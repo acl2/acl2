@@ -676,9 +676,6 @@
 (defn ixc () 4)
 (defn idc () 7)
 
-;; Trap enable bits are flags shifted by 8, e.g., IOE is FPSCR[8]
-;; and IDE is FPSCR[15].
-
 (defund fpscr-rc (fpscr) ; rounding mode
   (declare (xargs :guard (natp fpscr)))
   (case (bits fpscr 23 22)
@@ -691,18 +688,7 @@
 
 (defn dn () 25) ; default NaN mode
 
-;; In most cases, hardware sets an exception flag only if the corresponding
-;; trap enable bit is 0.  The exception is that FZ never generates a trapped
-;; underflow, so UFC is always set in this case:
-
-(defun cond-set-flag (b fpscr)
-  (declare (xargs :guard (and (natp b)
-                              (natp fpscr))))
-  (if (= (bitn fpscr (+ b 8)) 0)
-      (set-flag b fpscr)
-    fpscr))
-
-;;When a NaN is to be resturned and DN is set, the default is used:
+;; When a NaN is to be returned and DN is set, the default is used:
 
 (defun process-nan (x fpscr f)
   (declare (xargs :guard (and (encodingp x f)
@@ -737,13 +723,13 @@
                               (encodingp b f)
                               (natp fpscr))))
   (if (or (snanp a f) (snanp b f))
-      (cond-set-flag (ioc) fpscr)
+      (set-flag (ioc) fpscr)
     (if (or (qnanp a f) (qnanp b f))
         fpscr
       (if (binary-undefined-p op a f b f)
-          (cond-set-flag (ioc) fpscr)
+          (set-flag (ioc) fpscr)
         (if (and (eql op 'div) (zerp b f) (not (infp a f)))
-            (cond-set-flag (dzc) fpscr)
+            (set-flag (dzc) fpscr)
           fpscr)))))
 
 (defun arm-binary-pre-comp-val (op a b fpscr f)
@@ -778,7 +764,7 @@
                     b)
                   (if (and (or (denormp a f) (denormp b f))
                            (not (equal f (hp))))
-                      (cond-set-flag (idc) fpscr)
+                      (set-flag (idc) fpscr)
                     fpscr))
             (mv a b fpscr))
     (mv a b
@@ -794,7 +780,7 @@
          (r (rnd u rmode (prec f)))
          (sgn (if (< u 0) 1 0)))
     (if (> (abs r) (lpn f))
-        (let ((fpscr (cond-set-flag (ofc) (cond-set-flag (ixc) fpscr))))
+        (let ((fpscr (set-flag (ofc) (set-flag (ixc) fpscr))))
           (if (or (and (eql rmode 'rdn) (> r 0))
                   (and (eql rmode 'rup) (< r 0))
                   (eql rmode 'rtz))
@@ -807,14 +793,14 @@
             (let ((d (drnd u rmode f)))
               (if (= d u)
                   (mv (dencode d f) fpscr)
-                (let ((fpscr (cond-set-flag (ixc) (cond-set-flag (ufc) fpscr))))
+                (let ((fpscr (set-flag (ixc) (set-flag (ufc) fpscr))))
                   (if (= d 0)
                       (mv (zencode sgn f) fpscr)
                     (if (= (abs d) (spn f))
                         (mv (nencode d f) fpscr)
                       (mv (dencode d f) fpscr)))))))
         (mv (nencode r f)
-            (if (= r u) fpscr (cond-set-flag (ixc) fpscr)))))))
+            (if (= r u) fpscr (set-flag (ixc) fpscr)))))))
 
 (defun arm-binary-comp (op a b fpscr f)
   (declare (xargs :guard (and (member op '(add sub mul div))
@@ -852,11 +838,11 @@
   (declare (xargs :guard (and (encodingp a f)
                               (natp fpscr))))
   (if (snanp a f)
-      (cond-set-flag (ioc) fpscr)
+      (set-flag (ioc) fpscr)
     (if (qnanp a f)
         fpscr
       (if (and (not (zerp a f)) (= (sgnf a f) 1))
-          (cond-set-flag (ioc) fpscr)
+          (set-flag (ioc) fpscr)
         fpscr))))
 
 (defun arm-sqrt-pre-comp-val (a fpscr f)
@@ -875,7 +861,7 @@
     (if (and (denormp a f) (= (bitn fpscr (fz)) 1))
         (mv (zencode (sgnf a f) f)
             (if (not (equal f (hp)))
-                (cond-set-flag (idc) fpscr)
+                (set-flag (idc) fpscr)
               fpscr))
       (mv a fpscr))
     (mv a (arm-sqrt-pre-comp-val a fpscr f) (arm-sqrt-pre-comp-excp a fpscr f))))
@@ -910,7 +896,7 @@
                               (natp fpscr))))
   (if (or (snanp a f) (snanp b f) (snanp c f)
           (fma-undefined-p b c a f))
-      (cond-set-flag (ioc) fpscr)
+      (set-flag (ioc) fpscr)
     fpscr))
 
 (defun arm-fma-pre-comp-val (a b c fpscr f)
@@ -952,7 +938,7 @@
                     c)
                   (if (and (or (denormp a f) (denormp b f) (denormp c f))
                            (not (equal f (hp))))
-                      (cond-set-flag (idc) fpscr)
+                      (set-flag (idc) fpscr)
                     fpscr))
             (mv a b c fpscr))
       (mv a b c
@@ -1008,14 +994,14 @@
           (if (and (= (bitn fpscr (fz)) 1)
                    (denormp a f))
               (mv (zencode (sgnf a f) f)
-                  (cond-set-flag (idc) fpscr))
+                  (set-flag (idc) fpscr))
             (mv a fpscr))
     (mv a
         (if (nanp a f)
             (process-nan a fpscr f)
           ())
         (if (snanp a f)
-            (cond-set-flag (ioc) fpscr)
+            (set-flag (ioc) fpscr)
           fpscr))))
 
 (defun arm-fscale-comp (a b fpscr f)

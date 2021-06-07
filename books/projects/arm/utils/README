@@ -1,0 +1,36 @@
+----------------------------------------------------------------------
+Book Certification
+----------------------------------------------------------------------
+
+1. To certify books, execute the following:
+
+make ACL2=<Path of the ACL2 image>
+
+If you already set up an environment variable ACL2 on your machine,
+just simply run "make" to certify books. Here is how I set up this
+variable.
+
+* On Linux, add the following command to .cshrc:
+
+  setenv ACL2 <Path to the ACL2 directory>/saved_acl2
+
+* On Mac, add the following command to .bash_profile:
+
+  export ACL2=<Path to the ACL2 directory>/saved_acl2
+
+2. To remove certificate files, etc., execute the following:
+
+make clean ACL2=<Path of the ACL2 image>
+
+Or just "make clean" if you already set up the ACL2 environment
+variable described above.
+
+See Makefile for the detail.
+
+----------------------------------------------------------------------
+Book Organization
+----------------------------------------------------------------------
+
+arith-utils.lisp: Arithmetic utilities
+
+rtl-utils.lisp: RTL utilities

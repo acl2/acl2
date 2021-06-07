@@ -46,11 +46,11 @@
 
 (include-book "div") ;Newton-Raphson division
 
-(include-book "excps") ;specifications of elementary arithmetic operastions (SSE, x87, Arm)
+(include-book "excps") ;specifications of elementary arithmetic operations (SSE, x87, Arm)
 
 ;; Miscellaneous helpful stuff including a few macros;
 
-(include-book "util") 
+(include-book "util")
 
 ;; This is relevant to code derived from C++:
 
@@ -66,7 +66,7 @@
 (include-book "arithmetic-5/top" :dir :system)
 
 ;; Unfortunately, there are some conflicts between arithmetic-5 and this library
-;; (especially the "basic" book) that can severely slow down some proofs.  Much of 
+;; (especially the "basic" book) that can severely slow down some proofs.  Much of
 ;; this can be avoided by disabling the following lemmas:
 
 (in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)|
