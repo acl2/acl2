@@ -23,10 +23,6 @@
                           bit-listp
                           byte-listp
                           defxdoc+
-                          ecurve::jubjub-curve
-                          ecurve::jubjub-q
-                          ecurve::jubjub-a
-                          ecurve::jubjub-d
                           pfield::fep
                           pfield::add
                           pfield::neg
