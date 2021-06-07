@@ -144,10 +144,13 @@
     ((f . &) f)))
 
 (defun destruct-equality-hyp (hyp)
-  (case-match hyp
-    (('EQUAL x (f . args)) (list x (acl2::cons-term f args)))
-    (('EQUAL (f . args) x) (list x (acl2::cons-term f args)))
-    (('EQUAL x y) (list x y))))
+  (and (consp hyp)
+       (member-equal (car hyp)
+                     '(EQUAL EQ EQL = INT= STRING-EQUAL ACL2::HONS-EQUAL))
+       (case-match hyp
+         ((& x (f . args)) (list x (acl2::cons-term f args)))
+         ((& (f . args) x) (list x (acl2::cons-term f args)))
+         ((& x y) (list x y)))))
 
 (defun monadic-term-p (term)
   (and (consp term)
@@ -336,10 +339,9 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
 
 (defun destruct-var-equality-hyp (hyp)
   (case-match hyp
-    (('EQUAL (& . &) (& . &)) (list nil nil))
-    (('EQUAL x (f . args)) (list x (acl2::cons-term f args)))
-    (('EQUAL (f . args) x) (list x (acl2::cons-term f args)))
-    (('EQUAL x y) (if (acl2::symbol-< x y) (list x y) (list y x)))))
+    ((& x (f . args)) (list x (acl2::cons-term f args)))
+    ((& (f . args) x) (list x (acl2::cons-term f args)))
+    ((& x y) (if (acl2::symbol-< x y) (list x y) (list y x)))))
 
 (defun make-dummy-equality-frule-instance (eq-hyp)
   (b* (((list x equal-to-term) (destruct-var-equality-hyp eq-hyp))

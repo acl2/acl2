@@ -590,10 +590,13 @@ where
 
 (defloop strip-bound-vars (b*-bindings)
   ; x is either a (var value) or ((mv . vars) value)
-  (for ((x in b*-bindings)) (append (if (and (consp (car x)) (eq 'MV (car (car x))))
-                                        (remove-eq 'ACL2::& (cdr (car x)))
-                                      (list (car x))))))
+  (for ((x in b*-bindings))
+       (append (if (and (consp (car x)) (eq 'MV (car (car x))))
+                   (remove-eq 'ACL2::& (cdr (car x)))
+                 (list (car x))))))
+
 (include-book "select")
+
 (def make-next-sigma-defuns
      (hyps concl partial-A elim-bindings fixer-bindings top-vt-alist
            type-alist tau-interval-alist programp N i use-fixers-p vl state)
@@ -950,10 +953,13 @@ Use :simple search strategy to find counterexamples and witnesses.
     ;; mv-let body
     (declare (ignore erp trval))
 
-    (cond ((eq :timed-out (@ ss-temp-result)) (mv T nil state))
+    (cond ((eq :timed-out (@ ss-temp-result))
+           (mv T nil state))
           ((atom (@ ss-temp-result))
            (prog2$ 
-            (cw? (verbose-flag vl) "~|Cgen/Error : Bad trans-eval call in local Cgen/testing driver code.~|")
+            (cw? (verbose-flag vl)
+                 "~|Cgen/Error : Bad trans-eval call in local Cgen/testing driver code. ~ 
+ ss-temp-result: ~x0~|" (@ ss-temp-result))
             (mv T nil state)))
           (t (prog2$
               (and (verbose-stats-flag vl)
