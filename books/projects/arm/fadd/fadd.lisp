@@ -5,7 +5,7 @@
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     ash-to-floor |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
 
 (local-defund fadd-constraints (opa opb rin fma inz piz expovfl mulexcps)
@@ -552,7 +552,7 @@
 (local-defund rz ()
   (if (and (= (bitn (rin) (fz)) 1)
            (or (denormp (opa) (dp)) (denormp (opbhi) (dp))))
-      (cond-set-flag (idc) (rin))
+      (set-flag (idc) (rin))
     (rin)))
 
 (local-in-theory (disable (rz)))
@@ -982,7 +982,7 @@
   (if (and (= (bitn (rin) (fz)) 1) (denormp (opa) (dp)))
       (zencode (sgnf (opa) (dp)) (dp))
      (opa)))
-     
+
 (local-defund opbd ()
   (if (and (= (bitn (rin) (fz)) 1) (denormp (opbhi) (dp)))
       (zencode (sgnf (opbhi) (dp)) (dp))
@@ -991,7 +991,7 @@
 (local-defund rz ()
   (if (and (= (bitn (rin) (fz)) 1)
            (or (denormp (opa) (dp)) (denormp (opbhi) (dp))))
-      (cond-set-flag (idc) (rin))
+      (set-flag (idc) (rin))
     (rin)))
 
 (local-in-theory (disable (opad) (opbd)))

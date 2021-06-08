@@ -44,7 +44,7 @@
   (if (and (= (bitn (rin) (fz)) 1) (denormp (opaw) (f)))
       (zencode (sgnf (opaw) (f)) (f))
      (opaw)))
-     
+
 (defund opbz ()
   (if (and (= (bitn (rin) (fz)) 1) (denormp (opbw) (f)))
       (zencode (sgnf (opbw) (f)) (f))
@@ -54,7 +54,7 @@
   (if (and (= (bitn (rin) (fz)) 1)
            (not (= (f) (hp)))
            (or (denormp (opaw) (f)) (denormp (opbw) (f))))
-      (cond-set-flag (idc) (rin))
+      (set-flag (idc) (rin))
     (rin)))
 
 (in-theory (disable (fmtw) (opaw) (opbw) (opaz) (opbz) (rz)))

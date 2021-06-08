@@ -22,7 +22,7 @@
                   (fzp (bitn rin 24))
                   (rmode (bits rin 23 22)))
              (mv-let (data flags) (fdiv64 opa opb fnum fzp dnp rmode)
-               (let ((r (logior rin flags)))         
+               (let ((r (logior rin flags)))
                  (mv-let (data-spec r-spec)
                          (arm-binary-spec 'div (bits opa (1- fmtw) 0) (bits opb (1- fmtw) 0) rin f)
                    (and (equal data data-spec)
@@ -50,7 +50,7 @@
 (defund rmode () (bits (rin) 23 22))
 (defund f () (case (fnum) (0 (hp)) (1 (sp)) (2 (dp))))
 
-;; In terms of these constants, we define constants corresponding to the local 
+;; In terms of these constants, we define constants corresponding to the local
 ;; variables of the top-level function, fdiv64, culminating in the constants
 ;; (data) and (flags) corresponding to the outputs.
 
@@ -294,7 +294,7 @@
 
 (defthm qn-3n1-rewrite
   (equal (qn-3n1) (qn (1+ (* 3 (n))))))
-  
+
 
 ;;********************************************************************************************
 ;; Special Cases

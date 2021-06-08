@@ -27,7 +27,7 @@
                  (fzp (bitn rin 24))
                  (rmode (bits rin 23 22)))
              (mv-let (data flags) (fmul64 opa opb fzp dnp rmode 0)
-               (let ((r (logior rin flags)))         
+               (let ((r (logior rin flags)))
                  (mv-let (data-spec r-spec)
                          (arm-binary-spec 'mul opa opb rin (dp))
                    (and (equal data data-spec)
@@ -55,12 +55,12 @@
 (defund fzp () (bitn (rin) 24))
 (defund rmode () (bits (rin) 23 22))
 
-;; In terms of these constants, we shall define constants corresponding to the local 
-;; variables of fmul64, culminating in the constants (data) and (flags), corresponding to
-;; the outputs.
+;; In terms of these constants, we shall define constants corresponding to the
+;; local variables of fmul64, culminating in the constants (data) and (flags),
+;; corresponding to the outputs.
 
-;; The constant definitions will be derived from that of fsqrt64 in such a way that 
-;; the proof of the following will be trivial:
+;; The constant definitions will be derived from that of fmul64 in such a way
+;; that the proof of the following will be trivial:
 
 ;; (defthmd fmul64-lemma
 ;;   (mv-let (data flags prodinfzero infnanzero expovfl) (fmul64 (opa) (opb) (fzp) (dnp) (rmode) (fused))
@@ -118,7 +118,7 @@
            (or (zerp a (dp)) (fzerp a fz)))))
 
 ;; The special case data result:
-      
+
 (defun fmul64-fused-spec-special-val (a b fz dn)
   (cond ((inf-times-zero a b fz)
          (indef (dp)))
@@ -155,8 +155,8 @@
        (= data (ash (fmul64-fused-spec-special-val a b fz dn) 53))))
 
 
-;; Note that in the case of a subnormal product, the specification does not compute 
-;; a specific value, but rather constrains it:
+;; Note that in the case of a subnormal product, the specification does not
+;; compute a specific value, but rather constrains it:
 
 (defun fmul64-fused-comp (a b data flags prodinfzero infnanzero expovfl)
   (let ((prod (* (decode a (dp)) (decode b (dp)))))
@@ -854,10 +854,9 @@
                  (fzp (bitn rin 24))
                  (rmode (bits rin 23 22)))
              (mv-let (data flags) (fmul64 opa opb fzp dnp rmode 0)
-               (let ((r (logior rin flags)))         
+               (let ((r (logior rin flags)))
                  (mv-let (data-spec r-spec)
                          (arm-binary-spec 'mul opa opb rin (dp))
                    (and (equal data data-spec)
                         (equal r r-spec)))))))
   :rule-classes ())
- 

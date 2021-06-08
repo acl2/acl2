@@ -132,7 +132,7 @@
                       (if (= (rnd (qsqrt (a) (1+ (* 2 (n)))) (mode) (p))
 	                     (qsqrt (a) (1+ (* 2 (n)))))
 		          (rz)
-			(cond-set-flag (ixc) (rz))))))
+			(set-flag (ixc) (rz))))))
   :hints (("Goal" :in-theory (enable spec-6 arm-post-comp)
                   :use (spec-16 spec-14 spec-15 spec-10))))
 
@@ -142,7 +142,7 @@
                   (mv (nencode (rnd (qsqrt (a) (1+ (* 2 (n)))) (mode) (p)) (f))
                       (if (= (inx) 0)
 		          (rz)
-			(cond-set-flag (ixc) (rz))))))
+			(set-flag (ixc) (rz))))))
   :hints (("Goal" :in-theory (enable rnd-inx-rewrite)
                   :use (spec-17))))
 

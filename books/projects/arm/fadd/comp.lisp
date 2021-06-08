@@ -324,19 +324,19 @@
 (local-defthmd ovfl-33
   (implies (and (= (isspecial) 0) (= (informax) 1))
            (equal (bitn (flags) 3)
-	          (bitn (cond-set-flag (ofc) (cond-set-flag (ixc) 0)) (ufc))))
+	          (bitn (set-flag (ofc) (set-flag (ixc) 0)) (ufc))))
   :hints (("Goal" :in-theory (enable checkspecial checkdenorm bitn-bits bitn-logior set-flag flags flags-5 flags-4 flags-3 flags-2 flags-1))))
 
 (local-defthmd ovfl-34
   (implies (and (= (isspecial) 0) (= (informax) 1))
            (equal (bitn (flags) 2)
-	          (bitn (cond-set-flag (ofc) (cond-set-flag (ixc) (rin))) (ofc))))
+	          (bitn (set-flag (ofc) (set-flag (ixc) (rin))) (ofc))))
   :hints (("Goal" :in-theory (enable checkspecial checkdenorm bitn-bits bitn-logior set-flag flags flags-5 flags-4 flags-3 flags-2 flags-1))))
 
 (local-defthmd ovfl-35
   (implies (and (= (isspecial) 0) (= (informax) 1))
            (equal (bitn (flags) 4)
-	          (bitn (cond-set-flag (ofc) (cond-set-flag (ixc) (rin))) (ixc))))
+	          (bitn (set-flag (ofc) (set-flag (ixc) (rin))) (ixc))))
   :hints (("Goal" :in-theory (enable checkspecial checkdenorm bitn-bits bitn-logior set-flag flags flags-5 flags-4 flags-3 flags-2 flags-1))))
 
 (local-defthm bitn-set-flag

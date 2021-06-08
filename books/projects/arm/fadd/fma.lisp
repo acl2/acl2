@@ -813,7 +813,7 @@
 (local-defund rz ()
   (if (and (= (bitn (rin) (fz)) 1)
            (or (denormp (opa) (dp)) (denormp (opb) (dp)) (denormp (opc) (dp))))
-      (cond-set-flag (idc) (rin))
+      (set-flag (idc) (rin))
     (rin)))
 
 (local-in-theory (disable (rz)))
