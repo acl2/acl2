@@ -13,7 +13,7 @@ theorem-proving system.  They also contain proofs of correctness of
 some x86 machine-code programs.
 
 Up-to-date documentation is available at:
-http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=ACL2____X86ISA
+http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/?topic=ACL2____X86ISA
 
 Questions/Comments? Contact Shilpi Goel (shigoel@gmail.com).
 

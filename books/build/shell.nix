@@ -19,7 +19,7 @@
 
 with pkgs; let
 
-  # implements http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=IPASIR____BUILDING-AN-IPASIR-SOLVER-LIBRARY
+  # implements http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/?topic=IPASIR____BUILDING-AN-IPASIR-SOLVER-LIBRARY
   libipasirglucose4 = stdenv.mkDerivation rec {
     pname = "libipasirglucose4";
     version = "2017";

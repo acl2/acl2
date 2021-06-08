@@ -706,7 +706,7 @@ synchronize it with the community books for the medium-term.
 is via the instructions found at the following :doc topic, but for
 now, just email changes to Rager:
 
-http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=ACL2____GITHUB-COMMIT-CODE-USING-PULL-REQUESTS
+http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/?topic=ACL2____GITHUB-COMMIT-CODE-USING-PULL-REQUESTS
 
 
 (3) So long as no changes are made to the "lib" directory of rel11,

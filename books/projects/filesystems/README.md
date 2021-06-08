@@ -48,7 +48,7 @@ required. Installation note: these tests are known to work with an ACL2 built at
 Clozure Common Lisp (CCL). At least one other Common Lisp
 implementation (SBCL) causes some tests to fail, on account of
 inconsistent handling of command line arguments by
-[oslib::argv](http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=OSLIB____ARGV). The
+[oslib::argv](http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/?topic=OSLIB____ARGV). The
 ACL2 installation page points to instructions for
 [obtaining](http://www.cs.utexas.edu/users/moore/acl2/v8-2/HTML/installation/requirements.html#Obtaining-CCL)
 and

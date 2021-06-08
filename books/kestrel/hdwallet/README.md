@@ -22,7 +22,7 @@ transactions for the Ethereum mainnet are supported.
 
 For more information see [the XDOC main technical description][xdoc-hdwallet].  For command usage see below.
 
-[xdoc-hdwallet]: http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=HDWALLET____CRYPTO-HDWALLET
+[xdoc-hdwallet]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/?topic=HDWALLET____CRYPTO-HDWALLET
 
 ## Obtaining
 

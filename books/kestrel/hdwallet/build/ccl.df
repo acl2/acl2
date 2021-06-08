@@ -3,7 +3,7 @@ FROM ubuntu:latest
 # Dockerfile for building CCL on Linux on x86 64
 # EM: 2019-05-11
 # See
-#   http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____CCL-INSTALLATION
+#   http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____CCL-INSTALLATION
 #
 # To build an image with this, cd to this directory and do
 #   docker build --file ccl.df -t ccl:latest .

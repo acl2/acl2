@@ -9,7 +9,7 @@ https://github.com/acl2/acl2/tree/master/books/projects/smtlink, or in an
 ACL2+books distribution in books/projects/smtlink.
 
 Documentation can be found at
-http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=SMT____SMTLINK,
+http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/?topic=SMT____SMTLINK,
 or found in ACL2 with :doc smtlink (with projects/smtlink/doc book included).
 
 Each of these books contains the copyright, license, and authorship information.

@@ -42,7 +42,7 @@ browsing the manual.
 
 [base-manual]: http://www.cs.utexas.edu/users/moore/acl2/current/manual/index.html
 [full-manual]: http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html
-[dev-manual]:  http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html
+[dev-manual]:  http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html
 
 ### Obtaining the Source Code
 
@@ -74,7 +74,7 @@ executable and certify books in your new directory.
 [installation]:    http://www.cs.utexas.edu/users/moore/acl2/current/HTML/installation/installation.html
 [releases]:        https://github.com/acl2-devel/acl2-devel/releases/
 [git]:             http://git-scm.com
-[community books]: http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____COMMUNITY-BOOKS
+[community books]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____COMMUNITY-BOOKS
 
 #### Experimental Development Version
 
@@ -97,7 +97,7 @@ system.  (If you have suggestions for system changes, they should be
 emailed to [Matt or J](mailto:kaufmann@cs.utexas.edu), as has been done
 in the past.)
 
-[git tips]: http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____GIT-QUICK-START
+[git tips]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____GIT-QUICK-START
 
 ### Staying Informed
 
@@ -116,7 +116,7 @@ If you would like to contribute to this repository, see the
 documentation topic [git-quick-start].  Please note the [guidelines for
 book development][books guidelines].
 
-[git-quick-start]:  http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=ACL2____GIT-QUICK-START
+[git-quick-start]:  http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/?topic=ACL2____GIT-QUICK-START
 [wiki]:             https://github.com/acl2/acl2/wiki
 [bugtracker]:       https://github.com/acl2/acl2/issues
 [books guidelines]: https://github.com/acl2/acl2/wiki/Committing-code:-guidelines

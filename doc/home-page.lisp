@@ -26,7 +26,7 @@
 
 (defun topic-to-url-list (url chars names)
 ; Url is a url ending in "/", e.g.,
-; http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/ .
+; http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/ .
   (cond ((endp names) nil)
         (t (cons (cons (car chars)
                        (concatenate 'string
@@ -44,7 +44,7 @@
   "http://www.cs.utexas.edu/users/moore/acl2/v8-3/combined-manual/")
 
 (defconst *bleeding-edge-manual*
-  "http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/")
+  "http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/")
 
 (defconst *home-page-references*
   '(|The_02Tours|                       ;;; a
@@ -498,7 +498,7 @@ href=\"manual/index.html?topic=ACL2____ACL2-DOC\">ACL2-Doc browser</a>.
 (defun write-home-page (channel state url)
 
 ; Url is a url ending in "/", e.g.,
-; http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/ .
+; http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/ .
 
   (mv-let
    (n state)
