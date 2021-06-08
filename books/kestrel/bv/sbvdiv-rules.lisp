@@ -278,6 +278,15 @@
                                      sbvdiv-when-both-negative
                                      sbvdiv-when-both-positive))))
 
+(defthm equal-of-if-constants
+  (implies (syntaxp (and (quotep k1)
+                         (quotep k2)
+                         (quotep k3)))
+           (equal (equal (if test k1 k2) k3)
+                  (if test
+                      (equal k1 k3)
+                    (equal k2 k3)))))
+
 ;gen!
 (defthmd sbvdiv-of-sbvdiv-arg2
   (implies (and (natp size)
@@ -295,16 +304,19 @@
                     ;; divisor is so big we get 0:
                     0)))
   :otf-flg t
-  :hints (("Goal" :cases ((equal y1 0))
+  :hints (("Goal" :cases ((equal y1 0)
+                          (and (not (equal y1 0))
+                               (EQUAL (BVCHOP (BINARY-+ '-1 SIZE) X) '0)))
            :in-theory (e/d (;SBVDIV-WHEN-BOTH-POSITIVE
                             sbvlt
                             bvdiv
                             unsigned-byte-p
-                            ;bvuminus
+                            bvuminus
                             bvminus
                             floor-of-sum
                             floor-minus-arg1
                             bvchop-of-sum-cases
+                            ;BVCHOP-WHEN-TOP-BIT-0-WIDEN ; in rules.lisp
                             )
                            ( ;BVCHOP-IDENTITY
                             ;;todo: clean these up:
@@ -315,6 +327,7 @@
                             ;;slow:
                             USB-PLUS-FROM-BOUNDS
                             getbit-of-0-when-bitp
+                            BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE
                             )))))
 
 ;gen!

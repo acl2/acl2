@@ -14,6 +14,7 @@
 (include-book "getbit")
 (include-book "bitnot")
 (local (include-book "slice-rules"))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 
 (defthm getbit-of-minus
   (implies (and (integerp x)
@@ -29,3 +30,37 @@
                                    ;BITNOT-OF-SLICE ;bozo
                                    ;BITXOR-OF-SLICE-ARG2 ;loops with defn getbit
                                    )))))
+
+(defthmd floor-when-equal-of-floor-and-0-and->=
+  (implies (and (equal (floor x y) 0)
+                (<= xsmall x)
+                (posp y)
+                (natp n)
+                (natp x)
+                (natp xsmall))
+           (equal (floor xsmall y)
+                  0)))
+
+(defthmd logtail-when-equal-of-logtail-and-0-and->=
+  (implies (and (equal (logtail$inline n x) 0)
+                (<= xsmall x)
+                (natp n)
+                (integerp x)
+                (natp xsmall)
+                )
+           (equal (logtail$inline n xsmall)
+                  0))
+  :hints (("Goal" :in-theory (enable logtail
+                                     floor-when-equal-of-floor-and-0-and->=))))
+
+(defthm getbit-of-floor-when-top-bit-0
+  (implies (and (equal (getbit n x) 0)
+                (unsigned-byte-p (+ 1 n) x)
+                (posp y)
+                (integerp x)
+                (natp n))
+           (equal (getbit n (floor x y))
+                  0))
+  :hints (("Goal" :in-theory (e/d (getbit slice logtail-when-equal-of-logtail-and-0-and->=)
+                                  (BVCHOP-1-BECOMES-GETBIT
+                                   SLICE-BECOMES-GETBIT)))))
