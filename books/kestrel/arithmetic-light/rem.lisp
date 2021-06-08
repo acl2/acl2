@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function rem
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,6 +21,8 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/divides" :dir :system))
+
+(in-theory (disable rem))
 
 (defthm rem-of-0-arg2
   (equal (rem x 0)
@@ -54,5 +56,6 @@
                       (acl2-numberp x)
                     (< (abs x) (abs y)))))
   :hints (("Goal" :cases ((< 0 x))
-           :in-theory (enable truncate-becomes-floor-gen
-                                     equal-of-floor))))
+           :in-theory (enable rem
+                              truncate-becomes-floor-gen
+                              equal-of-floor))))

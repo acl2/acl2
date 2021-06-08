@@ -53,3 +53,9 @@
   (implies (booleanp x)
            (equal (if x t nil)
                   x)))
+
+(defthmd equal-of-if-arg2
+  (equal (equal k (if test x y))
+         (if test
+             (equal k x)
+           (equal k y))))

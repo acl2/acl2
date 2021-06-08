@@ -1085,28 +1085,28 @@
                                      rule-hyps
                                      rule-symbol))))
 
-;; Splits CONC into a left-hand-side and a right-hand-side..
-;;Returns (mv erp lhs rhs).
+;; Splits the rule conclusion, CONC, into a left-hand-side and a
+;; right-hand-side.  Returns (mv erp lhs rhs).
 (defund lhs-and-rhs-of-conc (conc rule-symbol known-boolean-fns)
   (declare (xargs :guard (and (pseudo-termp conc)
                               (symbolp rule-symbol)
                               (symbol-listp known-boolean-fns))))
   (if (atom conc)
       (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form (atom) of conclusion ~x0 in rule ~x1" conc rule-symbol)
-              (mv t nil nil))
+              (mv :bad-conclusion nil nil))
     (b* ((fn (ffn-symb conc)))
       (if (eq 'equal fn)
-          (if (not (consp (farg1 conc))) ;probably always true, since rewrite rules must have function calls on the lhs)
+          (if (not (consp (farg1 conc))) ; probably always true, since rewrite rules must have function calls on the lhs
               (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form (not a cons) of LHS ~x0 in rule ~x1" (farg1 conc) rule-symbol)
-                      (mv t nil nil))
+                      (mv :bad-lhs nil nil))
             (if (eq 'quote (ffn-symb (farg1 conc)))
                 (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form (quoted thing) of LHS ~x0 in rule ~x1" (farg1 conc) rule-symbol)
-                        (mv t nil nil))
+                        (mv :bad-lhs nil nil))
               (if (symbolp (ffn-symb (farg1 conc)))
                   ;;(equal (<function> ...) ...): ;fixme what about lambdas?
                   (mv nil (expand-lambdas-in-term (farg1 conc)) (farg2 conc))
                 (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form of conclusion ~x0 in rule ~x1" conc rule-symbol)
-                        (mv t nil nil)))))
+                        (mv :bad-conclusion nil nil)))))
         (if (eq 'not fn)
             (if (and (consp (farg1 conc)) ;; (these are probably always true, since rewrite rules must have function calls on the lhs
                      (symbolp (ffn-symb (farg1 conc)))
@@ -1115,19 +1115,21 @@
                 ;;(not x) is the same as (equal x 'nil):
                 (mv nil (expand-lambdas-in-term (farg1 conc)) *nil*)
               (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form of conclusion ~x0 in rule ~x1" conc rule-symbol)
-                      (mv t nil nil)))
+                      (mv :bad-conclusion nil nil)))
           (if (eq 'quote fn)
               (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form (quoted constant) of conclusion ~x0 in rule ~x1" conc rule-symbol)
-                      (mv t nil nil))
-            (if (member-eq fn known-boolean-fns)
-                ;; pred -> (equal pred 't)
-                (mv nil (expand-lambdas-in-term conc) *t*)
-              (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form of conclusion (not an equality, a call of not, or a call of a known-boolean) ~x0 in rule ~x1" conc rule-symbol)
-                      (mv t nil nil)))))))))
+                      (mv :bad-conclusion nil nil))
+            (if (consp fn)
+                (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form (lambda application) of conclusion ~x0 in rule ~x1" conc rule-symbol)
+                        (mv :bad-conclusion nil nil))
+              (if (member-eq fn known-boolean-fns)
+                  ;; pred -> (equal pred 't)
+                  (mv nil (expand-lambdas-in-term conc) *t*)
+                (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form of conclusion (not an equality, a call of not, or a call of a known-boolean) ~x0 in rule ~x1" conc rule-symbol)
+                        (mv :bad-conclusion nil nil))))))))))
 
 (defthm axe-rule-lhsp-of-mv-nth-1-of-lhs-and-rhs-of-conc
   (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
-                (symbol-listp known-boolean-fns) ;drop?
                 (pseudo-termp conc))
            (axe-rule-lhsp (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
   :hints (("Goal"  :expand ((expand-lambdas-in-term conc))
@@ -1325,16 +1327,17 @@
       (mv `(:bad-rule ,rule-name)
           (er hard? 'hyps-and-conc-for-axe-rule "Unable to make an Axe rule from ~x0 (theorem body is a variable): ~x1" rule-name theorem-body)
           nil)
-    (if (consp (car theorem-body))
+    (if (consp (car theorem-body)) ; check for lambda
         (mv `(:bad-rule ,rule-name)
             (er hard? 'hyps-and-conc-for-axe-rule "Unable to make an Axe rule from ~x0 (theorem body is a lambda application, which is not yet supported): ~x1" rule-name theorem-body)
             nil)
-      (if (and (eq 'implies (car theorem-body))
+      (if (and (call-of 'implies theorem-body)
                (= 2 (len (fargs theorem-body)))) ;for guards
           ;; TODO: Support nested implies?
           (mv (erp-nil)
-              (get-conjuncts (second theorem-body))
-              (third theorem-body))
+              (get-conjuncts (farg1 theorem-body)) ; multiple hyps
+              (farg2 theorem-body) ; single conclusion (for now)
+              )
         (mv (erp-nil)
             nil ;no hyps
             theorem-body)))))
@@ -1350,11 +1353,11 @@
   :hints (("Goal" :in-theory (enable hyps-and-conc-for-axe-rule))))
 
 ;;;
-;;; make-rules-from-theorem
+;;; make-axe-rules-from-theorem
 ;;;
 
 ;; Returns (mv erp axe-rules).
-(defund make-rules-from-theorem (theorem-body rule-symbol rule-classes known-boolean-fns print wrld)
+(defund make-axe-rules-from-theorem (theorem-body rule-symbol rule-classes known-boolean-fns print wrld)
   (declare (xargs :guard (and (pseudo-termp theorem-body)
                               (symbolp rule-symbol)
                               (symbol-listp known-boolean-fns)
@@ -1374,29 +1377,29 @@
     (mv (erp-nil)
         (make-rules-from-conclusion conc hyps extra-hyps rule-symbol known-boolean-fns print wrld))))
 
-(defthm axe-rule-listp-of-mv-nth-1-of-make-rules-from-theorem
+(defthm axe-rule-listp-of-mv-nth-1-of-make-axe-rules-from-theorem
   (implies (and (pseudo-termp theorem-body)
                 (symbolp rule-symbol)
                 (symbol-listp known-boolean-fns))
-           (axe-rule-listp (mv-nth 1 (make-rules-from-theorem theorem-body rule-symbol rule-classes known-boolean-fns print wrld))))
-  :hints (("Goal" :in-theory (enable make-rules-from-theorem
+           (axe-rule-listp (mv-nth 1 (make-axe-rules-from-theorem theorem-body rule-symbol rule-classes known-boolean-fns print wrld))))
+  :hints (("Goal" :in-theory (enable make-axe-rules-from-theorem
                                      axe-rulep ;fixme
                                      ))))
 
-(defthm true-listp-of-mv-nth-1-of-make-rules-from-theorem
-  (true-listp (mv-nth 1 (make-rules-from-theorem theorem-body rule-symbol rule-classes known-boolean-fns print wrld)))
-  :hints (("Goal" :in-theory (e/d (make-rules-from-theorem) ()))))
+(defthm true-listp-of-mv-nth-1-of-make-axe-rules-from-theorem
+  (true-listp (mv-nth 1 (make-axe-rules-from-theorem theorem-body rule-symbol rule-classes known-boolean-fns print wrld)))
+  :hints (("Goal" :in-theory (e/d (make-axe-rules-from-theorem) ()))))
 
 ;; Returns the axe-rules.  Does not return erp.
-(defund make-rules-from-theorem! (theorem-body rule-symbol rule-classes known-boolean-fns print wrld)
+(defund make-axe-rules-from-theorem! (theorem-body rule-symbol rule-classes known-boolean-fns print wrld)
   (declare (xargs :guard (and (pseudo-termp theorem-body)
                               (symbolp rule-symbol)
                               (symbol-listp known-boolean-fns)
                               (plist-worldp wrld))))
   (mv-let (erp axe-rules)
-    (make-rules-from-theorem theorem-body rule-symbol rule-classes known-boolean-fns print wrld)
+    (make-axe-rules-from-theorem theorem-body rule-symbol rule-classes known-boolean-fns print wrld)
     (if erp
-        (er hard? 'make-rules-from-theorem! "Error making Axe rules.")
+        (er hard? 'make-axe-rules-from-theorem! "Error making Axe rules.")
       axe-rules)))
 
 ;; (mutual-recursion
@@ -1490,7 +1493,7 @@
                  (remove-guard-holders-weak theorem-body))
                 (theorem-body (drop-unused-lambda-bindings theorem-body))
                 ((mv erp rules)
-                 (make-rules-from-theorem theorem-body name rule-classes known-boolean-fns print wrld))
+                 (make-axe-rules-from-theorem theorem-body name rule-classes known-boolean-fns print wrld))
                 ((when erp) (mv erp acc)))
              (mv (erp-nil)
                  (append rules acc)))))))
