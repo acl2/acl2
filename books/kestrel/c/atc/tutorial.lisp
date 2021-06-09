@@ -1726,7 +1726,7 @@
 
 (def-atc-tutorial-page conditionals-with-mbt
 
-  "Treatment of ACL2 conditionals with @(tsee mbt) or @(tsee mbt$)."
+  "Treatment of ACL2 conditionals with @(tsee mbt) or @(tsee mbt$)"
 
   (xdoc::p
    "After describing how ACL2 conditionals
