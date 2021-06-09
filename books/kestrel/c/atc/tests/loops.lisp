@@ -25,14 +25,17 @@
   (defun |f$loop| (|n| |r|)
     (declare (xargs :guard (and (c::uintp |n|)
                                 (c::uintp |r|))
+                    :guard-hints (("Goal" :in-theory (enable c::declar
+                                                             c::assign)))
                     :measure (c::uint->get |n|)
-                    :hints (("Goal" :in-theory (enable c::ne-uint-uint
+                    :hints (("Goal" :in-theory (enable c::assign
+                                                       c::ne-uint-uint
                                                        c::sub-uint-uint
                                                        c::uint-integer-fix
                                                        c::uint-mod)))))
     (if (c::boolean-from-sint (c::ne-uint-uint |n| (c::uint-dec-const 0)))
-        (let* ((|r| (c::mul-uint-uint |r| |n|))
-               (|n| (c::sub-uint-uint |n| (c::uint-dec-const 1))))
+        (let* ((|r| (c::assign (c::mul-uint-uint |r| |n|)))
+               (|n| (c::assign (c::sub-uint-uint |n| (c::uint-dec-const 1)))))
           (|f$loop| |n| |r|))
       (mv |n| |r|))))
 
@@ -41,7 +44,7 @@
   (set-ignore-ok t)
   (defun |f| (|n|)
     (declare (xargs :guard (c::uintp |n|)))
-    (let ((|r| (c::uint-dec-const 1)))
+    (let ((|r| (c::declar (c::uint-dec-const 1))))
       (mv-let (|n| |r|)
         (|f$loop| |n| |r|)
         |r|))))

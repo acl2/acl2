@@ -581,6 +581,8 @@
   (append
    '(compustate-frames-number
      condexpr
+     declar
+     assign
      create-var
      endp
      enter-scope

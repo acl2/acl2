@@ -314,7 +314,7 @@
        @('(return-last \'acl2::mbe1-raw \'t (if x \'t \'nil))');
        these are the patterns that ATC looks for.")
      (xdoc::li
-      "A term @('(let ((var term)) body)'),
+      "A term @('(let ((var (declar term))) body)'),
        where the symbol name of @('var') is a portable ASCII C identifier
        as defined in Section `Portable ASCII C Identifiers' below,
        the symbol name of @('var') is distinct from
@@ -324,29 +324,31 @@
        whose C type is not a pointer type, and
        @('body') is a statement term for @('fni')
        transforming variables @('vars').
-       This represents a declaration of
-       a C local variable represented by @('var'),
+       This represents, as indicated by the wrapper @(tsee declar),
+       a declaration of a C local variable represented by @('var'),
        initialized with the C expression represented by @('term'),
        followed by the C code represented by @('body').
        The C type of the variable is determined from the initializer.
        In translated terms,
-       @('(let ((var term)) body)') is @('((lambda (var) body) term)');
+       @('(let ((var (declar term))) body)') is
+       @('((lambda (var) body) (declar term))');
        this is the pattern that ATC looks for.")
      (xdoc::li
-      "A term @('(let ((var term)) body)'),
+      "A term @('(let ((var (assign term))) body)'),
        where @('var') is assignable,
-       @('term') is a C-valued term for @('fni') that differs from @('var')
-       and whose C type is the same as the C local variable represented by
+       @('term') is a C-valued term for @('fni')
+       whose C type is the same as the C local variable represented by
        the aforementioned ACL2 variable in scope, and
        @('body') is a statement term for @('fni')
        transforming variables @('vars').
-       This represents an assignment to
-       the C local variable or function parameter
-       represented by @('var'),
+       This represents, as indicated by the wrapper @(tsee assign),
+       an assignment to
+       the C local variable or function parameter represented by @('var'),
        with the C expression represented by @('term') as right-hand side,
        followed by the C code represented by @('body').
        In translated terms,
-       @('(let ((var term)) body)') is @('((lambda (var) body) term)');
+       @('(let ((var (assign term))) body)') is
+       @('((lambda (var) body) (assign term))');
        this is the pattern that ATC looks for.")
      (xdoc::li
       "A term @('(let ((var term)) body)'),
@@ -362,7 +364,8 @@
        which may modify the variable represented by @('var'),
        followed by the C code represented by @('body').
        In translated terms,
-       @('(let ((var term)) body)') is @('((lambda (var) body) term)');
+       @('(let ((var term)) body)') is
+       @('((lambda (var) body) term)');
        this is the pattern that ATC looks for.")
      (xdoc::li
       "A term @('(mv-let (var1 ... varn) term body)'),
@@ -455,7 +458,7 @@
        whose test expression is represented by the test term
        and whose branch blocks are represented by the branch terms.")
      (xdoc::li
-      "A term @('(let ((var term)) body)'),
+      "A term @('(let ((var (declar term))) body)'),
        where the symbol name of @('var') is a portable ASCII C identifier
        as defined in Section `Portable ASCII C Identifiers' below,
        the symbol name of @('var') is distinct from
@@ -465,29 +468,31 @@
        whose C type is not a pointer type, and
        @('body') is a loop body term for @('fni')
        transforming variables @('vars').
-       This represents a declaration of
-       a C local variable represented by @('var'),
+       This represents, as indicated by the wrapper @(tsee declar),
+       a declaration of a C local variable represented by @('var'),
        initialized with the C expression represented by @('term'),
        followed by the C code represented by @('body').
        The C type of the variable is determined from the initializer.
        In translated terms,
-       @('(let ((var term)) body)') is @('((lambda (var) body) term)');
+       @('(let ((var (declar term))) body)') is
+       @('((lambda (var) body) (declar term))');
        this is the pattern that ATC looks for.")
      (xdoc::li
-      "A term @('(let ((var term)) body)'),
+      "A term @('(let ((var (assign term))) body)'),
        where @('var') is assignable,
-       @('term') is a C-valued term for @('fni') that differs from @('var')
-       and whose C type is the same as the C local variable represented by
+       @('term') is a C-valued term for @('fni')
+       whose C type is the same as the C local variable represented by
        the aforementioned ACL2 variable in scope, and
        @('body') is a loop body term for @('fni')
        transforming variables @('vars').
-       This represents an assignment to
-       the C local variable or function parameter
-       represented by @('var'),
+       This represents, as indicated by the wrapper @(tsee assign),
+       an assignment to
+       the C local variable or function parameter represented by @('var'),
        with the C expression represented by @('term') as right-hand side,
        followed by the C code represented by @('body').
        In translated terms,
-       @('(let ((var term)) body)') is @('((lambda (var) body) term)');
+       @('(let ((var (assign term))) body)') is
+       @('((lambda (var) body) (assign term))');
        this is the pattern that ATC looks for.")
      (xdoc::li
       "A term @('(let ((var term)) body)'),

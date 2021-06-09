@@ -15,22 +15,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Some examples to test code generation for local variables.
+; Some examples to test code generation for local variable declarations.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |f| (|x| |y|)
-  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))
-  (let ((|z| (c::lt-sint-sint |x| |y|)))
+  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))
+                  :guard-hints (("Goal" :in-theory (enable c::declar)))))
+  (let ((|z| (c::declar (c::lt-sint-sint |x| |y|))))
     (c::lognot-sint |z|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |g| (|x| |y|)
-  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))
-  (let* ((|x_lt_y| (c::lt-sint-sint |x| |y|))
-         (|x_eq_y| (c::eq-sint-sint |x| |y|))
-         (|x_le_y| (c::bitior-sint-sint |x_lt_y| |x_eq_y|)))
+  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))
+                  :guard-hints (("Goal" :in-theory (enable c::declar)))))
+  (let* ((|x_lt_y| (c::declar (c::lt-sint-sint |x| |y|)))
+         (|x_eq_y| (c::declar (c::eq-sint-sint |x| |y|)))
+         (|x_le_y| (c::declar (c::bitior-sint-sint |x_lt_y| |x_eq_y|))))
     (c::lognot-sint |x_le_y|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -50,7 +52,8 @@
                                 (<= (c::sint->get |y|) 10))
                     :guard-hints (("Goal"
                                    :do-not-induct t
-                                   :in-theory (enable c::sint-integerp-alt-def
+                                   :in-theory (enable c::declar
+                                                      c::sint-integerp-alt-def
                                                       c::add-sint-sint-okp
                                                       c::sub-sint-sint-okp
                                                       c::mul-sint-sint-okp
@@ -59,7 +62,7 @@
                                                       c::mul-sint-sint
                                                       c::ge-sint-sint)))))
     (if (c::boolean-from-sint (c::ge-sint-sint |x| (c::sint-dec-const 0)))
-        (let ((|z| (c::add-sint-sint |x| |y|)))
+        (let ((|z| (c::declar (c::add-sint-sint |x| |y|))))
           (c::mul-sint-sint (c::sint-dec-const 2) |z|))
       (c::sub-sint-sint |y| |x|))))
 

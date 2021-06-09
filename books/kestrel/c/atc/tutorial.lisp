@@ -1316,12 +1316,15 @@
     that introduce and operate on local variables.")
 
   (xdoc::p
-   "A C local variable declaration is represented by an ACL2 @(tsee let).
+   "A C local variable declaration is represented by an ACL2 @(tsee let)
+    where the term to which the variable is bound
+    is wrapped with @(tsee declar) to indicate a variable declaration.
     For examples, the ACL2 function")
   (xdoc::codeblock
    "(defun |f| (|x| |y|)"
-   "  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))"
-   "  (let ((|z| (c::lt-sint-sint |x| |y|)))"
+   "  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))"
+   "                  :guard-hints ((\"Goal\" :in-theory (enable c::declar)))))"
+   "  (let ((|z| (c::declar (c::lt-sint-sint |x| |y|))))"
    "    (c::lognot-sint |z|)))")
   (xdoc::p
    "represents the C function")
@@ -1343,7 +1346,13 @@
     described in @(tsee atc-tutorial-identifiers).
     The type of the local variable, @('int') in this case,
     is not explicitly represented in ACL2,
-    but it is inferred by ATC based on the term that the variable is bound to.")
+    but it is inferred by ATC based on the term that the variable is bound to.
+    The @(tsee declar) wrapper is an identity function
+    whose only purpose is to indicate to ATC
+    that the @(tsee let) represents a local variable declaration
+    as opposed to a local variable assignment
+    (described in @(see atc-tutorial-assignments));
+    this wrapper should be normally enabled in proofs.")
 
   (xdoc::p
    "This is not limited to a single @(tsee let).
@@ -1352,10 +1361,11 @@
     For instance, the ACL2 function"
    (xdoc::codeblock
     "(defun |g| (|x| |y|)"
-    "  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))"
-    "  (let ((|x_lt_y| (c::lt-sint-sint |x| |y|)))"
-    "    (let ((|x_eq_y| (c::eq-sint-sint |x| |y|)))"
-    "      (let ((|x_le_y| (c::bitior-sint-sint |x_lt_y| |x_eq_y|)))"
+    "  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))"
+    "                  :guard-hints ((\"Goal\" :in-theory (enable c::declar)))))"
+    "  (let ((|x_lt_y| (c::declar (c::lt-sint-sint |x| |y|))))"
+    "    (let ((|x_eq_y| (c::declar (c::eq-sint-sint |x| |y|))))"
+    "      (let ((|x_le_y| (c::declar (c::bitior-sint-sint |x_lt_y| |x_eq_y|))))"
     "        (c::lognot-sint |x_le_y|)))))")
    (xdoc::p
     "represents the C function")
@@ -1371,15 +1381,16 @@
     "The C function above is equivalently represented by the ACL2 function")
    (xdoc::codeblock
     "(defun |g| (|x| |y|)"
-    "  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))"
-    "  (let* ((|x_lt_y| (c::lt-sint-sint |x| |y|))"
-    "         (|x_eq_y| (c::eq-sint-sint |x| |y|))"
-    "         (|x_le_y| (c::bitior-sint-sint |x_lt_y| |x_eq_y|)))"
+    "  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))"
+   "                  :guard-hints ((\"Goal\" :in-theory (enable c::declar)))))"
+    "  (let* ((|x_lt_y| (c::declar (c::lt-sint-sint |x| |y|)))"
+    "         (|x_eq_y| (c::declar (c::eq-sint-sint |x| |y|)))"
+    "         (|x_le_y| (c::declar (c::bitior-sint-sint |x_lt_y| |x_eq_y|))))"
     "    (c::lognot-sint |x_le_y|)))")
    (xdoc::p
     "This form may be more readable:
      the variables are not indented,
-     but they are at the visual level, like the corresponding C variables.
+     but they are at the same visual level, like the corresponding C variables.
      Internally, @(tsee let*) expands into nested @(tsee let)s;
      ATC examines ACL2 function bodies in "
     (xdoc::seetopic "acl2::term" "translated form")
@@ -1419,14 +1430,18 @@
 
   (xdoc::p
    "A C local variable assignment is represented by an ACL2 @(tsee let)
-    that binds a variable already bound, i.e. already in scope.
+    that binds a variable already bound, i.e. already in scope,
+    and where the term to which the variable is bound
+    is wrapped by the function @(tsee assign).
     For example, the ACL2 function")
   (xdoc::codeblock
    "(defun |f| (|x| |y|)"
    "  (declare (xargs :guard (and (c::sintp |x|)"
-   "                              (c::sintp |y|))))"
-   "  (let* ((|a| (c::bitand-sint-sint |x| |y|))"
-   "         (|a| (c::bitnot-sint |a|)))"
+   "                              (c::sintp |y|))"
+   "                  :guard-hints ((\"Goal\" :in-theory (enable c::declar"
+   "                                                             c::assign)))))"
+   "  (let* ((|a| (c:;declar (c::bitand-sint-sint |x| |y|)))"
+   "         (|a| (c::assign (c::bitnot-sint |a|))))"
    "    (c::gt-sint-sint |a| (c::sint-dec-const 0))))")
   (xdoc::p
    "represents the C function")
@@ -1458,9 +1473,19 @@
     (but it allows shadowing in an inner scope).")
 
   (xdoc::p
+   "The wrapper @(tsee assign) is the identity function,
+    whose sole purpose is to indicate to ATC
+    that the @(tsee let) represents a local variable assignment
+    as opposed to a local variable declaration
+    (described in @(see atc-tutorial-local-variables));
+    this wrapper should be normally enabled in proofs.")
+
+  (xdoc::p
    "In ATC, we can also represent assignments to C function parameters
     via @(tsee let) that bind variables
-    with the same names as the ACL2 function parameters.
+    with the same names as the ACL2 function parameters,
+    and with the terms bound to the variables
+    wrapped with @(tsee assign).
     For example, the ACL2 function")
   (xdoc::codeblock
    "(defun |g| (|a| |b|)"
@@ -1471,9 +1496,10 @@
    "                              (<= (c::sint->get |a|) 100))"
    "                  :guard-hints ((\"Goal\""
    "                                 :in-theory"
-   "                                 (enable c::add-sint-sint-okp"
+   "                                 (enable c::assign"
+   "                                         c::add-sint-sint-okp"
    "                                         c::sint-integerp-alt-def)))))"
-   "  (let ((|a| (c::add-sint-sint |a| (c::sint-dec-const 200))))"
+   "  (let ((|a| (c::assign (c::add-sint-sint |a| (c::sint-dec-const 200)))))"
    "    (c::lt-sint-sint |b| |a|)))")
   (xdoc::p
    "represents the C function")
@@ -1489,14 +1515,7 @@
     the fact remains that it binds an ACL2 variable
     with the same symbol as a variable in the same scope.
     (An ACL2 function parameter is, in a way, implicitly bound.)
-    Thus, ATC treats that as an assignment instead of a variable declaration.")
-
-  (xdoc::p
-   "In general, ATC treats a @(tsee let) as
-    either a local variable declaration or a local variable assignment
-    based on whether the variable is already in scope or not.
-    This description is still an over-approximation,
-    which will be refined in upcoming tutorial pages."))
+    Thus, ATC treats that as an assignment instead of a variable declaration."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

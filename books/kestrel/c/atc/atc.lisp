@@ -17,6 +17,7 @@
 (include-book "dynamic-semantics")
 (include-book "arrays")
 (include-book "conditional-expressions")
+(include-book "let-designations")
 (include-book "exec-limit-theorems")
 (include-book "proof-support")
 
@@ -1230,47 +1231,63 @@
 (define atc-check-let ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (var symbolp :hyp :guard)
-               (init pseudo-termp :hyp :guard)
-               (body pseudo-termp :hyp :guard))
+               (val pseudo-termp :hyp :guard)
+               (body pseudo-termp :hyp :guard)
+               (wrapper? symbolp :hyp :guard))
   :short "Check if a term may represent
           a local variable declaration
-          or assignment
-          or single-variable transformation,
+          or a local variable assignment
+          or a single-variable transformation,
           followed by more code."
   :long
   (xdoc::topstring
    (xdoc::p
     "Here we recognize and decompose statement terms that are @(tsee let)s.
-     In translated form, these are terms @('((lambda (var) body) init)').
-     However, if @('body') has other free variables in addition to @('var'),
+     In translated form, @('(let ((var val)) body)')
+     is @('((lambda (var) body) val)').
+     However, if @('rest') has other free variables in addition to @('var'),
      those appear as both formal parameters and actual arguments, e.g.
-     @('((lambda (var x y) body<var,x,y>) init x y)'):
+     @('((lambda (var x y) rest<var,x,y>) val x y)'):
      this is because ACL2 translated terms have all closed lambda expressions,
      so ACL2 adds formal parameters and actual arguments to make that happen.
      Here, we must remove them in order to get the ``true'' @(tsee let).
-     This is easily done by going through
-     formal parameters and actual arguments at the same time,
-     and removing the ones that match."))
+     This is done via a system utility.")
+   (xdoc::p
+    "We also return the @(tsee declar) or @(tsee assign) wrapper,
+     if present; @('nil') if absent."))
   (b* (((mv okp formals body actuals) (acl2::check-lambda-call term))
-       ((when (not okp)) (mv nil nil nil nil))
+       ((when (not okp)) (mv nil nil nil nil nil))
        ((mv formals actuals) (acl2::remove-equal-formals-actuals formals
                                                                  actuals))
        ((unless (and (= (len formals) 1)
                      (= (len actuals) 1)))
-        (mv nil nil nil nil))
+        (mv nil nil nil nil nil))
        (var (car formals))
-       (init (car actuals)))
-    (mv t var init body))
+       (possibly-wrapper-val (car actuals))
+       ((mv wrapper? val)
+        (case-match possibly-wrapper-val
+          (('declar val) (mv 'declar val))
+          (('assign val) (mv 'assign val))
+          (& (mv nil possibly-wrapper-val)))))
+    (mv t var val body wrapper?))
   :guard-hints (("Goal"
                  :in-theory
                  (enable acl2::len-of-check-lambda-calls.args-is-formals)))
   :prepwork
-  ((local (include-book "std/typed-lists/pseudo-term-listp" :dir :system)))
+
+  ((local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
+
+   (defrulel pseudo-termp-of-atc-check-let.val-lemma
+     (implies (and (pseudo-term-listp x)
+                   (equal (len x) 1)
+                   (not (equal (caar x) 'quote)))
+              (pseudo-termp (cadr (car x))))))
+
   ///
 
-  (defret acl2-count-of-atc-check-let-init
+  (defret acl2-count-of-atc-check-let-val
     (implies yes/no
-             (< (acl2-count init)
+             (< (acl2-count val)
                 (acl2-count term)))
     :rule-classes :linear)
 
@@ -1884,31 +1901,28 @@
      as a term transforming the variables in @('xforming').
      We just use the sum of the two limits as the overall limit.")
    (xdoc::p
-    "If the term is a @(tsee let),
-     we first check whether a variable with the same symbol name
-     is not already in scope (i.e. in the symbol table):
-     in that case, as explained in the user documentation,
+    "If the term is a @(tsee let), there are three cases.
+     If the term involves the @(tsee declar) wrapper,
+     we ensure that a variable with the same symbol name is not already in scope
+     (i.e. in the symbol table)
+     and that the name is a portable ASCII identifier;
      we generate a declaration for the variable,
      initialized with the expression obtained
      from the term that the variable is bound to,
      which also determines the type of the variable;
      the type must not be a pointer type (code generation fails if it is).
-     Otherwise, a variable with the same symbol is in scope,
-     and there are two case to consider.
-     The first case is that the term bound in the @(tsee let)
-     must be a statement term that is not a C-valued term:
-     then this is a term transforming the variable bound in the @(tsee let),
-     and thus we generate the transforming block items
-     followed by the body block items.
-     The second case is that the term bound in the @(tsee let)
-     must be a C-valued term:
-     in that case, we ensure that the type of the existing variable
-     matches the one of the term bound in the @(tsee let),
-     and we generate an assignment to the C variable,
-     with the expression obtained
-     from the term that the inner variable is bound to.
+     Otherwise, if the term involves the @(tsee assign) wrapper,
+     we ensure that the variable is assignable,
+     which implies that it must be in scope,
+     and we also ensure that it has the same type as the one in scope;
+     we generate an assignment whose right-hand side is
+     obtained from the unwrapped term, which must be a C-valued term.
+     Otherwise, if the term involves no wrapper,
+     we also ensure that the variable is assignable,
+     and that the non-wrapped term represents a conditional of loop in C;
+     we generate code that transforms the variable from that term.
      In all cases, we recursively generate the block items for the body
-     and we put those just after the variable declaration or assignment.")
+     and we put those just after the preceding code.")
    (xdoc::p
     "In the @(tsee let) case whose translation is explained above,
      the limit is calculated as follows.
@@ -2053,7 +2067,7 @@
              (type body-type)
              (limit (+ xform-limit body-limit)))
           (acl2::value (list items type limit))))
-       ((mv okp var val body) (atc-check-let term))
+       ((mv okp var val body wrapper?) (atc-check-let term))
        ((when okp)
         (b* (((mv type? innermostp errorp) (atc-check-var var inscope))
              ((when errorp)
@@ -2065,7 +2079,7 @@
                          a variable already in scope. ~
                          This is disallowed."
                         fn var))
-             ((when (not type?))
+             ((when (eq wrapper? 'declar))
               (b* (((unless (atc-ident-stringp (symbol-name var)))
                     (er-soft+ ctx t (list nil nil 0)
                               "The symbol name ~s0 of ~
@@ -2084,9 +2098,8 @@
                    (declon (make-declon :type (atc-gen-tyspecseq init-type)
                                         :declor (make-declor
                                                  :ident
-                                                 (make-ident
-                                                  :name
-                                                  (symbol-name var)))
+                                                  (make-ident
+                                                   :name (symbol-name var)))
                                         :init init-expr))
                    (item (block-item-declon declon))
                    (inscope (atc-add-var var init-type inscope))
@@ -2104,42 +2117,52 @@
                          an attempt is being made ~
                          to modify a non-assignable variable ~x1."
                         fn var))
-             (xforming-val (atc-xforming-term-for-let val prec-fns))
-             ((when xforming-val)
-              (b* (((er (list xform-items & xform-limit))
-                    (atc-gen-stmt val inscope (list var) fn prec-fns ctx state))
+             ((when (eq wrapper? 'assign))
+              (b* ((prev-type type?)
+                   ((mv erp (list rhs-expr rhs-type rhs-limit) state)
+                    (atc-gen-expr-cval val inscope fn prec-fns ctx state))
+                   ((when erp) (mv erp (list nil nil 0) state))
+                   ((unless (equal prev-type rhs-type))
+                    (er-soft+ ctx t (list nil nil 0)
+                              "The type ~x0 of the term ~x1 ~
+                               assigned to the LET variable ~x2 ~
+                               of the function ~x3 ~
+                               differs from the type ~x4 ~
+                               of a variable with the same symbol in scope."
+                              rhs-type val var fn prev-type))
+                   (asg (make-expr-binary
+                         :op (binop-asg)
+                         :arg1 (expr-ident (make-ident :name (symbol-name var)))
+                         :arg2 rhs-expr))
+                   (stmt (stmt-expr asg))
+                   (item (block-item-stmt stmt))
                    ((er (list body-items body-type body-limit))
                     (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
-                   (items (append xform-items body-items))
                    (type body-type)
-                   (limit (+ xform-limit body-limit)))
-                (acl2::value (list items type limit))))
-             (prev-type type?)
-             ((mv erp (list rhs-expr rhs-type rhs-limit) state)
-              (atc-gen-expr-cval val inscope fn prec-fns ctx state))
-             ((when erp) (mv erp (list nil nil 0) state))
-             ((unless (equal prev-type rhs-type))
+                   (limit (+ 1 (max (+ 1 1 1 rhs-limit)
+                                    body-limit))))
+                (acl2::value (list (cons item body-items)
+                                   type
+                                   limit))))
+             ((unless (eq wrapper? nil))
+              (prog2$ (raise "Internal error: LET wrapper is ~x0." wrapper?)
+                      (acl2::value (list nil nil 0))))
+             ((unless (atc-xforming-term-for-let val prec-fns))
               (er-soft+ ctx t (list nil nil 0)
-                        "The type ~x0 of the term ~x1 ~
-                         assigned to the LET variable ~x2 ~
-                         of the function ~x3 ~
-                         differs from the type ~x4 ~
-                         of a variable with the same symbol in scope."
-                        rhs-type val var fn prev-type))
-             (asg (make-expr-binary
-                   :op (binop-asg)
-                   :arg1 (expr-ident (make-ident :name (symbol-name var)))
-                   :arg2 rhs-expr))
-             (stmt (stmt-expr asg))
-             (item (block-item-stmt stmt))
+                        "When generating C code for the funcion ~x0, ~
+                         we encountered an unwrapped term ~x1 ~
+                         to which a LET variable is bound ~
+                         that is neither an IF or a loop function call. ~
+                         This is disallowed."
+                        fn val))
+             ((er (list xform-items & xform-limit))
+              (atc-gen-stmt val inscope (list var) fn prec-fns ctx state))
              ((er (list body-items body-type body-limit))
               (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
+             (items (append xform-items body-items))
              (type body-type)
-             (limit (+ 1 (max (+ 1 1 1 rhs-limit)
-                              body-limit))))
-          (acl2::value (list (cons item body-items)
-                             type
-                             limit))))
+             (limit (+ xform-limit body-limit)))
+          (acl2::value (list items type limit))))
        ((when (and (symbolp term)
                    (equal xforming (list term))))
         (acl2::value (list nil nil 0)))
@@ -2303,7 +2326,7 @@
                                       state))
              (items (append xform-items body-items)))
           (acl2::value items)))
-       ((mv okp var val body) (atc-check-let term))
+       ((mv okp var val body wrapper?) (atc-check-let term))
        ((when okp)
         (b* (((mv type? innermostp errorp) (atc-check-var var inscope))
              ((when errorp)
@@ -2315,7 +2338,7 @@
                          a variable already in scope. ~
                          This is disallowed."
                         fn var))
-             ((when (not type?))
+             ((when (eq wrapper? 'declar))
               (b* (((unless (atc-ident-stringp (symbol-name var)))
                     (er-soft+ ctx t nil
                               "The symbol name ~s0 of ~
@@ -2334,9 +2357,8 @@
                    (declon (make-declon :type (atc-gen-tyspecseq init-type)
                                         :declor (make-declor
                                                  :ident
-                                                 (make-ident
-                                                  :name
-                                                  (symbol-name var)))
+                                                  (make-ident
+                                                   :name (symbol-name var)))
                                         :init init-expr))
                    (item (block-item-declon declon))
                    (inscope (atc-add-var var init-type inscope))
@@ -2355,11 +2377,25 @@
                          an attempt is being made ~
                          to modify a non-assignable variable ~x1."
                         fn var))
-             (xforming-val (atc-xforming-term-for-let val prec-fns))
-             ((when xforming-val)
-              (b* (((mv erp (list xform-items & &) state)
-                    (atc-gen-stmt val inscope (list var) fn prec-fns ctx state))
+             ((when (eq wrapper? 'assign))
+              (b* ((prev-type type?)
+                   ((mv erp (list rhs-expr rhs-type &) state)
+                    (atc-gen-expr-cval val inscope fn prec-fns ctx state))
                    ((when erp) (mv erp nil state))
+                   ((unless (equal prev-type rhs-type))
+                    (er-soft+ ctx t nil
+                              "The type ~x0 of the term ~x1 ~
+                               assigned to the LET variable ~x2 ~
+                               of the function ~x3 ~
+                               differs from the type ~x4 ~
+                               of a variable with the same symbol in scope."
+                              rhs-type val var fn prev-type))
+                   (asg (make-expr-binary
+                         :op (binop-asg)
+                         :arg1 (expr-ident (make-ident :name (symbol-name var)))
+                         :arg2 rhs-expr))
+                   (stmt (stmt-expr asg))
+                   (item (block-item-stmt stmt))
                    ((er body-items)
                     (atc-gen-loop-body-stmt body
                                             inscope
@@ -2367,27 +2403,22 @@
                                             fn
                                             prec-fns
                                             ctx
-                                            state))
-                   (items (append xform-items body-items)))
-                (acl2::value items)))
-             (prev-type type?)
-             ((mv erp (list rhs-expr rhs-type &) state)
-              (atc-gen-expr-cval val inscope fn prec-fns ctx state))
-             ((when erp) (mv erp nil state))
-             ((unless (equal prev-type rhs-type))
+                                            state)))
+                (acl2::value (cons item body-items))))
+             ((unless (eq wrapper? nil))
+              (prog2$ (raise "Internal error: LET wrapper is ~x0." wrapper?)
+                      (acl2::value nil)))
+             ((unless (atc-xforming-term-for-let val prec-fns))
               (er-soft+ ctx t nil
-                        "The type ~x0 of the term ~x1 ~
-                         assigned to the LET variable ~x2 ~
-                         of the function ~x3 ~
-                         differs from the type ~x4 ~
-                         of a variable with the same symbol in scope."
-                        rhs-type val var fn prev-type))
-             (asg (make-expr-binary
-                   :op (binop-asg)
-                   :arg1 (expr-ident (make-ident :name (symbol-name var)))
-                   :arg2 rhs-expr))
-             (stmt (stmt-expr asg))
-             (item (block-item-stmt stmt))
+                        "When generating C code for the funcion ~x0, ~
+                         we encountered an unwrapped term ~x1 ~
+                         to which a LET variable is bound ~
+                         that is neither an IF or a loop function call. ~
+                         This is disallowed."
+                        fn val))
+             ((mv erp (list xform-items & &) state)
+              (atc-gen-stmt val inscope (list var) fn prec-fns ctx state))
+             ((when erp) (mv erp nil state))
              ((er body-items)
               (atc-gen-loop-body-stmt body
                                       inscope
@@ -2395,8 +2426,9 @@
                                       fn
                                       prec-fns
                                       ctx
-                                      state)))
-          (acl2::value (cons item body-items)))))
+                                      state))
+             (items (append xform-items body-items)))
+          (acl2::value items))))
     (case-match term
       ((fn1 . args)
        (b* (((unless (eq fn1 fn))
