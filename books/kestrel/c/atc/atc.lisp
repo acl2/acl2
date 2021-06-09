@@ -1018,7 +1018,7 @@
          (div (mv t (binop-div) arg1 arg2 (uaconvert-types type1 type2)))
          (rem (mv t (binop-rem) arg1 arg2 (uaconvert-types type1 type2)))
          (shl (mv t (binop-shl) arg1 arg2 (promote-type type1)))
-         (shr (mv t (binop-shr) arg1 arg2 (promote-type type2)))
+         (shr (mv t (binop-shr) arg1 arg2 (promote-type type1)))
          (lt (mv t (binop-lt) arg1 arg2 (type-sint)))
          (le (mv t (binop-le) arg1 arg2 (type-sint)))
          (gt (mv t (binop-gt) arg1 arg2 (type-sint)))
