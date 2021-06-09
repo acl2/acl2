@@ -17,7 +17,8 @@
 
 (defpkg "C" (append
              (set-difference-eq *std-pkg-symbols*
-                                '(boolean
+                                '(assign
+                                  boolean
                                   byte
                                   error
                                   pi
