@@ -1631,18 +1631,16 @@
     this tutorial page explains how to represent conditional expressions.")
 
   (xdoc::p
-   "C conditional expressions are represented by ACL2 @(tsee if)s,
-    which also represent C conditional statements:
-    the difference is where the terms occur, in the function body.
-    If they occur in places like
-    the top level of the function,
-    or recursively at the top level of the branches,
-    they represent @('if-then') statements,
-    as explained in @(see atc-tutorial-conditional-statements);
-    On the other hand, if they occur in places where they represent
-    sub-expressions of other expressions,
-    or initializers of local variable declarations,
-    then they represent conditional expressions.")
+   "C conditional expressions are represented by ACL2 @(tsee if)s
+    wrapped with @(tsee condexpr).
+    This is the identity function, and should be normally enabled in proofs.
+    Its purpose is to indicate to ATC that the wrapped @(tsee if)
+    represents a conditional expressions instead of a conditional statements.
+    Given that conditional statements are more frequent
+    than conditional expressions in C,
+    using the wrapper for conditional expressions,
+    and no wrapper for conditional statements,
+    reduces verbosity while still supporting the explicit distinction.")
 
   (xdoc::p
    "For example, the ACL2 function")
@@ -1660,9 +1658,10 @@
    "                                         c::sint->get)))))"
    "  (c::sub-sint-sint"
    "   |x|"
-   "   (if (c::boolean-from-sint (c::ge-sint-sint |y| (c::sint-dec-const 18)))"
-   "       (c::sint 0)"
-   "     (c::sint 1))))")
+   "   (c::condexpr"
+   "    (if (c::boolean-from-sint (c::ge-sint-sint |y| (c::sint-dec-const 18)))"
+   "        (c::sint 0)"
+   "      (c::sint 1)))))")
   (xdoc::p
    "represents the C function")
   (xdoc::codeblock
@@ -1686,10 +1685,11 @@
    "                                         c::sint->get)))))"
    "  (if (c::boolean-from-sint (c::gt-sint-sint |a| |b|))"
    "      (c::sub-sint-sint |a|"
-   "                        (if (c::boolean-from-sint"
-        "                        (c::eq-sint-sint |b| (c::sint-dec-const 3)))"
-   "                            (c::sint-dec-const 0)"
-   "                          (c::sint-dec-const 1)))"
+   "                        (c::condexpr"
+   "                         (if (c::boolean-from-sint"
+   "                              (c::eq-sint-sint |b| (c::sint-dec-const 3)))"
+   "                             (c::sint-dec-const 0)"
+   "                           (c::sint-dec-const 1))))"
    "    |b|))")
   (xdoc::p
    "represents the C function")
@@ -1703,7 +1703,7 @@
    "}")
   (xdoc::p
    "Note that the two ACL2 @(tsee if)s are treated differently
-    because of the place in which they occur:
+    because of the absence or presence of the @(tsee condexpr) wrapper:
     the outer one represents a conditional statement,
     the inner one represents a conditional expression.")
 
@@ -1713,7 +1713,14 @@
     in the same way as the @(tsee if)s that represent conditional statements.
     As explained in @(see atc-tutorial-conditional-statements),
     the function @(tsee boolean-from-sint) is used
-    to convert C @('int')s to ACL2 booleans in the tests."))
+    to convert C @('int')s to ACL2 booleans in the tests.")
+
+  (xdoc::p
+   "It is important to note that representing C conditional expressions
+    with a ternary function defined to be equal to @(tsee if) does not work.
+    Such a function would have to be strict,
+    like all ACL2 functions except @(tsee if).
+    But in general conditional expressions must be non-strict."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
