@@ -7211,7 +7211,8 @@
          (let ((term (car (access gframe frame :args)))
                (alist (cadr (access gframe frame :args)))
                (obj (cddr (access gframe frame :args))))
-           (cw "~x0. Rewriting (to ~@6)~@1,~%     ~Y23,~#4~[~/   under the substitution~%~*5~]"
+           (cw "~x0. Rewriting (to ~@6)~@1,~%     ~Y23,~#4~[~/   under the ~
+                substitution~%~*5~]"
                i
                (tilde-@-bkptr-phrase calling-sys-fn
                                      'rewrite
@@ -7232,13 +7233,13 @@
              (car (access gframe frame :args))
              evisc-tuple))
         (add-terms-and-lemmas
-         (cw "~x0. Attempting to apply linear arithmetic to ~@1 the term ~
-              list~%     ~Y23"
+         (cw "~x0. Attempting to apply linear arithmetic to ~@1~%     ~Y23"
              i
              (let ((obj (cdr (access gframe frame :args))))
-               (cond ((eq obj nil) "falsify")
-                     ((eq obj t) "establish")
-                     (t "simplify")))
+               (cond ((eq obj nil) (msg "falsify the term list"))
+                     ((eq obj t) "establish the term list")
+                     (t ; '?, a special mark for setting up the pot-lst
+                      "the clause")))
              (car (access gframe frame :args))
              evisc-tuple))
         (non-linear-arithmetic
@@ -19116,7 +19117,11 @@
 ; lst2 with the ttree arising from the refutation of lst1.  And vice versa.
 ; See add-disjunct-polys-and-lemma.
 
-; We return two values, the standard contradictionp, and a new pot-lst.
+; We return (mv sl contradictionp pot-lst changedp), where sl is the new
+; step-limit, and contradictionp and pot-lst are the standard contradictionp
+; and a new pot-lst.  When contradictionp is nil then, normally, changedp is t
+; if and only if the input and output pot-lst differ; however, we do not insist
+; on this, as changedp is to be used only heuristically.
 
 ; The to-do-later list was first present in Version 1.6, and represents an
 ; attempt to make the order of the split-lst irrelevant.  The idea is that if a
@@ -19231,25 +19236,31 @@
 ; function pass nils into them.
 
   (the-mv
-   3
+   4
    (signed-byte 30)
    (cond
     ((null split-lst)
-     (cond ((or (equal pot-lst0 simplify-clause-pot-lst)
-                (null to-do-later))
-            (mv step-limit nil simplify-clause-pot-lst))
-           (t (rewrite-entry
-               (add-disjuncts-polys-and-lemmas to-do-later nil
-                                               simplify-clause-pot-lst)
-               :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
-               ))))
+     (let ((eqp (equal pot-lst0 simplify-clause-pot-lst)))
+       (cond
+        ((or eqp
+             (null to-do-later))
+         (mv step-limit nil simplify-clause-pot-lst (not eqp)))
+        (t (sl-let
+            (contradictionp pot-lst changedp)
+            (rewrite-entry
+             (add-disjuncts-polys-and-lemmas to-do-later nil
+                                             simplify-clause-pot-lst)
+             :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored)
+             )
+            (declare (ignore changedp))
+            (mv step-limit contradictionp pot-lst t))))))
     (t (sl-let (contradictionp new-pot-lst)
                (rewrite-entry
                 (add-disjunct-polys-and-lemmas (car (car split-lst))
                                                (cadr (car split-lst)))
                 :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
                 )
-               (cond (contradictionp (mv step-limit contradictionp nil))
+               (cond (contradictionp (mv step-limit contradictionp nil nil))
                      (t (rewrite-entry
                          (add-disjuncts-polys-and-lemmas
                           (cdr split-lst)
@@ -19257,10 +19268,10 @@
                               (cons (car split-lst) to-do-later)
                             to-do-later)
                           pot-lst0)
-                         :obj nil ; ignored
-                         :geneqv nil ; ignored
-                         :pequiv-info nil ; ignored
-                         :ttree nil ; ignored
+                         :obj nil          ; ignored
+                         :geneqv nil       ; ignored
+                         :pequiv-info nil  ; ignored
+                         :ttree nil        ; ignored
                          :simplify-clause-pot-lst new-pot-lst))))))))
 
 (defun add-terms-and-lemmas (term-lst ttrees positivep
@@ -19282,18 +19293,31 @@
 ; Only variables introduced by the addition of the new polys are considered
 ; new.
 
-; This function returns 2 values.  The first indicates that a linear
-; contradiction arises from the assumption of term-lst as above.  When non-nil
-; the first result is the impossible-poly generated.  Its tag-tree contains all
-; the necessary information.  In particular, if a contradiction is indicated
-; then there is a proof of NIL from type-alist, the assumption of the terms in
-; term-lst (as per positivep), the assumptions in the final tag-tree and some
-; subset of the polys in the simplify-clause-pot-lst.
+; This function returns 3 values.  The first is the new step-limit.  The second
+; indicates that a linear contradiction arises from the assumption of term-lst
+; as above.  When non-nil the second result is the impossible-poly generated.
+; Its tag-tree contains all the necessary information.  In particular, if a
+; contradiction is indicated then there is a proof of NIL from type-alist, the
+; assumption of the terms in term-lst (as per positivep), the assumptions in
+; the final tag-tree and some subset of the polys in the
+; simplify-clause-pot-lst.
 
-; If no contradiction is indicated then the second value is the new
+; If no contradiction is indicated then the third value is the new
 ; simplify-clause-pot-lst.  For each poly p in the new pot list there is a
 ; proof of p from type-alist, the assumption of the terms in term-lst (as per
 ; positivep) and the polys in the original pot list.
+
+; Note that obj has an special use in this function.  Values t and nil for obj
+; indicate, as usual, that we are in the process of trying to prove or falsify
+; (respectively) the given terms; however, this function does not use obj for
+; that purpose. (That said, obj is used in reports issued by cw-gframe and
+; dmr-interp.)  The value '?, however, is a special mark that is used when
+; setting up the pot-lst for a clause.  The desperation heuristic noted below,
+; of making a second attempt to use linear lemmas after successfully using at
+; least one disjunctive inequality, is invoked only when setting up the pot-lst
+; (obj = '?).  We found it much too expensive in some cases without this
+; restriction, as discussed in a comment in (deflabel note-8-4 ...) in the
+; source documentation (see books/system/doc/acl2-doc.lisp).
 
   (declare (ignore geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
@@ -19333,34 +19357,72 @@
 ; Back to the original show.
 
       (mv-let (poly-lst split-lst)
-              (linearize-lst term-lst ttree-lst positivep
-                             type-alist
-                             (access rewrite-constant rcnst
-                                     :current-enabled-structure)
-                             (ok-to-force rcnst)
-                             wrld
-                             state)
-              (sl-let (contradictionp basic-pot-lst)
-                      (rewrite-entry
-                       (add-polys-and-lemmas poly-lst nil)
-                       :obj nil ; ignored
-                       :geneqv nil ; ignored
-                       :pequiv-info nil ; ignored
-                       :ttree nil ; ignored
-                       )
-                      (cond
-                       (contradictionp (mv step-limit contradictionp nil))
-                       (t (rewrite-entry
-                           (add-disjuncts-polys-and-lemmas
-                            split-lst
-                            nil
-                            basic-pot-lst)
-                           :obj nil ; ignored
-                           :geneqv nil ; ignored
-                           :pequiv-info nil ; ignored
-                           :ttree nil ; ignored
-                           :simplify-clause-pot-lst
-                           basic-pot-lst)))))))))
+        (linearize-lst term-lst ttree-lst positivep
+                       type-alist
+                       (access rewrite-constant rcnst
+                               :current-enabled-structure)
+                       (ok-to-force rcnst)
+                       wrld
+                       state)
+        (sl-let
+         (contradictionp basic-pot-lst)
+         (rewrite-entry
+          (add-polys-and-lemmas poly-lst nil)
+          :obj nil                ; ignored
+          :geneqv nil             ; ignored
+          :pequiv-info nil        ; ignored
+          :ttree nil              ; ignored
+          )
+         (cond
+          (contradictionp (mv step-limit contradictionp nil))
+          (t
+           (sl-let
+            (contradictionp new-pot-lst changedp)
+            (rewrite-entry
+             (add-disjuncts-polys-and-lemmas
+              split-lst
+              nil
+              basic-pot-lst)
+             :obj nil                         ; ignored
+             :geneqv nil                      ; ignored
+             :pequiv-info nil                 ; ignored
+             :ttree nil                       ; ignored
+             :simplify-clause-pot-lst
+             basic-pot-lst)
+            (cond
+             (contradictionp
+              (mv step-limit contradictionp nil))
+             ((and changedp
+                   (eq obj '?) ; special mark for setting up the pot-lst
+
+; The following test is what we use to enable so-called "desperation
+; heuristics".
+
+                   (eq (access rewrite-constant rcnst :rewriter-state)
+                       'settled-down))
+              (rewrite-entry
+
+; We have seen an example where a proof fails unless we make one more pass at
+; using linear lemmas after improving the pot-lst with
+; add-disjuncts-polys-and-lemmas.  That same example fails when, instead of
+; adding this call of add-polys-and-lemmas1 at the end, we add a call of
+; add-disjuncts-polys-and-lemmas before the earlier call of
+; add-polys-and-lemmas.
+
+; In the book
+; books/workshops/2004/legato/support/proof-by-generalization-mult.lisp we
+; measured almost 3% more time with this patch when output is off.  But in the
+; book books/centaur/gl/always-equal-prep.lisp we measured well under 1% more.
+; Probably the former is the outlier, in that it uses a considerable amount of
+; destructor elimination, which causes the 'settled-down test above to hold
+; (before entering destructor elimination) more often than may be usual.
+
+               (add-polys-and-lemmas1
+                (new-vars-in-pot-lst new-pot-lst nil nil)
+                new-pot-lst)
+               :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+               :simplify-clause-pot-lst new-pot-lst))
+             (t (mv step-limit nil new-pot-lst))))))))))))
 
 (defun rewrite-with-linear (term ; &extra formals
                             rdepth step-limit
@@ -19450,7 +19512,6 @@
                (rewrite-entry (add-terms-and-lemmas (list term)
                                                     nil ; pts
                                                     positivep)
-                              :obj nil ; ignored
                               :geneqv nil ; ignored
                               :pequiv-info nil ; ignored
                               :ttree nil ; ignored

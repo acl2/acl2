@@ -7606,7 +7606,7 @@
              :rdepth (rewrite-stack-limit wrld)
              :step-limit step-limit
              :type-alist type-alist
-             :obj nil
+             :obj '? ; special mark for setting up the pot-lst
              :geneqv nil
              :pequiv-info nil
              :wrld wrld

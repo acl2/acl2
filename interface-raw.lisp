@@ -2901,18 +2901,28 @@
         i
         (get-rule-field (cdr (access gframe frame :args)) :rune)))
       (add-terms-and-lemmas
-       (let ((len (length (car (access gframe frame :args)))))
-         (format
-          nil
-          "~a~s. Applying linear arithmetic to ~a ~s term~a~%"
-          (dmr-prefix)
-          i
-          (let ((obj (cdr (access gframe frame :args))))
+       (let ((len (length (car (access gframe frame :args))))
+             (obj (cdr (access gframe frame :args))))
+         (cond
+          ((eq obj '?) ; a special mark for setting up the pot-lst
+           (format
+            nil
+            "~a~s. Applying linear arithmetic to a clause with ~s term~a~%"
+            (dmr-prefix)
+            i
+            len
+            (if (eql len 1) "" "s")))
+          (t
+           (format
+            nil
+            "~a~s. Applying linear arithmetic to ~a ~s term~a~%"
+            (dmr-prefix)
+            i
             (cond ((eq obj nil) "falsify")
-                  ((eq obj t) "establish")
-                  (t "simplify")))
-          len
-          (if (eql len 1) "" "s"))))
+                  (t ; (eq obj t)
+                   "establish"))
+            len
+            (if (eql len 1) "" "s"))))))
       (non-linear-arithmetic
        (let ((len (length (access gframe frame :args))))
          (format
