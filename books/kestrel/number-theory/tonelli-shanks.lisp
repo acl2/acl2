@@ -255,13 +255,12 @@
 
 (verify-guards t-s-aux)
 
-(defthm integerp-t-s-aux
+(defthm natp-t-s-aux
   (implies  (and (natp m)
                  (natp c)
                  (natp tt)
                  (natp r)
-                 (natp p)
-                 (< 2 p))
+                 (natp p))
             (natp (t-s-aux m c tt r p)))
   )
 
@@ -287,9 +286,8 @@
   (implies (and (natp n)
                 (oddp q)
                 (natp q)
-                (rtl::primep p)
-                (< n p)
-                (> p 2))
+                (natp p)
+                )
            (natp (acl2::mod-expt-fast n (+ 1/2 (* 1/2 q)) p)))
   :hints (("Goal"
            :in-theory (enable acl2::not-evenp-when-oddp)
@@ -334,15 +332,11 @@
 (defthm natp-tonelli-shanks-sqrt-aux
   (implies  (and (natp n)
                  (natp p)
-                 (natp z)
-                 (rtl::primep p)
-                 (< n p)
-                 (has-square-root? n p)
-                 (not (has-square-root? z p))
-                 (< 2 p))
+                 (natp z))
             (natp (tonelli-shanks-sqrt-aux n p z)))
+  :rule-classes (:rewrite :type-prescription)
   :hints (("Goal"
-           :in-theory (e/d (tonelli-shanks-sqrt-aux) ())
+           :in-theory (e/d (tonelli-shanks-sqrt-aux) (natp))
            )))
 
 ;; ----------------
