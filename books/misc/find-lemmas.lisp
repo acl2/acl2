@@ -2,6 +2,17 @@
 ; Written by Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; This code was revised and extended with the addition of find-defs and
+; find-events in September 2020 by Mihir Mehta.  It remains to document
+; find-defs and perhaps find-events.
+; Future work: mutual-recursion is not yet supported.  It may be reasonably
+; straightforward to modify find-events-fn to add such support, as follows.
+; The key is to modify the use of the let-bound variable, namex, which is a
+; list of names in the mutual-recursion case rather than a single name.  So
+; instead of (formula namex t wrld) you can loop through the members of namex,
+; collect their formulas, and conjoin them before calling all-fnnames; or,
+; leave them as a list and call all-fnnames-lst instead of all-fnnames.
+
 (in-package "ACL2")
 
 (program)
@@ -12,7 +23,7 @@
     (cons (deref-macro-name (car fns) macro-aliases)
           (deref-macro-name-list (cdr fns) macro-aliases))))
 
-(defun find-lemmas-fn (fns omit-boot-strap acc wrld-tail wrld)
+(defun find-events-fn (fns omit-boot-strap acc wrld-tail wrld types)
   (declare (xargs :mode :program))
   (if (or (endp wrld-tail)
           (and omit-boot-strap
@@ -30,17 +41,43 @@
            (namex (and type (access-event-tuple-namex ev-tuple)))
            (formula (and namex
                          (symbolp namex)
-                         (member-eq type '(defthm defaxiom defchoose))
+                         (member-eq type types)
                          (formula namex t wrld))))
       (if (and formula
                (subsetp-eq fns (all-fnnames formula)))
-          (find-lemmas-fn fns omit-boot-strap
+          (find-events-fn fns omit-boot-strap
                           (cons (access-event-tuple-form ev-tuple) acc)
                           (cdr wrld-tail)
-                          wrld)
-        (find-lemmas-fn fns omit-boot-strap acc (cdr wrld-tail) wrld)))))
+                          wrld types)
+        (find-events-fn fns omit-boot-strap acc (cdr wrld-tail) wrld types)))))
 
-(defmacro find-lemmas (fns &optional (omit-boot-strap 't))
+(defmacro find-events (fns &optional
+                           (omit-boot-strap 't)
+                           (types '(defthm defaxiom defchoose defun defuns)))
+  (declare (xargs :guard (let ((fns (if (and (true-listp fns)
+                                             (eq (car fns) 'quote)
+                                             (eql (length fns) 2))
+                                        (cadr fns)
+                                      fns)))
+                           (or (symbolp fns)
+                               (symbol-listp fns)))))
+  (let* ((fns (if (and (true-listp fns)
+                       (eq (car fns) 'quote)
+                       (eql (length fns) 2))
+                  (cadr fns)
+                fns))
+         (fns (cond
+               ((symbolp fns) (list fns))
+               ((symbol-listp fns) fns)
+               (t (er hard 'find-lemmas
+                      "The first argument to find-events must be a symbol or ~
+                       a list of symbols, but ~x0 is not."
+                      fns))))
+         (fns `(deref-macro-name-list ',fns (macro-aliases (w state)))))
+    `(find-events-fn ,fns ',omit-boot-strap nil (w state) (w state) ',types)))
+
+(defmacro find-lemmas (fns &optional
+                           (omit-boot-strap 't))
   (declare (xargs :guard (let ((fns (if (and (true-listp fns)
                                              (eq (car fns) 'quote)
                                              (eql (length fns) 2))
@@ -69,7 +106,32 @@
                        a list of symbols, but ~x0 is not."
                       fns))))
          (fns `(deref-macro-name-list ',fns (macro-aliases (w state)))))
-    `(find-lemmas-fn ,fns ',omit-boot-strap nil (w state) (w state))))
+    `(find-events-fn ,fns ',omit-boot-strap nil (w state) (w state)
+                     '(defthm defaxiom defchoose))))
+
+(defmacro find-defs (fns &optional (omit-boot-strap 't))
+  (declare (xargs :guard (let ((fns (if (and (true-listp fns)
+                                             (eq (car fns) 'quote)
+                                             (eql (length fns) 2))
+                                        (cadr fns)
+                                      fns)))
+                           (or (symbolp fns)
+                               (symbol-listp fns)))))
+  (let* ((fns (if (and (true-listp fns)
+                       (eq (car fns) 'quote)
+                       (eql (length fns) 2))
+                  (cadr fns)
+                fns))
+         (fns (cond
+               ((symbolp fns) (list fns))
+               ((symbol-listp fns) fns)
+               (t (er hard 'find-defs
+                      "The first argument to find-defs must be a symbol or ~
+                       a list of symbols, but ~x0 is not."
+                      fns))))
+         (fns `(deref-macro-name-list ',fns (macro-aliases (w state)))))
+    `(find-events-fn ,fns ',omit-boot-strap nil (w state) (w state)
+                     '(defun defuns))))
 
 ; Documentation:
 
