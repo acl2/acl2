@@ -1,7 +1,7 @@
 ; General-purpose syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -161,6 +161,19 @@
       nil
     (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
       (atom expr))))
+
+(defund is-the-variablep (quoted-var nodenum-or-quotep dag-array)
+  (declare (xargs :guard (and ;; (symbolp (unquote quoted-var)) ; causes problems for caller but should be true
+                          (or (myquotep nodenum-or-quotep)
+                              (and (natp nodenum-or-quotep)
+                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep)))))))
+  (if (consp nodenum-or-quotep) ;check for quotep
+      nil
+    (if (not (and (myquotep quoted-var)
+                  (symbolp (unquote quoted-var))))
+        (er hard? 'is-the-variablep "Bad fn argument: ~x0." quoted-var)
+      (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
+        (equal (unquote quoted-var) expr)))))
 
 ;bozo make this a real table?
 ;args are numbered from 1
