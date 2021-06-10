@@ -746,6 +746,39 @@
                               (mod y p)))))
   :hints (("Goal" :in-theory (enable equal-of-div))))
 
+(defthmd equal-of-0-and-div
+  (implies (and (syntaxp (not (equal z ''0))) ;prevent loops
+                (fep z p)
+                (fep y p)
+                (rtl::primep p))
+           (equal (equal 0 (div y z p))
+                  (if (equal 0 z)
+                      ;; odd case (usually t unless p=2):
+                      (equal 0 (div y 0 p))
+                    (equal 0 (mod y p)))))
+  :hints (("Goal" :in-theory (enable equal-of-div)))
+  )
+
+(defthm div-of-0-arg2
+  (implies (and (primep p)
+                (integerp x))
+           (equal (div x 0 p)
+                  (if (equal p 2)
+                      (mod x p)
+                    0)))
+  :hints (("Goal" :in-theory (enable div))))
+
+;; for all primes other than 2
+(defthmd equal-of-0-and-div-special
+  (implies (and (fep z p)
+                (fep y p)
+                (rtl::primep p)
+                (< 2 p))
+           (equal (equal 0 (div y z p))
+                  (or (equal 0 z)
+                      (equal 0 y))))
+  :hints (("Goal" :in-theory (enable equal-of-div))))
+
 ;gen?
 (defthm mul-of--1-becomes-neg
   (implies (and (integerp x)
@@ -1002,15 +1035,6 @@
            (equal (neg x 2)
                   (mod x 2)))
   :hints (("Goal" :in-theory (enable neg))))
-
-(defthm div-of-0-arg2
-  (implies (and (primep p)
-                (integerp x))
-           (equal (div x 0 p)
-                  (if (equal p 2)
-                      (mod x p)
-                    0)))
-  :hints (("Goal" :in-theory (enable div))))
 
 ;can loop with other rules?
 (defthmd mul-of-constant-normalize-to-fep

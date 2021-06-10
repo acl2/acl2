@@ -30,6 +30,7 @@
                                     syntactic-call-of
                                     syntactic-constantp
                                     syntactic-variablep
+                                    is-the-variablep
                                     should-reverse-equality
                                     bv-array-write-nest-ending-inp
                                     bvcat-nest-with-low-zeros
