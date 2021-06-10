@@ -29,6 +29,7 @@
 (include-book "ceiling")
 (include-book "nonnegative-integer-quotient")
 (include-book "mod-expt-fast")
+(include-book "mod-expt-fast-unguarded")
 (include-book "mod-and-expt")
 (include-book "mod")
 (include-book "mod2")
