@@ -1726,7 +1726,7 @@
 
 (def-atc-tutorial-page conditionals-with-mbt
 
-  "Treatment of ACL2 conditionals with @(tsee mbt) or @(tsee mbt$)."
+  "Treatment of ACL2 conditionals with @(tsee mbt) or @(tsee mbt$)"
 
   (xdoc::p
    "After describing how ACL2 conditionals
@@ -1827,6 +1827,223 @@
    "(defun |f| (|x|)"
    "  (declare (xargs :guard (c::sintp |x|)))"
    "  (c::lt-sint-sint |x| (c::sint-dec-const 100)))"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-atc-tutorial-page conditionals-nonconcluding
+
+  "ACL2 representation of C conditional statements followed by more code"
+
+  (xdoc::p
+   "The preceding tutorial pages show how to represent C code
+    whose flow of control is ``tree-shaped'':
+    a function body is
+    a return statement,
+    or a local variable declaration followed by more code,
+    or an assignment followed by more code,
+    or a conditional statement whose branches have recursively the same form.
+    Thus, each conditional statement forks the tree,
+    while declarations and assignments extend the current tree branch,
+    and nested conditional statements fork subtrees.
+    Each path in the tree eventually concludes the execution of the function,
+    via a return statement.
+    This code structure excludes
+    conditional statements whose branches do not return,
+    but instead continue execution of subsequent code.")
+
+  (xdoc::p
+   "The execution of a C conditional statement that does not return
+    (but instead continues execution with the code after the statement)
+    generally causes side effects,
+    such as updating local variables or function parameters;
+    these are the only side effects of interest to us for now.
+    In a functional language like ACL2, these side effects must be explicit:
+    the representation of the conditional statement must yield something,
+    which must be used in the representation of the code after the statement.
+    We use @(tsee let) and @(tsee mv-let) for this purpose:
+    the former if one local variable or function parameter is updated;
+    the latter if multiple ones are updated.
+    These @(tsee let)s are disinguished from the ones that represent "
+   (xdoc::seetopic "atc-tutorial-local-variables" "local variable declarations")
+   " and "
+   (xdoc::seetopic "atc-tutorial-assignments" "assignments")
+   " because the term to which the variable is bound
+    does not have the @(tsee declar) or @(tsee assign) wrapper.
+    Consistently with that,
+    the terms to which the @(tsee mv-let) variables are bound
+    do not have any wrapper either.")
+
+  (xdoc::p
+   "For example, the ACL2 function")
+  (xdoc::codeblock
+   "(defun |j| (|x|)"
+   "  (declare"
+   "   (xargs"
+   "    :guard (c::sintp |x|)"
+   "    :guard-hints ((\"Goal\" :in-theory (enable c::declar c::assign)))))"
+   "  (let ((|y| (c::declar (c::sint-dec-const 0))))"
+   "    (let ((|y| (if (c::boolean-from-sint"
+   "                    (c::lt-sint-sint |x| (c::sint-dec-const 100)))"
+   "                   (let ((|y| (c::assign"
+   "                               (c::bitior-sint-sint"
+   "                                |y|"
+   "                                (c::sint-dec-const 6666)))))"
+   "                     |y|)"
+   "                 (let ((|y| (c::assign"
+   "                             (c::bitxor-sint-sint"
+   "                              |y|"
+   "                              (c::sint-dec-const 7777)))))"
+   "                   |y|))))"
+   "      (c::bitand-sint-sint |x| |y|))))")
+  (xdoc::p
+   "represents the C function")
+  (xdoc::codeblock
+   "int j(int x) {"
+   "    int y = 0;"
+   "    if (x < 100) {"
+   "        y = y | 6666;"
+   "    } else {"
+   "        y = y ^ 7777;"
+   "    }"
+   "    return x & y;"
+   "}")
+  (xdoc::p
+   "The first @(tsee let) represents a local variable declaration
+    as explained in @(see atc-tutorial-local-variables),
+    but the second @(tsee let) binds a homonymous variable
+    to an @(tsee if) that represents a side-effecting conditional statement.
+    The binding represents the side effects of the conditional statement,
+    and the body of the second @(tsee let)
+    (i.e. the @(tsee c::bitand-sint-sint) call)
+    ``sees'' those side effects by referencing the bound variable.
+    The variable bound in the second @(tsee let) must be one in scope;
+    as also in the representation of "
+   (xdoc::seetopic "atc-tutorial-assignments" "assignments")
+   ", it is a distinct shadowing variable in ACL2,
+    but it represents the same variable in C.
+    Indeed, the execution of a side-effecting conditional statement
+    is a bit like an assignment to the variable,
+    but performed via a statement instead of via an expression.
+    It is required that both branches of the @(tsee if)
+    end with the variable bound to the @(tsee if):
+    this is why both branches have a @(tsee let)
+    that represents an assignment that modifies the variable.
+    The function")
+  (xdoc::codeblock
+   "(defun |j| (|x|)"
+   "  (declare"
+   "   (xargs"
+   "    :guard (c::sintp |x|)"
+   "    :guard-hints ((\"Goal\" :in-theory (enable c::declar c::assign)))))"
+   "  (let ((|y| (c::declar (c::sint-dec-const 0))))"
+   "    (let ((|y| (if (c::boolean-from-sint"
+   "                    (c::lt-sint-sint |x| (c::sint-dec-const 100)))"
+   "                   (c::bitior-sint-sint"
+   "                    |y|"
+   "                    (c::sint-dec-const 6666))"
+   "                 (c::bitxor-sint-sint"
+   "                  |y|"
+   "                  (c::sint-dec-const 7777)))))"
+   "      (c::bitand-sint-sint |x| |y|))))")
+  (xdoc::p
+   "is equivalent to the one above in ACL2 but is rejected by ATC.
+    Requiring the branches to end with the bound variable
+    forces the assignment to be made explicit in the ACL2 representation,
+    thus simplifying ATC's task.
+    As already explained, ATC is meant to be used in conjunction with APT;
+    transformations could explicate these assignments automatically.")
+
+  (xdoc::p
+   "It is important to note that
+    @(tsee let)s that represent local variable declarations or assignments
+    cannot bind the variable (directly) to an @(tsee if),
+    but only to a term that represents a C expression,
+    wrapped with @(tsee declar) or @(tsee assign).
+    (The term may have the form @('(condexpr (if ...))'),
+    representing a conditional expression,
+    used as initializer of the declaration
+    or right-hand side of the assignment;
+    in this case the variable could be bound to an @(tsee if),
+    but only indirectly, which is why above we said `directly'.)
+    This kind of @(tsee let) may have bodies that are @(tsee if)s,
+    which represent conditional statements
+    that follow the declaration or assignment,
+    and not side-effecting conditional statements.
+    In contrast,
+    @(tsee let)s that represent side-effecting conditional statements,
+    as in the example above,
+    bind the variable directly to the @(tsee if), without wrappers.
+    Their bodies may be also @(tsee if)s,
+    but again those do not represent side-effecting conditional statemnent.")
+
+  (xdoc::p
+   "As another example, the ACL2 function")
+  (xdoc::codeblock
+   "(defun |k| (|x| |y|)"
+   "  (declare"
+   "   (xargs"
+   "    :guard (and (c::sintp |x|)"
+   "                (c::sintp |y|))"
+   "    :guard-hints ((\"Goal\" :in-theory (enable c::declar c::assign)))))"
+   "  (let* ((|a| (c::declar (c::lognot-sint |x|)))"
+   "         (|b| (c::declar (c::bitnot-sint |x|))))"
+   "    (mv-let (|a| |b|)"
+   "      (if (c::boolean-from-sint |y|)"
+   "          (let ((|a| (c::assign (c::bitnot-sint |a|))))"
+   "            (mv |a| |b|))"
+   "        (let* ((|b| (c::assign (c::sint-dec-const 2)))"
+   "               (|a| (c::assign (c::sint-dec-const 14))))"
+   "          (mv |a| |b|)))"
+   "      (c::bitxor-sint-sint |a| |b|))))")
+  (xdoc::p
+   "represents the C function")
+  (xdoc::codeblock
+   "int k(int x, int y) {"
+   "    int a = !x;"
+   "    int b = ~x;"
+   "    if (y) {"
+   "        a = ~a;"
+   "    } else {"
+   "        b = 2;"
+   "        a = 14;"
+   "    }"
+   "    return a ^ b;"
+   "}")
+  (xdoc::p
+   "The structure is the same as the previous example,
+    but the side effects involve two variables,
+    and therefore we use an @(tsee mv-let) instead of a @(tsee let).
+    The first two @(tsee let)s (to which the @(tsee let*) expands)
+    just represent local variable declarations,
+    but the @(tsee mv-let) represents
+    a conditional statement that side-effects two variables
+    followed by more code (a return statement in this case).
+    Similarly to the one-variable @(tsee let) case,
+    both branches of the @(tsee if) are required to end with
+    an @(tsee mv) of the bound variables, in the same order.
+    Again, this facilitates ATC's task,
+    and APT transformations could automatically produce terms of this form.")
+  (xdoc::p
+   "Note that, in this example,
+    one branch modifies only one variable,
+    while the other branch modifies both variables.
+    However, each branch must return all the variables;
+    for the first branch, only one is actually modified.")
+
+  (xdoc::p
+   "The above structures can be nested, in a way that should be obvious.
+    For instance, a branch of a conditional
+    could itself contain side-effecting conditionals.
+    The ability to represent side-effecting conditional statements
+    greatly expands the range of C code generable by ATC.")
+
+  (xdoc::p
+   "A branch that just returns the variable(s) without modification
+    represents an empty branch.
+    When that happens for the `else' branch,
+    ATC could generate an @('if') statement
+    instead of an @('if')-@('else') statement.
+    This is not supported yet, but could be supported with ease."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
