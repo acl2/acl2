@@ -42,3 +42,18 @@
            (pfield-squarep 0 p))
   :enable fep
   :use (:instance pfield-squarep-suff (r 0) (x 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule fep-of-pfield-square->root
+  (implies (pfield-squarep x p)
+           (fep (pfield-square->root x p) p))
+  :enable pfield-squarep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule natp-of-pfield-square->root
+  (implies (pfield-squarep x p)
+           (natp (pfield-square->root x p)))
+  :rule-classes (:type-prescription :rewrite)
+  :enable pfield-squarep)
