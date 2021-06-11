@@ -38,3 +38,9 @@
            (equal (div x 1 p)
                   (mod x p)))
   :hints (("Goal" :in-theory (enable div inv))))
+
+(defthm <-of-div
+  (implies (and (< 1 p) ; gen?
+                (integerp p))
+           (< (div x y p) p))
+  :hints (("Goal" :in-theory (enable div))))
