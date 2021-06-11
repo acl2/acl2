@@ -1,5 +1,6 @@
 #!/bin/sh
 
-cd $(dirname "$0") ; export invoking_dir=$PWD ; cd - >& /dev/null
+cd $(dirname "$0") ; export invoking_dir=$PWD ; cd - 2>&1 /dev/null
+echo "$invoking_dir"
 export parent_dir=`dirname "$invoking_dir"`
 $parent_dir/saved_acl2 "$@"
