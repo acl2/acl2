@@ -147,11 +147,6 @@
                               :d (baby-jubjub-d))
   ///
 
-  (defrule twisted-edwards-curve-primep-of-baby-jubjub-curve
-    (twisted-edwards-curve-primep (baby-jubjub-curve))
-    :enable twisted-edwards-curve-primep
-    :disable ((:e twisted-edwards-curve-primep)))
-
   (defrule twisted-edwards-curve-completep-of-baby-jubjub-curve
     (twisted-edwards-curve-completep (baby-jubjub-curve))
     :enable (twisted-edwards-curve-completep

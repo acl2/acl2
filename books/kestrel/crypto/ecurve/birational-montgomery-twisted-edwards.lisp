@@ -121,8 +121,7 @@
 
 (define twisted-edwards-to-montgomery ((tecurve twisted-edwards-curvep)
                                        (scaling posp))
-  :guard (and (twisted-edwards-curve-primep tecurve)
-              (fep scaling (twisted-edwards-curve->p tecurve)))
+  :guard (fep scaling (twisted-edwards-curve->p tecurve))
   :returns (mcurve montgomery-curvep)
   :short "Map a twisted Edwards curve to a Montgomery curve."
   :long
@@ -149,7 +148,6 @@
        (mb (div (mod 4 tecurve.p) a-d tecurve.p))
        (b (mul (acl2::pos-fix scaling) mb tecurve.p)))
     (make-montgomery-curve :p tecurve.p :a ma :b b))
-  :guard-hints (("Goal" :in-theory (enable twisted-edwards-curve-primep)))
   :hooks (:fix)
   :prepwork
   ((local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
@@ -180,7 +178,10 @@
                  (equal (mod -2 p)
                         (mul 2 (pfield::minus1 p) p)))
         :enable (mul pfield::minus1)
-        :prep-books ((include-book "arithmetic-3/top" :dir :system)))))))
+        :prep-books ((include-book "arithmetic-3/top" :dir :system)))))
+   (defrulel verify-guards-lemma-4
+     (not (equal (twisted-edwards-curve->p curve) 4))
+     :use (:instance twisted-edwards-curve-requirements (x curve)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -232,8 +233,7 @@
   ((point pointp)
    (curve twisted-edwards-curvep)
    (scaling posp))
-  :guard (and (twisted-edwards-curve-primep curve)
-              (point-on-twisted-edwards-p point curve)
+  :guard (and (point-on-twisted-edwards-p point curve)
               (not (equal (point-finite->x point) 0))
               (not (equal (point-finite->y point) 1))
               (fep scaling (twisted-edwards-curve->p curve)))
@@ -268,8 +268,7 @@
                 p))
        (y (mul (acl2::pos-fix scaling) my p)))
     (point-finite mx y))
-  :guard-hints (("Goal" :in-theory (enable point-on-twisted-edwards-p
-                                           twisted-edwards-curve-primep)))
+  :guard-hints (("Goal" :in-theory (enable point-on-twisted-edwards-p)))
   :prepwork
   ((local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
    (local (include-book "kestrel/prime-fields/bind-free-rules" :dir :system)))

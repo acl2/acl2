@@ -163,11 +163,6 @@
                                       :d (jubjub-d))
   ///
 
-  (defrule twisted-edwards-curve-primep-of-jubjub-curve
-    (ecurve::twisted-edwards-curve-primep (jubjub-curve))
-    :enable ecurve::twisted-edwards-curve-primep
-    :disable ((:e ecurve::twisted-edwards-curve-primep)))
-
   (defrule twisted-edwards-curve-completep-of-jubjub-curve
     (ecurve::twisted-edwards-curve-completep (jubjub-curve))
     :enable (ecurve::twisted-edwards-curve-completep jubjub-a jubjub-d jubjub-q)

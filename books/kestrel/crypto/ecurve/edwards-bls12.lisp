@@ -165,11 +165,6 @@
                                       :d (edwards-bls12-d))
   ///
 
-  (defrule twisted-edwards-curve-primep-of-edwards-bls12-curve
-    (twisted-edwards-curve-primep (edwards-bls12-curve))
-    :enable twisted-edwards-curve-primep
-    :disable ((:e twisted-edwards-curve-primep)))
-
   (defrule twisted-edwards-curve-completep-of-edwards-bls12-curve
     (twisted-edwards-curve-completep (edwards-bls12-curve))
     :enable (twisted-edwards-curve-completep edwards-bls12-a edwards-bls12-d edwards-bls12-q)
