@@ -80,10 +80,7 @@
 (defthmd sbvrem-when-both-negative
   (implies (and (sbvlt size x 0)
                 (sbvlt size y 0)
-                (posp size)
-                (integerp x) ;drop
-                (integerp y) ;drop
-                )
+                (posp size))
            (equal (sbvrem size x y)
                   (bvuminus size (bvmod size (bvuminus size x) (bvuminus size y)))))
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus slice-of-sum-cases
@@ -118,10 +115,7 @@
 (defthmd sbvrem-when-x-negative
   (implies (and (sbvlt size x 0)
                 (sbvle size 0 y)
-                (posp size)
-                (integerp x)
-                (integerp y)
-                )
+                (posp size))
            (equal (sbvrem size x y)
                   (bvuminus size (bvmod size (bvuminus size x) y))))
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus
@@ -157,18 +151,6 @@
                                   (;bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 
-(defthmd sbvrem-when-positive-better
-  (implies (and (sbvle size 0 x)
-                (sbvle size 0 y)
-                (posp size)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (sbvrem size x y)
-                  (bvmod (+ -1 size) x y)))
-  :hints (("Goal" :in-theory (enable sbvrem bvmod sbvlt ;bvchop
-                                     rem-becomes-mod))))
-
 (defthm sbvrem-rewrite
   (implies (and (posp size)
                 (integerp x)
@@ -182,7 +164,7 @@
                     (if (sbvle size 0 y)
                         (bvuminus size (bvmod size (bvuminus size x) y))
                       (bvuminus size (bvmod size (bvuminus size x) (bvuminus size y)))))))
-  :hints (("Goal" :in-theory (enable sbvrem-when-positive-better
+  :hints (("Goal" :in-theory (enable sbvrem-when-positive
                                      sbvrem-when-y-negative
                                      sbvrem-when-x-negative
                                      sbvrem-when-both-negative))))

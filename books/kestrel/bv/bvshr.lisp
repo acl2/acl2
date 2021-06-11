@@ -56,8 +56,9 @@
 ;FIXME gen
 (defthm unsigned-byte-p-of-bvshr
   (implies (and (natp amt)
-                (<= amt 32))
-           (unsigned-byte-p 32 (bvshr 32 x amt)))
+                (<= amt size)
+                (integerp size))
+           (unsigned-byte-p size (bvshr size x amt)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
 (defthm bvchop-of-bvshr

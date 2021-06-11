@@ -62,26 +62,17 @@
   :hints (("Goal" :use (:instance floor-minus-arg2 (y (- (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE y)))))
            :in-theory (disable floor-minus-arg2))))
 
-;move
-(defthmd minus-of-times-arg2
-  (equal (- (* x y))
-         (* x (- y))))
-
-;move
-(defthmd minus-of-/
-  (equal (- (/ x))
-         (/ (- x))))
-
 (defthm integerp-of-times-of-/-of-expt-and-minus-of-bvchop
   (implies (rationalp x)
            (equal (INTEGERP (* x (/ (+ (EXPT 2 SIZE) (- (BVCHOP SIZE Y))))))
                   (INTEGERP (* x (/ (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE Y)))))))
   :hints (("Goal" :use (:instance INTEGERP-OF--(x (* x (/ (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE Y))))))
            :do-not '(preprocess)
-           :in-theory (e/d (minus-of-times-arg2 minus-of-/)
+           :in-theory (e/d (--of-*-push-into-arg2 --of-/)
                            (/-of--
                             INTEGERP-OF--
-                            ;FUNCTIONAL-COMMUTATIVITY-OF-MINUS-*-right
+                            ;;FUNCTIONAL-COMMUTATIVITY-OF-MINUS-*-right
+                            *-OF---ARG2
                             )))))
 
 ;move or drop

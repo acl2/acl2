@@ -46,18 +46,18 @@
 ;or just rely on (:rewrite sbvrem-when-positive)?
 ;fixme gen!
 (defthm equal-of-0-and-sbvrem-when-small
-  (implies (and (equal width 32) ;fixme
+  (implies (and (<= 1 width) ;gen?
                 (natp x)
                 (unsigned-byte-p (+ -1 width) n)
-                (< x n)
-                (posp width)
-                )
+                (< x n))
            (equal (equal 0 (sbvrem width x n))
                   (equal 0 x)))
-  :hints (("Goal" :in-theory (enable ;logext logapp
-                                     sbvrem
-                                     bvchop-of-sum-cases
-                                     truncate-becomes-floor-gen))))
+  :hints (("Goal" :cases ((equal width 1)
+                          (equal width 2))
+           :in-theory (enable ;logext logapp
+                       sbvrem
+                       bvchop-of-sum-cases
+                       truncate-becomes-floor-gen))))
 
 ;do not remove (helps justify the translation to STP)
 (defthm sbvrem-of-bvchop-arg2
@@ -81,8 +81,6 @@
   (equal (unsigned-byte-p-forced size (sbvrem size x y))
          (natp size))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced natp sbvrem))))
-
-
 
 (defthm sbvrem-of-0-arg1
   (equal (sbvrem 0 x y)

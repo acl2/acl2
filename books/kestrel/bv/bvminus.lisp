@@ -75,9 +75,9 @@
   :hints (("Goal" :in-theory (enable bvminus))))
 
 (defthm equal-of-0-and-bvminus
-  (equal (equal 0 (bvminus 32 x y))
-         (equal (bvchop 32 x)
-                (bvchop 32 y)))
+  (equal (equal 0 (bvminus size x y))
+         (equal (bvchop size x)
+                (bvchop size y)))
   :hints (("Goal" :in-theory (enable bvminus bvchop-of-sum-cases))))
 
 (defthm unsigned-byte-p-of-bvminus-gen-better

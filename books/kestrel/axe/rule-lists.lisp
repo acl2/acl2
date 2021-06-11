@@ -1848,7 +1848,6 @@
      bvif-1-1-0
      equal-of-bool-to-bit-and-0
      equal-of-bool-to-bit-and-1
-     sbvrem-when-positive-better
      ;;fixme what about backchain-limit? <- for which rule??
 
      equal-of-bvchop-impossible
