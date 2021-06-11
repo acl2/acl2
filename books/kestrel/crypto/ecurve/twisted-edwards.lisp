@@ -1114,6 +1114,85 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define-sk twisted-edwards-add-associativity ()
+  :returns (yes/no booleanp)
+  :short "Assumption of associativity of twisted-Edwards addition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We plan to prove the associativity of @(tsee twisted-edwards-add),
+     but since that will take substantial work
+     (the proof is notoriously laborious),
+     for now we capture the associtivity property in this nullary predicate,
+     which we can use as hypothesis in theorems whose proof needs associativity.
+     This is preferable to stating an axiom,
+     because an incorrect axiom
+     (either because it is misstated or because addition is misdefined)
+     would make the logic inconsistent.
+     In contrast, if this nullary predicate is actually false
+     (due to the same kind of mistake mentioned just above),
+     it just means that any theorem with it as hypothesis is vacuous
+     (a much less severe problem).")
+   (xdoc::p
+    "We enable the rewrite rule associated to this @(tsee defun-sk)
+     because it is essentially the associativity theorem,
+     which is a good rewrite rule to have enabled,
+     with the only difference that
+     it has this nullary predicate as hypothesis.
+     That rewrite rule rewrites additions to associate to the right.
+     We also add a disabled associativity rule
+     that rewrites additions to associate to the left instead;
+     this may be occasionally useful in algebraic manipulations.
+     We add a theory invariant preventing both rules from being enabled.")
+   (xdoc::p
+    "Besides the fact that all three points are on the curve,
+     we also require the curve to be complete.
+     This may turn out not to be needed for associativity,
+     but for now we include it in case it is needed;
+     once we have an associativity proof, we will know more about this."))
+  (forall (curve point1 point2 point3)
+          (implies (and (twisted-edwards-curve-completep curve)
+                        (point-on-twisted-edwards-p point1 curve)
+                        (point-on-twisted-edwards-p point2 curve)
+                        (point-on-twisted-edwards-p point3 curve))
+                   (equal (twisted-edwards-add (twisted-edwards-add point1
+                                                                    point2
+                                                                    curve)
+                                               point3
+                                               curve)
+                          (twisted-edwards-add point1
+                                               (twisted-edwards-add point2
+                                                                    point3
+                                                                    curve)
+                                               curve))))
+  :verify-guards nil
+  :thm-name twisted-edwards-add-associative-right
+  :enabled :thm
+  ///
+
+  (defruled twisted-edwards-add-associative-left
+    (implies (and (twisted-edwards-add-associativity)
+                  (twisted-edwards-curve-completep curve)
+                  (point-on-twisted-edwards-p point1 curve)
+                  (point-on-twisted-edwards-p point2 curve)
+                  (point-on-twisted-edwards-p point3 curve))
+             (equal (twisted-edwards-add point1
+                                         (twisted-edwards-add point2
+                                                              point3
+                                                              curve)
+                                         curve)
+                    (twisted-edwards-add (twisted-edwards-add point1
+                                                              point2
+                                                              curve)
+                                         point3
+                                         curve))))
+
+  (theory-invariant (incompatible
+                     (:rewrite twisted-edwards-add-associative-right)
+                     (:rewrite twisted-edwards-add-associative-left))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define twisted-edwards-zero ()
   :returns (point pointp)
   :short "Neutral point of the twisted Edwards curve group."
