@@ -19,6 +19,7 @@
 (include-book "floor-mod-expt") ;todo deprecate
 
 ;; Recognizers for BVs:
+(include-book "bitp")
 (include-book "unsigned-byte-p")
 (include-book "unsigned-byte-p2")
 (include-book "unsigned-byte-p-forced")
