@@ -104,6 +104,9 @@
 
 ;; Rotate operations:
 (include-book "leftrotate")
+(include-book "leftrotate16")
+(include-book "leftrotate32")
+(include-book "leftrotate64")
 (include-book "rightrotate")
 (include-book "rightrotate32")
 (include-book "rotate")

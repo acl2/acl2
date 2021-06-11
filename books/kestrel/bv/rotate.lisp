@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "leftrotate")
+(include-book "leftrotate32")
 (include-book "rightrotate")
 (include-book "rightrotate32")
 (include-book "bvif")

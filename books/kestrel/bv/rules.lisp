@@ -37,6 +37,7 @@
 (include-book "kestrel/arithmetic-light/lg" :dir :system)
 (include-book "bv-syntax")
 (include-book "leftrotate")
+(include-book "leftrotate32")
 (include-book "sbvrem")
 (include-book "bvdiv")
 (include-book "sbvdiv")
