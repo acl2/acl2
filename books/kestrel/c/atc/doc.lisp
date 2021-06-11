@@ -100,12 +100,7 @@
      (xdoc::p
       "While it is obviously recommended to generate proofs,
        setting this to @('nil') may be useful
-       in case proof generation is (temporarily) broken.")
-     (xdoc::p
-      "Currently @(':proofs') must be @('nil')
-       if any of the target functions is recursive.
-       As explained below, recursive target functions represent loops.
-       Proof generation for loops is not supported yet."))
+       in case proof generation is (temporarily) broken."))
 
     (xdoc::desc
      "@(':const-name') &mdash; default @(':auto')"
@@ -874,6 +869,10 @@
       "If the @(':proofs') input is @('nil'),
        this theorem is not generated.")
      (xdoc::p
+      "If any of the target functions is recursive,
+       this theorem is not generated.
+       Proof generation for loops is not supported yet.")
+     (xdoc::p
       "This theorem may fail when some ACL2 target function
        includes unreachable code under the guard
        (other than the `else' branch of an @(tsee if)
@@ -908,7 +907,11 @@
        the C function is functionally equivalent to the ACL2 function.")
      (xdoc::p
       "If the @(':proofs') input is @('nil'),
-       this theorem is not generated.")))
+       this theorem is not generated.")
+     (xdoc::p
+      "If any of the target functions is recursive,
+       this theorem is not generated.
+       Proof generation for loops is not supported yet.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

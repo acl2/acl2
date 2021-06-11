@@ -123,6 +123,9 @@
    to the names of the generated respective correctness theorems.
    This is @('nil') if @('proofs') is @('nil')."
 
+  "@('recursionp') is a flag indicating whether
+   any target function is recursive or not."
+
   xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -132,36 +135,50 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-process-function (fn ctx state)
-  :returns (mv erp (nothing "Always @('nil').") state)
+  :returns (mv erp (recursionp booleanp) state)
   :short "Process a target function @('fni') among @('fn1'), ..., @('fnp')."
+  :long
+  (xdoc::topstring-p
+   "If there is no error,
+    we return a flag indicating whether the function is recursive or not.")
   (b* ((desc (msg "The target ~x0 input" fn))
        ((er &) (acl2::ensure-value-is-function-name$ fn desc t nil))
        (desc (msg "The target function ~x0" fn))
        ((er &) (acl2::ensure-function-is-logic-mode$ fn desc t nil))
        ((er &) (acl2::ensure-function-is-guard-verified$ fn desc t nil))
        ((er &) (acl2::ensure-function-is-defined$ fn desc t nil)))
-    (acl2::value nil))
+    (acl2::value (and (acl2::irecursivep+ fn (w state)) t)))
   :guard-hints (("Goal" :in-theory (enable
                                     acl2::ensure-value-is-function-name
                                     acl2::ensure-function-is-guard-verified
-                                    acl2::ensure-function-is-logic-mode))))
+                                    acl2::ensure-function-is-logic-mode
+                                    acl2::ensure-function-is-defined))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-process-function-list ((fns true-listp) ctx state)
-  :returns (mv erp (nothing "Always @('nil').") state)
+  :returns (mv erp (recursionp booleanp) state)
   :short "Lift @(tsee atc-process-function) to lists."
+  :long
+  (xdoc::topstring-p
+   "If there is no error,
+    we return a flag indicating whether any function is recursive or not.")
   (b* (((when (endp fns)) (acl2::value nil))
-       ((er &) (atc-process-function (car fns) ctx state)))
-    (atc-process-function-list (cdr fns) ctx state)))
+       ((er recursionp1) (atc-process-function (car fns) ctx state))
+       ((er recursionp2) (atc-process-function-list (cdr fns) ctx state)))
+    (acl2::value (or recursionp1 recursionp2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-process-fn1...fnp ((fn1...fnp true-listp) ctx state)
-  :returns (mv erp (nothing "Always @('nil').") state)
+  :returns (mv erp (recursionp booleanp) state)
   :verify-guards nil
   :short "Process the target functions @('fn1'), ..., @('fnp')."
-  (b* (((er &) (atc-process-function-list fn1...fnp ctx state))
+  :long
+  (xdoc::topstring-p
+   "If there is no error,
+    we return a flag indicating whether any function is recursive or not.")
+  (b* (((er recursionp) (atc-process-function-list fn1...fnp ctx state))
        ((unless (consp fn1...fnp))
         (er-soft+ ctx t nil
                   "At least one target function must be supplied."))
@@ -170,7 +187,7 @@
                 (msg "The list of target functions ~x0" fn1...fnp)
                 t
                 nil)))
-    (acl2::value nil)))
+    (acl2::value recursionp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -363,6 +380,7 @@
 (define atc-process-inputs ((args true-listp) ctx state)
   :returns (mv erp
                (val "A @('(tuple (fn1...fnp symbol-listp)
+                                 (recursionp booleanp)
                                  (output-file stringp)
                                  (proofs booleanp)
                                  (prog-const symbolp)
@@ -380,7 +398,7 @@
                               one or more target functions ~
                               followed by the options ~&0."
                              *atc-allowed-options*))
-       ((er &) (atc-process-fn1...fnp fn1...fnp ctx state))
+       ((er recursionp) (atc-process-fn1...fnp fn1...fnp ctx state))
        (output-file-option (assoc-eq :output-file options))
        ((mv output-file output-file?)
         (if output-file-option
@@ -416,6 +434,7 @@
                 :result))
        ((er &) (evmac-process-input-print print ctx state)))
     (acl2::value (list fn1...fnp
+                       recursionp
                        output-file
                        proofs
                        prog-const
@@ -3256,6 +3275,7 @@
                          (type typep)
                          (prec-fns atc-symbol-fninfo-alistp)
                          (proofs booleanp)
+                         (recursionp booleanp)
                          (prog-const symbolp)
                          (fn-thms symbol-symbol-alistp)
                          (print evmac-input-print-p)
@@ -3269,7 +3289,9 @@
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the theorems associated to the specified ACL2 function."
-  (b* (((when (not proofs)) (mv nil nil nil nil names-to-avoid))
+  (b* (((when (or (not proofs)
+                  recursionp))
+        (mv nil nil nil nil names-to-avoid))
        ((mv fn-returns-value-event
             fn-returns-value-thm
             names-to-avoid)
@@ -3355,6 +3377,7 @@
 (define atc-gen-ext-declon ((fn symbolp)
                             (prec-fns atc-symbol-fninfo-alistp)
                             (proofs booleanp)
+                            (recursionp booleanp)
                             (prog-const symbolp)
                             (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
@@ -3435,7 +3458,7 @@
             fn-exec-var-limit-correct-thm
             names-to-avoid)
         (atc-gen-fn-thms fn pointers type prec-fns
-                         proofs prog-const fn-thms print
+                         proofs recursionp prog-const fn-thms print
                          limit names-to-avoid wrld))
        (info (make-atc-fn-info
               :type? type
@@ -3454,7 +3477,6 @@
 
 (define atc-gen-loop ((fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
-                      (proofs booleanp)
                       ctx
                       state)
   :guard (acl2::irecursivep+ fn (w state))
@@ -3474,19 +3496,8 @@
      and update the @('prec-fns') alist with information about the function.")
    (xdoc::p
     "No C external declaration is generated for this function,
-     because this function just represents a loop used in oher functions.
-     No events are generated corresponding to this function for now,
-     because proof generation is not supported for loops yet;
-     in fact, we return an error if @(':proofs') is not @('nil')."))
-  (b* (((when proofs)
-        (er-soft+ ctx t nil
-                  "The target function ~x0 is recursive, ~
-                   and therefore represents a C loop; ~
-                   proof generation for loops is not supported yet. ~
-                   Thus the :PROOFS input must be NIL, ~
-                   but instead it is ~x1."
-                  fn proofs))
-       (wrld (w state))
+     because this function just represents a loop used in oher functions."))
+  (b* ((wrld (w state))
        (formals (acl2::formals+ fn wrld))
        (guard (acl2::uguard+ fn wrld))
        (guard-conjuncts (flatten-ands-in-lit guard))
@@ -3510,6 +3521,7 @@
 (define atc-gen-ext-declon-list ((fns symbol-listp)
                                  (prec-fns atc-symbol-fninfo-alistp)
                                  (proofs booleanp)
+                                 (recursionp booleanp)
                                  (prog-const symbolp)
                                  (fn-thms symbol-symbol-alistp)
                                  (print evmac-input-print-p)
@@ -3537,14 +3549,15 @@
        ((er (list exts local-events exported-events prec-fns names-to-avoid))
         (if (acl2::irecursivep+ fn (w state))
             (b* (((mv erp prec-fns state)
-                  (atc-gen-loop fn prec-fns proofs ctx state))
+                  (atc-gen-loop fn prec-fns ctx state))
                  ((when erp) (mv erp (list nil nil nil nil) state)))
               (acl2::value (list nil nil nil prec-fns names-to-avoid)))
           (b* (((mv erp
                     (list
                      ext local-events exported-events prec-fns names-to-avoid)
                     state)
-                (atc-gen-ext-declon fn prec-fns proofs prog-const fn-thms
+                (atc-gen-ext-declon fn prec-fns proofs recursionp
+                                    prog-const fn-thms
                                     print names-to-avoid ctx state))
                ((when erp) (mv erp (list nil nil nil nil) state)))
             (acl2::value (list (list ext)
@@ -3554,7 +3567,8 @@
                                names-to-avoid)))))
        ((er
          (list more-exts more-local-events more-exported-events names-to-avoid))
-        (atc-gen-ext-declon-list rest-fns prec-fns proofs prog-const fn-thms
+        (atc-gen-ext-declon-list rest-fns prec-fns proofs recursionp
+                                 prog-const fn-thms
                                  print names-to-avoid ctx state)))
     (acl2::value (list (append exts more-exts)
                        (append local-events more-local-events)
@@ -3588,6 +3602,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-wf-thm ((proofs booleanp)
+                        (recursionp booleanp)
                         (prog-const symbolp)
                         (wf-thm symbolp)
                         (print evmac-input-print-p))
@@ -3607,7 +3622,9 @@
    (xdoc::p
     "We generate singleton lists of events if @(':proofs') is @('t'),
      empty lists otherwise."))
-  (b* (((unless proofs) (mv nil nil))
+  (b* (((unless (and proofs
+                     (not recursionp)))
+        (mv nil nil))
        ((mv local-event exported-event)
         (evmac-generate-defthm
          wf-thm
@@ -3629,6 +3646,7 @@
 
 (define atc-gen-transunit ((fn1...fnp symbol-listp)
                            (proofs booleanp)
+                           (recursionp booleanp)
                            (prog-const symbolp)
                            (wf-thm symbolp)
                            (fn-thms symbol-symbol-alistp)
@@ -3653,10 +3671,11 @@
      because its name must be passed to the ACL2 functions
      that generate the external declarations that form the translation unit."))
   (b* (((mv wf-thm-local-events wf-thm-exported-events)
-        (atc-gen-wf-thm proofs prog-const wf-thm print))
+        (atc-gen-wf-thm proofs recursionp prog-const wf-thm print))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
-        (atc-gen-ext-declon-list fn1...fnp nil proofs prog-const fn-thms
+        (atc-gen-ext-declon-list fn1...fnp nil proofs recursionp
+                                 prog-const fn-thms
                                  print names-to-avoid ctx state))
        (tunit (make-transunit :declons exts))
        ((mv local-const-event exported-const-event)
@@ -3763,6 +3782,7 @@
 (define atc-gen-everything ((fn1...fnp symbol-listp)
                             (output-file stringp)
                             (proofs booleanp)
+                            (recursionp booleanp)
                             (prog-const symbolp)
                             (wf-thm symbolp)
                             (fn-thms symbol-symbol-alistp)
@@ -3785,7 +3805,7 @@
      Thus, we locally install the simpler ancestor check."))
   (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
        ((er (list tunit local-events exported-events &))
-        (atc-gen-transunit fn1...fnp proofs prog-const wf-thm fn-thms
+        (atc-gen-transunit fn1...fnp proofs recursionp prog-const wf-thm fn-thms
                            print names-to-avoid ctx state))
        ((er file-gen-event) (atc-gen-file-event tunit output-file print state))
        (print-events (and (evmac-input-print->= print :result)
@@ -3818,6 +3838,7 @@
   (b* (((when (atc-table-lookup call (w state)))
         (acl2::value '(value-triple :redundant)))
        ((er (list fn1...fnp
+                  recursionp
                   output-file
                   proofs
                   prog-const
@@ -3828,6 +3849,7 @@
     (atc-gen-everything fn1...fnp
                         output-file
                         proofs
+                        recursionp
                         prog-const
                         wf-thm
                         fn-thms
