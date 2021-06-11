@@ -3602,7 +3602,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-wf-thm ((proofs booleanp)
-                        (recursionp booleanp)
                         (prog-const symbolp)
                         (wf-thm symbolp)
                         (print evmac-input-print-p))
@@ -3622,9 +3621,7 @@
    (xdoc::p
     "We generate singleton lists of events if @(':proofs') is @('t'),
      empty lists otherwise."))
-  (b* (((unless (and proofs
-                     (not recursionp)))
-        (mv nil nil))
+  (b* (((unless proofs) (mv nil nil))
        ((mv local-event exported-event)
         (evmac-generate-defthm
          wf-thm
@@ -3671,7 +3668,7 @@
      because its name must be passed to the ACL2 functions
      that generate the external declarations that form the translation unit."))
   (b* (((mv wf-thm-local-events wf-thm-exported-events)
-        (atc-gen-wf-thm proofs recursionp prog-const wf-thm print))
+        (atc-gen-wf-thm proofs prog-const wf-thm print))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
         (atc-gen-ext-declon-list fn1...fnp nil proofs recursionp

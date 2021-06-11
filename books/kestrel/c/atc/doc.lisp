@@ -869,10 +869,6 @@
       "If the @(':proofs') input is @('nil'),
        this theorem is not generated.")
      (xdoc::p
-      "If any of the target functions is recursive,
-       this theorem is not generated.
-       Proof generation for loops is not supported yet.")
-     (xdoc::p
       "This theorem may fail when some ACL2 target function
        includes unreachable code under the guard
        (other than the `else' branch of an @(tsee if)
@@ -911,7 +907,7 @@
      (xdoc::p
       "If any of the target functions is recursive,
        this theorem is not generated.
-       Proof generation for loops is not supported yet.")))
+       Proof generation for loops is not fully supported yet.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
