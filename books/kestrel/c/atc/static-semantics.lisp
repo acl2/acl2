@@ -980,15 +980,14 @@
   (xdoc::topstring
    (xdoc::p
     "For now we only allow
-     @('return') statements with expressions,
-     conditional statements,
      compound statements,
-     and expression statements.")
+     expression statements,
+     conditional statements,
+     @('while') statements, and
+     @('return') statements with expressions.")
    (xdoc::p
     "These ACL2 functions return a statement type or an error;
      see @(tsee stmt-type).")
-   (xdoc::p
-    "We only allow simple assignments to variables as expression statements.")
    (xdoc::p
     "For a compound statement,
      we add a block scope to the variable table
@@ -1001,6 +1000,8 @@
      In fact, a compound statement does not update the variable table:
      we return the original variable table.")
    (xdoc::p
+    "We only allow simple assignments to variables as expression statements.")
+   (xdoc::p
     "For a conditional statement with both branches,
      after ensuring that the test expression has scalar type,
      we check the two branches, and take the union of their return types.
@@ -1010,7 +1011,16 @@
     "We treat a conditional statement with just one branch
      as one whose @('else') branch returns nothing.")
    (xdoc::p
-    "For a return statement,
+    "For a @('while') statement,
+     we ensure that the test has a scalar type,
+     and we check the body.
+     We put together @('nil') and the return types from the body:
+     the @('nil') accounts for the case in which
+     the body is never executed (i.e. the test is initially false).
+     We return the initial variable table, unchanged;
+     any change in the body is local to the body.")
+   (xdoc::p
+    "For a @('return') statement,
      we return the singleton set with the type of the expression.")
    (xdoc::p
     "For a block item that is a declaration,
@@ -1087,7 +1097,19 @@
                                           (stmt-type->return-types stype-else))
                 :variables vartab))
      :switch (error (list :unsupported-switch s.ctrl s.body))
-     :while (error (list :unsupported-while s.test s.body))
+     :while (b* ((type (check-expr-pure s.test vartab))
+                 ((when (errorp type)) (error (list :if-test-error type)))
+                 ((unless (type-scalarp type))
+                  (error (list :while-test-mistype s.test s.body
+                               :required :scalar
+                               :supplied type)))
+                 (stype-body (check-stmt s.body funtab vartab))
+                 ((when (errorp stype-body))
+                  (error (list :while-error stype-body))))
+              (make-stmt-type
+               :return-types (set::insert nil
+                                          (stmt-type->return-types stype-body))
+               :variables vartab))
      :dowhile (error (list :unsupported-dowhile s.body s.test))
      :for (error (list :unsupported-for s.init s.test s.next s.body))
      :goto (error (list :unsupported-goto s.target))
