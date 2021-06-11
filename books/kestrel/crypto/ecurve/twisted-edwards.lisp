@@ -1106,6 +1106,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule twisted-edwards-add-commutative
+  :short "Commutativity of twisted Edwards addition."
+  (equal (twisted-edwards-add point1 point2 curve)
+         (twisted-edwards-add point2 point1 curve))
+  :enable twisted-edwards-add)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define twisted-edwards-zero ()
   :returns (point pointp)
   :short "Neutral point of the twisted Edwards curve group."
