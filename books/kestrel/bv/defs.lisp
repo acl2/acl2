@@ -59,55 +59,6 @@
         (- width shift-amount)
         (bvshr width x shift-amount)))
 
-;; ;trimming of the amount wasn't nice and tight when width is not a power of 2
-;; ;fixme pass in the number of bits of amt to use?
-;; (defun leftrotate (width amt val)
-;;   (declare (type integer val amt)
-;;            (type (integer 0 *) width)
-;;            ;;            (xargs :guard (<= (bvchop (integer-length (+ -1 width)) amt) ;fixme think about this guard
-;;            ;;                              width))
-;;            )
-;;   (if (= 0 width)
-;;       0
-;;     (let* ((amt (mod (nfix amt) width))) ;((amt (bvchop (integer-length (+ -1 width)) amt)))
-;;       (bvcat (- width amt)
-;;              (slice (+ -1 width (- amt)) 0 val)
-;;              amt
-;;              (slice (+ -1 width) (+ width (- amt)) val)))))
-
-;; (defun leftrotate16 (amt val)
-;;   (declare (type integer amt val))
-;;   (leftrotate 16 amt val))
-
-;; (defund leftrotate32 (amt val)
-;;   (declare (type integer amt val))
-;;   (leftrotate 32 amt val))
-
-;; (defund leftrotate64 (amt val)
-;;   (declare (type integer amt val))
-;;   (leftrotate 64 amt val))
-
-;; ;or could define in terms of leftrotate
-;; (defun rightrotate (width amt val)
-;;   (declare (type integer val amt)
-;;            (type (integer 0 *) width)
-;;            ;;            (xargs :guard (<= (bvchop (integer-length (+ -1 width)) amt) ;fixme think about this guard
-;;            ;;                              width))
-;;            )
-;;   (if (= 0 width)
-;;       0
-;;     (let* ((amt (mod (nfix amt) width) ;(bvchop (integer-length (+ -1 width)) amt)
-;;                 ))
-;;       (bvcat amt
-;;              (slice (+ -1 amt) 0 val)
-;;              (- width amt)
-;;              (slice (+ -1 width) amt val)))))
-
-;; (defund rightrotate32 (amt val)
-;;   (rightrotate 32 amt val))
-
-
-
 ;divide and round toward 0
 ;fixme what should this do if y is 0?
 (defun bvdiv (n x y)
