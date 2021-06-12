@@ -697,7 +697,7 @@
                            0))))
     :use d.x1.x2.y1.y2-not-minus-one-on-curve-and-points
     :prep-books
-    ((include-book "kestrel/prime-fields/bind-free-rules" :dir :system))
+    ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
     :prep-lemmas
     ((defrule lemma
        (implies (rtl::primep p)
@@ -728,7 +728,7 @@
                            0))))
     :use d.x1.x2.y1.y2-not-one-on-curve-and-points
     :prep-books
-    ((include-book "kestrel/prime-fields/bind-free-rules" :dir :system))))
+    ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
