@@ -12,6 +12,7 @@
 
 (include-book "pow")
 (include-book "minus1")
+(include-book "fep-fix")
 
 ;; Compute the multiplicative inverse of x modulo the prime.
 ;; See theorem inv-correct below.
@@ -39,3 +40,25 @@
            (< (inv x p) p))
   :hints (("Goal" :use (:instance fep-of-inv)
            :in-theory (disable fep-of-inv))))
+
+;was called inv-correct
+(defthm mul-of-inv-arg2
+  (implies (rtl::primep p)
+           (equal (mul x (inv x p) p)
+                  (if (equal 0 (fep-fix x p))
+                      (if (equal p 2)
+                          (fep-fix x p)
+                        0)
+                    ;; usual case:
+                    1)))
+  :hints (("Goal" :in-theory (e/d (inv minus1) (pow-of-+ my-fermat-little))
+           :expand (pow x (+ -1 p) p)
+           :use (:instance my-fermat-little (a (mod (ifix x) p))))))
+
+;; todo: consider enabling
+(defthmd inv-of-mul
+  (implies (and (integerp p)
+                (< 1 p))
+           (equal (inv (mul x y p) p)
+                  (mul (inv x p) (inv y p) p)))
+  :hints (("Goal" :in-theory (enable inv pow-of-mul-arg1))))

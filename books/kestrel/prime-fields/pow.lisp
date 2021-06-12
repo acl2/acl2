@@ -11,7 +11,9 @@
 (in-package "PFIELD")
 
 (include-book "mul")
+(include-book "minus1")
 (include-book "../../arithmetic-3/floor-mod/mod-expt-fast") ;just provides mod-expt-fast
+(local (include-book "../number-theory/divides"))
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/expt"))
@@ -107,3 +109,80 @@
                        (pow x (+ -1 n) p)
                        p)))
   :hints (("Goal" :in-theory (enable pow))))
+
+(defthm pow-of-mod-arg1
+  (equal (pow (mod x p) n p)
+         (pow x n p))
+  :hints (("Goal" :in-theory (enable pow))))
+
+(defthm pow-subst-when-equal-of-mod
+  (implies (and (equal (mod x p) k)
+                (syntaxp (and (quotep k)
+                              (not (quotep x)))))
+           (equal (pow x n p)
+                  (pow k n p)))
+  :hints (("Goal" :in-theory (enable pow))))
+
+(defthm pow-of-0-arg1
+  (equal (pow 0 n p)
+         (if (posp n)
+             0
+           1 ; 0^0 = 1
+           ))
+  :hints (("Goal" :in-theory (enable pow))))
+
+(defthm pow-when-not-integerp-arg1-cheap
+  (implies (not (integerp x))
+           (equal (pow x n p)
+                  (pow 0 n p)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable pow))))
+
+(defthm pow-when-not-integerp-arg2-cheap
+  (implies (not (integerp n))
+           (equal (pow x n p)
+                  1))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable pow))))
+
+;; Cherry-pick Fermat's Little Theorem
+(encapsulate ()
+  (local (include-book "../../projects/quadratic-reciprocity/fermat"))
+  (local (include-book "../../arithmetic-3/top"))
+
+  (defthm my-fermat-little
+    (implies (and (fep a p)
+                  (not (equal 0 a))
+                  (rtl::primep p))
+             (equal (pow a (minus1 p) p)
+                    1))
+    :hints (("Goal" :use ((:instance rtl::fermat
+                                     (m a)
+                                     (p p)))
+             :cases ((equal 0 a))
+             :in-theory (e/d (pow-rewrite fep minus1)
+                             (expt (:e expt)))))))
+
+(defthmd pow-of-*-arg1
+  (implies (and (posp p)
+                (integerp x)
+                (integerp y))
+           (equal (pow (* x y) n p)
+                  (if (not (posp n))
+                      1
+                    (mod (* (pow x n p)
+                            (pow y n p))
+                         p))))
+  :hints (("Goal" :in-theory (enable pow mul))))
+
+(defthmd pow-of-mul-arg1
+  (implies (posp p)
+           (equal (pow (mul x y p) n p)
+                  (if (not (posp n))
+                      1
+                    (mul (pow x n p)
+                         (pow y n p)
+                         p))))
+  :hints (("Goal" :cases ((integerp x))
+           :in-theory (enable mul
+                              pow-of-*-arg1))))

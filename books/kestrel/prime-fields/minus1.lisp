@@ -39,3 +39,8 @@
            (natp (+ -1 (minus1 p))) ;the addition here is not the field addition
            )
   :hints (("Goal" :in-theory (enable minus1))))
+
+(defthm minus1-linear
+  (= (minus1 p) (+ -1 p))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable minus1))))

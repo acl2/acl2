@@ -1,6 +1,6 @@
 ; Prime fields library
 ;
-; Copyright (C) 2019-2020 Kestrel Institute
+; Copyright (C) 2019-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,6 +10,16 @@
 
 (in-package "PFIELD")
 
+(include-book "fep")
+(include-book "fep-fix")
+(include-book "minus1")
+(include-book "add")
+(include-book "neg")
+(include-book "sub")
+(include-book "mul")
+(include-book "pow")
+(include-book "inv")
+(include-book "div")
 (include-book "prime-fields")
 ;; (include-book "prime-fields-alt") ;incompatible
 (include-book "prime-fields-rules")

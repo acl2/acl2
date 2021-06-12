@@ -119,53 +119,6 @@
                                   (y (mod (ifix y) p)))
            :in-theory (disable equal-of-0-and-mul))))
 
-;; Cherry-pick Fermat's Little Theorem
-(encapsulate ()
-  (local (include-book "../../projects/quadratic-reciprocity/fermat"))
-  (local (include-book "../../arithmetic-3/top"))
-
-  (defthm my-fermat-little
-    (implies (and (fep a p)
-                  (not (equal 0 a))
-                  (primep p))
-             (equal (pow a (minus1 p) p)
-                    1))
-    :hints (("Goal" :use ((:instance rtl::fermat
-                                     (m a)
-                                     (p p)))
-             :cases ((equal 0 a))
-             :in-theory (e/d (pow-rewrite fep minus1)
-                             (expt (:e expt)))))))
-
-(defthm pow-of-mod-arg1
-  (equal (pow (mod x p) n p)
-         (pow x n p))
-  :hints (("Goal" :in-theory (enable pow))))
-
-(defthm pow-subst-when-equal-of-mod
-  (implies (and (equal (mod x p) k)
-                (syntaxp (and (quotep k)
-                              (not (quotep x)))))
-           (equal (pow x n p)
-                  (pow k n p)))
-  :hints (("Goal" :in-theory (enable pow))))
-
-;; Coerce X to satisfy (fep x p).
-;; TODO: Disable?
-(defun fep-fix (x p)
-  (mod (ifix x) p))
-
-(defthm fep-of-fep-fix
-  (implies (posp p)
-           (fep (fep-fix x p) p))
-  :hints (("Goal" :in-theory (enable fep-fix))))
-
-(defthm fep-fix-when-fep
-  (implies (fep x p)
-           (equal (fep-fix x p)
-                  x))
-  :hints (("Goal" :in-theory (enable fep-fix))))
-
 ;was called inv-correct
 (defthm mul-of-inv-arg2
   (implies (primep p)
@@ -645,12 +598,6 @@
                                   (p p))
            :in-theory (disable mul-of-inv-mul-of-inv))))
 
-;move?
-(defthm minus1-linear
-  (= (minus1 p) (+ -1 p))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable minus1))))
-
 ;; a bit odd, but we should not usually be calling inv on 0
 (defthm inv-of-0
   (implies (primep p)
@@ -903,82 +850,6 @@
            (equal (add x p p)
                   (mod (ifix x) p)))
   :hints (("Goal" :in-theory (enable add))))
-
-;move
-(defthm pow-of-mod-arg1
-  (equal (pow (mod x p) n p)
-         (pow x n p))
-  :hints (("Goal" :in-theory (enable pow))))
-
-;move
-(local
- (defthm mod-of-*-of-mod-arg3
-   (implies (and (integerp x)
-                 (integerp y)
-                 (integerp z)
-                 (integerp p))
-            (equal (mod (* x y (mod z p)) p)
-                   (mod (* x y z) p)))
-   :hints (("Goal" :use (:instance acl2::mod-of-*-of-mod
-                                   (z p)
-                                   (x (* x y))
-                                   (y z))
-            :in-theory (disable acl2::mod-of-*-of-mod)))))
-
-(defthmd pow-of-*-arg1
-  (implies (and (posp p)
-                (integerp x)
-                (integerp y))
-           (equal (pow (* x y) n p)
-                  (if (not (posp n))
-                      1
-                    (mod (* (pow x n p)
-                            (pow y n p))
-                         p))))
-  :hints (("Goal" :in-theory (enable pow mul))))
-
-(defthm pow-of-0-arg1
-  (equal (pow 0 n p)
-         (if (posp n)
-             0
-           1 ; 0^0 = 1
-           ))
-  :hints (("Goal" :in-theory (enable pow))))
-
-(defthm pow-when-not-integerp-arg1-cheap
-  (implies (not (integerp x))
-           (equal (pow x n p)
-                  (pow 0 n p)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable pow))))
-
-(defthm pow-when-not-integerp-arg2-cheap
-  (implies (not (integerp n))
-           (equal (pow x n p)
-                  1))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable pow))))
-
-(defthmd pow-of-mul-arg1
-  (implies (posp p)
-           (equal (pow (mul x y p) n p)
-                  (if (not (posp n))
-                      1
-                    (mul (pow x n p)
-                         (pow y n p)
-                         p))))
-  :hints (("Goal" :cases ((integerp x))
-           :in-theory (enable mul
-                              pow-of-*-arg1))))
-
-
-;; todo: consider enabling
-(defthmd inv-of-mul
-  (implies (and (integerp p)
-                (< 1 p))
-           (equal (inv (mul x y p) p)
-                  (mul (inv x p) (inv y p) p)))
-  :hints (("Goal" :in-theory (enable inv POW-OF-MUL-ARG1))))
 
 (defthm equal-of-0-and-add-of-neg
   (implies (and (fep x p)
