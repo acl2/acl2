@@ -1214,6 +1214,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection montogomery-zero-identity
+  :short "Left and right identity properties of the neutral point."
+
+  (defrulel mod-of-small
+    (implies (and (natp x)
+                  (< x p))
+             (equal (mod x p) x))
+    :prep-books ((include-book "kestrel/arithmetic-light/mod" :dir :system)))
+
+  (defrule twisted-edwards-add-of-twisted-edwards-zero-left
+    (implies (point-on-twisted-edwards-p point curve)
+             (equal (twisted-edwards-add (twisted-edwards-zero) point curve)
+                    (point-fix point)))
+    :enable (twisted-edwards-add
+             twisted-edwards-zero
+             point-on-twisted-edwards-p))
+
+  (defrule twisted-edwards-add-of-twisted-edwards-zero-right
+    (implies (point-on-twisted-edwards-p point curve)
+             (equal (twisted-edwards-add point (twisted-edwards-zero) curve)
+                    (point-fix point)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define twisted-edwards-neg ((point pointp) (curve twisted-edwards-curvep))
   :guard (and (twisted-edwards-curve-completep curve)
               (point-on-twisted-edwards-p point curve))
