@@ -671,7 +671,64 @@
   ;; into fewer or even just one reformulation of the gamma theorems.
   ;; However, the current proof, with the explanations, is probably clearer.
 
-  )
+  ;; We prove below two theorems saying that
+  ;; the denominators of the addition formulas are not 0.
+
+  (defrule 1+d.x1.x2.y1.y2-not-0
+    (implies (and (twisted-edwards-curve-completep curve)
+                  (point-on-twisted-edwards-p point1 curve)
+                  (point-on-twisted-edwards-p point2 curve))
+             (b* (((twisted-edwards-curve curve) curve)
+                  (x1 (point-finite->x point1))
+                  (y1 (point-finite->y point1))
+                  (x2 (point-finite->x point2))
+                  (y2 (point-finite->y point2)))
+               (not (equal (add 1
+                                (mul curve.d
+                                     (mul x1
+                                          (mul x2
+                                               (mul y1
+                                                    y2
+                                                    curve.p)
+                                               curve.p)
+                                          curve.p)
+                                     curve.p)
+                                curve.p)
+                           0))))
+    :use d.x1.x2.y1.y2-not-minus-one-on-curve-and-points
+    :prep-books
+    ((include-book "kestrel/prime-fields/bind-free-rules" :dir :system))
+    :prep-lemmas
+    ((defrule lemma
+       (implies (rtl::primep p)
+                (equal (mod -1 p)
+                       (- p 1)))
+       :prep-books ((include-book "arithmetic-3/top" :dir :system)))))
+
+  (defrule 1-d.x1.x2.y1.y2-not-0
+    (implies (and (twisted-edwards-curve-completep curve)
+                  (point-on-twisted-edwards-p point1 curve)
+                  (point-on-twisted-edwards-p point2 curve))
+             (b* (((twisted-edwards-curve curve) curve)
+                  (x1 (point-finite->x point1))
+                  (y1 (point-finite->y point1))
+                  (x2 (point-finite->x point2))
+                  (y2 (point-finite->y point2)))
+               (not (equal (sub 1
+                                (mul curve.d
+                                     (mul x1
+                                          (mul x2
+                                               (mul y1
+                                                    y2
+                                                    curve.p)
+                                               curve.p)
+                                          curve.p)
+                                     curve.p)
+                                curve.p)
+                           0))))
+    :use d.x1.x2.y1.y2-not-one-on-curve-and-points
+    :prep-books
+    ((include-book "kestrel/prime-fields/bind-free-rules" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
