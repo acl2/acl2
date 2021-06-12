@@ -1269,7 +1269,24 @@
           (x (point-finite->x point))
           (p (twisted-edwards-curve->p curve)))
     :prep-books
-    ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))))
+    ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+
+  (defrule twisted-edwards-neg-of-zero
+    (equal (twisted-edwards-neg (twisted-edwards-zero) curve)
+           (twisted-edwards-zero))
+    :enable twisted-edwards-zero)
+
+  (defrulel mod-of-small
+    (implies (and (natp x)
+                  (< x p))
+             (equal (mod x p) x))
+    :prep-books ((include-book "kestrel/arithmetic-light/mod" :dir :system)))
+
+  (defrule twisted-edwards-neg-of-neg
+    (implies (point-on-twisted-edwards-p point curve)
+             (equal (twisted-edwards-neg (twisted-edwards-neg point curve) curve)
+                    (point-fix point)))
+    :enable point-on-twisted-edwards-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
