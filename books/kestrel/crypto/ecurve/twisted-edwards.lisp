@@ -565,8 +565,7 @@
   ;; We also eliminate the use of oncurvep.
 
   (defruled d.x1.x2.y1.y2-not-one-on-curve-and-points
-    (implies (and (twisted-edwards-curvep curve)
-                  (twisted-edwards-curve-completep curve)
+    (implies (and (twisted-edwards-curve-completep curve)
                   (point-on-twisted-edwards-p point1 curve)
                   (point-on-twisted-edwards-p point2 curve))
              (b* (((twisted-edwards-curve curve) curve)
@@ -596,8 +595,7 @@
              fep))
 
   (defruled d.x1.x2.y1.y2-not-minus-one-on-curve-and-points
-    (implies (and (twisted-edwards-curvep curve)
-                  (twisted-edwards-curve-completep curve)
+    (implies (and (twisted-edwards-curve-completep curve)
                   (point-on-twisted-edwards-p point1 curve)
                   (point-on-twisted-edwards-p point2 curve))
              (b* (((twisted-edwards-curve curve) curve)
@@ -721,8 +719,7 @@
                        (equal ax^2+y^2 1+dx^2.y^2)))))))))
 
   (defruledl point-on-twisted-edwards-p-equivalence
-    (implies (and (pointp point)
-                  (twisted-edwards-curvep curve))
+    (implies (pointp point)
              (equal (point-on-twisted-edwards-p point curve)
                     (point-on-curve-p point
                                       (twisted-edwards-curve->p curve)
@@ -756,8 +753,7 @@
     (implies (and (pointp point1)
                   (pointp point2)
                   (point-on-twisted-edwards-p point1 curve)
-                  (point-on-twisted-edwards-p point2 curve)
-                  (twisted-edwards-curvep curve))
+                  (point-on-twisted-edwards-p point2 curve))
              (equal (twisted-edwards-add point1 point2 curve)
                     (curve-add point1
                                point2
@@ -1041,8 +1037,7 @@
   ;; instead of their components.
 
   (defruledl closure-on-curve
-    (implies (and (twisted-edwards-curvep curve)
-                  (twisted-edwards-curve-completep curve)
+    (implies (and (twisted-edwards-curve-completep curve)
                   (pointp pt1)
                   (pointp pt2)
                   (point-on-twisted-edwards-p pt1 curve)
@@ -1074,8 +1069,7 @@
   ;; leveraging their equivalence to the old definitions.
 
   (defruledl point-on-twisted-edwards-p-of-twisted-edward-add
-    (implies (and (twisted-edwards-curvep curve)
-                  (twisted-edwards-curve-completep curve)
+    (implies (and (twisted-edwards-curve-completep curve)
                   (pointp point1)
                   (pointp point2)
                   (point-on-twisted-edwards-p point1 curve)
@@ -1093,8 +1087,7 @@
   ;; Exported theorem, without hints.
 
   (defrule point-on-twisted-edwards-p-of-twisted-edward-add
-    (implies (and (twisted-edwards-curvep curve)
-                  (twisted-edwards-curve-completep curve)
+    (implies (and (twisted-edwards-curve-completep curve)
                   (pointp point1)
                   (pointp point2)
                   (point-on-twisted-edwards-p point1 curve)
@@ -1259,8 +1252,7 @@
   ///
 
   (defrule point-on-twisted-edwards-p-of-twisted-edwards-neg
-    (implies (and (twisted-edwards-curvep curve)
-                  (twisted-edwards-curve-completep curve)
+    (implies (and (twisted-edwards-curve-completep curve)
                   (point-on-twisted-edwards-p point curve))
              (point-on-twisted-edwards-p (twisted-edwards-neg point curve)
                                          curve))
@@ -1312,8 +1304,7 @@
   ///
 
   (defrule point-on-twisted-edwards-p-of-twisted-edwards-sub
-    (implies (and (twisted-edwards-curvep curve)
-                  (twisted-edwards-curve-completep curve)
+    (implies (and (twisted-edwards-curve-completep curve)
                   (pointp point1)
                   (pointp point2)
                   (point-on-twisted-edwards-p point1 curve)
@@ -1374,8 +1365,7 @@
      :verify-guards nil ; done below
      ///
      (defrule point-on-twisted-edwards-p-of-twisted-edwards-mul-nonneg
-       (implies (and (twisted-edwards-curvep curve)
-                     (twisted-edwards-curve-completep curve)
+       (implies (and (twisted-edwards-curve-completep curve)
                      (pointp point)
                      (point-on-twisted-edwards-p point curve))
                 (point-on-twisted-edwards-p (twisted-edwards-mul-nonneg scalar
@@ -1387,8 +1377,7 @@
   ///
 
   (defrule point-on-twisted-edwards-p-of-twisted-edwards-mul
-    (implies (and (twisted-edwards-curvep curve)
-                  (twisted-edwards-curve-completep curve)
+    (implies (and (twisted-edwards-curve-completep curve)
                   (pointp point)
                   (point-on-twisted-edwards-p point curve))
              (point-on-twisted-edwards-p (twisted-edwards-mul scalar
