@@ -18,7 +18,9 @@
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
 (include-book "all-dargp-less-than")
 
- ;pairs of the form (<nodenum> . <nodenum-or-quotep>)
+;; A node-replacement-alist maps nodenums to things (nodenums or quoteps) to
+;; which they are known to be equal.  The mapping is represented by a list of
+;; pairs of the form (<nodenum> . <nodenum-or-quotep>).
 (defund node-replacement-alistp (pairs dag-len)
   (declare (xargs :guard (natp dag-len)))
   (and (alistp pairs)

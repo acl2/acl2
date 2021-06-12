@@ -120,3 +120,9 @@
   (equal (mul x (mod y p) p)
          (mul x y p))
   :hints (("Goal" :in-theory (enable mul))))
+
+(defthm <-of-mul
+  (implies (and (< 0 p)
+                (integerp p))
+           (< (mul x y p) p))
+  :hints (("Goal" :in-theory (enable mul))))
