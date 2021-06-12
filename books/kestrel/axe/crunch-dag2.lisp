@@ -16,6 +16,9 @@
 ;; a list and then re-creates the array.  That should ensure that no extra
 ;; nodes (e.g., beyond the relevant portion of the dag) remain in the array.
 
+;; TODO: Consider making a version that crunches the dag in place, in the same
+;; array, perhaps also updating the three auxiliary data structures.
+
 ;; rename file to crunch-dag-array2
 
 (include-book "supporting-nodes")
@@ -205,9 +208,10 @@
             (not (< len (+ 1 (maxelem nodes)))))
    :hints (("Goal" :in-theory (enable maxelem all-<)))))
 
-;; Returns (mv dag-array dag-len renamed-nodenums).  Can change all the node
-;; numbers in the DAG, but the RENAMED-NODENUMS returned gives the new numbers
-;; of the NODENUMS.
+;; Extracts from DAG-ARRAY a dag (as a list) containing only the NODENUMS and
+;; the nodes that support them.  Returns (mv dag-array dag-len renamed-nodenums).
+;; Since nodes will in general be renumbered, this returns
+;; renamed-nodenums, which gives the new numbers of the NODENUMS.
 (defund crunch-dag-array2 (dag-array-name dag-array dag-len nodenums)
   (declare (xargs :guard (and (true-listp nodenums)
                               (all-natp nodenums)
@@ -328,7 +332,11 @@
                                                          dag-array dag-len nodenums))))
   :hints (("Goal" :in-theory (enable crunch-dag-array2))))
 
-;; Returns (mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
+;; Crunch DAG-ARRAY to contain only the NODENUMS and the nodes that support
+;; them.  Since nodes will in general be renumbered, this returns
+;; renamed-nodenums, which gives the new numbers of the NODENUMS.
+;; Returns (mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renamed-nodenums).
+;; TODO: Could we optimize this to make the indices as we crunch?
 (defund crunch-dag-array2-with-indices (dag-array-name dag-array dag-len dag-parent-array-name nodenums)
   (declare (xargs :guard (and (true-listp nodenums)
                               (all-natp nodenums)
