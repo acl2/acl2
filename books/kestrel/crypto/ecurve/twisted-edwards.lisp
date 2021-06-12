@@ -1341,6 +1341,98 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection twisted-edwards-neg-inverse
+  :short "Property that negation is left and right inverse for addition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The proof is very simple on paper,
+     looking at the formula for addition:
+     the abscissa is @($(xy-yx)/\\ldots$), i.e. 0;
+     the ordinate is @($(yy+axx)/(1-dxxyy)$),
+     but @($yy+axx = 1+dxxyy$) because the point is on the curve,
+     and thus the ordinate is 1,
+     since the denominators are known to be non-0 in the addition formula.")
+   (xdoc::p
+    "The prime field rules get the part about the abscissa,
+     since it follows a simplifying rewriting pattern.
+     For the ordinate, enabling @(tsee div) makese things worse,
+     splitting the fraction into two
+     (i.e. the direction of the rules is not appropriate
+     for this part of the proof).
+     Leaving @(tsee div) disabled prevents that,
+     and the hypothesis that the point is on the curve
+     turns the numerator into more or less the same term as the denominator.
+     We use the rule @('div-of-same') to simplify that to 1,
+     but that rule requires the common term to be non-0.
+     We instantiate the general theorem about the denominator being non-0
+     to prove that the specific term is not 0.
+     Because of the term reordering done by the rules,
+     the general theorem about the denominator does not readily apply here;
+     but we need those rules to prove the abscissa to be 0,
+     so this is another case in which different part of the same proof
+     need different rules, necessitating some user guidance.")
+   (xdoc::p
+    "Once we prove the left inverse theorem,
+     the right inverse theorem follows by commutativity,
+     but we need a @(':use') hint because
+     commutativity rewrites in the other direction."))
+
+  (defrule twisted-edwards-add-of-neg-left
+    (implies (and (twisted-edwards-curve-completep curve)
+                  (point-on-twisted-edwards-p point curve))
+             (equal (twisted-edwards-add (twisted-edwards-neg point curve)
+                                         point
+                                         curve)
+                    (twisted-edwards-zero)))
+    :use 1+x.x.y.y.d-not-0
+    :enable (point-on-twisted-edwards-p
+             twisted-edwards-add
+             twisted-edwards-neg
+             twisted-edwards-zero)
+    :prep-books
+    ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
+     (include-book "prime-field-extra-rules"))
+    :prep-lemmas
+    ((defruled 1+x.x.y.y.d-not-0
+       (implies (and (twisted-edwards-curve-completep curve)
+                     (point-on-twisted-edwards-p point curve))
+                (b* (((twisted-edwards-curve curve) curve)
+                     (x (point-finite->x point))
+                     (y (point-finite->y point)))
+                  (not (equal (add 1
+                                   (mul x
+                                        (mul x
+                                             (mul y
+                                                  (mul y
+                                                       curve.d
+                                                       curve.p)
+                                                  curve.p)
+                                             curve.p)
+                                        curve.p)
+                                   curve.p)
+                              0))))
+       :use ((:instance 1-d.x1.x2.y1.y2-not-0
+              (point1 point)
+              (point2 (twisted-edwards-neg point curve)))
+             (:instance point-on-twisted-edwards-p-of-twisted-edwards-neg))
+       :enable twisted-edwards-neg
+       :disable point-on-twisted-edwards-p-of-twisted-edwards-neg
+       :prep-books
+       ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))))
+
+  (defrule twisted-edwards-add-of-neg-right
+    (implies (and (twisted-edwards-curve-completep curve)
+                  (point-on-twisted-edwards-p point curve))
+             (equal (twisted-edwards-add point
+                                         (twisted-edwards-neg point curve)
+                                         curve)
+                    (twisted-edwards-zero)))
+    :use twisted-edwards-add-of-neg-left
+    :disable twisted-edwards-add-of-neg-left))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define twisted-edwards-sub ((point1 pointp)
                              (point2 pointp)
                              (curve twisted-edwards-curvep))
