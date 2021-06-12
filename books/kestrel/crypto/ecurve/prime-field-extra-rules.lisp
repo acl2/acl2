@@ -303,3 +303,12 @@
                        b
                        p)))
   :enable div)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule div-of-same
+  (implies (and (rtl::primep p)
+                (fep x p)
+                (not (equal x 0)))
+           (equal (div x x p) 1))
+  :enable div)
