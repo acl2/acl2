@@ -44,3 +44,11 @@
                 (integerp p))
            (< (div x y p) p))
   :hints (("Goal" :in-theory (enable div))))
+
+(defthm div-same
+  (implies (rtl::primep p)
+           (equal (div x x p)
+                  (if (equal 0 (fep-fix x p))
+                      0
+                    1)))
+  :hints (("Goal" :in-theory (e/d (div) (RTL::PRIMEP)))))
