@@ -1356,11 +1356,11 @@
    (xdoc::p
     "The prime field rules get the part about the abscissa,
      since it follows a simplifying rewriting pattern.
-     For the ordinate, enabling @(tsee div) makese things worse,
+     For the ordinate, enabling @('div') makese things worse,
      splitting the fraction into two
      (i.e. the direction of the rules is not appropriate
      for this part of the proof).
-     Leaving @(tsee div) disabled prevents that,
+     Leaving @('div') disabled prevents that,
      and the hypothesis that the point is on the curve
      turns the numerator into more or less the same term as the denominator.
      We use the rule @('div-of-same') to simplify that to 1,
