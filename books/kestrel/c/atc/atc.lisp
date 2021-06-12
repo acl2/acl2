@@ -2050,7 +2050,7 @@
                                 :else (make-stmt-compound :items else-items))))
             type
             limit))))
-       ((mv okp & vars & val body) (acl2::check-mv-let-call term))
+       ((mv okp & vars & & val body) (acl2::check-mv-let-call term))
        ((when okp)
         (b* (((unless (> (len vars) 1))
               (mv (raise "Internal error: MV-LET ~x0 has less than 2 variables."
@@ -2304,7 +2304,7 @@
               :test test-expr
               :then (make-stmt-compound :items then-items)
               :else (make-stmt-compound :items else-items)))))))
-       ((mv okp & vars & val body) (acl2::check-mv-let-call term))
+       ((mv okp & vars & & val body) (acl2::check-mv-let-call term))
        ((when okp)
         (b* (((unless (> (len vars) 1))
               (mv (raise "Internal error: MV-LET ~x0 has less than 2 variables."
