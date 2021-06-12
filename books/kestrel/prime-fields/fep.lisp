@@ -80,3 +80,13 @@
 (defthmd rationalp-when-fep
   (implies (fep x p)
            (rationalp x)))
+
+;; Keep disabled by default, even though the free var makes it pretty cheap
+(defthmd integerp-when-fep
+  (implies (fep x p)
+           (integerp x)))
+
+;; Keep disabled by default, even though the free var makes it pretty cheap
+(defthmd natp-when-fep
+  (implies (fep x p)
+           (natp x)))
