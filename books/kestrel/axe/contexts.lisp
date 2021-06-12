@@ -933,8 +933,8 @@
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                               (context-arrayp 'context-array context-array dag-len)
-                              (equal (alen1 'dag-parent-array dag-parent-array)
-                                     dag-len)
+                              ;; not necesarly equal:
+                              (<= dag-len (alen1 'dag-parent-array dag-parent-array))
                               (bounded-dag-parent-entriesp (+ -1 dag-len) 'dag-parent-array dag-parent-array dag-len)
                               (< nodenum dag-len))
                   :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 DAG-PARENT-ARRAYP) (PSEUDO-DAG-ARRAYP))))
@@ -956,15 +956,18 @@
            (equal (alen1 'context-array (make-full-context-array-aux nodenum dag-array-name dag-array dag-len dag-parent-array context-array))
                   (alen1 'context-array context-array))))
 
-;new version! deprecate the old way of doing things (already done?)?
 ;returns 'context-array, which associates nodenums with their contextps
-;smashes 'dag-parent-array
-(defun make-full-context-array (dag-array-name dag-array dag-len)
+;; Use make-full-context-array instead if you don't already have the parent array.
+(defun make-full-context-array-with-parents (dag-array-name dag-array dag-len dag-parent-array)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (posp dag-len)
-                              (<= dag-len 2147483646))))
-  (let* ((dag-parent-array (make-dag-parent-array-with-name dag-len dag-array-name dag-array 'dag-parent-array))
-         (context-array (make-empty-array 'context-array dag-len))
+                              (<= dag-len 2147483646)
+                              (dag-parent-arrayp 'dag-parent-array dag-parent-array)
+                              ;; not necesarly equal:
+                              (<= dag-len (alen1 'dag-parent-array dag-parent-array))
+                              (bounded-dag-parent-entriesp (+ -1 dag-len) 'dag-parent-array dag-parent-array dag-len))
+                  :guard-hints (("Goal" :in-theory (enable dag-parent-arrayp)))))
+  (let* ((context-array (make-empty-array 'context-array dag-len))
          (top-nodenum (+ -1 dag-len))
          (context-array (aset1 'context-array context-array top-nodenum (true-context))) ;top node has no context
          (context-array (make-full-context-array-aux (+ -1 top-nodenum) ; skip the top node
@@ -974,6 +977,22 @@
                                                      dag-parent-array
                                                      context-array)))
     context-array))
+
+;new version! deprecate the old way of doing things (already done?)?
+;returns 'context-array, which associates nodenums with their contextps
+;smashes 'dag-parent-array
+;; Use make-full-context-array-with-parents instead if you already have the parent array.
+(defun make-full-context-array (dag-array-name dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (posp dag-len)
+                              (<= dag-len 2147483646))))
+  (make-full-context-array-with-parents dag-array-name
+                                        dag-array
+                                        dag-len
+                                        (make-dag-parent-array-with-name dag-len ; somewhat unusual not to use (alen1 dag-array-name dag-array) here, but this array doesn't need to grow after creation
+                                                                         dag-array-name
+                                                                         dag-array
+                                                                         'dag-parent-array)))
 
 ;returns t, nil, or :unknown, depending on whether the context tells us anything about nodenum (fixme what if nodenum is the nodenum of a booland, a not, etc.?)
 ;fixme what if the context is (false-context)?
