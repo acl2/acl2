@@ -765,3 +765,16 @@
                   (/ (mod (* y2 x) y1)
                      y2)))
   :hints (("Goal" :in-theory (enable mod-cancel))))
+
+(defthm mod-of-*-of-mod-arg3
+   (implies (and (integerp x)
+                 (integerp y)
+                 (integerp z)
+                 (integerp p))
+            (equal (mod (* x y (mod z p)) p)
+                   (mod (* x y z) p)))
+   :hints (("Goal" :use (:instance acl2::mod-of-*-of-mod
+                                   (z p)
+                                   (x (* x y))
+                                   (y z))
+            :in-theory (disable acl2::mod-of-*-of-mod))))
