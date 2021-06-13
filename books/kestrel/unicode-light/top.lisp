@@ -12,5 +12,6 @@
 
 (include-book "hex-digit-chars-to-code-point")
 (include-book "code-point-to-utf-8-chars")
+(include-book "surrogates")
 
 (include-book "compare")
