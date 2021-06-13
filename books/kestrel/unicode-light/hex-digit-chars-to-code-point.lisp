@@ -25,10 +25,10 @@
 ;; range U+0000 through U+FFFF (the basic multilingual plane).
 ;; Returns (mv erp code-point) where code-point is a natural number.
 (defund hex-digit-chars-to-code-point (char1 ;most significant
-                                          char2
-                                          char3
-                                          char4 ;least significant
-                                          )
+                                       char2
+                                       char3
+                                       char4 ;least significant
+                                       )
   (declare (xargs :guard (and (characterp char1)
                               (characterp char2)
                               (characterp char3)

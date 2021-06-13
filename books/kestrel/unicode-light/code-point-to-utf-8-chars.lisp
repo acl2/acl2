@@ -19,9 +19,7 @@
 ;; Returns a list of chars that encodes the CODE-POINT in UTF-8.
 ;; We could first convert to a list of bytes and then to a list of chars, at the cost of more consing.
 (defund code-point-to-utf-8-chars (code-point)
-  (declare (type (integer 0 #x10FFFF) code-point)
-           (xargs :guard-hints (("Goal" :in-theory (enable ))))
-           )
+  (declare (type (integer 0 #x10FFFF) code-point))
   (cond ((<= code-point #x007F) ; 7 bits of data
          (list (code-char code-point) ; 0xxxxxxx (no masking needed)
                ))
