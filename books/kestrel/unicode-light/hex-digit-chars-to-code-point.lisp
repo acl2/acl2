@@ -24,6 +24,8 @@
 ;; Convert 4 chars representing hex digits into a Unicode code point in the
 ;; range U+0000 through U+FFFF (the basic multilingual plane).
 ;; Returns (mv erp code-point) where code-point is a natural number.
+;; Note that the resulting code point may be a surrogate (in the range U+D800 to
+;; U+DFFF) and so not actually be a legal character.
 (defund hex-digit-chars-to-code-point (char1 ;most significant
                                        char2
                                        char3
