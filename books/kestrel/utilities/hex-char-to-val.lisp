@@ -1,4 +1,4 @@
-; Tools to convert hex chars and to values
+; A tool to convert hex digit chars to values
 ;
 ; Copyright (C) 2021 Kestrel Institute
 ;
