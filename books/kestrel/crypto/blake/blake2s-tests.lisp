@@ -18,8 +18,6 @@
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/testing/assert-bang-stobj" :dir :system)
 
-(in-theory (disable ACL2::REVAPPEND-REMOVAL)) ;todo: bad.  comes in via file-io
-
 ;; Returns result where result is :pass, :fail, or :error
 (defund run-parsed-blake2s-test (test)
   (declare (xargs :guard t))
