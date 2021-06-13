@@ -308,3 +308,29 @@
            :in-theory (e/d (logand zip)
                            (lognot-of-logand
                             mod-sum-cases)))))
+
+(defthm <-of-logior-and-expt-of-2
+  (implies (and (< i (expt 2 n))
+                (natp i)
+                (< j (expt 2 n))
+                (natp j)
+                (natp n))
+           (< (logior i j) (expt 2 n)))
+  :hints (("Goal" :use (:instance logand-lower-bound-negative
+                                  (i (+ -1 (- I)))
+                                  (j (+ -1 (- j)))
+                                  (n n))
+           :in-theory (e/d (logior lognot)
+                           (logand-lower-bound-negative
+                            LOGAND-LOWER-BOUND-NEGATIVE-2
+                            LOGAND-LOWER-BOUND-NEGATIVE-2-ALT)))))
+
+;; special case
+(defthm <-of-logior-and-256
+  (implies (and (< i 256)
+                (natp i)
+                (< j 256)
+                (natp j))
+           (< (logior i j) 256))
+  :hints (("Goal" :use (:instance  <-of-logior-and-expt-of-2 (n 8))
+           :in-theory (disable  <-of-logior-and-expt-of-2))))
