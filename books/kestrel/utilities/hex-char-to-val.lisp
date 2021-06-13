@@ -37,3 +37,8 @@
   (< (mv-nth 1 (hex-char-to-val char)) 16)
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable hex-char-to-val))))
+
+(defthmd <-16-of-mv-nth-1-of-hex-char-to-val-forward
+  (< (mv-nth 1 (hex-char-to-val char)) 16)
+  :rule-classes ((:forward-chaining :trigger-terms ((hex-char-to-val char))))
+  :hints (("Goal" :in-theory (enable hex-char-to-val))))
