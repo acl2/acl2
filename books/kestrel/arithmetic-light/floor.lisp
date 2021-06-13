@@ -1308,3 +1308,20 @@
                                <-OF-*-OF-/-ARG1-ARG2
                                <-OF-*-OF-/-ARG1
                                helper1))))
+
+(defthm floor-bound-strict-linear
+  (implies (and (< 1 j)
+                (< 0 i) ;i can't be 0
+                (rationalp i)
+                (rationalp j))
+           (< (floor i j) i))
+  :rule-classes (:linear))
+
+;strengthen?
+(defthm floor-bound-strict
+  (implies (and (< 1 j)
+                (<= 0 i)
+                (rationalp i)
+                (rationalp j))
+           (equal (< (floor i j) i)
+                  (not (equal i 0)))))
