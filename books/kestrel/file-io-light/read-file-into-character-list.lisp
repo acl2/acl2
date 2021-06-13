@@ -13,13 +13,17 @@
 (local (in-theory (disable read-file-into-string2)))
 
 ;; Returns a character list, or nil if the file does not exist.
-(defun read-file-into-character-list-fn (filename state)
+(defund read-file-into-character-list-fn (filename state)
   (declare (xargs :guard (stringp filename)
                   :stobjs state))
   (let ((string (read-file-into-string filename)))
     (if (not string)
         nil
       (coerce string 'list))))
+
+(defthm character-listp-of-read-file-into-character-list-fn
+  (character-listp (read-file-into-character-list-fn filename state))
+  :hints (("Goal" :in-theory (enable read-file-into-character-list-fn))))
 
 ;; Returns a character list, or nil if the file does not exist.
 ;; May be faster than read-file-characters from std/io.
