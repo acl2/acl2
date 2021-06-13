@@ -85,6 +85,6 @@
                     t)))
   :hints (("Goal" :in-theory (enable bvdiv bvlt UNSIGNED-BYTE-P)
            :use (:instance <-OF-FLOOR-OF-CONSTANT-AND-CONSTANT-GEN
-                           (x (BVCHOP size X))
+                           (i (BVCHOP size X))
                            (k k2)
                            (k1 k1)))))
