@@ -24,6 +24,16 @@
 (local (include-book "../../meta/meta-plus-lessp"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
+;move
+(defthm <-of-numerator-and-denominator-same
+  (implies (rationalp x)
+           (equal (< (numerator x) (denominator x))
+                  (if (<= x 0)
+                      t
+                    (< x 1))))
+  :hints (("Goal" :use (:instance rational-implies2)
+           :in-theory (disable rational-implies2))))
+
 (in-theory (disable floor))
 
 (defthm floor-of-0-arg1
@@ -167,14 +177,6 @@
   :rule-classes (:linear)
   :hints (("Goal" :in-theory (enable floor))))
 
-(defthm floor-upper-bound-strong-linear
-  (implies (and (not (integerp (* (/ j) i)))
-                (rationalp i)
-                (rationalp j))
-           (< (floor i j) (* (/ j) i)))
-  :rule-classes ((:linear :backchain-limit-lst (0 nil nil)))
-  :hints (("Goal" :in-theory (disable <-OF-*-OF-/-ARG2))))
-
 ;; In this version, we have multiplied through by j.
 (defthmd my-floor-upper-bound-alt
   (implies (and (rationalp i)
@@ -189,6 +191,20 @@
                                    (y j)))
            :in-theory (disable my-floor-upper-bound
                                <-of-*-and-*-cancel))))
+
+(defthm floor-upper-bound-strict
+  (implies (and (not (integerp (/ i j)))
+                (rationalp i)
+                (rationalp j))
+           (< (floor i j) (/ i j))))
+
+(defthm floor-upper-bound-strong-linear
+  (implies (and (not (integerp (* (/ j) i)))
+                (rationalp i)
+                (rationalp j))
+           (< (floor i j) (* (/ j) i)))
+  :rule-classes ((:linear :backchain-limit-lst (0 nil nil)))
+  :hints (("Goal" :in-theory (disable <-OF-*-OF-/-ARG2))))
 
 ;; generalizing this is hard since even if j is not rational, the quotient may be.
 (defthm floor-when-not-rationalp-arg1
@@ -324,16 +340,6 @@
                   (and (< i j)
                        (<= 0 i))))
   :hints (("Goal" :in-theory (enable floor))))
-
-;move
-(defthm <-of-numerator-and-denominator-same
-  (implies (rationalp x)
-           (equal (< (numerator x) (denominator x))
-                  (if (<= x 0)
-                      t
-                    (< x 1))))
-  :hints (("Goal" :use (:instance rational-implies2)
-           :in-theory (disable rational-implies2))))
 
 ;drop the non-gen one?
 (defthm equal-of-0-and-floor-gen
@@ -552,12 +558,6 @@
          (floor a 2))
   :hints (("Goal" :in-theory (enable floor))))
 
-(defthm floor-upper-bound-strict
-  (implies (and (not (integerp (/ i j)))
-                (rationalp i)
-                (rationalp j))
-           (< (floor i j) (/ i j))))
-
 ;gen!
 (defthm equal-of-floor-same
   (implies (and (integerp j) ;(rationalp j);
@@ -724,14 +724,17 @@
            :in-theory (disable <-*-left-cancel))))
 
 (defthmd floor-bound-lemma-2
-  (implies (and (< (floor x j) (+ 1 k))
-                (rationalp x)
+  (implies (and (< (floor i j) (+ 1 k))
+                (rationalp i)
                 (rationalp j)
                 (< 0 j)
-                (integerp k))
-           (< x (+ j (* j k))))
-  :hints (("Goal" :use ((:instance my-floor-lower-bound-alt (i x))
-                        (:instance <-*-left-cancel (x k) (y (floor x j)) (z j)))
+                (integerp k) ; gen to (rationalp k)?
+                )
+           ;; says that k+1 is greater than the quotient
+           (< i (+ j (* j k))))
+  :hints (("Goal" :cases ((integerp k))
+           :use ((:instance my-floor-lower-bound-alt (i i))
+                        (:instance <-*-left-cancel (x k) (y (floor i j)) (z j)))
            :do-not '(generalize eliminate-destructors)
            :in-theory (disable <-*-left-cancel
                                *-preserves->=-for-nonnegatives
@@ -744,9 +747,12 @@
                 (integerp k) ;gen?
                 )
            (equal (< k (floor i j))
-                  (<= (* j (+ 1 k)) i)))
+                  (if (integerp k)
+                      (<= (* j (+ 1 k)) i) ; the quotient is at least k+1
+                    (<= (+ 1 (floor k 1)) (/ i j)))
+                    ))
   :hints (("Goal":use ((:instance floor-bound-lemma-1 (x i))
-                       (:instance floor-bound-lemma-2 (x i))))))
+                       (:instance floor-bound-lemma-2)))))
 
 ;ffixme other way?
 ;kill the version for 4
@@ -768,53 +774,84 @@
                   (<= y x))))
 
 (defthmd bound-from-floor-bound
-  (implies (and (<= m (floor x n))
-                (< 0 n)
-                (rationalp x)
-                (rationalp m)
-                (rationalp n))
-           (<= (* m n) x))
+  (implies (and (<= k (floor i j))
+                (< 0 j)
+                (rationalp i)
+                (rationalp k)
+                (rationalp j))
+           (<= (* k j) i))
   :hints (("Goal" :in-theory (disable my-floor-upper-bound
                                       <-*-left-cancel)
-           :use ((:instance <-*-left-cancel (x (floor x n)) (y  m) (z n))
-                 (:instance my-floor-upper-bound (i x) (j n))))))
+           :use ((:instance <-*-left-cancel (x (floor i j)) (y m) (z j))
+                 (:instance my-floor-upper-bound)))))
 
 (defthmd bound-from-floor-bound-back
-  (implies (and (<= (* m n) x)
-                (< 0 n)
-                (rationalp x)
-                (integerp m)
-                (integerp n))
-           (<= m (floor x n)))
+  (implies (and (<= (* k j) i)
+                (< 0 j)
+                (rationalp i)
+                (integerp k) ;gen?
+                (integerp j))
+           (<= k (floor i j)))
   :hints  (("Goal" :in-theory (disable ;floor-bound-lemma2
                                        my-floor-lower-bound-alt
                                        <-*-left-cancel)
             :use (;(:instance <-*-left-cancel (x  (floor x n)) (y  m) (z n))
 ;                  (:instance floor-lower-bound (y n))
-                  (:instance floor-weak-monotone (j n) (i1 (* m n)) (i2 x))
+                  (:instance floor-weak-monotone (i1 (* k j)) (i2 i))
                   ))))
 
+;do we want this?
+;; (defthmd bound-from-floor-bound-back-gen
+;;   (implies (and (<= (* (floor k 1) j) i)
+;;                 (< 0 j)
+;;                 (rationalp i)
+;;                 (rationalp k) ; not this
+;;                 (integerp j))
+;;            (<= (floor k 1) (floor i j)))
+;;   :hints (("Goal" :use (:instance bound-from-floor-bound-back
+;;                                   (k (floor k 1)))
+;;            :in-theory (disable bound-from-floor-bound-back))))
+
 (defthmd <-of-floor-arg1
-  (implies (and (< 0 n)
-                (rationalp x)
-                (integerp m) ;gen?
-                (integerp n))
-           (equal (< (floor x n) m)
-                  (< x (* m n))))
-  :hints (("Goal" :use ((:instance bound-from-floor-bound)
+  (implies (and (< 0 j)
+                (rationalp i)
+                (integerp k) ;gen?
+                (integerp j))
+           (equal (< (floor i j) k)
+                  (< i (* k j))))
+  :hints (("Goal" :use (bound-from-floor-bound
                         bound-from-floor-bound-back))))
 
+(defthmd <-of-floor-arg1-gen
+  (implies (and (< 0 j)
+                (rationalp i)
+                (rationalp k)
+                (integerp j) ;gen?
+                )
+           (equal (< (floor i j) k)
+                  (if (integerp k)
+                      ;; check whether k is bigger than the quotient:
+                      (< i (* k j))
+                    ;; round k up to an integer, and check whether that is
+                    ;; bigger than the quotient:
+                    (< (/ i j) (+ 1 (floor k 1))))))
+  :hints (("Goal" :use ((:instance <-of-floor-arg1)
+                        (:instance <-of-floor-arg1 (k (floor k 1))))
+           :cases ((equal (floor k 1) (floor i j))))))
+
 (defthmd <-of-floor-and-constant
-  (implies (and (syntaxp (and (quotep m)
-                              (quotep n)))
-                (< 0 n)
-                (rationalp x)
-                (integerp m)
-                (integerp n))
-           (equal (< (floor x n) m)
-                  (< x (* m n))))
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep j)))
+                (< 0 j)
+                (rationalp i)
+                (integerp k)
+                (integerp j))
+           (equal (< (floor i j) k)
+                  (< i (* k j))))
   :hints (("Goal" :use (:instance <-of-floor-arg1)
            :in-theory (disable <-of-floor-arg1))))
+
+
 
 ;disable?
 (defthm <-of-times-of-floor-and-same
@@ -1000,14 +1037,14 @@
 (defthm <-of-floor-of-constant-and-constant-gen
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k)))
-                (rationalp x)
+                (rationalp i)
                 (integerp k)
                 (posp k1))
-           (equal (< (floor x k1) k)
-                  (< x (* k k1))))
+           (equal (< (floor i k1) k)
+                  (< i (* k k1))))
   :hints (("Goal"
-           :use ((:instance bound-from-floor-bound (n k1) (m k))
-                 (:instance bound-from-floor-bound-back (n k1) (m k))))))
+           :use ((:instance bound-from-floor-bound (j k1) (k k))
+                 (:instance bound-from-floor-bound-back (j k1) (k k))))))
 
 ;slow?
 (defthm *-of-floor-of-same-when-multiple
@@ -1203,6 +1240,8 @@
 
 ;; quite strong!
 ;rephrase the rhs?
+;; If something is equal to the floor, it must be an integer, be no bigger than
+;; the quotient, and be strictly bigger than the quotient minus 1.
 (defthmd equal-of-floor
   (implies (and (rationalp i)
                 (rationalp j))
@@ -1235,3 +1274,37 @@
              0
            (floor x y)))
   :hints (("Goal" :in-theory (enable floor))))
+
+(local
+ (defthm helper1
+   (IMPLIES (AND (RATIONALP I)
+                 (RATIONALP J)
+                 (< 0 J)
+                 (RATIONALP K)
+                 (< k (floor i j)))
+            (<= (+ 1 (FLOOR K 1)) (FLOOR I J)))))
+
+(local
+ (defthm helper2
+   (IMPLIES (AND (RATIONALP I)
+                 (RATIONALP J)
+                 (< 0 J)
+                 (integerp Kup)
+                 (< kup (/ i j)))
+            (<= kup (FLOOR I J)))))
+
+(defthmd <-of-floor-arg2-gen
+  (implies (and (rationalp i)
+                (rationalp j)
+                (< 0 j)
+                (rationalp k))
+           (equal (< k (floor i j))
+                  ;; the quotient is at least k-rounded-up:
+                  (<= (+ 1 (floor k 1)) (/ i j))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :use (helper1
+                 (:instance helper2 (kup (+ 1 (floor k 1)))))
+           :in-theory (disable <-*-/-LEFT
+                               <-OF-*-OF-/-ARG1-ARG2
+                               <-OF-*-OF-/-ARG1
+                               helper1))))
