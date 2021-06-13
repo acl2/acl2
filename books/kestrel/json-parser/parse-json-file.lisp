@@ -11,8 +11,8 @@
 (in-package "ACL2")
 
 (include-book "parse-json")
-(include-book "std/io/read-file-characters" :dir :system)
-(include-book "../utilities/file-existsp")
+(include-book "kestrel/utilities/file-existsp" :dir :system)
+(include-book "kestrel/file-io-light/read-file-into-character-list" :dir :system)
 
 ;; Returns (mv parsed-value state).
 ;; Example call: (parse-file-as-json "example.json" state)
@@ -24,8 +24,8 @@
        ((when (not existsp))
         (progn$ (er hard? 'parse-file-as-json "JSON file does not exist: ~x0." filename)
                 (mv t state)))
-       ((mv chars state)
-        (read-file-characters filename state))
+       (chars ; not that state is not returned!
+        (read-file-into-character-list-fn filename state))
        ((when (not (consp chars))) ;I've seen this be a string error message
         (prog2$ (er hard? 'parse-file-as-json "Failed to read any character from file: ~x0.  Result: ~x1" filename chars)
                 (mv t state)))
