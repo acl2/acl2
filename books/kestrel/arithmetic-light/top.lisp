@@ -14,6 +14,7 @@
 ;; than including this top.lisp book, which is likely to include material you
 ;; don't need and which we expect to grow over time.
 
+(include-book "abs")
 (include-book "expt")
 (include-book "expt2")
 (include-book "integer-length")
