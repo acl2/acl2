@@ -48,5 +48,6 @@
 (include-book "std/top")
 (include-book "strings-light/top")
 ;; (include-book "typed-lists-light/top") ; TODO: Name clash on perm
+(include-book "unicode-light/top")
 (include-book "utilities/top")
 (include-book "zcash/top")
