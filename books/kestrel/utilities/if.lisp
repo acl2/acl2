@@ -54,8 +54,30 @@
            (equal (if x t nil)
                   x)))
 
-(defthmd equal-of-if-arg2
-  (equal (equal k (if test x y))
+(defthmd equal-of-if-arg1
+  (equal (equal (if test x y) z)
          (if test
-             (equal k x)
-           (equal k y))))
+             (equal x z)
+           (equal y z))))
+
+(defthmd equal-of-if-arg2
+  (equal (equal z (if test x y))
+         (if test
+             (equal z x)
+           (equal z y))))
+
+;; Safer, since the term that is getting replicated in the RHS (z) is a constant.
+(defthmd equal-of-if-arg1-when-quotep
+  (implies (syntaxp (quotep z))
+           (equal (equal (if test x y) z)
+                  (if test
+                      (equal x z)
+                    (equal y z)))))
+
+;; Safer, since the term that is getting replicated in the RHS (z) is a constant.
+(defthmd equal-of-if-arg2-when-quotep
+  (implies (syntaxp (quotep z))
+           (equal (equal z (if test x y))
+                  (if test
+                      (equal z x)
+                    (equal z y)))))
