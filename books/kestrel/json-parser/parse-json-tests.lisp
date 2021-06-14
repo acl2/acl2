@@ -13,9 +13,11 @@
 (include-book "parse-json")
 (include-book "std/testing/assert-bang" :dir :system)
 
-;; These tests focus on Unicode support
-
 ;; TODO: Add more tests
+
+;;;
+;;; Tests of string parsing (focusing on Unicode support)
+;;;
 
 (assert!
  (mv-let (erp string chars)
@@ -78,6 +80,7 @@
         (equal string "ğ·")
         (equal chars '(#\1 #\2 #\e #\x #\t #\r #\a #\C #\H #\A #\R #\S)))))
 
+;; A test involving characters not legal in UTF-8
 (assert!
  (mv-let (erp string chars)
    (parse-json-string (list #\"
@@ -89,6 +92,9 @@
         (equal string "ÿş")
         (equal chars nil))))
 
+;;;
+;;; Tests of parsing larger objects
+;;;
 
 ;; Parse a whole JSON object
 (assert!
