@@ -260,10 +260,10 @@
 
 ;can this be generalized?
 (defthm not-sbvlt-when-<=
-  (implies (and (syntaxp (quote k2))
+  (implies (and (syntaxp (quotep k2))
                 (unsigned-byte-p 31 k2) ;gets computed
                 (<= x k) ;k is a free var
-                (syntaxp (quote k))
+                (syntaxp (quotep k))
                 (unsigned-byte-p 31 k) ;gets computed
                 (<= k k2) ;gets computed
                 (natp x))

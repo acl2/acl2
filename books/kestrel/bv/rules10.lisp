@@ -49,7 +49,7 @@
 
 ;i've seen k be 2^65-24
 (defthm logext-of-sum-trim-constant-big
-  (implies (and (syntaxp (quote k))
+  (implies (and (syntaxp (quotep k))
                 (not (signed-byte-p 65 k))
                 (integerp k)
                 (integerp x))
@@ -536,7 +536,7 @@
 ;todo: move
 (defthm equal-of-bvchop-and-constant-when-signed-byte-p
   (implies (and (syntaxp (want-to-strengthen (equal k (bvchop 64 x))))
-                (syntaxp (quote k))
+                (syntaxp (quotep k))
                 (unsigned-byte-p 64 k)
                 (signed-byte-p 64 x))
            (equal (equal k (bvchop 64 x))
