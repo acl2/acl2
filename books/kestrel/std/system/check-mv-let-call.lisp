@@ -19,7 +19,8 @@
   :returns (mv (yes/no booleanp)
                (mv-var symbolp :hyp :guard)
                (vars symbol-listp :hyp :guard)
-               (indices nat-listp :hyp :guard)
+               (indices nat-listp)
+               (hides boolean-listp)
                (mv-term pseudo-termp :hyp :guard)
                (body-term pseudo-termp :hyp :guard))
   :parents (std/system/term-queries)
@@ -110,67 +111,108 @@
      so that a caller can indipendently check that there are no gaps,
      if the term is not supposed to have any such gaps.")
    (xdoc::p
+    "An additional complication derives from the fact that @(tsee mv-let)
+     allows the declaration of ignored variables within, e.g.
+     @('(mv-let (x y z) (mv 1 2 3) (declare (ignore x y)) z)').
+     In translated terms, this manifests in the addition of @(tsee hide)
+     around the @(tsee mv-nth) terms, which in this example is")
+   (xdoc::codeblock
+    "((lambda (mv)"
+    "         ((lambda (x y z) z)"
+    "          (hide (mv-nth '0 mv))"
+    "          (hide (mv-nth '1 mv))"
+    "          (mv-nth '2 mv)))"
+    " (cons '1 (cons '2 (cons '3 'nil))))")
+   (xdoc::p
+    "This utility takes this possibility into account,
+     and returns, as an additional result,
+     a list of booleans, of the same length as variables and indices,
+     that says whether the corresponding @(tsee mv-nth)
+     is wrapped by @(tsee hide) or not.
+     This way, the utility returns all the information about the term,
+     which the caller may use as desired.")
+   (xdoc::p
+    "@(tsee mv-let) also support the declaration of ignorable variables.
+     But these declarations do not introduce any @(tsee hide) wrapper
+     or other change into the translated term.")
+   (xdoc::p
     "This utility is a left inverse of @(tsee make-mv-let-call)."))
-  (b* (((when (variablep term)) (mv nil nil nil nil nil nil))
-       ((when (fquotep term)) (mv nil nil nil nil nil nil))
-       ((unless (flambda-applicationp term)) (mv nil nil nil nil nil nil))
+  (b* (((when (variablep term)) (mv nil nil nil nil nil nil nil))
+       ((when (fquotep term)) (mv nil nil nil nil nil nil nil))
+       ((unless (flambda-applicationp term)) (mv nil nil nil nil nil nil nil))
        (outer-lambda-expr (ffn-symb term))
        (formals (lambda-formals outer-lambda-expr))
        (actuals (fargs term))
-       ((mv list-mv list-mv-term) (remove-equal-formals-actuals formals actuals))
+       ((mv list-mv list-mv-term)
+        (remove-equal-formals-actuals formals actuals))
        ((unless (and (consp list-mv)
                      (not (consp (cdr list-mv)))))
-        (mv nil nil nil nil nil nil))
+        (mv nil nil nil nil nil nil nil))
        (mv-var (car list-mv))
        ((unless (and (consp list-mv-term)
                      (not (consp (cdr list-mv-term)))))
-        (mv nil nil nil nil nil nil))
+        (mv nil nil nil nil nil nil nil))
        (mv-term (car list-mv-term))
        (inner-lambda-expr-call (lambda-body outer-lambda-expr))
-       ((when (variablep inner-lambda-expr-call)) (mv nil nil nil nil nil nil))
-       ((when (fquotep inner-lambda-expr-call)) (mv nil nil nil nil nil nil))
+       ((when (variablep inner-lambda-expr-call))
+        (mv nil nil nil nil nil nil nil))
+       ((when (fquotep inner-lambda-expr-call))
+        (mv nil nil nil nil nil nil nil))
        ((unless (flambda-applicationp inner-lambda-expr-call))
-        (mv nil nil nil nil nil nil))
+        (mv nil nil nil nil nil nil nil))
        (inner-lambda-expr (ffn-symb inner-lambda-expr-call))
        (formals (lambda-formals inner-lambda-expr))
        (actuals (fargs inner-lambda-expr-call))
        ((mv vars mv-nths) (remove-equal-formals-actuals formals actuals))
        (body-term (lambda-body inner-lambda-expr))
        ((when (dumb-occur-var-open mv-var body-term))
-        (mv nil nil nil nil nil nil))
-       ((mv okp indices) (check-mv-let-call-aux mv-nths 0 mv-var))
-       ((unless okp) (mv nil nil nil nil nil nil)))
-    (mv t mv-var vars indices mv-term body-term))
+        (mv nil nil nil nil nil nil nil))
+       ((mv okp indices hides) (check-mv-let-call-aux mv-nths 0 mv-var))
+       ((unless okp) (mv nil nil nil nil nil nil nil)))
+    (mv t mv-var vars indices hides mv-term body-term))
 
   :prepwork
 
   ((define check-mv-let-call-aux ((terms pseudo-term-listp)
                                   (min-index natp)
                                   (mv-var symbolp))
-     :returns (mv (yes/no booleanp) (indices nat-listp))
-     (b* (((when (endp terms)) (mv t nil))
+     :returns (mv (yes/no booleanp) (indices nat-listp) (hides boolean-listp))
+     (b* (((when (endp terms)) (mv t nil nil))
           (term (car terms))
+          ((mv hide term)
+           (if (and (true-listp term)
+                    (consp term)
+                    (consp (cdr term))
+                    (atom (cddr term))
+                    (eq (car term) 'hide))
+               (mv t (cadr term))
+             (mv nil term)))
           ((unless (and (true-listp term)
                         (consp term)
                         (consp (cdr term))
                         (consp (cddr term))
-                        (atom (cdddr term)))) (mv nil nil))
-          ((unless (eq (car term) 'mv-nth)) (mv nil nil))
+                        (atom (cdddr term))))
+           (mv nil nil nil))
+          ((unless (eq (car term) 'mv-nth)) (mv nil nil nil))
           (index-term (cadr term))
-          ((unless (eq (caddr term) mv-var)) (mv nil nil))
-          ((unless (quotep index-term)) (mv nil nil))
+          ((unless (eq (caddr term) mv-var)) (mv nil nil nil))
+          ((unless (quotep index-term)) (mv nil nil nil))
           (index (unquote index-term))
-          ((unless (natp index)) (mv nil nil))
-          ((unless (>= index min-index)) (mv nil nil))
-          ((mv yes/no indices) (check-mv-let-call-aux (cdr terms)
-                                                      (1+ index)
-                                                      mv-var))
-          ((unless yes/no) (mv nil nil)))
-       (mv t (cons index indices)))
+          ((unless (natp index)) (mv nil nil nil))
+          ((unless (>= index min-index)) (mv nil nil nil))
+          ((mv yes/no indices hides) (check-mv-let-call-aux (cdr terms)
+                                                            (1+ index)
+                                                            mv-var))
+          ((unless yes/no) (mv nil nil nil)))
+       (mv t (cons index indices) (cons hide hides)))
      ///
      (defret len-of-check-mv-let-call-aux.indices
        (implies yes/no
                 (equal (len indices)
+                       (len terms))))
+     (defret len-of-check-mv-let-call-aux.hides
+       (implies yes/no
+                (equal (len hides)
                        (len terms)))))
 
    (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -185,7 +227,15 @@
     :hyp :guard
     :hints (("Goal" :in-theory (enable remove-equal-formals-actuals-same-len))))
 
-  (in-theory (disable len-of-check-mv-let-call.indices/vars))
+  (defret len-of-check-mv-let-call.hides/vars
+    (implies yes/no
+             (equal (len hides)
+                    (len vars)))
+    :hyp :guard
+    :hints (("Goal" :in-theory (enable remove-equal-formals-actuals-same-len))))
+
+  (in-theory (disable len-of-check-mv-let-call.indices/vars
+                      len-of-check-mv-let-call.hides/vars))
 
   (local
    (defthm acl2-count-of-check-mv-let-call.mv-term-lemma

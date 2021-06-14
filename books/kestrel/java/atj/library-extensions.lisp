@@ -119,6 +119,7 @@
                (mv-var symbolp)
                (vars symbol-listp)
                (indices nat-listp)
+               (hides boolean-listp)
                (mv-term pseudo-termp)
                (body-term pseudo-termp))
   :short "An FTY variant of @(tsee check-mv-let-call)."
@@ -165,7 +166,16 @@
     :hints (("Goal"
              :in-theory (enable acl2::len-of-check-mv-let-call.indices/vars))))
 
-  (in-theory (disable len-of-fty-check-mv-let-call.indices/vars))
+  (defret len-of-fty-check-mv-let-call.hides/vars
+    (implies yes/no
+             (equal (len hides)
+                    (len vars)))
+    :hyp :guard
+    :hints (("Goal"
+             :in-theory (enable acl2::len-of-check-mv-let-call.hides/vars))))
+
+  (in-theory (disable len-of-fty-check-mv-let-call.indices/vars
+                      len-of-fty-check-mv-let-call.indices/vars))
 
   (defrulel remove-equal-formals-actuals-lemma
     (<= (pseudo-term-list-count
@@ -176,7 +186,7 @@
 
   (defrulel pseudo-term-count-of-fty-check-mv-let-call.mv-term-lemma
     (implies (pseudo-termp term)
-             (b* (((mv yes/no & & & mv-term &) (check-mv-let-call term)))
+             (b* (((mv yes/no & & & & mv-term &) (check-mv-let-call term)))
                (implies yes/no
                         (< (pseudo-term-count mv-term)
                            (pseudo-term-count term)))))
@@ -202,7 +212,7 @@
 
   (defrulel pseudo-term-count-of-fty-check-mv-let-call.body-term-lemma
     (implies (pseudo-termp term)
-             (b* (((mv yes/no & & & & body-term) (check-mv-let-call term)))
+             (b* (((mv yes/no & & & & & body-term) (check-mv-let-call term)))
                (implies yes/no
                         (< (pseudo-term-count body-term)
                            (pseudo-term-count term)))))

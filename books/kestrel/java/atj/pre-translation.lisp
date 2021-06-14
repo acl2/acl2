@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -345,7 +345,7 @@
             (raise "Internal error: ~
                     the quoted constant ~x0 cannot return ~x1 results."
                    term numres)))
-         ((mv mv-let-callp & vars indices mv-term body-term)
+         ((mv mv-let-callp & vars indices & mv-term body-term)
           (check-mv-let-call term))
          ((when mv-let-callp)
           (b* ((mv-term-numres-list
@@ -1692,7 +1692,7 @@
          ((unless (mbt (and (atj-type-list-listp mv-typess)
                             (cons-listp mv-typess))))
           (mv nil nil (list (atj-type-irrelevant)) nil))
-         ((mv mv-let-p mv-var vars indices mv-term body-term)
+         ((mv mv-let-p mv-var vars indices & mv-term body-term)
           (fty-check-mv-let-call term))
          ((unless mv-let-p)
           (mv nil nil (list (atj-type-irrelevant)) mv-typess))

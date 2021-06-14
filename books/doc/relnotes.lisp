@@ -995,6 +995,12 @@
      which lifts @(tsee fresh-namep-msg-weak) to lists.")
 
    (xdoc::p
+    "The utility @(tsee check-mv-let-call) has been generalized
+     to check for the presence of @(tsee hide) wrappers
+     introduced when @(tsee mv-let) has @(tsee ignore) declarations,
+     and to return information about their presence or absence.")
+
+   (xdoc::p
     "The utilities
      @(tsee install-not-normalized-event) and
      @(tsee install-not-normalized-event-lst)
