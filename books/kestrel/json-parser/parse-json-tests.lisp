@@ -78,6 +78,17 @@
         (equal string "ğ·")
         (equal chars '(#\1 #\2 #\e #\x #\t #\r #\a #\C #\H #\A #\R #\S)))))
 
+(assert!
+ (mv-let (erp string chars)
+   (parse-json-string (list #\"
+                            (code-char 255) ; not legal in UTF-8
+                            (code-char 254) ; not legal in UTF-8
+                            #\"))
+   (and (not erp)
+        ;; weird chars passed through (here they are in octal, for some reason):
+        (equal string "ÿş")
+        (equal chars nil))))
+
 
 ;; Parse a whole JSON object
 (assert!
