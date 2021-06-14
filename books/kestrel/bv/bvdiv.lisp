@@ -112,10 +112,12 @@
   :hints (("Goal" :in-theory (enable bvdiv))))
 
 (defthm <-of-bvdiv-self
-  (implies (and (unsigned-byte-p size x) ;gen?
-                (< 1 (bvchop size y)))
+  (implies (and (< 1 (bvchop size y))
+                (natp x)
+                (natp size))
            (equal (< (bvdiv size x y) x)
-                  (not (equal 0 (bvchop size x)))))
+                  (or (<= (expt 2 size) x)
+                      (not (equal 0 (bvchop size x))))))
   :hints (("Goal" :in-theory (enable bvdiv))))
 
 ;; dividing x by y (usually) makes it smaller

@@ -88,3 +88,14 @@
                            (i (BVCHOP size X))
                            (k k2)
                            (k1 k1)))))
+
+(defthm <-of-bvdiv-same
+  (implies (and (natp x) ;can't be 0
+                (natp y)
+                (natp size)
+                (bvlt size 1 y))
+           (equal (< (bvdiv size x y) x)
+                  (not (equal 0 x))))
+  :hints (("Goal" :use (:instance floor-bound-strict (i (BVCHOP size X))
+                                  (j (BVCHOP size Y)))
+           :in-theory (enable bvdiv bvlt))))
