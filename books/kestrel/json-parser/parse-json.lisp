@@ -15,14 +15,6 @@
 
 ;; Written from http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf.
 
-;; TODO: If whitespace is optional, what if it occurs between digits?
-
-;; TODO: Define predicates for tokens and lists of tokens.
-
-;; TODO: Handle commas in lists and objects more elegantly.
-
-;; TODO: Return more helpful information in the case of errors.
-
 ;; This parser works best if its input is encoded in UTF-8 (regular ASCII text
 ;; is compatible with UTF-8).  The names and strings in the output of this
 ;; parser are also encoded in UTF-8.
@@ -35,6 +27,18 @@
 ;; process those code points as JSON, re-encoding any strings/names encountered
 ;; as UTF-8.  However, it seems that UTF-8 encodings would then simply pass
 ;; through our implementation unchanged, so we don't so that.
+
+;; This parser does not check that its input is valid UTF-8.  So characters,
+;; and sequences of characters, that are not allowed in UTF-8 (such as any
+;; occurence of the character whose code is 255) are just passed through.
+
+;; TODO: If whitespace is optional, what if it occurs between digits?
+
+;; TODO: Define predicates for tokens and lists of tokens.
+
+;; TODO: Handle commas in lists and objects more elegantly.
+
+;; TODO: Return more helpful information in the case of errors.
 
 (include-book "tools/flag" :dir :system)
 (include-book "kestrel/unicode-light/hex-digit-chars-to-code-point" :dir :system)
