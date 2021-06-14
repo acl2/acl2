@@ -77,3 +77,48 @@
    (and (not erp)
         (equal string "𐐷")
         (equal chars '(#\1 #\2 #\e #\x #\t #\r #\a #\C #\H #\A #\R #\S)))))
+
+
+;; Parse a whole JSON object
+(assert!
+ (mv-let (erp res)
+   (parse-json (coerce "{\"FirstName\" : \"John\", \"LastName\" : \"Smith\"}" 'list))
+   (and (null erp)
+        (equal res '(:OBJECT (("FirstName" . "John")
+                              ("LastName" . "Smith")))))))
+
+;; A version with Unicode escapes
+(assert!
+ (mv-let (erp res)
+   (parse-json (coerce "{\"First\\u20ACName\" : \"Jo\\u20AC\hn\", \"LastName\" : \"Smith\"}" 'list))
+   (and (null erp)
+        (equal res '(:OBJECT (("First€Name" . "Jo€hn")
+                              ("LastName" . "Smith")))))))
+
+;; A test with various kinds of values
+(assert!
+ (mv-let (erp res)
+   (parse-json (coerce "{\"name\" : \"Jo\\u20AC\hn\",
+                         \"age\" : 20,
+                         \"happy\" : true,
+                         \"sad\" : false,
+                         \"pets\" : null,
+                         \"friends\" : [\"Shelly\",
+                                        {\"name\" : \"Michael\", \"nickname\" : \"Mike\"},
+                                        \"Darnell\",
+                                        100,
+                                        true,
+                                        false,
+                                        null]}"
+                       'list))
+   (and (null erp)
+        (equal res '(:OBJECT (("name" . "Jo€hn")
+                              ("age" . 20)
+                              ("happy" . :TRUE)
+                              ("sad" . :FALSE)
+                              ("pets" . :NULL)
+                              ("friends" . (:ARRAY ("Shelly"
+                                                    (:OBJECT (("name" . "Michael")
+                                                              ("nickname" . "Mike")))
+                                                    "Darnell" 100 :TRUE
+                                                    :FALSE :NULL)))))))))
