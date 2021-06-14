@@ -230,7 +230,7 @@
                     (if erp
                         (mv erp nil chars)
                       (if (not (low-surrogatep second-code-point))
-                          (mv :missing-low-surrogate nil chars)
+                          (mv :code-point-not-a-low-surrogate nil chars)
                         ;; Combine the bits from the high and low surrogate and convert the resulting code-point to UTF-8:
                         (mv nil ; no error
                             (code-point-to-utf-8-chars (combine-utf-16-surrogates code-point second-code-point))
