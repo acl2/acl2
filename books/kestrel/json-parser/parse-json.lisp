@@ -1,6 +1,6 @@
 ; A simple JSON parser
 ;
-; Copyright (C) 2019-2020 Kestrel Institute
+; Copyright (C) 2019-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,9 +15,6 @@
 
 ;; Written from http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf.
 
-;; TODO: Add support for Unicode.  Currently, this uses ACL2 characters, of
-;; which there are only 256.
-
 ;; TODO: If whitespace is optional, what if it occurs between digits?
 
 ;; TODO: Define predicates for tokens and lists of tokens.
@@ -26,8 +23,24 @@
 
 ;; TODO: Return more helpful information in the case of errors.
 
+;; This parser works best if its input is encoded in UTF-8 (regular ASCII text
+;; is compatible with UTF-8).  The names and strings in the output of this
+;; parser are also encoded in UTF-8.
+
+;; This parser does handle Unicode escapes (character sequences starting with
+;; \u).
+
+;; For maximum clarity, we could restructure the parser implementation to first
+;; decode the entire input to create a sequence of Unicode code points, then
+;; process those code points as JSON, re-encoding any strings/names encountered
+;; as UTF-8.  However, it seems that UTF-8 encodings would then simply pass
+;; through our implementation unchanged, so we don't so that.
+
 (include-book "tools/flag" :dir :system)
-(local (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system)))
+(include-book "kestrel/unicode-light/hex-digit-chars-to-code-point" :dir :system)
+(include-book "kestrel/unicode-light/code-point-to-utf-8-chars" :dir :system)
+(include-book "kestrel/unicode-light/surrogates" :dir :system)
+(local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 
 (local (in-theory (disable mv-nth)))
 
@@ -143,61 +156,103 @@
            (character-listp (mv-nth 2 (parse-json-null-literal chars))))
   :hints (("Goal" :in-theory (enable parse-json-null-literal))))
 
-;todo: use more
-(defconst *digit-chars*
-  '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
-
-(defconst *hex-digit-chars*
-  (append *digit-chars*
-          '(#\A #\a
-            #\B #\b
-            #\C #\c
-            #\D #\d
-            #\E #\e
-            #\F #\f)))
-
-(defund hex-digitp (char)
-  (declare (xargs :guard (characterp char)))
-  (member char *hex-digit-chars*))
-
-;; Returns (mv erp result remaining-chars) where RESULT is a list of
-;; characters.
-(defund parse-unicode-digits (chars)
-  (declare (xargs :guard (and (character-listp chars))))
+;; Returns (mv erp code-point remaining-chars)
+(defund parse-4-hex-chars-as-code-point (chars)
+  (declare (xargs :guard (character-listp chars)
+                  :guard-hints (("Goal" :in-theory (enable <-16-of-mv-nth-1-of-hex-char-to-val-forward)))))
   (if (not (consp (rest (rest (rest chars)))))
-      (mv :too-few-unicode-digits nil chars)
+      (mv :too-few-unicode-digits 0 chars)
     (let ((digit1 (first chars))
           (digit2 (second chars))
           (digit3 (third chars))
           (digit4 (fourth chars)))
-      (if (not (and (hex-digitp digit1)
-                    (hex-digitp digit2)
-                    (hex-digitp digit3)
-                    (hex-digitp digit4)))
-          (mv :bad-unicode-digits nil chars)
-        ;;todo: do the right thing here:
-        (mv nil
-            ;; For now, we just return the characters.  We should instead
-            ;; create proper Unicode characters, or perhaps use UTF-8.
-            (list #\\ #\u digit1 digit2 digit3 digit4)
-            (rest (rest (rest (rest chars)))))))))
+      (mv-let (erp code-point)
+        (hex-digit-chars-to-code-point digit1 digit2 digit3 digit4)
+        (if erp ; happens if there are bad hex digits
+            (mv erp 0 chars)
+          (mv nil ; no error
+              code-point
+              (rest (rest (rest (rest chars))))))))))
 
-(defthm len-of-mv-nth-2-of-parse-unicode-digits-bound
-  (implies (not (mv-nth 0 (parse-unicode-digits chars)))
-           (< (len (mv-nth 2 (parse-unicode-digits chars)))
+(defthm natp-of-mv-nth-1-of-parse-4-hex-chars-as-code-point
+  (natp (mv-nth 1 (parse-4-hex-chars-as-code-point chars)))
+  :hints (("Goal" :in-theory (enable parse-4-hex-chars-as-code-point))))
+
+(defthm <-of-mv-nth-1-of-parse-4-hex-chars-as-code-point
+  (<= (mv-nth 1 (parse-4-hex-chars-as-code-point chars))
+      #x10FFFF)
+  :hints (("Goal" :in-theory (enable parse-4-hex-chars-as-code-point))))
+
+(defthm character-listp-of-mv-nth-2-of-parse-4-hex-chars-as-code-point
+  (implies (character-listp chars)
+           (character-listp (mv-nth 2 (parse-4-hex-chars-as-code-point chars))))
+  :hints (("Goal" :in-theory (enable parse-4-hex-chars-as-code-point))))
+
+(defthm true-listp-of-mv-nth-2-of-parse-4-hex-chars-as-code-point
+  (implies (true-listp chars)
+           (true-listp (mv-nth 2 (parse-4-hex-chars-as-code-point chars))))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable parse-4-hex-chars-as-code-point))))
+
+(defthm len-of-mv-nth-2-of-parse-4-hex-chars-as-code-point-bound
+  (implies (not (mv-nth 0 (parse-4-hex-chars-as-code-point chars)))
+           (< (len (mv-nth 2 (parse-4-hex-chars-as-code-point chars)))
               (len chars)))
   :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable parse-unicode-digits))))
+  :hints (("Goal" :in-theory (enable parse-4-hex-chars-as-code-point))))
 
-(defthm character-listp-of-mv-nth-2-of-parse-unicode-digits
-  (implies (character-listp chars)
-           (character-listp (mv-nth 2 (parse-unicode-digits chars))))
-  :hints (("Goal" :in-theory (enable parse-unicode-digits))))
+;; Parse the 4 hex digits of a Unicode escape, possibly followed by another
+;; entire Unicode escape (the \u and the 4 hex digits). We have already
+;; consumed the leading \u sequence of the first escape.
+;; Returns (mv erp result-chars remaining-chars).
+(defund parse-unicode-escape (chars)
+  (declare (xargs :guard (character-listp chars)))
+  (mv-let (erp code-point chars)
+    (parse-4-hex-chars-as-code-point chars)
+    (if erp
+        (mv erp nil chars)
+      (if (low-surrogatep code-point)
+          (mv :unexpected-low-surrogate nil chars)
+        (if (high-surrogatep code-point)
+            ;; Need to parse the upcoming low surrogate and combine:
+            (if (not (consp (cdr chars)))
+                (mv :not-enough-bytes-for-low-surrogate nil chars)
+              (if (not (and (equal #\\ (first chars))
+                            (equal #\u (second chars))))
+                  (mv :ill-formed-low-surrogate-escape nil chars)
+                (let ((chars (rest (rest chars)))) ; skip the \u
+                  (mv-let (erp second-code-point chars)
+                    (parse-4-hex-chars-as-code-point chars)
+                    (if erp
+                        (mv erp nil chars)
+                      (if (not (low-surrogatep second-code-point))
+                          (mv :missing-low-surrogate nil chars)
+                        ;; Combine the bits from the high and low surrogate and convert the resulting code-point to UTF-8:
+                        (mv nil ; no error
+                            (code-point-to-utf-8-chars (combine-utf-16-surrogates code-point second-code-point))
+                            chars)))))))
+          ;; Not a surrogate, so we have the entire code-point:
+          ;; Convert the code-point to UTF-8:
+          (mv nil ; no error
+              (code-point-to-utf-8-chars code-point)
+              chars))))))
 
-(defthm character-listp-of-mv-nth-1-of-parse-unicode-digits
+(defthm character-listp-of-mv-nth-1-of-parse-unicode-escape
   (implies (character-listp chars)
-           (character-listp (mv-nth 1 (parse-unicode-digits chars))))
-  :hints (("Goal" :in-theory (enable parse-unicode-digits))))
+           (character-listp (mv-nth 1 (parse-unicode-escape chars))))
+  :hints (("Goal" :in-theory (enable parse-unicode-escape))))
+
+(defthm character-listp-of-mv-nth-2-of-parse-unicode-escape
+  (implies (character-listp chars)
+           (character-listp (mv-nth 2 (parse-unicode-escape chars))))
+  :hints (("Goal" :in-theory (enable parse-unicode-escape))))
+
+(defthm len-of-mv-nth-2-of-parse-unicode-escape-bound
+  (implies (not (mv-nth 0 (parse-unicode-escape chars)))
+           (< (len (mv-nth 2 (parse-unicode-escape chars)))
+              (len chars)))
+  :rule-classes (:rewrite :linear)
+  :hints (("Goal" :in-theory (enable parse-unicode-escape))))
 
 (defconst *json-control-chars*
   (list (code-char #x0)
@@ -233,7 +288,7 @@
         (code-char #x1E)
         (code-char #x1F)))
 
-;; Returns (mv erp result remaining-chars) where RESULT is a list of characters.
+;; Returns (mv erp result-chars remaining-chars).
 (defund parse-json-string-char (chars)
   (declare (xargs :guard (and (character-listp chars)
                               (consp chars)
@@ -263,7 +318,8 @@
                   ((equal char-after-backslash #\t) ;character tabulation
                    (mv nil (list (code-char #x9)) (rest rest-chars)))
                   ((equal char-after-backslash #\u) ;a unicode char
-                   (parse-unicode-digits (rest rest-chars)))
+                   ;; May consume up to 12 characters:
+                   (parse-unicode-escape (rest rest-chars)))
                   (t
                    (mv :ill-formed-escape-sequence-in-string nil chars)))))
       (if (member first-char *json-control-chars*)
