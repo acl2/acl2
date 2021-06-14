@@ -39,15 +39,13 @@
           (|f$loop| |n| |r|))
       (mv |n| |r|))))
 
-(encapsulate
-  ()
-  (set-ignore-ok t)
-  (defun |f| (|n|)
-    (declare (xargs :guard (c::uintp |n|)))
-    (let ((|r| (c::declar (c::uint-dec-const 1))))
-      (mv-let (|n| |r|)
-        (|f$loop| |n| |r|)
-        |r|))))
+(defun |f| (|n|)
+  (declare (xargs :guard (c::uintp |n|)))
+  (let ((|r| (c::declar (c::uint-dec-const 1))))
+    (mv-let (|n| |r|)
+      (|f$loop| |n| |r|)
+      (declare (ignore |n|))
+      |r|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
