@@ -39,10 +39,10 @@
      starting with the empty theory and adding rules
      as needed to advance the symbolic execution,
      and also by looking at the C dynamic semantics.
-     There is guarantee (meta proof) that
+     There is no guarantee (meta proof) that
      these rules will suffice for every use of ATC;
      there is also no guarantee that
-     the proof will not be defeated by ACL2's heuristics.
+     the proof will not be defeated by some ACL2 heuristic in some cases.
      Nonetheless, the proof strategy seems sound and robust,
      and if a generated proof fails
      it should be possible to (prove and) use additional rules."))
