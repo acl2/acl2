@@ -45,6 +45,8 @@
 (include-book "kestrel/unicode-light/code-point-to-utf-8-chars" :dir :system)
 (include-book "kestrel/unicode-light/surrogates" :dir :system)
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+(local (include-book "kestrel/lists-light/cdr" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
 
 (local (in-theory (disable mv-nth)))
 
@@ -79,26 +81,6 @@
   (implies (character-listp chars)
            (character-listp (skip-json-whitespace chars)))
   :hints (("Goal" :in-theory (enable skip-json-whitespace))))
-
-(local
- (defthm len-of-cdr
-   (implies (consp x)
-            (equal (len (cdr x))
-                   (+ -1 (len x))))
-   :rule-classes (:rewrite :linear)
-   :hints (("Goal" :in-theory (enable len)))))
-
-(local
- (defthm true-listp-of-cdr
-   (implies (true-listp x)
-            (true-listp (cdr x)))))
-
-(local
- (defthm len-of-cdr-linear
-   (<= (len (cdr x))
-       (len x))
-   :rule-classes (:rewrite :linear)
-   :hints (("Goal" :in-theory (enable len)))))
 
 ;; Returns (mv erp parsed-token remaining-chars).  We parse the true literal
 ;; true as the symbol :TRUE.
