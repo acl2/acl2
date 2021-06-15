@@ -553,52 +553,52 @@
   :hints (("Goal" :in-theory (enable combine-axe-conjunctions))))
 
 (local
- ;; used to justify the operation of get-conjunction-from-dag-item below
+ ;; used to justify the operation of get-axe-conjunction-from-dag-item below
  (defthmd boolif-of-nil-arg3
    (iff (boolif x y 'nil)
         (booland x y))))
 
 (local
- ;; used to justify the operation of get-conjunction-from-dag-item below
+ ;; used to justify the operation of get-axe-conjunction-from-dag-item below
  (defthmd if-of-nil-arg3
    (iff (if x y 'nil)
         (booland x y))
    :hints (("Goal" :in-theory (enable booland)))))
 
 (local
- ;; used to justify the operation of get-conjunction-from-dag-item below
+ ;; used to justify the operation of get-axe-conjunction-from-dag-item below
  (defthmd myif-of-nil-arg3
    (iff (myif x y 'nil)
         (booland x y))
    :hints (("Goal" :in-theory (enable booland)))))
 
 (local
- ;; used to justify the operation of get-disjunction-from-dag-item below
+ ;; used to justify the operation of get-axe-disjunction-from-dag-item below
  (defthmd boolif-of-t-arg2
    (iff (boolif x 't y)
         (boolor x y))))
 
 (local
- ;; used to justify the operation of get-disjunction-from-dag-item below
+ ;; used to justify the operation of get-axe-disjunction-from-dag-item below
  (defthmd if-of-t-arg2
    (iff (if x 't y)
         (boolor x y))))
 
 (local
- ;; used to justify the operation of get-disjunction-from-dag-item below
+ ;; used to justify the operation of get-axe-disjunction-from-dag-item below
  (defthmd myif-of-t-arg2
    (iff (myif x 't y)
         (boolor x y))
    :hints (("Goal" :in-theory (enable boolor)))))
 
 (local
- ;; used to justify the operation of get-disjunction-from-dag-item below
+ ;; used to justify the operation of get-axe-disjunction-from-dag-item below
  (defthmd if-of-t-arg3
    (iff (if x y 't)
         (boolor (not x) y))))
 
 (local
- ;; used to justify the operation of get-conjunction-from-dag-item below
+ ;; used to justify the operation of get-axe-conjunction-from-dag-item below
  (defthmd if-of-nil-arg2
    (iff (if x 'nil y)
         (booland (not x) y))))
