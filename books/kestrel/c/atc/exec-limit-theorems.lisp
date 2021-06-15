@@ -211,8 +211,6 @@
      :measure (nfix limit))
 
    (define exec-block-item-induct (item compst fenv limit limit1)
-     :guard (and (> (compustate-frames-number compst) 0)
-                 (> (compustate-top-frame-scopes-number compst) 1))
      (b* (((when (or (zp limit) (zp limit1)))
            (mv (error :limit) (compustate-fix compst))))
        (block-item-case
