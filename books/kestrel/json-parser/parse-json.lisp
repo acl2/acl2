@@ -34,8 +34,6 @@
 
 ;; TODO: If whitespace is optional, what if it occurs between digits?
 
-;; TODO: Define predicates for tokens and lists of tokens.
-
 ;; TODO: Handle commas in lists and objects more elegantly.
 
 ;; TODO: Return more helpful information in the case of errors.
@@ -710,6 +708,31 @@
            (character-listp (mv-nth 2 (parse-json-number chars))))
   :hints (("Goal" :in-theory (enable parse-json-number))))
 
+(defun json-tokenp (tok)
+  (declare (xargs :guard t))
+  (or (member-eq tok '(:left-bracket :left-brace :right-bracket :right-brace :colon :comma
+                                     :true :false :null))
+      (stringp tok)
+      (rationalp tok)))
+
+(defun json-token-listp (l)
+  (declare (xargs :guard t))
+  (if (atom l)
+      (null l)
+    (and (json-tokenp (first l))
+         (json-token-listp (rest l)))))
+
+(defthm json-token-listp-of-cdr
+  (implies (json-token-listp tokens)
+           (json-token-listp (cdr tokens)))
+  :hints (("Goal" :in-theory (enable json-token-listp))))
+
+(defthm json-token-listp-of-revappend
+  (implies (and (json-token-listp x)
+                (json-token-listp y))
+           (json-token-listp (revappend x y)))
+  :hints (("Goal" :in-theory (enable revappend))))
+
 ;; Returns (mv erp tokens).
 (defund tokenize-json-chars-aux (chars acc)
   (declare (xargs :guard (and (character-listp chars)
@@ -765,12 +788,28 @@
            (true-listp (mv-nth 1 (tokenize-json-chars-aux chars acc))))
   :hints (("Goal" :in-theory (enable tokenize-json-chars-aux))))
 
+(defthm json-token-listp-of-mv-nth-1-of-tokenize-json-chars-aux
+  (implies (and (json-token-listp acc)
+                (not (mv-nth 0 (tokenize-json-chars-aux chars acc)))
+                (character-listp chars))
+           (json-token-listp (mv-nth 1 (tokenize-json-chars-aux chars acc))))
+  :hints (("Goal" :in-theory (enable tokenize-json-chars-aux
+                                     parse-json-true-literal
+                                     parse-json-false-literal
+                                     parse-json-null-literal))))
+
 (defund tokenize-json-chars (chars)
   (declare (xargs :guard (character-listp chars)))
   (tokenize-json-chars-aux chars nil))
 
 (defthm true-listp-of-mv-nth-1-of-tokenize-json-chars
   (true-listp (mv-nth 1 (tokenize-json-chars chars)))
+  :hints (("Goal" :in-theory (enable tokenize-json-chars))))
+
+(defthm json-token-listp-of-mv-nth-1-of-tokenize-json-chars
+  (implies (and (not (mv-nth 0 (tokenize-json-chars chars)))
+                (character-listp chars))
+           (json-token-listp (mv-nth 1 (tokenize-json-chars chars))))
   :hints (("Goal" :in-theory (enable tokenize-json-chars))))
 
 ;speed up proofs:
@@ -815,7 +854,7 @@
 (mutual-recursion
 
  ;; Parse the pairs in the object and the closing curly brace.  Returns (mv erp
- ;; parsed-object-pairs remaining-tokens).
+ ;; parsed-object remaining-tokens).
  (defund parse-json-object-pairs (tokens acc)
    (declare (xargs :guard (and (true-listp tokens)
                                (true-listp acc))
@@ -856,7 +895,7 @@
                            (mv :missing-comma-in-object nil tokens2))))))))))))))
 
  ;; Parse the comma-separated values in the array and the closing bracket.
- ;; Returns (mv erp parsed-array-values remaining-tokens).
+ ;; Returns (mv erp parsed-array-value remaining-tokens).
  (defund parse-json-array-values (tokens acc)
    (declare (xargs :guard (and (true-listp tokens)
                                (true-listp acc))
@@ -910,15 +949,15 @@
 (make-flag parse-json-object-pairs)
 
 (defthm-flag-parse-json-object-pairs
-  (defthm true-list-of-mv-nth-2-parse-json-object-pairs
+  (defthm true-list-of-mv-nth-2-of-parse-json-object-pairs
     (implies (true-listp tokens)
              (true-listp (mv-nth 2 (parse-json-object-pairs tokens acc))))
     :flag parse-json-object-pairs)
-  (defthm true-list-of-mv-nth-2-parse-json-array-values
+  (defthm true-list-of-mv-nth-2-of-parse-json-array-values
     (implies (true-listp tokens)
              (true-listp (mv-nth 2 (parse-json-array-values tokens acc))))
     :flag parse-json-array-values)
-  (defthm true-list-of-mv-nth-2-parse-json-value
+  (defthm true-list-of-mv-nth-2-of-parse-json-value
     (implies (true-listp tokens)
              (true-listp (mv-nth 2 (parse-json-value tokens))))
     :flag parse-json-value)
@@ -929,17 +968,36 @@
                     (parse-json-array-values tokens acc)))))
 
 (defthm-flag-parse-json-object-pairs
-  (defthm len-of-mv-nth-2-parse-json-object-pairs-bound
+  (defthm json-token-list-of-mv-nth-2-of-parse-json-object-pairs
+    (implies (json-token-listp tokens)
+             (json-token-listp (mv-nth 2 (parse-json-object-pairs tokens acc))))
+    :flag parse-json-object-pairs)
+  (defthm json-token-list-of-mv-nth-2-of-parse-json-array-values
+    (implies (json-token-listp tokens)
+             (json-token-listp (mv-nth 2 (parse-json-array-values tokens acc))))
+    :flag parse-json-array-values)
+  (defthm json-token-list-of-mv-nth-2-of-parse-json-value
+    (implies (json-token-listp tokens)
+             (json-token-listp (mv-nth 2 (parse-json-value tokens))))
+    :flag parse-json-value)
+  :hints (("Goal" :in-theory (enable parse-json-object-pairs
+                                     parse-json-array-values
+                                     parse-json-value)
+           :expand ((parse-json-object-pairs tokens acc)
+                    (parse-json-array-values tokens acc)))))
+
+(defthm-flag-parse-json-object-pairs
+  (defthm len-of-mv-nth-2-of-parse-json-object-pairs-bound
     (<= (len (mv-nth 2 (parse-json-object-pairs tokens acc)))
         (len tokens))
     :rule-classes (:rewrite :linear)
     :flag parse-json-object-pairs)
-  (defthm len-of-mv-nth-2-parse-json-array-values-bound
+  (defthm len-of-mv-nth-2-of-parse-json-array-values-bound
     (<= (len (mv-nth 2 (parse-json-array-values tokens acc)))
         (len tokens))
     :rule-classes (:rewrite :linear)
     :flag parse-json-array-values)
-  (defthm len-of-mv-nth-2-parse-json-value-bound
+  (defthm len-of-mv-nth-2-of-parse-json-value-bound
     (<= (len (mv-nth 2 (parse-json-value tokens)))
         (len tokens))
     :rule-classes (:rewrite :linear)
@@ -950,7 +1008,7 @@
            :expand ((parse-json-object-pairs tokens acc)
                     (parse-json-array-values tokens acc)))))
 
-(defthm len-of-mv-nth-2-parse-json-value-bound-strong
+(defthm len-of-mv-nth-2-of-parse-json-value-bound-strong
   (implies (not (mv-nth 0 (parse-json-value tokens)))
            (< (len (mv-nth 2 (parse-json-value tokens)))
               (len tokens)))
@@ -958,6 +1016,121 @@
   :hints (("Goal" :expand ((PARSE-JSON-VALUE TOKENS)))))
 
 (verify-guards parse-json-object-pairs)
+
+;;;
+;;; Recognizer for parsed JSON objects
+;;;
+
+(mutual-recursion
+ ;; Recognize the parsed form of a JSON array
+ (defund parsed-json-arrayp (val)
+   (declare (xargs :guard t
+                   :measure (make-ord 1 (+ 1 (acl2-count val)) 0)))
+   (and (true-listp val)
+        (= 2 (len val))
+        (eq :array (car val))
+        (parsed-json-valuesp (cadr val))))
+
+ ;; Recognize a sequence of name/value pairs that appears in the parsed form of
+ ;; a JSON object.
+ (defund parsed-json-object-pairsp (val)
+   (declare (xargs :guard t
+                   :measure (make-ord 1 (+ 1 (acl2-count val)) 0)))
+   (if (atom val)
+       (null val)
+     (let ((entry (first val)))
+       (and (consp entry)
+            (stringp (car entry))
+            (parsed-json-valuep (cdr entry))
+            (parsed-json-object-pairsp (rest val))))))
+
+ ;; Recognize a parsed JSON object (in JSON parlance, and "object" is a map
+ ;; from keys to values).
+ (defund parsed-json-objectp (val)
+   (declare (xargs :guard t
+                   :measure (make-ord 1 (+ 1 (acl2-count val)) 0)))
+   (and (true-listp val)
+        (= 2 (len val))
+        (eq :object (car val))
+        (parsed-json-object-pairsp (cadr val))))
+
+ ;; Recogize a true-list of parsed JSON values.
+ (defund parsed-json-valuesp (vals)
+   (declare (xargs :guard t
+                   :measure (make-ord 1 (+ 1 (acl2-count vals)) 0)))
+   (if (atom vals)
+       (null vals)
+     (and (parsed-json-valuep (first vals))
+          (parsed-json-valuesp (rest vals)))))
+
+ ;; Recogize a parsed JSON value (in JSON parlance, a "value" can be a scalar,
+ ;; an array, or an object).
+ (defund parsed-json-valuep (val)
+   (declare (xargs :guard t
+                   :measure (make-ord 1 (+ 1 (acl2-count val)) 1)))
+   (or (member-eq val '(:true :false :null))
+       (rationalp val)
+       (stringp val)
+       (parsed-json-arrayp val)
+       (parsed-json-objectp val))))
+
+(defthm parsed-json-object-pairsp-of-cons
+  (equal (parsed-json-object-pairsp (cons pair pairs))
+         (and (consp pair)
+              (stringp (car pair))
+              (parsed-json-valuep (cdr pair))
+              (parsed-json-object-pairsp pairs)))
+  :hints (("Goal" :in-theory (enable parsed-json-object-pairsp))))
+
+(defthm parsed-json-object-pairsp-of-revappend
+  (implies (and (parsed-json-object-pairsp x)
+                (parsed-json-object-pairsp acc))
+           (parsed-json-object-pairsp (revappend x acc)))
+  :hints (("Goal" :in-theory (enable parsed-json-object-pairsp revappend))))
+
+(defthm parsed-json-valuesp-of-revappend
+  (implies (and (parsed-json-valuesp x)
+                (parsed-json-valuesp acc))
+           (parsed-json-valuesp (revappend x acc)))
+  :hints (("Goal" :in-theory (enable parsed-json-valuesp revappend))))
+
+;; Prove that we always get well-formed structures
+(defthm-flag-parse-json-object-pairs
+  (defthm parsed-json-objectp-of-mv-nth-1-of-parse-json-object-pairs
+    (implies (and (not (mv-nth 0 (parse-json-object-pairs tokens acc)))
+                  (parsed-json-object-pairsp acc)
+                  (json-token-listp tokens))
+             (parsed-json-objectp (mv-nth 1 (parse-json-object-pairs tokens acc))))
+    :flag parse-json-object-pairs)
+  (defthm parsed-json-arrayp-of-mv-nth-1-of-parse-json-array-values
+    (implies (and (not (mv-nth 0 (parse-json-array-values tokens acc)))
+                  (parsed-json-valuesp acc)
+                  (json-token-listp tokens))
+             (parsed-json-arrayp (mv-nth 1 (parse-json-array-values tokens acc))))
+    :flag parse-json-array-values)
+  (defthm parsed-json-valuep-of-mv-nth-1-of-parse-json-value
+    (implies (and (not (mv-nth 0 (parse-json-value tokens)))
+                  (json-token-listp tokens))
+             (parsed-json-valuep (mv-nth 1 (parse-json-value tokens))))
+    :flag parse-json-value)
+  :hints (("Goal" :in-theory (e/d (parse-json-object-pairs
+                                   parse-json-array-values
+                                   parse-json-value
+                                   parsed-json-valuep
+                                   parsed-json-valuesp
+                                   parsed-json-object-pairsp
+                                   parsed-json-objectp
+                                   PARSED-JSON-ARRAYP
+                                   member-equal)
+                                  (cdr-iff ;looped
+                                   ))
+           :expand ((parse-json-value tokens)
+                    (parse-json-object-pairs tokens acc)
+                    (parse-json-array-values tokens acc)))))
+
+;;;
+;;; parse-json
+;;;
 
 ;; Returns (mv erp parsed-value).  where ERP is nil iff no error occured.
 ;; PARSED-VALUE is a parsed representation of the JSON value, using lists
@@ -976,3 +1149,9 @@
           (if (consp tokens)
               (mv :extra-tokens tokens)
             (mv nil parsed-value)))))))
+
+(defthm parsed-json-valuep-of-mv-nth-1-of-parse-json
+  (implies (and (not (mv-nth 0 (parse-json chars))) ; no error
+                (character-listp chars))
+           (parsed-json-valuep (mv-nth 1 (parse-json chars))))
+  :hints (("Goal" :in-theory (e/d (parse-json) (cdr-iff)))))
