@@ -13,6 +13,10 @@
 (include-book "parse-json")
 (include-book "std/testing/assert-bang" :dir :system)
 
+;; NOTE: To see the Unicode characters in this file, try M-x
+;; revert-buffer-with-coding-system utf-8.  But that may not be necessary
+;; unless further tests introduce illegal UTF-8 characters.
+
 ;; TODO: Add more tests
 
 ;;;
@@ -88,8 +92,12 @@
                             (code-char 254) ; not legal in UTF-8
                             #\"))
    (and (not erp)
-        ;; weird chars passed through (here they are in octal, for some reason):
-        (equal string "ÿþ")
+        ;; weird chars passed through (note; we avoid actually putting the
+        ;; literal weird chars here, so that this whole file remains legal UTF-8):
+        (equal string (coerce (list (code-char 255) ; not legal in UTF-8
+                                    (code-char 254) ; not legal in UTF-8
+                                    )
+                              'string))
         (equal chars nil))))
 
 ;;;
