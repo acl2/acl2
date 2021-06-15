@@ -29,14 +29,6 @@
      The C code is a constant value,
      because we are generating proofs over specific C functions.")
    (xdoc::p
-    "Since there is no recursion allowed by ATC,
-     we unfold, by symbolic execution, all the function calls.
-     This is not an ideal strategy in general,
-     because the functions are essentially inlined every time they are called,
-     but it can work well for relatively small programs.
-     Eventually, we will want to generate more modular proofs,
-     where each function is proved correct once and never inlined.")
-   (xdoc::p
     "In order to make these generated proofs more robust,
      we carry them out in a theory that consists exactly of
      (what we believe to be) all and only the needed rules.
