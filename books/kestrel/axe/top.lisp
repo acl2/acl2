@@ -88,6 +88,7 @@
 (include-book "evaluator-basic")
 (include-book "evaluator")
 ;; (include-book "evaluator-tests")
+(include-book "fixup-context")
 (include-book "get-args-not-done")
 (include-book "get-disjuncts")
 ;; (include-book "get-disjuncts-tests")
