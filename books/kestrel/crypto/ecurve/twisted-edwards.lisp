@@ -1591,6 +1591,161 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection twisted-edwards-distributivity-of-neg-over-add
+  :short "Distributivity of negation over addition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This says that @($-(P+Q) = (-P)+(-Q)$).
+     It is proved by showing that adding @($(P+Q)$) to @($(-P)+(-Q)$)
+     yields the zero point,
+     and then using @(see twisted-edwards-add-inverse-uniqueness)
+     to show the desired equality.")
+   (xdoc::p
+    "This should be provable automatically via suitably normalizing
+     commutativity and associativity rules,
+     but since we do not have them at the moment,
+     we carry out a more manual, step-wise proof.
+     Those rules, and a general form of this theorem,
+     belong to a generic group library anyhow."))
+
+  (local
+   (acl2::defisar
+    lemma
+    (implies (and (twisted-edwards-add-associativity)
+                  (twisted-edwards-curve-completep curve)
+                  (pointp point1)
+                  (pointp point2)
+                  (point-on-twisted-edwards-p point1 curve)
+                  (point-on-twisted-edwards-p point2 curve))
+             (equal (twisted-edwards-neg
+                     (twisted-edwards-add point1 point2 curve) curve)
+                    (twisted-edwards-add (twisted-edwards-neg point1 curve)
+                                         (twisted-edwards-neg point2 curve)
+                                         curve)))
+    :proof
+    ((:assume (:assoc (twisted-edwards-add-associativity)))
+     (:assume (:complete (twisted-edwards-curve-completep curve)))
+     (:assume (:point1 (and (pointp point1)
+                            (point-on-twisted-edwards-p point1 curve))))
+     (:assume (:point2 (and (pointp point2)
+                            (point-on-twisted-edwards-p point2 curve))))
+     (:derive
+      (:swap-point1-point2
+       (equal (twisted-edwards-add
+               (twisted-edwards-add point1 point2 curve)
+               (twisted-edwards-add (twisted-edwards-neg point1 curve)
+                                    (twisted-edwards-neg point2 curve)
+                                    curve)
+               curve)
+              (twisted-edwards-add
+               (twisted-edwards-add point2 point1 curve)
+               (twisted-edwards-add (twisted-edwards-neg point1 curve)
+                                    (twisted-edwards-neg point2 curve)
+                                    curve)
+               curve)))
+      :from (:point1 :point2))
+     (:derive
+      (:assoc-right
+       (equal (twisted-edwards-add
+               (twisted-edwards-add point2 point1 curve)
+               (twisted-edwards-add (twisted-edwards-neg point1 curve)
+                                    (twisted-edwards-neg point2 curve)
+                                    curve)
+               curve)
+              (twisted-edwards-add
+               point2
+               (twisted-edwards-add point1
+                                    (twisted-edwards-add (twisted-edwards-neg
+                                                          point1 curve)
+                                                         (twisted-edwards-neg
+                                                          point2 curve)
+                                                         curve)
+                                    curve)
+               curve)))
+      :from (:assoc :complete :point1 :point2)
+      :hints (("Goal" :in-theory (disable twisted-edwards-add-commutative))))
+     (:derive
+      (:assoc-left
+       (equal (twisted-edwards-add
+               point2
+               (twisted-edwards-add point1
+                                    (twisted-edwards-add (twisted-edwards-neg
+                                                          point1 curve)
+                                                         (twisted-edwards-neg
+                                                          point2 curve)
+                                                         curve)
+                                    curve)
+               curve)
+              (twisted-edwards-add
+               point2
+               (twisted-edwards-add (twisted-edwards-add point1
+                                                         (twisted-edwards-neg
+                                                          point1 curve)
+                                                         curve)
+                                    (twisted-edwards-neg point2 curve)
+                                    curve)
+               curve)))
+      :from (:assoc :complete :point1 :point2)
+      :hints (("Goal" :in-theory (e/d (twisted-edwards-add-associative-left)
+                                      (twisted-edwards-add-associative-right)))))
+     (:derive
+      (:simplify
+       (equal (twisted-edwards-add
+               point2
+               (twisted-edwards-add (twisted-edwards-add point1
+                                                         (twisted-edwards-neg
+                                                          point1 curve)
+                                                         curve)
+                                    (twisted-edwards-neg point2 curve)
+                                    curve)
+               curve)
+              (twisted-edwards-zero)))
+      :from (:point1 :point2 :complete))
+     (:derive
+      (:inverse
+       (equal (twisted-edwards-add
+               (twisted-edwards-add point1 point2 curve)
+               (twisted-edwards-add (twisted-edwards-neg point1 curve)
+                                    (twisted-edwards-neg point2 curve)
+                                    curve)
+               curve)
+              (twisted-edwards-zero)))
+      :from (:swap-point1-point2 :assoc-right :assoc-left :simplify))
+     (:derive
+      (:conclusion
+       (equal (twisted-edwards-neg
+               (twisted-edwards-add point1 point2 curve) curve)
+              (twisted-edwards-add
+               (twisted-edwards-neg point1 curve)
+               (twisted-edwards-neg point2 curve)
+               curve)))
+      :from (:inverse :complete :assoc :point1 :point2)
+      :hints (("Goal" :use (:instance twisted-edwards-add-zero-right-is-neg
+                            (point1 (twisted-edwards-add point1 point2 curve))
+                            (point2 (twisted-edwards-add (twisted-edwards-neg
+                                                          point1 curve)
+                                                         (twisted-edwards-neg
+                                                          point2 curve)
+                                                         curve))))))
+     (:qed))))
+
+  (defrule twisted-edwards-neg-of-add
+    (implies (and (twisted-edwards-add-associativity)
+                  (twisted-edwards-curve-completep curve)
+                  (pointp point1)
+                  (pointp point2)
+                  (point-on-twisted-edwards-p point1 curve)
+                  (point-on-twisted-edwards-p point2 curve))
+             (equal (twisted-edwards-neg
+                     (twisted-edwards-add point1 point2 curve) curve)
+                    (twisted-edwards-add (twisted-edwards-neg point1 curve)
+                                         (twisted-edwards-neg point2 curve)
+                                         curve)))
+    :hints (("Goal" :by lemma))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define twisted-edwards-sub ((point1 pointp)
                              (point2 pointp)
                              (curve twisted-edwards-curvep))
