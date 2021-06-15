@@ -50,7 +50,7 @@
      results of recursive calls in some cases
      (e.g. to execute a non-empty list of block items,
      we execute the first, and then execute the rest based on
-     the results from the first.
+     the results from the first).
      Thus, the simplest approach seems to copy the execution functions
      and add a second limit argument to them
      that is tested and decremented along with the first.
@@ -181,7 +181,8 @@
                     (exec-stmt-induct s.else compst fenv
                                       (1- limit) (1- limit1))))
         :switch (mv (error (list :exec-stmt s)) (compustate-fix compst))
-        :while (mv (error (list :exec-stmt s)) (compustate-fix compst))
+        :while (exec-stmt-while-induct s.test s.body compst fenv
+                                       (1- limit) (1- limit1))
         :dowhile (mv (error (list :exec-stmt s)) (compustate-fix compst))
         :for (mv (error (list :exec-stmt s)) (compustate-fix compst))
         :goto (mv (error (list :exec-stmt s)) (compustate-fix compst))
@@ -194,6 +195,19 @@
                                                    (1- limit)
                                                    (1- limit1))
                   (mv nil (compustate-fix compst)))))
+     :measure (nfix limit))
+
+   (define exec-stmt-while-induct (test body compst fenv limit limit1)
+     (b* (((when (or (zp limit) (zp limit1)))
+           (mv (error :limit) (compustate-fix compst)))
+          (continuep (exec-test (exec-expr-pure test compst)))
+          ((when (errorp continuep)) (mv continuep (compustate-fix compst)))
+          ((when (not continuep)) (mv nil (compustate-fix compst)))
+          ((mv val? compst) (exec-stmt-induct body compst fenv
+                                              (1- limit) (1- limit1)))
+          ((when (errorp val?)) (mv val? compst))
+          ((when (valuep val?)) (mv val? compst)))
+       (exec-stmt-while-induct test body compst fenv (1- limit) (1- limit1)))
      :measure (nfix limit))
 
    (define exec-block-item-induct (item compst fenv limit limit1)
@@ -278,6 +292,14 @@
                      (exec-stmt s compst fenv limit)))
      :flag exec-stmt-induct)
 
+   (defthm exec-stmt-while-induct-rewrite
+     (implies (and (natp limit1)
+                   (natp limit)
+                   (>= limit1 limit))
+              (equal (exec-stmt-while-induct test body compst fenv limit limit1)
+                     (exec-stmt-while test body compst fenv limit)))
+     :flag exec-stmt-while-induct)
+
    (defthm exec-block-item-induct-rewrite
      (implies (and (natp limit1)
                    (natp limit)
@@ -298,12 +320,14 @@
                                       exec-expr-asg
                                       exec-fun
                                       exec-stmt
+                                      exec-stmt-while
                                       exec-block-item
                                       exec-block-item-list
                                       exec-expr-call-or-pure-induct
                                       exec-expr-asg-induct
                                       exec-fun-induct
                                       exec-stmt-induct
+                                      exec-stmt-while-induct
                                       exec-block-item-induct
                                       exec-block-item-list-induct)))))
 
@@ -363,6 +387,17 @@
              (exec-stmt s compst fenv limit1)))
      :flag exec-stmt-induct)
 
+   (defthm exec-stmt-while-limit
+     (implies
+      (and (natp limit)
+           (natp limit1)
+           (>= limit1 limit)
+           (not (equal (mv-nth 0 (exec-stmt-while test body compst fenv limit))
+                       (error :limit))))
+      (equal (exec-stmt-while test body compst fenv limit)
+             (exec-stmt-while test body compst fenv limit1)))
+     :flag exec-stmt-while-induct)
+
    (defthm exec-block-item-limit
      (implies
       (and (natp limit)
@@ -389,6 +424,7 @@
                                       exec-expr-asg
                                       exec-fun
                                       exec-stmt
+                                      exec-stmt-while
                                       exec-block-item
                                       exec-block-item-list)))))
 

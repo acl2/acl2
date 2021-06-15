@@ -1698,7 +1698,7 @@
                      (exec-stmt s.then compst fenv (1- limit))
                    (exec-stmt s.else compst fenv (1- limit))))
        :switch (mv (error (list :exec-stmt s)) (compustate-fix compst))
-       :while (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :while (exec-stmt-while s.test s.body compst fenv (1- limit))
        :dowhile (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :for (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :goto (mv (error (list :exec-stmt s)) (compustate-fix compst))
@@ -1707,6 +1707,41 @@
        :return (if (exprp s.value)
                    (exec-expr-call-or-pure s.value compst fenv (1- limit))
                  (mv nil (compustate-fix compst)))))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define exec-stmt-while ((test exprp)
+                           (body stmtp)
+                           (compst compustatep)
+                           (fenv fun-envp)
+                           (limit natp))
+    :guard (> (compustate-frames-number compst) 0)
+    :returns (mv (result value-option-resultp)
+                 (new-compst compustatep))
+    :parents (atc-dynamic-semantics exec)
+    :short "Execute a @('while') statement."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "First, we execute the test.
+       If it yields a 0 scalar, we return a @('nil') value result,
+       because it means that the loop completes,
+       and execution can proceed with any code after the loop.
+       Otherwise, we recursively execute the body.
+       If the body returns a result,
+       we return it from this ACL2 function without continuing the loop.
+       If the body returns no result,
+       we re-execute the loop,
+       by calling this ACL2 function recursively."))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
+         (continuep (exec-test (exec-expr-pure test compst)))
+         ((when (errorp continuep)) (mv continuep (compustate-fix compst)))
+         ((when (not continuep)) (mv nil (compustate-fix compst)))
+         ((mv val? compst) (exec-stmt body compst fenv (1- limit)))
+         ((when (errorp val?)) (mv val? compst))
+         ((when (valuep val?)) (mv val? compst)))
+      (exec-stmt-while test body compst fenv (1- limit)))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1817,6 +1852,11 @@
              (compustate-frames-number compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-stmt)
+    (defret compustate-frames-number-of-exec-stmt-while
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
+      :hyp (> (compustate-frames-number compst) 0)
+      :fn exec-stmt-while)
     (defret compustate-frames-number-of-exec-block-item
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -1856,6 +1896,11 @@
              (compustate-scopes-numbers compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-stmt)
+    (defret compustate-scopes-numbers-of-exec-stmt-while
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
+      :hyp (> (compustate-frames-number compst) 0)
+      :fn exec-stmt-while)
     (defret compustate-scopes-numbers-of-exec-block-item
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
