@@ -83,7 +83,7 @@
                                   (aset1 'translation-array translation-array nodenum next-open-spot))
           (let ((fn (ffn-symb expr)))
             (if (eq 'quote fn)
-                ;; Node is a quoted constant, so inline it:
+                ;; Node is a quoted constant, so inline it (TODO: Can this cause duplicate nodes?!):
                 (crunch-dag-array-aux (+ 1 nodenum)
                                       max-nodenum
                                       next-open-spot ;; did not use a spot
@@ -121,7 +121,7 @@
 
 ;; Remove nodes that do not support NODENUMS and renumber the remaining nodes.
 ;; Returns (mv dag-len dag-array translation-array).
-;; Smashes tag-array and 'translation-array.
+;; Smashes 'tag-array and 'translation-array.
 ;; The resulting dag may have dead nodes at positions at and above the returned dag-len.
 ;; Another option is to go to a dag-lst and then back to a dag.
 ;; TODO: Look up all the nodeums and return them.

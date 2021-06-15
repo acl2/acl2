@@ -1,7 +1,7 @@
 ; DAGs, represented as lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -59,6 +59,7 @@
                                        bound))
   :hints (("Goal" :in-theory (enable strip-cdrs))))
 
+;; See also top-nodenum-of-dag below
 (defun top-nodenum (dag)
   (declare (xargs :GUARD (ALISTP dag) ;or require weak-dagp?  at least require non-empty?
                   :guard-hints (("Goal" :in-theory (enable alistp-guard-hack)))
@@ -311,14 +312,14 @@
 ;; are correct (so this is kind of like pseudo-termp).  This is not a good
 ;; function to use as a guard when recurring down dags because you want to go
 ;; until nil is reached, but nil is not a pseudo-dag.  Instead, see
-;; weak-dagp-aux or pseudo-dagp-aux.
+;; pseudo-dagp-aux (or weak-dagp-aux).
 (defund pseudo-dagp (dag)
   (declare (xargs :guard t))
   (and (consp dag) ;a dag can't be empty (but often we have items that are either dags or quoted constants)
        (let ((first-entry (first dag)))
          (and (consp first-entry)
               (let ((top-nodenum (car first-entry)))
-                (and (natp top-nodenum)
+                (and (natp top-nodenum) ; we check this here but avoid checking natp for every nodenum in pseudo-dagp-aux as we decrement
                      (pseudo-dagp-aux dag top-nodenum)))))))
 
 ;keeping this disabled for now, since it could be expensive.
@@ -684,17 +685,16 @@
            (symbol-listp (dag-fns-aux dag acc)))
   :hints (("Goal" :in-theory (enable weak-dagp dag-exprp0))))
 
-;dag is a dag-lst or quotep
-(defund dag-fns (dag)
-  (declare (xargs :guard (or (quotep dag)
-                             (weak-dagp dag))))
-  (if (quotep dag)
+(defund dag-fns (dag-or-quotep)
+  (declare (xargs :guard (or (quotep dag-or-quotep)
+                             (weak-dagp dag-or-quotep))))
+  (if (quotep dag-or-quotep)
       nil
-    (merge-sort-symbol-< (dag-fns-aux dag nil))))
+    (merge-sort-symbol-< (dag-fns-aux dag-or-quotep nil))))
 
 (defthm symbol-listp-of-dag-fns
-  (implies (weak-dagp dag)
-           (symbol-listp (dag-fns dag)))
+  (implies (weak-dagp dag-or-quotep)
+           (symbol-listp (dag-fns dag-or-quotep)))
   :hints (("Goal" :in-theory (enable dag-fns))))
 
 ;could allow the result to have duplicate nodes, but it doesn't seem worth it to check for that, if we are going to simplify the result anyway

@@ -32,7 +32,8 @@
 
 (local (in-theory (enable not-<-of-car-when-all-<)))
 
-;todo: rename to aref1-list?
+;todo: rename to aref1-list (but that already exists)?
+;todo: combine this with the summing
 ;not tail-rec..
 (defund lookup-lst-array (array-name array indices)
   (declare (xargs :guard (and (all-natp indices)

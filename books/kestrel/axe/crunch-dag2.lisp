@@ -1,7 +1,7 @@
 ; More tools for crunching DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -53,12 +53,6 @@
            (equal (< (array-len-with-slack len slack-amount) len)
                   (< 2147483646 len)))
   :hints (("Goal" :in-theory (enable array-len-with-slack))))
-;;move
-(defthmd not-equal-header-when-natp
-  (implies (natp x)
-           (not (equal ':header x))))
-
-(local (in-theory (enable not-equal-header-when-natp)))
 
 (defthm not-<-of-maxelem-and-maxelem-of-cdr
   (implies (consp (cdr x))
@@ -73,11 +67,45 @@
             (all-< nodenums (+ 1 (maxelem nodenums))))
    :hints (("Goal" :in-theory (enable all-natp)))))
 
-;; Extract a dag (as a list) from DAG-ARRAY containing only the NODENUMS and
-;; the nodes that support them.  Since nodes will in general be renumbered,
-;; this returns renamed-nodenums.
 ;move
+(defthm all-<=-of-maxelem-same
+  (implies (consp x)
+           (all-<= x (maxelem x)))
+  :hints (("Goal" :in-theory (enable all-<= maxelem))))
+
+(defthm all->-of--1-when-all-natp
+  (implies (all-natp x)
+           (all-> x -1))
+  :hints (("Goal" :in-theory (enable all-> all-natp))))
+
+;move
+(defthm all->-of--1-when-nat-listp
+  (implies (nat-listp x)
+           (all-> x '-1)))
+
+(defthm all->-of--1-when-all-natp
+  (implies (all-natp x)
+           (all-> x '-1))
+  :hints (("Goal" :in-theory (enable all-natp all->))))
+
+(local
+ (defthm maxelem-lemma
+   (implies (and (all-natp nodes)
+                 (all-< nodes len)
+                 (consp nodes)
+                 (integerp len))
+            (not (< len (+ 1 (maxelem nodes)))))
+   :hints (("Goal" :in-theory (enable maxelem all-<)))))
+
+;;;
+;;; End of library stuff
+;;;
+
+;; Extract from DAG-ARRAY a dag (as a list) containing only the NODENUMS and
+;; the nodes that support them.  Since nodes will in general be renumbered,
+;; this returns renamed-nodenums, representing the new numbers for NODENUMS.
 ;; Returns (mv renamed-nodenums dag-lst).
+;; TODO: Move to supporting-nodes.lisp?
 (defund drop-non-supporters-array-node-list (dag-array-name dag-array nodenums)
   (declare (xargs :guard (and (true-listp nodenums)
                               (all-natp nodenums)
@@ -100,15 +128,12 @@
   (true-listp (mv-nth 0 (drop-non-supporters-array-node-list dag-array-name dag-array nodenums)))
   :hints (("Goal" :in-theory (enable drop-non-supporters-array-node-list))))
 
-;move
-(defthm all->-of--1-when-nat-listp
-  (implies (nat-listp x)
-           (all-> x '-1)))
-
-(defthm all->-of--1-when-all-natp
-  (implies (all-natp x)
-           (all-> x '-1))
-  :hints (("Goal" :in-theory (enable all-natp all->))))
+(defthm nat-listp-of-mv-nth-0-of-drop-non-supporters-array-node-list
+  (implies (and (all-natp nodenums)
+                (consp nodenums)
+                (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums))))
+           (nat-listp (mv-nth 0 (drop-non-supporters-array-node-list dag-array-name dag-array nodenums))))
+  :hints (("Goal" :in-theory (enable drop-non-supporters-array-node-list))))
 
 ;; The renamed nodes are all valid nodes in the dag
 (defthm all-<-of-mv-nth-0-of-drop-non-supporters-array-node-list
@@ -173,25 +198,6 @@
            :in-theory (disable <=-of-len-of-mv-nth-1-of-drop-non-supporters-array-node-list
                                <=-OF-LEN-OF-MV-NTH-1-OF-DROP-NON-SUPPORTERS-ARRAY-NODE-LIST-GEN))))
 
-
-;move
-(defthm all-<=-of-maxelem-same
-  (implies (consp x)
-           (all-<= x (maxelem x)))
-  :hints (("Goal" :in-theory (enable all-<= maxelem))))
-
-(defthm all->-of--1-when-all-natp
-  (implies (all-natp x)
-           (all-> x -1))
-  :hints (("Goal" :in-theory (enable all-> all-natp))))
-
-(defthm nat-listp-of-mv-nth-0-of-drop-non-supporters-array-node-list
-  (implies (and (all-natp nodenums)
-                (consp nodenums)
-                (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums))))
-           (nat-listp (mv-nth 0 (drop-non-supporters-array-node-list dag-array-name dag-array nodenums))))
-  :hints (("Goal" :in-theory (enable drop-non-supporters-array-node-list))))
-
 (defthm consp-of-mv-nth-1-of-drop-non-supporters-array-node-list
   (implies (and (all-natp nodenums)
                 (consp nodenums)
@@ -199,14 +205,9 @@
            (consp (mv-nth 1 (drop-non-supporters-array-node-list dag-array-name dag-array nodenums))))
   :hints (("Goal" :in-theory (enable drop-non-supporters-array-node-list))))
 
-(local
- (defthm maxelem-lemma
-   (implies (and (all-natp nodes)
-                 (all-< nodes len)
-                 (consp nodes)
-                 (integerp len))
-            (not (< len (+ 1 (maxelem nodes)))))
-   :hints (("Goal" :in-theory (enable maxelem all-<)))))
+;;;
+;;; crunch-dag-array2
+;;;
 
 ;; Extracts from DAG-ARRAY a dag (as a list) containing only the NODENUMS and
 ;; the nodes that support them.  Returns (mv dag-array dag-len renamed-nodenums).

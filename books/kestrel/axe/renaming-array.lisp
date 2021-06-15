@@ -181,8 +181,8 @@
 ;;;
 
 ;; Checks that ARRAY is a valid array, with name ARRAY-NAME, and length at
-;; least NUM-NODES-TO-CHECK, that maps each index from NUM-NODES-TO-CHECK down to
-;; 0 to either a myquotep or a nodenum.
+;; least NUM-NODES-TO-CHECK, that maps each index from NUM-NODES-TO-CHECK - 1
+;; down to 0 to either a myquotep or a nodenum.
 (defund renaming-arrayp (array-name array num-nodes-to-check)
   (declare (xargs :guard t))
   (and (array1p array-name array)

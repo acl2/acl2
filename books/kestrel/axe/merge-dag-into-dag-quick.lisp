@@ -32,6 +32,25 @@
 (local (in-theory (enable symbolp-of-car-when-dag-exprp0
                           car-of-car-when-pseudo-dagp-cheap)))
 
+(local
+ (defthm integerp-when-natp
+   (implies (natp x) (integerp x))))
+
+(local
+ (defthm acl2-numberp-when-natp
+   (implies (natp x) (acl2-numberp x))))
+
+(defthm not-quote-of-ARRAY-TO-ALIST-AUX
+  (implies (not (equal 'quote (car acc)))
+           (not (quotep (ARRAY-TO-ALIST-AUX N LEN ARRAY-NAME ARRAY ACC))))
+  :hints (("Goal" :in-theory (enable ARRAY-TO-ALIST-AUX))))
+
+(local
+ (defthm natp-of-+-of--1
+   (implies (integerp x)
+            (equal (NATP (+ -1 x))
+                   (< 0 x)))))
+
 ;; Merges dag1 into dag2. Takes two dag-lst-or-quoteps and returns a
 ;; dag-lst-or-quotep. Returns (mv erp nodenum-or-quotep-for-dag1
 ;; extended-dag2). any valid nodenums in dag2 remain the same.  fixme make an
@@ -44,9 +63,7 @@
                                   (pseudo-dagp dag2)))
                   :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
                                  :in-theory (e/d ( ;car-of-nth-of-len-minus1-when-pseudo-dagp
-                                                  BOUNDED-DAG-PARENT-ARRAYP
-                                                  wf-dagp
-                                                  )
+                                                  BOUNDED-DAG-PARENT-ARRAYP)
                                                  ( ;REVERSE-REMOVAL
                                                   PSEUDO-DAG-arrayP))))))
   (if (quotep dag1)
@@ -95,9 +112,7 @@
                 (not (mv-nth 0 (merge-dag-into-dag-quick dag1 dag2))))
            (dargp-less-than (mv-nth 1 (merge-dag-into-dag-quick dag1 dag2))
                             (len (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2)))))
-  :hints (("Goal" :in-theory (enable merge-dag-into-dag-quick PSEUDO-DAGP
-                                     wf-dagp ;todo
-                                     ))))
+  :hints (("Goal" :in-theory (enable merge-dag-into-dag-quick PSEUDO-DAGP))))
 
 (defthm natp-of-mv-nth-1-of-merge-dag-into-dag-quick
   (implies (and (or (myquotep dag1)
@@ -149,29 +164,10 @@
                 (not (mv-nth 0 (merge-dag-into-dag-quick dag1 dag2))))
            (pseudo-dagp-aux (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2))
                             (+ -1 (len (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2))))))
-  :hints (("Goal" :in-theory (e/d (merge-dag-into-dag-quick PSEUDO-DAGP wf-dagp
+  :hints (("Goal" :in-theory (e/d (merge-dag-into-dag-quick PSEUDO-DAGP
                                                             ARRAY-TO-ALIST ;todo
                                                             )
                                   (myquotep len PSEUDO-DAGP)))))
-
-(local
- (defthm integerp-when-natp
-   (implies (natp x) (integerp x))))
-
-(local
- (defthm acl2-numberp-when-natp
-   (implies (natp x) (acl2-numberp x))))
-
-(defthm not-quote-of-ARRAY-TO-ALIST-AUX
-  (implies (not (equal 'quote (car acc)))
-           (not (quotep (ARRAY-TO-ALIST-AUX N LEN ARRAY-NAME ARRAY ACC))))
-  :hints (("Goal" :in-theory (enable ARRAY-TO-ALIST-AUX))))
-
-(local
- (defthm natp-of-+-of--1
-   (implies (integerp x)
-            (equal (NATP (+ -1 x))
-                   (< 0 x)))))
 
 (defthm pseudo-dagp-of-mv-nth-2-of-merge-dag-into-dag-quick
   (implies (and (or (myquotep dag1)

@@ -1,7 +1,7 @@
 ; Computing sets of DAG nodes that support DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -400,10 +400,10 @@
 ;; Special case for one node
 ;; rename make-supporters-tag-array-for-node
 (defund tag-supporters-of-node (nodenum
-                               dag-array-name dag-array
-                               tag-array-name ;; the name of the tag array to create
-                               tag-array-length ;if we might look up nodes higher than nodenum, we can make this larger than (+ 1 nodenum) to prevent errors
-                               )
+                                dag-array-name dag-array
+                                tag-array-name ;; the name of the tag array to create
+                                tag-array-length ;if we might look up nodes higher than nodenum, we can make this larger than (+ 1 nodenum) to prevent errors
+                                )
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                               (integerp tag-array-length)
@@ -450,16 +450,17 @@
 ;;; dropping non-supporters
 ;;;
 
-;; Returns (mv dag-lst translation-array).
-;takes arrays but returns a dag-lst
-;the name of translation-array must be 'translation-array
-;the name of tag-array must be 'tag-array
-;the name of dag-array must be dag-array-name
-;todo: avoid making a node that is a quotep (but then consider what to do about possible duplicates caused by that)?
+;; Returns (mv dag translation-array). This takes a dag-array but returns a dag (as a list).
+;; This does not remove duplicates (we are not building even a dag-array, much
+;; less a dag-parent-array!), because we assume that the incoming DAG has no
+;; duplicates, and we are not changing exprs in a way that can introduce duplicates.
+;; TODO: avoid making a node that is a quotep (but then consider what to do about possible duplicate exprs caused by that!).
 (defund build-reduced-dag2 (n top-nodenum dag-array-name dag-array
                               tag-array ; nodes that we want to keep have been tagged
                               dag-len ;the next nodenum to use in the new DAG
-                              translation-array dag-acc)
+                              translation-array
+                              dag-acc ; the DAG being built up
+                              )
   (declare (xargs :measure (+ 1 (nfix (+ 1 (- top-nodenum n))))
                   :guard-hints (("Goal" :in-theory (enable pseudo-dag-arrayp))) ;fixme?
                   :guard (and (array1p 'translation-array translation-array)
@@ -483,11 +484,14 @@
         (let* ((expr (aref1 dag-array-name dag-array n))
                (expr (if (or (variablep expr)
                              (fquotep expr)) ;todo: maybe inline constants
+                         ;; Nothing to fix up:
                          expr
                        (let* ((fn (ffn-symb expr))
                               (args (dargs expr))
                               (new-args (translate-args args translation-array)))
+                         ;; Could try cons-with-hint here if often nothing will change:
                          (cons fn new-args))))
+               ;; Record the new nodenum for old node N:
                (translation-array (aset1 'translation-array translation-array n dag-len))
                (dag-acc (acons-fast dag-len expr dag-acc)))
           (build-reduced-dag2 (+ 1 n) top-nodenum dag-array-name dag-array tag-array (+ 1 dag-len) translation-array dag-acc))))))
@@ -872,7 +876,7 @@
            (pseudo-dagp (drop-non-supporters-array dag-array-name dag-array top-nodenum print)))
   :hints (("Goal" :in-theory (enable drop-non-supporters-array))))
 
-;returns (mv renamed-smaller-nodenum renamed-larger-nodenum dag-lst)
+; Returns (mv renamed-smaller-nodenum renamed-larger-nodenum dag).
 ;; Only used by the equivalence checker.
 (defund drop-non-supporters-array-two-nodes (dag-array-name dag-array smaller-nodenum larger-nodenum)
   (declare (xargs :guard (and (natp larger-nodenum)
