@@ -992,6 +992,7 @@
   :hints (("Goal" :in-theory (enable array-to-alist-aux))))
 
 ;; The indices in the result will be decreasing.
+;; TODO: Put the length argument last?
 (defund array-to-alist (len array-name array)
   (declare (xargs :guard (and (array1p array-name array)
                               (natp len)
