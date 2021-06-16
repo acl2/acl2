@@ -10228,7 +10228,8 @@
   :hints
   (("goal"
     :in-theory (e/d (nth cp-spec-3)
-                    ((:rewrite-quoted-constant true-fix-under-true-equiv))))))
+                    ((:rewrite-quoted-constant true-fix-under-true-equiv)
+                     (:rewrite consp-of-cdr-of-nthcdr))))))
 
 ;; This is screwy! Because it comes from screwy premises.
 (defthm
@@ -10304,7 +10305,8 @@
   (set-default-hints
    '(("goal"
       :in-theory (e/d (nth cp-spec-3)
-                      ((:rewrite-quoted-constant true-fix-under-true-equiv))))))
+                      ((:rewrite-quoted-constant true-fix-under-true-equiv)
+                       consp-of-cdr-of-nthcdr)))))
 
   (defthm
     cp-without-subdirs-helper-correctness-lemma-42
@@ -10847,7 +10849,7 @@
       st))))
   :hints (("Goal" :in-theory
            (e/d
-            (collapse-equiv absfat-equiv put-assoc-equal-of-frame-with-root)
+            (collapse-equiv absfat-equiv put-assoc-of-frame-with-root-1)
             (collapse-congruence-2
              (:rewrite cp-without-subdirs-helper-correctness-lemma-64)
              cp-without-subdirs-helper-correctness-lemma-66))

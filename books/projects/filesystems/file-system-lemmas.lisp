@@ -472,6 +472,14 @@
   (equal (nthcdr i (cdr x))
          (cdr (nthcdr i x))))
 
+(defthm consp-of-cdr-of-nthcdr
+  (equal (consp (cdr (nthcdr i x)))
+         (< (nfix i) (len (cdr x))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (disable nthcdr-of-cdr)
+           :use nthcdr-of-cdr
+           :expand (len (cdr x)))))
+
 ;; The following is redundant with the eponymous theorem in
 ;; books/std/lists/update-nth.lisp, from where it was taken with thanks.
 (defthm update-nth-of-nth

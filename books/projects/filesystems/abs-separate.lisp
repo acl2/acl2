@@ -2668,7 +2668,7 @@
 
 ;; Gonna assume that both of these are disabled because of their potential to
 ;; cause case splits...
-(defthmd put-assoc-equal-of-frame-with-root
+(defthmd put-assoc-of-frame-with-root-1
   (equal (put-assoc-equal key val (frame-with-root root frame))
          (if (equal key 0)
              (cons (cons 0 val) frame)

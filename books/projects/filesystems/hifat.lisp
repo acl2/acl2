@@ -444,6 +444,10 @@
            (list-equiv path nil))
   :rule-classes :forward-chaining)
 
+(defthm nat-equiv-when-zp
+  (implies (zp x) (nat-equiv x 0))
+  :rule-classes :forward-chaining)
+
 (defthm nthcdr-when->=-n-len-l-under-list-equiv
   (implies (>= (nfix n) (len l))
            (list-equiv (nthcdr n l) nil)))
@@ -2072,6 +2076,12 @@
       :use (:instance append-when-prefixp
                       (x (fat32-filename-list-fix x))
                       (y (fat32-filename-list-fix y)))))))
+
+(defthm abs-place-file-helper-of-ctx-app-lemma-1
+  (implies (<= (len y) (len x))
+           (equal (fat32-filename-list-prefixp x y)
+                  (fat32-filename-list-equiv x y)))
+  :hints (("goal" :in-theory (enable fat32-filename-list-equiv))))
 
 ;; This function returns *ENOENT* when the root directory is asked for. There's
 ;; a simple reason: we want to return the whole file, including the directory

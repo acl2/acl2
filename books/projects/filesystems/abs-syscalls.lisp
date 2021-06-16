@@ -3685,7 +3685,7 @@
                                      abs-mkdir abs-file-contents-fix
                                      abs-alloc abs-find-file-helper
                                      assoc-equal-of-frame-with-root
-                                     put-assoc-equal-of-frame-with-root)
+                                     put-assoc-of-frame-with-root-1)
            :do-not-induct t))
   :otf-flg t)
 
@@ -3845,7 +3845,7 @@
      (ABS-MKDIR PARTIAL-COLLAPSE 1ST-COMPLETE-UNDER-PATH
                 ABS-FIND-FILE ABS-FIND-FILE-SRC
                 ASSOC-EQUAL-OF-FRAME-WITH-ROOT
-                PUT-ASSOC-EQUAL-OF-FRAME-WITH-ROOT
+                PUT-ASSOC-OF-FRAME-WITH-ROOT-1
                 ABS-FIND-FILE-AFTER-ABS-MKDIR-LEMMA-6)
      ((:REWRITE FRAME-P-OF-CDR-WHEN-FRAME-P)
       (:REWRITE COLLAPSE-HIFAT-PLACE-FILE-LEMMA-6)

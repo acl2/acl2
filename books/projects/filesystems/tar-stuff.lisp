@@ -2372,63 +2372,18 @@
            :in-theory (enable hifat-find-file (:rewrite abs-pwrite-correctness-lemma-37))
            :expand (hifat-find-file fs path2))))
 
-(defthm
-  hifat-tar-name-list-alist-correctness-lemma-20
-  (implies
-   (and
-    (stringp
-     (m1-file->contents
-      (mv-nth 0
-              (hifat-find-file
-               (m1-file->contents (mv-nth 0 (hifat-find-file fs path1)))
-               (list (car name-list))))))
-    (fat32-filename-list-p path2)
-    (consp
-     (assoc-equal (car name-list)
-                  (m1-file->contents (mv-nth 0 (hifat-find-file fs path1)))))
-    (equal (nth (len path1) path2)
-           (car name-list))
-    (m1-regular-file-p (mv-nth 0 (hifat-find-file fs path2)))
-    (prefixp path1 path2))
-   (equal path2
-          (append path1 (list (car name-list)))))
-  :instructions
-  (:promote
-   (:claim (equal (consp (cdr (nthcdr (len path1) path2)))
-                  (< (nfix (+ 1 (len path1)))
-                     (len path2)))
-           :hints :none)
-   (:bash ("goal" :in-theory (e/d (hifat-find-file)
-                                  ((:rewrite hifat-find-file-of-append-1)
-                                   append-when-prefixp))
-           :use ((:instance append-when-prefixp (x path1)
-                            (y path2))
-                 (:instance (:rewrite hifat-find-file-of-append-1)
-                            (y (nthcdr (len path1) path2))
-                            (x path1)
-                            (fs fs)))))
-   (:dive 1)
-   := :top :bash
-   (:= (nthcdr (len path1) path2)
-       (cons (car (nthcdr (len path1) path2))
-             (cdr (nthcdr (len path1) path2)))
-       :hints :none)
-   (:rewrite cons-equal)
-   :bash (:dive 2)
-   (:rewrite cons-car-cdr)
-   :top :bash (:dive 1 1)
-   (:= (nthcdr 1 (nthcdr (len path1) path2)))
-   (:rewrite nthcdr-of-nthcdr)
-   :up (:rewrite consp-of-nthcdr)
-   :top :bash)
-  :rule-classes
-  ((:rewrite
-    :corollary
+(encapsulate () (local (in-theory (disable consp-of-cdr-of-nthcdr)))
+
+  (defthm
+    hifat-tar-name-list-alist-correctness-lemma-20
     (implies
      (and
-      (not
-       (equal path2
-              (append path1 (list (car name-list)))))
+      (stringp
+       (m1-file->contents
+        (mv-nth 0
+                (hifat-find-file
+                 (m1-file->contents (mv-nth 0 (hifat-find-file fs path1)))
+                 (list (car name-list))))))
       (fat32-filename-list-p path2)
       (consp
        (assoc-equal (car name-list)
@@ -2437,13 +2392,60 @@
              (car name-list))
       (m1-regular-file-p (mv-nth 0 (hifat-find-file fs path2)))
       (prefixp path1 path2))
-     (not
-      (stringp
-       (m1-file->contents
-        (mv-nth 0
-                (hifat-find-file
-                 (m1-file->contents (mv-nth 0 (hifat-find-file fs path1)))
-                 (list (car name-list)))))))))))
+     (equal path2
+            (append path1 (list (car name-list)))))
+    :instructions
+    (:promote
+     (:claim (equal (consp (cdr (nthcdr (len path1) path2)))
+                    (< (nfix (+ 1 (len path1)))
+                       (len path2)))
+             :hints :none)
+     (:bash ("goal" :in-theory (e/d (hifat-find-file)
+                                    ((:rewrite hifat-find-file-of-append-1)
+                                     append-when-prefixp))
+             :use ((:instance append-when-prefixp (x path1)
+                              (y path2))
+                   (:instance (:rewrite hifat-find-file-of-append-1)
+                              (y (nthcdr (len path1) path2))
+                              (x path1)
+                              (fs fs)))))
+     (:dive 1)
+     := :top :bash
+     (:= (nthcdr (len path1) path2)
+         (cons (car (nthcdr (len path1) path2))
+               (cdr (nthcdr (len path1) path2)))
+         :hints :none)
+     (:rewrite cons-equal)
+     :bash (:dive 2)
+     (:rewrite cons-car-cdr)
+     :top :bash (:dive 1 1)
+     (:= (nthcdr 1 (nthcdr (len path1) path2)))
+     (:rewrite nthcdr-of-nthcdr)
+     :up (:rewrite consp-of-nthcdr)
+     :top :bash)
+    :rule-classes
+    ((:rewrite
+      :corollary
+      (implies
+       (and
+        (not
+         (equal path2
+                (append path1 (list (car name-list)))))
+        (fat32-filename-list-p path2)
+        (consp
+         (assoc-equal (car name-list)
+                      (m1-file->contents (mv-nth 0 (hifat-find-file fs path1)))))
+        (equal (nth (len path1) path2)
+               (car name-list))
+        (m1-regular-file-p (mv-nth 0 (hifat-find-file fs path2)))
+        (prefixp path1 path2))
+       (not
+        (stringp
+         (m1-file->contents
+          (mv-nth 0
+                  (hifat-find-file
+                   (m1-file->contents (mv-nth 0 (hifat-find-file fs path1)))
+                   (list (car name-list))))))))))))
 
 ;; Hypotheses minimised.
 (defthm
