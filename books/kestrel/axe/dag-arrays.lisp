@@ -2411,7 +2411,7 @@
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (posp dag-len) ;a pseudo-dag can't be empty
                 )
-           (pseudo-dagp (array-to-alist dag-len dag-array-name dag-array)))
+           (pseudo-dagp (array-to-alist dag-array-name dag-array dag-len)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :use (:instance pseudo-dagp-aux-of-array-to-alist-aux
                            (n 0)

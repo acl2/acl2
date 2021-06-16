@@ -695,7 +695,7 @@
 ;;          (acc-array (make-empty-array 'acc-array (len dag)))
 ;;          (len (len dag)))
 ;;     ;bozo wrong?
-;;     (array-to-alist (len dag) 'acc-array (var-dependency-alist-aux 0 len dag-array acc-array))))
+;;     (array-to-alist 'acc-array (var-dependency-alist-aux 0 len dag-array acc-array) (len dag))))
 
 ;; (defun var-dependencies-for-node (nodenum dag)
 ;;   (let* ((dag-array (make-into-array 'dag-array dag))
@@ -794,7 +794,7 @@
 ;;                              (equal 0 (mod dag-len print-interval)))
 ;; ;                          nil
 ;;                         (print-array2 'dag-array dag-array (+ -1 dag-len) ) ;
-;; ;                          (cw "Adding node ~x0 to dag: ~x1.~%" dag-len (array-to-alist dag-len 'dag-array dag-array))
+;; ;                          (cw "Adding node ~x0 to dag: ~x1.~%" dag-len (array-to-alist 'dag-array dag-array dag-len))
 
 ;;                       (if (and (not dont-add-permanently)
 ;;                                (equal 0 (mod dag-len 1000)))

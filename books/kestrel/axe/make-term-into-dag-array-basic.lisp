@@ -162,7 +162,7 @@
         (mv erp nil)
       (if (consp nodenum-or-quotep)
           (mv (erp-nil) nodenum-or-quotep)
-        (mv (erp-nil) (array-to-alist dag-len 'make-term-into-dag-basic-array dag-array))))))
+        (mv (erp-nil) (array-to-alist 'make-term-into-dag-basic-array dag-array dag-len))))))
 
 (local
  (defthm equal-of-quote-and-car-when-dargp

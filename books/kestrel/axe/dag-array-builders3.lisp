@@ -272,7 +272,7 @@
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (equal (alen1 'dag-parent-array dag-parent-array)
                        (alen1 'dag-array dag-array))
-                (not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
+                ;(not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
                 (<= dag-len 2147483646))
            (bounded-dag-parent-arrayp 'dag-parent-array
                                (mv-nth 4 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))
@@ -282,7 +282,7 @@
                            (bounded-dag-parent-entriesp-after-add-variable-to-dag-array-with-memo)))))
 
 (defthmd dag-variable-alist-correct-after-add-variable-to-dag-array-with-memo
-  (implies (and (not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
+  (implies (and ;(not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
                 (equal dag-variable-alist (make-dag-variable-alist 'dag-array dag-array dag-len))
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp dag-len)
@@ -295,7 +295,7 @@
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-memo))))
 
 (defthmd dag-constant-alist-correct-after-add-variable-to-dag-array-with-memo
-  (implies (and (not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
+  (implies (and ;(not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
                 (equal dag-constant-alist (make-dag-constant-alist 'dag-array dag-array dag-len))
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp dag-len)
@@ -308,7 +308,7 @@
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-memo))))
 
 (defthmd dag-constant-alist-after-add-variable-to-dag-array-with-memo
-  (implies (and (not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
+  (implies (and ;(not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
                 (equal dag-constant-alist (make-dag-constant-alist 'dag-array dag-array dag-len))
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp dag-len)
@@ -322,7 +322,7 @@
 
 (defthm wf-dagp-after-add-variable-to-dag-array-with-memo
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                (not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
+                ;(not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
                 (symbolp var))
            (wf-dagp 'dag-array
                     (mv-nth 2 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))
@@ -453,7 +453,7 @@
                            print-interval
                            (eql 0 (mod dag-len print-interval)))
                       (print-array2 'dag-array dag-array dag-len) ;
-                    ;; (cw "Adding node ~x0 to dag: ~x1.~%" dag-len (array-to-alist dag-len 'dag-array dag-array))
+                    ;; (cw "Adding node ~x0 to dag: ~x1.~%" dag-len (array-to-alist 'dag-array dag-array dag-len))
                     ;;ffixme also print for adding other kinds of nodes (else, there may be missing multiples of 1000?)
                     (and print ;new
                          (eql 0 (mod dag-len 1000))

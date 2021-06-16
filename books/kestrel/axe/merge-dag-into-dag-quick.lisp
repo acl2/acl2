@@ -96,7 +96,7 @@
         ;;fixme return more? ;do the array-to-alist in a wrapper function?
         (mv (erp-nil)
             (aref1 'renaming-array renaming-array (top-nodenum dag1))
-            (array-to-alist dag-len 'dag-array dag-array))))))
+            (array-to-alist 'dag-array dag-array dag-len))))))
 
 (defthm true-listp-of-mv-nth-2-of-merge-dag-into-dag-quick
   (implies (and (true-listp dag1)

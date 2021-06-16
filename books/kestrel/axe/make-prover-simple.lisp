@@ -4408,9 +4408,9 @@
                          ;;                 )))
                          (- (and print (cw ")~%" nodenum)))
                          ;;can we somehow avoid this saving? copy to a new array? ;change ,rewrite-literals-name to not destroy existing nodes?!
-                         ;;(saved-dag-array dag-array) ;(saved-dag-alist (array-to-alist dag-len 'dag-array dag-array)) ;don't convert to an alist?  just restore later by making the old value of dag-array the new  under-the-hood value?  same for parents array?
+                         ;;(saved-dag-array dag-array) ;(saved-dag-alist (array-to-alist 'dag-array dag-array dag-len)) ;don't convert to an alist?  just restore later by making the old value of dag-array the new  under-the-hood value?  same for parents array?
                          ;;(saved-dag-len dag-len)
-                         ;;(saved-dag-parent-array dag-parent-array) ;(saved-dag-parent-alist (array-to-alist dag-len 'dag-parent-array dag-parent-array))
+                         ;;(saved-dag-parent-array dag-parent-array) ;(saved-dag-parent-alist (array-to-alist 'dag-parent-array dag-parent-array dag-len))
                          ;;(saved-dag-constant-alist dag-constant-alist)
                          ;;(saved-dag-variable-alist dag-variable-alist)
                          (case-1-designator (concatenate 'string case-designator "1"))

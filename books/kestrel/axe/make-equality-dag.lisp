@@ -142,5 +142,5 @@
 ;;               (merge-dags-allows-constants-better dag1 dag2)
 ;;               (acons-fast dag-len
 ;;                           `(equal ,top-nodea ,top-nodeb) ;fixme could the equality expression ever be present in the dag? ;ffixme what if the top nodes are the same?
-;;                           (array-to-alist dag-len 'dag-array dag-array) ;ffixme skip this conversion?
+;;                           (array-to-alist 'dag-array dag-array dag-len) ;ffixme skip this conversion?
 ;;                           )))))

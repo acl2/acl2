@@ -993,7 +993,7 @@
 
 ;; The indices in the result will be decreasing.
 ;; TODO: Put the length argument last?
-(defund array-to-alist (len array-name array)
+(defund array-to-alist (array-name array len)
   (declare (xargs :guard (and (array1p array-name array)
                               (natp len)
                               (<= len (alen1 array-name array)))))
@@ -1001,18 +1001,18 @@
 
 (defthm len-of-array-to-alist
   (implies (natp len)
-           (equal (len (array-to-alist len array-name array))
+           (equal (len (array-to-alist array-name array len))
                   len))
   :hints (("Goal" :in-theory (enable array-to-alist))))
 
 (defthm true-listp-of-array-to-alist-type
-  (true-listp (array-to-alist len array-name array))
+  (true-listp (array-to-alist array-name array len))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable array-to-alist))))
 
 (defthm car-of-array-to-alist
   (implies (posp len)
-           (equal (car (array-to-alist len array-name array))
+           (equal (car (array-to-alist array-name array len))
                   (cons (+ -1 len) (aref1 array-name array (+ -1 len)))))
   :hints (("Goal" :in-theory (enable array-to-alist))))
 
