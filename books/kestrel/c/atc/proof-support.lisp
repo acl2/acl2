@@ -661,7 +661,7 @@
    (xdoc::p
     "During symbolic execution, certain term patterns appear,
      which are amenable to simplification via the following rewrite rules.
-     These are non-opener rewrite rules; those are considered separately
+     These are non-opener rewrite rules; opener rules are considered separately
      (see @(tsee atc-opener-rules)).")
    (xdoc::p
     "The following rules are general
@@ -702,7 +702,40 @@
      It seems that, in the course of these symbolic execution proofs,
      we will always want to distribute functions over @(tsee if)s.
      This distribution happens at the goal level,
-     but not in the rewriter by default."))
+     but not in the rewriter by default.")
+   (xdoc::p
+    "The two @('not-zp-of-limit-...') rules
+     serve to relieve the recurring hypothesis
+     that the limit is never 0 during the symbolic execution.
+     Initially the limit is a variable, and the first rule applies;
+     the hypothesis of this rule is easily discharged by
+     the inequality assumption over the initial limit
+     in the symbolic execution theorem,
+     via ACL2's linear arithmetic.
+     The @(tsee syntaxp) hypothesis restricts the application of the rule
+     to the case in which the limit is a variable (which is true initially).
+     As the symbolic execution proceeds,
+     1 gets repeatedly subtracted from the initial limit variable,
+     and it appears that ACL2 automatically combines multiple 1s
+     into constants larger than 1,
+     giving the pattern @('(binary-+ \'<negative-integer> <limit-variable>)').
+     This is the pattern in the second rule @('not-zp-of-limit-...'),
+     whose hypothesis about the limit variable
+     is easily discharged via linear arithmetic."))
+
+  (defruled not-zp-of-limit-variable
+    (implies (and (syntaxp (symbolp limit))
+                  (integerp limit)
+                  (> limit 0))
+             (not (zp limit))))
+
+  (defruled not-zp-of-limit-minus-const
+    (implies (and (syntaxp (quotep -c))
+                  (integerp -c)
+                  (< -c 0)
+                  (integerp limit)
+                  (> limit (- -c)))
+             (not (zp (binary-+ -c limit)))))
 
   (defruled value-result-fix-when-valuep
     (implies (valuep x)
@@ -1075,6 +1108,8 @@
      the finding of a variable in a scope."))
   (append
    '(;; introduced in this file (see ATC-REWRITE-RULES):
+     not-zp-of-limit-variable
+     not-zp-of-limit-minus-const
      value-result-fix-when-valuep
      not-errorp-when-valuep
      not-errorp-when-value-listp
