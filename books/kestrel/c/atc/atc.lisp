@@ -3122,10 +3122,9 @@
 (define atc-gen-fn-exec-var-limit-correct-thm
   ((fn symbolp)
    (pointers symbol-listp)
+   (prec-fns atc-symbol-fninfo-alistp)
    (prog-const symbolp)
    (limit natp)
-   (fn-returns-value-thm symbolp)
-   (fn-exec-const-limit-correct-thm symbolp)
    (names-to-avoid symbol-listp)
    (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
@@ -3182,21 +3181,40 @@
                          ,limit-var)))
            (and (equal ,new-compst-var ,compst-var)
                 (equal ,result-var (,fn ,@args)))))
+       (returns-value-thms
+        (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns))
+       (exec-var-limit-correct-thms
+        (atc-symbol-fninfo-alist-to-exec-var-limit-correct-thms prec-fns))
+       (type-prescriptions
+        (loop$ for callable in (strip-cars prec-fns)
+               collect `(:t ,callable)))
        (instantiation
         (atc-gen-instantiation-deref-compustate pointers compst-var))
        (hints `(("Goal"
-                 :in-theory '((:executable-counterpart ident)
-                              (:executable-counterpart natp)
-                              (:executable-counterpart tau-system)
-                              ,fn-exec-const-limit-correct-thm)
-                 :use ((:instance ,fn-returns-value-thm
-                        :extra-bindings-ok ,@instantiation)
-                       (:instance errorp-of-error (info :limit))
-                       (:instance exec-fun-limit
-                        (limit ,limit)
-                        (limit1 ,limit-var)
-                        (fun (ident ,(symbol-name fn)))
-                        (args (list ,@formals)))))))
+                 :in-theory (append (set-difference-eq
+                                     *atc-all-rules*
+                                     '(exec-expr-pure-base-6
+                                       exec-expr-pure-base-7
+                                       exec-expr-pure-base-8
+                                       exec-expr-pure-list-base-2
+                                       exec-stmt-base-1
+                                       exec-stmt-base-6
+                                       exec-stmt-base-8
+                                       exec-block-item-list-base-1
+                                       exec-block-item-list-base-3
+                                       init-scope-base-2
+                                       read-var-aux-base-1
+                                       write-var-aux-base-1))
+                                    '(,fn)
+                                    ',type-prescriptions
+                                    ',returns-value-thms
+                                    ',exec-var-limit-correct-thms)
+                 :use (:instance (:guard-theorem ,fn)
+                       :extra-bindings-ok ,@instantiation)
+                 :expand (:lambdas
+                          (:free (args ,compst-var ,fenv-var limit)
+                           (exec-fun '(:ident (name . ,(symbol-name fn)))
+                                     args ,compst-var ,fenv-var limit))))))
        ((mv local-event &)
         (evmac-generate-defthm
          name
@@ -3296,19 +3314,17 @@
             fn-returns-value-thm
             names-to-avoid)
         (atc-gen-fn-returns-value-thm fn type prec-fns names-to-avoid wrld))
-       ((mv fn-exec-const-limit-correct-event
-            fn-exec-const-limit-correct-thm
-            names-to-avoid)
-        (atc-gen-fn-exec-const-limit-correct-thm fn pointers
-                                                 prec-fns prog-const limit
-                                                 names-to-avoid wrld))
+       ;; ((mv fn-exec-const-limit-correct-event
+       ;;      fn-exec-const-limit-correct-thm
+       ;;      names-to-avoid)
+       ;;  (atc-gen-fn-exec-const-limit-correct-thm fn pointers
+       ;;                                           prec-fns prog-const limit
+       ;;                                           names-to-avoid wrld))
        ((mv fn-exec-var-limit-correct-local-event
             fn-exec-var-limit-correct-thm
             names-to-avoid)
         (atc-gen-fn-exec-var-limit-correct-thm fn pointers
-                                               prog-const limit
-                                               fn-returns-value-thm
-                                               fn-exec-const-limit-correct-thm
+                                               prec-fns prog-const limit
                                                names-to-avoid wrld))
        ((mv fn-correct-local-event
             fn-correct-exported-event
@@ -3323,7 +3339,7 @@
                            `((cw-event " done.~%"))))
        (local-events (append progress-start?
                              (list fn-returns-value-event)
-                             (list fn-exec-const-limit-correct-event)
+                             ;; (list fn-exec-const-limit-correct-event)
                              (list fn-exec-var-limit-correct-local-event)
                              (list fn-correct-local-event)
                              progress-end?))
