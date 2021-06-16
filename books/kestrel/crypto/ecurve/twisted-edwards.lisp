@@ -2401,3 +2401,93 @@
      ///
      (fty::deffixequiv-sk twisted-edwards-point-order-leastp
        :args ((point pointp) (order natp) (curve twisted-edwards-curvep))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule twisted-edwards-mul-of-mod-order
+  :short "Scalar multiplication modulo order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Multiplication by a scalar is the same as
+     multiplication by the scalar modulo the order of the point.
+     This is for points of non-zero order."))
+  (implies (and (twisted-edwards-add-associativity)
+                (twisted-edwards-curve-completep curve)
+                (pointp point)
+                (integerp scalar)
+                (point-on-twisted-edwards-p point curve)
+                (natp order)
+                (twisted-edwards-point-orderp point order curve))
+           (equal (twisted-edwards-mul (mod scalar order) point curve)
+                  (twisted-edwards-mul scalar point curve)))
+
+  :prep-lemmas
+
+  ((defrule decompose-floor-mod
+     (implies (and (integerp x)
+                   (integerp y))
+              (equal x (+ (* (floor x y) y)
+                          (mod x y))))
+     :rule-classes nil
+     :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+
+   (defrule integerp-of-mod
+     (implies (and (integerp x)
+                   (integerp y))
+              (integerp (mod x y)))
+     :rule-classes :type-prescription
+     :enable mod)
+
+   (acl2::defisar
+    theorem
+    (implies (and (twisted-edwards-add-associativity)
+                  (twisted-edwards-curve-completep curve)
+                  (pointp point)
+                  (integerp scalar)
+                  (point-on-twisted-edwards-p point curve)
+                  (natp order)
+                  (twisted-edwards-point-orderp point order curve))
+             (equal (twisted-edwards-mul (mod scalar order) point curve)
+                    (twisted-edwards-mul scalar point curve)))
+    :proof
+    ((:assume (:assoc (twisted-edwards-add-associativity)))
+     (:assume (:complete (twisted-edwards-curve-completep curve)))
+     (:assume (:scalar (integerp scalar)))
+     (:assume (:point (and (pointp point)
+                           (point-on-twisted-edwards-p point curve))))
+     (:assume (:order (natp order)))
+     (:assume (:point-order (twisted-edwards-point-orderp point order curve)))
+     (:derive (:order-not-zero (not (equal order 0)))
+      :from (:point-order)
+      :hints (("Goal" :in-theory (enable twisted-edwards-point-orderp))))
+     (:derive (:decompose-scalar
+               (equal (twisted-edwards-mul scalar point curve)
+                      (twisted-edwards-mul (+ (* (floor scalar order) order)
+                                              (mod scalar order))
+                                           point
+                                           curve)))
+      :from (:scalar :order)
+      :hints (("Goal"
+               :use (:instance decompose-floor-mod (x scalar) (y order))
+               :in-theory (disable floor mod))))
+     (:derive (:reduce-to-mod
+               (equal (twisted-edwards-mul (+ (* (floor scalar order) order)
+                                              (mod scalar order))
+                                           point
+                                           curve)
+                      (twisted-edwards-mul (mod scalar order) point curve)))
+      :from (:complete :assoc :point :scalar :order :point-order)
+      :hints (("Goal"
+               :in-theory (e/d (twisted-edwards-mul-of-scalar-addition
+                                twisted-edwards-mul-of-mul-converse
+                                twisted-edwards-point-orderp)
+                               (floor
+                                mod
+                                commutativity-of-*
+                                twisted-edwards-mul-of-mul)))))
+     (:derive (:conclusion
+               (equal (twisted-edwards-mul (mod scalar order) point curve)
+                      (twisted-edwards-mul scalar point curve)))
+      :from (:decompose-scalar :reduce-to-mod))
+     (:qed)))))
