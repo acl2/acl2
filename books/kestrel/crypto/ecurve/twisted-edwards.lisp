@@ -1463,6 +1463,7 @@
                          point1)
                   (equal (twisted-edwards-neg point1 curve)
                          point2)))
+    :disable t
     :proof
     ((:assume (:associativity (twisted-edwards-add-associativity)))
      (:assume (:complete (twisted-edwards-curve-completep curve)))
@@ -1516,8 +1517,7 @@
                            (twisted-edwards-zero))
                     (equal point1
                            (twisted-edwards-neg point2 curve))))
-    :use lemma
-    :disable lemma)
+    :use lemma)
 
   (defruled twisted-edwards-add-zero-right-is-neg
     (implies (and (twisted-edwards-add-associativity)
@@ -1550,7 +1550,6 @@
                   (equal (point-fix point1)
                          (point-fix point2))))
   :use lemma
-  :disable lemma
   :prep-lemmas
   ((acl2::defisar
     lemma
@@ -1563,6 +1562,7 @@
                          (twisted-edwards-add point point2 curve)))
              (equal (point-fix point1)
                     (point-fix point2)))
+    :disable t
     :proof
     ((:assume (:associativity (twisted-edwards-add-associativity)))
      (:assume (:complete (twisted-edwards-curve-completep curve)))
@@ -1623,6 +1623,7 @@
                     (twisted-edwards-add (twisted-edwards-neg point1 curve)
                                          (twisted-edwards-neg point2 curve)
                                          curve)))
+    :disable t
     :proof
     ((:assume (:assoc (twisted-edwards-add-associativity)))
      (:assume (:complete (twisted-edwards-curve-completep curve)))
@@ -2004,6 +2005,7 @@
                     (twisted-edwards-add (twisted-edwards-mul scalar1 point curve)
                                          (twisted-edwards-mul scalar2 point curve)
                                          curve)))
+    :disable t
     :proof
     ((:assume (:associativity (twisted-edwards-add-associativity)))
      (:assume (:complete (twisted-edwards-curve-completep curve)))
@@ -2055,11 +2057,6 @@
      (:qed))))
 
   (local
-   (in-theory
-    (disable
-     twisted-edwards-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum)))
-
-  (local
    (acl2::defisar
     twisted-edwards-mul-of-scalar-addition-when-nonneg-nonpos-nonpossum
     (implies (and (twisted-edwards-add-associativity)
@@ -2075,6 +2072,7 @@
                     (twisted-edwards-add (twisted-edwards-mul scalar1 point curve)
                                          (twisted-edwards-mul scalar2 point curve)
                                          curve)))
+    :disable t
     :proof
     ((:assume (:associativity (twisted-edwards-add-associativity)))
      (:assume (:complete (twisted-edwards-curve-completep curve)))
@@ -2122,11 +2120,6 @@
                        curve)))
       :from (:negate-both :complete :associativity :point :scalar1 :scalar2))
      (:qed))))
-
-  (local
-   (in-theory
-    (disable
-     twisted-edwards-mul-of-scalar-addition-when-nonneg-nonpos-nonpossum)))
 
   (defruledl twisted-edwards-mul-of-scalar-addition-when-nonneg-nonpos
     (implies (and (twisted-edwards-add-associativity)
