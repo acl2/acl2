@@ -1091,6 +1091,7 @@
                          point1)
                   (equal (montgomery-neg point1 curve)
                          point2)))
+    :disable t
     :proof
     ((:assume (:closure (montgomery-add-closure)))
      (:assume (:associativity (montgomery-add-associativity)))
@@ -1146,8 +1147,7 @@
                            (montgomery-zero))
                     (equal point1
                            (montgomery-neg point2 curve))))
-    :use lemma
-    :disable lemma)
+    :use lemma)
 
   (defruled montgomery-add-zero-right-is-neg
     (implies (and (montgomery-add-closure)
@@ -1160,8 +1160,7 @@
                            (montgomery-zero))
                     (equal point2
                            (montgomery-neg point1 curve))))
-    :use lemma
-    :disable lemma)
+    :use lemma)
 
   (theory-invariant (incompatible (:rewrite montgomery-add-zero-left-is-neg)
                                   (:rewrite montgomery-add-zero-right-is-neg))))
@@ -1246,6 +1245,7 @@
                     (montgomery-add (montgomery-neg point1 curve)
                                     (montgomery-neg point2 curve)
                                     curve)))
+    :disable t
     :proof
     ((:assume (:closure (montgomery-add-closure)))
      (:assume (:assoc (montgomery-add-associativity)))
@@ -1610,6 +1610,7 @@
                     (montgomery-add (montgomery-mul scalar1 point curve)
                                     (montgomery-mul scalar2 point curve)
                                     curve)))
+    :disable t
     :proof
     ((:assume (:closure (montgomery-add-closure)))
      (:assume (:associativity (montgomery-add-associativity)))
@@ -1656,10 +1657,6 @@
      (:qed))))
 
   (local
-   (in-theory
-    (disable montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum)))
-
-  (local
    (acl2::defisar
     montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonpossum
     (implies (and (montgomery-add-closure)
@@ -1674,6 +1671,7 @@
                     (montgomery-add (montgomery-mul scalar1 point curve)
                                     (montgomery-mul scalar2 point curve)
                                     curve)))
+    :disable t
     :proof
     ((:assume (:closure (montgomery-add-closure)))
      (:assume (:associativity (montgomery-add-associativity)))
@@ -1712,10 +1710,6 @@
                                       curve)))
       :from (:negate-both :closure :associativity :point :scalar1 :scalar2))
      (:qed))))
-
-  (local
-   (in-theory
-    (disable montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonpossum)))
 
   (defruledl montgomery-mul-of-scalar-addition-when-nonneg-nonpos
     (implies (and (montgomery-add-closure)
@@ -2153,6 +2147,7 @@
                   (equal (point-kind point2) :finite)
                   (not (equal (point-finite->x point1)
                               (point-finite->x point2)))))
+    :disable t
     :proof
     ((:assume
       (:closure (montgomery-add-closure)))
