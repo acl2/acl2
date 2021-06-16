@@ -46,7 +46,8 @@
 (include-book "kestrel/utilities/user-interface" :dir :system) ;for control-screen-output
 (include-book "defthm-events")
 
-(local (in-theory (disable mv-nth)))
+(local (in-theory (disable mv-nth
+                           remove-guard-holders-weak)))
 
 ;dup in ../sequences/seq2
 (defthm last-of-cdr
@@ -179,13 +180,18 @@
       claim
     (add-hyp-to-claim (first hyps) (add-hyps-to-claim (rest hyps) claim))))
 
-(defun add-hyps-to-claims (hyps claims)
+(defund add-hyps-to-claims (hyps claims)
   (declare (xargs :guard (and (true-listp hyps)
                               (true-listp claims))))
   (if (endp claims)
       nil
     (cons (add-hyps-to-claim hyps (first claims))
           (add-hyps-to-claims hyps (rest claims)))))
+
+(defthm len-of-add-hyps-to-claims
+  (equal (len (add-hyps-to-claims hyps claims))
+         (len claims))
+  :hints (("Goal" :in-theory (enable add-hyps-to-claims))))
 
 ;; ;finds free vars in a term
 ;; (mutual-recursion
@@ -308,9 +314,10 @@
 (defun make-unroll-and-base-claims-aux (term
                                         fns ;all the functions in the mut-rec nest
                                         fn-call)
-  (declare (xargs :guard (and (symbol-listp fns)
-                              (pseudo-termp term))
-                  :verify-guards nil ;todo below
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (symbol-listp fns)
+                              (pseudo-termp fn-call))
+                  :verify-guards nil ; done below
                   ))
   (if (and (consp term)
            (eq 'if (ffn-symb term)))
@@ -380,11 +387,12 @@
                 (pseudo-termp term))
            (pseudo-term-listp (mv-nth 0 (make-unroll-and-base-claims-aux term fns fn-call)))))
 
-;; (defthm pseudo-term-listp-of-mv-nth-1-of-make-unroll-and-base-claims-aux
-;;   (pseudo-term-listp (mv-nth 1 (make-unroll-and-base-claims-aux term fns fn-call))))
+(defthm pseudo-term-listp-of-mv-nth-1-of-make-unroll-and-base-claims-aux
+  (implies (and (pseudo-termp term)
+                (pseudo-termp fn-call))
+           (pseudo-term-listp (mv-nth 1 (make-unroll-and-base-claims-aux term fns fn-call)))))
 
-;todo
-;(verify-guards make-unroll-and-base-claims-aux)
+(verify-guards make-unroll-and-base-claims-aux)
 
 ;;Result is an untranslated term
 (defun clean-up-hyps-in-claim (claim)
@@ -495,7 +503,7 @@
       (prog2$ (cw "~x0~%" elided-thm)
               (cw-theorems (rest thms))))))
 
-(defun switch-package (symbol existing-symbol)
+(defund switch-package (symbol existing-symbol)
   (declare (xargs :guard (and (symbolp symbol)
                               (symbolp existing-symbol))))
   (intern-in-package-of-symbol (symbol-name symbol) existing-symbol))
@@ -503,7 +511,11 @@
 ;; Returns (mv event generated-names).
 (defund make-unroll-and-base-theorems (fn all-fns-in-nest hyps disable suffix verbose state)
   (declare (xargs :stobjs state
-                  :verify-guards nil
+                  :guard (and (symbolp fn)
+                              (symbol-listp all-fns-in-nest)
+                              (symbolp suffix)
+                              )
+                  :verify-guards nil ;todo
                   ))
   (let* ((body (fn-body fn t (w state)))
          (body (remove-guard-holders-weak body))
