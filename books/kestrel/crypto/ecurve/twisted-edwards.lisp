@@ -1812,6 +1812,7 @@
   :hooks (:fix)
 
   :prepwork
+
   ((define twisted-edwards-mul-nonneg ((scalar natp)
                                        (point pointp)
                                        (curve twisted-edwards-curvep))
@@ -1826,6 +1827,7 @@
      :hooks (:fix)
      :verify-guards nil ; done below
      ///
+
      (defrule point-on-twisted-edwards-p-of-twisted-edwards-mul-nonneg
        (implies (and (twisted-edwards-curve-completep curve)
                      (pointp point)
@@ -1834,18 +1836,61 @@
                                                                         point
                                                                         curve)
                                             curve)))
-     (verify-guards twisted-edwards-mul-nonneg)))
+
+     (verify-guards twisted-edwards-mul-nonneg)
+
+     (defrule twisted-edwards-mul-nonneg-of-0
+       (equal (twisted-edwards-mul-nonneg 0 point curve)
+              (twisted-edwards-zero)))
+
+     (defrule twisted-edwards-mul-nonneg-of-1
+       (implies (point-on-twisted-edwards-p point curve)
+                (equal (twisted-edwards-mul-nonneg 1 point curve)
+                       (point-fix point))))
+
+     (defrule twisted-edwards-mul-nonneg-of-zero
+       (equal (twisted-edwards-mul-nonneg scalar
+                                          (twisted-edwards-zero)
+                                          curve)
+              (twisted-edwards-zero)))))
 
   ///
 
-  (defrule point-on-twisted-edwards-p-of-twisted-edwards-mul
+  (defret point-on-twisted-edwards-p-of-twisted-edwards-mul
+    (point-on-twisted-edwards-p point1 curve)
+    :hyp (and (twisted-edwards-curve-completep curve)
+              (pointp point)
+              (point-on-twisted-edwards-p point curve)))
+
+  (defrule twisted-edwards-mul-of-0
+    (equal (twisted-edwards-mul 0 point curve)
+           (twisted-edwards-zero)))
+
+  (defrule twisted-edwards-mul-of-1
+    (implies (point-on-twisted-edwards-p point curve)
+             (equal (twisted-edwards-mul 1 point curve)
+                    (point-fix point))))
+
+  (defrule twisted-edwards-mul-of-zero
+    (equal (twisted-edwards-mul scalar (twisted-edwards-zero) curve)
+           (twisted-edwards-zero)))
+
+  (defrule twisted-edwards-mul-of-minus1
+    (implies (point-on-twisted-edwards-p point curve)
+             (equal (twisted-edwards-mul -1 point curve)
+                    (twisted-edwards-neg point curve))))
+
+  (defrule twisted-edwards-neg-of-mul
     (implies (and (twisted-edwards-curve-completep curve)
                   (pointp point)
                   (point-on-twisted-edwards-p point curve))
-             (point-on-twisted-edwards-p (twisted-edwards-mul scalar
+             (equal (twisted-edwards-neg (twisted-edwards-mul scalar
                                                               point
                                                               curve)
-                                         curve))))
+                                         curve)
+                    (twisted-edwards-mul (- (ifix scalar)) point curve)))
+    :enable twisted-edwards-mul
+    :prep-books ((include-book "kestrel/arithmetic-light/minus" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
