@@ -503,7 +503,7 @@ the implementation.</p>"
 
 
 (defabsstobj-events sin
-  :concrete sin$c
+  :foundation sin$c
   :recognizer (sinp :logic strin-p
                     :exec sin$cp)
   :creator (create-sin :logic empty-strin

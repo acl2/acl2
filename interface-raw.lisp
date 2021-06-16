@@ -2178,8 +2178,8 @@
 ; guard and hence, by the {preserved} theorems, results in an abstract stobj
 ; that satisfies the abstract predicate -- provably, since we are dealing with
 ; ground terms.  Moreover, because of the {guard-thm} theorems we know that the
-; concrete predicate provably holds as well, and hence won't be "revoked" as in
-; the preceding paragraph.
+; foundational stobjs' predicate provably holds as well, and hence won't be
+; "revoked" as in the preceding paragraph.
 
 ; Why do we care about guards on concrete stobjs?  For all we know, failure to
 ; respect those guards could result in corruption of the Lisp process.  An
@@ -2191,14 +2191,14 @@
 ; context of evaluating just the guard.
 
 ; Note that it is not sufficient to ensure for an abstract stobj that the
-; corresponding concrete stobj always satisfies its recognizer.  It is easy to
-; imagine a defabsstobj :export field that specifies the identify function for
-; its :logic component, returning the stobj unchanged, but for the :exec
-; component makes an ill-guarded call to update the stobj, corrupting the Lisp
-; imagine, before restoring the stobj.  In raw Lisp, this could really happen
-; because the export is a macro that calls the :exec function directly; the
-; only guard that need be met before this happens is a variant of the :logic
-; function's guard, at the level of *1* function of the export.
+; foundational stobj always satisfies its recognizer.  It is easy to imagine a
+; defabsstobj :export field that specifies the identify function for its :logic
+; component, returning the stobj unchanged, but for the :exec component makes
+; an ill-guarded call to update the stobj, corrupting the Lisp imagine, before
+; restoring the stobj.  In raw Lisp, this could really happen because the
+; export is a macro that calls the :exec function directly; the only guard that
+; need be met before this happens is a variant of the :logic function's guard,
+; at the level of *1* function of the export.
 
 ; Finally, here is the example promised above.
 
@@ -2229,6 +2229,11 @@
 ; example if the getprop below returns nil because the necessary property has
 ; not yet been put into wrld.  But as of this writing, the test seems to apply
 ; only to stobj updaters and resize functions.
+
+; Probably we could weaken the all-nils test below in the case that fn is a
+; stobj field recognizer (for either a concrete or an abstract stobj).  The
+; performance benefit may be small, so for now at least we avoid complicating
+; the code with that consideration.
 
                                             (let ((stobjs-out
                                                    (getpropc fn 'stobjs-out nil

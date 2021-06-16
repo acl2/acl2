@@ -6727,7 +6727,7 @@
   (mv-let (prefix suffix)
           (case type
             (:A (mv nil "$A")) ; abstract
-            (:C (mv nil "$C")) ; concrete
+            (:C (mv nil "$C")) ; concrete (really, foundation)
             (:CREATOR (mv "CREATE-" nil))
             (:RECOGNIZER (mv nil "P"))
             (:RECOGNIZER-LOGIC (mv nil "$AP"))

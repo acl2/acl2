@@ -19896,6 +19896,13 @@
 ; of evaluation uses ACL2 objects, even when modeling evaluation that takes
 ; place in raw Lisp using live stobjs.
 
+; (That said, there are clearly issues to address to ensure that raw Lisp
+; evaluation involving live stobjs is truly modeled by our evaluator.  The
+; anti-aliasing restriction implemented in
+; no-duplicatesp-checks-for-stobj-let-actuals is an example of how we avoid
+; a non-applicative child stobj modification that would not be modeled by our
+; purely functional object-level evaluator.)
+
 ; We introduce two kinds of evaluation: the :EXEC evaluator models how ACL2
 ; actually does evaluation (again, avoiding consideration of live stobjs),
 ; while the :LOGIC evaluator models evaluation in the logic.  The only
@@ -20322,7 +20329,7 @@
 ; modify these respectively by eliminating s0 from the domain and adding the
 ; pair <s0$c,s0_E>, therefore b_E$c E-corresponds to b_L''.  (Note that the
 ; common value of s0_E for s0$c in the two alists is appropriate for
-; E-corresopndence because s0$c is a concrete stobj, as we are not yet handling
+; E-correspondence because s0$c is a concrete stobj, as we are not yet handling
 ; the general case where the foundational stobj may be an abstract stobj.
 ; E-correspondence also requires that s0_E satisfy the recognizer for s0$c; but
 ; that follows since as already noted, b_E E-corresponds to b_L, which by
@@ -20665,7 +20672,9 @@
 (defmacro defabsstobj (&whole event-form
                               name
                               &key
-                              concrete recognizer creator exports
+                              foundation
+                              concrete ; deprecated alias for foundation
+                              recognizer creator exports
                               protect-default
                               congruent-to
                               &allow-other-keys)
@@ -20677,9 +20686,10 @@
 
   (let* ((the-live-name (the-live-var name))
          (recognizer (or recognizer (absstobj-name name :RECOGNIZER)))
-         (st$c (cond ((null concrete) (absstobj-name name :C))
-                     ((consp concrete) (car concrete))
-                     (t concrete)))
+         (foundation (or foundation concrete))
+         (st$c (cond ((null foundation) (absstobj-name name :C))
+                     ((consp foundation) (car foundation))
+                     (t foundation)))
          (creator (or creator (absstobj-name name :CREATOR)))
          (creator-name (if (consp creator)
                            (car creator)
@@ -20720,14 +20730,13 @@
 
 ; For defstobj, we lay down a defg form for the variable (st-lst name).  Here,
 ; we do not do so, because memoize-fn collects st-lst values based on
-; (congruent-stobj-rep values for) corresponding concrete stobjs.  To see why
-; this is appropriate, consider what happens when a stobj primitive is called
-; for an abstract stobj that updates that stobj.  That primitive is defined as
-; a macro that expands to a call of the :exec function for that stobj
-; primitive.  Any memoized function call made on behalf of calling that :exec
-; function will take responsibility for flushing memo tables; see the
-; discussion of abstract stobjs in comments in memoize-fn.  So there is no defg
-; form to lay down here.
+; (congruent-stobj-rep values for) underlying concrete stobjs.  To see why this
+; is appropriate, consider what happens when a stobj primitive is called for an
+; abstract stobj that updates that stobj.  That primitive is defined as a macro
+; that expands to a call of the :exec function for that stobj primitive.  Any
+; memoized function call made on behalf of calling that :exec function will
+; take responsibility for flushing memo tables; see the discussion of abstract
+; stobjs in comments in memoize-fn.  So there is no defg form to lay down here.
 
              ,@(mapcar (function (lambda (def)
                                    (cons 'DEFMACRO def)))
@@ -20778,27 +20787,54 @@
                                     *user-stobj-alist*))))
                  ',name))))))))))
 
+(defun defabsstobj-concrete-deprecation-chk (foundation concrete ctx state)
+  (cond ((and concrete foundation)
+         (er soft ctx
+             "It is illegal to supply non-nil values for both defabsstobj ~
+              keywords :CONCRETE and :FOUNDATION."))
+        (concrete
+         (pprogn (warning$ ctx
+                           "Deprecated"
+                           "The keyword :CONCRETE is deprecated and will ~
+                            likely no longer be supported after ACL2 Version ~
+                            8.4.  Use :FOUNDATION instead.")
+                 (value nil)))
+        (t (value nil))))
+
+(defmacro with-defabsstobj-concrete-deprecation-chk (foundation concrete ctx
+                                                                form)
+
+; Note that foundation and concrete are quoted below, but ctx and form are not.
+
+  `(er-progn
+    (defabsstobj-concrete-deprecation-chk ',foundation ',concrete ,ctx state)
+    ,form))
+
 #+acl2-loop-only
 (defmacro defabsstobj (&whole event-form
                               name
                               &key
-                              concrete recognizer creator corr-fn exports
+                              foundation
+                              concrete ; deprecated alias for foundation
+                              recognizer creator corr-fn exports
                               protect-default
                               congruent-to missing-only)
   (declare (xargs :guard (and (symbolp name)
                               (booleanp protect-default))))
-  (list 'defabsstobj-fn
-        (list 'quote name)
-        (list 'quote concrete)
-        (list 'quote recognizer)
-        (list 'quote creator)
-        (list 'quote corr-fn)
-        (list 'quote exports)
-        (list 'quote protect-default)
-        (list 'quote congruent-to)
-        (list 'quote missing-only)
-        'state
-        (list 'quote event-form)))
+  (list 'with-defabsstobj-concrete-deprecation-chk
+        foundation concrete ''defabsstobj
+        (list 'defabsstobj-fn
+              (list 'quote name)
+              (list 'quote (or foundation concrete))
+              (list 'quote recognizer)
+              (list 'quote creator)
+              (list 'quote corr-fn)
+              (list 'quote exports)
+              (list 'quote protect-default)
+              (list 'quote congruent-to)
+              (list 'quote missing-only)
+              'state
+              (list 'quote event-form))))
 
 (defun concrete-stobj (st wrld)
   (let ((absstobj-info
@@ -20813,23 +20849,28 @@
 (defmacro defabsstobj-missing-events (&whole event-form
                                              name
                                              &key
-                                             concrete recognizer creator
+                                             foundation
+                                             concrete ; deprecated alias for foundation
+                                             recognizer creator
                                              corr-fn exports protect-default
                                              congruent-to)
   (declare (xargs :guard (symbolp name)))
-  (list 'defabsstobj-fn1
-        (list 'quote name)
-        (list 'quote concrete)
-        (list 'quote recognizer)
-        (list 'quote creator)
-        (list 'quote corr-fn)
-        (list 'quote exports)
-        (list 'quote protect-default)
-        (list 'quote congruent-to)
-        (list 'quote t) ; missing-only
-        (list 'quote (msg "( DEFABSSTOBJ-MISSING-EVENTS ~x0 ...)" name)) ; ctx
-        'state
-        (list 'quote event-form)))
+  (let ((ctx (list 'quote (msg "( DEFABSSTOBJ-MISSING-EVENTS ~x0 ...)" name))))
+    (list 'with-defabsstobj-concrete-deprecation-chk
+          foundation concrete ctx
+          (list 'defabsstobj-fn1
+                (list 'quote name)
+                (list 'quote (or foundation concrete))
+                (list 'quote recognizer)
+                (list 'quote creator)
+                (list 'quote corr-fn)
+                (list 'quote exports)
+                (list 'quote protect-default)
+                (list 'quote congruent-to)
+                (list 'quote t) ; missing-only
+                ctx
+                'state
+                (list 'quote event-form)))))
 
 (defun redundant-defabsstobjp (name event-form wrld)
   (and (getpropc name 'stobj nil wrld)
@@ -20894,11 +20935,11 @@
 (defun absstobj-correspondence-formula (f$a f$c corr-fn formals guard-pre st
                                             st$c wrld)
 
-; F$A and f$c are the abstract and concrete versions of some exported function
-; whose formals are the given formals.  If f$c returns a single non-stobj
-; value, then the formula looks as follows, where guard-pre is the result of
-; restating the guard on f$a in terms of formals (but still using st$ap rather
-; than stp).
+; F$A and f$c are the abstract and foundational ("concrete") versions of some
+; exported function whose formals are the given formals.  If f$c returns a
+; single non-stobj value, then the formula looks as follows, where guard-pre is
+; the result of restating the guard on f$a in terms of formals (but still using
+; st$ap rather than stp).
 
 ; (IMPLIES (AND (corr-fn st$c st)
 ;               guard-pre)
@@ -20920,8 +20961,8 @@
    ((null formals)
 
 ; Note that translate-absstobj-field guarantees that except for the creator
-; function, the formals of an exec function must include the concrete stobj.
-; Thus, f$c is the exec creator function.
+; function, the formals of an exec function must include the foundational
+; stobj.  Thus, f$c is the exec creator function.
 
     `(,corr-fn (,f$c) (,f$a)))
    (t
@@ -20945,12 +20986,12 @@
 
 (defun absstobj-preserved-formula (f$a f$c formals guard-pre st st$c st$ap wrld)
 
-; F$A and f$c are the abstract and concrete versions of some exported function.
-; If these return a single stobj value, then the formula looks as follows,
-; where guard-pre is the result of restating the guard on f$a in terms of
-; formals (but still using st$ap rather than stp).  Although guard-pre may
-; often include the conjunct (st$ap st), we do not enforce that expectation
-; here.
+; F$A and f$c are the :logic and :exec ("abstract" and "concrete") versions of
+; some exported function.  If these return a single stobj value, then the
+; formula looks as follows, where guard-pre is the result of restating the
+; guard on f$a in terms of formals (but still using st$ap rather than stp).
+; Although guard-pre may often include the conjunct (st$ap st), we do not
+; enforce that expectation here.
 
 ; (IMPLIES guard-pre
 ;          (st$ap (f$a ... st ...)))
@@ -20959,8 +21000,8 @@
    ((null formals)
 
 ; Note that translate-absstobj-field guarantees that except for the creator
-; function, the formals of an exec function must include the concrete stobj.
-; So in this case, f$c is the exec creator function.
+; function, the formals of an exec function must include the foundational
+; stobj.  So in this case, f$c is the exec creator function.
 
     (fcons-term* st$ap
                  (fcons-term* f$a)))
@@ -21124,11 +21165,11 @@
 (defun unprotected-export-p (st$c name wrld)
 
 ; Note that even if st$c is an abstract stobj (while serving as the "concrete
-; stobj" that underlies a proposed abstract stobj), we do not concern ourselves
-; here with whether st$c primitives are themselves unprotected.  That's because
-; actually, they are guaranteed to be protected, either because they update
-; atomically or because the :PROTECT keyword was supplied at the time the
-; abstract stobj st$c was admitted.
+; stobj", i.e., foundational stobj, for a proposed abstract stobj), we do not
+; concern ourselves here with whether st$c primitives are themselves
+; unprotected.  That's because actually, they are guaranteed to be protected,
+; either because they update atomically or because the :PROTECT keyword was
+; supplied at the time the abstract stobj st$c was admitted.
 
   (and (member-eq st$c (stobjs-out name wrld))
        (eq t (fn-stobj-updates-p st$c name wrld))))
@@ -21242,7 +21283,7 @@
                 (er-cmp ctx
                         "The :EXEC field ~x0, specified~#1~[~/ (implicitly)~] ~
                          for defabsstobj field ~x2, appears capable of ~
-                         modifying the concrete stobj, ~x3, non-atomically; ~
+                         modifying the foundational stobj, ~x3, non-atomically; ~
                          yet :PROTECT T was not specified for this field.  ~@4"
                         exec
                         (if exec-p 0 1)
@@ -21335,23 +21376,24 @@
                          ((and (eq type :RECOGNIZER)
                                (not (eq exec (get-stobj-recognizer st$c wrld))))
 
-; We use the concrete recognizer in the definition of the recognizer returned
-; by defabsstobj-raw-defs.
+; We use the foundational recognizer in the definition of the recognizer
+; returned by defabsstobj-raw-defs.
 
                           (er-cmp ctx
                                   "The~#0~[~/ (implicit)~] :EXEC component, ~
                                    ~x1, of the specified :RECOGNIZER, ~x2, is ~
-                                   not the recognizer of the :CONCRETE stobj ~
-                                   ~x3.  ~@4"
+                                   not the recognizer of the foundational ~
+                                   stobj ~x3.  ~@4"
                                   (if exec-p 0 1) exec name st$c see-doc))
                          ((and preserved-p
                                (not preserved-required))
                           (er-cmp ctx
                                   "It is illegal to specify :PRESERVED for a ~
                                    field whose :EXEC does not return the ~
-                                   concrete stobj.  In this case, :PRESERVED ~
-                                   ~x0 has been specified for an :EXEC of ~
-                                   ~x1, which does not return ~x2.  ~@3"
+                                   foundational stobj.  In this case, ~
+                                   :PRESERVED ~x0 has been specified for an ~
+                                   :EXEC of ~x1, which does not return ~x2.  ~
+                                   ~@3"
                                   preserved exec st$c see-doc))
                          ((member-eq st exec-formals)
 
@@ -21423,8 +21465,8 @@
 ; functions other than the creator.
 
                           (er-cmp ctx
-                                  "The :CONCRETE stobj name, ~x0, is not a ~
-                                   known stobj parameter of :EXEC function ~
+                                  "The foundational stobj name, ~x0, is not ~
+                                   a known stobj parameter of :EXEC function ~
                                    ~x1 for field ~x2.~|~@3"
                                   st$c exec field0 see-doc))
                          ((and (not (eq type :CREATOR))
@@ -21468,13 +21510,17 @@
                                                         (guard logic nil wrld))))
                             (cond
                              ((member-eq st$c stobjs-in-logic)
+
+; We cause an error in this case in order to avoid a much more confusing
+; error.  Without it, defabsstobj-axiomatic-defs can declare st$c as a stobj
+; even though st$c is not among the formals.
+
                               (er-cmp ctx
                                       "the :LOGIC function ~x0 for export ~x1 ~
                                        declares as a stobj the formal ~
                                        parameter, ~x2.  This is illegal ~
-                                       because ~x2 is the corresponding ~
-                                       concrete stobj for the proposed ~
-                                       abstract stobj, ~x3."
+                                       because ~x2 is the foundational stobj ~
+                                       for the proposed abstract stobj, ~x3."
                                       logic name st$c st))
                              (t
                               (value-cmp
@@ -21933,8 +21979,8 @@
                 (mv (msg "The function spec for ~x0 specifies an :UPDATER ~
                           function, which is only allowed when the specified ~
                           :EXEC function is a stobj field accessor for the ~
-                          given concrete stobj.  However, the :EXEC function ~
-                          is ~x1, which ~@2."
+                          foundational stobj.  However, the :EXEC function is ~
+                          ~x1, which ~@2."
                          name
                          exec
                          (cond
@@ -21960,12 +22006,47 @@
                          (cons (access absstobj-method updater-method :exec)
                                updaters-exec))))))))))))))
 
+(defun chk-defabsstobj-updaters-1 (accessors accessors-exec
+                                             updaters updaters-exec 
+                                             lst)
+
+; This supports checking updaters for defabsstobj.  See chk-stobj-updaters-1
+; for a similar utility for stobj-let; comments there might be helpful as well.
+
+  (cond ((endp updaters-exec) nil)
+        (t
+         (let* ((updater-exec (car updaters-exec))
+                (accessor-exec (car accessors-exec))
+                (accessor-tail (member-eq (car accessors-exec) lst))
+                (actual-updater-exec (cadr accessor-tail)))
+           (assert$
+
+; This assertion should be true because of the check done by a call of
+; stobj-field-accessor-p in chk-stobj-let/bindings.
+
+            accessor-tail
+            (cond
+             ((eq updater-exec actual-updater-exec)
+              (chk-defabsstobj-updaters-1 (cdr accessors) (cdr accessors-exec)
+                                          (cdr updaters) (cdr updaters-exec)
+                                          lst))
+             (t (msg "The :EXPORTS specify that the :UPDATER for accessor ~x0 ~
+                      is the exported function, ~x1.  The :EXEC function for ~
+                      ~x1 is ~x2, but is expected to be ~x3, which is the ~
+                      updater corresponding to the :EXEC function for ~x0, ~
+                      ~x4."
+                     (car accessors) (car updaters)
+                     updater-exec actual-updater-exec accessor-exec))))))))
+
 (defun chk-defabsstobj-updaters (st$c methods wrld)
 
+; This supports checking updaters for defabsstobj.  See chk-stobj-updaters for
+; a similar utility for stobj-let.
+
 ; Implicit is an abstract stobj definition with the given methods (perhaps
-; partially fleshed out) and with the given concrete stobj, st$c.  We either
-; return (msg nil nil), where msg explains why methods illegally specifies
-; child stobj accessors and updaters, or else (in the absence of such
+; partially fleshed out) and with the given foundational stobj, st$c.  We
+; either return (msg nil nil), where msg explains why methods illegally
+; specifies child stobj accessors and updaters, or else (in the absence of such
 ; illegality) we return (mv nil accessors updaters), where accessors and
 ; updaters have the same length L and for all i < L, the ith elements of
 ; accessors and updaters are a corresponding accessor/updater pair for a child
@@ -21975,9 +22056,11 @@
     (msg accessors updaters accessors-exec updaters-exec)
     (collect-defabsstobj-updaters methods st$c methods wrld nil nil nil nil)
     (cond (msg (mv msg nil nil))
-          (t (let ((msg (chk-stobj-updaters accessors-exec updaters-exec
-                                            st$c wrld
-                                            "defabsstobj exports")))
+          (t (let ((msg (chk-defabsstobj-updaters-1
+                         accessors accessors-exec
+                         updaters updaters-exec
+                         (cdddr ; pop live-var, recognizer, and creator
+                          (getpropc st$c 'stobj nil wrld)))))
                (cond (msg (mv msg nil nil))
                      (t (mv nil accessors updaters))))))))
 
@@ -22281,14 +22364,19 @@
 
 (defun update-guard-post (logic-subst methods)
 
-; Note that the original :guard-pre term is the guard of a guard-verified
-; function; hence its guard proof obligations are provable.   The guard proof
-; obligations for the new :guard-post (created below using sublis-fn-simple) by
-; replacing some functions with equal functions, and hence are also provable.
-; Thus, the guard of the guard of an exported function, which comes from the
-; :guard-post field of the corresponding method, has provable guard proof
-; obligations, as we would expect for guard-of-the-guard, which is important
-; for avoiding guard violations while checking the guard for a function call.
+; We are processing a defabsstobj event.  Methods is a list of absstobj-method
+; records, and logic-subst is an alist that maps f$a to f for each exported
+; function fn and corresponding :logic function symbol f$a.
+
+; Note that the :guard-pre term of a method is the guard of a guard-verified
+; function (with a variable replaced); hence its guard proof obligations are
+; provable.  Consider the :guard-post for that method, which is created by this
+; function using sublis-fn-simple; it is obtained by replacing some functions
+; with equal functions.  The guard proof obligations for that :guard-post are
+; thus obtained by replacing some functions with equal functions; hence those
+; proof obligations are also provable.  Now that :guard-post becomes the guard
+; of the exported function for that method (the :name); we have thus shown that
+; the guard of that guard is provable, as required.
 
   (cond ((endp methods) nil)
         (t (cons (change absstobj-method (car methods)
@@ -22493,8 +22581,8 @@
                                      :st$c))))
             (er soft ctx
                 "The value provided for :congruent-to, ~x0, is illegal, ~
-                 because the concrete stobj associated with ~x0 is ~x1, while ~
-                 the concrete stobj proposed for ~x2 is ~x3.  ~@4"
+                 because the foundational stobj associated with ~x0 is ~x1, ~
+                 while the foundational stobj proposed for ~x2 is ~x3.  ~@4"
                 congruent-to
                 (access absstobj-info old-absstobj-info :st$c)
                 st-name
@@ -22849,9 +22937,8 @@
 
 ; Of course, we make other checks too: for example, all of the top-level
 ; let-bound stobj fields must be distinct stobj variables that suitably
-; correspond to distinct field calls on the same concrete (not abstract) stobj.
-; (If we want to relax that restriction, we need to think very carefully about
-; capture issues.)
+; correspond to distinct field calls on the same stobj.  (If we want to relax
+; that restriction, we need to think very carefully about capture issues.)
 
 ; In raw Lisp, the expansion avoids the expense of binding st+ to the updates,
 ; or even updating st+ at all, since the updates to its indicated stobj fields
@@ -33266,15 +33353,15 @@
                      str key conc))
                ((null conc)
                 (msg "~@0~x1 has input abstract stobj~#2~[ ~&2~/s ~&2, each ~
-                      of~] whose corresponding concrete stobj is ~
+                      of~] whose corresponding foundational stobj is ~
                       non-memoizable.  See :DOC defabsstobj."
                      str key abs))
                (t
-                (msg "~@0~x1 has input concrete stobj~#2~[ ~&2~/s ~&2, each~] ~
-                      introduced with :NON-MEMOIZABLE T.  ~x1 also has input ~
-                      abstract stobj~#3~[ ~&2~/s ~&3, each of~] whose ~
-                      corresponding concrete stobj is non-memoizable.  See ~
-                      :DOC defstobj."
+                (msg "~@0~x1 has input fondational stobj~#2~[ ~&2~/s ~&2, ~
+                      each~] introduced as non-memoizable.  ~x1 also has ~
+                      input abstract stobj~#3~[ ~&2~/s ~&3, each of~] whose ~
+                      corresponding foundational stobj is non-memoizable.  ~
+                      See :DOC defstobj."
                      str key conc abs)))))
            ((member-eq key *stobjs-out-invalid*)
             (msg "~@0~x1 is a primitive without a fixed output signature."

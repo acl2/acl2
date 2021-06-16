@@ -1222,7 +1222,7 @@
 
   (make-event
    `(acl2::defabsstobj-events svtv-data
-      :concrete svtv-data$c
+      :foundation svtv-data$c
       :corr-fn equal
       :recognizer (svtv-datap :logic svtv-data$ap :exec svtv-data$cp)
       :creator (create-svtv-data :logic create-svtv-data$a :exec create-svtv-data$c)
@@ -1514,7 +1514,7 @@
 
 ;;   (make-event
 ;;    `(acl2::defabsstobj-events svtv-data
-;;       :concrete svtv-data$c
+;;       :foundation svtv-data$c
 ;;       :corr-fn equal
 ;;       :recognizer (svtv-datap :logic svtv-data$ap :exec svtv-data$cp)
 ;;       :creator (create-svtv-data :logic create-svtv-data$a :exec create-svtv-data$c)

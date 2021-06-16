@@ -514,7 +514,7 @@ Form:  ( DEFABSSTOBJ TOP ...)
 Rules: NIL
  TOP
 ACL2 !>>(DEFABSSTOBJ TOP2
-                     :CONCRETE TOP$C
+                     :FOUNDATION TOP$C
                      :RECOGNIZER (TOP2P :LOGIC TOP$AP :EXEC TOP$CP)
                      :CREATOR (CREATE-TOP2 :LOGIC CREATE-TOP$A
                                            :EXEC CREATE-TOP$C)
@@ -750,7 +750,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:REWRITE EQUAL-LEN-1))
  UPDATE-SUB02{PRESERVED}
 ACL2 !>>(DEFABSSTOBJ TOP2
-                     :CONCRETE TOP
+                     :FOUNDATION TOP
                      :RECOGNIZER (TOP2P :LOGIC TOP$AP :EXEC TOPP)
                      :CREATOR (CREATE-TOP2 :LOGIC CREATE-TOP$A
                                            :EXEC CREATE-TOP)
@@ -1409,6 +1409,117 @@ Rules: NIL
 ACL2 Error in ( DEFABSSTOBJ ST3 ...):  See :DOC failure.
 
 ******** FAILED ********
+ACL2 !>>(DEFSTOBJ ST3-AUX FLD3-AUX)
+
+Summary
+Form:  ( DEFSTOBJ ST3-AUX ...)
+Rules: NIL
+ ST3-AUX
+ACL2 !>>(DEFUN GOOD3$A (X Y ST3$A)
+               (DECLARE (XARGS :GUARD (AND (NATP X) (< X 8))))
+               (MV X (AND Y ST3$A NIL) Y))
+
+Since GOOD3$A is non-recursive, its admission is trivial.  We observe
+that the type of GOOD3$A is described by the theorem 
+(AND (CONSP (GOOD3$A X Y ST3$A)) (TRUE-LISTP (GOOD3$A X Y ST3$A))).
+We used primitive type reasoning.
+
+(GOOD3$A * * *) => (MV * * *).
+
+Computing the guard conjecture for GOOD3$A....
+
+The guard conjecture for GOOD3$A is trivial to prove, given the :compound-
+recognizer rule NATP-COMPOUND-RECOGNIZER.  GOOD3$A is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN GOOD3$A ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ GOOD3$A
+ACL2 !>>(DEFUN GOOD3$C (X ST3-AUX ST3$C)
+               (DECLARE (XARGS :STOBJS (ST3$C ST3-AUX)
+                               :GUARD (AND (NATP X) (< X 8))))
+               (MV X ST3$C ST3-AUX))
+
+Since GOOD3$C is non-recursive, its admission is trivial.  We observe
+that the type of GOOD3$C is described by the theorem 
+(AND (CONSP (GOOD3$C X ST3-AUX ST3$C))
+     (TRUE-LISTP (GOOD3$C X ST3-AUX ST3$C))).
+We used primitive type reasoning.
+
+(GOOD3$C * ST3-AUX ST3$C) => (MV * ST3$C ST3-AUX).
+
+Computing the guard conjecture for GOOD3$C....
+
+The guard conjecture for GOOD3$C is trivial to prove, given the :compound-
+recognizer rule NATP-COMPOUND-RECOGNIZER.  GOOD3$C is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN GOOD3$C ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ GOOD3$C
+ACL2 !>>(DEFTHM CREATE-ST3{CORRESPONDENCE}
+                (ST3$CORR (CREATE-ST3$C) (CREATE-ST3$A))
+                :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM CREATE-ST3{CORRESPONDENCE} ...)
+Rules: ((:TYPE-PRESCRIPTION ST3$CORR))
+ CREATE-ST3{CORRESPONDENCE}
+ACL2 !>>(DEFTHM CREATE-ST3{PRESERVED}
+                (ST3$AP (CREATE-ST3$A))
+                :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM CREATE-ST3{PRESERVED} ...)
+Rules: ((:TYPE-PRESCRIPTION ST3$AP))
+ CREATE-ST3{PRESERVED}
+ACL2 !>>(DEFTHM GOOD3{CORRESPONDENCE}
+                (IMPLIES (AND (ST3$CORR ST3$C ST3)
+                              (NATP X)
+                              (< X 8))
+                         (LET ((LHS (GOOD3$C X ST3-AUX ST3$C))
+                               (RHS (GOOD3$A X ST3-AUX ST3)))
+                              (AND (EQUAL (MV-NTH 0 LHS) (MV-NTH 0 RHS))
+                                   (ST3$CORR (MV-NTH 1 LHS) (MV-NTH 1 RHS))
+                                   (EQUAL (MV-NTH 2 LHS) (MV-NTH 2 RHS)))))
+                :RULE-CLASSES NIL)
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM GOOD3{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION GOOD3$A)
+        (:DEFINITION GOOD3$C)
+        (:DEFINITION NATP)
+        (:DEFINITION ST3$CORR))
+ GOOD3{CORRESPONDENCE}
+ACL2 !>>(DEFTHM GOOD3{PRESERVED}
+                (IMPLIES (AND (ST3$AP ST3) (NATP X) (< X 8))
+                         (ST3$AP (MV-NTH 1 (GOOD3$A X ST3-AUX ST3))))
+                :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM GOOD3{PRESERVED} ...)
+Rules: ((:TYPE-PRESCRIPTION ST3$AP))
+ GOOD3{PRESERVED}
+ACL2 !>>(DEFABSSTOBJ ST3
+                     :EXPORTS ((GOOD3 :LOGIC GOOD3$A :EXEC GOOD3$C)))
+
+Summary
+Form:  ( DEFABSSTOBJ ST3 ...)
+Rules: NIL
+ ST3
 ACL2 !>>(DEFUN BIND-NON-CHILD-STOBJ-FIELD (TOP)
                (DECLARE (XARGS :STOBJS TOP))
                (STOBJ-LET ((SUB$C (SUB0 TOP))
@@ -1520,6 +1631,711 @@ Form:  ( DEFUN BIND-NON-FIELD-FUNCTION ...)
 Rules: NIL
 
 ACL2 Error in ( DEFUN BIND-NON-FIELD-FUNCTION ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFSTOBJ ST4$C-FLD FLD4$C-SUB)
+
+Summary
+Form:  ( DEFSTOBJ ST4$C-FLD ...)
+Rules: NIL
+ ST4$C-FLD
+ACL2 !>>(DEFSTOBJ ST4$C (FLD4$C :TYPE ST4$C-FLD)
+                  ST4$C-MISC)
+
+Summary
+Form:  ( DEFSTOBJ ST4$C ...)
+Rules: NIL
+ ST4$C
+ACL2 !>>(DEFUN-NX ST4$AP (X)
+                  (DECLARE (XARGS :GUARD T))
+                  (ST4$CP X))
+
+Since ST4$AP is non-recursive, its admission is trivial.  We observe
+that the type of ST4$AP is described by the theorem 
+(OR (EQUAL (ST4$AP X) T) (EQUAL (ST4$AP X) NIL)).  We used the :type-
+prescription rule ST4$CP.
+
+Computing the guard conjecture for ST4$AP....
+
+The guard conjecture for ST4$AP is trivial to prove.  ST4$AP is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN ST4$AP ...)
+Rules: ((:TYPE-PRESCRIPTION ST4$CP))
+ (:DEFUN-NX ST4$AP)
+ACL2 !>>(DEFUN-NX ST4$CORR (X Y)
+                  (DECLARE (XARGS :GUARD T))
+                  (EQUAL X Y))
+
+Since ST4$CORR is non-recursive, its admission is trivial.  We observe
+that the type of ST4$CORR is described by the theorem 
+(OR (EQUAL (ST4$CORR X Y) T) (EQUAL (ST4$CORR X Y) NIL)).  We used
+primitive type reasoning.
+
+Computing the guard conjecture for ST4$CORR....
+
+The guard conjecture for ST4$CORR is trivial to prove.  ST4$CORR is
+compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN ST4$CORR ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ (:DEFUN-NX ST4$CORR)
+ACL2 !>>(DEFUN-NX CREATE-ST4$A
+                  NIL (DECLARE (XARGS :GUARD T))
+                  (CREATE-ST4$C))
+
+Since CREATE-ST4$A is non-recursive, its admission is trivial.  We
+observe that the type of CREATE-ST4$A is described by the theorem 
+(AND (CONSP (CREATE-ST4$A)) (TRUE-LISTP (CREATE-ST4$A))).  We used
+the :type-prescription rule CREATE-ST4$C.
+
+Computing the guard conjecture for CREATE-ST4$A....
+
+The guard conjecture for CREATE-ST4$A is trivial to prove.  CREATE-ST4$A
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN CREATE-ST4$A ...)
+Rules: ((:TYPE-PRESCRIPTION CREATE-ST4$C))
+ (:DEFUN-NX CREATE-ST4$A)
+ACL2 !>>(DEFUN-NX FLD4$A (X)
+                  (DECLARE (XARGS :GUARD (ST4$CP X)))
+                  (FLD4$C X))
+
+Since FLD4$A is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of FLD4$A.
+
+Computing the guard conjecture for FLD4$A....
+
+The guard conjecture for FLD4$A is trivial to prove.  FLD4$A is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN FLD4$A ...)
+Rules: NIL
+ (:DEFUN-NX FLD4$A)
+ACL2 !>>(DEFUN-NX UPDATE-FLD4$A (V X)
+                  (DECLARE (XARGS :GUARD (AND (ST4$CP X) (ST4$C-FLDP V))))
+                  (UPDATE-FLD4$C V X))
+
+Since UPDATE-FLD4$A is non-recursive, its admission is trivial.  We
+observe that the type of UPDATE-FLD4$A is described by the theorem
+(CONSP (UPDATE-FLD4$A V X)).  We used the :type-prescription rule 
+UPDATE-FLD4$C.
+
+Computing the guard conjecture for UPDATE-FLD4$A....
+
+The guard conjecture for UPDATE-FLD4$A is trivial to prove.  UPDATE-FLD4$A
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN UPDATE-FLD4$A ...)
+Rules: ((:TYPE-PRESCRIPTION UPDATE-FLD4$C))
+ (:DEFUN-NX UPDATE-FLD4$A)
+ACL2 !>>(SKIP-PROOFS
+             (DEFABSSTOBJ ST4
+                          :EXPORTS ((FLD4 :LOGIC FLD4$A
+                                          :EXEC FLD4$C
+                                          :UPDATER UPDATE-FLD4)
+                                    (UPDATE-FLD4 :LOGIC UPDATE-FLD4$A
+                                                 :EXEC UPDATE-FLD4$C))))
+
+ACL2 Warning [defabsstobj] in ( DEFABSSTOBJ ST4 ...):  The following
+events would have to be admitted, if not for proofs currently being
+skipped (see :DOC ld-skip-proofsp), before the given defabsstobj event.
+See :DOC defabsstobj.
+
+(DEFTHM CREATE-ST4{CORRESPONDENCE}
+        (ST4$CORR (CREATE-ST4$C) (CREATE-ST4$A))
+        :RULE-CLASSES NIL)
+
+(DEFTHM CREATE-ST4{PRESERVED}
+        (ST4$AP (CREATE-ST4$A))
+        :RULE-CLASSES NIL)
+
+(DEFTHM FLD4{CORRESPONDENCE}
+        (IMPLIES (AND (ST4$CORR ST4$C ST4) (ST4$CP ST4))
+                 (EQUAL (FLD4$C ST4$C) (FLD4$A ST4)))
+        :RULE-CLASSES NIL)
+
+(DEFTHM UPDATE-FLD4{CORRESPONDENCE}
+        (IMPLIES (AND (ST4$CORR ST4$C ST4)
+                      (ST4$CP ST4)
+                      (ST4$C-FLDP ST4$C-FLD))
+                 (ST4$CORR (UPDATE-FLD4$C ST4$C-FLD ST4$C)
+                           (UPDATE-FLD4$A ST4$C-FLD ST4)))
+        :RULE-CLASSES NIL)
+
+(DEFTHM UPDATE-FLD4{PRESERVED}
+        (IMPLIES (AND (ST4$AP ST4)
+                      (ST4$CP ST4)
+                      (ST4$C-FLDP ST4$C-FLD))
+                 (ST4$AP (UPDATE-FLD4$A ST4$C-FLD ST4)))
+        :RULE-CLASSES NIL)
+
+
+
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  At least one guard of an exported
+function fails to obey single-threadedness restrictions.  See :DOC
+defabsstobj.  See below for details.
+
+The guard for exported function FLD4 fails to pass a test for being
+suitably single-threaded.  Here is that guard (derived from the guard
+for function FLD4$A).
+  (ST4$CP ST4)
+And here is the error message for the failed test.
+  The form ST4 is being used, as an argument to a call of ST4$CP, where
+the single-threaded object ST4$C is required.  Note that the variable
+ST4$C is required, not merely a term that returns such a single-threaded
+object, so you may need to bind ST4$C with LET; see :DOC stobj.  Note:
+this error occurred in the context (ST4$CP ST4).  Observe that while
+it is permitted to apply ST4$CP to an ordinary object, this stobj recognizer
+must not be applied to the wrong stobj.
+
+The guard for exported function UPDATE-FLD4 fails to pass a test for
+being suitably single-threaded.  Here is that guard (derived from the
+guard for function UPDATE-FLD4$A).
+  (IF (ST4$CP ST4) (ST4$C-FLDP ST4$C-FLD) 'NIL)
+And here is the error message for the failed test.
+  The form ST4 is being used, as an argument to a call of ST4$CP, where
+the single-threaded object ST4$C is required.  Note that the variable
+ST4$C is required, not merely a term that returns such a single-threaded
+object, so you may need to bind ST4$C with LET; see :DOC stobj.  Note:
+this error occurred in the context (ST4$CP ST4).  Observe that while
+it is permitted to apply ST4$CP to an ordinary object, this stobj recognizer
+must not be applied to the wrong stobj.
+
+
+
+ACL2 !>>(UBT 'FLD4$A)
+   d      54:x(DEFUN-NX CREATE-ST4$A NIL ...)
+ACL2 !>>(DEFUN-NX FLD4$A (X)
+                  (DECLARE (XARGS :GUARD (NON-EXEC (ST4$CP X))))
+                  (FLD4$C X))
+
+Since FLD4$A is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of FLD4$A.
+
+Computing the guard conjecture for FLD4$A....
+
+The guard conjecture for FLD4$A is trivial to prove, given the :type-
+prescription rule THROW-NONEXEC-ERROR.  FLD4$A is compliant with Common
+Lisp.
+
+Summary
+Form:  ( DEFUN FLD4$A ...)
+Rules: ((:TYPE-PRESCRIPTION THROW-NONEXEC-ERROR))
+ (:DEFUN-NX FLD4$A)
+ACL2 !>>(DEFUN-NX
+          UPDATE-FLD4$A (V X)
+          (DECLARE (XARGS :GUARD (NON-EXEC (AND (ST4$CP X) (ST4$C-FLDP V)))))
+          (UPDATE-FLD4$C V X))
+
+Since UPDATE-FLD4$A is non-recursive, its admission is trivial.  We
+observe that the type of UPDATE-FLD4$A is described by the theorem
+(CONSP (UPDATE-FLD4$A V X)).  We used the :type-prescription rule 
+UPDATE-FLD4$C.
+
+Computing the guard conjecture for UPDATE-FLD4$A....
+
+The guard conjecture for UPDATE-FLD4$A is trivial to prove, given the
+:type-prescription rule THROW-NONEXEC-ERROR.  UPDATE-FLD4$A is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN UPDATE-FLD4$A ...)
+Rules: ((:TYPE-PRESCRIPTION THROW-NONEXEC-ERROR)
+        (:TYPE-PRESCRIPTION UPDATE-FLD4$C))
+ (:DEFUN-NX UPDATE-FLD4$A)
+ACL2 !>>(DEFUN-NX ST4$A-MISC (X)
+                  (DECLARE (XARGS :GUARD (NON-EXEC (ST4$CP X))))
+                  (ST4$C-MISC X))
+
+Since ST4$A-MISC is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of ST4$A-MISC.
+
+Computing the guard conjecture for ST4$A-MISC....
+
+The guard conjecture for ST4$A-MISC is trivial to prove, given the
+:type-prescription rule THROW-NONEXEC-ERROR.  ST4$A-MISC is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN ST4$A-MISC ...)
+Rules: ((:TYPE-PRESCRIPTION THROW-NONEXEC-ERROR))
+ (:DEFUN-NX ST4$A-MISC)
+ACL2 !>>(DEFUN-NX UPDATE-ST4$A-MISC (V X)
+                  (DECLARE (XARGS :GUARD (NON-EXEC (ST4$CP X))))
+                  (UPDATE-ST4$C-MISC V X))
+
+Since UPDATE-ST4$A-MISC is non-recursive, its admission is trivial.
+We observe that the type of UPDATE-ST4$A-MISC is described by the theorem
+(CONSP (UPDATE-ST4$A-MISC V X)).  We used the :type-prescription rule
+UPDATE-ST4$C-MISC.
+
+Computing the guard conjecture for UPDATE-ST4$A-MISC....
+
+The guard conjecture for UPDATE-ST4$A-MISC is trivial to prove, given
+the :type-prescription rule THROW-NONEXEC-ERROR.  UPDATE-ST4$A-MISC
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN UPDATE-ST4$A-MISC ...)
+Rules: ((:TYPE-PRESCRIPTION THROW-NONEXEC-ERROR)
+        (:TYPE-PRESCRIPTION UPDATE-ST4$C-MISC))
+ (:DEFUN-NX UPDATE-ST4$A-MISC)
+ACL2 !>>(DEFTHM CREATE-ST4{CORRESPONDENCE}
+                (ST4$CORR (CREATE-ST4$C) (CREATE-ST4$A))
+                :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM CREATE-ST4{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION CREATE-ST4$A)
+        (:DEFINITION CREATE-ST4$C)
+        (:DEFINITION CREATE-ST4$C-FLD)
+        (:DEFINITION ST4$CORR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART EQUAL))
+ CREATE-ST4{CORRESPONDENCE}
+ACL2 !>>(DEFTHM CREATE-ST4{PRESERVED}
+                (ST4$AP (CREATE-ST4$A))
+                :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM CREATE-ST4{PRESERVED} ...)
+Rules: ((:DEFINITION CREATE-ST4$A)
+        (:DEFINITION CREATE-ST4$C)
+        (:DEFINITION CREATE-ST4$C-FLD)
+        (:DEFINITION ST4$AP)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART ST4$CP))
+ CREATE-ST4{PRESERVED}
+ACL2 !>>(DEFTHM
+            FLD4{CORRESPONDENCE}
+            (IMPLIES (AND (ST4$CORR ST4$C ST4)
+                          (PROG2$ (THROW-NONEXEC-ERROR :NON-EXEC '(ST4$CP X))
+                                  (ST4$CP ST4)))
+                     (EQUAL (FLD4$C ST4$C) (FLD4$A ST4)))
+            :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FLD4{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION FLD4$A)
+        (:DEFINITION FLD4$C)
+        (:DEFINITION FLD4$CP)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION ST4$C-FLDP)
+        (:DEFINITION ST4$CORR)
+        (:DEFINITION ST4$CP)
+        (:DEFINITION THROW-NONEXEC-ERROR)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+ FLD4{CORRESPONDENCE}
+ACL2 !>>(DEFTHM
+         UPDATE-FLD4{CORRESPONDENCE}
+         (IMPLIES
+          (AND
+           (ST4$CORR ST4$C ST4)
+           (PROG2$
+             (THROW-NONEXEC-ERROR :NON-EXEC '(AND (ST4$CP X) (ST4$C-FLDP V)))
+             (AND (ST4$CP ST4)
+                  (ST4$C-FLDP ST4$C-FLD))))
+          (ST4$CORR (UPDATE-FLD4$C ST4$C-FLD ST4$C)
+                    (UPDATE-FLD4$A ST4$C-FLD ST4)))
+         :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM UPDATE-FLD4{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION FLD4$CP)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION ST4$C-FLDP)
+        (:DEFINITION ST4$CORR)
+        (:DEFINITION ST4$CP)
+        (:DEFINITION THROW-NONEXEC-ERROR)
+        (:DEFINITION UPDATE-FLD4$A)
+        (:DEFINITION UPDATE-FLD4$C)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+ UPDATE-FLD4{CORRESPONDENCE}
+ACL2 !>>(DEFTHM
+         UPDATE-FLD4{PRESERVED}
+         (IMPLIES
+          (AND
+           (ST4$AP ST4)
+           (PROG2$
+             (THROW-NONEXEC-ERROR :NON-EXEC '(AND (ST4$CP X) (ST4$C-FLDP V)))
+             (AND (ST4$CP ST4)
+                  (ST4$C-FLDP ST4$C-FLD))))
+          (ST4$AP (UPDATE-FLD4$A ST4$C-FLD ST4)))
+         :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM UPDATE-FLD4{PRESERVED} ...)
+Rules: ((:DEFINITION FLD4$CP)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION ST4$AP)
+        (:DEFINITION ST4$C-FLDP)
+        (:DEFINITION ST4$CP)
+        (:DEFINITION THROW-NONEXEC-ERROR)
+        (:DEFINITION UPDATE-FLD4$A)
+        (:DEFINITION UPDATE-FLD4$C)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+ UPDATE-FLD4{PRESERVED}
+ACL2 !>>(DEFABSSTOBJ ST4
+                     :EXPORTS ((FLD4 :LOGIC FLD4$A
+                                     :EXEC FLD4$C
+                                     :UPDATER UPDATE-FLD4)
+                               (UPDATE-FLD4 :LOGIC UPDATE-FLD4$A
+                                            :EXEC UPDATE-FLD4$C)))
+
+Summary
+Form:  ( DEFABSSTOBJ ST4 ...)
+Rules: NIL
+ ST4
+ACL2 !>>(U)
+          63:x(DEFTHM UPDATE-FLD4{PRESERVED} ...)
+ACL2 !>>(DEFABSSTOBJ ST4
+                     :EXPORTS ((FLD4 :LOGIC FLD4$A
+                                     :EXEC FLD4$C
+                                     :UPDATER NIL)
+                               (NIL :LOGIC UPDATE-FLD4$A
+                                    :EXEC UPDATE-FLD4$C)))
+
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  Symbols in the main Lisp package,
+such as NIL, may not be defined or constrained.
+
+
+Summary
+Form:  ( DEFABSSTOBJ ST4 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFABSSTOBJ ST4
+                     :EXPORTS ((FLD4 :LOGIC FLD4$A
+                                     :EXEC FLD4$C
+                                     :UPDATER NTH)
+                               (NTH :LOGIC UPDATE-FLD4$A
+                                    :EXEC UPDATE-FLD4$C)))
+
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  The name NTH is in use as a
+function.  The redefinition feature is currently off.  See :DOC ld-
+redefinition-action.
+
+
+Note: NTH has already been defined as a system name; that is, it is
+built into ACL2.
+
+
+Summary
+Form:  ( DEFABSSTOBJ ST4 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFSTUB STUB (X) T)
+
+Summary
+Form:  (DEFSTUB STUB ...)
+Rules: NIL
+ STUB
+ACL2 !>>(DEFABSSTOBJ ST4
+                     :EXPORTS ((FLD4 :LOGIC FLD4$A
+                                     :EXEC FLD4$C
+                                     :UPDATER STUB)
+                               (STUB :LOGIC UPDATE-FLD4$A
+                                     :EXEC UPDATE-FLD4$C)))
+
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  The name STUB is in use as a
+function.  The redefinition feature is currently off.  See :DOC ld-
+redefinition-action.
+
+
+Note: STUB was previously defined at the top level.
+
+
+Summary
+Form:  ( DEFABSSTOBJ ST4 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(UBT 'STUB)
+          63:x(DEFTHM UPDATE-FLD4{PRESERVED} ...)
+ACL2 !>>(DEFABSSTOBJ ST4
+                     :EXPORTS ((FLD4 :LOGIC FLD4$A
+                                     :EXEC FLD4$C
+                                     :UPDATER NIL)))
+
+Summary
+Form:  ( DEFABSSTOBJ ST4 ...)
+Rules: NIL
+ ST4
+ACL2 !>>(U)
+          63:x(DEFTHM UPDATE-FLD4{PRESERVED} ...)
+ACL2 !>>(DEFUN-NX FLD4$A-NON-GV (X)
+                  (DECLARE (XARGS :GUARD (NON-EXEC (ST4$CP X))
+                                  :VERIFY-GUARDS NIL))
+                  (FLD4$C X))
+
+Since FLD4$A-NON-GV is non-recursive, its admission is trivial.  We
+could deduce no constraints on the type of FLD4$A-NON-GV.
+
+Summary
+Form:  ( DEFUN FLD4$A-NON-GV ...)
+Rules: NIL
+ (:DEFUN-NX FLD4$A-NON-GV)
+ACL2 !>>(DEFABSSTOBJ ST4
+                     :EXPORTS ((FLD4 :LOGIC FLD4$A-NON-GV
+                                     :EXEC FLD4$C)))
+
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  The :LOGIC component of field
+(FLD4 :LOGIC FLD4$A-NON-GV :EXEC FLD4$C), FLD4$A-NON-GV, is a function
+symbol but its guards have not yet been verified.  See :DOC defabsstobj.
+
+
+Summary
+Form:  ( DEFABSSTOBJ ST4 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(UBT 'FLD4$A-NON-GV)
+          63:x(DEFTHM UPDATE-FLD4{PRESERVED} ...)
+ACL2 !>>(DEFABSSTOBJ ST4
+                     :EXPORTS ((FLD4 :LOGIC FLD4$A
+                                     :EXEC FLD4$C
+                                     :UPDATER UPDATE-FLD4)
+                               (FLD4 :LOGIC FLD4$A
+                                     :EXEC FLD4$C
+                                     :UPDATER UPDATE-FLD4)))
+
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  The name FLD4 is introduced
+more than once by a DEFABSSTOBJ event.  See :DOC defabsstobj.
+
+
+Summary
+Form:  ( DEFABSSTOBJ ST4 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFABSSTOBJ ST4
+                     :EXPORTS ((FLD4 :LOGIC FLD4$A
+                                     :EXEC FLD4$C
+                                     :UPDATER FOO)
+                               (UPDATE-FLD4 :LOGIC UPDATE-FLD4$A
+                                            :EXEC UPDATE-FLD4$C)))
+
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  In the function spec for FLD4,
+the :UPDATER keyword has value FOO.  However, there is no function
+spec for FOO.  See :DOC defabsstobj.
+
+
+Summary
+Form:  ( DEFABSSTOBJ ST4 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFABSSTOBJ ST4
+                     :EXPORTS ((FLD4 :LOGIC FLD4$A
+                                     :EXEC FLD4$C
+                                     :UPDATER UPDATE-FLD4)))
+
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  In the function spec for FLD4,
+the :UPDATER keyword has value UPDATE-FLD4.  However, there is no function
+spec for UPDATE-FLD4.  See :DOC defabsstobj.
+
+
+Summary
+Form:  ( DEFABSSTOBJ ST4 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFABSSTOBJ ST4
+                     :EXPORTS ((FLD4 :LOGIC FLD4$A
+                                     :EXEC FLD4$C
+                                     :UPDATER UPDATE-FLD4)
+                               (UPDATE-FLD4 :LOGIC FLD4$A
+                                            :EXEC FLD4$C)))
+
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  The :EXPORTS specify that the
+:UPDATER for accessor FLD4 is the exported function, UPDATE-FLD4. 
+The :EXEC function for UPDATE-FLD4 is FLD4$C, but is expected to be
+UPDATE-FLD4$C, which is the updater corresponding to the :EXEC function
+for FLD4, FLD4$C.  See :DOC defabsstobj.
+
+
+Summary
+Form:  ( DEFABSSTOBJ ST4 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFABSSTOBJ ST4
+                     :EXPORTS ((ST4-MISC :LOGIC ST4$A-MISC
+                                         :EXEC ST4$C-MISC
+                                         :UPDATER UPDATE-ST4-MISC)
+                               (UPDATE-ST4-MISC :LOGIC UPDATE-ST4$A-MISC
+                                                :EXEC UPDATE-ST4$C-MISC)))
+
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  The function spec for ST4-MISC
+specifies an :UPDATER function, which is only allowed when the specified
+:EXEC function is a stobj field accessor for the foundational stobj.
+However, the :EXEC function is ST4$C-MISC, which is an accessor of
+ST4$C for a non-stobj field.  See :DOC defabsstobj.
+
+
+Summary
+Form:  ( DEFABSSTOBJ ST4 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFSTOBJ ST5$C FLD5$C)
+
+Summary
+Form:  ( DEFSTOBJ ST5$C ...)
+Rules: NIL
+ ST5$C
+ACL2 !>>(DEFUN-NX ST5$AP (X)
+                  (DECLARE (XARGS :GUARD T))
+                  (ST5$CP X))
+
+Since ST5$AP is non-recursive, its admission is trivial.  We observe
+that the type of ST5$AP is described by the theorem 
+(OR (EQUAL (ST5$AP X) T) (EQUAL (ST5$AP X) NIL)).  We used the :type-
+prescription rule ST5$CP.
+
+Computing the guard conjecture for ST5$AP....
+
+The guard conjecture for ST5$AP is trivial to prove.  ST5$AP is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN ST5$AP ...)
+Rules: ((:TYPE-PRESCRIPTION ST5$CP))
+ (:DEFUN-NX ST5$AP)
+ACL2 !>>(DEFUN-NX FLD5$A (ST5$C)
+                  (DECLARE (XARGS :STOBJS ST5$C))
+                  (FLD5$C ST5$C))
+
+Since FLD5$A is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of FLD5$A.
+
+(FLD5$A ST5$C) => *.
+
+Computing the guard conjecture for FLD5$A....
+
+The guard conjecture for FLD5$A is trivial to prove.  FLD5$A is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN FLD5$A ...)
+Rules: NIL
+ (:DEFUN-NX FLD5$A)
+ACL2 !>>(DEFUN-NX CREATE-ST5$A
+                  NIL (DECLARE (XARGS :GUARD T))
+                  (CREATE-ST5$C))
+
+Since CREATE-ST5$A is non-recursive, its admission is trivial.  We
+observe that the type of CREATE-ST5$A is described by the theorem 
+(AND (CONSP (CREATE-ST5$A)) (TRUE-LISTP (CREATE-ST5$A))).  We used
+the :type-prescription rule CREATE-ST5$C.
+
+Computing the guard conjecture for CREATE-ST5$A....
+
+The guard conjecture for CREATE-ST5$A is trivial to prove.  CREATE-ST5$A
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN CREATE-ST5$A ...)
+Rules: ((:TYPE-PRESCRIPTION CREATE-ST5$C))
+ (:DEFUN-NX CREATE-ST5$A)
+ACL2 !>>(DEFUN-NX ST5$CORR (X Y) (EQUAL X Y))
+
+Since ST5$CORR is non-recursive, its admission is trivial.  We observe
+that the type of ST5$CORR is described by the theorem 
+(OR (EQUAL (ST5$CORR X Y) T) (EQUAL (ST5$CORR X Y) NIL)).  We used
+primitive type reasoning.
+
+Summary
+Form:  ( DEFUN ST5$CORR ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ (:DEFUN-NX ST5$CORR)
+ACL2 !>>(SKIP-PROOFS
+             (DEFABSSTOBJ ST5
+                          :EXPORTS ((FLD5 :LOGIC FLD5$A :EXEC FLD5$C))))
+
+
+ACL2 Error in ( DEFABSSTOBJ ST5 ...):  the :LOGIC function FLD5$A for
+export FLD5 declares as a stobj the formal parameter, ST5$C.  This
+is illegal because ST5$C is the foundational stobj for the proposed
+abstract stobj, ST5.
+
+ACL2 !>>(DEFUN-NX FLD5$C-ALT (X)
+                  (DECLARE (XARGS :GUARD (NON-EXEC (ST5$CP X))))
+                  (FLD5$C X))
+
+Since FLD5$C-ALT is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of FLD5$C-ALT.
+
+Computing the guard conjecture for FLD5$C-ALT....
+
+The guard conjecture for FLD5$C-ALT is trivial to prove, given the
+:type-prescription rule THROW-NONEXEC-ERROR.  FLD5$C-ALT is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN FLD5$C-ALT ...)
+Rules: ((:TYPE-PRESCRIPTION THROW-NONEXEC-ERROR))
+ (:DEFUN-NX FLD5$C-ALT)
+ACL2 !>>(DEFABSSTOBJ ST5
+                     :EXPORTS ((FLD5 :LOGIC FLD5$A :EXEC FLD5$C-ALT)))
+
+
+ACL2 Error in ( DEFABSSTOBJ ST5 ...):  The foundational stobj name,
+ST5$C, is not a known stobj parameter of :EXEC function FLD5$C-ALT
+for field (FLD5 :LOGIC FLD5$A :EXEC FLD5$C-ALT).
+See :DOC defabsstobj.
+
+
+Summary
+Form:  ( DEFABSSTOBJ ST5 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFABSSTOBJ ST5 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFTTAG :BOGUS-CERT)

@@ -43,8 +43,8 @@
 
 ; As promised in :doc stobj-let, we begin with an example from that :doc.
 
-; WARNING: Many of these events appear in :DOC STOBJ-LET.  If they are changed
-; below, then we should make corresponding changes to that :doc topic.
+; WARNING: Many of these events appear in :DOC NESTED-STOBJS.  If they are
+; changed below, then we should make corresponding changes to that :doc topic.
 
 (defstobj kid1 fld1)
 
@@ -691,7 +691,7 @@ TOP1-FLD (:EXEC):
         :RULE-CLASSES NIL)
 
 (defabsstobj top1{abs}
-  :concrete top1
+  :foundation top1
   :recognizer (top1{abs}p :exec top1p :logic top1$ap)
   :creator (create-top1{abs} :exec create-top1 :logic create-top1$a)
   :corr-fn corr

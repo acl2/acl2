@@ -1495,7 +1495,7 @@
                      nil))))))
 
   (defabsstobj-events eba
-    :concrete eba$c
+    :foundation eba$c
     :recognizer (ebap :exec eba$cp :logic eba$ap)
     :creator (create-eba :exec create-eba$c :logic create-eba$a)
     :corr-fn eba-corr

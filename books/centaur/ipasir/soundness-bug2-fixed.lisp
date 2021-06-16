@@ -185,7 +185,7 @@
          (equal ipasir$a (ipasir-get1 ipasir$c$c))))
 
 (acl2::defabsstobj-events ipasir$c
-  :concrete ipasir$c$c
+  :foundation ipasir$c$c
   :recognizer (ipasir$cp :logic ipasir$a-p :exec ipasir$c$cp)
   :creator (create-ipasir$c :logic create-ipasir$a :exec create-ipasir$c$c)
   :corr-fn ipasir$c-corr
@@ -202,7 +202,7 @@
 
 
 (defabsstobj ipasir$c2
-  :concrete ipasir$c$c
+  :foundation ipasir$c$c
   :recognizer (ipasir$c2p :logic ipasir$a-p :exec ipasir$c$cp)
   :creator (create-ipasir$c2 :logic create-ipasir$a :exec create-ipasir$c$c)
   :corr-fn ipasir$c-corr

@@ -3,6 +3,9 @@
 ; Written by Matt Kaufmann, July, 2012 (updated Nov. and Dec., 2012)
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; Warning: If you change this book, then make corresponding changes to the
+; discussion of this book in :doc defabsstobj.
+
 ; Note: A separate example, one which is perhaps slightly more advanced and is
 ; probably more interesting, may be found in the book
 ; defabsstobj-example-2.lisp.  That example focuses especially on avoiding an
@@ -15,10 +18,10 @@
 (in-package "ACL2")
 
 ; Below, I typically use the suffix "$c" to suggest "concrete", for the
-; concrete stobj that will be used in our defabsstobj event.  Similarly, I
-; typically use the suffix "$a" to denote "abstract", for logical definitions
-; to use for our desired stobj.  If one prefers, one can think of "$c" as
-; suggesting "computational" and "$a" as suggesting "alternate".
+; concrete foundational stobj that will be used in our defabsstobj event.
+; Similarly, I typically use the suffix "$a" to denote "abstract", for logical
+; definitions to use for our desired stobj.  If one prefers, one can think of
+; "$c" as suggesting "computational" and "$a" as suggesting "alternate".
 
 (defstobj st$c
 
@@ -67,11 +70,12 @@
 ; The following function recognizes our abstract stobj, which has a MISC field
 ; unchanged from st$c but has a MAP field instead of a MEM field.  Just for
 ; fun, we switch the order of fields in our abstract stobj from the
-; corresponding concrete stobj: here, misc before mem rather than mem before
-; misc.  But note that there are no a priori restrictions on the shape of an
-; abstract stobj; it need not have the same number of "fields" as the concrete
-; stobj, and its organization need not be a list of "fields" at all!  In the
-; example in defabsstobj-example-2.lisp, the abstract stobj is actually empty!
+; corresponding concrete stobj (i.e., the foundational stobj for the abstract
+; stobj): here, misc before mem rather than mem before misc.  But note that
+; there are no a priori restrictions on the shape of an abstract stobj; it need
+; not have the same number of "fields" as the concrete stobj, and its
+; organization need not be a list of "fields" at all!  In the example in
+; defabsstobj-example-2.lisp, the abstract stobj is actually empty!
 
 (defun st$ap (x)
   (declare (xargs :guard t))
@@ -350,7 +354,7 @@
 ; they are not.
 
 (DEFABSSTOBJ ST2
-  :concrete st$c ; the corresponding concrete stobj
+  :foundation st$c ; the foundational (corresponding concrete) stobj
   :recognizer (st2p :logic st$ap :exec st$cp)
   :creator (create-st2 :logic create-st$a :EXEC create-st$c
                        :correspondence create-st{correspondence}
@@ -385,8 +389,8 @@
                      :guard-thm update{guard-thm})
 
 ; Note that renaming is not handled as with defstobj.  So for example, if the
-; concrete updater for the misc$c field is !misc$c, then we need to use a long
-; form such as the one below.
+; :exec ("concrete") updater for the misc$c field is !misc$c, then we need to
+; use a long form such as the one below.
 
             (MISC2 :logic misc$a
                    :exec misc$c
@@ -444,7 +448,7 @@
 ; interchangeably; we test that below.
 
 (defabsstobj st3
-  :concrete st$c
+  :foundation st$c
   :recognizer (st3p :logic st$ap :exec st$cp)
   :creator (create-st3 :logic create-st$a :exec create-st$c
                        :correspondence create-st{correspondence}
@@ -461,7 +465,7 @@
   :congruent-to st)
 
 (defabsstobj st4
-  :concrete st$c
+  :foundation st$c
   :recognizer (st4p :logic st$ap :exec st$cp)
   :creator (create-st4 :logic create-st$a :exec create-st$c
                        :correspondence create-st{correspondence}
@@ -478,7 +482,7 @@
   :congruent-to st)
 
 (defabsstobj st5
-  :concrete st$c
+  :foundation st$c
   :recognizer (st5p :logic st$ap :exec st$cp)
   :creator (create-st5 :logic create-st$a :exec create-st$c
                        :correspondence create-st{correspondence}

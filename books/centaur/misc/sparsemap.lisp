@@ -730,7 +730,7 @@
 ;; This abstracts a set-only sparsemap (no sm-set/sm-get, only sm-add/sm-inp)
 ;; as a pair of a list and an upper bound (range)
 (defabsstobj smset
-  :concrete sm
+  :foundation sm
   :recognizer (smsetp :logic smsetp$a :exec smp)
   :creator (smset-create :logic smset-create$a :exec create-sm)
   :corr-fn smset$corr
@@ -808,7 +808,7 @@
   (cons nil (cdr smmap)))
 
 (defabsstobj smmap
-  :concrete sm
+  :foundation sm
   :recognizer (smmapp :logic smmapp$a :exec smp)
   :creator (smmap-create :logic smmap-create$a :exec create-sm)
   :corr-fn smmap$corr
@@ -884,7 +884,7 @@
 ;; This "abstracts" a sparsemap as just a sparsemap, but folds sm-wfp into the
 ;; stobj recognizer.
 (defabsstobj sma
-  :concrete sm
+  :foundation sm
   :recognizer (smap :logic sm$ap :exec smp)
   :creator (create-sma :logic create-sm$a :exec create-sm)
   :corr-fn equal

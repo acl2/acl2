@@ -1153,7 +1153,7 @@
   (local (in-theory (disable (acl2::repeat))))
 
   (defabsstobj-events aignet-pathcond
-    :concrete aignet-pathcond$c
+    :foundation aignet-pathcond$c
     :corr-fn aignet-pathcond-corr
     :recognizer (aignet-pathcondp :logic nbalistp
                                   :exec aignet-pathcond$cp)

@@ -494,7 +494,7 @@ accessor on a stobj's creator function returns the default value.</li>
      ))
 
   (acl2::defabsstobj-events myst
-    :concrete myst$c
+    :foundation myst$c
     :corr-fn myst-corr
     :recognizer (mystp :logic myst$a-p :exec myst$cp)
     :creator (create-myst :logic create-myst$a :exec create-myst$c)
@@ -1182,7 +1182,7 @@ accessor on a stobj's creator function returns the default value.</li>
 (defun rstobj-defabsstobj (x)
   (b* (((rstobj x)))
     `(acl2::defabsstobj-events ,x.name
-       :concrete ,x.concrete-stobj
+       :foundation ,x.concrete-stobj
        :corr-fn ,(rstobj-corr-name x)
        :recognizer (,x.recognizer :logic ,x.logic-recognizer :exec ,(rstobj-concrete-recognizer x))
        :creator (,x.creator :logic ,x.logic-creator :exec ,(rstobj-concrete-creator x))

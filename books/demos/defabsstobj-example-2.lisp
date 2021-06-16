@@ -281,7 +281,7 @@
         :RULE-CLASSES NIL)
 
 ; Finally we introduce our abstract stobj, memo.  We use the most compact form
-; of defabsstobj; for example, :concrete is implicitly memo$c, obtained by
+; of defabsstobj; for example, :foundation is implicitly memo$c, obtained by
 ; putting the suffix "$C" on the symbol, memo.
 
 (defabsstobj memo :exports (fib2)
@@ -290,7 +290,7 @@
 ; Test other way of specifying :protect:
 
 (defabsstobj memo-alt
-  :concrete memo$c
+  :foundation memo$c
   :recognizer (memo-alt-p :logic memo$ap :exec memo$cp)
   :creator (create-memo-alt :logic create-memo$a :exec create-memo$c)
   :exports ((fib2-alt :logic fib2$a :exec fib2$c

@@ -492,7 +492,7 @@
 (local (in-theory (disable fgarray$c->alist)))
 
 (acl2::defabsstobj-events fgarray
-  :concrete fgarray$c
+  :foundation fgarray$c
   :corr-fn fgarray-corr
   :recognizer (fgarrayp :exec fgarray$cp :logic fgarrayp$a)
   :creator (create-fgarray :exec create-fgarray$c :logic create-fgarray$a)

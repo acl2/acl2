@@ -2123,7 +2123,7 @@
 
 
   (defabsstobj-events smm
-    :concrete smme
+    :foundation smme
     :recognizer (smmp :logic smmlp :exec smmep)
     :creator (smm-create :logic smml-create :exec create-smme)
     :corr-fn smme-corr

@@ -533,7 +533,7 @@
   (pruned-x86-32-model-list)
 
   `(DEFABSSTOBJ X86-32
-               :CONCRETE X86-32$C
+               :FOUNDATION X86-32$C
                :RECOGNIZER (X86-32P
                             :LOGIC X86-32$AP
                             :EXEC X86-32$CP-PRE)

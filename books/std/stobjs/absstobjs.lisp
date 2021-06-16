@@ -50,7 +50,7 @@
 
   @({
       (defabsstobj-events st
-        :concrete st$c
+        :foundation st$c
         :recognizer (stp :logic st$ap :exec st$cp)
         :creator (create-st :logic create-st$a :exec create-st$c)
         :corr-fn st$corr

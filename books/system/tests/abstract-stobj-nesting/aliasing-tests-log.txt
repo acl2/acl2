@@ -654,7 +654,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:REWRITE EQUAL-LEN-1))
  UPDATE-SUB02{PRESERVED}
 ACL2 !>>(DEFABSSTOBJ TOP2
-                     :CONCRETE TOP
+                     :FOUNDATION TOP
                      :RECOGNIZER (TOP2P :LOGIC TOP$AP :EXEC TOPP)
                      :CREATOR (CREATE-TOP2 :LOGIC CREATE-TOP$A
                                            :EXEC CREATE-TOP)

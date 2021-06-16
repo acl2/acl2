@@ -2018,7 +2018,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
             )))
 
   (acl2::defabsstobj-events elab-mod
-    :concrete elab-mod$c
+    :foundation elab-mod$c
     :creator (create-elab-mod :logic create-elab-mod$a :exec create-elab-mod$c)
     :recognizer (elab-modp :logic elab-mod$ap :exec elab-mod$cp)
     :corr-fn elab-mod-corr
