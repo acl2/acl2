@@ -281,7 +281,7 @@ the other keyword arguments are unused.  For example:</p>
        (creator (acl2::defstobj-fnname name :creator :top nil))
        (recognizer (acl2::defstobj-fnname name :recognizer :top nil)))
     `(defabsstobj ,name
-       :concrete ,concrete
+       :foundation ,concrete
        :recognizer (,recognizer :logic ,recog-logic :exec ,recog-exec)
        :creator (,creator :logic ,create-logic :exec ,create-exec)
        :exports ,(clone-absstobj-exports exports export-absstobj-tuples

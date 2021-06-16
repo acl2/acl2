@@ -3512,9 +3512,9 @@
 ; stobjs, that nth argument need not be st, and we believe that in principle,
 ; we could restrict flushing of memo table entries of f to those whose nth
 ; argument is eq to the stobj being updated (whether st, congruent to st, or an
-; abstract stobj whose concrete stobj is congruent to st).  But for now we take
-; the coarser approach, which has the advantage that we simply throw away the
-; memo-table for f when flushing, leaving it to be garbage collected; see
+; abstract stobj whose foundational stobj is congruent to st).  But for now we
+; take the coarser approach, which has the advantage that we simply throw away
+; the memo-table for f when flushing, leaving it to be garbage collected; see
 ; memoize-flush1.
 
               (and condition ; else no memo table usage, so skip flushing
@@ -3526,10 +3526,10 @@
                            (not (eq st 'state)) ; see memoize-table-chk
                            (st-lst (congruent-stobj-rep
 
-; In the case that st is an abstract stobj, we replace it with the
-; corresponding concrete stobj before getting a canonical (congruent)
-; representative; see the rather long comment just above that mentions
-; "abstract" stobjs.
+; In the case that st is an abstract stobj, we replace it with the concrete
+; stobj at the end of its chain of foundational stobjs before getting a
+; canonical (congruent) representative; see the rather long comment just above
+; that mentions "abstract" stobjs.
 
                                     (or (concrete-stobj st wrld)
                                         st)

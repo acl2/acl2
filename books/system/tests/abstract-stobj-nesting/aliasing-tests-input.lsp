@@ -223,7 +223,7 @@ ACL2 !>
         :RULE-CLASSES NIL)
 
 (defabsstobj top2
-  :concrete top
+  :foundation top
   :recognizer (top2p :logic top$ap :exec topp)
   :creator (create-top2 :logic create-top$a :exec create-top)
   :corr-fn top-corr

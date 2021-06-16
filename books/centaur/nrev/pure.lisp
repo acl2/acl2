@@ -330,7 +330,7 @@ visible elsewhere in the program.</p>"
            (nrev$a-copy nrev$a))))
 
 (defabsstobj-events nrev
-  :concrete nrev$c
+  :foundation nrev$c
   :recognizer (nrev$p :logic true-listp
                       :exec nrev$cp)
   :creator (acl2::create-nrev :logic create-nrev$a

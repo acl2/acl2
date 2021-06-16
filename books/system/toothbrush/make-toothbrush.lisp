@@ -31,6 +31,9 @@
 (program)
 
 (defun get-cltl-command (name ctx wrld quiet-p)
+
+; This is incomplete; in particular, it doesn't handle defabsstobj.
+
   (let ((val
          (scan-to-cltl-command
           (cdr (lookup-world-index 'event

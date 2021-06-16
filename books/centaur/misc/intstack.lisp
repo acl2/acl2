@@ -601,7 +601,7 @@
                   
 
 (defabsstobj-events intstack
-  :concrete intstack$c
+  :foundation intstack$c
   :corr-fn intstack-corr
   :recognizer (intstackp :logic intstack$ap :exec intstack$cp)
   :creator (create-intstack :logic create-intstack$a

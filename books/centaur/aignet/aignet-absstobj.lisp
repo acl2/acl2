@@ -874,7 +874,7 @@
 (local (in-theory (disable (:e aignet-corr) (:e aignet-count-equivs))))
 
 (acl2::defabsstobj-events aignet
-  :concrete aignet$c::aignet
+  :foundation aignet$c::aignet
   :corr-fn aignet-corr
   :recognizer (aignetp :logic aignet$a::aignet-well-formedp
                        :exec aignet$c::aignetp)

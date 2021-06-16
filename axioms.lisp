@@ -28551,7 +28551,7 @@ Lisp definition."
 ;            :RULE-CLASSES NIL)
 ;
 ;   (defabsstobj const-stobj
-;      :concrete const-stobj$c
+;      :foundation const-stobj$c
 ;      :recognizer (const-stobjp :logic const-stobj$ap :exec const-stobj$cp)
 ;      :creator (create-const-stobj :logic create-const-stobj$a :exec
 ;                                   create-const-stobj$c)

@@ -4,6 +4,13 @@
 ; Based on misc/defabsstobj-example-1.lisp (but the present example is simpler)
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; Note: In June 2021 the notion of "corresponding concrete stobj" for an
+; abstract stobjs, represented by keyword :concrete of defabsstobj, was
+; replaced by the notion of "foundational stobj" (or "foundation"), now
+; represented by keyword :foundation.  Since this book was provided as
+; supporting materials for a workshop paper, we have left everything below
+; unchanged except for the line where :concrete was replaced by :foundation.
+
 (in-package "ACL2")
 
 ; A nice convention, observed below, is to use the suffixes "$c" and "$a" to
@@ -254,7 +261,7 @@
 ; in CAPITAL LETTERS.
 
 (DEFABSSTOBJ ST
-  :concrete st$c ; the corresponding concrete stobj
+  :foundation st$c ; the corresponding foundational ("concrete") stobj
   :recognizer (stp :logic st$ap :exec st$cp)
   :creator (create-st :logic create-st$a :exec create-st$c
                       :correspondence create-st{correspondence}

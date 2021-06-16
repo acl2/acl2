@@ -160,7 +160,7 @@
         :RULE-CLASSES NIL)
 
 (defabsstobj st1
-  :concrete st0
+  :foundation st0
   :recognizer (st1p :logic st1$ap :exec st0p)
   :creator (create-st1 :logic create-st1$a :exec create-st0)
   :exports ((lookup1 :exec mem0i)
@@ -258,7 +258,7 @@
         :RULE-CLASSES NIL)
 
 (defabsstobj st2
-  :concrete st1
+  :foundation st1
   :recognizer (st2p :logic st2$ap :exec st1p)
   :creator (create-st2 :logic create-st1$a :exec create-st1)
   :exports ((lookup2 :exec lookup1)
@@ -365,7 +365,7 @@
 
 (defabsstobj st3
   :congruent-to st2
-  :concrete st1
+  :foundation st1
   :recognizer (st3p :logic st2$ap :exec st1p)
   :creator (create-st3 :logic create-st1$a :exec create-st1)
   :exports ((lookup3 :logic lookup2$a :exec lookup1)

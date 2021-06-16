@@ -845,7 +845,7 @@
 
   (defun create-x86-abstract-stobj-fn (pruned-x86-model-list)
     `(DEFABSSTOBJ X86
-       :CONCRETE X86$C
+       :FOUNDATION X86$C
        :RECOGNIZER (X86P
                     :LOGIC X86$AP
                     :EXEC X86$CP-PRE)

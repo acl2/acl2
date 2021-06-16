@@ -1143,6 +1143,10 @@
     "By default, @('make') commands for certifying ACL2 books take advantage of
      files @('*@useless-runes.lsp').  See @(see useless-runes).")
 
+   (xdoc::p
+    "One line of file @('Makefile-generic') has been tweaked to avoid the
+     @('+make') construct, which may help avoid errors in FreeBSD systems.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Testing")
