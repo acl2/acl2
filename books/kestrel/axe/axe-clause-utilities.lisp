@@ -28,7 +28,8 @@
                   :guard-hints (("Goal" :expand ((possibly-negated-nodenumsp items))
                                  :in-theory (enable strip-not-from-possibly-negated-nodenum
                                                     strip-nots-from-possibly-negated-nodenums
-                                                    DAG-FUNCTION-CALL-EXPRP-REDEF)))))
+                                                    dag-function-call-exprp-redef
+                                                    possibly-negated-nodenump)))))
   (if (endp items)
       nil
     (let* ((item (first items)))
@@ -53,7 +54,7 @@
                   :guard-hints (("Goal" :expand ((possibly-negated-nodenumsp items))
                                  :in-theory (enable strip-not-from-possibly-negated-nodenum
                                                     strip-nots-from-possibly-negated-nodenums
-                                                    DAG-FUNCTION-CALL-EXPRP-REDEF)))))
+                                                    dag-function-call-exprp-redef)))))
   (if (endp items)
       nil
     (let* ((item (first items)))

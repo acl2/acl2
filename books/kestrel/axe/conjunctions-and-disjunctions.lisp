@@ -34,7 +34,7 @@
 ;(local (in-theory (disable myquotep))) ;todo
 
 ; an item of the form <nodenum> or (not <nodenum>).
-(defun possibly-negated-nodenump (item)
+(defund possibly-negated-nodenump (item)
   (declare (xargs :guard t))
   (or (natp item)
       (and (call-of 'not item)
@@ -43,7 +43,8 @@
            (natp (farg1 item)))))
 
 (defund strip-not-from-possibly-negated-nodenum (item)
-  (declare (xargs :guard (possibly-negated-nodenump item)))
+  (declare (xargs :guard (possibly-negated-nodenump item)
+                  :guard-hints (("Goal" :in-theory (enable possibly-negated-nodenump)))))
   (if (consp item)
       (farg1 item)
     item))
@@ -52,7 +53,8 @@
   (implies (possibly-negated-nodenump item)
            (natp (strip-not-from-possibly-negated-nodenum item)))
   :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable strip-not-from-possibly-negated-nodenum))))
+  :hints (("Goal" :in-theory (enable strip-not-from-possibly-negated-nodenum
+                                     possibly-negated-nodenump))))
 
 (defthm rationalp-of-strip-not-from-possibly-negated-nodenum
   (implies (possibly-negated-nodenump item)
@@ -114,7 +116,8 @@
 (defthm possibly-negated-nodenumsp-of-singleton
   (implies (natp nodenum)
            (possibly-negated-nodenumsp (list nodenum)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp))))
+  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
+                                     possibly-negated-nodenump))))
 
 
 (defthm possibly-negated-nodenumsp-of-cdr
@@ -132,7 +135,8 @@
                       (not (natp (farg1 (car items))))
                       (cdr (fargs (car items))))))
   :rule-classes ((:rewrite :backchain-limit-lst (nil 0 nil)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp))))
+  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
+                                     possibly-negated-nodenump))))
 
 (defthm consp-of-car-when-possibly-negated-nodenumsp-weaken-cheap
   (implies (and (syntaxp (want-to-weaken (consp (car items))))
@@ -141,7 +145,8 @@
            (equal (consp (car items))
                   (not (natp (car items)))))
   :rule-classes ((:rewrite :backchain-limit-lst (nil 0 nil)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp))))
+  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
+                                     possibly-negated-nodenump))))
 
 ;;;
 ;;; strip-nots-from-possibly-negated-nodenums
@@ -177,7 +182,8 @@
 ;todo: rename
 (defun negate-possibly-negated-nodenums (items)
   (declare (xargs :guard (possibly-negated-nodenumsp items)
-                  :guard-hints (("Goal" :in-theory (enable possibly-negated-nodenumsp)))))
+                  :guard-hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
+                                                           possibly-negated-nodenump)))))
   (if (endp items)
       nil
     (let ((item (first items)))
@@ -190,7 +196,8 @@
 (defthm possibly-negated-nodenumsp-of-negate-possibly-negated-nodenums
   (implies (possibly-negated-nodenumsp items)
            (possibly-negated-nodenumsp (negate-possibly-negated-nodenums items)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp))))
+  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
+                                     possibly-negated-nodenump))))
 
 (defthm all-<-of-strip-nots-from-possibly-negated-nodenums-of-negate-possibly-negated-nodenums
   (implies (and (possibly-negated-nodenumsp items)
@@ -198,7 +205,8 @@
                 )
            (all-< (strip-nots-from-possibly-negated-nodenums (negate-possibly-negated-nodenums items)) dag-len))
   :hints (("Goal" :in-theory (enable negate-possibly-negated-nodenums strip-nots-from-possibly-negated-nodenums
-                                     strip-not-from-possibly-negated-nodenum))))
+                                     strip-not-from-possibly-negated-nodenum
+                                     possibly-negated-nodenump))))
 
 ;;;
 ;;; axe-conjunctionp
@@ -295,7 +303,9 @@
            (equal (quotep (negate-axe-disjunction item))
                   (quotep item)))
   :hints (("Goal" :expand (negate-possibly-negated-nodenums item)
-           :in-theory (enable negate-axe-disjunction axe-disjunctionp))))
+           :in-theory (enable negate-axe-disjunction
+                              axe-disjunctionp
+                              possibly-negated-nodenump))))
 
 (defthm equal-of-quote-nil-and-negate-axe-disjunction
   (implies (axe-disjunctionp item)
@@ -316,7 +326,8 @@
            (axe-conjunctionp (negate-axe-disjunction conj)))
   :hints (("Goal" :in-theory (enable axe-conjunctionp
                                      axe-disjunctionp
-                                     negate-axe-disjunction))))
+                                     negate-axe-disjunction
+                                     possibly-negated-nodenump))))
 
 ;Returns a disjunction
 (defund negate-axe-conjunction (item)
@@ -333,7 +344,8 @@
            (axe-disjunctionp (negate-axe-conjunction conj)))
   :hints (("Goal" :in-theory (enable axe-conjunctionp
                                      axe-disjunctionp
-                                     negate-axe-conjunction))))
+                                     negate-axe-conjunction
+                                     possibly-negated-nodenump))))
 
 (defund bounded-axe-conjunctionp (item dag-len)
   (declare (xargs :guard (and (axe-conjunctionp item)
@@ -410,7 +422,8 @@
                               (possibly-negated-nodenumsp y)
                               (consp y) ;prevents and empty result
                               )
-                  :guard-hints (("Goal" :in-theory (enable possibly-negated-nodenumsp)))))
+                  :guard-hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
+                                                           possibly-negated-nodenump)))))
   (if (endp x)
       y
     (let ((item (first x)))
@@ -481,7 +494,8 @@
                               (consp y) ;prevents an empty result
                               )
                   :guard-hints (("Goal" :in-theory (enable axe-conjunctionp
-                                                           possibly-negated-nodenumsp)))))
+                                                           possibly-negated-nodenumsp
+                                                           possibly-negated-nodenump)))))
   (if (endp x)
       y
     (let ((item (first x)))

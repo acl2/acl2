@@ -22,19 +22,55 @@
 (local (include-book "numeric-lists"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
+;; (defthm rational-listp-when-all-natp
+;;   (implies (all-natp nodenums)
+;;            (equal (RATIONAL-LISTP NODENUMS)
+;;                   (true-listp nodenums))))
+
+(defthm acl2-numberp-of-maxelem-forced
+  (implies (and (consp items)
+                (force (rational-listp items)))
+           (acl2-numberp (maxelem items)))
+  :hints (("Goal" :in-theory (enable maxelem))))
+
+(defthm natp-of-maxelem-forced
+  (implies (and (consp items)
+                (all-natp items))
+           (natp (maxelem items)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable maxelem))))
+
+(defthmd acl2-numberp-of-nth-when-all-dargp
+  (implies (and (all-dargp args)
+                (natp n)
+                (< n (len args))
+                )
+           (equal (acl2-numberp (nth n args))
+                  (not (consp (nth n args)))))
+  :hints (("Goal" :in-theory (e/d (all-dargp-less-than nth) (NTH-OF-CDR)))))
+
+;compute the context of nodenum coming in via the given parent (this is just the parent's context unless the parent is an ITE)
+;ffixme handle parents that are boolands and boolors - careful! -- must order the nodes: for (booland a b) we can't both assume a for b and assume b for a..
+(defthm acl2-numberp-of-nth-of-dargs
+  (implies (and (dag-exprp0 expr)
+                (< n (len (dargs expr)))
+                (natp n)
+                (not (equal 'quote (car expr)))
+;               (not (consp (nth n (aref1 dag-array-name dag-array nodenum)))) ;rules out a quotep
+                )
+           (equal (acl2-numberp (nth n (dargs expr)))
+                  (not (consp (nth n (dargs expr))))))
+  :hints (("Goal" :in-theory (enable acl2-numberp-of-nth-when-all-dargp))))
+
 ;for speed:
 (local (in-theory (disable nth-when-<=-len-cheap
                            ;;nth-with-large-index-cheap
-                           ;list::nth-when-l-is-not-a-consp
                            nth-when-zp-cheap
                            nth-when-not-consp-cheap
                            nth-when-not-cddr
                            not-consp-of-nth-of-dargs-of-aref1
                            ;;consp-when-len-equal
-                           ;;list::nth-when-n-is-not-an-integerp
                            )))
-
-(local (in-theory (disable possibly-negated-nodenump)))
 
 (defthm possibly-negated-nodenump-of-list-of-not
   (equal (possibly-negated-nodenump (list 'not nodenum))
@@ -83,7 +119,8 @@
       ;;a non-false context is a list of conjuncts of the form <nodenum> or (not <nodenum>)
       ;;the meaning of a context is the conjunction of its items
       ;;a context of nil represents "true" (the conjunction of no things)
-      ;;fixme, for efficiency, we could separate the lists of true and false things...
+      ;; TODO: for efficiency, consider separating the lists of true and false things...
+      ;; TODO: Consider requiring no dups, consider requiring no obvious contradictions (x and (not x) both present):
       (possibly-negated-nodenumsp context)))
 
 ;requires 0 <= nodenum < bound for all the nodenums in the context:
@@ -262,9 +299,8 @@
       nil
     (get-nodenums-mentioned-in-possibly-negated-nodenums context)))
 
-(local (in-theory (enable possibly-negated-nodenumsp))) ;todo
-
 ;checks for contradictions:
+;; TODO: Avoid comparing later items in CONTEXT1 to earlier items already copied from CONTEXT1 to CONTEXT2?
 (defun conjoin-contexts-aux (context1 context2)
   (declare (xargs :guard (and (possibly-negated-nodenumsp context1)
                               (possibly-negated-nodenumsp context2))
@@ -277,7 +313,7 @@
               (false-context)
             (conjoin-contexts-aux (rest context1) (add-to-set-equal item context2)))
         ;item is <nodenum>:
-        (if (member-equal `(not ,item) context2) ;fixme save this cons?
+        (if (member-equal `(not ,item) context2) ; TODO: save this cons?
             (false-context)
           (conjoin-contexts-aux (rest context1) (add-to-set-equal item context2)))))))
 
@@ -287,11 +323,13 @@
            (contextp (conjoin-contexts-aux context1 context2)))
   :hints (("Goal" :in-theory (enable conjoin-contexts-aux))))
 
-;this is inexact (doesn't look inside the nodenums in the context)
+;; Computes a context equivalent to the conjunction of CONTEXT1 and CONTEXT2.
+;; This doesn't look up the nodenums in the contexts and so may miss some
+;; simplifications (e.g., if we know (or x y) and then learn (not x)).
 (defund conjoin-contexts (context1 context2)
   (declare (xargs :guard (and (contextp context1)
                               (contextp context2))))
-  (if (or (eq (false-context) context1) ;use *false-context* for speed? ;fixme actually use false-contextp here and below?
+  (if (or (eq (false-context) context1)
           (eq (false-context) context2))
       (false-context)
     ;;both are lists of nodenums and negated nodenums:
@@ -305,10 +343,9 @@
            (contextp (conjoin-contexts context1 context2)))
   :hints (("Goal" :in-theory (enable conjoin-contexts))))
 
-;inline?
+;; Computes a context implied by the disjunction of CONTEXT1 and CONTEXT2.
 ;this is inexact in two ways (doesn't look inside the nodenums in the context, also can't express the disjunction of two conjunctions as a single conjunction)
 ;the second type of loss of information has the flavor of the convex hull operations done when generating polyhedral invariants using the abstract interpretation framework.
-
 (defund disjoin-contexts (context1 context2)
   (declare (xargs :guard (and (contextp context1)
                               (contextp context2))))
@@ -316,6 +353,7 @@
       context2
     (if (eq (false-context) context2)
         context1
+      ;; Keep only facts known in both contexts (giving true-context if there is nothing in common):
       (intersection-equal context1 context2))))
 
 (defthm possibly-negated-nodenumsp-of-intersection-equal
@@ -534,8 +572,6 @@
 ;;   :hints (("Goal" :use (:instance CONSP-OF-GET-AXE-CONJUNCTION-FROM-DAG-ITEM)
 ;;            :in-theory (disable CONSP-OF-GET-AXE-CONJUNCTION-FROM-DAG-ITEM))))
 
-(local (in-theory (disable array1p-forward))) ;let to a lot of assumptions in the forcing rounds?
-
 (defthm not-complex-rationalp-of-nth-when-all-dargp
   (implies (and (all-dargp args)
                 ;(natp n)
@@ -595,17 +631,17 @@
 ;;                                                                                 )))))
 
 ;returns a contextp that is boolean-equivalent to NODENUM
-(defund get-context-from-node (nodenum ;allow a quotep? might just work (then the caller could do less checking?)
-                               dag-array-name
-                               dag-array
-                               dag-len)
+(defund context-representing-node (nodenum ;allow a quotep? might just work (then the caller could do less checking?)
+                                   dag-array-name
+                                   dag-array
+                                   dag-len)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< nodenum dag-len))
                   :guard-hints (("Goal" :use (:instance axe-conjunctionp-of-get-axe-conjunction-from-dag-item (nodenum-or-quotep nodenum))
                                  :in-theory (e/d (axe-conjunctionp GET-AXE-CONJUNCTION-FROM-DAG-ITEM)
                                                  (axe-conjunctionp-of-get-axe-conjunction-from-dag-item
-                                                  ;axe-conjunctionp-of-get-axe-conjunction-from-dag-item-forced
+;axe-conjunctionp-of-get-axe-conjunction-from-dag-item-forced
                                                   ))))))
   (let ((conjunction (get-axe-conjunction-from-dag-item nodenum dag-array-name dag-array dag-len)))
     (if (quotep conjunction)
@@ -614,18 +650,18 @@
           (false-context))
       conjunction)))
 
-(defthm contextp-of-get-context-from-node
+(defthm contextp-of-context-representing-node
   (implies (and (natp nodenum)
                 (< nodenum dag-len)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
-           (contextp (get-context-from-node nodenum dag-array-name dag-array dag-len)))
-  :hints (("Goal" :in-theory (enable get-context-from-node))))
+           (contextp (context-representing-node nodenum dag-array-name dag-array dag-len)))
+  :hints (("Goal" :in-theory (enable context-representing-node))))
 
 ;returns a contextp that is boolean-equivalent to the negation of NODENUM
-(defund get-context-from-negation-of-node (nodenum ;allow a quotep? might just work (then the caller could do less checking?)
-                                           dag-array-name
-                                           dag-array
-                                           dag-len)
+(defund context-representing-negation-of-node (nodenum ;allow a quotep? might just work (then the caller could do less checking?)
+                                               dag-array-name
+                                               dag-array
+                                               dag-len)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< nodenum dag-len))
@@ -642,73 +678,15 @@
       ;;it's a list of nodenums and negations of nodenums:
       (negate-possibly-negated-nodenums disjunction))))
 
-(defthm contextp-of-get-context-from-negation-of-node
+(defthm contextp-of-context-representing-negation-of-node
   (implies (and (natp nodenum)
                 (< nodenum dag-len)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
-           (contextp (get-context-from-negation-of-node nodenum dag-array-name dag-array dag-len)))
-  :hints (("Goal" :in-theory (enable contextp get-context-from-negation-of-node))))
-
-;; ;returns a contextp equivalent to nodenum (flattens nested ANDs)
-;; ;;fixme what about a negation of a boolor?
-;; (skip- proofs
-;;  (defun get-context-equivalent-to-node (nodenum dag-array-name dag-array)
-;;    (let* ((expr (aref1 dag-array-name dag-array nodenum)))
-;;      (if (variablep expr)
-;;          (list nodenum) ;always safe to do this
-;;        (let ((fn (ffn-symb expr)))
-;;          (if (eq 'quote fn)
-;;              (if (unquote expr)
-;;                  ;;non-nil constant:
-;;                  (true-context)
-;;                (false-context) ;false context
-;;                )
-;;            (if (and (eq 'booland fn)
-;;                     (integerp (farg1 expr)) ;what if not?
-;;                     (integerp (farg2 expr)) ;what if not?
-;;                     )
-;;                (conjoin-contexts (get-context-equivalent-to-node (farg1 expr) dag-array-name dag-array)
-;;                                  (get-context-equivalent-to-node (farg2 expr) dag-array-name dag-array))
-;;              (if (and (eq 'not fn)
-;;                       (integerp (farg1 expr)) ;what if not?
-;;                       )
-;;                  (list `(not ,(farg1 expr)))
-;;                ;;always safe to do this:
-;;                (list nodenum)))))))))
-
-;;(skip- proofs (verify-guards get-context-equivalent-to-node))
-
-;; (defthm contextp-of-get-context-equivalent-to-node
-;;   (implies (integerp nodenum)
-;;            (contextp (get-context-equivalent-to-node nodenum dag-array-name dag-array)))
-;;   :hints (("Goal" :in-theory (disable contextp))))
-
-(local (in-theory (disable contextp))) ;make non-local?
+           (contextp (context-representing-negation-of-node nodenum dag-array-name dag-array dag-len)))
+  :hints (("Goal" :in-theory (enable contextp context-representing-negation-of-node))))
 
 ;todo: this failed when contextp was enabled
 (def-typed-acl2-array context-arrayp (contextp val))
-
-(defthmd acl2-numberp-of-nth-when-all-dargp
-  (implies (and (all-dargp args)
-                (natp n)
-                (< n (len args))
-                )
-           (equal (acl2-numberp (nth n args))
-                  (not (consp (nth n args)))))
-  :hints (("Goal" :in-theory (e/d (all-dargp-less-than nth) (NTH-OF-CDR)))))
-
-;compute the context of nodenum coming in via the given parent (this is just the parent's context unless the parent is an ITE)
-;ffixme handle parents that are boolands and boolors - careful! -- must order the nodes: for (booland a b) we can't both assume a for b and assume b for a..
-(defthm acl2-numberp-of-nth-of-dargs
-  (implies (and (dag-exprp0 expr)
-                (< n (len (dargs expr)))
-                (natp n)
-                (not (equal 'quote (car expr)))
-;               (not (consp (nth n (aref1 dag-array-name dag-array nodenum)))) ;rules out a quotep
-                )
-           (equal (acl2-numberp (nth n (dargs expr)))
-                  (not (consp (nth n (dargs expr))))))
-  :hints (("Goal" :in-theory (enable acl2-numberp-of-nth-when-all-dargp))))
 
 (defund get-context-via-parent (nodenum parent-nodenum dag-array-name dag-array dag-len context-array)
   (declare (xargs :guard (and (natp nodenum)
@@ -732,14 +710,14 @@
                      (not (eql nodenum (darg1 parent-expr)))
                      (not (eql nodenum (darg3 parent-expr))))
                 ;;nodenum is the then-branch (but not the else-branch or the test), so add the test to the context for nodenum:
-                (conjoin-contexts (get-context-from-node (darg1 parent-expr) dag-array-name dag-array dag-len) ;(get-context-equivalent-to-node (darg1 parent-expr) dag-array-name dag-array)
+                (conjoin-contexts (context-representing-node (darg1 parent-expr) dag-array-name dag-array dag-len) ;(get-context-equivalent-to-node (darg1 parent-expr) dag-array-name dag-array)
                                   parent-context)
               (if (and (eql nodenum (darg3 parent-expr))
                        (not (eql nodenum (darg1 parent-expr)))
                        (not (eql nodenum (darg2 parent-expr))))
                   ;;nodenum is the else-branch (but not the then-branch or the test), so add the negation of the test to the context for nodenum:
-                  ;(negate-and-conjoin-to-context (darg1 parent-expr) parent-context dag-array-name dag-array)
-                  (conjoin-contexts (get-context-from-negation-of-node (darg1 parent-expr) dag-array-name dag-array dag-len)
+                  ;;(negate-and-conjoin-to-context (darg1 parent-expr) parent-context dag-array-name dag-array)
+                  (conjoin-contexts (context-representing-negation-of-node (darg1 parent-expr) dag-array-name dag-array dag-len)
                                     parent-context)
                 ;;nodenum is the test or appears in more than one argument (should be rare), so we don't add anything to the context:
                 parent-context))
@@ -751,15 +729,15 @@
                        (not (eql nodenum (darg2 parent-expr)))
                        (not (eql nodenum (darg4 parent-expr))))
                   ;;nodenum is the then-branch but not the else-branch (or the test or the size), so add the test to the context:
-                  (conjoin-contexts (get-context-from-node (darg2 parent-expr) dag-array-name dag-array dag-len) ;(get-context-equivalent-to-node (darg2 parent-expr) dag-array-name dag-array)
+                  (conjoin-contexts (context-representing-node (darg2 parent-expr) dag-array-name dag-array dag-len) ;(get-context-equivalent-to-node (darg2 parent-expr) dag-array-name dag-array)
                                     parent-context)
                 (if (and (eql nodenum (darg4 parent-expr))
                          (not (eql nodenum (darg1 parent-expr)))
                          (not (eql nodenum (darg2 parent-expr)))
                          (not (eql nodenum (darg3 parent-expr))))
                     ;;nodenum is the else-branch but not the then-branch (or the test or the size), so add the negation of test to the context:
-                    ;(negate-and-conjoin-to-context (darg2 parent-expr) parent-context dag-array-name dag-array)
-                    (conjoin-contexts (get-context-from-negation-of-node (darg2 parent-expr) dag-array-name dag-array dag-len)
+                    ;;(negate-and-conjoin-to-context (darg2 parent-expr) parent-context dag-array-name dag-array)
+                    (conjoin-contexts (context-representing-negation-of-node (darg2 parent-expr) dag-array-name dag-array dag-len)
                                       parent-context)
                   ;;otherwise (nodenum is the test or size or appears more than once), we don't add anything to the context:
                   parent-context))
@@ -776,24 +754,6 @@
            (contextp (get-context-via-parent nodenum parent-nodenum dag-array-name dag-array dag-len context-array)))
   :hints (("Goal" :in-theory (enable get-context-via-parent
                                      cadr-becomes-nth-of-1 car-becomes-nth-of-0))))
-
-;; (defthm rational-listp-when-all-natp
-;;   (implies (all-natp nodenums)
-;;            (equal (RATIONAL-LISTP NODENUMS)
-;;                   (true-listp nodenums))))
-
-(defthm acl2-numberp-of-maxelem-forced
-  (implies (and (consp items)
-                (force (rational-listp items)))
-           (acl2-numberp (maxelem items)))
-  :hints (("Goal" :in-theory (enable maxelem))))
-
-(defthm natp-of-maxelem-forced
-  (implies (and (consp items)
-                (all-natp items))
-           (natp (maxelem items)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable maxelem))))
 
 ;;todo: pull out lemmas proved by induction (about all-> ?)
 (defun disjoin-contexts-of-parents (parent-nodenums nodenum dag-array-name dag-array dag-len context-array context-so-far)
@@ -1000,14 +960,14 @@
           (cons maybe-expr (context-to-exprs (rest context) dag-array))
         (context-to-exprs (rest context) dag-array)))))
 
-;returns nil
-(defun print-contexts (dag-lst)
-  (declare (xargs :guard (and (pseudo-dagp dag-lst)
-                              (< (len dag-lst) 2147483645))
-                  :guard-hints (("Goal" :in-theory (e/d (pseudo-dagp) (pseudo-dag-arrayp))))))
-  (prog2$ (cw "(Computing contexts:~%")
-          (let* ((dag-len (len dag-lst))
-                 (dag-array (make-into-array 'dag-array dag-lst))
-                 (context-array (make-full-context-array 'dag-array dag-array dag-len)))
-            (prog2$ (cw ")~%")
-                    (print-array2 'context-array context-array dag-len)))))
+;; ;; Returns nil but prints.
+;; (defun print-contexts (dag-lst)
+;;   (declare (xargs :guard (and (pseudo-dagp dag-lst)
+;;                               (< (len dag-lst) 2147483645))
+;;                   :guard-hints (("Goal" :in-theory (e/d (pseudo-dagp) (pseudo-dag-arrayp))))))
+;;   (prog2$ (cw "(Computing contexts:~%")
+;;           (let* ((dag-len (len dag-lst))
+;;                  (dag-array (make-into-array 'dag-array dag-lst))
+;;                  (context-array (make-full-context-array 'dag-array dag-array dag-len)))
+;;             (prog2$ (cw ")~%")
+;;                     (print-array2 'context-array context-array dag-len)))))

@@ -36,7 +36,8 @@
   (<= acc (max-nodenum-in-possibly-negated-nodenums-aux items acc))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux
-                                     POSSIBLY-NEGATED-NODENUMSP))))
+                                     possibly-negated-nodenumsp
+                                     possibly-negated-nodenump))))
 
 (defthm <=-of-car-and-max-nodenum-in-possibly-negated-nodenums-aux
   (implies (and (possibly-negated-nodenumsp items)
@@ -46,7 +47,8 @@
            (<= (car items) (max-nodenum-in-possibly-negated-nodenums-aux items acc)))
   :rule-classes (:rewrite (:linear :trigger-terms ((max-nodenum-in-possibly-negated-nodenums-aux items acc))))
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux
-                                     POSSIBLY-NEGATED-NODENUMSP))))
+                                     POSSIBLY-NEGATED-NODENUMSP
+                                     possibly-negated-nodenump))))
 
 (defthm <=-of-max-nodenum-in-possibly-negated-nodenums-aux-and-max-nodenum-in-possibly-negated-nodenums-aux
   (implies (<= acc1 acc2)
@@ -112,7 +114,8 @@
                       (cadr item)
                     item)))
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums
-                                     max-nodenum-in-possibly-negated-nodenums-aux))))
+                                     max-nodenum-in-possibly-negated-nodenums-aux
+                                     possibly-negated-nodenump))))
 
 (defthm max-nodenum-in-possibly-negated-nodenums-of-singleton-2
   (implies (not (consp item))
@@ -135,13 +138,19 @@
                 (<= k 0))
            (not (< (nth n predicates-or-negations) k)))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
-  :hints (("Goal" :in-theory (e/d (possibly-negated-nodenumsp nth) (nth-of-cdr)))))
+  :hints (("Goal" :in-theory (e/d (possibly-negated-nodenumsp
+                                   nth
+                                   possibly-negated-nodenump)
+                                  (nth-of-cdr)))))
 
 (defthm not-equal-of-1-and-len-of-nth-when-possibly-negated-nodenumsp-cheap
   (implies (possibly-negated-nodenumsp predicates-or-negations)
            (not (equal 1 (len (nth n predicates-or-negations)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (e/d (possibly-negated-nodenumsp nth) (nth-of-cdr)))))
+  :hints (("Goal" :in-theory (e/d (possibly-negated-nodenumsp
+                                   nth
+                                   possibly-negated-nodenump)
+                                  (nth-of-cdr)))))
 
 (defthm node-replacement-alist-for-context-aux-helper
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (nth '0 predicates-or-negations)))
