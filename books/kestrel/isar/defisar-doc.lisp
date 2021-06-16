@@ -47,7 +47,8 @@
     (xdoc::codeblock
      "(defisar name"
      "  formula"
-     "  :proof ...)"))
+     "  :proof   ..."
+     "  :disable ...)"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,10 +75,10 @@
       (xdoc::li
        "If @('formula') is not an implication,
         i.e. it does not have the form @('(implies ... ...)'),
-        then @('n') is 0 (i.e. there are no @('hypi') hypotheses
+        then @('n') is 0 (i.e. there are no @('hypi') hypotheses)
         and @('concl') is all of @('formula').")
       (xdoc::li
-       "Otherwise, @('formula') has the form @('(implies hyps concl')').
+       "Otherwise, @('formula') has the form @('(implies hyps concl)').
         In this case, @('concl') is the conclusion of the implication.
         For the hypotheses, there are two cases.")
       (xdoc::li
@@ -146,7 +147,7 @@
           This may be omitted, just like in @(tsee defthm).")))
       (xdoc::li
        (xdoc::p
-        "A proof finishing command of the form")
+        "A proof-finishing command of the form")
        (xdoc::codeblock
         "(:qed)")
        (xdoc::p
@@ -163,7 +164,12 @@
        However, while incrementally constructing the proof,
        it may be omitted and the @('defisar') event will still succeed,
        but it will not generate any permanent theorem
-       (it will only check the commands present in the script).")))
+       (it will only check the commands present in the script)."))
+
+    (xdoc::desc
+     "@(':disable') &mdash; default @('nil')"
+     (xdoc::p
+      "Specifies if the theorem is disabled.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

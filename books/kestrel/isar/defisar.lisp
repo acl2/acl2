@@ -258,16 +258,18 @@
 (define defisar-qed ((name symbolp)
                      formula
                      (events pseudo-event-form-listp)
-                     (facts keyword-fact-info-alistp))
+                     (facts keyword-fact-info-alistp)
+                     (disable booleanp))
   :returns (new-events pseudo-event-form-listp
                        :hyp (pseudo-event-form-listp events))
   :short "Execute the @(':qed') command."
   (b* ((fact-infos (strip-cdrs facts))
        (fact-thm-names (fact-info-list->thm-name-list fact-infos))
        (hints `(("Goal" :in-theory nil :use ,fact-thm-names)))
-       (local-thm `(local (defthm ,name ,formula :hints ,hints)))
+       (defthm/defthmd (if disable 'defthmd 'defthm))
+       (local-thm `(local (,defthm/defthmd ,name ,formula :hints ,hints)))
        (local-thm (restore-output local-thm))
-       (exported-thm `(defthm ,name ,formula))
+       (exported-thm `(,defthm/defthmd ,name ,formula))
        (print-event `(cw-event "~%~%~%~s0~%~x1~%~%"
                                "****************************************"
                                '(:qed)))
@@ -282,6 +284,7 @@
                           (hyps true-listp)
                           (events pseudo-event-form-listp)
                           (facts keyword-fact-info-alistp)
+                          (disable booleanp)
                           ctx
                           state)
   :returns (mv erp
@@ -313,18 +316,18 @@
                     ((when erp) (mv erp nil state)))
                  (defisar-commands (cdr commands)
                    name formula hyps
-                   events facts ctx state)))
+                   events facts disable ctx state)))
       (:derive (b* (((mv erp (list events facts) state)
                      (defisar-derive (cdr command)
                        name events facts ctx state))
                     ((when erp) (mv erp nil state)))
                  (defisar-commands (cdr commands)
                    name formula hyps
-                   events facts ctx state)))
+                   events facts disable ctx state)))
       (:qed (b* (((run-unless (endp (cdr commands)))
                   (cw "Commands found after :QED." (cdr commands))))
               (value
-               (defisar-qed name formula events facts))))
+               (defisar-qed name formula events facts disable))))
       (t (er-soft+ ctx t nil
                    "Unrecognized command ~x0." command-name)))))
 
@@ -333,13 +336,15 @@
 (define defisar-proof ((commands true-listp)
                        (name symbolp)
                        formula
+                       (disable booleanp)
                        ctx
                        state)
   :returns (mv erp (events pseudo-event-form-listp) state)
   :short "Execute a proof."
   (b* (((mv hyps &) (defisar-formula-to-hyps+concl formula))
        ((er events)
-        (defisar-commands commands name formula hyps nil nil ctx state)))
+        (defisar-commands commands name formula hyps nil nil disable
+          ctx state)))
     (value (rev events)))
   :prepwork
   ((defrulel rev-of-pseudo-event-form-listp
@@ -348,7 +353,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defisar-fn (name formula proof ctx state)
+(define defisar-fn (name formula proof disable ctx state)
   :returns (mv erp (event pseudo-event-formp) state)
   :short "Generate and submit the @(tsee defisar) events."
   (b* (((unless (symbolp name))
@@ -359,7 +364,12 @@
         (er-soft+ ctx t '(_)
                   "The :PROOF input must be a list of commands, ~
                    but it is ~x0 instead." proof))
-       ((mv erp events state) (defisar-proof proof name formula ctx state))
+       ((unless (booleanp disable))
+        (er-soft+ ctx t '(_)
+                  "The :DISABLE input must be a boolean, ~
+                   but it is ~x0 instead." disable))
+       ((mv erp events state)
+        (defisar-proof proof name formula disable ctx state))
        ((when erp) (mv erp '(_) state)))
     (value `(progn
               (encapsulate () ,@events)
@@ -369,11 +379,12 @@
 
 (defsection defisar-macro-definition
   :short "Definition of the @(tsee defisar) macro."
-  (defmacro defisar (name formula &key proof)
+  (defmacro defisar (name formula &key proof disable)
     `(make-event-terse (defisar-fn
                          ',name
                          ',formula
                          ',proof
+                         ',disable
                          (cons 'defisar ',name)
                          state)
                        :suppress-errors nil)))
