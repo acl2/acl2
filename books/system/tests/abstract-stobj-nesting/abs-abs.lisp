@@ -2,9 +2,8 @@
 ; Written by Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; This book illustrates that even when the "corresponding concrete stobj" for
-; an abstract stobj is itself an abstract stobj, one can use an export
-; :updater.
+; This book illustrates that even when the foundation for an abstract stobj is
+; itself an abstract stobj, one can use an export :updater.
 
 (in-package "ACL2")
 
@@ -65,7 +64,7 @@
         :RULE-CLASSES NIL)
 
 (defabsstobj n$
-  :concrete n$c
+  :foundation n$c
   :recognizer (n$p :logic n$ap :exec n$cp)
   :creator (create-n$ :logic create-n$a :exec create-n$c)
   :corr-fn n-corr
@@ -139,7 +138,7 @@
         :RULE-CLASSES NIL)
 
 (defabsstobj main$lo$
-  :concrete main$c
+  :foundation main$c
   :recognizer (main$lo$p :logic main$lo$ap :exec main$cp)
   :creator (create-main$lo$ :logic create-main$lo$a :exec create-main$c)
   :corr-fn main$lo$-corr
@@ -212,7 +211,7 @@
         :RULE-CLASSES NIL)
 
 (defabsstobj main$hi$
-  :concrete main$lo$
+  :foundation main$lo$
   :recognizer (main$hi$p :logic main$hi$ap :exec main$lo$p)
   :creator (create-main$hi$ :logic create-main$hi$a :exec create-main$lo$)
   :corr-fn main$hi$-corr

@@ -653,7 +653,7 @@
 ;;                        (create-st$c))))
 
 ;;     (defabsstobj-events st
-;;       :concrete st$c
+;;       :foundation st$c
 ;;       :corr-fn rstobj-tmp-corr
 ;;       :creator (create-st :logic create-st$a :exec create-st$c)
 ;;       :recognizer (stp :logic stp$a :exec st$cp)
@@ -2291,7 +2291,7 @@
                          (create-st$c))))
 
       (acl2::defabsstobj-events st
-        :concrete st$c
+        :foundation st$c
         :corr-fn rstobj-tmp-corr
         :creator (create-st :logic create-st$a :exec create-st$c)
         :recognizer (stp :logic stp$a :exec st$cp)

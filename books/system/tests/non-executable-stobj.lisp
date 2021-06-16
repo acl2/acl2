@@ -101,7 +101,7 @@
         :RULE-CLASSES NIL)
 
 (defabsstobj st1-abs
-  :concrete st1
+  :foundation st1
   :recognizer (st1-absp :logic st1$ap :exec st1p)
   :creator (create-st1-abs :logic create-st1$a :exec create-st1)
   :corr-fn equal

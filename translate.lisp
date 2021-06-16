@@ -7082,7 +7082,7 @@
 ; 'ld-skip-proofsp, and there is no summary string.  A typical use of this
 ; macro might be as follows.
 
-; (warning$-cw ctx "The :REWRITE rule ~x0 loops forever." name)
+; (warning$-cw ctx name)
 
   `(let ((state-vars (default-state-vars nil))
          (wrld nil))
@@ -7544,6 +7544,12 @@
                  name))))))
 
 (defun macroexpand1-cmp (x ctx wrld state-vars)
+
+; Warning: If the result is x', then translating for code may yield different
+; results for x and x' when x is a call of stobj-let and perhaps for other
+; cases listed in the definition of macroexpand1*-cmp.  (But the two will be
+; logically equivalent if both complete without error.)
+
   (let ((gc-off (gc-off1 (access state-vars state-vars :guard-checking-on))))
     (er-let*-cmp
      ((alist (bind-macro-args
@@ -7604,6 +7610,9 @@
                                (t (value-cmp expansion))))))))))
 
 (defun macroexpand1 (x ctx state)
+
+; Warning: See the warning in macroexpand1-cmp.
+
   (cmp-to-error-triple (macroexpand1-cmp x ctx (w state)
                                          (default-state-vars t))))
 
@@ -11834,7 +11843,7 @@
                 `(let* ,(pairlis-x1 stobj (pairlis$ updaters nil))
                    ,guarded-consumer))
                (form
-                `(let* (,@(pairlis$ bound-vars (pairlis$ actuals nil)))
+                `(let (,@(pairlis$ bound-vars (pairlis$ actuals nil)))
                    (declare (ignorable ,@bound-vars))
                    ,(cond
                      ((cdr producer-vars)
@@ -12103,7 +12112,10 @@
                                                (cdr actuals)
                                                wrld))))))))
 
-(defun chk-stobj-updaters1 (accessors updaters lst source)
+(defun chk-stobj-updaters-1 (accessors updaters lst)
+
+; This supports checking updaters for defabsstobj.  See chk-stobj-updaters-1
+; for a similar utility for stobj-let.
 
 ; Lst is the cdddr of the 'stobj property of a stobj in an implicit world,
 ; accessors is a list of field accessors for that stobj, and updaters is a list
@@ -12111,8 +12123,7 @@
 ; accessors), the ith updater is indeed the stobj field updater corresponding
 ; to the ith accessor.  Recall that the 'stobj property is a list of the form
 ; (*the-live-var* recognizer creator ...), and that each field updater
-; immediately follows the corresponding field accessor in that list.  Source is
-; as in chk-stobj-updaters.
+; immediately follows the corresponding field accessor in that list.
 
   (cond ((endp updaters) nil)
         (t (let* ((updater (car updaters))
@@ -12127,31 +12138,32 @@
               accessor-tail
               (cond
                ((eq updater actual-updater)
-                (chk-stobj-updaters1 (cdr accessors) (cdr updaters)
-                                     lst source))
-               (t (msg "The ~@0 have specified that the stobj ~
-                        field updater corresponding to accessor ~x1 is ~x2, ~
-                        but the actual corresponding updater is ~x3."
-                       source accessor updater actual-updater))))))))
+                (chk-stobj-updaters-1 (cdr accessors) (cdr updaters) lst))
+               (t (msg "The stobj-let bindings have specified that the stobj ~
+                        field updater corresponding to accessor ~x0 is ~x1, ~
+                        but the actual corresponding updater is ~x2."
+                       accessor updater actual-updater))))))))
 
-(defun chk-stobj-updaters (accessors updaters stobj wrld source)
+(defun chk-stobj-updaters (accessors updaters stobj wrld)
 
-; Source is a string or message such as "stobj-let bindings" or "defabsstobj
-; exports", indicating (as a plural noun phrase) what has specified that the
-; given updater functions are supposed to correspond to the given accessor
-; functions.
+; This supports checking updaters for stobj-let forms.  See
+; chk-defabsstobj-updaters for a similar utility that checks exports for
+; defabsstobj.
 
-  (chk-stobj-updaters1
+; We either return a msgp that explains why methods illegally specifies child
+; stobj accessors and updaters, or else (in the absence of such illegality) we
+; return nil.
+
+  (chk-stobj-updaters-1
    accessors
    updaters
    (cdddr ; pop live-var, recognizer, and creator
-    (getpropc stobj 'stobj nil wrld))
-   source))
+    (getpropc stobj 'stobj nil wrld))))
 
 (defun chk-stobj-let/updaters (updater-calls corresp-accessor-fns stobj wrld)
   (chk-stobj-updaters corresp-accessor-fns
                       (strip-cars updater-calls)
-                      stobj wrld "stobj-let bindings"))
+                      stobj wrld))
 
 (defun alist-to-doublets (alist)
   (declare (xargs :guard (alistp alist)))
@@ -12205,7 +12217,7 @@
 ; abstract stobj st, actuals is the values in the bindings of a stobj-let form,
 ; and tuples-lst is the list of :absstobj-tuples for the chain of foundational
 ; stobjs starting with the foundational stobj for st.  We look for aliasing
-; caused by ultimately invoking the same concrete stobj export).  However we do
+; caused by ultimately invoking the same concrete stobj export.  However we do
 ; not handle aliasing caused by non-identiccal array indices; for that, see
 ; no-duplicatesp-checks-for-stobj-let-actuals-1, which generates guard
 ; obligations rather than causing an error like the present function (but more

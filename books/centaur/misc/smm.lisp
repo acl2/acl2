@@ -405,7 +405,7 @@
 ;; Abstract stobjs where the smml- functions are the logical story and the smme-
 ;; functions are executed.
 (defabsstobj smm
-  :concrete smme
+  :foundation smme
   :recognizer (smmp :logic smmlp :exec smmep)
   :creator (smm-create :logic smml-create :exec create-smme)
   :corr-fn smme-corr

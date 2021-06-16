@@ -836,7 +836,7 @@ in @('std/stobjs/tests/2d-arr.lisp') for an example.</p>")
 
 
      (defabsstobj-events _stobj-name_
-       :concrete _prefix_e-arr2
+       :foundation _prefix_e-arr2
        :recognizer (_stobj-name_p :logic _prefix_l-arr2-wfp :exec _prefix_e-arr2p)
        :creator (create-_stobj-name_ :logic create-_prefix_l-arr2 :exec create-_prefix_e-arr2)
        :corr-fn _stobj-name_-corr

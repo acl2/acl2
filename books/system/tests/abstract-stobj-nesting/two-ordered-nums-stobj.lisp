@@ -91,7 +91,7 @@
         :RULE-CLASSES NIL)
 
 (defabsstobj n$
-  :concrete n$c
+  :foundation n$c
   :recognizer (n$p :logic n$ap :exec n$cp)
   :creator (create-n$ :logic create-n$a :exec create-n$c)
   :corr-fn n-corr
@@ -99,7 +99,7 @@
             (update-n$val :logic update-n$val$a :exec update-n$val$c)))
 
 (defabsstobj n$2
-  :concrete n$c
+  :foundation n$c
   :recognizer (n2$p :logic n$ap :exec n$cp)
   :creator (create-n2$ :logic create-n$a :exec create-n$c)
   :corr-fn n-corr

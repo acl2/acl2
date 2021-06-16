@@ -1458,7 +1458,7 @@
                           ;;acl2::nth-when-zp
                           nth update-nth))))
   (acl2::defabsstobj-events hyp
-    :concrete hyp$c
+    :foundation hyp$c
     :recognizer (hyp-p :logic hyp$ap :exec hyp$cp)
     :creator (create-hyp :logic create-hyp$a :exec create-hyp$c)
     :corr-fn hyp-corr

@@ -1420,7 +1420,7 @@ records book.  See @(see def-typed-record).</p>")
                             (,create$c))))
 
          (acl2::defabsstobj-events ,name
-           :concrete ,name$c
+           :foundation ,name$c
            :corr-fn rstobj-tmp-corr
            :creator (,create :logic ,create$a :exec ,create$c)
            :recognizer (,recog :logic ,recog$a :exec ,recog$c)

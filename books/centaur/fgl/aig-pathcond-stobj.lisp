@@ -219,7 +219,7 @@
                             calist-stobj-pop$c)))
 
   (defabsstobj-events calist-stobj
-    :concrete calist-stobj$c
+    :foundation calist-stobj$c
     :corr-fn calist-stobj-corr
     :recognizer (calist-stobjp :logic calist-stobjp$a
                                :exec calist-stobj$cp)

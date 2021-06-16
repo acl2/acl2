@@ -309,7 +309,7 @@ documentation can be generated automatically.</dd>
      (local (in-theory (enable acl2::nth-of-resize-list-split)))
 
      (defabsstobj-events _arrname_
-       :concrete _arrname_$c
+       :foundation _arrname_$c
        :recognizer (_arrname_p :exec _arrname_$cp :logic _arrname_$ap)
        :creator (create-_arrname_ :exec create-_arrname_$c :logic create-_arrname_$a)
        :corr-fn _arrname_$corr

@@ -4155,7 +4155,7 @@
 
 (make-event
  `(defabsstobj-events stack
-    :concrete stack$c
+    :foundation stack$c
     :corr-fn stack-corr
     :recognizer (stackp :logic major-stack-p
                         :exec stack$cp)

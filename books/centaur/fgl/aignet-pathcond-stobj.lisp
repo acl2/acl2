@@ -685,7 +685,7 @@
                             nbalist-stobj-nbalist$c)))
 
   (defabsstobj-events nbalist-stobj
-    :concrete nbalist-stobj$c
+    :foundation nbalist-stobj$c
     :corr-fn nbalist-stobj-corr
     :recognizer (nbalist-stobjp :logic nbalist-stobj$ap
                                :exec nbalist-stobj$cp)
