@@ -2924,7 +2924,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-fn-exec-const-limit-correct-thm
+(define atc-gen-fn-exec-var-limit-correct-thm
   ((fn symbolp)
    (pointers symbol-listp)
    (prec-fns atc-symbol-fninfo-alistp)
@@ -2940,7 +2940,7 @@
           the dynamic functional correctness of the C function
           generated from the specified ACL2 function,
           in any computation state,
-          with a constant limit."
+          with a variable limit."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2984,8 +2984,10 @@
      and using a variable makes the rule easier to match with,
      in particular if @(tsee init-fun-env) needs to be enabled.")
    (xdoc::p
-    "The limit passed to @(tsee exec-fun) is a constant value,
-     which is calculated by the code generation code
+    "The limit passed to @(tsee exec-fun) is a variable,
+     which is assumed (in a hypothesis of the generated theorem)
+     to be no smaller than a value
+     that is calculated by the code generation code
      as sufficient to run @(tsee exec-fun) to completion.")
    (xdoc::p
     "The proof is a symbolic execution of the generated translation unit,
@@ -2996,12 +2998,10 @@
      plus the theorems that the functions callable by @('fn') return values,
      plust the type prescriptions of the functions callable by @('fn'),
      plus the correctness theorems of the functions callable by @('fn').
-     The latter are the correctness theorems
-     with @(tsee exec-fun) and a variable limit:
-     during symbolic execution, the initial constant limit for @('fn')
+     During symbolic execution, the initial limit for @('fn')
      is progressively decremented,
      so by the time we get to functions called by @('fn')
-     it will have different values from the initial one;
+     it will have different symbolic values from the initial variable;
      thus, we need to match that to the variable @('limit')
      in the correctness theorems for the callees,
      which are used as rewrite rules to turn calls of @(tsee exec-fun)
@@ -3047,110 +3047,6 @@
     "The name of the theorem is obtained by
      appending @('-exec-correct') to the name of @('fn'),
      and making it fresh by appending @('$')s as needed.")
-   (xdoc::p
-    "This theorem is not generated if @(':proofs') is @('nil')."))
-  (b* ((name (add-suffix fn "-EXEC-CONST-LIMIT-CORRECT"))
-       ((mv name names-to-avoid)
-        (acl2::fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
-       (formals (acl2::formals+ fn wrld))
-       (compst-var (acl2::genvar 'atc "COMPST" nil formals))
-       (fenv-var (acl2::genvar 'atc "FENV" nil formals))
-       (result-var (acl2::genvar 'atc "RESULT" nil formals))
-       (new-compst-var (acl2::genvar 'atc "NEW-COMPST" nil formals))
-       (args (atc-gen-fn-args-deref-compustate formals pointers compst-var))
-       (guard (acl2::uguard fn wrld))
-       (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var))
-       (hyps (acl2::conjoin (list `(compustatep ,compst-var)
-                                  hyps
-                                  `(equal ,fenv-var
-                                          (init-fun-env ,prog-const)))))
-       (hyps (acl2::flatten-ands-in-lit hyps))
-       (hyps `(and ,@(acl2::untranslate-lst hyps t wrld)))
-       (equalities
-        `(b* (((mv ,result-var ,new-compst-var)
-               (exec-fun ',(ident (symbol-name fn))
-                         (list ,@formals)
-                         ,compst-var
-                         ,fenv-var
-                         ,limit)))
-           (and (equal ,new-compst-var ,compst-var)
-                (equal ,result-var (,fn ,@args)))))
-       (returns-value-thms
-        (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns))
-       (exec-var-limit-correct-thms
-        (atc-symbol-fninfo-alist-to-exec-var-limit-correct-thms prec-fns))
-       (type-prescriptions
-        (loop$ for callable in (strip-cars prec-fns)
-               collect `(:t ,callable)))
-       (instantiation
-        (atc-gen-instantiation-deref-compustate pointers compst-var))
-       (hints `(("Goal"
-                 :in-theory (append (set-difference-eq
-                                     *atc-all-rules*
-                                     '(exec-expr-pure-base-6
-                                       exec-expr-pure-base-7
-                                       exec-expr-pure-base-8
-                                       exec-expr-pure-list-base-2
-                                       exec-stmt-base-1
-                                       exec-stmt-base-6
-                                       exec-stmt-base-8
-                                       exec-block-item-list-base-1
-                                       exec-block-item-list-base-3
-                                       init-scope-base-2
-                                       read-var-aux-base-1
-                                       write-var-aux-base-1))
-                                    '(,fn)
-                                    ',type-prescriptions
-                                    ',returns-value-thms
-                                    ',exec-var-limit-correct-thms)
-                 :use (:instance (:guard-theorem ,fn)
-                       :extra-bindings-ok ,@instantiation)
-                 :expand (:lambdas
-                          (:free (args ,compst-var ,fenv-var limit)
-                           (exec-fun '(:ident (name . ,(symbol-name fn)))
-                                     args ,compst-var ,fenv-var limit))))))
-       ((mv local-event &)
-        (evmac-generate-defthm
-         name
-         :formula `(implies ,hyps ,equalities)
-         :hints hints
-         :enable nil)))
-    (mv local-event name names-to-avoid)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-gen-fn-exec-var-limit-correct-thm
-  ((fn symbolp)
-   (pointers symbol-listp)
-   (prec-fns atc-symbol-fninfo-alistp)
-   (prog-const symbolp)
-   (limit natp)
-   (names-to-avoid symbol-listp)
-   (wrld plist-worldp))
-  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
-  :short "Generate the theorem asserting
-          the dynamic functional correctness of the C function
-          generated from the specified ACL2 function,
-          in any computation state,
-          with a variable limit."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is similar to the theorem generated by
-     @(tsee atc-gen-fn-exec-const-limit-correct-thm),
-     but here we use a variable for the limit,
-     with hypotheses saying that it is an integer greater than or equal to
-     the constant limit used in the theorem generated by
-     @(tsee atc-gen-fn-exec-const-limit-correct-thm).
-     That theorem is used to prove this theorem,
-     via the general @('exec-fun-limit').")
-   (xdoc::p
-    "See the documentation of @(tsee atc-gen-fn-exec-const-limit-correct-thm)
-     for an explanation of our use of a variable for the function environment
-     that is equated to @('(init-fun-env <constant>)') in a hypothesis.")
    (xdoc::p
     "This theorem is not generated if @(':proofs') is @('nil')."))
   (b* ((name (add-suffix fn "-EXEC-VAR-LIMIT-CORRECT"))
@@ -3314,12 +3210,6 @@
             fn-returns-value-thm
             names-to-avoid)
         (atc-gen-fn-returns-value-thm fn type prec-fns names-to-avoid wrld))
-       ;; ((mv fn-exec-const-limit-correct-event
-       ;;      fn-exec-const-limit-correct-thm
-       ;;      names-to-avoid)
-       ;;  (atc-gen-fn-exec-const-limit-correct-thm fn pointers
-       ;;                                           prec-fns prog-const limit
-       ;;                                           names-to-avoid wrld))
        ((mv fn-exec-var-limit-correct-local-event
             fn-exec-var-limit-correct-thm
             names-to-avoid)
@@ -3339,7 +3229,6 @@
                            `((cw-event " done.~%"))))
        (local-events (append progress-start?
                              (list fn-returns-value-event)
-                             ;; (list fn-exec-const-limit-correct-event)
                              (list fn-exec-var-limit-correct-local-event)
                              (list fn-correct-local-event)
                              progress-end?))
