@@ -1894,6 +1894,317 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection twisted-edwards-mul-distributivity-over-scalar-addition
+  :short "Distributivity of scalar multiplication over scalar addition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We first prove it on @(tsee twisted-edwards-mul-nonneg) by induction,
+     then we lift it to @(tsee twisted-edwards-mul),
+     but only for non-negative scalars.
+     To extend it to negative scalars, we consider different cases.
+     If both scalars are non-positive,
+     the definition of @(tsee twisted-edwards-mul) is expanded,
+     and the theorem about @(tsee twisted-edwards-mul-nonneg) applies.
+     If one is non-negative and the other non-positive,
+     we consider two subcases:
+     when the sum is non-negative, and when the sum is non-positive.
+     The first subcase requires adding and subtracting the same quantity,
+     and thus we use Isar to explicate this proof strategy.
+     The second subcase is proved by considering the negated scalars
+     and thus applying the theorem for the first subcase;
+     we use Isar, but it might be possible to shorten the proof.
+     Finally, the case in which one is non-positive and the other non-negative
+     is handled by swapping the roles, and implicitly using commutativity.
+     With all the cases in hand, we prove the main theorem,
+     which applies to any integer scalars.
+     We keep the theorem disabled,
+     because distribution is not always desired.")
+   (xdoc::p
+    "Note that we consider non-negative and non-positive cases,
+     which overlap at zero,
+     rather than non-overlapping non-negative and negative cases.
+     The overlap is intentional, so that the cases are more symmetric
+     and it is easy to swap signs, as we do in some of the proofs."))
+
+  (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+
+  (defruledl montogomery-mul-nonneg-of-scalar-addition
+    (implies (and (twisted-edwards-add-associativity)
+                  (twisted-edwards-curve-completep curve)
+                  (pointp point)
+                  (point-on-twisted-edwards-p point curve)
+                  (natp scalar1)
+                  (natp scalar2))
+             (equal (twisted-edwards-mul-nonneg (+ scalar1 scalar2) point curve)
+                    (twisted-edwards-add
+                     (twisted-edwards-mul-nonneg scalar1 point curve)
+                     (twisted-edwards-mul-nonneg scalar2 point curve)
+                     curve)))
+    :enable twisted-edwards-mul-nonneg)
+
+  (defruledl twisted-edwards-mul-of-scalar-addition-when-nonneg
+    (implies (and (twisted-edwards-add-associativity)
+                  (twisted-edwards-curve-completep curve)
+                  (pointp point)
+                  (point-on-twisted-edwards-p point curve)
+                  (natp scalar1)
+                  (natp scalar2))
+             (equal (twisted-edwards-mul (+ scalar1 scalar2) point curve)
+                    (twisted-edwards-add
+                     (twisted-edwards-mul scalar1 point curve)
+                     (twisted-edwards-mul scalar2 point curve)
+                     curve)))
+    :enable (twisted-edwards-mul montogomery-mul-nonneg-of-scalar-addition))
+
+  (defruledl twisted-edwards-mul-of-scalar-addition-when-nonneg-converse
+    (implies (and (twisted-edwards-add-associativity)
+                  (twisted-edwards-curve-completep curve)
+                  (pointp point)
+                  (point-on-twisted-edwards-p point curve)
+                  (natp scalar1)
+                  (natp scalar2))
+             (equal (twisted-edwards-add
+                     (twisted-edwards-mul scalar1 point curve)
+                     (twisted-edwards-mul scalar2 point curve)
+                     curve)
+                    (twisted-edwards-mul (+ scalar1 scalar2) point curve)))
+    :use twisted-edwards-mul-of-scalar-addition-when-nonneg)
+
+  (defruledl twisted-edwards-mul-of-scalar-addition-when-nonpos
+    (implies (and (twisted-edwards-add-associativity)
+                  (twisted-edwards-curve-completep curve)
+                  (pointp point)
+                  (point-on-twisted-edwards-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2)
+                  (<= scalar1 0)
+                  (<= scalar2 0))
+             (equal (twisted-edwards-mul (+ scalar1 scalar2) point curve)
+                    (twisted-edwards-add
+                     (twisted-edwards-mul scalar1 point curve)
+                     (twisted-edwards-mul scalar2 point curve)
+                     curve)))
+    :enable (twisted-edwards-mul
+             montogomery-mul-nonneg-of-scalar-addition))
+
+  (local
+   (acl2::defisar
+    twisted-edwards-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum
+    (implies (and (twisted-edwards-add-associativity)
+                  (twisted-edwards-curve-completep curve)
+                  (pointp point)
+                  (point-on-twisted-edwards-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2)
+                  (>= scalar1 0)
+                  (<= scalar2 0)
+                  (>= (+ scalar1 scalar2) 0))
+             (equal (twisted-edwards-mul (+ scalar1 scalar2) point curve)
+                    (twisted-edwards-add (twisted-edwards-mul scalar1 point curve)
+                                         (twisted-edwards-mul scalar2 point curve)
+                                         curve)))
+    :proof
+    ((:assume (:associativity (twisted-edwards-add-associativity)))
+     (:assume (:complete (twisted-edwards-curve-completep curve)))
+     (:assume (:point (and (pointp point)
+                           (point-on-twisted-edwards-p point curve))))
+     (:assume (:scalar1 (and (integerp scalar1) (>= scalar1 0))))
+     (:assume (:scalar2 (and (integerp scalar2) (<= scalar2 0))))
+     (:assume (:scalar1+2 (>= (+ scalar1 scalar2) 0)))
+     (:derive (:add-and-sub
+               (equal (twisted-edwards-mul (+ scalar1 scalar2) point curve)
+                      (twisted-edwards-add
+                       (twisted-edwards-mul (+ scalar1 scalar2) point curve)
+                       (twisted-edwards-add
+                        (twisted-edwards-neg
+                         (twisted-edwards-mul scalar2 point curve) curve)
+                        (twisted-edwards-mul scalar2 point curve)
+                        curve)
+                       curve)))
+      :from (:point :complete)
+      :hints (("Goal" :in-theory (disable twisted-edwards-neg-of-mul))))
+     (:derive (:simplify
+               (equal (twisted-edwards-add
+                       (twisted-edwards-mul (+ scalar1 scalar2) point curve)
+                       (twisted-edwards-add
+                        (twisted-edwards-neg
+                         (twisted-edwards-mul scalar2 point curve) curve)
+                        (twisted-edwards-mul scalar2 point curve)
+                        curve)
+                       curve)
+                      (twisted-edwards-add
+                       (twisted-edwards-mul scalar1 point curve)
+                       (twisted-edwards-mul scalar2 point curve)
+                       curve)))
+      :from (:associativity :complete :point :scalar1+2 :scalar1 :scalar2)
+      :hints
+      (("Goal"
+        :in-theory
+        (e/d (twisted-edwards-add-associative-left
+              twisted-edwards-mul-of-scalar-addition-when-nonneg-converse)
+             (twisted-edwards-add-associative-right
+              twisted-edwards-add-commutative)))))
+     (:derive (:conclusion
+               (equal (twisted-edwards-mul (+ scalar1 scalar2) point curve)
+                      (twisted-edwards-add
+                       (twisted-edwards-mul scalar1 point curve)
+                       (twisted-edwards-mul scalar2 point curve)
+                       curve)))
+      :from (:add-and-sub :simplify))
+     (:qed))))
+
+  (local
+   (in-theory
+    (disable
+     twisted-edwards-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum)))
+
+  (local
+   (acl2::defisar
+    twisted-edwards-mul-of-scalar-addition-when-nonneg-nonpos-nonpossum
+    (implies (and (twisted-edwards-add-associativity)
+                  (twisted-edwards-curve-completep curve)
+                  (pointp point)
+                  (point-on-twisted-edwards-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2)
+                  (>= scalar1 0)
+                  (<= scalar2 0)
+                  (<= (+ scalar1 scalar2) 0))
+             (equal (twisted-edwards-mul (+ scalar1 scalar2) point curve)
+                    (twisted-edwards-add (twisted-edwards-mul scalar1 point curve)
+                                         (twisted-edwards-mul scalar2 point curve)
+                                         curve)))
+    :proof
+    ((:assume (:associativity (twisted-edwards-add-associativity)))
+     (:assume (:complete (twisted-edwards-curve-completep curve)))
+     (:assume (:point (and (pointp point)
+                           (point-on-twisted-edwards-p point curve))))
+     (:assume (:scalar1 (and (integerp scalar1) (>= scalar1 0))))
+     (:assume (:scalar2 (and (integerp scalar2) (<= scalar2 0))))
+     (:assume (:scalar1+2 (<= (+ scalar1 scalar2) 0)))
+     (:derive (:swapped-negated
+               (equal (twisted-edwards-mul (+ (- scalar2) (- scalar1))
+                                           point
+                                           curve)
+                      (twisted-edwards-add
+                       (twisted-edwards-mul (- scalar2) point curve)
+                       (twisted-edwards-mul (- scalar1) point curve)
+                       curve)))
+      :from (:complete :associativity :point :scalar1 :scalar2 :scalar1+2)
+      :hints
+      (("Goal"
+        :in-theory
+        (disable
+         twisted-edwards-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum)
+        :use (:instance
+              twisted-edwards-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum
+              (scalar1 (- scalar2))
+              (scalar2 (- scalar1))))))
+     (:derive (:negate-both
+               (equal (twisted-edwards-neg
+                       (twisted-edwards-mul (+ (- scalar2) (- scalar1))
+                                            point
+                                            curve)
+                       curve)
+                      (twisted-edwards-neg
+                       (twisted-edwards-add
+                        (twisted-edwards-mul (- scalar2) point curve)
+                        (twisted-edwards-mul (- scalar1) point curve)
+                        curve)
+                       curve)))
+      :from (:swapped-negated))
+     (:derive (:conclusion
+               (equal (twisted-edwards-mul (+ scalar1 scalar2) point curve)
+                      (twisted-edwards-add
+                       (twisted-edwards-mul scalar1 point curve)
+                       (twisted-edwards-mul scalar2 point curve)
+                       curve)))
+      :from (:negate-both :complete :associativity :point :scalar1 :scalar2))
+     (:qed))))
+
+  (local
+   (in-theory
+    (disable
+     twisted-edwards-mul-of-scalar-addition-when-nonneg-nonpos-nonpossum)))
+
+  (defruledl twisted-edwards-mul-of-scalar-addition-when-nonneg-nonpos
+    (implies (and (twisted-edwards-add-associativity)
+                  (twisted-edwards-curve-completep curve)
+                  (pointp point)
+                  (point-on-twisted-edwards-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2)
+                  (>= scalar1 0)
+                  (<= scalar2 0))
+             (equal (twisted-edwards-mul (+ scalar1 scalar2) point curve)
+                    (twisted-edwards-add
+                     (twisted-edwards-mul scalar1 point curve)
+                     (twisted-edwards-mul scalar2 point curve)
+                     curve)))
+    :cases ((>= (+ scalar1 scalar2) 0))
+    :enable
+    (twisted-edwards-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum
+     twisted-edwards-mul-of-scalar-addition-when-nonneg-nonpos-nonpossum))
+
+  (defruledl twisted-edwards-mul-of-scalar-addition-when-nonpos-nonneg
+    (implies (and (twisted-edwards-add-associativity)
+                  (twisted-edwards-curve-completep curve)
+                  (pointp point)
+                  (point-on-twisted-edwards-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2)
+                  (<= scalar1 0)
+                  (>= scalar2 0))
+             (equal (twisted-edwards-mul (+ scalar1 scalar2) point curve)
+                    (twisted-edwards-add
+                     (twisted-edwards-mul scalar1 point curve)
+                     (twisted-edwards-mul scalar2 point curve)
+                     curve)))
+    :use (:instance twisted-edwards-mul-of-scalar-addition-when-nonneg-nonpos
+          (scalar1 scalar2) (scalar2 scalar1)))
+
+  (defruled twisted-edwards-mul-of-scalar-addition
+    (implies (and (twisted-edwards-add-associativity)
+                  (twisted-edwards-curve-completep curve)
+                  (pointp point)
+                  (point-on-twisted-edwards-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2))
+             (equal (twisted-edwards-mul (+ scalar1 scalar2) point curve)
+                    (twisted-edwards-add
+                     (twisted-edwards-mul scalar1 point curve)
+                     (twisted-edwards-mul scalar2 point curve)
+                     curve)))
+    :cases ((and (>= scalar1 0) (>= scalar2 0))
+            (and (<= scalar1 0) (<= scalar2 0))
+            (and (>= scalar1 0) (<= scalar2 0))
+            (and (<= scalar1 0) (>= scalar2 0)))
+    :enable (twisted-edwards-mul-of-scalar-addition-when-nonneg
+             twisted-edwards-mul-of-scalar-addition-when-nonpos
+             twisted-edwards-mul-of-scalar-addition-when-nonneg-nonpos
+             twisted-edwards-mul-of-scalar-addition-when-nonpos-nonneg))
+
+  (defruled twisted-edwards-mul-of-scalar-addition-converse
+    (implies (and (twisted-edwards-add-associativity)
+                  (twisted-edwards-curve-completep curve)
+                  (pointp point)
+                  (point-on-twisted-edwards-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2))
+             (equal (twisted-edwards-add
+                     (twisted-edwards-mul scalar1 point curve)
+                     (twisted-edwards-mul scalar2 point curve)
+                     curve)
+                    (twisted-edwards-mul (+ scalar1 scalar2) point curve)))
+    :use twisted-edwards-mul-of-scalar-addition)
+
+  (theory-invariant
+   (incompatible (:rewrite twisted-edwards-mul-of-scalar-addition)
+                 (:rewrite twisted-edwards-mul-of-scalar-addition-converse))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define twisted-edwards-compress ((point pointp) (curve twisted-edwards-curvep))
   :guard (point-on-twisted-edwards-p point curve)
   :returns (mv (p bitp) (y natp))
