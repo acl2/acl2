@@ -2760,8 +2760,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a local theorem for now.
-     It will be used in upcoming proof generation extensions.")
+    "This is a local theorem for now.")
    (xdoc::p
     "The restrictions on the form of the functions that ATC translates to C
      ensures that, under the guard, these functions always return C values.
@@ -2791,11 +2790,7 @@
    (xdoc::p
     "We use the C value predicate corresponding to
      the type of the body of the function;
-     the type is passed to this ACL2 function as the @('type') parameter.
-     This will always be one among @('unsigned char') and @('int'),
-     by construction;
-     thus, we stop with an error if it is any other type,
-     but that should never happen currently."))
+     the type is passed to this ACL2 function as the @('type') parameter."))
   (b* (((unless (type-integerp type))
         (prog2$ (raise "Internal error: function return type is ~x0." type)
                 (mv '(_) nil names-to-avoid)))
