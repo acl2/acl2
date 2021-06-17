@@ -2098,7 +2098,12 @@
                          This is disallowed."
                         fn var))
              ((when (eq wrapper? 'declar))
-              (b* (((unless (atc-ident-stringp (symbol-name var)))
+              (b* (((when type?)
+                    (er-soft+ ctx t (list nil nil 0)
+                              "The variable ~x0 in the function ~x1 ~
+                               is already in scope and cannot be re-declared."
+                              var fn))
+                   ((unless (atc-ident-stringp (symbol-name var)))
                     (er-soft+ ctx t (list nil nil 0)
                               "The symbol name ~s0 of ~
                                the LET variable ~x1 of the function ~x2 ~
@@ -2357,7 +2362,12 @@
                          This is disallowed."
                         fn var))
              ((when (eq wrapper? 'declar))
-              (b* (((unless (atc-ident-stringp (symbol-name var)))
+              (b* (((when type?)
+                    (er-soft+ ctx t nil
+                              "The variable ~x0 in the function ~x1 ~
+                               is already in scope and cannot be re-declared."
+                              var fn))
+                   ((unless (atc-ident-stringp (symbol-name var)))
                     (er-soft+ ctx t nil
                               "The symbol name ~s0 of ~
                                the LET variable ~x1 of the function ~x2 ~
