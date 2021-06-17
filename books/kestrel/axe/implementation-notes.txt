@@ -18,7 +18,7 @@ DAG algorithms:
 By "dag" we mean a DAG represented as a list (see pseudo-dagp).
 
 To convert a dag to a dag-array:
-  make-into-array (TODO: Make a faster version specialized for dags)
+  make-into-array (TODO: Use make-dag-into-array instead?)
   also make-dag-into-array and make-dag-into-array2
 
 To convert a dag-array to a dag:

@@ -902,11 +902,14 @@
   (declare (xargs :guard (or (and (pseudo-dagp dag-or-quotep)
                                   (<= (car (car dag-or-quotep)) 2147483645))
                              (myquotep dag-or-quotep))
-                  :guard-hints (("Goal" :in-theory (enable pseudo-dagp)))))
+                  :guard-hints (("Goal" :in-theory (enable
+                                                    pseudo-dagp ;todo
+                                                    TOP-NODENUM-OF-DAG
+                                                    )))))
   (if (quotep dag-or-quotep)
       dag-or-quotep
     (let* ((dag-array-name 'dag-array-for-drop-non-supporters)
-           (dag-array (make-into-array dag-array-name dag-or-quotep))
+           (dag-array (make-dag-into-array dag-array-name dag-or-quotep 0))
            (top-nodenum (top-nodenum dag-or-quotep)))
       (drop-non-supporters-array dag-array-name
                                  dag-array
