@@ -731,7 +731,7 @@
      an optional (loop) statement that is present,
      and is represented by the function,
      when the function is recursive;
-     a list of variables transormed by the function,
+     a list of variables transformed by the function,
      which is non-@('nil') when the function is recursive;
      the name of the locally generated theorem that asserts
      that the function returns a C value;
