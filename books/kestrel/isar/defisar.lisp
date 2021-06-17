@@ -165,7 +165,7 @@
                         `(implies (and ,@hyps) ,assume-fact)
                       assume-fact))
        (thm-formula (if bindings
-                        `(let* ,(acl2::alist-to-doublets bindings)
+                        `(let* ,(alist-to-doublets bindings)
                            ,thm-formula)
                       thm-formula))
        (thm-hints '(("Goal" :in-theory nil)))
@@ -284,7 +284,7 @@
                         `(implies (and ,@thm-hyps) ,derive-fact)
                       derive-fact))
        (thm-formula (if bindings
-                        `(let* ,(acl2::alist-to-doublets bindings)
+                        `(let* ,(alist-to-doublets bindings)
                            ,thm-formula)
                       thm-formula))
        (thm-hints derive-hints)
