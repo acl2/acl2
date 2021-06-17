@@ -2706,7 +2706,7 @@
                                    state)
   :returns (mv erp
                (val (tuple (params param-declon-listp)
-                           (inscope atc-symbol-type-alist-listp)
+                           (scope atc-symbol-type-alistp)
                            (pointers symbol-listp)
                            val))
                state)
@@ -2715,15 +2715,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Also generate an initial symbol table,
-     consisting of a single scope
+    "Also generate an initial scope
      that maps the formal parameters to their C types.")
    (xdoc::p
     "Also return a list of the formal parameters
      that are pointers in C.
      These get a special treatment
      in the formulation of the generated correctness theorems."))
-  (b* (((when (endp formals)) (acl2::value (list nil (list nil) nil)))
+  (b* (((when (endp formals)) (acl2::value (list nil nil nil)))
        (formal (mbe :logic (acl2::symbol-fix (car formals))
                     :exec (car formals)))
        ((when (member-equal (symbol-name formal)
@@ -2737,12 +2736,12 @@
        ((mv erp (list param type pointerp) state)
         (atc-gen-param-declon formal fn guard-conjuncts guard ctx state))
        ((when erp) (mv erp (list nil nil nil) state))
-       ((er (list params inscope pointers))
+       ((er (list params scope pointers))
         (atc-gen-param-declon-list (cdr formals)
                                    fn guard-conjuncts guard
                                    ctx state)))
     (acl2::value (list (cons param params)
-                       (atc-add-var formal type inscope)
+                       (acons formal type scope)
                        (if pointerp (cons formal pointers) pointers))))
 
   :verify-guards nil ; done below
@@ -2752,7 +2751,9 @@
   (more-returns
    (val true-listp :rule-classes :type-prescription)) ; speeds up guard proofs
 
-  (verify-guards atc-gen-param-declon-list))
+  (verify-guards atc-gen-param-declon-list
+    :hints
+    (("Goal" :in-theory (enable alistp-when-atc-symbol-type-alistp-rewrite)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3338,11 +3339,11 @@
        (formals (acl2::formals+ fn wrld))
        (guard (acl2::uguard+ fn wrld))
        (guard-conjuncts (flatten-ands-in-lit guard))
-       ((er (list params inscope pointers))
+       ((er (list params scope pointers))
         (atc-gen-param-declon-list formals fn guard-conjuncts guard ctx state))
        (body (acl2::ubody+ fn wrld))
        ((er (list items type limit)) (atc-gen-stmt body
-                                                   inscope
+                                                   (list scope)
                                                    nil
                                                    fn
                                                    prec-fns
@@ -3411,12 +3412,12 @@
        (formals (acl2::formals+ fn wrld))
        (guard (acl2::uguard+ fn wrld))
        (guard-conjuncts (flatten-ands-in-lit guard))
-       ((mv erp (list & inscope &) state)
+       ((mv erp (list & scope &) state)
         (atc-gen-param-declon-list formals fn guard-conjuncts guard ctx state))
        ((when erp) (mv erp nil state))
        (body (acl2::ubody+ fn wrld))
        ((mv erp (list loop-stmt loop-xforming) state)
-        (atc-gen-loop-stmt body inscope fn prec-fns ctx state))
+        (atc-gen-loop-stmt body (list scope) fn prec-fns ctx state))
        ((when erp) (mv erp nil state))
        (info (make-atc-fn-info :type? nil
                                :loop? loop-stmt
