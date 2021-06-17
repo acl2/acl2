@@ -710,7 +710,7 @@
                      (not (eql nodenum (darg1 parent-expr)))
                      (not (eql nodenum (darg3 parent-expr))))
                 ;;nodenum is the then-branch (but not the else-branch or the test), so add the test to the context for nodenum:
-                (conjoin-contexts (context-representing-node (darg1 parent-expr) dag-array-name dag-array dag-len) ;(get-context-equivalent-to-node (darg1 parent-expr) dag-array-name dag-array)
+                (conjoin-contexts (context-representing-node (darg1 parent-expr) dag-array-name dag-array dag-len)
                                   parent-context)
               (if (and (eql nodenum (darg3 parent-expr))
                        (not (eql nodenum (darg1 parent-expr)))
@@ -729,7 +729,7 @@
                        (not (eql nodenum (darg2 parent-expr)))
                        (not (eql nodenum (darg4 parent-expr))))
                   ;;nodenum is the then-branch but not the else-branch (or the test or the size), so add the test to the context:
-                  (conjoin-contexts (context-representing-node (darg2 parent-expr) dag-array-name dag-array dag-len) ;(get-context-equivalent-to-node (darg2 parent-expr) dag-array-name dag-array)
+                  (conjoin-contexts (context-representing-node (darg2 parent-expr) dag-array-name dag-array dag-len)
                                     parent-context)
                 (if (and (eql nodenum (darg4 parent-expr))
                          (not (eql nodenum (darg1 parent-expr)))
@@ -832,9 +832,13 @@
                   (alen1 'context-array context-array)))
   :hints (("Goal" :in-theory (enable set-context-of-nodenum))))
 
-;would it be faster to just take a non-array and cdr down it?
-;nodenum counts down
-;returns 'context-array, which associates nodenums with their contextps
+;;;
+;;; make-full-context-array-aux
+;;;
+
+;; Go top-down from NODENUM, filling in the context array.  Assumes we started at the top node and so will cover all ways a node can be reached from the top.
+;; Returns the context-array, named 'context-array, which associates nodenums with their contextps.
+;; It might seem faster to just take the dag as a list and cdr down it, but we need the dag to be an array so we can quickly dig conjunctions out of dag nodes.
 (defun make-full-context-array-aux (nodenum dag-array-name dag-array dag-len dag-parent-array context-array)
   (declare (xargs :guard (and (integerp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
