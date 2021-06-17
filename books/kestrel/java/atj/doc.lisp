@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -744,6 +744,13 @@
      otherwise, it exits the JVM with return code 1,
      which is an error code when the test class
      is invoked as a Java application in a shell script.")
+
+   (xdoc::h4 "Java Version")
+
+   (xdoc::p
+    "ATJ generates Java 8 code.
+     This means that the code can be compiled
+     using a compiler for Java 8 or later.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

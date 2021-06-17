@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -57,6 +57,11 @@
      or via the @('Makefile') file in this directory,
      which generates class and jar files in the same place
      where IntelliJ IDEA does.
-     This @('Makefile') also generates Javadoc HTML documentation.
-     This @('Makefile') assumes that OpenJDK Java 14 is in the path,
-     but it may well work with other Java versions or implementations.")))
+     This @('Makefile') also generates Javadoc HTML documentation.")
+   (xdoc::p
+    "AIJ is written in Java 8,
+     which means that it can be compiled
+     using a compiler for Java 8 or later.
+     The aforementioned @('Makefile') assumes that
+     a Java 8 (or later) compiler and related tools (e.g. the latest OpenJDK)
+     is in the path.")))
