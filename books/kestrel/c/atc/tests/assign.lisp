@@ -41,10 +41,10 @@
                               (<= (c::sint->get |a|) 100))
                   :guard-hints (("Goal"
                                  :in-theory
-                                 (enable c::declar
+                                 (enable c::assign
                                          c::add-sint-sint-okp
                                          c::sint-integerp-alt-def)))))
-  (let ((|a| (c::declar (c::add-sint-sint |a| (c::sint-dec-const 200)))))
+  (let ((|a| (c::assign (c::add-sint-sint |a| (c::sint-dec-const 200)))))
     (c::lt-sint-sint |b| |a|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
