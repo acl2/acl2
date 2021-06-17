@@ -2792,7 +2792,8 @@
      the type of the body of the function;
      the type is passed to this ACL2 function as the @('type') parameter."))
   (b* (((unless (type-integerp type))
-        (prog2$ (raise "Internal error: function return type is ~x0." type)
+        (prog2$ (raise "Internal error: the function ~x0 has return type ~x1."
+                       fn type)
                 (mv '(_) nil names-to-avoid)))
        (pred (pack (atc-integer-type-fixtype type) 'p))
        (name (add-suffix fn "-RETURNS-VALUE"))
