@@ -1064,84 +1064,12 @@
     ;;print the close paren:
     (cw ")~%"))))
 
-;Consider adding an option to reuse an existing array if large enough?
-; The length of the resulting array is one more than the max key in the alist, unless the alist is empty, in which case the length is 1.
-(defund make-into-array (array-name alist)
-  (declare (xargs :guard (and (true-listp alist)
-                              (bounded-natp-alistp alist (+ -1 *maximum-positive-32-bit-integer*)) ; might be able to drop the -1 if array1p is weakened a bit
-                              )
-                  :guard-hints (("Goal" :in-theory (enable array1p-rewrite))))
-           (type symbol array-name))
-  (let* ((len (if (consp alist)
-                  ;; normal case:
-                  (+ 1 (max-key alist 0)) ;could save this max if we know it's a dag-lst...
-                ;; compress1 must be given a dimension of at least 1
-                1)))
-    (compress1 array-name
-               (acons-fast :header (list :dimensions (list len)
-                                         ;;ffixme think about this:
-                                         :maximum-length (min (* 2 len) *maximum-positive-32-bit-integer* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
-                                                              )
-                                         :default nil ;; fixme?
-                                         :name array-name)
-                           alist))))
-
-(defthm default-of-make-into-array
-  (equal (default array-name (make-into-array array-name alist))
-         nil)
-  :hints (("Goal" :in-theory (enable array1p compress1 make-into-array))))
-
-;rename make-into-array-with-slack?
-;LEN must exceed the largest key in ALIST; this allows for some slack space of empty slots
-;todo: add an option to reuse existing array if large enough?
-;todo: adapt this to use max-key like the one above?
-(defund make-into-array-with-len (array-name alist len)
-  (declare (type (integer 1 2147483646) len)
-           (type symbol array-name)
-           (xargs :guard (and (true-listp alist)
-                              (bounded-natp-alistp alist len))
-                  :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))))
-  (compress1 array-name
-             (acons-fast :header (list :dimensions (list len)
-                                       ;;ffixme think about this:
-                                       :maximum-length (min (* 2 len) *maximum-positive-32-bit-integer* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
-                                                            )
-                                       :default nil ; ;fixme?
-                                       :name array-name)
-                         alist)))
-
-(defthm dimensions-of-make-into-array-with-len
-  (equal (dimensions array-name (make-into-array-with-len array-name alist len))
-         (list len))
-  :hints (("Goal" :in-theory (enable make-into-array-with-len))))
-
-(defthm alen1-of-make-into-array-with-len
-  (equal (alen1 array-name (make-into-array-with-len array-name alist len))
-         len)
-  :hints (("Goal" :in-theory (enable make-into-array-with-len))))
-
-(defthm array1p-of-make-into-array-with-len
-  (implies (and (symbolp array-name)
-                (bounded-integer-alistp alist len)
-                (posp len)
-                (< len 2147483647))
-           (array1p array-name (make-into-array-with-len array-name alist len)))
-  :hints (("Goal" :in-theory (enable make-into-array-with-len array1p-rewrite))))
-
+;move
 (defthm array1p-of-compress1
   (implies (array1p array-name l)
            (array1p array-name (compress1 array-name l)))
   :hints (("Goal" :in-theory (enable array1p compress1 header))))
 
-(defthm array1p-of-make-into-array
-  (implies (and (bounded-natp-alistp alist 2147483646)
-                (true-listp alist)
-                ;alist
-                (symbolp array-name)
-                )
-           (equal (array1p array-name (make-into-array array-name alist))
-                  t))
-  :hints (("Goal" :in-theory (enable array1p compress1 make-into-array))))
 
 ;; (defthm assoc-equal-of-compress1
 ;;   (implies (and (natp index)
@@ -1175,22 +1103,6 @@
               (integerp max)))
   :hints (("Goal" :in-theory (enable ARRAY1P-rewrite))))
 
-(defthm aref1-of-make-into-array
-  (implies (and (bounded-natp-alistp alist 2147483646)
-                (true-listp alist)
-                alist
-                (symbolp array-name)
-                (natp index)
-                (< index (max-key alist 0))
-                )
-           (equal (aref1 array-name (make-into-array array-name alist) index)
-                  (cdr (assoc-equal index alist))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :do-not-induct t
-           :in-theory (enable array1p ;compress1
-                              ARRAY-ORDER
-                              make-into-array
-                              aref1))))
 
 (defthm aref1-of-make-empty-array-with-default
   (implies (and (symbolp array-name)
@@ -1296,7 +1208,7 @@
                  (alistp array)
                  (integerp (ALEN1 ARRAY-NAME ARRAY))
                  )
-            (equal (aref1 array-name (compress1 array-name array) n)
+            (equal (aref1 array-name (compress1 array-name2 array) n)
                    (aref1 array-name array n)))
    :hints (("Goal" :in-theory (e/d (aref1 compress1 header default) (default-intro))))))
 
@@ -1308,14 +1220,14 @@
                  ;;(alistp array)
                  ;;(integerp (ALEN1 ARRAY-NAME ARRAY))
                  )
-            (equal (aref1 array-name (compress1 array-name array) n)
+            (equal (aref1 array-name (compress1 array-name2 array) n)
                    (default array-name array)))
    :hints (("Goal" :in-theory (e/d (default aref1-when-too-large aref1 compress1 header) (default-intro))))))
 
 (defthm aref1-of-compress1
   (implies (and (natp n)
                 (array1p array-name array))
-           (equal (aref1 array-name (compress1 array-name array) n)
+           (equal (aref1 array-name (compress1 array-name2 array) n)
                   (if (< n (alen1 array-name array))
                       (aref1 array-name array n)
                     (default array-name array))))
@@ -1344,19 +1256,7 @@
                   (default array-name alist)))
   :hints (("Goal" :in-theory (enable aref1))))
 
-(defthm dimensions-of-make-into-array
-  (equal (dimensions array-name (make-into-array array-name alist))
-         (if (consp alist)
-             (list (+ 1 (max-key alist 0)))
-           (list 1)))
-  :hints (("Goal" :in-theory (enable make-into-array))))
 
-(defthm alen1-of-make-into-array
-  (equal (alen1 array-name (make-into-array array-name alist))
-         (if (consp alist)
-             (+ 1 (max-key alist 0))
-           1))
-  :hints (("Goal" :in-theory (enable make-into-array))))
 
 ;; (defthm assoc-equal-of-header-of-compress1
 ;;   (equal (assoc-equal :header (compress1 array-name array))
@@ -1477,7 +1377,7 @@
                       (aref1 array-name (aset1 array-name array index2 val2) read-index)
                     (aref1 array-name (aset1 array-name (aset1 array-name array index2 val2) index1 val1) read-index)))))
 
-(in-theory (disable (:e make-into-array-with-len))) ;blew up
+
 
 (defthm array1p-of-cons-of-header-and-nil
   (equal (array1p array-name
@@ -1494,3 +1394,138 @@
               (< (car dims) maximum-length)
               (<= maximum-length 2147483647)))
   :hints (("Goal" :in-theory (enable array1p-rewrite))))
+
+;; Makes the ALIST, whose keys must be naturals, into an array named
+;; ARRAY-NAME, which will have length LEN.  LEN must exceed the largest key in
+;; ALIST.  If LEN is greater than the largest key, the resulting array will
+;; contain some slack space (empty slots) for the array to grow.
+;rename make-into-array-with-slack?
+;todo: add an option to reuse an existing array if large enough?
+;todo: adapt this to use max-key like the one above?
+;todo: take the default value as an option
+(defund make-into-array-with-len (array-name alist len)
+  (declare (type (integer 1 2147483646) len)
+           (type symbol array-name)
+           (xargs :guard (and (true-listp alist)
+                              (bounded-natp-alistp alist len) ;todo: change this to imply true-listp
+                              )
+                  :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))))
+  (compress1 array-name
+             (acons-fast :header
+                         (list :dimensions (list len)
+                               ;; TODO: Can we do something better here?:
+                               :maximum-length (min (* 2 len)
+                                                    *maximum-positive-32-bit-integer* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
+                                                    )
+                               :default nil ; ;fixme?
+                               :name array-name)
+                         alist)))
+
+(in-theory (disable (:e make-into-array-with-len))) ;blew up
+
+(defthm dimensions-of-make-into-array-with-len
+  (equal (dimensions array-name (make-into-array-with-len array-name alist len))
+         (list len))
+  :hints (("Goal" :in-theory (enable make-into-array-with-len))))
+
+(defthm alen1-of-make-into-array-with-len
+  (equal (alen1 array-name (make-into-array-with-len array-name alist len))
+         len)
+  :hints (("Goal" :in-theory (enable make-into-array-with-len))))
+
+(defthm array1p-of-make-into-array-with-len
+  (implies (and (symbolp array-name)
+                (bounded-integer-alistp alist len)
+                (posp len)
+                (< len 2147483647))
+           (array1p array-name (make-into-array-with-len array-name alist len)))
+  :hints (("Goal" :in-theory (enable make-into-array-with-len array1p-rewrite))))
+
+(defthm default-of-make-into-array-with-len
+  (equal (default array-name (make-into-array-with-len array-name alist len))
+         nil)
+  :hints (("Goal" :in-theory (enable array1p compress1 make-into-array-with-len))))
+
+(defthm aref1-of-make-into-array-with-len
+  (implies (and (bounded-natp-alistp alist len)
+                (true-listp alist)
+                alist
+                (symbolp array-name)
+                (natp index)
+                (< index len)
+                (integerp len)
+                )
+           (equal (aref1 array-name (make-into-array-with-len array-name alist len) index)
+                  (cdr (assoc-equal index alist))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :do-not-induct t
+           :expand (AREF1 ARRAY-NAME ALIST INDEX)
+           :in-theory (e/d ( ;array1p ;compress1
+                            ARRAY-ORDER
+                            make-into-array-with-len
+                            ;;aref1
+                            ) (array1p)))))
+
+;Consider adding an option to reuse an existing array if large enough (well, compress1 now does that internally)?
+; The length of the resulting array is one more than the max key in the alist, unless the alist is empty, in which case the length is 1.
+; TODO: Add an option for slack space
+(defund make-into-array (array-name alist)
+  (declare (xargs :guard (and (true-listp alist)
+                              (bounded-natp-alistp alist (+ -1 *maximum-positive-32-bit-integer*)) ; might be able to drop the -1 if array1p is weakened a bit
+                              )
+                  :guard-hints (("Goal" :in-theory (enable array1p-rewrite))))
+           (type symbol array-name))
+  (let* ((len (if (consp alist)
+                  ;; normal case:
+                  (+ 1 (max-key alist 0)) ;could save this max if we know it's a dag-lst...
+                ;; compress1 must be given a dimension of at least 1
+                1)))
+    (make-into-array-with-len array-name alist len)))
+
+(in-theory (disable (:e make-into-array))) ;might blow up
+
+(defthm default-of-make-into-array
+  (equal (default array-name (make-into-array array-name alist))
+         nil)
+  :hints (("Goal" :in-theory (enable make-into-array))))
+
+(defthm array1p-of-make-into-array
+  (implies (and (bounded-natp-alistp alist 2147483646)
+                (true-listp alist)
+                ;alist
+                (symbolp array-name)
+                )
+           (equal (array1p array-name (make-into-array array-name alist))
+                  t))
+  :hints (("Goal" :in-theory (enable array1p compress1 make-into-array))))
+
+(defthm aref1-of-make-into-array
+  (implies (and (bounded-natp-alistp alist 2147483646)
+                (true-listp alist)
+                alist
+                (symbolp array-name)
+                (natp index)
+                (< index (max-key alist 0))
+                )
+           (equal (aref1 array-name (make-into-array array-name alist) index)
+                  (cdr (assoc-equal index alist))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :do-not-induct t
+           :in-theory (enable array1p ;compress1
+                              ARRAY-ORDER
+                              make-into-array
+                              aref1))))
+
+(defthm dimensions-of-make-into-array
+  (equal (dimensions array-name (make-into-array array-name alist))
+         (if (consp alist)
+             (list (+ 1 (max-key alist 0)))
+           (list 1)))
+  :hints (("Goal" :in-theory (enable make-into-array))))
+
+(defthm alen1-of-make-into-array
+  (equal (alen1 array-name (make-into-array array-name alist))
+         (if (consp alist)
+             (+ 1 (max-key alist 0))
+           1))
+  :hints (("Goal" :in-theory (enable make-into-array))))
