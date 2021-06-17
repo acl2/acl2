@@ -2758,7 +2758,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fn-returns-value-thm ((fn symbolp)
-                                      (type typep)
+                                      (type? type-optionp)
                                       (prec-fns atc-symbol-fninfo-alistp)
                                       (names-to-avoid symbol-listp)
                                       (wrld plist-worldp))
@@ -2801,18 +2801,37 @@
    (xdoc::p
     "We use the C value predicate corresponding to
      the type of the body of the function;
-     the type is passed to this ACL2 function as the @('type') parameter."))
-  (b* (((unless (type-integerp type))
-        (prog2$ (raise "Internal error: the function ~x0 has return type ~x1."
-                       fn type)
+     the type is passed to this ACL2 function as the @('type') parameter.")
+   (xdoc::p
+    "We are in the process of generalizing this code
+     to handle theorems for functions that return multiple results
+     (as may be the case for loop functions that transform multiple variables).
+     This is why we form a list of types and then we operate on the list:
+     the list will never be expected to be empty;
+     if the list is a singleton, we generate,
+     as the conclusion of the theorem,
+     a single type assertion for the whole function;
+     if the list has multiple elements, we generate,
+     as the conclusion of the theorem,
+     a conjunction of type assertions
+     for the @(tsee mv-nth)s of the function."))
+  (b* ((types (and type? (list type?)))
+       ((unless (and (consp types)
+                     (type-integer-listp types)))
+        (prog2$ (raise "Internal error: the function ~x0 has return types ~x1."
+                       fn types)
                 (mv '(_) nil names-to-avoid)))
-       (pred (pack (atc-integer-type-fixtype type) 'p))
+       (formals (acl2::formals+ fn wrld))
+       (fn-call `(,fn ,@formals))
+       (conclusion
+        (if (consp (cdr types))
+            `(and (conjuncts (atc-gen-fn-returns-value-thm-aux types 0 fn-call)))
+          `(,(pack (atc-integer-type-fixtype (car types)) 'p) ,fn-call)))
        (name (add-suffix fn "-RETURNS-VALUE"))
        ((mv name names-to-avoid)
         (acl2::fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
-       (formals (acl2::formals+ fn wrld))
        (guard (untranslate (acl2::uguard fn wrld) t wrld))
-       (formula `(implies ,guard (,pred (,fn ,@formals))))
+       (formula `(implies ,guard ,conclusion))
        (hints `(("Goal"
                  :in-theory
                  (append
@@ -2846,7 +2865,21 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv event name names-to-avoid)))
+    (mv event name names-to-avoid))
+
+  :prepwork
+  ((define atc-gen-fn-returns-value-thm-aux ((types type-listp)
+                                             (index natp)
+                                             (fn-call pseudo-termp))
+     :guard (type-integer-listp types)
+     :returns conjuncts
+     :parents nil
+     (cond ((endp types) nil)
+           (t (cons `(,(pack (atc-integer-type-fixtype (car types)) 'p)
+                      (mv-nth ',index ,fn-call))
+                    (atc-gen-fn-returns-value-thm-aux (cdr types)
+                                                      (1+ index)
+                                                      fn-call)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
