@@ -2829,7 +2829,20 @@
      if the list has multiple elements, we generate,
      as the conclusion of the theorem,
      a conjunction of type assertions
-     for the @(tsee mv-nth)s of the function."))
+     for the @(tsee mv-nth)s of the function.")
+   (xdoc::p
+    "If @('fn') is recursive, we generate a hint to induct on the function.
+     Since ACL2 disallows @(':use') and @(':induct') hints on the goal,
+     we make the @(':use') hint a computed hint;
+     we do that whether @('fn') is recursive or not, for simplicity.")
+   (xdoc::p
+    "When @('fn') returns multiple results or contains @(tsee mv-let)s,
+     terms appear during the proof in which
+     @(tsee mv-nth)s are applied to @(tsee list)s (i.e. @(tsee cons) nests).
+     So we add the rule" (xdoc::@def "acl2::mv-nth-of-cons") " to the theory,
+     in order to simplify those terms.
+     We also enable the executable counterpart of @(tsee zp)
+     to simplify the test in the right-hand side of that rule."))
   (b* ((types1 (and type? (list type?)))
        (types2 (atc-gen-fn-returns-value-thm-aux1 xforming scope))
        (types (append types1 types2))
@@ -2850,6 +2863,8 @@
        (guard (untranslate (acl2::uguard fn wrld) t wrld))
        (formula `(implies ,guard ,conclusion))
        (hints `(("Goal"
+                 ,@(and (acl2::irecursivep+ fn wrld)
+                        `(:induct ,fn-call))
                  :in-theory
                  (append
                   *atc-integer-ops-1-return-rewrite-rules*
@@ -2876,8 +2891,10 @@
                     ullongp-of-ullong-oct-const
                     ullongp-of-ullong-hex-const
                     sintp-of-sint-from-boolean
-                    ucharp-of-uchar-array-read-sint))
-                 :use (:guard-theorem ,fn))))
+                    ucharp-of-uchar-array-read-sint
+                    acl2::mv-nth-of-cons
+                    (:e zp))))
+                '(:use (:guard-theorem ,fn))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
