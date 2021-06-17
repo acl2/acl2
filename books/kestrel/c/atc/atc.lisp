@@ -2759,6 +2759,8 @@
 
 (define atc-gen-fn-returns-value-thm ((fn symbolp)
                                       (type? type-optionp)
+                                      (xforming symbol-listp)
+                                      (scope atc-symbol-type-alistp)
                                       (prec-fns atc-symbol-fninfo-alistp)
                                       (names-to-avoid symbol-listp)
                                       (wrld plist-worldp))
@@ -2767,7 +2769,8 @@
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the theorem saying that
-          @('fn') returns a C value under the guard."
+          @('fn') returns one or more C values,
+          under the guard."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2784,13 +2787,16 @@
      "Calls of @(tsee sint-dec-const), @(tsee add-sint-sint), etc.
       are known to return values.")
     (xdoc::li
-     "A @(tsee let) variable is equal to a term that,
+     "A @(tsee let) or @(tsee mv-let) variable is equal to a term that,
       recursively, always returns a value.")
     (xdoc::li
      "A call of a preceding function returns a value,
       as proved by the same theorems for the preceding functions.")
     (xdoc::li
-     "An @(tsee if) return value reduces to the branches' return values."))
+     "An @(tsee if) return value reduces to the branches' return values.")
+    (xdoc::li
+     "An @(tsee mv) returns variables that have C types,
+      because either they are parameters or bound variables."))
    (xdoc::p
     "This suggests a coarse but adequate proof strategy:
      We use the theory consisting of
@@ -2799,15 +2805,24 @@
      and the theorems about the preceding functions;
      we also add a @(':use') hint for the guard theorem of @('fn').")
    (xdoc::p
-    "We use the C value predicate corresponding to
-     the type of the body of the function;
-     the type is passed to this ACL2 function as the @('type') parameter.")
+    "If the function is not recursive,
+     its body returns a single result,
+     whose type is passed as the parameter @('type?').
+     If the function is recursive, @('type?') is @('nil'),
+     but the function returns as many results as the transformed variables
+     (passed as the @('xforming') parameter),
+     whose types are retrieved from the scope passed as the @('scope') parameter
+     (this is the scope consisting of the parameters of @('fn')).")
    (xdoc::p
-    "We are in the process of generalizing this code
-     to handle theorems for functions that return multiple results
-     (as may be the case for loop functions that transform multiple variables).
-     This is why we form a list of types and then we operate on the list:
-     the list will never be expected to be empty;
+    "In anticipation for future situations in which
+     also non-recursive target functions may return multiple results,
+     namely the C return result plus other results representing side effects,
+     the code below is already general.
+     It concatenates zero or one type from @('type?')
+     with zero or more types from @('xforming') and @('scope').
+     Then we operate on the resulting list,
+     which forms all the results of the function:
+     the list is never empty (and ACL2 function must always return something);
      if the list is a singleton, we generate,
      as the conclusion of the theorem,
      a single type assertion for the whole function;
@@ -2815,7 +2830,9 @@
      as the conclusion of the theorem,
      a conjunction of type assertions
      for the @(tsee mv-nth)s of the function."))
-  (b* ((types (and type? (list type?)))
+  (b* ((types1 (and type? (list type?)))
+       (types2 (atc-gen-fn-returns-value-thm-aux1 xforming scope))
+       (types (append types1 types2))
        ((unless (and (consp types)
                      (type-integer-listp types)))
         (prog2$ (raise "Internal error: the function ~x0 has return types ~x1."
@@ -2868,18 +2885,32 @@
     (mv event name names-to-avoid))
 
   :prepwork
-  ((define atc-gen-fn-returns-value-thm-aux ((types type-listp)
-                                             (index natp)
-                                             (fn-call pseudo-termp))
+
+  ((define atc-gen-fn-returns-value-thm-aux1 ((xforming symbol-listp)
+                                              (scope atc-symbol-type-alistp))
+     :returns (types type-listp :hyp (atc-symbol-type-alistp scope))
+     :parents nil
+     (cond ((endp xforming) nil)
+           (t (b* ((type (cdr (assoc-eq (car xforming) scope))))
+                (if (typep type)
+                    (cons type
+                          (atc-gen-fn-returns-value-thm-aux1 (cdr xforming)
+                                                             scope))
+                  (raise "Internal error: variable ~x0 not found in ~x1."
+                         (car xforming) scope))))))
+
+   (define atc-gen-fn-returns-value-thm-aux2 ((types type-listp)
+                                              (index natp)
+                                              (fn-call pseudo-termp))
      :guard (type-integer-listp types)
      :returns conjuncts
      :parents nil
      (cond ((endp types) nil)
            (t (cons `(,(pack (atc-integer-type-fixtype (car types)) 'p)
                       (mv-nth ',index ,fn-call))
-                    (atc-gen-fn-returns-value-thm-aux (cdr types)
-                                                      (1+ index)
-                                                      fn-call)))))))
+                    (atc-gen-fn-returns-value-thm-aux2 (cdr types)
+                                                       (1+ index)
+                                                       fn-call)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3248,7 +3279,8 @@
        ((mv fn-returns-value-event
             fn-returns-value-thm
             names-to-avoid)
-        (atc-gen-fn-returns-value-thm fn type prec-fns names-to-avoid wrld))
+        (atc-gen-fn-returns-value-thm
+         fn type nil nil prec-fns names-to-avoid wrld))
        ((mv fn-exec-correct-local-event
             fn-exec-correct-thm
             names-to-avoid)
