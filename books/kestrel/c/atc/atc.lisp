@@ -3273,7 +3273,7 @@
 
 (define atc-gen-fn-thms ((fn symbolp)
                          (pointers symbol-listp)
-                         (type typep)
+                         (type? type-optionp)
                          (prec-fns atc-symbol-fninfo-alistp)
                          (proofs booleanp)
                          (recursionp booleanp)
@@ -3297,7 +3297,7 @@
             fn-returns-value-thm
             names-to-avoid)
         (atc-gen-fn-returns-value-thm
-         fn type nil nil prec-fns names-to-avoid wrld))
+         fn type? nil nil prec-fns names-to-avoid wrld))
        ((mv fn-exec-correct-local-event
             fn-exec-correct-thm
             names-to-avoid)
