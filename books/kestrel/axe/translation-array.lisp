@@ -22,7 +22,9 @@
 
 ;; A translation-array maps each node, up to a given node, to a nodenum,
 ;; myquotep, or nil (meaning no translation applies for that node).  See also
-;; renaming-array.lisp, which disallows nodes being mapped to nil.
+;; renaming-array.lisp, which disallows nodes being mapped to nil.  The
+;; translation-array may be appropriate for top-down algorithms, especially
+;; worklist algorithms that may not touch every node.
 
 ;; TODO: Define translation-arrayp and use it instead of translation-arrayp-aux.
 
