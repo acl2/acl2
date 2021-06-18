@@ -1486,6 +1486,11 @@
            (bounded-natp-alistp dag bound))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
+(defthm bounded-natp-alistp-of-+-1-of-caar-when-pseudo-dagp-gen-2
+  (implies (pseudo-dagp dag)
+           (bounded-natp-alistp dag (+ 1 (caar dag))))
+  :hints (("Goal" :in-theory (enable pseudo-dagp))))
+
 (defthmd car-of-car-when-pseudo-dagp
   (implies (pseudo-dagp dag-lst)
            (equal (car (car dag-lst))
