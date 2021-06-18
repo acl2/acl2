@@ -3470,14 +3470,23 @@
 
 (define atc-gen-loop ((fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
+                      (proofs booleanp)
+                      (recursionp booleanp)
+                      (prog-const symbolp)
+                      (fn-thms symbol-symbol-alistp)
+                      (print evmac-input-print-p)
+                      (names-to-avoid symbol-listp)
                       ctx
                       state)
   :guard (acl2::irecursivep+ fn (w state))
   :returns (mv erp
-               (updated-prec-fns atc-symbol-fninfo-alistp
-                                 :hyp (and (atc-symbol-fninfo-alistp prec-fns)
-                                           (symbolp fn)))
+               (val "A @('(tuple (local-events pseudo-event-form-listp)
+                                 (exported-events pseudo-event-form-listp)
+                                 (updated-prec-fns atc-symbol-fninfo-alistp)
+                                 (updated-names-to-avoid symbol-listp)
+                                 val)').")
                state)
+  :mode :program
   :short "Generate a loop for a recursive target function."
   :long
   (xdoc::topstring
@@ -3494,20 +3503,32 @@
        (formals (acl2::formals+ fn wrld))
        (guard (acl2::uguard+ fn wrld))
        (guard-conjuncts (flatten-ands-in-lit guard))
-       ((mv erp (list & scope &) state)
+       ((mv erp (list & scope pointers) state)
         (atc-gen-param-declon-list formals fn guard-conjuncts guard ctx state))
        ((when erp) (mv erp nil state))
        (body (acl2::ubody+ fn wrld))
        ((mv erp (list loop-stmt loop-xforming) state)
         (atc-gen-loop-stmt body (list scope) fn prec-fns ctx state))
        ((when erp) (mv erp nil state))
-       (info (make-atc-fn-info :type? nil
+       (type? nil)
+       (limit 0)
+       ((mv local-events
+            exported-events
+            fn-returns-value-thm
+            fn-exec-correct-thm
+            names-to-avoid)
+        (atc-gen-fn-thms fn pointers type? prec-fns proofs recursionp
+                         prog-const fn-thms print limit names-to-avoid wrld))
+       (info (make-atc-fn-info :type? type?
                                :loop? loop-stmt
                                :xforming loop-xforming
-                               :returns-value-thm nil
-                               :exec-correct-thm nil
-                               :limit 0)))
-    (acl2::value (acons fn info prec-fns))))
+                               :returns-value-thm fn-returns-value-thm
+                               :exec-correct-thm fn-exec-correct-thm
+                               :limit limit)))
+    (acl2::value (list local-events
+                       exported-events
+                       (acons fn info prec-fns)
+                       names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3541,10 +3562,20 @@
        ((cons fn rest-fns) fns)
        ((er (list exts local-events exported-events prec-fns names-to-avoid))
         (if (acl2::irecursivep+ fn (w state))
-            (b* (((mv erp prec-fns state)
-                  (atc-gen-loop fn prec-fns ctx state))
+            (b* (((mv erp
+                      (list local-events
+                            exported-events
+                            prec-fns
+                            names-to-avoid)
+                      state)
+                  (atc-gen-loop fn prec-fns proofs recursionp prog-const
+                                fn-thms print names-to-avoid ctx state))
                  ((when erp) (mv erp (list nil nil nil nil) state)))
-              (acl2::value (list nil nil nil prec-fns names-to-avoid)))
+              (acl2::value (list nil
+                                 local-events
+                                 exported-events
+                                 prec-fns
+                                 names-to-avoid)))
           (b* (((mv erp
                     (list
                      ext local-events exported-events prec-fns names-to-avoid)
