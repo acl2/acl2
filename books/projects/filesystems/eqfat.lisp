@@ -7814,66 +7814,7 @@ channel state))
                                           '1)))))
 
 (defthm
-  lofat-fs-p-of-lofat-place-file-lemma-4
-  (implies
-   (<=
-    1
-    (count-free-clusters
-     (set-indices-in-fa-table
-      (effective-fat fat32$c)
-      (mv-nth
-       0
-       (d-e-cc
-        fat32$c
-        (mv-nth
-         0
-         (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c d-e)))
-                   name))))
-      (make-list-ac
-       (len
-        (mv-nth
-         0
-         (d-e-cc
-          fat32$c
-          (mv-nth
-           0
-           (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c d-e)))
-                     name)))))
-       0 nil))))
-   (not
-    (<
-     (nth
-      '0
-      (find-n-free-clusters
-       (set-indices-in-fa-table
-        (effective-fat fat32$c)
-        (mv-nth
-         '0
-         (d-e-cc
-          fat32$c
-          (mv-nth
-           '0
-           (find-d-e (make-d-e-list (mv-nth '0
-                                            (d-e-cc-contents fat32$c d-e)))
-                     name))))
-        (make-list-ac
-         (len
-          (mv-nth
-           '0
-           (d-e-cc
-            fat32$c
-            (mv-nth
-             '0
-             (find-d-e (make-d-e-list (mv-nth '0
-                                              (d-e-cc-contents fat32$c d-e)))
-                       name)))))
-         '0
-         'nil))
-       '1))
-     '2))))
-
-(defthm
-  lofat-place-file-guard-lemma-4
+  lofat-place-file-guard-lemma-3
   (implies
    (<=
     1

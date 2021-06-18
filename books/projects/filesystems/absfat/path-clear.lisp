@@ -38,12 +38,11 @@
 
 (defthm
   path-clear-of-frame-with-root
-  (iff (path-clear path (frame-with-root root frame))
-       (and (path-clear path frame)
-            (not (consp (names-at root path)))))
+  (equal (path-clear path (frame-with-root root frame))
+         (and (path-clear path frame)
+              (not (consp (names-at root path)))))
   :hints (("goal" :in-theory (enable path-clear frame-with-root names-at)
-           :do-not-induct t))
-  :otf-flg t)
+           :do-not-induct t)))
 
 (defthm
   dist-names-when-path-clear
