@@ -1465,17 +1465,18 @@
                          point2)))
     :disable t
     :proof
-    ((:assume (:associativity (twisted-edwards-add-associativity)))
+    ((:let (point1+point2 (twisted-edwards-add point1 point2 curve)))
+     (:assume (:associativity (twisted-edwards-add-associativity)))
      (:assume (:complete (twisted-edwards-curve-completep curve)))
      (:assume (:point1 (and (pointp point1)
                             (point-on-twisted-edwards-p point1 curve))))
      (:assume (:point2 (and (pointp point2)
                             (point-on-twisted-edwards-p point2 curve))))
-     (:assume (:add-is-zero (equal (twisted-edwards-add point1 point2 curve)
+     (:assume (:add-is-zero (equal point1+point2
                                    (twisted-edwards-zero))))
      (:derive (:add-neg-point1 (equal (twisted-edwards-add
                                        (twisted-edwards-neg point1 curve)
-                                       (twisted-edwards-add point1 point2 curve)
+                                       point1+point2
                                        curve)
                                       (twisted-edwards-add
                                        (twisted-edwards-neg point1 curve)
@@ -1483,7 +1484,7 @@
                                        curve)))
       :from (:add-is-zero))
      (:derive (:add-neg-point2 (equal (twisted-edwards-add
-                                       (twisted-edwards-add point1 point2 curve)
+                                       point1+point2
                                        (twisted-edwards-neg point2 curve)
                                        curve)
                                       (twisted-edwards-add
@@ -1625,7 +1626,10 @@
                                          curve)))
     :disable t
     :proof
-    ((:assume (:assoc (twisted-edwards-add-associativity)))
+    ((:let (-point1 (twisted-edwards-neg point1 curve)))
+     (:let (-point2 (twisted-edwards-neg point2 curve)))
+     (:let (point1+point2 (twisted-edwards-add point1 point2 curve)))
+     (:assume (:assoc (twisted-edwards-add-associativity)))
      (:assume (:complete (twisted-edwards-curve-completep curve)))
      (:assume (:point1 (and (pointp point1)
                             (point-on-twisted-edwards-p point1 curve))))
@@ -1633,35 +1637,24 @@
                             (point-on-twisted-edwards-p point2 curve))))
      (:derive
       (:swap-point1-point2
-       (equal (twisted-edwards-add
-               (twisted-edwards-add point1 point2 curve)
-               (twisted-edwards-add (twisted-edwards-neg point1 curve)
-                                    (twisted-edwards-neg point2 curve)
-                                    curve)
-               curve)
+       (equal (twisted-edwards-add point1+point2
+                                   (twisted-edwards-add -point1 -point2 curve)
+                                   curve)
               (twisted-edwards-add
                (twisted-edwards-add point2 point1 curve)
-               (twisted-edwards-add (twisted-edwards-neg point1 curve)
-                                    (twisted-edwards-neg point2 curve)
-                                    curve)
+               (twisted-edwards-add -point1 -point2 curve)
                curve)))
       :from (:point1 :point2))
      (:derive
       (:assoc-right
        (equal (twisted-edwards-add
                (twisted-edwards-add point2 point1 curve)
-               (twisted-edwards-add (twisted-edwards-neg point1 curve)
-                                    (twisted-edwards-neg point2 curve)
-                                    curve)
+               (twisted-edwards-add -point1 -point2 curve)
                curve)
               (twisted-edwards-add
                point2
                (twisted-edwards-add point1
-                                    (twisted-edwards-add (twisted-edwards-neg
-                                                          point1 curve)
-                                                         (twisted-edwards-neg
-                                                          point2 curve)
-                                                         curve)
+                                    (twisted-edwards-add -point1 -point2 curve)
                                     curve)
                curve)))
       :from (:assoc :complete :point1 :point2)
@@ -1671,56 +1664,40 @@
        (equal (twisted-edwards-add
                point2
                (twisted-edwards-add point1
-                                    (twisted-edwards-add (twisted-edwards-neg
-                                                          point1 curve)
-                                                         (twisted-edwards-neg
-                                                          point2 curve)
-                                                         curve)
+                                    (twisted-edwards-add -point1 -point2 curve)
                                     curve)
                curve)
               (twisted-edwards-add
                point2
-               (twisted-edwards-add (twisted-edwards-add point1
-                                                         (twisted-edwards-neg
-                                                          point1 curve)
-                                                         curve)
-                                    (twisted-edwards-neg point2 curve)
+               (twisted-edwards-add (twisted-edwards-add point1 -point1 curve)
+                                    -point2
                                     curve)
                curve)))
       :from (:assoc :complete :point1 :point2)
-      :hints (("Goal" :in-theory (e/d (twisted-edwards-add-associative-left)
-                                      (twisted-edwards-add-associative-right)))))
+      :hints (("Goal" :in-theory (e/d
+                                  (twisted-edwards-add-associative-left)
+                                  (twisted-edwards-add-associative-right)))))
      (:derive
       (:simplify
        (equal (twisted-edwards-add
                point2
-               (twisted-edwards-add (twisted-edwards-add point1
-                                                         (twisted-edwards-neg
-                                                          point1 curve)
-                                                         curve)
-                                    (twisted-edwards-neg point2 curve)
+               (twisted-edwards-add (twisted-edwards-add point1 -point1 curve)
+                                    -point2
                                     curve)
                curve)
               (twisted-edwards-zero)))
       :from (:point1 :point2 :complete))
      (:derive
       (:inverse
-       (equal (twisted-edwards-add
-               (twisted-edwards-add point1 point2 curve)
-               (twisted-edwards-add (twisted-edwards-neg point1 curve)
-                                    (twisted-edwards-neg point2 curve)
-                                    curve)
-               curve)
+       (equal (twisted-edwards-add point1+point2
+                                   (twisted-edwards-add -point1 -point2 curve)
+                                   curve)
               (twisted-edwards-zero)))
       :from (:swap-point1-point2 :assoc-right :assoc-left :simplify))
      (:derive
       (:conclusion
-       (equal (twisted-edwards-neg
-               (twisted-edwards-add point1 point2 curve) curve)
-              (twisted-edwards-add
-               (twisted-edwards-neg point1 curve)
-               (twisted-edwards-neg point2 curve)
-               curve)))
+       (equal (twisted-edwards-neg point1+point2 curve)
+              (twisted-edwards-add -point1 -point2 curve)))
       :from (:inverse :complete :assoc :point1 :point2)
       :hints (("Goal" :use (:instance twisted-edwards-add-zero-right-is-neg
                             (point1 (twisted-edwards-add point1 point2 curve))
@@ -2014,14 +1991,15 @@
      (:assume (:scalar1 (and (integerp scalar1) (>= scalar1 0))))
      (:assume (:scalar2 (and (integerp scalar2) (<= scalar2 0))))
      (:assume (:scalar1+2 (>= (+ scalar1 scalar2) 0)))
+     (:let (scalar1*point (twisted-edwards-mul scalar1 point curve)))
+     (:let (scalar2*point (twisted-edwards-mul scalar2 point curve)))
      (:derive (:add-and-sub
                (equal (twisted-edwards-mul (+ scalar1 scalar2) point curve)
                       (twisted-edwards-add
                        (twisted-edwards-mul (+ scalar1 scalar2) point curve)
                        (twisted-edwards-add
-                        (twisted-edwards-neg
-                         (twisted-edwards-mul scalar2 point curve) curve)
-                        (twisted-edwards-mul scalar2 point curve)
+                        (twisted-edwards-neg scalar2*point curve)
+                        scalar2*point
                         curve)
                        curve)))
       :from (:point :complete)
@@ -2029,16 +2007,14 @@
      (:derive (:simplify
                (equal (twisted-edwards-add
                        (twisted-edwards-mul (+ scalar1 scalar2) point curve)
-                       (twisted-edwards-add
-                        (twisted-edwards-neg
-                         (twisted-edwards-mul scalar2 point curve) curve)
-                        (twisted-edwards-mul scalar2 point curve)
-                        curve)
+                       (twisted-edwards-add (twisted-edwards-neg
+                                             scalar2*point curve)
+                                            scalar2*point
+                                            curve)
                        curve)
-                      (twisted-edwards-add
-                       (twisted-edwards-mul scalar1 point curve)
-                       (twisted-edwards-mul scalar2 point curve)
-                       curve)))
+                      (twisted-edwards-add scalar1*point
+                                           scalar2*point
+                                           curve)))
       :from (:associativity :complete :point :scalar1+2 :scalar1 :scalar2)
       :hints
       (("Goal"
@@ -2049,10 +2025,9 @@
               twisted-edwards-add-commutative)))))
      (:derive (:conclusion
                (equal (twisted-edwards-mul (+ scalar1 scalar2) point curve)
-                      (twisted-edwards-add
-                       (twisted-edwards-mul scalar1 point curve)
-                       (twisted-edwards-mul scalar2 point curve)
-                       curve)))
+                      (twisted-edwards-add scalar1*point
+                                           scalar2*point
+                                           curve)))
       :from (:add-and-sub :simplify))
      (:qed))))
 
@@ -2253,17 +2228,14 @@
      (:assume (:scalar1 (integerp scalar1)))
      (:assume (:point (and (pointp point)
                            (point-on-twisted-edwards-p point curve))))
+     (:let (scalar1*point (twisted-edwards-mul scalar1 point curve)))
      (:derive (:lhs-to-intermediate
                (equal (twisted-edwards-mul scalar
-                                           (twisted-edwards-mul scalar1
-                                                                point
-                                                                curve)
+                                           scalar1*point
                                            curve)
                       (twisted-edwards-neg
                        (twisted-edwards-mul (- scalar)
-                                            (twisted-edwards-mul scalar1
-                                                                 point
-                                                                 curve)
+                                            scalar1*point
                                             curve)
                        curve)))
       :from (:complete :point :scalar)
@@ -2275,18 +2247,14 @@
      (:derive (:intermediate-to-rhs
                (equal (twisted-edwards-neg
                        (twisted-edwards-mul (- scalar)
-                                            (twisted-edwards-mul scalar1
-                                                                 point
-                                                                 curve)
+                                            scalar1*point
                                             curve)
                        curve)
                       (twisted-edwards-mul (* scalar scalar1) point curve)))
       :from (:complete :associativity :point :scalar :scalar1))
      (:derive (:lhs-to-rhs
                (equal (twisted-edwards-mul scalar
-                                           (twisted-edwards-mul scalar1
-                                                                point
-                                                                curve)
+                                           scalar1*point
                                            curve)
                       (twisted-edwards-mul (* scalar scalar1) point curve)))
       :from (:lhs-to-intermediate :intermediate-to-rhs))
@@ -2461,10 +2429,11 @@
      (:derive (:order-not-zero (not (equal order 0)))
       :from (:point-order)
       :hints (("Goal" :in-theory (enable twisted-edwards-point-orderp))))
+     (:let (floor*order+mod (+ (* (floor scalar order) order)
+                               (mod scalar order))))
      (:derive (:decompose-scalar
                (equal (twisted-edwards-mul scalar point curve)
-                      (twisted-edwards-mul (+ (* (floor scalar order) order)
-                                              (mod scalar order))
+                      (twisted-edwards-mul floor*order+mod
                                            point
                                            curve)))
       :from (:scalar :order)
@@ -2472,8 +2441,7 @@
                :use (:instance decompose-floor-mod (x scalar) (y order))
                :in-theory (disable floor mod))))
      (:derive (:reduce-to-mod
-               (equal (twisted-edwards-mul (+ (* (floor scalar order) order)
-                                              (mod scalar order))
+               (equal (twisted-edwards-mul floor*order+mod
                                            point
                                            curve)
                       (twisted-edwards-mul (mod scalar order) point curve)))
