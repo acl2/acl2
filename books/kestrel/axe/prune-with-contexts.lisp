@@ -64,15 +64,15 @@
   (declare (xargs :guard (and (natp old-nodenum)
                               (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (pseudo-dag-arrayp 'old-dag-array old-dag-array old-dag-len)
-                              (renaming-arrayp 'renaming-array renaming-array old-nodenum) ;everything ok up through old-nodenum-1
+                              ;; everything in the renaming array up through old-nodenum-1 maps to a valid node in the new dag:
+                              (bounded-renaming-arrayp 'renaming-array renaming-array old-nodenum dag-len)
                               (equal (alen1 'renaming-array renaming-array)
                                      old-dag-len)
-                              (bounded-renaming-entriesp (+ -1 old-nodenum) 'renaming-array renaming-array dag-len) ;everything in the renaming array maps to a valid node in the new dag
                               (context-arrayp 'context-array context-array old-dag-len))
-                  :guard-hints (("Goal" :in-theory (enable renaming-arrayp ;todo
-                                                    )))
-                  :measure (nfix (+ 1 (- old-dag-len old-nodenum)))
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable
+                                                    bounded-renaming-arrayp ;todo
+                                                    dargp-rules)))
+                  :measure (nfix (+ 1 (- old-dag-len old-nodenum)))))
   (if (or (not (and (mbt (natp old-nodenum))
                     (mbt (natp old-dag-len))))
           (>= old-nodenum old-dag-len))

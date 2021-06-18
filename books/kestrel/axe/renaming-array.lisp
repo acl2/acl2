@@ -19,6 +19,12 @@
 ;; translation-array.lisp.  The renaming-array may be appropriate for bottom-up
 ;; algorithms that touch every node.
 
+
+(defthm all-dargp-less-than-of-+-of-1-and-largest-non-quotep
+  (implies (all-dargp dargs)
+           (all-dargp-less-than dargs (+ 1 (largest-non-quotep dargs))))
+  :hints (("Goal" :in-theory (enable all-dargp-less-than largest-non-quotep))))
+
 ;; TODO: Can we define this using def-typed-acl2-array?
 
 ;;;
@@ -90,6 +96,20 @@
            :cases ((equal index 0))
            :in-theory (e/d () (myquotep)))))
 
+(defthm dargp-of-aref1-when-renaming-arrayp-aux
+  (implies (and (renaming-arrayp-aux renaming-array-name renaming-array nodenum)
+                (natp nodenum))
+           (dargp (aref1 renaming-array-name renaming-array nodenum)))
+  :hints (("Goal" :in-theory (enable renaming-arrayp-aux))))
+
+(defthm dargp-of-aref1-when-renaming-arrayp-aux-free
+  (implies (and (renaming-arrayp-aux renaming-array-name renaming-array top-nodenum-to-check) ;free var
+                (integerp top-nodenum-to-check)
+                (natp nodenum)
+                (<= nodenum top-nodenum-to-check))
+           (dargp (aref1 renaming-array-name renaming-array nodenum)))
+  :hints (("Goal" :in-theory (disable dargp))))
+
 ;normalize to whether it is a consp
 (defthm integerp-of-aref1-when-renaming-arrayp-aux
   (implies (and (renaming-arrayp-aux renaming-array-name renaming-array top-nodenum-to-check)
@@ -119,19 +139,14 @@
                   (consp (aref1 renaming-array-name renaming-array nodenum))))
   :hints (("Goal" :in-theory (enable renaming-arrayp-aux))))
 
-(defthm dargp-of-aref1-when-renaming-arrayp-aux
-  (implies (and (renaming-arrayp-aux renaming-array-name renaming-array top-nodenum-to-check) ;free var
-                (integerp top-nodenum-to-check)
-                (natp nodenum)
-                (<= nodenum top-nodenum-to-check))
-           (dargp (aref1 renaming-array-name renaming-array nodenum)))
+(defthm renaming-arrayp-aux-of-make-empty-array
+  (implies (and (posp size)
+                (symbolp array-name)
+                (< size 2147483647))
+           (renaming-arrayp-aux array-name (make-empty-array array-name size) -1))
   :hints (("Goal" :in-theory (enable renaming-arrayp-aux))))
 
-(defthm dargp-of-aref1-when-renaming-arrayp-aux-alt
-  (implies (and (renaming-arrayp-aux renaming-array-name renaming-array nodenum)
-                (natp nodenum))
-           (dargp (aref1 renaming-array-name renaming-array nodenum)))
-  :hints (("Goal" :in-theory (enable renaming-arrayp-aux))))
+;; enabling dargp-rulesy may avoid the need for these:
 
 (defthm true-listp-of-aref1-when-renaming-arrayp-aux
   (implies (and (renaming-arrayp-aux renaming-array-name renaming-array top-nodenum-to-check)
@@ -202,13 +217,46 @@
            (array1p array-name array))
   :hints (("Goal" :in-theory (enable renaming-arrayp))))
 
+(defthm renaming-arrayp-of-aset1
+  (implies (and (renaming-arrayp renaming-array-name renaming-array num)
+                (dargp val)
+                (<= num (alen1 renaming-array-name renaming-array))
+                (< index (alen1 renaming-array-name renaming-array))
+                (natp index)
+                (integerp num))
+           (renaming-arrayp renaming-array-name (aset1 renaming-array-name renaming-array index val) num))
+  :hints (("Goal" :in-theory (enable renaming-arrayp))))
+
 (defthm renaming-arrayp-of-aset1-special
   (implies (and (equal (+ 1 index) n) ;this case
-                (renaming-arrayp renaming-array-name renaming-array n)
+                (renaming-arrayp renaming-array-name renaming-array index)
                 (dargp val)
                 (< index (alen1 renaming-array-name renaming-array))
                 (natp index))
            (renaming-arrayp renaming-array-name (aset1 renaming-array-name renaming-array index val) n))
+  :hints (("Goal" :in-theory (enable renaming-arrayp))))
+
+;;other properties should follow from this
+(defthm dargp-of-aref1-when-renaming-arrayp
+  (implies (and (renaming-arrayp renaming-array-name renaming-array (+ 1 nodenum))
+                (natp nodenum))
+           (dargp (aref1 renaming-array-name renaming-array nodenum)))
+  :hints (("Goal" :in-theory (enable renaming-arrayp))))
+
+(defthm dargp-of-aref1-when-renaming-arrayp-free
+  (implies (and (renaming-arrayp renaming-array-name renaming-array num-nodes-to-check) ;free var
+                (integerp num-nodes-to-check)
+                (natp nodenum)
+                (< nodenum num-nodes-to-check))
+           (dargp (aref1 renaming-array-name renaming-array nodenum)))
+  :hints (("Goal" :in-theory (enable renaming-arrayp))))
+
+(defthm renaming-arrayp-monotone
+  (implies (and (renaming-arrayp renaming-array-name renaming-array num-nodes-to-check-free) ; free var
+                (<= num-nodes-to-check num-nodes-to-check-free)
+                (natp num-nodes-to-check)
+                (integerp num-nodes-to-check-free))
+           (renaming-arrayp renaming-array-name renaming-array num-nodes-to-check))
   :hints (("Goal" :in-theory (enable renaming-arrayp))))
 
 ;;;
@@ -216,27 +264,29 @@
 ;;;
 
 ;; Renames any of the ARGS that are nodenums according to the RENAMING-ARRAY.
-(defund rename-args (args renaming-array-name renaming-array)
-  (declare (xargs :guard (and (array1p renaming-array-name renaming-array)
-                              (true-listp args)
-                              (all-dargp-less-than args (alen1 renaming-array-name renaming-array))
-                              (renaming-arrayp-aux renaming-array-name renaming-array (largest-non-quotep args)))))
-  (if (endp args)
+;todo: call this rename-dargs?
+(defund rename-args (dargs renaming-array-name renaming-array)
+  (declare (xargs :guard (and (all-dargp dargs)
+                              (true-listp dargs)
+                              (renaming-arrayp renaming-array-name renaming-array (+ 1 (largest-non-quotep dargs))))
+                  :guard-hints (("Goal" :in-theory (enable RENAMING-ARRAYP)))
+                  ))
+  (if (endp dargs)
       nil
-    (let* ((arg (first args)))
+    (let* ((arg (first dargs)))
       (cons (if (consp arg)
                 ;;quoted constant, do nothing:
                 arg
               ;;nodenum to fixup:
               (aref1 renaming-array-name renaming-array arg))
-            (rename-args (rest args) renaming-array-name renaming-array)))))
+            (rename-args (rest dargs) renaming-array-name renaming-array)))))
 
 (defthm all-dargp-of-rename-args
-  (implies (and (renaming-arrayp-aux renaming-array-name renaming-array (largest-non-quotep args))
-                (all-dargp args))
-           (all-dargp (rename-args args renaming-array-name renaming-array)))
+  (implies (and (renaming-arrayp renaming-array-name renaming-array (+ 1 (largest-non-quotep dargs)))
+                (all-dargp dargs))
+           (all-dargp (rename-args dargs renaming-array-name renaming-array)))
   :hints (("Goal" :in-theory (e/d (rename-args all-dargp) (myquotep))
-           :expand (all-dargp args)
+           :expand (all-dargp dargs)
            :do-not '(generalize eliminate-destructors))))
 
 ;;;
@@ -249,7 +299,7 @@
                               (natp limit)
                               (array1p renaming-array-name renaming-array)
                               (< n (alen1 renaming-array-name renaming-array))
-                              (renaming-arrayp-aux renaming-array-name renaming-array n))
+                              (renaming-arrayp renaming-array-name renaming-array (+ 1 n)))
                   :guard-hints (("Goal" :in-theory (enable renaming-arrayp-aux)))))
   (declare (xargs :measure (nfix (+ 1 n))))
   (if (not (natp n))
@@ -362,24 +412,58 @@
   :hints (("Goal" :in-theory (e/d (bound-lemma-for-car-when-all-dargp-less-than) (myquotep)))))
 
 (defthm all-dargp-less-than-of-rename-args
-  (implies (and (renaming-arrayp-aux renaming-array-name renaming-array n)
-                (bounded-renaming-entriesp n renaming-array-name renaming-array limit)
-                (all-dargp-less-than args (+ 1 n))
-                (integerp n)
-                )
-           (all-dargp-less-than (rename-args args renaming-array-name renaming-array) limit))
-  :hints (("Goal" :in-theory (e/d (rename-args bound-lemma-for-car-when-all-dargp-less-than) (myquotep)))))
+  (implies (and (renaming-arrayp renaming-array-name renaming-array (+ 1 (largest-non-quotep dargs)))
+                (bounded-renaming-entriesp (largest-non-quotep dargs) renaming-array-name renaming-array limit)
+                (all-dargp dargs))
+           (all-dargp-less-than (rename-args dargs renaming-array-name renaming-array) limit))
+  :hints (("Goal" :in-theory (e/d (renaming-arrayp rename-args bound-lemma-for-car-when-all-dargp-less-than) (myquotep)))))
 
 (defthm bounded-renaming-entriesp-of--1
   (bounded-renaming-entriesp -1 renaming-array-name renaming-array limit)
   :hints (("Goal" :in-theory (enable bounded-renaming-entriesp))))
 
-(defthm renaming-arrayp-aux-of-make-empty-array
-  (implies (and (posp size)
-                (symbolp array-name)
-                (< size 2147483647))
-           (renaming-arrayp-aux array-name (make-empty-array array-name size) -1))
-  :hints (("Goal" :in-theory (enable renaming-arrayp-aux))))
+(defthm dargp-less-than-of-aref1-when-renaming-arrayp
+  (implies (and (renaming-arrayp renaming-array-name renaming-array (+ 1 nodenum))
+                (bounded-renaming-entriesp nodenum renaming-array-name renaming-array limit)
+                (natp nodenum))
+           (dargp-less-than (aref1 renaming-array-name renaming-array nodenum) limit))
+  :hints (("Goal" :in-theory (enable renaming-arrayp))))
+
+(defthm dargp-less-than-of-aref1-when-renaming-arrayp-free
+  (implies (and (renaming-arrayp renaming-array-name renaming-array free)
+                (bounded-renaming-entriesp nodenum renaming-array-name renaming-array limit)
+                (natp free)
+                (< nodenum free)
+                (natp nodenum))
+           (dargp-less-than (aref1 renaming-array-name renaming-array nodenum) limit))
+  :hints (("Goal" :in-theory (e/d (bound-lemma-for-car-when-all-dargp-less-than) (myquotep)))))
+
+;;;
+;;; bounded-renaming-arrayp
+;;;
+
+;; Check that all elements from n down to 0 are less than limit, assuming they are not conses (quoteps)
+(defund bounded-renaming-arrayp (renaming-array-name renaming-array num-nodes-to-check bound)
+  (declare (xargs :guard (and (integerp num-nodes-to-check)
+                              (natp bound))
+                  :guard-hints (("Goal" :in-theory (enable RENAMING-ARRAYP)))))
+  (and (renaming-arrayp renaming-array-name renaming-array num-nodes-to-check)
+       (bounded-renaming-entriesp (+ -1 num-nodes-to-check) renaming-array-name renaming-array bound)))
+
+(defthm bounded-renaming-arrayp-of-0-arg3
+  (equal (bounded-renaming-arrayp array-name array 0 bound)
+         (renaming-arrayp array-name array 0))
+  :hints (("Goal" :in-theory (enable bounded-renaming-arrayp))))
+
+(defthm all-dargp-less-than-of-rename-args-when-bounded-renaming-arrayp
+  (implies (and (bounded-renaming-arrayp renaming-array-name renaming-array (+ 1 (largest-non-quotep dargs)) limit)
+                ;(all-dargp-less-than args (+ 1 n))
+;(integerp n)
+                (all-dargp dargs)
+                )
+           (all-dargp-less-than (rename-args dargs renaming-array-name renaming-array) limit))
+  :hints (("Goal" :in-theory (enable bounded-renaming-arrayp
+                                     renaming-arrayp))))
 
 ;;;
 ;;; rename-var-or-fn-call-expr
@@ -397,8 +481,9 @@
                                 t)
                               (array1p 'renaming-array renaming-array)
                               (< highest-node-in-renaming (alen1 'renaming-array renaming-array))
-                              (renaming-arrayp-aux 'renaming-array renaming-array highest-node-in-renaming))
-                  :guard-hints (("Goal" :cases ((equal -1 highest-node-in-renaming))))))
+                              (renaming-arrayp 'renaming-array renaming-array (+ 1 highest-node-in-renaming)))
+                  :guard-hints (("Goal" :in-theory (enable renaming-arrayp)
+                                 :cases ((equal -1 highest-node-in-renaming))))))
   (declare (ignore highest-node-in-renaming))
   (if (variablep expr)
       expr
