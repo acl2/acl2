@@ -2763,7 +2763,6 @@
                                       (scope atc-symbol-type-alistp)
                                       (prec-fns atc-symbol-fninfo-alistp)
                                       (proofs booleanp)
-                                      (recursionp booleanp)
                                       (names-to-avoid symbol-listp)
                                       (wrld plist-worldp))
   :returns (mv (events "A @(tsee pseudo-event-form-listp).")
@@ -2845,8 +2844,7 @@
      in order to simplify those terms.
      We also enable the executable counterpart of @(tsee zp)
      to simplify the test in the right-hand side of that rule."))
-  (b* (((when (or (not proofs)
-                  recursionp))
+  (b* (((when (not proofs))
         (mv nil nil names-to-avoid))
        (types1 (and type? (list type?)))
        (types2 (atc-gen-fn-returns-value-thm-aux1 xforming scope))
@@ -2860,7 +2858,7 @@
        (fn-call `(,fn ,@formals))
        (conclusion
         (if (consp (cdr types))
-            `(and (conjuncts (atc-gen-fn-returns-value-thm-aux types 0 fn-call)))
+            `(and ,@(atc-gen-fn-returns-value-thm-aux2 types 0 fn-call))
           `(,(pack (atc-integer-type-fixtype (car types)) 'p) ,fn-call)))
        (name (add-suffix fn "-RETURNS-VALUE"))
        ((mv name names-to-avoid)
@@ -3309,7 +3307,7 @@
             fn-returns-value-thm
             names-to-avoid)
         (atc-gen-fn-returns-value-thm fn type? xforming scope prec-fns
-                                      proofs recursionp names-to-avoid wrld))
+                                      proofs names-to-avoid wrld))
        ((mv fn-exec-correct-local-events
             fn-exec-correct-thm
             names-to-avoid)
