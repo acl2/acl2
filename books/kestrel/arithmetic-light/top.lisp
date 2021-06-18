@@ -51,6 +51,7 @@
 (include-book "ash")
 (include-book "min")
 (include-book "max")
+(include-book "natp")
 
 (include-book "limit-expt")
 
