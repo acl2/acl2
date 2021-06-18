@@ -19409,14 +19409,6 @@
 ; add-disjuncts-polys-and-lemmas before the earlier call of
 ; add-polys-and-lemmas.
 
-; In the book
-; books/workshops/2004/legato/support/proof-by-generalization-mult.lisp we
-; measured almost 3% more time with this patch when output is off.  But in the
-; book books/centaur/gl/always-equal-prep.lisp we measured well under 1% more.
-; Probably the former is the outlier, in that it uses a considerable amount of
-; destructor elimination, which causes the 'settled-down test above to hold
-; (before entering destructor elimination) more often than may be usual.
-
                (add-polys-and-lemmas1
                 (new-vars-in-pot-lst new-pot-lst nil nil)
                 new-pot-lst)

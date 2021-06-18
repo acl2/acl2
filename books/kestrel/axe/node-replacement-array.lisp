@@ -179,14 +179,24 @@
   :extra-vars (bound)
   :extra-guards ((natp bound)))
 
+(defthmd bounded-natp-alistp-when-node-replacement-alistp ;todo: are these the same?
+  (implies (node-replacement-alistp alist bound)
+           (bounded-natp-alistp alist bound))
+  :hints (("Goal" :in-theory (enable bounded-natp-alistp node-replacement-alistp))))
+
 (defthm bounded-node-replacement-arrayp-aux-of-make-into-array
   (implies (and (node-replacement-alistp alist bound)
                 (natp index)
-                (< (max-key alist 0) 2147483646)
+                (< (max-key alist 0) 2147483646) ;or say bounded-natp-alistp
                 (<= index (max-key alist 0))
                 (symbolp array-name))
            (bounded-node-replacement-arrayp-aux array-name (make-into-array array-name alist) index bound))
-  :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp-aux make-into-array aref1))))
+  :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp-aux
+                                     bounded-natp-alistp-when-node-replacement-alistp
+                                     make-into-array ;todo
+                                     aref1 ;todo
+                                     make-into-array-with-len ;todo
+                                     ))))
 
 (defthm bounded-node-replacement-arrayp-of-make-into-array
   (implies (and (node-replacement-alistp node-replacement-alist bound)
@@ -197,11 +207,13 @@
            (bounded-node-replacement-arrayp 'node-replacement-array
                                             (make-into-array 'node-replacement-array node-replacement-alist)
                                             bound))
-  :hints (("Goal" :in-theory (e/d (bounded-NODE-REPLACEMENT-ARRAYP
+  :hints (("Goal" :cases ((CONSP NODE-REPLACEMENT-ALIST))
+           :in-theory (e/d (bounded-NODE-REPLACEMENT-ARRAYP
                                    bounded-NODE-REPLACEMENT-ARRAYP-aux
-                                   NODE-REPLACEMENT-ALISTP
+                                   ;;NODE-REPLACEMENT-ALISTP
                                    ;;MAKE-INTO-ARRAY
                                    BOUNDED-NATP-ALISTP-redef
+                                   bounded-natp-alistp-when-node-replacement-alistp
                                    ) (alistp
                                    STRIP-CDRS
                                    STRIP-CARS)))))

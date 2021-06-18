@@ -34,8 +34,11 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/utilities/merge-sort-symbol-less-than" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 (local (in-theory (disable symbol-alistp strip-cdrs alistp))) ;prevent inductions
 
@@ -307,6 +310,14 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
 
+(defthm pseudo-dagp-aux-of-nthcdr
+  (implies (and (pseudo-dagp-aux dag (+ current-nodenum n))
+                (natp n)
+                (integerp current-nodenum))
+           (pseudo-dagp-aux (nthcdr n dag) current-nodenum))
+  :hints (("Goal" :in-theory (enable pseudo-dagp-aux nthcdr))))
+
+
 ;; Checks that the node numbering is correct with no gaps and that nodes only
 ;; refer to smaller nodes.  Does not check that the arities of the functions
 ;; are correct (so this is kind of like pseudo-termp).  This is not a good
@@ -356,6 +367,64 @@
                 (natp n))
            (bounded-dag-exprp n (lookup-equal n dag)))
   :hints (("Goal" :in-theory (e/d (PSEUDO-DAGP) (bounded-dag-exprp)))))
+
+(defthmd natp-of-car-of-nth-when-pseudo-dagp-aux
+  (implies (and (pseudo-dagp-aux dag curr)
+                (natp n)
+                (natp curr))
+           (equal (natp (car (nth n dag)))
+                  (<= n curr)))
+  :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
+
+(defthmd integerp-of-car-of-nth-when-pseudo-dagp-aux
+  (implies (and (pseudo-dagp-aux dag curr)
+                (natp n)
+                (natp curr))
+           (equal (integerp (car (nth n dag)))
+                  (<= n curr)))
+  :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
+
+;subsumes the 2 above?
+(defthmd car-of-nth-when-pseudo-dagp-aux
+  (implies (and (pseudo-dagp-aux dag curr)
+                ;(natp n)
+                (natp curr))
+           (equal (car (nth n dag))
+                  (if (<= (nfix n) curr)
+                      (- curr (nfix n))
+                    nil)))
+  :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
+
+(defthmd consp-of-nth-when-pseudo-dagp-aux
+  (implies (and (pseudo-dagp-aux dag curr)
+                ;(natp n)
+                (natp curr))
+           (equal (consp (nth n dag))
+                  (<= (nfix n) curr)))
+  :hints (("Goal" ;:induct (PSEUDO-DAGP-AUX DAG CURR)
+           :in-theory (enable pseudo-dagp-aux))))
+
+(defthm len-when-pseudo-dagp-aux
+  (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
+                (natp top-nodenum))
+           (equal (len dag-lst)
+                  (+ 1 (car (car dag-lst)))))
+  :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
+
+(defthm pseudo-dagp-of-nthcdr
+  (implies (and (pseudo-dagp dag)
+                (natp n)
+                (< 0 (- (len dag) n)) ;must be at least one node left)
+                )
+           (equal (pseudo-dagp (nthcdr n dag))
+                  t
+                  ))
+  :otf-flg t
+  :hints (("Goal" :in-theory (e/d (pseudo-dagp
+                                   natp-of-car-of-nth-when-pseudo-dagp-aux
+                                   consp-of-nth-when-pseudo-dagp-aux
+                                   car-of-nth-when-pseudo-dagp-aux)
+                                  (nthcdr natp)))))
 
 (defthmd pseudo-dagp-rewrite
   (equal (pseudo-dagp dag)
@@ -824,7 +893,7 @@
                             dag-exprp0)
                            (DARGP
                             TOP-NODENUM
-                            MYQUOTEP
+                            ;MYQUOTEP
                             ;DARGP-LESS-THAN
                             )))))
 
@@ -1123,12 +1192,7 @@
            (bounded-natp-alistp dag-lst bound))
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux bounded-natp-alistp))))
 
-(defthm len-when-pseudo-dagp-aux
-  (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
-                (natp top-nodenum))
-           (equal (len dag-lst)
-                  (+ 1 (car (car dag-lst)))))
-  :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
+
 
 (defthmd len-when-pseudo-dagp
   (implies (and (pseudo-dagp dag)
@@ -1740,3 +1804,15 @@
            (natp (top-nodenum-of-dag dag)))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable top-nodenum-of-dag))))
+
+;may subsume stuff above
+(defthmd car-of-nth-when-pseudo-dagp
+  (implies (and (pseudo-dagp dag)
+;                (natp n)
+                (natp curr))
+           (equal (car (nth n dag))
+                  (if (< (nfix n) (+ 1 (car (car dag))))
+                      (+ -1 (len dag) (- (nfix n)))
+                    nil)))
+  :hints (("Goal" :in-theory (enable pseudo-dagp
+                                     CAR-OF-NTH-WHEN-PSEUDO-DAGP-AUX))))

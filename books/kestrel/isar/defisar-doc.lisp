@@ -35,7 +35,9 @@
       The script, starting with the hypotheses of the theorem's formula,
       derives intermediate facts, provable via ACL2's @(':hints') mechanism,
       and eventually derives the conclusion of the theorem's formula,
-      thus proving the theorem.")
+      thus proving the theorem.
+      It also provides the ability to introduce local variables
+      to abbreviate terms and make the formulas more concise and readable.")
     (xdoc::p
      "See the file @('[books]/kestrel/isar/defisar-tests.lisp')
       for examples of use of this macro."))
@@ -115,11 +117,30 @@
          "@('<fact>') is a formula that is the fact proved by this command.
           It must be one of @('<hyp1>'), ..., @('<hypn>'),
           or easily derivable from them in the empty ACL2 theory
-          (i.e. minor, easily bridgeable differences are allowed)."))
+          (i.e. minor, easily bridgeable differences are allowed);
+          it may use variables introduced by preceding @(':let') commands."))
        (xdoc::p
         "This command serves to give a name to one of the theorem's hypotheses
          so that the fact (i.e. hypothesis) can be referenced
          in subsequent commands."))
+      (xdoc::li
+       (xdoc::p
+        "An abbreviation of the form")
+       (xdoc::codeblock
+        "(:let (<var> <term>))")
+       (xdoc::p
+        "where:")
+       (xdoc::ul
+        (xdoc::li
+         "@('<var>') is an ACL2 variable symbol
+          that must not occur in @('formula')
+          and that must be distinct from all the ones
+          introduced by other instances of the @(':let') command in the proof.")
+        (xdoc::li
+         "@('<term>') is an ACL2 term, to which @('<var') is bound.
+          This binding is local to the proof,
+          and can make the proof steps more concise and readable.
+          See below for more details on the generated events.")))
       (xdoc::li
        (xdoc::p
         "A derivation command of the form")
@@ -136,7 +157,8 @@
          "@('<fact>') is a formula that is the fact proved by this command.
           It must be provable by ACL2
           from the facts referenced in @(':from') (see below)
-          using the hints in @(':hints') (see below).")
+          using the hints in @(':hints') (see below).
+          It may use variables introduced by preceding @(':let') commands.")
         (xdoc::li
          "@('<id1>'), @('<id2>'), ... are names of previously proved facts
           (via @(':assume') or @(':derive') commands).
@@ -179,22 +201,29 @@
      "Each @(':assume') command generates a theorem")
     (xdoc::codeblock
      "(defthm name<id>"
-     "  (implies (and <hyp1> ... <hypn>)"
-     "           <fact>)"
+     "  (let* ((<var1> <term1>) (<var2> <term2>) ...)"
+     "    (implies (and <hyp1> ... <hypn>)"
+     "             <fact>))"
      "  :rule-classes nil"
      "  :hints ((\"Goal\" :in-theory nil)))")
+    (xdoc::p
+     "where the @(tsee let*) bindings are from
+      the @(':let') commands that precede the @(':assume') command.")
 
     (xdoc::p
      "Each @(':derive') command generates a theorem")
     (xdoc::codeblock
      "(defthm name<id>"
-     "  (implies (and <fact1> <fact2> ...)"
-     "           <fact>)"
+     "  (let* ((<var1> <term1>) (<var2> <term2>) ...)"
+     "    (implies (and <fact1> <fact2> ...)"
+     "             <fact>))"
      "  :rule-classes nil"
      "  :hints <hints>)")
     (xdoc::p
      "where @('<fact1>'), @('<fact2>'), ... are the facts
-      named by @('<id1>'), @('<id2>'), ... in @(':from').")
+      named by @('<id1>'), @('<id2>'), ... in @(':from'), and
+      where the @(tsee let*) bindings are from
+      the @(':let') commands that precede the @(':derive') command.")
 
     (xdoc::p
      "The @(':qed') command generates a theorem")
@@ -205,4 +234,8 @@
      "  :hints ((\"Goal\" :use <ids>)))")
     (xdoc::p
      "where @('<ids>') is a list of all the names of the facts
-      proved by the script before the @(':qed')."))))
+      proved by the script before the @(':qed').")
+
+    (xdoc::p
+     "The @(':let') command does not generate any events.
+      It introduces abbreviations that may be used in subsequent commands."))))

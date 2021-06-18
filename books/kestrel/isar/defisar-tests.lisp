@@ -35,3 +35,18 @@
     :from (:q)
     :hints (("Goal" :use q=>r)))
    (:qed)))
+
+(defisar p=>r-with-let
+  (implies (p x) (r x))
+  :proof
+  ((:let (px (p x)))
+   (:let (qx (q x)))
+   (:let (rx (r x)))
+   (:assume (:p px))
+   (:derive (:q qx)
+    :from (:p)
+    :hints (("Goal" :use p=>q)))
+   (:derive (:r rx)
+    :from (:q)
+    :hints (("Goal" :use q=>r)))
+   (:qed)))
