@@ -3274,6 +3274,8 @@
 (define atc-gen-fn-thms ((fn symbolp)
                          (pointers symbol-listp)
                          (type? type-optionp)
+                         (xforming symbol-listp)
+                         (scope atc-symbol-type-alistp)
                          (prec-fns atc-symbol-fninfo-alistp)
                          (proofs booleanp)
                          (recursionp booleanp)
@@ -3297,13 +3299,13 @@
             fn-returns-value-thm
             names-to-avoid)
         (atc-gen-fn-returns-value-thm
-         fn type? nil nil prec-fns names-to-avoid wrld))
+         fn type? xforming scope prec-fns names-to-avoid wrld))
        ((mv fn-exec-correct-local-event
             fn-exec-correct-thm
             names-to-avoid)
         (atc-gen-fn-exec-correct-thm fn pointers
-                                               prec-fns prog-const limit
-                                               names-to-avoid wrld))
+                                     prec-fns prog-const limit
+                                     names-to-avoid wrld))
        ((mv fn-correct-local-event
             fn-correct-exported-event
             fn-correct-thm)
@@ -3450,7 +3452,7 @@
             fn-returns-value-thm
             fn-exec-correct-thm
             names-to-avoid)
-        (atc-gen-fn-thms fn pointers type prec-fns
+        (atc-gen-fn-thms fn pointers type nil scope prec-fns
                          proofs recursionp prog-const fn-thms print
                          limit names-to-avoid wrld))
        (info (make-atc-fn-info
@@ -3517,8 +3519,9 @@
             fn-returns-value-thm
             fn-exec-correct-thm
             names-to-avoid)
-        (atc-gen-fn-thms fn pointers type? prec-fns proofs recursionp
-                         prog-const fn-thms print limit names-to-avoid wrld))
+        (atc-gen-fn-thms fn pointers type? loop-xforming scope prec-fns
+                         proofs recursionp prog-const fn-thms
+                         print limit names-to-avoid wrld))
        (info (make-atc-fn-info :type? type?
                                :loop? loop-stmt
                                :xforming loop-xforming
