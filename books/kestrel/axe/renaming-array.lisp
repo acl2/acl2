@@ -16,7 +16,8 @@
 
 ;; A renaming-array maps all nodes, up to a given node, to nodenums or
 ;; myquoteps.  NOTE: No node in that range can map to nil, but see
-;; translation-array.lisp.
+;; translation-array.lisp.  The renaming-array may be appropriate for bottom-up
+;; algorithms that touch every node.
 
 ;; TODO: Can we define this using def-typed-acl2-array?
 
@@ -196,6 +197,20 @@
          (array1p array-name array))
   :hints (("Goal" :in-theory (enable renaming-arrayp))))
 
+(defthm renaming-arrayp-forward-to-array1p
+  (implies (renaming-arrayp array-name array num-nodes-to-check)
+           (array1p array-name array))
+  :hints (("Goal" :in-theory (enable renaming-arrayp))))
+
+(defthm renaming-arrayp-of-aset1-special
+  (implies (and (equal (+ 1 index) n) ;this case
+                (renaming-arrayp renaming-array-name renaming-array n)
+                (dargp val)
+                (< index (alen1 renaming-array-name renaming-array))
+                (natp index))
+           (renaming-arrayp renaming-array-name (aset1 renaming-array-name renaming-array index val) n))
+  :hints (("Goal" :in-theory (enable renaming-arrayp))))
+
 ;;;
 ;;; rename-args
 ;;;
@@ -246,7 +261,7 @@
 
 (defthm <-of-aref1-when-bounded-renaming-entriesp
   (implies (and (bounded-renaming-entriesp n renaming-array-name renaming-array bound)
-                (natp n)
+                (integerp n)
                 (natp m)
                 (<= m n)
                 (not (consp (aref1 renaming-array-name renaming-array m))))
