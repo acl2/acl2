@@ -145,7 +145,10 @@
      which must be a list of a keyword and a formula.
      The keyword must not be already the name of a fact.
      We do not check the formula here;
-     we implicitly check it when the generated theorem is submitted."))
+     we implicitly check it when the generated theorem is submitted.")
+   (xdoc::p
+    "The bindings are reversed before being put into the formula,
+     because they are @(tsee cons)ed as go through the @(':let')s."))
   (b* (((unless (tuplep 1 assume-args))
         (er-soft+ ctx t (list nil nil)
                   "Malformed :ASSUME arguments ~x0." assume-args))
@@ -165,7 +168,7 @@
                         `(implies (and ,@hyps) ,assume-fact)
                       assume-fact))
        (thm-formula (if bindings
-                        `(let* ,(alist-to-doublets bindings)
+                        `(let* ,(rev (alist-to-doublets bindings))
                            ,thm-formula)
                       thm-formula))
        (thm-hints '(("Goal" :in-theory nil)))
@@ -258,6 +261,11 @@
                                  (keyword-fact-info-alistp facts)))
                state)
   :short "Execute a @(':derive') command."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The bindings are reversed before being put into the formula,
+     because they are @(tsee cons)ed as go through the @(':let')s."))
   (b* (((mv okp derive-id derive-fact derive-from derive-hints)
         (case-match derive-args
           (((id fact)) (mv t id fact nil nil))
@@ -284,7 +292,7 @@
                         `(implies (and ,@thm-hyps) ,derive-fact)
                       derive-fact))
        (thm-formula (if bindings
-                        `(let* ,(alist-to-doublets bindings)
+                        `(let* ,(rev (alist-to-doublets bindings))
                            ,thm-formula)
                       thm-formula))
        (thm-hints derive-hints)
