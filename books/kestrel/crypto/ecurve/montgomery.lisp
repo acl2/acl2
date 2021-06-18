@@ -1242,6 +1242,7 @@
     ((:let (-point1 (montgomery-neg point1 curve)))
      (:let (-point2 (montgomery-neg point2 curve)))
      (:let (point1+point2 (montgomery-add point1 point2 curve)))
+     (:let (-point1+-point2 (montgomery-add -point1 -point2 curve)))
      (:assume (:closure (montgomery-add-closure)))
      (:assume (:assoc (montgomery-add-associativity)))
      (:assume (:point1 (point-on-montgomery-p point1 curve)))
@@ -1249,16 +1250,16 @@
      (:derive
       (:swap-point1-point2
        (equal (montgomery-add point1+point2
-                              (montgomery-add -point1 -point2 curve)
+                              -point1+-point2
                               curve)
               (montgomery-add (montgomery-add point2 point1 curve)
-                              (montgomery-add -point1 -point2 curve)
+                              -point1+-point2
                               curve)))
       :from (:point1 :point2))
      (:derive
       (:assoc-right
        (equal (montgomery-add (montgomery-add point2 point1 curve)
-                              (montgomery-add -point1 -point2 curve)
+                              -point1+-point2
                               curve)
               (montgomery-add point2
                               (montgomery-add point1
@@ -1273,9 +1274,7 @@
       (:assoc-left
        (equal (montgomery-add point2
                               (montgomery-add point1
-                                              (montgomery-add -point1
-                                                              -point2
-                                                              curve)
+                                              -point1+-point2
                                               curve)
                               curve)
               (montgomery-add point2
@@ -1302,7 +1301,7 @@
      (:derive
       (:inverse
        (equal (montgomery-add point1+point2
-                              (montgomery-add -point1 -point2 curve)
+                              -point1+-point2
                               curve)
               (montgomery-zero)))
       :from (:swap-point1-point2 :assoc-right :assoc-left :simplify))
