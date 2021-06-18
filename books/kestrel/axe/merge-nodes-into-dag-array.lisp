@@ -40,12 +40,12 @@
                                     )
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (weak-dagp-aux rev-dag-lst)
-                              (array1p 'renaming-array renaming-array)
-                              (all-< (strip-cars rev-dag-lst) (alen1 'renaming-array renaming-array)) ;drop?
                               ;; have to know that the rev-dag-lst nodenums increase:
                               (if (consp rev-dag-lst)
-                                  (and (renaming-arrayp-aux 'renaming-array renaming-array (+ -1 (car (car rev-dag-lst))))
-                                       (bounded-renaming-entriesp (+ -1 (car (car rev-dag-lst))) 'renaming-array renaming-array dag-len))
+                                  (and (renaming-arrayp 'renaming-array renaming-array (car (car rev-dag-lst)))
+                                       (all-< (strip-cars rev-dag-lst) (alen1 'renaming-array renaming-array)) ;drop?
+                                       (bounded-renaming-entriesp (+ -1 (car (car rev-dag-lst))) 'renaming-array renaming-array dag-len)
+                                       )
                                 t)
                               (consecutivep (strip-cars rev-dag-lst)))
                   :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -87,11 +87,10 @@
 (defthm wf-dagp-after-merge-nodes-into-dag-array
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 (weak-dagp-aux rev-dag-lst)
-                (array1p 'renaming-array renaming-array)
                 (all-< (strip-cars rev-dag-lst) (alen1 'renaming-array renaming-array)) ;drop or simplify?
                 ;; have to know that the rev-dag-lst nodenums increase:
                 (if (consp rev-dag-lst)
-                    (and (renaming-arrayp-aux 'renaming-array renaming-array (+ -1 (car (car rev-dag-lst))))
+                    (and (renaming-arrayp 'renaming-array renaming-array (car (car rev-dag-lst)))
                          (bounded-renaming-entriesp (+ -1 (car (car rev-dag-lst))) 'renaming-array renaming-array dag-len))
                   t)
                 (consecutivep (strip-cars rev-dag-lst)))
@@ -136,55 +135,53 @@
            (array1p 'renaming-array (mv-nth 1 (merge-nodes-into-dag-array rev-dag-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array))))
   :hints (("Goal" :in-theory (enable merge-nodes-into-dag-array strip-cars))))
 
-(defthm renaming-arrayp-aux-of-mv-nth-1-of-merge-nodes-into-dag-array
+(defthm renaming-arrayp-of-mv-nth-1-of-merge-nodes-into-dag-array
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 (weak-dagp-aux rev-dag-lst)
-                (array1p 'renaming-array renaming-array)
                 (all-< (strip-cars rev-dag-lst) (alen1 'renaming-array renaming-array)) ;drop?
                 ;; have to know that the rev-dag-lst nodenums increase:
                 (consp rev-dag-lst)
-                (renaming-arrayp-aux 'renaming-array renaming-array (+ -1 (car (car rev-dag-lst))))
+                (renaming-arrayp 'renaming-array renaming-array (car (car rev-dag-lst)))
                 (bounded-renaming-entriesp (+ -1 (car (car rev-dag-lst))) 'renaming-array renaming-array dag-len)
                 (consecutivep (strip-cars rev-dag-lst))
                 (not (mv-nth 0 (merge-nodes-into-dag-array rev-dag-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array))))
-           (renaming-arrayp-aux 'renaming-array
-                                (mv-nth 1 (merge-nodes-into-dag-array rev-dag-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array))
-                                (car (car (last rev-dag-lst)))))
+           (renaming-arrayp 'renaming-array
+                            (mv-nth 1 (merge-nodes-into-dag-array rev-dag-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array))
+                            (+ 1 (car (car (last rev-dag-lst))))))
   :hints (("Goal" :expand (RENAMING-ARRAYP-AUX 'RENAMING-ARRAY
                                                RENAMING-ARRAY (CAR (CAR REV-DAG-LST)))
            :in-theory (e/d (merge-nodes-into-dag-array strip-cars) (MYQUOTEP)))))
 
 
-(defthm renaming-arrayp-aux-of-mv-nth-1-of-merge-nodes-into-dag-array-gen
-  (implies (and (<= n (car (car (last rev-dag-lst))))
+(defthm renaming-arrayp-of-mv-nth-1-of-merge-nodes-into-dag-array-gen
+  (implies (and (<= n (+ 1 (car (car (last rev-dag-lst)))))
                 (natp n)
                 (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 (weak-dagp-aux rev-dag-lst)
-                (array1p 'renaming-array renaming-array)
                 (all-< (strip-cars rev-dag-lst) (alen1 'renaming-array renaming-array)) ;drop?
                 ;; have to know that the rev-dag-lst nodenums increase:
                 (consp rev-dag-lst) ;or else the call to last is meaningles
-                (renaming-arrayp-aux 'renaming-array renaming-array (+ -1 (car (car rev-dag-lst))))
+                (renaming-arrayp 'renaming-array renaming-array (car (car rev-dag-lst)))
                 (bounded-renaming-entriesp (+ -1 (car (car rev-dag-lst))) 'renaming-array renaming-array dag-len)
                 (consecutivep (strip-cars rev-dag-lst))
                 (not (mv-nth 0 (merge-nodes-into-dag-array rev-dag-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array))))
-           (renaming-arrayp-aux 'renaming-array
-                                (mv-nth 1 (merge-nodes-into-dag-array rev-dag-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array))
-                                n))
-  :hints (("Goal" :use renaming-arrayp-aux-of-mv-nth-1-of-merge-nodes-into-dag-array
+           (renaming-arrayp 'renaming-array
+                            (mv-nth 1 (merge-nodes-into-dag-array rev-dag-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array))
+                            n))
+  :hints (("Goal" :use renaming-arrayp-of-mv-nth-1-of-merge-nodes-into-dag-array
            :do-not-induct t
 ;           :expand (WEAK-DAGP-AUX REV-DAG-LST)
-           :in-theory (e/d (natp-of-car-of-car-of-last-when-WEAK-DAGP-AUX) (renaming-arrayp-aux-of-mv-nth-1-of-merge-nodes-into-dag-array)) ;'(RENAMING-ARRAYP-AUX-MONOTONE)
+           :in-theory (e/d (natp-of-car-of-car-of-last-when-WEAK-DAGP-AUX)
+                           (renaming-arrayp-of-mv-nth-1-of-merge-nodes-into-dag-array)) ;'(RENAMING-ARRAYP-AUX-MONOTONE)
            )))
 
 (defthm bounded-renaming-entriesp-of-mv-nth-1-of-merge-nodes-into-dag-array
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 (weak-dagp-aux rev-dag-lst)
-                (array1p 'renaming-array renaming-array)
                 (all-< (strip-cars rev-dag-lst) (alen1 'renaming-array renaming-array)) ;drop?
                 ;; have to know that the rev-dag-lst nodenums increase:
                 (consp rev-dag-lst)
-                (renaming-arrayp-aux 'renaming-array renaming-array (+ -1 (car (car rev-dag-lst))))
+                (renaming-arrayp 'renaming-array renaming-array (car (car rev-dag-lst)))
                 (bounded-renaming-entriesp (+ -1 (car (car rev-dag-lst))) 'renaming-array renaming-array dag-len)
                 (consecutivep (strip-cars rev-dag-lst))
                 (not (mv-nth 0 (merge-nodes-into-dag-array rev-dag-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array))))
@@ -192,8 +189,8 @@
                                       'renaming-array
                                       (mv-nth 1 (merge-nodes-into-dag-array rev-dag-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array))
                                       (mv-nth 3 (merge-nodes-into-dag-array rev-dag-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array))))
-  :hints (("Goal" :expand (RENAMING-ARRAYP-AUX 'RENAMING-ARRAY
-                                               RENAMING-ARRAY (CAR (CAR REV-DAG-LST)))
+  :hints (("Goal" ;; :expand (RENAMING-ARRAYP-AUX 'RENAMING-ARRAY
+                  ;;                              RENAMING-ARRAY (CAR (CAR REV-DAG-LST)))
            :in-theory (e/d (merge-nodes-into-dag-array strip-cars) (MYQUOTEP)))))
 
 (defthm bounded-renaming-entriesp-of-mv-nth-1-of-merge-nodes-into-dag-array-gen
@@ -201,11 +198,10 @@
                 (natp n)
                 (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 (weak-dagp-aux rev-dag-lst)
-                (array1p 'renaming-array renaming-array)
                 (all-< (strip-cars rev-dag-lst) (alen1 'renaming-array renaming-array)) ;drop?
                 ;; have to know that the rev-dag-lst nodenums increase:
                 (consp rev-dag-lst)
-                (renaming-arrayp-aux 'renaming-array renaming-array (+ -1 (car (car rev-dag-lst))))
+                (renaming-arrayp 'renaming-array renaming-array (car (car rev-dag-lst)))
                 (bounded-renaming-entriesp (+ -1 (car (car rev-dag-lst))) 'renaming-array renaming-array dag-len)
                 (consecutivep (strip-cars rev-dag-lst))
                 (not (mv-nth 0 (merge-nodes-into-dag-array rev-dag-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array))))
@@ -228,10 +224,9 @@
 (defthm pseudo-dag-arrayp-of-mv-nth-2-of-merge-nodes-into-dag-array
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 (weak-dagp rev-dag-lst)
-                (ARRAY1P 'RENAMING-ARRAY RENAMING-ARRAY)
                 (all-< (strip-cars rev-dag-lst) (alen1 'renaming-array renaming-array))
                 (if (consp rev-dag-lst)
-                    (and (renaming-arrayp-aux 'renaming-array renaming-array (+ -1 (car (car rev-dag-lst))))
+                    (and (renaming-arrayp 'renaming-array renaming-array (car (car rev-dag-lst)))
                          (bounded-renaming-entriesp (+ -1 (car (car rev-dag-lst))) 'renaming-array renaming-array dag-len)
                          )
                   t)
@@ -256,10 +251,9 @@
                 (consecutivep (strip-cars rev-dag-lst))
                 (weak-dagp-aux rev-dag-lst)
                 (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
-                (array1p 'renaming-array renaming-array)
                 (all-< (strip-cars rev-dag-lst) (alen1 'renaming-array renaming-array))
                 (if (consp rev-dag-lst)
-                    (and (renaming-arrayp-aux 'renaming-array renaming-array (+ -1 (car (car rev-dag-lst))))
+                    (and (renaming-arrayp 'renaming-array renaming-array (car (car rev-dag-lst)))
                          (bounded-renaming-entriesp (+ -1 (car (car rev-dag-lst))) 'renaming-array renaming-array dag-len))
                   t)
                 (equal (alen1 'dag-array dag-array)

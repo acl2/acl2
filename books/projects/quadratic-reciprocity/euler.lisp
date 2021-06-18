@@ -111,7 +111,7 @@
   :rule-classes ())
 
 "If there exists @('x') such that @('mod(x*x,p) = mod(m,p)'), then @('m') is said to be
-@('m') (quadratic) residue mod @('p')."
+a (quadratic) residue mod @('p')."
 
 (defun find-root (n m p)
   (if (zp n)

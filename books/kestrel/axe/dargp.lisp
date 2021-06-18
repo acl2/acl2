@@ -60,17 +60,43 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable dargp))))
 
+;; These are kept disabled by default, for speed
+
+(defthmd <=-of-0-when-dargp
+  (implies (dargp item)
+           (<= 0 item)))
+
 (defthmd myquotep-when-dargp
   (implies (dargp item)
            (equal (myquotep item)
                   (consp item))))
 
-;; keep disabled by default
+;we use consp as the normal form
 (defthmd integerp-when-dargp
   (implies (dargp item)
            (equal (integerp item)
                   (not (consp item)))))
 
-(defthmd <=-of-0-when-dargp
-  (implies (dargp item)
-           (<= 0 item)))
+;we use consp as the normal form
+(defthmd consp-of-cdr-when-dargp
+  (implies (dargp darg)
+           (equal (consp (cdr darg))
+                  (consp darg))))
+
+;we use consp as the normal form
+(defthmd cdr-when-dargp-iff
+  (implies (dargp darg)
+           (iff (cdr darg)
+                (consp darg))))
+
+(defthmd not-cddr-when-dargp
+  (implies (dargp darg)
+           (not (cddr darg))))
+
+(deftheory dargp-rules
+  '(myquotep-when-dargp
+    integerp-when-dargp
+    consp-of-cdr-when-dargp
+    cdr-when-dargp-iff
+    not-cddr-when-dargp)
+  :redundant-okp flg)

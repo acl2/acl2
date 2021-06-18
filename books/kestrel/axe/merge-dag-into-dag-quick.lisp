@@ -28,6 +28,7 @@
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 
 (local (in-theory (enable symbolp-of-car-when-dag-exprp0
                           car-of-car-when-pseudo-dagp-cheap)))
@@ -45,11 +46,7 @@
            (not (quotep (ARRAY-TO-ALIST-AUX N LEN ARRAY-NAME ARRAY ACC))))
   :hints (("Goal" :in-theory (enable ARRAY-TO-ALIST-AUX))))
 
-(local
- (defthm natp-of-+-of--1
-   (implies (integerp x)
-            (equal (NATP (+ -1 x))
-                   (< 0 x)))))
+
 
 ;; Merges dag1 into dag2. Takes two dag-lst-or-quoteps and returns a
 ;; dag-lst-or-quotep. Returns (mv erp nodenum-or-quotep-for-dag1
