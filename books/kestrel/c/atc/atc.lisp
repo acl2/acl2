@@ -2764,10 +2764,14 @@
                                       (prec-fns atc-symbol-fninfo-alistp)
                                       (proofs booleanp)
                                       (names-to-avoid symbol-listp)
-                                      (wrld plist-worldp))
-  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
-               (name "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+                                      ctx
+                                      state)
+  :returns (mv erp
+               (val "A @('(tuple (events pseudo-event-form-listp)
+                                 (name symbolp)
+                                 (updated-names-to-avoid symbol-listp)
+                                 val)').")
+               state)
   :mode :program
   :short "Generate the theorem saying that
           @('fn') returns one or more C values,
@@ -2844,16 +2848,22 @@
      in order to simplify those terms.
      We also enable the executable counterpart of @(tsee zp)
      to simplify the test in the right-hand side of that rule."))
-  (b* (((when (not proofs))
-        (mv nil nil names-to-avoid))
+  (b* ((wrld (w state))
+       ((when (not proofs))
+        (acl2::value (list nil nil names-to-avoid)))
        (types1 (and type? (list type?)))
        (types2 (atc-gen-fn-returns-value-thm-aux1 xforming scope))
        (types (append types1 types2))
-       ((unless (and (consp types)
-                     (type-integer-listp types)))
-        (prog2$ (raise "Internal error: the function ~x0 has return types ~x1."
-                       fn types)
-                (mv nil nil names-to-avoid)))
+       ((unless (consp types))
+        (prog2$ (raise "Internal error: the function ~x0 has no return types."
+                       fn)
+                (acl2::value (list nil nil names-to-avoid))))
+       ((unless (type-integer-listp types))
+        (er-soft+ ctx t (list nil nil names-to-avoid)
+                  "The function ~x0 returns results of types ~x1, ~
+                   not all of which are integer types. ~
+                   This is currently disallowed."
+                  fn types))
        (formals (acl2::formals+ fn wrld))
        (fn-call `(,fn ,@formals))
        (conclusion
@@ -2902,7 +2912,7 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv (list event) name names-to-avoid))
+    (acl2::value (list (list event) name names-to-avoid)))
 
   :prepwork
 
@@ -3295,19 +3305,27 @@
                          (print evmac-input-print-p)
                          (limit natp)
                          (names-to-avoid symbol-listp)
-                         (wrld plist-worldp))
-  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
-               (exported-events "A @(tsee pseudo-event-form-listp).")
-               (fn-returns-value-thm "A @(tsee symbolp).")
-               (fn-exec-correct-thm "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+                         ctx
+                         state)
+  :returns (mv erp
+               (val "A @('(tuple (local-events pseudo-event-form-listp)
+                                 (exported-events pseudo-event-form-listp)
+                                 (fn-returns-value-thm symbolp)
+                                 (fn-exec-correct-thm symbolp)
+                                 (updated-names-to-avoid symbol-listp)
+                                 val)').")
+               state)
   :mode :program
   :short "Generate the theorems associated to the specified ACL2 function."
-  (b* (((mv fn-returns-value-events
-            fn-returns-value-thm
-            names-to-avoid)
+  (b* ((wrld (w state))
+       ((mv erp
+            (list fn-returns-value-events
+                  fn-returns-value-thm
+                  names-to-avoid)
+            state)
         (atc-gen-fn-returns-value-thm fn type? xforming scope prec-fns
-                                      proofs names-to-avoid wrld))
+                                      proofs names-to-avoid ctx state))
+       ((when erp) (mv erp (list nil nil nil nil nil) state))
        ((mv fn-exec-correct-local-events
             fn-exec-correct-thm
             names-to-avoid)
@@ -3330,11 +3348,11 @@
                              fn-correct-local-events
                              progress-end?))
        (exported-events fn-correct-exported-events))
-    (mv local-events
-        exported-events
-        fn-returns-value-thm
-        fn-exec-correct-thm
-        names-to-avoid)))
+    (acl2::value (list local-events
+                       exported-events
+                       fn-returns-value-thm
+                       fn-exec-correct-thm
+                       names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3454,14 +3472,17 @@
                           :params params
                           :body (stmt-compound items))))
        (limit (+ 1 1 limit))
-       ((mv local-events
-            exported-events
-            fn-returns-value-thm
-            fn-exec-correct-thm
-            names-to-avoid)
+       ((mv erp
+            (list local-events
+                  exported-events
+                  fn-returns-value-thm
+                  fn-exec-correct-thm
+                  names-to-avoid)
+            state)
         (atc-gen-fn-thms fn pointers type nil scope prec-fns
                          proofs recursionp prog-const fn-thms print
-                         limit names-to-avoid wrld))
+                         limit names-to-avoid ctx state))
+       ((when erp) (mv erp (list (irr-ext-declon) nil nil nil nil) state))
        (info (make-atc-fn-info
               :type? type
               :loop? nil
@@ -3521,14 +3542,17 @@
        ((when erp) (mv erp nil state))
        (type? nil)
        (limit 0)
-       ((mv local-events
-            exported-events
-            fn-returns-value-thm
-            fn-exec-correct-thm
-            names-to-avoid)
+       ((mv erp
+            (list local-events
+                  exported-events
+                  fn-returns-value-thm
+                  fn-exec-correct-thm
+                  names-to-avoid)
+            state)
         (atc-gen-fn-thms fn pointers type? loop-xforming scope prec-fns
                          proofs recursionp prog-const fn-thms
-                         print limit names-to-avoid wrld))
+                         print limit names-to-avoid ctx state))
+       ((when erp) (mv erp (list nil nil nil nil) state))
        (info (make-atc-fn-info :type? type?
                                :loop? loop-stmt
                                :xforming loop-xforming
