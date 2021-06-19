@@ -189,10 +189,9 @@
                              context-array ;must be the context computed from dag
                              )
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (context-arrayp 'context-array context-array (+ 1 (top-nodenum dag))))
-
+                              (context-arrayp 'context-array context-array (+ 1 (top-nodenum-of-dag dag))))
                   :guard-hints (("Goal" :in-theory (enable wf-dagp len-when-pseudo-dagp)))))
-  (b* ((old-dag-len (+ 1 (top-nodenum dag)))
+  (b* ((old-dag-len (+ 1 (top-nodenum-of-dag dag)))
        (old-dag-array (make-into-array-with-len 'old-dag-array dag old-dag-len)) ; no slack needed since this won't grow
        (renaming-array (make-empty-array 'renaming-array old-dag-len)) ;will rename nodes in old dag to nodes in the new dag
        ;;todo: make a util for making an empty dag and its aux structures
@@ -218,8 +217,8 @@
                               (< (top-nodenum-of-dag dag)
                                  *maximum-1-d-array-length*))
                   :guard-hints (("Goal" :in-theory (enable wf-dagp len-when-pseudo-dagp
-                                                           TOP-NODENUM-OF-DAG)))))
-  (b* ((old-dag-len (+ 1 (top-nodenum dag)))
+                                                           top-nodenum-of-dag)))))
+  (b* ((old-dag-len (+ 1 (top-nodenum-of-dag dag)))
        (old-dag-array (make-into-array-with-len 'old-dag-array dag old-dag-len)) ; no slack needed since this won't grow
        ;; Make the auxiliary data structures for the DAG:
        ((mv old-dag-parent-array

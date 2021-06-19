@@ -66,7 +66,7 @@
   (if (quotep dag1)
       (mv (erp-nil) dag1 dag2)
     (if (quotep dag2) ;this case is a bit odd
-        (mv (erp-nil) (top-nodenum dag1) dag1)
+        (mv (erp-nil) (top-nodenum-of-dag dag1) dag1)
       ;;neither is a quotep:
       (b* ((dag1-len (len dag1))
            (dag2-len (len dag2))
@@ -92,7 +92,7 @@
            ((when erp) (mv erp nil nil)))
         ;;fixme return more? ;do the array-to-alist in a wrapper function?
         (mv (erp-nil)
-            (aref1 'renaming-array renaming-array (top-nodenum dag1))
+            (aref1 'renaming-array renaming-array (top-nodenum-of-dag dag1))
             (array-to-alist 'dag-array dag-array dag-len))))))
 
 (defthm true-listp-of-mv-nth-2-of-merge-dag-into-dag-quick
@@ -219,7 +219,7 @@
 ;;                       (mv dag-array
 ;;                           dag-len
 ;;                           (+ -1 larger-dag-len) ;top node "a" (may be for dag1 or dag2)
-;;                           (aref1 'renaming-array renaming-array (top-nodenum smaller-dag))
+;;                           (aref1 'renaming-array renaming-array (top-nodenum-of-dag smaller-dag))
 ;;                           ))))))
 
 ;; (skip- proofs (verify-guards merge-dags-allows-constants-better))

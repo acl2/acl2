@@ -857,8 +857,8 @@
 ;;                   ))
 ;;   (mv-let (translation-alist new-dag)
 ;;           (merge-dags-allows-constants dag1 dag2)
-;;           (let* ((dag2-nodenum (top-nodenum dag2))
-;;                  (dag1-nodenum (lookup (top-nodenum dag1) translation-alist)))
+;;           (let* ((dag2-nodenum (top-nodenum-of-dag dag2))
+;;                  (dag1-nodenum (lookup (top-nodenum-of-dag dag1) translation-alist)))
 ;;             (mv-let (top-nodenum new-dag) ;will add-to-dag ever find this expression already present - almost certainly not?
 ;;                     (add-to-dag `(equal ,dag1-nodenum ,dag2-nodenum)
 ;;                                 new-dag)

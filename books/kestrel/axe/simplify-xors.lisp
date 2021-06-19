@@ -1358,7 +1358,7 @@
       (mv (erp-nil) dag-lst nil)
     (let* ( ;;convert dag-lst to an array:
            (dag-len (len dag-lst))
-           (top-nodenum (top-nodenum dag-lst))
+           (top-nodenum (top-nodenum-of-dag dag-lst))
            (dag-array-name 'simplify-xors-array) ;use a better name?
            (dag-array (make-dag-into-array dag-array-name dag-lst 0)) ; add slack space?
            (dag-parent-array-name 'simplify-xors-parent-array))

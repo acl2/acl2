@@ -231,7 +231,7 @@
                                                     dag-array
                                                     size-array-name)))
     ;; The size of the DAG is the size of its top node in the populated size-array:
-    (aref1 size-array-name size-array (top-nodenum dag))))
+    (aref1 size-array-name size-array (top-nodenum-of-dag dag))))
 
 (defthm natp-of-dag-size
   (implies (and (pseudo-dagp dag)

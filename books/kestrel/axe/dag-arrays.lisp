@@ -2226,7 +2226,7 @@
                   :split-types t)
            (type (integer 0 2147483646) slack-amount)
            (type symbol dag-array-name))
-  (let* ((dag-len (+ 1 (top-nodenum dag))) ;no need to search for the max key, since we know it's the top node
+  (let* ((dag-len (+ 1 (top-nodenum-of-dag dag))) ;no need to search for the max key, since we know it's the top node
          (length-with-slack (array-len-with-slack dag-len slack-amount)))
     (make-into-array-with-len dag-array-name dag length-with-slack)))
 
