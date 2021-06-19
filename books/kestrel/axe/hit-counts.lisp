@@ -266,7 +266,9 @@
 ;use this more?
 (defun print-hit-counts (print info all-rule-names)
   (declare (xargs :guard (and (info-worldp info)
-                              (symbol-listp all-rule-names))))
+                              (symbol-listp all-rule-names)))
+           (ignore all-rule-names ;todo)
+                   ))
   (let ((len (len info)))
     ;; TODO: We are transitioning to not counting hits for :brief printing
     (if (eq :brief print)
@@ -283,9 +285,13 @@
                   (if (eql 1 len)
                       (cw "(1 hit:~%~y0)" rule-count-alist)
                     (cw "(~x0 hits:~%~y1)" len rule-count-alist)))
-                (let* ((useful-rules (strip-cars rule-count-alist))
-                       (useless-rules (set-difference-eq all-rule-names useful-rules)))
-                  (cw "(~x0 Useless rules: ~x1.)~%" (len useless-rules) useless-rules)))))))
+                nil
+                ;;todo: put this back but make it a separate option, off by default:
+                ;; (let* ((useful-rules (strip-cars rule-count-alist))
+                ;;        (useless-rules (set-difference-eq all-rule-names useful-rules)))
+                ;;   (cw "(~x0 Useless rules: ~x1.)~%" (len useless-rules) useless-rules)
+                ;;   )
+                )))))
 
 ;; Make a hit count alist where each rule's count is its count in alist1 minus
 ;; its count in alist2.  We expect alist1 to be an "superset" (in the sense of
