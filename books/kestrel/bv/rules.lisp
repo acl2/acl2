@@ -6759,15 +6759,16 @@
 
 ;compare to UNSIGNED-BYTE-P-TIGHTEN and USB-HACK
 (defthm unsigned-byte-p-when-top-bit-0
-  (implies (and (equal free (getbit freeindex x))
+  (implies (and (equal free (getbit freeindex x)) ; free vars for poor man's backchain limit?
                 (equal 0 free)
                 (equal freeindex (+ -1 size))
-                (posp size)
-                )
+                (< 0 size))
            (equal (unsigned-byte-p size x)
-                  (unsigned-byte-p freeindex x)))
-  :hints (("Goal" :in-theory (e/d (posp) (EQUAL-OF-BVCHOP-AND-BVCHOP-SAME
-                                          BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE))
+                  (and (unsigned-byte-p freeindex x)
+                       (integerp size))))
+  :hints (("Goal" :in-theory (e/d (posp)
+                                  (equal-of-bvchop-and-bvchop-same
+                                   bvchop-when-top-bit-not-1-fake-free))
            :use (:instance split-with-bvcat (hs 1) (ls (+ -1 size))))))
 
 (defthmd logext-drop
