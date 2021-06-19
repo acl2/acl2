@@ -3200,6 +3200,9 @@
                                        exec-stmt-base-1
                                        exec-stmt-base-6
                                        exec-stmt-base-8
+                                       exec-stmt-while-base-1
+                                       exec-stmt-while-base-2
+                                       exec-stmt-while-base-4
                                        exec-block-item-list-base-1
                                        exec-block-item-list-base-3
                                        init-scope-base-2
