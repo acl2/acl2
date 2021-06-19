@@ -94,7 +94,7 @@
   :hints (("Goal" :expand ((renaming-arrayp-aux renaming-array-name (aset1 renaming-array-name renaming-array index val) index)
                            (renaming-arrayp-aux renaming-array-name (aset1 renaming-array-name renaming-array 0 val) 0))
            :cases ((equal index 0))
-           :in-theory (e/d () (myquotep)))))
+           :in-theory (disable myquotep))))
 
 (defthm dargp-of-aref1-when-renaming-arrayp-aux
   (implies (and (renaming-arrayp-aux renaming-array-name renaming-array nodenum)

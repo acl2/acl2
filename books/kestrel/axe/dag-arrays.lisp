@@ -32,6 +32,13 @@
 (in-theory (disable true-listp ;looped?
                     ))
 
+(defthmd len-bound-when-not-cddr
+  (implies (not (cddr x))
+           (<= (len x) 2))
+  :rule-classes :linear)
+
+(local (in-theory (enable len-bound-when-not-cddr)))
+
 (defthm memberp-of-nth-and-cdr
   (implies (posp n)
            (equal (memberp (nth n lst) (cdr lst))
@@ -486,9 +493,7 @@
                   (consp val)))
   :hints (("Goal" :in-theory (enable all-dargp-less-than memberp))))
 
-(in-theory (disable PSEUDO-DAG-ARRAYP-AUX))
-
-(defthm nth-when-not-cddr
+(defthmd nth-when-not-cddr
   (implies (and (not (cddr x))
                 (<= 2 n)
                 (natp n))
@@ -512,13 +517,6 @@
   :hints (("Goal" :in-theory (enable NTH-WHEN-<=-LEN))))
 
 
-
-(defthmd len-bound-when-not-cddr
-  (implies (not (cddr x))
-           (<= (len x) 2))
-  :rule-classes :linear)
-
-(local (in-theory (enable len-bound-when-not-cddr)))
 
 
 

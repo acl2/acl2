@@ -104,7 +104,7 @@
 (defthm all-integerp-of-mv-nth-0-of-split-list-fast
   (implies (all-integerp lst)
            (all-integerp (mv-nth 0 (split-list-fast lst))))
-  :hints (("Goal" :in-theory (e/d (split-list-fast) ()))))
+  :hints (("Goal" :in-theory (enable split-list-fast))))
 
 (defthm all-integerp-of-mv-nth-1-of-split-list-fast-aux
   (implies (all-integerp lst)
@@ -134,7 +134,7 @@
                 (true-listp lst))
            (all-integerp (merge-sort-< lst)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (merge-sort-<) ()))))
+           :in-theory (enable merge-sort-<))))
 
 (defthm all-dargp-less-than-of-merge-sort-<
   (implies (all-dargp-less-than items bound)
@@ -1072,8 +1072,7 @@
                               (bounded-translation-arrayp-aux (+ -1 old-dag-len) translation-array dag-len)
                               )
                   :split-types t
-                  :guard-hints (("Goal" :in-theory (e/d ()
-                                                        (dargp dargp-less-than natp))))))
+                  :guard-hints (("Goal" :in-theory (disable dargp dargp-less-than natp)))))
   (if (or (not (mbt (natp n)))
           (not (mbt (natp old-dag-len)))
           (prog2$ (and print (eql 0 (mod n 1000)) (cw "XORs node ~x0...~%" n))
