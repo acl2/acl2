@@ -1351,7 +1351,7 @@
   (declare (xargs :guard (and (pseudo-dagp dag-lst)
                               (<= (* 2 (len dag-lst)) 2147483646) ;todo
                               )
-                  :guard-hints (("Goal" :in-theory (disable pseudo-dag-arrayp natp quotep)))))
+                  :guard-hints (("Goal" :in-theory (e/d (top-nodenum-of-dag) (pseudo-dag-arrayp natp quotep))))))
   (if (not (intersection-eq '(bitxor bvxor) (dag-fns dag-lst))) ;; TODO: Optimize the check
       ;; nothing to do (TODO: We could do a bit better by selecting this case if there are bvxors but all are of non-constant size)
       ;; What if there is just one xor?
@@ -1361,7 +1361,7 @@
            (dag-len (len dag-lst))
            (top-nodenum (top-nodenum dag-lst))
            (dag-array-name 'simplify-xors-array) ;use a better name?
-           (dag-array (make-into-array dag-array-name dag-lst)) ;could pass in the len? ;add slack space?
+           (dag-array (make-dag-into-array dag-array-name dag-lst 0)) ; add slack space?
            (dag-parent-array-name 'simplify-xors-parent-array))
       (mv-let (dag-parent-array dag-constant-alist dag-variable-alist)
         (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len)

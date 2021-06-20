@@ -1,7 +1,7 @@
 ; A recognizer for alists that can be made into ACL2 arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -165,8 +165,7 @@
 (defthm bounded-integer-alistp-of-+-of-1-and-max-key
   (implies (and (natp-alistp alist)
                 (true-listp alist)
-                (integerp max-so-far)
-                )
+                (integerp max-so-far))
            (bounded-integer-alistp alist (+ 1 (max-key alist max-so-far))))
   :hints (("Goal" :in-theory (enable natp-alistp bounded-integer-alistp max-key))))
 
@@ -178,12 +177,27 @@
            (bounded-integer-alistp alist (+ 1 (max-key alist 0))))
   :hints (("Goal" :use (:instance bounded-integer-alistp-of-+-of-1-and-max-key (max-so-far 0)))))
 
+(defthm bounded-natp-alistp-of-+-of-1-and-max-key-0-when-bounded-natp-alistp
+  (implies (and (bounded-natp-alistp alist bound)
+                (true-listp alist)
+                )
+           (bounded-natp-alistp alist (+ 1 (max-key alist max-so-far))))
+  :hints (("Goal" :in-theory (enable bounded-natp-alistp
+                                     max-key))))
+
 (defthm max-key-linear-2
   (implies (and (bounded-natp-alistp alist bound)
                 (integerp max-so-far)
+                (integerp bound)
                 (< max-so-far bound))
-           (< (max-key alist max-so-far) bound))
-  :rule-classes ((:linear))
+           (<= (max-key alist max-so-far) (+ -1 bound)))
+  :rule-classes ((:linear :trigger-terms ((max-key alist max-so-far))))
   :hints (("Goal" :in-theory (enable max-key bounded-natp-alistp))))
 
-(in-theory (disable max-key))
+(defthm <-of-max-key
+  (implies (and (bounded-natp-alistp alist bound)
+                ;(integerp max-so-far)
+                ;(integerp bound)
+                (< max-so-far bound))
+           (< (max-key alist max-so-far) bound))
+  :hints (("Goal" :in-theory (enable max-key bounded-natp-alistp))))

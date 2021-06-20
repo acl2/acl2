@@ -1956,7 +1956,9 @@
            :do-not-induct t
            :expand ((:free (a) (array1p array-name (cons a dag-lst))))
            :in-theory (enable PSEUDO-DAGP
-                              pseudo-dag-arrayp-aux make-into-array
+                              pseudo-dag-arrayp-aux
+                              make-into-array
+                              make-into-array-with-len
                               array1p))))
 
 (defthm pseudo-dag-arrayp-aux-of-make-into-array-with-len
@@ -2216,17 +2218,17 @@
                               (symbolp dag-array-name)
                               (< (top-nodenum-of-dag dag)
                                  *maximum-1-d-array-length*)
-                              (posp slack-amount)
+                              (natp slack-amount)
                               (<= slack-amount 2147483646))
-                  :guard-hints (("Goal" :use (:instance bounded-natp-alistp-when-pseudo-dagp)
+                  :guard-hints (("Goal" :use (:instance bounded-natp-alistp-when-pseudo-dagp (dag-lst dag))
                                  :in-theory (e/d (car-of-car-when-pseudo-dagp-cheap
                                                   array-len-with-slack
                                                   top-nodenum-of-dag-becomes-top-nodenum)
                                                  (bounded-natp-alistp-when-pseudo-dagp))))
                   :split-types t)
-           (type (integer 1 2147483646) slack-amount)
+           (type (integer 0 2147483646) slack-amount)
            (type symbol dag-array-name))
-  (let* ((dag-len (+ 1 (top-nodenum dag))) ;no need to search for the max key, since we know it's a dag
+  (let* ((dag-len (+ 1 (top-nodenum dag))) ;no need to search for the max key, since we know it's the top node
          (length-with-slack (array-len-with-slack dag-len slack-amount)))
     (make-into-array-with-len dag-array-name dag length-with-slack)))
 
@@ -2261,6 +2263,7 @@
 ;; Convert DAG into an array named DAG-ARRAY-NAME, leaving SLACK-AMOUNT of
 ;; unused nodes if possible.
 ;; TODO: Use this more instead of make-into-array and make-dag-into-array.
+;; Similar to make-dag-into-array
 ;; Returns (mv erp dag-array).
 (defund make-dag-into-array2 (dag-array-name dag slack-amount)
   (declare (xargs :guard (and (pseudo-dagp dag)

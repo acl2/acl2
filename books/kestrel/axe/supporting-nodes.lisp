@@ -33,6 +33,8 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
+(local (include-book "kestrel/lists-light/cdr" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 
 (local (in-theory (disable (:i alistp))))
@@ -902,11 +904,14 @@
   (declare (xargs :guard (or (and (pseudo-dagp dag-or-quotep)
                                   (<= (car (car dag-or-quotep)) 2147483645))
                              (myquotep dag-or-quotep))
-                  :guard-hints (("Goal" :in-theory (enable pseudo-dagp)))))
+                  :guard-hints (("Goal" :in-theory (enable
+                                                    pseudo-dagp ;todo
+                                                    TOP-NODENUM-OF-DAG
+                                                    )))))
   (if (quotep dag-or-quotep)
       dag-or-quotep
     (let* ((dag-array-name 'dag-array-for-drop-non-supporters)
-           (dag-array (make-into-array dag-array-name dag-or-quotep))
+           (dag-array (make-dag-into-array dag-array-name dag-or-quotep 0))
            (top-nodenum (top-nodenum dag-or-quotep)))
       (drop-non-supporters-array dag-array-name
                                  dag-array
@@ -950,12 +955,20 @@
   :hints (("Goal" :use (:instance consp-of-drop-non-supporters)
            :in-theory (disable consp-of-drop-non-supporters))))
 
-;extracts the subdag with only the nodes needed to support the nodenum
+; Extracts the subdag with only the nodes needed to support NODENUM-OR-QUOTEP.
 ;this builds some arrays to do its job fast
 ;maybe some callers of this function would be okay with just the result of the nthcdr
 ;might have non-supporting pairs - but maybe they'll get simplified away anyway?
 ;on the other hand, it's probably better to throw them away before doing a rewrite?
 (defund get-subdag (nodenum-or-quotep dag)
+  (declare (xargs :guard (or (myquotep nodenum-or-quotep)
+                             (and (pseudo-dagp dag)
+                                  (natp nodenum-or-quotep)
+                                  (< nodenum-or-quotep (len dag))
+                                  (<= nodenum-or-quotep 2147483645)
+                                  ))
+                  :guard-hints (("Goal" :in-theory (enable car-of-nth-when-pseudo-dagp)))
+                  ))
   (if (quotep nodenum-or-quotep)
       nodenum-or-quotep
     (drop-non-supporters (nthcdr (+ -1 (- (len dag) nodenum-or-quotep)) dag) ;this requires the nodenums be consecutive
@@ -979,8 +992,7 @@
          (true-listp acc))
   :hints (("Goal" :in-theory (enable harvest-non-nil-indices))))
 
-;returns a list of the nodenums that support NODENUM
-;a node counts as its own supporter
+;; Returns a list of the nodenums that support NODENUM (a node counts as its own supporter).
 ;; See also make-supporters-array.
 ;; TODO: Make a version that builds in the array name (as 'tag-array-for-supporters?).
 ;; TODO: Make a variant that, instead of calling harvest-non-nil-indices, simply checks whether a given node of interest is among the supporters.

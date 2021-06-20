@@ -51,7 +51,7 @@
                   (bvlt (+ -1 size) x y)))
   :hints (("Goal" :in-theory (enable sbvlt bvlt))))
 
-;fixme weaken hyps to sbvle?  hmm. then it might loop?!
+;fixme weaken hyps to sbvle?  hmm. then it might loop when y is '0?!
 ;expensive..
 (defthmd sbvlt-becomes-bvlt
   (implies (and (sbvlt size 0 x)
@@ -64,5 +64,6 @@
                                   (y (bvchop size y))
                                   (size size))
            :in-theory (e/d (sbvlt <-of-0-and-logext-alt
-                                  unsigned-byte-p-of-bvchop-one-more)
+                                  unsigned-byte-p-of-bvchop-one-more
+                                  logext)
                            (sbvlt-becomes-bvlt-better)))))

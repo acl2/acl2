@@ -148,6 +148,13 @@
     (add-to-ruleset atc-openers (defopeners-names exec-stmt)))
 
   (progn
+    (defopeners exec-stmt-while
+      :hyps ((syntaxp (quote test))
+             (syntaxp (quote body)))
+      :disable t)
+    (add-to-ruleset atc-openers (defopeners-names exec-stmt-while)))
+
+  (progn
     (defopeners exec-block-item
       :hyps ((syntaxp item))
       :disable t)
@@ -287,6 +294,8 @@
     (:e stmt-ifelse->then)
     (:e stmt-kind)
     (:e stmt-return->value)
+    (:e stmt-while->test)
+    (:e stmt-while->body)
     (:e tyname)
     (:e type-kind)
     (:e type-name-to-type)

@@ -272,9 +272,17 @@
 
 (defthm
   abs-directory-file-p-of-abs-file
-  (implies (abs-file-alist-p contents)
-           (abs-directory-file-p (abs-file d-e contents)))
+  (equal (abs-directory-file-p (abs-file d-e contents))
+         (abs-file-alist-p (abs-file-contents-fix contents)))
   :hints (("goal" :in-theory (enable abs-directory-file-p))))
+
+(defthm collapse-hifat-place-file-lemma-58
+  (implies (and (member-equal n contents)
+                (abs-file-contents-p contents))
+           (abs-file-alist-p contents))
+  :hints (("goal" :do-not-induct t
+           :in-theory (e/d (abs-file-contents-p) nil)))
+  :rule-classes (:forward-chaining :rewrite))
 
 (defthm
   abs-directory-file-p-when-m1-file-p-lemma-1
@@ -903,6 +911,15 @@
            (abs-fs-p fs))
   :hints (("goal" :do-not-induct t
            :in-theory (enable abs-fs-p))))
+
+(defthm
+  abs-mkdir-correctness-lemma-48
+  (implies (and (abs-fs-p fs2) (consp fs2))
+           (abs-file-alist-p (cons (car fs2) 'nil)))
+  :hints (("goal" :in-theory (enable abs-fs-p
+                                     abs-file-alist-p)
+           :do-not-induct t
+           :expand (abs-file-alist-p (list (car fs2))))))
 
 (defthm abs-addrs-of-remove-assoc-lemma-1
   (implies (and (consp (car x))
@@ -3843,6 +3860,22 @@
   :hints (("goal" :in-theory (e/d (absfat-subsetp abs-no-dups-p) nil)
            :induct (put-assoc-equal name val abs-file-alist1))
           ("subgoal *1/2" :expand (abs-no-dups-p abs-file-alist1))))
+
+(defthm
+  abs-mkdir-correctness-lemma-46
+  (implies (abs-fs-p x)
+           (absfat-subsetp (cdr x) x))
+  :hints (("goal" :do-not-induct t
+           :in-theory (e/d (absfat-subsetp abs-file-alist-p abs-fs-p)
+                           (absfat-subsetp-of-append-2))
+           :use (:instance absfat-subsetp-of-append-2 (x (cdr x))
+                           (y (list (car x)))
+                           (z (cdr x)))
+           :expand (abs-file-alist-p x)))
+  :rule-classes ((:rewrite :corollary (implies (and (abs-fs-p x)
+                                                    (absfat-subsetp x y)
+                                                    (abs-file-alist-p y))
+                                               (absfat-subsetp (cdr x) y)))))
 
 (defund
   absfat-equiv

@@ -4,7 +4,7 @@
 
 # Java Library
 #
-# Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+# Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 #
 # License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 #
@@ -20,8 +20,9 @@
 # because AIJ's recursive evaluation uses much more stack space
 # than typical Java programs.
 
-# This file assumes that OpenJDK Java 14 is in the path,
-# but it may well work with other Java versions or implementations.
+# This file assumes that
+# a Java 8 (or later) compiler and related tools (e.g. the latest OpenJDK)
+# is in the path.
 
 ################################################################################
 

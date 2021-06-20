@@ -710,7 +710,7 @@
                      (not (eql nodenum (darg1 parent-expr)))
                      (not (eql nodenum (darg3 parent-expr))))
                 ;;nodenum is the then-branch (but not the else-branch or the test), so add the test to the context for nodenum:
-                (conjoin-contexts (context-representing-node (darg1 parent-expr) dag-array-name dag-array dag-len) ;(get-context-equivalent-to-node (darg1 parent-expr) dag-array-name dag-array)
+                (conjoin-contexts (context-representing-node (darg1 parent-expr) dag-array-name dag-array dag-len)
                                   parent-context)
               (if (and (eql nodenum (darg3 parent-expr))
                        (not (eql nodenum (darg1 parent-expr)))
@@ -729,7 +729,7 @@
                        (not (eql nodenum (darg2 parent-expr)))
                        (not (eql nodenum (darg4 parent-expr))))
                   ;;nodenum is the then-branch but not the else-branch (or the test or the size), so add the test to the context:
-                  (conjoin-contexts (context-representing-node (darg2 parent-expr) dag-array-name dag-array dag-len) ;(get-context-equivalent-to-node (darg2 parent-expr) dag-array-name dag-array)
+                  (conjoin-contexts (context-representing-node (darg2 parent-expr) dag-array-name dag-array dag-len)
                                     parent-context)
                 (if (and (eql nodenum (darg4 parent-expr))
                          (not (eql nodenum (darg1 parent-expr)))
@@ -803,6 +803,11 @@
            (context (disjoin-contexts-of-parents (rest parent-nodenums) nodenum dag-array-name dag-array dag-len context-array context-via-first-parent)))
       (aset1 'context-array context-array nodenum context))))
 
+(defthmd <-of-car-when-all->
+  (implies (and (all-> parent-nodenums nodenum)
+                (consp parent-nodenums))
+           (< nodenum (car parent-nodenums))))
+
 (defthm context-arrayp-of-set-context-of-nodenum
   (implies (and (context-arrayp 'context-array context-array len)
                 (natp nodenum)
@@ -832,9 +837,13 @@
                   (alen1 'context-array context-array)))
   :hints (("Goal" :in-theory (enable set-context-of-nodenum))))
 
-;would it be faster to just take a non-array and cdr down it?
-;nodenum counts down
-;returns 'context-array, which associates nodenums with their contextps
+;;;
+;;; make-full-context-array-aux
+;;;
+
+;; Go top-down from NODENUM, filling in the context array.  Assumes we started at the top node and so will cover all ways a node can be reached from the top.
+;; Returns the context-array, named 'context-array, which associates nodenums with their contextps.
+;; It might seem faster to just take the dag as a list and cdr down it, but we need the dag to be an array so we can quickly dig conjunctions out of dag nodes.
 (defun make-full-context-array-aux (nodenum dag-array-name dag-array dag-len dag-parent-array context-array)
   (declare (xargs :guard (and (integerp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -863,6 +872,18 @@
            (equal (alen1 'context-array (make-full-context-array-aux nodenum dag-array-name dag-array dag-len dag-parent-array context-array))
                   (alen1 'context-array context-array))))
 
+(defthm context-arrayp-of-make-full-context-array-aux
+  (implies (and (integerp nodenum)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (dag-parent-arrayp 'dag-parent-array dag-parent-array)
+                (context-arrayp 'context-array context-array dag-len)
+                ;; not necesarly equal:
+                (<= dag-len (alen1 'dag-parent-array dag-parent-array))
+                (bounded-dag-parent-entriesp (+ -1 dag-len) 'dag-parent-array dag-parent-array dag-len)
+                (< nodenum dag-len))
+           (context-arrayp 'context-array (make-full-context-array-aux nodenum dag-array-name dag-array dag-len dag-parent-array context-array) dag-len))
+  :hints (("Goal" :in-theory (enable make-full-context-array-aux len-when-pseudo-dagp))))
+
 ;returns 'context-array, which associates nodenums with their contextps
 ;; Use make-full-context-array instead if you don't already have the parent array.
 (defun make-full-context-array-with-parents (dag-array-name dag-array dag-len dag-parent-array)
@@ -885,14 +906,24 @@
                                                      context-array)))
     context-array))
 
+(defthm context-arrayp-of-make-full-context-array-with-parents
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (posp dag-len)
+                (<= dag-len 2147483646)
+                (dag-parent-arrayp 'dag-parent-array dag-parent-array)
+                ;; not necesarly equal:
+                (<= dag-len (alen1 'dag-parent-array dag-parent-array))
+                (bounded-dag-parent-entriesp (+ -1 dag-len) 'dag-parent-array dag-parent-array dag-len))
+           (context-arrayp 'context-array (make-full-context-array-with-parents dag-array-name dag-array dag-len dag-parent-array) dag-len))
+  :hints (("Goal" :in-theory (enable make-full-context-array-with-parents))))
+
 ;new version! deprecate the old way of doing things (already done?)?
 ;returns 'context-array, which associates nodenums with their contextps
 ;smashes 'dag-parent-array
 ;; Use make-full-context-array-with-parents instead if you already have the parent array.
 (defun make-full-context-array (dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (posp dag-len)
-                              (<= dag-len 2147483646))))
+                              (posp dag-len))))
   (make-full-context-array-with-parents dag-array-name
                                         dag-array
                                         dag-len
@@ -900,6 +931,12 @@
                                                                          dag-array-name
                                                                          dag-array
                                                                          'dag-parent-array)))
+
+(defthm context-arrayp-of-make-full-context-array
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (posp dag-len))
+           (context-arrayp 'context-array (make-full-context-array dag-array-name dag-array dag-len) dag-len))
+  :hints (("Goal" :in-theory (enable make-full-context-array))))
 
 ;returns t, nil, or :unknown, depending on whether the context tells us anything about nodenum (fixme what if nodenum is the nodenum of a booland, a not, etc.?)
 ;fixme what if the context is (false-context)?

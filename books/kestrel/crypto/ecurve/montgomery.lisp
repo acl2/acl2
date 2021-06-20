@@ -1093,46 +1093,40 @@
                          point2)))
     :disable t
     :proof
-    ((:assume (:closure (montgomery-add-closure)))
+    ((:let (point1+point2 (montgomery-add point1 point2 curve)))
+     (:let (-point1 (montgomery-neg point1 curve)))
+     (:let (-point2 (montgomery-neg point2 curve)))
+     (:assume (:closure (montgomery-add-closure)))
      (:assume (:associativity (montgomery-add-associativity)))
      (:assume (:point1 (and (pointp point1)
                             (point-on-montgomery-p point1 curve))))
      (:assume (:point2 (and (pointp point2)
                             (point-on-montgomery-p point2 curve))))
-     (:assume (:add-is-zero (equal (montgomery-add point1 point2 curve)
-                                   (montgomery-zero))))
-     (:derive (:add-neg-point1 (equal (montgomery-add
-                                       (montgomery-neg point1 curve)
-                                       (montgomery-add point1 point2 curve)
-                                       curve)
-                                      (montgomery-add
-                                       (montgomery-neg point1 curve)
-                                       (montgomery-zero)
-                                       curve)))
+     (:assume (:add-is-zero (equal point1+point2 (montgomery-zero))))
+     (:derive (:add-neg-point1 (equal (montgomery-add -point1
+                                                      point1+point2
+                                                      curve)
+                                      (montgomery-add -point1
+                                                      (montgomery-zero)
+                                                      curve)))
       :from (:add-is-zero))
-     (:derive (:add-neg-point2 (equal (montgomery-add
-                                       (montgomery-add point1 point2 curve)
-                                       (montgomery-neg point2 curve)
-                                       curve)
-                                      (montgomery-add
-                                       (montgomery-zero)
-                                       (montgomery-neg point2 curve)
-                                       curve)))
+     (:derive (:add-neg-point2 (equal (montgomery-add point1+point2
+                                                      -point2
+                                                      curve)
+                                      (montgomery-add (montgomery-zero)
+                                                      -point2
+                                                      curve)))
       :from (:add-is-zero))
-     (:derive (:point1-is-neg-point2 (equal (montgomery-neg point2 curve)
-                                            point1))
+     (:derive (:point1-is-neg-point2 (equal -point2 point1))
       :from (:add-neg-point2 :point1 :point2
              :associativity :closure))
-     (:derive (:point2-is-neg-point1 (equal (montgomery-neg point1 curve)
-                                            point2))
+     (:derive (:point2-is-neg-point1 (equal -point1 point2))
       :from (:add-neg-point1 :point1 :point2
              :associativity :closure)
       :hints (("Goal" :in-theory (e/d (montgomery-add-associative-left)
                                       (montgomery-add-associative-right)))))
-     (:derive (:conclusion (and (equal (montgomery-neg point2 curve)
-                                       point1)
-                                (equal (montgomery-neg point1 curve)
-                                       point2)))
+     (:derive (:conclusion (and (equal -point2 point1)
+                                (equal -point1 point2)))
       :from (:point1-is-neg-point2 :point2-is-neg-point1))
      (:qed))))
 
@@ -1178,7 +1172,6 @@
                   (equal (point-fix point1)
                          (point-fix point2))))
   :use lemma
-  :disable lemma
   :prep-lemmas
   ((acl2::defisar
     lemma
@@ -1191,6 +1184,7 @@
                          (montgomery-add point point2 curve)))
              (equal (point-fix point1)
                     (point-fix point2)))
+    :disable t
     :proof
     ((:assume (:closure (montgomery-add-closure)))
      (:assume (:associativity (montgomery-add-associativity)))
@@ -1199,13 +1193,11 @@
      (:assume (:point2 (point-on-montgomery-p point2 curve)))
      (:assume (:equality (equal (montgomery-add point point1 curve)
                                 (montgomery-add point point2 curve))))
-     (:derive (:add-neg (equal
-                         (montgomery-add (montgomery-neg point curve)
-                                         (montgomery-add point point1 curve)
-                                         curve)
-                         (montgomery-add (montgomery-neg point curve)
-                                         (montgomery-add point point2 curve)
-                                         curve)))
+     (:let (-point (montgomery-neg point curve)))
+     (:let (point+point1 (montgomery-add point point1 curve)))
+     (:let (point+point2 (montgomery-add point point2 curve)))
+     (:derive (:add-neg (equal (montgomery-add -point point+point1 curve)
+                               (montgomery-add -point point+point2 curve)))
       :from (:equality))
      (:derive (:same-point (equal (point-fix point1)
                                   (point-fix point2)))
@@ -1247,36 +1239,32 @@
                                     curve)))
     :disable t
     :proof
-    ((:assume (:closure (montgomery-add-closure)))
+    ((:let (-point1 (montgomery-neg point1 curve)))
+     (:let (-point2 (montgomery-neg point2 curve)))
+     (:let (point1+point2 (montgomery-add point1 point2 curve)))
+     (:let (-point1+-point2 (montgomery-add -point1 -point2 curve)))
+     (:assume (:closure (montgomery-add-closure)))
      (:assume (:assoc (montgomery-add-associativity)))
      (:assume (:point1 (point-on-montgomery-p point1 curve)))
      (:assume (:point2 (point-on-montgomery-p point2 curve)))
      (:derive
       (:swap-point1-point2
-       (equal (montgomery-add (montgomery-add point1 point2 curve)
-                              (montgomery-add (montgomery-neg point1 curve)
-                                              (montgomery-neg point2 curve)
-                                              curve)
+       (equal (montgomery-add point1+point2
+                              -point1+-point2
                               curve)
               (montgomery-add (montgomery-add point2 point1 curve)
-                              (montgomery-add (montgomery-neg point1 curve)
-                                              (montgomery-neg point2 curve)
-                                              curve)
+                              -point1+-point2
                               curve)))
       :from (:point1 :point2))
      (:derive
       (:assoc-right
        (equal (montgomery-add (montgomery-add point2 point1 curve)
-                              (montgomery-add (montgomery-neg point1 curve)
-                                              (montgomery-neg point2 curve)
-                                              curve)
+                              -point1+-point2
                               curve)
               (montgomery-add point2
                               (montgomery-add point1
-                                              (montgomery-add (montgomery-neg
-                                                               point1 curve)
-                                                              (montgomery-neg
-                                                               point2 curve)
+                                              (montgomery-add -point1
+                                                              -point2
                                                               curve)
                                               curve)
                               curve)))
@@ -1286,19 +1274,14 @@
       (:assoc-left
        (equal (montgomery-add point2
                               (montgomery-add point1
-                                              (montgomery-add (montgomery-neg
-                                                               point1 curve)
-                                                              (montgomery-neg
-                                                               point2 curve)
-                                                              curve)
+                                              -point1+-point2
                                               curve)
                               curve)
               (montgomery-add point2
                               (montgomery-add (montgomery-add point1
-                                                              (montgomery-neg
-                                                               point1 curve)
+                                                              -point1
                                                               curve)
-                                              (montgomery-neg point2 curve)
+                                              -point2
                                               curve)
                               curve)))
       :from (:assoc :closure :point1 :point2)
@@ -1308,28 +1291,25 @@
       (:simplify
        (equal (montgomery-add point2
                               (montgomery-add (montgomery-add point1
-                                                              (montgomery-neg
-                                                               point1 curve)
+                                                              -point1
                                                               curve)
-                                              (montgomery-neg point2 curve)
+                                              -point2
                                               curve)
                               curve)
               (montgomery-zero)))
       :from (:point1 :point2))
      (:derive
       (:inverse
-       (equal (montgomery-add (montgomery-add point1 point2 curve)
-                              (montgomery-add (montgomery-neg point1 curve)
-                                              (montgomery-neg point2 curve)
-                                              curve)
+       (equal (montgomery-add point1+point2
+                              -point1+-point2
                               curve)
               (montgomery-zero)))
       :from (:swap-point1-point2 :assoc-right :assoc-left :simplify))
      (:derive
       (:conclusion
-       (equal (montgomery-neg (montgomery-add point1 point2 curve) curve)
-              (montgomery-add (montgomery-neg point1 curve)
-                              (montgomery-neg point2 curve)
+       (equal (montgomery-neg point1+point2 curve)
+              (montgomery-add -point1
+                              -point2
                               curve)))
       :from (:inverse :closure :assoc :point1 :point2)
       :hints (("Goal" :use (:instance montgomery-add-zero-right-is-neg
@@ -1618,29 +1598,26 @@
      (:assume (:scalar1 (and (integerp scalar1) (>= scalar1 0))))
      (:assume (:scalar2 (and (integerp scalar2) (<= scalar2 0))))
      (:assume (:scalar1+2 (>= (+ scalar1 scalar2) 0)))
+     (:let (scalar1*point (montgomery-mul scalar1 point curve)))
+     (:let (scalar2*point (montgomery-mul scalar2 point curve)))
      (:derive (:add-and-sub
                (equal (montgomery-mul (+ scalar1 scalar2) point curve)
                       (montgomery-add
                        (montgomery-mul (+ scalar1 scalar2) point curve)
-                       (montgomery-add
-                        (montgomery-neg (montgomery-mul scalar2 point curve) curve)
-                        (montgomery-mul scalar2 point curve)
-                        curve)
+                       (montgomery-add (montgomery-neg scalar2*point curve)
+                                       scalar2*point
+                                       curve)
                        curve)))
       :from (:point :closure)
       :hints (("Goal" :in-theory (disable montgomery-neg-of-mul))))
      (:derive (:simplify
                (equal (montgomery-add
                        (montgomery-mul (+ scalar1 scalar2) point curve)
-                       (montgomery-add
-                        (montgomery-neg
-                         (montgomery-mul scalar2 point curve) curve)
-                        (montgomery-mul scalar2 point curve)
-                        curve)
+                       (montgomery-add (montgomery-neg scalar2*point curve)
+                                       scalar2*point
+                                       curve)
                        curve)
-                      (montgomery-add (montgomery-mul scalar1 point curve)
-                                      (montgomery-mul scalar2 point curve)
-                                      curve)))
+                      (montgomery-add scalar1*point scalar2*point curve)))
       :from (:associativity :closure :point :scalar1+2 :scalar1 :scalar2)
       :hints
       (("Goal"
@@ -1650,9 +1627,7 @@
                          montgomery-add-commutative)))))
      (:derive (:conclusion
                (equal (montgomery-mul (+ scalar1 scalar2) point curve)
-                      (montgomery-add (montgomery-mul scalar1 point curve)
-                                      (montgomery-mul scalar2 point curve)
-                                      curve)))
+                      (montgomery-add scalar1*point scalar2*point curve)))
       :from (:add-and-sub :simplify))
      (:qed))))
 
@@ -1831,17 +1806,14 @@
      (:assume (:scalar (and (integerp scalar) (< scalar 0))))
      (:assume (:scalar1 (integerp scalar1)))
      (:assume (:point (point-on-montgomery-p point curve)))
+     (:let (scalar1*point (montgomery-mul scalar1 point curve)))
      (:derive (:lhs-to-intermediate
                (equal (montgomery-mul scalar
-                                      (montgomery-mul scalar1
-                                                      point
-                                                      curve)
+                                      scalar1*point
                                       curve)
                       (montgomery-neg
                        (montgomery-mul (- scalar)
-                                       (montgomery-mul scalar1
-                                                       point
-                                                       curve)
+                                       scalar1*point
                                        curve)
                        curve)))
       :from (:closure :point :scalar)
@@ -1853,18 +1825,14 @@
      (:derive (:intermediate-to-rhs
                (equal (montgomery-neg
                        (montgomery-mul (- scalar)
-                                       (montgomery-mul scalar1
-                                                       point
-                                                       curve)
+                                       scalar1*point
                                        curve)
                        curve)
                       (montgomery-mul (* scalar scalar1) point curve)))
       :from (:closure :associativity :point :scalar :scalar1))
      (:derive (:lhs-to-rhs
                (equal (montgomery-mul scalar
-                                      (montgomery-mul scalar1
-                                                      point
-                                                      curve)
+                                      scalar1*point
                                       curve)
                       (montgomery-mul (* scalar scalar1) point curve)))
       :from (:lhs-to-intermediate :intermediate-to-rhs))
@@ -2001,10 +1969,11 @@
      (:derive (:order-not-zero (not (equal order 0)))
       :from (:point-order)
       :hints (("Goal" :in-theory (enable montgomery-point-orderp))))
+     (:let (floor*order+mod (+ (* (floor scalar order) order)
+                               (mod scalar order))))
      (:derive (:decompose-scalar
                (equal (montgomery-mul scalar point curve)
-                      (montgomery-mul (+ (* (floor scalar order) order)
-                                         (mod scalar order))
+                      (montgomery-mul floor*order+mod
                                       point
                                       curve)))
       :from (:scalar :order)
@@ -2012,8 +1981,7 @@
                :use (:instance decompose-floor-mod (x scalar) (y order))
                :in-theory (disable floor mod))))
      (:derive (:reduce-to-mod
-               (equal (montgomery-mul (+ (* (floor scalar order) order)
-                                         (mod scalar order))
+               (equal (montgomery-mul floor*order+mod
                                       point
                                       curve)
                       (montgomery-mul (mod scalar order) point curve)))

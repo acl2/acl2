@@ -157,6 +157,7 @@
 ;; (include-book "prover-basic-tests")
 (include-book "prover-common")
 (include-book "prover-stress-test")
+(include-book "prune-with-contexts")
 (include-book "rational-lists")
 (include-book "rebuild-literals")
 (include-book "rebuild-nodes2")

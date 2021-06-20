@@ -43,7 +43,13 @@
 
   "@('hyps') is the list of hypotheses of @('formula')."
 
-  "@('concl') is the conclusion of @('formula')")
+  "@('concl') is the conclusion of @('formula')"
+
+  "@('facts') is an alist from keyword that identify facts
+   to information about those facts."
+
+  "@('bindings') is an alist from variable symbols to formulas,
+   corresponding to the @(':let') bindings.")
 
  :default-parent t)
 
@@ -121,6 +127,7 @@
                         (hyps true-listp)
                         (events pseudo-event-form-listp)
                         (facts keyword-fact-info-alistp)
+                        (bindings symbol-alistp)
                         ctx
                         state)
   :returns (mv erp
@@ -138,7 +145,10 @@
      which must be a list of a keyword and a formula.
      The keyword must not be already the name of a fact.
      We do not check the formula here;
-     we implicitly check it when the generated theorem is submitted."))
+     we implicitly check it when the generated theorem is submitted.")
+   (xdoc::p
+    "The bindings are reversed before being put into the formula,
+     because they are @(tsee cons)ed as go through the @(':let')s."))
   (b* (((unless (tuplep 1 assume-args))
         (er-soft+ ctx t (list nil nil)
                   "Malformed :ASSUME arguments ~x0." assume-args))
@@ -157,11 +167,16 @@
        (thm-formula (if (consp hyps)
                         `(implies (and ,@hyps) ,assume-fact)
                       assume-fact))
+       (thm-formula (if bindings
+                        `(let* ,(rev (alist-to-doublets bindings))
+                           ,thm-formula)
+                      thm-formula))
        (thm-hints '(("Goal" :in-theory nil)))
-       (thm-event `(local (defthm ,thm-name
-                            ,thm-formula
-                            :hints ,thm-hints
-                            :rule-classes nil)))
+       (thm-event `(local
+                    (defthm ,thm-name
+                      ,thm-formula
+                      :hints ,thm-hints
+                      :rule-classes nil)))
        (thm-event (restore-output thm-event))
        (print-event `(cw-event "~%~%~%~s0~%~x1~%~%"
                                "****************************************"
@@ -173,6 +188,40 @@
   ///
   (more-returns
    (result true-listp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defisar-let (let-args
+                     (bindings symbol-alistp)
+                     ctx
+                     state)
+  :returns (mv erp
+               (new-bindings symbol-alistp :hyp (symbol-alistp bindings))
+               state)
+  :short "Execute a @(':let') command."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A @(':let') command takes exactly one argument,
+     which must be a list of a variable symbol and a term.
+     The variable symbol must not be already bound.
+     We do no check he term here:
+     we implicitly check it when the bound variable is used."))
+  (b* (((unless (tuplep 1 let-args))
+        (er-soft+ ctx t nil
+                  "Malformed :LET arguments ~x0." let-args))
+       (let-var+term (car let-args))
+       ((unless (tuplep 2 let-var+term))
+        (er-soft+ ctx t nil
+                  "Malformed :LET argument ~x0." let-var+term))
+       (let-var (first let-var+term))
+       (let-term (second let-var+term))
+       ((unless (symbolp let-var))
+        (er-soft+ ctx t nil
+                  "The variable ~x0 must be a symbol." let-var))
+       ((when (consp (assoc-eq let-var bindings)))
+        (er-soft+ ctx t nil "Duplicate variable ~x0." let-var)))
+    (value (acons let-var let-term bindings))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -201,6 +250,7 @@
                         (name symbolp)
                         (events pseudo-event-form-listp)
                         (facts keyword-fact-info-alistp)
+                        (bindings symbol-alistp)
                         ctx
                         state)
   :returns (mv erp
@@ -211,6 +261,11 @@
                                  (keyword-fact-info-alistp facts)))
                state)
   :short "Execute a @(':derive') command."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The bindings are reversed before being put into the formula,
+     because they are @(tsee cons)ed as go through the @(':let')s."))
   (b* (((mv okp derive-id derive-fact derive-from derive-hints)
         (case-match derive-args
           (((id fact)) (mv t id fact nil nil))
@@ -236,11 +291,16 @@
        (thm-formula (if (consp thm-hyps)
                         `(implies (and ,@thm-hyps) ,derive-fact)
                       derive-fact))
+       (thm-formula (if bindings
+                        `(let* ,(rev (alist-to-doublets bindings))
+                           ,thm-formula)
+                      thm-formula))
        (thm-hints derive-hints)
-       (thm-event `(local (defthm ,thm-name
-                            ,thm-formula
-                            :hints ,thm-hints
-                            :rule-classes nil)))
+       (thm-event `(local
+                    (defthm ,thm-name
+                      ,thm-formula
+                      :hints ,thm-hints
+                      :rule-classes nil)))
        (thm-event (restore-output thm-event))
        (print-event `(cw-event "~%~%~%~s0~%~x1~%~%"
                                "****************************************"
@@ -284,6 +344,7 @@
                           (hyps true-listp)
                           (events pseudo-event-form-listp)
                           (facts keyword-fact-info-alistp)
+                          (bindings symbol-alistp)
                           (disable booleanp)
                           ctx
                           state)
@@ -312,18 +373,24 @@
       (:assume (b* (((mv erp (list events facts) state)
                      (defisar-assume (cdr command)
                        name hyps
-                       events facts ctx state))
+                       events facts bindings ctx state))
                     ((when erp) (mv erp nil state)))
                  (defisar-commands (cdr commands)
                    name formula hyps
-                   events facts disable ctx state)))
+                   events facts bindings disable ctx state)))
+      (:let (b* (((mv erp bindings state)
+                  (defisar-let (cdr command) bindings ctx state))
+                 ((when erp) (mv erp nil state)))
+              (defisar-commands (cdr commands)
+                name formula hyps
+                events facts bindings disable ctx state)))
       (:derive (b* (((mv erp (list events facts) state)
                      (defisar-derive (cdr command)
-                       name events facts ctx state))
+                       name events facts bindings ctx state))
                     ((when erp) (mv erp nil state)))
                  (defisar-commands (cdr commands)
                    name formula hyps
-                   events facts disable ctx state)))
+                   events facts bindings disable ctx state)))
       (:qed (b* (((run-unless (endp (cdr commands)))
                   (cw "Commands found after :QED." (cdr commands))))
               (value
@@ -343,8 +410,8 @@
   :short "Execute a proof."
   (b* (((mv hyps &) (defisar-formula-to-hyps+concl formula))
        ((er events)
-        (defisar-commands commands name formula hyps nil nil disable
-          ctx state)))
+        (defisar-commands
+          commands name formula hyps nil nil nil disable ctx state)))
     (value (rev events)))
   :prepwork
   ((defrulel rev-of-pseudo-event-form-listp
@@ -372,7 +439,9 @@
         (defisar-proof proof name formula disable ctx state))
        ((when erp) (mv erp '(_) state)))
     (value `(progn
-              (encapsulate () ,@events)
+              (encapsulate ()
+                (set-ignore-ok t)
+                ,@events)
               (value-triple :invisible)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
