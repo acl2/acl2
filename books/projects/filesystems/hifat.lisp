@@ -1356,12 +1356,13 @@
 
 (defthm
   take-of-fat32-filename-list-fix
-  (implies (< (nfix n) (len x))
+  (implies (<= (nfix n) (len x))
            (equal (take n (fat32-filename-list-fix x))
                   (fat32-filename-list-fix (take n x))))
   :hints
-  (("goal" :in-theory (e/d (fat32-filename-list-fix)
-                           (take-of-too-many take-when-atom take-of-cons)))))
+  (("goal"
+    :in-theory (e/d (fat32-filename-list-fix)
+                    (take-of-too-many take-when-atom take-of-cons)))))
 
 (defthm
   prefixp-of-fat32-filename-list-fix
