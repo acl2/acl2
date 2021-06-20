@@ -840,7 +840,7 @@
 ;;                                  nodenums)))
 ;;  :hints (("Goal" :in-theory (enable nat-listp))))
 
-;takes an array but returns a dag-lst
+;; Takes a dag-array but returns a dag.
 ;smashes the arrays 'tag-array and 'translation-array
 ;bad to use the name 'tag-array here?
 ;better to use a worklist algorithm? maybe not..
