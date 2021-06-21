@@ -135,6 +135,8 @@
 (include-book "make-substitution-code-simple")
 (include-book "make-term-into-dag-array-simple")
 (include-book "make-term-into-dag-array-basic")
+(include-book "make-term-into-dag-simple")
+(include-book "make-term-into-dag-basic")
 (include-book "match-hyp-with-nodenum-to-assume-false")
 (include-book "math-rules")
 (include-book "memoization")
