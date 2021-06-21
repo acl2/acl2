@@ -24,6 +24,7 @@
 ;;;
 
 ;; TODO: Strengthen to say that the dag-parent-array is actually correct.
+;; TODO: Rename wf-dag-arrayp ("well-formed DAG array")
 (defund wf-dagp (dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
   (declare (xargs :guard t))
   (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -65,6 +66,12 @@
 (defthm wf-dagp-forward-to-<=-of-len
   (implies (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
            (and (<= dag-len 2147483646)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable wf-dagp))))
+
+(defthmd <-of-len-when-wf-dagp
+  (implies (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+           (< dag-len 2147483647))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable wf-dagp))))
 
