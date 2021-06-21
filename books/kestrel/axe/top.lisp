@@ -133,6 +133,7 @@
 (include-book "make-prover-simple")
 (include-book "make-rewriter-simple")
 (include-book "make-substitution-code-simple")
+(include-book "make-term-into-dag-array-simple")
 (include-book "make-term-into-dag-array-basic")
 (include-book "match-hyp-with-nodenum-to-assume-false")
 (include-book "math-rules")
