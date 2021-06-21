@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "prune-with-contexts")
-(include-book "make-term-into-dag-basic")
+(include-book "make-term-into-dag-simple")
 (include-book "dag-to-term")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
@@ -25,7 +25,7 @@
                   :guard-hints (("Goal" :in-theory (disable myquotep)))
                   :guard-debug t
                   ))
-  (b* (((mv erp dag-or-quotep) (make-term-into-dag-basic term nil)) ;todo: use a version that doesn't simplify/eval!
+  (b* (((mv erp dag-or-quotep) (make-term-into-dag-simple term)) ;todo: use a version that doesn't simplify/eval!
        ((when erp)
         (er hard? 'prunes-to "Error making term into dag.")
         nil)
@@ -43,4 +43,12 @@
       (er hard? 'prunes-to "Term ~x0 did not prune to ~x1.  Instead, as we got ~x2." term expected-result-term result-term))))
 
 (assert-event (prunes-to 'a 'a))
-;(assert-event (prunes-to '(cons '1 '2) '3)) ;todo: the constant gets computed before pruning
+(assert-event (prunes-to '(cons '1 '2) '(cons '1 '2)))
+(assert-event (prunes-to '(if 't a b) 'a))
+(assert-event (prunes-to '(if '3 a b) 'a))
+(assert-event (prunes-to '(if 'nil a b) 'b))
+(assert-event (prunes-to '(if x (if x y z) w) '(if x y w)))
+(assert-event (prunes-to '(if x w (if x y z)) '(if x w z)))
+(assert-event (prunes-to '(if (not x) (if x y z) w) '(if (not x) z w)))
+(assert-event (prunes-to '(if (not x) w (if x y z)) '(if (not x) w y)))
+;; TODO: Add more tests!
