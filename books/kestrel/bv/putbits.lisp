@@ -72,3 +72,9 @@
                 )
            (equal (slice high low (putbits width high low val bv))
                   (bvchop (+ 1 high (- low)) val))))
+
+(defthm putbit-of-bvchop-same
+  (implies (natp width)
+           (equal (putbit width n val (bvchop width bv))
+                  (putbit width n val bv)))
+  :hints (("Goal" :in-theory (enable putbit))))
