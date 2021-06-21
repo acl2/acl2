@@ -257,16 +257,24 @@ the other keyword arguments are unused.  For example:</p>
            '(local (def-ruleset! clone-stobj-tmp-rules nil))
            (clone-stobj-rewrites new-defs old-defs))))
 
-(defun clone-absstobj-exports (exports absstobj-tuples renaming concrete world)
-  (b* (((when (atom exports)) nil)
-       ((list* ?!name logic exec updater) (car absstobj-tuples))
-       (new-sym (clone-stobj-change-symbol (car exports) renaming))
+(defun clone-absstobj-exports (absstobj-tuples exports renaming concrete world)
+  (b* (((when (atom absstobj-tuples)) nil)
+       ((list* name logic exec updater) (car absstobj-tuples))
+       (name-export-lookup (assoc-eq name exports))
+       (new-sym (if name-export-lookup
+                    (cdr name-export-lookup)
+                  (clone-stobj-change-symbol name renaming)))
+       (updater (and updater
+                     (b* ((updater-export-lookup (assoc-eq updater exports)))
+                       (if updater-export-lookup
+                           (cdr updater-export-lookup)
+                         (clone-stobj-change-symbol updater renaming)))))
        (protect (acl2::unprotected-export-p concrete exec world)))
     (cons `(,new-sym :logic ,logic :exec ,exec
                      ,@(and updater `(:updater ,updater))
                      :protect ,protect)
           (clone-absstobj-exports
-           (cdr exports) (cdr absstobj-tuples) renaming concrete world))))
+           (cdr absstobj-tuples) exports renaming concrete world))))
 
 (defun clone-absstobj-fn (stobjname name renaming user-exports world)
   (b* ((abs-info (fgetprop stobjname 'acl2::absstobj-info nil world))
@@ -276,15 +284,16 @@ the other keyword arguments are unused.  For example:</p>
           (,?!creator-name ,create-logic ,create-exec)
           . ,export-absstobj-tuples)
         abs-info)
-       (`(,& ,?pred ,?create . ,exports) stobj-info)
-       (exports (or user-exports exports))
+       (`(,& ,?pred ,?create . ,?exports) stobj-info)
+       (exports (and user-exports
+                     (pairlis$ (strip-cars export-absstobj-tuples) user-exports)))
        (creator (acl2::defstobj-fnname name :creator :top nil))
        (recognizer (acl2::defstobj-fnname name :recognizer :top nil)))
     `(defabsstobj ,name
-       :foundation ,concrete
+       :concrete ,concrete
        :recognizer (,recognizer :logic ,recog-logic :exec ,recog-exec)
        :creator (,creator :logic ,create-logic :exec ,create-exec)
-       :exports ,(clone-absstobj-exports exports export-absstobj-tuples
+       :exports ,(clone-absstobj-exports export-absstobj-tuples exports
                                          renaming
                                          ;; needed for computing :protect args
                                          concrete world)
