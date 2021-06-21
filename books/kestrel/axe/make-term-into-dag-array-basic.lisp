@@ -159,3 +159,16 @@
   :hints (("Goal" :in-theory (e/d (make-term-into-dag-array-basic
                                    merge-terms-into-dag-array-basic)
                                   (posp natp dargp)))))
+
+;; We use consp as the normal forma
+(defthm myquotep-of-mv-nth-1-of-make-term-into-dag-array-basic
+  (implies (and (pseudo-termp term)
+                (symbolp dag-array-name)
+                (symbolp dag-parent-array-name)
+                (interpreted-function-alistp interpreted-function-alist)
+                ;; no error:
+                (not (mv-nth 0 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist))))
+           (equal (myquotep (mv-nth 1 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist)))
+                  (consp (mv-nth 1 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist)))))
+  :hints (("Goal" :use dargp-of-mv-nth-1-of-make-term-into-dag-array-basic
+           :in-theory (disable dargp-of-mv-nth-1-of-make-term-into-dag-array-basic))))

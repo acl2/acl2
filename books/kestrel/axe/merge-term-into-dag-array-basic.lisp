@@ -15,13 +15,12 @@
 ;; The functions in this book use the basic evaluator to evaluate ground terms.
 
 (include-book "dag-array-builders2")
-(include-book "axe-trees")
-;(include-book "def-dag-builder-theorems")
 (include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "evaluator-basic")
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp2" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system)) ;why does this break a proof below?
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -32,13 +31,6 @@
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
 ;; this version does not handle embedded dags
-
-;dup
-(local
- (defthm pseudo-termp-of-nth
-   (implies (pseudo-term-listp l)
-            (pseudo-termp (nth n l)))
-   :hints (("Goal" :in-theory (e/d (pseudo-term-listp nth) (nth-of-cdr))))))
 
 (local (in-theory (enable integerp-when-natp)))
 
@@ -61,6 +53,16 @@
                            wf-dagp-expander
                            wf-dagp
                            member-equal)))
+
+(defthmd true-listp-of-nth-1-of-nth-0-when-pseudo-termp
+  (implies (and (pseudo-termp term)
+                ;; (consp (nth 0 term))
+                )
+           (TRUE-LISTP (NTH 1 (NTH 0 TERM))))
+  :hints (("Goal" :expand (PSEUDO-TERMP TERM)
+           :cases ((consp (nth 0 term)))
+           :in-theory (enable pseudo-termp))))
+
 
 (defthm lookup-equal-forward-to-assoc-equal
   (implies (lookup-equal key alist)
@@ -113,7 +115,7 @@
 ;; TODO: Consider handling other versions of IF top-down.
 ;; TODO: Include subst in the name since this also substitutes for vars.
 (mutual-recursion
- ;; This one can replace vars in term using var-replacement-alist.
+ ;; This one can replace vars in term using var-replacement-alist (helps us deal with lambdas).
  ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
  ;; where nodenum-or-quotep is equivalent to the term passed in, and nodes already in the dag remain unchanged (and the aux. data structures have been updated, of course)
  (defund merge-term-into-dag-array-basic (term
@@ -552,7 +554,7 @@
            :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic car-becomes-nth-of-0
                                                       not-equal-of-len-and-1-when-dargp
                                                       <-of-nth-when-all-dargp-less-than
-                                                      true-listp-of-nth-1-of-nth-0-when-axe-treep
+                                                      true-listp-of-nth-1-of-nth-0-when-pseudo-termp
                                                       ALL-MYQUOTEP-WHEN-ALL-DARGP)
                            (natp dargp pseudo-term-listp pseudo-termp)))))
 

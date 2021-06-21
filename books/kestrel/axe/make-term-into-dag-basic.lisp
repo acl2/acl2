@@ -48,7 +48,7 @@
                 (not (mv-nth 0 (make-term-into-dag-basic term interpreted-function-alist))))
            (or (pseudo-dagp (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist)))
                (myquotep (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist)))))
-  :hints (("Goal" :in-theory (e/d (make-term-into-dag-basic) (natp)))))
+  :hints (("Goal" :in-theory (e/d (make-term-into-dag-basic) (natp myquotep)))))
 
 (defthm pseudo-dagp-of-mv-nth-1-of-make-term-into-dag-basic
   (implies (and (pseudo-termp term)
