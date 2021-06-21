@@ -51,4 +51,22 @@
 (assert-event (prunes-to '(if x w (if x y z)) '(if x w z)))
 (assert-event (prunes-to '(if (not x) (if x y z) w) '(if (not x) z w)))
 (assert-event (prunes-to '(if (not x) w (if x y z)) '(if (not x) w y)))
+
+(assert-event (prunes-to '(if (booland x x2) (if x y z) w) '(if (booland x x2) y w)))
+(assert-event (prunes-to '(if (boolor x x2) w (if x y z)) '(if (boolor x x2) w z)))
+
+;; TODO: Get this to work?
+;; (assert-event (prunes-to '(if (booland x x2) (if (booland x2 x) y z) w) '(if (booland x x2) y w)))
+
+(assert-event (prunes-to
+               '(myif (not (< a b))
+                      (myif (booland (< a b) (w c d))
+                            x
+                            y)
+                      z ;; could put (booland (< a b) (w c d)) here, to prevent context from helping rewrite the booland (if we get smarted about booland)
+                      )
+               '(myif (not (< a b))
+                      y
+                      z)))
+
 ;; TODO: Add more tests!
