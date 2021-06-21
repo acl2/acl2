@@ -142,6 +142,7 @@
 (include-book "merge-sort-by-cdr-greater")
 (include-book "merge-sort-less-than")
 (include-book "merge-sort-less-than-rules")
+(include-book "merge-term-into-dag-array-simple")
 (include-book "merge-term-into-dag-array-basic")
 (include-book "merge-tree-into-dag-array-basic")
 (include-book "sublis-var-and-eval-basic")
