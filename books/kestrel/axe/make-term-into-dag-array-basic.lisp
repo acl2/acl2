@@ -16,54 +16,9 @@
 
 (include-book "merge-term-into-dag-array-basic")
 
-;; Returns (mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array
-;; dag-constant-alist dag-variable-alist), where nodenums-or-quoteps are
-;; equivalent to the TERMS passed in.
-(defund make-terms-into-dag-array-basic (terms dag-array-name dag-parent-array-name interpreted-function-alist)
-  (declare (xargs :guard (and (pseudo-term-listp terms)
-                              (symbolp dag-array-name)
-                              (symbolp dag-parent-array-name)
-                              (interpreted-function-alistp interpreted-function-alist))))
-  (merge-terms-into-dag-array-basic terms
-                                    nil ;initial var-replacement-alist
-                                    (make-empty-array dag-array-name 1000) ;fixme why 1000?
-                                    0 ;initial dag-len
-                                    (make-empty-array dag-parent-array-name 1000)
-                                    nil  ;empty dag-constant-alist
-                                    nil  ;empty dag-variable-alist
-                                    dag-array-name dag-parent-array-name
-                                    interpreted-function-alist))
-
-(defthm wf-dagp-of-make-terms-into-dag-array-basic
-  (implies (and (pseudo-term-listp terms)
-                (symbolp dag-array-name)
-                (symbolp dag-parent-array-name)
-                (interpreted-function-alistp interpreted-function-alist)
-                (not (mv-nth 0 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
-           (mv-let (erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-             (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist)
-             (declare (ignore erp nodenums-or-quoteps))
-             (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)))
-  :hints (("Goal" :in-theory (enable make-terms-into-dag-array-basic))))
-
-(defthm all-dargp-less-than-of-mv-nth-1-of-make-terms-into-dag-array-basic
-  (implies (and (pseudo-term-listp terms)
-                (symbolp dag-array-name)
-                (symbolp dag-parent-array-name)
-                (interpreted-function-alistp interpreted-function-alist)
-                (not (mv-nth 0 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
-           (all-dargp-less-than (mv-nth 1 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))
-                                (mv-nth 3 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
-  :hints (("Goal" :in-theory (enable make-terms-into-dag-array-basic))))
-
-(defthm true-listp-of-mv-nth-1-of-make-terms-into-dag-array-basic
-  (implies (and (pseudo-term-listp terms)
-                (symbolp dag-array-name)
-                (symbolp dag-parent-array-name)
-                (interpreted-function-alistp interpreted-function-alist)
-                (not (mv-nth 0 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
-           (true-listp (mv-nth 1 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
-  :hints (("Goal" :in-theory (enable make-terms-into-dag-array-basic))))
+;;;
+;;; make-term-into-dag-array-basic
+;;;
 
 ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array
 ;; dag-constant-alist dag-variable-alist), where nodenum-or-quotep is
@@ -172,3 +127,56 @@
                   (consp (mv-nth 1 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist)))))
   :hints (("Goal" :use dargp-of-mv-nth-1-of-make-term-into-dag-array-basic
            :in-theory (disable dargp-of-mv-nth-1-of-make-term-into-dag-array-basic))))
+
+;;;
+;;; make-terms-into-dag-array-basic
+;;;
+
+;; Returns (mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array
+;; dag-constant-alist dag-variable-alist), where nodenums-or-quoteps are
+;; equivalent to the TERMS passed in.
+(defund make-terms-into-dag-array-basic (terms dag-array-name dag-parent-array-name interpreted-function-alist)
+  (declare (xargs :guard (and (pseudo-term-listp terms)
+                              (symbolp dag-array-name)
+                              (symbolp dag-parent-array-name)
+                              (interpreted-function-alistp interpreted-function-alist))))
+  (merge-terms-into-dag-array-basic terms
+                                    nil ;initial var-replacement-alist
+                                    (make-empty-array dag-array-name 1000) ;fixme why 1000?
+                                    0 ;initial dag-len
+                                    (make-empty-array dag-parent-array-name 1000)
+                                    nil  ;empty dag-constant-alist
+                                    nil  ;empty dag-variable-alist
+                                    dag-array-name dag-parent-array-name
+                                    interpreted-function-alist))
+
+(defthm wf-dagp-of-make-terms-into-dag-array-basic
+  (implies (and (pseudo-term-listp terms)
+                (symbolp dag-array-name)
+                (symbolp dag-parent-array-name)
+                (interpreted-function-alistp interpreted-function-alist)
+                (not (mv-nth 0 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
+           (mv-let (erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+             (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist)
+             (declare (ignore erp nodenums-or-quoteps))
+             (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)))
+  :hints (("Goal" :in-theory (enable make-terms-into-dag-array-basic))))
+
+(defthm all-dargp-less-than-of-mv-nth-1-of-make-terms-into-dag-array-basic
+  (implies (and (pseudo-term-listp terms)
+                (symbolp dag-array-name)
+                (symbolp dag-parent-array-name)
+                (interpreted-function-alistp interpreted-function-alist)
+                (not (mv-nth 0 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
+           (all-dargp-less-than (mv-nth 1 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))
+                                (mv-nth 3 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
+  :hints (("Goal" :in-theory (enable make-terms-into-dag-array-basic))))
+
+(defthm true-listp-of-mv-nth-1-of-make-terms-into-dag-array-basic
+  (implies (and (pseudo-term-listp terms)
+                (symbolp dag-array-name)
+                (symbolp dag-parent-array-name)
+                (interpreted-function-alistp interpreted-function-alist)
+                (not (mv-nth 0 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
+           (true-listp (mv-nth 1 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
+  :hints (("Goal" :in-theory (enable make-terms-into-dag-array-basic))))
