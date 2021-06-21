@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "prune-with-contexts")
-(include-book "make-term-into-dag-array-basic")
+(include-book "make-term-into-dag-basic")
 (include-book "dag-to-term")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 

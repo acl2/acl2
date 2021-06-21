@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "make-term-into-dag-array-basic")
+(include-book "make-term-into-dag-basic")
 
 (assert-event
  (mv-let (erp dag-or-quotep)
