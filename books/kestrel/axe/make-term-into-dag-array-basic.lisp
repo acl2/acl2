@@ -14,6 +14,8 @@
 
 ;; The functions in this book use the basic evaluator to evaluate ground terms.
 
+;; See also make-term-into-dag-array-simple.lisp.
+
 (include-book "merge-term-into-dag-array-basic")
 
 ;;;

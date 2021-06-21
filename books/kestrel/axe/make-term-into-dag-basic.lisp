@@ -12,6 +12,8 @@
 
 (in-package "ACL2")
 
+;; See also make-term-into-dag-simple.lisp.
+
 (include-book "make-term-into-dag-array-basic")
 
 ;;;
