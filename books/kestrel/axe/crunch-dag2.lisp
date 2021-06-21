@@ -227,7 +227,7 @@
            (ignore dag-len))
   (b* (((mv renamed-nodenums dag)
         (drop-non-supporters-array-node-list dag-array-name dag-array nodenums))
-       (dag-len (+ 1 (top-nodenum dag)))
+       (dag-len (+ 1 (top-nodenum-of-dag dag)))
        (slack-amount dag-len)
        (dag-array (make-dag-into-array dag-array-name dag slack-amount)))
     (mv dag-array dag-len renamed-nodenums)))

@@ -54,8 +54,7 @@
                 (natp index)
                 (integerp n))
            (translation-arrayp-aux n (aset1 'translation-array translation-array index val)))
-  :hints (("Goal" :expand ()
-           :in-theory (e/d (translation-arrayp-aux) (myquotep)))))
+  :hints (("Goal":in-theory (e/d (translation-arrayp-aux) (myquotep)))))
 
 (defthm translation-arrayp-aux-of-make-empty-array
   (implies (and (natp len)
@@ -303,7 +302,7 @@
                 (integerp bound))
            (not (< (+ -1 bound)
                    (nth n args))))
-  :hints (("Goal" :in-theory (e/d (all-dargp-less-than (:i nth)) ()))))
+  :hints (("Goal" :in-theory (enable all-dargp-less-than (:i nth)))))
 
 ;dup
 (defthmd not-<-of-one-less-and-nth

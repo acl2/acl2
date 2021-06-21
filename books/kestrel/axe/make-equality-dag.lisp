@@ -35,12 +35,12 @@
               (mv (erp-nil) *t*)
             (mv (erp-nil) *nil*))
         ;;only dag1 is a quotep:
-        (let ((top-nodenum (top-nodenum dag2)))
+        (let ((top-nodenum (top-nodenum-of-dag dag2)))
           (mv (erp-nil)
               (acons-fast (+ 1 top-nodenum) `(equal ,dag1 ,top-nodenum) dag2))))
     (if (quotep dag2)
         ;;only dag2 is a quotep:
-        (let ((top-nodenum (top-nodenum dag1)))
+        (let ((top-nodenum (top-nodenum-of-dag dag1)))
           (mv (erp-nil)
               (acons-fast (+ 1 top-nodenum) `(equal ,dag2 ,top-nodenum) dag1)))
       ;;both are dag-lsts (we'll merge the smaller one into the larger one):
@@ -119,11 +119,11 @@
 ;;               *t*
 ;;             *nil*)
 ;;         ;;only dag1 is a quotep:
-;;         (let ((top-nodenum (top-nodenum dag2)))
+;;         (let ((top-nodenum (top-nodenum-of-dag dag2)))
 ;;           (acons-fast (+ 1 top-nodenum) `(equal ,dag1 ,top-nodenum) dag2)))
 ;;     (if (quotep dag2)
 ;;         ;;only dag2 is a quotep:
-;;         (let ((top-nodenum (top-nodenum dag1)))
+;;         (let ((top-nodenum (top-nodenum-of-dag dag1)))
 ;;           (acons-fast (+ 1 top-nodenum) `(equal ,dag2 ,top-nodenum) dag1))
 ;;       ;;both are dag-lsts (we'll merge the larger one into the smaller one):
 ;;       (let* ((dag-len1 (len dag1))

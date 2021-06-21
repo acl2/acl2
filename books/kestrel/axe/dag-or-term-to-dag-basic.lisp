@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "make-term-into-dag-array-basic")
+(include-book "make-term-into-dag-basic")
 (include-book "kestrel/utilities/translate" :dir :system)
 
 ;; Returns (mv erp dag-or-quotep).

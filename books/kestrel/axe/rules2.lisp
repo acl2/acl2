@@ -1747,7 +1747,7 @@
 ;;                 )
 ;;            (equal (bvcat highsize highval lowsize lowval)
 ;;                   (bvcat highsize (bvchop highsize highval) lowsize lowval)))
-;;   :hints (("Goal" :in-theory (e/d (bvcat) ()))))
+;;   :hints (("Goal" :in-theory (enable bvcat))))
 
 ;; (thm
 ;;  (implies (and (unsigned-byte-p 1 x)

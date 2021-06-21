@@ -66,10 +66,9 @@
                                                         (array-name 'assumption-array)
                                                         (array assumption-array)
                                                         (index nodenum))
-                                 :in-theory (e/d ()
-                                                 (natp
-                                                  myquotep
-                                                  type-of-aref1-when-assumption-arrayp))))))
+                                 :in-theory (disable natp
+                                                     myquotep
+                                                     type-of-aref1-when-assumption-arrayp)))))
   (if (not (< nodenum assumption-array-num-valid-nodes))
       nodenum ; no replacement possible
     (let ((assumption-info (aref1 'assumption-array assumption-array nodenum)))

@@ -104,9 +104,10 @@
   :hints (("Goal" :in-theory (enable node-replacement-alistp))))
 
 ;; Separate so we can profile it
-(defun assoc-in-node-replacement-alist (nodenum node-replacement-alist)
+(defund assoc-in-node-replacement-alist (nodenum node-replacement-alist)
   (declare (xargs :guard (and (natp nodenum)
-                              ;;(node-replacement-alistp node-replacement-alist)
                               (alistp node-replacement-alist)
+                              ;; can't call this unless dag-len is passed in:
+                              ;; (node-replacement-alistp node-replacement-alist dag-len)
                               )))
   (assoc nodenum node-replacement-alist))

@@ -795,10 +795,9 @@
          (bitnot (getbit 0 (ifix index))))
   :hints (("Goal"
            :expand (NTH (GETBIT 0 INDEX) '(1 0))
-           :in-theory (e/d (bitnot bv-array-read ;LIST::NTH-OF-CONS
+           :in-theory (enable bitnot bv-array-read ;LIST::NTH-OF-CONS
                                    GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
-                                   )
-                           ()))))
+                                   ))))
 
 ;; ;yuck?
 ;; (defthmd myif-of-constant-lists
@@ -871,8 +870,7 @@
                 (< 0 n))
            (equal (all-signed-byte-p n x)
                   (all-unsigned-byte-p (+ -1 n) x)))
-  :hints (("Goal" :in-theory (e/d (all-signed-byte-p all-unsigned-byte-p)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable all-signed-byte-p all-unsigned-byte-p))))
 
 ;yuck?
 ;; (defthm all-signed-byte-p-of-bv-array-write
@@ -1152,10 +1150,10 @@
            :cases ((and (equal 1 (getbit 0 a)) (equal 1 (getbit 0 b)))
                    (and (not (equal 1 (getbit 0 a))) (equal 1 (getbit 0 b)))
                    (and (equal 1 (getbit 0 a)) (not (equal 1 (getbit 0 b)))))
-           :in-theory (e/d () ( ;GETBIT-WHEN-NOT-0
-;GETBIT-WHEN-NOT-1
+           :in-theory (disable ;GETBIT-WHEN-NOT-0
+                       ;;GETBIT-WHEN-NOT-1
                                NTH-OF-BVCAT-BECOMES-NTH2
-                               )))))
+                               ))))
 
 (defthmd nth-of-if-arg2
   (equal (nth n (if test a b))
@@ -1348,7 +1346,7 @@
                 (< INDEX LEN))
            (equal (bv-array-write esize len index val data)
                   (bv-array-write 1 len index val data)))
-  :hints (("Goal" :in-theory (e/d (UPDATE-NTH2 BV-ARRAY-WRITE) ()))))
+  :hints (("Goal" :in-theory (enable UPDATE-NTH2 BV-ARRAY-WRITE))))
 
 (defthm bv-array-read-of-myif
   (equal (bv-array-read esize len index (myif test x y))
@@ -1938,7 +1936,7 @@
 ;;                (all-unsigned-byte-p esize lst)))
 ;;  :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;           :induct t
-;;           :in-theory (e/d (update-nth all-unsigned-byte-p) ()))))
+;;           :in-theory (enable update-nth all-unsigned-byte-p)))
 
 (in-theory (disable TRUE-LISTP))
 
@@ -2428,7 +2426,7 @@
                 (natp element-size))
            (equal (unsigned-byte-p-forced n (bv-array-read element-size len index data))
                   t))
-  :hints (("Goal" :in-theory (e/d (unsigned-byte-p-forced) ()))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
 (defthm force-of-non-nil
   (implies x
@@ -2983,7 +2981,7 @@
 (defthm bv-array-clear-of-true-list-fix
   (equal (bv-array-clear elem-size len index (true-list-fix lst))
          (bv-array-clear elem-size len index lst))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-clear))))
 
 (defthm BV-ARRAY-CLEAR-RANGE-of-true-list-fix
   (implies (and (<= lowindex highindex)
@@ -2991,7 +2989,7 @@
                 (natp highindex))
            (equal (BV-ARRAY-CLEAR-RANGE ELEM-SIZE len lowindex highindex (TRUE-LIST-FIX LST))
                   (BV-ARRAY-CLEAR-RANGE ELEM-SIZE len lowindex highindex LST)))
-  :hints (("Goal" :in-theory (e/d (BV-ARRAY-CLEAR-RANGE) ()))))
+  :hints (("Goal" :in-theory (enable BV-ARRAY-CLEAR-RANGE))))
 
 (defthm bv-array-clear-whole-range
   (implies (and (equal i (+ -1 len))
@@ -3024,7 +3022,7 @@
 (defthm bv-array-clear-of-firstn
   (equal (bv-array-clear element-size len index (firstn len data))
          (bv-array-clear element-size len index data))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-clear))))
 
 (defthm bv-array-clear-of-bv-array-write-better
   (implies (and (not (equal key1 key2))
@@ -3322,7 +3320,7 @@
                 (integerp len))
            (equal (bv-array-read width len index (bv-array-write width len index val lst))
                   (bvchop width val)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read-opener bv-array-write-opener) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener bv-array-write-opener))))
 
 ;move these?
 (defthmd bv-array-read-of-bv-array-write-both-better-work-hard

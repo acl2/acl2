@@ -4834,7 +4834,7 @@
 ;;            (b* ( ;(dummy (cw " ~x0 prover rules (print ~x1).~%" (len prover-rules) print)) ;drop?
 ;; ;          (dummy (cw "print-timeout-goalp:  ~x0" print-timeout-goalp))
 ;;                 (dag-array (make-into-array 'dag-array dag))
-;;                 (top-nodenum (top-nodenum dag))
+;;                 (top-nodenum (top-nodenum-of-dag dag))
 ;;                 (dag-len (+ 1 top-nodenum))
 ;;                 (negated-assumptions (negate-terms assumptions))
 ;;                 (max-context-nodenum (max-nodenum-in-context context)) ;pass in? ;fixme have this return nil instead of -1

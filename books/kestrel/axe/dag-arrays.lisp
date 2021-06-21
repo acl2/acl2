@@ -32,6 +32,13 @@
 (in-theory (disable true-listp ;looped?
                     ))
 
+(defthmd len-bound-when-not-cddr
+  (implies (not (cddr x))
+           (<= (len x) 2))
+  :rule-classes :linear)
+
+(local (in-theory (enable len-bound-when-not-cddr)))
+
 (defthm memberp-of-nth-and-cdr
   (implies (posp n)
            (equal (memberp (nth n lst) (cdr lst))
@@ -486,9 +493,7 @@
                   (consp val)))
   :hints (("Goal" :in-theory (enable all-dargp-less-than memberp))))
 
-(in-theory (disable PSEUDO-DAG-ARRAYP-AUX))
-
-(defthm nth-when-not-cddr
+(defthmd nth-when-not-cddr
   (implies (and (not (cddr x))
                 (<= 2 n)
                 (natp n))
@@ -512,13 +517,6 @@
   :hints (("Goal" :in-theory (enable NTH-WHEN-<=-LEN))))
 
 
-
-(defthmd len-bound-when-not-cddr
-  (implies (not (cddr x))
-           (<= (len x) 2))
-  :rule-classes :linear)
-
-(local (in-theory (enable len-bound-when-not-cddr)))
 
 
 
@@ -2228,7 +2226,7 @@
                   :split-types t)
            (type (integer 0 2147483646) slack-amount)
            (type symbol dag-array-name))
-  (let* ((dag-len (+ 1 (top-nodenum dag))) ;no need to search for the max key, since we know it's the top node
+  (let* ((dag-len (+ 1 (top-nodenum-of-dag dag))) ;no need to search for the max key, since we know it's the top node
          (length-with-slack (array-len-with-slack dag-len slack-amount)))
     (make-into-array-with-len dag-array-name dag length-with-slack)))
 

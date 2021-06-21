@@ -8,21 +8,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;; Data Strutctures ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+Major data structures used by Axe:
+  term - pseudo-termp
+  dag - pseudo-dagp (or sometimes weak-dagp)
+  dag-array - pseudo-dag-arrayp
+  dag-array with accompanying indices (dag-parent-array, dag-constant-alist, dag-variable-alist) - wf-dagp
+
+;;; Conversions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+Converting a term to a dag:
+  Using the basic-evaluator for ground terms: make-term-into-dag-basic
+
+Converting a term to a dag-array:
+  Using the basic-evaluator for ground terms: make-term-into-dag-array-basic
+
+Converting a dag to a dag-array:
+  make-into-array (TODO: Use make-dag-into-array instead?)
+  also make-dag-into-array and make-dag-into-array2
+
+Converting a dag-array to a dag:
+  array-to-alist (TODO: Make a function dag-array-to-dag)
+
+Converting a dag to a term (may explode!):
+  dag-to-term (but see also "Dropping non-supporters" below)
+  dag-to-term-with-lets
+  dag-to-term-with-lets-simple
+
 Functions to build dag-arrays:
   dag-array-builder2.lisp: Assume the standard array names
   dag-array-builders2.lisp: Take the array names as arguments
   dag-array-builders3.lisp: Assume the standard array names, update the memoization
 
-DAG algorithms:
+Building auxiliary data structures for a dag-array: make-dag-indices
+
+;;; Algorithms ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 By "dag" we mean a DAG represented as a list (see pseudo-dagp).
-
-To convert a dag to a dag-array:
-  make-into-array (TODO: Use make-dag-into-array instead?)
-  also make-dag-into-array and make-dag-into-array2
-
-To convert a dag-array to a dag:
-  array-to-alist
 
 DAG Size (number of nodes in corresponding tree):
  of an entire dag: dag-size in dag-size.lisp (bottom-up, TODO: Make a version that doesn't go to an array)
