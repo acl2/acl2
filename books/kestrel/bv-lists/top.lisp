@@ -25,6 +25,7 @@
 
 (include-book "bits-to-byte")
 (include-book "bits-to-byte-little")
+(include-book "bits-to-byte-little-rules")
 (include-book "bits-to-bytes")
 (include-book "bits-to-bytes2")
 (include-book "bits-to-bytes-little")
