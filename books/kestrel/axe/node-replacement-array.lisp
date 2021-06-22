@@ -51,7 +51,7 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable strip-cars max-key))))
 
-(defthm ALL-DARGP-LESS-THAN-of-strip-cdrs-of-cdr
+(defthm all-dargp-less-than-of-strip-cdrs-of-cdr
   (implies (all-dargp-less-than (strip-cdrs alist) bound)
            (all-dargp-less-than (strip-cdrs (cdr alist)) bound)))
 

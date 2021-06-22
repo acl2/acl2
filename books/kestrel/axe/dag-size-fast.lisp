@@ -206,14 +206,14 @@
 ;; Smashes the array named 'size-array.
 (defund make-size-array-for-dag (dag)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (< (top-nodenum dag) 2147483646) ;gen?
+                              (< (top-nodenum-of-dag dag) 2147483646) ;gen?
                               )))
   (make-size-array-for-rev-dag-aux (reverse-list dag)
-                                   (make-empty-array 'size-array (+ 1 (top-nodenum dag)))))
+                                   (make-empty-array 'size-array (+ 1 (top-nodenum-of-dag dag)))))
 
 (defthm size-arrayp-of-make-size-array-for-dag
   (implies (and (pseudo-dagp dag)
-                (< (top-nodenum dag) 2147483646)
+                (< (top-nodenum-of-dag dag) 2147483646)
                 (<= bound (len dag))
                 (natp bound))
            (size-arrayp 'size-array
@@ -225,7 +225,7 @@
 
 (defthm alen1-of-make-size-array-for-dag
   (implies (and (pseudo-dagp dag)
-                (< (top-nodenum dag) 2147483646))
+                (< (top-nodenum-of-dag dag) 2147483646))
            (equal (alen1 'size-array (make-size-array-for-dag dag))
                   (len dag)))
   :hints (("Goal" :in-theory (enable make-size-array-for-dag
@@ -249,7 +249,7 @@
                                                  (size-arrayp-of-make-size-array-for-dag))))))
   (aref1 'size-array
          (make-size-array-for-dag dag)
-         (top-nodenum dag)))
+         (top-nodenum-of-dag dag)))
 
 (defthm natp-of-dag-size-fast
   (implies (and (pseudo-dagp dag)

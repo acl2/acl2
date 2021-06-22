@@ -163,18 +163,18 @@
   (equal (<-all a (append x y))
          (and (<-all a x)
               (<-all a y)))
-  :hints (("Goal" :in-theory (e/d (<-all reverse-list) ()))))
+  :hints (("Goal" :in-theory (enable <-all reverse-list))))
 
 (defthm <-all-of-reverse-list
   (equal (<-all a (reverse-list x))
          (<-all a x))
-  :hints (("Goal" :in-theory (e/d (<-all reverse-list) ()))))
+  :hints (("Goal" :in-theory (enable <-all reverse-list))))
 
 (defthm <-all-revappend
   (equal (<-all a (revappend x y))
          (and (<-all a x)
               (<-all a y)))
-  :hints (("Goal" :in-theory (e/d (all-> revappend-lemma) ()))))
+  :hints (("Goal" :in-theory (enable all-> revappend-lemma))))
 
 (defthm <-all-of-mv-nth-0-of-split-list-fast-aux
   (implies (and (<-all a lst)

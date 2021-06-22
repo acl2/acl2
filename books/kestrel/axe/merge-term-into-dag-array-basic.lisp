@@ -1,7 +1,7 @@
 ; Utilities to merge terms into dags (and to convert terms into dags).
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,18 +12,15 @@
 
 (in-package "ACL2")
 
-;; This uses the basic evaluator.
+;; The functions in this book use the basic evaluator to evaluate ground terms.
 
 (include-book "dag-array-builders2")
-(include-book "renaming-array")
-;(include-book "supporting-nodes")
-(include-book "axe-trees")
-;(include-book "def-dag-builder-theorems")
 (include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "evaluator-basic")
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp2" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system)) ;why does this break a proof below?
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -35,17 +32,19 @@
 
 ;; this version does not handle embedded dags
 
-;dup
-(local
- (defthm pseudo-termp-of-nth
-   (implies (pseudo-term-listp l)
-            (pseudo-termp (nth n l)))
-   :hints (("Goal" :in-theory (e/d (pseudo-term-listp nth) (nth-of-cdr))))))
-
 (local (in-theory (enable integerp-when-natp)))
 
 (local (in-theory (disable consp-from-len-cheap
-                           ;;use-all-consp-for-car
+                           use-all-consp-for-car
+                           USE-ALL-CONSP
+                           USE-ALL-CONSP-2
+                           NTH-WHEN-NOT-CONSP-CHEAP
+                           NTH-WHEN-ZP-CHEAP
+                           ALL-CONSP-WHEN-NOT-CONSP
+                           NAT-LISTP
+                           ALL-DARGP-LESS-THAN-WHEN-ALL-< ;limit?
+                           ALL-<-OF-ALEN1-WHEN-PSEUDO-DAG-ARRAYP-LIST
+                           NTH-WHEN-<=-LEN-CHEAP
                            default-+-2
                            default-car
                            default-cdr
@@ -53,7 +52,21 @@
                            symbol-alistp ;don't induct
                            wf-dagp-expander
                            wf-dagp
-                           member-equal)))
+                           member-equal
+                           use-all-<-for-car
+                           all-dargp-less-than-when-<-of-largest-non-quotep
+                           ;;all-dargp-less-than-when-all-consp
+                           strip-cdrs
+                           )))
+
+(defthmd true-listp-of-nth-1-of-nth-0-when-pseudo-termp
+  (implies (and (pseudo-termp term)
+                ;; (consp (nth 0 term))
+                )
+           (true-listp (nth 1 (nth 0 term))))
+  :hints (("Goal" :expand (pseudo-termp term)
+           :cases ((consp (nth 0 term)))
+           :in-theory (enable pseudo-termp))))
 
 (defthm lookup-equal-forward-to-assoc-equal
   (implies (lookup-equal key alist)
@@ -76,10 +89,11 @@
            (dargp-less-than (lookup-equal term var-replacement-alist) dag-len))
   :hints (("Goal" :in-theory (enable lookup-equal))))
 
-(local (in-theory (disable use-all-<-for-car
-                           all-dargp-less-than-when-<-of-largest-non-quotep
-                           ;all-dargp-less-than-when-all-consp
-                           )))
+(defthmd consp-of-lookup-equal-when-all-myquotep-of-strip-cdrs
+  (implies (and (all-myquotep (strip-cdrs var-replacement-alist))
+                (lookup-equal term var-replacement-alist))
+           (consp (lookup-equal term var-replacement-alist)))
+  :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs strip-cdrs assoc-equal))))
 
 ;; (thm
 ;;  (implies (and (pseudo-termp term)
@@ -106,13 +120,13 @@
 ;; TODO: Consider handling other versions of IF top-down.
 ;; TODO: Include subst in the name since this also substitutes for vars.
 (mutual-recursion
- ;; This one replaces the vars in term using var-replacement-alist.
+ ;; This one can replace vars in term using var-replacement-alist (helps us deal with lambdas).
  ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
  ;; where nodenum-or-quotep is equivalent to the term passed in, and nodes already in the dag remain unchanged (and the aux. data structures have been updated, of course)
  (defund merge-term-into-dag-array-basic (term
-                                           var-replacement-alist ;maps all vars in TERM to quoteps or nodenums in dag-array
-                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                                           interpreted-function-alist)
+                                          var-replacement-alist ; maps vars in TERM to quoteps or nodenums in DAG-ARRAY
+                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                          interpreted-function-alist)
    (declare (xargs :guard (and (pseudo-termp term)
                                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                                (symbol-alistp var-replacement-alist)
@@ -138,49 +152,49 @@
                     (consp (cdr (cdr args))))
                (mv-let (erp test-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                  (merge-term-into-dag-array-basic (first args) var-replacement-alist
-                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                                            interpreted-function-alist)
+                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                                  interpreted-function-alist)
                  (if erp
                      (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                    (if (consp test-nodenum-or-quotep) ;tests for quotep
                        ;;the test was resolved:
                        (merge-term-into-dag-array-basic (if (unquote test-nodenum-or-quotep) (second args) (third args)) var-replacement-alist
-                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                                                  interpreted-function-alist)
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                                        interpreted-function-alist)
                      ;;could not resolve the test:
                      (mv-let (erp then-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                        (merge-term-into-dag-array-basic (second args) var-replacement-alist
-                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                                                  interpreted-function-alist)
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                                        interpreted-function-alist)
                        (if erp
                            (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                          (mv-let (erp else-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                            (merge-term-into-dag-array-basic (third args) var-replacement-alist
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                                                      interpreted-function-alist)
+                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                                            interpreted-function-alist)
                            (if erp
                                (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                              ;;treat it like a normal function call (we know it's not a ground term because the if-test is not a constant)
                              (progn$ ;(cw "Adding (~x0 : ~x1).~%" fn arg-nodenums-or-quoteps)
                               (add-function-call-expr-to-dag-array-with-name fn (list test-nodenum-or-quotep then-nodenum-or-quotep else-nodenum-or-quotep)
-                                                                                   dag-array dag-len dag-parent-array
-                                                                                   dag-constant-alist dag-variable-alist
-                                                                                   dag-array-name dag-parent-array-name)))))))))
+                                                                             dag-array dag-len dag-parent-array
+                                                                             dag-constant-alist dag-variable-alist
+                                                                             dag-array-name dag-parent-array-name)))))))))
              ;;begin by adding the args to the dag: (expensive to cons this up, if they are ground terms?)
              (mv-let
                (erp arg-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                (merge-terms-into-dag-array-basic args var-replacement-alist
-                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                                                  interpreted-function-alist)
+                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                                 interpreted-function-alist)
                (if erp
                    (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                  (if (consp fn) ;tests for ((lambda <formals> <body>) ...<actuals>...) ;move this case up?
                      (let* ((formals (lambda-formals fn))
                             (body (lambda-body fn)))
                        (merge-term-into-dag-array-basic body
-                                                         (pairlis$-fast formals arg-nodenums-or-quoteps) ;save this consing?
-                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                                                         interpreted-function-alist))
+                                                        (pairlis$-fast formals arg-nodenums-or-quoteps) ;save this consing?
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                                        interpreted-function-alist))
                    ;; normal function call:
                    (if (not (all-consp arg-nodenums-or-quoteps)) ;; test for args being quoted constants
                        ;; it's not a ground term, so just add it to the dag:
@@ -203,14 +217,12 @@
                        ;; no error evaluating:
                        (mv (erp-nil) (enquote val) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))))))))))
 
-
- ;;TERMS are trees with variables, nodenums (new!), and quoteps at the leaves
- ;; Returns (mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
-;fixme use a changep flag to not recons the list of the terms are constants
+ ;; Returns (mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist), where nodenums-or-quoteps are equivalent to the terms passed in.
+ ;; TODO: Consider using a changep flag to avoid reconsing the list?
  (defund merge-terms-into-dag-array-basic (terms
-                                    var-replacement-alist
-                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                                    interpreted-function-alist)
+                                           var-replacement-alist
+                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                           interpreted-function-alist)
    (declare (xargs :guard (and (pseudo-term-listp terms)
                                (true-listp terms)
                                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
@@ -282,9 +294,7 @@
                   ;;no errors:
                   (not (mv-nth 0 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
              (and (dargp-less-than (mv-nth 1 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))
-                                              (mv-nth 3 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
-;could prove later, as a corollary?
-                  (dargp (mv-nth 1 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
+                                   (mv-nth 3 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
                   (wf-dagp dag-array-name
                            (mv-nth 2 (merge-term-into-dag-array-basic
                                       term
@@ -439,12 +449,13 @@
   :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type)
            :in-theory (disable merge-term-into-dag-array-basic-return-type))))
 
-(defthm merge-term-into-dag-array-basic-return-type-corollary2
+(defthm dargp-less-than-of-mv-nth-1-of-merge-term-into-dag-array-basic
   (implies (and (<= (mv-nth 3 (merge-term-into-dag-array-basic
                                term
                                var-replacement-alist
                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                               interpreted-function-alist)) bound)
+                               interpreted-function-alist))
+                    bound)
                 (pseudo-termp term)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (symbol-alistp var-replacement-alist)
@@ -474,7 +485,9 @@
                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                              interpreted-function-alist))))
   :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type)
-           :in-theory (disable merge-term-into-dag-array-basic-return-type))))
+           :in-theory (disable merge-term-into-dag-array-basic-return-type
+                               dargp-less-than-of-mv-nth-1-of-merge-term-into-dag-array-basic
+                               dargp))))
 
 (defthm merge-term-into-dag-array-basic-return-type-corollary3
   (implies (and (pseudo-termp term)
@@ -497,7 +510,7 @@
                          interpreted-function-alist))))
   :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type)
            :in-theory (disable merge-term-into-dag-array-basic-return-type
-                               MERGE-TERM-INTO-DAG-ARRAY-BASIC-RETURN-TYPE-COROLLARY2
+                               dargp-less-than-of-mv-nth-1-of-merge-term-into-dag-array-basic
                                MERGE-TERM-INTO-DAG-ARRAY-BASIC-RETURN-TYPE-COROLLARY))))
 
 (defthm merge-term-into-dag-array-basic-return-type-corollary3-gen
@@ -540,14 +553,15 @@
                             interpreted-function-alist))))
   :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type)
            :in-theory (disable merge-term-into-dag-array-basic-return-type
-                               dargp-of-mv-nth-1-of-merge-term-into-dag-array-basic))))
+                               dargp-of-mv-nth-1-of-merge-term-into-dag-array-basic
+                               dargp-less-than-of-mv-nth-1-of-merge-term-into-dag-array-basic))))
 
 (verify-guards merge-term-into-dag-array-basic
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic car-becomes-nth-of-0
                                                       not-equal-of-len-and-1-when-dargp
                                                       <-of-nth-when-all-dargp-less-than
-                                                      true-listp-of-nth-1-of-nth-0-when-axe-treep
+                                                      true-listp-of-nth-1-of-nth-0-when-pseudo-termp
                                                       ALL-MYQUOTEP-WHEN-ALL-DARGP)
                            (natp dargp pseudo-term-listp pseudo-termp)))))
 
@@ -606,12 +620,6 @@
     :flag merge-terms-into-dag-array-basic)
   :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic) (natp)))))
 
-(defthmd consp-of-lookup-equal-when-all-myquotep-of-strip-cdrs
-  (implies (and (all-myquotep (strip-cdrs var-replacement-alist))
-                (lookup-equal term var-replacement-alist))
-           (consp (lookup-equal term var-replacement-alist)))
-  :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs strip-cdrs assoc-equal))))
-
 ;; handle the case of a lambda whose body is a var
 (defthm-flag-merge-term-into-dag-array-basic
   (defthm posp-of-mv-nth-3-of-merge-term-into-dag-array-basic
@@ -663,5 +671,4 @@
                     (MERGE-TERM-INTO-DAG-ARRAY-BASIC TERM var-replacement-alist DAG-ARRAY 0 DAG-PARENT-ARRAY
                                                     DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST
                                                     DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
-                                                    INTERPRETED-FUNCTION-ALIST))
-           )))
+                                                    INTERPRETED-FUNCTION-ALIST)))))

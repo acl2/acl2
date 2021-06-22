@@ -45,7 +45,7 @@
                               (true-listp nodenums-to-assume-false)
                               (all-natp nodenums-to-assume-false)
                               (all-< nodenums-to-assume-false dag-len))
-                  :guard-hints (("Goal" :in-theory (e/d () (PSEUDO-DAG-ARRAYP))))))
+                  :guard-hints (("Goal" :in-theory (disable pseudo-dag-arrayp)))))
   (if (endp nodenums-to-assume-false)
       acc
     (let* ((nodenum (first nodenums-to-assume-false))

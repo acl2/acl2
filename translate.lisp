@@ -16592,15 +16592,15 @@
                cform x
                ctx
                "The quoted object ~x0 occurs in a :FN slot of a function call ~
-                but ~x0 ~@1  We see no reason to allow this!  To insist on ~
+                but ~x0 ~@1.  We see no reason to allow this!  To insist on ~
                 having such a call, defconst some symbol and use that symbol ~
                 constant here instead but be advised that even this workaround ~
                 will not allow such a call in a DEFUN."
                (unquote transx)
                (if (symbolp (unquote transx))
                    (if (function-symbolp (unquote transx) wrld)
-                       "does not have a badge."
-                       "is not a function symbol.")
+                       "does not have a badge"
+                       "is not a function symbol")
                    "is not a function symbol or lambda object")))
              (t
               (translate11-var-or-quote-exit x transx stobjs-out bindings

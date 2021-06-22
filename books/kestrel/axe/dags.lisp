@@ -623,7 +623,7 @@
 (defthm natp-of-mv-nth-0-of-add-to-dag
   (implies (weak-dagp-aux dag)
            (natp (mv-nth 0 (add-to-dag expr dag))))
-  :hints (("Goal" :in-theory (e/d (add-to-dag) ()))))
+  :hints (("Goal" :in-theory (enable add-to-dag))))
 
 (defthm weak-dagp-aux-of-mv-nth-1-of-add-to-dag
   (implies (and (weak-dagp-aux dag)
@@ -674,7 +674,7 @@
   (implies (pseudo-dagp dag)
            (dargp-less-than (mv-nth 0 (add-to-dag expr dag))
                                        (+ 1 (top-nodenum (mv-nth 1 (add-to-dag expr dag))))))
-  :hints (("Goal" :in-theory (e/d (add-to-dag pseudo-dagp dargp-less-than) ()))))
+  :hints (("Goal" :in-theory (enable add-to-dag pseudo-dagp dargp-less-than))))
 
 (defthm  add-to-dag-of-nil
   (equal (add-to-dag expr nil)
@@ -1421,8 +1421,7 @@
                 (natp dag-len)
                 (not (consp (nth n items))))
            (not (< dag-len (+ 1 (nth n items)))))
-  :hints (("Goal" :in-theory (e/d (all-dargp-less-than nth)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable all-dargp-less-than nth))))
 
 (defthm all-dargp-less-than-when-all-<
   (implies (and (all-< items bound)
@@ -1456,7 +1455,7 @@
                   (if (consp (nth n items))
                       2
                     0)))
-  :hints (("Goal" :in-theory (e/d (all-dargp-less-than nth) ()))))
+  :hints (("Goal" :in-theory (enable all-dargp-less-than nth))))
 
 (defthm len-of-nth-when-all-dargp
   (implies (and (all-dargp items)
@@ -1465,14 +1464,14 @@
                   (if (consp (nth n items))
                       2
                     0)))
-  :hints (("Goal" :in-theory (e/d (all-dargp nth) ()))))
+  :hints (("Goal" :in-theory (enable all-dargp nth))))
 
 ;; (defthm <-of-car-when-all-dargp-less-than
 ;;   (implies (and (all-dargp-less-than items bound)
 ;;                 (not (consp (car items)))
 ;;                 (consp items))
 ;;            (< (car items) bound))
-;;   :hints (("Goal" :in-theory (e/d (all-dargp-less-than) ()))))
+;;   :hints (("Goal" :in-theory (enable all-dargp-less-than))))
 
 (defthm bounded-natp-alistp-when-pseudo-dagp
   (implies (pseudo-dagp dag-lst)
@@ -1784,9 +1783,8 @@
 ;this one has a better guard
 ;deprecate the other one?
 (defund top-nodenum-of-dag (dag)
-  (declare (xargs :GUARD (pseudo-dagp dag)
-                  :guard-hints (("Goal" :in-theory (enable alistp-guard-hack)))
-                  ))
+  (declare (xargs :guard (pseudo-dagp dag)
+                  :guard-hints (("Goal" :in-theory (enable alistp-guard-hack)))))
   (let* ((entry (car dag))
          (nodenum (car entry)))
     nodenum))
@@ -1809,6 +1807,15 @@
            (natp (top-nodenum-of-dag dag)))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable top-nodenum-of-dag))))
+
+;; for reasoning (for execution, len would be much slower)
+(defthm top-nodenum-of-dag-becomes-len-minus-1
+  (implies (pseudo-dagp dag)
+           (equal (top-nodenum-of-dag dag)
+                  (+ -1 (len dag))))
+  :hints (("Goal" :in-theory (enable top-nodenum
+                                     top-nodenum-of-dag
+                                     len-when-pseudo-dagp))))
 
 ;may subsume stuff above
 (defthmd car-of-nth-when-pseudo-dagp

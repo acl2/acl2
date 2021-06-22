@@ -93,10 +93,16 @@
   (implies (dargp darg)
            (not (cddr darg))))
 
+(defthmd true-listp-when-dargp
+  (implies (dargp darg)
+           (equal (true-listp darg)
+                  (consp darg))))
+
 (deftheory dargp-rules
   '(myquotep-when-dargp
     integerp-when-dargp
     consp-of-cdr-when-dargp
     cdr-when-dargp-iff
-    not-cddr-when-dargp)
+    not-cddr-when-dargp
+    true-listp-when-dargp)
   :redundant-okp flg)

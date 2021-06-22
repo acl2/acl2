@@ -4636,17 +4636,6 @@
       '(set-raw-mode-off state)
     '(set-raw-mode-on state)))
 
-#-acl2-loop-only
-(defun-one-output stobj-out (val)
-
-; Warning:  This function assumes that we are not in the context of a local
-; stobj.  As of this writing, it is only used in raw mode, so this does not
-; concern us too much.  With raw mode, there are no guarantees.
-
-  (if (eq val *the-live-state*)
-      'state
-    (car (rassoc val *user-stobj-alist* :test 'eq))))
-
 #-(or acl2-loop-only acl2-mv-as-values)
 (defun mv-ref! (i)
 
@@ -4813,46 +4802,169 @@
              (list 'in-package-fn (list 'quote (cadr form)) 'state))
             (t form))))
 
-#-(or acl2-loop-only acl2-mv-as-values)
-(defun acl2-raw-eval (form state)
-  (or (eq state *the-live-state*)
-      (error "Unexpected state in acl2-raw-eval!"))
-  (if (or (eq form :q) (equal form '(EXIT-LD STATE)))
-      (mv nil '((NIL NIL STATE) NIL :Q REPLACED-STATE) state)
-    (let ((val (eval (acl2-raw-eval-form-to-eval form)))
-          (index-bound (raw-arity form (w state) state)))
-      (if (<= index-bound 1)
-          (mv nil (cons (list (stobj-out val)) val) state)
-        (let ((ans nil)
-              (stobjs-out nil))
-          (do ((i (1- index-bound) (1- i)))
-              ((eql i 0))
-              (let ((x (mv-ref! i)))
-                (push x ans)
-                (push (stobj-out x)
-                      stobjs-out)))
-          (mv nil
-              (cons (cons (stobj-out val) stobjs-out)
-                    (cons val ans))
-              state))))))
+#-acl2-loop-only
+(defun chk-stobjs-out-raw (sym expr bad wrld state)
 
-#+(and (not acl2-loop-only) acl2-mv-as-values)
+; Sym is a symbol and expr is an expression.  Return t if it is determined that
+; expr returns single value, which is a new stobj value for sym if sym names a
+; stobj and otherwise is a non-stobj value.
+
+  (declare (ftype (function (t t t t) (values t))
+                  stobjs-out-raw))
+  (let ((stobjs-out (stobjs-out-raw expr bad wrld state)))
+    (if (stobjp sym t wrld)
+        (and (consp stobjs-out)
+             (eq (car stobjs-out) sym)
+             (null (cdr stobjs-out)))
+      (equal stobjs-out '(nil)))))
+
+#-acl2-loop-only
+(defun stobjs-out-raw (form bad wrld state)
+
+; Warning: If the signature of this function changes, then change the
+; corresponding declare form in chk-stobjs-out-raw.
+
+; Bad is a list of symbols that should not be considered to be stobjs,
+; presumably because they have been let-bound to non-stobj values.
+
+; This function attempts to return the stobjs-out from evaluating form.  When
+; it is unable to determine that, it may return nil, but it may also return a
+; list whose length is the number of values returned and whose nth element is
+; either a stobj name when that can be determined, else nil.  Soundness should
+; not rely on the result: although we expect it to be accurate in nearly all
+; cases, the fact that form is arbitrary rather than an ACL2 form, together how
+; we mix two kinds of macroexpansion (raw-Lisp and logical), raises suspicion.
+
+  (cond
+   ((or (atom form)
+        (eq (car form) 'quote))
+    (cond ((and (symbolp form)
+                (member-eq form bad))
+           '(nil))
+          ((or (eq form 'state)
+               (stobjp form t wrld))
+           (list form))
+          (t '(nil))))
+   ((eq (car form) 'if)
+    (and (true-listp form)
+         (equal (length form) 4)
+         (let ((so-tbr (stobjs-out-raw (caddr form) bad wrld state))
+               (so-fbr (stobjs-out-raw (cadddr form) bad wrld state)))
+           (cond ((equal so-tbr so-fbr) so-tbr)
+                 ((equal (length so-tbr) (length so-fbr))
+                  (loop for x in so-tbr as y in so-fbr
+                        collect (and (eq x y) x)))
+                 (t nil)))))
+   ((eq (car form) 'mv)
+    (loop for x in (cdr form)
+          collect
+          (let ((s (stobjs-out-raw x bad wrld state)))
+            (cond ((and s (null (cdr s))) (car s))
+                  (t nil)))))
+   ((eq (car form) 'let) ; (let ((var1 expr1) ...) ... body)
+    (and (consp (cdr form))
+         (consp (cddr form))
+         (doublet-listp (cadr form))
+         (let ((new-bad (loop for (sym expr) in (cadr form)
+                              when
+                              (and (symbolp sym)
+                                   (not (member-eq sym bad))
+                                   (stobjp sym t wrld)
+                                   (not (chk-stobjs-out-raw sym expr bad wrld
+                                                            state)))
+                              collect sym)))
+           (stobjs-out-raw (car (last form))
+                           (append new-bad bad)
+                           wrld state))))
+   ((and (consp (car form))
+         (eq (caar form) 'lambda)) ; ((lambda (var1 ...) body) expr1 ...)
+    (and (true-listp form)
+         (true-listp (car form))
+         (let* ((lam (car form))
+                (vars (cadr lam))
+                (body (car (last lam)))
+                (expr-lst (cdr form)))
+           (and (symbol-listp vars)
+                (equal (length vars) (length expr-lst))
+                (let ((new-bad
+                       (loop for v in vars
+                             as e in expr-lst
+                             when
+                             (and (not (member-eq v bad))
+                                  (stobjp v t wrld)
+                                  (not (chk-stobjs-out-raw v e bad wrld
+                                                           state)))
+                             collect v)))
+                  (stobjs-out-raw body (append new-bad bad) wrld state))))))
+   ((eq (car form) 'mv-let) ; (mv-let (var1 ... varn) expr ... body)
+    (and (consp (cdr form))
+         (consp (cddr form))
+         (consp (cdddr form))
+         (symbol-listp (cadr form))
+         (let ((stobjs-out-expr (stobjs-out-raw (caddr form) bad wrld state)))
+           (and stobjs-out-expr
+                (equal (length (cadr form)) (length stobjs-out-expr))
+                (let ((new-bad (loop for v in (cadr form)
+                                     as s in stobjs-out-expr
+                                     when (and (not (member-eq v bad))
+                                               (stobjp v t wrld)
+                                               (not (eq v s)))
+                                     collect v)))
+                  (stobjs-out-raw (car (last form))
+                                  (append new-bad bad)
+                                  wrld state))))))
+   ((member-eq (car form) '(progn return-last))
+    (stobjs-out-raw (car (last form)) bad wrld state))
+   ((not (symbolp (car form)))
+    nil)
+   ((getpropc (car form) 'macro-body nil wrld)
+    (mv-let (msg val)
+      (macroexpand1-cmp form 'stobjs-out-raw wrld
+                        (default-state-vars t))
+      (cond (msg nil)
+            (t (stobjs-out-raw val bad wrld state)))))
+   ((getpropc (car form) 'stobjs-out nil wrld))
+   (t (multiple-value-bind
+       (form flg)
+       (macroexpand-1 form)
+       (cond ((null flg) nil)
+             (t (stobjs-out-raw form bad wrld state)))))))
+
+#-acl2-loop-only
 (defun acl2-raw-eval (form state)
   (or (eq state *the-live-state*)
       (error "Unexpected state in acl2-raw-eval!"))
   (if (or (eq form :q) (equal form '(EXIT-LD STATE)))
       (mv nil '((NIL NIL STATE) NIL :Q REPLACED-STATE) state)
-    (let* ((vals (multiple-value-list
+    (let* ((stobjs-out (stobjs-out-raw form nil (w state) state))
+           (vals (multiple-value-list
                   (eval (acl2-raw-eval-form-to-eval form))))
-           (arity (length vals)))
-      (if (<= arity 1)
-          (let ((val (car vals)))
-            (mv nil (cons (list (stobj-out val)) val) state))
-        (mv nil
-            (loop for val in vals
-                  collect (stobj-out val) into stobjs-out
-                  finally (return (cons stobjs-out vals)))
-            state)))))
+           (eq-len (equal (length stobjs-out) (length vals)))
+           (stobjs-out (if eq-len
+                           stobjs-out
+
+; We can be in this case if, for example, form is (defun ...), because defun
+; returns a single value in raw Lisp but an error triple in ACL2.  It seems
+; unlikely that such a discrepancy could result in a stobj being returned in
+; raw Lisp, so we just return the values as an ordinary list in this case.  It
+; is a bit tempting to print a warning in this situation, but it's probably a
+; rare situation and, perhaps more important, such a warning could easily be
+; confusing.
+
+                         '(nil)))
+           (latches (and eq-len
+                         (loop for x in stobjs-out
+                               as val in vals
+                               when x
+                               collect (cons x val)))))
+      (when eq-len
+        (update-user-stobj-alist (put-assoc-eq-alist (user-stobj-alist state)
+                                                     latches)
+                                 state))
+      (mv nil
+          (cons stobjs-out
+                (if (cdr stobjs-out) vals (car vals)))
+          state))))
 
 #+acl2-loop-only
 (defun acl2-raw-eval (form state)

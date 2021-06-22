@@ -1690,6 +1690,7 @@
                  ELIMINATE-DESTRUCTORS-RULE
                  COARSENINGS
                  CONGRUENCES
+                 RECOGNIZER-ALIST
                  PEQUIVS
                  INDUCTION-RULES
                  DEFCHOOSE-AXIOM

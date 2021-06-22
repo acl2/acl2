@@ -78,7 +78,7 @@
                 (natp n))
            (equal (consp (cdr (nth n args)))
                   (consp (nth n args))))
-  :hints (("Goal" :in-theory (e/d (all-dargp nth) ()))))
+  :hints (("Goal" :in-theory (enable all-dargp nth))))
 
 (defthmd myquotep-of-nth-when-all-dargp
   (implies (and (all-dargp args)
@@ -86,14 +86,14 @@
                 (natp n))
            (equal (myquotep (nth n args))
                   (consp (nth n args))))
-  :hints (("Goal" :in-theory (e/d (all-dargp nth) ()))))
+  :hints (("Goal" :in-theory (enable all-dargp nth))))
 
 (defthmd dargp-of-nth-when-all-dargp
   (implies (and (all-dargp args)
                 (< n (len args))
                 (natp n))
            (dargp (nth n args)))
-  :hints (("Goal" :in-theory (e/d (all-dargp) ()))))
+  :hints (("Goal" :in-theory (enable all-dargp))))
 
 
 ;; too expensive to leave enabled
@@ -152,7 +152,7 @@
                 (natp n))
            (equal (equal 'quote (car (nth n args)))
                   (consp (nth n args))))
-  :hints (("Goal" :in-theory (e/d (all-dargp nth) ()))))
+  :hints (("Goal" :in-theory (enable all-dargp nth))))
 
 (defthmd equal-of-quote-and-nth-0-of-nth-when-all-dargp
   (implies (and (all-dargp args)
@@ -160,7 +160,7 @@
                 (natp n))
            (equal (equal 'quote (nth 0 (nth n args)))
                   (consp (nth n args))))
-  :hints (("Goal" :in-theory (e/d (all-dargp nth) ()))))
+  :hints (("Goal" :in-theory (enable all-dargp nth))))
 
 (defthm all-dargp-forward-helper
   (implies (and (all-dargp items)
@@ -180,5 +180,4 @@
   (implies (and (all-dargp (strip-cdrs alist))
                 (assoc-equal var alist))
            (dargp (cdr (assoc-equal var alist))))
-  :hints (("Goal" :in-theory (e/d (strip-cdrs)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable strip-cdrs))))
