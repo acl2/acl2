@@ -33,13 +33,13 @@
           ;;if they are both constants, just compute the result:
           (mv (erp-nil) (enquote (and (unquote dag1) (unquote dag2))))
         ;;only dag1 is a quotep:
-        (let ((top-nodenum (top-nodenum dag2)))
+        (let ((top-nodenum (top-nodenum-of-dag dag2)))
           (mv (erp-nil)
               ;;fixme call a blessed dag builder function here?
               (acons-fast (+ 1 top-nodenum) `(if ,dag1 ,top-nodenum 'nil) dag2))))
     (if (quotep dag2)
         ;;only dag2 is a quotep:
-        (let ((top-nodenum (top-nodenum dag1)))
+        (let ((top-nodenum (top-nodenum-of-dag dag1)))
           (mv (erp-nil)
               ;;fixme call a blessed dag builder function here?
               (acons-fast (+ 1 top-nodenum) `(if ,top-nodenum ,dag2 'nil) dag1)))

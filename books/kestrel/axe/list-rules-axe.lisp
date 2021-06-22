@@ -85,7 +85,7 @@
                 (syntaxp (quotep free)))
            (equal (consp x)
                   (< 0 free)))
-  :hints (("Goal" :in-theory (e/d (len) ()))))
+  :hints (("Goal" :in-theory (enable len))))
 
 ;mostly for axe
 (defthmd acl2::equal-of-cons-when-quotep

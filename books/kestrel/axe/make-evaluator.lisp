@@ -303,7 +303,7 @@
                                        (natp array-depth))))
            (if (quotep dag)
                (unquote dag)
-             (let* ((top-nodenum (top-nodenum dag))
+             (let* ((top-nodenum (top-nodenum-of-dag dag))
                     (dag-array-name (pack$ 'dag-array- array-depth '-for-dag-val))
                     (dag-array (make-into-array dag-array-name dag)) ; todo: call make-dag-into-array?
                     (eval-array-name (pack$ 'eval-array- array-depth '-for-dag-val))

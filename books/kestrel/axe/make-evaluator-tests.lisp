@@ -235,7 +235,7 @@
      (QUOTEP DAG)
      (UNQUOTE DAG)
      (LET*
-      ((TOP-NODENUM (TOP-NODENUM DAG))
+      ((TOP-NODENUM (TOP-NODENUM-of-dag DAG))
        (DAG-ARRAY-NAME (PACK$ 'DAG-ARRAY-
                               ARRAY-DEPTH '-FOR-DAG-VAL))
        (DAG-ARRAY (MAKE-INTO-ARRAY DAG-ARRAY-NAME DAG))

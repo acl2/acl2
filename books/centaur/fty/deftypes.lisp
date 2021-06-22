@@ -177,12 +177,27 @@
     :enable-rules
     :verbosep))
 
+(defun flextypelist-check-bad-name (types)
+  (if (atom types)
+      nil
+    (prog2$ (b* ((main-lisp-pkg acl2::*main-lisp-package-name*))
+              (with-flextype-bindings (x (car types))
+                (and (equal (symbol-package-name x.name) main-lisp-pkg)
+                     (er hard? 'flextypelist-check-bad-name
+                         "Name must be a symbol not in the ~s0 package: ~x1~%"
+                         main-lisp-pkg x.name))))
+            (flextypelist-check-bad-name (cdr types)))))
+
 
 (defun parse-flextypes (x state)
   (b* (((cons name x) x)
        ((unless (symbolp name))
         (er hard? 'parse-flextypes
             "Malformed flextypes: name must be a symbol, but found ~x0" name))
+       ((when (equal (symbol-package-name name) acl2::*main-lisp-package-name*))
+        (er hard? 'parse-flextypes
+            "Name must be a symbol not in the ~s0 package: ~x1~%"
+            acl2::*main-lisp-package-name* name))
        ((mv pre-/// post-///) (std::split-/// 'parse-flexsum x))
        ((mv kwd-alist typedecls)
         (extract-keywords 'parse-flextypes *flextypes-keywords* pre-/// nil))
@@ -797,6 +812,7 @@
 
 (defun deftypes-events (x state)
   (b* (((flextypes x) x)
+       (- (flextypelist-check-bad-name x.types)) 
        (fix/pred-pairs (flextypes-collect-fix/pred-pairs x.types))
        ((mv enable-rules temp-thms) (collect-fix/pred-enable-rules fix/pred-pairs (w state)))
        (verbosep (getarg :verbosep nil x.kwd-alist)))
