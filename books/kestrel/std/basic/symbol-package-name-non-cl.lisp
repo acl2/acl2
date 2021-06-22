@@ -44,7 +44,4 @@
      a package name into whose package we want to intern a symbol
      for a new function name,
      which cannot be interned into the @('\"COMMON-LISP\"') package."))
-  (let ((pkg (symbol-package-name sym)))
-    (if (equal pkg *main-lisp-package-name*)
-        "ACL2"
-      pkg)))
+  (fix-pkg (symbol-package-name sym)))
