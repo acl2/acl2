@@ -4955,7 +4955,7 @@
            (latches (and eq-len
                          (loop for x in stobjs-out
                                as val in vals
-                               when x
+                               when (and x (not (eq x 'state)))
                                collect (cons x val)))))
       (when eq-len
         (update-user-stobj-alist (put-assoc-eq-alist (user-stobj-alist state)
