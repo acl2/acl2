@@ -34,7 +34,7 @@
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc svtv-data
-  :parents (svtv)
+  :parents (svex-stvs)
   :short "A stobj encapsulating an SVTV and the steps used in creating it, from
 the initial SV design to (potentially) a pipelined symbolic run."
   :long "
@@ -203,6 +203,9 @@ be run.</li>
 <li>@('svtv-data-chase-phase-fsm') sets up the chase REPL for a phase FSM run,
 given an initial state environment and a list of input environments for the
 phases to be run.</li>
+
+<li>@('svtv-data-chase-repl') re-enters a chase REPL that was previously set up,
+with the same input/initial state environments as before.</li>
 
 </ul>
 

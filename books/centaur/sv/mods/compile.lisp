@@ -45,7 +45,10 @@
   :short "Turning a hierarchical SVEX design into a finite state machine."
   :long " <p>The function @(see svex-design-compile) extracts a finite state
 machine representation from a hierarchical SVEX design.  See also @(see
-defsvtv).</p>
+defsvtv), @(see defsvtv$), and @(see defcycle), which all perform this process
+and subsequently perform some amount of unrolling of the resulting finite state
+machine in order to produce either a pipeline representation (@(see defsvtv)
+and @(see defsvtv$)) or a cycle FSM (@(see defcycle)).</p>
 
 <p>We follow these steps to turn an svex module hierarchy into a finite-state
 machine representation:</p>

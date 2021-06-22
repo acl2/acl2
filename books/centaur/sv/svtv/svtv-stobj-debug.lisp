@@ -265,6 +265,25 @@
                           :filename filename)
                (mv vcd-wiremap vcd-vals state))))
 
+
+(define svtv-data-chase-repl (&key 
+                              (svtv-data 'svtv-data)
+                              (svtv-chase-data 'svtv-chase-data)
+                              (state 'state))
+  :guard (and (open-input-channel-p *standard-oi* :object state)
+              (svtv-data->flatten-validp svtv-data))
+  (b* ((design  (svtv-data->design svtv-data)))
+    (stobj-let ((moddb (svtv-data->moddb svtv-data))
+                (aliases (svtv-data->aliases svtv-data)))
+               (svtv-chase-data state)
+               (b* ((svtv-chase-data (set-svtv-chase-data->modidx (moddb-modname-get-index
+                                                                   (design->top design)
+                                                                   moddb)
+                                                                  svtv-chase-data)))
+                 (svtv-chase-repl))
+               (mv svtv-chase-data state))))
+
+
 (define svtv-data-chase-phase-fsm ((ins svex-envlist-p)
                                    (initst svex-env-p)
                                    &key
@@ -287,17 +306,8 @@
        (svtv-chase-data (set-svtv-chase-data->evaldata evaldata svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->updates (make-fast-alist fsm.values) svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->delays (make-fast-alist flatnorm.delays) svtv-chase-data))
-       (svtv-chase-data (set-svtv-chase-data->assigns (make-fast-alist flatnorm.assigns) svtv-chase-data))
-       (design  (svtv-data->design svtv-data)))
-    (stobj-let ((moddb (svtv-data->moddb svtv-data))
-                (aliases (svtv-data->aliases svtv-data)))
-               (svtv-chase-data state)
-               (b* ((svtv-chase-data (set-svtv-chase-data->modidx (moddb-modname-get-index
-                                                                   (design->top design)
-                                                                   moddb)
-                                                                  svtv-chase-data)))
-                 (svtv-chase-repl))
-               (mv svtv-chase-data state))))
+       (svtv-chase-data (set-svtv-chase-data->assigns (make-fast-alist flatnorm.assigns) svtv-chase-data)))
+    (svtv-data-chase-repl)))
 
 
 
