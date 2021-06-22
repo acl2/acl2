@@ -1732,87 +1732,65 @@ irrelevant inputs are removed.</p>"
 
 (defxdoc svex-stvs
   :parents (sv)
-  :short "Using SVEX-based STVs as a replacement for ESIM/4v-sexpr-based STVs"
+  :short "SVEX Symbolic Test Vectors" 
   :long
-  "<p>Svex STVs are a mostly-drop-in replacement for ESIM-based STVs.  In this
-topic we discuss practicalities of making the transition.</p>
+  "<p>Historically, <em>Symbolic Test Vectors</em> or <em>STVs</em> were
+developed to aid checking of pipeline properties in the VL2014/ESIM hardware
+verification framework -- see @(see acl2::symbolic-test-vectors).  The VL/SV
+framework replicates and extends that functionality, of which we give an
+overview here.  For the implementation in the SV framework, we usually refer to
+them as <em>SVTVs</em>, with the extra V distinguishing them from ESIM
+STVs.</p>
 
-<h3>Obtaining a Module</h3>
+<p>The <see topic='@(url sv-tutorial)'>SV tutorial</see> gives a step by step
+overview of how to run tests and prove properties about hardware modules using
+the VL/SV/SVTV framework.  Here we mainly summarize what SVTVs are for and link
+to further documentation.</p>
 
-<p>An example of the full process, starting from a Verilog file and resulting
-in a constant containing the new svex design:</p>
+<h3>Concept</h3>
+<p>A symbolic test vector is a description of a multiphase simulation of a
+hardware design, usually to show some particular functionality like the results
+of running one fixed-latency instruction on an ALU.  Usually in such a
+simulation we want to set some inputs (or override some internal signals) to
+constant values or variables at certain times, and extract the values (given
+those inputs/overrides) of some outputs or internal signals at certain times.
+The result of defining a symbolic test vector is an expression (@(see svex))
+for each output in terms of the input variables.</p>
 
-@({
- (local ;; optional
-  (include-book \"svex/vl-svex\" :dir :cbooks))
- (defconsts (*my-design* state)
-    (b* (((mv loadres state)
-          (vl::vl-load (vl::make-vl-loadconfig
-                        :edition :verilog-2005
-                        :start-files '(\"/foo/bar/mymod.v\")
-                        :search-path '(\"/library/directory1\"
-                                       \"/library/directory2\"))))
-         (vl-design (vl::vl-loadresult->design loadres))
-         ((mv ?err svex-design ?vl-good-design ?vl-bad-design)
-          (vl::cwtime (vl::vl-design->svex-design \"topmodule\" vl-design
-                                                  (vl::make-vl-simpconfig)))))
-      (and err
-           (er hard? 'my-design \Error: ~@0~%\" err))
-      (mv svex-design state)))
- })
+<h3>Defining an SVTV</h3>
+<p>There are two utilities for defining svex-based S(V)TVs: the original @(see
+defsvtv), and the newer @(see defsvtv$), which uses the @(see svtv-data) stobj
+framework to keep track of logical relationships between the results of
+different steps in the process and support better debugging tools.  These
+utilities both begin with SV modules as produced by the @(see vl-to-svex)
+tools, go through the steps described in @(see svex-compilation) to produce a
+finite state machine representation of the design, and then compose the FSM
+phases together to create the output expressions in terms of the input
+variables according to the I/O specification.  Both use a similar timing
+diagram syntax for describing the I/O specification, and both support a variant
+@(see defsvtv-phasewise), @(see defsvtv$-phasewise) that tend to make it easier
+to edit these I/O specifications.</p>
 
-<p>The resulting constant @('*my-design*') (if there is no error) is an
-@('sv::design-p') object that, among other things, can be passed to
-@('defsvtv').</p>
+<h3>Testing, Proof, and Debugging</h3>
+<p>Once an SVTV is defined, the function @(see svtv-run) can be used to run
+tests on it, and is also the usual target for proofs about it.  There are also
+some useful debugging utilities, @(see svtv-debug) for dumping waveforms and
+@(see svtv-chase) for chasing down the root causes of signal values.  See @(see
+svtv-data) for versions of these utilities that can shorten the debug loop when
+using SVTVs defined with @(see defsvtv$).</p>
 
-<h3>General STV Creation and Usage</h3>
 
-<p>The svex STV package is largely compatible with the ESIM STV package.  In
-particular, the following functions/macros have largely the same meaning and
-interface in both packages:</p>
-@({
- defstv
- stv-run
- stv-easy-bindings
- stv-debug
- stv->ins
- stv->outs
- stv->out-width
- stv->in-width
- })
-
-<p>Each of these names is defined in the SVEX package and also aliased in the
-ACL2 package but with \"SVTV\" used instead of \"STV\".  This allows two ways
-of transitioning from ESIM STVs to SVEX STVs: if your proofs are in a package,
-then just import the symbols above from the SVEX package instead of the ACL2
-package; otherwise, search and replace \"stv\" with \"svtv\" in your sources;
-we assume \"stv\" is a rare enough substring that unrelated code isn't likely
-to be affected. See also @(see svtv-versus-stv).</p>
-
-<h3>Simulation and Specifications</h3>
-
-<p>The one important difference between svex's @('stv-run') and esim's
-@('acl2::stv-run') is in the values of the input/output alists.  Esim's are
-either natural numbers or the symbol X, meaning that some bit in the vector is
-non-Boolean.  Svex's are @(see 4vec) objects.  These will also be natural
-numbers iff all of the bits in the vector are Boolean.  If some bits are X or
-Z, then the 4vec will be a cons of two integers; where the corresponding bits
-are the same, they indicate Boolean values, and where they are opposite, @('(1
-. 0)') indicates X and @('(0 . 1)') indicates Z.  Therefore, if your
-specifications make queries like @('(eq (cdr (assoc 'my-result out-alist))
-\'x)') then you'll need to change these to some other idiom.</p>
 
 <h3>Symbolic Simulation</h3>
 
-<p>Svex STVs support symbolic simulation via the GL package similar to esim
-STVs: first, the formulas are expressed as AIGs and then these AIGs are
-composed with the symbolic representations of the inputs.  This is implemented
-in the book \"svex/symbolic.lisp\".  Svex's stv-run has an optional keyword
-argument that can have an impact on symbolic execution (but doesn't mean
-anything logically): @(':boolvars') is T by default, and in this case the
-symbolic execution assumes that all your input vectors are syntactically
-obviously Boolean-valued.  This helps symbolic execution speed, but can cause
-an error like:</p>
+<p>Svex STVs support symbolic simulation via the GL or FGL packages. First, the
+formulas are expressed as AIGs and then these AIGs are composed with the
+symbolic representations of the inputs.  This is implemented in the book
+\"svex/symbolic.lisp\".  @(csee svtv-run) has an optional keyword argument that
+can have an impact on symbolic execution (but doesn't mean anything logically):
+@(':boolvars') is T by default, and in this case the symbolic execution assumes
+that all your input vectors are syntactically obviously Boolean-valued.  This
+helps symbolic execution speed, but can cause an error like:</p>
 
 @({ ERROR: some bits assumed to be Boolean were not. })
 
