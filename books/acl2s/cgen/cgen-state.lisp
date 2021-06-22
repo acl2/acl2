@@ -348,7 +348,7 @@ cgen-state"
 (table cgen::builtin-relations nil
        '((:member . (member-equal member-eq member))
          (:assoc . (assoc-equal assoc assoc-eq assoc-eql))
-         (:equal . (=  equal eq eql int= string-equal hons-equal))
+         (:equal . (=  equal eq eql int= string-equal acl2::hons-equal acl2s::==))
          (:less . (< <=))
          (:greater . (> >=)))
        :clear)
