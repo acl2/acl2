@@ -1004,7 +1004,7 @@ accessor on a stobj's creator function returns the default value.</li>
                (,x.updater fld i v2 ,x.logic-stobj)))
 
       (defthm ,(mksym x.updater '- x.updater '-intra-field-arrange-writes)
-        (implies (not (equal (nfix i1) (nfix i2)))
+        (implies (not (equal i1 i2))
                  (equal (,x.updater fld i2 v2 (,x.updater fld i1 v1 ,x.logic-stobj))
                         (,x.updater fld i1 v1 (,x.updater fld i2 v2 ,x.logic-stobj))))
         :rule-classes ((:rewrite :loop-stopper ((i2 i1)))))
@@ -1037,7 +1037,7 @@ accessor on a stobj's creator function returns the default value.</li>
        (,x.accessor
         ,field.field-key
         ,(and field.arrayp
-              '(nfix idx))
+              'idx)
         ,x.logic-stobj))))
 
 (defun rstobj-logic-accessor-defs (fields x)
@@ -1063,7 +1063,7 @@ accessor on a stobj's creator function returns the default value.</li>
        (,x.updater
         ,field.field-key
         ,(and field.arrayp
-              '(nfix idx))
+              'idx)
         v
         ,x.logic-stobj))))
 
@@ -1095,14 +1095,15 @@ accessor on a stobj's creator function returns the default value.</li>
                                      `(,field.child-accessor idx (nth ,field-index ,x.concrete-stobj))
                                    `(nth idx (nth ,field-index ,x.concrete-stobj)))
                                 (,x.accessor
-                                 ,field.field-key (nfix idx)
+                                 ,field.field-key idx
                                  ,x.logic-stobj))))
         :rewrite :direct)
       (in-theory (disable ,name))
       (defthm ,(mksym name '-of-update-other)
        (implies (and (,name ,x.concrete-stobj ,x.logic-stobj)
-                     (not (equal (nfix field-index2) ,field-index))
-                     (not (equal field-key2 ,field.field-key)))
+                     (not (equal field-index2 ,field-index))
+                     (not (equal field-key2 ,field.field-key))
+                     (natp field-index2))
                 (,name
                  (update-nth field-index2 new-field2 ,x.concrete-stobj)
                  (,x.updater field-key2 idx val ,x.logic-stobj)))
