@@ -111,13 +111,19 @@ to define function NAT-TO-CHARLIST1.
         (t (f4 (floor x 10)
                (cons x y)))))
 
+#||
+;; Shilpi Goel (06/23/2021): The file
+;; projects/x86isa/machine/concrete-state does not exist anymore.  I
+;; talked to Matt Kaufmann and he said it's okay to comment out
+;; my-merge for now.
+
 (defunt my-merge (x y)
 
 ; *Defunt note*: Using termination theorem for X86ISA::MERGE-<-INTO->.
 
 #||
 *Defunt note*: Evaluating
- (LOCAL (INCLUDE-BOOK "projects/x86isa/machine/concrete-state" :DIR :SYSTEM))
+; (LOCAL (INCLUDE-BOOK "projects/x86isa/machine/concrete-state" :DIR :SYSTEM))
 to define function X86ISA::MERGE-<-INTO->.
 ||#
 
@@ -128,6 +134,7 @@ to define function X86ISA::MERGE-<-INTO->.
                (my-merge (cdr x) y)))
         (t (cons (car y)
                  (my-merge x (cdr y))))))
+||#
 
 (defunt count-up-to (bound from)
 ; *Defunt note*: Using termination theorem for COMPRESS211.
