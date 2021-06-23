@@ -501,7 +501,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
        (look (vl-scopestack-find-item name ss))
        ((unless look)
         (mv nil
-            (fatal :type :vl-bad-instance
+            (fatal :type :vl-bad-dotstar-connection
                    :msg "~a0: using .* syntax to instantiate ~m1, but there is ~
                          no declaration for port ~s2."
                    :args (list inst inst.modname name))
@@ -543,7 +543,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
              (mod/if (vl-scopestack-find-definition look.modname ss))
              ((unless mod/if)
               (mv nil
-                  (fatal :type :vl-bad-instance
+                  (fatal :type :vl-bad-dotstar-connection
                          :msg "~a0: trying to resolve .* connection for ~
                                ~w1 (type ~m2): but ~m2 is not defined."
                          :args (list inst name look.modname))
@@ -556,7 +556,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
                                               :atts       nil)))
                 (mv t (ok) (list new-arg)))))
           (mv nil
-              (fatal :type :vl-bad-instance
+              (fatal :type :vl-bad-dotstar-connection
                      :msg "~a0: using .* syntax to instantiate ~m1 would ~
                            result in connecting port ~s2 to ~a3, which is ~
                            an instance of a ~x4."
@@ -574,7 +574,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
           (mv t (ok) (list new-arg)))))
 
     (mv nil
-        (fatal :type :vl-bad-instance
+        (fatal :type :vl-bad-dotstar-connection
                :msg "~a0: using .* syntax to instantiate ~m1 would result in ~
                      connecting port ~s2 to ~a3, which has unsupported type ~
                      ~x4."
