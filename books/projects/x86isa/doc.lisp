@@ -138,17 +138,16 @@
  mbe) and its friends like @(see acl2::mbt), and @(see acl2::assert*),
  @(see acl2::stobj), and @(see acl2::defabsstobj).</p>
 
- <p>ACL2 features like abstract stobjs and @('assert*') were a response
- by the ACL2 authors to provide mechanisms to mitigate the complexity
- of reasoning vs. execution efficiency that came up over the course of
- this project.  This x86 ISA model uses abstract stobjs to layer the
- state of the x86 machine such that the lower layer \(i.e., the
- concrete stobj\, see @(see concrete-state)\) can be optimized for
- execution efficiency and the upper layer \(i.e., the abstract stobj,
- see @(see abstract-state)\) can be optimized for reasoning
- efficiency, while a correspondence theorem is proved to hold between
- these two layers at all times.  Therefore, we get the benefit of both
- fast execution and effective reasoning.</p>
+ <p>ACL2 features like abstract stobjs and @('assert*') were a
+ response by the ACL2 authors to provide mechanisms to mitigate the
+ complexity of reasoning vs. execution efficiency that came up over
+ the course of this project.  This x86 ISA model uses abstract stobjs
+ to layer the state of the x86 machine such that the lower layer
+ \(i.e., the concrete stobj\) can be optimized for execution
+ efficiency and the upper layer \(i.e., the abstract stobj) can be
+ optimized for reasoning efficiency, while a correspondence theorem is
+ proved to hold between these two layers at all times.  Therefore, we
+ get the benefit of both fast execution and effective reasoning.</p>
 
  <h3>Modes of Operation</h3>
 
@@ -482,10 +481,7 @@
 
 (xdoc::order-subtopics
  machine
- (concrete-state
-  concrete-memory
-  abstract-state
-  state-field-theorems
+ (x86isa-state
   app-view
   rflag-specifications
   register-readers-and-writers

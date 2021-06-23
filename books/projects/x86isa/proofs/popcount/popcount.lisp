@@ -289,8 +289,6 @@
 
    ))
 
-(gl::gl-set-uninterpreted create-undef)
-
 ;; We could not use GL to prove such theorems on the earlier version
 ;; of our X86 model. GL needed to create large linear lists
 ;; (corresponding to the logical representation of our X86 state) in
@@ -301,6 +299,58 @@
 ;; However, on our current model with abstract stobjs, a sparse
 ;; logical representation of state makes symbolic execution by GL
 ;; possible.
+
+;; We use GL term-level reasoning below to make it faster to reason
+;; about reads/writes to/from the x86 state.  Another benefit is that
+;; this way, the code proofs will work irrespective of the
+;; representation of the x86 state as well as the definitions of the
+;; universal accessor/updater function, as long as these rules about
+;; xr/xw are true and made available to GL.
+
+(gl::gl-set-uninterpreted xr)
+(gl::gl-set-uninterpreted xw)
+(gl::gl-set-uninterpreted create-x86)
+
+(gl::add-gl-rewrite xr-of-xw-intra-field)
+(gl::add-gl-rewrite xr-of-xw-inter-field)
+(gl::add-gl-rewrite xw-of-xr)
+(gl::add-gl-rewrite xw-xw-shadow-writes)
+;; (gl::add-gl-rewrite xw-xw-intra-field-arrange-writes)
+;; (gl::add-gl-rewrite xw-xw-inter-field-arrange-writes)
+(gl::add-gl-rewrite x86p-xw)
+
+(gl::def-gl-rewrite xr-of-create-x86
+  (equal (xr fld index (create-x86))
+         (x86-elem-default fld)))
+
+(gl::def-gl-branch-merge merge-conditional-write
+  (equal (if test (xw fld index val x86) x86)
+         (xw fld index (if test val (xr fld index x86)) x86)))
+
+(gl::gl-set-uninterpreted create-undef)
+
+(gl::def-gl-rewrite split-on-logapp-of-create-undef
+  ;; From Sol Swords.
+  (equal (logapp 1 (create-undef x) 0)
+         (let ((undef (create-undef x)))
+           (if (gl::gl-hide (logbitp 0 undef))
+               1
+             0))))
+
+(gl::def-gl-rewrite integerp-of-create-undef
+  (equal (integerp (create-undef n)) t))
+
+(local
+ (def-gl-thm term-level-reasoning-test ;; ok after adding gl-rewrites; not okay before that
+   :hyp (unsigned-byte-p 32 n)
+   :concl (b* ((x86 (XW :RGF *RDI* (LOGHEAD 32 N)
+                        (XW :RIP nil 4195856
+                            (XW :SEG-HIDDEN-ATTR 1 512 (create-x86))))))
+            (equal (rgfi *RDI* x86) n))
+   :g-bindings
+   `((n    (:g-number ,(increasing-list 0 1 33))))
+   :n-counterexamples 0
+   :rule-classes nil))
 
 (def-gl-thm x86-popcount-32-correct
   :hyp (and (natp n)
@@ -444,17 +494,6 @@
    (cons #x40064f #x00) ;;
 
    ))
-
-(gl::def-gl-rewrite split-on-logapp-of-create-undef
-  ;; From Sol Swords.
-  (equal (logapp 1 (create-undef x) 0)
-         (let ((undef (create-undef x)))
-           (if (gl::gl-hide (logbitp 0 undef))
-               1
-             0))))
-
-(gl::def-gl-rewrite integerp-of-create-undef
-  (equal (integerp (create-undef n)) t))
 
 ;; FAILS!
 (acl2::must-fail

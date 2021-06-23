@@ -143,7 +143,6 @@
                   (:rewrite rflagsbits->ac-of-write-with-mask)
                   (:rewrite acl2::bfix-when-not-1)
                   (:rewrite unsigned-byte-p-when-mxcsrbits-p)
-                  (:type-prescription logtail-*2^x-byte-pseudo-page*-of-physical-address)
                   (:rewrite unsigned-byte-p-when-cr0bits-p)
                   (:rewrite
                    infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-with-disjoint-p$)
@@ -493,13 +492,13 @@
                         12))
                       :R X86))))
                   (XW
-                   :RIP 0 (+ 193 (XR :RIP 0 X86))
+                   :RIP nil (+ 193 (XR :RIP nil X86))
                    (XW
-                    :UNDEF 0 (+ 39 (NFIX (XR :UNDEF 0 X86)))
+                    :UNDEF nil (+ 39 (NFIX (XR :UNDEF nil X86)))
                     (XW
-                     :RFLAGS 0
+                     :RFLAGS nil
                      (RFLAGSBITS
-                      0 (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+                      0 (RFLAGSBITS->RES1 (XR :RFLAGS nil X86))
                       (PF-SPEC64
                        (LOGIOR
                         (LOGAND
@@ -554,10 +553,10 @@
                                  :R X86))))
                              12))
                            :R X86)))))
-                      (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+                      (RFLAGSBITS->RES2 (XR :RFLAGS nil X86))
                       (LOGHEAD 1
-                               (CREATE-UNDEF (+ 38 (NFIX (XR :UNDEF 0 X86)))))
-                      (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+                               (CREATE-UNDEF (+ 38 (NFIX (XR :UNDEF nil X86)))))
+                      (RFLAGSBITS->RES3 (XR :RFLAGS nil X86))
                       (ZF-SPEC
                        (LOGIOR
                         (LOGAND
@@ -666,23 +665,23 @@
                                  :R X86))))
                              12))
                            :R X86)))))
-                      (RFLAGSBITS->TF (XR :RFLAGS 0 X86))
-                      (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
-                      (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
-                      0 (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
-                      (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
-                      (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
-                      (RFLAGSBITS->RF (XR :RFLAGS 0 X86))
-                      (RFLAGSBITS->VM (XR :RFLAGS 0 X86))
-                      (BOOL->BIT (LOGBITP 18 (XR :RFLAGS 0 X86)))
-                      (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
-                      (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
-                      (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
-                      (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86)))
+                      (RFLAGSBITS->TF (XR :RFLAGS nil X86))
+                      (RFLAGSBITS->INTF (XR :RFLAGS nil X86))
+                      (RFLAGSBITS->DF (XR :RFLAGS nil X86))
+                      0 (RFLAGSBITS->IOPL (XR :RFLAGS nil X86))
+                      (RFLAGSBITS->NT (XR :RFLAGS nil X86))
+                      (RFLAGSBITS->RES4 (XR :RFLAGS nil X86))
+                      (RFLAGSBITS->RF (XR :RFLAGS nil X86))
+                      (RFLAGSBITS->VM (XR :RFLAGS nil X86))
+                      (BOOL->BIT (LOGBITP 18 (XR :RFLAGS nil X86)))
+                      (RFLAGSBITS->VIF (XR :RFLAGS nil X86))
+                      (RFLAGSBITS->VIP (XR :RFLAGS nil X86))
+                      (RFLAGSBITS->ID (XR :RFLAGS nil X86))
+                      (RFLAGSBITS->RES5 (XR :RFLAGS nil X86)))
                      (MV-NTH
                       2
                       (LAS-TO-PAS
-                       3 (+ 190 (XR :RIP 0 X86))
+                       3 (+ 190 (XR :RIP nil X86))
                        :X
                        (MV-NTH
                         1
@@ -763,7 +762,7 @@
                          (MV-NTH
                           2
                           (LAS-TO-PAS
-                           6 (+ 184 (XR :RIP 0 X86))
+                           6 (+ 184 (XR :RIP nil X86))
                            :X
                            (MV-NTH
                             2
@@ -792,12 +791,12 @@
                              (MV-NTH
                               2
                               (LAS-TO-PAS
-                               40 (+ 144 (XR :RIP 0 X86))
+                               40 (+ 144 (XR :RIP nil X86))
                                :X
                                (MV-NTH
                                 2
                                 (LAS-TO-PAS
-                                 3 (+ 140 (XR :RIP 0 X86))
+                                 3 (+ 140 (XR :RIP nil X86))
                                  :X
                                  (MV-NTH
                                   2
@@ -812,12 +811,12 @@
                                    (MV-NTH
                                     2
                                     (LAS-TO-PAS
-                                     32 (+ 108 (XR :RIP 0 X86))
+                                     32 (+ 108 (XR :RIP nil X86))
                                      :X
                                      (MV-NTH
                                       2
                                       (LAS-TO-PAS
-                                       18 (+ 86 (XR :RIP 0 X86))
+                                       18 (+ 86 (XR :RIP nil X86))
                                        :X
                                        (MV-NTH
                                         2
@@ -850,12 +849,12 @@
                                          (MV-NTH
                                           2
                                           (LAS-TO-PAS
-                                           40 (+ 46 (XR :RIP 0 X86))
+                                           40 (+ 46 (XR :RIP nil X86))
                                            :X
                                            (MV-NTH
                                             2
                                             (LAS-TO-PAS
-                                             4 (+ 38 (XR :RIP 0 X86))
+                                             4 (+ 38 (XR :RIP nil X86))
                                              :X
                                              (MV-NTH
                                               2
@@ -872,7 +871,7 @@
                                                (MV-NTH
                                                 2
                                                 (LAS-TO-PAS
-                                                 25 (+ 13 (XR :RIP 0 X86))
+                                                 25 (+ 13 (XR :RIP nil X86))
                                                  :X
                                                  (MV-NTH
                                                   2
@@ -882,7 +881,7 @@
                                                    (MV-NTH
                                                     2
                                                     (LAS-TO-PAS
-                                                     5 (+ 8 (XR :RIP 0 X86))
+                                                     5 (+ 8 (XR :RIP nil X86))
                                                      :X
                                                      (MV-NTH
                                                       1
@@ -892,7 +891,7 @@
                                                        (MV-NTH
                                                         2
                                                         (LAS-TO-PAS
-                                                         8 (XR :RIP 0 X86)
+                                                         8 (XR :RIP nil X86)
                                                          :X
                                                          X86)))))))))))))))))))))))))))))))))))))))))))))
     (XW
@@ -1026,13 +1025,13 @@
                   12))
                 :R X86))))
             (XW
-             :RIP 0
+             :RIP nil
              (LOGEXT 64
                      (MV-NTH 1 (RB 8 (XR :RGF *RSP* X86) :R X86)))
              (XW
-              :UNDEF 0 (+ 46 (NFIX (XR :UNDEF 0 X86)))
+              :UNDEF nil (+ 46 (NFIX (XR :UNDEF nil X86)))
               (XW
-               :RFLAGS 0
+               :RFLAGS nil
                (RFLAGSBITS
                 (BOOL->BIT
                  (<
@@ -1117,7 +1116,7 @@
                              :R X86))))
                          12))
                        :R X86)))))))
-                (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+                (RFLAGSBITS->RES1 (XR :RFLAGS nil X86))
                 (PF-SPEC64
                  (LOGHEAD
                   64
@@ -1214,7 +1213,7 @@
                                 :R X86))))
                             12))
                           :R X86))))))))))
-                (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+                (RFLAGSBITS->RES2 (XR :RFLAGS nil X86))
                 (SUB-AF-SPEC64
                  (LOGAND
                   4503598553628672
@@ -1297,7 +1296,7 @@
                             :R X86))))
                         12))
                       :R X86))))))
-                (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+                (RFLAGSBITS->RES3 (XR :RFLAGS nil X86))
                 1
                 (SF-SPEC64
                  (LOGHEAD
@@ -1395,9 +1394,9 @@
                                 :R X86))))
                             12))
                           :R X86))))))))))
-                (RFLAGSBITS->TF (XR :RFLAGS 0 X86))
-                (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
-                (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+                (RFLAGSBITS->TF (XR :RFLAGS nil X86))
+                (RFLAGSBITS->INTF (XR :RFLAGS nil X86))
+                (RFLAGSBITS->DF (XR :RFLAGS nil X86))
                 (OF-SPEC64
                  (+
                   (LOGAND
@@ -1492,16 +1491,16 @@
                                :R X86))))
                            12))
                          :R X86)))))))))
-                (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
-                (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
-                (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
-                (RFLAGSBITS->RF (XR :RFLAGS 0 X86))
-                (RFLAGSBITS->VM (XR :RFLAGS 0 X86))
-                (BOOL->BIT (LOGBITP 18 (XR :RFLAGS 0 X86)))
-                (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
-                (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
-                (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
-                (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86)))
+                (RFLAGSBITS->IOPL (XR :RFLAGS nil X86))
+                (RFLAGSBITS->NT (XR :RFLAGS nil X86))
+                (RFLAGSBITS->RES4 (XR :RFLAGS nil X86))
+                (RFLAGSBITS->RF (XR :RFLAGS nil X86))
+                (RFLAGSBITS->VM (XR :RFLAGS nil X86))
+                (BOOL->BIT (LOGBITP 18 (XR :RFLAGS nil X86)))
+                (RFLAGSBITS->VIF (XR :RFLAGS nil X86))
+                (RFLAGSBITS->VIP (XR :RFLAGS nil X86))
+                (RFLAGSBITS->ID (XR :RFLAGS nil X86))
+                (RFLAGSBITS->RES5 (XR :RFLAGS nil X86)))
                (MV-NTH
                 2
                 (LAS-TO-PAS
@@ -1510,12 +1509,12 @@
                  (MV-NTH
                   2
                   (LAS-TO-PAS
-                   40 (+ 206 (XR :RIP 0 X86))
+                   40 (+ 206 (XR :RIP nil X86))
                    :X
                    (MV-NTH
                     2
                     (LAS-TO-PAS
-                     15 (+ 190 (XR :RIP 0 X86))
+                     15 (+ 190 (XR :RIP nil X86))
                      :X
                      (MV-NTH
                       1
@@ -1603,7 +1602,7 @@
                        (MV-NTH
                         2
                         (LAS-TO-PAS
-                         6 (+ 184 (XR :RIP 0 X86))
+                         6 (+ 184 (XR :RIP nil X86))
                          :X
                          (MV-NTH
                           2
@@ -1635,12 +1634,12 @@
                            (MV-NTH
                             2
                             (LAS-TO-PAS
-                             40 (+ 144 (XR :RIP 0 X86))
+                             40 (+ 144 (XR :RIP nil X86))
                              :X
                              (MV-NTH
                               2
                               (LAS-TO-PAS
-                               3 (+ 140 (XR :RIP 0 X86))
+                               3 (+ 140 (XR :RIP nil X86))
                                :X
                                (MV-NTH
                                 2
@@ -1657,12 +1656,12 @@
                                  (MV-NTH
                                   2
                                   (LAS-TO-PAS
-                                   32 (+ 108 (XR :RIP 0 X86))
+                                   32 (+ 108 (XR :RIP nil X86))
                                    :X
                                    (MV-NTH
                                     2
                                     (LAS-TO-PAS
-                                     18 (+ 86 (XR :RIP 0 X86))
+                                     18 (+ 86 (XR :RIP nil X86))
                                      :X
                                      (MV-NTH
                                       2
@@ -1698,12 +1697,12 @@
                                        (MV-NTH
                                         2
                                         (LAS-TO-PAS
-                                         40 (+ 46 (XR :RIP 0 X86))
+                                         40 (+ 46 (XR :RIP nil X86))
                                          :X
                                          (MV-NTH
                                           2
                                           (LAS-TO-PAS
-                                           4 (+ 38 (XR :RIP 0 X86))
+                                           4 (+ 38 (XR :RIP nil X86))
                                            :X
                                            (MV-NTH
                                             2
@@ -1723,7 +1722,7 @@
                                              (MV-NTH
                                               2
                                               (LAS-TO-PAS
-                                               25 (+ 13 (XR :RIP 0 X86))
+                                               25 (+ 13 (XR :RIP nil X86))
                                                :X
                                                (MV-NTH
                                                 2
@@ -1733,7 +1732,7 @@
                                                  (MV-NTH
                                                   2
                                                   (LAS-TO-PAS
-                                                   5 (+ 8 (XR :RIP 0 X86))
+                                                   5 (+ 8 (XR :RIP nil X86))
                                                    :X
                                                    (MV-NTH
                                                     1
@@ -1745,7 +1744,7 @@
                                                      (MV-NTH
                                                       2
                                                       (LAS-TO-PAS
-                                                       8 (XR :RIP 0 X86)
+                                                       8 (XR :RIP nil X86)
                                                        :X
                                                        X86)))))))))))))))))))))))))))))))))))))))))))))))))))))
 

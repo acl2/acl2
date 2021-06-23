@@ -133,8 +133,8 @@
     :stobjp T                      ;;  and whether it's a stobj
     :hyps ((clc-stc-hyps x86))     ;; invariant to assume about state
     :step x86-fetch-decode-execute ;; name of step function
-    :get-pc (lambda (x86) (xr :rip 0 x86))     ;; how to fetch the pc
-    :put-pc (lambda (v x86) (xw :rip 0 v x86)) ;; how to set the pc
+    :get-pc (lambda (x86) (xr :rip nil x86))     ;; how to fetch the pc
+    :put-pc (lambda (v x86) (xw :rip nil v x86)) ;; how to set the pc
 
     ;; the ``drivers'' below specify how to dive through updaters (and
     ;; constructors) and their accessors

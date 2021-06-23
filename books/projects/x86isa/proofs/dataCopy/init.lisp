@@ -211,9 +211,9 @@
 
   (and (x86p x86)
        (64-bit-modep x86)
-       (xr :app-view 0 x86)
-       (equal (xr :ms 0 x86) nil)
-       (equal (xr :fault 0 x86) nil)
+       (xr :app-view nil x86)
+       (equal (xr :ms nil x86) nil)
+       (equal (xr :fault nil x86) nil)
        (unsigned-byte-p 34 m)
        (equal (mod m 4) 0)
        (unsigned-byte-p 34 k)
@@ -277,15 +277,15 @@
        (posp m)
        (equal (xr :rgf *rdi* x86) src-addr)
        (equal (xr :rgf *rsi* x86) dst-addr)
-       (equal addr (+ -16 (xr :rip 0 x86)))))
+       (equal addr (+ -16 (xr :rip nil x86)))))
 
 (defthm loop-preconditions-fwd-chain-to-its-body
   (implies (loop-preconditions k m addr src-addr dst-addr x86)
            (and (x86p x86)
                 (64-bit-modep x86)
-                (xr :app-view 0 x86)
-                (equal (xr :ms 0 x86) nil)
-                (equal (xr :fault 0 x86) nil)
+                (xr :app-view nil x86)
+                (equal (xr :ms nil x86) nil)
+                (equal (xr :fault nil x86) nil)
                 (unsigned-byte-p 34 m)
                 (equal (mod m 4) 0)
                 (unsigned-byte-p 34 k)
@@ -348,7 +348,7 @@
                 (posp m)
                 (equal (xr :rgf *rdi* x86) src-addr)
                 (equal (xr :rgf *rsi* x86) dst-addr)
-                (equal addr (+ -16 (xr :rip 0 x86)))))
+                (equal addr (+ -16 (xr :rip nil x86)))))
   :rule-classes :forward-chaining)
 
 ;; ======================================================================

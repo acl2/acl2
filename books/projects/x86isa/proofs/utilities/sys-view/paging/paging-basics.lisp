@@ -65,45 +65,37 @@
 (local (in-theory (e/d* () (greater-logbitp-of-unsigned-byte-p not))))
 
 (encapsulate
- ()
-
- (defrule loghead-1-bool->bit-rule
-   (equal (loghead 1 (bool->bit x))
-          (bool->bit x)))
-
- (encapsulate
   ()
 
-  (local (include-book "arithmetic-5/top" :dir :system))
+  (defrule loghead-1-bool->bit-rule
+    (equal (loghead 1 (bool->bit x))
+           (bool->bit x)))
 
-  (defrule low-3-bits-0-add-7-preserve-bound
-    (implies (and (equal (loghead 3 x) 0)
-                  (< x *mem-size-in-bytes*)
-                  (integerp x))
-             (< (+ 7 x) *mem-size-in-bytes*))
-    :in-theory (e/d* (loghead) ())))
+  (encapsulate
+    ()
 
- (defthm-unsigned-byte-p rm-low-64-logand-logior-helper-1
-   :hyp (and (n64p x)
-             (syntaxp (quotep n))
-             (natp n)
-             (<= n 64)
-             (equal m (- (1+ n))))
-   :bound 64
-   :concl (logior n (logand m x))
-   :hints-l (("Goal" :in-theory (e/d () (force (force)))))
-   :gen-type t
-   :gen-linear t))
+    (local (include-book "arithmetic-5/top" :dir :system))
+
+    (defrule low-3-bits-0-add-7-preserve-bound
+      (implies (and (equal (loghead 3 x) 0)
+                    (< x *mem-size-in-bytes*)
+                    (integerp x))
+               (< (+ 7 x) *mem-size-in-bytes*))
+      :in-theory (e/d* (loghead) ())))
+
+  (defthm-unsigned-byte-p rm-low-64-logand-logior-helper-1
+    :hyp (and (n64p x)
+              (syntaxp (quotep n))
+              (natp n)
+              (<= n 64)
+              (equal m (- (1+ n))))
+    :bound 64
+    :concl (logior n (logand m x))
+    :hints-l (("Goal" :in-theory (e/d () (unsigned-byte-p force (force)))))
+    :gen-type t
+    :gen-linear t))
 
 (in-theory (e/d* (low-3-bits-0-add-7-preserve-bound) ()))
-
-;; Disabling some expensive rules:
-
-(local
- (in-theory (e/d ()
-                 (ash-monotone-2
-                  <-preserved-by-adding-<-*pseudo-page-size-in-bytes*-commuted
-                  <-preserved-by-adding-<-*pseudo-page-size-in-bytes*))))
 
 ;; ======================================================================
 

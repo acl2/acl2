@@ -733,6 +733,13 @@
 ;; INSTRUCTION: PUSHF/PUSHFQ
 ;; ======================================================================
 
+(defthm-unsigned-byte-p n32p-xr-rflags
+  :hyp t
+  :bound 32
+  :concl (xr :rflags i x86)
+  :gen-linear t
+  :gen-type t)
+
 (def-inst x86-pushf
 
   ;; #x9C: Op/En: NP

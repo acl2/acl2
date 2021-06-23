@@ -74,6 +74,13 @@
                                acl2::ihsext-inductions)
                               ()))))
 
+(defthm-unsigned-byte-p n64p-xr-ctr
+  :hyp t
+  :bound 64
+  :concl (xr :ctr i x86)
+  :gen-linear t
+  :gen-type t)
+
 (define good-lin-addr-p (lin-addr x86)
 
   :parents (ia32e-paging)
@@ -381,40 +388,95 @@
 ;; confusing arithmetic expressions involving logtail, loghead, etc.
 
 (encapsulate
+
   ()
 
-  (local (include-book "arithmetic-5/top" :dir :system))
+  (encapsulate
+    ()
+
+    (local (include-book "arithmetic-5/top" :dir :system))
+
+    (defthm break-logand-into-loghead-and-logtail
+      (implies (and (natp x)
+                    (natp y)
+                    (natp n))
+               (equal (logand x y)
+                      (+
+                       (* (expt 2 n)
+                          (logand (logtail n x)
+                                  (logtail n y)))
+                       (logand (loghead n x)
+                               (loghead n y)))))
+      :hints (("Goal" :in-theory (e/d (loghead logtail ifix) ())))
+      :rule-classes nil)
+
+    (defthm logand-identity-lemma-for-base-addr
+      (implies (and (syntaxp (quotep n))
+                    (natp n)
+                    (equal (loghead 12 base-addr) 0)
+                    (unsigned-byte-p 52 base-addr)
+                    (equal (logtail 12 n) (1- (ash 1 52))))
+               (equal (logand n base-addr)
+                      base-addr))
+      :hints (("Goal" :in-theory (e/d (logtail loghead) ())
+               :use ((:instance break-logand-into-loghead-and-logtail
+                                (x n)
+                                (y base-addr)
+                                (n 12))))))
+
+    (defthm adding-7-to-base-addr-lemma
+      (implies (and (equal (loghead 3 x) 0)
+                    (unsigned-byte-p 52 x))
+               (unsigned-byte-p 52 (+ 7 x)))
+      :hints (("Goal" :in-theory (e/d* (loghead) ())))))
+
 
   (local
-   (defthm adding-7-to-shifted-bits-helper
-     (implies (and (syntaxp (quotep n))
-                   (natp n)
-                   (equal (loghead 12 base-addr) 0)
+   (defthm logior-base-addr-i-lemma
+     (implies (and (equal (loghead 12 base-addr) 0)
                    (unsigned-byte-p 52 base-addr)
-                   (equal (logtail 12 n) (1- (ash 1 52))))
-              (equal (logand n base-addr)
-                     base-addr))
-     :hints (("Goal" :in-theory (e/d (logtail loghead) ())
-              :use ((:instance break-logand-into-loghead-and-logtail
-                               (x n)
-                               (y base-addr)
-                               (n 12)))))))
+                   (unsigned-byte-p 12 i))
+              (unsigned-byte-p 52 (logior base-addr i)))
+     :hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+                                       bitops::ihsext-recursive-redefs)
+                                      (unsigned-byte-p))))))
+
+  (local
+   (defthm low-3-bits-of-logior-base-addr-i
+     (implies (equal (loghead 12 base-addr) 0)
+              (equal (loghead 3 (logior base-addr (ash x 3))) 0))))
+
+  (local
+   (defthm unsigned-byte-p-of-7+logior-base-addr-i
+     (implies (and (equal (loghead 12 base-addr) 0)
+                   (equal (loghead 3 i) 0)
+                   (unsigned-byte-p 52 base-addr)
+                   (unsigned-byte-p 12 i))
+              (unsigned-byte-p 52 (+ 7 (logior base-addr i))))
+     :hints (("Goal" :in-theory (e/d* ()
+                                      (unsigned-byte-p))))))
 
   (defthm adding-7-to-shifted-bits
     (implies (and (equal (loghead 12 base-addr) 0)
                   (unsigned-byte-p 52 base-addr)
                   (unsigned-byte-p 9 x))
-             (<
-              (+ 7
-                 (logior (logand 18446744073709547527 base-addr)
-                         (ash x 3)))
-              *mem-size-in-bytes*))
-    :hints (("Goal" :in-theory (e/d (loghead) ())))))
+             ;; (< (+ 7 (logior base-addr (ash x 3)))
+             ;;    *mem-size-in-bytes*)
+             (unsigned-byte-p 52 (+ 7 (logior base-addr (ash x 3)))))
+    :hints (("Goal"
+             :use ((:instance unsigned-byte-p-of-7+logior-base-addr-i
+                              (base-addr base-addr)
+                              (i (ash x 3))))
+             :in-theory (e/d ()
+                             (unsigned-byte-p-of-7+logior-base-addr-i))))))
+
+
 
 (encapsulate
   ()
 
   (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+  (local (in-theory (e/d () (unsigned-byte-p))))
 
   (define page-table-entry-addr
     ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -761,10 +823,12 @@ accesses.</p>
                             (:rewrite default-<-2)
                             bitops::unsigned-byte-p-incr
                             weed-out-irrelevant-logand-when-first-operand-constant
-                            negative-logand-to-positive-logand-with-integerp-x)))))
+                            negative-logand-to-positive-logand-with-integerp-x
+                            (tau-system))))))
 
   :guard (not (app-view x86))
-  :returns (mv flg val (x86 x86p :hyp (x86p x86)))
+  :returns (mv flg val (x86 x86p :hyp (x86p x86)
+                            :hints (("Goal" :in-theory (e/d () (x86p))))))
 
   (b* ((entry (mbe :logic (loghead 64 entry)
                    :exec entry))
@@ -1348,7 +1412,8 @@ accesses.</p>
               (mv-nth 2
                       (ia32e-la-to-pa-page-table
                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                       wp smep smap ac nxe r-w-x cpl x86)))))
+                       wp smep smap ac nxe r-w-x cpl x86))))
+    :hints (("Goal" :in-theory (e/d () (x86p)))))
 
   (defthm xr-ia32e-la-to-pa-page-table
     (implies (and (not (equal fld :mem))
@@ -1683,7 +1748,8 @@ accesses.</p>
                       (ia32e-la-to-pa-page-directory
                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
                        wp smep smap ac nxe r-w-x cpl
-                       x86)))))
+                       x86))))
+    :hints (("Goal" :in-theory (e/d () (x86p)))))
 
   (defthm xr-ia32e-la-to-pa-page-directory
     (implies (and (not (equal fld :mem))
@@ -2025,7 +2091,8 @@ accesses.</p>
                       (ia32e-la-to-pa-page-dir-ptr-table
                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
                        wp smep smap ac nxe r-w-x cpl
-                       x86)))))
+                       x86))))
+    :hints (("Goal" :in-theory (e/d () (x86p)))))
 
   (defthm xr-ia32e-la-to-pa-page-dir-ptr-table
     (implies (and (not (equal fld :mem))
@@ -2284,7 +2351,8 @@ accesses.</p>
                       (ia32e-la-to-pa-pml4-table
                        lin-addr base-addr
                        wp smep smap ac nxe r-w-x cpl
-                       x86)))))
+                       x86))))
+    :hints (("Goal" :in-theory (e/d () (x86p)))))
 
   (defthm xr-ia32e-la-to-pa-pml4-table
     (implies (and (not (equal fld :mem))
@@ -2396,8 +2464,8 @@ accesses.</p>
 
 (defabbrev cpl (x86)
   (the (unsigned-byte 2)
-    (segment-selectorBits->rpl
-     (the (unsigned-byte 16) (xr :seg-visible #.*cs* x86)))))
+       (segment-selectorBits->rpl
+        (the (unsigned-byte 16) (seg-visiblei #.*cs* x86)))))
 
 (define ia32e-la-to-pa
   ((lin-addr :type (signed-byte   #.*max-linear-address-size*)
@@ -2470,7 +2538,8 @@ accesses.</p>
 
   (defthm x86p-mv-nth-2-ia32e-la-to-pa
     (implies (x86p x86)
-             (x86p (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))))
+             (x86p (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))))
+    :hints (("Goal" :in-theory (e/d () (x86p)))))
 
   (defthm xr-ia32e-la-to-pa
     (implies (and (not (equal fld :mem))
@@ -2520,12 +2589,12 @@ accesses.</p>
                     (rflagsBits->ac (rflags x86)))
              (and (equal (mv-nth 0
                                  (ia32e-la-to-pa lin-addr r-w-x
-                                                 (xw :rflags 0 value x86)))
+                                                 (xw :rflags nil value x86)))
                          (mv-nth 0
                                  (ia32e-la-to-pa lin-addr r-w-x x86)))
                   (equal (mv-nth 1
                                  (ia32e-la-to-pa lin-addr r-w-x
-                                                 (xw :rflags 0 value x86)))
+                                                 (xw :rflags nil value x86)))
                          (mv-nth 1
                                  (ia32e-la-to-pa lin-addr r-w-x x86)))))
     :hints (("Goal" :in-theory (e/d (rflagsbits->ac rflagsbits-fix) ()))))
@@ -2553,8 +2622,8 @@ accesses.</p>
                     (rflagsBits->ac (rflags x86)))
              (equal (mv-nth 2
                             (ia32e-la-to-pa lin-addr r-w-x
-                                            (xw :rflags 0 value x86)))
-                    (xw :rflags 0 value
+                                            (xw :rflags nil value x86)))
+                    (xw :rflags nil value
                         (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))))
     :hints (("Goal" :in-theory (e/d* (rflagsBits->ac rflagsbits-fix) (force (force))))))
 
@@ -2937,6 +3006,34 @@ accesses.</p>
   :hints (("Goal" :in-theory (e/d () (ia32e-la-to-pa-lower-12-bits))))
   :rule-classes :linear)
 
+(encapsulate
+
+  ()
+
+  (local (include-book "arithmetic-5/top" :dir :system))
+
+  (defthm logtail-and-loghead-equality
+    (implies (and (equal (logtail n x) (logtail n y))
+                  (equal (loghead n x) (loghead n y))
+                  (natp x)
+                  (natp y))
+             (equal x y))
+    :hints (("Goal" :in-theory (enable logtail loghead)))
+    :rule-classes ((:forward-chaining
+                    ;; These trigger terms are no good if the hyps of
+                    ;; the theorem to be proved have something like
+                    ;; (and (equal (logtail n x) 0)
+                    ;;      (equal (logtail n x) 0))
+                    ;; But, for my use case so far, the following terms
+                    ;; do fine, though (equal (loghead n x) (loghead n
+                    ;; y)) is not a good candidate since logheads
+                    ;; appear separately, like:
+                    ;; (and (equal (loghead n x) 0)
+                    ;;      (equal (loghead n x) 0))
+                    :trigger-terms ((equal (logtail n x) (logtail n y))
+                                    ;; (equal (loghead n x) (loghead n y))
+                                    )))))
+
 (defthm loghead-monotonic-when-upper-bits-are-equal
   ;; See also the rule logtail-and-loghead-equality.
   (implies (and (< (loghead x a) (loghead x b))
@@ -2952,18 +3049,6 @@ accesses.</p>
            unsigned-byte-p**))))
   :rule-classes :forward-chaining)
 
-(defthm logtail-and-loghead-inequality
-  ;; See also the rule logtail-and-loghead-equality, which is a
-  ;; forward-chaining rule.  This is a :rule-classes nil instead.
-  (implies (and (<= (logtail n x) (logtail n y))
-                (< (loghead n x) (loghead n y))
-                (natp n)
-                (natp x)
-                (natp y))
-           (< x y))
-  :hints (("Goal" :cases ((< (logtail n x) (logtail n y)))))
-  :rule-classes nil)
-
 (defthm logtail-and-loghead-inequality-with-low-bits-equal
   (implies (and (<= (logtail n x) (logtail n y))
                 (equal (loghead n x) (loghead n y))
@@ -2978,6 +3063,28 @@ accesses.</p>
             (loghead-equality-monotone
              acl2::loghead-identity
              unsigned-byte-p**))))
+  :rule-classes nil)
+
+(defthm logtail-monotone-1
+  (implies (and (natp a)
+                (natp b)
+                (<= a b))
+           (<= (logtail x a) (logtail x b)))
+  :hints
+  (("Goal" :in-theory
+    (e/d* (acl2::ihsext-inductions acl2::ihsext-recursive-redefs)))))
+
+(defthm logtail-and-loghead-inequality
+  ;; See also the rule logtail-and-loghead-equality, which is a
+  ;; forward-chaining rule.  This is a :rule-classes nil instead.
+  (implies (and (<= (logtail n x) (logtail n y))
+                (< (loghead n x) (loghead n y))
+                (natp n)
+                (natp x)
+                (natp y))
+           (< x y))
+  :hints (("Goal"
+           :cases ((< (logtail n x) (logtail n y)))))
   :rule-classes nil)
 
 (defthmd ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-<-4093-helper

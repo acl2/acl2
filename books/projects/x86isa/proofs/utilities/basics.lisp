@@ -40,10 +40,9 @@
 
 (in-package "X86ISA")
 (include-book "x86" :ttags :all :dir :machine)
+(include-book "../../portcullis/utils")
 (include-book "tools/mv-nth" :dir :system)
-
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-(local (include-book "arithmetic-5/top" :dir :system))
 
 ;; ======================================================================
 
@@ -60,6 +59,87 @@
 ;; Some useful arithmetic theorems, currently placed here because
 ;; they've yet to find a good home:
 
+(encapsulate
+  ()
+  (local (include-book "arithmetic/top-with-meta" :dir :system))
+
+  (defthmd expt-to-ash
+    (implies (and (natp n)
+                  (integerp x))
+             (equal (ash x n) (* x (expt 2 n))))
+    :hints (("Goal" :in-theory (e/d* (expt ash floor) ()))))
+
+  (defthmd logior-expt-to-plus-helper-1
+    (implies (and (natp n)
+                  (integerp x)
+                  (unsigned-byte-p n y))
+             (equal (loghead n (logior y (ash x n))) y))
+    :hints (("Goal" :in-theory (e/d* (unsigned-byte-p
+                                      ihsext-inductions
+                                      ihsext-recursive-redefs)
+                                     ()))))
+
+  (defthmd logior-expt-to-plus-helper-2
+    (implies (and (natp n)
+                  (integerp x)
+                  (unsigned-byte-p n y))
+             (equal (logtail n (logior y (ash x n))) x))
+    :hints (("Goal" :in-theory (e/d* (unsigned-byte-p
+                                      ihsext-inductions
+                                      ihsext-recursive-redefs)
+                                     ()))))
+
+  (defthmd putting-loghead-and-logtail-together
+    (implies (and (equal (logtail n w) x)
+                  (equal (loghead n w) y)
+                  (integerp w)
+                  (natp n))
+             (equal (+ y (ash x n)) w))
+    :hints (("Goal" :in-theory (e/d* (ihsext-recursive-redefs
+                                      ihsext-inductions)
+                                     ()))))
+
+  (defthmd logior-to-plus-with-ash
+    (implies (and (natp n)
+                  (integerp x)
+                  (unsigned-byte-p n y))
+             (equal (logior y (ash x n))
+                    (+ y (ash x n))))
+    :hints (("Goal"
+             :use ((:instance logior-expt-to-plus-helper-1)
+                   (:instance logior-expt-to-plus-helper-2)
+                   (:instance putting-loghead-and-logtail-together
+                              (w (logior y (ash x n))))))))
+
+  ;; Sometimes, it's easier to reason about addition instead of logical
+  ;; OR.
+
+  (defthmd logior-expt-to-plus
+    (implies (and (natp n)
+                  (integerp x)
+                  (unsigned-byte-p n y))
+             (equal (logior y (* x (expt 2 n)))
+                    (+ (* (expt 2 n) x) y)))
+    :hints (("Goal" :use ((:instance expt-to-ash)
+                          (:instance logior-to-plus-with-ash)))))
+
+  ;; Now for a new version of logior-expt-to-plus using a constant in
+  ;; place of (expt 2 n)....
+
+  (local (in-theory (e/d (logior-expt-to-plus) ())))
+  (defthmd logior-expt-to-plus-quotep
+    (implies (and (bind-free (and (quotep k)
+                                  (let* ((k0 (acl2::unquote k))
+                                         (n (log-2 k0 0)))
+                                    (and (eql k0 (expt 2 n))
+                                         (list (cons 'n (kwote n)))))))
+                  (natp n)
+                  (eql k (expt 2 n))
+                  (integerp x)
+                  (unsigned-byte-p n y))
+             (equal (logior y (* k x))
+                    (+ (* k x) y)))))
+
 (defthm loghead-unequal
   (implies (and (signed-byte-p x a)
                 (signed-byte-p x b)
@@ -70,15 +150,18 @@
     (e/d* (acl2::ihsext-inductions acl2::ihsext-recursive-redefs)
           (signed-byte-p)))))
 
+(local (include-book "arithmetic-5/top" :dir :system))
+
 (defthm putting-logior-loghead-ash-logtail-together
   (implies (and (syntaxp (quotep n))
                 (unsigned-byte-p (* 2 n) x))
            (equal (logior (loghead n x)
                           (ash (logtail n x) n))
                   x))
-  :hints (("Goal" :in-theory
-           (e/d (loghead logtail logior-expt-to-plus-quotep)
-                ()))))
+  :hints (("Goal" :in-theory (e/d (loghead
+                                   logtail
+                                   logior-expt-to-plus)
+                                  ()))))
 
 ;; ======================================================================
 

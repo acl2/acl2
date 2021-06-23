@@ -43,7 +43,7 @@
 ; Instruction to cert.pl for dependency tracking.
 ; (depends-on "register-readers-and-writers-raw.lsp")
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 (defsection register-readers-and-writers
   :parents (machine)
@@ -51,7 +51,9 @@
   registers"
   )
 
-;; ======================================================================
+(local (in-theory (e/d () (unsigned-byte-p))))
+
+;; ----------------------------------------------------------------------
 
 (defsection GPR-indices
 
@@ -129,11 +131,18 @@ prefix.</p>"
                (unsigned-byte-p 4 reg))
       :rule-classes :forward-chaining)))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ;; [Jared] these rules broke something below
-(local (in-theory (disable BITOPS::LOGEXT-OF-LOGAND
-                           BITOPS::LOGEXT-OF-LOGIOR)))
+(local (in-theory (disable bitops::logext-of-logand
+                           bitops::logext-of-logior)))
+
+(defthm-signed-byte-p n08p-xr-rgf
+  :hyp t
+  :bound 64
+  :concl (xr :rgf i x86)
+  :gen-linear t
+  :gen-type t)
 
 (defsection GPRs-Reads-and-Writes
 
@@ -191,15 +200,16 @@ are used to write natural numbers into the GPRs.</p>"
 
  <p>In 32-bit mode, this function is called with 0 as REX.</p>"
 
-    (cond ((or (not (eql rex 0))
-               (< reg 4))
-           (let ((qword (the (signed-byte 64) (rgfi reg x86))))
-             (n08 qword)))
-          (t ;; no rex and reg is at least 4 -- then read from AH, etc.
-           (let ((qword
-                  (the (signed-byte 64) (rgfi (the (unsigned-byte 4) (- reg 4)) x86))))
-             (mbe :logic (part-select qword :low 8 :width 8)
-                  :exec (n08 (ash qword -8))))))
+    (b* ((reg (mbe :logic (nfix reg) :exec reg)))
+      (cond ((or (not (eql rex 0))
+                 (< reg 4))
+             (let ((qword (the (signed-byte 64) (rgfi reg x86))))
+               (n08 qword)))
+            (t ;; no rex and reg is at least 4 -- then read from AH, etc.
+             (let ((qword
+                    (the (signed-byte 64) (rgfi (the (unsigned-byte 4) (- reg 4)) x86))))
+               (mbe :logic (part-select qword :low 8 :width 8)
+                    :exec (n08 (ash qword -8)))))))
 
     ///
 
@@ -207,61 +217,6 @@ are used to write natural numbers into the GPRs.</p>"
       :hyp t
       :bound 8
       :concl (rr08 reg rex x86)
-      :gen-linear t
-      :gen-type t))
-
-  (define rr16
-    ((reg :type (unsigned-byte 4))
-     (x86))
-    :inline t
-    :no-function t
-    :short "Read from word general-purpose registers"
-
-    (n16 (the (signed-byte 64) (rgfi reg x86)))
-
-    ///
-
-    (defthm-unsigned-byte-p n16p-rr16
-      :hyp t
-      :bound 16
-      :concl (rr16 reg x86)
-      :gen-linear t
-      :gen-type t))
-
-  (define rr32
-    ((reg :type (unsigned-byte 4))
-     (x86))
-    :inline t
-    :no-function t
-    :short "Read from doubleword general-purpose registers"
-
-    (n32 (the (signed-byte 64) (rgfi reg x86)))
-
-    ///
-
-    (defthm-unsigned-byte-p n32p-rr32
-      :hyp t
-      :bound 32
-      :concl (rr32 reg x86)
-      :gen-linear t
-      :gen-type t))
-
-  (define rr64
-    ((reg :type (unsigned-byte 4))
-     (x86))
-    :inline t
-    :no-function t
-    :short "Read from quadword general-purpose registers"
-    :long "<p>This function is used only in 64-bit mode.</p>"
-
-    (n64 (the (signed-byte 64) (rgfi reg x86)))
-
-    ///
-
-    (defthm-unsigned-byte-p n64p-rr64
-      :hyp t
-      :bound 64
-      :concl (rr64 reg x86)
       :gen-linear t
       :gen-type t))
 
@@ -308,40 +263,40 @@ are used to write natural numbers into the GPRs.</p>"
     to 64-bit mode (when modeled) will set the high 32 bits of general-purpose
     registers to undefined values.</p>"
 
-
-    (cond ((or (not (eql rex 0))
-               (< reg 4))
-           (let ((qword (the (signed-byte 64) (rgfi reg x86))))
-             (!rgfi reg
-                    (n64-to-i64
-                     (mbe :logic
-                          (part-install
-                           byte
-                           (part-select qword :low 0 :width 64)
-                           :low 0 :width 8)
-                          :exec
-                          (the (unsigned-byte 64)
-                            (logior (the (unsigned-byte 64)
-                                      (logand #xffffffffffffff00 qword))
-                                    byte))))
-                    x86)))
-          (t ;; no rex and reg is at least 4 -- then write to AH, etc.
-           (let* ((index (the (unsigned-byte 4)
-                           (- (the (unsigned-byte 4) reg) 4)))
-                  (qword (the (signed-byte 64) (rgfi index x86))))
-             (!rgfi index
-                    (n64-to-i64
-                     (mbe :logic
-                          (part-install
-                           byte
-                           (part-select qword :low 0 :width 64)
-                           :low 8 :width 8)
-                          :exec
-                          (the (unsigned-byte 64)
-                            (logior (the (unsigned-byte 64)
-                                      (logand #xffffffffffff00ff qword))
-                                    (the (unsigned-byte 16) (ash byte 8))))))
-                    x86))))
+    (b* ((reg (mbe :logic (nfix reg) :exec reg)))
+      (cond ((or (not (eql rex 0))
+                 (< reg 4))
+             (let ((qword (the (signed-byte 64) (rgfi reg x86))))
+               (!rgfi reg
+                      (n64-to-i64
+                       (mbe :logic
+                            (part-install
+                             byte
+                             (part-select qword :low 0 :width 64)
+                             :low 0 :width 8)
+                            :exec
+                            (the (unsigned-byte 64)
+                                 (logior (the (unsigned-byte 64)
+                                              (logand #xffffffffffffff00 qword))
+                                         byte))))
+                      x86)))
+            (t ;; no rex and reg is at least 4 -- then write to AH, etc.
+             (let* ((index (the (unsigned-byte 4)
+                                (- (the (unsigned-byte 4) reg) 4)))
+                    (qword (the (signed-byte 64) (rgfi index x86))))
+               (!rgfi index
+                      (n64-to-i64
+                       (mbe :logic
+                            (part-install
+                             byte
+                             (part-select qword :low 0 :width 64)
+                             :low 8 :width 8)
+                            :exec
+                            (the (unsigned-byte 64)
+                                 (logior (the (unsigned-byte 64)
+                                              (logand #xffffffffffff00ff qword))
+                                         (the (unsigned-byte 16) (ash byte 8))))))
+                      x86)))))
 
     ///
 
@@ -373,12 +328,30 @@ are used to write natural numbers into the GPRs.</p>"
                               (force) force)))))
 
   (defthm rr08-wr08-different
-    (implies (not (equal reg1 reg2))
+    (implies (not (equal (nfix reg1) (nfix reg2)))
              (equal (rr08 reg1 rex1 (wr08 reg2 rex2 byte x86))
                     (rr08 reg1 rex1 x86)))
     :hints (("Goal"
              :in-theory (e/d (n64-to-i64 rr08 wr08)
                              (force (force))))))
+
+  (define rr16
+    ((reg :type (unsigned-byte 4))
+     (x86))
+    :inline t
+    :no-function t
+    :short "Read from word general-purpose registers"
+
+    (n16 (the (signed-byte 64) (rgfi reg x86)))
+
+    ///
+
+    (defthm-unsigned-byte-p n16p-rr16
+      :hyp t
+      :bound 16
+      :concl (rr16 reg x86)
+      :gen-linear t
+      :gen-type t))
 
   (define wr16
     ((reg  :type (unsigned-byte 4))
@@ -431,9 +404,9 @@ are used to write natural numbers into the GPRs.</p>"
                     :low 0 :width 16)
                    :exec
                    (the (unsigned-byte 64)
-                     (logior (the (unsigned-byte 64)
-                               (logand qword #xffffffffffff0000))
-                             val))))
+                        (logior (the (unsigned-byte 64)
+                                     (logand qword #xffffffffffff0000))
+                                val))))
              x86))
 
     ///
@@ -451,12 +424,30 @@ are used to write natural numbers into the GPRs.</p>"
                              (unsigned-byte-p force (force))))))
 
   (defthm rr16-wr16-different
-    (implies (not (equal reg1 reg2))
+    (implies (not (equal (nfix reg1) (nfix reg2)))
              (equal (rr16 reg1 (wr16 reg2 val x86))
                     (rr16 reg1 x86)))
     :hints (("Goal"
              :in-theory (e/d (n64-to-i64 rr16 wr16)
                              (force (force))))))
+
+  (define rr32
+    ((reg :type (unsigned-byte 4))
+     (x86))
+    :inline t
+    :no-function t
+    :short "Read from doubleword general-purpose registers"
+
+    (n32 (the (signed-byte 64) (rgfi reg x86)))
+
+    ///
+
+    (defthm-unsigned-byte-p n32p-rr32
+      :hyp t
+      :bound 32
+      :concl (rr32 reg x86)
+      :gen-linear t
+      :gen-type t))
 
   (define wr32
     ((reg  :type (unsigned-byte  4))
@@ -517,12 +508,31 @@ are used to write natural numbers into the GPRs.</p>"
                              (unsigned-byte-p)))))
 
   (defthm rr32-wr32-different
-    (implies (not (equal reg1 reg2))
+    (implies (not (equal (nfix reg1) (nfix reg2)))
              (equal (rr32 reg1 (wr32 reg2 val x86))
                     (rr32 reg1 x86)))
     :hints (("Goal"
              :in-theory (e/d (n64-to-i64 rr32 wr32)
                              ()))))
+
+  (define rr64
+    ((reg :type (unsigned-byte 4))
+     (x86))
+    :inline t
+    :no-function t
+    :short "Read from quadword general-purpose registers"
+    :long "<p>This function is used only in 64-bit mode.</p>"
+
+    (n64 (the (signed-byte 64) (rgfi reg x86)))
+
+    ///
+
+    (defthm-unsigned-byte-p n64p-rr64
+      :hyp t
+      :bound 64
+      :concl (rr64 reg x86)
+      :gen-linear t
+      :gen-type t))      
 
   (define wr64
     ((reg  :type (unsigned-byte  4))
@@ -554,7 +564,7 @@ are used to write natural numbers into the GPRs.</p>"
                              (unsigned-byte-p)))))
 
   (defthm rr64-wr64-different
-    (implies (not (equal reg1 reg2))
+    (implies (not (equal (nfix reg1) (nfix reg2)))
              (equal (rr64 reg1 (wr64 reg2 val x86))
                     (rr64 reg1 x86)))
     :hints (("Goal"
@@ -596,7 +606,8 @@ are used to write natural numbers into the GPRs.</p>"
     :guard (and (reg-indexp index rex)
                 (member nbytes '(1 2 4 8))
                 (unsigned-byte-p (ash nbytes 3) val))
-    :returns (x86 x86p :hyp (x86p x86))
+    :returns (x86 x86p :hyp (x86p x86)
+                  :hints (("Goal" :in-theory (e/d () (x86p)))))
     :inline t
     :no-function t
     :short "Write to byte, word, doubleword, or quadword
@@ -611,7 +622,14 @@ are used to write natural numbers into the GPRs.</p>"
        ;; 4, or 8.
        x86))))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
+
+(defthm-unsigned-byte-p n80p-xr-fp-data
+  :hyp t
+  :bound 80
+  :concl (xr :fp-data i x86)
+  :gen-linear t
+  :gen-type t)
 
 (defsection MMX-Registers-Reads-and-Writes
 
@@ -726,7 +744,14 @@ pointer, or opcode registers\).</em></p>"
       (implies (x86p x86)
                (x86p (mmx-instruction-updates x86))))))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
+
+(defthm-unsigned-byte-p n512p-xr-zmm
+  :hyp t
+  :bound 512
+  :concl (xr :zmm i x86)
+  :gen-linear t
+  :gen-type t)
 
 (defsection ZMMs-Reads-and-Writes
 
@@ -917,7 +942,7 @@ pointer, or opcode registers\).</em></p>"
                               force (force))))))
 
   (defthm rz32-wz32-different
-    (implies (not (equal reg1 reg2))
+    (implies (not (equal (nfix reg1) (nfix reg2)))
              (equal (rz32 reg1 (wz32 reg2 val x86 :regtype access))
                     (rz32 reg1 x86)))
     :hints (("Goal"
@@ -973,7 +998,7 @@ pointer, or opcode registers\).</em></p>"
                               force (force))))))
 
   (defthm rz64-wz64-different
-    (implies (not (equal reg1 reg2))
+    (implies (not (equal (nfix reg1) (nfix reg2)))
              (equal (rz64 reg1 (wz64 reg2 val x86 :regtype access))
                     (rz64 reg1 x86)))
     :hints (("Goal"
@@ -1030,7 +1055,7 @@ pointer, or opcode registers\).</em></p>"
                               force (force))))))
 
   (defthm rz128-wz128-different
-    (implies (not (equal reg1 reg2))
+    (implies (not (equal (nfix reg1) (nfix reg2)))
              (equal (rz128 reg1 (wz128 reg2 val x86 :regtype access))
                     (rz128 reg1 x86)))
     :hints (("Goal"
@@ -1084,7 +1109,7 @@ pointer, or opcode registers\).</em></p>"
                               force (force))))))
 
   (defthm rz256-wz256-different
-    (implies (not (equal reg1 reg2))
+    (implies (not (equal (nfix reg1) (nfix reg2)))
              (equal (rz256 reg1 (wz256 reg2 val x86 :regtype access))
                     (rz256 reg1 x86)))
     :hints (("Goal"
@@ -1124,7 +1149,7 @@ pointer, or opcode registers\).</em></p>"
                               force (force))))))
 
   (defthm rz512-wz512-different
-    (implies (not (equal reg1 reg2))
+    (implies (not (equal (nfix reg1) (nfix reg2)))
              (equal (rz512 reg1 (wz512 reg2 val x86))
                     (rz512 reg1 x86)))
     :hints (("Goal"
@@ -1165,7 +1190,8 @@ pointer, or opcode registers\).</em></p>"
     :enabled t
     :guard (and (member nbytes '(4 8 16 32 64))
                 (unsigned-byte-p (ash nbytes 3) val))
-    :returns (x86 x86p :hyp (x86p x86))
+    :returns (x86 x86p :hyp (x86p x86)
+                  :hints (("Goal" :in-theory (e/d () (x86p)))))
     :inline t
     :no-function t
     (case nbytes
@@ -1299,7 +1325,8 @@ pointer, or opcode registers\).</em></p>"
     :enabled t
     :guard (and (member nbytes '(4 8 16))
                 (unsigned-byte-p (ash nbytes 3) val))
-    :returns (x86 x86p :hyp (x86p x86))
+    :returns (x86 x86p :hyp (x86p x86)
+                  :hints (("Goal" :in-theory (e/d () (x86p)))))
     :inline t
     :no-function t
     (case nbytes
@@ -1312,7 +1339,7 @@ pointer, or opcode registers\).</em></p>"
        ;; anything else.
        x86))))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 (defsection characterizing-undefined-behavior
 
@@ -1447,7 +1474,7 @@ values.</p>"
  (!undef$inline)
  t)
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 (defsection rflags-Reads-and-Writes
   :parents (rflag-specifications register-readers-and-writers)
@@ -1528,7 +1555,8 @@ values.</p>"
     :enabled t
     :prepwork ((local (in-theory (e/d* () (undef-read)))))
     :returns (mv (unknown natp :rule-classes :type-prescription)
-                 (x86     x86p :hyp (x86p x86)))
+                 (x86     x86p :hyp (x86p x86)
+                          :hints (("Goal" :in-theory (e/d () (x86p))))))
     (undef-read x86))
 
   (define undef-flg (x86)
@@ -1541,7 +1569,8 @@ values.</p>"
     :enabled t
     :prepwork ((local (in-theory (e/d* () (undef-flg-logic)))))
     :returns (mv (unknown-bit bitp :rule-classes :type-prescription)
-                 (x86         x86p :hyp (x86p x86)))
+                 (x86         x86p :hyp (x86p x86)
+                              :hints (("Goal" :in-theory (e/d () (x86p))))))
     (b* (((mv val x86)
           (undef-flg-logic x86)))
       (mv (n01 val) x86)))
@@ -1698,7 +1727,7 @@ values.</p>"
                                        (force (force))))))))
 
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 (include-book "tools/include-raw" :dir :system)
 (defttag :undef-flg)
@@ -1710,4 +1739,4 @@ values.</p>"
              (cw "[register-readers-and-writers-raw.lsp] Load failed; Moving On.~%")
              :host-readtable t)
 
-;; ======================================================================
+;; ----------------------------------------------------------------------

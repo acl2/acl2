@@ -435,25 +435,25 @@
  ;; Destination address is 1G-aligned.
  (equal (loghead 30 (xr :rgf *rsi* x86)) 0)
  ;; Program addresses are canonical.
- (canonical-address-p (+ (len *rewire_dst_to-src*) (xr :rip 0 x86)))
- ;; (canonical-address-p (xr :rip 0 x86))
+ (canonical-address-p (+ (len *rewire_dst_to-src*) (xr :rip nil x86)))
+ ;; (canonical-address-p (xr :rip nil x86))
  ;; Stack addresses are canonical.
  (canonical-address-p (+ -24 (xr :rgf *rsp* x86)))
  ;; (canonical-address-p (xr :rgf *rsp* x86))
  (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
- (equal (xr :ms 0 x86) nil)
- (equal (xr :fault 0 x86) nil)
+ (equal (xr :ms nil x86) nil)
+ (equal (xr :fault nil x86) nil)
  (equal (cpl x86) 0)
- ;; (program-at (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip 0 x86))
+ ;; (program-at (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip nil x86))
  ;;             *rewire_dst_to-src* x86)
  ;; No errors encountered while translating the linear
  ;; addresses where the program is located.
  ;; (not (mv-nth 0 (las-to-pas
- ;;                 (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip 0 x86))
+ ;;                 (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip nil x86))
  ;;                 :x (cpl x86) x86)))
 
  (b*
-     ((prog-laddrs (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip 0 x86)))
+     ((prog-laddrs (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip nil x86)))
       ((mv top-prog-flg program-bytes x86) (rb prog-laddrs :x x86))
       ((mv xlate-prog-flg ?prog-paddrs x86)
        (las-to-pas prog-laddrs :x (cpl x86) x86)))
@@ -477,7 +477,7 @@
 
 ;; Tests related to the stack:
 (b*
-    ((prog-laddrs (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip 0 x86)))
+    ((prog-laddrs (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip nil x86)))
      ((mv ?xlate-prog-flg prog-paddrs x86)
       (las-to-pas prog-laddrs :x (cpl x86) x86))
      (stack-laddrs (create-canonical-address-list 8 (+ -24 (xr :rgf *rsp* x86))))
@@ -527,7 +527,7 @@
        ;; stack are disjoint.
        ;; (disjoint-p
        ;;  (mv-nth 1 (las-to-pas
-       ;;             (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip 0 x86))
+       ;;             (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip nil x86))
        ;;             :x (cpl x86) x86))
        ;;  (mv-nth 1
        ;;          (las-to-pas
@@ -540,7 +540,7 @@
        ;; disjoint from the physical addresses of the stack.
        ;; (disjoint-p
        ;;  (all-xlation-governing-entries-paddrs
-       ;;   (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip 0 x86))
+       ;;   (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip nil x86))
        ;;   x86)
        ;;  (mv-nth 1 (las-to-pas
        ;;             (create-canonical-address-list
@@ -834,7 +834,7 @@
     (mv :FAILED x86)))
 
 ;; Tests related to the destination PDPTE:
-(b* ((prog-laddrs (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip 0 x86)))
+(b* ((prog-laddrs (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip nil x86)))
      ((mv ?xlate-prog-flg prog-paddrs x86)
       (las-to-pas prog-laddrs :x (cpl x86) x86))
      ((mv page-dir-ptr-table-base-addr-flg page-dir-ptr-table-base-addr x86)
@@ -933,7 +933,7 @@
        ;; write).
        ;; (disjoint-p
        ;;  (mv-nth 1 (las-to-pas
-       ;;             (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip 0 x86))
+       ;;             (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip nil x86))
        ;;             :x (cpl x86) x86))
        ;;  (mv-nth 1 (las-to-pas
        ;;             (create-canonical-address-list
@@ -949,7 +949,7 @@
        ;; of a write).
        ;; (disjoint-p
        ;;  (all-xlation-governing-entries-paddrs
-       ;;   (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip 0 x86))
+       ;;   (create-canonical-address-list (len *rewire_dst_to-src*) (xr :rip nil x86))
        ;;   x86)
        ;;  (mv-nth 1 (las-to-pas
        ;;             (create-canonical-address-list

@@ -53,6 +53,13 @@
 ; INSTRUCTION: MXCSR State Management Instructions
 ; =============================================================================
 
+(defthm-unsigned-byte-p n32p-xr-mxcsr
+  :hyp t
+  :bound 32
+  :concl (xr :mxcsr i x86)
+  :gen-linear t
+  :gen-type t)
+
 (def-inst x86-ldmxcsr/stmxcsr-Op/En-M
 
   :parents (two-byte-opcodes fp-opcodes)
@@ -68,7 +75,9 @@
 
   :modr/m t
 
-  :body
+  :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+  
+  :body  
 
   (b* ((p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*

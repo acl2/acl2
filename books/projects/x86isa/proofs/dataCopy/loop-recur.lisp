@@ -73,7 +73,7 @@
                      (XW
                       :RGF *RDI* (+ 4 (XR :RGF *RDI* X86))
                       (XW
-                       :RIP 0 (XR :RIP 0 X86)
+                       :RIP nil (XR :RIP nil X86)
                        (MV-NTH
                         1
                         (WB
@@ -262,8 +262,8 @@
 (defthm effects-copyData-loop-recur-app-view-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (< 4 m))
-           (equal (xr :app-view 0 (x86-run (loop-clk-recur) x86))
-                  (xr :app-view 0 x86)))
+           (equal (xr :app-view nil (x86-run (loop-clk-recur) x86))
+                  (xr :app-view nil x86)))
   :hints (("Goal" :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* ()
                             (separate-smaller-regions
@@ -287,8 +287,8 @@
 (defthm effects-copyData-loop-recur-ms-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (< 4 m))
-           (equal (xr :ms 0 (x86-run (loop-clk-recur) x86))
-                  (xr :ms 0 x86)))
+           (equal (xr :ms nil (x86-run (loop-clk-recur) x86))
+                  (xr :ms nil x86)))
   :hints (("Goal" :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* ()
                             (separate-smaller-regions
@@ -299,8 +299,8 @@
 (defthm effects-copyData-loop-recur-fault-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (< 4 m))
-           (equal (xr :fault 0 (x86-run (loop-clk-recur) x86))
-                  (xr :fault 0 x86)))
+           (equal (xr :fault nil (x86-run (loop-clk-recur) x86))
+                  (xr :fault nil x86)))
   :hints (("Goal" :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* ()
                             (separate-smaller-regions
@@ -374,8 +374,8 @@
 (defthm effects-copyData-loop-recur-rip-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (< 4 m))
-           (equal (xr :rip 0 (x86-run (loop-clk-recur) x86))
-                  (xr :rip 0 x86)))
+           (equal (xr :rip nil (x86-run (loop-clk-recur) x86))
+                  (xr :rip nil x86)))
   :hints (("Goal"
            :use ((:instance effects-copyData-loop-recur))
            :in-theory (e/d* ()
@@ -434,7 +434,7 @@
            :use ((:instance loop-preconditions-fwd-chain-to-its-body))
            :expand (loop-preconditions (+ 4 k)
                                        (+ -4 (xr :rgf *rax* x86))
-                                       (+ -16 (xr :rip 0 x86))
+                                       (+ -16 (xr :rip nil x86))
                                        (+ 4 (xr :rgf *rdi* x86))
                                        (+ 4 (xr :rgf *rsi* x86))
                                        (x86-run (loop-clk-recur) x86))

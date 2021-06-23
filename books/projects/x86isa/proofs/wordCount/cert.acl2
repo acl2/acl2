@@ -43,6 +43,6 @@
 (include-book "../../portcullis/sharp-dot-constants")
 
 (include-book "wc-addr-byte")
-;; cert-flags: ? t :ttags (:include-raw :syscall-exec :other-non-det :undef-flg) :skip-proofs-okp t
+;; cert-flags: ? t :ttags (:include-raw :syscall-exec :other-non-det :undef-flg) 
 
 ;; ======================================================================

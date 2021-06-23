@@ -742,7 +742,7 @@
 
   :parents (gather-paging-structures)
 
-  :guard (and (not (xr :app-view 0 x86))
+  :guard (and (not (app-view x86))
               (physical-address-p superior-structure-paddr)
               (physical-address-p (+ 7 superior-structure-paddr)))
 
@@ -814,7 +814,7 @@
                   (xlate-equiv-entries (double-rewrite val)
                                        (rm-low-64 addr x86))
                   (unsigned-byte-p 64 val)
-                  (not (xr :app-view 0 x86)))
+                  (not (xr :app-view nil x86)))
              (equal (gather-qword-addresses-corresponding-to-1-entry
                      addr (wm-low-64 index val x86))
                     (gather-qword-addresses-corresponding-to-1-entry addr x86)))
@@ -858,7 +858,7 @@
     (implies (and (xlate-equiv-entries (double-rewrite val)
                                        (rm-low-64 addr x86))
                   (unsigned-byte-p 64 val)
-                  (not (xr :app-view 0 x86-equiv)))
+                  (not (xr :app-view nil x86-equiv)))
              (equal (gather-qword-addresses-corresponding-to-1-entry
                      addr (wm-low-64 addr val x86-equiv))
                     (gather-qword-addresses-corresponding-to-1-entry addr x86)))
@@ -910,7 +910,7 @@
 
   :parents (gather-qword-addresses-corresponding-to-entries)
 
-  :guard (and (not (xr :app-view 0 x86))
+  :guard (and (not (app-view x86))
               (qword-paddr-listp superior-structure-paddrs))
 
   :short "Returns a list of qword addresses of inferior paging
@@ -1002,7 +1002,7 @@
                    (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
                    (unsigned-byte-p 64 val)
                    (physical-address-p index)
-                   (not (xr :app-view 0 x86)))
+                   (not (xr :app-view nil x86)))
               (equal (gather-qword-addresses-corresponding-to-entries-aux
                       addrs (wm-low-64 index val x86))
                      (gather-qword-addresses-corresponding-to-entries-aux addrs x86)))
@@ -1015,7 +1015,7 @@
                   (no-duplicates-p addrs)
                   (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
                   (unsigned-byte-p 64 val)
-                  (not (xr :app-view 0 x86)))
+                  (not (xr :app-view nil x86)))
              (equal (gather-qword-addresses-corresponding-to-entries-aux
                      addrs (wm-low-64 index val x86))
                     (gather-qword-addresses-corresponding-to-entries-aux addrs x86)))
@@ -1052,7 +1052,7 @@
               (xlate-equiv-entries (double-rewrite val)
                                    (rm-low-64 index x86-equiv))
               (unsigned-byte-p 64 val)
-              (not (xr :app-view 0 x86-equiv)))
+              (not (xr :app-view nil x86-equiv)))
              (equal (gather-qword-addresses-corresponding-to-entries-aux
                      addrs (wm-low-64 index val x86-equiv))
                     (gather-qword-addresses-corresponding-to-entries-aux addrs x86)))
@@ -1108,7 +1108,7 @@
 
   :parents (gather-all-paging-structure-qword-addresses)
 
-  :guard (and (not (xr :app-view 0 x86))
+  :guard (and (not (app-view x86))
               (qword-paddr-listp superior-structure-paddrs))
 
   :short "Returns a list --- with no duplicates --- of qword addresses
@@ -1176,7 +1176,7 @@
                    (no-duplicates-p addrs)
                    (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
                    (unsigned-byte-p 64 val)
-                   (not (xr :app-view 0 x86)))
+                   (not (xr :app-view nil x86)))
               (equal (gather-qword-addresses-corresponding-to-entries
                       addrs (wm-low-64 index val x86))
                      (gather-qword-addresses-corresponding-to-entries addrs x86)))
@@ -1189,7 +1189,7 @@
                   (no-duplicates-p addrs)
                   (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
                   (unsigned-byte-p 64 val)
-                  (not (xr :app-view 0 x86)))
+                  (not (xr :app-view nil x86)))
              (equal (gather-qword-addresses-corresponding-to-entries
                      addrs (wm-low-64 index val x86))
                     (gather-qword-addresses-corresponding-to-entries addrs x86)))
@@ -1225,7 +1225,7 @@
               (xlate-equiv-entries (double-rewrite val)
                                    (rm-low-64 index x86-equiv))
               (unsigned-byte-p 64 val)
-              (not (xr :app-view 0 x86-equiv)))
+              (not (xr :app-view nil x86-equiv)))
              (equal (gather-qword-addresses-corresponding-to-entries
                      addrs (wm-low-64 index val x86-equiv))
                     (gather-qword-addresses-corresponding-to-entries addrs x86)))
@@ -1274,7 +1274,7 @@
   :short "Returns a list of qword addresses of all the active paging
   structures"
 
-  :guard (not (xr :app-view 0 x86))
+  :guard (not (app-view x86))
 
   :returns (list-of-addresses qword-paddr-listp)
 
@@ -1431,7 +1431,7 @@
     (implies (and (member-p index (gather-all-paging-structure-qword-addresses x86))
                   (xlate-equiv-entries (double-rewrite val) (rm-low-64 index x86))
                   (unsigned-byte-p 64 val)
-                  (not (xr :app-view 0 x86)))
+                  (not (xr :app-view nil x86)))
              (equal (gather-all-paging-structure-qword-addresses
                      (wm-low-64 index val x86))
                     (gather-all-paging-structure-qword-addresses x86)))
@@ -1502,8 +1502,8 @@
               (x86p x86-1)
               (x86p x86-2))
 
-  (if (equal (xr :app-view 0 x86-1) nil)
-      (if (equal (xr :app-view 0 x86-2) nil)
+  (if (equal (xr :app-view nil x86-1) nil)
+      (if (equal (xr :app-view nil x86-2) nil)
 
           (if (endp list-of-addresses-1)
               t
@@ -1522,8 +1522,8 @@
     ;; :app-view 0 x86-2) t) so that I can prove that
     ;; this function unconditionally returns a boolean, as opposed to
     ;; returning a boolean only if x86-2 is known to satisfy x86p.
-    (equal (xr :app-view 0 x86-2)
-           (xr :app-view 0 x86-1)))
+    (equal (xr :app-view nil x86-2)
+           (xr :app-view nil x86-1)))
 
   ///
 
@@ -1562,7 +1562,7 @@
     (implies (and (xlate-equiv-entries-at-qword-addresses
                    addrs addrs x86-1 x86-2)
                   (member-p index addrs)
-                  (not (xr :app-view 0 x86-1)))
+                  (not (xr :app-view nil x86-1)))
              (xlate-equiv-entries (rm-low-64 index x86-1)
                                   (rm-low-64 index x86-2)))
     :hints (("Goal" :in-theory (e/d* (member-p)
@@ -1931,8 +1931,8 @@
 
      (defthm all-mem-except-paging-structures-equal-aux-and-wm-low-64
        (implies (and (all-mem-except-paging-structures-equal-aux i addrs x y)
-                     (not (xr :app-view 0 x))
-                     (not (xr :app-view 0 y)))
+                     (not (xr :app-view nil x))
+                     (not (xr :app-view nil y)))
                 (all-mem-except-paging-structures-equal-aux
                  i addrs
                  (wm-low-64 index val x)
@@ -2076,8 +2076,8 @@
   paging structures are equal, modulo the accessed and dirty bits (See
   @(see xlate-equiv-entries)).</p>"
 
-  (if (and (equal (xr :app-view 0 x86-1) nil)
-           (equal (xr :app-view 0 x86-2) nil))
+  (if (and (equal (xr :app-view nil x86-1) nil)
+           (equal (xr :app-view nil x86-2) nil))
 
       (let* ((paging-qword-addresses-1
               (gather-all-paging-structure-qword-addresses x86-1))
@@ -2098,14 +2098,14 @@
                     (ia32_eferBits->nxe (n12 (msri *ia32_efer-idx* x86-2))))
              (equal (rflagsBits->ac (rflags x86-1))
                     (rflagsBits->ac (rflags x86-2)))
-             (equal (xr :marking-view 0 x86-1)
-                    (xr :marking-view 0 x86-2))
+             (equal (xr :marking-view nil x86-1)
+                    (xr :marking-view nil x86-2))
              (equal paging-qword-addresses-1 paging-qword-addresses-2)
              (xlate-equiv-entries-at-qword-addresses
               paging-qword-addresses-1 paging-qword-addresses-2 x86-1 x86-2)))
 
-    (and (equal (xr :app-view 0 x86-2)
-                (xr :app-view 0 x86-1))))
+    (and (equal (xr :app-view nil x86-2)
+                (xr :app-view nil x86-1))))
 
   ///
 
@@ -2166,16 +2166,16 @@
 
   (defthm xlate-equiv-structures-and-app-view-cong
     (implies (xlate-equiv-structures x86-1 x86-2)
-             (equal (xr :app-view 0 x86-1)
-                    (xr :app-view 0 x86-2)))
+             (equal (xr :app-view nil x86-1)
+                    (xr :app-view nil x86-2)))
     :rule-classes :congruence))
 
 (define xlate-equiv-memory (x86-1 x86-2)
   :non-executable t
   :guard (and (x86p x86-1) (x86p x86-2))
 
-  (if (and (equal (xr :app-view 0 x86-1) nil)
-           (equal (xr :app-view 0 x86-2) nil)
+  (if (and (equal (xr :app-view nil x86-1) nil)
+           (equal (xr :app-view nil x86-2) nil)
            (64-bit-modep x86-1)
            (64-bit-modep x86-2))
 
