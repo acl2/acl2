@@ -24,6 +24,7 @@
 (def-nils
   CHECK-PROPOSED-IMPORTS ; Presumably the check was already done!
   MEMOIZE-LOOK-UP-DEF ; !! We should fix this when toothbrush can memoize.
+; ACL2H-INIT ; Done later below
   )
 
 (def-errors
@@ -106,6 +107,15 @@
    #+acl2-par (load "futures-raw.lisp")
    #+acl2-par (load "parallel-raw.lisp")
    #+hons (load "memoize-raw.lisp")))
+
+(def-nils
+  ACL2H-INIT ; calls ccl-initialize-gc-strategy, which we define to cause error
+  )
+
+#+static-hons
+(setq *print-array*
+; Copied from acl2h-init, which is defined just above to be nil.
+      nil)
 
 ; Code for saving an image.
 
