@@ -582,7 +582,6 @@
      assign
      create-var
      endp
-     enter-scope
      exit-scope
      exec-iconst
      exec-const
@@ -748,6 +747,32 @@
   :short "List of rewrite rules for @(tsee read-var)."
   '(read-var-of-compustate-empty-scope
     read-var-of-compustate-nonempty-scope))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-enter-scope-rewrite-rules
+  :short "Rewrite rules for @(tsee enter-scope)."
+
+  (defruled enter-scope-of-compustate
+    (implies (consp scopes)
+             (equal (enter-scope (compustate (cons (frame fun
+                                                          scopes)
+                                                   frames)
+                                             heap))
+                    (compustate (cons (frame fun
+                                             (cons nil scopes))
+                                      frames)
+                                heap)))
+    :enable (enter-scope
+             push-frame
+             top-frame
+             pop-frame)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-enter-scope-rewrite-rules*
+  :short "List of rewrite rules for @(tsee enter-scope)."
+  '(enter-scope-of-compustate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1240,6 +1265,7 @@
   (append
    ;; introduced in this file:
    *atc-read-var-rewrite-rules*
+   *atc-enter-scope-rewrite-rules*
    *atc-distributivity-over-if-rewrite-rules*
    '(not-zp-of-limit-variable
      not-zp-of-limit-minus-const
