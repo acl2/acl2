@@ -95,15 +95,19 @@
      as well as for some other recursive functions.
      The opener rules have hypotheses saying that
      certain arguments are (quoted) constants,
-     which is what we expect in the symbolic execution.
-     For @(tsee read-var-aux) and @(tsee write-var-aux),
-     we also add @(tsee syntaxp) hypotheses saying that
+     which is what we expect in the symbolic execution.")
+   (xdoc::p
+    "We used to have opener rules for @(tsee read-var-aux),
+     and to enable the @(tsee read-var) definition rule,
+     but now we keep @(tsee read-var) disabled
+     and we use rules about how it manipulates
+     computation states of a certain form (see @(see atc-rewrite-rules)).
+     We plan to do the same for @(tsee write-var),
+     but for now instead we enable it
+     and we introduce and use opener rules for @(tsee write-var-aux).
+     These openers have @(tsee syntaxp) hypotheses saying that
      the list of scopes has the form @('(cons ...)'),
-     because this is what we expect to happen during symbolic execution.
-     The latter is motivated by the fact that,
-     during the symbolic execution,
-     the list of scopes in a frame has the form of a nest of @(tsee cons)es,
-     with some constant and some non-constant parts.")
+     because this is what happens during symbolic execution.")
    (xdoc::p
     "We avoid opener rules for @(tsee exec-fun) because
      we use the correctness theorems of callees
@@ -171,14 +175,6 @@
       :hyps ((syntaxp formals))
       :disable t)
     (add-to-ruleset atc-openers (defopeners-names init-scope)))
-
-  (progn
-    (defopeners read-var-aux
-      :hyps ((syntaxp (quotep var))
-             (syntaxp (and (consp scopes)
-                           (eq (car scopes) 'cons))))
-      :disable t)
-    (add-to-ruleset atc-openers (defopeners-names read-var-aux)))
 
   (progn
     (defopeners write-var-aux
@@ -624,7 +620,6 @@
      mv-nth
      pop-frame
      push-frame
-     read-var
      sint-from-boolean
      sint-dec-const
      sint-oct-const
@@ -662,6 +657,99 @@
    *atc-integer-ops-2-conv-definition-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-read-var-rewrite-rules
+  :short "Rewrite rules for @(tsee read-var)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "During symbolic execution, the computation state
+     always has a top frame with at least one scope,
+     because an attempt to read a variable should not fail
+     (as we are proving the correctness of the generated C code).
+     The variable is searched in the innermost scope first,
+     then in the surrounding scopes.")
+   (xdoc::p
+    "So we need a rule for the case in which the innermost scope is empty,
+     which defers to the remaining scopes.
+     And we need a rule for the case the innermost scope is not empty,
+     in which case it has the form of a call of @(tsee omap::update);
+     this rule involves a case split based on whether
+     the variable is found in the @(tsee omap::update) call,
+     or must be searched in the omap argument of that call.")
+   (xdoc::p
+    "Note that both rules construct new computation states
+     that do not represent actual computation states of the C code,
+     but rather artificial ones
+     that include the recursed-upon scopes.
+     This may incur additional @(tsee cons)ing cost during symbolic execution,
+     but on the other hand keeping @(tsee read-var) disabled
+     may avoid the application of certain rules,
+     and so it may be worth overall.
+     It certainly seems to help keep the symbolic execution simpler,
+     so for now we go this route,
+     and plan to do the same for other functions too."))
+
+  (defruled read-var-of-compustate-empty-scope
+    (implies (syntaxp (quotep var))
+             (equal (read-var var
+                              (compustate (cons (frame fun
+                                                       (cons nil
+                                                             scopes))
+                                                frames)
+                                          heap))
+                    (read-var var
+                              (compustate (cons (frame fun
+                                                       scopes)
+                                                frames)
+                                          heap))))
+    :enable (read-var
+             read-var-aux
+             compustate-frames-number
+             top-frame))
+
+  (defruled read-var-of-compustate-nonempty-scope
+    (implies (and (syntaxp (quotep var))
+                  (syntaxp (quotep var2))
+                  (identp var2)
+                  (valuep val)
+                  (scopep scope))
+             (equal (read-var var
+                              (compustate
+                               (cons (frame fun
+                                            (cons (omap::update var2
+                                                                val
+                                                                scope)
+                                                  scopes))
+                                     frames)
+                               heap))
+                    (if (equal (ident-fix var)
+                               (ident-fix var2))
+                        val
+                      (read-var var
+                                (compustate (cons (frame fun
+                                                         (cons scope
+                                                               scopes))
+                                                  frames)
+                                            heap)))))
+    :enable (read-var
+             read-var-aux
+             compustate-frames-number
+             top-frame)
+    :prep-lemmas
+    ((defrule frame->scopes-of-top-grame-of-compustate-of-cons
+       (equal (frame->scopes (top-frame (compustate (cons frame frames) heap)))
+              (frame->scopes frame))
+       :enable (top-frame)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-read-var-rewrite-rules*
+  :short "List of rewrite rules for @(tsee read-var)."
+  '(read-var-of-compustate-empty-scope
+    read-var-of-compustate-nonempty-scope))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-rewrite-rules
   :short "Rewrite rules for the proofs generated by ATC."
@@ -886,6 +974,10 @@
   (defruled compustate->frames-of-if
     (equal (compustate->frames (if a b c))
            (if a (compustate->frames b) (compustate->frames c))))
+
+  (defruled scope-fix-of-if
+    (equal (scope-fix (if a b c))
+           (if a (scope-fix b) (scope-fix c))))
 
   (defruled 1+nat-greater-than-0
     (implies (natp x)
@@ -1116,8 +1208,9 @@
      which serves to simplify, during symbolic execution,
      the finding of a variable in a scope."))
   (append
-   '(;; introduced in this file (see ATC-REWRITE-RULES):
-     not-zp-of-limit-variable
+   ;; introduced in this file (see ATC-REWRITE-RULES):
+   *atc-read-var-rewrite-rules*
+   '(not-zp-of-limit-variable
      not-zp-of-limit-minus-const
      value-result-fix-when-valuep
      not-errorp-when-valuep
@@ -1150,11 +1243,12 @@
      ullongp-of-if
      pointerp-of-if
      compustate->frames-of-if
+     scope-fix-of-if
      1+nat-greater-than-0
      natp-of-1+
-     natp-of-len
-     ;; introduced elsewhere:
-     booleanp-of-boolean-from-uchar
+     natp-of-len)
+   ;; introduced elsewhere:
+   '(booleanp-of-boolean-from-uchar
      booleanp-of-boolean-from-schar
      booleanp-of-boolean-from-ushort
      booleanp-of-boolean-from-sshort
@@ -1225,7 +1319,6 @@
      value-listp-of-cons
      value-list-fix-of-cons
      value-optionp-when-valuep)
-   ;; also introduced elsewhere:
    *value-disjoint-rules*
    *atc-integer-ops-1-return-rewrite-rules*
    *atc-integer-ops-2-return-rewrite-rules*
