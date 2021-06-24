@@ -356,7 +356,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 ;;;                  name formals ic oc body (w state)
 ;;;                  make-staticp d? typed-undef pkg))
           (ebody (make-defun-body/exec name formals oc body
-                                       (w state) make-staticp))
+                                       make-staticp (w state)))
 ;;;          (fun-ind-name (make-sym name 'induction-scheme-from-definition pkg))
           (ind-scheme-name (make-sym name 'induction-scheme pkg))
 ;;;          (defun `(defun-no-test ,fun-ind-name ,formals
@@ -1793,7 +1793,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
           '(:OR ,static-defunc-ev
                 ,(make-show-failure-msg-ev start kwd-alist events-seen-t)))
          ,(make-generic-typed-defunc-events
-           name formals ic oc decls body kwd-alist (w state) t d? pkg)
+           name formals ic oc decls body kwd-alist t d? pkg (w state))
          (me-assign defunc-failure-reason :none)
          (make-event
           ,(print-summary-ev name oc kwd-alist pkg))))
@@ -1805,7 +1805,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                  ()
                  ,static-defunc-ev
                  ,(make-generic-typed-defunc-events
-                   name formals ic oc decls body kwd-alist (w state) t d? pkg))
+                   name formals ic oc decls body kwd-alist t d? pkg (w state)))
                 ,dynamic-defunc-ev
                 ,(make-show-failure-msg-ev start kwd-alist events-seen-nil)))
          (me-assign defunc-failure-reason :none)
@@ -1818,7 +1818,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                  ()
                  ,static-defunc-ev
                  ,(make-generic-typed-defunc-events
-                   name formals ic oc decls body kwd-alist (w state) t d? pkg))
+                   name formals ic oc decls body kwd-alist t d? pkg (w state)))
                 ,dynamic-defunc-ev
                 ,program-mode-defunc-ev
                 ,(make-show-failure-msg-ev
