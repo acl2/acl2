@@ -48,8 +48,6 @@
   :parents (proof-utilities)
 
   :short "Miscellaneous RoW and WoW theorems"
-  :long "<p>See @(see state-field-theorems) for a detailed description
-  of RoW and WoW theorems.</p>"
 
   )
 
@@ -119,7 +117,6 @@
                                 (cdr (assoc-equal :file-contents env))))
               (cons :oracle (cdr (assoc-equal :oracle env))))))
    :hints (("Goal"
-            :use ((:instance env-alistp-env (i 0)))
             :in-theory (e/d (env-alistp rip-ret-alistp) ())))))
 
 (defthm read-x86-file-contents-write-x86-file-contents-same-indices

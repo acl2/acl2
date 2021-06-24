@@ -381,6 +381,12 @@
              (equal (equal (loghead 32 (+ -1 (logext 32 rdi))) 0)
                     nil))))
 
+(local
+ (defthm xw-of-xr-alt
+   ;; Contrast with xw-of-xr.
+   (implies (equal old-val (xr fld idx x86))
+            (equal (xw fld idx old-val x86) x86))))
+
 (defthm loop-effects
   ;; imul %edi,%eax
   ;; sub $0x1,%edi
@@ -394,7 +400,7 @@
             (equal a (rgfi *rax* x86)))
            (equal (x86-run (loop-clk n a) x86)
                   (let* ((x86 (loop-all-induction n a loop-addr x86))
-                         (x86 (xw :rip 0 (+ #x18 addr) x86)))
+                         (x86 (xw :rip nil (+ #x18 addr) x86)))
                     x86)))
   :hints (("Goal"
            :induct (loop-all-induction n a loop-addr x86)
@@ -447,14 +453,14 @@
 (defthm factorial-preamble-n=0-post-cond
   (implies (fact-init-x86-state 0 (rip x86) x86)
 
-           (and (fact-init-x86-state 0 (xr :rip 0 x86) (x86-run (fact-preamble-n=0) x86))
+           (and (fact-init-x86-state 0 (xr :rip nil x86) (x86-run (fact-preamble-n=0) x86))
 
                 (equal (xr :rgf *rax* (x86-run (fact-preamble-n=0) x86)) 1)
-                (equal (xr :rip    0  (x86-run (fact-preamble-n=0) x86)) (+ #x18 (xr :rip 0 x86)))
-                (equal (xr :ms     0  (x86-run (fact-preamble-n=0) x86)) nil)
-                (equal (xr :fault  0  (x86-run (fact-preamble-n=0) x86)) nil)
-                (equal (xr :app-view 0 (x86-run (fact-preamble-n=0) x86))
-                       (xr :app-view 0 x86))))
+                (equal (xr :rip      nil  (x86-run (fact-preamble-n=0) x86)) (+ #x18 (xr :rip nil x86)))
+                (equal (xr :ms       nil  (x86-run (fact-preamble-n=0) x86)) nil)
+                (equal (xr :fault    nil  (x86-run (fact-preamble-n=0) x86)) nil)
+                (equal (xr :app-view nil (x86-run (fact-preamble-n=0) x86))
+                       (xr :app-view nil x86))))
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
@@ -492,7 +498,7 @@
 
 (defthm factorial-preamble-n=0-rip-fluff
   (implies (fact-init-x86-state 0 (rip x86) x86)
-           (equal (xw :rip 0 (+ 24 (xr :rip 0 x86))
+           (equal (xw :rip nil (+ 24 (xr :rip nil x86))
                       (x86-run (fact-preamble-n=0) x86))
                   (x86-run (fact-preamble-n=0) x86)))
 
@@ -531,17 +537,17 @@
                              loop-effects)))))
 
 (defthm factorial-preamble-n!=0-post-cond
-  (implies (and (fact-init-x86-state n (xr :rip 0 x86) x86)
+  (implies (and (fact-init-x86-state n (xr :rip nil x86) x86)
                 (not (equal (rgfi *rdi* x86) 0)))
 
-           (and (fact-init-x86-state n (xr :rip 0 x86) (x86-run (fact-preamble-n!=0) x86))
+           (and (fact-init-x86-state n (xr :rip nil x86) (x86-run (fact-preamble-n!=0) x86))
 
                 (equal (xr :rgf *rax* (x86-run (fact-preamble-n!=0) x86)) 1)
-                (equal (xr :rip    0  (x86-run (fact-preamble-n!=0) x86)) (+ #x10 (xr :rip 0 x86)))
-                (equal (xr :ms     0  (x86-run (fact-preamble-n!=0) x86)) nil)
-                (equal (xr :fault  0  (x86-run (fact-preamble-n!=0) x86)) nil)
-                (equal (xr :app-view 0 (x86-run (fact-preamble-n!=0) x86))
-                       (xr :app-view 0 x86))))
+                (equal (xr :rip    nil  (x86-run (fact-preamble-n!=0) x86)) (+ #x10 (xr :rip nil x86)))
+                (equal (xr :ms     nil  (x86-run (fact-preamble-n!=0) x86)) nil)
+                (equal (xr :fault  nil  (x86-run (fact-preamble-n!=0) x86)) nil)
+                (equal (xr :app-view nil (x86-run (fact-preamble-n!=0) x86))
+                       (xr :app-view nil x86))))
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
@@ -581,7 +587,7 @@
   (implies (and (<= n 0)
                 (fact-init-x86-state n (rip x86) x86)
                 (not (equal n 0)))
-           (equal (xw :rip 0 (+ 24 (xr :rip 0 x86))
+           (equal (xw :rip nil (+ 24 (xr :rip nil x86))
                       (x86-run (fact-preamble-n!=0) x86))
                   (x86-run (fact-preamble-n=0) x86)))
 

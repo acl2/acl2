@@ -46,7 +46,6 @@
 
 (include-book "../rflags-spec"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
-
 (include-book "centaur/bitops/fast-rotate" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -58,7 +57,7 @@
 ;; (unsigned-byte 6) or (unsigned-byte 5) since it is masked before the actual
 ;; rotate or shift operations.
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ;; Shifts:
 
@@ -89,6 +88,17 @@
                         acl2::bitp)
                        (bitops::logand-with-bitmask))))
 
+(defthm logand-2^32-1-rflagsbits
+  (b* ((rflagsbits (rflagsbits cf res1 pf res2
+                               af res3 zf sf tf intf df of iopl
+                               nt res4 rf vm ac vif vip id res5)))
+    (equal (logand #xFFFFFFFF rflagsbits)
+           rflagsbits))
+  :hints (("Goal"
+           :use ((:instance rflagsbits-p-of-rflagsbits))
+           :in-theory (e/d (rflagsbits-p) (rflagsbits-p-of-rflagsbits
+                                           unsigned-byte-p)))))
+
 ;;;;;;;;;; SAL/SHR:
 
 (define sal/shl-spec-gen ((size :type (member 8 16 32 64)))
@@ -107,7 +117,8 @@
         (input-rflags :type (unsigned-byte 32)))
 
        :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
-                                              ((tau-system)))))
+                                              (unsigned-byte-p
+                                               (tau-system)))))
        :parents (sal/shl-spec)
 
        (b* ((dst (mbe :logic (n-size ,size dst)
@@ -140,10 +151,10 @@
                                :width 1)
                        :exec
                        (the (unsigned-byte 1)
-                         (logand 1
-                                 (the (unsigned-byte ,size)
-                                   (ash (the (unsigned-byte ,size) dst)
-                                        ,neg-size-1))))))
+                            (logand 1
+                                    (the (unsigned-byte ,size)
+                                         (ash (the (unsigned-byte ,size) dst)
+                                              ,neg-size-1))))))
                      (pf (general-pf-spec ,size result))
                      ;; AF is undefined.
                      (zf (zf-spec result))
@@ -154,11 +165,11 @@
                       (b-xor cf
                              (mbe :logic (logbit ,size-1 result)
                                   :exec (the (unsigned-byte 1)
-                                          (logand 1
-                                                  (the (unsigned-byte 1)
-                                                    (ash (the (unsigned-byte ,size)
-                                                           result)
-                                                         ,neg-size-1)))))))
+                                             (logand 1
+                                                     (the (unsigned-byte 1)
+                                                          (ash (the (unsigned-byte ,size)
+                                                                    result)
+                                                               ,neg-size-1)))))))
 
                      (output-rflags (mbe :logic
                                          (change-rflagsBits
@@ -170,17 +181,17 @@
                                           :of of)
                                          :exec
                                          (the (unsigned-byte 32)
-                                           (!rflagsBits->cf
-                                            cf
-                                            (!rflagsBits->pf
-                                             pf
-                                             (!rflagsBits->zf
-                                              zf
-                                              (!rflagsBits->sf
-                                               sf
-                                               (!rflagsBits->of
-                                                of
-                                                input-rflags))))))))
+                                              (!rflagsBits->cf
+                                               cf
+                                               (!rflagsBits->pf
+                                                pf
+                                                (!rflagsBits->zf
+                                                 zf
+                                                 (!rflagsBits->sf
+                                                  sf
+                                                  (!rflagsBits->of
+                                                   of
+                                                   input-rflags))))))))
 
                      (undefined-flags (!rflagsBits->af 1 0)))
 
@@ -207,13 +218,13 @@
                                               :sf sf)
                                              :exec
                                              (the (unsigned-byte 32)
-                                               (!rflagsBits->pf
-                                                pf
-                                                (!rflagsBits->zf
-                                                 zf
-                                                 (!rflagsBits->sf
-                                                  sf
-                                                  input-rflags))))))
+                                                  (!rflagsBits->pf
+                                                   pf
+                                                   (!rflagsBits->zf
+                                                    zf
+                                                    (!rflagsBits->sf
+                                                     sf
+                                                     input-rflags))))))
 
                          (undefined-flags (mbe :logic
                                                (change-rflagsBits
@@ -251,15 +262,15 @@
                                             :sf sf)
                                            :exec
                                            (the (unsigned-byte 32)
-                                             (!rflagsBits->cf
-                                              cf
-                                              (!rflagsBits->pf
-                                               pf
-                                               (!rflagsBits->zf
-                                                zf
-                                                (!rflagsBits->sf
-                                                 sf
-                                                 input-rflags)))))))
+                                                (!rflagsBits->cf
+                                                 cf
+                                                 (!rflagsBits->pf
+                                                  pf
+                                                  (!rflagsBits->zf
+                                                   zf
+                                                   (!rflagsBits->sf
+                                                    sf
+                                                    input-rflags)))))))
 
                        (undefined-flags (mbe :logic
                                              (change-rflagsBits
@@ -387,7 +398,8 @@ otherwise, it is set to 1.</p>"
 
        :parents (shr-spec)
        :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
-                                              ((tau-system)))))
+                                              (unsigned-byte-p
+                                               (tau-system)))))
 
        (b* ((dst (mbe :logic (n-size ,size dst)
                       :exec dst))
@@ -398,9 +410,9 @@ otherwise, it is set to 1.</p>"
 
             (neg-src (the (signed-byte ,size+1) (- src)))
             (raw-result (the (unsigned-byte ,size)
-                          (ash
-                           (the (unsigned-byte ,size) dst)
-                           (the (signed-byte ,size+1) neg-src))))
+                             (ash
+                              (the (unsigned-byte ,size) dst)
+                              (the (signed-byte ,size+1) neg-src))))
             (result (the (unsigned-byte ,size) (n-size ,size raw-result)))
 
             ((mv (the (unsigned-byte 32) output-rflags)
@@ -415,16 +427,16 @@ otherwise, it is set to 1.</p>"
                 (b*
                     ((cf (mbe :logic (part-select dst :low 0 :width 1)
                               :exec (the (unsigned-byte 1)
-                                      (logand 1 (the (unsigned-byte ,size)
-                                                  dst)))))
+                                         (logand 1 (the (unsigned-byte ,size)
+                                                        dst)))))
                      (pf (general-pf-spec ,size result))
                      ;; AF is undefined.
                      (zf (zf-spec result))
                      (sf (general-sf-spec ,size result))
                      (of (mbe :logic (part-select dst :low ,size-1 :width 1)
                               :exec  (the (unsigned-byte 1)
-                                       (ash (the (unsigned-byte ,size) dst)
-                                            ,neg-size-1))))
+                                          (ash (the (unsigned-byte ,size) dst)
+                                               ,neg-size-1))))
 
                      (output-rflags (mbe :logic
                                          (change-rflagsBits
@@ -436,19 +448,19 @@ otherwise, it is set to 1.</p>"
                                           :of of)
                                          :exec
                                          (the (unsigned-byte 32)
-                                           (!rflagsBits->cf
-                                            cf
-                                            (!rflagsBits->pf
-                                             pf
-                                             (!rflagsBits->zf
-                                              zf
-                                              (!rflagsBits->sf
-                                               sf
-                                               (!rflagsBits->of
-                                                of
-                                                input-rflags))))))))
+                                              (!rflagsBits->cf
+                                               cf
+                                               (!rflagsBits->pf
+                                                pf
+                                                (!rflagsBits->zf
+                                                 zf
+                                                 (!rflagsBits->sf
+                                                  sf
+                                                  (!rflagsBits->of
+                                                   of
+                                                   input-rflags))))))))
                      (undefined-flags (the (unsigned-byte 32)
-                                        (!rflagsBits->af 1 0))))
+                                           (!rflagsBits->af 1 0))))
                   (mv output-rflags undefined-flags)))
 
                (otherwise
@@ -468,13 +480,13 @@ otherwise, it is set to 1.</p>"
                                               :sf sf)
                                              :exec
                                              (the (unsigned-byte 32)
-                                               (!rflagsBits->pf
-                                                pf
-                                                (!rflagsBits->zf
-                                                 zf
-                                                 (!rflagsBits->sf
-                                                  sf
-                                                  input-rflags))))))
+                                                  (!rflagsBits->pf
+                                                   pf
+                                                   (!rflagsBits->zf
+                                                    zf
+                                                    (!rflagsBits->sf
+                                                     sf
+                                                     input-rflags))))))
 
                          (undefined-flags (mbe :logic
                                                (change-rflagsBits
@@ -484,28 +496,28 @@ otherwise, it is set to 1.</p>"
                                                 :of 1)
                                                :exec
                                                (the (unsigned-byte 32)
-                                                 (!rflagsBits->cf
-                                                  1
-                                                  (!rflagsBits->af
-                                                   1
-                                                   (!rflagsBits->of
-                                                    1
-                                                    0)))))))
+                                                    (!rflagsBits->cf
+                                                     1
+                                                     (!rflagsBits->af
+                                                      1
+                                                      (!rflagsBits->of
+                                                       1
+                                                       0)))))))
 
                       (mv output-rflags undefined-flags))
 
                   (b* ((cf (mbe :logic (part-select dst :low (1- src) :width 1)
                                 :exec (let* ((shft
                                               (the (signed-byte ,size)
-                                                (- 1
-                                                   (the (unsigned-byte ,size) src)))))
+                                                   (- 1
+                                                      (the (unsigned-byte ,size) src)))))
                                         (the (unsigned-byte 1)
-                                          (logand
-                                           1
-                                           (the (unsigned-byte ,size)
-                                             (ash
-                                              (the (unsigned-byte ,size) dst)
-                                              (the (signed-byte ,size) shft))))))))
+                                             (logand
+                                              1
+                                              (the (unsigned-byte ,size)
+                                                   (ash
+                                                    (the (unsigned-byte ,size) dst)
+                                                    (the (signed-byte ,size) shft))))))))
                        (pf (general-pf-spec ,size result))
                        ;; AF is undefined.
                        (zf (zf-spec result))
@@ -521,15 +533,15 @@ otherwise, it is set to 1.</p>"
                                             :sf sf)
                                            :exec
                                            (the (unsigned-byte 32)
-                                             (!rflagsBits->cf
-                                              cf
-                                              (!rflagsBits->pf
-                                               pf
-                                               (!rflagsBits->zf
-                                                zf
-                                                (!rflagsBits->sf
-                                                 sf
-                                                 input-rflags)))))))
+                                                (!rflagsBits->cf
+                                                 cf
+                                                 (!rflagsBits->pf
+                                                  pf
+                                                  (!rflagsBits->zf
+                                                   zf
+                                                   (!rflagsBits->sf
+                                                    sf
+                                                    input-rflags)))))))
 
                        (undefined-flags (mbe :logic
                                              (change-rflagsBits
@@ -650,6 +662,16 @@ set to the most-significant bit of the original operand.</p>"
 
 ;;;;;;;;;; SAR:
 
+;; (local
+;;  (defthm logand-identity
+;;    (implies (and (equal 2^size-1 (1- (expt 2 size)))
+;;                  (unsigned-byte-p size i))
+;;             (equal (logand 2^size-1 i) i))
+;;    :hints (("Goal" :in-theory (e/d ()
+;;                                    (loghead-to-logand))
+;;             :use ((:instance loghead-to-logand
+;;                              (n size) (x i)))))))
+
 (define sar-spec-gen ((size :type (member 8 16 32 64)))
   :verify-guards nil
 
@@ -667,9 +689,25 @@ set to the most-significant bit of the original operand.</p>"
               by the caller of this function.")
         (input-rflags :type (unsigned-byte 32)))
 
-       :parents (sar-spec)
+       :parents (sar-spec)       
        :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
-                                              ((tau-system)))))
+                                              (unsigned-byte-p
+                                               (tau-system)))))
+       :prepwork
+       ((local
+         (defthm sar-spec-helper
+           (implies (unsigned-byte-p ,size dst)
+                    (equal (logand ,(1- (expt 2 size)) (logtail src dst))
+                           (logtail src dst)))
+           :hints (("Goal"
+                    :do-not-induct t
+                    :use ((:instance unsigned-byte-p-of-logtail
+                                     (size1 ,size)
+                                     (size src)
+                                     (i dst)))
+                    :in-theory (e/d* ()
+                                     (unsigned-byte-p
+                                      unsigned-byte-p-of-logtail)))))))
 
        (b* ((dst (mbe :logic (n-size ,size dst)
                       :exec dst))
@@ -681,16 +719,16 @@ set to the most-significant bit of the original operand.</p>"
             (neg-src (the (signed-byte ,size+1) (- src)))
             (raw-result-not-sign-extended
              (the (unsigned-byte ,size)
-               (ash
-                (the (unsigned-byte ,size) dst)
-                (the (signed-byte ,size+1) neg-src))))
+                  (ash
+                   (the (unsigned-byte ,size) dst)
+                   (the (signed-byte ,size+1) neg-src))))
             (raw-result
              (if (eql (mbe :logic (logbit ,size-1 dst)
                            :exec (logand 1
                                          (the (unsigned-byte 1)
-                                           (ash (the (unsigned-byte ,size)
-                                                  dst)
-                                                ,neg-size-1))))
+                                              (ash (the (unsigned-byte ,size)
+                                                        dst)
+                                                   ,neg-size-1))))
                       1)
                  (loghead ,size
                           (ash
@@ -714,8 +752,8 @@ set to the most-significant bit of the original operand.</p>"
                (1
                 (b* ((cf (mbe :logic (part-select dst :low 0 :width 1)
                               :exec (the (unsigned-byte 1)
-                                      (logand 1 (the (unsigned-byte ,size)
-                                                  dst)))))
+                                         (logand 1 (the (unsigned-byte ,size)
+                                                        dst)))))
                      (pf (general-pf-spec ,size result))
                      ;; AF is undefined.
                      (zf (zf-spec result))
@@ -732,21 +770,21 @@ set to the most-significant bit of the original operand.</p>"
                                           :of of)
                                          :exec
                                          (the (unsigned-byte 32)
-                                           (!rflagsBits->cf
-                                            cf
-                                            (!rflagsBits->pf
-                                             pf
-                                             (!rflagsBits->zf
-                                              zf
-                                              (!rflagsBits->sf
-                                               sf
-                                               (!rflagsBits->of
-                                                of
-                                                input-rflags))))))))
+                                              (!rflagsBits->cf
+                                               cf
+                                               (!rflagsBits->pf
+                                                pf
+                                                (!rflagsBits->zf
+                                                 zf
+                                                 (!rflagsBits->sf
+                                                  sf
+                                                  (!rflagsBits->of
+                                                   of
+                                                   input-rflags))))))))
 
                      (undefined-flags
                       (the (unsigned-byte 32)
-                        (!rflagsBits->af 1 0))))
+                           (!rflagsBits->af 1 0))))
                   (mv output-rflags undefined-flags)))
 
                (otherwise
@@ -766,13 +804,13 @@ set to the most-significant bit of the original operand.</p>"
                                               :sf sf)
                                              :exec
                                              (the (unsigned-byte 32)
-                                               (!rflagsBits->pf
-                                                pf
-                                                (!rflagsBits->zf
-                                                 zf
-                                                 (!rflagsBits->sf
-                                                  sf
-                                                  input-rflags))))))
+                                                  (!rflagsBits->pf
+                                                   pf
+                                                   (!rflagsBits->zf
+                                                    zf
+                                                    (!rflagsBits->sf
+                                                     sf
+                                                     input-rflags))))))
 
                          (undefined-flags (mbe :logic
                                                (change-rflagsBits
@@ -782,27 +820,27 @@ set to the most-significant bit of the original operand.</p>"
                                                 :of 1)
                                                :exec
                                                (the (unsigned-byte 32)
-                                                 (!rflagsBits->cf
-                                                  1
-                                                  (!rflagsBits->af
-                                                   1
-                                                   (!rflagsBits->of
-                                                    1
-                                                    0)))))))
+                                                    (!rflagsBits->cf
+                                                     1
+                                                     (!rflagsBits->af
+                                                      1
+                                                      (!rflagsBits->of
+                                                       1
+                                                       0)))))))
                       (mv output-rflags undefined-flags))
 
                   (b* ((cf (mbe :logic (part-select dst :low (1- src) :width 1)
                                 :exec (let* ((shft
                                               (the (signed-byte ,size)
-                                                (- 1
-                                                   (the (unsigned-byte ,size) src)))))
+                                                   (- 1
+                                                      (the (unsigned-byte ,size) src)))))
                                         (the (unsigned-byte 1)
-                                          (logand
-                                           1
-                                           (the (unsigned-byte ,size)
-                                             (ash
-                                              (the (unsigned-byte ,size) dst)
-                                              (the (signed-byte ,size) shft))))))))
+                                             (logand
+                                              1
+                                              (the (unsigned-byte ,size)
+                                                   (ash
+                                                    (the (unsigned-byte ,size) dst)
+                                                    (the (signed-byte ,size) shft))))))))
                        (pf (general-pf-spec ,size result))
                        ;; AF is undefined.
                        (zf (zf-spec result))
@@ -818,15 +856,15 @@ set to the most-significant bit of the original operand.</p>"
                                             :sf sf)
                                            :exec
                                            (the (unsigned-byte 32)
-                                             (!rflagsBits->cf
-                                              cf
-                                              (!rflagsBits->pf
-                                               pf
-                                               (!rflagsBits->zf
-                                                zf
-                                                (!rflagsBits->sf
-                                                 sf
-                                                 input-rflags)))))))
+                                                (!rflagsBits->cf
+                                                 cf
+                                                 (!rflagsBits->pf
+                                                  pf
+                                                  (!rflagsBits->zf
+                                                   zf
+                                                   (!rflagsBits->sf
+                                                    sf
+                                                    input-rflags)))))))
 
                        (undefined-flags (mbe
                                          :logic
@@ -958,7 +996,11 @@ most-significant bit of the original operand.</p>"
                     output-rflags ; output flags, ignoring the undefined ones
                     undefined-flags) ; flags to set to undefined values
 
-       :parents (shld-spec)
+       :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
+                                              (unsigned-byte-p
+                                               (tau-system)))))
+       
+       :parents (shld-spec)       
 
        (b* ((dst (mbe :logic (n-size ,size dst)
                       :exec dst))
@@ -1016,26 +1058,26 @@ most-significant bit of the original operand.</p>"
                      (sf (general-sf-spec ,size output-dst))
                      (output-rflags (mbe
                                      :logic
-                                      (change-rflagsBits
-                                       input-rflags
-                                       :cf cf
-                                       :of of
-                                       :pf pf
-                                       :zf zf
-                                       :sf sf)
-                                      :exec
-                                      (the (unsigned-byte 32)
-                                           (!rflagsBits->cf
-                                            cf
-                                            (!rflagsBits->of
-                                             of
-                                             (!rflagsBits->pf
-                                              pf
-                                              (!rflagsBits->zf
-                                               zf
-                                               (!rflagsBits->sf
-                                                sf
-                                                input-rflags))))))))
+                                     (change-rflagsBits
+                                      input-rflags
+                                      :cf cf
+                                      :of of
+                                      :pf pf
+                                      :zf zf
+                                      :sf sf)
+                                     :exec
+                                     (the (unsigned-byte 32)
+                                          (!rflagsBits->cf
+                                           cf
+                                           (!rflagsBits->of
+                                            of
+                                            (!rflagsBits->pf
+                                             pf
+                                             (!rflagsBits->zf
+                                              zf
+                                              (!rflagsBits->sf
+                                               sf
+                                               input-rflags))))))))
                      (undefined-flags (the (unsigned-byte 32)
                                            (!rflagsBits->af 1 0))))
                   (mv output-rflags undefined-flags)))
@@ -1060,34 +1102,34 @@ most-significant bit of the original operand.</p>"
                          (sf (general-sf-spec ,size output-dst))
                          (output-rflags (mbe
                                          :logic
-                                          (change-rflagsBits
-                                           input-rflags
-                                           :cf cf
-                                           :pf pf
-                                           :zf zf
-                                           :sf sf)
-                                          :exec
-                                          (the (unsigned-byte 32)
-                                               (!rflagsBits->cf
-                                                cf
-                                                (!rflagsBits->pf
-                                                 pf
-                                                 (!rflagsBits->zf
-                                                  zf
-                                                  (!rflagsBits->sf
-                                                   sf
-                                                   input-rflags)))))))
+                                         (change-rflagsBits
+                                          input-rflags
+                                          :cf cf
+                                          :pf pf
+                                          :zf zf
+                                          :sf sf)
+                                         :exec
+                                         (the (unsigned-byte 32)
+                                              (!rflagsBits->cf
+                                               cf
+                                               (!rflagsBits->pf
+                                                pf
+                                                (!rflagsBits->zf
+                                                 zf
+                                                 (!rflagsBits->sf
+                                                  sf
+                                                  input-rflags)))))))
                          (undefined-flags (mbe
                                            :logic
-                                            (change-rflagsBits
-                                             0
-                                             :af 1
-                                             :of 1)
-                                            :exec
-                                            (!rflagsBits->af
-                                             1
-                                             (!rflagsBits->of
-                                              1 0)))))
+                                           (change-rflagsBits
+                                            0
+                                            :af 1
+                                            :of 1)
+                                           :exec
+                                           (!rflagsBits->af
+                                            1
+                                            (!rflagsBits->of
+                                             1 0)))))
                       (mv output-rflags undefined-flags))
 
                   ;; all flags undefined if cnt > size:
@@ -1117,34 +1159,9 @@ most-significant bit of the original operand.</p>"
          (mv output-dst
              (> cnt ,size) ; result undefined if count exceeds operand size
              output-rflags
-             undefined-flags))
-
-       :verify-guards nil ; done below
+             undefined-flags))       
 
        ///
-
-       ;; The following local lemma is used to verify the guards of the
-       ;; function.  The (MBE ...) assigned to CF under the case in which CNT
-       ;; is between 2 and SIZE generates a subgoal of this form, which needs
-       ;; non-linear arithmetic to be solved.  Maybe there is a better way to
-       ;; verify the guards without providing this lemma and without using
-       ;; non-linear arithmetic.
-       (defruledl verify-guards-lemma
-         (implies (and (natp cnt)
-                       (<= cnt ,size)
-                       (natp dst)
-                       (< dst ,(expt 2 size)))
-                  (< (* dst (expt 2 cnt)) ,(expt 2 (* 2 size))))
-         :prep-books ((include-book "arithmetic-5/top" :dir :system)
-                      (set-default-hints '((acl2::nonlinearp-default-hint
-                                            acl2::stable-under-simplificationp
-                                            acl2::hist
-                                            acl2::pspv)))))
-
-       (verify-guards ,fn-name
-         :hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables
-                                           verify-guards-lemma)
-                                          ((tau-system))))))
 
        (local (in-theory (e/d () (unsigned-byte-p))))
 
@@ -1245,7 +1262,8 @@ most-significant bit of the original operand.</p>"
        :parents (shrd-spec)
 
        :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
-                                              ((tau-system)))))
+                                              (unsigned-byte-p
+                                               (tau-system)))))
 
        (b* ((dst (mbe :logic (n-size ,size dst)
                       :exec dst))
@@ -1477,4 +1495,4 @@ most-significant bit of the original operand.</p>"
     :gen-type t
     :gen-linear t))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------

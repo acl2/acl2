@@ -39,6 +39,7 @@
 (in-package "X86ISA")
 
 (include-book "paging" :dir :machine)
+(include-book "../../../portcullis/utils")
 (local (include-book "centaur/gl/gl" :dir :system))
 
 ;; ======================================================================

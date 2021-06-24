@@ -56,7 +56,6 @@
                   x86))
   :hints (("Goal" :in-theory (e/d* (wm-low-32
                                     rm-low-32
-                                    xw-xr-mem
                                     ;; xr-after-writing-the-read
                                     unsigned-byte-p)
                                    ()))))
@@ -475,7 +474,7 @@
 
  @(def xlate-governing-qword-and-byte-addresses)"
 
-  :guard (not (xr :app-view 0 x86))
+  :guard (not (app-view x86))
   :guard-hints (("Goal" :in-theory (e/d* (canonical-address-p)
                                          (xlate-governing-qword-addresses-for-pml4-table
                                           unsigned-byte-p
@@ -520,7 +519,7 @@
   ((n        natp)
    (lin-addr canonical-address-p)
    x86)
-  :guard (and (not (xr :app-view 0 x86))
+  :guard (and (not (app-view x86))
               (canonical-address-p (+ n lin-addr)))
   :guard-hints (("Goal" :in-theory (e/d* (signed-byte-p) ())))
   :enabled t
@@ -580,8 +579,8 @@
            (ia32e-la-to-pa-page-table
             lin-addr base-addr u/s-acc r/w-acc x/d-acc
             wp smep smap ac nxe r-w-x cpl x86))
-          (if (or (xr :app-view 0 x86)
-                  (not (xr :marking-view 0 x86)))
+          (if (or (xr :app-view nil x86)
+                  (not (xr :marking-view nil x86)))
               x86
             (mv-nth 1
                     (update-a/d-bits
@@ -649,8 +648,8 @@
             (ia32e-la-to-pa-page-directory
              lin-addr base-addr u/s-acc r/w-acc x/d-acc
              wp smep smap ac nxe r-w-x cpl x86))
-           (if (or (xr :app-view 0 x86)
-                   (not (xr :marking-view 0 x86)))
+           (if (or (xr :app-view nil x86)
+                   (not (xr :marking-view nil x86)))
                x86
              (mv-nth 1
                      (update-a/d-bits
@@ -687,8 +686,8 @@
             (ia32e-la-to-pa-page-directory
              lin-addr base-addr u/s-acc r/w-acc x/d-acc
              wp smep smap ac nxe r-w-x cpl x86))
-           (if (or (xr :app-view 0 x86)
-                   (not (xr :marking-view 0 x86)))
+           (if (or (xr :app-view nil x86)
+                   (not (xr :marking-view nil x86)))
                x86
              (mv-nth 1
                      (update-a/d-bits
@@ -723,8 +722,8 @@
            (ia32e-la-to-pa-page-directory
             lin-addr base-addr u/s-acc r/w-acc x/d-acc
             wp smep smap ac nxe r-w-x cpl x86))
-          (if (or (xr :app-view 0 x86)
-                  (not (xr :marking-view 0 x86)))
+          (if (or (xr :app-view nil x86)
+                  (not (xr :marking-view nil x86)))
               x86
             (mv-nth 1
                     (update-a/d-bits
@@ -797,8 +796,8 @@
             (ia32e-la-to-pa-page-dir-ptr-table
              lin-addr base-addr u/s-acc r/w-acc x/d-acc
              wp smep smap ac nxe r-w-x cpl x86))
-           (if (or (xr :app-view 0 x86)
-                   (not (xr :marking-view 0 x86)))
+           (if (or (xr :app-view nil x86)
+                   (not (xr :marking-view nil x86)))
                x86
              (mv-nth 1
                      (update-a/d-bits
@@ -846,8 +845,8 @@
             (ia32e-la-to-pa-page-dir-ptr-table
              lin-addr base-addr u/s-acc r/w-acc x/d-acc
              wp smep smap ac nxe r-w-x cpl x86))
-           (if (or (xr :app-view 0 x86)
-                   (not (xr :marking-view 0 x86)))
+           (if (or (xr :app-view nil x86)
+                   (not (xr :marking-view nil x86)))
                x86
              (mv-nth 1
                      (update-a/d-bits
@@ -899,8 +898,8 @@
             (ia32e-la-to-pa-page-dir-ptr-table
              lin-addr base-addr u/s-acc r/w-acc x/d-acc
              wp smep smap ac nxe r-w-x cpl x86))
-           (if (or (xr :app-view 0 x86)
-                   (not (xr :marking-view 0 x86)))
+           (if (or (xr :app-view nil x86)
+                   (not (xr :marking-view nil x86)))
                x86
              (mv-nth 1
                      (update-a/d-bits
@@ -936,8 +935,8 @@
            (ia32e-la-to-pa-page-dir-ptr-table
             lin-addr base-addr u/s-acc r/w-acc x/d-acc
             wp smep smap ac nxe r-w-x cpl x86))
-          (if (or (xr :app-view 0 x86)
-                  (not (xr :marking-view 0 x86)))
+          (if (or (xr :app-view nil x86)
+                  (not (xr :marking-view nil x86)))
               x86
             (mv-nth 1
                     (update-a/d-bits
@@ -1055,8 +1054,8 @@
             2
             (ia32e-la-to-pa-pml4-table lin-addr base-addr wp smep smap
                                        ac nxe r-w-x cpl x86))
-           (if (or (xr :app-view 0 x86)
-                   (not (xr :marking-view 0 x86)))
+           (if (or (xr :app-view nil x86)
+                   (not (xr :marking-view nil x86)))
                x86
              (mv-nth 1
                      (update-a/d-bits
@@ -1123,8 +1122,8 @@
             2
             (ia32e-la-to-pa-pml4-table lin-addr base-addr wp smep smap
                                        ac nxe r-w-x cpl x86))
-           (if (or (xr :app-view 0 x86)
-                   (not (xr :marking-view 0 x86)))
+           (if (or (xr :app-view nil x86)
+                   (not (xr :marking-view nil x86)))
                x86
              (mv-nth 1
                      (update-a/d-bits
@@ -1193,8 +1192,8 @@
             2
             (ia32e-la-to-pa-pml4-table lin-addr base-addr wp smep smap
                                        ac nxe r-w-x cpl x86))
-           (if (or (xr :app-view 0 x86)
-                   (not (xr :marking-view 0 x86)))
+           (if (or (xr :app-view nil x86)
+                   (not (xr :marking-view nil x86)))
                x86
              (mv-nth 1
                      (update-a/d-bits
@@ -1230,8 +1229,8 @@
            2
            (ia32e-la-to-pa-pml4-table
             lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86))
-          (if (or (xr :app-view 0 x86)
-                  (not (xr :marking-view 0 x86)))
+          (if (or (xr :app-view nil x86)
+                  (not (xr :marking-view nil x86)))
               x86
             (mv-nth 1
                     (update-a/d-bits
@@ -1358,8 +1357,8 @@
     (canonical-address-p lin-addr)
     (x86p x86))
    (equal (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
-          (if (or (xr :app-view 0 x86)
-                  (not (xr :marking-view 0 x86)))
+          (if (or (xr :app-view nil x86)
+                  (not (xr :marking-view nil x86)))
               x86
             (mv-nth 1
                     (update-a/d-bits

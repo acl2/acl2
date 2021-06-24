@@ -7,6 +7,6 @@
 ;; supported with it turned on.
 (set-parallel-execution nil)
 (include-book "portcullis/sharp-dot-constants")
-;; cert-flags: ? t :ttags all :skip-proofs-okp t
+;; cert-flags: ? t :ttags all 
 
 ;; ======================================================================

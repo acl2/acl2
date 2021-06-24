@@ -434,7 +434,7 @@
 (defthmd rb-rb-split-reads
   (implies (and (canonical-address-p addr)
                 (canonical-address-p (+ -1 k j addr))
-                (xr :app-view 0 x86)
+                (xr :app-view nil x86)
                 (natp j)
                 (natp k))
            (equal (mv-nth 1 (rb (+ k j) addr r-x x86))
@@ -450,9 +450,10 @@
            ;;         (ash (mv-nth 1 (rb j (+ k addr) r-x x86)) (ash k 3))
            ;;         (mv-nth 1 (rb k addr r-x x86))))
            )
-  :hints (("Goal" :in-theory (e/d* (push-ash-inside-logior)
-                                   (unsigned-byte-p
-                                    (:meta acl2::mv-nth-cons-meta))))))
+  :hints (("Goal"
+           :in-theory (e/d* (push-ash-inside-logior)
+                            (unsigned-byte-p                             
+                             (:meta acl2::mv-nth-cons-meta))))))
 
 ;; ----------------------------------------------------------------------
 
@@ -607,9 +608,7 @@
    :hints (("Goal" :in-theory (e/d* (nth
                                      logtail-n>=8-of-byte
                                      loghead-n->=8-of-a-byte)
-                                    ((:linear ash-monotone-2)
-                                     member-equal
-                                     (:linear size-of-combine-bytes-of-take)))))))
+                                    (member-equal))))))
 
 (defthm one-read-with-rb-from-program-at
   ;; Even though we have many-reads-with-rb-from-program-at, I like

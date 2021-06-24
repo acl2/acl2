@@ -126,6 +126,13 @@
 
 ;; Memory Read Functions:
 
+(defthm-unsigned-byte-p n16p-xr-seg-hidden-attr
+  :hyp t
+  :bound 16
+  :concl (xr :seg-hidden-attr i x86)
+  :gen-linear t
+  :gen-type t)
+
 (define gen-read-function (&key
                            (size natp)
                            (signed? booleanp)
@@ -187,7 +194,7 @@
                     (/= proc-mode #.*64-bit-mode*)
                     (= seg-reg #.*cs*)
                     (eq r-x :r)
-                    (b* ((attr (loghead 16 (xr :seg-hidden-attr seg-reg x86)))
+                    (b* ((attr (loghead 16 (seg-hidden-attri seg-reg x86)))
                          (r (code-segment-descriptor-attributesBits->r attr)))
                       (= r 0))))
              (mv (list :execute-only-code-segment eff-addr) 0 x86))
@@ -352,21 +359,21 @@
            (equal
             (mv-nth 0 ,(search-and-replace-once
                         'x86
-                        '(xw :rflags 0 value x86)
+                        '(xw :rflags nil value x86)
                         fn-call))
             (mv-nth 0 ,fn-call))
            (equal
             (mv-nth 1 ,(search-and-replace-once
                         'x86
-                        '(xw :rflags 0 value x86)
+                        '(xw :rflags nil value x86)
                         fn-call))
             (mv-nth 1 ,fn-call))
            (equal
             (mv-nth 2 ,(search-and-replace-once
                         'x86
-                        '(xw :rflags 0 value x86)
+                        '(xw :rflags nil value x86)
                         fn-call))
-            (xw :rflags 0 value (mv-nth 2 ,fn-call)))))
+            (xw :rflags nil value (mv-nth 2 ,fn-call)))))
          :enable (,@(and signed?
                          `(,lin-mem-fn-name
                            ;; ,(mk-name "RML" size-str)
@@ -529,7 +536,7 @@
   (b* (((when (and (/= proc-mode #.*64-bit-mode*)
                    (= seg-reg #.*cs*)
                    (eq r-x :r)
-                   (b* ((attr (loghead 16 (xr :seg-hidden-attr seg-reg x86)))
+                   (b* ((attr (loghead 16 (seg-hidden-attri seg-reg x86)))
                         (r (code-segment-descriptor-attributesBits->r attr)))
                      (= r 0))))
         (mv (list :execute-only-code-segment eff-addr) 0 x86))
@@ -686,7 +693,7 @@
   (b* (((when (and (/= proc-mode #.*64-bit-mode*)
                    (= seg-reg #.*cs*)
                    (eq r-x :r)
-                   (b* ((attr (loghead 16 (xr :seg-hidden-attr seg-reg x86)))
+                   (b* ((attr (loghead 16 (seg-hidden-attri seg-reg x86)))
                         (r (code-segment-descriptor-attributesBits->r attr)))
                      (= r 0))))
         (mv (list :execute-only-code-segment eff-addr) 0 x86))
@@ -854,7 +861,7 @@
        (b* (((when (and (/= proc-mode #.*64-bit-mode*)
                         (or (= seg-reg #.*cs*)
                             (b* ((attr (loghead
-                                        16 (xr :seg-hidden-attr seg-reg x86)))
+                                        16 (seg-hidden-attri seg-reg x86)))
                                  (w (data-segment-descriptor-attributesBits->w
                                      attr)))
                               (= w 0)))))
@@ -1039,7 +1046,7 @@
   (b* (((when (and (/= proc-mode #.*64-bit-mode*)
                    (or (= seg-reg #.*cs*)
                        (b* ((attr (loghead
-                                   16 (xr :seg-hidden-attr seg-reg x86)))
+                                   16 (seg-hidden-attri seg-reg x86)))
                             (w (data-segment-descriptor-attributesBits->w
                                 attr)))
                          (= w 0)))))
@@ -1156,7 +1163,7 @@
   (b* (((when (and (/= proc-mode #.*64-bit-mode*)
                    (or (= seg-reg #.*cs*)
                        (b* ((attr (loghead
-                                   16 (xr :seg-hidden-attr seg-reg x86)))
+                                   16 (seg-hidden-attri seg-reg x86)))
                             (w (data-segment-descriptor-attributesBits->w
                                 attr)))
                          (= w 0)))))

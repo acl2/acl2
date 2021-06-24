@@ -91,7 +91,7 @@
 (defthm program-effects-2
   (implies (preconditions x86)
            (equal (x86-run 2 x86)
-                  (!rip (+ 2 (xr :rip 0 x86)) (!flgi :cf 1 x86))))
+                  (!rip (+ 2 (xr :rip nil x86)) (!flgi :cf 1 x86))))
   :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std
                                     x86-operation-mode
                                     las-to-pas

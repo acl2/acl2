@@ -42,6 +42,7 @@
 
 (include-book "../utils/utilities")
 (include-book "../portcullis/utils")
+(include-book "../utils/segmentation-structures")
 (include-book "tools/rulesets" :dir :system)
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 
@@ -377,11 +378,54 @@
                      (:nat n64 64)
                      (:nat n16 64))))
 
+(defthm-using-gl far-jmp-call-gate-guard-helper-5
+  :hyp (call-gate-descriptorbits-p z)
+  :concl (equal
+          (logand #xFFFFFFFF00000000 (ash (call-gate-descriptorbits->offset63-32 z) 32))
+          (ash (call-gate-descriptorbits->offset63-32 z) 32))
+  :g-bindings (gl::auto-bindings (:nat z 128)))
+
+(defthm-using-gl far-jmp-call-gate-guard-helper-6
+  :hyp (unsigned-byte-p 16 x)
+  :concl (equal (logand #xffff0000 (ash x 16))
+                (ash x 16))
+  :g-bindings (gl::auto-bindings (:nat x 16)))
+
+(defthm-using-gl far-jmp-call-gate-guard-helper-7
+  :hyp (and (unsigned-byte-p 32 call-gate-descriptorbits->offset63-32)
+            (unsigned-byte-p 16 call-gate-descriptorbits->offset31-16)
+            (unsigned-byte-p 16 call-gate-descriptorbits->offset15-0))
+  :concl (equal
+          (logior
+           (ash
+            call-gate-descriptorbits->offset31-16
+            16)
+           (loghead
+            32
+            call-gate-descriptorbits->offset15-0)
+           (logand
+            18446744069414584320
+            (ash
+             call-gate-descriptorbits->offset63-32
+             32)))
+          (logior
+           call-gate-descriptorbits->offset15-0
+           (ash
+            call-gate-descriptorbits->offset31-16
+            16)
+           (ash
+            call-gate-descriptorbits->offset63-32
+            32)))
+  :g-bindings (gl::auto-bindings (:mix (:nat call-gate-descriptorbits->offset15-0 32)
+                                       (:nat call-gate-descriptorbits->offset31-16 32)
+                                       (:nat call-gate-descriptorbits->offset63-32 32))))
+
 (def-ruleset far-jump-guard-helpers
   '(far-jmp-conforming-code-segment-guard-helper-1
     far-jmp-conforming-code-segment-guard-helper-2
     far-jmp-non-conforming-code-segment-guard-helper-3
-    far-jmp-call-gate-guard-helper-4))
+    far-jmp-call-gate-guard-helper-4
+    far-jmp-call-gate-guard-helper-5))
 
 ;; ======================================================================
 

@@ -785,7 +785,7 @@
                 (pdpt-base-addr (xr :rgf *rsi* x86) x86))
                :w x86))
     (all-xlation-governing-entries-paddrs
-     *rewire_dst_to_src-len* (xr :rip 0 x86) x86))
+     *rewire_dst_to_src-len* (xr :rip nil x86) x86))
    ;; From destination-PDPTE-ok-p:
    (disjoint-p
     (mv-nth 1 (las-to-pas
@@ -825,7 +825,7 @@
                 (pdpt-base-addr (xr :rgf *rsi* x86) x86))
                :w x86))
     (all-xlation-governing-entries-paddrs
-     *rewire_dst_to_src-len* (xr :rip 0 x86) x86))
+     *rewire_dst_to_src-len* (xr :rip nil x86) x86))
    ;; From destination-PDPTE-ok-p:
    (disjoint-p
     (mv-nth 1 (las-to-pas
@@ -881,7 +881,7 @@
                      x86)))
           30))
     (all-xlation-governing-entries-paddrs
-     *rewire_dst_to_src-len* (xr :rip 0 x86) x86))
+     *rewire_dst_to_src-len* (xr :rip nil x86) x86))
 
    (disjoint-p
     (addr-range
@@ -1071,13 +1071,13 @@
                 12))
               :R X86))))
           (XW
-           :RIP 0
+           :RIP nil
            (LOGEXT 64
                    (MV-NTH 1 (RB 8 (XR :RGF *RSP* X86) :R X86)))
            (XW
-            :UNDEF 0 (+ 46 (NFIX (XR :UNDEF 0 X86)))
+            :UNDEF nil (+ 46 (NFIX (XR :UNDEF nil X86)))
             (XW
-             :RFLAGS 0
+             :RFLAGS nil
              (RFLAGSBITS
               (BOOL->BIT
                (<
@@ -1162,7 +1162,7 @@
                            :R X86))))
                        12))
                      :R X86)))))))
-              (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+              (RFLAGSBITS->RES1 (XR :RFLAGS nil X86))
               (PF-SPEC64
                (LOGHEAD
                 64
@@ -1259,7 +1259,7 @@
                               :R X86))))
                           12))
                         :R X86))))))))))
-              (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+              (RFLAGSBITS->RES2 (XR :RFLAGS nil X86))
               (SUB-AF-SPEC64
                (LOGAND
                 4503598553628672
@@ -1342,7 +1342,7 @@
                           :R X86))))
                       12))
                     :R X86))))))
-              (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+              (RFLAGSBITS->RES3 (XR :RFLAGS nil X86))
               1
               (SF-SPEC64
                (LOGHEAD
@@ -1440,9 +1440,9 @@
                               :R X86))))
                           12))
                         :R X86))))))))))
-              (RFLAGSBITS->TF (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+              (RFLAGSBITS->TF (XR :RFLAGS nil X86))
+              (RFLAGSBITS->INTF (XR :RFLAGS nil X86))
+              (RFLAGSBITS->DF (XR :RFLAGS nil X86))
               (OF-SPEC64
                (+
                 (LOGAND
@@ -1537,16 +1537,16 @@
                              :R X86))))
                          12))
                        :R X86)))))))))
-              (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->RF (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->VM (XR :RFLAGS 0 X86))
-              (BOOL->BIT (LOGBITP 18 (XR :RFLAGS 0 X86)))
-              (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86)))
+              (RFLAGSBITS->IOPL (XR :RFLAGS nil X86))
+              (RFLAGSBITS->NT (XR :RFLAGS nil X86))
+              (RFLAGSBITS->RES4 (XR :RFLAGS nil X86))
+              (RFLAGSBITS->RF (XR :RFLAGS nil X86))
+              (RFLAGSBITS->VM (XR :RFLAGS nil X86))
+              (BOOL->BIT (LOGBITP 18 (XR :RFLAGS nil X86)))
+              (RFLAGSBITS->VIF (XR :RFLAGS nil X86))
+              (RFLAGSBITS->VIP (XR :RFLAGS nil X86))
+              (RFLAGSBITS->ID (XR :RFLAGS nil X86))
+              (RFLAGSBITS->RES5 (XR :RFLAGS nil X86)))
              (MV-NTH
               2
               (LAS-TO-PAS
@@ -1555,12 +1555,12 @@
                (MV-NTH
                 2
                 (LAS-TO-PAS
-                 40 (+ 206 (XR :RIP 0 X86))
+                 40 (+ 206 (XR :RIP nil X86))
                  :X
                  (MV-NTH
                   2
                   (LAS-TO-PAS
-                   15 (+ 190 (XR :RIP 0 X86))
+                   15 (+ 190 (XR :RIP nil X86))
                    :X
                    (MV-NTH
                     1
@@ -1648,7 +1648,7 @@
                      (MV-NTH
                       2
                       (LAS-TO-PAS
-                       6 (+ 184 (XR :RIP 0 X86))
+                       6 (+ 184 (XR :RIP nil X86))
                        :X
                        (MV-NTH
                         2
@@ -1680,12 +1680,12 @@
                          (MV-NTH
                           2
                           (LAS-TO-PAS
-                           40 (+ 144 (XR :RIP 0 X86))
+                           40 (+ 144 (XR :RIP nil X86))
                            :X
                            (MV-NTH
                             2
                             (LAS-TO-PAS
-                             3 (+ 140 (XR :RIP 0 X86))
+                             3 (+ 140 (XR :RIP nil X86))
                              :X
                              (MV-NTH
                               2
@@ -1702,12 +1702,12 @@
                                (MV-NTH
                                 2
                                 (LAS-TO-PAS
-                                 32 (+ 108 (XR :RIP 0 X86))
+                                 32 (+ 108 (XR :RIP nil X86))
                                  :X
                                  (MV-NTH
                                   2
                                   (LAS-TO-PAS
-                                   18 (+ 86 (XR :RIP 0 X86))
+                                   18 (+ 86 (XR :RIP nil X86))
                                    :X
                                    (MV-NTH
                                     2
@@ -1743,12 +1743,12 @@
                                      (MV-NTH
                                       2
                                       (LAS-TO-PAS
-                                       40 (+ 46 (XR :RIP 0 X86))
+                                       40 (+ 46 (XR :RIP nil X86))
                                        :X
                                        (MV-NTH
                                         2
                                         (LAS-TO-PAS
-                                         4 (+ 38 (XR :RIP 0 X86))
+                                         4 (+ 38 (XR :RIP nil X86))
                                          :X
                                          (MV-NTH
                                           2
@@ -1768,7 +1768,7 @@
                                            (MV-NTH
                                             2
                                             (LAS-TO-PAS
-                                             25 (+ 13 (XR :RIP 0 X86))
+                                             25 (+ 13 (XR :RIP nil X86))
                                              :X
                                              (MV-NTH
                                               2
@@ -1778,7 +1778,7 @@
                                                (MV-NTH
                                                 2
                                                 (LAS-TO-PAS
-                                                 5 (+ 8 (XR :RIP 0 X86))
+                                                 5 (+ 8 (XR :RIP nil X86))
                                                  :X
                                                  (MV-NTH
                                                   1
@@ -1790,7 +1790,7 @@
                                                    (MV-NTH
                                                     2
                                                     (LAS-TO-PAS
-                                                     8 (XR :RIP 0 X86)
+                                                     8 (XR :RIP nil X86)
                                                      :X
                                                      X86))))))))))))))))))))))))))))))))))))))))))))))))))))
 
@@ -1983,7 +1983,7 @@
                :R X86))
              X86)))
           (XW
-           :RIP 0
+           :RIP nil
            (LOGEXT 64
                    (READ-FROM-PHYSICAL-MEMORY
                     (MV-NTH 1
@@ -1991,9 +1991,9 @@
                                         :R X86))
                     X86))
            (XW
-            :UNDEF 0 (+ 46 (NFIX (XR :UNDEF 0 X86)))
+            :UNDEF nil (+ 46 (NFIX (XR :UNDEF nil X86)))
             (XW
-             :RFLAGS 0
+             :RFLAGS nil
              (RFLAGSBITS
               (BOOL->BIT
                (<
@@ -2090,7 +2090,7 @@
                         12))
                       :R X86))
                     X86))))))
-              (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+              (RFLAGSBITS->RES1 (XR :RFLAGS nil X86))
               (PF-SPEC64
                (LOGHEAD
                 64
@@ -2201,7 +2201,7 @@
                            12))
                          :R X86))
                        X86)))))))))
-              (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+              (RFLAGSBITS->RES2 (XR :RFLAGS nil X86))
               (SUB-AF-SPEC64
                (LOGAND
                 4503598553628672
@@ -2296,7 +2296,7 @@
                        12))
                      :R X86))
                    X86)))))
-              (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+              (RFLAGSBITS->RES3 (XR :RFLAGS nil X86))
               1
               (SF-SPEC64
                (LOGHEAD
@@ -2411,9 +2411,9 @@
                            12))
                          :R X86))
                        X86)))))))))
-              (RFLAGSBITS->TF (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+              (RFLAGSBITS->TF (XR :RFLAGS nil X86))
+              (RFLAGSBITS->INTF (XR :RFLAGS nil X86))
+              (RFLAGSBITS->DF (XR :RFLAGS nil X86))
               (OF-SPEC64
                (+
                 (LOGAND
@@ -2525,16 +2525,16 @@
                           12))
                         :R X86))
                       X86))))))))
-              (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->RF (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->VM (XR :RFLAGS 0 X86))
-              (BOOL->BIT (LOGBITP 18 (XR :RFLAGS 0 X86)))
-              (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
-              (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86)))
+              (RFLAGSBITS->IOPL (XR :RFLAGS nil X86))
+              (RFLAGSBITS->NT (XR :RFLAGS nil X86))
+              (RFLAGSBITS->RES4 (XR :RFLAGS nil X86))
+              (RFLAGSBITS->RF (XR :RFLAGS nil X86))
+              (RFLAGSBITS->VM (XR :RFLAGS nil X86))
+              (BOOL->BIT (LOGBITP 18 (XR :RFLAGS nil X86)))
+              (RFLAGSBITS->VIF (XR :RFLAGS nil X86))
+              (RFLAGSBITS->VIP (XR :RFLAGS nil X86))
+              (RFLAGSBITS->ID (XR :RFLAGS nil X86))
+              (RFLAGSBITS->RES5 (XR :RFLAGS nil X86)))
              (MV-NTH
               2
               (LAS-TO-PAS
@@ -2543,12 +2543,12 @@
                (MV-NTH
                 2
                 (LAS-TO-PAS
-                 40 (+ 206 (XR :RIP 0 X86))
+                 40 (+ 206 (XR :RIP nil X86))
                  :X
                  (MV-NTH
                   2
                   (LAS-TO-PAS
-                   15 (+ 190 (XR :RIP 0 X86))
+                   15 (+ 190 (XR :RIP nil X86))
                    :X
                    (MV-NTH
                     2
@@ -2582,7 +2582,7 @@
                      (MV-NTH
                       2
                       (LAS-TO-PAS
-                       6 (+ 184 (XR :RIP 0 X86))
+                       6 (+ 184 (XR :RIP nil X86))
                        :X
                        (MV-NTH
                         2
@@ -2616,12 +2616,12 @@
                          (MV-NTH
                           2
                           (LAS-TO-PAS
-                           40 (+ 144 (XR :RIP 0 X86))
+                           40 (+ 144 (XR :RIP nil X86))
                            :X
                            (MV-NTH
                             2
                             (LAS-TO-PAS
-                             3 (+ 140 (XR :RIP 0 X86))
+                             3 (+ 140 (XR :RIP nil X86))
                              :X
                              (MV-NTH
                               2
@@ -2638,12 +2638,12 @@
                                (MV-NTH
                                 2
                                 (LAS-TO-PAS
-                                 32 (+ 108 (XR :RIP 0 X86))
+                                 32 (+ 108 (XR :RIP nil X86))
                                  :X
                                  (MV-NTH
                                   2
                                   (LAS-TO-PAS
-                                   18 (+ 86 (XR :RIP 0 X86))
+                                   18 (+ 86 (XR :RIP nil X86))
                                    :X
                                    (MV-NTH
                                     2
@@ -2685,12 +2685,12 @@
                                      (MV-NTH
                                       2
                                       (LAS-TO-PAS
-                                       40 (+ 46 (XR :RIP 0 X86))
+                                       40 (+ 46 (XR :RIP nil X86))
                                        :X
                                        (MV-NTH
                                         2
                                         (LAS-TO-PAS
-                                         4 (+ 38 (XR :RIP 0 X86))
+                                         4 (+ 38 (XR :RIP nil X86))
                                          :X
                                          (MV-NTH
                                           2
@@ -2711,7 +2711,7 @@
                                            (MV-NTH
                                             2
                                             (LAS-TO-PAS
-                                             25 (+ 13 (XR :RIP 0 X86))
+                                             25 (+ 13 (XR :RIP nil X86))
                                              :X
                                              (MV-NTH
                                               2
@@ -2723,7 +2723,7 @@
                                                (MV-NTH
                                                 2
                                                 (LAS-TO-PAS
-                                                 5 (+ 8 (XR :RIP 0 X86))
+                                                 5 (+ 8 (XR :RIP nil X86))
                                                  :X
                                                  (MV-NTH
                                                   2
@@ -2736,7 +2736,7 @@
                                                    (MV-NTH
                                                     2
                                                     (LAS-TO-PAS
-                                                     8 (XR :RIP 0 X86)
+                                                     8 (XR :RIP nil X86)
                                                      :X
                                                      (WRITE-TO-PHYSICAL-MEMORY
                                                       (MV-NTH
@@ -2927,17 +2927,20 @@
 
 (defthmd preconditions-imply-ms-fault-view
   (implies (rewire_dst_to_src-effects-preconditions x86)
-           (and (equal (xr :ms 0 x86) nil)
-                (equal (xr :fault 0 x86) nil)
-                (equal (xr :app-view 0 x86) nil)
-                (equal (xr :marking-view 0 x86) t))))
+           (and (equal (xr :ms nil x86) nil)
+                (equal (xr :fault nil x86) nil)
+                (equal (xr :app-view nil x86) nil)
+                (equal (xr :marking-view nil x86) t)))
+  :hints (("Goal" :in-theory (e/d () (elem-p-of-xr-marking-view))
+           :use ((:instance elem-p-of-xr-marking-view
+                            (i nil) (x86$a x86))))))
 
 (defthmd fault-projection
   (implies
    (rewire_dst_to_src-effects-preconditions x86)
    (equal
-    (xr :fault 0 (zeroCopy-state x86))
-    (xr :fault 0 x86)))
+    (xr :fault nil (zeroCopy-state x86))
+    (xr :fault nil x86)))
   :hints (("Goal"
            :do-not '(preprocess)
            :hands-off (x86-run)
@@ -2952,10 +2955,10 @@
 (defthmd ms-fault-application-level-and-marking-view-projection
   (implies (rewire_dst_to_src-effects-preconditions x86)
            (and
-            (equal (xr :ms                          0 (zeroCopy-state x86)) nil)
-            (equal (xr :fault                       0 (zeroCopy-state x86)) nil)
-            (equal (xr :app-view       0 (zeroCopy-state x86)) nil)
-            (equal (xr :marking-view 0 (zeroCopy-state x86)) t)))
+            (equal (xr :ms nil (zeroCopy-state x86)) nil)
+            (equal (xr :fault nil (zeroCopy-state x86)) nil)
+            (equal (xr :app-view nil (zeroCopy-state x86)) nil)
+            (equal (xr :marking-view nil (zeroCopy-state x86)) t)))
   :hints (("Goal"
            :do-not '(preprocess)
            :use ((:instance fault-projection))
@@ -2973,8 +2976,8 @@
    (rewire_dst_to_src-effects-preconditions x86)
    (equal
     (mv-nth 1 (las-to-pas
-               *rewire_dst_to_src-len* (xr :rip 0 x86) :x (zeroCopy-state x86)))
-    (mv-nth 1 (las-to-pas *rewire_dst_to_src-len* (xr :rip 0 x86) :x x86))))
+               *rewire_dst_to_src-len* (xr :rip nil x86) :x (zeroCopy-state x86)))
+    (mv-nth 1 (las-to-pas *rewire_dst_to_src-len* (xr :rip nil x86) :x x86))))
   :hints (("Goal" :in-theory (e/d (page-size) ()))))
 
 
@@ -3020,8 +3023,8 @@
 (defthmd program-at-alt-projection
   (implies
    (rewire_dst_to_src-effects-preconditions x86)
-   (equal (program-at-alt (xr :rip 0 x86) *rewire_dst_to_src* (zeroCopy-state x86))
-          (program-at-alt (xr :rip 0 x86) *rewire_dst_to_src* x86)))
+   (equal (program-at-alt (xr :rip nil x86) *rewire_dst_to_src* (zeroCopy-state x86))
+          (program-at-alt (xr :rip nil x86) *rewire_dst_to_src* x86)))
   :hints (("Goal"
            :use ((:instance preconditions-imply-ms-fault-view)
                  (:instance preconditions-imply-x86p))
@@ -3196,11 +3199,11 @@
    (implies (rewire_dst_to_src-effects-preconditions x86)
             (and
              (disjoint-p (mv-nth 1
-                                 (las-to-pas *rewire_dst_to_src-len* (xr :rip 0 x86) :x x86))
+                                 (las-to-pas *rewire_dst_to_src-len* (xr :rip nil x86) :x x86))
                          (open-qword-paddr-list
                           (gather-all-paging-structure-qword-addresses x86)))
-             (canonical-address-p (xr :rip 0 x86))
-             (canonical-address-p (+ *rewire_dst_to_src-len* (xr :rip 0 x86)))))
+             (canonical-address-p (xr :rip nil x86))
+             (canonical-address-p (+ *rewire_dst_to_src-len* (xr :rip nil x86)))))
    :hints (("Goal" :in-theory (e/d* (rewire_dst_to_src-effects-preconditions)
                                     ())))))
 
@@ -3214,7 +3217,7 @@
                       :r x86))
    (disjoint-p$
     (mv-nth 1 (las-to-pas *rewire_dst_to_src-len*
-                          (xr :rip 0 x86) :x
+                          (xr :rip nil x86) :x
                           (zeroCopy-state x86)))
     (open-qword-paddr-list
      (gather-all-paging-structure-qword-addresses (zeroCopy-state x86)))))
@@ -3225,9 +3228,9 @@
           (:instance preconditions-imply-disjointness-of-program-from-paging-structures)
           (:instance disjoint-p-subset-p
                      (a (mv-nth 1 (las-to-pas *rewire_dst_to_src-len*
-                                              (xr :rip 0 x86) :x x86)))
+                                              (xr :rip nil x86) :x x86)))
                      (x (mv-nth 1 (las-to-pas *rewire_dst_to_src-len*
-                                              (xr :rip 0 x86) :x x86)))
+                                              (xr :rip nil x86) :x x86)))
                      (b (open-qword-paddr-list
                          (gather-all-paging-structure-qword-addresses
                           (zeroCopy-state x86))))
@@ -3249,8 +3252,8 @@
                        (pdpt-base-addr (xr :rgf *rsi* x86) x86))
                       :r (double-rewrite x86))
         (64-bit-modep (double-rewrite x86)))
-   (equal (program-at (xr :rip 0 x86) *rewire_dst_to_src* (zeroCopy-state x86))
-          (program-at (xr :rip 0 x86) *rewire_dst_to_src* x86)))
+   (equal (program-at (xr :rip nil x86) *rewire_dst_to_src* (zeroCopy-state x86))
+          (program-at (xr :rip nil x86) *rewire_dst_to_src* x86)))
   :hints (("Goal"
            :use
            ((:instance program-at-projection-helper)
@@ -3390,12 +3393,9 @@
                              (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
                              (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
                              (:rewrite bitops::logand-with-bitmask)
-                             (:rewrite xw-xw-intra-simple-field-shadow-writes)
                              (:rewrite x86-run-opener-not-ms-not-zp-n)
                              (:type-prescription acl2::bitmaskp$inline)
                              (:rewrite x86-run-opener-not-ms-not-fault-zp-n)
-                             (:definition ms$inline)
-                             (:definition fault$inline)
                              (:rewrite gl::nfix-natp)
                              (:type-prescription bitops::logior-natp-type)
                              rb-and-rm-low-64-for-direct-map)))))
@@ -3450,12 +3450,9 @@
                   (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
                   (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
                   (:rewrite bitops::logand-with-bitmask)
-                  (:rewrite xw-xw-intra-simple-field-shadow-writes)
                   (:rewrite x86-run-opener-not-ms-not-zp-n)
                   (:type-prescription acl2::bitmaskp$inline)
                   (:rewrite x86-run-opener-not-ms-not-fault-zp-n)
-                  (:definition ms$inline)
-                  (:definition fault$inline)
                   (:rewrite gl::nfix-natp))))))
 
 (in-theory (e/d () (pml4-table-base-addr pml4-table-entry-addr)))
@@ -3485,7 +3482,7 @@
       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
       (double-rewrite x86)))
     (64-bit-modep x86) ; added
-    (not (xr :app-view 0 x86)))
+    (not (xr :app-view nil x86)))
    (equal (pdpt-base-addr lin-addr (mv-nth 2 (las-to-pas n-2 lin-addr-2 r-w-x-2 x86)))
           (pdpt-base-addr lin-addr (double-rewrite x86))))
   :hints (("Goal" :in-theory (e/d* (pdpt-base-addr) (force (force))))))
@@ -3632,12 +3629,9 @@
                              (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
                              (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
                              (:rewrite bitops::logand-with-bitmask)
-                             (:rewrite xw-xw-intra-simple-field-shadow-writes)
                              (:rewrite x86-run-opener-not-ms-not-zp-n)
                              (:type-prescription acl2::bitmaskp$inline)
                              (:rewrite x86-run-opener-not-ms-not-fault-zp-n)
-                             (:definition ms$inline)
-                             (:definition fault$inline)
                              (:rewrite gl::nfix-natp))))))
 
 (defthmd source-data-projection
@@ -3728,12 +3722,9 @@
                         (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
                         (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
                         (:rewrite bitops::logand-with-bitmask)
-                        (:rewrite xw-xw-intra-simple-field-shadow-writes)
                         (:rewrite x86-run-opener-not-ms-not-zp-n)
                         (:type-prescription acl2::bitmaskp$inline)
                         (:rewrite x86-run-opener-not-ms-not-fault-zp-n)
-                        (:definition ms$inline)
-                        (:definition fault$inline)
                         (:rewrite gl::nfix-natp)
                         (:type-prescription bitops::logior-natp-type)
                         (:type-prescription bitops::logand-natp-type-1)
@@ -4011,10 +4002,8 @@
                               (:rewrite acl2::equal-of-booleans-rewrite)
                               (:rewrite bitops::unsigned-byte-p-incr)
                               (:rewrite loghead-negative)
-                              (:linear rip-is-i48p)
                               (:type-prescription subset-p)
                               (:rewrite default-+-1)
-                              (:linear rgfi-is-i64p)
                               (:type-prescription member-p)
                               (:rewrite default-<-2)
                               (:type-prescription pdpt-base-addr)
@@ -4041,7 +4030,6 @@
                               (:linear *physical-address-size*p-pml4-table-entry-addr)
                               (:type-prescription booleanp)
                               (:rewrite subset-p-cdr-x)
-                              (:linear ash-monotone-2)
                               (:rewrite rationalp-implies-acl2-numberp)
                               (:type-prescription consp-mv-nth-1-las-to-pas)
                               (:rewrite acl2::ash-0)
@@ -4212,12 +4200,9 @@
        (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
        (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
        (:rewrite bitops::logand-with-bitmask)
-       (:rewrite xw-xw-intra-simple-field-shadow-writes)
        (:rewrite x86-run-opener-not-ms-not-zp-n)
        (:type-prescription acl2::bitmaskp$inline)
        (:rewrite x86-run-opener-not-ms-not-fault-zp-n)
-       (:definition ms$inline)
-       (:definition fault$inline)
        (:rewrite gl::nfix-natp)
        mv-nth-0-las-to-pas-subset-p))))))
 
@@ -4240,7 +4225,7 @@
                       (pdpt-base-addr (xr :rgf *rsi* x86) x86))
                      :w x86))
           (all-xlation-governing-entries-paddrs
-           *rewire_dst_to_src-len* (xr :rip 0 x86) x86))
+           *rewire_dst_to_src-len* (xr :rip nil x86) x86))
          ;; From destination-PDPTE-ok-p:
          (disjoint-p
           (mv-nth 1 (las-to-pas
@@ -4301,11 +4286,8 @@
        member-p-canonical-address-listp
        xr-marking-view-mv-nth-2-las-to-pas
        (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
-       (:rewrite xw-xw-intra-simple-field-shadow-writes)
        (:rewrite x86-run-opener-not-ms-not-zp-n)
        (:rewrite x86-run-opener-not-ms-not-fault-zp-n)
-       (:definition ms$inline)
-       (:definition fault$inline)
        (:rewrite gl::nfix-natp)
        mv-nth-0-las-to-pas-subset-p
        (tau-system)))))))
@@ -4329,7 +4311,7 @@
                       (pdpt-base-addr (xr :rgf *rsi* x86) x86))
                      :w x86))
           (all-xlation-governing-entries-paddrs
-           *rewire_dst_to_src-len* (xr :rip 0 x86) x86))
+           *rewire_dst_to_src-len* (xr :rip nil x86) x86))
          ;; From destination-PDPTE-ok-p:
          (disjoint-p
           (mv-nth 1 (las-to-pas
@@ -4380,11 +4362,8 @@
        member-p-canonical-address-listp
        xr-marking-view-mv-nth-2-las-to-pas
        (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
-       (:rewrite xw-xw-intra-simple-field-shadow-writes)
        (:rewrite x86-run-opener-not-ms-not-zp-n)
        (:rewrite x86-run-opener-not-ms-not-fault-zp-n)
-       (:definition ms$inline)
-       (:definition fault$inline)
        (:rewrite gl::nfix-natp)
        mv-nth-0-las-to-pas-subset-p
        (tau-system)))))))
@@ -4407,7 +4386,7 @@
                      (pdpt-base-addr (xr :rgf *rsi* x86) x86))
                     :w x86))
          (all-xlation-governing-entries-paddrs
-          *rewire_dst_to_src-len* (xr :rip 0 x86) x86))
+          *rewire_dst_to_src-len* (xr :rip nil x86) x86))
         ;; From destination-PDPTE-ok-p:
         (disjoint-p
          (mv-nth 1 (las-to-pas
@@ -4466,11 +4445,8 @@
       member-p-canonical-address-listp
       xr-marking-view-mv-nth-2-las-to-pas
       (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
-      (:rewrite xw-xw-intra-simple-field-shadow-writes)
       (:rewrite x86-run-opener-not-ms-not-zp-n)
       (:rewrite x86-run-opener-not-ms-not-fault-zp-n)
-      (:definition ms$inline)
-      (:definition fault$inline)
       (:rewrite gl::nfix-natp)
       mv-nth-0-las-to-pas-subset-p
       (tau-system))))))
@@ -4494,7 +4470,7 @@
                       (pdpt-base-addr (xr :rgf *rsi* x86) x86))
                      :w x86))
           (all-xlation-governing-entries-paddrs
-           *rewire_dst_to_src-len* (xr :rip 0 x86) x86))
+           *rewire_dst_to_src-len* (xr :rip nil x86) x86))
          ;; From destination-PDPTE-ok-p:
          (disjoint-p
           (mv-nth 1 (las-to-pas
@@ -4550,7 +4526,7 @@
                            x86)))
                 30))
           (all-xlation-governing-entries-paddrs
-           *rewire_dst_to_src-len* (xr :rip 0 x86) x86))
+           *rewire_dst_to_src-len* (xr :rip nil x86) x86))
 
          (disjoint-p
           (addr-range
@@ -4656,11 +4632,8 @@
        member-p-canonical-address-listp
        xr-marking-view-mv-nth-2-las-to-pas
        (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
-       (:rewrite xw-xw-intra-simple-field-shadow-writes)
        (:rewrite x86-run-opener-not-ms-not-zp-n)
        (:rewrite x86-run-opener-not-ms-not-fault-zp-n)
-       (:definition ms$inline)
-       (:definition fault$inline)
        (:rewrite gl::nfix-natp)
        mv-nth-0-las-to-pas-subset-p
        size-of-read-from-physical-memory
@@ -4687,7 +4660,7 @@
                       (pdpt-base-addr (xr :rgf *rsi* x86) x86))
                      :w x86))
           (all-xlation-governing-entries-paddrs
-           *rewire_dst_to_src-len* (xr :rip 0 x86) x86))
+           *rewire_dst_to_src-len* (xr :rip nil x86) x86))
          ;; From destination-PDPTE-ok-p:
          (disjoint-p
           (mv-nth 1 (las-to-pas
@@ -4743,7 +4716,7 @@
                            x86)))
                 30))
           (all-xlation-governing-entries-paddrs
-           *rewire_dst_to_src-len* (xr :rip 0 x86) x86))
+           *rewire_dst_to_src-len* (xr :rip nil x86) x86))
 
          (disjoint-p
           (addr-range
@@ -4873,7 +4846,6 @@
           rewire_dst_to_src-effects-preconditions
           read-from-physical-memory
           pdpt-base-addr-after-mv-nth-2-las-to-pas
-          xw-xw-intra-simple-field-shadow-writes
           rewrite-rb-to-rb-alt
           page-dir-ptr-table-entry-addr-to-c-program-optimized-form
           unsigned-byte-p-52-of-left-shifting-a-40-bit-vector-by-12)))
@@ -4916,10 +4888,10 @@
   ;; Derived from ms-fault-application-level-and-marking-view-projection.
   (implies
    (rewire_dst_to_src-effects-preconditions x86)
-   (and (equal (xr :ms  0 (x86-run (rewire_dst_to_src-clk) x86)) nil)
-        (equal (xr :fault 0 (x86-run (rewire_dst_to_src-clk) x86)) nil)
-        (equal (xr :app-view 0 (x86-run (rewire_dst_to_src-clk) x86)) nil)
-        (equal (xr :marking-view 0 (x86-run (rewire_dst_to_src-clk) x86))
+   (and (equal (xr :ms nil (x86-run (rewire_dst_to_src-clk) x86)) nil)
+        (equal (xr :fault nil (x86-run (rewire_dst_to_src-clk) x86)) nil)
+        (equal (xr :app-view nil (x86-run (rewire_dst_to_src-clk) x86)) nil)
+        (equal (xr :marking-view nil (x86-run (rewire_dst_to_src-clk) x86))
                t)))
   :hints (("Goal"
            :use ((:instance ms-fault-application-level-and-marking-view-projection)
@@ -4988,9 +4960,11 @@
   :hints (("Goal"
            :use ((:instance rewire_dst_to_src-effects))
            :in-theory (union-theories
-                       '(xr-xw-intra-array-field
+                       '(xr-of-xw-intra-field
+                         xr-of-xw-inter-field
                          member-equal
                          (logext)
+                         (x86-elem-fix)
                          zeroCopy-state)
                        (theory 'minimal-theory)))))
 
@@ -5005,9 +4979,9 @@
                        (xr :rgf *rsi* x86)
                        (pdpt-base-addr (xr :rgf *rsi* x86) x86))
                       :r x86))
-   (equal (program-at (xr :rip 0 x86) *rewire_dst_to_src*
+   (equal (program-at (xr :rip nil x86) *rewire_dst_to_src*
                       (x86-run (rewire_dst_to_src-clk) x86))
-          (program-at (xr :rip 0 x86) *rewire_dst_to_src* x86)))
+          (program-at (xr :rip nil x86) *rewire_dst_to_src* x86)))
   :hints (("Goal"
            :use
            ((:instance program-at-projection)

@@ -77,7 +77,7 @@
              (XW
               :RGF *RDI* (+ 4 (XR :RGF *RDI* X86))
               (XW
-               :RIP 0 (+ 18 (XR :RIP 0 X86))
+               :RIP nil (+ 18 (XR :RIP nil X86))
                (MV-NTH
                 1
                 (WB
@@ -292,8 +292,8 @@
 (defthm effects-copyData-loop-base-app-view-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (<= m 4))
-           (equal (xr :app-view 0 (x86-run (loop-clk-base) x86))
-                  (xr :app-view 0 x86)))
+           (equal (xr :app-view nil (x86-run (loop-clk-base) x86))
+                  (xr :app-view nil x86)))
   :hints (("Goal"
            :use ((:instance effects-copydata-loop-base))
            :in-theory (e/d* ()
@@ -341,8 +341,8 @@
 (defthm effects-copyData-loop-base-fault-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (<= m 4))
-           (equal (xr :fault 0 (x86-run (loop-clk-base) x86))
-                  (xr :fault 0 x86)))
+           (equal (xr :fault nil (x86-run (loop-clk-base) x86))
+                  (xr :fault nil x86)))
   :hints (("Goal" :use ((:instance effects-copydata-loop-base))
            :in-theory (e/d* ()
                             (separate-smaller-regions
@@ -353,8 +353,8 @@
 (defthm effects-copyData-loop-base-ms-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (<= m 4))
-           (equal (xr :ms 0 (x86-run (loop-clk-base) x86))
-                  (xr :ms 0 x86)))
+           (equal (xr :ms nil (x86-run (loop-clk-base) x86))
+                  (xr :ms nil x86)))
   :hints (("Goal" :use ((:instance effects-copydata-loop-base))
            :in-theory (e/d* ()
                             (separate-smaller-regions
@@ -365,8 +365,8 @@
 (defthm effects-copyData-loop-base-rip-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (<= m 4))
-           (equal (xr :rip 0 (x86-run (loop-clk-base) x86))
-                  (+ 18 (xr :rip 0 x86))))
+           (equal (xr :rip nil (x86-run (loop-clk-base) x86))
+                  (+ 18 (xr :rip nil x86))))
   :hints (("Goal" :use ((:instance effects-copydata-loop-base))
            :in-theory (e/d* ()
                             (separate-smaller-regions

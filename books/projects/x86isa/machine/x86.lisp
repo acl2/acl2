@@ -107,6 +107,7 @@
                       (e/d ()
                            (force
                             (force)
+                            unsigned-byte-p
                             acl2::zp-open not
                             unsigned-byte-p
                             signed-byte-p
@@ -152,7 +153,6 @@
                        bitops::logtail-of-logior
                        unsigned-byte-p-of-logtail
                        acl2::logtail-identity
-                       ash-monotone-2
                        bitops::logand-with-negated-bitmask
                        (:linear bitops::logior-<-0-linear-1)
                        (:linear bitops::logior-<-0-linear-2)
@@ -163,8 +163,7 @@
                        acl2::ifix-when-not-integerp
                        bitops::basic-signed-byte-p-of-+
                        default-<-1
-                       negative-logand-to-positive-logand-with-integerp-x
-                       negative-logand-to-positive-logand-with-n52p-x))))))
+                       negative-logand-to-positive-logand-with-integerp-x))))))
 
   :parents (x86-decoder)
 
@@ -324,55 +323,37 @@
                                      ())))
      :rule-classes :rewrite)
 
-   (encapsulate
-     ()
-
-     (local (include-book "arithmetic-5/top" :dir :system))
-
-     (defthm return-type-of-!prefixes->*-linear
-       (and (< (!prefixes->num x prefixes) #.*2^52*)
-            (< (!prefixes->lck x prefixes) #.*2^52*)
-            (< (!prefixes->rep x prefixes) #.*2^52*)
-            (< (!prefixes->seg x prefixes) #.*2^52*)
-            (< (!prefixes->opr x prefixes) #.*2^52*)
-            (< (!prefixes->adr x prefixes) #.*2^52*)
-            (< (!prefixes->nxt x prefixes) #.*2^52*))
-       :hints (("Goal" :in-theory
-                (e/d* (loghead
-                       !prefixes->num
-                       !prefixes->lck
-                       !prefixes->rep
-                       !prefixes->seg
-                       !prefixes->opr
-                       !prefixes->adr
-                       !prefixes->nxt
-                       prefixes-fix
-                       4bits-fix
-                       8bits-fix)
-                      (bitops::logand-with-negated-bitmask))))
-       :rule-classes :linear))
-
-   (local
-    (encapsulate
-      ()
-
-      (local (include-book "arithmetic-5/top" :dir :system))
-
-      (defthm get-prefixes-storing-last-byte-lemma
-        (implies (unsigned-byte-p 8 byte)
-                 (< (logior (logand 4503599626326015 prefixes)
-                            (ash byte 12))
-                    4503599627370496))
-        :rule-classes :linear)
-
-      (defthm negative-logand-to-positive-logand-with-n52p-x
-        (implies (and (< n 0)
-                      (syntaxp (quotep n))
-                      (equal m 52)
-                      (integerp n)
-                      (n52p x))
-                 (equal (logand n x)
-                        (logand (logand (1- (ash 1 m)) n) x))))))
+   (defthm return-type-of-!prefixes->*-linear
+     (and (unsigned-byte-p 52 (!prefixes->num x prefixes))
+          (unsigned-byte-p 52 (!prefixes->lck x prefixes))
+          (unsigned-byte-p 52 (!prefixes->rep x prefixes))
+          (unsigned-byte-p 52 (!prefixes->seg x prefixes))
+          (unsigned-byte-p 52 (!prefixes->opr x prefixes))
+          (unsigned-byte-p 52 (!prefixes->adr x prefixes))
+          (unsigned-byte-p 52 (!prefixes->nxt x prefixes)))
+     :hints (("Goal" :in-theory
+              (e/d* (!prefixes->num
+                     !prefixes->lck
+                     !prefixes->rep
+                     !prefixes->seg
+                     !prefixes->opr
+                     !prefixes->adr
+                     !prefixes->nxt
+                     prefixes-fix
+                     4bits-fix
+                     8bits-fix)
+                    (unsigned-byte-p
+                     bitops::logand-with-negated-bitmask))))
+     :rule-classes
+     ((:rewrite)
+      (:linear :corollary
+               (and (< (!prefixes->num x prefixes) #.*2^52*)
+                    (< (!prefixes->lck x prefixes) #.*2^52*)
+                    (< (!prefixes->rep x prefixes) #.*2^52*)
+                    (< (!prefixes->seg x prefixes) #.*2^52*)
+                    (< (!prefixes->opr x prefixes) #.*2^52*)
+                    (< (!prefixes->adr x prefixes) #.*2^52*)
+                    (< (!prefixes->nxt x prefixes) #.*2^52*)))))
 
    (defthm loghead-ash-0
      (implies (and (natp i)
@@ -561,7 +542,6 @@
                               bitops::logtail-of-logior
                               unsigned-byte-p-of-logtail
                               acl2::logtail-identity
-                              ash-monotone-2
                               bitops::logand-with-negated-bitmask
                               (:linear bitops::logior-<-0-linear-1)
                               (:linear bitops::logior-<-0-linear-2)
@@ -597,7 +577,6 @@
                               bitops::logtail-of-logior
                               unsigned-byte-p-of-logtail
                               acl2::logtail-identity
-                              ash-monotone-2
                               bitops::logand-with-negated-bitmask
                               (:linear bitops::logior-<-0-linear-1)
                               (:linear bitops::logior-<-0-linear-2)
@@ -673,7 +652,6 @@
                               bitops::logtail-of-logior
                               unsigned-byte-p-of-logtail
                               acl2::logtail-identity
-                              ash-monotone-2
                               bitops::logand-with-negated-bitmask
                               (:linear bitops::logior-<-0-linear-1)
                               (:linear bitops::logior-<-0-linear-2)
@@ -733,9 +711,7 @@
      :hints (("Goal"
               :induct
               (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)
-              :in-theory (e/d ()
-                              (unsigned-byte-p
-                               negative-logand-to-positive-logand-with-n52p-x))))))
+              :in-theory (e/d () (unsigned-byte-p))))))
 
   (defthm get-prefixes-opener-lemma-no-prefix-byte
     ;; This lemma is applicable in all the views of the x86isa model. This
@@ -818,7 +794,6 @@
              (e/d* (add-to-*ip)
                    (rb
                     unsigned-byte-p
-                    negative-logand-to-positive-logand-with-n52p-x
                     negative-logand-to-positive-logand-with-integerp-x)))))
 
   (defthm get-prefixes-opener-lemma-group-2-prefix
@@ -852,7 +827,6 @@
              (e/d* (add-to-*ip)
                    (rb
                     unsigned-byte-p
-                    negative-logand-to-positive-logand-with-n52p-x
                     negative-logand-to-positive-logand-with-integerp-x)))))
 
   (defthm get-prefixes-opener-lemma-group-3-prefix
@@ -881,7 +855,6 @@
              (e/d* (add-to-*ip)
                    (rb
                     unsigned-byte-p
-                    negative-logand-to-positive-logand-with-n52p-x
                     negative-logand-to-positive-logand-with-integerp-x)))))
 
   (defthm get-prefixes-opener-lemma-group-4-prefix
@@ -909,7 +882,6 @@
              (e/d* (add-to-*ip)
                    (rb
                     unsigned-byte-p
-                    negative-logand-to-positive-logand-with-n52p-x
                     negative-logand-to-positive-logand-with-integerp-x)))))
 
   (local
@@ -943,8 +915,6 @@
               :induct <call>
               :in-theory (e/d ()
                               (unsigned-byte-p
-                               (:linear <=-logior)
-                               negative-logand-to-positive-logand-with-n52p-x
                                las-to-pas rb rme08 rml08))))))
 
   (local

@@ -212,20 +212,59 @@
                                    ()))))
 
 (local
- (defthm combine-bytes-take-and-loghead-helper
-   (implies (natp n)
-            (equal (loghead (ash n 3) (ash x 8))
-                   (ash (loghead (ash (+ -1 n) 3) x) 8)))
-   :hints (("Goal" :use ((:instance ash-and-plus (n n)))
-            :in-theory (e/d* () (ash-and-plus))))))
+ (defun combine-bytes-take-ind (num xs)
+   (if (or (zp num) (endp xs))
+       (mv num xs)
+     (combine-bytes-take-ind (1- num) (cdr xs)))))
 
+(local
+ (encapsulate
+   ()
+   (local (include-book "arithmetic-5/top" :dir :system))
+
+   (defthmd ash-n-3-lemma
+     (implies (and (natp num) (< 0 num))
+              (iff (equal (ash num 3) 8)
+                   (equal num 1))))))
+
+(local
+ (defthm combine-bytes-take-and-loghead-helper
+   (implies (and (< 0 num)
+                 (consp xs)
+                 (equal (combine-bytes (take (+ -1 num) (cdr xs)))
+                        (loghead (ash (+ -1 num) 3)
+                                 (combine-bytes (cdr xs))))
+                 (integerp num)
+                 (unsigned-byte-p 8 (car xs))
+                 (byte-listp (cdr xs)))
+            (equal (combine-bytes (take num xs))
+                   (loghead (ash num 3)
+                            (logapp 8 (car xs)
+                                    (combine-bytes (cdr xs))))))
+   :hints (("goal"
+            :do-not-induct t
+            :in-theory (e/d (ash-n-3-lemma)
+                            (bitops::loghead-of-logapp-2))
+            :use ((:instance bitops::loghead-of-logapp-2
+                             (n (ash num 3))
+                             (size 8)
+                             (i (car xs))
+                             (j (combine-bytes (cdr xs)))))))))
 
 (defthm combine-bytes-take-and-loghead
   (implies (and (natp num)
                 (byte-listp xs))
            (equal (combine-bytes (take num xs))
                   (loghead (ash num 3)
-                           (combine-bytes xs)))))
+                           (combine-bytes xs))))
+  :hints (("goal" :induct (combine-bytes-take-ind num xs)
+           :in-theory (e/d ()
+                           (take
+                            (:rewrite acl2::take-of-cons)
+                            (:rewrite acl2::take-of-too-many)
+                            (:rewrite acl2::take-when-atom)
+                            (:rewrite acl2::take-of-zero)
+                            unsigned-byte-p)))))
 
 (defthm combine-bytes-nthcdr-and-logtail
   (implies (and (natp i)
@@ -268,10 +307,7 @@
 (defthm x86p-!rip-when-val-is-canonical-address-p
   (implies (forced-and (x86p x86)
                        (canonical-address-p v))
-           (x86p (xw :rip index v x86)))
-  :hints (("Goal" :in-theory (enable ripp))))
-
-(in-theory (disable (:type-prescription rip-is-i48p)))
+           (x86p (xw :rip index v x86))))
 
 (defthm canonical-address-p-to-integerp-thm
   (implies (canonical-address-p x)
@@ -445,193 +481,19 @@
            (canonical-address-listp (append x y)))
   :rule-classes (:rewrite :type-prescription))
 
-(define addr-range (count addr)
-  :guard (natp count)
+(defthm canonical-address-listp-addr-range
+  (implies (and (canonical-address-p lin-addr)
+                (canonical-address-p (+ -1 n lin-addr)))
+           (canonical-address-listp (addr-range n lin-addr)))
+  :hints (("Goal" :in-theory (e/d (addr-range) ()))))
 
-  :enabled t
-
-  (if (zp count)
-      nil
-    (cons (ifix addr)
-          (addr-range (1- count) (1+ (ifix addr)))))
-
-  ///
-
-  (defthm neg-addr-range=nil
-    (implies (negp i) (equal (addr-range i n) nil)))
-
-  (defthm true-listp-addr-range
-    (true-listp (addr-range count addr))
-    :rule-classes :type-prescription)
-
-  (defthm addr-range-1
-    (equal (addr-range 1 x)
-           (list (ifix x)))
-    :hints (("Goal" :expand (addr-range 1 x))))
-
-  (defthm len-of-addr-range
-    (implies (natp n)
-             (equal (len (addr-range n val)) n))
-    :hints (("Goal" :in-theory (e/d (addr-range) ()))))
-
-  (defthm canonical-address-listp-addr-range
-    (implies (and (canonical-address-p lin-addr)
-                  (canonical-address-p (+ -1 n lin-addr)))
-             (canonical-address-listp (addr-range n lin-addr)))
-    :hints (("Goal" :in-theory (e/d (addr-range) ()))))
-
-  (defthm physical-address-listp-addr-range
-    (implies (and (physical-address-p lin-addr)
-                  (physical-address-p (+ -1 n lin-addr)))
-             (physical-address-listp (addr-range n lin-addr)))
-    :hints (("Goal" :in-theory (e/d (addr-range) ()))))
-
-  (defthm member-p-addr-range
-    (implies (and (<= prog-addr addr)
-                  (< addr (+ n prog-addr))
-                  (integerp n)
-                  (integerp addr)
-                  (integerp prog-addr))
-             (equal (member-p addr (addr-range n prog-addr))
-                    t)))
-
-  (defthm member-p-addr-range-from-member-p-addr-range
-    (implies (and (member-p x (addr-range j y))
-                  (integerp l)
-                  (< j l))
-             (equal (member-p x (addr-range l y))
-                    t)))
-
-  (defthm not-member-p-addr-range
-    (implies (and (or (< addr prog-addr)
-                      (<= (+ n prog-addr) addr))
-                  (integerp prog-addr))
-             (equal (member-p addr (addr-range n prog-addr))
-                    nil)))
-
-  (defthm not-member-p-addr-range-from-not-member-p-addr-range
-    (implies (and (not (member-p x (addr-range j y)))
-                  (integerp j)
-                  (<= l j))
-             (equal (member-p x (addr-range l y))
-                    nil)))
-
-  (defthm subset-p-two-addr-ranges
-    (implies (and (integerp x)
-                  (integerp y)
-                  (<= y x)
-                  (<= (+ i x) (+ j y))
-                  (integerp j))
-             (subset-p (addr-range i x)
-                       (addr-range j y)))
-    :hints (("Goal" :in-theory (e/d (subset-p) nil))))
-
-  (defthm not-disjoint-p-two-addr-ranges-thm
-    (implies (and (integerp x)
-                  (integerp y)
-                  (integerp i)
-                  (integerp j)
-                  (<= x y)
-                  (< y (+ i x))
-                  (<= (+ i x) (+ j y)))
-             (equal (disjoint-p (addr-range i x)
-                                (addr-range j y))
-                    nil))
-    :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
-
-  (defthm disjoint-p-two-addr-ranges-thm-0
-    (implies (and (integerp x)
-                  (integerp y)
-                  (integerp j)
-                  (< 0 j)
-                  (<= (+ i x) y))
-             (disjoint-p (addr-range i x)
-                         (addr-range j y)))
-    :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
-
-  (defthm disjoint-p-two-addr-ranges-thm-1
-    (implies (and (integerp x)
-                  (integerp y)
-                  (integerp j)
-                  (< 0 j)
-                  (<= (+ j y) x))
-             (disjoint-p (addr-range i x)
-                         (addr-range j y)))
-    :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
-
-  ;; (defthm disjoint-p-two-addr-ranges-thm-2
-  ;;   (implies (and (disjoint-p (addr-range i x)
-  ;;                             (addr-range j y))
-  ;;                 (integerp i)
-  ;;                 (integerp j)
-  ;;                 (<= k i)
-  ;;                 (<= l j))
-  ;;            (disjoint-p (addr-range k x)
-  ;;                        (addr-range l y)))
-  ;;   :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
-
-  (defthm disjoint-p-two-addr-ranges-thm-2
-    (implies (and (disjoint-p (addr-range i x)  (addr-range j y))
-                  (subset-p   (addr-range ia a) (addr-range i x))
-                  (subset-p   (addr-range jb b) (addr-range j y)))
-             (disjoint-p (addr-range ia a) (addr-range jb b)))
-    :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
-
-  (defthm disjoint-p-two-addr-ranges-thm-3
-    (implies (and (disjoint-p (addr-range j y)  (addr-range i x))
-                  (subset-p   (addr-range ia a) (addr-range i x))
-                  (subset-p   (addr-range jb b) (addr-range j y)))
-             (disjoint-p (addr-range ia a) (addr-range jb b)))
-    :hints (("Goal" :use ((:instance disjoint-p-commutative
-                                     (a (addr-range j y))
-                                     (b (addr-range i x)))))))
-
-  (defthm consp-addr-range
-    (implies (posp n)
-             (consp (addr-range n val)))
-    :rule-classes (:type-prescription :rewrite))
-
-  (defthm car-addr-range
-    (implies (posp n)
-             (equal (car (addr-range n val))
-                    (ifix val))))
-
-  (defthm cdr-addr-range
-    (implies (and (posp n)
-                  (integerp val))
-             (equal (cdr (addr-range n val))
-                    (addr-range (1- n) (1+ val)))))
-
-  (defthm no-duplicates-p-and-addr-range
-    (no-duplicates-p (addr-range n x))
-    :hints (("Goal" :in-theory (e/d* (member-p) ()))))
-
-  (defthm instance-of-pos-1-accumulator-thm
-    (implies (and (member-p e x)
-                  (natp acc))
-             (equal (pos-1 e x (+ 1 acc))
-                    (+ 1 (pos-1 e x acc)))))
-
-  (defthm pos-and-create-canonical-address-list
-    (implies (member-p addr
+(defthm pos-and-create-canonical-address-list
+  (implies (member-p addr
+                     (create-canonical-address-list n prog-addr))
+           (equal (pos addr
                        (create-canonical-address-list n prog-addr))
-             (equal (pos addr
-                         (create-canonical-address-list n prog-addr))
-                    (- addr prog-addr)))
-    :hints (("Goal" :in-theory (e/d (pos) ()))))
-
-  ;; (defthm nth-pos-of-addr-range-first
-  ;;   (implies (and (integerp index)
-  ;;                 (posp n))
-  ;;            (equal (pos index (addr-range n index)) 0))
-  ;;   :hints (("Goal" :in-theory (e/d* (pos) ()))))
-
-  (defthm nth-pos-of-addr-range
-    (implies (and (<= index i) (< i (+ n index))
-                  (integerp index) (integerp i) (posp n))
-             (equal (pos i (addr-range n index))
-                    (- i index)))
-    :hints (("Goal" :in-theory (e/d* (pos) ())))))
+                  (- addr prog-addr)))
+  :hints (("Goal" :in-theory (e/d (pos addr-range) ()))))
 
 ;; ======================================================================
 

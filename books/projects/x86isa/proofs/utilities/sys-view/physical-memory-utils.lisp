@@ -43,6 +43,7 @@
 
 (local (include-book "gl-lemmas"))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
 ;; ======================================================================
 
@@ -253,115 +254,6 @@
                           (ash (loghead 8 (logtail 8 val)) 8))
                   val)))
 
-(local (in-theory (enable rm-low-32 rm-low-64 wm-low-32 wm-low-64)))
-
-(defthm |(rm-low-32 addr2 (wm-low-32 addr1 val x86)) --- same addr|
-  (implies (and (equal addr1 addr2)
-                (force (n32p val))
-                (not (app-view x86)))
-           (equal (rm-low-32 addr2 (wm-low-32 addr1 val x86))
-                  val))
-  :hints (("Goal" :in-theory (e/d () (force (force))))))
-
-(defthm |(rm-low-32 addr2 (wm-low-32 addr1 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 4 addr1)
-                       (addr-range 4 addr2))
-           (equal (rm-low-32 addr2 (wm-low-32 addr1 val x86))
-                  (rm-low-32 addr2 x86)))
-  :hints (("Goal" :in-theory (e/d () (force (force))))))
-
-;; wm-low-32 WoW:
-
-(defthm |(wm-low-32 addr2 val2 (wm-low-32 addr1 val1 x86)) --- same addr|
-  (implies (equal addr1 addr2)
-           (equal (wm-low-32 addr2 val2 (wm-low-32 addr1 val1 x86))
-                  (wm-low-32 addr2 val2 x86)))
-  :hints (("Goal" :in-theory (e/d () (force (force))))))
-
-(defthm |(wm-low-32 addr2 val2 (wm-low-32 addr1 val1 x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 4 addr1)
-                       (addr-range 4 addr2))
-           (equal (wm-low-32 addr2 val2 (wm-low-32 addr1 val1 x86))
-                  (wm-low-32 addr1 val1 (wm-low-32 addr2 val2 x86))))
-  :hints (("Goal" :in-theory (e/d* () ())))
-  :rule-classes ((:rewrite :loop-stopper ((addr2 addr1)))))
-
-;; Theorems about rml64 and wml64:
-
-;; rm-low-64 and wm-low-64:
-
-(defthm |(rm-low-64 addr2 (wm-low-64 addr1 val x86)) --- same addr|
-  (implies (and (equal addr1 addr2)
-                (force (n64p val))
-                (not (app-view x86)))
-           (equal (rm-low-64 addr2 (wm-low-64 addr1 val x86))
-                  val))
-  :hints (("Goal" :in-theory (e/d () (rm-low-32 wm-low-32)))))
-
-(defthm |(rm-low-64 addr2 (wm-low-64 addr1 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 8 addr1)
-                       (addr-range 8 addr2))
-           (equal (rm-low-64 addr2 (wm-low-64 addr1 val x86))
-                  (rm-low-64 addr2 x86)))
-  :hints (("Goal" :in-theory (e/d (rm-low-32 wm-low-32) ()))))
-
-;; wm-low-64 WoW:
-
-(defthm |(wm-low-64 addr2 val2 (wm-low-64 addr1 val1 x86)) --- same addr|
-  (implies (equal addr1 addr2)
-           (equal (wm-low-64 addr2 val2 (wm-low-64 addr1 val1 x86))
-                  (wm-low-64 addr2 val2 x86)))
-  :hints (("Goal" :in-theory (e/d () (rm-low-32 wm-low-32)))))
-
-(defthm |(wm-low-64 addr2 val2 (wm-low-64 addr1 val1 x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 8 addr1)
-                       (addr-range 8 addr2))
-           (equal (wm-low-64 addr2 val2 (wm-low-64 addr1 val1 x86))
-                  (wm-low-64 addr1 val1 (wm-low-64 addr2 val2 x86))))
-  :hints (("Goal" :in-theory (e/d (rm-low-32 wm-low-32) ())))
-  :rule-classes ((:rewrite :loop-stopper ((addr2 addr1)))))
-
-;; Some theorems about the interaction of memi/!memi with
-;; rm-low-32/rm-low-64/wm-low-32/wm-low-64 when the addresses are
-;; disjoint:
-
-(defthm |(rm-low-32 addr2 (xw :mem addr1 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 1 addr1)
-                       (addr-range 4 addr2))
-           (equal (rm-low-32 addr2 (xw :mem addr1 val x86))
-                  (rm-low-32 addr2 x86)))
-  :hints (("Goal" :in-theory (e/d () (force (force))))))
-
-(defthm |(rm-low-64 addr2 (xw :mem addr1 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 1 addr1)
-                       (addr-range 8 addr2))
-           (equal (rm-low-64 addr2 (xw :mem addr1 val x86))
-                  (rm-low-64 addr2 x86)))
-  :hints (("Goal" :in-theory (e/d () (force (force))))))
-
-(defthm |(xr :mem addr1 (wm-low-32 addr2 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 4 addr2)
-                       (addr-range 1 addr1))
-           (equal (xr :mem addr1 (wm-low-32 addr2 val x86))
-                  (xr :mem addr1 x86)))
-  :hints (("Goal" :in-theory (e/d (ifix) (force (force))))))
-
-(defthm |(xr :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 8 addr2)
-                       (addr-range 1 addr1))
-           (equal (xr :mem addr1 (wm-low-64 addr2 val x86))
-                  (xr :mem addr1 x86)))
-  :hints (("Goal" :in-theory (e/d (ifix) (force (force))))))
-
-(defthm |(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 8 addr2)
-                       (addr-range 1 addr1))
-           (equal (wm-low-64 addr2 val2 (xw :mem addr1 val1 x86))
-                  (xw :mem addr1 val1 (wm-low-64 addr2 val2 x86))))
-  :hints (("Goal" :in-theory (e/d (ifix wm-low-64 wm-low-32) (force (force))))))
-
-(local (in-theory (disable rm-low-32 rm-low-64 wm-low-32 wm-low-64)))
-
 ;; ======================================================================
 
 ;; Misc. lemmas:
@@ -370,42 +262,39 @@
   (implies (not (member-p index p-addrs))
            (equal (xr :mem index (write-to-physical-memory p-addrs bytes x86))
                   (xr :mem index x86)))
-  :hints (("Goal" :in-theory (e/d* (member-p) (force (force))))))
+  :hints (("Goal"
+           :in-theory (e/d* (write-to-physical-memory member-p) (force (force))))))
 
 (local
  (defthmd write-to-physical-memory-xw-mem-member-p-helper
-   (implies
-    (and (consp p-addrs)
-         (equal (write-to-physical-memory (cdr p-addrs)
-                                          (logtail 8 bytes)
-                                          (xw :mem index byte
-                                              (xw :mem (car p-addrs)
-                                                  (loghead 8 bytes)
-                                                  x86)))
-                (write-to-physical-memory (cdr p-addrs)
-                                          (logtail 8 bytes)
-                                          (xw :mem (car p-addrs)
-                                              (loghead 8 bytes)
-                                              x86)))
-         (member-p index (cdr p-addrs)))
-    (equal (write-to-physical-memory (cdr p-addrs)
-                                     (logtail 8 bytes)
-                                     (xw :mem (car p-addrs)
-                                         (loghead 8 bytes)
-                                         (xw :mem index byte x86)))
-           (write-to-physical-memory (cdr p-addrs)
-                                     (logtail 8 bytes)
-                                     (xw :mem (car p-addrs)
-                                         (loghead 8 bytes)
-                                         x86))))
+   (implies (equal (write-to-physical-memory (cdr p-addrs)
+                                             (logtail 8 bytes)
+                                             (xw :mem index byte
+                                                 (xw :mem (car p-addrs)
+                                                     (loghead 8 bytes)
+                                                     x86)))
+                   (write-to-physical-memory (cdr p-addrs)
+                                             (logtail 8 bytes)
+                                             (xw :mem (car p-addrs)
+                                                 (loghead 8 bytes)
+                                                 x86)))
+            (equal (write-to-physical-memory (cdr p-addrs)
+                                             (logtail 8 bytes)
+                                             (xw :mem (car p-addrs)
+                                                 (loghead 8 bytes)
+                                                 (xw :mem index byte x86)))
+                   (write-to-physical-memory (cdr p-addrs)
+                                             (logtail 8 bytes)
+                                             (xw :mem (car p-addrs)
+                                                 (loghead 8 bytes)
+                                                 x86))))
    :hints (("Goal" :cases ((equal index (car p-addrs)))))))
 
 (defthm write-to-physical-memory-xw-mem-member-p
   (implies (member-p index p-addrs)
            (equal (write-to-physical-memory p-addrs bytes (xw :mem index byte x86))
                   (write-to-physical-memory p-addrs bytes x86)))
-  :hints (("Goal" :in-theory (e/d* (member-p
-                                    write-to-physical-memory-xw-mem-member-p-helper)
+  :hints (("Goal" :in-theory (e/d* (member-p write-to-physical-memory-xw-mem-member-p-helper)
                                    ()))))
 
 (defthm rm-low-64-and-write-to-physical-memory-disjoint
@@ -450,7 +339,6 @@
                              write-to-physical-memory-xw-mem-member-p
                              (:linear bitops::logior-<-0-linear-2)
                              (:type-prescription bitops::logior-natp-type)
-                             (:linear ash-monotone-2)
                              x86isa::combining-logior-of-loghead-and-ash-logtail
                              (:rewrite acl2::zip-open))))))
 

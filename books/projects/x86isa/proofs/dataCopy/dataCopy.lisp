@@ -390,11 +390,11 @@
 (defun-nx preconditions (n addr x86)
   (and (x86p x86)
        (64-bit-modep x86)
-       (xr :app-view 0 x86)
-       (equal (xr :ms 0 x86) nil)
-       (equal (xr :fault 0 x86) nil)
+       (xr :app-view nil x86)
+       (equal (xr :ms nil x86) nil)
+       (equal (xr :fault nil x86) nil)
        ;; We are poised to run the copyData sub-routine.
-       (equal (xr :rip 0 x86) addr)
+       (equal (xr :rip nil x86) addr)
        ;; [Shilpi] This used to be (unsigned-byte-p 32 n), but I
        ;; needed to make this change after fixing the NOP/XCHG bug.
        (unsigned-byte-p 14 n) ;; 32?
@@ -471,11 +471,11 @@
   (implies (preconditions n addr x86)
            (and (x86p x86)
                 (64-bit-modep x86)
-                (xr :app-view 0 x86)
-                (equal (xr :ms 0 x86) nil)
-                (equal (xr :fault 0 x86) nil)
+                (xr :app-view nil x86)
+                (equal (xr :ms nil x86) nil)
+                (equal (xr :fault nil x86) nil)
                 ;; We are poised to run the copyData sub-routine.
-                (equal (xr :rip 0 x86) addr)
+                (equal (xr :rip nil x86) addr)
                 (unsigned-byte-p 32 n)
                 (equal (xr :rgf *rdx* x86) n)
                 ;; All the stack addresses are canonical.
@@ -570,34 +570,36 @@
           (XW
            :RGF *RBP* (+ -8 (XR :RGF *RSP* X86))
            (XW
-            :RIP 0 (+ 16 (XR :RIP 0 X86))
+            :RIP NIL (+ 16 (XR :RIP NIL X86))
             (XW
-             :UNDEF 0 (+ 3 (NFIX (XR :UNDEF 0 X86)))
+             :UNDEF
+             NIL (+ 3 (NFIX (XR :UNDEF NIL X86)))
              (XW
-              :RFLAGS 0
-              (RFLAGSBITS 0 (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+              :RFLAGS NIL
+              (RFLAGSBITS 0
+                          (RFLAGSBITS->RES1 (XR :RFLAGS NIL X86))
                           (PF-SPEC64 (ASH (XR :RGF *RDX* X86) 2))
-                          (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+                          (RFLAGSBITS->RES2 (XR :RFLAGS NIL X86))
                           (LOGHEAD 1
-                                   (CREATE-UNDEF (+ 1 (NFIX (XR :UNDEF 0 X86)))))
-                          (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+                                   (CREATE-UNDEF (+ 1 (NFIX (XR :UNDEF NIL X86)))))
+                          (RFLAGSBITS->RES3 (XR :RFLAGS NIL X86))
                           0
                           (SF-SPEC64 (ASH (XR :RGF *RDX* X86) 2))
-                          (RFLAGSBITS->TF (XR :RFLAGS 0 X86))
-                          (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
-                          (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+                          (RFLAGSBITS->TF (XR :RFLAGS NIL X86))
+                          (RFLAGSBITS->INTF (XR :RFLAGS NIL X86))
+                          (RFLAGSBITS->DF (XR :RFLAGS NIL X86))
                           (LOGHEAD 1
-                                   (CREATE-UNDEF (+ 2 (NFIX (XR :UNDEF 0 X86)))))
-                          (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
-                          (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
-                          (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
-                          (RFLAGSBITS->RF (XR :RFLAGS 0 X86))
-                          (RFLAGSBITS->VM (XR :RFLAGS 0 X86))
-                          (RFLAGSBITS->AC (XR :RFLAGS 0 X86))
-                          (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
-                          (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
-                          (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
-                          (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86)))
+                                   (CREATE-UNDEF (+ 2 (NFIX (XR :UNDEF NIL X86)))))
+                          (RFLAGSBITS->IOPL (XR :RFLAGS NIL X86))
+                          (RFLAGSBITS->NT (XR :RFLAGS NIL X86))
+                          (RFLAGSBITS->RES4 (XR :RFLAGS NIL X86))
+                          (RFLAGSBITS->RF (XR :RFLAGS NIL X86))
+                          (RFLAGSBITS->VM (XR :RFLAGS NIL X86))
+                          (RFLAGSBITS->AC (XR :RFLAGS NIL X86))
+                          (RFLAGSBITS->VIF (XR :RFLAGS NIL X86))
+                          (RFLAGSBITS->VIP (XR :RFLAGS NIL X86))
+                          (RFLAGSBITS->ID (XR :RFLAGS NIL X86))
+                          (RFLAGSBITS->RES5 (XR :RFLAGS NIL X86)))
               (MV-NTH 1
                       (WB 8 (+ -8 (XR :RGF *RSP* X86))
                           :W (LOGHEAD 64 (XR :RGF *RBP* X86))
@@ -606,31 +608,37 @@
        :RGF *RSP* (+ -8 (XR :RGF *RSP* X86))
        (XW
         :RGF *RBP* (+ -8 (XR :RGF *RSP* X86))
-        (XW :RIP 0 (+ 34 (XR :RIP 0 X86))
-            (XW :UNDEF 0 (+ 1 (NFIX (XR :UNDEF 0 X86)))
-                (XW :RFLAGS 0
-                    (RFLAGSBITS 0 (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
-                                1 (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
-                                (LOGHEAD 1
-                                         (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
-                                (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
-                                1 0 (RFLAGSBITS->TF (XR :RFLAGS 0 X86))
-                                (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
-                                (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
-                                0 (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
-                                (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
-                                (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
-                                (RFLAGSBITS->RF (XR :RFLAGS 0 X86))
-                                (RFLAGSBITS->VM (XR :RFLAGS 0 X86))
-                                (RFLAGSBITS->AC (XR :RFLAGS 0 X86))
-                                (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
-                                (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
-                                (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
-                                (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86)))
-                    (MV-NTH 1
-                            (WB 8 (+ -8 (XR :RGF *RSP* X86))
-                                :W (LOGHEAD 64 (XR :RGF *RBP* X86))
-                                X86))))))))))
+        (XW
+         :RIP NIL (+ 34 (XR :RIP NIL X86))
+         (XW :UNDEF
+             NIL (+ 1 (NFIX (XR :UNDEF NIL X86)))
+             (XW :RFLAGS NIL
+                 (RFLAGSBITS 0
+                             (RFLAGSBITS->RES1 (XR :RFLAGS NIL X86))
+                             1
+                             (RFLAGSBITS->RES2 (XR :RFLAGS NIL X86))
+                             (LOGHEAD 1
+                                      (CREATE-UNDEF (NFIX (XR :UNDEF NIL X86))))
+                             (RFLAGSBITS->RES3 (XR :RFLAGS NIL X86))
+                             1
+                             0 (RFLAGSBITS->TF (XR :RFLAGS NIL X86))
+                             (RFLAGSBITS->INTF (XR :RFLAGS NIL X86))
+                             (RFLAGSBITS->DF (XR :RFLAGS NIL X86))
+                             0
+                             (RFLAGSBITS->IOPL (XR :RFLAGS NIL X86))
+                             (RFLAGSBITS->NT (XR :RFLAGS NIL X86))
+                             (RFLAGSBITS->RES4 (XR :RFLAGS NIL X86))
+                             (RFLAGSBITS->RF (XR :RFLAGS NIL X86))
+                             (RFLAGSBITS->VM (XR :RFLAGS NIL X86))
+                             (RFLAGSBITS->AC (XR :RFLAGS NIL X86))
+                             (RFLAGSBITS->VIF (XR :RFLAGS NIL X86))
+                             (RFLAGSBITS->VIP (XR :RFLAGS NIL X86))
+                             (RFLAGSBITS->ID (XR :RFLAGS NIL X86))
+                             (RFLAGSBITS->RES5 (XR :RFLAGS NIL X86)))
+                 (MV-NTH 1
+                         (WB 8 (+ -8 (XR :RGF *RSP* X86))
+                             :W (LOGHEAD 64 (XR :RGF *RBP* X86))
+                             X86))))))))))
   :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
                                     rflag-RoWs-enables
                                     write-user-rflags
@@ -668,8 +676,8 @@
 
 (defthm effects-copyData-pre-app-view-projection
   (implies (preconditions n addr x86)
-           (equal (xr :app-view 0 (x86-run (pre-clk n) x86))
-                  (xr :app-view 0 x86)))
+           (equal (xr :app-view nil (x86-run (pre-clk n) x86))
+                  (xr :app-view nil x86)))
   :hints (("Goal"
            :use ((:instance effects-copydata-pre))
            :in-theory (e/d* ()
@@ -714,23 +722,23 @@
 
 (defthm effects-copyData-pre-fault-projection
   (implies (preconditions n addr x86)
-           (equal (xr :fault 0 (x86-run (pre-clk n) x86))
-                  (xr :fault 0 x86)))
+           (equal (xr :fault nil (x86-run (pre-clk n) x86))
+                  (xr :fault nil x86)))
   :hints (("Goal" :use ((:instance effects-copydata-pre))
            :in-theory (e/d* () ((pre-clk) pre-clk force (force))))))
 
 (defthm effects-copyData-pre-ms-projection
   (implies (preconditions n addr x86)
-           (equal (xr :ms 0 (x86-run (pre-clk n) x86))
-                  (xr :ms 0 x86)))
+           (equal (xr :ms nil (x86-run (pre-clk n) x86))
+                  (xr :ms nil x86)))
   :hints (("Goal" :use ((:instance effects-copydata-pre))
            :in-theory (e/d* () ((pre-clk) pre-clk force (force))))))
 
 (defthm effects-copyData-pre-rip-projection
   (implies (and (preconditions n addr x86)
                 (not (zp n)))
-           (equal (xr :rip 0 (x86-run (pre-clk n) x86))
-                  (+ 16 (xr :rip 0 x86))))
+           (equal (xr :rip nil (x86-run (pre-clk n) x86))
+                  (+ 16 (xr :rip nil x86))))
   :hints (("Goal" :use ((:instance effects-copydata-pre))
            :in-theory (e/d* () ((pre-clk) pre-clk force (force))))))
 
@@ -894,8 +902,8 @@
 (defthm loop-state-app-view-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (natp k))
-           (equal (xr :app-view 0 (loop-state k m src-addr dst-addr x86))
-                  (xr :app-view 0 x86)))
+           (equal (xr :app-view nil (loop-state k m src-addr dst-addr x86))
+                  (xr :app-view nil x86)))
   :hints (("Goal"
            :hands-off (x86-run)
            :in-theory (e/d* ()
@@ -911,8 +919,8 @@
 
 (defthm loop-clk-app-view-projection
   (implies (loop-preconditions 0 m addr src-addr dst-addr x86)
-           (equal (xr :app-view 0 (x86-run (loop-clk m) x86))
-                  (xr :app-view 0 x86)))
+           (equal (xr :app-view nil (x86-run (loop-clk m) x86))
+                  (xr :app-view nil x86)))
   :hints (("Goal"
            :use ((:instance effects-copydata-loop (k 0)))
            :hands-off (x86-run)
@@ -955,8 +963,8 @@
 (defthm loop-state-ms-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (natp k))
-           (equal (xr :ms 0 (loop-state k m src-addr dst-addr x86))
-                  (xr :ms 0 x86)))
+           (equal (xr :ms nil (loop-state k m src-addr dst-addr x86))
+                  (xr :ms nil x86)))
   :hints (("Goal"
            :hands-off (x86-run)
            :in-theory (e/d* ()
@@ -971,8 +979,8 @@
 
 (defthm loop-clk-ms-projection
   (implies (loop-preconditions 0 m addr src-addr dst-addr x86)
-           (equal (xr :ms 0 (x86-run (loop-clk m) x86))
-                  (xr :ms 0 x86)))
+           (equal (xr :ms nil (x86-run (loop-clk m) x86))
+                  (xr :ms nil x86)))
   :hints (("Goal"
            :use ((:instance effects-copydata-loop (k 0)))
            :hands-off (x86-run)
@@ -984,8 +992,8 @@
 (defthm loop-state-fault-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (natp k))
-           (equal (xr :fault 0 (loop-state k m src-addr dst-addr x86))
-                  (xr :fault 0 x86)))
+           (equal (xr :fault nil (loop-state k m src-addr dst-addr x86))
+                  (xr :fault nil x86)))
   :hints (("Goal"
            :hands-off (x86-run)
            :in-theory (e/d* ()
@@ -1000,8 +1008,8 @@
 
 (defthm loop-clk-fault-projection
   (implies (loop-preconditions 0 m addr src-addr dst-addr x86)
-           (equal (xr :fault 0 (x86-run (loop-clk m) x86))
-                  (xr :fault 0 x86)))
+           (equal (xr :fault nil (x86-run (loop-clk m) x86))
+                  (xr :fault nil x86)))
   :hints (("Goal"
            :use ((:instance effects-copydata-loop (k 0)))
            :hands-off (x86-run)
@@ -1013,8 +1021,8 @@
 (defthm loop-state-rip-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (natp k))
-           (equal (xr :rip 0 (loop-state k m src-addr dst-addr x86))
-                  (+ 18 (xr :rip 0 x86))))
+           (equal (xr :rip nil (loop-state k m src-addr dst-addr x86))
+                  (+ 18 (xr :rip nil x86))))
   :hints (("Goal"
            :hands-off (x86-run)
            :in-theory (e/d* ()
@@ -1029,8 +1037,8 @@
 
 (defthm loop-clk-rip-projection
   (implies (loop-preconditions 0 m addr src-addr dst-addr x86)
-           (equal (xr :rip 0 (x86-run (loop-clk m) x86))
-                  (+ 18 (xr :rip 0 x86))))
+           (equal (xr :rip nil (x86-run (loop-clk m) x86))
+                  (+ 18 (xr :rip nil x86))))
   :hints (("Goal"
            :use ((:instance effects-copydata-loop (k 0)))
            :hands-off (x86-run)
@@ -1263,11 +1271,11 @@
 (defun-nx after-the-copy-conditions (n addr x86)
   (and (x86p x86)
        (64-bit-modep x86)
-       (xr :app-view 0 x86)
-       (equal (xr :ms 0 x86) nil)
-       (equal (xr :fault 0 x86) nil)
+       (xr :app-view nil x86)
+       (equal (xr :ms nil x86) nil)
+       (equal (xr :fault nil x86) nil)
        ;; We are poised to run the last two instructions.
-       (equal addr (+ -34 (xr :rip 0 x86)))
+       (equal addr (+ -34 (xr :rip nil x86)))
        ;; All the stack addresses are canonical.
        (canonical-address-p (xr :rgf *rsp* x86))
        (canonical-address-p (+ 16 (xr :rgf *rsp* x86)))
@@ -1347,7 +1355,7 @@
                 (XW :RGF *RBP*
                     (LOGEXT 64
                             (MV-NTH 1 (RB 8 (XR :RGF *RSP* X86) :R X86)))
-                    (XW :RIP 0
+                    (XW :RIP NIL
                         (LOGEXT 64
                                 (MV-NTH 1
                                         (RB 8 (+ 8 (XR :RGF *RSP* X86))

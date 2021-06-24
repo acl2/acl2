@@ -500,13 +500,13 @@
 			flags mem x86))
        ((when flg) (mv t x86))
        ;; set IA32_EFER.LMA to 1:
-       (ia32_efer (n12 (xr :msr #.*ia32_efer-idx* x86)))
+       (ia32_efer (n12 (msri #.*ia32_efer-idx* x86)))
        (ia32_efer (!ia32_eferBits->lma 1 ia32_efer))
-       (x86 (xw :msr #.*ia32_efer-idx* (n64 ia32_efer) x86))
+       (x86 (!msri #.*ia32_efer-idx* (n64 ia32_efer) x86))
        ;; set CS.L to 1:
-       ((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
+       ((the (unsigned-byte 16) cs-attr) (seg-hidden-attri #.*cs* x86))
        (cs-attr (!code-segment-descriptor-attributesBits->l 1 cs-attr))
-       (x86 (xw :seg-hidden-attr #.*cs* cs-attr x86)))
+       (x86 (!seg-hidden-attri #.*cs* cs-attr x86)))
     (mv nil x86))
   ///
 
