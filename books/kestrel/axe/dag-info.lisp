@@ -130,7 +130,8 @@
            (ALISTP (MERGE-CDR-< l1 l2 acc)))
   :hints (("Goal" :in-theory (enable MERGE-CDR-<))))
 
-(defthmd consp-of-car-when-alistp
+;; conflicts with something in std
+(defthmd consp-of-car-when-alistp-2
   (implies (alistp lst)
            (equal (consp (car lst))
                   (consp lst))))
@@ -143,7 +144,7 @@
                 )
            (alistp (mv-nth 0 (split-list-fast-aux lst tail acc))))
   :hints (("Goal" :in-theory (enable split-list-fast-aux
-                                     consp-of-car-when-alistp))))
+                                     consp-of-car-when-alistp-2))))
 
 (defthm alistp-of-mv-nth-1-of-split-list-fast-aux
   (implies (and (alistp lst)
@@ -153,7 +154,7 @@
                 )
            (alistp (mv-nth 1 (split-list-fast-aux lst tail acc))))
   :hints (("Goal" :in-theory (enable split-list-fast-aux
-                                     consp-of-car-when-alistp))))
+                                     consp-of-car-when-alistp-2))))
 
 (defthm alistp-of-mv-nth-0-of-split-list-fast
   (implies (alistp alist)
