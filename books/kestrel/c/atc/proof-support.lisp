@@ -582,7 +582,6 @@
      assign
      create-var
      endp
-     exit-scope
      exec-iconst
      exec-const
      exec-ident
@@ -773,6 +772,31 @@
 (defval *atc-enter-scope-rewrite-rules*
   :short "List of rewrite rules for @(tsee enter-scope)."
   '(enter-scope-of-compustate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exit-scope-rewrite-rules
+  :short "Rewrite rules for @(tsee exit-scope)."
+
+  (defruled exit-scope-of-compustate
+    (equal (exit-scope (compustate (cons (frame fun
+                                                (cons scope scopes))
+                                         frames)
+                                   heap))
+           (compustate (cons (frame fun
+                                    scopes)
+                             frames)
+                       heap))
+    :enable (exit-scope
+             push-frame
+             top-frame
+             pop-frame)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-exit-scope-rewrite-rules*
+  :short "List of rewrite rules for @(tsee exit-scope)."
+  '(exit-scope-of-compustate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1266,6 +1290,7 @@
    ;; introduced in this file:
    *atc-read-var-rewrite-rules*
    *atc-enter-scope-rewrite-rules*
+   *atc-exit-scope-rewrite-rules*
    *atc-distributivity-over-if-rewrite-rules*
    '(not-zp-of-limit-variable
      not-zp-of-limit-minus-const
