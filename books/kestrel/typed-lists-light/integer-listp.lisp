@@ -41,3 +41,12 @@
                   (consp x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable integer-listp))))
+
+;; better than the one in std?
+(defthm integer-listp-of-update-nth-better
+  (implies (integer-listp lst)
+           (equal (integer-listp (update-nth index val lst))
+                  (and (<= (nfix index) (len lst))
+                       (integerp val))))
+  :hints (("Goal" :in-theory (enable update-nth integer-listp)
+           :induct (update-nth index val lst))))
