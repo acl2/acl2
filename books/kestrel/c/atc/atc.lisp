@@ -3206,7 +3206,6 @@
                                        exec-block-item-list-base-1
                                        exec-block-item-list-base-3
                                        init-scope-base-2
-                                       read-var-aux-base-1
                                        write-var-aux-base-1))
                                     '(,fn)
                                     ',type-prescriptions
