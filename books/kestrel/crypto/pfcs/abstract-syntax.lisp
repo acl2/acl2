@@ -24,7 +24,8 @@
     "Expressions are built out of
      constants, variables, and field operations.
      A constraint is an equality between expressions.
-     Constraints may be (conjunctively) grouped into named relations (see @(tsee definition)),
+     Constraints may be (conjunctively) grouped into named relations
+     (see @(tsee definition)),
      which may be conjoined with equality constraints.
      A system of constraints is a collection of named relations,
      which are hierarchically organized."))
