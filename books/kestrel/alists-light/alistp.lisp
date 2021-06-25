@@ -1,7 +1,8 @@
 ; A lightweight book about the built-in function alistp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -64,10 +65,32 @@
   :hints (("Goal" :in-theory (enable alistp))))
 
 ;; Avoid name clash with the version in std
+;; Keep disabled to avoid inappropriate backchaining to alistp.
 (defthmd consp-of-car-when-alistp-alt
   (implies (alistp x)
            (equal (consp (car x))
                   (consp x)))
+  :hints (("Goal" :in-theory (enable alistp))))
+
+(defthm consp-of-car-when-alistp-cheap
+  (implies (alistp x)
+           (equal (consp (car x))
+                  (consp x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable alistp))))
+
+;; Keep disabled to avoid inappropriate backchaining to alistp.
+(defthmd car-when-alistp-iff
+  (implies (alistp x)
+           (iff (car x)
+                (consp x)))
+  :hints (("Goal" :in-theory (enable alistp))))
+
+(defthm car-when-alistp-iff-cheap
+  (implies (alistp x)
+           (iff (car x)
+                (consp x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable alistp))))
 
 (defthm alistp-of-remove1-equal
