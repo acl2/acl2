@@ -393,10 +393,10 @@
 
   (defthm program-at-alt-xw-rflags
     (implies (and (equal (rflagsBits->ac value)
-                         (rflagsBits->ac (xr :rflags 0 (double-rewrite x86))))
+                         (rflagsBits->ac (xr :rflags nil (double-rewrite x86))))
                   (not (app-view x86))
                   (x86p x86))
-             (equal (program-at-alt l-addrs bytes (xw :rflags 0 value x86))
+             (equal (program-at-alt l-addrs bytes (xw :rflags nil value x86))
                     (program-at-alt l-addrs bytes (double-rewrite x86))))
     :hints (("Goal" :in-theory (e/d* (program-at-alt)
                                      (rewrite-program-at-to-program-at-alt)))))
@@ -515,9 +515,9 @@
   (defthm rb-alt-xw-rflags-not-ac-values-in-sys-view
     (implies (equal (rflagsBits->ac (double-rewrite value))
                     (rflagsBits->ac (rflags x86)))
-             (and (equal (mv-nth 0 (rb-alt n addr r-x (xw :rflags 0 value x86)))
+             (and (equal (mv-nth 0 (rb-alt n addr r-x (xw :rflags nil value x86)))
                          (mv-nth 0 (rb-alt n addr r-x x86)))
-                  (equal (mv-nth 1 (rb-alt n addr r-x (xw :rflags 0 value x86)))
+                  (equal (mv-nth 1 (rb-alt n addr r-x (xw :rflags nil value x86)))
                          (mv-nth 1 (rb-alt n addr r-x x86)))))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
@@ -536,17 +536,17 @@
   (defthm rb-alt-xw-rflags-not-ac-state-in-sys-view
     (implies (equal (rflagsBits->ac (double-rewrite value))
                     (rflagsBits->ac (rflags x86)))
-             (equal (mv-nth 2 (rb-alt n addr r-x (xw :rflags 0 value x86)))
-                    (xw :rflags 0 value (mv-nth 2 (rb-alt n addr r-x x86)))))
+             (equal (mv-nth 2 (rb-alt n addr r-x (xw :rflags nil value x86)))
+                    (xw :rflags nil value (mv-nth 2 (rb-alt n addr r-x x86)))))
     :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
   (defthm rb-alt-values-and-xw-rflags-in-sys-view
     (implies (and (equal (rflagsBits->ac (double-rewrite value))
                          (rflagsBits->ac (rflags x86)))
                   (x86p x86))
-             (and (equal (mv-nth 0 (rb-alt n addrs r-x (xw :rflags 0 value x86)))
+             (and (equal (mv-nth 0 (rb-alt n addrs r-x (xw :rflags nil value x86)))
                          (mv-nth 0 (rb-alt n addrs r-x (double-rewrite x86))))
-                  (equal (mv-nth 1 (rb-alt n addrs r-x (xw :rflags 0 value x86)))
+                  (equal (mv-nth 1 (rb-alt n addrs r-x (xw :rflags nil value x86)))
                          (mv-nth 1 (rb-alt n addrs r-x (double-rewrite x86))))))
     :hints (("Goal" :do-not-induct t
              :in-theory (e/d* () (force (force))))))
@@ -555,15 +555,15 @@
     (implies (and (equal (rflagsBits->ac (double-rewrite value))
                          (rflagsBits->ac (rflags x86)))
                   (x86p x86))
-             (equal (mv-nth 2 (rb-alt n lin-addr r-x (xw :rflags 0 value x86)))
-                    (xw :rflags 0 value (mv-nth 2 (rb-alt n lin-addr r-x x86)))))
+             (equal (mv-nth 2 (rb-alt n lin-addr r-x (xw :rflags nil value x86)))
+                    (xw :rflags nil value (mv-nth 2 (rb-alt n lin-addr r-x x86)))))
     :hints (("Goal"
              :do-not-induct t
              :in-theory (e/d* () (force (force))))))
 
   (defthm xr-rflags-and-mv-nth-2-rb-alt
-    (equal (xr :rflags 0 (mv-nth 2 (rb-alt n lin-addr r-x x86)))
-           (xr :rflags 0 x86)))
+    (equal (xr :rflags nil (mv-nth 2 (rb-alt n lin-addr r-x x86)))
+           (xr :rflags nil x86)))
 
   (defthm alignment-checking-enabled-p-and-mv-nth-2-rb-alt
     (equal (alignment-checking-enabled-p (mv-nth 2 (rb-alt n lin-addr r-x x86)))
@@ -1458,7 +1458,7 @@
       (equal (mv-nth
               0
               (get-prefixes-alt start-rip prefixes rex-byte cnt
-                                (xw :rflags 0 value x86)))
+                                (xw :rflags nil value x86)))
              (mv-nth
               0
               (get-prefixes-alt start-rip prefixes rex-byte
@@ -1466,7 +1466,7 @@
       (equal (mv-nth
               1
               (get-prefixes-alt start-rip prefixes rex-byte cnt
-                                (xw :rflags 0 value x86)))
+                                (xw :rflags nil value x86)))
              (mv-nth
               1
               (get-prefixes-alt start-rip prefixes rex-byte cnt
@@ -1474,7 +1474,7 @@
       (equal (mv-nth
               2
               (get-prefixes-alt start-rip prefixes rex-byte cnt
-                                (xw :rflags 0 value x86)))
+                                (xw :rflags nil value x86)))
              (mv-nth
               2
               (get-prefixes-alt start-rip prefixes rex-byte
@@ -1491,8 +1491,8 @@
               (mv-nth
                3
                (get-prefixes-alt start-rip prefixes rex-byte cnt
-                                 (xw :rflags 0 value x86)))
-              (xw :rflags 0 value
+                                 (xw :rflags nil value x86)))
+              (xw :rflags nil value
                   (mv-nth
                    3
                    (get-prefixes-alt
@@ -1500,10 +1500,10 @@
     :hints (("Goal" :do-not-induct t :in-theory (e/d* () (force (force))))))
 
   (defthm xr-rflags-and-mv-nth-3-get-prefixes-alt
-    (equal (xr :rflags 0
+    (equal (xr :rflags nil
                (mv-nth 3
                        (get-prefixes-alt start-rip prefixes rex-byte cnt x86)))
-           (xr :rflags 0 x86)))
+           (xr :rflags nil x86)))
 
   (defthm alignment-checking-enabled-p-and-mv-nth-3-get-prefixes-alt
     (equal (alignment-checking-enabled-p
@@ -1887,13 +1887,13 @@
      (equal (rflagsbits->ac (double-rewrite value))
             (rflagsbits->ac (rflags x86)))
      (and (equal (mv-nth 0 (get-prefixes-alt start-rip prefixes rex-byte cnt
-                                             (xw :rflags 0 value x86)))
+                                             (xw :rflags nil value x86)))
                  (mv-nth 0 (get-prefixes-alt start-rip prefixes rex-byte cnt x86)))
           (equal (mv-nth 1 (get-prefixes-alt start-rip prefixes rex-byte cnt
-                                             (xw :rflags 0 value x86)))
+                                             (xw :rflags nil value x86)))
                  (mv-nth 1 (get-prefixes-alt start-rip prefixes rex-byte cnt x86)))
           (equal (mv-nth 2 (get-prefixes-alt start-rip prefixes rex-byte cnt
-                                             (xw :rflags 0 value x86)))
+                                             (xw :rflags nil value x86)))
                  (mv-nth 2 (get-prefixes-alt start-rip prefixes rex-byte cnt x86)))))
     :hints (("Goal" :in-theory (e/d (get-prefixes-alt)
                                     (rewrite-get-prefixes-to-get-prefixes-alt)))))
@@ -2221,7 +2221,6 @@
                (:rewrite unsigned-byte-p-of-combine-bytes)
                (:rewrite acl2::ash-0)
                (:rewrite acl2::zip-open)
-               (:linear ash-monotone-2)
                (:rewrite subset-p-cdr-y)
                (:rewrite default-<-2)
                (:rewrite negative-logand-to-positive-logand-with-integerp-x)
@@ -2299,7 +2298,6 @@
                (:rewrite mv-nth-1-ia32e-la-to-pa-when-error)
                (:rewrite weed-out-irrelevant-logand-when-first-operand-constant)
                (:rewrite logand-redundant)
-               (:type-prescription logtail-*2^x-byte-pseudo-page*-of-physical-address)
                (:rewrite subset-p-cdr-x)
                (:type-prescription n52p-mv-nth-1-ia32e-la-to-pa)
                (:linear <=-logior)
@@ -2869,10 +2867,10 @@
     ;; For get-prefixes-alt (we wouldn't need these hyps if we
     ;; used get-prefixes):
     (disjoint-p
-     (mv-nth 1 (las-to-pas 15 (xr :rip 0 x86) :x (double-rewrite x86)))
+     (mv-nth 1 (las-to-pas 15 (xr :rip nil x86) :x (double-rewrite x86)))
      (open-qword-paddr-list
       (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-    (not (mv-nth 0 (las-to-pas 15 (xr :rip 0 x86) :x (double-rewrite x86))))
+    (not (mv-nth 0 (las-to-pas 15 (xr :rip nil x86) :x (double-rewrite x86))))
 
     ;; Print the rip and the first opcode byte of the instruction
     ;; under consideration after all the non-trivial hyps (above) of

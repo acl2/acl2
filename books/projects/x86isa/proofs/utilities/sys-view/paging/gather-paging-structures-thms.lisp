@@ -136,6 +136,17 @@
 
 ;; ======================================================================
 
+(encapsulate
+  ()
+  (local (include-book "arithmetic-5/top" :dir :system))
+
+  (defthm <=-logior
+    (and (implies (and (natp x) (natp y))
+                  (<= y (logior x y)))
+         (implies (and (natp x) (natp y))
+                  (<= x (logior x y))))
+    :rule-classes :linear))
+
 (local
  (defthm pml4-table-entry-addr-is-at-the-first-level
    (implies (and (equal base-addr (pml4-table-base-addr x86))

@@ -49,4 +49,4 @@
 (set-waterfall-parallelism nil)
 
 ; Copied from cert.acl2:
-;; cert-flags: ? t :ttags (:include-raw :syscall-exec :other-non-det :undef-flg) :skip-proofs-okp t
+;; cert-flags: ? t :ttags (:include-raw :syscall-exec :other-non-det :undef-flg) :skip-proofs-okp nil

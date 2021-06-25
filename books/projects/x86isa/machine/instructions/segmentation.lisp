@@ -141,7 +141,7 @@
         (if (eql base-size 8)
             8
           (b* (((the (unsigned-byte 16) cs-attr)
-                (xr :seg-hidden-attr #.*cs* x86))
+                (seg-hidden-attri #.*cs* x86))
                (cs.d
                 (code-segment-descriptor-attributesBits->d cs-attr)))
             (if (= cs.d 1)
@@ -258,7 +258,7 @@
         (if (eql base-size 8)
             8
           (b* (((the (unsigned-byte 16) cs-attr)
-                (xr :seg-hidden-attr #.*cs* x86))
+                (seg-hidden-attri #.*cs* x86))
                (cs.d
                 (code-segment-descriptor-attributesBits->d cs-attr)))
             (if (= cs.d 1)

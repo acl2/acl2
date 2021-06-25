@@ -38,7 +38,7 @@
 
 (in-package "X86ISA")
 
-(include-book "abstract-state")
+(include-book "state")
 
 ;; ======================================================================
 

@@ -59,14 +59,14 @@
 ; Model aborts with a message "temp-rip-not-canonical" as expected.
 
 (defrule test-1-thm
-  (b* ((start-rip (xr :rip 0 x86))
+  (b* ((start-rip (xr :rip nil x86))
        (temp-rip (+ 3 start-rip))
        (x86-new (x86-fetch-decode-execute x86)))
     (implies
      (test-state-1 x86)
      (equal
       x86-new
-      (xw :ms 0
+      (xw :ms nil
           `((X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I
              :rip ,start-rip
              :temp-rip-not-canonical ,temp-rip))
@@ -84,13 +84,13 @@
 ; I expect here the same message "temp-rip-not-canonical" as in previous theorem.
 
 (defrule test-2-thm
-  (b* ((start-rip (xr :rip 0 x86))
+  (b* ((start-rip (xr :rip nil x86))
        (x86-new (x86-fetch-decode-execute x86)))
     (implies
      (test-state-2 x86)
      (equal
       x86-new
-      (xw :ms 0
+      (xw :ms nil
           `((x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I
              :rip ,start-rip
              :x86-operand-from-modr/m-and-sib-bytes

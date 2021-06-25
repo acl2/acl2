@@ -41,14 +41,14 @@
 (include-book "application-level-memory")
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 (defsection rflag-specifications
   :parents (machine)
   :short "Specifications of @('rflags')"
   )
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 (define general-cf-spec-fn (result-nbits raw-result)
   :long "<p>General @('CF') Specification (Source: Intel Manuals,
@@ -112,7 +112,7 @@ arithmetic.</p>"
 
 (add-macro-alias general-cf-spec general-cf-spec-fn)
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 (define general-of-spec-fn (result-nbits signed-raw-result)
   :guard (and (natp result-nbits)
@@ -175,7 +175,7 @@ complement) arithmetic.</p>"
 
 (add-macro-alias general-of-spec general-of-spec-fn)
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 (define zf-spec
   ;; CCL generates great code for this function, even without type
@@ -203,7 +203,7 @@ otherwise.</p>"
     (implies (not (equal x 0))
              (equal (zf-spec x) 0))))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ;; [Shilpi]: I could have put the theorems preceding the define of
 ;; pf-spec inside its :prepwork, but I believe that these theorems can
@@ -212,33 +212,31 @@ otherwise.</p>"
 
 (local
  (encapsulate
-  ()
-  (local (include-book "arithmetic-5/top" :dir :system))
+   ()
+   (local (include-book "arithmetic-5/top" :dir :system))
 
-  (defthm logbitp-and-loghead
-    (implies (integerp x)
-             (equal (acl2::bool->bit (logbitp 0 x))
-                    (loghead 1 x)))
-    :hints (("Goal" :in-theory
-             (e/d (acl2::bool->bit
-                   evenp oddp
-                   logbitp
-                   loghead)
-                  ()))))
+   (defthm logbitp-and-loghead
+     (implies (integerp x)
+              (equal (acl2::bool->bit (logbitp 0 x))
+                     (loghead 1 x)))
+     :hints (("Goal" :in-theory
+              (e/d (acl2::bool->bit
+                    evenp oddp
+                    logbitp
+                    loghead)
+                   ()))))
 
-  (defthm logbitp-and-logtail
-    (implies (unsigned-byte-p (1+ n) x)
-             (equal (acl2::bool->bit (logbitp n x))
-                    (logtail n x)))
-    :hints (("Goal" :in-theory
-             (e/d (acl2::bool->bit
-                   evenp oddp
-                   logbitp
-                   logtail
-                   nfix)
-                  ()))))
-
-  ))
+   (defthm logbitp-and-logtail
+     (implies (unsigned-byte-p (1+ n) x)
+              (equal (acl2::bool->bit (logbitp n x))
+                     (logtail n x)))
+     :hints (("Goal" :in-theory
+              (e/d (acl2::bool->bit
+                    evenp oddp
+                    logbitp
+                    logtail
+                    nfix)
+                   ()))))))
 
 (defthm logcount-and-loghead
   (implies (and (integerp x)
@@ -258,18 +256,17 @@ otherwise.</p>"
   :rule-classes :linear)
 
 (encapsulate
- ()
- (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+  ()  
+  (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
- (defthm unsigned-byte-p-and-integer-length
-   (implies (and (unsigned-byte-p n x)
-                 (natp n))
-            (<= (integer-length x) n))
-   :hints (("Goal" :in-theory (e/d* (acl2::ihsext-inductions
-                                     acl2::ihsext-recursive-redefs)
-                                    ())))
-   :rule-classes :linear)
- )
+  (defthm unsigned-byte-p-and-integer-length
+    (implies (and (unsigned-byte-p n x)
+                  (natp n))
+             (<= (integer-length x) n))
+    :hints (("Goal" :in-theory (e/d* (acl2::ihsext-inductions
+                                      acl2::ihsext-recursive-redefs)
+                                     ())))
+    :rule-classes :linear))
 
 
 (define bitcount8
@@ -407,7 +404,7 @@ result contains an even number of 1 bits; cleared otherwise.</p>"
 
 (add-macro-alias general-pf-spec general-pf-spec-fn)
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 (define sf-spec-gen-fn (result-nbits)
   :verify-guards nil
@@ -471,8 +468,7 @@ positive value and 1 indicates a negative value.)</p>"
     :bound 1
     :concl (general-sf-spec-fn result-nbits result)
     :gen-type t
-    :gen-linear t)
-  )
+    :gen-linear t))
 
 (defmacro general-sf-spec (result-nbits result)
   (cond ((eql result-nbits 8)
@@ -488,7 +484,7 @@ positive value and 1 indicates a negative value.)</p>"
 
 (add-macro-alias general-sf-spec general-sf-spec-fn)
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ;; Instruction-specific AF specification:
 
@@ -701,7 +697,7 @@ positive value and 1 indicates a negative value.)</p>"
          `(sbb-af-spec-fn
             ,result-nbits ,dst ,src ,cf))))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ;; Some arithmetic theorems that will be used in all books higher up
 ;; (especially for proving away MBEs):
@@ -860,7 +856,6 @@ positive value and 1 indicates a negative value.)</p>"
             (equal (logand x y) y))
    :hints (("Goal"
             :use ((:instance acl2::mod-logand (x x) (y y) (n n)))
-            :in-theory (disable acl2::mod-logand))))
+            :in-theory (disable acl2::mod-logand)))))
 
- )
-;;  ======================================================================
+;; ----------------------------------------------------------------------

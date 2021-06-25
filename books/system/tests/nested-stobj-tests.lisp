@@ -10,6 +10,8 @@
 ; nesting of inductions, suggesting considering formulation of additional
 ; lemmas.
 
+; See also nested-stobj-errors-input.lsp for additional error testing.
+
 ; See also ACL2 community book demos/modeling/nested-stobj-toy-isa.lisp for a
 ; nicer, self-contained example.
 

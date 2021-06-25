@@ -70,6 +70,27 @@
 
 ;; ======================================================================
 
+(defthm-unsigned-byte-p n64p-xr-seg-hidden-base
+  :hyp t
+  :bound 64
+  :concl (xr :seg-hidden-base i x86)
+  :gen-linear t
+  :gen-type t)
+
+(defthm-unsigned-byte-p n32p-xr-seg-hidden-limit
+  :hyp t
+  :bound 32
+  :concl (xr :seg-hidden-limit i x86)
+  :gen-linear t
+  :gen-type t)
+
+(defthm-unsigned-byte-p n16p-xr-seg-visible
+  :hyp t
+  :bound 16
+  :concl (xr :seg-visible i x86)
+  :gen-linear t
+  :gen-type t)
+
 (define segment-base-and-bounds
   ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
    (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
@@ -168,9 +189,9 @@
     (#.*compatibility-mode*
      (mbe
       :logic
-      (b* ((base (loghead 64 (xr :seg-hidden-base seg-reg x86)))
-	   (limit (loghead 32 (xr :seg-hidden-limit seg-reg x86)))
-	   (attr (loghead 16 (xr :seg-hidden-attr seg-reg x86)))
+      (b* ((base (loghead 64 (seg-hidden-basei seg-reg x86)))
+	   (limit (loghead 32 (seg-hidden-limiti seg-reg x86)))
+	   (attr (loghead 16 (seg-hidden-attri seg-reg x86)))
 	   (d/b (if (= seg-reg #.*cs*)
                     (code-segment-descriptor-attributesBits->d attr)
                   (data-segment-descriptor-attributesBits->d/b attr)))
@@ -186,11 +207,11 @@
       ;; (include-book "std/bitsets/bignum-extract-opt" :dir :system)
       ;; Note that this book requires a trust tag.
       :exec
-      (b* (((the (unsigned-byte 64) base) (xr :seg-hidden-base seg-reg x86))
+      (b* (((the (unsigned-byte 64) base) (seg-hidden-basei seg-reg x86))
 	   ((the (unsigned-byte 32) base)
 	    (bitsets::bignum-extract base 0))
-	   ((the (unsigned-byte 32) limit) (xr :seg-hidden-limit seg-reg x86))
-	   ((the (unsigned-byte 16) attr) (xr :seg-hidden-attr seg-reg x86))
+	   ((the (unsigned-byte 32) limit) (seg-hidden-limiti seg-reg x86))
+	   ((the (unsigned-byte 16) attr) (seg-hidden-attri seg-reg x86))
 	   (d/b (if (= seg-reg #.*cs*)
                     (code-segment-descriptor-attributesBits->d attr)
                   (data-segment-descriptor-attributesBits->d/b attr)))

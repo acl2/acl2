@@ -44,7 +44,7 @@
 (in-package "X86ISA")
 
 (include-book "other-non-det"
-	      :ttags (:include-raw :undef-flg :syscall-exec :other-non-det))
+              :ttags (:include-raw :undef-flg :syscall-exec :other-non-det))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (in-theory (e/d () (mv-nth)))
@@ -103,7 +103,7 @@ the @('fault') field instead.</li>
 
   (defmacro !ms-erp (&rest args)
     `(cons (list ctx ,@args)
-	   erp))
+           erp))
 
   (defmacro !ms-erp-fresh (&rest args)
     `(let ((erp nil))
@@ -111,15 +111,15 @@ the @('fault') field instead.</li>
 
   (defmacro !!ms (&rest args)
     `(!ms (!ms-erp :rip (rip x86) ,@args)
-	  x86))
+          x86))
 
   (defmacro !!ms-fresh (&rest args)
     `(!ms (!ms-erp-fresh :rip (rip x86) ,@args)
-	  x86))
+          x86))
 
   (defmacro !!fault-fresh (&rest args)
     `(!fault (!ms-erp-fresh :rip (rip x86) ,@args)
-	     x86)))
+             x86)))
 
 ;; ======================================================================
 
@@ -127,8 +127,15 @@ the @('fault') field instead.</li>
   :parents (decoding-and-spec-utils)
   :short "Operations to manipulate instruction pointers."
 
+  (defthm-signed-byte-p i48p-xr-rip
+    :hyp t
+    :bound 48
+    :concl (xr :rip i x86)
+    :gen-linear t
+    :gen-type t)
+
   (define read-*ip ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-		    x86)
+                    x86)
     :returns (*ip i48p :hyp (x86p x86))
 
     :parents (instruction-pointer-operations)
@@ -161,17 +168,17 @@ the @('fault') field instead.</li>
      </p>"
     (b* ((*ip (the (signed-byte #.*max-linear-address-size*) (rip x86))))
       (case proc-mode
-	(#.*64-bit-mode* *ip)
-	(#.*compatibility-mode*
-	 (b* (((the (unsigned-byte 16) cs-attr)
-	       (xr :seg-hidden-attr #.*cs* x86))
-	      (cs.d (code-segment-descriptor-attributesBits->d cs-attr)))
-	   (if (= cs.d 1)
-	       (n32 *ip)
-	     (n16 *ip))))
-	(otherwise
-	 ;; Unimplemented for other modes!
-	 0)))
+        (#.*64-bit-mode* *ip)
+        (#.*compatibility-mode*
+         (b* (((the (unsigned-byte 16) cs-attr)
+               (seg-hidden-attri #.*cs* x86))
+              (cs.d (code-segment-descriptor-attributesBits->d cs-attr)))
+           (if (= cs.d 1)
+               (n32 *ip)
+             (n16 *ip))))
+        (otherwise
+         ;; Unimplemented for other modes!
+         0)))
     :inline t
     :no-function t
     ///
@@ -185,7 +192,7 @@ the @('fault') field instead.</li>
 
     (defrule read-*ip-when-64-bit-modep
       (equal (read-*ip #.*64-bit-mode* x86)
-	     (rip x86)))
+             (rip x86)))
 
     (defthm-unsigned-byte-p read-*ip-when-not-64-bit-modep
       :hyp (not (equal proc-mode #.*64-bit-mode*))
@@ -195,12 +202,12 @@ the @('fault') field instead.</li>
       :gen-linear t))
 
   (define add-to-*ip ((proc-mode :type (integer     0 #.*num-proc-modes-1*))
-		      (*ip       :type (signed-byte #.*max-linear-address-size*))
-		      (delta     :type (signed-byte #.*max-linear-address-size*))
-		      x86)
+                      (*ip       :type (signed-byte #.*max-linear-address-size*))
+                      (delta     :type (signed-byte #.*max-linear-address-size*))
+                      x86)
     :returns (mv flg
-		 (*ip+delta i48p
-			    :hyp (and (i48p *ip) (i48p delta))))
+                 (*ip+delta i48p
+                            :hyp (and (i48p *ip) (i48p delta))))
     :prepwork
     ((local (in-theory (e/d () (force (force))))))
     :parents (instruction-pointer-operations)
@@ -235,31 +242,31 @@ the @('fault') field instead.</li>
      </p>"
 
     (b* ((*ip+delta
-	  (the (signed-byte #.*max-linear-address-size+1*)
-	    (+ *ip delta))))
+          (the (signed-byte #.*max-linear-address-size+1*)
+            (+ *ip delta))))
 
       (case proc-mode
 
-	(#.*64-bit-mode*
-	 (if (mbe :logic (canonical-address-p *ip+delta)
-		  :exec (and (<= #.*-2^47* *ip+delta)
-			     (< *ip+delta #.*2^47*)))
-	     (mv nil *ip+delta)
-	   (mv (list :non-canonical-instruction-pointer *ip+delta) 0)))
+        (#.*64-bit-mode*
+         (if (mbe :logic (canonical-address-p *ip+delta)
+                  :exec (and (<= #.*-2^47* *ip+delta)
+                             (< *ip+delta #.*2^47*)))
+             (mv nil *ip+delta)
+           (mv (list :non-canonical-instruction-pointer *ip+delta) 0)))
 
-	(#.*compatibility-mode*
-	 (b* (((the (unsigned-byte 32) cs.limit)
-	       (mbe :logic (loghead 32 (xr :seg-hidden-limit #.*cs* x86))
-		    :exec (xr :seg-hidden-limit #.*cs* x86))))
-	   (if (and (<= 0 *ip+delta)
-		    (<= *ip+delta cs.limit))
-	       (mv nil (the (unsigned-byte 32) *ip+delta))
-	     (mv (list :out-of-segment-instruction-pointer cs.limit *ip+delta)
-		 0))))
+        (#.*compatibility-mode*
+         (b* (((the (unsigned-byte 32) cs.limit)
+               (mbe :logic (loghead 32 (seg-hidden-limiti #.*cs* x86))
+                    :exec (seg-hidden-limiti #.*cs* x86))))
+           (if (and (<= 0 *ip+delta)
+                    (<= *ip+delta cs.limit))
+               (mv nil (the (unsigned-byte 32) *ip+delta))
+             (mv (list :out-of-segment-instruction-pointer cs.limit *ip+delta)
+                 0))))
 
-	(otherwise
-	 (mv (list :unimplemented-proc-mode proc-mode)
-	     0))))
+        (otherwise
+         (mv (list :unimplemented-proc-mode proc-mode)
+             0))))
 
     :inline t
     :no-function t
@@ -267,9 +274,9 @@ the @('fault') field instead.</li>
 
     (defthm-signed-byte-p add-to-*ip-is-i48p
       :hyp (and (integerp *ip)
-		(<= -140737488355328 *ip)
-		(< *ip 140737488355328)
-		(integerp delta))
+                (<= -140737488355328 *ip)
+                (< *ip 140737488355328)
+                (integerp delta))
       :bound 48
       :concl (mv-nth 1 (add-to-*ip proc-mode *ip delta x86))
       :gen-type t
@@ -292,67 +299,67 @@ the @('fault') field instead.</li>
     (defruled add-to-*ip-is-i48p-rewrite-rule
       (implies
        (and (integerp *ip)
-	    (<= -140737488355328 *ip)
-	    (< *ip 140737488355328)
-	    (integerp delta))
+            (<= -140737488355328 *ip)
+            (< *ip 140737488355328)
+            (integerp delta))
        (and (integerp (mv-nth 1 (add-to-*ip proc-mode *ip delta x86)))
-	    (rationalp (mv-nth 1 (add-to-*ip proc-mode *ip delta x86)))
-	    (<= -140737488355328 (mv-nth 1 (add-to-*ip proc-mode *ip delta x86)))
-	    (< (mv-nth 1 (add-to-*ip proc-mode *ip delta x86)) 140737488355328)
-	    ;; The following allow us to disable signed-byte-p in places where
-	    ;; add-to-*ip is followed by a check for canonical addresses.
-	    (signed-byte-p 48 (mv-nth 1 (add-to-*ip proc-mode *ip delta x86)))
-	    (signed-byte-p 64 (mv-nth 1 (add-to-*ip proc-mode *ip delta x86))))))
+            (rationalp (mv-nth 1 (add-to-*ip proc-mode *ip delta x86)))
+            (<= -140737488355328 (mv-nth 1 (add-to-*ip proc-mode *ip delta x86)))
+            (< (mv-nth 1 (add-to-*ip proc-mode *ip delta x86)) 140737488355328)
+            ;; The following allow us to disable signed-byte-p in places where
+            ;; add-to-*ip is followed by a check for canonical addresses.
+            (signed-byte-p 48 (mv-nth 1 (add-to-*ip proc-mode *ip delta x86)))
+            (signed-byte-p 64 (mv-nth 1 (add-to-*ip proc-mode *ip delta x86))))))
 
     (defrule add-to-*ip-rationalp-type
       (implies (and (rationalp *ip)
-		    (rationalp delta))
-	       (rationalp (mv-nth 1 (add-to-*ip proc-mode *ip delta x86))))
+                    (rationalp delta))
+               (rationalp (mv-nth 1 (add-to-*ip proc-mode *ip delta x86))))
       :rule-classes :type-prescription)
 
     (defrule mv-nth-0-of-add-to-*ip-when-64-bit-modep
       (equal (mv-nth 0 (add-to-*ip #.*64-bit-mode* *ip delta x86))
-	     (if (canonical-address-p (+ *ip delta))
-		 nil
-	       (list
-		:non-canonical-instruction-pointer (+ *ip delta)))))
+             (if (canonical-address-p (+ *ip delta))
+                 nil
+               (list
+                :non-canonical-instruction-pointer (+ *ip delta)))))
 
     (defrule mv-nth-1-of-add-to-*ip-when-64-bit-modep
       (equal (mv-nth 1 (add-to-*ip #.*64-bit-mode* *ip delta x86))
-	     (if (canonical-address-p (+ *ip delta))
-		 (+ *ip delta)
-	       0)))
+             (if (canonical-address-p (+ *ip delta))
+                 (+ *ip delta)
+               0)))
 
     (defthm-unsigned-byte-p mv-nth-1-of-add-to-*ip-when-compatibility-modep
       :hyp (and (not (equal proc-mode #.*64-bit-mode*))
-		(integerp (+ *ip delta))
-		(not (mv-nth 0
-			     (add-to-*ip
-			      proc-mode *ip delta x86))))
+                (integerp (+ *ip delta))
+                (not (mv-nth 0
+                             (add-to-*ip
+                              proc-mode *ip delta x86))))
       :bound 32
       :concl (mv-nth 1 (add-to-*ip proc-mode *ip delta x86))
       :gen-linear t
       :gen-type t))
 
   (define write-*ip ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-		     (*ip       :type (signed-byte #.*max-linear-address-size*))
-		     x86)
+                     (*ip       :type (signed-byte #.*max-linear-address-size*))
+                     x86)
     :returns (x86-new x86p
-		      :hyp (x86p x86)
-		      :hints (("Goal" :in-theory (e/d () (force (force))))))
+                      :hyp (x86p x86)
+                      :hints (("Goal" :in-theory (e/d () (force (force))))))
 
     :guard (if (equal proc-mode #.*64-bit-mode*)
-	       t
-	     ;; Could strengthen the following, based on cs.d value...
-	     (unsigned-byte-p 32 *ip)
-	     ;; (b* (((the (unsigned-byte 16) cs-attr)
-	     ;;       (xr :seg-hidden-attr #.*cs* x86))
-	     ;;      (cs.d
-	     ;;       (code-segment-descriptor-attributesBits->d cs-attr)))
-	     ;;   (case cs.d
-	     ;;     (0 (unsigned-byte-p 16 *ip))
-	     ;;     (otherwise (unsigned-byte-p 32 *ip))))
-	     )
+               t
+             ;; Could strengthen the following, based on cs.d value...
+             (unsigned-byte-p 32 *ip)
+             ;; (b* (((the (unsigned-byte 16) cs-attr)
+             ;;       (xr :seg-hidden-attr #.*cs* x86))
+             ;;      (cs.d
+             ;;       (code-segment-descriptor-attributesBits->d cs-attr)))
+             ;;   (case cs.d
+             ;;     (0 (unsigned-byte-p 16 *ip))
+             ;;     (otherwise (unsigned-byte-p 32 *ip))))
+             )
 
     :parents (instruction-pointer-operations)
     :short "Write an instruction pointer into the register RIP, EIP, or IP."
@@ -435,18 +442,19 @@ the @('fault') field instead.</li>
     :prepwork
     ((local
       (in-theory (e/d ()
-		      (bitops::logand-with-bitmask
-		       bitops::logand-with-negated-bitmask))))
+                      (bitops::logand-with-bitmask
+                       bitops::logand-with-negated-bitmask))))
 
      (local
       (defthm logtail-logbitp-lemma
-	(equal (logand 1 (logtail n x))
-	       (bool->bit (logbitp n x)))
-	:hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
-					  bitops::ihsext-recursive-redefs)
-					 ()))))))
+        (equal (logand 1 (logtail n x))
+               (bool->bit (logbitp n x)))
+        :hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+                                          bitops::ihsext-recursive-redefs)
+                                         ()))))))
 
-    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand) ())))
+    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand)
+                                          (unsigned-byte-p))))
 
     (case proc-mode
 
@@ -454,18 +462,18 @@ the @('fault') field instead.</li>
        (!rip *ip x86))
 
       (#.*compatibility-mode* ;; Maybe *protected-mode* too?
-       (b* ((cs-attr (the (unsigned-byte 16) (xr :seg-hidden-attr #.*cs* x86)))
-	    (cs.d (code-segment-descriptor-attributesBits->d cs-attr)))
-	 (if (= cs.d 1)
-	     (mbe :logic (!rip (n32 *ip) x86)
-		  :exec (!rip (the (unsigned-byte 32) *ip) x86))
-	   (b* ((rip (the (signed-byte #.*max-linear-address-size*)
-		       (rip x86)))
-		((the (signed-byte #.*max-linear-address-size*) rip-new)
-		 (mbe :logic (part-install (n16 *ip) rip :low 0 :width 16)
-		      :exec (logior (logand #ux-1_0000  rip)
-				    (logand #uxFFFF *ip)))))
-	     (!rip rip-new x86)))))
+       (b* ((cs-attr (the (unsigned-byte 16) (seg-hidden-attri #.*cs* x86)))
+            (cs.d (code-segment-descriptor-attributesBits->d cs-attr)))
+         (if (= cs.d 1)
+             (mbe :logic (!rip (n32 *ip) x86)
+                  :exec (!rip (the (unsigned-byte 32) *ip) x86))
+           (b* ((rip (the (signed-byte #.*max-linear-address-size*)
+                       (rip x86)))
+                ((the (signed-byte #.*max-linear-address-size*) rip-new)
+                 (mbe :logic (part-install (n16 *ip) rip :low 0 :width 16)
+                      :exec (logior (logand #ux-1_0000  rip)
+                                    (logand #uxFFFF *ip)))))
+             (!rip rip-new x86)))))
 
       (otherwise
        ;; Unimplemented for other modes!
@@ -476,7 +484,7 @@ the @('fault') field instead.</li>
 
     (defrule write-*ip-when-64-bit-modep
       (equal (write-*ip #.*64-bit-mode* *ip x86)
-	     (!rip *ip x86)))))
+             (!rip *ip x86)))))
 
 ;; ======================================================================
 
@@ -485,7 +493,7 @@ the @('fault') field instead.</li>
   :short "Operations to manipulate stack pointers."
 
   (define read-*sp ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-		    x86)
+                    x86)
     :returns (*sp i64p :hyp (x86p x86))
     :parents (stack-pointer-operations)
     :short "Read the stack pointer from the register RSP, ESP, or SP."
@@ -519,17 +527,17 @@ the @('fault') field instead.</li>
      </p>"
     (b* ((*sp (the (signed-byte 64) (rgfi #.*rsp* x86))))
       (case proc-mode
-	(#.*64-bit-mode*
-	 *sp)
-	(#.*compatibility-mode*
-	 (b* (((the (unsigned-byte 16) ss-attr) (xr :seg-hidden-attr #.*ss* x86))
-	      (ss.b (data-segment-descriptor-attributesBits->d/b ss-attr)))
-	   (if (= ss.b 1)
-	       (n32 *sp)
-	     (n16 *sp))))
-	(otherwise
-	 ;; Unimplemented for other modes!
-	 0)))
+        (#.*64-bit-mode*
+         *sp)
+        (#.*compatibility-mode*
+         (b* (((the (unsigned-byte 16) ss-attr) (seg-hidden-attri #.*ss* x86))
+              (ss.b (data-segment-descriptor-attributesBits->d/b ss-attr)))
+           (if (= ss.b 1)
+               (n32 *sp)
+             (n16 *sp))))
+        (otherwise
+         ;; Unimplemented for other modes!
+         0)))
     :inline t
     :no-function t
     ///
@@ -552,11 +560,11 @@ the @('fault') field instead.</li>
       :gen-linear t))
 
   (define add-to-*sp ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-		      (*sp   :type (signed-byte 64))
-		      (delta :type (signed-byte 64))
-		      x86)
+                      (*sp   :type (signed-byte 64))
+                      (delta :type (signed-byte 64))
+                      x86)
     :returns (mv flg
-		 (*sp+delta i64p))
+                 (*sp+delta i64p))
     :parents (stack-pointer-operations)
     :short "Add a specified amount to a stack pointer."
     :long
@@ -597,36 +605,36 @@ the @('fault') field instead.</li>
      </p>"
     (b* ((*sp+delta (the (signed-byte 65) (+ *sp delta))))
       (case proc-mode
-	(#.*64-bit-mode*
+        (#.*64-bit-mode*
          (let ((*sp+delta (i64 *sp+delta)))
            (if (mbe :logic (canonical-address-p *sp+delta)
                     :exec (and (<= #.*-2^47* *sp+delta)
                                (< *sp+delta #.*2^47*)))
                (mv nil *sp+delta)
              (mv (list :non-canonical-stack-address *sp+delta) 0))))
-	(#.*compatibility-mode*
-	 (b* (((the (unsigned-byte 32) ss.limit)
-	       (xr :seg-hidden-limit #.*ss* x86))
-	      ((the (unsigned-byte 16) ss-attr)
-	       (xr :seg-hidden-attr #.*ss* x86))
-	      (ss.b (data-segment-descriptor-attributesBits->d/b ss-attr))
-	      (ss.e (data-segment-descriptor-attributesBits->e ss-attr))
-	      (ss-lower (if (= ss.e 1) (1+ ss.limit) 0))
-	      (ss-upper (if (= ss.e 1)
-			    (if (= ss.b 1)
-				#xffffffff
-			      #xffff)
-			  ss.limit))
+        (#.*compatibility-mode*
+         (b* (((the (unsigned-byte 32) ss.limit)
+               (seg-hidden-limiti #.*ss* x86))
+              ((the (unsigned-byte 16) ss-attr)
+               (seg-hidden-attri #.*ss* x86))
+              (ss.b (data-segment-descriptor-attributesBits->d/b ss-attr))
+              (ss.e (data-segment-descriptor-attributesBits->e ss-attr))
+              (ss-lower (if (= ss.e 1) (1+ ss.limit) 0))
+              (ss-upper (if (= ss.e 1)
+                            (if (= ss.b 1)
+                                #xffffffff
+                              #xffff)
+                          ss.limit))
               (*sp+delta (if (= ss.b 1) (n32 *sp+delta) (n16 *sp+delta)))
-	      ((unless (and (<= ss-lower *sp+delta)
-			    (<= *sp+delta ss-upper)))
-	       (mv (list :out-of-segment-stack-address
-			 *sp+delta ss-lower ss-upper)
-		   0)))
+              ((unless (and (<= ss-lower *sp+delta)
+                            (<= *sp+delta ss-upper)))
+               (mv (list :out-of-segment-stack-address
+                         *sp+delta ss-lower ss-upper)
+                   0)))
            (mv nil *sp+delta)))
-	(otherwise
-	 (mv (list :unimplemented-proc-mode proc-mode)
-	     0))))
+        (otherwise
+         (mv (list :unimplemented-proc-mode proc-mode)
+             0))))
     :inline t
     :no-function t
     ///
@@ -639,20 +647,20 @@ the @('fault') field instead.</li>
 
     (defrule mv-nth-0-of-add-to-*sp-when-64-bit-modep
       (equal (mv-nth 0 (add-to-*sp #.*64-bit-mode* *sp delta x86))
-	     (if (canonical-address-p (i64 (+ *sp delta)))
-		 nil
-	       (list :non-canonical-stack-address (i64 (+ *sp delta))))))
+             (if (canonical-address-p (i64 (+ *sp delta)))
+                 nil
+               (list :non-canonical-stack-address (i64 (+ *sp delta))))))
 
     (defrule mv-nth-1-of-add-to-*sp-when-64-bit-modep
       (equal (mv-nth 1 (add-to-*sp #.*64-bit-mode* *sp delta x86))
-	     (if (canonical-address-p (i64 (+ *sp delta)))
-		 (i64 (+ *sp delta))
-	       0)))
+             (if (canonical-address-p (i64 (+ *sp delta)))
+                 (i64 (+ *sp delta))
+               0)))
 
     (defthm-unsigned-byte-p mv-nth-1-of-add-to-*sp-when-compatibility-modep
       :hyp (and (not (equal proc-mode #.*64-bit-mode*))
-		(integerp (+ *sp delta))
-		(not (mv-nth 0 (add-to-*sp proc-mode *sp delta x86))))
+                (integerp (+ *sp delta))
+                (not (mv-nth 0 (add-to-*sp proc-mode *sp delta x86))))
       :bound 32
       :concl (mv-nth 1 (add-to-*sp proc-mode *sp delta x86))
       :hints (("Goal" :in-theory (e/d () (force (force)))))
@@ -660,23 +668,23 @@ the @('fault') field instead.</li>
       :gen-type t))
 
   (define write-*sp ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-		     (*sp :type (signed-byte 64))
-		     x86)
+                     (*sp :type (signed-byte 64))
+                     x86)
     :returns (x86-new x86p :hyp (x86p x86))
     :parents (stack-pointer-operations)
 
     :guard (if (equal proc-mode #.*64-bit-mode*)
-	       t
-	     ;; Could strengthen the following, based on ss.d.
-	     (unsigned-byte-p 32 *sp)
-	     ;; (b* (((the (unsigned-byte 16) ss-attr)
-	     ;;       (xr :seg-hidden-attr #.*ss* x86))
-	     ;;      (ss.d
-	     ;;       (data-segment-descriptor-attributesBits->d/b ss-attr)))
-	     ;;   (case ss.d
-	     ;;     (0 (unsigned-byte-p 16 *sp))
-	     ;;     (otherwise (unsigned-byte-p 32 *sp))))
-	     )
+               t
+             ;; Could strengthen the following, based on ss.d.
+             (unsigned-byte-p 32 *sp)
+             ;; (b* (((the (unsigned-byte 16) ss-attr)
+             ;;       (xr :seg-hidden-attr #.*ss* x86))
+             ;;      (ss.d
+             ;;       (data-segment-descriptor-attributesBits->d/b ss-attr)))
+             ;;   (case ss.d
+             ;;     (0 (unsigned-byte-p 16 *sp))
+             ;;     (otherwise (unsigned-byte-p 32 *sp))))
+             )
 
     :short "Write a stack pointer into the register RSP, ESP, or SP."
     :long
@@ -733,34 +741,35 @@ the @('fault') field instead.</li>
     :prepwork
     ((local
       (in-theory (e/d ()
-		      (bitops::logand-with-bitmask
-		       bitops::logand-with-negated-bitmask))))
+                      (bitops::logand-with-bitmask
+                       bitops::logand-with-negated-bitmask))))
 
      (local
       (defthm logtail-logbitp-lemma
-	(equal (logand 1 (logtail n x))
-	       (bool->bit (logbitp n x)))
-	:hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
-					  bitops::ihsext-recursive-redefs)
-					 ()))))))
+        (equal (logand 1 (logtail n x))
+               (bool->bit (logbitp n x)))
+        :hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+                                          bitops::ihsext-recursive-redefs)
+                                         ()))))))
 
-    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand) ())))
+    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand)
+                                          (unsigned-byte-p))))
 
     (case proc-mode
       (#.*64-bit-mode*
        (!rgfi #.*rsp* *sp x86))
       (#.*compatibility-mode*
-       (b* (((the (unsigned-byte 16) ss-attr) (xr :seg-hidden-attr #.*ss* x86))
-	    (ss.b (data-segment-descriptor-attributesBits->d/b ss-attr)))
-	 (if (= ss.b 1)
-	     (mbe :logic (!rgfi #.*rsp* (n32 *sp) x86)
-		  :exec (!rgfi #.*rsp* (the (unsigned-byte 32) *sp) x86))
-	   (b* (((the (signed-byte 64) rsp) (rgfi #.*rsp* x86))
-		((the (signed-byte 64) rsp-new)
-		 (mbe :logic (part-install (n16 *sp) rsp :low 0 :width 16)
-		      :exec (logior (logand #ux-1_0000  rsp)
-				    (logand #xFFFF *sp)))))
-	     (!rgfi #.*rsp* rsp-new x86)))))
+       (b* (((the (unsigned-byte 16) ss-attr) (seg-hidden-attri #.*ss* x86))
+            (ss.b (data-segment-descriptor-attributesBits->d/b ss-attr)))
+         (if (= ss.b 1)
+             (mbe :logic (!rgfi #.*rsp* (n32 *sp) x86)
+                  :exec (!rgfi #.*rsp* (the (unsigned-byte 32) *sp) x86))
+           (b* (((the (signed-byte 64) rsp) (rgfi #.*rsp* x86))
+                ((the (signed-byte 64) rsp-new)
+                 (mbe :logic (part-install (n16 *sp) rsp :low 0 :width 16)
+                      :exec (logior (logand #ux-1_0000  rsp)
+                                    (logand #xFFFF *sp)))))
+             (!rgfi #.*rsp* rsp-new x86)))))
       (otherwise
        ;; Unimplemented for other modes!
        x86))
@@ -770,13 +779,13 @@ the @('fault') field instead.</li>
 
     (defrule write-*sp-when-64-bit-modep
       (equal (write-*sp #.*64-bit-mode* *sp x86)
-	     (!rgfi #.*rsp* *sp x86)))))
+             (!rgfi #.*rsp* *sp x86)))))
 
 ;; ======================================================================
 
 (define select-address-size ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-			     (p4? booleanp)
-			     (x86 x86p))
+                             (p4? booleanp)
+                             (x86 x86p))
   :prepwork
   ((local (in-theory (e/d () (force (force))))))
   :returns (address-size (member-equal address-size '(2 4 8)))
@@ -811,8 +820,8 @@ the @('fault') field instead.</li>
   (case proc-mode
     (#.*64-bit-mode* (if p4? 4 8))
     (otherwise ;; #.*compatibility-mode* or #.*protected-mode*
-     (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
-	  (cs.d (code-segment-descriptor-attributesBits->d cs-attr)))
+     (b* (((the (unsigned-byte 16) cs-attr) (seg-hidden-attri #.*cs* x86))
+          (cs.d (code-segment-descriptor-attributesBits->d cs-attr)))
        (if (= cs.d 1) (if p4? 2 4) (if p4? 4 2)))))
   ///
 
@@ -845,13 +854,13 @@ the @('fault') field instead.</li>
 
     :guard (sib-p sib)
     :guard-hints (("Goal"
-		   :use ((:instance bitops::unsigned-byte-p-incr
-				    (a 3)
-				    (b 4)
-				    (x (sib->base sib))))
-		   :in-theory (e/d ()
-				   (unsigned-byte-p
-				    bitops::unsigned-byte-p-incr))))
+                   :use ((:instance bitops::unsigned-byte-p-incr
+                                    (a 3)
+                                    (b 4)
+                                    (x (sib->base sib))))
+                   :in-theory (e/d ()
+                                   (unsigned-byte-p
+                                    bitops::unsigned-byte-p-incr))))
 
     :short "Calculates effective address when SIB is present."
     :long "<p>Source: Intel Vol. 2A, Table 2-3.</p>
@@ -874,81 +883,81 @@ the @('fault') field instead.</li>
            see AMD manual, Dec'17, Volume 3, Section 1.5.</p>"
 
     :returns (mv flg
-		 (non-truncated-memory-address
-		  integerp :hyp (and (force (x86p x86))
-				     (integerp temp-rip))
-		  :rule-classes :type-prescription)
-		 disp
-		 (increment-RIP-by natp :rule-classes :type-prescription)
-		 (x86 x86p :hyp (force (x86p x86))))
+                 (non-truncated-memory-address
+                  integerp :hyp (and (force (x86p x86))
+                                     (integerp temp-rip))
+                  :rule-classes :type-prescription)
+                 disp
+                 (increment-RIP-by natp :rule-classes :type-prescription)
+                 (x86 x86p :hyp (force (x86p x86))))
 
     :prepwork ((local (in-theory (e/d (rime-size riml-size)
-				      (unsigned-byte-p)))))
+                                      (unsigned-byte-p)))))
 
     (b* (((the (unsigned-byte 3) b) (sib->base sib))
-	 (check-alignment? nil)
-	 ((mv flg base displacement nrip-bytes x86)
+         (check-alignment? nil)
+         ((mv flg base displacement nrip-bytes x86)
 
-	  (case mod
+          (case mod
 
-	    (0 (if (equal b 5)
-		   (b* (((mv ?flg0 dword x86)
-			 (rime-size-opt
-			  proc-mode 4 temp-RIP #.*cs* :x check-alignment? x86
-			  :mem-ptr? nil)) ;; sign-extended
-			((when flg0)
-			 (mv (cons flg0 'rime-size-opt-error) 0 0 0 x86)))
-		     (mv nil 0 dword 4 x86))
-		 (mv nil
-		     (if (equal proc-mode #.*64-bit-mode*)
-			 (rgfi (reg-index b rex-byte #.*b*) x86)
-		       (rr32 b x86)) ; rex-byte is 0 in 32-bit mode
-		     0
-		     0
-		     x86)))
+            (0 (if (equal b 5)
+                   (b* (((mv ?flg0 dword x86)
+                         (rime-size-opt
+                          proc-mode 4 temp-RIP #.*cs* :x check-alignment? x86
+                          :mem-ptr? nil)) ;; sign-extended
+                        ((when flg0)
+                         (mv (cons flg0 'rime-size-opt-error) 0 0 0 x86)))
+                     (mv nil 0 dword 4 x86))
+                 (mv nil
+                     (if (equal proc-mode #.*64-bit-mode*)
+                         (rgfi (reg-index b rex-byte #.*b*) x86)
+                       (rr32 b x86)) ; rex-byte is 0 in 32-bit mode
+                     0
+                     0
+                     x86)))
 
-	    (1 (b* (((mv ?flg1 byte x86)
-		     (rime-size-opt proc-mode 1 temp-RIP #.*cs* :x check-alignment? x86
-				:mem-ptr? nil)) ;; sign-extended
-		    ((when flg1)
-		     (mv (cons flg1 'rime-size-opt-error) 0 0 0 x86)))
-		 (mv nil
-		     (if (equal proc-mode #.*64-bit-mode*)
-			 (rgfi (reg-index b rex-byte #.*b*) x86)
-		       (rr32 b x86)) ; rex-byte is 0 in 32-bit mode
-		     byte
-		     1
-		     x86)))
+            (1 (b* (((mv ?flg1 byte x86)
+                     (rime-size-opt proc-mode 1 temp-RIP #.*cs* :x check-alignment? x86
+                                :mem-ptr? nil)) ;; sign-extended
+                    ((when flg1)
+                     (mv (cons flg1 'rime-size-opt-error) 0 0 0 x86)))
+                 (mv nil
+                     (if (equal proc-mode #.*64-bit-mode*)
+                         (rgfi (reg-index b rex-byte #.*b*) x86)
+                       (rr32 b x86)) ; rex-byte is 0 in 32-bit mode
+                     byte
+                     1
+                     x86)))
 
-	    (2 (b* (((mv ?flg2 dword x86)
-		     (rime-size-opt proc-mode 4 temp-RIP #.*cs* :x check-alignment? x86
-				:mem-ptr? nil)) ;; sign-extended
-		    ((when flg2)
-		     (mv (cons flg2 'rime-size-opt-error) 0 0 0 x86)))
-		 (mv nil
-		     (if (equal proc-mode #.*64-bit-mode*)
-			 (rgfi (reg-index b rex-byte #.*b*) x86)
-		       (rr32 b x86)) ; rex-byte is 0 in 32-bit mode
-		     dword
-		     4
-		     x86)))
+            (2 (b* (((mv ?flg2 dword x86)
+                     (rime-size-opt proc-mode 4 temp-RIP #.*cs* :x check-alignment? x86
+                                :mem-ptr? nil)) ;; sign-extended
+                    ((when flg2)
+                     (mv (cons flg2 'rime-size-opt-error) 0 0 0 x86)))
+                 (mv nil
+                     (if (equal proc-mode #.*64-bit-mode*)
+                         (rgfi (reg-index b rex-byte #.*b*) x86)
+                       (rr32 b x86)) ; rex-byte is 0 in 32-bit mode
+                     dword
+                     4
+                     x86)))
 
-	    (otherwise ;; can't happen: (< mod 3)
-	     (mv 'mod-can-not-be-anything-other-than-0-1-or-2 0 0 0 x86))))
+            (otherwise ;; can't happen: (< mod 3)
+             (mv 'mod-can-not-be-anything-other-than-0-1-or-2 0 0 0 x86))))
 
-	 (ix ;; use REX-BYTE prefix (cf. Intel Vol. 2, Table 2-4)
-	  (reg-index (sib->index sib) rex-byte #.*x*))
+         (ix ;; use REX-BYTE prefix (cf. Intel Vol. 2, Table 2-4)
+          (reg-index (sib->index sib) rex-byte #.*x*))
 
-	 (index (case ix ; Intel Vol. 2, Figure 2-6
-		  (4 0)  ; no index register; "none" in Intel Table 2-3
-		  (otherwise (if (equal proc-mode #.*64-bit-mode*)
-				 (rgfi ix x86)
-			       (i32 (rgfi ix x86)))))) ; 32-bit signed index
+         (index (case ix ; Intel Vol. 2, Figure 2-6
+                  (4 0)  ; no index register; "none" in Intel Table 2-3
+                  (otherwise (if (equal proc-mode #.*64-bit-mode*)
+                                 (rgfi ix x86)
+                               (i32 (rgfi ix x86)))))) ; 32-bit signed index
 
-	 (scale (the (unsigned-byte 2) (sib->scale sib)))
-	 (scaled-index (ash index scale))
+         (scale (the (unsigned-byte 2) (sib->scale sib)))
+         (scaled-index (ash index scale))
 
-	 (effective-addr (+ base scaled-index)))
+         (effective-addr (+ base scaled-index)))
 
       (mv flg effective-addr displacement nrip-bytes x86))
 
@@ -956,16 +965,16 @@ the @('fault') field instead.</li>
 
     (defthm x86-effective-addr-from-sib-returns-integerp-displacement
       (implies (x86p x86)
-	       (integerp
-		(mv-nth 2 (x86-effective-addr-from-sib
-			   proc-mode temp-RIP rex-byte mod sib x86))))
+               (integerp
+                (mv-nth 2 (x86-effective-addr-from-sib
+                           proc-mode temp-RIP rex-byte mod sib x86))))
       :rule-classes (:rewrite :type-prescription)
       :hints (("Goal" :in-theory (e/d (rime-size riml-size) ()))))
 
     (defthm x86-effective-addr-from-sib-returns-<=-increment-rip-bytes
       (<= (mv-nth 3 (x86-effective-addr-from-sib
-		     proc-mode temp-RIP rex-byte mod sib x86))
-	  4)
+                     proc-mode temp-RIP rex-byte mod sib x86))
+          4)
       :hints (("Goal" :in-theory (e/d (rime-size riml-size) ())))
       :rule-classes :linear))
 
@@ -975,7 +984,7 @@ the @('fault') field instead.</li>
 
     (defthm logext-loghead-identity
       (implies (signed-byte-p n x)
-	       (equal (logext n (loghead n x)) x))
+               (equal (logext n (loghead n x)) x))
       :hints (("Goal" :in-theory (e/d (logext loghead logapp logbitp) ())))))
 
   (define x86-effective-addr-16-disp
@@ -985,11 +994,11 @@ the @('fault') field instead.</li>
      x86)
     :guard (2bits-p mod)
     :returns (mv flg
-		 (disp i16p
-		       :hyp (x86p x86)
-		       :hints (("Goal" :in-theory (enable rime-size))))
-		 (increment-rip-by natp)
-		 (x86 x86p :hyp (x86p x86)))
+                 (disp i16p
+                       :hyp (x86p x86)
+                       :hints (("Goal" :in-theory (enable rime-size))))
+                 (increment-rip-by natp)
+                 (x86 x86p :hyp (x86p x86)))
     :short "Calculate the displacement for
             16-bit effective address calculation."
     :long
@@ -1020,26 +1029,26 @@ the @('fault') field instead.</li>
     (case mod
       (0 (mv nil 0 0 x86))
       (1 (b* (((mv flg byte x86)
-	       (rime-size-opt proc-mode 1 temp-rip #.*cs* :x nil x86 :mem-ptr? nil))
-	      ((when flg) (mv flg 0 0 x86)))
-	   (mv nil byte 1 x86)))
+               (rime-size-opt proc-mode 1 temp-rip #.*cs* :x nil x86 :mem-ptr? nil))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil byte 1 x86)))
       (2 (b* (((mv flg word x86)
-	       (rime-size-opt proc-mode 2 temp-rip #.*cs* :x nil x86 :mem-ptr? nil))
-	      ((when flg) (mv flg 0 0 x86)))
-	   (mv nil word 2 x86)))
+               (rime-size-opt proc-mode 2 temp-rip #.*cs* :x nil x86 :mem-ptr? nil))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil word 2 x86)))
       (otherwise ; shouldn't happen
        (mv 'mod-value-wrong 0 0 x86)))
     ///
 
     (more-returns
      (disp integerp
-	   :hyp (x86p x86)
-	   :name integerp-of-x86-effective-addr-16-disp.disp
-	   :rule-classes :type-prescription))
+           :hyp (x86p x86)
+           :name integerp-of-x86-effective-addr-16-disp.disp
+           :rule-classes :type-prescription))
 
     (defthm mv-nth-2-x86-effective-addr-16-disp-<=-4
       (<= (mv-nth 2 (x86-effective-addr-16-disp proc-mode temp-RIP mod x86))
-	  4)
+          4)
       :rule-classes :linear))
 
   (define x86-effective-addr-16
@@ -1049,11 +1058,11 @@ the @('fault') field instead.</li>
      (mod       :type (unsigned-byte 2) "mod field of ModR/M byte")
      x86)
     :guard (and (2bits-p mod)
-		(3bits-p r/m))
+                (3bits-p r/m))
     :returns (mv flg
-		 (address n16p)
-		 (increment-rip-by natp)
-		 (x86 x86p :hyp (x86p x86)))
+                 (address n16p)
+                 (increment-rip-by natp)
+                 (x86 x86p :hyp (x86p x86)))
     :short "Effective address calculation with 16-bit addressing."
     :long
     "<p>
@@ -1070,56 +1079,56 @@ the @('fault') field instead.</li>
      </p>"
     (case r/m
       (0 (b* ((bx (rr16 #.*rbx* x86))
-	      (si (rr16 #.*rsi* x86))
-	      ((mv flg disp increment-rip-by x86)
-	       (x86-effective-addr-16-disp proc-mode temp-rip mod x86))
-	      ((when flg) (mv flg 0 0 x86)))
-	   (mv nil (n16 (+ bx si disp)) increment-rip-by x86)))
+              (si (rr16 #.*rsi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp proc-mode temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bx si disp)) increment-rip-by x86)))
       (1 (b* ((bx (rr16 #.*rbx* x86))
-	      (di (rr16 #.*rdi* x86))
-	      ((mv flg disp increment-rip-by x86)
-	       (x86-effective-addr-16-disp proc-mode temp-rip mod x86))
-	      ((when flg) (mv flg 0 0 x86)))
-	   (mv nil (n16 (+ bx di disp)) increment-rip-by x86)))
+              (di (rr16 #.*rdi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp proc-mode temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bx di disp)) increment-rip-by x86)))
       (2 (b* ((bp (rr16 #.*rbp* x86))
-	      (si (rr16 #.*rsi* x86))
-	      ((mv flg disp increment-rip-by x86)
-	       (x86-effective-addr-16-disp proc-mode temp-rip mod x86))
-	      ((when flg) (mv flg 0 0 x86)))
-	   (mv nil (n16 (+ bp si disp)) increment-rip-by x86)))
+              (si (rr16 #.*rsi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp proc-mode temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bp si disp)) increment-rip-by x86)))
       (3 (b* ((bp (rr16 #.*rbp* x86))
-	      (di (rr16 #.*rdi* x86))
-	      ((mv flg disp increment-rip-by x86)
-	       (x86-effective-addr-16-disp proc-mode temp-rip mod x86))
-	      ((when flg) (mv flg 0 0 x86)))
-	   (mv nil (n16 (+ bp di disp)) increment-rip-by x86)))
+              (di (rr16 #.*rdi* x86))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp proc-mode temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bp di disp)) increment-rip-by x86)))
       (4 (b* ((si (rr16 #.*rsi* x86))
-	      ((mv flg disp increment-rip-by x86)
-	       (x86-effective-addr-16-disp proc-mode temp-rip mod x86))
-	      ((when flg) (mv flg 0 0 x86)))
-	   (mv nil (n16 (+ si disp)) increment-rip-by x86)))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp proc-mode temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ si disp)) increment-rip-by x86)))
       (5 (b* ((di (rr16 #.*rdi* x86))
-	      ((mv flg disp increment-rip-by x86)
-	       (x86-effective-addr-16-disp proc-mode temp-rip mod x86))
-	      ((when flg) (mv flg 0 0 x86)))
-	   (mv nil (n16 (+ di disp)) increment-rip-by x86)))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp proc-mode temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ di disp)) increment-rip-by x86)))
       (6 (case mod
-	   (0 (b* (((mv flg disp x86)
-		    (rime-size-opt proc-mode 2 temp-rip #.*cs* :x nil x86
-			       :mem-ptr? nil))
-		   ((when flg) (mv flg 0 0 x86)))
-		(mv nil (n16 disp) 2 x86)))
-	   (otherwise (b* ((bp (rr16 #.*rbp* x86))
-			   ((mv flg disp increment-rip-by x86)
-			    (x86-effective-addr-16-disp
-			     proc-mode temp-rip mod x86))
-			   ((when flg) (mv flg 0 0 x86)))
-			(mv nil (n16 (+ bp disp)) increment-rip-by x86)))))
+           (0 (b* (((mv flg disp x86)
+                    (rime-size-opt proc-mode 2 temp-rip #.*cs* :x nil x86
+                               :mem-ptr? nil))
+                   ((when flg) (mv flg 0 0 x86)))
+                (mv nil (n16 disp) 2 x86)))
+           (otherwise (b* ((bp (rr16 #.*rbp* x86))
+                           ((mv flg disp increment-rip-by x86)
+                            (x86-effective-addr-16-disp
+                             proc-mode temp-rip mod x86))
+                           ((when flg) (mv flg 0 0 x86)))
+                        (mv nil (n16 (+ bp disp)) increment-rip-by x86)))))
       (7 (b* ((bx (rr16 #.*rbx* x86))
-	      ((mv flg disp increment-rip-by x86)
-	       (x86-effective-addr-16-disp proc-mode temp-rip mod x86))
-	      ((when flg) (mv flg 0 0 x86)))
-	   (mv nil (n16 (+ bx disp)) increment-rip-by x86)))
+              ((mv flg disp increment-rip-by x86)
+               (x86-effective-addr-16-disp proc-mode temp-rip mod x86))
+              ((when flg) (mv flg 0 0 x86)))
+           (mv nil (n16 (+ bx disp)) increment-rip-by x86)))
       (otherwise ; shouldn't happen
        (mv :r/m-out-of-range 0 0 x86)))
     ///
@@ -1137,7 +1146,7 @@ the @('fault') field instead.</li>
 
     (defthm mv-nth-2-x86-effective-addr-16-<=-4
       (<= (mv-nth 2 (x86-effective-addr-16 proc-mode temp-RIP r/m mod x86))
-	  4)
+          4)
       :rule-classes :linear))
 
   (define x86-effective-addr-32/64
@@ -1155,23 +1164,23 @@ the @('fault') field instead.</li>
      ;; instruction. For details, see *Z-addressing-method-info* in
      ;; x86isa/utils/decoding-utilities.lisp.
      (num-imm-bytes  :type (unsigned-byte 3)
-		     "Number of immediate bytes (0, 1, 2, or 4)
-		      that follow the sib (or displacement bytes, if any).")
+                     "Number of immediate bytes (0, 1, 2, or 4)
+                      that follow the sib (or displacement bytes, if any).")
      x86)
 
     :guard (and (2bits-p mod)
-		(3bits-p r/m)
-		(sib-p sib))
+                (3bits-p r/m)
+                (sib-p sib))
     :guard-hints (("Goal" :in-theory (e/d (n64-to-i64 rime-size) ())))
 
     ;; Returns the flag, the effective address (taking the SIB and
     ;; ModR/M bytes into account) and the number of bytes to increment
     ;; the temp-RIP by.
     :returns (mv
-	      flg
-	      i64p-memory-address
-	      increment-RIP-by
-	      (x86 x86p :hyp (force (x86p x86))))
+              flg
+              i64p-memory-address
+              increment-RIP-by
+              (x86 x86p :hyp (force (x86p x86))))
 
     :short "Effective address calculation with 32-bit and 64-bit addressing."
 
@@ -1223,106 +1232,106 @@ the @('fault') field instead.</li>
 
     (b* (((mv flg addr displacement increment-RIP-by x86)
 
-	  (case mod
+          (case mod
 
-	    (0
-	     (case r/m
-	       (4
-		;; Returns
-		;; (mv flg non-truncated-memory-address 0 increment-RIP-by x86)
-		(x86-effective-addr-from-sib
-		 proc-mode temp-RIP rex-byte mod sib x86))
-	       (5
-		(if (equal proc-mode #.*64-bit-mode*)
-		    ;; RIP-relative addressing in 64-bit mode:
-		    (b* (((mv ?flg0 dword x86)
-			  ;; dword is the sign-extended displacement
-			  ;; present in the instruction.
-			  (rime-size-opt
-			   #.*64-bit-mode* 4 temp-RIP #.*cs* :x nil x86
-			   :mem-ptr? nil))
-			 ;; next-rip is the rip of the next instruction.
-			 ;; temp-RIP + 4 bytes of the displacement
-			 ;; mentioned above + bytes of rest of the
-			 ;; instruction (immediate bytes)
-			 ((mv flg next-rip)
-			  (add-to-*ip #.*64-bit-mode* temp-RIP
-				      (+ 4 num-imm-bytes)
-				      x86))
-			 ((when flg) (mv flg 0 0 0 x86)))
-		      (mv flg0 next-rip dword 4 x86))
-		  ;; displacement only in 32-bit mode:
-		  (b* (((mv flg dword x86)
-			;; dword is the sign-extended displacement
-			;; present in the instruction.
-			(rime-size-opt
-			 proc-mode 4 temp-RIP #.*cs* :x nil x86 :mem-ptr? nil))
-		       ((when flg) (mv flg 0 0 0 x86)))
-		    (mv nil 0 dword 4 x86))))
+            (0
+             (case r/m
+               (4
+                ;; Returns
+                ;; (mv flg non-truncated-memory-address 0 increment-RIP-by x86)
+                (x86-effective-addr-from-sib
+                 proc-mode temp-RIP rex-byte mod sib x86))
+               (5
+                (if (equal proc-mode #.*64-bit-mode*)
+                    ;; RIP-relative addressing in 64-bit mode:
+                    (b* (((mv ?flg0 dword x86)
+                          ;; dword is the sign-extended displacement
+                          ;; present in the instruction.
+                          (rime-size-opt
+                           #.*64-bit-mode* 4 temp-RIP #.*cs* :x nil x86
+                           :mem-ptr? nil))
+                         ;; next-rip is the rip of the next instruction.
+                         ;; temp-RIP + 4 bytes of the displacement
+                         ;; mentioned above + bytes of rest of the
+                         ;; instruction (immediate bytes)
+                         ((mv flg next-rip)
+                          (add-to-*ip #.*64-bit-mode* temp-RIP
+                                      (+ 4 num-imm-bytes)
+                                      x86))
+                         ((when flg) (mv flg 0 0 0 x86)))
+                      (mv flg0 next-rip dword 4 x86))
+                  ;; displacement only in 32-bit mode:
+                  (b* (((mv flg dword x86)
+                        ;; dword is the sign-extended displacement
+                        ;; present in the instruction.
+                        (rime-size-opt
+                         proc-mode 4 temp-RIP #.*cs* :x nil x86 :mem-ptr? nil))
+                       ((when flg) (mv flg 0 0 0 x86)))
+                    (mv nil 0 dword 4 x86))))
 
-	       (otherwise
-		(mv nil
-		    (if (equal proc-mode #.*64-bit-mode*)
-			(rgfi (reg-index r/m rex-byte #.*b*) x86)
-		      (rr32 r/m x86)) ; rex-byte is 0 in 32-bit mode
-		    0
-		    0
-		    x86))))
+               (otherwise
+                (mv nil
+                    (if (equal proc-mode #.*64-bit-mode*)
+                        (rgfi (reg-index r/m rex-byte #.*b*) x86)
+                      (rr32 r/m x86)) ; rex-byte is 0 in 32-bit mode
+                    0
+                    0
+                    x86))))
 
-	    (1
-	     (case r/m
-	       (4
-		;; Returns
-		;; (mv flg non-truncated-memory-address 0 increment-RIP-by x86)
-		(x86-effective-addr-from-sib
-		 proc-mode temp-RIP rex-byte mod sib x86))
+            (1
+             (case r/m
+               (4
+                ;; Returns
+                ;; (mv flg non-truncated-memory-address 0 increment-RIP-by x86)
+                (x86-effective-addr-from-sib
+                 proc-mode temp-RIP rex-byte mod sib x86))
 
-	       (otherwise
-		(b* (((mv ?flg2 byte2 x86)
-		      (rime-size-opt proc-mode 1 temp-RIP #.*cs* :x nil x86
-				 :mem-ptr? nil)) ; sign-extended
-		     (reg (if (equal proc-mode #.*64-bit-mode*)
-			      (rgfi (reg-index r/m rex-byte #.*b*) x86)
-			    (rr32 r/m x86)))) ; rex-byte is 0 in 32-bit mode
-		  (mv flg2 reg byte2 1 x86)))))
+               (otherwise
+                (b* (((mv ?flg2 byte2 x86)
+                      (rime-size-opt proc-mode 1 temp-RIP #.*cs* :x nil x86
+                                 :mem-ptr? nil)) ; sign-extended
+                     (reg (if (equal proc-mode #.*64-bit-mode*)
+                              (rgfi (reg-index r/m rex-byte #.*b*) x86)
+                            (rr32 r/m x86)))) ; rex-byte is 0 in 32-bit mode
+                  (mv flg2 reg byte2 1 x86)))))
 
-	    (2
-	     (case r/m
-	       (4
-		;; Returns
-		;; (mv flg non-truncated-memory-address 0 increment-RIP-by x86)
-		(x86-effective-addr-from-sib
-		 proc-mode temp-RIP rex-byte mod sib x86))
+            (2
+             (case r/m
+               (4
+                ;; Returns
+                ;; (mv flg non-truncated-memory-address 0 increment-RIP-by x86)
+                (x86-effective-addr-from-sib
+                 proc-mode temp-RIP rex-byte mod sib x86))
 
-	       (otherwise
-		(b* (((mv ?flg1 dword x86)
-		      (rime-size-opt proc-mode 4 temp-RIP #.*cs* :x nil x86
-				 :mem-ptr? nil)) ; sign-extended
-		     (reg (if (equal proc-mode #.*64-bit-mode*)
-			      (rgfi (reg-index r/m rex-byte #.*b*) x86)
-			    (rr32 r/m x86)))) ; rex-byte is 0 in 32-bit mode
-		  (mv flg1 reg dword 4 x86)))))
+               (otherwise
+                (b* (((mv ?flg1 dword x86)
+                      (rime-size-opt proc-mode 4 temp-RIP #.*cs* :x nil x86
+                                 :mem-ptr? nil)) ; sign-extended
+                     (reg (if (equal proc-mode #.*64-bit-mode*)
+                              (rgfi (reg-index r/m rex-byte #.*b*) x86)
+                            (rr32 r/m x86)))) ; rex-byte is 0 in 32-bit mode
+                  (mv flg1 reg dword 4 x86)))))
 
-	    (otherwise ; shouldn't happen
-	     (mv 'mod-value-wrong 0 0 0 x86))))
+            (otherwise ; shouldn't happen
+             (mv 'mod-value-wrong 0 0 0 x86))))
 
-	 (dst-base (+ addr displacement))
+         (dst-base (+ addr displacement))
 
-	 ;; In 64-bit mode, if #x67 (address-override prefix) is
-	 ;; present, the effective address size is 32 bits, else it is
-	 ;; 64 bits.  Note that our current virtual memory functions can
-	 ;; cause an error if the address we are reading from/writing to
-	 ;; is >= 2^47-8.
-	 ;; In 32-bit mode,
-	 ;; this function we are in is called when the address size is 32 bits
-	 ;; (X86-EFFECTIVE-ADDR-16 is called when the address size is 16 bits),
-	 ;; so the following code always returns
-	 ;; a 32-bit address in 32-bit mode.
-	 (dst-base (if (equal proc-mode #.*64-bit-mode*)
-		       (if p4
-			   (n32 dst-base)
-			 (n64-to-i64 (n64 dst-base)))
-		     (n32 dst-base))))
+         ;; In 64-bit mode, if #x67 (address-override prefix) is
+         ;; present, the effective address size is 32 bits, else it is
+         ;; 64 bits.  Note that our current virtual memory functions can
+         ;; cause an error if the address we are reading from/writing to
+         ;; is >= 2^47-8.
+         ;; In 32-bit mode,
+         ;; this function we are in is called when the address size is 32 bits
+         ;; (X86-EFFECTIVE-ADDR-16 is called when the address size is 16 bits),
+         ;; so the following code always returns
+         ;; a 32-bit address in 32-bit mode.
+         (dst-base (if (equal proc-mode #.*64-bit-mode*)
+                       (if p4
+                           (n32 dst-base)
+                         (n64-to-i64 (n64 dst-base)))
+                     (n32 dst-base))))
 
       (mv flg dst-base increment-RIP-by x86))
 
@@ -1335,22 +1344,22 @@ the @('fault') field instead.</li>
       :hyp t
       :bound 64
       :concl (mv-nth 1 (x86-effective-addr-32/64
-			proc-mode p4 temp-RIP rex-byte r/m mod sib
-			num-imm-bytes x86))
+                        proc-mode p4 temp-RIP rex-byte r/m mod sib
+                        num-imm-bytes x86))
       :gen-linear t
       :gen-type t)
 
     (defthm natp-mv-nth-2-x86-effective-addr-32/64
       (natp (mv-nth 2 (x86-effective-addr-32/64
-		       proc-mode p4 temp-RIP rex-byte r/m mod sib
-		       num-imm-bytes x86)))
+                       proc-mode p4 temp-RIP rex-byte r/m mod sib
+                       num-imm-bytes x86)))
       :rule-classes :type-prescription)
 
     (defthm mv-nth-2-x86-effective-addr-32/64-<=-4
       (<= (mv-nth 2 (x86-effective-addr-32/64
-		     proc-mode p4 temp-RIP rex-byte r/m mod sib
-		     num-imm-bytes x86))
-	  4)
+                     proc-mode p4 temp-RIP rex-byte r/m mod sib
+                     num-imm-bytes x86))
+          4)
       :rule-classes :linear))
 
   (define x86-effective-addr
@@ -1374,17 +1383,17 @@ the @('fault') field instead.</li>
 
 
     :guard (and (2bits-p mod)
-		(3bits-p r/m)
-		(sib-p sib))
+                (3bits-p r/m)
+                (sib-p sib))
 
     ;; Returns the flag, the effective address (taking the SIB and
     ;; ModR/M bytes into account) and the number of bytes to increment
     ;; the temp-RIP by.
     :returns (mv
-	      flg
-	      i64p-memory-address
-	      increment-RIP-by
-	      (x86 x86p :hyp (force (x86p x86))))
+              flg
+              i64p-memory-address
+              increment-RIP-by
+              (x86 x86p :hyp (force (x86p x86))))
 
     :short "Effective address calculation."
 
@@ -1396,7 +1405,7 @@ the @('fault') field instead.</li>
      </p>"
 
     (if (eql 2 (select-address-size proc-mode (if p4 t nil) x86))
-	(x86-effective-addr-16 proc-mode temp-rip r/m mod x86)
+        (x86-effective-addr-16 proc-mode temp-rip r/m mod x86)
       (x86-effective-addr-32/64
        proc-mode p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))
 
@@ -1406,57 +1415,57 @@ the @('fault') field instead.</li>
       :hyp t
       :bound 64
       :concl (mv-nth 1 (x86-effective-addr
-			proc-mode p4 temp-RIP rex-byte r/m mod sib
-			num-imm-bytes x86))
+                        proc-mode p4 temp-RIP rex-byte r/m mod sib
+                        num-imm-bytes x86))
       :gen-linear t
       :gen-type t)
 
     (defthm natp-mv-nth-2-x86-effective-addr
       (natp (mv-nth 2 (x86-effective-addr
-		       proc-mode p4 temp-RIP rex-byte r/m mod sib
-		       num-imm-bytes x86)))
+                       proc-mode p4 temp-RIP rex-byte r/m mod sib
+                       num-imm-bytes x86)))
       :rule-classes :type-prescription)
 
     (defthm mv-nth-2-x86-effective-addr-<=-4
       (<= (mv-nth 2 (x86-effective-addr
-		     proc-mode p4 temp-RIP rex-byte r/m mod sib
-		     num-imm-bytes x86))
-	  4)
+                     proc-mode p4 temp-RIP rex-byte r/m mod sib
+                     num-imm-bytes x86))
+          4)
       :rule-classes :linear)
 
     (defruled x86-effective-addr-when-64-bit-modep
       (equal (x86-effective-addr
-	      #.*64-bit-mode*
-	      p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86)
-	     (x86-effective-addr-32/64
-	      #.*64-bit-mode*
-	      p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86)))))
+              #.*64-bit-mode*
+              p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86)
+             (x86-effective-addr-32/64
+              #.*64-bit-mode*
+              p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86)))))
 
 ;; ======================================================================
 
 (local
  (defthm-unsigned-byte-p usb-80-of-16-and-64
    :hyp (and (unsigned-byte-p 16 n16)
-	     (unsigned-byte-p 64 n64))
+             (unsigned-byte-p 64 n64))
    :bound 80
    :concl (logior n16 (ash n64 16))
    :gen-type t
    :gen-linear t
    :hints-l (("Goal"
-	      :do-not '(preprocess)
-	      :in-theory (e/d () (unsigned-byte-p))))))
+              :do-not '(preprocess)
+              :in-theory (e/d () (unsigned-byte-p))))))
 
 (local
  (defthm-unsigned-byte-p usb-48-of-16-and-32
    :hyp (and (unsigned-byte-p 16 n16)
-	     (unsigned-byte-p 32 n32))
+             (unsigned-byte-p 32 n32))
    :bound 48
    :concl (logior n16 (ash n32 16))
    :gen-type t
    :gen-linear t
    :hints-l (("Goal"
-	      :do-not '(preprocess)
-	      :in-theory (e/d () (unsigned-byte-p))))))
+              :do-not '(preprocess)
+              :in-theory (e/d () (unsigned-byte-p))))))
 
 (defsection read-operands-and-write-results
 
@@ -1508,21 +1517,21 @@ generate alignment-check exceptions, even when caused by a memory
 reference made from privilege level 3.</blockquote>"
 
     (b* ((cr0 (the (unsigned-byte 32) (n32 (ctri #.*cr0* x86))))
-	 (AM  (cr0Bits->am cr0))
-	 (AC (flgi :ac x86))
-	 (CPL (cpl x86)))
+         (AM  (cr0Bits->am cr0))
+         (AC (flgi :ac x86))
+         (CPL (cpl x86)))
       (and (equal AM 1)
-	   (equal AC 1)
-	   (equal CPL 3)))
+           (equal AC 1)
+           (equal CPL 3)))
 
     ///
 
     (defthm alignment-checking-enabled-p-and-xw
       (implies (and (not (equal fld :ctr))
-		    (not (equal fld :seg-visible))
-		    (not (equal fld :rflags)))
-	       (equal (alignment-checking-enabled-p (xw fld index val x86))
-		      (alignment-checking-enabled-p x86))))
+                    (not (equal fld :seg-visible))
+                    (not (equal fld :rflags)))
+               (equal (alignment-checking-enabled-p (xw fld index val x86))
+                      (alignment-checking-enabled-p x86))))
 
     (defthm alignment-checking-enabled-p-and-xw-ctr
       (implies (case-split (or (not (equal (nfix index) *cr0*))
@@ -1536,9 +1545,9 @@ reference made from privilege level 3.</blockquote>"
 
     (defthm alignment-checking-enabled-p-and-xw-rflags
       (implies (equal (rflagsBits->ac val)
-		      (rflagsBits->ac (xr :rflags 0 x86)))
-	       (equal (alignment-checking-enabled-p (xw :rflags 0 val x86))
-		      (alignment-checking-enabled-p x86)))
+                      (rflagsBits->ac (xr :rflags nil x86)))
+               (equal (alignment-checking-enabled-p (xw :rflags nil val x86))
+                      (alignment-checking-enabled-p x86)))
       :hints (("Goal" :in-theory (e/d (rflagsBits->ac rflagsBits-fix) ()))))
 
     (defthm alignment-checking-enabled-p-and-xw-seg-visible
@@ -1548,25 +1557,25 @@ reference made from privilege level 3.</blockquote>"
                           (equal (segment-selectorBits->rpl val)
                                  (segment-selectorBits->rpl
                                   (seg-visiblei #.*cs* x86))))))
-	       (equal (alignment-checking-enabled-p (xw :seg-visible index val x86))
-		      (alignment-checking-enabled-p x86)))
+               (equal (alignment-checking-enabled-p (xw :seg-visible index val x86))
+                      (alignment-checking-enabled-p x86)))
       :hints (("Goal" :in-theory (e/d (segment-selectorbits->rpl segment-selectorbits-fix)
                                       ()))))
 
     (defthm alignment-checking-enabled-p-and-mv-nth-1-wb
       (equal (alignment-checking-enabled-p (mv-nth 1 (wb n addr w val x86)))
-	     (alignment-checking-enabled-p x86))
+             (alignment-checking-enabled-p x86))
       :hints (("Goal" :in-theory (e/d* (wb write-to-physical-memory) ()))))
 
     (defthm alignment-checking-enabled-p-and-mv-nth-2-rb
       (equal (alignment-checking-enabled-p (mv-nth 2 (rb n addr r-x x86)))
-	     (alignment-checking-enabled-p x86))
+             (alignment-checking-enabled-p x86))
       :hints (("Goal" :in-theory (e/d* (rb) ()))))
 
     (defthm alignment-checking-enabled-p-and-mv-nth-2-las-to-pas
       (equal (alignment-checking-enabled-p
-	      (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
-	     (alignment-checking-enabled-p x86))))
+              (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
+             (alignment-checking-enabled-p x86))))
 
   (define x86-operand-from-modr/m-and-sib-bytes
     ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))
@@ -1607,7 +1616,7 @@ reference made from privilege level 3.</blockquote>"
 
     :returns
     (mv flg
-        operand
+        (operand natp :rule-classes :type-prescription)
         increment-RIP-by
         addr
         (x86 x86p :hyp (force (x86p x86))))
@@ -1670,8 +1679,8 @@ reference made from privilege level 3.</blockquote>"
     ///
 
     (defthm-unsigned-byte-p bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand
-      :hyp (and (member operand-size '(1 2 4 8 16))
-                (equal bound (ash operand-size 3))
+      :hyp (and (equal bound (ash operand-size 3))
+                (member operand-size '(1 2 4 8 16))                
                 (x86p x86))
       :bound bound
       :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes
@@ -1680,11 +1689,11 @@ reference made from privilege level 3.</blockquote>"
                         x86))
       :gen-linear t
       :gen-type t
-      :hints (("Goal" :in-theory (enable rme-size))))
+      :hints (("Goal" :in-theory (e/d (rme-size) ()))))
 
     (defthm-unsigned-byte-p bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand
-      :hyp (and (member operand-size '(1 2 4 8 16))
-                (<= (ash operand-size 3) bound)
+      :hyp (and (<= (ash operand-size 3) bound)
+                (member operand-size '(1 2 4 8 16))                
                 (integerp bound)
                 (x86p x86))
       :bound bound
@@ -1701,8 +1710,8 @@ reference made from privilege level 3.</blockquote>"
       bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand))
 
     (defthm-unsigned-byte-p bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand-6-and-10-bytes-read
-      :hyp (and (member operand-size '(6 10))
-                (equal bound (ash operand-size 3))
+      :hyp (and (equal bound (ash operand-size 3))
+                (member operand-size '(6 10))                
                 (not (equal mod #b11))
                 (x86p x86))
       :bound bound
@@ -1895,96 +1904,96 @@ reference made from privilege level 3.</blockquote>"
 
   (defthm rip-guard-okp-equiv-for-non-64-bit-modes
     (implies (and (rip-guard-okp proc-mode-1 rip)
-		  (not (equal proc-mode-1 0))
-		  (not (equal proc-mode-2 0)))
-	     (rip-guard-okp proc-mode-2 rip)))
+                  (not (equal proc-mode-1 0))
+                  (not (equal proc-mode-2 0)))
+             (rip-guard-okp proc-mode-2 rip)))
 
   (defthm rip-guard-okp-for-64-bit-modep
     (equal (rip-guard-okp #.*64-bit-mode* rip)
-	   (signed-byte-p #.*max-linear-address-size* rip)))
+           (signed-byte-p #.*max-linear-address-size* rip)))
 
   (defthm rip-guard-okp-for-compatibility-mode
     (equal (rip-guard-okp #.*compatibility-mode* rip)
-	   (unsigned-byte-p 32 rip))))
+           (unsigned-byte-p 32 rip))))
 
 
 (defmacro def-inst
   (name &key
-	(operation   'nil)
-	(sp/dp       'nil)
-	(dp-to-sp    'nil)
-	(high/low    'nil)
-	(trunc       'nil)
-	(evex        'nil)
+        (operation   'nil)
+        (sp/dp       'nil)
+        (dp-to-sp    'nil)
+        (high/low    'nil)
+        (trunc       'nil)
+        (evex        'nil)
         (modr/m      'nil)
-	body parents short long
-	inline enabled guard-debug guard
-	guard-hints (verify-guards 't) prepwork thms
-	returns)
+        body parents short long
+        inline enabled guard-debug guard
+        guard-hints (verify-guards 't) prepwork thms
+        returns)
 
   (if body
       `(define ,name
-	 (,@(and operation `((operation :type (integer 0 36))))
-	  ,@(and sp/dp     `((sp/dp     :type (integer 0 1))))
-	  ,@(and dp-to-sp  `((dp-to-sp  :type (integer 0 1))))
-	  ,@(and high/low  `((high/low  :type (integer 0 1))))
-	  ,@(and trunc     `((trunc     booleanp)))
-	  (proc-mode     :type (integer 0     #.*num-proc-modes-1*))
-	  (start-rip     :type (signed-byte   #.*max-linear-address-size*))
-	  (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
-	  (prefixes      :type (unsigned-byte #.*prefixes-width*))
-	  (rex-byte      :type (unsigned-byte 8))
-	  ,@(if evex
-		`((vex-prefixes   :type (unsigned-byte 24))
-		  (evex-prefixes  :type (unsigned-byte 32)))
-	      `())
-	  (opcode        :type (unsigned-byte 8))
-	  (modr/m        :type (unsigned-byte 8))
-	  (sib           :type (unsigned-byte 8))
-	  x86
-	  ;; If operation = -1, ignore this field.  Note that -1 is
-	  ;; the default value of operation.
-	  ;; &optional ((operation :type (integer -1 8)) '-1 )
-	  )
+         (,@(and operation `((operation :type (integer 0 36))))
+          ,@(and sp/dp     `((sp/dp     :type (integer 0 1))))
+          ,@(and dp-to-sp  `((dp-to-sp  :type (integer 0 1))))
+          ,@(and high/low  `((high/low  :type (integer 0 1))))
+          ,@(and trunc     `((trunc     booleanp)))
+          (proc-mode     :type (integer 0     #.*num-proc-modes-1*))
+          (start-rip     :type (signed-byte   #.*max-linear-address-size*))
+          (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
+          (prefixes      :type (unsigned-byte #.*prefixes-width*))
+          (rex-byte      :type (unsigned-byte 8))
+          ,@(if evex
+                `((vex-prefixes   :type (unsigned-byte 24))
+                  (evex-prefixes  :type (unsigned-byte 32)))
+              `())
+          (opcode        :type (unsigned-byte 8))
+          (modr/m        :type (unsigned-byte 8))
+          (sib           :type (unsigned-byte 8))
+          x86
+          ;; If operation = -1, ignore this field.  Note that -1 is
+          ;; the default value of operation.
+          ;; &optional ((operation :type (integer -1 8)) '-1 )
+          )
 
-	 (declare
-	  (ignorable proc-mode start-rip temp-rip prefixes rex-byte
-		     opcode modr/m sib))
+         (declare
+          (ignorable proc-mode start-rip temp-rip prefixes rex-byte
+                     opcode modr/m sib))
 
-	 ,@(and parents `(:parents ,parents))
-	 ,@(and short `(:short ,short))
-	 ,@(and long `(:long ,long))
+         ,@(and parents `(:parents ,parents))
+         ,@(and short `(:short ,short))
+         ,@(and long `(:long ,long))
 
-	 ,@(and prepwork `(:prepwork ,prepwork))
+         ,@(and prepwork `(:prepwork ,prepwork))
 
-	 :guard (and (prefixes-p prefixes)
-		     (ModR/M-p modr/m)
-		     (sib-p sib)
-		     (rip-guard-okp proc-mode temp-rip)
-		     ,@(and guard `(,guard)))
+         :guard (and (prefixes-p prefixes)
+                     (ModR/M-p modr/m)
+                     (sib-p sib)
+                     (rip-guard-okp proc-mode temp-rip)
+                     ,@(and guard `(,guard)))
 
-	 ,@(and enabled `(:enabled ,enabled))
-	 ,@(and inline `(:inline ,inline :no-function t))
-	 ,@(and (not verify-guards) `(:verify-guards ,verify-guards))
-	 ,@(and guard-debug `(:guard-debug ,guard-debug))
-	 ,@(and guard-hints `(:guard-hints ,guard-hints))
+         ,@(and enabled `(:enabled ,enabled))
+         ,@(and inline `(:inline ,inline :no-function t))
+         ,@(and (not verify-guards) `(:verify-guards ,verify-guards))
+         ,@(and guard-debug `(:guard-debug ,guard-debug))
+         ,@(and guard-hints `(:guard-hints ,guard-hints))
 
-	 ,@(and returns `(:returns ,returns))
+         ,@(and returns `(:returns ,returns))
 
-	 (b* ((?ctx ',name)
+         (b* ((?ctx ',name)
               ,@(and modr/m
                      '((?r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
                        (?mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
                        (?reg (the (unsigned-byte 3) (modr/m->reg modr/m))))))
            ,body)
 
-	 ///
+         ///
 
-	 (add-to-ruleset instruction-decoding-and-spec-rules
-			 '(,name))
+         (add-to-ruleset instruction-decoding-and-spec-rules
+                         '(,name))
 
-	 ,@(and thms
-		`(,@thms)))
+         ,@(and thms
+                `(,@thms)))
 
     nil))
 
@@ -2080,28 +2089,28 @@ reference made from privilege level 3.</blockquote>"
   (if byte-operand?
       1
     (if (equal proc-mode #.*64-bit-mode*)
-	(if (and (logbitp #.*w* rex-byte)
+        (if (and (logbitp #.*w* rex-byte)
                  (not ignore-rex?))
-	    (if imm?
-		;; Fetch 4 bytes (sign-extended to 64 bits) if operand is
-		;; immediate.
-		4
-	      8)
-	  (if (and (eql #.*operand-size-override*
+            (if imm?
+                ;; Fetch 4 bytes (sign-extended to 64 bits) if operand is
+                ;; immediate.
+                4
+              8)
+          (if (and (eql #.*operand-size-override*
                         (the (unsigned-byte 8) (prefixes->opr prefixes)))
                    (not ignore-p3-64?))
-	      2
-	    (if default64?
+              2
+            (if default64?
                 8
               4)))
       ;; 32-bit mode or Compatibility Mode:
-      (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
-	   (cs.d (code-segment-descriptor-attributesBits->d cs-attr))
-	   (p3? (eql #.*operand-size-override*
-		     (the (unsigned-byte 8) (prefixes->opr prefixes)))))
-	(if (= cs.d 1)
-	    (if p3? 2 4)
-	  (if p3? 4 2))))))
+      (b* (((the (unsigned-byte 16) cs-attr) (seg-hidden-attri #.*cs* x86))
+           (cs.d (code-segment-descriptor-attributesBits->d cs-attr))
+           (p3? (eql #.*operand-size-override*
+                     (the (unsigned-byte 8) (prefixes->opr prefixes)))))
+        (if (= cs.d 1)
+            (if p3? 2 4)
+          (if p3? 4 2))))))
 
 ;; ======================================================================
 
@@ -2161,23 +2170,23 @@ reference made from privilege level 3.</blockquote>"
     (#x64 #.*fs*)
     (#x65 #.*gs*)
     (t (b* ((addr-size (select-address-size proc-mode p4? x86)))
-	 (if (= addr-size 2)
-	     (if (and (not (= mod 3))
-		      (or (= r/m 2) (= r/m 3)))
-		 #.*ss*
-	       #.*ds*)
-	   (if (or (and (or (= mod 1) (= mod 2))
+         (if (= addr-size 2)
+             (if (and (not (= mod 3))
+                      (or (= r/m 2) (= r/m 3)))
+                 #.*ss*
+               #.*ds*)
+           (if (or (and (or (= mod 1) (= mod 2))
                         (= r/m 5))
                    (and (not (= mod 3))
                         (= r/m 4)
                         (= (sib->base sib) 4)))
-	       #.*ss*
-	     #.*ds*)))))
+               #.*ss*
+             #.*ds*)))))
   ///
 
   (defret range-of-select-segment-register
     (and (<= 0 seg-reg)
-	 (< seg-reg #.*segment-register-names-len*))
+         (< seg-reg #.*segment-register-names-len*))
     :rule-classes :linear))
 
 ;; ======================================================================
@@ -2187,7 +2196,7 @@ reference made from privilege level 3.</blockquote>"
    (temp-rip :type (signed-byte #.*max-linear-address-size*))
    (delta-rip :type (unsigned-byte 3)))
   :returns (badlength? acl2::maybe-natp
-		       :hints (("Goal" :in-theory (enable acl2::maybe-natp))))
+                       :hints (("Goal" :in-theory (enable acl2::maybe-natp))))
   :inline t
   :no-function t
   :parents (decoding-and-spec-utils)
@@ -2218,12 +2227,12 @@ reference made from privilege level 3.</blockquote>"
        (temp-rip (mbe :logic (ifix temp-rip) :exec temp-rip))
        (delta-rip (mbe :logic (nfix delta-rip) :exec delta-rip))
        ((the (signed-byte #.*max-linear-address-size+1*) end-rip)
-	(+ (the (signed-byte #.*max-linear-address-size*) temp-rip)
-	   (the (unsigned-byte 3) delta-rip)))
+        (+ (the (signed-byte #.*max-linear-address-size*) temp-rip)
+           (the (unsigned-byte 3) delta-rip)))
        ((the (signed-byte #.*max-linear-address-size+2*) length)
-	(- (the (signed-byte #.*max-linear-address-size+1*) end-rip)
-	   (the (signed-byte #.*max-linear-address-size*) start-rip))))
+        (- (the (signed-byte #.*max-linear-address-size+1*) end-rip)
+           (the (signed-byte #.*max-linear-address-size*) start-rip))))
     (and (> length 15)
-	 length)))
+         length)))
 
 ;; ======================================================================

@@ -161,7 +161,7 @@
 
 ;; Control printing:
 (acl2::add-untranslate-pattern-function
- (program-at (xr :rip 0 x86)
+ (program-at (xr :rip nil x86)
              '(15 32 216 72 137 68 36 232 72 139 84 36 232
                   72 137 248 72 193 232 36 37 248 15 0 0
                   72 129 226 0 240 255 255 72 9 208 72 139
@@ -185,12 +185,12 @@
                   102 46 15 31 132 0 0 0 0 0 72 199 192
                   255 255 255 255 195 15 31 132 0 0 0 0 0)
              x86)
- (program-at (xr :rip 0 x86)
+ (program-at (xr :rip nil x86)
              *rewire_dst_to_src*
              x86))
 
 (acl2::add-untranslate-pattern-function
- (program-at-alt (xr :rip 0 x86)
+ (program-at-alt (xr :rip nil x86)
                  '(15 32 216 72 137 68 36 232 72 139 84 36 232
                       72 137 248 72 193 232 36 37 248 15 0 0
                       72 129 226 0 240 255 255 72 9 208 72 139
@@ -214,7 +214,7 @@
                       102 46 15 31 132 0 0 0 0 0 72 199 192
                       255 255 255 255 195 15 31 132 0 0 0 0 0)
                  x86)
- (program-at-alt (xr :rip 0 x86)
+ (program-at-alt (xr :rip nil x86)
                  *rewire_dst_to_src*
                  x86))
 
@@ -415,7 +415,6 @@
     (:rewrite xr-ia32e-la-to-pa)
     (:rewrite acl2::nfix-when-not-natp)
     (:rewrite acl2::nfix-when-natp)
-    (:rewrite constant-upper-bound-of-logior-for-naturals)
     ;; (:linear combine-bytes-size-for-rml64-app-view)
     (:rewrite acl2::natp-when-integerp)
     (:rewrite acl2::natp-when-gte-0)
@@ -456,12 +455,10 @@
     (:rewrite disjoint-p-subset-p)
     (:definition binary-append)
     (:rewrite member-p-of-subset-is-member-p-of-superset)
-    (:linear rgfi-is-i64p)
     (:rewrite member-p-cdr)
     (:rewrite bitops::unsigned-byte-p-incr)
     (:rewrite acl2::difference-unsigned-byte-p)
     (:rewrite acl2::append-when-not-consp)
-    (:linear rip-is-i48p)
     (:rewrite acl2::ifix-when-not-integerp)
     (:rewrite bitops::basic-unsigned-byte-p-of-+)
     (:rewrite disjoint-p-append-1)
@@ -479,9 +476,7 @@
     (:rewrite subset-p-reflexive)
     (:meta acl2::cancel_times-equal-correct)
     (:rewrite set::sets-are-true-lists)
-    (:linear rflags-is-n32p)
     (:definition true-listp)
-    (:type-prescription rflags-is-n32p)
     (:rewrite cdr-append-is-append-cdr)
     (:type-prescription bitops::logtail-natp)
     (:rewrite subset-p-cdr-x)
@@ -524,7 +519,6 @@
     (:linear bitops::upper-bound-of-logand . 2)
     (:rewrite weed-out-irrelevant-logand-when-first-operand-constant)
     (:rewrite logand-redundant)
-    (:linear ash-monotone-2)
     (:linear bitops::logand->=-0-linear-2)
     (:linear bitops::upper-bound-of-logand . 1)
     (:linear bitops::logand->=-0-linear-1)
@@ -608,7 +602,6 @@
     (:type-prescription rm-low-64-logand-logior-helper-1)
     (:type-prescription n64p$inline)
     (:definition strip-cars)
-    (:type-prescription !ms$inline)
     (:rewrite bitops::signed-byte-p-monotonicity)
     (:linear mv-nth-1-gpr-sbb-spec-8)
     (:linear mv-nth-1-gpr-add-spec-8)
@@ -618,7 +611,6 @@
     (:type-prescription subsetp-equal)
     (:type-prescription acl2::|x < y  =>  0 < y-x|)
     (:linear mv-nth-1-gpr-xor-spec-8)
-    (:type-prescription !rip$inline)
     (:linear acl2::index-of-<-len)
     (:type-prescription x86-step-unimplemented)
     (:type-prescription !rgfi-size$inline)
@@ -632,9 +624,7 @@
     (:linear mv-nth-2-gpr-xor-spec-8)
     (:type-prescription n08p$inline)
     (:rewrite cdr-strip-cars-is-strip-cars-cdr)
-    (:linear ctri-is-n64p)
     (:type-prescription strip-cars)
-    (:type-prescription !rgfi$inline)
     (:rewrite signed-byte-p-limits-thm)
     (:rewrite canonical-address-p-and-signed-byte-p-64p-limits-1)
     (:rewrite bitops::logbitp-of-loghead-out-of-bounds)
@@ -647,8 +637,8 @@
 (defun-nx x86-state-okp (x86)
   (and
    (x86p x86)
-   (equal (xr :ms 0 x86) nil)
-   (equal (xr :fault 0 x86) nil)
+   (equal (xr :ms nil x86) nil)
+   (equal (xr :fault nil x86) nil)
    (64-bit-modep x86)
    (not (alignment-checking-enabled-p x86))
    (not (app-view x86))
@@ -661,34 +651,34 @@
 (defun-nx program-ok-p (x86)
   (and
    ;; Program addresses are canonical.
-   (canonical-address-p (+ *rewire_dst_to_src-len* (xr :rip 0 x86)))
+   (canonical-address-p (+ *rewire_dst_to_src-len* (xr :rip nil x86)))
    ;; Program is located at linear address (rip x86) in the memory.
-   (program-at (xr :rip 0 x86) *rewire_dst_to_src* x86)
+   (program-at (xr :rip nil x86) *rewire_dst_to_src* x86)
    ;; No errors encountered while translating the linear addresses
    ;; where the program is located.
-   (not (mv-nth 0 (las-to-pas *rewire_dst_to_src-len* (xr :rip 0 x86) :x x86)))
+   (not (mv-nth 0 (las-to-pas *rewire_dst_to_src-len* (xr :rip nil x86) :x x86)))
    ;; The following precondition was not required in the non-marking
    ;; view: physical addresses corresponding to the program are
    ;; disjoint from the paging structure physical addresses.
    (disjoint-p$
-    (mv-nth 1 (las-to-pas *rewire_dst_to_src-len* (xr :rip 0 x86) :x x86))
+    (mv-nth 1 (las-to-pas *rewire_dst_to_src-len* (xr :rip nil x86) :x x86))
     (open-qword-paddr-list
      (gather-all-paging-structure-qword-addresses x86)))))
 
 (defun-nx program-alt-ok-p (x86)
   (and
    ;; Program addresses are canonical.
-   (canonical-address-p (+ *rewire_dst_to_src-len* (xr :rip 0 x86)))
+   (canonical-address-p (+ *rewire_dst_to_src-len* (xr :rip nil x86)))
    ;; Program is located at linear address (rip x86) in the memory.
-   (program-at-alt (xr :rip 0 x86) *rewire_dst_to_src* x86)
+   (program-at-alt (xr :rip nil x86) *rewire_dst_to_src* x86)
    ;; No errors encountered while translating the linear addresses
    ;; where the program is located.
-   (not (mv-nth 0 (las-to-pas *rewire_dst_to_src-len* (xr :rip 0 x86) :x x86)))
+   (not (mv-nth 0 (las-to-pas *rewire_dst_to_src-len* (xr :rip nil x86) :x x86)))
    ;; The following precondition was not required in the non-marking
    ;; view: physical addresses corresponding to the program are
    ;; disjoint from the paging structure physical addresses.
    (disjoint-p$
-    (mv-nth 1 (las-to-pas *rewire_dst_to_src-len* (xr :rip 0 x86) :x x86))
+    (mv-nth 1 (las-to-pas *rewire_dst_to_src-len* (xr :rip nil x86) :x x86))
     (open-qword-paddr-list
      (gather-all-paging-structure-qword-addresses x86)))))
 
@@ -730,7 +720,7 @@
    ;; are disjoint.
    (disjoint-p$
     (mv-nth 1 (las-to-pas 8 (+ -24 (xr :rgf *rsp* x86)) :w x86))
-    (mv-nth 1 (las-to-pas *rewire_dst_to_src-len* (xr :rip 0 x86) :x x86)))
+    (mv-nth 1 (las-to-pas *rewire_dst_to_src-len* (xr :rip nil x86) :x x86)))
 
    ;; The following precondition was not required in the non-marking
    ;; view: the stack physical addresses are disjoint from the
@@ -738,7 +728,7 @@
    (disjoint-p$
     (mv-nth 1 (las-to-pas 8 (+ -24 (xr :rgf *rsp* x86)) :w x86))
     (all-xlation-governing-entries-paddrs
-     *rewire_dst_to_src-len* (xr :rip 0 x86) x86))))
+     *rewire_dst_to_src-len* (xr :rip nil x86) x86))))
 
 (defun-nx source-addresses-ok-p (x86)
   (and
@@ -879,7 +869,7 @@
               (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86))
               :r x86))
    (all-xlation-governing-entries-paddrs
-    *rewire_dst_to_src-len* (xr :rip 0 x86) x86)))
+    *rewire_dst_to_src-len* (xr :rip nil x86) x86)))
 
 (defun-nx source-PDPTE-and-stack-no-interfere-p (x86)
   (and
@@ -916,7 +906,7 @@
                (pdpt-base-addr (xr :rgf *rdi* x86) x86))
               :r x86))
    (all-xlation-governing-entries-paddrs
-    *rewire_dst_to_src-len* (xr :rip 0 x86) x86)))
+    *rewire_dst_to_src-len* (xr :rip nil x86) x86)))
 
 (defun-nx source-PDPTE-and-source-PML4E-no-interfere-p (x86)
   ;; The source PDPTE physical addresses are disjoint from the
@@ -1084,7 +1074,7 @@
               (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86))
               :r x86))
    (all-xlation-governing-entries-paddrs
-    *rewire_dst_to_src-len* (xr :rip 0 x86) x86)))
+    *rewire_dst_to_src-len* (xr :rip nil x86) x86)))
 
 (defun-nx destination-PML4TE-and-source-PML4TE-no-interfere-p (x86)
   ;; The destination PML4TE physical addresses are disjoint from the
@@ -1211,7 +1201,7 @@
                 (xr :rgf *rsi* x86)
                 (pdpt-base-addr (xr :rgf *rsi* x86) x86))
                :w x86))
-    (mv-nth 1 (las-to-pas *rewire_dst_to_src-len* (xr :rip 0 x86) :x x86)))
+    (mv-nth 1 (las-to-pas *rewire_dst_to_src-len* (xr :rip nil x86) :x x86)))
    ;; The destination PDPTE physical addresses are disjoint from the
    ;; translation-governing addresses of the program.
    (disjoint-p$
@@ -1222,11 +1212,11 @@
                 (pdpt-base-addr (xr :rgf *rsi* x86) x86))
                :w x86))
     (all-xlation-governing-entries-paddrs
-     *rewire_dst_to_src-len* (xr :rip 0 x86) x86))
+     *rewire_dst_to_src-len* (xr :rip nil x86) x86))
    ;; The program physical addresses are disjoint from the
    ;; translation-governing addresses of the destination PDPTE.
    (disjoint-p$
-    (mv-nth 1 (las-to-pas *rewire_dst_to_src-len* (xr :rip 0 x86) :x x86))
+    (mv-nth 1 (las-to-pas *rewire_dst_to_src-len* (xr :rip nil x86) :x x86))
     (all-xlation-governing-entries-paddrs
      8
      (page-dir-ptr-table-entry-addr
@@ -1261,7 +1251,7 @@
   (disjoint-p$
    (mv-nth 1 (las-to-pas 8 (xr :rgf *rsp* x86) :r x86))
    (all-xlation-governing-entries-paddrs
-    *rewire_dst_to_src-len* (xr :rip 0 x86) x86)))
+    *rewire_dst_to_src-len* (xr :rip nil x86) x86)))
 
 (defun-nx stack-containing-return-address-and-source-PML4E-no-interfere-p (x86)
   ;; Physical addresses on the stack corresponding to the return
@@ -1357,19 +1347,19 @@
 (defthm xlate-equiv-structures-and-rflags-ac
   (and
    (xlate-equiv-structures
-    (xw :rflags 0
+    (xw :rflags nil
         (rflagsBits$inline
          cf res1 pf res2 af res3 zf sf tf intf df of iopl nt res4 rf vm
-         (rflagsbits->ac$inline (xr :rflags 0 x86))
+         (rflagsbits->ac$inline (xr :rflags nil x86))
          vif vip id res5)
         x86)
     (double-rewrite x86))
    (xlate-equiv-structures
     x86
-    (xw :rflags 0
+    (xw :rflags nil
         (rflagsBits$inline
          cf res1 pf res2 af res3 zf sf tf intf df of iopl nt res4 rf vm
-         (rflagsbits->ac$inline (xr :rflags 0 x86))
+         (rflagsbits->ac$inline (xr :rflags nil x86))
          vif vip id res5)
         x86)))
   :hints (("Goal"
@@ -1377,22 +1367,22 @@
 
 (defthm xlate-equiv-memory-and-rflags-ac
   (implies (and (64-bit-modep (double-rewrite x86))
-                (not (xr :app-view 0 (double-rewrite x86))))
+                (not (xr :app-view nil (double-rewrite x86))))
            (and
             (xlate-equiv-memory
-             (xw :rflags 0
+             (xw :rflags nil
                  (rflagsBits$inline
                   cf res1 pf res2 af res3 zf sf tf intf df of iopl nt res4 rf vm
-                  (rflagsbits->ac$inline (xr :rflags 0 x86))
+                  (rflagsbits->ac$inline (xr :rflags nil x86))
                   vif vip id res5)
                  x86)
              (double-rewrite x86))
             (xlate-equiv-memory
              x86
-             (xw :rflags 0
+             (xw :rflags nil
                  (rflagsBits$inline
                   cf res1 pf res2 af res3 zf sf tf intf df of iopl nt res4 rf vm
-                  (rflagsbits->ac$inline (xr :rflags 0 x86))
+                  (rflagsbits->ac$inline (xr :rflags nil x86))
                   vif vip id res5)
                  x86))))
   :hints (("Goal"

@@ -22152,8 +22152,8 @@
 
 (defun chk-defabsstobj-updaters (st$c methods wrld)
 
-; This supports checking updaters for defabsstobj.  See chk-stobj-updaters for
-; a similar utility for stobj-let.
+; This supports checking updaters for defabsstobj.  See chk-stobj-let/updaters
+; for a similar utility for stobj-let.
 
 ; Implicit is an abstract stobj definition with the given methods (perhaps
 ; partially fleshed out) and with the given foundational stobj, st$c.  We

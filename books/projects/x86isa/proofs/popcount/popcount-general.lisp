@@ -677,7 +677,6 @@
                    (:rewrite weed-out-irrelevant-logand-when-first-operand-constant)
                    (:rewrite logand-redundant)
                    (:rewrite zf-spec-thm)
-                   (:linear rflags-is-n32p)
                    (:rewrite acl2::ifix-when-not-integerp)
                    (:linear bitops::logand->=-0-linear-2)
                    (:linear bitops::upper-bound-of-logand . 2)
@@ -720,7 +719,6 @@
                    (:linear bsf-posp-strict-upper-bound)
                    (:rewrite signed-byte-p-limits-thm)
                    (:rewrite acl2::posp-redefinition)
-                   (:linear <=-logior)
                    (:linear bitops::logior-<-0-linear-2)
                    (:linear bitops::logior-<-0-linear-1)
                    (:linear bitops::logior->=-0-linear)
@@ -742,13 +740,11 @@
                    (:linear bitops::upper-bound-of-logand . 1)
                    (:linear bitops::logand->=-0-linear-1)
                    (:rewrite rb-returns-x86-in-non-marking-view-if-no-error)
-                   (:definition marking-view$inline)
                    (:linear acl2::logext-bounds)
                    (:rewrite acl2::natp-when-integerp)
                    (:rewrite acl2::natp-when-gte-0)
                    (:rewrite acl2::reduce-integerp-+-constant)
-                   (:linear mv-nth-1-imul-spec-32)
-                   (:type-prescription booleanp-marking-view-type)))))
+                   (:linear mv-nth-1-imul-spec-32)))))
 
 (local
  (defthm x86-popcount-64-symbolic-simulation-snorkeling

@@ -409,7 +409,7 @@
 
 </ol>"
 
-  :guard (not (xr :app-view 0 x86))
+  :guard (not (app-view x86))
   :guard-hints (("Goal" :in-theory (e/d* (canonical-address-p)
                                          (xlation-governing-entries-paddrs-for-pml4-table
                                           unsigned-byte-p
@@ -463,7 +463,7 @@
   ((n        natp)
    (lin-addr canonical-address-p)
    x86)
-  :guard (and (not (xr :app-view 0 x86))
+  :guard (and (not (app-view x86))
               (canonical-address-p (+ n lin-addr)))
   :guard-hints (("Goal" :in-theory (e/d* (signed-byte-p) ())))
   :enabled t

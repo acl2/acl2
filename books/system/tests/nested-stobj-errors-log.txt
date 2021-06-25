@@ -1,0 +1,121 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(DEFSTOBJ SUB1 SUB1-FLD1)
+
+Summary
+Form:  ( DEFSTOBJ SUB1 ...)
+Rules: NIL
+ SUB1
+ACL2 !>>(DEFSTOBJ TOP1 (TOP1-FLD :TYPE SUB1)
+                  :RENAMING ((UPDATE-TOP1-FLD !TOP1-FLD)))
+
+Summary
+Form:  ( DEFSTOBJ TOP1 ...)
+Rules: NIL
+ TOP1
+ACL2 !>>(DEFUN F1 (X TOP1)
+               (DECLARE (XARGS :STOBJS TOP1))
+               (STOBJ-LET ((SUB1 (TOP1-FLD TOP1)))
+                          (SUB1)
+                          (UPDATE-SUB1-FLD1 X SUB1)
+                          TOP1))
+
+
+ACL2 Error in ( DEFUN F1 ...):  The stobj-let bindings have specified
+implicitly that the stobj field updater corresponding to accessor TOP1-FLD
+is UPDATE-TOP1-FLD, but the actual corresponding updater is !TOP1-FLD.
+The form 
+(STOBJ-LET ((SUB1 (TOP1-FLD TOP1))) (SUB1) (UPDATE-SUB1-FLD1 X SUB1) TOP1)
+is thus illegal.  See :DOC stobj-let.
+
+
+Summary
+Form:  ( DEFUN F1 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN F1 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F1 (X TOP1)
+               (DECLARE (XARGS :STOBJS TOP1))
+               (STOBJ-LET ((SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD))
+                          (SUB1)
+                          (UPDATE-SUB1-FLD1 X SUB1)
+                          TOP1))
+
+
+ACL2 Error in ( DEFUN F1 ...):  The stobj-let bindings have specified
+that the stobj field updater corresponding to accessor TOP1-FLD is
+UPDATE-TOP1-FLD, but the actual corresponding updater is !TOP1-FLD.
+The form 
+(STOBJ-LET ((SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD))
+           (SUB1)
+           (UPDATE-SUB1-FLD1 X SUB1)
+           TOP1)
+is thus illegal.  See :DOC stobj-let.
+
+
+Summary
+Form:  ( DEFUN F1 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN F1 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F1 (TOP1)
+               (DECLARE (XARGS :STOBJS TOP1))
+               (STOBJ-LET ((SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD))
+                          (VAL)
+                          (SUB1-FLD1 SUB1)
+                          VAL))
+
+
+ACL2 Error in ( DEFUN F1 ...):  The stobj-let bindings have specified
+that the stobj field updater corresponding to accessor TOP1-FLD is
+UPDATE-TOP1-FLD, but the actual corresponding updater is !TOP1-FLD.
+(This error can be eliminated by replacing the offending binding, 
+(SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD), by (SUB1 (TOP1-FLD TOP1)).)
+The form 
+(STOBJ-LET ((SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD))
+           (VAL)
+           (SUB1-FLD1 SUB1)
+           VAL)
+is thus illegal.  See :DOC stobj-let.
+
+
+Summary
+Form:  ( DEFUN F1 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN F1 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F1 (TOP1)
+               (DECLARE (XARGS :STOBJS TOP1))
+               (STOBJ-LET ((SUB1 (TOP1-FLD TOP1)))
+                          (VAL)
+                          (SUB1-FLD1 SUB1)
+                          VAL))
+
+Since F1 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of F1.
+
+(F1 TOP1) => *.
+
+Computing the guard conjecture for F1....
+
+The guard conjecture for F1 is trivial to prove.  F1 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN F1 ...)
+Rules: NIL
+ F1
+ACL2 !>>Bye.

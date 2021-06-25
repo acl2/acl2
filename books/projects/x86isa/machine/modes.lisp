@@ -73,6 +73,13 @@
 
 ;; ----------------------------------------------------------------------
 
+(defthm-unsigned-byte-p n64p-xr-msr
+  :hyp t
+  :bound 64
+  :concl (xr :msr i x86)
+  :gen-linear t
+  :gen-type t)
+
 (define 64-bit-modep (x86)
   :parents (x86-modes)
   :short "Check whether we are in 64-bit mode."
@@ -106,12 +113,12 @@
    </p>"
 
   :no-function t
-  :guard-hints (("Goal" :in-theory (e/d (bitsets::bignum-extract) ())))
+  :guard-hints (("Goal" :in-theory (e/d (bitsets::bignum-extract) (x86p))))
   (mbe
    :logic
-   (b* ((ia32_efer (n12 (xr :msr #.*ia32_efer-idx* x86)))
+   (b* ((ia32_efer (n12 (msri #.*ia32_efer-idx* x86)))
 	(ia32_efer.lma (ia32_eferBits->lma ia32_efer))
-	(cs-attr (xr :seg-hidden-attr #.*cs* x86))
+	(cs-attr (seg-hidden-attri #.*cs* x86))
 	(cs.l (code-segment-descriptor-attributesBits->l cs-attr)))
      (and (equal ia32_efer.lma 1)
 	  (equal cs.l 1)))
@@ -123,14 +130,14 @@
    ;; Note that this book requires a trust tag.
    (b* (((the (unsigned-byte 32) ia32_efer-low-32)
 	 (bitsets::bignum-extract
-	  (xr :msr #.*ia32_efer-idx* x86)
+	  (msri #.*ia32_efer-idx* x86)
 	  0))
 	((the (unsigned-byte 12) ia32_efer)
 	 (mbe :logic (n12 ia32_efer-low-32)
 	      :exec (logand #xFFF (the (unsigned-byte 32) ia32_efer-low-32))))
 	(ia32_efer.lma (ia32_eferBits->lma ia32_efer))
 	((the (unsigned-byte 16) cs-attr)
-	 (xr :seg-hidden-attr #.*cs* x86))
+	 (seg-hidden-attri #.*cs* x86))
 	(cs.l (code-segment-descriptor-attributesBits->l cs-attr)))
      (and (equal ia32_efer.lma 1)
 	  (equal cs.l 1))))

@@ -93,6 +93,7 @@
   :returns (x86 x86p :hyp (x86p x86))
 
   :modr/m t
+  :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
   :body
 
@@ -255,7 +256,7 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86)
 
-  :guard-hints (("Goal" :in-theory (enable rme-size))))
+  :guard-hints (("Goal" :in-theory (e/d (rme-size) (unsigned-byte-p)))))
 
 (def-inst x86-cmpps-Op/En-RMI
 
@@ -410,7 +411,7 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86)
 
-  :guard-hints (("Goal" :in-theory (enable rme-size))))
+  :guard-hints (("Goal" :in-theory (e/d (rme-size) (unsigned-byte-p)))))
 
 (def-inst x86-cmppd-Op/En-RMI
 
@@ -534,7 +535,7 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
       x86)
 
-  :guard-hints (("Goal" :in-theory (enable rme-size))))
+  :guard-hints (("Goal" :in-theory (e/d (rme-size) (unsigned-byte-p)))))
 
 (def-inst x86-comis?/ucomis?-Op/En-RM
 

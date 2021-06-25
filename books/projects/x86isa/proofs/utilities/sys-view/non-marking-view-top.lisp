@@ -587,7 +587,7 @@
                  (<= (+ addr-1 n-2) (+ addr-1 n-1))
                  (not (mv-nth 0 (ia32e-la-to-pa addr-1 r-w-x x86)))
                  (not (mv-nth 0 (las-to-pas (+ -1 n-1) (+ 1 addr-1) r-w-x x86)))
-                 (not (xr :marking-view 0 x86))
+                 (not (xr :marking-view nil x86))
                  (integerp n-1)
                  (< 0 n-2))
             (not (mv-nth 0 (las-to-pas n-2 addr-1 r-w-x x86))))
@@ -692,8 +692,12 @@
                  (x86p x86))
             (equal (loghead (ash j 3) (xr :mem index x86))
                    (xr :mem index x86)))
-   :hints (("Goal" :in-theory (e/d* () (memi-is-n08p unsigned-byte-p))
-            :use ((:instance memi-is-n08p (i index)))))))
+   :hints (("Goal"
+            :use ((:instance n08p-xr-mem (i index)))
+            :in-theory (e/d* ()
+                             (unsigned-byte-p
+                              elem-p-of-xr-mem
+                              n08p-xr-mem))))))
 
 (local
  (encapsulate

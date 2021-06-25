@@ -135,8 +135,8 @@
 
 (defthm xlate-equiv-memory-and-rflagsbits->ac
   (implies (xlate-equiv-memory x86-1 x86-2)
-           (equal (rflagsbits->ac (xr :rflags 0 x86-1))
-                  (rflagsbits->ac (xr :rflags 0 x86-2))))
+           (equal (rflagsbits->ac (xr :rflags nil x86-1))
+                  (rflagsbits->ac (xr :rflags nil x86-2))))
   :hints (("goal" :in-theory (e/d* (xlate-equiv-memory
                                     xlate-equiv-structures)
                                    ())))
@@ -144,8 +144,8 @@
 
 (defthm xlate-equiv-memory-and-rflags-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
-           (equal (bool->bit (logbitp 18 (xr :rflags 0 x86-1)))
-                  (bool->bit (logbitp 18 (xr :rflags 0 x86-2)))))
+           (equal (bool->bit (logbitp 18 (xr :rflags nil x86-1)))
+                  (bool->bit (logbitp 18 (xr :rflags nil x86-2)))))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory
                                     xlate-equiv-structures
                                     rflagsbits->ac)
@@ -174,16 +174,16 @@
 
 (defthm xlate-equiv-memory-and-marking-view-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
-           (equal (xr :marking-view 0 x86-1)
-                  (xr :marking-view 0 x86-2)))
+           (equal (xr :marking-view nil x86-1)
+                  (xr :marking-view nil x86-2)))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
                                    ())))
   :rule-classes :congruence)
 
 (defthm xlate-equiv-memory-and-app-view-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
-           (equal (xr :app-view 0 x86-1)
-                  (xr :app-view 0 x86-2)))
+           (equal (xr :app-view nil x86-1)
+                  (xr :app-view nil x86-2)))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
                                    ())))
   :rule-classes :congruence)
@@ -246,7 +246,6 @@
 
    (local (in-theory (e/d* ()
                            (loghead-of-non-integerp
-                            (:t ctri-is-n64p)
                             acl2::ash-0
                             (:t bitops::logtail-natp)
                             unsigned-byte-p-of-logtail))))

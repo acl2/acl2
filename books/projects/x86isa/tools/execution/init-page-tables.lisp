@@ -100,8 +100,8 @@
 
   ///
   (defthm app-view-unchanged-after-load-qwords-into-physical-memory
-    (equal (xr :app-view 0 (load-qwords-into-physical-memory addr-qword-lst x86))
-           (xr :app-view 0 x86))))
+    (equal (xr :app-view nil (load-qwords-into-physical-memory addr-qword-lst x86))
+           (xr :app-view nil x86))))
 
 (define physical-addr-qword-alist-listp (list)
   :parents (Setting-up-Page-Tables)
@@ -128,8 +128,8 @@
       (load-qwords-into-physical-memory-list (cdr addr-qword-list-list) x86)))
   ///
   (defthm app-view-unchanged-after-load-qwords-into-physical-memory-list
-    (equal (xr :app-view 0 (load-qwords-into-physical-memory-list addr-qword-lst-lst x86))
-           (xr :app-view 0 x86))))
+    (equal (xr :app-view nil (load-qwords-into-physical-memory-list addr-qword-lst-lst x86))
+           (xr :app-view nil x86))))
 
 ;; ======================================================================
 
@@ -570,7 +570,7 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
     x86
     (mv-let
       (result x86)
-      (b* ((x86 (xw :app-view 0 nil x86))
+      (b* ((x86 (!app-view nil x86))
            (x86
             (load-qwords-into-physical-memory-list *1-gig-page-tables* x86))
 

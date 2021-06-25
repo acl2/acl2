@@ -5404,28 +5404,33 @@
         (cond
          ((consp (access history-entry ; (SPECIOUS . processor)
                          (car new-hist) :processor))
+
+; A more complete "specious simplification" message is printed when gag-mode is
+; off, because it is presumably unnecessary to see such detail in gag-mode.  We
+; avoid using io? or io?@par because we do not want to save this form to print
+; with :pso, which will already print the more complete message mentioned
+; above.
+
           (pprogn@par
-           (cond ((gag-mode)
-                  (mv-let (str cl-id-phrase assumption-1-0 case-split-lim)
+           (cond ((and (gag-mode)
+                       (not (member-eq 'prove
+                                       (f-get-global 'inhibit-output-lst
+                                                     state))))
+                  (mv-let (str cl-id-phrase assumption-1-0)
                     (mv "~@0The goal, ~@1, ~#2~[~/forcibly ~]simplifies to a ~
                          set of conjectures including itself!  Therefore, we ~
                          ignore this specious simp~-li~-fi~-ca~-tion.  See ~
-                         :DOC specious-simplification.~@3~|"
+                         :DOC specious-simplification.~|"
                         (tilde-@-clause-id-phrase cl-id)
-                        (if (tagged-objectsp 'assumption ttree) 1 0)
-                        (tilde-@-case-split-limitations-phrase
-                         (tagged-objects 'sr-limit ttree)
-                         (tagged-objects 'case-limit ttree)
-                         "  "))
+                        (if (tagged-objectsp 'assumption ttree) 1 0))
                     (serial-first-form-parallel-second-form@par
                      (fms str
                           (list (cons #\0 "")
                                 (cons #\1 cl-id-phrase)
-                                (cons #\2 assumption-1-0)
-                                (cons #\3 case-split-lim))
+                                (cons #\2 assumption-1-0))
                           (proofs-co state) state nil)
                      (cw str
-                         "~%" cl-id-phrase assumption-1-0 case-split-lim))))
+                         "~%" cl-id-phrase assumption-1-0))))
                  (t (state-mac@par)))
            (mv@par 'MISS nil ttree new-hist
                    (accumulate-rw-cache-into-pspv processor ttree pspv)

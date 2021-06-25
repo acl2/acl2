@@ -48,6 +48,8 @@
 
 (local (include-book "../guard-helpers"))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+(local (in-theory (e/d () (unsigned-byte-p))))
+
 
 ;; ======================================================================
 ;; INSTRUCTION: (one-byte opcode map)
@@ -126,6 +128,10 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
+(local (include-book "centaur/bitops/width-find-rule" :dir :system))
+(local (in-theory (e/d (bitops::unsigned-byte-p-by-find-rule) ())))
+(local (in-theory (e/d (bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand) ())))
+
 (def-inst x86-near-jmp-Op/En-M
 
   ;; Absolute indirect jump: RIP = r/m16/32/64
@@ -190,7 +196,7 @@
        ((unless (if (equal proc-mode #.*64-bit-mode*)
                     (canonical-address-p jmp-addr)
                   (b* ((cs.limit (the (unsigned-byte 32)
-                                   (xr :seg-hidden-limit #.*cs* x86))))
+                                   (seg-hidden-limiti #.*cs* x86))))
                     (and (<= 0 jmp-addr) (<= jmp-addr cs.limit)))))
         (!!fault-fresh :gp 0 :bad-return-address jmp-addr)) ;; #GP(0)
 
@@ -279,6 +285,108 @@
  (defthm unsigned-byte-p-96-of-xr-str
    (unsigned-byte-p 96 (xr :str i x86))))
 
+(defthm-unsigned-byte-p n32p-xr-ssr-hidden-limit
+  :hyp t
+  :bound 32
+  :concl (xr :ssr-hidden-limit i x86)
+  :gen-linear t
+  :gen-type t)
+
+(defthm-unsigned-byte-p n64p-xr-ssr-hidden-base
+  :hyp t
+  :bound 64
+  :concl (xr :ssr-hidden-base i x86)
+  :gen-linear t
+  :gen-type t)
+
+(local
+ (defthm x86-far-jmp-op/en-d-helper-1
+   (unsigned-byte-p
+    32
+    (logior
+     (call-gate-descriptorbits->offset15-0 x)
+     (ash (call-gate-descriptorbits->offset31-16 y) 16)))
+   :hints (("Goal" :in-theory (e/d (call-gate-descriptorbits->offset15-0
+                                    call-gate-descriptorbits->offset31-16)
+                                   ())))))
+
+(local
+ (defthm x86-far-jmp-op/en-d-helper-2
+   (unsigned-byte-p
+    64
+    (logior (call-gate-descriptorbits->offset15-0 x)
+            (ash (call-gate-descriptorbits->offset31-16 y) 16)
+            (ash (call-gate-descriptorbits->offset63-32 z) 32)))
+   :hints (("Goal" :in-theory (e/d (call-gate-descriptorbits->offset15-0
+                                    call-gate-descriptorbits->offset31-16)
+                                   ())))))
+
+(local
+ (defthm x86-far-jmp-op/en-d-helper-3
+   (unsigned-byte-p 32 (gdtr/idtrbits->limit x))
+   :hints (("Goal" :in-theory (e/d (gdtr/idtrbits->limit
+                                    gdtr/idtrbits-fix)
+                                   ())))))
+
+(local
+ (defthm x86-far-jmp-op/en-d-helper-4
+   (equal
+    (logior (call-gate-descriptorbits->offset15-0 x)
+            (logand #xFFFF0000 (ash (call-gate-descriptorbits->offset31-16 y) 16)))
+    (logior (call-gate-descriptorbits->offset15-0 x)
+            (ash (call-gate-descriptorbits->offset31-16 y) 16)))
+   :hints (("Goal" :in-theory (e/d (far-jmp-call-gate-guard-helper-6)
+                                   ())))))
+
+(defthmd unsigned-byte-p-32-call-gate-descriptorbits->offset63-32
+  (unsigned-byte-p 32 (call-gate-descriptorbits->offset63-32 x))
+  :hints (("goal" :in-theory (e/d (call-gate-descriptorbits->offset63-32) ()))))
+
+(defthmd unsigned-byte-p-16-call-gate-descriptorbits->offset31-16
+  (unsigned-byte-p 16 (call-gate-descriptorbits->offset31-16 x))
+  :hints (("goal" :in-theory (e/d (call-gate-descriptorbits->offset31-16) ()))))
+
+(defthmd unsigned-byte-p-16-call-gate-descriptorbits->offset15-0
+  (unsigned-byte-p 16 (call-gate-descriptorbits->offset15-0 x))
+  :hints (("goal" :in-theory (e/d (call-gate-descriptorbits->offset15-0) ()))))
+
+(defthm x86-far-jmp-op/en-d-helper-5
+  (equal
+   (logior
+    (ash
+     (call-gate-descriptorbits->offset31-16
+      x)
+     16)
+    (loghead
+     32
+     (call-gate-descriptorbits->offset15-0
+      y))
+    (logand
+     18446744069414584320
+     (ash
+      (call-gate-descriptorbits->offset63-32
+       z)
+      32)))
+   (logior
+    (call-gate-descriptorbits->offset15-0
+     y)
+    (ash
+     (call-gate-descriptorbits->offset31-16
+      x)
+     16)
+    (ash
+     (call-gate-descriptorbits->offset63-32
+      z)
+     32)))
+  :hints (("goal" :in-theory (e/d (far-jmp-call-gate-guard-helper-7
+                                   unsigned-byte-p-32-call-gate-descriptorbits->offset63-32
+                                   unsigned-byte-p-16-call-gate-descriptorbits->offset31-16
+                                   unsigned-byte-p-16-call-gate-descriptorbits->offset15-0)
+                                  ((:rewrite bitops::commutativity-2-of-logior)
+                                   (:rewrite acl2::loghead-identity)
+                                   (:rewrite unsigned-byte-p-16-call-gate-descriptorbits->offset15-0)
+                                   (:rewrite bitops::unsigned-byte-p-by-find-rule))))))
+
 (def-inst x86-far-jmp-Op/En-D
 
   :parents (one-byte-opcodes)
@@ -320,7 +428,23 @@ occurs. The target operand specifies the far address of the call gate
 indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
   :returns (x86 x86p :hyp (x86p x86)
-                :hints (("Goal" :in-theory (e/d* () (select-operand-size)))))
+                :hints (("Goal"
+                         :in-theory
+                         (union-theories
+                          '(!ms !ms$a !fault !fault$a
+                                !seg-hidden-attri !seg-hidden-attri$a
+                                !seg-hidden-limiti !seg-hidden-limiti$a
+                                ssr-hidden-limiti ssr-hidden-limiti$a
+                                seg-hidden-basei seg-hidden-basei$a
+                                !seg-visiblei !seg-visiblei$a
+                                !seg-hidden-basei !seg-hidden-basei$a
+                                x86-far-jmp-op/en-d
+                                (:rewrite x86p-of-write-*ip)
+                                (:rewrite x86p-of-x86-operand-from-modr/m-and-sib-bytes.x86)
+                                x86p-of-mv-nth-2-of-rml-size
+                                x86p-of-write-*ip
+                                (:rewrite x86p-xw))
+                          (theory 'minimal-theory)))))
 
   :prepwork
   ((local (in-theory (e/d* (far-jump-guard-helpers
@@ -334,19 +458,12 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
   :guard-hints (("Goal" :in-theory (enable
                                     signed-byte-p-64-when-unsigned-byte-p-48
-                                    signed-byte-p-64-when-unsigned-byte-p-32
-                                    ;; [Shilpi] TODO Define linear rules for
-                                    ;; the following...
-                                    call-gate-descriptorbits->offset31-16
-                                    call-gate-descriptorbits->offset15-0
-                                    gdtr/idtrbits->limit
-                                    )))
-
+                                    signed-byte-p-64-when-unsigned-byte-p-32)))
   :modr/m t
 
   :body
 
-  (b* (;; Note that this exception was not mentioned in the Intel
+  (b* ( ;; Note that this exception was not mentioned in the Intel
        ;; Manuals, but I think that the reason for this omission was
        ;; that the JMP instruction reference sheet mentioned direct
        ;; addressing opcodes too (which are unavailable in the 64-bit
@@ -550,7 +667,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
               (if (eql proc-mode #.*64-bit-mode*)
                   (canonical-address-p jmp-addr)
                 (b* ((limit15-0 (code-segment-descriptorBits->limit15-0
-                descriptor))
+                                 descriptor))
                      (limit19-16 (code-segment-descriptorBits->limit19-16
                                   descriptor))
                      (limit (part-install limit15-0
@@ -677,12 +794,12 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                 ;; Code Segment Selector references the LDT whose base
                 ;; address is in LDTR.
                 (b* ((ldtr-base (the (unsigned-byte 64)
-                                  (ssr-hidden-basei #.*ldtr* x86)))
+                                     (ssr-hidden-basei #.*ldtr* x86)))
                      (ldtr-base (if (eql proc-mode #.*64-bit-mode*)
                                     ldtr-base
                                   (n32 ldtr-base)))
                      (ldtr-limit (the (unsigned-byte 32)
-                                   (ssr-hidden-limiti #.*ldtr* x86))))
+                                      (ssr-hidden-limiti #.*ldtr* x86))))
                   (mv ldtr-base ldtr-limit))))
              ;; To obtain the largest address of the descriptor that we are
              ;; reading from the GDT or LDT, we multiply the selector index by 8
@@ -744,9 +861,9 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                                         :low 0 :width 16)
                    :exec
                    (the (unsigned-byte 32)
-                     (logior (the (unsigned-byte 16) call-gate-offset15-0)
-                             (the (unsigned-byte 32)
-                               (ash call-gate-offset31-16 16))))))
+                        (logior (the (unsigned-byte 16) call-gate-offset15-0)
+                                (the (unsigned-byte 32)
+                                     (ash call-gate-offset31-16 16))))))
              (call-gate-offset
               (mbe :logic
                    (part-install call-gate-offset31-0
@@ -754,9 +871,9 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                                  :low 0 :width 32)
                    :exec
                    (the (unsigned-byte 64)
-                     (logior (the (unsigned-byte 32) call-gate-offset31-0)
-                             (the (unsigned-byte 64)
-                               (ash call-gate-offset63-32 32))))))
+                        (logior (the (unsigned-byte 32) call-gate-offset31-0)
+                                (the (unsigned-byte 64)
+                                     (ash call-gate-offset63-32 32))))))
 
              ;; Trimming the call gate offset based on the operand-size:
              (jmp-addr
@@ -834,7 +951,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                                          riml32
                                          rime-size
                                          select-address-size)
-                                        ())))
+                                        (unsigned-byte-p))))
 
   :returns (x86 x86p :hyp (x86p x86)
                 :hints (("Goal"
