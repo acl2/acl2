@@ -1562,13 +1562,7 @@
    (xdoc::p
     "These are rewrite rules in addition to
      the ones in @(see atc-other-rewrite-rules).
-     We definitely need better nomenclature than `more' and `other'.")
-   (xdoc::p
-    "These exclude the openers (see @(tsee *atc-opener-rules*)),
-     and include not only the rules defined in @(see atc-rewrite-rules),
-     but also other existing rewrite rules.
-     Note that some of them serve to
-     simplify fixtype deconstructors applied to constructors."))
+     We definitely need better nomenclature than `more' and `other'."))
   '(booleanp-of-boolean-from-uchar
     booleanp-of-boolean-from-schar
     booleanp-of-boolean-from-ushort
