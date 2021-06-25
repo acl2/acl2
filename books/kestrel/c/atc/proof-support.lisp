@@ -470,7 +470,6 @@
              push-frame
              pop-frame)))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atc-symbolic-computation-state-rules*
