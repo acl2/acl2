@@ -28,6 +28,7 @@
 
 (include-book "file-write-date-dollar")
 (include-book "file-length-dollar")
+(include-book "file-is-newer-thanp")
 
 (include-book "read-object-from-file")
 (include-book "read-file-into-byte-list")
