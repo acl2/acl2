@@ -51,7 +51,7 @@
   (b* (((when (endp sys)) nil)
        (def (car sys))
        ((when (eq (definition->name def)
-                  (acl2::symbol-fix name)))
+                  (symbol-fix name)))
         (definition-fix def)))
     (lookup-definition name (cdr sys)))
   :hooks (:fix))
