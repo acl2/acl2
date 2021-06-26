@@ -124,6 +124,13 @@
   :tag :definition
   :pred definitionp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption definition-option
+  definition
+  :short "Fixtype of optional definitions of relations."
+  :pred definition-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist system
