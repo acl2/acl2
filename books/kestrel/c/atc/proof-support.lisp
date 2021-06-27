@@ -470,7 +470,6 @@
              push-frame
              pop-frame)))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atc-symbolic-computation-state-rules*
@@ -648,9 +647,6 @@
     (:e block-item-kind)
     (:e block-item-stmt->get)
     (:e booleanp)
-    (:e compustate)
-    (:e compustate->frames)
-    (:e compustate-fix)
     (:e const-int->get)
     (:e const-kind)
     (:e declon->init)
@@ -677,7 +673,6 @@
     (:e expr-unary->arg)
     (:e expr-unary->op)
     (:e exprp)
-    (:e frame-list-fix)
     (:e fun-env-lookup)
     (:e fun-info->body)
     (:e fun-info->params)
@@ -1012,7 +1007,6 @@
   '(condexpr
     declar
     assign
-    endp
     exec-iconst
     exec-const
     exec-ident
@@ -1319,14 +1313,6 @@
              (not (errorp x)))
     :enable errorp)
 
-  (defruled len-of-cons
-    (equal (len (cons x y))
-           (1+ (len y)))
-    :prep-books ((include-book "std/lists/len" :dir :system)))
-
-  (defruled 1+len-greater-than-0
-    (> (1+ (len x)) 0))
-
   (defruled boolean-from-sint-of-0
     (equal (boolean-from-sint (sint 0)) nil))
 
@@ -1339,18 +1325,7 @@
 
   (defruled lognot-sint-of-1
     (equal (lognot-sint (sint 1))
-           (sint 0)))
-
-  (defruled 1+nat-greater-than-0
-    (implies (natp x)
-             (< 0 (1+ x))))
-
-  (defruled natp-of-1+
-    (implies (natp x)
-             (natp (1+ x))))
-
-  (defruled natp-of-len
-    (natp (len x))))
+           (sint 0))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1365,15 +1340,10 @@
     not-errorp-when-scope-listp
     not-errorp-when-uchar-arrayp
     not-errorp-when-booleanp
-    len-of-cons
-    1+len-greater-than-0
     boolean-from-sint-of-0
     boolean-from-sint-of-1
     lognot-sint-of-0
-    lognot-sint-of-1
-    1+nat-greater-than-0
-    natp-of-1+
-    natp-of-len))
+    lognot-sint-of-1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1575,29 +1545,14 @@
     booleanp-of-boolean-from-sllong
     car-cons
     cdr-cons
-    compustate-of-fields
-    compustate->frames-of-compustate
-    compustate->heap-of-compustate
     compustate-fix-when-compustatep
     compustatep-of-add-frame
     compustatep-of-add-scope
     compustatep-of-add-var
-    compustatep-of-compustate
-    frame->function-of-frame
-    frame->scopes-of-frame
-    frame-fix-when-framep
-    frame-list-fix-of-cons
-    frame-list-fix-when-frame-listp
-    frame-listp-of-compustate->frames
-    framep-of-frame
     heap-fix-when-heapp
     heapp-of-compustate->heap
     not-errorp-when-compustatep
     omap::in-of-update
-    pop-frame-of-push-frame
-    scope-fix-when-scopep
-    scope-list-fix-of-cons
-    scope-listp-of-cons
     scopep-of-update
     schar-fix-when-scharp
     uchar-fix-when-ucharp
@@ -1619,9 +1574,7 @@
     ulongp-of-ulong
     sllongp-of-sllong
     ullongp-of-ullong
-    ucharp-of-uchar-array-read-sint
     ucharp-of-uchar-array-read
-    top-frame-of-push-frame
     valuep-when-pointerp
     valuep-when-scharp
     valuep-when-ucharp
@@ -1848,7 +1801,6 @@
      (:t ulong)
      (:t sllong)
      (:t ullong)
-     (:t uchar-array-read-sint)
      (:t uchar-array-read))
    *atc-integer-ops-1-type-prescription-rules*
    *atc-integer-ops-2-type-prescription-rules*
