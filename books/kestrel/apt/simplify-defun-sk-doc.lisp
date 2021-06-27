@@ -117,7 +117,12 @@
 
  <p>The value of @(':assumptions') must be a list of terms (not necessarily
  translated; see @(see acl2::term)) that only reference variables among the
- formal parameters of @('FN').</p>
+ formal parameters of @('FN').  However, @(':assumptions') may be @(':guard'),
+ which is equivalent to @(':assumptions (G)') where @('G') is the @(see guard)
+ of @('FN'); and for @(':assumptions (A1 ... :guard ... An)'), @(':guard') is
+ similarly replaced by @('G').  Below we imagine that @(':guard') has been
+ replaced in these ways; let us assume below that the value of
+ @(':assumptions') is a list that does not contain @(':guard').</p>
 
  <p>When @(':assumptions H') is supplied, all simplification will be performed
  assuming @('H''), where @('H'') is the result of simplifying @('H').</p>

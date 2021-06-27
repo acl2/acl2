@@ -806,6 +806,31 @@
       (IMPLIES (TRUE-LISTP X)
                (EQUAL (FOO X) (FOO$1 X))))))
 
+;; As above, but here we have :guard as a member of the :assumptions.
+(deftest
+
+  (defun foo (x y)
+    (declare (xargs :guard (true-listp x)))
+    (if (consp x)
+        (foo (cdr x) y)
+      (cons y x)))
+
+  (simplify foo :assumptions ((consp y) :guard))
+
+  (must-be-redundant
+    (DEFUN FOO$1 (X Y)
+      (DECLARE
+       (XARGS :GUARD (TRUE-LISTP X)
+              :MEASURE (ACL2-COUNT X)
+              :VERIFY-GUARDS T))
+      (IF (CONSP X)
+          (FOO$1 (CDR X) Y)
+        (CONS Y NIL)))
+    (DEFTHM FOO-BECOMES-FOO$1
+      (IMPLIES (AND (CONSP Y)
+                    (TRUE-LISTP X))
+               (EQUAL (FOO X Y) (FOO$1 X Y))))))
+
 ;; As above, but here we rely on the old guard-theorem in order for the proof
 ;; to succeed.
 (deftest
@@ -4041,6 +4066,30 @@ of :?, namely, (:? X).
   (must-be-redundant
    (DEFUND F$1 (X) (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL)) X)
    (DEFTHM F-BECOMES-F$1 (EQUAL (F X) (F$1 X)))))
+
+; When the function is called in the guard or measure, it isn't replaced by the
+; new function.
+(deftest
+  (defun f (x)
+    (declare (xargs :guard (f x) :verify-guards nil))
+    (cons (car (cons x x)) 3))
+  (verify-guards f)
+  (simplify f)
+  (must-be-redundant
+   (DEFUN F$1 (X) (DECLARE (XARGS :GUARD (F X) :VERIFY-GUARDS T)) (CONS X 3))
+   (DEFTHM F-BECOMES-F$1 (EQUAL (F X) (F$1 X))))
+
+  (defun f2 (x)
+    (declare (xargs :measure (if (f x) (acl2-count x) (len x))))
+    (if (consp x) (f2 (cdr x)) (car (cons x x))))
+  (simplify f2)
+  (must-be-redundant
+   (DEFUN F2$1 (X)
+     (DECLARE (XARGS :GUARD T
+                     :MEASURE (IF (F X) (ACL2-COUNT X) (LEN X))
+                     :VERIFY-GUARDS NIL))
+     (IF (CONSP X) (F2$1 (CDR X)) X))
+   (DEFTHM F2-BECOMES-F2$1 (EQUAL (F2 X) (F2$1 X)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

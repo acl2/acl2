@@ -444,6 +444,12 @@
       If this input is absent, it is taken from the APT defaults table."))
 
    (xdoc::p
+    "The @(tsee apt::simplify) transformation has been improved by allowing the
+     use of keyword @(':guard') for the @(':assumptions'), not only as the
+     entire value of @(':assumptions') as before, but also as a member of a
+     specified list of assumptions.")
+
+   (xdoc::p
     "The @(tsee apt::tailrec) transformation has been improved as follows:")
    (xdoc::ul
     (xdoc::li
