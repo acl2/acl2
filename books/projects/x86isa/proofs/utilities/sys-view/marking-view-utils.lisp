@@ -713,7 +713,7 @@
   :parents (system-level-marking-view-proof-utilities)
 
   (defthmd xlate-equiv-memory-and-rvm08
-    (implies (and (xr :app-view 0 (double-rewrite x86-1))
+    (implies (and (xr :app-view nil (double-rewrite x86-1))
                   (xlate-equiv-memory (double-rewrite x86-1) x86-2))
              (and (equal (mv-nth 0 (rvm08 lin-addr x86-1))
                          (mv-nth 0 (rvm08 lin-addr x86-2)))
@@ -728,7 +728,7 @@
              (equal (mv-nth 0 (rml08 lin-addr r-w-x x86-1))
                     (mv-nth 0 (rml08 lin-addr r-w-x x86-2))))
     :hints
-    (("Goal" :cases ((xr :app-view 0 x86-1))
+    (("Goal" :cases ((xr :app-view nil x86-1))
       :in-theory (e/d* (rml08 disjoint-p member-p)
                        (force (force)))
       :use ((:instance xlate-equiv-memory-and-rvm08))))
@@ -767,7 +767,7 @@
      (equal (mv-nth 1 (rml08 lin-addr r-w-x x86-1))
             (mv-nth 1 (rml08 lin-addr r-w-x x86-2))))
     :hints (("Goal"
-             :cases ((xr :app-view 0 x86-1))
+             :cases ((xr :app-view nil x86-1))
              :in-theory (e/d* (rml08
                                rb
                                disjoint-p
@@ -862,8 +862,6 @@
                        (:linear mv-nth-1-idiv-spec)
                        (:linear mv-nth-1-div-spec)
                        (:rewrite mv-nth-2-ia32e-la-to-pa-system-level-non-marking-view)
-                       (:definition marking-view$inline)
-                       (:type-prescription booleanp-marking-view-type)
                        (:rewrite ia32e-la-to-pa-in-app-view)
                        (:type-prescription 64-bit-modep)
                        (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
@@ -884,9 +882,7 @@
                        (:definition len)
                        (:rewrite acl2::fold-consts-in-+)
                        (:linear acl2::expt->-1)
-                       (:type-prescription booleanp-app-view-type)
                        (:rewrite default-cdr)
-                       (:linear ash-monotone-2)
                        (:definition rb-1)
                        (:linear member-p-pos-value)
                        (:linear member-p-pos-1-value)
@@ -947,7 +943,6 @@
                        (:rewrite
                         get-prefixes-does-not-modify-x86-state-in-system-level-non-marking-view)
                        (:rewrite bitops::unsigned-byte-p-incr)
-                       (:linear size-of-combine-bytes-of-take)
                        (:linear size-of-combine-bytes)
                        (:linear bitops::expt-2-lower-bound-by-logbitp)
                        (:rewrite get-prefixes-does-not-modify-x86-state-in-app-view)
@@ -1174,8 +1169,8 @@
                  (rflagsBits->ac (rflags x86))))
      (equal
       (mv-nth 3 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt
-                              (xw :rflags 0 value x86)))
-      (xw :rflags 0 value
+                              (xw :rflags nil value x86)))
+      (xw :rflags nil value
           (mv-nth 3 (get-prefixes
                      #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))))
     :hints
@@ -1183,7 +1178,7 @@
       :induct (get-prefixes *64-bit-mode* start-rip prefixes rex-byte cnt x86)
       :expand
       (get-prefixes *64-bit-mode* start-rip prefixes rex-byte cnt
-                    (xw :rflags 0 value x86))
+                    (xw :rflags nil value x86))
       :in-theory (e/d* (get-prefixes)
                        (negative-logand-to-positive-logand-with-integerp-x
                         unsigned-byte-p-of-logior
@@ -1206,26 +1201,26 @@
       (equal
        (mv-nth 0 (get-prefixes
                   #.*64-bit-mode* start-rip prefixes rex-byte cnt
-                  (xw :rflags 0 value x86)))
+                  (xw :rflags nil value x86)))
        (mv-nth 0 (get-prefixes
                   #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))
       (equal
        (mv-nth 1 (get-prefixes
                   #.*64-bit-mode* start-rip prefixes rex-byte cnt
-                  (xw :rflags 0 value x86)))
+                  (xw :rflags nil value x86)))
        (mv-nth 1 (get-prefixes
                   #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))
       (equal
        (mv-nth 2 (get-prefixes
                   #.*64-bit-mode* start-rip prefixes rex-byte cnt
-                  (xw :rflags 0 value x86)))
+                  (xw :rflags nil value x86)))
        (mv-nth 2 (get-prefixes
                   #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)))))
     :hints
     (("Goal"
       :induct (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
       :expand (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt
-                            (xw :rflags 0 value x86))
+                            (xw :rflags nil value x86))
       :in-theory (e/d* (get-prefixes)
                        (bitops::logtail-of-logior
                         bitops::logtail-of-logand
@@ -1696,8 +1691,8 @@
     (implies (and (equal (rflagsBits->ac (double-rewrite value))
                          (rflagsBits->ac (rflags x86)))
                   (x86p x86))
-             (equal (mv-nth 2 (rb n lin-addr r-w-x (xw :rflags 0 value x86)))
-                    (xw :rflags 0 value (mv-nth 2 (rb n lin-addr r-w-x x86)))))
+             (equal (mv-nth 2 (rb n lin-addr r-w-x (xw :rflags nil value x86)))
+                    (xw :rflags nil value (mv-nth 2 (rb n lin-addr r-w-x x86)))))
     :hints (("Goal"
              :do-not-induct t
              :in-theory (e/d* (rb) (force (force))))))
@@ -2008,7 +2003,7 @@
     (and (program-at (+ 1 prog-addr)
                      (cdr bytes)
                      (mv-nth 2 (ia32e-la-to-pa prog-addr :x x86)))
-         (not (xr :app-view 0 x86))
+         (not (xr :app-view nil x86))
          (64-bit-modep (double-rewrite x86)))
     (equal (mv-nth 0
                    (las-to-pas (len (cdr bytes))
@@ -2027,8 +2022,8 @@
                  (x86p x86))
             (equal (loghead (ash j 3) (xr :mem index x86))
                    (xr :mem index x86)))
-   :hints (("Goal" :in-theory (e/d* () (memi-is-n08p unsigned-byte-p))
-            :use ((:instance memi-is-n08p (i index)))))))
+   :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p elem-p-of-xr-mem n08p-xr-mem))
+            :use ((:instance n08p-xr-mem (i index)))))))
 
 (local
  (encapsulate
@@ -2267,7 +2262,6 @@
                       (:rewrite cdr-mv-nth-1-las-to-pas-no-error)
                       (:rewrite default-+-1)
                       (:rewrite default-+-2)
-                      (:linear ash-monotone-2)
                       (:rewrite size-of-read-from-physical-memory)
                       (:rewrite mv-nth-1-las-to-pas-when-error)
                       (:rewrite mv-nth-2-las-to-pas-system-level-non-marking-view)
@@ -2329,7 +2323,6 @@
                       (:rewrite acl2::natp-posp)
                       (:rewrite acl2::equal-constant-+)
                       (:rewrite cdr-addr-range)
-                      (:rewrite equal-ash-ash)
                       (:linear acl2::expt-is-increasing-for-base>1)
                       (:rewrite acl2::posp-rw)
                       (:type-prescription natp)
@@ -2340,7 +2333,6 @@
                        infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-with-disjoint-p$)
                       (:rewrite acl2::natp-when-gte-0)
                       (:linear bitops::logior-<-0-linear-1)
-                      (:linear size-of-combine-bytes-of-take)
                       (:linear size-of-combine-bytes)
                       (:linear bitops::expt-2-lower-bound-by-logbitp)
                       (:rewrite bitops::unsigned-byte-p-incr)

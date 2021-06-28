@@ -43,6 +43,6 @@
 (add-include-book-dir :machine "../../machine")
 (add-include-book-dir :proof-utils ".")
 ; The book basics.lisp, at least, seems to need :useless-runes nil:
-;; cert-flags: ? t :ttags (:include-raw :syscall-exec :other-non-det :undef-flg) :skip-proofs-okp t :useless-runes nil
+;; cert-flags: ? t :ttags (:include-raw :syscall-exec :other-non-det :undef-flg)  :useless-runes nil
 
 ;; ======================================================================

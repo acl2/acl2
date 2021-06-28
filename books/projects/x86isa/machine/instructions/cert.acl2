@@ -42,6 +42,6 @@
 (include-book "../../portcullis/sharp-dot-constants")
 (add-include-book-dir :utils "../../utils")
 ; The book divide-spec.lisp, at least, seems to need :useless-runes nil:
-;; cert-flags: ? t :ttags (:include-raw :syscall-exec :other-non-det :undef-flg) :skip-proofs-okp t :useless-runes nil
+;; cert-flags: ? t :ttags (:include-raw :syscall-exec :other-non-det :undef-flg)  :useless-runes nil
 
 ;; ======================================================================

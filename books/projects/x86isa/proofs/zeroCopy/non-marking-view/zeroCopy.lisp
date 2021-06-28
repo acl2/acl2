@@ -156,7 +156,7 @@
 
 ;; Control printing:
 (acl2::add-untranslate-pattern-function
- (program-at (xr :rip 0 x86)
+ (program-at (xr :rip nil x86)
           '(15 32 216 72 137 68 36 232 72 139 84 36 232
                72 137 248 72 193 232 36 37 248 15 0 0
                72 129 226 0 240 255 255 72 9 208 72 139
@@ -180,7 +180,7 @@
                102 46 15 31 132 0 0 0 0 0 72 199 192
                255 255 255 255 195 15 31 132 0 0 0 0 0)
           x86)
- (program-at (xr :rip 0 x86) *rewire_dst_to_src* x86))
+ (program-at (xr :rip nil x86) *rewire_dst_to_src* x86))
 
 ;; ======================================================================
 
@@ -304,8 +304,8 @@
 (defun-nx x86-state-okp (x86)
   (and
    (x86p x86)
-   (equal (xr :ms 0 x86) nil)
-   (equal (xr :fault 0 x86) nil)
+   (equal (xr :ms nil x86) nil)
+   (equal (xr :fault nil x86) nil)
    (64-bit-modep x86)
    (not (alignment-checking-enabled-p x86))
    (not (app-view x86))
@@ -318,12 +318,12 @@
 (defun-nx program-ok-p (x86)
   (and
    ;; Program addresses are canonical.
-   (canonical-address-p (+ *rewire_dst_to_src-len* (xr :rip 0 x86)))
+   (canonical-address-p (+ *rewire_dst_to_src-len* (xr :rip nil x86)))
    ;; Program is located at linear address (rip x86) in the memory.
-   (program-at (xr :rip 0 x86) *rewire_dst_to_src* x86)
+   (program-at (xr :rip nil x86) *rewire_dst_to_src* x86)
    ;; No errors encountered while translating the linear addresses
    ;; where the program is located.
-   (not (mv-nth 0 (las-to-pas *rewire_dst_to_src-len* (xr :rip 0 x86) :x x86)))))
+   (not (mv-nth 0 (las-to-pas *rewire_dst_to_src-len* (xr :rip nil x86) :x x86)))))
 
 (defun-nx stack-ok-p (x86)
   (and
@@ -519,12 +519,12 @@
    ;; The physical addresses corresponding to the program and stack
    ;; are disjoint.
    (disjoint-p
-    (mv-nth 1 (las-to-pas *rewire_dst_to_src-len* (xr :rip 0 x86) :x x86))
+    (mv-nth 1 (las-to-pas *rewire_dst_to_src-len* (xr :rip nil x86) :x x86))
     (mv-nth 1 (las-to-pas 8 (+ -24 (xr :rgf *rsp* x86)) :w x86)))
    ;; Translation-governing addresses of the program are disjoint from
    ;; the physical addresses of the stack.
    (disjoint-p
-    (all-xlation-governing-entries-paddrs *rewire_dst_to_src-len* (xr :rip 0 x86) x86)
+    (all-xlation-governing-entries-paddrs *rewire_dst_to_src-len* (xr :rip nil x86) x86)
     (mv-nth 1 (las-to-pas 8 (+ -24 (xr :rgf *rsp* x86)) :w x86)))))
 
 (defun-nx source-PML4TE-and-stack-no-intefere-p (x86)
@@ -610,7 +610,7 @@
    ;; The physical addresses corresponding to the program are disjoint
    ;; from those of the PDPTE (on behalf of a write).
    (disjoint-p
-    (mv-nth 1 (las-to-pas *rewire_dst_to_src-len* (xr :rip 0 x86) :x x86))
+    (mv-nth 1 (las-to-pas *rewire_dst_to_src-len* (xr :rip nil x86) :x x86))
     (mv-nth 1 (las-to-pas
                8
                (page-dir-ptr-table-entry-addr
@@ -621,7 +621,7 @@
    ;; Translation-governing addresses of the program are disjoint from
    ;; the PDPTE physical addresses (on behalf of a write).
    (disjoint-p
-    (all-xlation-governing-entries-paddrs *rewire_dst_to_src-len* (xr :rip 0 x86) x86)
+    (all-xlation-governing-entries-paddrs *rewire_dst_to_src-len* (xr :rip nil x86) x86)
     (mv-nth 1 (las-to-pas
                8
                (page-dir-ptr-table-entry-addr
@@ -720,7 +720,6 @@
     (:rewrite xr-ia32e-la-to-pa)
     (:rewrite acl2::nfix-when-not-natp)
     (:rewrite acl2::nfix-when-natp)
-    (:rewrite constant-upper-bound-of-logior-for-naturals)
     (:rewrite acl2::natp-when-integerp)
     (:rewrite acl2::natp-when-gte-0)
     (:rewrite 4k-aligned-physical-address-helper)
@@ -754,12 +753,10 @@
     (:rewrite disjoint-p-subset-p)
     (:definition binary-append)
     (:rewrite member-p-of-subset-is-member-p-of-superset)
-    (:linear rgfi-is-i64p)
     (:rewrite member-p-cdr)
     (:rewrite bitops::unsigned-byte-p-incr)
     (:rewrite acl2::difference-unsigned-byte-p)
     (:rewrite acl2::append-when-not-consp)
-    (:linear rip-is-i48p)
     (:rewrite acl2::ifix-when-not-integerp)
     (:rewrite bitops::basic-unsigned-byte-p-of-+)
     (:rewrite disjoint-p-append-1)
@@ -777,9 +774,7 @@
     (:rewrite subset-p-reflexive)
     (:meta acl2::cancel_times-equal-correct)
     (:rewrite set::sets-are-true-lists)
-    (:linear rflags-is-n32p)
     (:definition true-listp)
-    (:type-prescription rflags-is-n32p)
     (:rewrite cdr-append-is-append-cdr)
     (:type-prescription bitops::logtail-natp)
     (:rewrite subset-p-cdr-x)
@@ -819,7 +814,6 @@
     (:linear bitops::upper-bound-of-logand . 2)
     (:rewrite weed-out-irrelevant-logand-when-first-operand-constant)
     (:rewrite logand-redundant)
-    (:linear ash-monotone-2)
     (:linear bitops::logand->=-0-linear-2)
     (:linear bitops::upper-bound-of-logand . 1)
     (:linear bitops::logand->=-0-linear-1)
@@ -831,7 +825,6 @@
     (:type-prescription zip)
     (:linear bitops::logand-<-0-linear)
     (:rewrite bitops::logior-fold-consts)
-    (:linear <=-logior)
     (:linear member-p-pos-value)
     (:linear member-p-pos-1-value)
     (:linear bitops::logior->=-0-linear)
@@ -1006,13 +999,13 @@
                               ;;   12))
                               :R X86))))
                           (XW
-                           :RIP 0
+                           :RIP nil
                            (LOGEXT 64
                                    (MV-NTH 1 (RB 8 (XR :RGF *RSP* X86) :R X86)))
                            (XW
-                            :UNDEF 0 (+ 46 (NFIX (XR :UNDEF 0 X86)))
+                            :UNDEF nil (+ 46 (NFIX (XR :UNDEF nil X86)))
                             (XW
-                             :RFLAGS 0
+                             :RFLAGS nil
                              (RFLAGSBITS
                               (BOOL->BIT
                                (<
@@ -1097,7 +1090,7 @@
                                            :R X86))))
                                        12))
                                      :R X86)))))))
-                              (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+                              (RFLAGSBITS->RES1 (XR :RFLAGS nil X86))
                               (PF-SPEC64
                                (LOGHEAD
                                 64
@@ -1194,7 +1187,7 @@
                                               :R X86))))
                                           12))
                                         :R X86))))))))))
-                              (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+                              (RFLAGSBITS->RES2 (XR :RFLAGS nil X86))
                               (SUB-AF-SPEC64
                                (LOGAND
                                 4503598553628672
@@ -1277,7 +1270,7 @@
                                           :R X86))))
                                       12))
                                     :R X86))))))
-                              (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+                              (RFLAGSBITS->RES3 (XR :RFLAGS nil X86))
                               1
                               (SF-SPEC64
                                (LOGHEAD
@@ -1375,9 +1368,9 @@
                                               :R X86))))
                                           12))
                                         :R X86))))))))))
-                              (RFLAGSBITS->TF (XR :RFLAGS 0 X86))
-                              (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
-                              (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+                              (RFLAGSBITS->TF (XR :RFLAGS nil X86))
+                              (RFLAGSBITS->INTF (XR :RFLAGS nil X86))
+                              (RFLAGSBITS->DF (XR :RFLAGS nil X86))
                               (OF-SPEC64
                                (+
                                 (LOGAND
@@ -1472,16 +1465,16 @@
                                              :R X86))))
                                          12))
                                        :R X86)))))))))
-                              (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
-                              (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
-                              (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
-                              (RFLAGSBITS->RF (XR :RFLAGS 0 X86))
-                              (RFLAGSBITS->VM (XR :RFLAGS 0 X86))
-                              (RFLAGSBITS->AC (XR :RFLAGS 0 X86))
-                              (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
-                              (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
-                              (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
-                              (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86)))
+                              (RFLAGSBITS->IOPL (XR :RFLAGS nil X86))
+                              (RFLAGSBITS->NT (XR :RFLAGS nil X86))
+                              (RFLAGSBITS->RES4 (XR :RFLAGS nil X86))
+                              (RFLAGSBITS->RF (XR :RFLAGS nil X86))
+                              (RFLAGSBITS->VM (XR :RFLAGS nil X86))
+                              (RFLAGSBITS->AC (XR :RFLAGS nil X86))
+                              (RFLAGSBITS->VIF (XR :RFLAGS nil X86))
+                              (RFLAGSBITS->VIP (XR :RFLAGS nil X86))
+                              (RFLAGSBITS->ID (XR :RFLAGS nil X86))
+                              (RFLAGSBITS->RES5 (XR :RFLAGS nil X86)))
                              (MV-NTH
                               1
                               (WB
@@ -1887,7 +1880,7 @@
                   (wp (cr0Bits->wp (n32 (ctri *cr0* x86))))
                   (smep (loghead 1 (bool->bit (logbitp 20 (xr :ctr *cr4* x86)))))
                   (smap (loghead 1 (bool->bit (logbitp 21 (xr :ctr *cr4* x86)))))
-                  (ac (bool->bit (logbitp 18 (xr :rflags 0 x86))))
+                  (ac (bool->bit (logbitp 18 (xr :rflags nil x86))))
                   (nxe (loghead 1 (bool->bit (logbitp 11 (xr :msr *ia32_efer-idx* x86)))))
                   (r-w-x r-w-x)
                   (cpl (cpl x86))
@@ -3114,7 +3107,6 @@
                   disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
                   acl2::consp-when-member-equal-of-atom-listp
                   ia32e-la-to-pa-xw-state
-                  ash-monotone-2
                   adding-7-to-pml4-table-entry-addr
                   *physical-address-size*p-pml4-table-entry-addr
                   (:r acl2::equal-of-booleans-rewrite)

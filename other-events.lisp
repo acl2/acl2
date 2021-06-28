@@ -4955,7 +4955,7 @@
            (latches (and eq-len
                          (loop for x in stobjs-out
                                as val in vals
-                               when x
+                               when (and x (not (eq x 'state)))
                                collect (cons x val)))))
       (when eq-len
         (update-user-stobj-alist (put-assoc-eq-alist (user-stobj-alist state)
@@ -22084,7 +22084,7 @@
                    (child (and (consp stobjs-out)
                                (null (cdr stobjs-out))
                                (car stobjs-out)))
-                   (name (access absstobj-method method :name))) 
+                   (name (access absstobj-method method :name)))
               (cond
                ((or (not (stobj-field-accessor-p exec st$c wrld))
                     (null child))
@@ -22119,7 +22119,7 @@
                                updaters-exec))))))))))))))
 
 (defun chk-defabsstobj-updaters-1 (accessors accessors-exec
-                                             updaters updaters-exec 
+                                             updaters updaters-exec
                                              lst)
 
 ; This supports checking updaters for defabsstobj.  See chk-stobj-updaters-1
@@ -22152,8 +22152,8 @@
 
 (defun chk-defabsstobj-updaters (st$c methods wrld)
 
-; This supports checking updaters for defabsstobj.  See chk-stobj-updaters for
-; a similar utility for stobj-let.
+; This supports checking updaters for defabsstobj.  See chk-stobj-let/updaters
+; for a similar utility for stobj-let.
 
 ; Implicit is an abstract stobj definition with the given methods (perhaps
 ; partially fleshed out) and with the given foundational stobj, st$c.  We
@@ -25818,12 +25818,12 @@
                                                       ens state)
                         (value :invisible)))))))))))
 
-(defun pl-fn (name state)
+(defun pl-fn (name0 state)
   (cond
-   ((symbolp name)
+   ((symbolp name0)
     (let* ((wrld (w state))
            (ens (ens-maybe-brr state))
-           (name (deref-macro-name name (macro-aliases wrld))))
+           (name (deref-macro-name name0 (macro-aliases wrld))))
       (cond
        ((eq name 'quote)
         (print-info-for-rules
@@ -25858,8 +25858,14 @@
               "If the argument to PL is a symbol, then it must be a function ~
                symbol in the current world, the symbol QUOTE, or else a macro ~
                that is associated with a function symbol (see :DOC ~
-               add-macro-alias).")))))
-   (t (pl2-fn name nil 'pl state))))
+               add-macro-alias).~@0"
+              (cond
+               ((getpropc name0 'macro-body)
+                (msg "  Since ~x0 is a macro without such association, ~
+                      consider applying PL to a call (~x0 ...); see :DOC pl."
+                     name0))
+               (t "")))))))
+   (t (pl2-fn name0 nil 'pl state))))
 
 (defmacro pl (name)
   (list 'pl-fn name 'state))

@@ -220,8 +220,7 @@
                (signed-byte-p 48 (+ n temp-rip)))
       :hints (("Goal" :in-theory (e/d (signed-byte-p
                                        unsigned-byte-p)
-                                      (seg-hidden-limiti-is-n32p))
-               :use ((:instance seg-hidden-limiti-is-n32p))))))
+                                      ())))))
 
    ;; Enabling for RoW proofs of vex-prefixes->* and !vex-prefixes->*.
    (local (in-theory (e/d (!vex-prefixes->byte0-is-vex-prefixes

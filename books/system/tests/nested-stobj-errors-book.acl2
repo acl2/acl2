@@ -1,0 +1,10 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "nested-stobj-errors")
+
+; cert-flags: ? t :ttags (:bogus-cert)
+
+; Help dependency scanner.
+#||
+(depends-on "nested-stobj-errors-input.lsp")
+(depends-on "nested-stobj-errors-log.txt")
+||#

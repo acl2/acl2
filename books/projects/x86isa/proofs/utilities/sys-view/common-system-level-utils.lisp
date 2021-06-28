@@ -131,7 +131,7 @@
   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
 
 (defthm mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-sys-view
-  (implies (not (xr :app-view 0 x86))
+  (implies (not (xr :app-view nil x86))
            (equal (mv-nth 0 (rb n addr r-x x86))
                   (mv-nth 0 (las-to-pas n addr r-x x86))))
   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
@@ -144,7 +144,7 @@
 (in-theory (e/d (wml16 wml32 wml64) ()))
 
 (defthm mv-nth-0-wb-and-mv-nth-0-las-to-pas-in-sys-view
-  (implies (not (xr :app-view 0 x86))
+  (implies (not (xr :app-view nil x86))
            (equal (mv-nth 0 (wb n addr w value x86))
                   (mv-nth 0 (las-to-pas n addr :w (double-rewrite x86)))))
   :hints (("Goal" :in-theory (e/d* (wb) (force (force))))))
@@ -193,7 +193,7 @@
   (implies (and (not (app-view x86))
                 (equal (rflagsBits->ac value)
                        (rflagsBits->ac (rflags x86))))
-           (equal (program-at addr bytes (xw :rflags 0 value x86))
+           (equal (program-at addr bytes (xw :rflags nil value x86))
                   (program-at addr bytes x86)))
   :hints (("Goal" :in-theory (e/d* (program-at) (rb)))))
 
@@ -463,7 +463,7 @@
                             (smap
                              (cr4bits->smap (loghead 22 (xr :ctr *cr4* x86))))
                             (ac
-                             (rflagsbits->ac (xr :rflags 0 x86)))
+                             (rflagsbits->ac (xr :rflags nil x86)))
                             (nxe
                              (ia32_eferbits->nxe
                               (loghead 12 (xr :msr *ia32_efer-idx* x86))))))
@@ -723,7 +723,7 @@
                             (wp (cr0bits->wp (loghead 32 (xr :ctr *cr0* x86))))
                             (smep (cr4bits->smep (loghead 22 (xr :ctr *cr4* x86))))
                             (smap (cr4bits->smap (loghead 22 (xr :ctr *cr4* x86))))
-                            (ac (rflagsbits->ac (xr :rflags 0 x86)))
+                            (ac (rflagsbits->ac (xr :rflags nil x86)))
                             (nxe (ia32_eferbits->nxe
                                   (loghead 12 (xr :msr *ia32_efer-idx* x86))))))
            :in-theory (e/d* (ia32e-la-to-pa) ()))))
@@ -769,8 +769,6 @@
   :hints (("Goal" :in-theory (e/d* (nth
                                     logtail-n>=8-of-byte
                                     loghead-n->=8-of-a-byte)
-                                   ((:linear ash-monotone-2)
-                                    member-equal
-                                    (:linear size-of-combine-bytes-of-take))))))
+                                   (member-equal)))))
 
 ;; ======================================================================

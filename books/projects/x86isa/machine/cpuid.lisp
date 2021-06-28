@@ -37,7 +37,7 @@
 ; Shilpi Goel         <shigoel@gmail.com>
 
 (in-package "X86ISA")
-(include-book "abstract-state") ;; Need x86p for cpuid-flag-fn
+(include-book "state") ;; Need x86p for cpuid-flag-fn
 (include-book "cpuid-constants")
 
 ;; Macros and functions used by utilities in dispatch.lisp to create opcode

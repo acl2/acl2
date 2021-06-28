@@ -45,7 +45,6 @@
 
 (include-book "../decoding-and-spec-utils"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
-(local (include-book "../guard-helpers"))
 
 ;; ======================================================================
 ;; INSTRUCTION: SYSCALL
@@ -79,8 +78,7 @@
 
   :guard-hints (("Goal" :in-theory (e/d (rflagsbits-p
                                          !rflagsbits->tf)
-                                        (msri-is-n64p))
-                 :use ((:instance msri-is-n64p (i 0)))))
+                                        (unsigned-byte-p))))
 
   :body
 
@@ -206,6 +204,17 @@
        (x86 (!rip temp-rip x86))) ;; SYSRET
     x86))
 
+(local
+ (defthm-unsigned-byte-p n32p-xr-rflags
+   :hyp t
+   :bound 32
+   :concl (xr :rflags i x86)
+   :gen-linear t
+   :gen-type t))
+
+(local (include-book "centaur/bitops/width-find-rule" :dir :system))
+(local (in-theory (e/d (bitops::unsigned-byte-p-by-find-rule) ())))
+
 (def-inst x86-syscall
 
   ;; Fast System Call to privilege level 0 system procedures.
@@ -218,7 +227,7 @@
                                (not (app-view x86))))
 
   :guard-hints (("Goal" :in-theory (e/d (n64-to-i64 wr64)
-                                        ())))
+                                        (unsigned-byte-p))))
 
   :body
 
@@ -230,7 +239,7 @@
         (!!fault-fresh :ud nil ;; #UD
                        :ia32-efer-sce=0 (cons 'ia32_efer ia32-efer)))
 
-       ((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
+       ((the (unsigned-byte 16) cs-attr) (seg-hidden-attri #.*cs* x86))
 
        ;; Update the x86 state:
 
@@ -401,9 +410,7 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
-  :prepwork ((local (in-theory (e/d* (sysret-guard-helpers) ())))
-
-             (local
+  :prepwork ((local
               (defthm sysret-guard-helper
                 (implies (and (signed-byte-p 48 temp-rip)
                               (signed-byte-p 48 start-rip))
@@ -415,7 +422,7 @@
 
   :body
 
-  (b* (;; We can't *call* SYSRET in any mode other than 64-bit mode
+  (b* ( ;; We can't *call* SYSRET in any mode other than 64-bit mode
        ;; (including compatibility mode), but when it is called from
        ;; the 64-bit mode *without* REX.W, a mode switch to
        ;; compatibility mode is effected.  From then on, the machine
@@ -490,7 +497,7 @@
        ;; CS.Limit <- FFFFFH;  (* With 4-KByte granularity, implies a 4-GByte limit *)
        (cs-base-addr 0)
        (cs-limit #xffffffff) ; this is 32 bits, not 20 bits
-       ((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
+       ((the (unsigned-byte 16) cs-attr) (seg-hidden-attri #.*cs* x86))
        ;; CS.A       <- 1;   (* Accessed. *)
        ;; CS.R       <- 1;   (* Execute/read code. *)
        ;; CS.C       <- 0;
@@ -540,7 +547,7 @@
        ;; SS.Limit <- FFFFFH;      (* With 4-KByte granularity, implies a 4-GByte limit *)
        (ss-base-addr 0)
        (ss-limit #xffffffff) ; this is 32 bits, not 20 bits
-       ((the (unsigned-byte 16) ss-attr) (xr :seg-hidden-attr #.*ss* x86))
+       ((the (unsigned-byte 16) ss-attr) (seg-hidden-attri #.*ss* x86))
        ;; SS.A       <-  1;      (* Accessed. *)
        ;; SS.W       <-  1;      (* Read/write data. *)
        ;; SS.E       <-  0;

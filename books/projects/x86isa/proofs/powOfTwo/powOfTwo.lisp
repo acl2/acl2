@@ -231,7 +231,7 @@
     (logext 64 (mv-nth 1 (rb 8 (xr :rgf *rsp* x86) :r x86))))
    ;; Program and stack are disjoint.
    (separate
-    :x *l* (xr :rip 0 x86)
+    :x *l* (xr :rip nil x86)
     :w  8  (+ -8 (xr :rgf *rsp* x86)))
    (unsigned-byte-p 64 (rr64 *rdi* x86))))
 

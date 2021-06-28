@@ -187,7 +187,7 @@
 
 (defmacro cs.d ()
   `(b* (((the (unsigned-byte 16) cs-attr)
-	 (xr :seg-hidden-attr #.*cs* x86)))
+	 (seg-hidden-attri #.*cs* x86)))
      (code-segment-descriptor-attributesBits->d cs-attr)))
 
 (defmacro cr0 ()

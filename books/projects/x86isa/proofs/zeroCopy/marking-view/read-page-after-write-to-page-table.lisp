@@ -178,7 +178,6 @@
                              xlate-equiv-memory-and-xr-mem-from-rest-of-memory
                              bitops::loghead-of-logior
                              (:linear bitops::logior-<-0-linear-2)
-                             (:linear ash-monotone-2)
                              (:rewrite bitops::ash-<-0)
                              (:rewrite acl2::ash-0)
                              (:rewrite acl2::zip-open)
@@ -485,7 +484,7 @@
               (canonical-address-p lin-addr)
               (canonical-address-p (+ (- count iteration) lin-addr))
               (member-equal r-w-x '(:r :w :x))
-              (not (xr :app-view 0 x86)))
+              (not (app-view x86)))
   (if (zp (- count iteration))
       (mv nil nil x86)
     (b* (((unless (canonical-address-p (+ iteration lin-addr)))
@@ -2165,7 +2164,6 @@
                         member-p-addr-range
                         not-member-p-addr-range
                         mv-nth-0-las-to-pas-subset-p
-                        (:linear ash-monotone-2)
                         unsigned-byte-p-of-combine-bytes
                         rewrite-rb-to-rb-alt
                         mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p

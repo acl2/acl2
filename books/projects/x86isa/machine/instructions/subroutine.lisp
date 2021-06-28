@@ -224,7 +224,7 @@
                   (and (<= 0 call-rip)
                        (<= call-rip
                            (the (unsigned-byte 32)
-                             (xr :seg-hidden-limit #.*cs* x86))))))
+                             (seg-hidden-limiti #.*cs* x86))))))
         (!!fault-fresh :gp 0 :bad-return-address call-rip)) ;; #GP(0)
 
        (rsp (read-*sp proc-mode x86))
@@ -377,7 +377,7 @@
        ((unless (if (equal proc-mode #.*64-bit-mode*)
                     (canonical-address-p tos)
                   (b* (((the (unsigned-byte 32) cs.limit)
-                        (xr :seg-hidden-limit #.*cs* x86)))
+                        (seg-hidden-limiti #.*cs* x86)))
                     (and (<= 0 tos) (<= tos cs.limit)))))
         (!!fault-fresh :gp 0 :bad-return-address tos)) ;; #GP(0)
 

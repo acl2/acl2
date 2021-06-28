@@ -40,6 +40,6 @@
 
 (set-waterfall-parallelism t)
 (include-book "../../../portcullis/sharp-dot-constants")
-;; cert-flags: ? t :ttags (:include-raw :syscall-exec :other-non-det :undef-flg :instrument) :skip-proofs-okp t
+;; cert-flags: ? t :ttags (:include-raw :syscall-exec :other-non-det :undef-flg :instrument) 
 
 ;; ======================================================================

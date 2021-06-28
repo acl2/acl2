@@ -74,8 +74,8 @@
  :stobjp T                      ;;  and whether it's a stobj
  :hyps ((factorial-hyps x86))   ;; invariant to assume about state
  :step x86-fetch-decode-execute ;; name of step function
- :get-pc (lambda (x86) (xr :rip 0 x86))     ;; how to fetch the pc
- :put-pc (lambda (v x86) (xw :rip 0 v x86)) ;; how to set the pc
+ :get-pc (lambda (x86) (xr :rip nil x86))     ;; how to fetch the pc
+ :put-pc (lambda (v x86) (xw :rip nil v x86)) ;; how to set the pc
 
  ;; the ``drivers'' below specify how to dive through updaters (and
  ;; constructors) and their accessors
@@ -87,7 +87,7 @@
  :state-comps-and-types
  (((XR :RGF *RDI* X86) (natp (XR :RGF *RDI* X86)))
   ((XR :RGF *RAX* X86) (natp (XR :RGF *RAX* X86)))
-  ((XR :RIP 0 X86)     (canonical-address-p (XR :RIP 0 X86))))
+  ((XR :RIP  nil  X86) (canonical-address-p (XR :RIP  nil  X86))))
  :callp  nil  ;; recognizer fn for states with pc on call instruction
  :ret-pc nil  ;; how to fetch the return pc after a call
  :returnp nil ;; recognizer for states with pc on return instruction
@@ -99,7 +99,7 @@
 ; how to generate variable names from state comps
  :var-names (((XR :RGF *RDI* X86) "N")
              ((XR :RGF *RAX* X86) "ACC")
-             ((XR :RIP 0 X86)      "PC")))
+             ((XR :RIP nil X86)   "PC")))
 
 (local (in-theory (e/d* (instruction-decoding-and-spec-rules
                          rflag-RoWs-enables
@@ -230,9 +230,9 @@
          (LOGHEAD 32
                   (+ -1 (LOGEXT 32 (XR :RGF *RDI* X86))))
          (XW
-          :RIP 0 16
+          :RIP nil 16
           (XW
-           :UNDEF 0 (+ 4 (NFIX (XR :UNDEF 0 X86)))
+           :UNDEF nil (+ 4 (NFIX (XR :UNDEF nil X86)))
            (!FLGI
             :CF
             (LOGHEAD 1
@@ -270,9 +270,9 @@
        (XW
         :RGF *RAX* 1
         (XW
-         :RIP 0 16
+         :RIP nil 16
          (XW
-          :UNDEF 0 (+ 1 (NFIX (XR :UNDEF 0 X86)))
+          :UNDEF NIL (+ 1 (NFIX (XR :UNDEF nil X86)))
           (!FLGI
            :CF 0
            (!FLGI
@@ -280,7 +280,7 @@
             (PF-SPEC32 (LOGHEAD 32 (XR :RGF *RDI* X86)))
             (!FLGI :AF
                    (LOGHEAD 1
-                            (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
+                            (CREATE-UNDEF (NFIX (XR :UNDEF nil X86))))
                    (!FLGI :ZF 0
                           (!FLGI :SF
                                  (SF-SPEC32 (LOGHEAD 32 (XR :RGF *RDI* X86)))
@@ -308,9 +308,9 @@
       (XW
        :RGF *RDI* 0
        (XW
-        :RIP 0 24
+        :RIP nil 24
         (XW
-         :UNDEF 0 (+ 4 (NFIX (XR :UNDEF 0 X86)))
+         :UNDEF nil (+ 4 (NFIX (XR :UNDEF nil X86)))
          (!FLGI
           :CF
           (LOGHEAD 1
@@ -338,9 +338,9 @@
         (LOGHEAD 32
                  (+ -1 (LOGEXT 32 (XR :RGF *RDI* X86))))
         (XW
-         :RIP 0 16
+         :RIP nil 16
          (XW
-          :UNDEF 0 (+ 4 (NFIX (XR :UNDEF 0 X86)))
+          :UNDEF nil (+ 4 (NFIX (XR :UNDEF nil X86)))
           (!FLGI
            :CF
            (LOGHEAD 1
@@ -375,23 +375,23 @@
     (XW
      :RGF *RAX* 1
      (XW
-      :RIP 0 24
+      :RIP nil 24
       (XW
-       :UNDEF 0 (+ 1 (NFIX (XR :UNDEF 0 X86)))
+       :UNDEF nil (+ 1 (NFIX (XR :UNDEF nil X86)))
        (!FLGI :CF 0
               (!FLGI :PF 1
                      (!FLGI :AF
                             (LOGHEAD 1
-                                     (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
+                                     (CREATE-UNDEF (NFIX (XR :UNDEF nil X86))))
                             (!FLGI :ZF 1
                                    (!FLGI :SF 0 (!FLGI :OF 0 X86)))))))))
     (SEM-16
      (XW
       :RGF *RAX* 1
       (XW
-       :RIP 0 16
+       :RIP nil 16
        (XW
-        :UNDEF 0 (+ 1 (NFIX (XR :UNDEF 0 X86)))
+        :UNDEF nil (+ 1 (NFIX (XR :UNDEF nil X86)))
         (!FLGI
          :CF 0
          (!FLGI
@@ -399,7 +399,7 @@
           (PF-SPEC32 (LOGHEAD 32 (XR :RGF *RDI* X86)))
           (!FLGI :AF
                  (LOGHEAD 1
-                          (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
+                          (CREATE-UNDEF (NFIX (XR :UNDEF nil X86))))
                  (!FLGI :ZF 0
                         (!FLGI :SF
                                (SF-SPEC32 (LOGHEAD 32 (XR :RGF *RDI* X86)))
@@ -414,7 +414,7 @@
 
  (DEFTHM SEM-16-CORRECT
    (IMPLIES (AND (FACTORIAL-HYPS X86)
-                 (EQUAL (XR :RIP 0 X86) 16))
+                 (EQUAL (XR :RIP nil X86) 16))
             (EQUAL (X86-RUN-ALT X86 (CLK-16 X86))
                    (SEM-16 X86))))
 
@@ -422,7 +422,7 @@
 
  (DEFTHM SEM-0-CORRECT
    (IMPLIES (AND (FACTORIAL-HYPS X86)
-                 (EQUAL (XR :RIP 0 X86) 0))
+                 (EQUAL (XR :RIP nil X86) 0))
             (EQUAL (X86-RUN-ALT X86 (CLK-0 X86))
                    (SEM-0 X86))))
 
@@ -465,7 +465,7 @@
 
 (defthm factorial-loop-result-helper
   (implies (and (factorial-hyps x86)
-                (equal (xr :rip 0 x86) 16)
+                (equal (xr :rip nil x86) 16)
                 (< 0 (rgfi *rdi* x86))
                 (< 0 (rgfi *rax* x86)))
            (equal (xr :rgf *rax* (sem-16 x86))
@@ -473,7 +473,7 @@
 
 (defthm factorial-program-result-helper
   (implies (and (factorial-hyps x86)
-                (equal (xr :rip 0 x86) 0))
+                (equal (xr :rip nil x86) 0))
            (equal (xr :rgf *rax* (sem-0 x86))
                   (fact-algorithm (rgfi *rdi* x86) 1)))
   :hints (("Goal" :in-theory (e/d* () ()))))
@@ -532,7 +532,7 @@
 
 (defthm factorial-program-result
   (implies (and (factorial-hyps x86)
-                (equal (xr :rip 0 x86) 0))
+                (equal (xr :rip nil x86) 0))
            (equal (xr :rgf *rax* (x86-run-alt x86 (clk-0 x86)))
                   (f (rgfi *rdi* x86)))))
 

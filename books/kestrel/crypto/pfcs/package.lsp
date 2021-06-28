@@ -19,4 +19,5 @@
                        '(defund-sk
                          defxdoc+
                          int
+                         symbol-fix
                          symbol-list)))

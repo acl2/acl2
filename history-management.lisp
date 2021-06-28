@@ -1927,7 +1927,7 @@
                 :SKIP
                 (clear-warning-summaries-alist
                  (wormhole-data whs))))
-            nil 
+            nil
             nil))
 
 (defun print-warnings-summary (state)
@@ -7719,7 +7719,7 @@
   (list 'doc-fn name 'state))
 
 (defmacro help nil
-  '(pprogn (fms "For information about name, type :DOC name.  For an ~
+  '(pprogn (fms "For information about <name>, type :DOC <name>.  For an ~
                  introduction to the ACL2 documentation, type :DOC ~
                  documentation.~|"
                 nil (standard-co state) state nil)

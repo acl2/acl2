@@ -524,7 +524,7 @@
 ; position for which hyp-fn** and assumptions** is nil, replace nil by the list
 ; containing the trivial assumption t in assumptions**.
 
-  (cond ((and (all-nils assumptions**)
+  (cond ((and (all-nils hyp-fn**)
               (all-nils assumptions**))
          assumptions**)
         (t (fix-assumptions**-1 hyp-fn** assumptions**))))
@@ -811,13 +811,30 @@
                    acc)
            acc))))))
 
-(defun assumptions-to-hyps (assumptions hyp-fn fn wrld)
-  (cond (hyp-fn
-         (list (cons hyp-fn
-                     (formals fn wrld))))
+(defun assumptions-to-hyps (assumptions hyp-fn fn guard? ctx wrld state)
+  (cond (hyp-fn (cond ((symbolp hyp-fn)
+                       (value (list (cons hyp-fn
+                                          (formals fn wrld)))))
+                      (t (er-soft+ ctx :bad-input nil
+                                   "The value of keyword :HYP-FN for ~x0 must ~
+                                    be a symbol.  The value ~x1 is thus ~
+                                    illegal."
+                                   'simplify
+                                   hyp-fn))))
         ((eq assumptions :guard)
-         (list (guard-raw fn wrld)))
-        (t assumptions)))
+         (value (list (or guard?
+                          (guard-raw fn wrld)))))
+        ((not (true-listp assumptions))
+         (er-soft+ ctx :bad-input nil
+                   "The value of keyword :ASSUMPTIONS for ~x0 must be either ~
+                    :GUARD or a true list.  The value ~x1 is thus illegal."
+                   'simplify
+                   assumptions))
+        (t (value (let ((p (position-eq :guard assumptions)))
+                    (cond (p (update-nth p
+                                         (or guard? (guard-raw fn wrld))
+                                         assumptions))
+                          (t assumptions)))))))
 
 (defun hyps-preserved-thm (fn fn-hyps assumptions hints
                               fn-hyps-alist expand-lst
@@ -2387,7 +2404,8 @@
             (and rune ; true if we've done enough error checking?
                  (enabled-runep rune (ens state) wrld))
           new-enable))
-       (hyps (assumptions-to-hyps assumptions hyp-fn fn wrld))
+       ((er hyps) (assumptions-to-hyps assumptions hyp-fn fn nil ctx wrld
+                                       state))
        ((er thyps) (translate-hyp-list hyps fn ctx wrld state))
        (expand (fix-expand-hint expand))
        (fn-hyps (and hyps (fn-hyps-name fn wrld)))

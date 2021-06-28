@@ -417,14 +417,14 @@
                         (and rune ; true if we've done enough error checking?
                              (enabled-runep rune (ens state) wrld))
                       new-enable))
-        (hyps (cond ((eq assumptions :guard)
-                     (cond ((eq guard :auto)
-                            (list (guard-raw fn wrld)))
+       ((er hyps) (assumptions-to-hyps assumptions nil fn
+                                       (and (not (eq guard :auto))
 
-; In the case of defun-sk, simplify allows a :guard, which we use here.
+; In the case of defun-sk, simplify allows a :guard, which we use when an
+; assumption is specified as :guard.
 
-                           (t (list guard))))
-                    (t assumptions)))
+                                            guard)
+                                       ctx wrld state))
         (expand (fix-expand-hint expand))
         (must-simplify (if (eq must-simplify ':default)
                            t

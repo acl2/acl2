@@ -3205,9 +3205,7 @@
                                        exec-stmt-while-base-4
                                        exec-block-item-list-base-1
                                        exec-block-item-list-base-3
-                                       init-scope-base-2
-                                       read-var-aux-base-1
-                                       write-var-aux-base-1))
+                                       init-scope-base-2))
                                     '(,fn)
                                     ',type-prescriptions
                                     ',returns-value-thms

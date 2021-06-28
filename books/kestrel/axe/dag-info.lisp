@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/alists-light/acons-unique" :dir :system)
+(include-book "kestrel/alists-light/alistp" :dir :system)
 (include-book "kestrel/axe/dag-size" :dir :system)
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
@@ -130,11 +131,6 @@
            (ALISTP (MERGE-CDR-< l1 l2 acc)))
   :hints (("Goal" :in-theory (enable MERGE-CDR-<))))
 
-(defthmd consp-of-car-when-alistp
-  (implies (alistp lst)
-           (equal (consp (car lst))
-                  (consp lst))))
-
 (defthm alistp-of-mv-nth-0-of-split-list-fast-aux
   (implies (and (alistp lst)
                 (alistp tail)
@@ -142,8 +138,7 @@
                 (<= (len tail) (len lst))
                 )
            (alistp (mv-nth 0 (split-list-fast-aux lst tail acc))))
-  :hints (("Goal" :in-theory (enable split-list-fast-aux
-                                     consp-of-car-when-alistp))))
+  :hints (("Goal" :in-theory (enable split-list-fast-aux))))
 
 (defthm alistp-of-mv-nth-1-of-split-list-fast-aux
   (implies (and (alistp lst)
@@ -152,8 +147,7 @@
                 (<= (len tail) (len lst))
                 )
            (alistp (mv-nth 1 (split-list-fast-aux lst tail acc))))
-  :hints (("Goal" :in-theory (enable split-list-fast-aux
-                                     consp-of-car-when-alistp))))
+  :hints (("Goal" :in-theory (enable split-list-fast-aux))))
 
 (defthm alistp-of-mv-nth-0-of-split-list-fast
   (implies (alistp alist)

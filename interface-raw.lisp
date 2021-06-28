@@ -8854,6 +8854,84 @@
 
   (make-two-way-stream *standard-input* *standard-output*))
 
+(defun ld-acl2-customization (state)
+  (let ((customization-full-file-name
+         (initial-customization-filename)))
+    (cond
+     ((or (eq customization-full-file-name :none)
+          (f-get-global 'boot-strap-flg state))
+      nil)
+     (customization-full-file-name
+
+; If the ACL2 customization file exists (and we are not booting) then it hasn't
+; been included yet, and we include it now.
+
+      (let ((quietp (let ((s (getenv$-raw "ACL2_CUSTOMIZATION_QUIET")))
+                      (and s
+                           (not (equal s ""))
+                           (not (string-equal s "NIL"))
+                           (if (string-equal s "ALL") :all t)))))
+        (when (not quietp)
+          (fms "Customizing with ~x0.~%"
+               (list (cons #\0 customization-full-file-name))
+               *standard-co*
+               state
+               nil))
+        (let ((ld-alist (put-assoc-eq
+                         'standard-oi
+                         customization-full-file-name
+                         (put-assoc-eq
+                          'ld-error-action :error
+                          (f-get-ld-specials *the-live-state*))))
+              #+acl2-infix (old-infixp
+                            (f-get-global 'infixp *the-live-state*)))
+          #+acl2-infix (f-put-global 'infixp nil *the-live-state*)
+          (mv-let (erp val state)
+            (with-suppression ; package locks, not just warnings, for read
+             (state-free-global-let*
+              ((connected-book-directory
+                (f-get-global 'connected-book-directory state)))
+              (cond (quietp
+
+; We avoid using with-output!, since it generates a call of state-global-let*,
+; which isn't allowed outside the loop -- which we haven't yet entered!
+
+                     (state-free-global-let*
+                      ((inhibit-output-lst *valid-output-names*)
+                       (gag-mode nil)
+                       (print-clause-ids nil))
+                      (let ((quiet-alist ld-alist))
+                        (loop for pair in
+; Warning: Keep quiet-alist in sync with the state-free-global-let* bindings
+; below.
+                              '((ld-verbose . nil)
+                                (ld-pre-eval-print . :never)
+                                (ld-post-eval-print . nil)
+                                (ld-prompt . nil))
+                              do (setq quiet-alist
+                                       (put-assoc-eq (car pair)
+                                                     (cdr pair)
+                                                     quiet-alist)))
+                        (cond
+                         ((eq quietp :all)
+                          (ld-fn quiet-alist *the-live-state* nil))
+                         (t
+                          (state-free-global-let*
+; Warning: Keep these bindings in sync with quiet-alist.
+                           ((ld-verbose nil)
+                            (ld-pre-eval-print :never)
+                            (ld-post-eval-print nil)
+                            (ld-prompt nil))
+                           (ld-fn quiet-alist *the-live-state* nil)))))))
+                    (t (ld-fn ld-alist *the-live-state* nil)))))
+            #+acl2-infix
+            (f-put-global 'infixp old-infixp *the-live-state*)
+            (cond (erp (format t "**Error encountered during LD of ACL2 ~
+                                  customization file,~%~s.~%Quitting....~%"
+                               customization-full-file-name)
+                       (quit 1))
+                  (t (value val))))))))))
+
 (defun lp (&rest args)
 
 ; This function can only be called from within raw lisp, because no ACL2
@@ -9048,76 +9126,7 @@
 
        #+(and clisp unicode)
        (setq custom:*default-file-encoding* charset:iso-8859-1)
-       (let ((customization-full-file-name
-              (initial-customization-filename)))
-         (cond
-          ((or (eq customization-full-file-name :none)
-               (f-get-global 'boot-strap-flg state))
-           nil)
-          (customization-full-file-name
-
-; If the ACL2 customization file exists (and we are not booting) then it hasn't
-; been included yet, and we include it now.
-
-           (let ((quietp (let ((s (getenv$-raw "ACL2_CUSTOMIZATION_QUIET")))
-                           (and s
-                                (not (equal s ""))
-                                (not (string-equal s "NIL"))
-                                (if (string-equal s "ALL") :all t)))))
-             (when (not quietp)
-               (fms "Customizing with ~x0.~%"
-                    (list (cons #\0 customization-full-file-name))
-                    *standard-co*
-                    state
-                    nil))
-             (let ((ld-alist (put-assoc-eq
-                              'standard-oi
-                              customization-full-file-name
-                              (put-assoc-eq
-                               'ld-error-action :return
-                               (f-get-ld-specials *the-live-state*))))
-                   #+acl2-infix (old-infixp
-                                 (f-get-global 'infixp *the-live-state*)))
-               #+acl2-infix (f-put-global 'infixp nil *the-live-state*)
-               (with-suppression ; package locks, not just warnings, for read
-                (state-free-global-let*
-                 ((connected-book-directory
-                   (f-get-global 'connected-book-directory state)))
-                 (cond (quietp
-
-; We avoid using with-output!, since it generates a call of state-global-let*,
-; which isn't allowed outside the loop -- which we haven't yet entered!
-
-                        (state-free-global-let*
-                         ((inhibit-output-lst *valid-output-names*)
-                          (gag-mode nil)
-                          (print-clause-ids nil))
-                         (let ((quiet-alist ld-alist))
-                           (loop for pair in
-; Warning: Keep quiet-alist in sync with the state-free-global-let* bindings
-; below.
-                                 '((ld-verbose . nil)
-                                   (ld-pre-eval-print . :never)
-                                   (ld-post-eval-print . nil)
-                                   (ld-prompt . nil))
-                                 do (setq quiet-alist
-                                          (put-assoc-eq (car pair)
-                                                        (cdr pair)
-                                                        quiet-alist)))
-                           (cond
-                            ((eq quietp :all)
-                             (ld-fn quiet-alist *the-live-state* nil))
-                            (t
-                             (state-free-global-let*
-; Warning: Keep these bindings in sync with quiet-alist.
-                              ((ld-verbose nil)
-                               (ld-pre-eval-print :never)
-                               (ld-post-eval-print nil)
-                               (ld-prompt nil))
-                              (ld-fn quiet-alist *the-live-state* nil)))))))
-                       (t (ld-fn ld-alist *the-live-state* nil)))))
-               #+acl2-infix
-               (f-put-global 'infixp old-infixp *the-live-state*))))))
+       (ld-acl2-customization state)
        (let ((val (getenv$-raw "ACL2_CHECK_INVARIANT_RISK")))
          (when (and val (not (equal val "")))
            (let* ((val1 (string-upcase val))
