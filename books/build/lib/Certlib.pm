@@ -79,6 +79,8 @@ collect_top_up_to_date_modulo_local
 collect_all_up_to_date
 write_timestamps
 read_timestamps
+to_source_name
+find_deps
 );
 
 
