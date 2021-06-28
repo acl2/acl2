@@ -612,12 +612,35 @@ No longer needed.
 
 (defun nth-proper-symbol-builtin (n)
   (declare (xargs :guard (natp n)))
-  (let ((psym (nth-symbol n)))
+  (let ((psym (nth-symbol-builtin n)))
     (if (proper-symbolp psym)
         psym
       (nth (mod n (len *nice-symbol-names*)) *nice-symbol-names*))))
 
 (register-custom-type proper-symbol t nth-proper-symbol-builtin proper-symbolp)
+
+(local (defthm symbolp-helper
+         (implies (and (symbol-listp l)
+                       (< n (len l)))
+                  (symbolp (nth n l)))))
+
+(local (include-book "arithmetic-5/top" :dir :system))
+
+(local (defthm mod-helper
+         (implies (and (posp m)
+                       (natp n))
+                  (< (mod n m) m))))
+
+(defthm nth-proper-symbol-builtin-type
+  (implies (natp n)
+           (symbolp (nth-proper-symbol-builtin n))))
+
+(defun nth-keyword-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (let ((psym (nth-proper-symbol-builtin n)))
+    (intern (symbol-name psym) "KEYWORD")))
+
+(register-custom-type keyword t nth-keyword-builtin keywordp)
 
 (defun nth-character-uniform-builtin (m seed)
     (declare (ignorable m))
@@ -962,16 +985,17 @@ The corresponding rules do not seem to help, at all.
 ;; (verify-termination pos-listp) ; pos-listp is in program mode, so we need this.
 ;; (verify-guards pos-listp)
 
-(defdata    pos-list (listof pos))
+(defdata pos-list (listof pos))
 
-(defdata    integer-list (listof integer) )
-(defdata    rational-list (listof rational) )
-(defdata    complex-rational-list (listof complex-rational) )
+(defdata integer-list (listof integer))
+(defdata rational-list (listof rational))
+(defdata complex-rational-list (listof complex-rational))
 
-(defdata acl2-number-list (listof acl2-number) )
-(defdata boolean-list (listof boolean) )
-(defdata symbol-list  (listof symbol) )
-(defdata proper-symbol-list (listof proper-symbol) )
+(defdata acl2-number-list (listof acl2-number))
+(defdata boolean-list (listof boolean))
+(defdata symbol-list  (listof symbol))
+(defdata keyword-list (listof keyword))
+(defdata proper-symbol-list (listof proper-symbol))
 (defdata::register-type character-list 
                :domain-size t 
                :predicate character-listp
@@ -1017,6 +1041,7 @@ The corresponding rules do not seem to help, at all.
 (defdata-subtype-strict rational-list acl2-number-list )
 (defdata-subtype-strict acl2-number-list atom-list)
 (defdata-subtype-strict boolean-list symbol-list)
+(defdata-subtype-strict keyword-list symbol-list)
 (defdata-subtype-strict standard-char-list character-list)
 (defdata-subtype-strict character-list atom-list)
 (defdata-subtype-strict string-list atom-list)
@@ -1764,3 +1789,8 @@ The corresponding rules do not seem to help, at all.
        (res (max lo res))
        (res (min hi res)))
     res))
+
+(defthm eqlable-keyword-listp
+  (implies (keyword-listp keywords)
+           (eqlable-listp keywords)))
+

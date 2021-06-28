@@ -742,4 +742,3 @@ functions over natural numbers.
        (ecw ,@rst)
      nil))
 
-
