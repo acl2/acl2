@@ -40,6 +40,7 @@ use FindBin qw($RealBin);
 use lib "$RealBin/lib";
 use Storable qw(nstore retrieve);
 use Certlib;
+use Bookscan;
 
 # Note: Trying out FindBin::$RealBin.  If breaks, we can go back to
 # the system below.
