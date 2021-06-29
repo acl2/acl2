@@ -1515,7 +1515,7 @@
     (mv-let (temp1 bound-vars actuals producer-vars stobj)
       (stobj-let-fn x)
       (let* ((temp2 (oneify temp1 fns w program-p))
-             (dups-check (no-duplicatesp-checks-for-stobj-let-actuals
+             (dups-check (no-duplicate-indices-checks-for-stobj-let-actuals
                           bound-vars actuals producer-vars stobj w)))
         (cond (dups-check
                `(prog2$ (flet ((chk-no-stobj-array-index-aliasing

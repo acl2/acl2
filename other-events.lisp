@@ -20011,9 +20011,9 @@
 ; (That said, there are clearly issues to address to ensure that raw Lisp
 ; evaluation involving live stobjs is truly modeled by our evaluator.  The
 ; anti-aliasing restriction implemented in
-; no-duplicatesp-checks-for-stobj-let-actuals is an example of how we avoid
-; a non-applicative child stobj modification that would not be modeled by our
-; purely functional object-level evaluator.)
+; no-duplicate-indices-checks-for-stobj-let-actuals is an example of how we
+; avoid a non-applicative child stobj modification that would not be modeled by
+; our purely functional object-level evaluator.)
 
 ; We introduce two kinds of evaluation: the :EXEC evaluator models how ACL2
 ; actually does evaluation (again, avoiding consideration of live stobjs),

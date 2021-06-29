@@ -11655,7 +11655,8 @@
                                lst1
                                (cons (cdar alist) lst2)))))
 
-(defun no-duplicatesp-checks-for-stobj-let-actuals/alist (alist producer-vars)
+(defun no-duplicate-indices-checks-for-stobj-let-actuals/alist
+    (alist producer-vars)
   (cond
    ((endp alist) nil)
    (t
@@ -11665,15 +11666,15 @@
             (let ((indices (strip-cdrs pairs)))
               (and (nat-listp indices)
                    (no-duplicatesp indices))))
-        (no-duplicatesp-checks-for-stobj-let-actuals/alist (cdr alist)
-                                                           producer-vars))
+        (no-duplicate-indices-checks-for-stobj-let-actuals/alist
+         (cdr alist) producer-vars))
        (t
         (mv-let (producer-indices other-indices)
           (split-values-by-keys producer-vars pairs nil nil)
           (cond
            ((null producer-indices)
-            (no-duplicatesp-checks-for-stobj-let-actuals/alist (cdr alist)
-                                                               producer-vars))
+            (no-duplicate-indices-checks-for-stobj-let-actuals/alist
+             (cdr alist) producer-vars))
            (t
             (cons `(with-guard-checking
                     t
@@ -11702,7 +11703,7 @@
                     (chk-no-stobj-array-index-aliasing
                      (list ,@producer-indices)
                      (list ,@other-indices)))
-                  (no-duplicatesp-checks-for-stobj-let-actuals/alist
+                  (no-duplicate-indices-checks-for-stobj-let-actuals/alist
                    (cdr alist) producer-vars)))))))))))
 
 (defun concrete-accessor (accessor tuples-lst)
@@ -11718,7 +11719,7 @@
              (assert$ accessor$c
                       (concrete-accessor accessor$c (cdr tuples-lst)))))))
 
-(defun no-duplicatesp-checks-for-stobj-let-actuals-1
+(defun no-duplicate-indices-checks-for-stobj-let-actuals-1
     (bound-vars exprs producer-vars tuples-lst alist)
 
 ; It is useful to introduce the notion that st$c "ultimately underlies" a stobj
@@ -11739,12 +11740,12 @@
 
   (cond
    ((endp exprs)
-    (let ((lst (no-duplicatesp-checks-for-stobj-let-actuals/alist
+    (let ((lst (no-duplicate-indices-checks-for-stobj-let-actuals/alist
                 alist producer-vars)))
       (if (cdr lst)
           (cons 'progn$ lst)
         (car lst))))
-   (t (no-duplicatesp-checks-for-stobj-let-actuals-1
+   (t (no-duplicate-indices-checks-for-stobj-let-actuals-1
        (cdr bound-vars)
        (cdr exprs)
        producer-vars
@@ -11773,9 +11774,9 @@
 ; records, where st$c is the corresponding foundational stobj and
 ; absstobj-tuples is a list of tuples (name logic exec . updater), where
 ; updater is non-nil only when name is a child stobj accessor (hence exec is a
-; child stobj accessofr for st$c).  The first tuple is for the recognizer, the
-; second is for the creator, and the rest are for the exports, in order of
-; the exports in the original defabsstobj event.
+; child stobj accessor for st$c).  The first tuple is for the recognizer, the
+; second is for the creator, and the rest are for the exports, in order of the
+; exports in the original defabsstobj event.
 
   (st$c . absstobj-tuples)
   t)
@@ -11787,10 +11788,16 @@
                    (absstobj-tuples-lst (access absstobj-info abs-info :st$c)
                                         wrld))))))
 
-(defun no-duplicatesp-checks-for-stobj-let-actuals
+(defun no-duplicate-indices-checks-for-stobj-let-actuals
+
+; This function is called in translate11, to lay down a prog2$ call whose first
+; argument is a call of chk-no-stobj-array-index-aliasing, which is a function
+; whose body is nil but whose guard insists that array indices from stobj-let
+; bindings are suitably distinct.
+
     (bound-vars exprs producer-vars st wrld)
   (let ((tuples-lst (absstobj-tuples-lst st wrld)))
-    (no-duplicatesp-checks-for-stobj-let-actuals-1
+    (no-duplicate-indices-checks-for-stobj-let-actuals-1
      bound-vars exprs producer-vars tuples-lst nil)))
 
 (defun stobj-let-fn (x)
@@ -12029,9 +12036,9 @@
 ; that this is congruent to stobj.  First-acc is the first accessor, which is
 ; just used in the error message when another accessor's stobj doesn't match.
 
-; We do an additional check in chk-stobj-let/accessors to ensure, in the
-; abstract stobj case, that two different accessors aren't aliases for the same
-; underlying concrete stobj accessor.  See chk-stobj-let/accessors
+; We do an additional check in chk-stobj-let/accessors to ensure that two
+; different accessors aren't aliases for the same underlying concrete stobj
+; accessor.  See chk-stobj-let/accessors.
 
   (cond ((endp bound-vars) nil)
         (t (let* ((var (car bound-vars))
@@ -12080,23 +12087,6 @@
                           (car (stobjs-out (caar actuals) wrld))
                           (caar actuals)
                           stobj))
-                    ((member-equal actual (cdr actuals))
-
-; This case fixes a soundness bug for duplicated actuals (see :DOC note-8-0).
-; It effectively checks no-duplicatesp-equal of the actuals, but doing it here
-; one-by-one has the advantage that we can easily say which actual is
-; duplicated.  Alternatively, we could check only that scalar accessor
-; functions are not used more than once.  This is a bit stronger since it also
-; disallows duplicate array accesses (though they would be disallowed by guards
-; anyway).  If we ever relax the strict syntactic restrictions on actuals --
-; e.g., allow accessors from multiple congruent stobjs -- this check will need
-; to become smarter.
-
-                     (msg "The bindings of a stobj-let must contain no ~
-                           duplicated expressions, but in the following form, ~
-                           more than one variable is bound to the expression, ~
-                           ~x0."
-                          actual))
                     (t (chk-stobj-let/bindings stobj acc-stobj first-acc
                                                (cdr bound-vars)
                                                (cdr actuals)
@@ -12177,7 +12167,7 @@
         (t (cons (list (caar alist) (cdar alist))
                  (alist-to-doublets (cdr alist))))))
 
-(defun chk-stobj-let/accessors2 (alist producer-vars wrld)
+(defun chk-stobj-let/accessors2 (alist producer-vars concretep wrld)
 
 ; Alist contains entries (fn$c (var1 . expr1) (var2 . expr2) ... (varn
 ; . exprn)), where each expri is a call of a child stobj accessor that
@@ -12186,9 +12176,14 @@
 ; involving the field accessed by fn$c that is not completely read-only.
 ; Otherwise we return nil.
 
+; Concretep is used in the construction of the message (if non-nil) returned by
+; this function.  It is true iff the child stobj accessors are (implicitly)
+; from a parent stobj that is concrete.
+
   (cond
    ((endp alist) nil)
-   (t (let* ((msg1 (chk-stobj-let/accessors2 (cdr alist) producer-vars wrld))
+   (t (let* ((msg1 (chk-stobj-let/accessors2 (cdr alist) producer-vars
+                                             concretep wrld))
              (key (caar alist))
              (indexp (consp key))
              (fn$c (if indexp
@@ -12198,14 +12193,16 @@
                          (reverse (cdar alist))))
              (bad-vars (strip-cars (restrict-alist producer-vars pairs)))
              (msg2 (and bad-vars
-                        (msg "The stobj-let bindings ~x0 ultimately access ~
-                              the same field ~x1 of concrete stobj ~x2~@3.  ~
-                              Since variable~#4~[ ~&4 is~/s ~&4 are~] to be ~
-                              updated (i.e., ~#4~[it is~/they are~] among the ~
+                        (msg "The stobj-let bindings ~x0~@1 access ~
+                              the same field ~x2 of~@3 stobj ~x4~@5.  ~
+                              Since variable~#6~[ ~&6 is~/s ~&6 are~] to be ~
+                              updated (i.e., ~#6~[it is~/they are~] among the ~
                               stobj-let form's producer variables), this ~
                               aliasing is illegal."
                              (alist-to-doublets pairs)
+                             (if concretep "" " ultimately")
                              fn$c
+                             (if concretep "" " concrete")
                              (getpropc fn$c 'stobj-function nil wrld)
                              (if indexp
                                  " (with identical array indices)"
@@ -12219,37 +12216,40 @@
 (defun chk-stobj-let/accessors1 (bound-vars actuals producer-vars
                                             tuples tuples-lst wrld alist)
 
-; Tuples is the :absstobj-tuples field of an absstobj-info record for an
-; abstract stobj st, actuals is the values in the bindings of a stobj-let form,
-; and tuples-lst is the list of :absstobj-tuples for the chain of foundational
-; stobjs starting with the foundational stobj for st.  We look for aliasing
-; caused by ultimately invoking the same concrete stobj export.  However we do
-; not handle aliasing caused by non-identiccal array indices; for that, see
-; no-duplicatesp-checks-for-stobj-let-actuals-1, which generates guard
+; This function returns a msgp if there is aliasing caused by ultimately
+; invoking the same concrete stobj export of a stobj-let form (which is
+; implicit here; see discussion of inputs below).  However we do not handle
+; aliasing caused by non-identical array indices; for that, see
+; no-duplicate-indices-checks-for-stobj-let-actuals-1, which generates guard
 ; obligations rather than causing an error like the present function (but more
 ; precisely, the present function can return a msg, which is passed up the call
 ; chain until causing an error in defabsstobj-fn1).
 
-; We assume that we are here because of a chk-stobj-let call that invoked
-; chk-stobj-let/accessors after a corresponding check already done with
-; chk-stobj-let/bindings (see comment on assert$ below).
+; Actuals is the list of expressions in the bindings of a stobj-let form for a
+; stobj st, and producer-vars is the producer variables of that stobj-let form.
+; If st is a concrete stobj then tuples and tuples-lst are nil.  But if st is
+; an abstract stobj, then tuples is the :absstobj-tuples field of the
+; absstobj-info record for st, and tuples-lst is the list of :absstobj-tuples
+; for the chain of foundational stobjs starting with the foundational stobj for
+; st.
 
-; Note that duplicated actuals are already checked in chk-stobj-let/bindings;
-; here we are checking that two (distinct) actuals do not represent the same
-; update for the same concrete stobj.  We could actually avoid that previous
-; check in the case of abstract stobjs because the check is done here, but we
-; need the other check anyhow for concrete stobjs.  The price seems small for
-; the duplicated effort here, so we aren't concerned about that.
+; We assume that we are here because of a chk-stobj-let call that invoked
+; chk-stobj-let/accessors after a corresponding check already done successfully
+; with chk-stobj-let/bindings (see comment on assert$ below).
 
   (cond
    ((endp bound-vars) ; equivalently, (endp actuals)
-    (chk-stobj-let/accessors2 alist producer-vars wrld))
+    (chk-stobj-let/accessors2 alist producer-vars
+                              (null tuples) ; implicit stobj is concrete
+                              wrld))
    (t (let* ((var (car bound-vars))
              (actual (car actuals))
              (fn (car actual))
-             (tuple (assoc-eq fn tuples))
-             (fn$c0 (caddr tuple))
-             (fn$c (concrete-accessor fn$c0 tuples-lst))
+             (fn$c (cond (tuples ; abstract stobj case
+                          (let* ((tuple (assoc-eq fn tuples))
+                                 (fn$c0 (caddr tuple)))
+                            (concrete-accessor fn$c0 tuples-lst)))
+                         (t fn)))
              (index (and (= (length actual) 3)
                          (cadr actual)))
              (key (if index
@@ -12286,22 +12286,27 @@
 ; aliases for the same underlying concrete stobj accessor.  This notion of
 ; "underlying" refers to following the chain of foundational stobjs until a
 ; concrete stobj is reached.  (This is the notion of "ultimately underlies"
-; introduced in no-duplicatesp-checks-for-stobj-let-actuals-1.)
+; introduced in no-duplicate-indices-checks-for-stobj-let-actuals-1.)
 
 ; Note that this function checks (by way of chk-stobj-let/accessors1) for
 ; aliasing in the form of explicit duplication of accessors (modulo the
 ; corresponding underlying concrete stobj accessor) in the bindings of a
-; stobj-let form.  See no-duplicatesp-checks-for-stobj-let-actuals-1 for how we
-; deal with duplicate array indices by generating a runtime check that, in
-; turn, generates a suitable guard obligation.
+; stobj-let form.  See no-duplicate-indices-checks-for-stobj-let-actuals-1 for
+; how we deal with duplicate array indices by generating a runtime check that,
+; in turn, generates a suitable guard obligation.
 
   (let ((abs-info (getpropc st 'absstobj-info nil wrld)))
-    (and abs-info ; st is an abstract stobj
-         (let* ((tuples (access absstobj-info abs-info :absstobj-tuples))
-                (st$c (access absstobj-info abs-info :st$c))
-                (tuples-lst (absstobj-tuples-lst st$c wrld)))
-           (chk-stobj-let/accessors1 bound-vars actuals producer-vars
-                                     tuples tuples-lst wrld nil)))))
+    (cond
+     (abs-info ; st is an abstract stobj
+      (let* ((tuples (access absstobj-info abs-info :absstobj-tuples))
+             (st$c (access absstobj-info abs-info :st$c))
+             (tuples-lst (absstobj-tuples-lst st$c wrld)))
+        (assert$
+         tuples ; as expected for abstract stobjs in chk-stobj-let/accessors1
+         (chk-stobj-let/accessors1 bound-vars actuals producer-vars
+                                   tuples tuples-lst wrld nil))))
+     (t (chk-stobj-let/accessors1 bound-vars actuals producer-vars
+                                  nil nil wrld nil)))))
 
 (defun chk-stobj-let (bound-vars actuals stobj producer-vars bindings
                                  known-stobjs wrld)
@@ -12326,12 +12331,11 @@
           (msg "The name ~x0 is not the name of a field accessor for the ~
                 stobj ~x1, or even one congruent to it."
                first-accessor stobj))
-         ((chk-stobj-let/bindings
-           stobj acc-stobj first-accessor bound-vars actuals wrld))
-         ((chk-stobj-let/updaters bindings producer-vars acc-stobj wrld))
-         ((chk-stobj-let/accessors acc-stobj bound-vars actuals producer-vars
-                                   wrld))
-         (t nil))))))
+         (t (or (chk-stobj-let/bindings stobj acc-stobj first-accessor
+                                        bound-vars actuals wrld)
+                (chk-stobj-let/updaters bindings producer-vars acc-stobj wrld)
+                (chk-stobj-let/accessors acc-stobj bound-vars actuals
+                                         producer-vars wrld))))))))
 
 (defun all-nils-or-x (x lst)
   (declare (xargs :guard (and (symbolp x)
@@ -17204,11 +17208,8 @@
               (let ((actual-stobjs-out
                      (translate-deref stobjs-out bindings))
                     (dups-check
-                     (no-duplicatesp-checks-for-stobj-let-actuals bound-vars
-                                                                  actuals
-                                                                  producer-vars
-                                                                  stobj
-                                                                  wrld))
+                     (no-duplicate-indices-checks-for-stobj-let-actuals
+                      bound-vars actuals producer-vars stobj wrld))
                     (producer-stobjs
                      (collect-non-x
                       nil
