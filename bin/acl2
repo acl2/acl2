@@ -1,6 +1,6 @@
 #!/bin/sh
 
-{ pushd $(dirname "$0") ; invoking_dir="`pwd`" ; popd ; } > /dev/null
+{ cd $(dirname "$0") ; invoking_dir="`pwd`" ; cd - ; } > /dev/null
 my_acl2=$(dirname "$invoking_dir")/saved_acl2
 if [ -x "$my_acl2" ] ; then \
     "$my_acl2" "$@" ;\
