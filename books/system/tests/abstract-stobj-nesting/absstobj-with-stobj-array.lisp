@@ -578,3 +578,115 @@
 
 (assert! (equal (read-only-stobj-let-test-2 0 0 top)
                 '(3 . 3)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Example 2
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The next example shows that invariant-risk is preserved for stobj fields of
+; abstract stobj is maintained not only when the array access is in the
+; stobj-let bindings, but also when it is in the producer code.
+
+(defstobj sub0$c (sub0$c-fld :type (array t (8))))
+(defstobj top0$c (top0$c-fld :type sub0$c))
+(defun bar$c (n top0$c)
+  (declare (xargs :stobjs top0$c
+                  :guard (and (natp n)
+                              (< n 8))))
+  (stobj-let ((sub0$c (top0$c-fld top0$c)))
+             (sub0$c)
+             (update-sub0$c-fldi n 17 sub0$c)
+             top0$c))
+
+(defun sub0$ap (x)
+  (declare (xargs :guard t))
+  (non-exec (sub0$cp x)))
+(defun create-sub0$a ()
+  (declare (xargs :guard t))
+  (non-exec (create-sub0$c)))
+(defun sub0$a-fldi (i x)
+  (declare (xargs :guard (and (natp i)
+                              (< i 8))))
+  (non-exec (sub0$c-fldi i x)))
+(defun update-sub0$a-fldi (i v x)
+  (declare (xargs :guard (and (natp i)
+                              (< i 8))))
+  (non-exec (update-sub0$c-fldi i v x)))
+(defun top0$ap (x)
+  (declare (xargs :guard t))
+  (non-exec (top0$cp x)))
+(defun create-top0$a ()
+  (declare (xargs :guard t))
+  (non-exec (create-top0$c)))
+(defun top0$a-fld (x)
+  (declare (xargs :guard (top0$ap x)))
+  (non-exec (top0$c-fld x)))
+(defun update-top0$a-fld (sub0$c y)
+  (declare (xargs :stobjs sub0$c
+                  :guard (top0$ap y)))
+  (non-exec (update-top0$c-fld sub0$c y)))
+(defun top0$corr (top0$c x)
+  (declare (xargs :stobjs top0$c))
+  (non-exec (equal top0$c x)))
+
+(DEFTHM CREATE-TOP0{CORRESPONDENCE}
+        (TOP0$CORR (CREATE-TOP0$C)
+                   (CREATE-TOP0$A))
+        :RULE-CLASSES NIL)
+
+(DEFTHM CREATE-TOP0{PRESERVED}
+        (TOP0$AP (CREATE-TOP0$A))
+        :RULE-CLASSES NIL)
+
+(DEFTHM TOP0-FLD{CORRESPONDENCE}
+        (IMPLIES (AND (TOP0$CORR TOP0$C TOP0)
+                      (TOP0$AP TOP0))
+                 (EQUAL (TOP0$C-FLD TOP0$C)
+                        (TOP0$A-FLD TOP0)))
+        :RULE-CLASSES NIL)
+
+(DEFTHM UPDATE-TOP0-FLD{CORRESPONDENCE}
+        (IMPLIES (AND (TOP0$CORR TOP0$C TOP0)
+                      (SUB0$CP SUB0$C)
+                      (TOP0$AP TOP0))
+                 (TOP0$CORR (UPDATE-TOP0$C-FLD SUB0$C TOP0$C)
+                            (UPDATE-TOP0$A-FLD SUB0$C TOP0)))
+        :RULE-CLASSES NIL)
+
+(DEFTHM UPDATE-TOP0-FLD{PRESERVED}
+        (IMPLIES (AND (SUB0$CP SUB0$C) (TOP0$AP TOP0))
+                 (TOP0$AP (UPDATE-TOP0$A-FLD SUB0$C TOP0)))
+        :RULE-CLASSES NIL)
+
+(defabsstobj top0
+  :exports ((top0-fld :logic top0$a-fld
+                      :exec top0$c-fld
+                      :updater update-top0-fld)
+            (update-top0-fld :logic update-top0$a-fld
+                             :exec update-top0$c-fld)))
+
+(defun bar (n top0)
+  (declare (xargs :stobjs top0
+                  :guard (and (natp n)
+                              (< n 8))))
+  (stobj-let ((sub0$c (top0-fld top0)))
+             (sub0$c)
+             (update-sub0$c-fldi n 17 sub0$c) ; creates invariant-risk
+             top0))
+
+(defun bar-program-wrapper (n top0)
+  (declare (xargs :mode :program :stobjs top0))
+  (bar n top0))
+
+(defun bar-program-wrapper-test-1 (i)
+  (declare (xargs :mode :program))
+  (with-local-stobj top0
+    (mv-let (ans top0)
+      (let ((top0 (bar-program-wrapper i top0)))
+        (mv t top0))
+      ans)))
+
+(assert! (eq (bar-program-wrapper-test-1 3) t))
+
+(must-fail (bar-program-wrapper-test-1 9)
+           :expected :hard)
