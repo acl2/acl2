@@ -88,9 +88,9 @@
    (xdoc::p
     "A list of constraints is well-formed iff
      all the constraints are well-formed."))
-  (cond ((endp constrs) t)
-        (t (and (constraint-wfp (car constrs) sys)
-                (constraint-list-wfp (cdr constrs) sys))))
+  (or (endp constrs)
+      (and (constraint-wfp (car constrs) sys)
+           (constraint-list-wfp (cdr constrs) sys)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -136,8 +136,8 @@
   ((define system-wfp-aux ((rev-sys systemp))
      :returns (yes/no booleanp)
      :parents nil
-     (cond ((endp rev-sys) t)
-           (t (and (system-wfp-aux (cdr rev-sys))
-                   (definition-wfp (car rev-sys) (cdr rev-sys)))))
+     (or (endp rev-sys)
+         (and (system-wfp-aux (cdr rev-sys))
+              (definition-wfp (car rev-sys) (cdr rev-sys))))
      :hooks (:fix)))
   :hooks (:fix))
