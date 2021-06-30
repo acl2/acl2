@@ -10,7 +10,7 @@
 
 (in-package "PFCS")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,30 +31,6 @@
     "All these well-formedness conditions are formalized here."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define lookup-definition ((name symbolp) (sys systemp))
-  :returns (def? definition-optionp)
-  :short "Look up a definition in a system of constraints."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the system has a definition for the given name,
-     return that definition.
-     Otherwise return @('nil').")
-   (xdoc::p
-    "We return the first definition found for that name.
-     In a well-formed system of constraints,
-     there is at most a definition for each name,
-     and thus returning the first one found is also the only one."))
-  (b* (((when (endp sys)) nil)
-       (def (car sys))
-       ((when (eq (definition->name def)
-                  (symbol-fix name)))
-        (definition-fix def)))
-    (lookup-definition name (cdr sys)))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,9 +64,9 @@
    (xdoc::p
     "A list of constraints is well-formed iff
      all the constraints are well-formed."))
-  (cond ((endp constrs) t)
-        (t (and (constraint-wfp (car constrs) sys)
-                (constraint-list-wfp (cdr constrs) sys))))
+  (or (endp constrs)
+      (and (constraint-wfp (car constrs) sys)
+           (constraint-list-wfp (cdr constrs) sys)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -136,8 +112,8 @@
   ((define system-wfp-aux ((rev-sys systemp))
      :returns (yes/no booleanp)
      :parents nil
-     (cond ((endp rev-sys) t)
-           (t (and (system-wfp-aux (cdr rev-sys))
-                   (definition-wfp (car rev-sys) (cdr rev-sys)))))
+     (or (endp rev-sys)
+         (and (system-wfp-aux (cdr rev-sys))
+              (definition-wfp (car rev-sys) (cdr rev-sys))))
      :hooks (:fix)))
   :hooks (:fix))

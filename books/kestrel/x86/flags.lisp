@@ -330,7 +330,7 @@
 (defthm get-flag-of-set-flag
   (implies (and (member-eq flag1 *flags*)
                 ;;todo: add more:
-                (member-eq flag2 '(::af :cf :pf :of :sf :zf))
+                (member-eq flag2 '(:af :cf :pf :of :sf :zf))
                 (unsigned-byte-p 1 val))
            (equal (get-flag flag1 (set-flag flag2 val x86))
                   (if (equal flag1 flag2)
