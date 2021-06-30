@@ -18,7 +18,8 @@
 (defpkg "PFCS" (append (set-difference-eq *std-pkg-symbols*
                                           '(eval
                                             proof-tree))
-                       '(defund-sk
+                       '(define-sk
+                         defund-sk
                          defxdoc+
                          int
                          maybe-natp
