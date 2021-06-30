@@ -11,13 +11,19 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
+(include-book "kestrel/prime-fields/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "PFCS" (append (set-difference-eq *std-pkg-symbols*
-                                          '(eval))
+                                          '(eval
+                                            proof-tree))
                        '(defund-sk
                          defxdoc+
                          int
+                         maybe-natp
+                         nat
                          symbol-fix
-                         symbol-list)))
+                         symbol-list
+                         pfield::fep
+                         pfield::fe-listp)))
