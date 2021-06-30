@@ -15,8 +15,7 @@
 (include-book "kestrel/utilities/digits-any-base/core" :dir :system)
 (include-book "kestrel/ethereum/semaphore/baby-jubjub-prime" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
-
-(include-book "kestrel/crypto/r1cs/fe-listp" :dir :system)
+(include-book "kestrel/prime-fields/fe-listp" :dir :system)
 
 
 ;; Note, (zksemaphore::baby-jubjub-prime) is defined to be equal to

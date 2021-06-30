@@ -10,7 +10,7 @@
 
 (in-package "PFIELD")
 
-(include-book "kestrel/prime-fields/prime-fields" :dir :system)
+(include-book "prime-fields") ;todo: reduce?
 
 ;; Recognize a true list of field elements.
 (defun fe-listp (elems prime)

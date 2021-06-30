@@ -30,4 +30,7 @@
 (include-book "rule-lists")
 (include-book "printing")
 
+(include-book "fe-listp")
+(include-book "fe-listp-fast")
+
 (include-book "bitp-idioms")
