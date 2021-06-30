@@ -12,8 +12,8 @@
 
 (include-book "abstract-syntax-operations")
 
-(include-book "kestrel/crypto/r1cs/fe-listp" :dir :system)
 (include-book "kestrel/fty/defomap" :dir :system)
+(include-book "kestrel/prime-fields/fe-listp" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
