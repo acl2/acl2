@@ -10,7 +10,7 @@
 
 (in-package "PFCS")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,30 +31,6 @@
     "All these well-formedness conditions are formalized here."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define lookup-definition ((name symbolp) (sys systemp))
-  :returns (def? definition-optionp)
-  :short "Look up a definition in a system of constraints."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the system has a definition for the given name,
-     return that definition.
-     Otherwise return @('nil').")
-   (xdoc::p
-    "We return the first definition found for that name.
-     In a well-formed system of constraints,
-     there is at most a definition for each name,
-     and thus returning the first one found is also the only one."))
-  (b* (((when (endp sys)) nil)
-       (def (car sys))
-       ((when (eq (definition->name def)
-                  (symbol-fix name)))
-        (definition-fix def)))
-    (lookup-definition name (cdr sys)))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
