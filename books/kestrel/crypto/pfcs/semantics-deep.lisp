@@ -12,12 +12,12 @@
 
 (include-book "abstract-syntax-operations")
 
+(include-book "kestrel/crypto/r1cs/fe-listp" :dir :system)
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
-(include-book "kestrel/crypto/r1cs/fe-listp" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
-(in-theory (disable rtl::primep))
+(local (in-theory (disable rtl::primep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
