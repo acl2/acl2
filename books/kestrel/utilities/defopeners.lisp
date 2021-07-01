@@ -522,7 +522,7 @@
                               (not (eq 'quote fn))
                               (symbol-listp all-fns-in-nest)
                               (true-listp hyps)
-                              ;(pseudo-term-listp hyps) ; todo: not necessarily true?
+                              ;;(pseudo-term-listp hyps) ; todo: not necessarily true?
                               (symbolp suffix)
                               (plist-worldp wrld)
                               )
@@ -530,7 +530,7 @@
                   ))
   (let* ((body (fn-body fn t wrld))
          (body (remove-guard-holders-weak body))
-        (formals (fn-formals fn wrld)))
+         (formals (fn-formals fn wrld)))
     (mv-let (base-claims unroll-claims)
       (make-unroll-and-base-claims-aux body all-fns-in-nest `(,fn ,@formals))
       (b* ((base-claims (add-hyps-to-claims hyps base-claims))
@@ -561,10 +561,10 @@
                            (cw "Unroll theorems for ~x0:~%" fn)
                            (cw-theorems unroll-theorems)))))
         (mv `(progn (encapsulate ()
-                  (local (install-not-normalized ,fn))
-                  (set-ignore-ok t)
-                  ,@base-theorems
-                  ,@unroll-theorems)
+                      (local (install-not-normalized ,fn))
+                      (set-ignore-ok t)
+                      ,@base-theorems
+                      ,@unroll-theorems)
                     (value-triple ',(append base-theorem-names unroll-theorem-names)))
             (append base-theorem-names unroll-theorem-names))))))
 
