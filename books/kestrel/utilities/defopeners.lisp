@@ -45,40 +45,10 @@
 (include-book "misc/install-not-normalized" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system) ;for control-screen-output
 (include-book "defthm-events")
-(local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "remove-guard-holders"))
 
 (local (in-theory (disable mv-nth
                            remove-guard-holders-weak)))
-
-;move
-(local
- (defthm car-last-when-length-known
-   (implies (and (equal (len x) k)
-                 (posp k))
-            (equal (car (last x))
-                   (nth (+ -1 k) x)))))
-
-;move
-(local
- (defthm pseudo-termp-of-car-of-last-of-car
-  (implies (and (pseudo-termp term)
-                (consp term)
-                (consp (cdr (car term))))
-           (pseudo-termp (car (last (car term)))))
-  :hints (("Goal" :in-theory (disable len)
-           :expand ((pseudo-termp term))))))
-
-;move
-(defthm pseudo-termp-of-beta-reduce
-  (implies (and (pseudo-termp term)
-                (consp term)
-                (consp (car term)))
-           (pseudo-termp (beta-reduce term)))
-  :hints (("Goal" :expand ((pseudo-termp term)
-                           (nth 2 (car term))
-                           (nth 1 (cdr (car term))))
-           :in-theory (enable beta-reduce nth))))
 
 ;; end of library stuff
 

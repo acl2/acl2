@@ -23,6 +23,7 @@
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/add-to-set-equal" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
+(local (include-book "kestrel/lists-light/last" :dir :system))
 
 ;todo: use list fix to combine these into a nice rule?
 
@@ -434,7 +435,35 @@
          (body (car (last lambda-part))) ;previously we took the third part, but declares sometime intervene?
          (actuals (cdr lambda-expr)))
     (sublis-var-simple (pairlis$ formals actuals)
-                   body)))
+                       body)))
+
+;move
+(local
+ (defthm car-last-when-length-known
+   (implies (and (equal (len x) k)
+                 (posp k))
+            (equal (car (last x))
+                   (nth (+ -1 k) x)))))
+
+;move
+(local
+ (defthm pseudo-termp-of-car-of-last-of-car
+  (implies (and (pseudo-termp term)
+                (consp term)
+                (consp (cdr (car term))))
+           (pseudo-termp (car (last (car term)))))
+  :hints (("Goal" :in-theory (disable len)
+           :expand ((pseudo-termp term))))))
+
+(defthm pseudo-termp-of-beta-reduce
+  (implies (and (pseudo-termp term)
+                (consp term)
+                (consp (car term)))
+           (pseudo-termp (beta-reduce term)))
+  :hints (("Goal" :expand ((pseudo-termp term)
+                           (nth 2 (car term))
+                           (nth 1 (cdr (car term))))
+           :in-theory (enable beta-reduce nth))))
 
 ;; where should this go?
 ;; Negate TERM by adding or removing a call of not (avoids double negation)
@@ -472,12 +501,11 @@
                          (length b))))))
   :hints (("Goal" :in-theory (enable pseudo-termp))))
 
+;move
 (defthm pseudo-termp-car-last
   (implies (pseudo-term-listp term)
-           (pseudo-termp (car (last term)))))
-
-
-
+           (pseudo-termp (car (last term))))
+  :hints (("Goal" :in-theory (enable last))))
 
 ;; (thm
 ;;  (implies (natp n)
