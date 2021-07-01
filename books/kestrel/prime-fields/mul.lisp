@@ -63,6 +63,11 @@
          0)
   :hints (("Goal" :in-theory (enable mul))))
 
+(defthm mul-of-0-arg3
+  (equal (mul x y 0)
+         0)
+  :hints (("Goal" :in-theory (enable mul))))
+
 (defthm mul-when-not-integerp-arg1-cheap
   (implies (not (integerp x))
            (equal (mul x y p)
