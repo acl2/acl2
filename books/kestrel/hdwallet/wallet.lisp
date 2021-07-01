@@ -23,6 +23,9 @@
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/strtok" :dir :system)
 
+; Added 7/1/2021 by Matt K. after 3 successive ACL2(p) certification failures:
+(set-waterfall-parallelism nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ crypto-hdwallet

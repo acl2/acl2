@@ -45,43 +45,10 @@
 (include-book "misc/install-not-normalized" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system) ;for control-screen-output
 (include-book "defthm-events")
+(local (include-book "remove-guard-holders"))
 
 (local (in-theory (disable mv-nth
                            remove-guard-holders-weak)))
-
-;dup in ../sequences/seq2
-(defthm last-of-cdr
-  (equal (last (cdr x))
-         (if (consp (cdr x))
-             (last x)
-           (cdr x))))
-
-;move
-(defthm car-last-when-length-known
-  (implies (and (equal (len x) k)
-                (posp k))
-           (equal (car (last x))
-                  (nth (+ -1 k) x))))
-
-;move
-(defthm pseudo-termp-of-car-of-last-of-car
-  (implies (and (pseudo-termp term)
-                (consp term)
-                (consp (cdr (car term))))
-           (pseudo-termp (car (last (car term)))))
-  :hints (("Goal" :in-theory (disable len)
-           :expand ((pseudo-termp term)))))
-
-;move
-(defthm pseudo-termp-of-beta-reduce
-  (implies (and (pseudo-termp term)
-                (consp term)
-                (consp (car term)))
-           (pseudo-termp (beta-reduce term)))
-  :hints (("Goal" :expand ((pseudo-termp term)
-                           (nth 2 (car term))
-                           (nth 1 (cdr (car term))))
-           :in-theory (enable beta-reduce nth))))
 
 ;; end of library stuff
 
@@ -161,7 +128,7 @@
     (cons (add-hyp-to-claim hyp (first claims))
           (add-hyp-to-claims hyp (rest claims)))))
 
-(defthm pseudo-term-listp-of-add-hyp-to-claim
+(defthm pseudo-term-listp-of-add-hyp-to-claims
   (implies (and (pseudo-termp hyp)
                 (pseudo-term-listp claims))
            (pseudo-term-listp (add-hyp-to-claims hyp claims))))
@@ -180,6 +147,11 @@
       claim
     (add-hyp-to-claim (first hyps) (add-hyps-to-claim (rest hyps) claim))))
 
+(defthm pseudo-termp-of-add-hyps-to-claim
+  (implies (and (pseudo-term-listp hyps)
+                (pseudo-termp claim))
+           (pseudo-termp (add-hyps-to-claim hyps claim))))
+
 (defund add-hyps-to-claims (hyps claims)
   (declare (xargs :guard (and (true-listp hyps)
                               (true-listp claims))))
@@ -191,6 +163,12 @@
 (defthm len-of-add-hyps-to-claims
   (equal (len (add-hyps-to-claims hyps claims))
          (len claims))
+  :hints (("Goal" :in-theory (enable add-hyps-to-claims))))
+
+(defthm pseudo-termp-of-add-hyps-to-claims
+  (implies (and (pseudo-term-listp hyps)
+                (pseudo-term-listp claims))
+           (pseudo-term-listp (add-hyps-to-claims hyps claims)))
   :hints (("Goal" :in-theory (enable add-hyps-to-claims))))
 
 ;; ;finds free vars in a term
@@ -321,52 +299,52 @@
                   ))
   (if (and (consp term)
            (eq 'if (ffn-symb term)))
+      ;; TERM is an IF:
       (mv-let
-       (base-claims1 unroll-claims1)
-       (make-unroll-and-base-claims-aux (farg2 term) fns fn-call)
-       (mv-let
-        (base-claims2 unroll-claims2)
-        (make-unroll-and-base-claims-aux (farg3 term) fns fn-call)
-        (if (and (not base-claims1) (not base-claims2))
-            ;; no base cases in either branch, so the IF is irrelevant, and this whole branch is an -unroll theorem
-            (mv nil ; no base-claims
-                (list `(equal ,fn-call ,term)))
-          (if (and (not unroll-claims1) (not unroll-claims2))
-              ;; no recursive calls in either branch, so the IF is irrelevant, and this whole branch is a -base theorem
-              (mv (list `(equal ,fn-call ,term))
-                  nil ; no unroll-claims
-                  )
-            (mv (append (add-hyp-to-claims (farg1 term) base-claims1) ;; the claims from the then-branch get the IF test as a hyp
-                        (add-hyp-to-claims `(not ,(farg1 term)) base-claims2)) ;; the claims from the else-branch get the negated IF test as a hyp
-                (append (add-hyp-to-claims (farg1 term) unroll-claims1) ;; the claims from the then-branch get the IF test as a hyp
-                        (add-hyp-to-claims `(not ,(farg1 term)) unroll-claims2)) ;; the claims from the else-branch get the negated IF test as a hyp
-                )))))
+        (base-claims1 unroll-claims1)
+        (make-unroll-and-base-claims-aux (farg2 term) fns fn-call)
+        (mv-let
+          (base-claims2 unroll-claims2)
+          (make-unroll-and-base-claims-aux (farg3 term) fns fn-call)
+          (if (and (not base-claims1) (not base-claims2))
+              ;; no base cases in either branch, so this whole branch is an -unroll case
+              (mv nil ; no base-claims
+                  (list `(equal ,fn-call ,term)))
+            (if (and (not unroll-claims1) (not unroll-claims2))
+                ;; no recursive calls in either branch, so this whole branch is a -base case
+                (mv (list `(equal ,fn-call ,term))
+                    nil ; no unroll-claims
+                    )
+              (mv (append (add-hyp-to-claims (farg1 term) base-claims1) ;; the claims from the then-branch get the IF test as a hyp
+                          (add-hyp-to-claims `(not ,(farg1 term)) base-claims2)) ;; the claims from the else-branch get the negated IF test as a hyp
+                  (append (add-hyp-to-claims (farg1 term) unroll-claims1) ;; the claims from the then-branch get the IF test as a hyp
+                          (add-hyp-to-claims `(not ,(farg1 term)) unroll-claims2)) ;; the claims from the else-branch get the negated IF test as a hyp
+                  )))))
     (if (and (consp term)
              (consp (ffn-symb term)))
-        ;; It's a lambda application: ((lambda <formals> <body>) ...<actuals>...)
+        ;; TERM is a lambda application: ((lambda <formals> <body>) ...<actuals>...)
         (let ((lambda-formals (second (ffn-symb term)))
               (lambda-body (third (ffn-symb term)))
               (lambda-actuals (fargs term)))
           ;; FIXME: Think about this:  If there is a recursive call in one of the args, we just consider the whole term a recursive case:
           (if (some-expr-calls-some-fn fns lambda-actuals)
               (mv nil ; no base-claims
-               (list `(equal ,fn-call ,term)))
-            (mv-let
-             (base-claims unroll-claims)
-             (make-unroll-and-base-claims-aux lambda-body fns fn-call)
-             (if (not base-claims)
-                 ;; no base cases, so this whole branch is an -unroll theorem
-                 (mv nil ; no base-claims
                   (list `(equal ,fn-call ,term)))
-               (if (not unroll-claims)
-                   ;; no recursive calls, so this whole branch is a -base theorem
-                   (mv (list `(equal ,fn-call ,term))
-                       nil ; no unroll-claims
-                       )
-                 (mv (wrap-lambda-around-claims base-claims lambda-formals lambda-actuals)
-                     (wrap-lambda-around-claims unroll-claims lambda-formals lambda-actuals)))))))
-
-      ;; not an IF or LET:
+            (mv-let
+              (base-claims unroll-claims)
+              (make-unroll-and-base-claims-aux lambda-body fns fn-call)
+              (if (not base-claims)
+                  ;; no base cases, so this whole branch is an -unroll theorem
+                  (mv nil ; no base-claims
+                      (list `(equal ,fn-call ,term)))
+                (if (not unroll-claims)
+                    ;; no recursive calls, so this whole branch is a -base theorem
+                    (mv (list `(equal ,fn-call ,term))
+                        nil ; no unroll-claims
+                        )
+                  (mv (wrap-lambda-around-claims base-claims lambda-formals lambda-actuals)
+                      (wrap-lambda-around-claims unroll-claims lambda-formals lambda-actuals)))))))
+      ;; TERM is not an IF or LET:
       (if (expr-calls-some-fn fns term)
           ;; a recursive case, so make an unroll rule:
           (mv nil ; no base-claims
@@ -410,9 +388,8 @@
           `(implies (and ,@hyp-conjuncts)
                     ,body))))))
 
-(defun make-base-theorems (claims num totalnum defthmnameprefix fn formals disable state)
-  (declare (xargs :stobjs state
-                  :guard (and (natp num)
+(defun make-base-theorems (claims num totalnum defthmnameprefix fn formals disable)
+  (declare (xargs :guard (and (natp num)
                               (natp totalnum)
                               (symbolp fn)
                               (pseudo-term-listp claims)
@@ -430,11 +407,10 @@
                        :expand ((,fn ,@formals))
                        :in-theory (union-theories '(,(add-suffix fn "$NOT-NORMALIZED"))
                                                   (theory 'minimal-theory)))))
-            (make-base-theorems (rest claims) (+ 1 num) totalnum defthmnameprefix fn formals disable state)))))
+            (make-base-theorems (rest claims) (+ 1 num) totalnum defthmnameprefix fn formals disable)))))
 
-(defun make-unroll-theorems (claims num totalnum defthmnameprefix fn formals disable state)
-  (declare (xargs :stobjs state
-                  :guard (and (natp num)
+(defun make-unroll-theorems (claims num totalnum defthmnameprefix fn formals disable)
+  (declare (xargs :guard (and (natp num)
                               (natp totalnum)
                               (symbolp fn)
                               (pseudo-term-listp claims)
@@ -452,7 +428,7 @@
                        :expand ((,fn ,@formals))
                        :in-theory (union-theories '(,(add-suffix fn "$NOT-NORMALIZED"))
                                                   (theory 'minimal-theory)))))
-            (make-unroll-theorems (rest claims) (+ 1 num) totalnum defthmnameprefix fn formals disable state)))))
+            (make-unroll-theorems (rest claims) (+ 1 num) totalnum defthmnameprefix fn formals disable)))))
 
 
 ;;         (mv (cons `(defthm ,(if (> total-unroll-count 1)
@@ -508,18 +484,23 @@
                               (symbolp existing-symbol))))
   (intern-in-package-of-symbol (symbol-name symbol) existing-symbol))
 
+(local (in-theory (disable w true-listp PLIST-WORLDP SYMBOL-LISTP)))
+
 ;; Returns (mv event generated-names).
-(defund make-unroll-and-base-theorems (fn all-fns-in-nest hyps disable suffix verbose state)
-  (declare (xargs :stobjs state
-                  :guard (and (symbolp fn)
+(defund make-unroll-and-base-theorems (fn all-fns-in-nest hyps disable suffix verbose wrld)
+  (declare (xargs :guard (and (symbolp fn)
+                              (not (eq 'quote fn))
                               (symbol-listp all-fns-in-nest)
+                              (true-listp hyps)
+                              ;;(pseudo-term-listp hyps) ; todo: not necessarily true?
                               (symbolp suffix)
+                              (plist-worldp wrld)
                               )
-                  :verify-guards nil ;todo
+                  :verify-guards nil ;todo: not provable if the hyps are not pseudo-terms
                   ))
-  (let* ((body (fn-body fn t (w state)))
+  (let* ((body (fn-body fn t wrld))
          (body (remove-guard-holders-weak body))
-        (formals (fn-formals fn (w state))))
+         (formals (fn-formals fn wrld)))
     (mv-let (base-claims unroll-claims)
       (make-unroll-and-base-claims-aux body all-fns-in-nest `(,fn ,@formals))
       (b* ((base-claims (add-hyps-to-claims hyps base-claims))
@@ -537,11 +518,11 @@
            (base-theorems (make-base-theorems base-claims 1
                                               (len base-claims)
                                               base-theorems-name-root
-                                              fn formals disable state))
+                                              fn formals disable))
            (unroll-theorems (make-unroll-theorems unroll-claims 1
                                                   (len unroll-claims)
                                                   unroll-theorems-name-root
-                                                  fn formals disable state))
+                                                  fn formals disable))
            (base-theorem-names (strip-cadrs base-theorems))
            (unroll-theorem-names (strip-cadrs unroll-theorems))
            (- (and verbose
@@ -550,10 +531,10 @@
                            (cw "Unroll theorems for ~x0:~%" fn)
                            (cw-theorems unroll-theorems)))))
         (mv `(progn (encapsulate ()
-                  (local (install-not-normalized ,fn))
-                  (set-ignore-ok t)
-                  ,@base-theorems
-                  ,@unroll-theorems)
+                      (local (install-not-normalized ,fn))
+                      (set-ignore-ok t)
+                      ,@base-theorems
+                      ,@unroll-theorems)
                     (value-triple ',(append base-theorem-names unroll-theorem-names)))
             (append base-theorem-names unroll-theorem-names))))))
 
@@ -565,7 +546,7 @@
   (declare (xargs :stobjs state
                   :verify-guards nil))
   (mv-let (event names)
-    (make-unroll-and-base-theorems fn (list fn) hyps disable suffix verbose state)
+    (make-unroll-and-base-theorems fn (list fn) hyps disable suffix verbose (w state))
     (declare (ignore names))
     event))
 
@@ -587,7 +568,7 @@
   (declare (xargs :stobjs state
                   :verify-guards nil))
   (mv-let (event names)
-    (make-unroll-and-base-theorems fn (list fn) hyps disable suffix verbose state)
+    (make-unroll-and-base-theorems fn (list fn) hyps disable suffix verbose (w state))
     (declare (ignore event))
     names))
 
@@ -606,7 +587,7 @@
   (declare (xargs :stobjs state
                   :verify-guards nil))
   (mv-let (event names)
-    (make-unroll-and-base-theorems fn (fn-recursive-partners fn state) hyps disable suffix verbose state)
+    (make-unroll-and-base-theorems fn (fn-recursive-partners fn state) hyps disable suffix verbose (w state))
     (declare (ignore names))
     event))
 

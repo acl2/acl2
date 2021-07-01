@@ -65,11 +65,6 @@
          (mul x y p))
   :hints (("Goal" :in-theory (enable mul mul-unguarded))))
 
-(defthm mul-of-0-arg3
-  (equal (mul x y 0)
-         0)
-  :hints (("Goal" :in-theory (enable mul))))
-
 (defthm mul-of-1-arg3
   (equal (mul x y 1)
          0)
