@@ -195,22 +195,6 @@
 ;;      (union-eq (vars-in-term (car term-lst))
 ;;                (vars-in-term-lst (cdr term-lst))))))
 
-;term should be a lambda
-;; (defund maybe-beta-reduce (term)
-;;   (declare (xargs :guard (pseudo-termp term)))
-;;   (if (and (consp term)
-;;            (consp (ffn-symb term))
-;;       ;     (true-listp (cdr term))
-;;            )
-;;       (beta-reduce term)
-;;     ;;not a lambda, so do nothing I guess:
-;;     term))
-
-;; (defthm PSEUDO-TERMP-of-maybe-BETA-REDUCE
-;;  (implies (PSEUDO-TERMP term)
-;;           (PSEUDO-TERMP (MAYBE-BETA-REDUCE term)))
-;;  :hints (("Goal" :in-theory (enable maybe-beta-reduce))))
-
 ;fixme think this through
 ;claim is a nest of implies bottoming out in an (equal <function-call> <body>) where <body> and the conditions of the implies may already have lambdas wrapped around them?
 ;the point of this is that we don't want to wrap the function call buried deep in the equality
@@ -256,8 +240,6 @@
                 (equal (len lambda-formals)
                        (len lambda-actuals)))
            (pseudo-termp (wrap-lambda-around-claim claim lambda-formals lambda-actuals))))
-
-(in-theory (disable beta-reduce))
 
 ;; (defthm wrap-lambda-around-claim-type-2
 ;;   (implies (and (pseudo-termp claim))

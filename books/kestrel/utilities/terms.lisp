@@ -433,7 +433,7 @@
 
 ;returns a term with one level of lambda removed...
 ;fixme what if the body is also a lambda?
-(defun beta-reduce (lambda-expr)
+(defund beta-reduce (lambda-expr)
   (declare (xargs :guard (my-lambda-applicationp lambda-expr)))
   (let* ((lambda-part (first lambda-expr))
          (formals (second lambda-part))
