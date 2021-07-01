@@ -616,11 +616,6 @@
                     a)))
   :hints (("Goal" :cases ((equal 0 a)))))
 
-(defthm mul-of-0
-  (equal (mul 0 y p)
-         0)
-  :hints (("Goal" :in-theory (enable mul))))
-
 ;; a cancellation rule
 (defthm equal-of-mul-and-mul-same
   (implies (and (fep x p)
@@ -1107,11 +1102,6 @@
 
 (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
 (local (include-book "kestrel/number-theory/primes" :dir :system))
-
-(defthm mul-of-0-arg3
-  (equal (mul x y 0)
-         0)
-  :hints (("Goal" :in-theory (enable mul))))
 
 (defthm pow-of-neg
   (implies (and (posp p)

@@ -217,3 +217,38 @@
               (EQUAL (MYREV X)
                      (BINARY-APPEND (MYREV (CDR X))
                                     (CONS (CAR X) 'NIL)))))))
+
+;; Example showing repeated terms in the generated rules
+(deftest
+  (defun weird-len (x)
+    (if (atom x)
+        0
+      (let ((res (len (cdr x))))
+        (if (equal res 4)
+            5
+          (if (equal res 5)
+              6
+            ;; consider also a version where res is passed to the recursive call:
+            (+ 1 (weird-len (cdr x))))))))
+  (defopeners weird-len)
+
+  (must-be-redundant
+   ;; TODO: Note that (len (cdr x)) appears 3 times in this.  Improve
+   ;; defopeners to avoid that, perhaps using a binding hyp (but consider that
+   ;; you can't have more than one binding hyp for a var, but you can re-bind
+   ;; a let var).  There is also repetition in some of the base case rules
+   (DEFTHM
+     WEIRD-LEN-UNROLL
+     (IMPLIES (AND (NOT (ATOM X))
+                   (NOT (EQUAL (LEN (CDR X)) '4))
+                   (NOT (EQUAL (LEN (CDR X)) '5)))
+              (EQUAL (WEIRD-LEN X)
+                     ((LAMBDA (RES X) ; res is bound but not used!
+                              (BINARY-+ '1 (WEIRD-LEN (CDR X))))
+                      (LEN (CDR X))
+                      X)))
+     :HINTS
+     (("Goal"
+       :EXPAND ((WEIRD-LEN X))
+       :IN-THEORY (UNION-THEORIES '(WEIRD-LEN$NOT-NORMALIZED)
+                                  (THEORY 'MINIMAL-THEORY)))))))
