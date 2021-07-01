@@ -328,11 +328,11 @@
         (base-claims2 unroll-claims2)
         (make-unroll-and-base-claims-aux (farg3 term) fns fn-call)
         (if (and (not base-claims1) (not base-claims2))
-            ;; no base cases in either branch, so the IF is irrelevant, and this whole branch is an -unroll theorem
+            ;; no base cases in either branch, so this whole branch is an -unroll case
             (mv nil ; no base-claims
                 (list `(equal ,fn-call ,term)))
           (if (and (not unroll-claims1) (not unroll-claims2))
-              ;; no recursive calls in either branch, so the IF is irrelevant, and this whole branch is a -base theorem
+              ;; no recursive calls in either branch, so this whole branch is a -base case
               (mv (list `(equal ,fn-call ,term))
                   nil ; no unroll-claims
                   )
