@@ -108,6 +108,8 @@
 
 (include-book "centaur/acre/top" :dir :system)
 
+(include-book "centaur/bigmem/bigmem" :dir :system)
+
 (include-book "centaur/bridge/top" :dir :system)
 
 (include-book "centaur/clex/example" :dir :system)
