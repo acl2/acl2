@@ -327,7 +327,6 @@
                               (quotep k2)
                               (quotep p)))
                 (equal (pfield::div k1 k2 p) 2)
-                (posp p)
                 (primep p)
                 (bitp bit1)
                 (bitp bit2)
@@ -345,7 +344,6 @@
                               (quotep k2)
                               (quotep p)))
                 (equal (pfield::div k1 k2 p) 2)
-                (posp p)
                 (primep p)
                 (bitp bit1)
                 (bitp bit2)
@@ -363,7 +361,6 @@
                               (quotep k2)
                               (quotep p)))
                 (equal (pfield::div k1 k2 p) 2)
-                (posp p)
                 (primep p)
                 (bitp bit1)
                 (bitp bit2)
@@ -382,7 +379,6 @@
                               (quotep k2)
                               (quotep p)))
                 (equal (pfield::div k1 k2 p) 2)
-                (posp p)
                 (primep p)
                 (bitp bit1)
                 (bitp bit2)
@@ -406,7 +402,6 @@
                               (quotep p)))
                 (posp k2) ;avoid division by 0
                 (equal (pfield::div k1 k2 p) (expt 2 size2)) ; free var
-                (posp p)
                 (primep p)
                 (unsigned-byte-p size1 bv1)
                 (unsigned-byte-p size2 bv2)
@@ -427,7 +422,6 @@
                               (quotep ls2)))
                 (posp k2) ;avoid division by 0
                 (equal (pfield::div k1 k2 p) (expt 2 (+ hs2 ls2))) ; gets computed
-                (posp p) ; gets computed
                 (primep p)
                 (fep k1 p) ; gets computed
                 (fep k2 p) ; gets computed
@@ -452,7 +446,6 @@
                               (quotep ls2)))
                 (posp k2) ;avoid division by 0
                 (equal (pfield::div k1 k2 p) (expt 2 (+ hs2 ls2))) ; gets computed
-                (posp p) ; gets computed
                 (primep p)
                 (fep k1 p) ; gets computed
                 (fep k2 p) ; gets computed
@@ -475,7 +468,6 @@
                               (quotep ls2)))
                 (posp k2) ;avoid division by 0
                 (equal (pfield::div k1 k2 p) (expt 2 (+ hs2 ls2))) ; gets computed
-                (posp p) ; gets computed
                 (primep p)
                 (fep k1 p) ; gets computed
                 (fep k2 p) ; gets computed
@@ -499,7 +491,6 @@
                               (quotep ls2)))
                 (posp k2) ;avoid division by 0
                 (equal (pfield::div k1 k2 p) (expt 2 (+ hs2 ls2))) ; gets computed
-                (posp p) ; gets computed
                 (primep p)
                 (fep k1 p) ; gets computed
                 (fep k2 p) ; gets computed
@@ -525,7 +516,6 @@
                               (quotep ls2)))
                 (posp k2) ;avoid division by 0
                 (equal (pfield::div k1 k2 p) (expt 2 (+ hs2 ls2))) ; gets computed
-                (posp p) ; gets computed
                 (bitp bit)
                 (primep p)
                 (fep k1 p) ; gets computed
@@ -549,7 +539,6 @@
                               (quotep ls2)))
                 (posp k2) ;avoid division by 0
                 (equal (pfield::div k1 k2 p) (expt 2 (+ hs2 ls2))) ; gets computed
-                (posp p) ; gets computed
                 (bitp bit)
                 (primep p)
                 (fep k1 p) ; gets computed
@@ -573,7 +562,6 @@
                               (quotep ls2)))
                 (posp k2) ;avoid division by 0
                 (equal (pfield::div k1 k2 p) (expt 2 (+ hs2 ls2))) ; gets computed
-                (posp p) ; gets computed
                 (bitp bit)
                 (primep p)
                 (fep k1 p) ; gets computed
@@ -598,7 +586,6 @@
                               (quotep ls2)))
                 (posp k2) ;avoid division by 0
                 (equal (pfield::div k1 k2 p) (expt 2 (+ hs2 ls2))) ; gets computed
-                (posp p) ; gets computed
                 (bitp bit)
                 (primep p)
                 (fep k1 p) ; gets computed
@@ -623,7 +610,6 @@
                               (quotep p)))
                 (posp k1) ;avoid division by 0
                 (equal (pfield::div k1 k2 p) 2)
-                (posp p)
                 (primep p)
                 (bitp bit)
                 (fep k1 p)
@@ -645,7 +631,6 @@
                               (quotep p)))
                 (posp k1) ;avoid division by 0
                 (equal (pfield::div k1 k2 p) 2)
-                (posp p)
                 (primep p)
                 (bitp bit)
                 (fep k1 p)
@@ -667,7 +652,6 @@
                               (quotep p)))
                 (posp k1) ;avoid division by 0
                 (equal (pfield::div k1 k2 p) 2)
-                (posp p)
                 (primep p)
                 (bitp bit)
                 (fep k1 p)
@@ -690,7 +674,6 @@
                               (quotep p)))
                 (posp k1) ;avoid division by 0
                 (equal (pfield::div k1 k2 p) 2)
-                (posp p)
                 (primep p)
                 (bitp bit)
                 (fep k1 p)
@@ -710,8 +693,7 @@
 ;;;
 
 (defthmd add-of-mul-of-2-and-bvcat-and-bit
-  (implies (and (posp p)
-                (< (expt 2 (+ 1 ls hs)) p)
+  (implies (and (< (expt 2 (+ 1 ls hs)) p)
                 (primep p)
                 (bitp bit)
                 (natp ls)
