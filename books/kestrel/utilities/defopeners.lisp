@@ -322,25 +322,25 @@
   (if (and (consp term)
            (eq 'if (ffn-symb term)))
       (mv-let
-       (base-claims1 unroll-claims1)
-       (make-unroll-and-base-claims-aux (farg2 term) fns fn-call)
-       (mv-let
-        (base-claims2 unroll-claims2)
-        (make-unroll-and-base-claims-aux (farg3 term) fns fn-call)
-        (if (and (not base-claims1) (not base-claims2))
-            ;; no base cases in either branch, so this whole branch is an -unroll case
-            (mv nil ; no base-claims
-                (list `(equal ,fn-call ,term)))
-          (if (and (not unroll-claims1) (not unroll-claims2))
-              ;; no recursive calls in either branch, so this whole branch is a -base case
-              (mv (list `(equal ,fn-call ,term))
-                  nil ; no unroll-claims
-                  )
-            (mv (append (add-hyp-to-claims (farg1 term) base-claims1) ;; the claims from the then-branch get the IF test as a hyp
-                        (add-hyp-to-claims `(not ,(farg1 term)) base-claims2)) ;; the claims from the else-branch get the negated IF test as a hyp
-                (append (add-hyp-to-claims (farg1 term) unroll-claims1) ;; the claims from the then-branch get the IF test as a hyp
-                        (add-hyp-to-claims `(not ,(farg1 term)) unroll-claims2)) ;; the claims from the else-branch get the negated IF test as a hyp
-                )))))
+        (base-claims1 unroll-claims1)
+        (make-unroll-and-base-claims-aux (farg2 term) fns fn-call)
+        (mv-let
+          (base-claims2 unroll-claims2)
+          (make-unroll-and-base-claims-aux (farg3 term) fns fn-call)
+          (if (and (not base-claims1) (not base-claims2))
+              ;; no base cases in either branch, so this whole branch is an -unroll case
+              (mv nil ; no base-claims
+                  (list `(equal ,fn-call ,term)))
+            (if (and (not unroll-claims1) (not unroll-claims2))
+                ;; no recursive calls in either branch, so this whole branch is a -base case
+                (mv (list `(equal ,fn-call ,term))
+                    nil ; no unroll-claims
+                    )
+              (mv (append (add-hyp-to-claims (farg1 term) base-claims1) ;; the claims from the then-branch get the IF test as a hyp
+                          (add-hyp-to-claims `(not ,(farg1 term)) base-claims2)) ;; the claims from the else-branch get the negated IF test as a hyp
+                  (append (add-hyp-to-claims (farg1 term) unroll-claims1) ;; the claims from the then-branch get the IF test as a hyp
+                          (add-hyp-to-claims `(not ,(farg1 term)) unroll-claims2)) ;; the claims from the else-branch get the negated IF test as a hyp
+                  )))))
     (if (and (consp term)
              (consp (ffn-symb term)))
         ;; It's a lambda application: ((lambda <formals> <body>) ...<actuals>...)
@@ -350,21 +350,21 @@
           ;; FIXME: Think about this:  If there is a recursive call in one of the args, we just consider the whole term a recursive case:
           (if (some-expr-calls-some-fn fns lambda-actuals)
               (mv nil ; no base-claims
-               (list `(equal ,fn-call ,term)))
-            (mv-let
-             (base-claims unroll-claims)
-             (make-unroll-and-base-claims-aux lambda-body fns fn-call)
-             (if (not base-claims)
-                 ;; no base cases, so this whole branch is an -unroll theorem
-                 (mv nil ; no base-claims
                   (list `(equal ,fn-call ,term)))
-               (if (not unroll-claims)
-                   ;; no recursive calls, so this whole branch is a -base theorem
-                   (mv (list `(equal ,fn-call ,term))
-                       nil ; no unroll-claims
-                       )
-                 (mv (wrap-lambda-around-claims base-claims lambda-formals lambda-actuals)
-                     (wrap-lambda-around-claims unroll-claims lambda-formals lambda-actuals)))))))
+            (mv-let
+              (base-claims unroll-claims)
+              (make-unroll-and-base-claims-aux lambda-body fns fn-call)
+              (if (not base-claims)
+                  ;; no base cases, so this whole branch is an -unroll theorem
+                  (mv nil ; no base-claims
+                      (list `(equal ,fn-call ,term)))
+                (if (not unroll-claims)
+                    ;; no recursive calls, so this whole branch is a -base theorem
+                    (mv (list `(equal ,fn-call ,term))
+                        nil ; no unroll-claims
+                        )
+                  (mv (wrap-lambda-around-claims base-claims lambda-formals lambda-actuals)
+                      (wrap-lambda-around-claims unroll-claims lambda-formals lambda-actuals)))))))
 
       ;; not an IF or LET:
       (if (expr-calls-some-fn fns term)
