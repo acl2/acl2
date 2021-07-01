@@ -35,7 +35,7 @@
     pfield::mul-of-mod-arg1
     pfield::mul-of-mod-arg2
     pfield::mod-of-mul
-    pfield::mul-becomes-neg
+    ;; pfield::mul-becomes-neg ; may cause problems with (negated) bvcat reassembly
     pfield::integerp-of-neg
     pfield::mod-of-neg
     pfield::neg-of-0
