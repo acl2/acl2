@@ -488,9 +488,10 @@
 
   :long "<h4>Old definition of the @('x86isa') state</h4>
 
- <p>Before @('bigmem') and @('defrstobj') were used to define the x86
- state, the x86 state's definition was rather tedious.  (For future
- reference, the following git revision has that old definition:
+ <p>Before @(tsee bigmem::bigmem) and @(tsee rstobj2::defrstobj)
+ were used to define the x86 state, the x86 state's definition was
+ rather tedious.  (For future reference, the following git revision
+ has that old definition:
  @('dea40263247bd930077205526934bc596686bfb0')).</p>
 
  <p>This current file @('state.lisp') replaces the following old
@@ -624,8 +625,8 @@
  <h4>Current definition of the @('x86isa') state</h4>
 
  <p>The current definition of the state is simpler, owing to the use
- of nested and abstract stobjs by way of community books
- @('defrstobj') and @('bigmem').</p>
+ of nested and abstract stobjs by way of community books @(tsee
+ rstobj2::defrstobj) and @(tsee bigmem::bigmem).</p>
 
  <p>The @('bigmem') books define a memory model similar to the old
  @('x86isa') memory model, but in a much more maintainable way. The

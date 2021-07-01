@@ -135,6 +135,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "bigmem::bigmem" "Bigmem"))
+
+   (xdoc::p
+    "A library that defines a @('2^64')-byte memory model that is
+  logically a record but provides array-like performance during
+  execution.")
+   
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
 
    (xdoc::p

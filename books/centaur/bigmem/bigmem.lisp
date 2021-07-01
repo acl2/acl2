@@ -290,3 +290,37 @@
 ;; (time$ (init-mem-region (1- (expt 2 20)) 0 mem))
 
 ;; (memsum)
+
+;; ----------------------------------------------------------------------
+
+(defxdoc bigmem
+  :pkg "BIGMEM"
+  :parents (acl2::projects)
+  :short "A @('2^64')-byte memory model that is logically a record but
+  provides array-like performance during execution"
+
+  :long "<p>The @('bigmem') library implements the idea in the
+   following paper using nested and abstract stobjs, which leads to a
+   simpler implementation of a large memory.</p>
+
+   <blockquote>Warren A. Hunt, Jr. and Matt Kaufmann. A Formal Model
+   of a Large Memory that Supports Efficient Execution. In Proceedings
+   of the 12th International Conference on Formal Methods in
+   Computer-Aided Design (FMCAD 2012, Cambrige, UK, October 22-25),
+   2012</blockquote>
+
+  <p>These books define an abstract stobj called @('mem') that exports
+  an accessor function @('read-mem') and an updater function
+  @('write-mem'). @('mem') is logically a typed record that models
+  @('2^64') bytes.  The corresponding concrete stobj for @('mem') is
+  @('mem$c'), which is a stobj containing stobjs that essentially
+  allocates chunks of bytes on demand; see @(see
+  bigmem-concrete-stobj) for implementation details.</p>
+
+  <p>An obvious application of @('bigmem') is to model memory;
+  @('mem') can be used as a child stobj to define a field representing
+  the memory (up to @('2^64') bytes) in a parent stobj that models
+  some machine's state. See @(see x86isa::x86isa-state) for such an
+  example.</p>")
+
+;; ----------------------------------------------------------------------
