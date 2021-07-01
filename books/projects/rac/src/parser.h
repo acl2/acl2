@@ -470,8 +470,8 @@ public:
 class MvType : public Type {
 public:
   uint numVals;
-  Type *type[7];
-  MvType(uint n, Type *t0, Type *t1, Type *t2 = NULL, Type *t3 = NULL, Type *t4 = NULL, Type *t5 = NULL, Type *t6 = NULL);
+  Type *type[8];
+  MvType(uint n, Type *t0, Type *t1, Type *t2 = NULL, Type *t3 = NULL, Type *t4 = NULL, Type *t5 = NULL, Type *t6 = NULL, Type *t7 = NULL);
   void display(ostream& os);
 };
 
@@ -738,7 +738,7 @@ public:
 class MultipleValue : public Expression {
 public:
   MvType *type;
-  Expression *expr[7];
+  Expression *expr[8];
   MultipleValue(MvType *t, Expression **e);
   MultipleValue(MvType *t, List<Expression> *e);
   void displayNoParens(ostream& os);
@@ -898,7 +898,7 @@ public:
 
 class MultipleAssignment : public SimpleStatement {
 public:
-  Expression *lval[7];
+  Expression *lval[8];
   FunCall *rval;
   MultipleAssignment(FunCall *r, List<Expression> *e);
   void displaySimple(ostream& os);
