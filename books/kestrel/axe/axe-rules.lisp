@@ -549,3 +549,15 @@
               (subsetp-equal (free-vars-in-term rhs)
                              (bound-vars-after-hyps (free-vars-in-term lhs) hyps))
               ))))
+
+(defthm pseudo-termp-of-rule-rhs
+  (implies (axe-rulep axe-rule)
+           (pseudo-termp (rule-rhs axe-rule)))
+  :hints (("Goal" :in-theory (enable axe-rulep))))
+
+;; Kept disabled to avoid introducing axe-rulep out of nowhere
+(defthmd len-when-axe-rulep
+  (implies (axe-rulep axe-rule)
+           (equal (len axe-rule)
+                  4))
+  :hints (("Goal" :in-theory (enable axe-rulep))))

@@ -61,7 +61,7 @@
          (b* (((when (and rules rule-lists))
                (er hard? ',defthm-with-clause-processor-fn-name "Both :rules and :rule-lists were given for ~x0." name))
               (rule-lists (if rules
-                              (list (elaborate-rule-items rules nil state))
+                              (list (elaborate-rule-items rules state))
                             (elaborate-rule-item-lists rule-lists state)))
               (rule-lists (remove-from-all rule-lists remove-rules)))
            `(defthm ,name

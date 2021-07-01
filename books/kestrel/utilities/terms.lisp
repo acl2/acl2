@@ -347,6 +347,11 @@
            (symbol-listp (get-fns-in-term term)))
   :hints (("Goal" :in-theory (enable get-fns-in-term))))
 
+(defthm true-listp-of-get-fns-in-term
+  (true-listp (get-fns-in-term term))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable get-fns-in-term))))
+
 (defund get-fns-in-terms (terms)
   (declare (xargs :guard (pseudo-term-listp terms)))
   (get-fns-in-terms-aux terms nil))
