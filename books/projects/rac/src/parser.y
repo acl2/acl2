@@ -265,8 +265,9 @@ mv_type
   | TUPLE '<' type_spec ',' type_spec ',' type_spec '>'                {$$ = new MvType(3, $3, $5, $7);}
   | TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec '>'  {$$ = new MvType(4, $3, $5, $7, $9);}
   | TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec ',' type_spec '>'  {$$ = new MvType(4, $3, $5, $7, $9, $11);}
-| TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec ',' type_spec  ',' type_spec '>'  {$$ = new MvType(4, $3, $5, $7, $9, $11, $13);}
-| TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec ',' type_spec  ',' type_spec ',' type_spec  '>'  {$$ = new MvType(4, $3, $5, $7, $9, $11, $13, $15);}
+  | TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec ',' type_spec  ',' type_spec '>'  {$$ = new MvType(4, $3, $5, $7, $9, $11, $13);}
+  | TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec ',' type_spec  ',' type_spec ',' type_spec  '>'  {$$ = new MvType(4, $3, $5, $7, $9, $11, $13, $15);}
+| TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec ',' type_spec  ',' type_spec ',' type_spec  ',' type_spec '>'  {$$ = new MvType(4, $3, $5, $7, $9, $11, $13, $15, $17);}
   ;
 
 //*************************************************************************************

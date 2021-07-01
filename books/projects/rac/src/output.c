@@ -700,10 +700,10 @@ void EnumType::makeDef(const char *name, ostream& os) {
 // class MvType : public Type (multiple-value type)
 // -------------------------------------------
 
-// Data members:  uint numVals; Type *type[4];
-// 2 <= numVals <= 4; determines number of valid entries of type[].
+// Data members:  uint numVals; Type *type[8];
+// 2 <= numVals <= 8; determines number of valid entries of type[].
 
-MvType::MvType(uint n, Type *t0, Type *t1, Type *t2, Type *t3, Type *t4, Type *t5, Type *t6) {
+MvType::MvType(uint n, Type *t0, Type *t1, Type *t2, Type *t3, Type *t4, Type *t5, Type *t6, Type *t7) {
   numVals = n;
   type[0] = t0;
   type[1] = t1;
@@ -712,6 +712,7 @@ MvType::MvType(uint n, Type *t0, Type *t1, Type *t2, Type *t3, Type *t4, Type *t
   type[4] = t4;
   type[5] = t5;
   type[6] = t6;
+  type[7] = t7;
 }
 
 void MvType::display(ostream& os) {
@@ -734,6 +735,10 @@ void MvType::display(ostream& os) {
 	  if (type[6]) {
             os << ", ";
             type[6]->display(os);
+	    if (type[7]) {
+	      os << ", ";
+	      type[7]->display(os);
+	    }
   	  }
 	}
       }
@@ -1679,16 +1684,16 @@ Sexpression *CondExpr::ACL2Expr(bool isBV) {
 // class MultipleValue : public Expression
 // ---------------------------------------
 
-// Data members: MvType *type; Expression *expr[7];
+// Data members: MvType *type; Expression *expr[8];
 
 MultipleValue::MultipleValue(MvType *t, Expression **e) : Expression() {
   type = t;
-  for (uint i=0; i<7; i++) expr[i] = e[i];
+  for (uint i=0; i<8; i++) expr[i] = e[i];
 }
 
 MultipleValue::MultipleValue(MvType *t, List<Expression> *e) : Expression() {
   type = t;
-  for (uint i=0; i<7; i++) {
+  for (uint i=0; i<8; i++) {
     if (e) {
       expr[i] = e->value;
       e = e->pop();
@@ -1719,6 +1724,10 @@ void MultipleValue::displayNoParens(ostream& os) {
           if (expr[6]) {
             os << ", ";
             expr[6]->display(os);
+            if (expr[7]) {
+              os << ", ";
+              expr[7]->display(os);
+	    }
           }
 	}
       }
@@ -1728,9 +1737,9 @@ void MultipleValue::displayNoParens(ostream& os) {
 }
 
 Expression *MultipleValue::subst(SymRef *var, Expression *val) {
-  Expression *newExpr[7];
+  Expression *newExpr[8];
   bool isNew = false;
-  for (uint i=0; i<7; i++) {
+  for (uint i=0; i<8; i++) {
     newExpr[i] = expr[i] ? expr[i]->subst(var, val) : NULL;
     if (newExpr[i] != expr[i]) {isNew = true;}
   }
@@ -1739,7 +1748,7 @@ Expression *MultipleValue::subst(SymRef *var, Expression *val) {
 
 Sexpression *MultipleValue::ACL2Expr(bool isBV) {
   Plist *result = new Plist(&s_mv);
-  for (uint i=0; i<7 && expr[i]; i++) {
+  for (uint i=0; i<8 && expr[i]; i++) {
     result->add(type->type[i]->derefType()->ACL2Assign(expr[i]));
   }
   return result;
@@ -2206,10 +2215,10 @@ void AssignRange::displaySimple(ostream& os) {
 // class MultipleAssignment : public SimpleStatement
 // -------------------------------------------------
 
-// Data members: Expression *lval[4]; FunCall *rval;
+// Data members: Expression *lval[8]; FunCall *rval;
 
 MultipleAssignment::MultipleAssignment(FunCall *r, List<Expression> *e) : SimpleStatement() {
-  for (uint i=0; i<7; i++) {
+  for (uint i=0; i<8; i++) {
     if (e) {
       lval[i] = e->value;
       e = e->pop();
@@ -2224,15 +2233,9 @@ MultipleAssignment::MultipleAssignment(FunCall *r, List<Expression> *e) : Simple
 void MultipleAssignment::displaySimple(ostream& os) {
   os << "<";
   lval[0]->display(os);
-  os << ", ";
-  lval[1]->display(os);
-  if (lval[2]) {
+  for (uint i=1; i<8 && lval[i]; i++) {
     os << ", ";
-    lval[2]->display(os);
-    if (lval[3]) {
-      os << ", ";
-      lval[3]->display(os);
-    }
+    lval[i]->display(os);
   }
   os << "> = ";
   rval->display(os);
@@ -2242,7 +2245,7 @@ Statement *MultipleAssignment::subst(SymRef *var, Expression *val) {
   Expression *newR = rval->subst(var, val);
   bool changed = (newR != rval);
   List<Expression> *newL;
-  for (uint i=0; i<7 && lval[i]; i++) {
+  for (uint i=0; i<8 && lval[i]; i++) {
     Expression *temp = lval[i]->subst(var, val);
     if (temp != lval[i]) changed = true;
     if (i == 0) {
@@ -2280,7 +2283,7 @@ Sexpression *MultipleAssignment::ACL2Expr() {
   Plist *vars = new Plist();
   Plist *result = new Plist(&s_mv_assign, vars, rval->ACL2Expr());
   bool isBlock = false;
-  for (uint i=0; i<7 && lval[i]; i++) {
+  for (uint i=0; i<8 && lval[i]; i++) {
     if (lval[i]->isSymRef()) {
       vars->add(((SymRef*)lval[i])->symDec->sym);
     }
