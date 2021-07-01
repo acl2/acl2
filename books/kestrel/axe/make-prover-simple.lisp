@@ -4970,7 +4970,7 @@
               ;; Build the rule-alists:
               (rule-lists (elaborate-rule-item-lists rule-lists state))
               ;; Include the global-rules in each rule-list:
-              (rule-lists (union-eq-with-all (elaborate-rule-items global-rules nil state) rule-lists))
+              (rule-lists (union-eq-with-all (elaborate-rule-items global-rules state) rule-lists))
               ((mv erp rule-alists) (make-rule-alists rule-lists (w state)))
               ((when erp) (mv erp nil state))
               (case-designator "MAIN_CASE") ; the name of this case
