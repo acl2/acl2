@@ -1564,6 +1564,11 @@
         (er hard? 'make-axe-rules! "Error making Axe rules.")
       axe-rules)))
 
+(defthm axe-rule-listp-of-of-make-axe-rules!
+  (implies (symbol-listp rule-names)
+           (axe-rule-listp (make-axe-rules! rule-names wrld)))
+  :hints (("Goal" :in-theory (enable make-axe-rules!))))
+
 ;; Returns (mv erp rules) where rules is a list of axe-rules.
 ;; This version removes duplicate rules first.  (That may happen later anyway
 ;; when making the rule-alist...).
@@ -1660,3 +1665,29 @@
 ;;       nil
 ;;     (cons (remove-rules-from-rule-set rules (first rule-sets))
 ;;           (remove-rules-from-rule-sets rules (rest rule-sets)))))
+
+;;;
+;;; axe-rules-that-introduce
+;;;
+
+;; Can be used to determine which rules introduce a given function symbol
+(defund filter-axe-rules-for-rhses-mentioning (fn axe-rules)
+  (declare (xargs :guard (and (symbolp fn)
+                              (axe-rule-listp axe-rules))
+                  :guard-hints (("Goal" :in-theory (enable len-when-axe-rulep)))))
+  (if (endp axe-rules)
+      nil
+    (let* ((axe-rule (first axe-rules))
+           (rhs (rule-rhs axe-rule))
+           (rhs-fns (get-fns-in-term rhs)))
+      (if (member-eq fn rhs-fns)
+          (cons (rule-symbol axe-rule)
+                (filter-axe-rules-for-rhses-mentioning fn (rest axe-rules)))
+        (filter-axe-rules-for-rhses-mentioning fn (rest axe-rules))))))
+
+(defund axe-rules-that-introduce (fn rule-names wrld)
+  (declare (xargs :guard (and (symbolp fn)
+                              (symbol-listp rule-names)
+                              (ilks-plist-worldp wrld))))
+  (let ((axe-rules (make-axe-rules! rule-names wrld)))
+    (filter-axe-rules-for-rhses-mentioning fn axe-rules)))
