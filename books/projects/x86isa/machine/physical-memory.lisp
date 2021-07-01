@@ -426,6 +426,9 @@ recommend using these functions at the top-level.</p>")
                     (xw fld index value (wm-low-32 addr val x86))))
     :hints (("Goal" :in-theory (e/d* (wm-low-32) (force (force)))))))
 
+; MattK mod for ACL2(p): Hint LOGBITP-REASONING modifies state:
+(set-waterfall-parallelism nil)
+
 (defthmd put-logior-4-bytes-together
   (implies (unsigned-byte-p 32 val)
            (equal (logior (loghead 8 val)
