@@ -106,12 +106,14 @@
                     (< n (len lst))))
     :hints (("Goal" :in-theory (enable zp)))))
 
-; the :logic version could be very slow if the list is long
- (defun len-at-least (n lst)
-   (declare (xargs :guard (and (posp n)
-                               (true-listp lst))))
-   (mbe :logic (<= n (len lst))
-        :exec (consp (nthcdr (+ -1 n) lst)))))
+;; todo: name clash
+;; ; the :logic version could be very slow if the list is long
+ ;; (defun len-at-least (n lst)
+ ;;   (declare (xargs :guard (and (posp n)
+ ;;                               (true-listp lst))))
+ ;;   (mbe :logic (<= n (len lst))
+ ;;        :exec (consp (nthcdr (+ -1 n) lst))))
+ )
 
 
 ; Given a BV and an alist from flag masks (values with a single bit set) to
