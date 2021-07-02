@@ -225,7 +225,7 @@
                  PFIELD::MUL-COMBINE-CONSTANTS-alt
                  PFIELD::MUL-OF-CONSTANT-NORMALIZE-TO-FEP
                  PFIELD::MUL-OF-1-ARG1
-                 PFIELD::MUL-BECOMES-NEG
+                 pfield::mul-of--1-becomes-neg-alt
                  (acl2::unsigned-byte-p-rules)
                  ACL2::BVCHOP-OF-BVCHOP
                  ACL2::GETBIT-OF-BVCHOP

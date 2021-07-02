@@ -722,17 +722,28 @@
   :hints (("Goal" :in-theory (enable equal-of-div))))
 
 ;gen?
+;; In this version, the constant is actually -1.
 (defthm mul-of--1-becomes-neg
-  (implies (and (integerp x)
-                (posp p))
+  (implies (posp p)
            (equal (mul -1 x p)
                   (neg x p)))
   :hints (("Goal" :in-theory (enable mul neg sub))))
 
-;; p-1 represents -1.
+;; (* -1 y) becomes (neg y)
+;; In this version, the constant is p-1.
 (defthm mul-of--1-becomes-neg-alt
-  (implies (and (posp p)
-                (integerp x))
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep p)))
+                (equal x (+ -1 p))
+                (posp p))
+           (equal (mul x y p)
+                  (neg y p)))
+  :hints (("Goal" :in-theory (enable mul neg sub acl2::mod-sum-cases))))
+
+;; p-1 represents -1.
+;subsumed by mul-of-+-same-arg2
+(defthmd mul-of--1-becomes-neg-alt-other
+  (implies (posp p)
            (equal (mul (+ -1 p) x p)
                   (neg x p)))
   :hints (("Goal" :in-theory (enable mul neg sub ACL2::MOD-SUM-CASES))))
@@ -803,16 +814,6 @@
                   x))
   :hints (("Goal" :cases ((rationalp p))
            :in-theory (enable fep))))
-
-;; (* -1 y) becomes (neg y)
-(defthm mul-becomes-neg
-  (implies (and (syntaxp (and (quotep x)
-                              (quotep p)))
-                (equal x (+ -1 p))
-                (posp p))
-           (equal (mul x y p)
-                  (neg y p)))
-  :hints (("Goal" :in-theory (enable mul neg sub acl2::mod-sum-cases))))
 
 (defthmd integerp-when-fep
   (implies (fep x p)

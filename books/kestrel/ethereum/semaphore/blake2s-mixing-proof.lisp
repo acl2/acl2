@@ -1240,7 +1240,7 @@
                  pfield::mul-combine-constants-alt
                  pfield::mul-of-constant-normalize-to-fep
                  pfield::mul-of-1-arg1
-                 pfield::mul-becomes-neg
+                 pfield::mul-of--1-becomes-neg-alt
                  acl2::bvchop-of-bvchop
                  acl2::getbit-of-bvchop
                  acl2::bvchop-of-bvplus-same
