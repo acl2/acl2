@@ -18,3 +18,8 @@
 (include-book "register-readers-and-writers")
 (include-book "flags")
 (include-book "conditions")
+
+(include-book "support-x86")
+(include-book "support32")
+(include-book "read-over-write-rules")
+(include-book "write-over-write-rules")
