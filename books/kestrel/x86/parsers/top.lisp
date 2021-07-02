@@ -13,3 +13,4 @@
 
 (include-book "parser-utils")
 (include-book "parse-pe-file")
+(include-book "parse-mach-o-file")
