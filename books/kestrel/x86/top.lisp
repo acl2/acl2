@@ -10,4 +10,5 @@
 
 (in-package "ACL2")
 
+(include-book "parsers/top")
 (include-book "tools/top")
