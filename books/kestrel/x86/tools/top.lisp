@@ -12,7 +12,6 @@
 (in-package "ACL2")
 
 ;; Roughly ordered by according to dependencies:
-(include-book "portcullis")
 (include-book "bitops")
 (include-book "linear-memory")
 (include-book "register-readers-and-writers")

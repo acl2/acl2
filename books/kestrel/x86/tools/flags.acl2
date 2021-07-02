@@ -9,6 +9,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (include-book "projects/x86isa/portcullis/portcullis" :dir :system)
-(include-book "portcullis")
+(include-book "../portcullis")
 
 ; cert-flags: ? T :TTAGS :ALL

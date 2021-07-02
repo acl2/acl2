@@ -10,5 +10,6 @@
 
 (in-package "ACL2")
 
+(include-book "portcullis")
 (include-book "parsers/top")
 (include-book "tools/top")
