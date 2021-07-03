@@ -25,10 +25,9 @@
               '(COND ((EQUAL X 3) (POSP 3))
                      ((EQUAL X 4) (POSP 4))))
 
-;; TODO: Fails:
-;; ;; Test with a cond with a clause of length 1
-;; (assert-equal (rename-functions-in-untranslated-term  '(cond ((equal x 3))
-;;                                                              ((equal x 4) (natp 4)))
-;;                                                       '((natp . posp)) nil state)
-;;               '(COND ((EQUAL X 3))
-;;                      ((EQUAL X 4) (POSP 4))))
+;; Test with a cond with a clause of length 1
+(assert-equal (rename-functions-in-untranslated-term  '(cond ((equal x 3))
+                                                             ((equal x 4) (natp 4)))
+                                                      '((natp . posp)) nil state)
+              '(COND ((EQUAL X 3))
+                     ((EQUAL X 4) (POSP 4))))

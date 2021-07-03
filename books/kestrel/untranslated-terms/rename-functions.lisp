@@ -45,6 +45,28 @@
     (cons (replace-symbols-in-tree (car tree) alist)
           (replace-symbols-in-tree (cdr tree) alist))))
 
+;move
+;clash
+;similar to flatten
+(defun append-all2 (lists)
+  (declare (xargs :guard (true-listp lists)))
+  (if (endp lists)
+      nil
+    (append (true-list-fix (first lists))
+            (append-all2 (rest lists)))))
+
+;; Replace the stuff in the CLAUSES with the corresponding NEW-ITEMS, which
+;; come in order and correspond to the stuff in the existing clauses.
+(defun recreate-cond-clauses (clauses new-items)
+  (if (endp clauses)
+      nil
+    (let* ((clause (first clauses))
+           (clause-len (len clause)) ;can be 1 or 2
+           )
+      (cons (take clause-len new-items)
+            (recreate-cond-clauses (rest clauses)
+                                   (nthcdr clause-len new-items))))))
+
 (mutual-recursion
  ;; Renames all function calls in TERM according to ALIST.  WRLD must contain real or fake info (at least 'formals
  ;; properties) for the cdrs of ALIST, so we can translate terms mentioning them.
@@ -101,12 +123,13 @@
                      `(,fn ,(make-doublets binders ;do nothing to these (TODO: might some have function calls?)
                                            (rename-functions-in-untranslated-terms-aux expressions alist permissivep (+ -1 count) wrld state))
                            ,@(rename-functions-in-untranslated-terms-aux result-forms alist permissivep (+ -1 count) wrld state))))
-               (cond ;; (cond <clauses>) ;; TODO: Handle clauses of length 1
+               (cond ;; (cond <clauses>)
+                ;; Note that cond clauses can have length 1 or 2.  We flatten the clauses, process the resulting list of untranslated terms, and then recreate the clauses
+                ;; by walking through them and putting in the new items.
                 (let* ((clauses (fargs term))
-                       (conditions (strip-cars clauses))
-                       (vals-to-return (strip-cadrs clauses)))
-                  `(cond ,@(make-doublets (rename-functions-in-untranslated-terms-aux conditions alist permissivep (+ -1 count) wrld state)
-                                          (rename-functions-in-untranslated-terms-aux vals-to-return alist permissivep (+ -1 count) wrld state)))))
+                       (items (append-all2 clauses))
+                       (new-items (rename-functions-in-untranslated-terms-aux items alist permissivep (+ -1 count) wrld state)))
+                  `(cond ,@(recreate-cond-clauses clauses new-items))))
                ((case case-match)
                 (let* ((expr (farg1 term))
                        (cases (rest (fargs term)))
