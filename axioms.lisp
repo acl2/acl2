@@ -10357,11 +10357,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; We use record-expansion (as described in :doc make-event-details) in order to
 ; support redundancy of encapsulate, as implemented by redundant-encapsulatep
-; and its subroutines.  Here is a summary of the redundancy issue.
+; and its subroutines.  We have these two key goals regarding redundancy.
 
-; We have these two key goals regarding redundancy
-
-; + We prefer to recognize redundancy without having to execute the
+; + We prefer to recognize redundancy without having to execute events in the
 ;   encapsulate.
 
 ; + If an encapsulate form is redundant with an earlier form that is local, and
@@ -10372,20 +10370,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; The latter of these properties is important because otherwise unsoundness
 ; could result!  Suppose for example that a book bar.lisp contains (local
 ; (include-book "foo")), where foo.lisp contains an encapsulate that causes a
-; second encapsulate in bar.lisp to be redundant.  What should we know at the
-; point we see the second encapsulate as redundant?  We should know that the
-; event logically represented by the encapsulate is the same as the one
-; logically represented by the earlier encapsulate, so we certainly do not want
-; to re-do its expansion at include-book time.  Thus, when an encapsulate is
-; redundant, we store the expanded version of the earlier encapsulate as the
-; expansion of the current encapsulate.  But how do we expand a non-redundant
+; second encapsulate in bar.lisp to be redundant during book certification.
+; Then the event logically represented by the second encapsulate must be the
+; same as the one logically represented by the earlier encapsulate, so we
+; certainly do not want to re-do its expansion at include-book time.  Thus,
+; when an encapsulate is redundant, we store the expanded version of the
+; earlier encapsulate as the expansion of the current encapsulate, in the
+; :expansion-alist of the .cert file.  But how do we expand a non-redundant
 ; encapsulate?  We expand it by replacing every sub-event by its expansion (if
 ; it has an expansion).  Then, we may recognize a subsequent encapsulate as
-; redundant with this one if their signatures are equal, they have the same
-; length, and each of the subsequent encapsulate's events, ev2, is either the
-; same as the corresponding event ev1 of the old encapsulate or their
-; expansions match up.  Note that two local events always "match up" in this
-; sense when each is under an encapsulate or in a book.
+; redundant with this one if their signatures are equal; they have the same
+; length; and each of the subsequent encapsulate's events, ev2, is either the
+; same as the corresponding event ev1 of the old encapsulate, stored as the
+; first argument of a record-expansion call, or their expansions match up.
+; Note that two local events always "match up" in this sense when each is under
+; an encapsulate or in a book.  See corresponding-encaps, which explains a
+; subtle reason why we do not consider the first argument of a record-expansion
+; call when including a book.
 
 ; We elide local forms arising from make-event expansions when writing
 ; expansion-alists to book certificates, in order to save space.  See

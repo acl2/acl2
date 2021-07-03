@@ -7793,7 +7793,11 @@
                 (equal-mod-elide-locals-lst (cdr lst1) (cdr lst2))))))
 )
 
-(defun corresponding-encap-events (old-evs new-evs ans)
+(defun corresponding-encap-events (old-evs new-evs r-e-p ans)
+
+; The parameter r-e-p is for the "record expansions property" as discussed in a
+; comment in function corresponding-encaps.
+
   (cond
    ((endp old-evs)
     (and (null new-evs)
@@ -7803,32 +7807,107 @@
    (t (let ((old-ev (car old-evs))
             (new-ev (car new-evs)))
         (cond ((equal old-ev new-ev)
-               (corresponding-encap-events (cdr old-evs) (cdr new-evs) ans))
-              ((and (eq (car old-ev) 'record-expansion)
+               (corresponding-encap-events (cdr old-evs) (cdr new-evs) r-e-p ans))
+              ((and r-e-p
+                    (eq (car old-ev) 'record-expansion)
                     (equal (cadr old-ev) new-ev))
                (corresponding-encap-events (cdr old-evs) (cdr new-evs)
-                                           :expanded))
+                                           r-e-p :expanded))
               ((equal-mod-elide-locals old-ev new-ev)
                (corresponding-encap-events (cdr old-evs) (cdr new-evs)
-                                           :expanded))
+                                           r-e-p :expanded))
               (t nil))))))
 
-(defun corresponding-encaps (old new)
+(defun corresponding-encaps (old new r-e-p)
+
+; See the comment below for a discussion of parameter r-e-p.
+
   (assert$
    (eq (car new) 'encapsulate)
    (and (eq (car old) 'encapsulate)
         (true-listp new)
         (equal (cadr old) (cadr new))
-        (corresponding-encap-events (cddr old) (cddr new) t))))
+        (corresponding-encap-events (cddr old)
+                                    (cddr new)
+
+; Warning: The following comment is referenced in :DOC redundant-encapsulate.
+; If it is modified or moved, then consider modifying that documentation
+; accordingly.
+
+; The parameter r-e-p says whether to consider event E in the new encapsulate
+; to correspond to an event (record-expansion E ...) in the old encapsulate.
+; It is nil when this check is taking place during include-book, and otherwise
+; is t.
+
+; As noted in the Essay on Make-event, we defeat one of the criteria for events
+; to "match up" (correspond) in an old and new encapsulate, when checking
+; redundancy of the new encapsulate: the case that the old event is a call of
+; record-expansion and the new event equals the first argument of that call.
+; The example below shows why: these three books certified before adding the
+; r-e-p argument to corresponding-encap-events, which we are setting here to
+; nil during include-book.  After the addition of that argument, top.lisp no
+; longer certifies.
+
+;   $ cat sub-book-1.lisp
+;   (in-package "ACL2")
+;   (encapsulate ()
+;     (record-expansion (defun f () 2)
+;                       (defun f () 1)))
+;   (defthm f-is-1
+;     (equal (f) 1))
+;   $ cat sub-book-2.lisp
+;   (in-package "ACL2")
+;   (encapsulate ()
+;     (defun f () 2))
+;   (defthm f-is-2
+;     (equal (f) 2))
+;   $ cat top.lisp
+;   (in-package "ACL2")
+;   (include-book "sub-book-1")
+;   (include-book "sub-book-2")
+;   (defthm nil-is-true
+;     nil
+;     :hints (("Goal" :use (f-is-1 f-is-2) :in-theory nil))
+;     :rule-classes nil)
+;   $ 
+
+; Here is how one can think about the criterion mentioned above, i.e., for the
+; new event E to be the first argument of the old event (record-expansion E
+; ...).  When certifying a book, and also when evaluating events directly under
+; LD, the expansion of a make-event call -- where that call might be the result
+; of macroexpansion -- the expansion hasn't yet been determined, and ACL2 has a
+; right to determine the expansion in any reasonable manner.  The criterion
+; above, based on record-expansion in the event in the old encapsulate, is
+; sufficiently reasonable.  However, when including a certified book, the
+; expansion is already determined by the book's certificate -- assuming the
+; book is certified, but we have decided not to complicate this code with a
+; restriction to the certified case.  Theorems in the included book may well
+; depend on that expansion, as in the examples sub-book-1.lisp and
+; sub-book-2.lisp above.  It is not reasonable (or sound!) to change those
+; expansions, which is why, in the include-book case, we pass nil for the
+; "record expansions property" argument (r-e-p) of corresponding-encap-events.
+
+; By the way, in ordinary usage as opposed to the counterfeit calls of
+; record-expansion in sub-book-1.lisp and sub-book-2.lisp above, this r-e-p =
+; nil restriction (below) in the include-book case is probably no restriction
+; at all.  That's because the relevant event stored in the new encapsulate is
+; itself likely a call of record-expansion, which is unlikely to be the first
+; argument of record-expansion in the corresponding event of the old
+; encapsulate.
+
+                                    r-e-p
+                                    t))))
 
 (defun redundant-encapsulate-tuplep (event-form mode ruler-extenders vge
-                                                event-number wrld)
+                                                event-number wrld r-e-p)
 
 ; We return non-nil iff the non-prehistoric (if that's where we start) part of
 ; wrld later than the given absolute event number (unless it's nil) contains an
 ; event-tuple whose form is essentially equal to event-form.  We return t if
 ; they are equal, else we return the old form.  See also the Essay on
 ; Make-event.
+
+; See corresponding-encaps for a discussion of argument r-e-p.
 
   (cond ((or (null wrld)
              (and (eq (caar wrld) 'command-landmark)
@@ -7844,8 +7923,8 @@
               (eq (cadar wrld) 'global-value)
               (let* ((old-event-form (access-event-tuple-form (cddar wrld)))
                      (equal? (and (eq (car old-event-form) 'encapsulate)
-                                  (corresponding-encaps old-event-form
-                                                        event-form))))
+                                  (corresponding-encaps
+                                   old-event-form event-form r-e-p))))
                 (and equal?
                      (let ((adt (table-alist 'acl2-defaults-table wrld)))
                        (and
@@ -7858,7 +7937,7 @@
                             old-event-form
                           t)))))))
         (t (redundant-encapsulate-tuplep event-form mode ruler-extenders vge
-                                         event-number (cdr wrld)))))
+                                         event-number (cdr wrld) r-e-p))))
 
 (defun redundant-encapsulatep (signatures ev-lst event-form wrld)
 
@@ -7905,8 +7984,10 @@
                   (event-tuple (cddr (car wrld-tail)))
                   (old-event-form (access-event-tuple-form
                                    event-tuple))
-                  (equal? (corresponding-encaps old-event-form
-                                                event-form)))
+                  (equal? (corresponding-encaps
+                           old-event-form
+                           event-form
+                           (null (global-val 'include-book-path wrld)))))
              (and
               equal?
               (let ((old-adt
@@ -7946,7 +8027,8 @@
                 (default-verify-guards-eagerness-from-table new-adt)
                 (and name
                      (getpropc name 'absolute-event-number nil wrld))
-                wrld)))))))
+                wrld
+                (null (global-val 'include-book-path wrld)))))))))
 
 (defun mark-missing-as-hidden-p (a1 a2)
 
