@@ -52,3 +52,13 @@
                       0
                     1)))
   :hints (("Goal" :in-theory (e/d (div) (RTL::PRIMEP)))))
+
+(defthm div-of-+-same-arg1-arg2
+  (equal (div (+ x p) y p)
+         (div x y p))
+  :hints (("Goal" :in-theory (enable div))))
+
+(defthm div-of-+-same-arg2-arg2
+  (equal (div x (+ y p) p)
+         (div x y p))
+  :hints (("Goal" :in-theory (enable div))))

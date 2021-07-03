@@ -62,3 +62,19 @@
            (equal (inv (mul x y p) p)
                   (mul (inv x p) (inv y p) p)))
   :hints (("Goal" :in-theory (enable inv pow-of-mul-arg1))))
+
+(defthm inv-of-+-same-arg1
+  (equal (inv (+ p x) p)
+         (inv x p))
+  :hints (("Goal" :in-theory (enable inv))))
+
+(defthm inv-of-+-same-arg2
+  (equal (inv (+ x p) p)
+         (inv x p))
+  :hints (("Goal" :in-theory (enable inv))))
+
+(defthm inv-of--1
+  (implies (rtl::primep p)
+           (equal (inv -1 p)
+                  (+ -1 p)))
+  :hints (("Goal" :in-theory (enable inv minus1))))

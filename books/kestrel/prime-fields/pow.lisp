@@ -17,6 +17,7 @@
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/expt"))
+(local (include-book "../arithmetic-light/even-and-odd"))
 
 ;; Compute x to the nth power (x^n) modulo the prime. Note that n can be any natural.
 (defund pow (x n p)
@@ -186,3 +187,26 @@
   :hints (("Goal" :cases ((integerp x))
            :in-theory (enable mul
                               pow-of-*-arg1))))
+
+(defthm pow-of-+-same-arg1-arg1
+  (equal (pow (+ p x) n p)
+         (pow x n p))
+  :hints (("Goal" :in-theory (enable pow))))
+
+(defthm pow-of-1-arg3
+  (equal (pow x n 1)
+         (if (posp n)
+             0
+           1))
+  :hints (("Goal" :in-theory (enable pow))))
+
+;; we either get 1 or -1 depending on whether n is odd or even
+(defthm pow-of--1-arg1
+  (implies (and (integerp p)
+                (< 1 p) ;gen?
+                (natp n))
+           (equal (pow -1 n p)
+                  (if (evenp n)
+                      1
+                    (- p 1))))
+  :hints (("Goal" :in-theory (e/d (pow) (evenp)))))

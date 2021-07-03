@@ -1180,3 +1180,127 @@
     add-of-mul-and-mul-when-bvs-bvcat-version-extra-alt
     ;; TODO: Add more rules to combine larger bvs into bvcats
     ))
+
+;; starts out the process of creating a bvcat
+;; special case when the coeffs are -1 and -2 and the -1 has been turned into neg
+(defthm add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-negated-start
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep p)))
+                (equal k1 (neg 2 p)) ;k1 = -2
+                (primep p)
+                (< 2 p)
+                (bitp bit1)
+                (bitp bit2))
+           (equal (add (mul k1 bit1 p) (neg bit2 p) p)
+                  (mul (neg 1 p) (acl2::bvcat 1 bit1 1 bit2) p)))
+  :hints (("Goal" :use (:instance add-of-mul-and-mul-when-bitps-and-adjacent-coeffs
+                                  (k1 (neg 2 p))
+                                  (k2 (neg 1 p)))
+           :in-theory (e/d (div ;todo
+                            )
+                           (add-of-mul-and-mul-when-bitps-and-adjacent-coeffs
+                            MUL-OF-NEG-ARG1
+                            rtl::primep
+                            )))))
+
+;; starts out the process of creating a bvcat
+;; has the args in the lhs commuted
+(defthm add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-negated-start-alt
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep p)))
+                (equal k1 (neg 2 p)) ;k1 = -2
+                (primep p)
+                (< 2 p)
+                (bitp bit1)
+                (bitp bit2))
+           (equal (add (neg bit2 p) (mul k1 bit1 p) p)
+                  (mul (neg 1 p) (acl2::bvcat 1 bit1 1 bit2) p)))
+  :hints (("Goal" :use add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-negated-start
+           :in-theory (disable add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-negated-start))))
+
+;has an extra addend
+(defthm add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-negated-start-extra
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep p)))
+                (equal k1 (neg 2 p)) ;k1 = -2
+                (primep p)
+                (< 2 p)
+                (bitp bit1)
+                (bitp bit2))
+           (equal (add (mul k1 bit1 p) (add (neg bit2 p) extra p) p)
+                  (add (mul (neg 1 p) (acl2::bvcat 1 bit1 1 bit2) p) extra p)))
+  :hints (("Goal" :use (add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-negated-start)
+           :in-theory (disable add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-negated-start))))
+
+;has an extra addend
+(defthm add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-negated-start-extra-alt
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep p)))
+                (equal k1 (neg 2 p)) ;k1 = -2
+                (primep p)
+                (< 2 p)
+                (bitp bit1)
+                (bitp bit2))
+           (equal (add (neg bit2 p) (add (mul k1 bit1 p) extra p) p)
+                  (add (mul (neg 1 p) (acl2::bvcat 1 bit1 1 bit2) p)
+                       extra p)))
+  :hints (("Goal" :use (add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-negated-start-alt)
+           :in-theory (disable add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-negated-start-alt))))
+
+;move
+(defthm mod-of-+-of-*-same-arg2-arg2
+  (implies (and (rationalp x1)
+                (integerp x2)
+                (posp y))
+           (equal (mod (+ x1 (* x2 y)) y)
+                  (mod x1 y))))
+
+;won't match
+;core rule for this series
+(defthmd add-of-neg-of-mul-becomes-neg-of-bvcat-core
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep p)))
+                (equal k (neg 2 p)) ;k = -2
+                (primep p)
+                (< 2 p)
+                (bitp bit)
+                (unsigned-byte-p bvsize bv)
+                )
+           (equal (add (neg bit p) (mul k bv p) p)
+                  (neg (acl2::bvcat bvsize bv 1 bit) p)))
+  :hints (("Goal" :in-theory (enable add mul neg acl2::bvcat acl2::logapp))))
+
+;; special case for bv=bvcat
+;todo: add an -alt rule?
+(defthm add-of-neg-of-mul-becomes-neg-of-bvcat
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep p)))
+                (equal k (neg 2 p)) ;k = -2
+                (primep p)
+                (< 2 p)
+                (bitp bit)
+                (natp highsize)
+                (natp lowsize))
+           (equal (add (neg bit p) (mul k (acl2::bvcat highsize highval lowsize lowval) p) p)
+                  (neg (acl2::bvcat (+ highsize lowsize) (acl2::bvcat highsize highval lowsize lowval) 1 bit) p)))
+  :hints (("Goal" :use (:instance add-of-neg-of-mul-becomes-neg-of-bvcat-core
+                                  (bv (acl2::bvcat highsize highval lowsize lowval))
+                                  (bvsize (+ highsize lowsize))
+                                  ))))
+
+;; has an extra addend, EXTRA
+(defthm add-of-neg-of-mul-becomes-neg-of-bvcat-extra
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep p)))
+                (equal k (neg 2 p)) ;k = -2
+                (primep p)
+                (< 2 p)
+                (bitp bit)
+                (natp highsize)
+                (natp lowsize))
+           (equal (add (neg bit p) (add (mul k (acl2::bvcat highsize highval lowsize lowval) p) extra p) p)
+                  (add (neg (acl2::bvcat (+ highsize lowsize) (acl2::bvcat highsize highval lowsize lowval) 1 bit) p)
+                       extra
+                       p)))
+  :hints (("Goal" :use (:instance add-of-neg-of-mul-becomes-neg-of-bvcat)
+           :in-theory (disable add-of-neg-of-mul-becomes-neg-of-bvcat))))

@@ -104,13 +104,6 @@
                   0))
   :hints (("Goal" :in-theory (enable pow))))
 
-(defthm pow-of-1-arg3
-  (equal (pow x n 1)
-         (if (posp n)
-             0
-           1))
-  :hints (("Goal" :in-theory (enable pow))))
-
 (defthm pow-of-0-arg3
   (implies (posp n)
            (equal (pow x n 0)
