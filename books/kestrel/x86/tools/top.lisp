@@ -22,3 +22,9 @@
 (include-book "support32")
 (include-book "read-over-write-rules")
 (include-book "write-over-write-rules")
+(include-book "read-and-write")
+
+(include-book "lifter-support")
+(include-book "support0")
+
+(include-book "assumptions")
