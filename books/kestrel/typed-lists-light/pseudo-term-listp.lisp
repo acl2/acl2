@@ -58,3 +58,9 @@
          (and (pseudo-termp a)
               (pseudo-term-listp x)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
+(defthm pseudo-term-listp-of-revappend
+  (equal (pseudo-term-listp (revappend x y))
+         (and (pseudo-term-listp (true-list-fix x))
+              (pseudo-term-listp y)))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp))))

@@ -1,4 +1,4 @@
-; Portcullis commands and cert-flags for register-readers-and-writers.lisp
+; Portcullis commands and cert-flags for support0.lisp
 ;
 ; Copyright (C) 2021 Kestrel Institute
 ;
@@ -8,6 +8,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "portcullis")
-
-; cert-flags: ? T :TTAGS :ALL
+(include-book "../portcullis")

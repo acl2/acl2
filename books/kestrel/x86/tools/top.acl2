@@ -1,4 +1,4 @@
-; Top-level book for Kestrel x86 library
+; cert-flags for top.lisp
 ;
 ; Copyright (C) 2021 Kestrel Institute
 ;
@@ -8,8 +8,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
-
-(include-book "portcullis")
-(include-book "parsers/top")
-(include-book "tools/top")
+; cert-flags: ? T :TTAGS :ALL

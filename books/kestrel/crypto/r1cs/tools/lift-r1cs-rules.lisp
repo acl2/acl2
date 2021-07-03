@@ -351,19 +351,6 @@
 (defthmd bitp-of-0
   (bitp 0))
 
-;improve the other
-(defthm pfield::mul-of--1-becomes-neg-gen
-  (implies (and ;(integerp pfield::x)
-            (posp p))
-           (equal (mul -1 x p)
-                  (neg x p)))
-  :hints
-  (("Goal"
-    :in-theory (enable mul neg pfield::sub))))
-
-
-
-
 (defthm bitp-of-bitxor
   (bitp (acl2::bitxor x y)))
 

@@ -1,4 +1,4 @@
-; Portcullis commands and cert-flags for flags.lisp
+; Cert-flags for support32.lisp
 ;
 ; Copyright (C) 2021 Kestrel Institute
 ;
@@ -7,8 +7,5 @@
 ; Author: Eric Smith (eric.smith@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(include-book "projects/x86isa/portcullis/portcullis" :dir :system)
-(include-book "portcullis")
 
 ; cert-flags: ? T :TTAGS :ALL
