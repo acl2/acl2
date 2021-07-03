@@ -23,20 +23,9 @@
 (include-book "kestrel/utilities/magic-macroexpand1-dollar" :dir :system)
 
 ;; The point of this utility is to preserve as much of the structure of the
-;; term (macros, etc.) as possible.
+;; term (macro calls, named constants, lets, etc.) as possible.
 
 ;; TODO: Add tests
-
-
-
-;; ;; RENAMING is an alist mapping old-fns to new-fns.  We add fake items to WRLD
-;; ;; for each new-fn, giving it the arity of the corresponding old-fn.
-;; (defun add-fake-fns-from-renaming-to-world (renaming wrld)
-;;   (declare (xargs :guard (and (function-renamingp renaming)
-;;                               (plist-worldp-with-formals wrld))))
-;;   (add-fake-fns-to-world (pairlis$ (strip-cdrs renaming)
-;;                                    (fn-arities (strip-cars renaming) wrld))
-;;                          wrld))
 
 ;; Dumb replacement, without trying to determine whether symbols are vars,
 ;; function names, stuff passed to macros, etc.  TODO: Maybe stop if 'QUOTE is
@@ -68,6 +57,8 @@
                                                    )
    (declare (xargs :guard (and ;; no guard on term, though below we try to translate it
                            (symbol-alistp alist) ;; TODO: Should not rename QUOTE?
+                           (booleanp permissivep)
+                           (natp count)
                            (plist-worldp wrld))
                    :mode :program ; because we call translate-term-with-defaults
                    :stobjs state))
@@ -92,7 +83,7 @@
            ;;function call or lambda:
            (let* ((fn (ffn-symb term)))
              (case fn
-               ((let let*) ;;(let <bindings> ...declares... <body>)
+               ((let let*) ;; (let <bindings> ...declares... <body>)
                 (let* ((bindings (farg1 term))
                        (binding-vars (strip-cars bindings))
                        (binding-terms (strip-cadrs bindings))
@@ -110,7 +101,7 @@
                      `(,fn ,(make-doublets binders ;do nothing to these (TODO: might some have function calls?)
                                            (rename-functions-in-untranslated-terms-aux expressions alist permissivep (+ -1 count) wrld state))
                            ,@(rename-functions-in-untranslated-terms-aux result-forms alist permissivep (+ -1 count) wrld state))))
-               (cond ;;(cond <clauses>) ;; TODO: Handle clauses of length 1
+               (cond ;; (cond <clauses>) ;; TODO: Handle clauses of length 1
                 (let* ((clauses (fargs term))
                        (conditions (strip-cars clauses))
                        (vals-to-return (strip-cadrs clauses)))
@@ -181,7 +172,7 @@
                                    fn)))))
                     (cons fn args)))))))))))
 
- ;;rename all functions calls in TERMS according to ALIST
+ ;; rename all functions calls in TERMS according to ALIST
  (defun rename-functions-in-untranslated-terms-aux (terms alist permissivep count wrld state)
    (declare (xargs :guard (and ;(untranslated-term-listp terms)
                            ;;(true-listp terms)
@@ -196,7 +187,7 @@
 
 (defun rename-functions-in-untranslated-term (term
                                               renaming ; the renaming to apply
-                                              fake-fns-arity-alist ; maps functions which may be mentioned in TERM (but don't yet exist) to their arities
+                                              fake-fns-arity-alist ; maps functions which may be mentioned in TERM (but don't yet exist) to their arities (TODO: figure this out automatically?)
                                               state)
   (declare (xargs :guard (and (symbol-alistp renaming)
                               (symbol-listp (strip-cdrs renaming))
