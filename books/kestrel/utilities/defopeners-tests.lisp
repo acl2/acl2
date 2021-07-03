@@ -105,16 +105,18 @@
 
   (must-be-redundant
    (DEFTHM SUM-LIST4-BASE-2
-     (IMPLIES (IF (NOT (ENDP LST)) (ENDP (CDR LST)) 'NIL)
+     (IMPLIES (AND (NOT (ENDP LST))
+                   (LET ((REST (CDR LST))) (ENDP REST)))
               (EQUAL (SUM-LIST4 LST)
-                     ((LAMBDA (REST LST) (CAR LST))
-                      (CDR LST) LST)))))
+                     (CAR LST)))))
 
   (must-be-redundant
    (DEFTHM SUM-LIST4-UNROLL
-     (IMPLIES (IF (NOT (ENDP LST)) (NOT (ENDP (CDR LST))) 'NIL)
+     (IMPLIES (AND (NOT (ENDP LST))
+                   (not (LET ((REST (CDR LST)))
+                             (ENDP REST))))
               (EQUAL (SUM-LIST4 LST)
-                     ((LAMBDA (REST LST) (BINARY-+ (CAR LST) (SUM-LIST4 (CDR LST)))) (CDR LST) LST))))))
+                     (BINARY-+ (CAR LST) (SUM-LIST4 (CDR LST))))))))
 
 ;test of the mutual recursion version
 (deftest
@@ -237,16 +239,14 @@
    ;; defopeners to avoid that, perhaps using a binding hyp (but consider that
    ;; you can't have more than one binding hyp for a var, but you can re-bind
    ;; a let var).  There is also repetition in some of the base case rules
-   (DEFTHM
-     WEIRD-LEN-UNROLL
+   (DEFTHM WEIRD-LEN-UNROLL
      (IMPLIES (AND (NOT (ATOM X))
-                   (NOT (EQUAL (LEN (CDR X)) '4))
-                   (NOT (EQUAL (LEN (CDR X)) '5)))
+                   (not (LET ((RES (LEN (CDR X))))
+                             (EQUAL RES '4)))
+                   (not (LET ((RES (LEN (CDR X))))
+                             (EQUAL RES '5))))
               (EQUAL (WEIRD-LEN X)
-                     ((LAMBDA (RES X) ; res is bound but not used!
-                              (BINARY-+ '1 (WEIRD-LEN (CDR X))))
-                      (LEN (CDR X))
-                      X)))
+                     (BINARY-+ '1 (WEIRD-LEN (CDR X)))))
      :HINTS
      (("Goal"
        :EXPAND ((WEIRD-LEN X))
