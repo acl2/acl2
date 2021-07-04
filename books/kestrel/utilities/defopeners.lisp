@@ -39,7 +39,7 @@
 ;; TODO: Verify guards
 
 (include-book "world") ; for fn-body
-(include-book "terms")
+(include-book "terms") ; for SOME-EXPR-CALLS-FN, etc
 (include-book "pack")
 (include-book "conjunctions")
 (include-book "misc/install-not-normalized" :dir :system)
@@ -306,7 +306,7 @@
           (union-eq
            (set-difference-eq term-vars
                               (strip-cars relevant-renaming))
-           (get-vars-from-terms (strip-cdrs relevant-renaming)))))))
+           (free-vars-in-terms (strip-cdrs relevant-renaming)))))))
 
 ;; the renamings come innermost first
 (defun make-lets-around-term (term renamings term-vars)
@@ -324,7 +324,7 @@
                               (renamingsp renamings))))
   (if (endp terms)
       nil
-    (cons (make-lets-around-term (first terms) renamings (get-vars-from-term (first terms)))
+    (cons (make-lets-around-term (first terms) renamings (free-vars-in-term (first terms)))
           (make-lets-around-terms (rest terms) renamings))))
 
 ;; The hyps should have already been renamed.
@@ -334,7 +334,7 @@
                               (pseudo-termp term)
                               (true-listp rev-hyps) ; may contain lets
                               (renamingsp renamings))))
-  (let* ((term (make-lets-around-term term renamings (get-vars-from-term term)))
+  (let* ((term (make-lets-around-term term renamings (free-vars-in-term term)))
          (conclusion `(equal ,fn-call ,term)))
     (if (not rev-hyps)
         conclusion
@@ -394,7 +394,7 @@
   (if (call-of 'if term)
       ;; TERM is an IF:
       (let* ((test (farg1 term)) ; apply the overarching LETs to the test
-             (renamed-test (make-lets-around-term test renamings (get-vars-from-term test))))
+             (renamed-test (make-lets-around-term test renamings (free-vars-in-term test))))
         (mv-let
           (then-base-claims then-unroll-claims)
           ;; the claims from the then-branch get the IF test as a hyp
