@@ -13,11 +13,10 @@
 ;todo: reduce:
 (include-book "kestrel/ethereum/semaphore/printing" :dir :system) ; so we can refer to the constants below
 (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
-(include-book "kestrel/axe/axe-syntax" :dir :system)
-(include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
+(include-book "kestrel/axe/axe-syntax" :dir :system) ; for acl2::axe-bind-free
+(include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system) ; for acl2::bind-bv-size-axe
 (local (include-book "kestrel/prime-fields/bind-free-rules" :dir :system))
 (local (include-book "kestrel/prime-fields/bv-rules" :dir :system))
-(include-book "kestrel/crypto/r1cs/proof-support" :dir :system)
 (include-book "kestrel/crypto/r1cs/gadgets/xor-rules" :dir :system)
 ;(include-book "kestrel/crypto/r1cs/tools/axe-rules-r1cs" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system) ; for ACL2::BVXOR-WITH-SMALLER-ARG-1, drop
@@ -45,36 +44,6 @@
 ;;                       p)))
 ;;  :hints (("Goal" :in-theory (enable div))))
 
-(defthmd neg-becomes-bitnot
-  (implies (and (bitp bit)
-                (posp p))
-           (equal (neg bit p)
-                  (add -1 (acl2::bitnot bit) p)))
-  :hints (("Goal" :cases ((equal 1 bit))
-           :in-theory (enable add neg))))
-
-(defthm add-of-neg-of-add-of-bvcat-of-0
-  (implies (and (bitp bit)
-                (posp p))
-           (equal (add (neg bit p) (acl2::bvcat highsize highval '1 '0) p)
-                  (add -1
-                       (acl2::bvcat highsize highval '1 (acl2::bitnot bit))
-                       p)))
-  :hints (("Goal"  :cases ((equal 1 bit))
-           :in-theory (e/d (add bvcat acl2::logapp) (ACL2::BVXOR-WITH-SMALLER-ARG-1)))))
-
-;slow
-(defthm add-of-neg-of-add-of-bvcat-of-0-extra
-  (implies (and (bitp bit)
-                (posp p))
-           (equal (add (neg bit p) (add (acl2::bvcat highsize highval '1 '0) z p) p)
-                  (add -1
-                       (add (acl2::bvcat highsize highval '1 (acl2::bitnot bit))
-                            z
-                            p)
-                       p)))
-  :hints (("Goal"  :cases ((equal 1 bit))
-           :in-theory (e/d (add bvcat acl2::logapp) (ACL2::BVXOR-WITH-SMALLER-ARG-1)))))
 
 ;;because he top bit gets stuck onto the wrong cat
 (defthm swing-bit-onto-outer-cat
@@ -84,6 +53,7 @@
   :hints (("Goal" :in-theory (e/d (add acl2::bvcat acl2::logapp) (;R1CS::BVCAT-OF-BVXOR-LOW-WHEN-QUOTEP ;looped
                                                                   )))))
 
+;; x=y-z becomes x+z=y
 ;move
 (defthm pfield::equal-of-add-of-neg-arg2-solve
   (implies (and (posp p)
@@ -1217,9 +1187,9 @@
                   (mod extra p)))
   :hints (("Goal" :in-theory (enable add neg bvplus acl2::bvchop-of-sum-cases))))
 
-
+;move
 (defthm mod-of-bitxor
-  (implies (and (< 2 p)
+  (implies (and (<= 2 p)
                 (integerp p))
            (equal (mod (bitxor x y) p)
                   (bitxor x y))))

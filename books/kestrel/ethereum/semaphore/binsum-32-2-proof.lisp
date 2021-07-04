@@ -252,8 +252,8 @@
                 acl2::bvcat-of-bitnot-and-bitnot
                 pfield::add-of-bvnot-becomes-add-of-neg
                 pfield::add-of-bvnot-becomes-add-of-neg-arg2
-                add-of-neg-of-add-of-bvcat-of-0
-                add-of-neg-of-add-of-bvcat-of-0-extra
+                pfield::add-of-neg-and-bvcat-of-0
+                pfield::add-of-neg-and-bvcat-of-0-extra
                 swing-bit-onto-outer-cat ;todo: awkward.  why needed?
                 pfield::equal-of-0-and-add-of-add-of-neg-lemma
                 pfield::equal-of-add-of-neg-arg2-solve)

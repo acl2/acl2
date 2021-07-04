@@ -28,6 +28,7 @@
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/bv/rules9" :dir :system))
 (local (include-book "kestrel/bv/bitwise" :dir :system))
+(local (include-book "kestrel/prime-fields/bind-free-rules" :dir :system))
 
 (defthm fep-of-bvchop
   (implies (and (< (expt 2 size) p)
@@ -1304,3 +1305,33 @@
                        p)))
   :hints (("Goal" :use (:instance add-of-neg-of-mul-becomes-neg-of-bvcat)
            :in-theory (disable add-of-neg-of-mul-becomes-neg-of-bvcat))))
+
+(defthmd neg-becomes-bitnot
+  (implies (and (bitp bit)
+                (posp p))
+           (equal (neg bit p)
+                  (add -1 (acl2::bitnot bit) p)))
+  :hints (("Goal" :cases ((equal 1 bit))
+           :in-theory (enable add neg))))
+
+(defthm add-of-neg-and-bvcat-of-0
+  (implies (and (bitp bit)
+                (posp p))
+           (equal (add (neg bit p) (acl2::bvcat highsize highval 1 0) p)
+                  (add -1
+                       (acl2::bvcat highsize highval 1 (acl2::bitnot bit))
+                       p)))
+  :hints (("Goal"  :cases ((equal 1 bit))
+           :in-theory (e/d (add acl2::bvcat acl2::logapp) (ACL2::BVXOR-WITH-SMALLER-ARG-1)))))
+
+(defthm add-of-neg-and-bvcat-of-0-extra
+  (implies (and (bitp bit)
+                (posp p))
+           (equal (add (neg bit p) (add (acl2::bvcat highsize highval 1 0) extra p) p)
+                  (add -1
+                       (add (acl2::bvcat highsize highval 1 (acl2::bitnot bit))
+                            extra
+                            p)
+                       p)))
+  :hints (("Goal" :use add-of-neg-and-bvcat-of-0
+           :in-theory (disable add-of-neg-and-bvcat-of-0))))
