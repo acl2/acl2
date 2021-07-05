@@ -1769,7 +1769,7 @@
    ((eq (ffn-symb body) 'if)
     (let ((test
 
-; Since (remove-guard-holders-weak x) is provably equal to x, the machine we
+; Since (remove-guard-holders-weak x _) is provably equal to x, the machine we
 ; generate using it below is equivalent to the machine generated without it.
 ; It might be sound also to call possibly-clean-up-dirty-lambda-objects (i.e.,
 ; to call remove-guard-holders instead of remove-guard-holders-weak) so that
@@ -1777,7 +1777,11 @@
 ; :fn (or :fn?), but we don't expect to pay much of a price by playing it safe
 ; here and in termination-machine.
 
-           (remove-guard-holders-weak (fargn body 1))))
+; For why we pass nil as the second argument of remove-guard-holders-weak,
+; below, see a comment about remove-guard-holders-weak in the definition of
+; termination-machine-rec.
+
+           (remove-guard-holders-weak (fargn body 1) nil)))
       (cond
        ((member-eq-all 'if ruler-extenders) ; other case is easier to follow
         (mv-let
@@ -1954,8 +1958,13 @@
 ; possibly-clean-up-dirty-lambda-objects anytime we're removing guard holders
 ; we do not do so here and just play it safe until we get burned!
 
+; For why we pass nil as the second argument of remove-guard-holders-weak,
+; below, see a comment about remove-guard-holders-weak in the definition of
+; termination-machine-rec.
+
   (let* ((tests0 (remove-guard-holders-weak-lst
-                  (access tests-and-calls tc :tests))))
+                  (access tests-and-calls tc :tests)
+                  nil)))
     (mv-let
      (var const)
      (term-equated-to-constant-in-termlist tests0)
@@ -1985,7 +1994,8 @@
        (make tests-and-calls
              :tests tests
              :calls (remove-guard-holders-weak-lst
-                     (access tests-and-calls tc :calls)))))))
+                     (access tests-and-calls tc :calls)
+                     nil))))))
 
 (defun simplify-tests-and-calls-lst (tc-list)
 

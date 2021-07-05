@@ -66,7 +66,7 @@
            (my-double-cdr-induction (cdr lst) (cdr ilks)))))
 
 (defthm len-mv-nth-1-remove-guard-holders1-lst
-  (equal (len (mv-nth 1 (remove-guard-holders1-lst lst)))
+  (equal (len (mv-nth 1 (remove-guard-holders1-lst lst lamp)))
          (len lst))
   :hints (("Goal" :induct (my-double-cdr-induction lst ilks))))
 
@@ -78,23 +78,32 @@
          (defthm pseudo-termp-remove-guard-holders1
            (implies (pseudo-termp term)
                     (pseudo-termp
-                     (mv-nth 1 (remove-guard-holders1 changedp0 term))))
+                     (mv-nth 1 (remove-guard-holders1 changedp0 term lamp))))
            :flag remove-guard-holders1)
          (defthm pseudo-term-listp-remove-guard-holders1-lst
            (implies (pseudo-term-listp lst)
                     (pseudo-term-listp
-                     (mv-nth 1 (remove-guard-holders1-lst lst))))
+                     (mv-nth 1 (remove-guard-holders1-lst lst lamp))))
            :flag remove-guard-holders1-lst)))
 
 (defthm pseudo-termp-remove-guard-holders1 ; redundant
   (implies (pseudo-termp term)
            (pseudo-termp
-            (mv-nth 1 (remove-guard-holders1 changedp0 term)))))
+            (mv-nth 1 (remove-guard-holders1 changedp0 term lamp)))))
 
 (defthm pseudo-term-listp-remove-guard-holders1-lst ; redundant
   (implies (pseudo-term-listp lst)
            (pseudo-term-listp
-            (mv-nth 1 (remove-guard-holders1-lst lst)))))
+            (mv-nth 1 (remove-guard-holders1-lst lst lamp)))))
+
+(local
+ (defthm pseudo-term-listp-remove-guard-holders1-lst-forward
+   (implies (pseudo-term-listp lst)
+            (pseudo-term-listp
+             (mv-nth 1 (remove-guard-holders1-lst lst lamp))))
+   :rule-classes ((:forward-chaining
+                   :trigger-terms
+                   ((mv-nth 1 (remove-guard-holders1-lst lst lamp)))))))
 
 ; It was tempting to avoid the following, but the approach in the
 ; remove-guard-holders.lisp requires it.

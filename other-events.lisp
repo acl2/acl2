@@ -6471,7 +6471,8 @@
 ; problems then we can think harder about whether it is sound.
 
            (remove-guard-holders-weak-lst
-            (constraints-list infectious-fns wrld formula-lst1 nil))))
+            (constraints-list infectious-fns wrld formula-lst1 nil)
+            (remove-guard-holders-lamp))))
      (mv constraints constrained-fns subversive-fns infectious-fns fns))))
 
 (defun bogus-exported-compliants (names exports-with-sig-ancestors sig-fns
@@ -7869,7 +7870,7 @@
 ;     nil
 ;     :hints (("Goal" :use (f-is-1 f-is-2) :in-theory nil))
 ;     :rule-classes nil)
-;   $ 
+;   $
 
 ; Here is how one can think about the criterion mentioned above, i.e., for the
 ; new event E to be the first argument of the old event (record-expansion E

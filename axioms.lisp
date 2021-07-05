@@ -26877,6 +26877,7 @@ Lisp definition."
 (verify-termination-boot-strap cpu-core-count)
 (verify-termination-boot-strap get-in-theory-redundant-okp)
 (verify-termination-boot-strap dumb-occur-var)
+(verify-termination-boot-strap trivial-lambda-p)
 
 ; We need for sharp-atsign-alist to be compiled before it is called in
 ; *sharp-atsign-ar*, file basis.lisp.  So we put its definition here, along

@@ -954,9 +954,8 @@ Goal
   (AND
    (LET ((OLD (N$VAL N$))) (NATP OLD))
    (LET
-    ((N$ (LET* ((OLD (N$VAL N$))
-                (N$ (UPDATE-N$VAL OLD N$)))
-               N$)))
+    ((N$ (LET ((OLD (N$VAL N$)))
+              (UPDATE-N$VAL OLD N$))))
     (OR
       (NOT (UENVALID TWO-USUALLYEQUAL-NUMS))
       (PROG2$ (THROW-NONEXEC-ERROR :NON-EXEC '(EQUAL (N$VAL N$)
@@ -1050,9 +1049,8 @@ Goal
              (LET NIL (NATP OLD))))
    (LET
     ((N$ (LET* ((OLD (N$VAL N$))
-                (N$ (UPDATE-N$VAL (+ 1 OLD) N$))
-                (N$ (UPDATE-N$VAL OLD N$)))
-               N$)))
+                (N$ (UPDATE-N$VAL (+ 1 OLD) N$)))
+               (UPDATE-N$VAL OLD N$))))
     (OR
       (NOT (UENVALID TWO-USUALLYEQUAL-NUMS))
       (PROG2$ (THROW-NONEXEC-ERROR :NON-EXEC '(EQUAL (N$VAL N$)

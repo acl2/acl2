@@ -613,7 +613,9 @@
                               )
                   :guard-hints (("Goal" :in-theory (enable all->=-len-when-defthm-form-listp)))))
   (let* ((body (fn-body fn t wrld))
-         (body (remove-guard-holders-weak body))
+         (body (remove-guard-holders-weak body
+; Matt K. mod: Add new argument 7/2021.
+                                          (remove-guard-holders-lamp)))
          (formals (fn-formals fn wrld)))
     (mv-let (base-claims unroll-claims)
       (make-unroll-and-base-claims-aux body all-fns-in-nest `(,fn ,@formals)

@@ -43,7 +43,9 @@
                   ;; part, but its correctness assumes the guards hold.  If the
                   ;; :logic part is too slow, consider building the function
                   ;; into an evaluator.
-                  (body (remove-guard-holders-weak body)))
+                  (body (remove-guard-holders-weak body
+; Matt K. mod: Add new argument 7/2021.
+                                                   (remove-guard-holders-lamp))))
               (if match
                   (if (equal match (list formals body))
                       ;;consistent with previous definition:

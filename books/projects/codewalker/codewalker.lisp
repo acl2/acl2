@@ -3619,6 +3619,47 @@
 
 (set-state-ok t)
 
+; The following two definitions from Matt Kaufmann are essentially versions of
+; remove-guard-holders[-lst] from before July 2021, to preserve the existing
+; behavior of codewalker.
+
+(defun remove-guard-holders-legacy (term wrld)
+
+; Warning: Keep in sync with ACL2 source function remove-guard-holders.
+
+; Return a term equal to term, but slightly simplified, even perhaps inside
+; quoted lambda objects.  See remove-guard-holders-weak for a version that does
+; not take a world argument and does not simplify quoted lambda objects.
+
+; See the warning in remove-guard-holders1.
+
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (plist-worldp wrld))))
+  (let ((lamp nil)) ; (remove-guard-holders-lamp)
+    (cond (wrld (possibly-clean-up-dirty-lambda-objects
+                 (remove-guard-holders-weak term lamp)
+                 wrld
+                 lamp))
+          (t (remove-guard-holders-weak term lamp)))))
+
+(defun remove-guard-holders-lst-legacy (lst wrld)
+
+; Warning: Keep in sync with ACL2 source function remove-guard-holders.
+
+; Return a list of terms element-wise equal to lst, but slightly simplified,
+; even perhaps inside quoted lambda objects.  See remove-guard-holders-weak-lst
+; for a version that does not take a world argument and does not simplify
+; quoted lambda objects.
+
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (plist-worldp wrld))))
+  (let ((lamp nil)) ; (remove-guard-holders-lamp)
+    (cond (wrld (possibly-clean-up-dirty-lambda-objects-lst
+                 (remove-guard-holders-weak-lst lst lamp)
+                 wrld
+                 lamp))
+          (t (remove-guard-holders-weak-lst lst lamp)))))
+
 (defun update-codewalker-splitters (s0 s1 pc splitters)
   (cond ((or (not (quotep pc))
              (not (quotep splitters)))
@@ -3701,11 +3742,11 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
       (er-let* ((call (translate (cons fn (cadr fn))
                                  t t nil ctx
                                  w state)))
-        (value (ffn-symb (remove-guard-holders call
+        (value (ffn-symb (remove-guard-holders-legacy call
 ; Matt K. mod 3/2019 for new argument of remove-guard-holders:
-                                               w)))))
+                                                      w)))))
      (t (er soft ctx
-            "The ~x0 argument must be either a an existing function symbol or ~
+            "The ~x0 argument must be either an existing function symbol or ~
              a well-formed LAMBDA expression.  The arity of the function ~
              symbol or LAMBDA expression must be ~x1 and ~#2~[the formals ~
              must not include~/the ~n3 formal must be~] the state variable ~
@@ -3744,9 +3785,9 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
                                'translate-list-of-terms
                                (w state) state))
               (rest (translate-list-of-terms (cdr terms) state)))
-      (value (remove-guard-holders-lst (cons term rest)
+      (value (remove-guard-holders-lst-legacy (cons term rest)
 ; Matt K. mod 3/2019 for new argument of remove-guard-holders:
-                                       (w state)))))))
+                                              (w state)))))))
 
 (defun translate-list-of-terms-list (lst state)
   (cond
@@ -3769,8 +3810,8 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
                                 (w state) state))
               (rest (translate-list-of-term-term-doublets (cdr doublets) state)))
 ; Matt K. mod 3/2019 by adding new world argument of remove-guard-holders:
-      (value (cons (list (remove-guard-holders term1 (w state))
-                         (remove-guard-holders term2 (w state)))
+      (value (cons (list (remove-guard-holders-legacy term1 (w state))
+                         (remove-guard-holders-legacy term2 (w state)))
                    rest))))
    (t (er soft 'translate-list-of-term-term-doublets
           "This function takes a true list of doublets, each of the form ~
@@ -4561,9 +4602,9 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
                   :run run
                   :svar svar
                   :stobjp stobjp
-                  :hyps (remove-guard-holders-lst hyps
+                  :hyps (remove-guard-holders-lst-legacy hyps
 ; Matt K. mod 3/2019 for new argument of remove-guard-holders:
-                                                  (w state))
+                                                         (w state))
                   :step step
                   :get-pc get-pc
                   :put-pc put-pc

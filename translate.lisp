@@ -3978,7 +3978,58 @@
 
 (mutual-recursion
 
-(defun remove-guard-holders1 (changedp0 term)
+(defun dumb-occur-var (var term)
+
+; This function determines if variable var occurs free in the given term.  This
+; is the same as dumb-occur, but optimized for the case that var is a variable.
+
+  (declare (xargs :guard (and (symbolp var) (pseudo-termp term))))
+  (cond ((eq var term) t)
+        ((variablep term) nil)
+        ((fquotep term) nil)
+        (t (dumb-occur-var-lst var (fargs term)))))
+
+(defun dumb-occur-var-lst (var lst)
+  (declare (xargs :guard (and (symbolp var) (pseudo-term-listp lst))))
+  (cond ((endp lst) nil)
+        (t (or (dumb-occur-var var (car lst))
+               (dumb-occur-var-lst var (cdr lst))))))
+)
+
+(defun trivial-lambda-p (formals args body)
+
+; For the term ((lambda formals body) . args), if this Boolean function returns
+; t then that term is provably equal to body.  What's more, such elimination of
+; a trivial lambda preserves the ev$ property discussed in
+; remove-guard-holders1, as shown in a comment there.
+
+; Note that this function does not recognize the translation of a term of the
+; form (let ((x term)) x), even though we also consider that to be trivial and
+; worthy of simplification by remove-guard-holders1.
+
+; We tried defining this function as indicated in the commented-out section
+; below, the idea being that if a variable is not used then its binding is
+; irrelevant.  However, we encountered at least 30 regression failures due to
+; that decision.  That seemed sufficiently many that we decided not to be so
+; generous.  Besides, we wonder if -- for example -- replacing (let ((x (cw
+; "..." ...))) (declare (ignore x)) term) with just term is such a good idea.
+
+  (declare (xargs :guard (and (symbol-listp formals)
+                              (true-listp args)
+                              (equal (length formals) (length args))
+                              (pseudo-termp body))))
+; Deleted experimental code; see comment above.
+; (cond ((endp formals) t)
+;       ((or (eq (car formals) (car args))
+;            (not (dumb-occur-var (car formals) body)))
+;        (trivial-lambda-p (cdr formals) (cdr args) body))
+;       (t nil))
+  (declare (ignore body))
+  (equal formals args))
+
+(mutual-recursion
+
+(defun remove-guard-holders1 (changedp0 term lamp)
 
 ; Warning: If you change this function, consider changing :DOC guard-holders.
 
@@ -3986,10 +4037,14 @@
 ; and where if changedp is nil, then changedp0 is nil and new-term is identical
 ; to term.  The second part can be restated as follows: if changedp0 is true
 ; then changedp is true (a kind of monotonicity), and if the resulting term is
-; distinct from the input term then changedp is true.  Intuitively, if changedp
-; is true then new-term might be distinct from term but we don't know that
-; (especially if changedp0 is true), but if changedp is nil then we know that
-; new-term is just term.
+; distinct from the input term then changedp is true.  Thus if changedp is true
+; then new-term might be distinct from term but we don't know that (especially
+; if changedp0 is true), but if changedp is nil then we know that new-term is
+; just term.
+
+; The parameter name "LAMP" is intended to suggest "LAMbda remove Property".
+; When true, we should remove trivial lambdas (see the comment about these in
+; trivial-lambda-p, which recognizes one class of trivial lambdas).
 
 ; See the Essay on the Removal of Guard Holders.
 
@@ -3999,47 +4054,64 @@
 ; provably equal to term.  But since this function is used to clean up the
 ; bodies of tame but dirty lambda objects in :FN slots (see
 ; clean-up-dirty-lambda-objects) it must also satisfy the ``ev$ property'': the
-; ev$ of tame input must be provably equal to the ev$ of the output.  There is
-; an easy way to ensure that remove-guard-holders-weak has the ev$ property:
-; remove-guard-holders1 ``merely lifts'' ordinary subterms to ordinary slots.
-; We call this the ``Merely Lifts'' principle and it is a sufficient but not
-; necessary condition to guarantee the ev$ property.
+; ev$ of tame input must be provably equal to the ev$ of the output of
+; remove-guard-holders1 on that input.
 
-; We will illustrate the ``Merely Lifts'' principle in a moment, but we first
-; make two important observations about tameness: First, if any ordinary
-; subterm of a term is untame then the term itself is untame, or
-; contrapositively, if a term is tame, every ordinary subterm is tame.  Second,
-; if a term, z, is tame, then (ev$ z s) = z/s, or colloquially, ``tame terms
-; evaluate to themselves.''
+; Before we argue that the ev$ property holds, we make an important observation
+; about tameness: If any ordinary subterm of a term is untame then the term
+; itself is untame; or contrapositively, if a term is tame, every ordinary
+; subterm is tame.
 
-; So now we illustrate the Merely Lifts principle and show how it insures the
-; ev$ property.  Let term be (g u (f a b)) and assume the second slots of both
-; g and f are ordinary (i.e., have ilk NIL).  We assume term is tame.  But if
-; (g u (f a b)) is tame, then so is (f a b) and so is b.  Finally, assume that
-; remove-guard-holders-weak merely lifts the b out of (f a b), producing (g u
-; b) which we assume is provably equal to (g u (f a b)).  Then (g u b) is tame
-; because the only difference between (g u (f a b)) and (g u b) is in an
-; ordinary slot in which one tame term has been replaced by another.  Thus (ev$
-; (remove-guard-holders-weak '(g u (f a b))) s) = (ev$ '(g u b) s) = (g u b)/s,
-; but (ev$ '(g u (f a b)) s) = (g u (f a b))/s.  But since (g u b) is provably
-; equal to (g u (f a b)), their mutual instantiations by s are provably equal.
-; So if every transformation made by remove-guard-holders-weak is a lift of
-; ordinary to ordinary, that is, if remove-guard-holders-weak merely lifts, it
-; has the ev$ property.
+; So now we illustrate why the ev$ property holds.  A proof would be by
+; induction along remove-guard-holders1, but here we just consider a single
+; (inductive) step of the reduction.  Such a step typically replaces a call of
+; a one of the built-in functions HIDE, RETURN-LAST, MV-LIST, or THE-CHECK by
+; its last argument.  (We'll discuss the other cases later below.)  So let f be
+; such a function and consider the transformation of a tame term (g u (f a b))
+; to (g u b).  Note that (g u b) is still tame, essentially by the important
+; observation above; and note that f is built.  So each term in the following
+; sequence is provably equal to the next, and thus the first and last are
+; provably equal as required for the ev$ property.
 
-; How could it do more than merely lift?  It could, for example, lift b out but
-; then embed it in a non-tame expression, e.g., produce (g u (h b)) where h is
-; an unwarranted identity function.  In that case, remove-guard-holders-weak
-; would satisfy its minimal requirement of provable equality without having the
-; ev$ property because the attempt to ev (g u (h b)) would produce an
-; untame-ev$ term, which is not provably equal to anything besides itself.
+; (ev$ '(g u (f a b)) a)
+; (apply$ 'g (list (eval$ 'u s)
+;                  (apply$ 'f (list (eval$ 'a s) (eval$ 'b s)))))
+; (apply$ 'g (list (eval$ 'u s)
+;                  (f (eval$ 'a s) (eval$ 'b s))))
+; (apply$ 'g (list (eval$ 'u s)
+;                  (eval$ 'b s))).
+; (ev$ '(g u b) a)
+
+; The case that f is CONS-WITH-HINT is similar, as each of the following is
+; provably equal to the next.
+
+; (eval$ '(cons-with-hint t1 t2 h) a)
+; (cons-with-hint (eval$ 't1 a) (eval$ 't2 a) (eval$ 'h a))
+; (cons (eval$ 't1 a) (eval$ 't2 a))
+; (eval$ '(cons t1 t2) a)
+
+; The removal of trivial lambdas is similarly justified, where for the last
+; step, we note that the bindings in a to variables other than x and y are
+; irrelevant for evaluating '(foo x y).  This example actually is more general
+; that what we now recognize as "trivial", in that lambda formal z is not bound
+; to itself but doesn't occur in the lambda body; see trivial-lambda-p.
+
+; (ev$ '((lambda (x y z) (foo x y)) x y t0) a)
+; (apply$ '(lambda (x y z) (foo x y))
+;         (list (eval$ x a) (eval$ y a) (eval$ t0 a)))
+; (apply$-lambda '(lambda (x y z) (foo x y))
+;                (list (eval$ x a) (eval$ y a) (eval$ t0 a)))
+; (apply$-lambda-logical '(lambda (x y z) (foo x y))
+;                        (list (eval$ x a) (eval$ y a) (eval$ t0 a)))
+; (ev$ '(foo x y)
+;      (pairlis$ '(x y z)
+;                (list (eval$ x a) (eval$ y a) (eval$ t0 a))))
+; (ev$ '(foo x y) a)
 
 ; WARNING: The take home lesson from the discussion above is: Be careful if you
 ; change remove-guard-holders1 so as not to introduce any unbadged functions or
 ; untame expressions or the requirements for warrants that are not already
-; implied by the subterms in term!  The simplest thing to do is to follow the
-; Merely Lifts principle and always just lift out an ordinary subterm into an
-; ordinary slot.
+; implied by the subterms in term!
 
 ; WARNING: The resulting term is in quote normal form.  We take advantage of
 ; this fact in our implementation of :by hints, in function
@@ -4084,15 +4156,15 @@
 ; to the bottom with things like (prog2$ (illegal ...) body) and (prog2$ T
 ; body), we just open up the prog2$ early, throwing away the dcl-guardian.
 
-    (remove-guard-holders1 t (car (last (fargs term)))))
+    (remove-guard-holders1 t (car (last (fargs term))) lamp))
    ((eq (ffn-symb term) 'CONS-WITH-HINT)
     (mv-let
       (changedp1 arg1)
-      (remove-guard-holders1 nil (fargn term 1))
+      (remove-guard-holders1 nil (fargn term 1) lamp)
       (declare (ignore changedp1))
       (mv-let
         (changedp2 arg2)
-        (remove-guard-holders1 nil (fargn term 2))
+        (remove-guard-holders1 nil (fargn term 2) lamp)
         (declare (ignore changedp2))
         (mv t (mcons-term* 'cons arg1 arg2)))))
    ((flambdap (ffn-symb term))
@@ -4100,7 +4172,7 @@
       term
       ((('LAMBDA ('VAR) ('THE-CHECK & & 'VAR))
         val)
-       (remove-guard-holders1 t val))
+       (remove-guard-holders1 t val lamp))
       ((('LAMBDA formals ('RETURN-LAST ''MBE1-RAW & logic))
         . args)
 
@@ -4111,33 +4183,42 @@
 
        (mv-let
          (changedp1 args1)
-         (remove-guard-holders1-lst args)
+         (remove-guard-holders1-lst args lamp)
          (declare (ignore changedp1))
          (mv-let
            (changedp2 logic2)
-           (remove-guard-holders1 nil logic)
+           (remove-guard-holders1 nil logic lamp)
            (declare (ignore changedp2))
            (mv t (subcor-var formals args1 logic2)))))
       (&
        (mv-let
          (changedp1 lambda-body)
          (remove-guard-holders1 nil
-                                (lambda-body (ffn-symb term)))
-         (mv-let
-           (changedp2 args)
-           (remove-guard-holders1-lst (fargs term))
-           (cond ((or changedp1 changedp2)
-                  (mv t
-                      (mcons-term
-                       (if changedp1
-                           (make-lambda (lambda-formals (ffn-symb term))
-                                        lambda-body)
-                         (ffn-symb term))
-                       args)))
-                 (t (mv changedp0 term))))))))
+                                (lambda-body (ffn-symb term))
+                                lamp)
+         (let ((lambda-formals (lambda-formals (ffn-symb term))))
+           (mv-let
+             (changedp2 args)
+             (remove-guard-holders1-lst (fargs term) lamp)
+             (cond ((and lamp
+                         (consp lambda-formals)
+                         (null (cdr lambda-formals))
+                         (eq (car lambda-formals) lambda-body))
+                    (mv t (car args)))
+                   ((and lamp
+                         (trivial-lambda-p lambda-formals args lambda-body))
+                    (mv t lambda-body))
+                   ((or changedp1 changedp2)
+                    (mv t
+                        (mcons-term
+                         (if changedp1
+                             (make-lambda lambda-formals lambda-body)
+                           (ffn-symb term))
+                         args)))
+                   (t (mv changedp0 term)))))))))
    (t (mv-let
         (changedp1 args)
-        (remove-guard-holders1-lst (fargs term))
+        (remove-guard-holders1-lst (fargs term) lamp)
         (cond ((null changedp1)
                (cond ((quote-listp args)
                       (let ((new-term (mcons-term (ffn-symb term)
@@ -4148,64 +4229,72 @@
                      (t (mv changedp0 term))))
               (t (mv t (mcons-term (ffn-symb term) args))))))))
 
-(defun remove-guard-holders1-lst (lst)
+(defun remove-guard-holders1-lst (lst lamp)
+
+; See the warnings and other comments in remove-guard-holders1.
+
   (declare (xargs :guard (pseudo-term-listp lst)
                   :measure (acl2-count lst)))
   (cond ((endp lst) (mv nil nil))
         (t (mv-let (changedp1 a)
-                   (remove-guard-holders1 nil (car lst))
+                   (remove-guard-holders1 nil (car lst) lamp)
                    (mv-let (changedp2 b)
-                           (remove-guard-holders1-lst (cdr lst))
+                           (remove-guard-holders1-lst (cdr lst) lamp)
                            (cond ((or changedp1 changedp2)
                                   (mv t (cons a b)))
                                  (t (mv nil lst))))))))
 )
 
-(defun remove-guard-holders-weak (term)
+(defun remove-guard-holders-weak (term lamp)
 
-; Return a term equal to term, but slightly simplified.  See also the warning
-; in remove-guard-holders1.
+; Return a term equal to term, but slightly simplified.  See the warnings and
+; other comments in remove-guard-holders1.
 
   (declare (xargs :guard (pseudo-termp term)))
   (mv-let (changedp result)
-          (remove-guard-holders1 nil term)
+          (remove-guard-holders1 nil term lamp)
           (declare (ignore changedp))
           result))
 
-(defun remove-guard-holders-weak-lst (lst)
+(defun remove-guard-holders-weak-lst (lst lamp)
 
 ; Return a list of terms element-wise equal to lst, but slightly simplified.
+; See the warnings and other comments in remove-guard-holders1.
 
   (declare (xargs :guard (pseudo-term-listp lst)))
   (mv-let (changedp result)
-          (remove-guard-holders1-lst lst)
+          (remove-guard-holders1-lst lst lamp)
           (declare (ignore changedp))
           result))
 
-(defun remove-guard-holders1-lst-lst (lst)
+(defun remove-guard-holders1-lst-lst (lst lamp)
+
+; See the warnings and other comments in remove-guard-holders1.
+
   (declare (xargs :guard (pseudo-term-list-listp lst)))
   (cond ((null lst) (mv nil nil))
         (t (mv-let (changedp1 a)
-                   (remove-guard-holders1-lst (car lst))
+                   (remove-guard-holders1-lst (car lst) lamp)
                    (mv-let (changedp2 b)
-                           (remove-guard-holders1-lst-lst (cdr lst))
+                           (remove-guard-holders1-lst-lst (cdr lst) lamp)
                            (cond ((or changedp1 changedp2)
                                   (mv t (cons a b)))
                                  (t (mv nil lst))))))))
 
-(defun remove-guard-holders-weak-lst-lst (lst)
+(defun remove-guard-holders-weak-lst-lst (lst lamp)
 
 ; Return a list of clauses element-wise equal to lst, but slightly simplified.
+; See the warnings and other comments in remove-guard-holders1.
 
   (declare (xargs :guard (pseudo-term-list-listp lst)))
   (mv-let (changedp result)
-          (remove-guard-holders1-lst-lst lst)
+          (remove-guard-holders1-lst-lst lst lamp)
           (declare (ignore changedp))
           result))
 
 (mutual-recursion
 
-(defun clean-up-dirty-lambda-objects (term ilk wrld)
+(defun clean-up-dirty-lambda-objects (term ilk wrld lamp)
 
 ; Warning: This function must not be called during boot-strap, so check
 ; (global-val 'boot-strap-flg wrld) before calling this function.
@@ -4236,9 +4325,11 @@
                       (expand-all-lambdas
                        (clean-up-dirty-lambda-objects
                         (remove-guard-holders-weak
-                         (lambda-object-body evg))
+                         (lambda-object-body evg)
+                         lamp)
                         nil
-                        wrld)))))
+                        wrld
+                        lamp)))))
               (t term)))
             (t term))))
    ((and (eq (ffn-symb term) 'HIDE)
@@ -4251,8 +4342,9 @@
            (clean-up-dirty-lambda-objects
             (lambda-body (ffn-symb term))
             nil
-            wrld))
-     (clean-up-dirty-lambda-objects-lst (fargs term) nil wrld)))
+            wrld
+            lamp))
+     (clean-up-dirty-lambda-objects-lst (fargs term) nil wrld lamp)))
    (t (let ((bdg (executable-badge (ffn-symb term) wrld)))
         (fcons-term (ffn-symb term)
                     (clean-up-dirty-lambda-objects-lst
@@ -4261,15 +4353,17 @@
                              (eq (access apply$-badge bdg :ilks) t))
                          nil
                          (access apply$-badge bdg :ilks))
-                     wrld))))))
+                     wrld
+                     lamp))))))
 
-(defun clean-up-dirty-lambda-objects-lst (terms ilks wrld)
+(defun clean-up-dirty-lambda-objects-lst (terms ilks wrld lamp)
   (cond
    ((endp terms) nil)
-   (t (cons (clean-up-dirty-lambda-objects (car terms) (car ilks) wrld)
-            (clean-up-dirty-lambda-objects-lst (cdr terms) (cdr ilks) wrld))))))
+   (t (cons (clean-up-dirty-lambda-objects (car terms) (car ilks) wrld lamp)
+            (clean-up-dirty-lambda-objects-lst (cdr terms) (cdr ilks) wrld
+                                               lamp))))))
 
-(defun possibly-clean-up-dirty-lambda-objects (term wrld)
+(defun possibly-clean-up-dirty-lambda-objects (term wrld lamp)
 
 ; We copy term and clean up every dirty well-formed lambda object occurring in
 ; a :FN slot.  We only do this if we're not in boot-strap and if we have reason
@@ -4280,10 +4374,10 @@
   (cond
    ((and (not (global-val 'boot-strap-flg wrld))
          (may-contain-dirty-lambda-objectsp term))
-    (clean-up-dirty-lambda-objects term nil wrld))
+    (clean-up-dirty-lambda-objects term nil wrld lamp))
    (t term)))
 
-(defun possibly-clean-up-dirty-lambda-objects-lst (terms wrld)
+(defun possibly-clean-up-dirty-lambda-objects-lst (terms wrld lamp)
 
 ; We copy each term in terms and clean up every dirty well-formed quoted lambda
 ; objects we find.  This funtion checks (not (global-val 'boot-strap-flg wrld))
@@ -4293,20 +4387,24 @@
 
   (cond
    ((endp terms) nil)
-   (t (cons (possibly-clean-up-dirty-lambda-objects (car terms) wrld)
-            (possibly-clean-up-dirty-lambda-objects-lst (cdr terms) wrld)))))
+   (t (cons (possibly-clean-up-dirty-lambda-objects (car terms) wrld lamp)
+            (possibly-clean-up-dirty-lambda-objects-lst (cdr terms) wrld
+                                                        lamp)))))
 
-(defun possibly-clean-up-dirty-lambda-objects-lst-lst (terms-lst wrld)
+(defun possibly-clean-up-dirty-lambda-objects-lst-lst (terms-lst wrld lamp)
 
 ; Again, we test the 'boot-strap-flg repeatedly when only one test would
 ; suffice.  So we're sacrificing a little efficiency for code simplicity.
 
   (cond
    ((endp terms-lst) nil)
-   (t (cons (possibly-clean-up-dirty-lambda-objects-lst (car terms-lst) wrld)
+   (t (cons (possibly-clean-up-dirty-lambda-objects-lst
+             (car terms-lst) wrld lamp)
             (possibly-clean-up-dirty-lambda-objects-lst-lst
-             (cdr terms-lst)
-             wrld)))))
+             (cdr terms-lst) wrld lamp)))))
+
+(defstub remove-guard-holders-lamp () t)
+(defattach remove-guard-holders-lamp constant-t-function-arity-0)
 
 (defun remove-guard-holders (term wrld)
 
@@ -4314,14 +4412,16 @@
 ; quoted lambda objects.  See remove-guard-holders-weak for a version that does
 ; not take a world argument and does not simplify quoted lambda objects.
 
-; See the warning in remove-guard-holders1.
+; See the warnings and other comments in remove-guard-holders1.
 
   (declare (xargs :guard (and (pseudo-termp term)
                               (plist-worldp wrld))))
-  (cond (wrld (possibly-clean-up-dirty-lambda-objects
-               (remove-guard-holders-weak term)
-               wrld))
-        (t (remove-guard-holders-weak term))))
+  (let ((lamp (remove-guard-holders-lamp)))
+    (cond (wrld (possibly-clean-up-dirty-lambda-objects
+                 (remove-guard-holders-weak term lamp)
+                 wrld
+                 lamp))
+          (t (remove-guard-holders-weak term lamp)))))
 
 (defun remove-guard-holders-lst (lst wrld)
 
@@ -4330,12 +4430,16 @@
 ; for a version that does not take a world argument and does not simplify
 ; quoted lambda objects.
 
+; See the warnings and other comments in remove-guard-holders1.
+
   (declare (xargs :guard (and (pseudo-term-listp lst)
                               (plist-worldp wrld))))
-  (cond (wrld (possibly-clean-up-dirty-lambda-objects-lst
-               (remove-guard-holders-weak-lst lst)
-               wrld))
-        (t (remove-guard-holders-weak-lst lst))))
+  (let ((lamp (remove-guard-holders-lamp)))
+    (cond (wrld (possibly-clean-up-dirty-lambda-objects-lst
+                 (remove-guard-holders-weak-lst lst lamp)
+                 wrld
+                 lamp))
+          (t (remove-guard-holders-weak-lst lst lamp)))))
 
 (defun remove-guard-holders-lst-lst (lst wrld)
 
@@ -4344,12 +4448,16 @@
 ; remove-guard-holders-weak-lst-lst for a version that does not take a world
 ; argument and does not simplify quoted lambda objects.
 
+; See the warnings and other comments in remove-guard-holders1.
+
   (declare (xargs :guard (and (pseudo-term-list-listp lst)
                               (plist-worldp wrld))))
-  (cond (wrld (possibly-clean-up-dirty-lambda-objects-lst-lst
-               (remove-guard-holders-weak-lst-lst lst)
-               wrld))
-        (t (remove-guard-holders-weak-lst-lst lst))))
+  (let ((lamp (remove-guard-holders-lamp)))
+    (cond (wrld (possibly-clean-up-dirty-lambda-objects-lst-lst
+                 (remove-guard-holders-weak-lst-lst lst lamp)
+                 wrld
+                 lamp))
+          (t (remove-guard-holders-weak-lst-lst lst lamp)))))
 
 (defun lambda-object-guard (x)
 

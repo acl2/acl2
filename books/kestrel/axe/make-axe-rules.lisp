@@ -1476,7 +1476,10 @@
                 ;; If we don't handle return-last, the axe rule for
                 ;; string-append causes a loop.  Also, this should make it
                 ;; faster to open functions defined using MBE:
-                (body (remove-guard-holders-weak body) ;(strip-return-last body)
+                (body (remove-guard-holders-weak body
+; Matt K. mod: Add new argument 7/2021.
+                                                 (remove-guard-holders-lamp)
+                                                 ) ;(strip-return-last body)
                       )
                 (body (drop-unused-lambda-bindings body))
                 (lhs (cons name formals))
@@ -1490,7 +1493,9 @@
                 (rule-classes (defthm-rule-classes name wrld))
                 ;;otherwise, unrolling rules of functions using mbe can loop):
                 (theorem-body ;(strip-return-last theorem-body)
-                 (remove-guard-holders-weak theorem-body))
+                 (remove-guard-holders-weak theorem-body
+; Matt K. mod: Add new argument 7/2021.
+                                            (remove-guard-holders-lamp)))
                 (theorem-body (drop-unused-lambda-bindings theorem-body))
                 ((mv erp rules)
                  (make-axe-rules-from-theorem theorem-body name rule-classes known-boolean-fns print wrld))

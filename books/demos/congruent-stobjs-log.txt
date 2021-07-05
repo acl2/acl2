@@ -1169,6 +1169,7 @@ ACL2 !>>(DEFUN BAR (S$2 S$3)
 
 Since BAR is non-recursive, its admission is trivial.  We observe that
 the type of BAR is described by the theorem (EQUAL (BAR S$2 S$3) S$3).
+We used the :type-prescription rule FOO.
 
 (BAR S$2 S$3) => S$3.
 
@@ -1179,6 +1180,6 @@ with Common Lisp.
 
 Summary
 Form:  ( DEFUN BAR ...)
-Rules: NIL
+Rules: ((:TYPE-PRESCRIPTION FOO))
  BAR
 ACL2 !>>Bye.

@@ -1092,6 +1092,9 @@
    :hints (("Goal" :in-theory (enable e4 f8)))
    :rule-classes :congruence))
 
+;;; In July 2021 we extended remove-guard-holders to simplify
+;;; (let ((var expr)) var) to expr.
+#||
 (must-fail
  (defthm e4-implies-equal-f8-cong-bad-lambda
    (implies (e4 z1 z2)
@@ -1103,6 +1106,7 @@
                        z2)))
    :hints (("Goal" :in-theory (enable e4 f8)))
    :rule-classes :congruence))
+||#
 
 (must-fail
  (defthm e4-implies-equal-f8-cong-bad-equal-lambda

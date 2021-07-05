@@ -12171,7 +12171,7 @@
    ((eq (ffn-symb body) 'if)
     (let* ((inst-test (sublis-var alist
 
-; Since (remove-guard-holders-weak x) is provably equal to x, the machine we
+; Since (remove-guard-holders-weak x _) is provably equal to x, the machine we
 ; generate using it below is equivalent to the machine generated without it.
 ; It might be sound also to call possibly-clean-up-dirty-lambda-objects (i.e.,
 ; to call remove-guard-holders instead of remove-guard-holders-weak) so that
@@ -12179,7 +12179,15 @@
 ; :fn (or :fn?), but we don't expect to pay much of a price by playing it safe
 ; here and in induction-machine-for-fn1.
 
-                                  (remove-guard-holders-weak (fargn body 1))))
+                                  (remove-guard-holders-weak (fargn body 1)
+
+; Rather than pass (remove-guard-holders-lamp) to the following argument
+; through all the recursive calls of termination-machine-rec, or passing it
+; from the caller, we use nil.  That's simpler and it probably doesn't much
+; matter in practice.  We similarly use nil in other calls of
+; remove-guard-holders-weak in this function and in induction-machine-for-fn1.
+
+                                                             nil)))
            (branch-result
             (append (termination-machine-rec loop$-recursion
                                              names
@@ -12287,13 +12295,14 @@
 ; termination machines, at least not until we see it hurt us.
 
                  (lamb-body (remove-guard-holders-weak
-                             (lambda-object-body lamb)))
+                             (lambda-object-body lamb)
+                             nil))
                  (target (sublis-var alist (fargn body 2)))
                  (newvar (genvar v "NV" 0 avoid-vars))
                  (avoid-vars (cons newvar avoid-vars))
                  (inst-test `(MEMBER-EQUAL
                               ,newvar
-                              ,(remove-guard-holders-weak target))))
+                              ,(remove-guard-holders-weak target nil))))
             (append normal-ans
                     (termination-machine-rec loop$-recursion
                                              names
@@ -12317,14 +12326,15 @@
                  (gvars (car (lambda-object-formals lamb)))
                  (ivars (cadr (lambda-object-formals lamb)))
                  (lamb-body (remove-guard-holders-weak
-                             (lambda-object-body lamb)))
+                             (lambda-object-body lamb)
+                             nil))
                  (globals (sublis-var alist (fargn body 2)))
                  (target (sublis-var alist (fargn body 3)))
                  (newvar (genvar ivars "NV" 0 avoid-vars))
                  (avoid-vars (cons newvar avoid-vars))
                  (inst-test `(MEMBER-EQUAL
                               ,newvar
-                              ,(remove-guard-holders-weak target))))
+                              ,(remove-guard-holders-weak target nil))))
             (append normal-ans
                     (termination-machine-rec loop$-recursion
                                              names

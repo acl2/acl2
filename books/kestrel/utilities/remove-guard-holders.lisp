@@ -17,6 +17,6 @@
 
 (defthm pseudo-termp-of-remove-guard-holders-weak
   (implies (pseudo-termp term)
-           (pseudo-termp (remove-guard-holders-weak term))))
+           (pseudo-termp (remove-guard-holders-weak term lamp))))
 
 (in-theory (disable remove-guard-holders-weak))

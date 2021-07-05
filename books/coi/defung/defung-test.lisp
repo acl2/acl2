@@ -542,6 +542,10 @@
 
 (verify-guards NUM-LIST-DEFAULT)
 
+; Matt K. mod for July 2021 modification to remove-guard-holders, which was
+; causing the verify-guards event just below to fail.
+(defattach-system remove-guard-holders-lamp constant-nil-function-arity-0)
+
 (verify-guards NUM-LIST-MONADIC
 	       :hints (("Goal" :do-not-induct t
 			:expand ((:Free (key) (num-list-0-domain key a list))))))

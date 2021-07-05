@@ -1100,7 +1100,8 @@
         (let ((term
                (possibly-clean-up-dirty-lambda-objects
                 (disjoin (expand-any-final-implies cl wrld))
-                wrld)))
+                wrld
+                (remove-guard-holders-lamp))))
           (sl-let (term ttree)
                   (expand-abbreviations term nil
                                         *geneqv-iff* nil
