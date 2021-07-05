@@ -14,6 +14,8 @@
 (include-book "parser-utils")
 (include-book "parse-pe-file")
 (include-book "parse-mach-o-file")
+(include-book "parse-elf-file") ; just a placeholder
+(include-book "parse-executable")
 
 (include-book "mach-o-tools")
 (include-book "pe-tools")

@@ -682,7 +682,7 @@
 
             ;; arrays:
             array-object-fields
-            ;; size-of-array-element
+            ;; jvm::size-of-array-element
             unsigned-byte-p-when-array-refp
             address-or-nullp-when-array-refp
             equal-of-get-field-contents-and-nil-when-array-refp
@@ -694,7 +694,7 @@
             ;; get-class-when-array-refp ; enable this if we disable get-class
             get-field-class-when-array-refp
             get-field-class-when-array-ref-listp-one-dim
-            make-array-type      ;dangerous?
+            jvm::make-array-type      ;dangerous?
             acl2::array-contents ;; we enable this to expost get-field
 
             ;; rules about initialize-one-dim-array:
@@ -726,9 +726,8 @@
             jvm::lookup-offset-for-match
 
             ;; all this stuff is new:
-            get-array-element-type-of-ref
-            get-array-element-type-base
-            get-array-element-type-unroll
+            jvm::get-array-element-type-base
+            jvm::get-array-element-type-unroll
             get-array-dimensions-of-ref
             get-array-dimensions-of-ref-aux-base-1
             get-array-dimensions-of-ref-aux-base-2
@@ -747,7 +746,7 @@
             sbvlt-of-bvmult-4-and-0
             sbvlt-of-bvmult-4-and-16
             get-array-dimensions-of-ref-aux-of-set-field-irrel
-            number-of-array-dimensions-constant-opener
+            jvm::number-of-array-dimensions-constant-opener
             get-array-dimensions-of-ref-aux-of-set-field-same-1d
 
             jvm::field-id-type-constant-opener
