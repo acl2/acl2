@@ -15,3 +15,4 @@
 (include-book "floats")
 (include-book "descriptors")
 (include-book "method-descriptors")
+(include-book "fields")
