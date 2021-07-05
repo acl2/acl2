@@ -462,7 +462,7 @@
           ((slongp arg) (boolean-from-slong arg))
           ((ullongp arg) (boolean-from-ullong arg))
           ((sllongp arg) (boolean-from-sllong arg))
-          ((pointerp arg) (pointer-nullp arg))
+          ((pointerp arg) (not (pointer-nullp arg)))
           (t (error (impossible)))))
   :hooks (:fix))
 
