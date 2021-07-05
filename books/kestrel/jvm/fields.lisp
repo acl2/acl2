@@ -1,4 +1,4 @@
-; Fields (names, ids, attributes, etc)
+; Fields (names, ids, attributes, etc) and the field-info structure
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2021 Kestrel Institute

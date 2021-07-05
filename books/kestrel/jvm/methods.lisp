@@ -1,4 +1,4 @@
-; JVM methods
+; JVM methods, including the method-info structure
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2021 Kestrel Institute
