@@ -13,3 +13,5 @@
 ;; The order of these roughly reflects the dependencies:
 (include-book "types")
 (include-book "floats")
+(include-book "descriptors")
+(include-book "method-descriptors")
