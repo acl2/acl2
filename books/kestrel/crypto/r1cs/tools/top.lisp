@@ -14,3 +14,4 @@
 (include-book "lift-r1cs")
 (include-book "axe-prover-r1cs")
 (include-book "verify-r1cs")
+(include-book "order-r1cs-vars")
