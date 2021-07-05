@@ -98,6 +98,12 @@
   (implies (sparse-vectorp vec)
            (true-listp vec))
   :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable sparse-vectorp))))
+
+(defthm sparse-vectorp-forward-to-alistp
+  (implies (sparse-vectorp vec)
+           (alistp vec))
+  :rule-classes :forward-chaining
     :hints (("Goal" :in-theory (enable sparse-vectorp))))
 
 ;; Check that each pseudo-var is either 1 or an element of ALLOWED-VARS.  Also
