@@ -17,3 +17,4 @@
 (include-book "method-descriptors")
 (include-book "fields")
 (include-book "instructions")
+(include-book "methods")
