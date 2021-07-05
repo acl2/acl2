@@ -18,7 +18,6 @@
 (include-book "arrays")
 (include-book "conditional-expressions")
 (include-book "let-designations")
-(include-book "exec-limit-theorems")
 (include-book "proof-support")
 
 (include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
