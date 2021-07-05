@@ -357,15 +357,6 @@
            (EQUAL (ACL2::LOGTAIL 33 x)
                   (ACL2::LOGTAIL 1 k))))
 
-(defthm floor-weak-monotone-linear
-  (implies (and (<= free i)
-                (<= 0 j)
-                (rationalp free)
-                (rationalp i)
-                (rationalp j))
-           (<= (floor free j) (floor i j)))
-  :rule-classes ((:linear :trigger-terms ((floor i j)))))
-
 ;gen
 (local
  (defthm unsigned-byte-p-helper
