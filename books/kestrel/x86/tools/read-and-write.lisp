@@ -165,7 +165,7 @@
 ;; Negative canonical addresses get mapped to the upper half of the 2^48 byte
 ;; range.
 ;todo: define a read-bytes that calls this (and returns a list)?
-;todo: disable this less below, using rules instead?
+;todo: enable this less below, using rules instead?
 (defund read-byte (addr x86)
   (declare (xargs :stobjs x86
                   :guard (integerp addr)))
@@ -399,7 +399,6 @@
 ;; write-byte
 ;;
 
-;todo: have write call this?
 (defund write-byte (base-addr byte x86)
   (declare (xargs :stobjs x86
                   :guard (and (acl2::unsigned-byte-p 8 byte)
