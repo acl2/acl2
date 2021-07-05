@@ -49,86 +49,6 @@
 
 ;dups (but some of these are now guard verified)
 
-;I guess this works for lambdas too, since they must be complete (i.e., the lambda formals must include all vars that are free in the lambda body)
-;TODO: Compare to all-vars1
-(mutual-recursion
- (defund get-vars-from-term-aux (term acc)
-   (declare (xargs :guard (and (true-listp acc)
-                               (pseudo-termp term))
-                   :verify-guards nil ;;done below
-                   ))
-   (if (atom term)
-       (add-to-set-eq term acc)
-     (let ((fn (ffn-symb term)))
-       (if (eq 'quote fn)
-           acc
-         (get-vars-from-terms-aux (fargs term) acc)))))
-
- (defund get-vars-from-terms-aux (terms acc)
-   (declare (xargs :guard (and (true-listp acc)
-                               (true-listp terms)
-                               (pseudo-term-listp terms))))
-   (if (endp terms)
-       acc
-     (get-vars-from-terms-aux (cdr terms)
-                          (get-vars-from-term-aux (car terms) acc)))))
-
-(make-flag get-vars-from-term-aux)
-
-(defthm-flag-get-vars-from-term-aux
-  (defthm true-listp-of-get-vars-from-term-aux
-    (implies (true-listp acc)
-             (true-listp (get-vars-from-term-aux term acc)))
-    :flag get-vars-from-term-aux)
-  (defthm true-listp-of-get-vars-from-terms-aux
-    (implies (true-listp acc)
-             (true-listp (get-vars-from-terms-aux terms acc)))
-    :flag get-vars-from-terms-aux)
-  :hints (("Goal" :in-theory (enable get-vars-from-term-aux get-vars-from-terms-aux))))
-
-(verify-guards get-vars-from-term-aux)
-
-(defun get-vars-from-term (term)
-  (declare (xargs :guard (pseudo-termp term)))
-  (get-vars-from-term-aux term nil))
-
-(defun get-vars-from-terms (terms)
-  (declare (xargs :guard (pseudo-term-listp terms)))
-  (get-vars-from-terms-aux terms nil))
-
-(defthm-flag-get-vars-from-term-aux
-  (defthm symbol-listp-of-get-vars-from-term-aux
-    (implies (and (pseudo-termp term)
-                  (symbol-listp acc))
-             (symbol-listp (get-vars-from-term-aux term acc)))
-    :flag get-vars-from-term-aux)
-  (defthm symbol-listp-of-get-vars-from-terms-aux
-    (implies (and (pseudo-term-listp terms)
-                  (symbol-listp acc))
-             (symbol-listp (get-vars-from-terms-aux terms acc)))
-    :flag get-vars-from-terms-aux)
-  :hints (("Goal" :in-theory (enable get-vars-from-term-aux get-vars-from-terms-aux))))
-
-(defthm symbol-listp-of-get-vars-from-terms
-  (implies (pseudo-term-listp terms)
-           (symbol-listp (get-vars-from-terms terms)))
-  :hints (("Goal" :in-theory (enable get-vars-from-terms))))
-
-(defthm symbol-listp-of-get-vars-from-term
-  (implies (pseudo-termp term)
-           (symbol-listp (get-vars-from-term term)))
-  :hints (("Goal" :in-theory (enable get-vars-from-term))))
-
-(defthm true-listp-of-get-vars-from-terms
-  (implies (pseudo-term-listp terms)
-           (true-listp (get-vars-from-terms terms)))
-  :hints (("Goal" :in-theory (enable get-vars-from-terms))))
-
-(defthm true-listp-of-get-vars-from-term
-  (implies (pseudo-termp term)
-           (true-listp (get-vars-from-term term)))
-  :hints (("Goal" :in-theory (enable get-vars-from-term))))
-
 ;recognize an alist from pseudo-terms to pseudo-terms
 (defun pseudo-term-alistp (alist)
   (declare (xargs :guard t))
@@ -160,8 +80,8 @@
     (let* ((pair (first alist))
            (key (car pair))
            (val (cdr pair)))
-      (if (or (intersection-eq (get-vars-from-term key) vars)
-              (intersection-eq (get-vars-from-term val) vars)) ;todo: do we want this check?  if not, we can simplify this routine
+      (if (or (intersection-eq (free-vars-in-term key) vars)
+              (intersection-eq (free-vars-in-term val) vars)) ;todo: do we want this check?  if not, we can simplify this routine
           (drop-pairs-that-mention-vars (rest alist) vars) ;drop the pair
         (cons pair (drop-pairs-that-mention-vars (rest alist) vars))))))
 
@@ -228,7 +148,7 @@
   (if (endp terms)
       nil
     (let ((term (first terms)))
-      (if (intersection-eq (get-vars-from-term term) vars)
+      (if (intersection-eq (free-vars-in-term term) vars)
           (drop-terms-that-mention-vars (rest terms) vars) ;drop the term
         (cons term (drop-terms-that-mention-vars (rest terms) vars))))))
 

@@ -25,8 +25,7 @@
 ;; Apply ALIST to replace free variables in FORM.  Free variables not bound in ALIST are left alone.
 ;; This function is simpler than sublis-var and, unlike sublis-var, doesn't evaluate functions applied to constant arguments.
 ;; TODO: Consider simplifying IFs whose tests are constants (i.e., don't build both branches of such an IF).
-;; TODO: Rename sublis-var-simple?
-;TODO change the formals of sublis-var-simple and sublis-var-simple-lst to be term and terms, not form and l?
+;; TODO change the formals of sublis-var-simple and sublis-var-simple-lst to be term and terms, not form and l?
 (mutual-recursion
  (defund sublis-var-simple (alist form) ;todo: call this 'term'?
    (declare (xargs :measure (acl2-count form)
