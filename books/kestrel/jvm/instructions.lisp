@@ -13,7 +13,7 @@
 
 (include-book "floats")
 (include-book "fields") ;for field-idp
-(include-book "kestrel/jvm/method-descriptors" :dir :system)
+(include-book "method-descriptors")
 
 (local (in-theory (disable member-equal jvm::typep))) ;for speed
 

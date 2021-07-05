@@ -11,7 +11,7 @@
 
 (in-package "JVM")
 
-(include-book "kestrel/jvm/types" :dir :system)
+(include-book "types")
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 
 (local
