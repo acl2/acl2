@@ -18,3 +18,4 @@
 (include-book "fields")
 (include-book "instructions")
 (include-book "methods")
+(include-book "classes")
