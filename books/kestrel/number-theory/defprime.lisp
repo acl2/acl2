@@ -67,15 +67,15 @@
        (defconst-name (acl2::pack-in-package-of-symbol name '* name '*))
        (pratt-cert-defconst-name (acl2::pack-in-package-of-symbol name '* name '-pratt-cert*))
        (parents (if (eq :auto parents)
-                    (list 'acl2::number-theory) ;todo: use something better here, perhaps acl2::primes?
-                  parents))
+                    '(:parents (acl2::number-theory)) ;todo: use something better here, perhaps acl2::primes?
+                  `(:parents ,parents)))
        (short (if (eq :auto short)
-                  "A prime defined by @(tsee defprime)."
-                short))
+                  '(:short "A prime defined by @(tsee defprime).")
+                `(:short ,short)))
        (long (if (eq :auto long)
                  ;; Default :long documentation:
-                 (concatenate 'string "<p>The value of " (acl2::string-downcase-gen (symbol-name name)) " is " (acl2::nat-to-string number) ".</p>")
-               long)))
+                 `(:long ,(concatenate 'string "<p>The value of " (acl2::string-downcase-gen (symbol-name name)) " is " (acl2::nat-to-string number) ".</p>"))
+               `(:long ,long))))
     `(encapsulate ()
 
        ,@(and (not existing-prime-name)
@@ -155,7 +155,7 @@
        ,@(and (not existing-prime-name)
               `((acl2::add-io-pairs (((rtl::primep (,name)) t)))))
 
-       (defxdoc ,name :parents ,parents :short ,short :long ,long)
+       (defxdoc ,name ,@parents ,@short ,@long)
 
        ;; record the prime in the table of primes
        (table defprime-table ',name ,number))))
