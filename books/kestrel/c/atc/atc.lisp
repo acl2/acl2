@@ -2843,7 +2843,7 @@
     "When @('fn') returns multiple results or contains @(tsee mv-let)s,
      terms appear during the proof in which
      @(tsee mv-nth)s are applied to @(tsee list)s (i.e. @(tsee cons) nests).
-     So we add the rule" (xdoc::@def "acl2::mv-nth-of-cons") " to the theory,
+     So we add the rule" (xdoc::@def "mv-nth-of-cons") " to the theory,
      in order to simplify those terms.
      We also enable the executable counterpart of @(tsee zp)
      to simplify the test in the right-hand side of that rule."))
@@ -2904,7 +2904,7 @@
                     ullongp-of-ullong-hex-const
                     sintp-of-sint-from-boolean
                     ucharp-of-uchar-array-read-sint
-                    acl2::mv-nth-of-cons
+                    mv-nth-of-cons
                     (:e zp))))
                 '(:use (:guard-theorem ,fn))))
        ((mv event &) (evmac-generate-defthm name
