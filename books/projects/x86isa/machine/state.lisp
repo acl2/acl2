@@ -48,6 +48,7 @@
 (include-book "centaur/defrstobj2/defrstobj" :dir :system)
 (include-book "centaur/bigmem/bigmem" :dir :system)
 (include-book "centaur/bitops/ihsext-basics" :dir :system)
+(include-book "std/strings/pretty" :dir :system)
 
 ; cert_param: (non-lispworks)
 ; cert_param: (hons-only)
@@ -77,9 +78,7 @@
    decoder function, etc., and proofs about the x86 ISA
    specification.")
 
-(defsection x86isa-state
-  :parents (machine)
-  :short "The state of the @('x86isa') model")
+(local (xdoc::set-default-parents x86isa-state))
 
 ;; ----------------------------------------------------------------------
 ;; x86 state
@@ -87,7 +86,7 @@
 
 (defsection environment-field
 
-  :parents (concrete-state)
+  :parents (x86isa-state)
 
   :short "An environment field that includes a simple model of the
   file system and an oracle"
@@ -175,12 +174,81 @@
 
 (defconst *x86isa-state*
   `(
-    ;; The general-purpose registers are just an array of signed
-    ;; 64-bit integers.  Note that we choose to define the GPRs as
-    ;; signed integers for the sake of efficiency.  E.g., -1 in
-    ;; unsigned format would occupy 64 bits, a bignum.  But in the
-    ;; signed format, it would be a fixum.
-    ;; See Intel manual, Jan'19, Volume 1, Section 3.4.1.
+    ;; --------------------------------------------------
+    (:doc "<h5>Fields that govern the model's operation</h5>
+
+    <p>These fields are an artifact of our x86 ISA model.</p>
+
+    <ul>")
+
+    (:doc "<li>@('MS'): Model state, used to indicate I/O or errors
+    that our model does not handle yet.  Basically, we use the model
+    state to assert partial correctness.  If the model state is nil
+    till the end of execution, we expect the results to be correct.
+    Otherwise, all bets are off.<br/>")
+    (ms :type t :initially nil)
+    (:doc "</li>")
+
+    (:doc "<li>@('FAULT'): We need some way to pass exceptions and
+    such around.  So we stuff them into the @('fault') slot, to be
+    processed by the step function.<br/>")
+    (fault :type t :initially nil)
+    (:doc "</li>")
+
+    (:doc "<li>@('ENV'): Environment for the programs running on our
+    x86 model.<br/>")
+    (env :type (satisfies env-alistp)
+         :fix (ec-call (env-alist-fix x))
+         :initially nil)
+    (:doc "</li>")
+
+    (:doc "<li>@('UNDEF'): Field that seeds unknown values that
+    characterize commonly occurring undefined behavior.<br/>")
+    (undef :type t :initially 0)
+    (:doc "</li>")
+
+    (:doc "<li>@('APP-VIEW'): This field acts as a switch.  When its
+    value is @('t'), support for system features like paging is
+    absent.  When its value is @('nil'), the model is in @('sys-view')
+    and support for system features is present.<br/>")
+    (app-view :type (satisfies booleanp)
+              :fix (acl2::bool-fix x)
+              :initially t)
+    (:doc "</li>")
+
+    (:doc "<li>@('MARKING-VIEW'): This field also acts as a
+    switch. When its value is @('t'), then accessed and dirty bits in
+    the paging structures are set during those data structure
+    traversals, as expected. Otherwise, these bits are not set. This
+    switch is meaningful only in when the model is in @('sys-view').<br/>")
+    (marking-view :type (satisfies booleanp)
+                  :fix (acl2::bool-fix x)
+                  :initially t)
+    (:doc "</li>")
+
+    (:doc "<li>@('OS-INFO'): This field is meaningful only in
+    @('app-view') mode to model system call behavior.<br/>")
+    (os-info :type (satisfies keywordp)
+             :fix (ec-call (os-info-fix x))
+             :initially :linux)
+    (:doc "</li>")
+
+    (:doc "</ul>")
+
+    ;; --------------------------------------------------
+
+    (:doc "<h5>Components of the x86 state specified by this model</h5>
+
+     <ul>")
+
+    (:doc
+     "<li>@('RGF'): The general-purpose registers are just an array of
+     signed 64-bit integers.  Note that we choose to define the GPRs
+     as signed integers for the sake of efficiency.  For instance,
+     @('-1') in unsigned format would occupy 64 bits, a bignum.  But
+     in the signed format, it would be a fixum.  See Intel Volume 1,
+     Section 3.4.1 (General-Purpose Registers) for information about
+     these registers.<br/>")
     (rgf :type (array (signed-byte 64)
                       (,*64-bit-general-purpose-registers-len*))
          :initially 0
@@ -188,38 +256,41 @@
          :resizable nil
          :accessor rgfi
          :updater !rgfi)
+    (:doc "</li>")
 
-    ;; We choose the RIP to be a 48-bit signed integer.  RIP can
-    ;; contain only canonical addresses, which range from 0 to
-    ;; 2^47-1 and 2^64-2^47 to 2^64-1, inclusive, for the 64-bit
-    ;; mode.  So, in our model, 0 to 2^47-1 represents the lower
-    ;; range of canonical addresses and -2^47 to -1 represents the
-    ;; upper range of canonical addresses.
-    ;; See Intel manual, Jan'19, Volume 1, Section 3.5.
+    (:doc "<li>@('RIP'): We choose the RIP to be a 48-bit signed
+    integer.  RIP can contain only canonical addresses, which range
+    from 0 to 2^47-1 and 2^64-2^47 to 2^64-1, inclusive, for the
+    64-bit mode.  So, in our model, 0 to 2^47-1 represents the lower
+    range of canonical addresses and -2^47 to -1 represents the upper
+    range of canonical addresses.  See Intel manual, Jan'19, Volume 1,
+    Section 3.5 for details about the instruction pointer.<br/>")
     (rip :type (signed-byte 48)
          :initially 0
          :fix (acl2::logext 48 (ifix x)))
+    (:doc "</li>")
 
-    ;; Rflags: We define the rflags register as a 32-bit field, even
-    ;; though in the 64-bit mode, rflags is a 64-bit register.  This
-    ;; is good to do, because it avoids bignum creation.  Also, as
-    ;; of 2014, Intel says that the top 32 bits of rflags are
-    ;; reserved, so we aren't messing anything up.
-    ;; See Intel manual, Jan'19, Volume 1, Section 3.4.3.
+    (:doc "<li>@('RFLAGS'): We define the @('rflags') register as a
+    32-bit field, even though in the 64-bit mode, rflags is a 64-bit
+    register --- this is justified because Intel says that the top 32
+    bits of rflags are reserved. See Intel manual, Jan'19A, Volume 1,
+    Section 3.4.3 for details about @('rflags').<br/>")
     (rflags :type (unsigned-byte 32)
             ;; Bit 1 is always 1.
             :initially 2
             :fix (acl2::loghead 32 (ifix x)))
+    (:doc "</li>")
 
-    ;; User Segment Registers
-    ;; Visible portion:
-    ;; 16-bit selector INDEX(13)::TI(1)::RPL(2)
-    ;; Hidden/Cache portion (see Intel manual, Mar'17, Vol. 3A, Figure 3-7):
-    ;; 16-bit Attributes
-    ;; 32-bit Limit
-    ;; 64-bit Base Address
-    ;; See Intel manual, Jan'19, Volume 1, Section 3.4.2
-    ;; and Intel manual, Jan'19, Volume 3, Sections 3.4.2 and 3.4.3.
+    (:doc "<li>@('User Segment Registers'):
+    <p>Visible portion:
+    @({ 16-bit selector INDEX(13)::TI(1)::RPL(2) })</p>
+    <p>Hidden/Cache portion (see Intel manual, Mar'17, Vol. 3A, Figure 3-7):
+    @({ 16-bit Attributes
+        32-bit Limit
+        64-bit Base Address})</p>
+    <p>See Intel manual, Jan'19, Volume 1, Section 3.4.2 and Intel
+    manual, Jan'19, Volume 3, Sections 3.4.2 and 3.4.3 for
+    details.</p><br/>")
     (seg-visible :type (array (unsigned-byte 16)
                               (#.*segment-register-names-len*))
                  :initially 0
@@ -248,12 +319,13 @@
                      :resizable nil
                      :accessor seg-hidden-attri
                      :updater !seg-hidden-attri)
+    (:doc "</li>")
 
-    ;; System Table Registers (GDTR and IDTR) -- these registers
-    ;; point to bounded tables of (up to 8192) segment descriptors.
-    ;; In 64-bit mode, the system table registers are extended from
-    ;; 48 to 80 bits.
-    ;; See Intel manual, Jan'19, Volume 3, Figure 2-6.
+    (:doc "<li>@('System Table Registers (GDTR and IDTR)'): These
+    registers point to bounded tables of (up to 8192) segment
+    descriptors.  In 64-bit mode, the system table registers are
+    extended from 48 to 80 bits.  See Intel manual, Jan'19, Volume 3,
+    Figure 2-6.<br/>")
     (str :type (array (unsigned-byte 80)
                       (#.*gdtr-idtr-names-len*))
          :fix (acl2::loghead 80 (ifix x))
@@ -261,15 +333,16 @@
          :resizable nil
          :accessor stri
          :updater !stri)
+    (:doc "</li>")
 
-    ;; System Segment Registers (Task Register and LDTR)
-    ;; Visible portion:
-    ;; 16-bit selector INDEX(13)::TI(1)::RPL(2)
-    ;; Hidden/Cache portion:
-    ;; 16-bit Attributes
-    ;; 32-bit Limit
-    ;; 64-bit Base Address
-    ;; See Intel manual, Jan'19, Volume 3, Figure 2-6.
+    (:doc "<li>@('System Segment Registers (Task Register and LDTR)'):
+     <p>Visible portion:
+    @({ 16-bit selector INDEX(13)::TI(1)::RPL(2) })</p>
+    <p>Hidden/Cache portion:
+    @({ 16-bit Attributes
+        32-bit Limit
+        64-bit Base Address })</p>
+    <p>See Intel manual, Jan'19, Volume 3, Figure 2-6 for details.</p><br/>")
     (ssr-visible :type (array (unsigned-byte 16)
                               (#.*ldtr-tr-names-len*))
                  :initially 0
@@ -298,15 +371,16 @@
                      :resizable nil
                      :accessor ssr-hidden-attri
                      :updater !ssr-hidden-attri)
+    (:doc "</li>")
 
-    ;; Control registers
+    (:doc "<li>@('CTR'): Control registers --- See Intel manual,
+    Jan'19, Volume 3, Section 2.5.<br/>")
     ;; [Shilpi]:
     ;; Note that CR0 is still a 32-bit register in 64-bit mode.  All
     ;; other control registers are 64-bit wide.  Also, CR4 has all
     ;; but the low 21 bits reserved.  It'd be nice to define these
     ;; registers separately so that bignum creation can be avoided
     ;; during slicing operations involving these registers.
-    ;; See Intel manual, Jan'19, Volume 3, Section 2.5.
     (ctr  :type (array (unsigned-byte 64)
                        (#.*control-register-names-len*))
           :fix (acl2::loghead 64 (ifix x))
@@ -314,9 +388,10 @@
           :resizable nil
           :accessor ctri
           :updater !ctri)
+    (:doc "</li>")
 
-    ;; Debug registers
-    ;; See Intel manual, Jan'19, Volume 3, Section 17.2.
+    (:doc "<li>@('DBG'): Debug registers --- See Intel manual, Jan'19,
+    Volume 3, Section 17.2.<br/>")
     (dbg :type (array (unsigned-byte 64)
                       (#.*debug-register-names-len*))
          :initially 0
@@ -324,13 +399,13 @@
          :resizable nil
          :accessor dbgi
          :updater !dbgi)
+    (:doc "</li>")
 
-    ;; Floating-point registers:
 
-    ;; FPU 80-bit data registers
-    ;; The MMX registers (MM0 through MM7) are aliased to the low
-    ;; 64-bits of the FPU data registers.
-    ;; See Intel manual, Jan'19, Volume 1, Section 8.1.2.
+    (:doc "<li>@('FPU 80-bit data registers'): The MMX
+     registers (@('MM0') through @('MM7')) are aliased to the low
+     64-bits of the FPU data registers.  See Intel manual, Jan'19,
+     Volume 1, Section 8.1.2.")
     (fp-data :type (array (unsigned-byte 80)
                           (#.*fp-data-register-names-len*))
              :fix (acl2::loghead 80 (ifix x))
@@ -338,48 +413,64 @@
              :resizable nil
              :accessor fp-datai
              :updater !fp-datai)
+    (:doc "</li>")
 
-    ;; FPU 16-bit control register
-    ;; See Intel manual, Jan'19, Volume 1, Section 8.1.5.
+    (:doc "<li>@('FPU 16-bit control register'): See Intel manual,
+     Jan'19, Volume 1, Section 8.1.5.")
     (fp-ctrl :type (unsigned-byte 16)
              :fix (acl2::loghead 16 (ifix x))
              :initially 0)
+    (:doc "</li>")
 
-    ;; FPU 16-bit status register
-    ;; See Intel manual, Jan'19, Volume 1, Section 8.1.3.
+    (:doc "<li>@('FPU 16-bit status register'): See Intel manual,
+     Jan'19, Volume 1, Section 8.1.3.")
     (fp-status :type (unsigned-byte 16)
                :fix (acl2::loghead 16 (ifix x))
                :initially 0)
+    (:doc "</li>")
 
-    ;; FPU 16-bit tag register
-    ;; See Intel manual, Jan'19, Volume 1, Section 8.1.7.
+    (:doc "<li>@('FPU 16-bit tag register'): See Intel manual,
+     Jan'19, Volume 1, Section 8.1.7.")
     (fp-tag :type (unsigned-byte 16)
             :fix (acl2::loghead 16 (ifix x))
             :initially 0)
+    (:doc "</li>")
 
-    ;; FPU 48-bit last instruction pointer
-    ;; See Intel manual, Jan'19, Volume 1, Figure 8-1.
+    (:doc "<li>@('FPU 48-bit last instruction pointer'): See Intel
+     manual, Jan'19, Volume 1, Figure 8-1.")
     (fp-last-inst :type (unsigned-byte 48)
                   :fix (acl2::loghead 48 (ifix x))
                   :initially 0)
+    (:doc "</li>")
 
-    ;; FPU 48-bit last data (operand) pointer
-    ;; See Intel manual, Jan'19, Volume 1, Figure 8-1.
+    (:doc "<li>@('FPU 48-bit last data (operand) pointer'): See Intel
+     manual, Jan'19, Volume 1, Figure 8-1.")
     (fp-last-data :type (unsigned-byte 48)
                   :fix (acl2::loghead 48 (ifix x))
                   :initially 0)
+    (:doc "</li>")
 
-    ;; FPU 11-bit opcode
-    ;; See Intel manual, Jan'19, Volume 1, Figure 8-1.
+    (:doc "<li>@('FPU 11-bit opcode:') See Intel manual, Jan'19,
+     Volume 1, Figure 8-1.<br/>")
     (fp-opcode :type (unsigned-byte 11)
                :fix (acl2::loghead 11 (ifix x))
                :initially 0)
+    (:doc "</li>")
 
-    ;; ZMM 512-bit data registers The lower 256-bits of the ZMM
-    ;; registers are aliased to the respective 256-bit YMM registers
-    ;; and the lower 128-bit are aliased to the respective 128-bit
-    ;; XMM registers.  Note that registers YMM16/XMM16 to
-    ;; YMM31/XMM31 are available only via the EVEX prefix (AVX-512).
+    (:doc "<li>@('MXCSR') register")
+    (mxcsr :type (unsigned-byte 32)
+           ;; Bits 7 through 12 are the individual masks for the
+           ;; SIMD floating point exceptions.  These are set upon
+           ;; a power-up or reset.
+           :fix (acl2::loghead 32 (ifix x))
+           :initially 8064)
+    (:doc "</li>")
+
+    (:doc "<li>@('ZMM'): ZMM 512-bit data registers --- the lower
+    256-bits of the ZMM registers are aliased to the respective
+    256-bit YMM registers and the lower 128-bit are aliased to the
+    respective 128-bit XMM registers.  Note that registers YMM16/XMM16
+    to YMM31/XMM31 are available only via the EVEX prefix (AVX-512).")
     (zmm :type (array (unsigned-byte 512)
                       (#.*zmm-register-names-len*))
          :fix (acl2::loghead 512 (ifix x))
@@ -387,17 +478,9 @@
          :resizable nil
          :accessor zmmi
          :updater !zmmi)
+    (:doc "</li>")
 
-    ;; MXCSR
-    ;; Top 16 bits are reserved.
-    (mxcsr :type (unsigned-byte 32)
-           ;; Bits 7 through 12 are the individual masks for the
-           ;; SIMD floating point exceptions.  These are set upon
-           ;; a power-up or reset.
-           :fix (acl2::loghead 32 (ifix x))
-           :initially 8064)
-
-    ;; Model-specific registers
+    (:doc "<li>@('MSR'): Model-specific registers<br/>")
     (msr :type (array (unsigned-byte 64)
                       (#.*model-specific-register-names-len*))
          :fix (acl2::loghead 64 (ifix x))
@@ -405,50 +488,11 @@
          :resizable nil
          :accessor msri
          :updater !msri)
+    (:doc "</li>")
 
-    ;; Model state, used to indicate I/O or errors that our model
-    ;; does not handle yet.  Basically, we use the model state to
-    ;; assert partial correctness.  If the model state is nil till
-    ;; the end of execution, we expect the results to be correct.
-    ;; Otherwise, all bets are off.
-    (ms :type t :initially nil)
-
-    ;; We need some way to pass exceptions and such around.  So we
-    ;; stuff them into the fault slot, to be processed by the step
-    ;; function.
-    (fault :type t :initially nil)
-
-    ;; Environment for the programs running on our x86 model:
-    (env :type (satisfies env-alistp)
-         :fix (ec-call (env-alist-fix x))
-         :initially nil)
-
-    ;; Field that seeds unknown values that characterize commonly
-    ;; occurring undefined behavior:
-    (undef :type t :initially 0)
-
-    ;; The following field acts as a switch.  When its value is t,
-    ;; support for paging is absent, and it is present otherwise.
-    ;; This field is an artifact of our model, and does not exist on
-    ;; the real x86 processors.
-    (app-view :type (satisfies booleanp)
-              :fix (acl2::bool-fix x)
-              :initially t)
-
-    ;; The following field also acts as a switch. When its value is
-    ;; t, then accessed and dirty bits in the paging structures are
-    ;; set during those data structure traversals, as
-    ;; expected. Otherwise, these bits are not set. This switch is
-    ;; meaningful only in when the model is in sys-view.
-    (marking-view :type (satisfies booleanp)
-                  :fix (acl2::bool-fix x)
-                  :initially t)
-
-    ;; The os-info is meaningful only in the application-level view.
-    (os-info :type (satisfies keywordp)
-             :fix (ec-call (os-info-fix x))
-             :initially :linux)
-
+    (:doc "<li>@('MEM'): Field modeling @('2^52') bytes of physical
+    memory in @('sys-view') and @('2^48') bytes of linear memory in
+    @('app-view'). <br/>")
     (mem   :type (array (unsigned-byte 8) (,*mem-size-in-bytes*)) ;; 2^52
            :initially 0
            :fix (acl2::loghead 8 (ifix x))
@@ -456,14 +500,33 @@
            :child-accessor bigmem::read-mem
            :child-updater  bigmem::write-mem
            :accessor memi
-           :updater !memi)))
+           :updater !memi)
+    (:doc "</li>")
+
+    (:doc "</ul>")))
+
+(defun xdoc-x86-state (xs) ;; xs: *x86isa-state*
+  (if (atom xs)
+      ""
+    (let* ((fld (car xs))
+           (rest (xdoc-x86-state (cdr xs))))
+      (if (equal (car fld) :doc)
+          (str::cat (cadr fld) rest)
+        (str::cat "@({ " (str::pretty fld
+                                      :config (str::make-printconfig
+                                               :home-package (pkg-witness "X86ISA")
+                                               :print-lowercase t))
+                  " })" rest)))))
 
 (with-output
   :on summary
   :summary-off #!acl2(:other-than errors time)
   (make-event
    `(rstobj2::defrstobj x86
-                        ,@*x86isa-state*
+                        ,@(loop$ for fld in *x86isa-state* append
+                                 (if (equal (car fld) :doc)
+                                     nil
+                                   (list fld)))
                         :inline t
                         :non-memoizable t
                         :enable '(bigmem::read-mem-over-write-mem
@@ -481,6 +544,43 @@
 (globally-disable '(x86p))
 
 ;; ----------------------------------------------------------------------
+
+(make-event
+ `(defxdoc x86isa-state
+    :pkg "X86ISA"
+    :parents (machine)
+    :short "The state of the @('x86isa') model"
+    :long ,(str::cat
+            "<h4>Definition of the @('x86isa') state</h4>
+
+ <p>The definition of the state uses nested and abstract stobjs by way
+ of community books @(tsee rstobj2::defrstobj) and @(tsee
+ bigmem::bigmem).  It may be interesting to read about the old
+ definition to see how the current definition supports all of its
+ functionality but in a more maintainable way; see @(see
+ x86isa-state-history).</p>
+
+ <p>The @('bigmem') books define a memory model similar to the old
+ @('x86isa') memory model in that it provides a record representation
+ for reasoning and an allocate-on-demand, array-like performance for
+ execution. The x86 concrete stobj has the @('bigmem') stobj for its
+ memory field; @('defrstobj') exports the @('bigmem') memory accessor
+ and updater functions alongside those of other x86 fields and gives
+ us a state definition that's logically a multi-typed record.
+ @('defrstobj') also allows the definition of a universal accessor and
+ updater, so we still retain that feature in the @('x86isa')
+ books.</p>
+
+ <p>Note that the @('bigmem') books define a 64-bit address space,
+ though the @('x86isa') state restricts that to a 52-bit address space
+ because the max. physical address allowed by the x86 architecture is
+ 52 (as of this writing in mid-2021).  If the max. allowed physical
+ address is increased anywhere up to 64 bits, then we can simply
+ change the size of the @('mem') field in the @('x86isa') stobj.</p>
+
+ <h4>x86 ISA state components modeled by @('x86isa')</h4>"
+
+            (xdoc-x86-state *x86isa-state*))))
 
 (defxdoc x86isa-state-history
   :parents (x86isa-state)
@@ -620,28 +720,6 @@
  <p>The consequence of this was that whenever an @('RGFI') call was
  encountered during reasoning, it quickly opened up to @('XR') (about
  which we have all those nice theorems).  During execution, @('RGFI')
- was simply the efficient concrete accessor @('RGF$CI').</p>
-
- <h4>Current definition of the @('x86isa') state</h4>
-
- <p>The current definition of the state is simpler, owing to the use
- of nested and abstract stobjs by way of community books @(tsee
- rstobj2::defrstobj) and @(tsee bigmem::bigmem).</p>
-
- <p>The @('bigmem') books define a memory model similar to the old
- @('x86isa') memory model, but in a much more maintainable way. The
- x86 concrete stobj has the @('bigmem') stobj for its memory field;
- @('defrstobj') exports the @('bigmem') memory accessor and updater
- functions alongside those of other x86 fields and gives us a state
- definition that's logically a multi-typed record.  @('defrstobj')
- also allows the definition of a universal accessor and updater, so we
- still retain that feature in the @('x86isa') books.</p>
-
- <p>Note that the @('bigmem') books define a 64-bit address space,
- though the @('x86isa') state restricts that to a 52-bit address space
- because the max. physical address allowed by the x86 architecture is
- 52 (as of this writing in mid-2021).  If the max. allowed physical
- address is increased anywhere up to 64 bits, then we can simply
- change the size of the @('mem') field in the @('x86isa') stobj.</p>")
+ was simply the efficient concrete accessor @('RGF$CI').</p>")
 
 ;; ----------------------------------------------------------------------
