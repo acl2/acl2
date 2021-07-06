@@ -1,6 +1,6 @@
-; Theorems about remove-guard-holders
+; Utilities about remove-guard-holders
 ;
-; Copyright (C) 2017-2020 Kestrel Institute
+; Copyright (C) 2017-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,3 +20,15 @@
            (pseudo-termp (remove-guard-holders-weak term lamp))))
 
 (in-theory (disable remove-guard-holders-weak))
+
+;;;
+;;; remove-guard-holders-and-clean-up-lambdas
+;;;
+
+(defun remove-guard-holders-and-clean-up-lambdas (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (remove-guard-holders-weak term t))
+
+(defthm pseudo-termp-of-remove-guard-holders-and-clean-up-lambdas
+  (implies (pseudo-termp term)
+           (pseudo-termp (remove-guard-holders-and-clean-up-lambdas term))))

@@ -15,10 +15,17 @@
 (in-theory (disable princ$))
 
 (defthm open-output-channel-p-of-princ$
-  (implies (and (open-output-channel-p channel :character state)
-                (symbolp channel)
-                (state-p state))
-           (open-output-channel-p channel :character (princ$ x channel state)))
+  (implies (open-output-channel-p channel2 typ state)
+           (open-output-channel-p channel2 typ (princ$ x channel state)))
+  :hints (("Goal" :in-theory (enable open-output-channel-p
+                                     princ$
+                                     open-output-channel-p1
+                                     open-output-channels
+                                     open-output-channel-p))))
+
+(defthm open-output-channel-p1-of-princ$-gen
+  (implies (open-output-channel-p1 channel2 typ state)
+           (open-output-channel-p1 channel2 typ (princ$ x channel state)))
   :hints (("Goal" :in-theory (enable open-output-channel-p
                                      princ$
                                      open-output-channel-p1

@@ -23,3 +23,10 @@
   :hints (("Goal" :use (:instance state-p1-of-write-byte$)
            :in-theory (e/d (open-output-channel-p)
                            (state-p1-of-write-byte$)))))
+
+(defthm open-output-channel-p1-of-write-byte$-gen
+  (implies (open-output-channel-p1 channel2 typ state)
+           (open-output-channel-p1 channel2 typ (write-byte$ byte channel state)))
+  :hints (("Goal" :in-theory (enable write-byte$
+                                     open-output-channel-p1 ;todo
+                                     ))))

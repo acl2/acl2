@@ -46,13 +46,12 @@
 (include-book "kestrel/utilities/user-interface" :dir :system) ;for control-screen-output
 (include-book "defthm-events")
 (include-book "kestrel/alists-light/keep-pairs" :dir :system)
-(local (include-book "remove-guard-holders"))
+(include-book "remove-guard-holders")
 (local (include-book "state"))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 (local (in-theory (disable mv-nth
-                           remove-guard-holders-weak
                            w
                            true-listp
                            PLIST-WORLDP)))
@@ -613,9 +612,7 @@
                               )
                   :guard-hints (("Goal" :in-theory (enable all->=-len-when-defthm-form-listp)))))
   (let* ((body (fn-body fn t wrld))
-         (body (remove-guard-holders-weak body
-; Matt K. mod: Add new argument 7/2021.
-                                          (remove-guard-holders-lamp)))
+         (body (remove-guard-holders-and-clean-up-lambdas body))
          (formals (fn-formals fn wrld)))
     (mv-let (base-claims unroll-claims)
       (make-unroll-and-base-claims-aux body all-fns-in-nest `(,fn ,@formals)
