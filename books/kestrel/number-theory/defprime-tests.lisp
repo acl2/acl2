@@ -104,3 +104,39 @@
   :short "short doc"
   ;; Makes sure we can calculate this:
   :long (concatenate 'string "foo" "bar"))
+
+;; A test with :doc nil
+(defprime my97-prime ;; name to use for the prime
+  97 ;; numeric value of the prime
+  ;; Pratt certificate:
+  (5 (2 3)
+     (5 1)
+     (() ()))
+  :doc nil)
+
+;; A test with :long nil
+(defprime my97-prime ;; name to use for the prime
+  97 ;; numeric value of the prime
+  ;; Pratt certificate:
+  (5 (2 3)
+     (5 1)
+     (() ()))
+  :long nil)
+
+;; A test with :short nil
+(defprime my97-prime ;; name to use for the prime
+  97 ;; numeric value of the prime
+  ;; Pratt certificate:
+  (5 (2 3)
+     (5 1)
+     (() ()))
+  :short nil)
+
+;; A test with :parents nil
+(defprime my97-prime ;; name to use for the prime
+  97 ;; numeric value of the prime
+  ;; Pratt certificate:
+  (5 (2 3)
+     (5 1)
+     (() ()))
+  :parents nil)
