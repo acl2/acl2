@@ -46,7 +46,7 @@
 
 (xdoc::order-subtopics elliptic-curves
   (points
-   short-weierstrass
+   short-weierstrass-curves
    twisted-edwards
    montgomery
    edwards-bls12
