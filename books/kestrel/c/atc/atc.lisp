@@ -3173,7 +3173,7 @@
        (hyps `(and ,@(acl2::untranslate-lst hyps t wrld)))
        (equalities
         `(b* (((mv ,result-var ,new-compst-var)
-               (exec-fun ',(ident (symbol-name fn))
+               (exec-fun (ident ,(symbol-name fn))
                          (list ,@formals)
                          ,compst-var
                          ,fenv-var
@@ -3213,7 +3213,7 @@
                        :extra-bindings-ok ,@instantiation)
                  :expand (:lambdas
                           (:free (args ,compst-var ,fenv-var limit)
-                           (exec-fun '(:ident (name . ,(symbol-name fn)))
+                           (exec-fun (ident ,(symbol-name fn))
                                      args ,compst-var ,fenv-var limit))))))
        ((mv event &)
         (evmac-generate-defthm
@@ -3279,7 +3279,7 @@
            (and (equal ,new-compst-var ,compst-var)
                 (equal ,result-var (,fn ,@args)))))
        (hints `(("Goal"
-                 :in-theory '((:executable-counterpart ident))
+                 :in-theory nil
                  :use (:instance ,fn-exec-correct-thm
                        (fenv (init-fun-env ,prog-const))))))
        ((mv local-event exported-event)
