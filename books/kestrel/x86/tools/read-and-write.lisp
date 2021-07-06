@@ -279,6 +279,12 @@
                   (natp size)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
 
+;enable?
+(defthmd read-of-1-becomes-read-byte
+  (equal (read 1 addr x86)
+         (read-byte addr x86))
+  :hints (("Goal" :in-theory (enable read-byte))))
+
 (defthm ash-of-read
   (implies (natp n)
            (equal (ash (read n base-addr x86)
@@ -1278,7 +1284,7 @@
            (equal (read 1 addr x86)
                   (nth (- addr addr2) bytes)))
   :hints (("Goal" :in-theory (e/d (program-at
-;rb
+                                   ;;rb
                                    x::read-when-equal-of-read-gen
                                    )
                                   (read
@@ -1575,3 +1581,18 @@
   (equal (write-bytes addr (read-bytes addr n x86) x86)
          x86)
   :hints (("Goal" :in-theory (enable read-bytes write-bytes))))
+
+(defthm write-bytes-of-write-byte-irrel
+  (implies (and (<= (len bytes) (bvminus 48 addr2 addr1))
+                (integerp addr2)
+                (integerp addr1))
+           (equal (write-bytes addr1 bytes (write-byte addr2 byte x86))
+                  (write-byte addr2 byte (write-bytes addr1 bytes x86))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :induct (write-bytes addr1 bytes x86)
+           :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvuminus bvminus write-bytes write-byte)
+                           (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
+                                                    acl2::slice-of-+ ;looped
+                                                    acl2::bvcat-of-+-high
+                                                    ACL2::BVCHOP-IDENTITY ;for speed
+                                                    )))))
