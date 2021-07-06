@@ -27,15 +27,17 @@
     "Currently, the generated proofs of function correctness
      are carried out via symbolic execution of the C code.
      The C code is a constant value,
-     because we are generating proofs over specific C functions.")
+     because we are generating proofs over specific C functions;
+     this makes symbolic execution possible.")
    (xdoc::p
     "In order to make these generated proofs more robust,
      we carry them out in a theory that consists exactly of
      (what we believe to be) all and only the needed rules.
      This file defines that theory, which consists of
-     rules introduced elsewhere and rules introduced in this file.
+     some rules introduced elsewhere and some rules introduced in this file.
      This set of rules has been defined by
-     experimenting with several symbolic execution proofs,
+     not only thinking of what is needed for symbolic execution,
+     but also experimenting with several symbolic execution proofs,
      starting with the empty theory and adding rules
      as needed to advance the symbolic execution,
      and also by looking at the C dynamic semantics.
