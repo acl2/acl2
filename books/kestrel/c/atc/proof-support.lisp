@@ -1039,7 +1039,6 @@
     exec-cast
     exec-arrsub
     promote-value
-    mv-nth
     sint-from-boolean
     sint-dec-const
     sint-oct-const
@@ -1645,7 +1644,8 @@
     "These are rewrite rules in addition to
      the ones in @(see atc-other-rewrite-rules).
      We definitely need better nomenclature than `more' and `other'."))
-  '(booleanp-of-boolean-from-uchar
+  '(acl2::mv-nth-of-cons
+    booleanp-of-boolean-from-uchar
     booleanp-of-boolean-from-schar
     booleanp-of-boolean-from-ushort
     booleanp-of-boolean-from-sshort
