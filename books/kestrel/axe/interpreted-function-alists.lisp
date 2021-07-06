@@ -15,7 +15,6 @@
 (include-book "interpreted-function-alistp")
 (include-book "kestrel/utilities/remove-guard-holders" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system) ; for get-fns-in-term
-(local (include-book "kestrel/utilities/remove-guard-holders" :dir :system))
 
 ; this does not take pains to add subfunctions called by fn
 ;todo: call fn-formals?
