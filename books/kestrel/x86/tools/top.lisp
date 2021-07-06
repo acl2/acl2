@@ -29,6 +29,8 @@
 (include-book "support2")
 
 (include-book "assumptions")
+(include-book "assumptions32")
+(include-book "assumptions64")
 
 (include-book "run-until-return")
 (include-book "support")
