@@ -46,8 +46,6 @@
   :hints (("Goal" :in-theory (enable write-strings-to-channel OPEN-OUTPUT-CHANNEL-P))))
 
 (defthm open-output-channel-p1-of-write-strings-to-channel
-  (implies (and (open-output-channel-p1 channel :character state)
-                (symbolp channel)
-                (state-p1 state))
-           (open-output-channel-p1 channel :character (write-strings-to-channel list channel state)))
+  (implies (open-output-channel-p1 channel2 typ state)
+           (open-output-channel-p1 channel2 typ (write-strings-to-channel strings channel state)))
   :hints (("Goal" :in-theory (enable write-strings-to-channel))))
