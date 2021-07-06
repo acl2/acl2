@@ -52,7 +52,6 @@
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 (local (in-theory (disable mv-nth
-                           remove-guard-holders-weak
                            w
                            true-listp
                            PLIST-WORLDP)))
