@@ -19,4 +19,5 @@
 (include-book "instructions")
 (include-book "methods")
 (include-book "classes")
+(include-book "operand-stacks")
 (include-book "ads")
