@@ -21,6 +21,7 @@
 (include-book "kestrel/utilities/conjuncts-and-disjuncts" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system)
+(include-book "kestrel/utilities/remove-guard-holders" :dir :system)
 ;(include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "known-booleans")
 (include-book "axe-rule-lists")
@@ -28,7 +29,6 @@
 (include-book "kestrel/std/system/theorem-symbolp" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
 ;(local (include-book "kestrel/std/system/all-vars" :dir :system))
-(local (include-book "kestrel/utilities/remove-guard-holders" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -1476,10 +1476,7 @@
                 ;; If we don't handle return-last, the axe rule for
                 ;; string-append causes a loop.  Also, this should make it
                 ;; faster to open functions defined using MBE:
-                (body (remove-guard-holders-weak body
-; Matt K. mod: Add new argument 7/2021.
-                                                 (remove-guard-holders-lamp)
-                                                 ) ;(strip-return-last body)
+                (body (remove-guard-holders-and-clean-up-lambdas body) ;(strip-return-last body)
                       )
                 (body (drop-unused-lambda-bindings body))
                 (lhs (cons name formals))
@@ -1493,9 +1490,7 @@
                 (rule-classes (defthm-rule-classes name wrld))
                 ;;otherwise, unrolling rules of functions using mbe can loop):
                 (theorem-body ;(strip-return-last theorem-body)
-                 (remove-guard-holders-weak theorem-body
-; Matt K. mod: Add new argument 7/2021.
-                                            (remove-guard-holders-lamp)))
+                 (remove-guard-holders-and-clean-up-lambdas theorem-body))
                 (theorem-body (drop-unused-lambda-bindings theorem-body))
                 ((mv erp rules)
                  (make-axe-rules-from-theorem theorem-body name rule-classes known-boolean-fns print wrld))
