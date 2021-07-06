@@ -1208,8 +1208,8 @@
   (defruled equal-of-ident-and-ident
     (equal (equal (ident x)
                   (ident y))
-           (equal (acl2::str-fix x)
-                  (acl2::str-fix y))))
+           (equal (str-fix x)
+                  (str-fix y))))
 
   (defruled exec-fun-of-const-identifier
     (implies (and (syntaxp (quotep fun))
@@ -1230,7 +1230,7 @@
   '(ident-fix-when-identp
     identp-of-ident
     equal-of-ident-and-ident
-    (:e acl2::str-fix)
+    (:e str-fix)
     exec-fun-of-const-identifier))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1269,7 +1269,7 @@
                                 (quotep c)))
                   (identp c))
              (equal (equal (ident x) c)
-                    (equal (acl2::str-fix x)
+                    (equal (str-fix x)
                            (ident->name c))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

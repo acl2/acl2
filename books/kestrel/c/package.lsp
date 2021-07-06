@@ -59,6 +59,7 @@
                pseudo-event-form-listp
                pseudo-event-formp
                run-when
+               str-fix
                symbol-symbol-alistp
                tuple
                std::defret-mutual)))
