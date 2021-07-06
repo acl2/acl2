@@ -1,6 +1,6 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -52,7 +52,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection bytelist-bytelist-map
+(fty::defomap bytelist-bytelist-map
   :parents (mmp-trees)
   :short "Finite maps from byte arrays to byte arrays."
   :long
@@ -69,17 +69,15 @@
      because the construction of MMP trees from these finite maps
      (which is described in [YP:D])
      does not depend on any such length constraints."))
-
-  (fty::defomap bytelist-bytelist-map
-                :key-type byte-list
-                :val-type byte-list
-                :pred bytelist-bytelist-mapp
-                :fix bytelist-bytelist-mfix
-                :equiv bytelist-bytelist-mequiv))
+  :key-type byte-list
+  :val-type byte-list
+  :pred bytelist-bytelist-mapp
+  :fix bytelist-bytelist-mfix
+  :equiv bytelist-bytelist-mequiv)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection nibblelist-bytelist-map
+(fty::defomap nibblelist-bytelist-map
   :parents (mmp-trees)
   :short "Finite maps from nibble arrays to byte arrays."
   :long
@@ -93,13 +91,11 @@
     "This is similar to @(tsee bytelist-bytelist-map),
      but the keys of the map are nibble arrays instead of byte arrays.
      This is the type of the result of @($y$) [YP:(190), YP:(191)]."))
-
-  (fty::defomap nibblelist-bytelist-map
-                :key-type nibble-list
-                :val-type byte-list
-                :pred nibblelist-bytelist-mapp
-                :fix nibblelist-bytelist-mfix
-                :equiv nibblelist-bytelist-mequiv))
+  :key-type nibble-list
+  :val-type byte-list
+  :pred nibblelist-bytelist-mapp
+  :fix nibblelist-bytelist-mfix
+  :equiv nibblelist-bytelist-mequiv)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

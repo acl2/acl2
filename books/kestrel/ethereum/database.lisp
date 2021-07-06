@@ -1,6 +1,6 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,7 +16,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection database
+(fty::defomap database
   :parents (ethereum)
   :short "Database."
   :long
@@ -38,8 +38,6 @@
      from <see topic='@(url byte-list32)'>byte arrays of length 32</see>
      to <see topic='@(url byte-list)'>byte arrays</see>,
      based on the fixtype of <see topic='@(url omap::omaps)'>omaps</see>."))
-
-  (fty::defomap database
-                :key-type byte-list32
-                :val-type byte-list
-                :pred databasep))
+  :key-type byte-list32
+  :val-type byte-list
+  :pred databasep)
