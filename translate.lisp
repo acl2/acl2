@@ -3969,12 +3969,12 @@
 ; the primitives, it cannot be called in boot-strap.  But
 ; remove-guard-holders-weak can be and is!  Thus, the standard idiom for
 ; cleaning up a formula is (possibly-clean-up-dirty-lambda-objects
-; (remove-guard-holders-weak term) wrld) where the inner expression cleans up
-; the term outside any lambda objects and the outer one cleans up the
+; (remove-guard-holders-weak term lamp) wrld) where the inner expression cleans
+; up the term outside any lambda objects and the outer one cleans up the
 ; well-formed lambdas.  For convenience we define (remove-guard-holders term
 ; wrld) to be exactly that composition.  Occasionally you will see just
-; (remove-guard-holders-weak term) because we're nervous about messing with the
-; lambdas.
+; (remove-guard-holders-weak term lamp) because we're nervous about messing
+; with the lambdas.
 
 (mutual-recursion
 
@@ -4120,14 +4120,14 @@
 ; interpret-term-as-rewrite-rule, as commented there.
 
 ; WARNING.  Remove-guard-holders-weak is used in induction-machine-for-fn1, and
-; termination-machine, so (remove-guard-holders-weak term) needs to be provably
-; equal to term, for every term and suitable ilk, in the ground-zero theory.
-; In fact, because of the use in constraint-info, it needs to be the case that
-; for any axiomatic event e, (remove-guard-holders-weak e) can be substituted
-; for e without changing the logical power of the set of axioms.  Actually, we
-; want to view the logical axiom added by e as though remove-guard-holders-weak
-; had been applied to it, and hence RETURN-LAST, MV-LIST, and CONS-WITH-HINT
-; appear in *non-instantiable-primitives*.
+; termination-machine, so (remove-guard-holders-weak term nil) needs to be
+; provably equal to term, for every term and suitable ilk, in the ground-zero
+; theory.  In fact, because of the use in constraint-info, it needs to be the
+; case that for any axiomatic event e, (remove-guard-holders-weak e lamp) can
+; be substituted for e without changing the logical power of the set of axioms.
+; Actually, we want to view the logical axiom added by e as though
+; remove-guard-holders-weak had been applied to it, and hence RETURN-LAST,
+; MV-LIST, and CONS-WITH-HINT appear in *non-instantiable-primitives*.
 
 ; Special functions recognized by this function are: RETURN-LAST, MV-LIST,
 ; CONS-WITH-HINT, and THE-CHECK.

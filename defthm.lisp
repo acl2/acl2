@@ -3391,7 +3391,7 @@
 ; might have.  But we decided to stick with the ``just do what the user said''
 ; approach.
 
-;   (let ((term (remove-lambdas (remove-guard-holders term))))
+;   (let ((term (remove-lambdas (remove-guard-holders term wrld))))
 ;     (cond ((or (variablep term)
 ;                (fquotep term)
 ;                (not (eq (ffn-symb term) 'implies)))
