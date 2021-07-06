@@ -1,4 +1,4 @@
-; Portcullis commands and cert-flags for assumptions.lisp
+; Portcullis commands and cert-flags for support-axe.lisp
 ;
 ; Copyright (C) 2021 Kestrel Institute
 ;
@@ -9,3 +9,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (include-book "../portcullis")
+
+; cert-flags: ? T :TTAGS :ALL
