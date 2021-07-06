@@ -384,43 +384,6 @@
 
 ; Constants related to the memory model in the x86 state:
 
-; The following note also appears with the definition of the processor state.
-
-    ;; For our ACL2 model, we define a paging-like mechanism to model the
-    ;; complete x86 52-bit address space.  The memory is laid out in a flat
-    ;; array, to be viewed as back-to-back "pseudo-pages" each of size 2^27
-    ;; bytes (128MB).  The address of a byte is split into two pieces: a 25-bit
-    ;; pseudo-page address and a 27-bit offset within a page.  The mem-table
-    ;; data structure is of size *mem-table-size* = 2^25 -- thus, indices are
-    ;; 25 bits -- and it maps these indices to 25-bit pseudo-page addresses.
-    ;; However, the mem-table values are actually 26-bit values: the least
-    ;; significant bit is initially 1, but is 0 when the entry is valid, in
-    ;; which case the most significant 25 bits represent a pseudo-page address.
-    ;; The offset of a byte address is a 27-bit wide address, which when added
-    ;; to (pseudo-page address << 27), gives the "real" address of a byte
-    ;; stored in mem-array.  Mem-array-next-addr keeps track of the 25-bit
-    ;; index of the pseudo-page to be allocated next.
-
-    ;; Here is an example of how this works.  Suppose we have the following,
-    ;; where again, the least significant bit of 0 indicates a valid entry, and
-    ;; where {i, 1'bx} denotes concatenation of the bit-vector i with the
-    ;; single bit x.
-
-    ;;   mem-table[#x0654321] = {0, 1'b0}
-    ;;   mem-table[#x16789ab] = {1, 1'b0}
-    ;;   mem-table[#x0111111] = {2, 1'b0}
-
-    ;; All additional values in mem-table are the initial value of 1, which means
-    ;; "page is not present".
-
-    ;; Intel manual, Mar'17, Vol. 1, Section 3.2.1 says that the maximum size of
-    ;; the physical address space is 2^46 bytes in 64-bit mode. However, Table
-    ;; 4-1 in Vol. 3 says that the physical address width is up to 52 bits
-    ;; in 64-bit mode. Furtermore, AMD manual, Oct'13, Vol. 1, Section 2.1.4.1
-    ;; says that physical addresses are up to 52 bits in size. Based on all of
-    ;; this, our model assumes a 2^52-byte physical memory -- see the constant
-    ;; *physical-address-size*.
-
 ; Virtual Memory:
 
 (defconst *max-linear-address-size*  48)
@@ -471,59 +434,6 @@
 (defconst *mem-size-in-bytes-13*  (+ -13 *mem-size-in-bytes*))
 (defconst *mem-size-in-bytes-14*  (+ -14 *mem-size-in-bytes*))
 (defconst *mem-size-in-bytes-15*  (+ -15 *mem-size-in-bytes*))
-
-(defconst *default-mem-value*
-
-; If we change this default memory value, we also need to change the
-; :initially value in the mem-array field of our x86-64 stobj.
-
-  0)
-
-(defconst *initial-mem-array-pages* 2) ; arbitrary
-
-(defconst *2^x-byte-pseudo-page*
-  ;; Log size of pseudo page; i.e.; for 128MB pseudo pages, this is 27
-  27)
-
-(defconst *pseudo-page-size-in-bytes*
-  ;; Pseudo page size
-  (expt 2 *2^x-byte-pseudo-page*))
-
-(defconst *pseudo-page-size-in-bytes-1*
-  (1- *pseudo-page-size-in-bytes*))
-
-(defconst *2^x-number-pseudo-pages*
-  ;; Previously named *non-zero-mem-table-entry-size*
-  ;; Log size of the number of pseudo pages
-  (- *physical-address-size*
-     *2^x-byte-pseudo-page*))
-
-(defconst *initial-mem-array-length*
-  ;; Initial allocation of pseudo pages
-  (* *initial-mem-array-pages*
-     *pseudo-page-size-in-bytes*))
-
-(defconst *mem-table-size*
-  ;; Size of table for address-to-pseudo-page translation
-  (floor *mem-size-in-bytes*
-         *pseudo-page-size-in-bytes*))
-
-(make-event
- `(defconst *mem-table-size-bits*
-    ,(log-2 *mem-table-size* 0)))
-
-(defconst *mem-table-size-bits+1*
-  (+ 1 *mem-table-size-bits*))
-
-(defconst *2^mem-table-size-bits+1*
-  (expt 2 *mem-table-size-bits+1*))
-
-(defconst *mem-table-size-1*
-  (1- *mem-table-size*))
-
-(defconst *mem-array-resize-factor*
-  ;; Growth factor used when additional pseudo pages are required
-  2)
 
 ;; ======================================================================
 

@@ -77,10 +77,12 @@
     :pku :popcnt :prefetchwt1 :prfchw :proc-trace :pse
     :pse-36 :psn :rdpid :rdrand :rdseed :rdt-a :rdt-m
     :rdtscp :rep-movsb-stosb :rtm :sdbg :sep :sgx1
-    :sgx2 :sgx_lc :sha :smap :smep :ss :sse-state
+    :sgx2 :sgx_lc :pks :sha :smap :smep :ss :sse-state
     :syscall-sysret :tm :tm2 :tsc :tsc-deadline
     :umip :vme :x2pic :x87-state :xgetbv :xsave
-    :xsavec :xsaveopt :xss :xtpr-up-ctrl))
+    :xsavec :xsaveopt :xss :xtpr-up-ctrl
+    :maxphyaddr :linearaddr
+    :cet :la57))
 
 (defconst *supported-feature-flags*
   (append *fp-simd-feature-flags*
