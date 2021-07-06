@@ -21,10 +21,16 @@
 (include-book "write-bytes-to-channel")
 (include-book "write-bytes-to-file")
 (include-book "write-bytes-to-file-bang")
+
 (include-book "princ-dollar")
 (include-book "write-strings-to-channel")
 (include-book "write-strings-to-file")
 (include-book "write-strings-to-file-bang")
+
+(include-book "print-object-dollar")
+(include-book "write-objects-to-channel")
+(include-book "write-objects-to-file")
+(include-book "write-objects-to-file-bang")
 
 (include-book "file-write-date-dollar")
 (include-book "file-length-dollar")

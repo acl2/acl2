@@ -50,7 +50,8 @@
            (integerp (cadddr header)))
   :hints (("Goal" :in-theory (enable channel-headerp))))
 
-(defthm open-channel-listp-of-add-pair
+;; Avoid name clash with std
+(defthm open-channel-listp-of-add-pair-strong
   (implies (open-channel-listp l)
            (equal (open-channel-listp (add-pair key value l))
                   (open-channel1 value)))
@@ -62,7 +63,8 @@
                   (symbolp key)))
   :hints (("Goal" :in-theory (enable add-pair ordered-symbol-alistp))))
 
-(defthm open-channels-p-of-add-pair
+;; Avoid name clash with std
+(defthm open-channels-p-of-add-pair-strong
   (implies (open-channels-p channels)
            (equal (open-channels-p (add-pair channel value channels))
                   (and (symbolp channel)
@@ -160,14 +162,16 @@
            (ordered-symbol-alistp (remove1-assoc-equal channel channels)))
   :hints (("Goal" :in-theory (enable ordered-symbol-alistp))))
 
-(defthm open-channel-listp-of-remove1-assoc-equal
+;; Avoid name clash with std
+(defthm open-channel-listp-of-remove1-assoc-equal-alt
   (implies (open-channel-listp channels)
            (open-channel-listp (remove1-assoc-equal channel channels)))
   :hints (("Goal" :in-theory (enable open-channel-listp))))
 
 (local (in-theory (disable ordered-symbol-alistp)))
 
-(defthm open-channels-p-of-remove1-assoc-equal
+;; Avoid name clash with std
+(defthm open-channels-p-of-remove1-assoc-equal-alt
   (implies (open-channels-p channels)
            (open-channels-p (remove1-assoc-equal channel channels)))
   :hints (("Goal" :in-theory (enable open-channels-p))))

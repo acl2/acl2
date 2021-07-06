@@ -164,7 +164,6 @@
 ;; similar to RVM08 but without the error checks and the multiple values.
 ;; Negative canonical addresses get mapped to the upper half of the 2^48 byte
 ;; range.
-;todo: define a read-bytes that calls this (and returns a list)?
 ;todo: enable this less below, using rules instead?
 (defund read-byte (addr x86)
   (declare (xargs :stobjs x86
@@ -279,6 +278,12 @@
            (equal (unsigned-byte-p size (read n base-addr x86))
                   (natp size)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
+
+;enable?
+(defthmd read-of-1-becomes-read-byte
+  (equal (read 1 addr x86)
+         (read-byte addr x86))
+  :hints (("Goal" :in-theory (enable read-byte))))
 
 (defthm ash-of-read
   (implies (natp n)
@@ -516,6 +521,14 @@
                       (write-byte ad1 byte1 x86)
                     (write-byte ad2 byte2 (write-byte ad1 byte1 x86)))))
   :hints (("Goal" :in-theory (enable write-byte))))
+
+(defthmd xw-becomes-write-byte
+  (implies (and (acl2::unsigned-byte-p 8 byte)
+                (unsigned-byte-p 48 addr)
+                (integerp addr))
+           (equal (xw :mem addr byte x86)
+                  (write-byte addr byte x86)))
+  :hints (("Goal" :in-theory (e/d (write-byte) ()))))
 
 ;;
 ;; write
@@ -1271,7 +1284,7 @@
            (equal (read 1 addr x86)
                   (nth (- addr addr2) bytes)))
   :hints (("Goal" :in-theory (e/d (program-at
-;rb
+                                   ;;rb
                                    x::read-when-equal-of-read-gen
                                    )
                                   (read
@@ -1520,3 +1533,66 @@
            (equal (write-bytes addr bytes x86)
                   (write-byte addr (first bytes) x86)))
   :hints (("Goal" :in-theory (e/d () ()))))
+
+;;;
+;;; read-bytes
+;;;
+
+;; Read N bytes, starting at ADDR, returning a list.
+(defund read-bytes (addr n x86)
+  (declare (xargs :guard (and (integerp addr)
+                              (natp n))
+                  :stobjs x86))
+  (if (zp n)
+      nil
+    (cons (read-byte addr x86)
+          (read-bytes (+ 1 addr) (+ -1 n) x86))))
+
+(defthm car-of-read-bytes
+  (implies (and (posp n)
+                (integerp addr))
+           (equal (car (read-bytes addr n x86))
+                  (read-byte addr x86)))
+  :hints (("Goal" :expand
+           (read-bytes addr n x86))))
+
+(local
+ (defun inc-dec-dec-induct (x y z)
+   (if (zp y)
+       (list x y z)
+     (inc-dec-dec-induct (+ 1 x) (+ -1 y) (+ -1 z)))))
+
+(defthm nth-of-read-bytes
+  (implies (and (natp n1)
+                (< n1 n2)
+                (natp n2)
+                (integerp addr))
+           (equal (nth n1 (read-bytes addr n2 x86))
+                  (read-byte (+ addr n1) x86)))
+  :hints (("Goal" :induct (inc-dec-dec-induct addr n1 n2)
+           :in-theory (enable read-bytes nth))))
+
+(defthm write-byte-of-read-byte-same
+  (equal (write-byte addr (read-byte addr x86) x86)
+         x86)
+  :hints (("Goal" :in-theory (enable read-byte write-byte))))
+
+(defthm write-bytes-of-read-bytes-same
+  (equal (write-bytes addr (read-bytes addr n x86) x86)
+         x86)
+  :hints (("Goal" :in-theory (enable read-bytes write-bytes))))
+
+(defthm write-bytes-of-write-byte-irrel
+  (implies (and (<= (len bytes) (bvminus 48 addr2 addr1))
+                (integerp addr2)
+                (integerp addr1))
+           (equal (write-bytes addr1 bytes (write-byte addr2 byte x86))
+                  (write-byte addr2 byte (write-bytes addr1 bytes x86))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :induct (write-bytes addr1 bytes x86)
+           :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvuminus bvminus write-bytes write-byte)
+                           (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
+                                                    acl2::slice-of-+ ;looped
+                                                    acl2::bvcat-of-+-high
+                                                    ACL2::BVCHOP-IDENTITY ;for speed
+                                                    )))))
