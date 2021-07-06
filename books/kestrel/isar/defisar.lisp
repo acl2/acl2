@@ -460,7 +460,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection defisar-macro-definition
+(defsection defisar-macro-definition-synonym
   :short "Synonym of @(tsee defisar) in the @('\"ACL2\"') package."
   (defmacro acl2::defisar (&rest args)
     `(defisar ,@args)))
