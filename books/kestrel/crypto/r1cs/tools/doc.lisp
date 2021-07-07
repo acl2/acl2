@@ -112,12 +112,12 @@ variables of the R1CS are not mentioned at all by this spec function.
 Often, the spec function will do 3 things:")
 
     (xdoc::ol-from-string
-     "A. Pack the input bits and output bits into larger words (e.g., 32-bit words.
+     "Pack the input bits and output bits into larger words (e.g., 32-bit words.
 
-       B. Call a \"core\" specification function (e.g., the specification of a
+      Call a \"core\" specification function (e.g., the specification of a
 hash function, from a library) on the input words.
 
-      C. Check that the (packed) output matches the value returned from the
+      Check that the (packed) output matches the value returned from the
 core function."))
 
    (xdoc::p "2. Load the R1CS by calling load-circom-json to read in the file.  This
@@ -129,25 +129,25 @@ core function."))
    (xdoc::&&
     (xdoc::p "4. Invoke the Axe Prover.  This is done by calling verify-r1cs (or a variant of it, like verify-semaphore-r1cs).  You pass it:")
 
-    (xdoc::ol-from-string
-     "A. The R1CS
+    (xdoc::ul-from-string
+     "The R1CS
 
-      B. The spec
+      The spec
 
-      C. A list of inputs which should be assumed to be bits
+      A list of inputs which should be assumed to be bits
 
-      D. Rules to use, and other prover options")
+      Rules to use, and other prover options")
 
     (xdoc::topparas "This is the hardest step.  We suggest looking at some example proofs.
 
      The proof will include assumptions that:")
 
-    (xdoc::ol-from-string
-     "A. All of the inputs are field elements.
+    (xdoc::ul-from-string
+     "All of the inputs are field elements.
 
-      B. The inputs that were indicated to be bits actually are bits.
+      The inputs that were indicated to be bits actually are bits.
 
-      C. The R1CS holds.")
+      The R1CS holds.")
 
     (xdoc::topparas "The conclusion will assert that the spec function (written in step 1)
      holds over the appropriate arguments.
