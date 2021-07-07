@@ -33,3 +33,4 @@
 (include-book "heap")
 (include-book "java-types")
 (include-book "int-subtypes")
+(include-book "strings")
