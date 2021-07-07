@@ -300,7 +300,7 @@
 
 (defxdoc Publications
   :parents (x86isa)
-  :short "Technical publications related to @('x86isa')"
+  :short "Technical publications related to these @('x86isa') books"
   :long "<p>From the oldest to the newest:</p>
  <ol>
 
@@ -344,6 +344,19 @@
  <li>Alessandro Coglio and Shilpi Goel. Adding 32-bit Mode to the ACL2 Model of
   the x86 ISA. In the Fifteenth International Workshop on the ACL2 Theorem
   Prover and Its Applications (ACL2 Workshop), 2018</li>
+
+ <li>Alessandro Coglio and Shilpi Goel. Adding 32-bit Mode to the ACL2 Model of
+  the x86 ISA. In the Fifteenth International Workshop on the ACL2 Theorem
+  Prover and Its Applications (ACL2 Workshop), 2018</li>
+
+ <li>Shilpi Goel and Rob Sumners. Using @('x86isa') for Microcode
+ Verification. In the Workshop on Instruction Set Architecture
+ Specification (SpISA), 2019.</li>
+
+ <li>Shilpi Goel, Anna Slobodova, Rob Sumners, and Sol
+ Swords. Verifying x86 Instruction Implementations. In the proceedings
+ of the 9th ACM SIGPLAN International Conference on Certified Programs
+ and Proofs (CPP), 2020.</li>
 
  </ol>")
 

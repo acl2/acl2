@@ -34,6 +34,8 @@
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
+(local (xdoc::set-default-parents bigmem))
+
 ;; ----------------------------------------------------------------------
 
 (defn ubp8-fix (x)
@@ -266,7 +268,91 @@
 
 (in-theory (e/d () (read-mem write-mem create-mem)))
 
-;; (acl2::find-lemmas '(ubp8-set ubp8-set))
+;; ----------------------------------------------------------------------
+
+;; Get the contents of the entire memory as a linear list --- suitable
+;; for use by tools that are used to defstobj's logic representation
+;; of an array.
+
+(include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
+
+(defthm unsigned-byte-p-8-read-mem
+  (unsigned-byte-p 8 (read-mem addr mem))
+  :hints (("Goal" :in-theory (e/d (read-mem read-mem$a) ()))))
+
+(define get-mem-aux  ((i :type (unsigned-byte 64))
+                      (mem  memp))
+  :non-executable t
+  :returns (memlist (acl2::unsigned-byte-listp 8 memlist)
+                    :hyp (memp mem))
+  :enabled t
+  (if (zp i)
+      (list (read-mem i mem))
+    (cons (read-mem i mem)
+          (get-mem-aux (1- i) mem)))
+  ///
+  (defthm len-of-get-mem-aux
+    (implies (and (memp mem)
+                  (natp i))
+             (equal (len (get-mem-aux i mem))
+                    (+ 1 i))))
+
+  (local (include-book "std/lists/nth" :dir :system))
+
+  (defthm read-mem-and-get-mem-aux
+    (implies (and (memp mem)
+                  (<= i j)
+                  (natp i)
+                  (natp j))
+             (equal (nth i (acl2::rev (get-mem-aux j mem)))
+                    (read-mem i mem))))
+
+  (defthm get-mem-aux-beyond-write-mem
+    (implies (< j i)
+             (equal (get-mem-aux j (write-mem i v mem))
+                    (get-mem-aux j mem)))
+    :hints (("goal" :in-theory (e/d (get-mem-aux) nil))))
+
+  (defthm get-mem-aux-after-write-mem
+    (implies (and (<= i j)
+                  (natp i)
+                  (natp j))
+             (equal (get-mem-aux j (write-mem i v mem))
+                    (update-nth (- j i) (loghead 8 v) (get-mem-aux j mem))))
+    :hints (("Goal" :in-theory (e/d (get-mem-aux) ())))))
+
+(define get-mem ((mem  memp))
+  :short "Get the entire contents of the memory in the form of a linear list"
+  :non-executable t
+  :returns (memlist (acl2::unsigned-byte-listp 8 memlist)
+                    :hyp (memp mem))
+  (acl2::rev (get-mem-aux (1- (expt 2 64)) mem))
+
+  ///
+
+  (defthmd rewrite-read-mem-to-nth-of-get-mem
+    (implies (and (unsigned-byte-p 64 i)
+                  (memp mem))
+             (equal (read-mem i mem)
+                    (nth i (get-mem mem)))))
+
+  (local (include-book "std/lists/nth" :dir :system))
+  (local (include-book "std/lists/update-nth" :dir :system))
+
+  (local
+   (defthm rev-and-update-nth
+     (implies (and (equal j (len xs))
+                   (< i j)
+                   (natp i))
+              (equal (update-nth i v (acl2::rev xs))
+                     (acl2::rev (update-nth (- (- j 1) i) v xs))))
+     :hints (("Goal" :in-theory (e/d (acl2::rev) ())))))
+
+  (defthm get-mem-after-write-mem
+    (implies (unsigned-byte-p 64 i)
+             (equal (get-mem (write-mem i v mem))
+                    (update-nth i (loghead 8 v) (get-mem mem))))
+    :hints (("Goal" :do-not-induct t))))
 
 ;; ----------------------------------------------------------------------
 

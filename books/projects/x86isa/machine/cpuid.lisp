@@ -74,14 +74,16 @@
   <li>@('x86'): the x86 state </li>
  </ol>
 
- <p>The only constraint about the return value of this function is that it must
- be a bit.  During proofs, you would need to add appropriate hypotheses to your
- theorems about the values returned by @('cpuid-flag-fn') for a given CPUID
- leaf, sub-leaf, and relevant output indexing information (i.e., @('reg') and
- @('bit')).  During execution, you can use @(tsee defattach) to execute this
- function.  By default, we use the function @(tsee cpuid-feature-bit-always-1)
- as an attachment --- this function always returns @('1'), so all the features
- are enabled.  Feel free, of course, to use your own attachment.</p>
+ <p>The only constraint about the return value of this function is
+ that it must be return a natural number of width @('width').  During
+ proofs, you would need to add appropriate hypotheses to your theorems
+ about the values returned by @('cpuid-flag-fn') for a given CPUID
+ leaf, sub-leaf, and relevant output indexing information (i.e.,
+ @('reg') and @('bit')).  During execution, you can use @(tsee
+ defattach) to execute this function.  By default, we use the function
+ @(tsee default-cpuid-flag-fn) as an attachment.  Feel free, of
+ course, to use your own attachment, where you can choose to
+ case-split on the leaf/sub-leaf of the CPUID.</p>
 
  <p>We also provide macros the following macros to access CPUID feature flags
  conveniently.</p>
@@ -97,55 +99,79 @@
     (((cpuid-flag-fn * * * * * x86) => *
       :formals (eax ecx reg bit width x86)
       :guard (and (unsigned-byte-p 32 eax)
-		  (unsigned-byte-p 32 ecx)
-		  (or (equal reg #.*eax*)
-		      (equal reg #.*ebx*)
-		      (equal reg #.*ecx*)
-		      (equal reg #.*edx*))
-		  (unsigned-byte-p 6 bit)
-		  (posp width)
-		  (<= width 32)
-		  (x86p x86))))
+                  (unsigned-byte-p 32 ecx)
+                  (or (equal reg #.*eax*)
+                      (equal reg #.*ebx*)
+                      (equal reg #.*ecx*)
+                      (equal reg #.*edx*))
+                  (unsigned-byte-p 6 bit)
+                  (posp width)
+                  (<= width 32)
+                  (x86p x86))))
 
     (local
      (defun cpuid-flag-fn (eax ecx reg bit width x86)
        (declare
-	(ignorable eax ecx reg bit width x86)
-	(xargs :stobjs x86
-	       :guard (x86p x86)))
-       1))
+        (ignorable eax ecx reg bit width x86)
+        (xargs :stobjs x86
+               :guard (and (natp width) (x86p x86))))
+       (loghead width 1)))
 
-    (defthm bitp-of-cpuid-flag-fn
-      (bitp (cpuid-flag-fn eax ecx reg bit width x86))
-      :rule-classes :type-prescription))
+    (defthm natp-cpuid-flag-fn
+      (natp (cpuid-flag-fn eax ecx reg bit width x86))
+      :rule-classes (:type-prescription))
 
-  (define cpuid-feature-bit-always-1 ((eax  :type (unsigned-byte 32))
-				      (ecx  :type (unsigned-byte 32))
-				      (reg   (or (equal reg #.*eax*)
-						 (equal reg #.*ebx*)
-						 (equal reg #.*ecx*)
-						 (equal reg #.*edx*)))
-				      (bit   :type (integer 0 63))
-				      (width :type (integer 1 32))
-				      x86)
+    (defthm unsigned-byte-width-of-cpuid-flag-fn
+      (implies (posp width)
+               (unsigned-byte-p width (cpuid-flag-fn eax ecx reg bit width x86)))))
+
+  (define default-cpuid-flag-fn ((eax  :type (unsigned-byte 32))
+                                 (ecx  :type (unsigned-byte 32))
+                                 (reg   (or (equal reg #.*eax*)
+                                            (equal reg #.*ebx*)
+                                            (equal reg #.*ecx*)
+                                            (equal reg #.*edx*)))
+                                 (bit   :type (integer 0 63))
+                                 (width :type (integer 1 32))
+                                 x86)
     :ignore-ok t
-    1)
 
-  (defattach cpuid-flag-fn cpuid-feature-bit-always-1)
+    ;; Let's have everything enabled by default, just to see what breaks and when.
+
+    (case eax
+      
+      (#ux8000_0008
+       (case reg
+         (#.*eax*
+          (case bit
+            (0 (if (equal width 8)
+                   52 ;; MAXPHYADDR
+                 0))
+            (8 (if (equal width 8)
+                   48 ;; LINEARADDR
+                 0))
+            (t 0)))
+         (t 1))) ;; EAX = #ux8000_0008
+
+      (t 1)))
+
+  (defattach (cpuid-flag-fn default-cpuid-flag-fn)
+    :hints (("Goal" :in-theory (e/d (default-cpuid-flag-fn)
+                                    (unsigned-byte-p)))))
 
   (defmacro cpuid-flag (eax ;; CPUID leaf
-			&key
-			;; CPUID Sub-leaf (if any)
-			(ecx '0)
-			;; Index of the output register
-			(reg '0)
-			;; Relevant LSB of the output register
-			(bit '0)
-			;; Width of the CPUID field of the output
-			;; register, 1 by default
-			(width '1)
-			;; x86 state
-			(x86 'x86))
+                        &key
+                        ;; CPUID Sub-leaf (if any)
+                        (ecx '0)
+                        ;; Index of the output register
+                        (reg '0)
+                        ;; Relevant LSB of the output register
+                        (bit '0)
+                        ;; Width of the CPUID field of the output
+                        ;; register, 1 by default
+                        (width '1)
+                        ;; x86 state
+                        (x86 'x86))
     ;; CPUID:
 
     ;; 64-bit input:
@@ -273,12 +299,14 @@
       (:umip            (cpuid-flag #ux_07 :ecx #ux_00 :reg #.*ecx* :bit 2))
       (:pku             (cpuid-flag #ux_07 :ecx #ux_00 :reg #.*ecx* :bit 3))
       (:ospke           (cpuid-flag #ux_07 :ecx #ux_00 :reg #.*ecx* :bit 4))
-      ;; ecx[16:5]: reserved
+      (:cet             (cpuid-flag #ux_07 :ecx #ux_00 :reg #.*ecx* :bit 7))
+      ;; ecx[5-6], ecx[15:8]: reserved
+      (:la57            (cpuid-flag #ux_07 :ecx #ux_00 :reg #.*ecx* :bit 16))
       (:mawau           (cpuid-flag #ux_07 :ecx #ux_00 :reg #.*ecx* :bit 17 :width 5))
       (:rdpid           (cpuid-flag #ux_07 :ecx #ux_00 :reg #.*ecx* :bit 22))
       ;; ecx[29:23]: reserved
       (:sgx_lc          (cpuid-flag #ux_07 :ecx #ux_00 :reg #.*ecx* :bit 30))
-      ;; ecx[31]: reserved
+      (:pks             (cpuid-flag #ux_07 :ecx #ux_00 :reg #.*ecx* :bit 31))
 
       ;; [Shilpi] Intel Manuals, May 2018 edition don't seem to list
       ;; avx512_4vnniw and avx512_4fmaps anywhere.  However, I found the
@@ -340,7 +368,19 @@
       ;; edx[28]: reserved
       (:intel64         (cpuid-flag #ux8000_0001       :reg #.*edx* :bit 29))
       ;; edx[31:30]: reserved
+
+      ;; Linear/physical address size data
+      (:maxphyaddr      (cpuid-flag #ux8000_0008       :reg #.*eax* :bit 0 :width 8))
+      (:linearaddr      (cpuid-flag #ux8000_0008       :reg #.*eax* :bit 8 :width 8))
+      ;; Output eax (for function #ux8000_0008) bits 16-31 are reserved.
+
       (otherwise       0)))
+
+  (assert-event
+   ;; The default attachment is the reason why the following is true.
+   ;; TODO: Parameterize the model w.r.t. these flags.
+   (and (equal (feature-flag :maxphyaddr x86) 52)
+        (equal (feature-flag :linearaddr x86) 48)))
 
   (define feature-flags (features x86)
     :guard (subset-equal features *supported-feature-flags*)
