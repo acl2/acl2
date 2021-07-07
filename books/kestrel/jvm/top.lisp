@@ -28,3 +28,6 @@
 (include-book "call-stacks")
 (include-book "utilities")
 (include-book "utilities2")
+(include-book "class-tables")
+(include-book "heap0")
+(include-book "heap")
