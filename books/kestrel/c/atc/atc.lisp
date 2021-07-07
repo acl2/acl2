@@ -3159,8 +3159,6 @@
        (compst-var (acl2::genvar 'atc "COMPST" nil formals))
        (fenv-var (acl2::genvar 'atc "FENV" nil formals))
        (limit-var (acl2::genvar 'atc "LIMIT" nil formals))
-       (result-var (acl2::genvar 'atc "RESULT" nil formals))
-       (new-compst-var (acl2::genvar 'atc "NEW-COMPST" nil formals))
        (args (atc-gen-fn-args-deref-compustate formals pointers compst-var))
        (guard (acl2::uguard fn wrld))
        (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var))
@@ -3171,15 +3169,14 @@
                                   `(>= ,limit-var ,limit))))
        (hyps (acl2::flatten-ands-in-lit hyps))
        (hyps `(and ,@(acl2::untranslate-lst hyps t wrld)))
-       (equalities
-        `(b* (((mv ,result-var ,new-compst-var)
-               (exec-fun (ident ,(symbol-name fn))
-                         (list ,@formals)
-                         ,compst-var
-                         ,fenv-var
-                         ,limit-var)))
-           (and (equal ,new-compst-var ,compst-var)
-                (equal ,result-var (,fn ,@args)))))
+       (concl `(equal
+                (exec-fun (ident ,(symbol-name fn))
+                          (list ,@formals)
+                          ,compst-var
+                          ,fenv-var
+                          ,limit-var)
+                (mv (,fn ,@args)
+                    ,compst-var)))
        (returns-value-thms
         (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns))
        (exec-correct-thms
@@ -3218,7 +3215,7 @@
        ((mv event &)
         (evmac-generate-defthm
          name
-         :formula `(implies ,hyps ,equalities)
+         :formula `(implies ,hyps ,concl)
          :hints hints
          :enable nil)))
     (mv (list event) name names-to-avoid)))
@@ -3258,8 +3255,6 @@
        (formals (acl2::formals+ fn wrld))
        (compst-var (acl2::genvar 'atc "COMPST" nil formals))
        (limit-var (acl2::genvar 'atc "LIMIT" nil formals))
-       (result-var (acl2::genvar 'atc "RESULT" nil formals))
-       (new-compst-var (acl2::genvar 'atc "NEW-COMPST" nil formals))
        (args (atc-gen-fn-args-deref-compustate formals pointers compst-var))
        (guard (acl2::uguard fn wrld))
        (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var))
@@ -3269,15 +3264,14 @@
                                   `(>= ,limit-var ,limit))))
        (hyps (acl2::flatten-ands-in-lit hyps))
        (hyps `(and ,@(acl2::untranslate-lst hyps t wrld)))
-       (equalities
-        `(b* (((mv ,result-var ,new-compst-var)
-               (exec-fun (ident ,(symbol-name fn))
-                         (list ,@formals)
-                         ,compst-var
-                         (init-fun-env ,prog-const)
-                         ,limit-var)))
-           (and (equal ,new-compst-var ,compst-var)
-                (equal ,result-var (,fn ,@args)))))
+       (concl `(equal
+                (exec-fun (ident ,(symbol-name fn))
+                          (list ,@formals)
+                          ,compst-var
+                          (init-fun-env ,prog-const)
+                          ,limit-var)
+                (mv (,fn ,@args)
+                    ,compst-var)))
        (hints `(("Goal"
                  :in-theory nil
                  :use (:instance ,fn-exec-correct-thm
@@ -3285,7 +3279,7 @@
        ((mv local-event exported-event)
         (evmac-generate-defthm
          name
-         :formula `(implies ,hyps ,equalities)
+         :formula `(implies ,hyps ,concl)
          :hints hints
          :enable nil)))
     (mv (list local-event) (list exported-event) name)))
