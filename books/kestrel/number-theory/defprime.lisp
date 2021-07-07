@@ -182,17 +182,18 @@
            :long "Xdoc :long section for the prime.")
   :long (xdoc::topstring
          (xdoc::p "Defprime generates, for a prime named FOO:")
-         (xdoc::ul "A constant, *FOO*, representing the prime."
-                   "A theorem that *FOO* is prime."
-                   "A 0-ary function, FOO, representing the prime.  This is disabled but its :executable-counterpart is not (disable the :executable-counterpart to prevent execution during proofs)."
-                   "A theorem that the function FOO always returns a prime."
-                   "A :linear rule stating that the function FOO is equal to the prime (i.e., its integer value)."
-                   "A utility, eviscerate-FOO, to cause the prime to be printed using a symbolic name.  This is in turn invoked by defprime to turn on evisceration, unless the :evisc argument is nil."
-                   "A utility, uneviscerate-FOO, to turn off the evisceration mentioned just above."
-                   "A constant, *FOO-pratt-cert*, for the Pratt certificate supplied for FOO."
-                   "A @(tsee defxdoc) form for the prime, using the supplied :short, :long, and :parents, or suitable defaults for each."
-                   "A call of @(tsee acl2::add-io-pairs) to cause rtl::primep to be fast when called on the prime."
-                   "A @(tsee table) event that records the call of defprime.")))
+         (xdoc::ul
+           (xdoc::li "A constant, *FOO*, representing the prime.")
+           (xdoc::li "A theorem that *FOO* is prime.")
+           (xdoc::li "A 0-ary function, FOO, representing the prime.  This is disabled but its :executable-counterpart is not (disable the :executable-counterpart to prevent execution during proofs).")
+           (xdoc::li "A theorem that the function FOO always returns a prime.")
+           (xdoc::li "A :linear rule stating that the function FOO is equal to the prime (i.e., its integer value).")
+           (xdoc::li "A utility, eviscerate-FOO, to cause the prime to be printed using a symbolic name.  This is in turn invoked by defprime to turn on evisceration, unless the :evisc argument is nil.")
+           (xdoc::li "A utility, uneviscerate-FOO, to turn off the evisceration mentioned just above.")
+           (xdoc::li "A constant, *FOO-pratt-cert*, for the Pratt certificate supplied for FOO.")
+           (xdoc::li "A @(tsee defxdoc) form for the prime, using the supplied :short, :long, and :parents, or suitable defaults for each.")
+           (xdoc::li "A call of @(tsee acl2::add-io-pairs) to cause rtl::primep to be fast when called on the prime.")
+           (xdoc::li "A @(tsee table) event that records the call of defprime."))))
 
 ;; Variant of defprime that defines a prime that is numerically equal to an existng prime.
 (acl2::defmacrodoc defprime-alias (name existing-prime-name &key
