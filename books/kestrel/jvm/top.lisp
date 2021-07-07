@@ -31,3 +31,4 @@
 (include-book "class-tables")
 (include-book "heap0")
 (include-book "heap")
+(include-book "java-types")
