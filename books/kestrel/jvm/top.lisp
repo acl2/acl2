@@ -34,3 +34,4 @@
 (include-book "java-types")
 (include-book "int-subtypes")
 (include-book "strings")
+(include-book "intern-table")
