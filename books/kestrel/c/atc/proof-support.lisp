@@ -336,7 +336,9 @@
      serve to discharge the hypotheses about it being not 0
      in some of the other theorems below.
      We simply consume @(tsee add-scope) and @(tsee add-var),
-     and stop at @(tsee add-frame) because that one adds a frame.")
+     and stop at @(tsee add-frame) because that one adds a frame.
+     For @(tsee write-var), i.e. for side-effected variables,
+     we need the hypothesis that @(tsee write-var) is not an error.")
    (xdoc::p
     "The theorems below about @(tsee deref)
      applied to the heap component of the computation state
@@ -659,6 +661,15 @@
            (compustate-frames-number compst))
     :enable add-var)
 
+  (defruled compustate-frames-number-of-write-var-when-not-errorp
+    (implies (not (errorp (write-var var val compst)))
+             (equal (compustate-frames-number (write-var var val compst))
+                    (compustate-frames-number compst)))
+    :enable (compustate-frames-number
+             write-var
+             push-frame
+             pop-frame))
+
   ;; rules about DEREF of COMPUSTATE->HEAP:
 
   (defruled deref-of-heap-of-add-frame
@@ -707,6 +718,7 @@
     compustate-frames-number-of-add-frame
     compustate-frames-number-of-add-scope
     compustate-frames-number-of-add-var
+    compustate-frames-number-of-write-var-when-not-errorp
     deref-of-heap-of-add-frame
     deref-of-heap-of-add-scope
     deref-of-heap-of-add-var))
