@@ -1444,11 +1444,13 @@ During symbolic execution, some data is constant,
      sometimes applies @(tsee ident-fix) to identifiers,
      we enable @('ident-fix-when-identp') and @('identp-of-ident'),
      so that @(tsee ident-fix) can be rewritten away.
-     Sometimes the symbolic execution produces equalities over identifiers;
+     Sometimes the symbolic execution produces equalities over identifiers:
      we introduce a rule that reduces those to equalities over strings.
      Since the latter equalities involve the string fixer,
      we enable its executable counterpart.
-     See @(tsee *atc-identifier-rules*).")
+     Similarly, sometimes the symbolic execution produces
+     calls of @(tsee <<) over identifiers:
+     we introduce a rule that reduces those to @(tsee <<) over strings.")
    (xdoc::p
     "In the course of symbolic execution,
      terms appears of the form @('(exec-fun <ident> ...)'),
@@ -1457,7 +1459,11 @@ During symbolic execution, some data is constant,
      This @('<ident>') does not have the form @('(ident <string>'));
      we introduce and enable a rule
      to turn @('<ident>') into @('(ident <string>')
-     when it appears in @(tsee exec-fun)."))
+     when it appears in @(tsee exec-fun).
+     We introduce similar rules for terms of the form
+     @('(create-var <ident> ...)'),
+     @('(read-var <ident> ...)'), and
+     @('(write-var <ident> ...)')."))
 
   (defruled equal-of-ident-and-ident
     (equal (equal (ident x)
@@ -1465,13 +1471,38 @@ During symbolic execution, some data is constant,
            (equal (str-fix x)
                   (str-fix y))))
 
+  (defruled <<-of-ident-and-ident
+    (equal (<< (ident x)
+               (ident y))
+           (<< (str-fix x)
+               (str-fix y)))
+    :enable (<< lexorder ident))
+
   (defruled exec-fun-of-const-identifier
     (implies (and (syntaxp (quotep fun))
                   (c::identp fun))
              (equal (exec-fun fun
                               args compst fenv limit)
                     (exec-fun (ident (ident->name fun))
-                              args compst fenv limit)))))
+                              args compst fenv limit))))
+
+  (defruled create-var-of-const-identifier
+    (implies (and (syntaxp (quotep var))
+                  (c::identp var))
+             (equal (create-var var val compst)
+                    (create-var (ident (ident->name var)) val compst))))
+
+  (defruled read-var-of-const-identifier
+    (implies (and (syntaxp (quotep var))
+                  (c::identp var))
+             (equal (read-var var compst)
+                    (read-var (ident (ident->name var)) compst))))
+
+  (defruled write-var-of-const-identifier
+    (implies (and (syntaxp (quotep var))
+                  (c::identp var))
+             (equal (write-var var val compst)
+                    (write-var (ident (ident->name var)) val compst)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1484,8 +1515,12 @@ During symbolic execution, some data is constant,
   '(ident-fix-when-identp
     identp-of-ident
     equal-of-ident-and-ident
+    <<-of-ident-and-ident
     (:e str-fix)
-    exec-fun-of-const-identifier))
+    exec-fun-of-const-identifier
+    create-var-of-const-identifier
+    read-var-of-const-identifier
+    write-var-of-const-identifier))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
