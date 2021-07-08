@@ -96,7 +96,7 @@
      a sequence of applications of the three functions below
      to an initial symbolic computation state @('<compst>'):")
    (xdoc::codeblock
-    "(add-var ... (add-var ... (add-scope ... (add-frame ... <compst>)...)")
+    "(add-var ... (add-var ... (add-scope (add-frame ... <compst>)...)")
    (xdoc::p
     "We then prove theorems that describe
      the effect of @(tsee push-frame) and other functions
@@ -108,7 +108,59 @@
     "Note that @(tsee add-scope) and @(tsee add-var)
      return the computation state unchanged if the frame stack is empty.
      This is intentional, as it seems to make some theorems simpler,
-     but this decision may be revisited."))
+     but this decision may be revisited.")
+   (xdoc::p
+    "In the presence of C loops,
+     which are represented by ACL2 recursive functions,
+     we generate theorems that describe the execution of the loops
+     starting from generic (symbolic) computation states.
+     The execution of a loop does not push a new frame,
+     because the loop executes in the frame of the enclosing C function.
+     In this case, the initial generic computation state
+     includes part of the frame of the enclosing C function;
+     the execution of the loop may add new scopes and variables,
+     so in this case the symbolic computtion state looks like")
+   (xdoc::codeblock
+    "(add-var ... (add-var ... (add-scope <compst>)...)")
+   (xdoc::p
+    "In fact, the innermost function there
+     must be @(tsee add-scope) (it cannot be @(tsee add-var)),
+     because the loops we generate have compound statements as bodies,
+     which create new scopes.")
+   (xdoc::p
+    "The initial symbolic computation state @('<compst>')
+     contains the initial part of the frame
+     of the function that contains the loop;
+     the loop extends the frame with @(tsee add-scope) and @(tsee add-var)
+     as shown above.
+     But the structure of the initial part of the frame
+     is not known in the symbolic execution for the loop itself:
+     it is just the initial @('<compst>').
+     However, the loop may access variables in that initial part of the frame:
+     the theorem generated for the loop includes hypotheses
+     saying that @(tsee read-var) applied to @('<compst>')
+     for certain variables (i.e. identifiers)
+     yields values of certain C types:
+     this way, any of these @(tsee read-var) calls
+     arising during symbolic execution match those hypotheses.
+     A loop may write to those variables:
+     in this case, the @(tsee write-var) will go through
+     all the @(tsee add-var) and @(tsee add-scope) layers shown above,
+     and reach @('<compst>'), where it is not further reducible.
+     This may happen for several different variables,
+     so the general form of our symbolic computation states is")
+   (xdoc::codeblock
+    "(add-var ... (add-scope (write-var ... (write-var ... <compst>)...)")
+   (xdoc::p
+    "Below we introduce rules to order these @(tsee write-var)s
+     according to the variables,
+     maintaining a canonical form.")
+   (xdoc::p
+    "Note that this form of the computation states
+     serves to represent side effects performed by the loop
+     on the initial computation state.
+     The same approach will be used to generate proofs for
+     more general side effects, e.g. on global variables or the heap."))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -174,7 +226,7 @@
    (xdoc::p
     "As explained in @(see atc-symbolic-computation-states),
      we use a canonical representation of computation states
-     that explicated the frames, scopes, and variables
+     that explicates the frames, scopes, and variables
      added to a starting computation state.
      Here we prove theorems expressing how
      functions like @(tsee push-frame) transform those states.")
