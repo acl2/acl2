@@ -227,17 +227,19 @@
     "As explained in @(see atc-symbolic-computation-states),
      we use a canonical representation of computation states
      that explicates the frames, scopes, and variables
-     added to a starting computation state.
+     added to a starting computation state,
+     as well as the side-effecting updates to the starting computation state.
      Here we prove theorems expressing how
-     functions like @(tsee push-frame) transform those states.")
+     functions like @(tsee push-frame) transform those computation states,
+     maintaining their canonical form.")
    (xdoc::p
     "In @(tsee exec-fun), a scope is initialized
      and a frame is pushed with that scope.
-     Here we provide theorems to turn that into a canonical representation.
+     Here we provide two theorems to turn that into a canonical representation.
      Assuming that @(tsee init-scope) is rewritten
      to a nest of @(tsee omap::update) calls
-     (which it is, because we use openers for @(tsee init-scope)),
-     the theorems below move the variables into @(tsee add-var) calls,
+     (as it is, because we use openers for @(tsee init-scope)),
+     the two theorems below move the variables into @(tsee add-var) calls,
      and finally turn @(tsee push-frame) into @(tsee add-frame).")
    (xdoc::p
     "The theorems below about @(tsee pop-frame)
@@ -245,10 +247,11 @@
      until they reach @(tsee add-frame),
      with which @(tsee pop-frame) neutralizes.")
    (xdoc::p
-    "The theorems below about @(tsee enter-scope)
-     just turn that into @(tsee add-scope) in all cases.
-     But in some cases we need the stack frame to be non-empty;
-     this is also the case for some of the theorems described below.")
+    "We provide a single theorem about @(tsee enter-scope),
+     which just turns that into @(tsee add-scope) in all cases.
+     If the computation state starts with @(tsee add-frame),
+     the hypothesis  that the stack frame is not empty is not needed;
+     but we still prefer to have just one theorem for all cases here.")
    (xdoc::p
     "The theorems below about @(tsee exit-scope)
      cancel it with @(tsee add-scope)
@@ -347,29 +350,11 @@
 
   ;; rules about ENTER-SCOPE:
 
-  (defruled enter-scope-of-add-frame
-    (equal (enter-scope (add-frame fun compst))
-           (add-scope (add-frame fun compst)))
-    :enable (enter-scope add-scope add-frame))
-
-  (defruled enter-scope-of-add-scope
+  (defruled enter-scope-of-compustate
     (implies (not (equal (compustate-frames-number compst) 0))
-             (equal (enter-scope (add-scope compst))
-                    (add-scope (add-scope compst))))
-    :enable (enter-scope
-             add-scope
-             push-frame
-             compustate-frames-number))
-
-  (defruled enter-scope-of-add-var
-    (implies (not (equal (compustate-frames-number compst) 0))
-             (equal (enter-scope (add-var var val compst))
-                    (add-scope (add-var var val compst))))
-    :enable (enter-scope
-             add-scope
-             add-var
-             push-frame
-             compustate-frames-number))
+             (equal (enter-scope compst)
+                    (add-scope compst)))
+    :enable (enter-scope add-scope))
 
   ;; rules about EXIT-SCOPE:
 
@@ -533,9 +518,7 @@
     pop-frame-of-add-frame
     pop-frame-of-add-scope
     pop-frame-of-add-var
-    enter-scope-of-add-frame
-    enter-scope-of-add-scope
-    enter-scope-of-add-var
+    enter-scope-of-compustate
     exit-scope-of-add-scope
     exit-scope-of-add-var
     create-var-of-add-frame
