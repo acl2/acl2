@@ -226,27 +226,40 @@
 ;;; parse-descriptor-chars
 ;;;
 
-;; Attempt to parse the CHARS as a single descriptor.  Returns the parsed descriptor.  Can throw an error.
+;; Attempt to parse the CHARS as a single descriptor.
+;; Returns (mv erp parsed-descriptor).  Can throw an error.
 (defund parse-descriptor-chars (chars)
   (declare (xargs :guard (character-listp chars)))
   (mv-let (parsed-descriptor remaining-chars)
     (parse-descriptor-from-front chars)
     (if (not parsed-descriptor)
         (prog2$ (er hard? 'parse-descriptor-chars "Failed to parse a descriptor from ~X01." chars nil)
-                nil)
+                (mv :failed-to-parse-descriptor nil))
       (if (consp remaining-chars)
           (prog2$ (er hard? 'parse-descriptor-chars "Extra chars found after descriptor in ~X01." chars nil)
-                  nil)
-        parsed-descriptor))))
+                  (mv :extra-chars-after-descriptor nil))
+        (mv nil ; no error
+            parsed-descriptor)))))
+
+(defthm typep-of-mv-nth-1-of-parse-descriptor-chars
+  (implies (not (mv-nth 0 (jvm::parse-descriptor-chars chars)))
+           (jvm::typep (mv-nth 1 (jvm::parse-descriptor-chars chars))))
+  :hints (("Goal" :in-theory (enable jvm::parse-descriptor-chars))))
 
 ;;;
 ;;; parse-descriptor
 ;;;
 
-;; Returns the parsed descriptor.  Can throw an error.
+;; Returns (mv erp parsed-descriptor).
+;; Can throw an error.
 (defund parse-descriptor (str)
   (declare (xargs :guard (stringp str)))
   (parse-descriptor-chars (coerce str 'list)))
+
+(defthm typep-of-mv-nth-1-of-parse-descriptor
+  (implies (not (mv-nth 0 (jvm::parse-descriptor str)))
+           (jvm::typep (mv-nth 1 (jvm::parse-descriptor str))))
+  :hints (("Goal" :in-theory (enable jvm::parse-descriptor))))
 
 ;;;
 ;;; descriptor-charsp
