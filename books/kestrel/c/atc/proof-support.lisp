@@ -319,7 +319,7 @@
      with a @(tsee write-var) for the same variable.
      The fifth theorem is used to arrange a nest of @(tsee write-var)s
      in alphabetical order of the variable names:
-     it swaps two @(tsee write-vars) when the outer one
+     it swaps two @(tsee write-var)s when the outer one
      has an larger variable than the inner one.
      Note that we need to disable loop stoppers for this rule,
      otherwise ACL2 may not apply it based on the written value terms,
