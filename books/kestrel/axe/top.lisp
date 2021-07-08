@@ -154,6 +154,7 @@
 (include-book "node-replacement-alist")
 (include-book "node-replacement-array2")
 (include-book "node-replacement-array")
+(include-book "nodenum-type-alists")
 (include-book "numeric-lists")
 (include-book "packbv-axe")
 (include-book "print-constant")
