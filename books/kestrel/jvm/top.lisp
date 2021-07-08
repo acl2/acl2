@@ -38,3 +38,4 @@
 (include-book "arrays0")
 (include-book "array-building")
 (include-book "arrays")
+(include-book "arrays-2d")
