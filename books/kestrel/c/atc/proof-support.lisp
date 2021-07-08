@@ -245,7 +245,11 @@
     "The theorems below about @(tsee pop-frame)
      remove all the @(tsee add-var) and @(tsee add-scope) calls
      until they reach @(tsee add-frame),
-     with which @(tsee pop-frame) neutralizes.")
+     with which @(tsee pop-frame) neutralizes.
+     No rules are needed for
+     computation states that start with @(tsee write-var)
+     because these only occur when executing loops,
+     which do not pop frames.")
    (xdoc::p
     "We provide a single theorem about @(tsee enter-scope),
      which just turns that into @(tsee add-scope) in all cases.
@@ -257,7 +261,9 @@
      cancel it with @(tsee add-scope)
      and move it past @(tsee add-var).
      No rule for @(tsee add-frame) is needed
-     because that case should never happen in the symbolic execution.")
+     because that case should never happen in the symbolic execution.
+     No rule is needed for computation states that start with @(tsee write-var)
+     because @(tsee write-var) is always pushed past @(tsee add-scope).")
    (xdoc::p
     "The theorems below about @(tsee create-var)
      turn that into @(tsee add-var)
@@ -271,7 +277,16 @@
      But this may be inefficient, because it means that
      we are pushing @(tsee create-var)
      into the layers of the computation state repeatedly.
-     We will look into making this more efficient.")
+     We will look into making this more efficient.
+     The reason for skipping over @(tsee add-var)s with different names
+     is to exclude the case of a variable redefinition:
+     attempting to prove a theorem
+     that simply replaces @(tsee create-var) with @(tsee add-var),
+     similarly to the theorem that
+     turns @(tsee enter-scope) into @(tsee add-scope),
+     fails because of the possibility of a redefined variable.
+     There is no rule for @(tsee create-var) applied to @(tsee write-var),
+     because @(tsee write-var)s are always pushed past @(tsee add-scope).")
    (xdoc::p
     "The theorems below about @(tsee read-var) are a bit different
      because @(tsee read-var) does not return a state, but a value instead.
