@@ -701,6 +701,9 @@
     write-var-of-add-scope
     write-var-of-add-var-same
     write-var-of-add-var-diff
+    write-var-of-write-var-same
+    write-var-of-write-var-less
+    write-var-of-read-var-same
     compustate-frames-number-of-add-frame
     compustate-frames-number-of-add-scope
     compustate-frames-number-of-add-var
