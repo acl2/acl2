@@ -36,3 +36,5 @@
 (include-book "strings")
 (include-book "intern-table")
 (include-book "arrays0")
+(include-book "array-building")
+(include-book "arrays")
