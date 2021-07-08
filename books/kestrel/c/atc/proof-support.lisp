@@ -327,7 +327,10 @@
      based on alphabetical order.
      Note the @(tsee syntaxp) hypotheses
      that require the identifiers (i.e. variable names)
-     to have the form described in @(see atc-identifier-rules).")
+     to have the form described in @(see atc-identifier-rules).
+     Finally, the sixth theorem serves to simplify the case in which
+     a variable is written with its current value;
+     this case may occur when proving the base case of a loop.")
    (xdoc::p
     "The theorems below about @(tsee compustate-frames-number)
      serve to discharge the hypotheses about it being not 0
@@ -608,6 +611,37 @@
         (defruled lemma
           (implies (<< a b)
                    (not (equal a b))))))))
+
+  (defruled write-var-of-read-var-same
+    (implies (not (errorp (read-var var compst)))
+             (equal (write-var var (read-var var compst) compst)
+                    (compustate-fix compst)))
+    :enable (read-var
+             write-var
+             write-var-aux-of-read-var-aux-same
+             top-frame
+             push-frame
+             pop-frame
+             compustate-frames-number)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (scope-listp x)
+                (not (errorp x)))
+       :enable errorp)
+     (defruled write-var-aux-of-read-var-aux-same
+       (implies (not (errorp (read-var-aux var scopes)))
+                (equal (write-var-aux var (read-var-aux var scopes) scopes)
+                       (scope-list-fix scopes)))
+       :enable (read-var-aux
+                write-var-aux
+                omap::update-of-cdr-of-in-when-in)
+       :prep-lemmas
+       ((defruled omap::update-of-cdr-of-in-when-in
+          (implies (consp (omap::in k m))
+                   (equal (omap::update k (cdr (omap::in k m)) m)
+                          m))
+          :induct (omap::in k m)
+          :enable omap::in)))))
 
   ;; rules about COMPUSTATE-FRAMES-NUMBER:
 
