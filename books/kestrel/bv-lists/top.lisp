@@ -40,6 +40,7 @@
 (include-book "bits-and-bytes-inversions-little")
 
 (include-book "bvxor-list")
+(include-book "bvxor-list-rules")
 (include-book "bvnot-list")
 (include-book "bvchop-list")
 (include-book "getbit-list")

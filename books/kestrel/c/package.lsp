@@ -54,6 +54,7 @@
                maybe-pseudo-event-formp
                mbt$
                msg-listp
+               mv-nth-of-cons
                nat
                pos-listp
                pseudo-event-form-listp
