@@ -324,7 +324,10 @@
      Note that we need to disable loop stoppers for this rule,
      otherwise ACL2 may not apply it based on the written value terms,
      which are irrelevant to this normalization
-     based on alphabetical order.")
+     based on alphabetical order.
+     Note the @(tsee syntaxp) hypotheses
+     that require the identifiers (i.e. variable names)
+     to have the form described in @(see atc-identifier-rules).")
    (xdoc::p
     "The theorems below about @(tsee compustate-frames-number)
      serve to discharge the hypotheses about it being not 0
