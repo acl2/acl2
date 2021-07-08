@@ -976,20 +976,7 @@
    (xdoc::p
     "These are in addition to the ones in @(tsee *atc-abstract-syntax-rules*).
      More rules may be moved from here to there at some point,
-     or moved from here to more specific categories.")
-   (xdoc::p
-    "
-During symbolic execution, some data is constant,
-     especially the C abstract sytactic entities being executed.
-     In the course of the symbolic execution,
-     terms appear with functions applied to quoted constants.
-     Those can be simplified via the executable counterparts of such functions.
-     We collect all such rules here.
-     Many of them are fixtype deconstructors;
-     there are also some fixers and some constructors.
-     The one for @(tsee zp) serves when testing the limit value,
-     which is a (large) constant.
-     This list may not be exhaustive; we may add more as needed."))
+     or moved from here to more specific categories."))
   '((:e binop-fix)
     (:e booleanp)
     (:e expr-fix)
@@ -1034,7 +1021,8 @@ During symbolic execution, some data is constant,
     (:e valuep)
     (:e value-list-fix)
     (:e value-listp)
-    (:e zp)))
+    (:e zp)
+    (:e <<)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1993,6 +1981,8 @@ During symbolic execution, some data is constant,
     compustatep-of-add-frame
     compustatep-of-add-scope
     compustatep-of-add-var
+    compustatep-when-compustate-resultp-and-not-errorp
+    compustate-resultp-of-write-var
     heap-fix-when-heapp
     heapp-of-compustate->heap
     mv-nth-of-cons
