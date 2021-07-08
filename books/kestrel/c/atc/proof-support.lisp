@@ -342,7 +342,17 @@
    (xdoc::p
     "The theorems below about @(tsee deref)
      applied to the heap component of the computation state
-     skip over all the added frames, scopes, and variables."))
+     skip over all the added frames, scopes, and variables.
+     We also skip over the side-effected @(tsee write-var) variables.")
+   (xdoc::p
+    "The theorem about @(tsee errorp) applied to @(tsee write-var)
+     serves to discharge the hypotheses about that in some of the other rules.
+     During symbolic execution, there will be hypotheses saying that
+     reading the variable in question does not return an error:
+     so we have that hypothesis in the rule.
+     The rule reduces the fact that @(tsee write-var) is an error
+     to the non-equality of the types of the values,
+     which will always be equal during symbolic execution by construction."))
 
   ;; rules about PUSH-FRAME:
 
@@ -689,7 +699,40 @@
            (deref ptr (compustate->heap compst)))
     :enable (add-var
              push-frame
-             pop-frame)))
+             pop-frame))
+
+  (defruled deref-of-heap-of-write-var
+    (implies (not (errorp (write-var var val compst)))
+             (equal (deref ptr (compustate->heap (write-var var val compst)))
+                    (deref ptr (compustate->heap compst))))
+    :enable (write-var
+             push-frame
+             pop-frame))
+
+  ;; rules about WRITE-VAR being an error:
+
+  (defruled errorp-of-write-var-when-not-errorp-of-read-var
+    (implies (not (errorp (read-var var compst)))
+             (equal (errorp (write-var var val compst))
+                    (not (equal (type-of-value val)
+                                (type-of-value (read-var var compst))))))
+    :enable (read-var
+             write-var
+             errorp-of-write-var-aux-when-not-errorp-of-read-var-aux)
+    :prep-lemmas
+    ((defruled errorp-of-write-var-aux-when-not-errorp-of-read-var-aux
+       (implies (not (errorp (read-var-aux var scopes)))
+                (equal (errorp (write-var-aux var val scopes))
+                       (not (equal (type-of-value val)
+                                   (type-of-value (read-var-aux var scopes))))))
+       :enable (read-var-aux
+                write-var-aux
+                scope-listp-when-scope-list-resultp-and-not-errorp)
+       :prep-lemmas
+       ((defrule lemma
+          (implies (scope-listp x)
+                   (not (errorp x)))
+          :enable errorp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -721,7 +764,9 @@
     compustate-frames-number-of-write-var-when-not-errorp
     deref-of-heap-of-add-frame
     deref-of-heap-of-add-scope
-    deref-of-heap-of-add-var))
+    deref-of-heap-of-add-var
+    deref-of-heap-of-write-var
+    errorp-of-write-var-when-not-errorp-of-read-var))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
