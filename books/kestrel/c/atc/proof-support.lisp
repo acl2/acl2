@@ -569,13 +569,7 @@
     :rule-classes ((:rewrite :loop-stopper nil))
     :prep-lemmas
     ((defruled write-var-aux-of-write-var-aux-less
-       (implies (and (syntaxp (and (consp var2)
-                                   (eq (car var2) 'ident)
-                                   (quotep (cadr var2))))
-                     (syntaxp (and (consp var)
-                                   (eq (car var) 'ident)
-                                   (quotep (cadr var))))
-                     (not (errorp (write-var-aux var val scopes)))
+       (implies (and (not (errorp (write-var-aux var val scopes)))
                      (not (errorp (write-var-aux var2 val2 scopes)))
                      (<< (ident-fix var2)
                          (ident-fix var)))
