@@ -295,7 +295,13 @@
      either returns the value of the encountered variable or skips over it,
      based on whether the names coincide or not.
      There is no theorem for @(tsee add-frame) because this situation
-     should never happen during the symbolic execution.")
+     should never happen during the symbolic execution.
+     The third theorem serves for variables read in loops
+     that are declared outside the scope of the loop,
+     i.e. that are represented as @(tsee write-var)s:
+     if the two variables are the same, the value is returned;
+     otherwise, we skip over the @(tsee write-var)
+     in search for the variable.")
    (xdoc::p
     "The theorems below about @(tsee write-var)
      have some analogies to the ones for @(tsee create-var),
@@ -436,6 +442,31 @@
              top-frame)
     :disable omap::in-when-in-tail)
 
+  (defruled read-var-of-write-var
+    (implies (not (errorp (write-var var2 val compst)))
+             (equal (read-var var (write-var var2 val compst))
+                    (if (equal (ident-fix var)
+                               (ident-fix var2))
+                        (value-fix val)
+                      (read-var var compst))))
+    :enable (read-var
+             write-var
+             push-frame
+             top-frame
+             compustate-frames-number
+             read-var-aux-of-write-var-aux)
+    :prep-lemmas
+    ((defruled read-var-aux-of-write-var-aux
+       (implies (not (errorp (write-var-aux var2 val scopes)))
+                (equal (read-var-aux var (write-var-aux var2 val scopes))
+                       (if (equal (ident-fix var)
+                                  (ident-fix var2))
+                           (value-fix val)
+                         (read-var-aux var scopes))))
+       :enable (read-var-aux
+                write-var-aux)
+       :disable omap::in-when-in-tail)))
+
   ;; rules about WRITE-VAR:
 
   (defruled write-var-of-add-scope
@@ -541,6 +572,7 @@
     create-var-of-add-var
     read-var-of-add-scope
     read-var-of-add-var
+    read-var-of-write-var
     write-var-of-add-scope
     write-var-of-add-var-same
     write-var-of-add-var-diff
