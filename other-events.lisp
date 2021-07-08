@@ -20963,7 +20963,7 @@
                        (cons 'defabsstobj
                              (make defstobj-redundant-raw-lisp-discriminator-value
                                    :event ',event-form
-                                   :creator ',creator
+                                   :creator ',creator-name
                                    :congruent-stobj-rep ',congruent-stobj-rep
                                    :non-memoizable
                                    ',(non-memoizable-stobj-raw st$c)

@@ -65,7 +65,9 @@
                              (mv (cons fn args) ;; Return the ground term unevaluated
                                  nil ; no free vars since it's a ground term (even though we couldn't evaluate it)
                                  ))
-                          (mv (enquote res)
+                          (mv (if (eq res t)
+                                  *t* ;saves a cons in this common case
+                                (enquote res))
                               nil ; no free vars
                               )))
                     ;; The term has free vars iff the args did:

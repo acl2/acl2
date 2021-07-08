@@ -614,11 +614,17 @@ book that depends on Glucose being installed.</p>")
 ; below against the empty string (or nil) instead, and users who want
 ; TAGS-acl2-doc could explicitly set TAGS_ACL2_DOC if they want the tags table.
 
+; Commenting out the following since it is already in top.lisp, to avoid
+; potential problem from concurrent runs of ../../bin/make-tags-acl2-doc.sh.
+
+#||
  :script-file
  (and (not (equal *tags-acl2-doc* "SKIP")) ; e.g., for build server
       (extend-pathname (cbd)
                        "../../bin/make-tags-acl2-doc.sh"
-                       state)) )
+                       state))
+||#
+ )
 ) ; end encapsulate
 
 (local

@@ -10,7 +10,7 @@
 
 (in-package "PFCS")
 
-(include-book "semantics")
+(include-book "semantics-shallow")
 
 (include-book "std/util/defrule" :dir :system)
 
@@ -22,7 +22,8 @@
 ; They may be moved to the Zcash library at some point.
 
 ; Each example defines a PFCS named relation
-; and proves it equivalence with an ACL2 specification.
+; and proves its equivalence with an ACL2 specification,
+; using the PFCS shallowly embedded semantics.
 
 ; These are simple examples for now,
 ; but they should demonstrate how PFCS can support

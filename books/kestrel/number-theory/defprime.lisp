@@ -33,6 +33,7 @@
                      pratt-cert
                      existing-prime-name ;; nil, of the name of existing prime (created using defprime) equal to this prime
                      evisc
+                     doc
                      parents
                      short
                      long
@@ -45,11 +46,15 @@
                                   (eq :none pratt-cert)
                                 (true-listp pratt-cert)) ;; todo: strengthen?
                               (booleanp evisc)
-                              (or (eq :auto parents)
+                              (booleanp doc)
+                              (or (eq nil parents)
+                                  (eq :auto parents)
                                   (symbol-listp parents))
-                              (or (eq :auto short)
+                              (or (eq nil short)
+                                  (eq :auto short)
                                   (stringp short))
-                              (or (eq :auto long)
+                              (or (eq nil long)
+                                  (eq :auto long)
                                   (stringp long))
                               (symbolp existing-prime-name) ; may be nil, for none
                               (plist-worldp wrld))))
@@ -64,18 +69,28 @@
                  number))
        ((when (not (natp number)))
         (er hard? 'defprime "Bad value for existing prime: ~x0." number))
+       ((when (and (not doc) (or (not (eq :auto parents))
+                                 (not (eq :auto short))
+                                 (not (eq :auto long)))))
+        (er hard? 'defprime "Since the :doc argument is nil, :parents, :short, and :long should not be supplied." existing-prime-name))
        (defconst-name (acl2::pack-in-package-of-symbol name '* name '*))
        (pratt-cert-defconst-name (acl2::pack-in-package-of-symbol name '* name '-pratt-cert*))
-       (parents (if (eq :auto parents)
-                    (list 'acl2::number-theory) ;todo: use something better here, perhaps acl2::primes?
-                  parents))
-       (short (if (eq :auto short)
-                  "A prime defined by @(tsee defprime)."
-                short))
-       (long (if (eq :auto long)
-                 ;; Default :long documentation:
-                 (concatenate 'string "<p>The value of " (acl2::string-downcase-gen (symbol-name name)) " is " (acl2::nat-to-string number) ".</p>")
-               long)))
+       (parents (if (eq nil parents)
+                    nil ; suppress :parents (defxdoc puts in the default parents?)
+                  (if (eq :auto parents)
+                      '(:parents (acl2::number-theory)) ;todo: use something better here, perhaps acl2::primes?
+                    `(:parents ,parents))))
+       (short (if (eq nil short)
+                  nil ; suppress :short doc
+                (if (eq :auto short)
+                    '(:short "A prime defined by @(tsee defprime).")
+                  `(:short ,short))))
+       (long (if (eq nil long)
+                 nil ; suppress :long doc
+               (if (eq :auto long)
+                   ;; Default :long documentation:
+                   `(:long ,(concatenate 'string "<p>The value of " (acl2::string-downcase-gen (symbol-name name)) " is " (acl2::nat-to-string number) ".</p>"))
+                 `(:long ,long)))))
     `(encapsulate ()
 
        ,@(and (not existing-prime-name)
@@ -155,7 +170,7 @@
        ,@(and (not existing-prime-name)
               `((acl2::add-io-pairs (((rtl::primep (,name)) t)))))
 
-       (defxdoc ,name :parents ,parents :short ,short :long ,long)
+       ,@(and doc `((defxdoc ,name ,@parents ,@short ,@long)))
 
        ;; record the prime in the table of primes
        (table defprime-table ',name ,number))))
@@ -167,9 +182,10 @@
                                   (evisc 't)
                                   (parents ':auto)
                                   (short ':auto)
-                                  (long ':auto))
+                                  (long ':auto)
+                                  (doc 't))
   `(make-event (defprime-fn ',name ',number ',pratt-cert nil ',evisc
-                 ',parents ,short ,long
+                 ,doc ',parents ,short ,long
                  (w state)))
   :parents (acl2::number-theory)
   :short "Introduce a prime and related machinery."
@@ -177,37 +193,41 @@
            number "Numeric value of the prime, a natural number."
            pratt-cert "Pratt certificate for the prime."
            :evisc "Whether to print occurrences of the prime using its symbolic name."
+           :doc "Whether to generate xdoc for the prime."
            :parents "Xdoc :parents for the prime."
            :short "Xdoc :short description for the prime."
            :long "Xdoc :long section for the prime.")
   :long (xdoc::topstring
          (xdoc::p "Defprime generates, for a prime named FOO:")
-         (xdoc::ul "A constant, *FOO*, representing the prime."
-                   "A theorem that *FOO* is prime."
-                   "A 0-ary function, FOO, representing the prime.  This is disabled but its :executable-counterpart is not (disable the :executable-counterpart to prevent execution during proofs)."
-                   "A theorem that the function FOO always returns a prime."
-                   "A :linear rule stating that the function FOO is equal to the prime (i.e., its integer value)."
-                   "A utility, eviscerate-FOO, to cause the prime to be printed using a symbolic name.  This is in turn invoked by defprime to turn on evisceration, unless the :evisc argument is nil."
-                   "A utility, uneviscerate-FOO, to turn off the evisceration mentioned just above."
-                   "A constant, *FOO-pratt-cert*, for the Pratt certificate supplied for FOO."
-                   "A @(tsee defxdoc) form for the prime, using the supplied :short, :long, and :parents, or suitable defaults for each."
-                   "A call of @(tsee acl2::add-io-pairs) to cause rtl::primep to be fast when called on the prime."
-                   "A @(tsee table) event that records the call of defprime.")))
+         (xdoc::ul
+           (xdoc::li "A constant, *FOO*, representing the prime.")
+           (xdoc::li "A theorem that *FOO* is prime.")
+           (xdoc::li "A 0-ary function, FOO, representing the prime.  This is disabled but its :executable-counterpart is not (disable the :executable-counterpart to prevent execution during proofs).")
+           (xdoc::li "A theorem that the function FOO always returns a prime.")
+           (xdoc::li "A :linear rule stating that the function FOO is equal to the prime (i.e., its integer value).")
+           (xdoc::li "A utility, eviscerate-FOO, to cause the prime to be printed using a symbolic name.  This is in turn invoked by defprime to turn on evisceration, unless the :evisc argument is nil.")
+           (xdoc::li "A utility, uneviscerate-FOO, to turn off the evisceration mentioned just above.")
+           (xdoc::li "A constant, *FOO-pratt-cert*, for the Pratt certificate supplied for FOO.")
+           (xdoc::li "A @(tsee defxdoc) form for the prime, using the supplied :short, :long, and :parents, or suitable defaults for each.")
+           (xdoc::li "A call of @(tsee acl2::add-io-pairs) to cause rtl::primep to be fast when called on the prime.")
+           (xdoc::li "A @(tsee table) event that records the call of defprime."))))
 
 ;; Variant of defprime that defines a prime that is numerically equal to an existng prime.
 (acl2::defmacrodoc defprime-alias (name existing-prime-name &key
                                         (evisc 't)
                                         (parents ':auto)
                                         (short ':auto)
-                                        (long ':auto))
+                                        (long ':auto)
+                                        (doc 't))
   `(make-event (defprime-fn ',name ',:none ':none ',existing-prime-name ',evisc
-                 ',parents ,short ,long
+                 ,doc ',parents ,short ,long
                  (w state)))
   :parents (acl2::number-theory)
   :short "Introduce an alias of an existing prime introduced with defprime."
   :inputs (name "Name of the prime to introduce, a symbol."
            existing-prime-name "Name of the existing prime, a symbol."
            :evisc "Whether to print occurrences of the prime using its symbolic name."
+           :doc "Whether to generate xdoc for the prime."
            :parents "Xdoc :parents for the prime."
            :short "Xdoc :short description for the prime."
            :long "Xdoc :long section for the prime.")
