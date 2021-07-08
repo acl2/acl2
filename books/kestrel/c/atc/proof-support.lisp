@@ -310,11 +310,21 @@
      but has the same kind of possibly inefficient hypothesis
      discussed above for @(tsee create-var).
      There is no rule for @(tsee add-frame) because that should not happen.
-     The other two theorems are for @(tsee add-var),
-     when the variable names are the same or are different.
-     When they are the same, the value in the @(tsee add-var) is replaced.
-     When the names differ, we skip over the @(tsee add-var),
-     but again we have the potentially inefficient hypothesis discussed.")
+     The second and third theorems are for @(tsee add-var),
+     when the variable names are the same or are different:
+     when they are the same, the value in the @(tsee add-var) is replaced;
+     when the names differ, we skip over the @(tsee add-var),
+     but again we have the potentially inefficient hypothesis discussed.
+     The fourth theorem overwrites a @(tsee write-var)
+     with a @(tsee write-var) for the same variable.
+     The fifth theorem is used to arrange a nest of @(tsee write-var)s
+     in alphabetical order of the variable names:
+     it swaps two @(tsee write-vars) when the outer one
+     has an larger variable than the inner one.
+     Note that we need to disable loop stoppers for this rule,
+     otherwise ACL2 may not apply it based on the written value terms,
+     which are irrelevant to this normalization
+     based on alphabetical order.")
    (xdoc::p
     "The theorems below about @(tsee compustate-frames-number)
      serve to discharge the hypotheses about it being not 0
@@ -517,6 +527,90 @@
              compustate-frames-number
              errorp
              error))
+
+  (defruled write-var-of-write-var-same
+    (implies (not (errorp (write-var var val2 compst)))
+             (equal (write-var var val (write-var var val2 compst))
+                    (write-var var val compst)))
+    :enable (write-var
+             write-var-aux-of-write-var-aux-same
+             push-frame
+             pop-frame
+             top-frame
+             compustate-frames-number)
+    :prep-lemmas
+    ((defruled write-var-aux-of-write-var-aux-same
+       (implies (not (errorp (write-var-aux var val2 scopes)))
+                (equal (write-var-aux var val (write-var-aux var val2 scopes))
+                       (write-var-aux var val scopes)))
+       :enable write-var-aux)))
+
+  (defruled write-var-of-write-var-less
+    (implies (and (syntaxp (and (consp var2)
+                                (eq (car var2) 'ident)
+                                (quotep (cadr var2))))
+                  (syntaxp (and (consp var)
+                                (eq (car var) 'ident)
+                                (quotep (cadr var))))
+                  (<< (ident-fix var2)
+                      (ident-fix var))
+                  (not (equal (compustate-frames-number compst) 0))
+                  (not (errorp (write-var var val compst)))
+                  (not (errorp (write-var var2 val2 compst))))
+             (equal (write-var var val (write-var var2 val2 compst))
+                    (write-var var2 val2 (write-var var val compst))))
+    :enable (write-var
+             push-frame
+             pop-frame
+             top-frame
+             compustate-frames-number)
+    :use (:instance write-var-aux-of-write-var-aux-less
+          (scopes (frame->scopes (top-frame compst))))
+    :rule-classes ((:rewrite :loop-stopper nil))
+    :prep-lemmas
+    ((defruled write-var-aux-of-write-var-aux-less
+       (implies (and (syntaxp (and (consp var2)
+                                   (eq (car var2) 'ident)
+                                   (quotep (cadr var2))))
+                     (syntaxp (and (consp var)
+                                   (eq (car var) 'ident)
+                                   (quotep (cadr var))))
+                     (not (errorp (write-var-aux var val scopes)))
+                     (not (errorp (write-var-aux var2 val2 scopes)))
+                     (<< (ident-fix var2)
+                         (ident-fix var)))
+                (equal (write-var-aux var
+                                      val
+                                      (write-var-aux var2
+                                                     val2
+                                                     scopes))
+                       (write-var-aux var2
+                                      val2
+                                      (write-var-aux var
+                                                     val
+                                                     scopes))))
+       :use (:instance lemma (a (ident-fix var2)) (b (ident-fix var)))
+       :prep-lemmas
+       ((defrule write-var-aux-of-write-var-aux-diff
+          (implies (and (not (errorp (write-var-aux var val scopes)))
+                        (not (errorp (write-var-aux var2 val2 scopes)))
+                        (not (equal (ident-fix var2)
+                                    (ident-fix var))))
+                   (equal (write-var-aux var
+                                         val
+                                         (write-var-aux var2
+                                                        val2
+                                                        scopes))
+                          (write-var-aux var2
+                                         val2
+                                         (write-var-aux var
+                                                        val
+                                                        scopes))))
+          :enable (write-var-aux
+                   scope-listp-when-scope-list-resultp-and-not-errorp))
+        (defruled lemma
+          (implies (<< a b)
+                   (not (equal a b))))))))
 
   ;; rules about COMPUSTATE-FRAMES-NUMBER:
 
