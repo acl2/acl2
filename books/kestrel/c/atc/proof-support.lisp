@@ -647,7 +647,7 @@
 
   ;; rules about COMPUSTATE-FRAMES-NUMBER:
 
-  (defruled compustate-frames-number-of-add-frame
+  (defruled compustate-frames-number-of-add-frame-not-zero
     (not (equal (compustate-frames-number (add-frame fun compst)) 0))
     :enable add-frame)
 
@@ -715,7 +715,7 @@
     write-var-of-write-var-same
     write-var-of-write-var-less
     write-var-of-read-var-same
-    compustate-frames-number-of-add-frame
+    compustate-frames-number-of-add-frame-not-zero
     compustate-frames-number-of-add-scope
     compustate-frames-number-of-add-var
     compustate-frames-number-of-write-var-when-not-errorp
