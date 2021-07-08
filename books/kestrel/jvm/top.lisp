@@ -35,3 +35,4 @@
 (include-book "int-subtypes")
 (include-book "strings")
 (include-book "intern-table")
+(include-book "arrays0")
