@@ -333,14 +333,6 @@
                               acl2::equal-of-0-and-mod
                               acl2::integerp-of-*-three))))
 
-(defthm neg-of-add
-  (equal (neg (add x y p) p)
-         (add (neg x p)
-              (neg y p)
-              p))
-  :hints (("Goal" :do-not '(preprocess)
-           :in-theory (enable neg add sub mul acl2::mod-sum-cases))))
-
 ;move
 ;gen
 (defthm mod-of-expt-of-mod
