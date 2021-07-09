@@ -361,3 +361,16 @@
   (implies (not (equal nil v)) ;phrasing is for axe (TODO: can we just say v?)
            (equal (rkeys (s a v r))
                   (set::insert a (rkeys r)))))
+
+;will this loop?
+(defthm s-of-s-same-val
+  (implies t ;(syntaxp (smaller-termp a2 a1))
+           (equal (s key val (s key2 val r))
+                  (s key2 val (s key val r))))
+  :hints (("Goal" :cases ((equal key key2)))))
+
+;expensive?
+(defthm s-same-g-strong
+  (implies (equal v (g a r))
+           (equal (s a v r)
+                  r)))

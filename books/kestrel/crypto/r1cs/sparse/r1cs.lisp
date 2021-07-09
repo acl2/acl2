@@ -106,14 +106,18 @@
   :rule-classes :forward-chaining
     :hints (("Goal" :in-theory (enable sparse-vectorp))))
 
-;; Check that each pseudo-var is either 1 or an element of ALLOWED-VARS.  Also
-;; checks that no pseudo-var appears in more than one entry in VEC.
+;; Checks that each pseudo-var is either 1 or an element of ALLOWED-VARS.
 ;; Previously, this checked that coefficients are field elements, but we
 ;; decided to relax that check to allow coefficients like -1.
-(defund good-sparse-vectorp-aux (vec allowed-vars seen-pseudo-vars)
+;; Previously, this checked that no pseudo-var appeared more than once, but
+;; we decided to drop that check since it was often violated in practice.
+;; TODO: Add a lint-like check for repeated r1cs pseudo-vars.
+(defund good-sparse-vectorp-aux (vec allowed-vars ;seen-pseudo-vars
+                                     )
   (declare (xargs :guard (and (sparse-vectorp vec)
                               (symbol-listp allowed-vars)
-                              (pseudo-var-listp seen-pseudo-vars))
+                              ;;(pseudo-var-listp seen-pseudo-vars)
+                              )
                   :guard-hints (("Goal" :in-theory (enable sparse-vectorp)))))
   (if (atom vec)
       (null vec)
@@ -122,31 +126,36 @@
            (pseudo-var (second item)))
       (and (or (eql 1 pseudo-var)
                (member-eq pseudo-var allowed-vars))
-           (not (member pseudo-var seen-pseudo-vars)) ;prevent duplicate pseudo-vars
+           ;; (not (member pseudo-var seen-pseudo-vars)) ;prevent duplicate pseudo-vars
            (good-sparse-vectorp-aux (rest vec)
                                     allowed-vars
-                                    (cons pseudo-var seen-pseudo-vars))))))
+                                    ;;(cons pseudo-var seen-pseudo-vars)
+                                    )))))
 
 (defthm good-sparse-vectorp-aux-of-nil
-  (good-sparse-vectorp-aux nil allowed-vars seen-pseudo-vars)
+  (good-sparse-vectorp-aux nil allowed-vars ;;seen-pseudo-vars
+                           )
   :hints (("Goal" :in-theory (enable good-sparse-vectorp-aux))))
 
 (defthm good-sparse-vectorp-aux-when-good-sparse-vectorp-aux-and-subsetp-equal-arg1
-  (implies (and (good-sparse-vectorp-aux vec allowed-vars2 seen-pseudo-vars)
+  (implies (and (good-sparse-vectorp-aux vec allowed-vars2 ;seen-pseudo-vars
+                                         )
                 (subsetp-equal allowed-vars2 allowed-vars))
-           (good-sparse-vectorp-aux vec allowed-vars seen-pseudo-vars))
+           (good-sparse-vectorp-aux vec allowed-vars ;seen-pseudo-vars
+                                    ))
   :hints (("Goal" :in-theory (enable good-sparse-vectorp-aux))))
 
-(defthm good-sparse-vectorp-aux-when-good-sparse-vectorp-aux-and-subsetp-equal-arg2
-  (implies (and (good-sparse-vectorp-aux vec allowed-vars seen-pseudo-vars2)
-                (subsetp-equal seen-pseudo-vars seen-pseudo-vars2))
-           (good-sparse-vectorp-aux vec allowed-vars seen-pseudo-vars))
-  :hints (("Goal" :in-theory (enable good-sparse-vectorp-aux))))
+;; (defthm good-sparse-vectorp-aux-when-good-sparse-vectorp-aux-and-subsetp-equal-arg2
+;;   (implies (and (good-sparse-vectorp-aux vec allowed-vars seen-pseudo-vars2)
+;;                 (subsetp-equal seen-pseudo-vars seen-pseudo-vars2))
+;;            (good-sparse-vectorp-aux vec allowed-vars seen-pseudo-vars))
+;;   :hints (("Goal" :in-theory (enable good-sparse-vectorp-aux))))
 
 (defund good-sparse-vectorp (vec allowed-vars)
   (declare (xargs :guard (and (sparse-vectorp vec)
                               (symbol-listp allowed-vars))))
-  (good-sparse-vectorp-aux vec allowed-vars nil))
+  (good-sparse-vectorp-aux vec allowed-vars ;; nil
+                           ))
 
 (defthm good-sparse-vectorp-when-good-sparse-vectorp-and-subsetp-equal
   (implies (and (good-sparse-vectorp vec allowed-vars1)
@@ -157,7 +166,8 @@
 (defthm good-sparse-vectorp-of-cdr
   (implies (good-sparse-vectorp vec allowed-vars)
            (good-sparse-vectorp (cdr vec) allowed-vars))
-  :hints (("Goal" :expand (good-sparse-vectorp-aux vec allowed-vars nil)
+  :hints (("Goal" :expand (good-sparse-vectorp-aux vec allowed-vars ;;nil
+                                                   )
            :in-theory (enable good-sparse-vectorp))))
 
 (defthm good-sparse-vectorp-of-nil

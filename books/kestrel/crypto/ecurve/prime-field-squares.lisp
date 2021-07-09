@@ -57,3 +57,35 @@
            (natp (pfield-square->root x p)))
   :rule-classes (:type-prescription :rewrite)
   :enable pfield-squarep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Odd and even square roots.
+
+(define-sk pfield-odd-squarep (x p)
+  :guard (and (integerp p) (fep x p))
+  :returns (yes/no booleanp)
+  :parents (elliptic-curves)
+  :short "Check if a prime field element is a square of an odd field element."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Same as pfield-squarep except restricts the root to be odd."))
+  (exists (r) (and (fep r p)
+                   (oddp r)
+                   (equal (mul r r p) x)))
+  :skolem-name pfield-square->odd-root)
+
+(define-sk pfield-even-squarep (x p)
+  :guard (and (integerp p) (fep x p))
+  :returns (yes/no booleanp)
+  :parents (elliptic-curves)
+  :short "Check if a prime field element is a square of an even field element."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Same as pfield-squarep except restricts the root to be even."))
+  (exists (r) (and (fep r p)
+                   (evenp r)
+                   (equal (mul r r p) x)))
+  :skolem-name pfield-square->even-root)
