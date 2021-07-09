@@ -12,7 +12,7 @@
 (in-package "JVM")
 
 (include-book "misc/records" :dir :system)
-(include-book "kestrel/jvm/class-tables" :dir :system)
+(include-book "class-tables")
 
 ;; An alternative to using a nest of many calls to S when there are many classes
 
