@@ -11,6 +11,7 @@
 (in-package "PFIELD")
 
 (include-book "prime-fields")
+(include-book "../arithmetic-light/ifix") ; since some rules introduce ifix
 (local (include-book "support"))
 (local (include-book "../number-theory/divides"))
 (local (include-book "../arithmetic-light/times"))
