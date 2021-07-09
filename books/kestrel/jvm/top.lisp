@@ -41,3 +41,4 @@
 (include-book "arrays-2d")
 (include-book "float-to-bits")
 ;; (include-book "floats2") ; name clash on java-floatp
+(include-book "locals")
