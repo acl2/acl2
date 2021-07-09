@@ -2846,7 +2846,23 @@
      So we add the rule" (xdoc::@def "mv-nth-of-cons") " to the theory,
      in order to simplify those terms.
      We also enable the executable counterpart of @(tsee zp)
-     to simplify the test in the right-hand side of that rule."))
+     to simplify the test in the right-hand side of that rule.")
+   (xdoc::p
+    "We also generate conjuncts saying that the results are not @('nil').
+     Without this, some proofs fail with a subgoal saying that
+     a function result is @('nil'), which is false.
+     This seems to happen only with functions returning multiple results,
+     where the results in question have the form @('(mv-nth ...)');
+     perhaps single results are taken care by ACL2's tau system.
+     So we generate these non-@('nil') theorems only for multiple results.
+     These theorems have to be rewrite rules:
+     with type prescription rules,
+     the example theorems mentioned above still fail.
+     To prove these non-@('nil') theorems,
+     it seems sufficient to enable
+     the executable counterparts of the integer value recognizers;
+     the subgoals that arise without them have the form
+     @('(<recognizer> nil)')."))
   (b* ((wrld (w state))
        ((when (not proofs))
         (acl2::value (list nil nil names-to-avoid)))
@@ -2854,9 +2870,9 @@
        (types2 (atc-gen-fn-returns-value-thm-aux1 xforming scope))
        (types (append types1 types2))
        ((unless (consp types))
-        (prog2$ (raise "Internal error: the function ~x0 has no return types."
-                       fn)
-                (acl2::value (list nil nil names-to-avoid))))
+        (prog2$
+         (raise "Internal error: the function ~x0 has no return types." fn)
+         (acl2::value (list nil nil names-to-avoid))))
        ((unless (type-integer-listp types))
         (er-soft+ ctx t (list nil nil names-to-avoid)
                   "The function ~x0 returns results of types ~x1, ~
@@ -2905,7 +2921,17 @@
                     sintp-of-sint-from-boolean
                     ucharp-of-uchar-array-read-sint
                     mv-nth-of-cons
-                    (:e zp))))
+                    (:e zp)
+                    (:e ucharp)
+                    (:e scharp)
+                    (:e ushortp)
+                    (:e sshortp)
+                    (:e uintp)
+                    (:e sintp)
+                    (:e ulongp)
+                    (:e slongp)
+                    (:e ullongp)
+                    (:e sllongp))))
                 '(:use (:guard-theorem ,fn))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
@@ -2935,11 +2961,12 @@
      :returns conjuncts
      :parents nil
      (cond ((endp types) nil)
-           (t (cons `(,(pack (atc-integer-type-fixtype (car types)) 'p)
-                      (mv-nth ',index ,fn-call))
-                    (atc-gen-fn-returns-value-thm-aux2 (cdr types)
-                                                       (1+ index)
-                                                       fn-call)))))))
+           (t (list* `(,(pack (atc-integer-type-fixtype (car types)) 'p)
+                       (mv-nth ',index ,fn-call))
+                     `(mv-nth ',index ,fn-call)
+                     (atc-gen-fn-returns-value-thm-aux2 (cdr types)
+                                                        (1+ index)
+                                                        fn-call)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
