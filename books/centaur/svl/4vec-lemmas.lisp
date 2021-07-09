@@ -4716,3 +4716,26 @@
            (integerp (sv::3vec-fix x)))
   :hints (("Goal"
            :in-theory (e/d (sv::3vec-fix) ()))))
+
+
+(def-rp-rule integerp-of-4vec-=
+  (implies (and (integerp x)
+                (integerp y))
+           (integerp (4vec-== x y)))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (4vec-==
+                            SV::3VEC-BITXOR
+                            SV::3VEC-BITNOT
+                            SV::3VEC-REDUCTION-AND
+                            sv::3vec-==)
+                           ()))))
+
+(def-rp-rule 4vec-?*-of-test=-1
+  (implies t
+           (equal (4vec-?* -1 x y)
+                  (sv::4vec-fix x)))
+  :hints (("Goal"
+           :in-theory (e/d (4vec-?*
+                            sv::3vec-?*)
+                           ()))))

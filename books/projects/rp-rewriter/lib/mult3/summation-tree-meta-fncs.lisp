@@ -117,7 +117,7 @@
   (define hash-coef ()
     :inline t
     1)
-  
+
   (define pp-instance-hash (e)
     :returns (hash integerp)
     :inline t
@@ -1149,7 +1149,6 @@
        (and-list-instance-to-binary-and-aux lst))
       (& term))))
 
-
 (define single-s-to-pp-lst ((pp1)
                             (pp2)
                             (pp3))
@@ -1207,7 +1206,6 @@
                              (pp-term-p `(binary-or ,x ,y))))
              :in-theory (e/d (is-rp ex-from-rp) ())))))
 
-
 (progn
   (encapsulate
     (((pattern2-reduce-enabled) => *))
@@ -1221,7 +1219,6 @@
       `(defattach  pattern2-reduce-enabled return-nil)))
 
   (enable-pattern2-reduce t))
-
 
 (define c-pattern2-reduce ((s-lst rp-term-listp)
                            (pp-lst rp-term-listp)
@@ -1889,7 +1886,6 @@
 
 (in-theory (enable PP-LST-TO-PP))
 
-
 (define c-of-1-merge ((single-c1 rp-termp)
                       (single-c2 rp-termp))
   :returns (mv (res-s-lst rp-term-listp :hyp (and (rp-termp single-c1)
@@ -2033,7 +2029,7 @@
              (c-of-1-merge single-c1 single-c2))
             ((when merge-success)
              (mv (create-list-instance s-lst) pp-lst c-lst t))
-            
+
             ((when (or (negated-termp single-c1)
                        (negated-termp single-c2)))
              (mv ''nil nil nil nil ))
@@ -2360,7 +2356,6 @@
 
 ;; (define c-sum-merge-light ((c1-lst rp-term-listp)
 ;;                            (c2-lst rp-term-listp))
-  
 
 (define c-sum-merge-main ((c1-lst rp-term-listp)
                           (c2-lst rp-term-listp)
@@ -2385,20 +2380,20 @@
         (c-sum-merge* c1-lst c2-lst auto-swap clean-c1-lst cough-c-lst))
        (merged-c-lst (s-sum-merge-aux c1-lst c2-lst))
        #|(- (or (s-sum-ordered-listp c1-lst)
-              (hard-error 'c-sum-merge-main
-                          "c1-lst is not ordered. ~p0 ~%"
-                          (list (cons #\0 c1-lst)))))
+       (hard-error 'c-sum-merge-main
+       "c1-lst is not ordered. ~p0 ~%"
+       (list (cons #\0 c1-lst)))))
        (- (or (s-sum-ordered-listp c2-lst)
-              (hard-error 'c-sum-merge-main
-                          "c2-lst is not ordered. ~p0 ~%"
-                          (list (cons #\0 c2-lst)))))
+       (hard-error 'c-sum-merge-main
+       "c2-lst is not ordered. ~p0 ~%"
+       (list (cons #\0 c2-lst)))))
        (- (or (s-sum-ordered-listp merged-c-lst)
-              (hard-error 'c-sum-merge-main
-                          "merged-c-lst is not ordered. ~p0. c1-lst: ~p1
-                          c2-lst: ~p2 ~%"
-                          (list (cons #\0 merged-c-lst)
-                                (cons #\1 c1-lst)
-                                (cons #\2 c2-lst)))))||#)
+       (hard-error 'c-sum-merge-main
+       "merged-c-lst is not ordered. ~p0. c1-lst: ~p1
+       c2-lst: ~p2 ~%"
+       (list (cons #\0 merged-c-lst)
+       (cons #\1 c1-lst)
+       (cons #\2 c2-lst)))))||#)
     (mv ''nil nil merged-c-lst nil)))
 
 (define c-of-s-fix-lst ((arg-s-lst rp-term-listp)
@@ -2646,6 +2641,140 @@
 
 ;;;;;;;;;;;;;;;;;;;
 
+(progn
+  (define recollectable-pp-p ((pp))
+    (b* ((pp (ex-from--- pp))
+         (pp (ex-from-rp pp)))
+      (case-match pp
+        (('and-list & ('list a1 a2 a3 a4))
+         (b* ((a1 (ex-from-rp a1))
+              (a2 (ex-from-rp a2))
+              (a3 (ex-from-rp a3))
+              (a4 (ex-from-rp a4))
+              (a1 (ex-from-rp (case-match a1 (('bit-of x &) x) (& a1))))
+              (a2 (ex-from-rp (case-match a2 (('bit-of x &) x) (& a2))))
+              (a3 (ex-from-rp (case-match a3 (('bit-of x &) x) (& a3))))
+              (a4 (ex-from-rp (case-match a4 (('bit-of x &) x) (& a4)))))
+           (or (and (equal a1 a2)
+                    (equal a1 a3)
+                    (not (equal a1 a4))
+                    1)
+               (and (equal a4 a2)
+                    (equal a4 a3)
+                    (not (equal a1 a4))
+                    2)))))))
+
+  (define recollect-pp ((pp rp-termp))
+    :guard (recollectable-pp-p pp)
+    :prepwork ((local
+                (defthm is-rp-of-rp
+                  (is-rp `(rp 'bitp ,x))
+                  :hints (("Goal"
+                           :in-theory (e/d (is-rp) ()))))))
+    :returns (mv  (res-pp-lst rp-term-listp :hyp (rp-termp pp))
+                  (c rp-termp :hyp (rp-termp pp)))
+    (b* ((p (recollectable-pp-p pp))
+         (pp-orig pp)
+         ((mv pp negated) (case-match pp (('-- x) (mv x t)) (& (mv pp nil))))
+         (pp (ex-from-rp pp))
+         ((mv pp1 pp2 pp3 pp4 pp5 pp6 valid)
+          (case-match pp
+            (('and-list & ('list a1 a2 a3 a4))
+             (cond ((equal p 1)
+                    (mv (create-and-list-instance (list a1 a4))
+                        (create-and-list-instance (list a2 a4))
+                        (create-and-list-instance (list a3 a4))
+                        (create-and-list-instance (list a1 a2 a4))
+                        (create-and-list-instance (list a1 a3 a4))
+                        (create-and-list-instance (list a2 a3 a4))
+                        t))
+                   ((equal p 2)
+                    (mv (create-and-list-instance (list a1 a2))
+                        (create-and-list-instance (list a1 a3))
+                        (create-and-list-instance (list a1 a4))
+                        (create-and-list-instance (list a1 a2 a3))
+                        (create-and-list-instance (list a1 a2 a4))
+                        (create-and-list-instance (list a1 a3 a4))
+                        t))
+                   (t (mv ''0 ''0 ''0 ''0 ''0 ''0 nil))))
+            (& (mv ''0 ''0 ''0 ''0 ''0 ''0 nil))))
+         ((unless valid) (mv (list pp-orig pp-orig) ''0))
+         (c (b* ((pp-lst (pp-sum-merge-aux (list pp1)
+                                           (pp-sum-merge-aux (list pp2)
+                                                             (list pp3))))
+                 (pp (create-list-instance pp-lst))
+                 (hash-code (calculate-c-hash ''nil pp ''nil))
+                 (c `(rp 'bitp (c ',hash-code 'nil ,pp 'nil )))
+                 (c (if negated c `(-- ,c))))
+              c))
+         ((mv pp4 pp5 pp6)
+          (if negated
+              (mv `(-- ,pp4) `(-- ,pp5) `(-- ,pp6))
+            (mv pp4 pp5 pp6)))
+         (res-pp-lst (pp-sum-merge-aux (list pp4)
+                                       (pp-sum-merge-aux (list pp5) (list
+                                                                     pp6)))))
+      (mv res-pp-lst c)))
+
+  (define recollect-pp-lst-to-sc ((pp-lst rp-term-listp))
+
+    :measure (cons-count pp-lst)
+    :prepwork ((local
+                (defthm cons-count-cddr
+                  (implies (and (consp pp-lst)
+                                (consp (cdr pp-lst)))
+                           (o< (cons-count (cddr pp-lst))
+                               (cons-count pp-lst)))
+                  :hints (("Goal"
+                           :induct (cons-count pp-lst)
+                           :do-not-induct t
+                           :in-theory (e/d (cons-count)
+                                           (+-IS-SUM))))))
+               (local
+                (in-theory (enable measure-lemmas))))
+    :returns (mv (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
+                 (res-c-lst rp-term-listp :hyp (rp-term-listp pp-lst)))
+    (cond ((atom pp-lst) (mv pp-lst nil))
+          ((atom (cdr pp-lst)) (mv pp-lst nil))
+          ((and (equal (car pp-lst)
+                       (cadr pp-lst))
+                (recollectable-pp-p (car pp-lst)))
+           (b* (((mv new-pp-lst c)
+                 (recollect-pp (car pp-lst)))
+                ((mv rest-pp-lst res-c-lst)
+                 (recollect-pp-lst-to-sc (cddr pp-lst))))
+             (mv (pp-sum-merge-aux rest-pp-lst new-pp-lst)
+                 (s-sum-merge-aux (list c) res-c-lst))))
+          (t (b* (((mv res-pp-lst res-c-lst)
+                   (recollect-pp-lst-to-sc (cdr pp-lst))))
+               (mv (cons (car pp-lst) res-pp-lst)
+                   res-c-lst)))))
+
+  (progn
+    (encapsulate
+      (((recollect-pp-enabled) => *))
+      (local
+       (defun recollect-pp-enabled ()
+         nil)))
+
+    (defmacro enable-recollect-pp (enable)
+      (if enable
+          `(defattach recollect-pp-enabled return-t)
+        `(defattach recollect-pp-enabled return-nil)))
+
+    (enable-recollect-pp t))
+  
+  (define recollect-pp-lst-to-sc-main ((pp-lst rp-term-listp))
+     :returns (mv (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
+                  (res-c-lst rp-term-listp :hyp (rp-term-listp pp-lst)))
+     :enabled t
+     (if (recollect-pp-enabled)
+         (recollect-pp-lst-to-sc pp-lst)
+       (mv pp-lst nil))))
+    
+
+;;;;;;;;;;;;;;;;;;;
+
 (define extract-new-sum-element ((term rp-termp) acc)
   :returns (acc-res rp-term-listp
                     :hyp (and (rp-termp term)
@@ -2820,7 +2949,9 @@
         (mv s pp-lst c-lst to-be-coughed-c-lst)))
      ((pp-term-p ABS-TERM-W/-SC)
       (b* (;;(abs-term (4vec->pp-term abs-term))
-           (pp-lst2 (pp-flatten ABS-TERM-W/-SC negated))
+           (pp-lst2 (pp-flatten abs-term-w/-sc negated))
+           ((mv pp-lst2 recollected-c-lst) (recollect-pp-lst-to-sc pp-lst2))
+           (c-lst (s-sum-merge-aux recollected-c-lst c-lst))
            (pp-lst (pp-sum-merge-aux pp-lst pp-lst2)))
         (mv s pp-lst c-lst to-be-coughed-c-lst)))
      (t
@@ -2993,7 +3124,7 @@
       (mv (or (and valid
                    (quarternaryp res))
               #|(hard-error 'quarternarp-sum "term ~p0 ~%"
-                          (list (cons #\0 term)))||#)
+              (list (cons #\0 term)))||#)
           (and valid
                (bitp res))))))
 
