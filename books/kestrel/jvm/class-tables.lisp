@@ -14,7 +14,7 @@
 (include-book "classes")
 (include-book "kestrel/maps/maps" :dir :system)
 (include-book "kestrel/lists-light/memberp" :dir :system)
-(local (include-book "kestrel/jvm/utilities" :dir :system))
+(local (include-book "utilities"))
 (local (include-book "std/lists/union" :dir :system))
 
 ; The class-table of a JVM state is a map, where the keys are class

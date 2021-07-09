@@ -13,8 +13,8 @@
 
 ;; TODO: Add Unicode support.
 
-(include-book "kestrel/jvm/types" :dir :system)
-(include-book "kestrel/jvm/java-types" :dir :system)
+(include-book "types")
+(include-book "java-types")
 (include-book "kestrel/bv/bvchop" :dir :system)
 
 ;todo: change to JVM package
