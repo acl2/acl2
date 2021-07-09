@@ -133,7 +133,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-function (fn ctx state)
+(define atc-process-function (fn (ctx ctxp) state)
   :returns (mv erp (recursionp booleanp) state)
   :short "Process a target function @('fni') among @('fn1'), ..., @('fnp')."
   :long
@@ -155,7 +155,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-function-list ((fns true-listp) ctx state)
+(define atc-process-function-list ((fns true-listp) (ctx ctxp) state)
   :returns (mv erp (recursionp booleanp) state)
   :short "Lift @(tsee atc-process-function) to lists."
   :long
@@ -169,7 +169,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-fn1...fnp ((fn1...fnp true-listp) ctx state)
+(define atc-process-fn1...fnp ((fn1...fnp true-listp) (ctx ctxp) state)
   :returns (mv erp (recursionp booleanp) state)
   :verify-guards nil
   :short "Process the target functions @('fn1'), ..., @('fnp')."
@@ -192,7 +192,7 @@
 
 (define atc-process-output-file (output-file
                                  (output-file? booleanp)
-                                 ctx
+                                 (ctx ctxp)
                                  state)
   :returns (mv erp (nothing "Always @('nil').") state)
   :mode :program
@@ -263,7 +263,7 @@
                                 (const-name? booleanp)
                                 (fn1...fnp symbol-listp)
                                 (proofs booleanp)
-                                ctx
+                                (ctx ctxp)
                                 state)
   :returns (mv erp
                (val "A @('(tuple (prog-const symbolp)
@@ -339,7 +339,7 @@
   :prepwork
   ((define atc-process-const-name-aux ((fni...fnp symbol-listp)
                                        (prog-const symbolp)
-                                       ctx
+                                       (ctx ctxp)
                                        state)
      :returns (mv erp
                   (val "A @(tsee symbol-symbol-alistp).")
@@ -376,7 +376,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-inputs ((args true-listp) ctx state)
+(define atc-process-inputs ((args true-listp) (ctx ctxp) state)
   :returns (mv erp
                (val "A @('(tuple (fn1...fnp symbol-listp)
                                  (recursionp booleanp)
@@ -1328,7 +1328,7 @@
   (define atc-gen-expr-cval-pure ((term pseudo-termp)
                                   (inscope atc-symbol-type-alist-listp)
                                   (fn symbolp)
-                                  ctx
+                                  (ctx ctxp)
                                   state)
     :returns (mv erp
                  (val (tuple (expr exprp)
@@ -1497,7 +1497,7 @@
   (define atc-gen-expr-bool ((term pseudo-termp)
                              (inscope atc-symbol-type-alist-listp)
                              (fn symbolp)
-                             ctx
+                             (ctx ctxp)
                              state)
     :returns (mv erp (expr exprp) state)
     :parents (atc-event-and-code-generation atc-gen-expr-pure)
@@ -1614,7 +1614,7 @@
 (define atc-gen-expr-cval-pure-list ((terms pseudo-term-listp)
                                      (inscope atc-symbol-type-alist-listp)
                                      (fn symbolp)
-                                     ctx
+                                     (ctx ctxp)
                                      state)
   :returns (mv erp (exprs expr-listp) state)
   :short "Generate a list of C expressions from a list of ACL2 terms
@@ -1644,7 +1644,7 @@
                            (inscope atc-symbol-type-alist-listp)
                            (fn symbolp)
                            (prec-fns atc-symbol-fninfo-alistp)
-                           ctx
+                           (ctx ctxp)
                            state)
   :returns (mv erp
                (val (tuple (expr exprp)
@@ -1844,7 +1844,7 @@
                       (xforming symbol-listp)
                       (fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
-                      ctx
+                      (ctx ctxp)
                       state)
   :returns (mv erp
                (val (tuple (items block-item-listp)
@@ -2257,7 +2257,7 @@
                                 (xforming symbol-listp)
                                 (fn symbolp)
                                 (prec-fns atc-symbol-fninfo-alistp)
-                                ctx
+                                (ctx ctxp)
                                 state)
   :returns (mv erp
                (items block-item-listp)
@@ -2492,7 +2492,7 @@
                            (inscope atc-symbol-type-alist-listp)
                            (fn symbolp)
                            (prec-fns atc-symbol-fninfo-alistp)
-                           ctx
+                           (ctx ctxp)
                            state)
   :returns (mv erp
                (val (tuple (stmt stmtp)
@@ -2589,7 +2589,7 @@
                              (fn symbolp)
                              (guard-conjuncts pseudo-term-listp)
                              (guard pseudo-termp)
-                             ctx
+                             (ctx ctxp)
                              state)
   :returns (mv erp (type typep) state)
   :short "Find the C type of a function's parameter from the guard."
@@ -2642,7 +2642,7 @@
                               (fn symbolp)
                               (guard-conjuncts pseudo-term-listp)
                               (guard pseudo-termp)
-                              ctx
+                              (ctx ctxp)
                               state)
   :returns (mv erp
                (val (tuple (param param-declonp)
@@ -2701,7 +2701,7 @@
                                    (fn symbolp)
                                    (guard-conjuncts pseudo-term-listp)
                                    (guard pseudo-termp)
-                                   ctx
+                                   (ctx ctxp)
                                    state)
   :returns (mv erp
                (val (tuple (params param-declon-listp)
@@ -2763,7 +2763,7 @@
                                       (prec-fns atc-symbol-fninfo-alistp)
                                       (proofs booleanp)
                                       (names-to-avoid symbol-listp)
-                                      ctx
+                                      (ctx ctxp)
                                       state)
   :returns (mv erp
                (val "A @('(tuple (events pseudo-event-form-listp)
@@ -3224,7 +3224,7 @@
                          (print evmac-input-print-p)
                          (limit natp)
                          (names-to-avoid symbol-listp)
-                         ctx
+                         (ctx ctxp)
                          state)
   :returns (mv erp
                (val "A @('(tuple (local-events pseudo-event-form-listp)
@@ -3315,7 +3315,7 @@
                             (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
                             (names-to-avoid symbol-listp)
-                            ctx
+                            (ctx ctxp)
                             state)
   :returns (mv erp
                (val "A @('(tuple (ext ext-declonp)
@@ -3522,7 +3522,7 @@
                       (fn-thms symbol-symbol-alistp)
                       (print evmac-input-print-p)
                       (names-to-avoid symbol-listp)
-                      ctx
+                      (ctx ctxp)
                       state)
   :guard (acl2::irecursivep+ fn (w state))
   :returns (mv erp
@@ -3598,7 +3598,7 @@
                                  (fn-thms symbol-symbol-alistp)
                                  (print evmac-input-print-p)
                                  (names-to-avoid symbol-listp)
-                                 ctx
+                                 (ctx ctxp)
                                  state)
   :returns (mv erp
                (val "A @('(tuple (exts ext-declon-listp)
@@ -3731,7 +3731,7 @@
                            (fn-thms symbol-symbol-alistp)
                            (print evmac-input-print-p)
                            (names-to-avoid symbol-listp)
-                           ctx
+                           (ctx ctxp)
                            state)
   :returns (mv erp
                (val "A @('(tuple (tunit transunitp)
@@ -3867,7 +3867,7 @@
                             (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
                             (call pseudo-event-formp)
-                            ctx
+                            (ctx ctxp)
                             state)
   :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
   :mode :program
@@ -3906,7 +3906,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-fn ((args true-listp) (call pseudo-event-formp) ctx state)
+(define atc-fn ((args true-listp) (call pseudo-event-formp) (ctx ctxp) state)
   :returns (mv erp
                (result "Always @('(value-triple :invisible)').")
                state)
