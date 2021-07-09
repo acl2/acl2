@@ -39,3 +39,9 @@
 (include-book "array-building")
 (include-book "arrays")
 (include-book "arrays-2d")
+(include-book "float-to-bits")
+;; (include-book "floats2") ; name clash on java-floatp
+(include-book "locals")
+(include-book "set-classes")
+(include-book "method-designator-strings")
+(include-book "get-method-info")

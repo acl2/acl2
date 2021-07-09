@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -263,9 +263,9 @@
      If they are the same, the call is considered redundant
      and no further action is taken.
      If they differ, it is an error."))
-  (b* (((unless (symbolp fn))
-        (raise "The first input, ~x0, must be a symbol." fn))
-       (formals (formals fn wrld)) ; error if not FUNCTION-SYMBOLP
+  (b* (((unless (function-namep fn wrld))
+        (raise "The first input, ~x0, must be the name of a function." fn))
+       (formals (formals fn wrld))
        ((unless (keyword-listp in-type-specs))
         (raise "The second input, ~x0, ~
                 must be a list of ATJ type keywords."
@@ -670,9 +670,9 @@
      The reason is analogous to the one discussed above
      to motivate the check against the primary output types;
      but here we are talking about the secondary output types."))
-  (b* (((unless (symbolp fn))
-        (raise "The first input, ~x0, must be a symbol." fn))
-       (formals (formals fn wrld)) ; error if not FUNCTION-SYMBOLP
+  (b* (((unless (function-namep fn wrld))
+        (raise "The first input, ~x0, must be the name of a function." fn))
+       (formals (formals fn wrld))
        ((unless (keyword-listp in-type-specs))
         (raise "The second input, ~x0, ~
                 must be a list of ATJ type keywords."
