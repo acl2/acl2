@@ -12,7 +12,7 @@
 
 (local (include-book "plus"))
 
-(in-theory (disable ifix))
+;; (in-theory (disable ifix)) ; todo: consider this
 
 (defthm ifix-when-integerp
   (implies (integerp x)
