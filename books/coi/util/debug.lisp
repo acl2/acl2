@@ -97,7 +97,7 @@
 ; "))
 
 (defxdoc coi-debug::fail
-  :parents (coi-debug::fail)
+  :parents (acl2::miscellaneous)
   :short "A macro to assist in signalling runtime errors"
   :long "<p>The coi-debug::fail macro allows the user to signal runtime errors
  in ACL2 code.  The return value of coi-debug::fail can be set by specifying
@@ -165,7 +165,7 @@
 ; "))
 
 (defxdoc coi-debug::assert
-  :parents (coi-debug::assert)
+  :parents (acl2::miscellaneous)
   :short "A macro to assist in detecting runtime errors"
   :long "<p>The coi-debug::assert macro allows the user to identify runtime
  errors in ACL2 code.  The return value of coi-debug::assert can be set by
