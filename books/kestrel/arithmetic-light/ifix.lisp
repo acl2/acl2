@@ -20,7 +20,8 @@
                   x))
   :hints (("Goal" :in-theory (enable ifix))))
 
-(defthm ifix-when-not-integerp
+;; Avoid name clash with std
+(defthm ifix-when-not-integerp-unlimited
   (implies (not (integerp x))
            (equal (ifix x)
                   0))
