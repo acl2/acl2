@@ -155,3 +155,13 @@
                       0 ; unusual case
                     1)))
   :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-of-ifix-arg1
+  (equal (mul (ifix x) y p)
+         (mul x y p))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-of-ifix-arg2
+  (equal (mul x (ifix y) p)
+         (mul x y p))
+  :hints (("Goal" :in-theory (enable mul))))

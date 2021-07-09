@@ -161,3 +161,13 @@
                    (equal (mod (ifix y) p) (mod (ifix z) p))))
    :hints (("Goal" ;:do-not '(preprocess)
             :in-theory (enable add))))
+
+(defthm add-of-ifix-arg1
+  (equal (add (ifix x) y p)
+         (add x y p))
+  :hints (("Goal" :in-theory (enable add))))
+
+(defthm add-of-ifix-arg2
+  (equal (add x (ifix y) p)
+         (add x y p))
+  :hints (("Goal" :in-theory (enable add))))
