@@ -43,3 +43,5 @@
 ;; (include-book "floats2") ; name clash on java-floatp
 (include-book "locals")
 (include-book "set-classes")
+(include-book "method-designator-strings")
+(include-book "get-method-info")
