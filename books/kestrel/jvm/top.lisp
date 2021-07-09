@@ -39,3 +39,4 @@
 (include-book "array-building")
 (include-book "arrays")
 (include-book "arrays-2d")
+(include-book "float-to-bits")
