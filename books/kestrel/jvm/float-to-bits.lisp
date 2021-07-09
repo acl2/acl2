@@ -15,7 +15,7 @@
 ;; TODO: Rewrite this carefuly and cleanly
 ;; TODO: Prove inversion with parse-float and parse-double (from class-file-parser.lisp)
 
-(include-book "kestrel/jvm/floats" :dir :system)
+(include-book "floats")
 
 (encapsulate ()
   (local (include-book "rtl/rel9/support/support/float" :dir :system))
