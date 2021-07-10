@@ -11,7 +11,7 @@
 
 (in-package "ACL2") ;todo: use jvm package?
 
-(include-book "kestrel/jvm/jvm" :dir :system)
+(include-book "jvm")
 
 ;fixme where should this go?
 ;FIXME use a defstub?  Is it important to be able to execute this?
