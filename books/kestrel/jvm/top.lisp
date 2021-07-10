@@ -45,3 +45,4 @@
 (include-book "set-classes")
 (include-book "method-designator-strings")
 (include-book "get-method-info")
+(include-book "jvm")
