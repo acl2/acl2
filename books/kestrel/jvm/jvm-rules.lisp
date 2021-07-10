@@ -1853,12 +1853,6 @@
          (cons (myif test a1 a2) (myif test b1 b2)))
   :hints (("Goal" :in-theory (enable myif))))
 
-(defthm assoc-equal-when-not-consp
-  (implies (not (consp alist))
-           (equal (assoc-equal key alist)
-                  nil))
-  :hints (("Goal" :in-theory (enable assoc-equal))))
-
 ;gross proof
 (defthm bind-equal-same-rewrite
   (equal (equal (jvm::bind key val alist) alist)
