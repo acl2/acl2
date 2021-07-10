@@ -28,7 +28,10 @@
            (equal (equal x (neg y p))
                   ;; keep y on the RHS:
                   (and (equal (neg x p) (mod (ifix y) p))
-                       (fep x p)))))
+                       (fep x p))))
+  :hints (("Goal" :use (:instance equal-of-neg
+                                  (x y)
+                                  (y x)))))
 
 ;; x = y - z becomes -x + y = z
 ;; This solves for z but departs from our usual normal form.

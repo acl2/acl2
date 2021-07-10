@@ -54,5 +54,7 @@
             acl2::integerp-of-ifix
             acl2::ifix-does-nothing
             baby-jubjub-prime
-            mimc::mimc-feistel-220-constants)
+            mimc::mimc-feistel-220-constants
+            acl2::pos-fix ;or build in to evaluator
+            )
           (pfield::prime-field-proof-rules)))

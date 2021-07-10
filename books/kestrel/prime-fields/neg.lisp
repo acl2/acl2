@@ -104,3 +104,10 @@
   (equal (neg (mod x p) p)
          (neg x p))
   :hints (("Goal" :in-theory (enable neg))))
+
+(defthm neg-when-not-posp-arg2-cheap
+  (implies (not (posp p))
+           (equal (neg x p)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable neg))))

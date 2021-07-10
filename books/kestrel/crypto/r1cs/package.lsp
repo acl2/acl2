@@ -38,5 +38,6 @@
             bvshr
             bvshl
             bvplus
-            power-of-2p)
+            power-of-2p
+            pos-fix)
           *acl2-exports*))
