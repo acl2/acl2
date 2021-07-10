@@ -108,6 +108,7 @@
 (include-book "lenconsmeta")
 (include-book "list-rules-axe")
 (include-book "list-rules")
+(include-book "lists-axe")
 (include-book "make-assumption-array")
 (include-book "make-axe-bind-free-evaluator")
 (include-book "make-axe-rules2")
