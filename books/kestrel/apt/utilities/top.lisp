@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "defaults-table")
 (include-book "defun-variant")
+(include-book "fixup-ignores")
 (include-book "function-renamingp")
 (include-book "input-processing")
 (include-book "input-processing-soft")

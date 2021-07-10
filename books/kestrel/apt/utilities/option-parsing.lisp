@@ -17,6 +17,10 @@
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system) ;for repeat
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 ;; Build an alist whose keys are exactly KEYS, where each key is bound as it is
 ;; in ALIST.  This can be used to sort the keys of ALIST to match the order of
@@ -35,10 +39,6 @@
                   key alist)
         (er-let*-cmp ((alist (alist-for-keys (rest keys) alist ctx)))
                      (value-cmp (acons key (cdr pair) alist)))))))
-
-(defthm symbol-listp-set-difference-equal
-  (implies (symbol-listp x)
-           (symbol-listp (set-difference-equal x y))))
 
 ;; Build an alist from function names in the clique to their values of the
 ;; option.  Returns (mv nil alist) or (mv error-context msg).
@@ -100,22 +100,6 @@
       (value-cmp
        (append (pairlis$ keys (repeat (len keys) value)) ;map all the keys to this value
                msg-or-rest)))))
-
-; Matt K. mod: I renamed the following because it conflicted (when building
-; books/doc/top-slow.lisp) with alistp-append in
-; books/data-structures/alist-defthms.lisp.  This one is stronger.
-(defthm alistp-append-strong
-  (implies (true-listp x)
-           (equal (alistp (append x y))
-                  (and (alistp x)
-                       (alistp y)))))
-
-; Matt K. mod: Originally the variables below were x and y, but this conflicted
-; with those used in the version of alistp-pairlis$ in
-; books/tools/with-quoted-forms.lisp, so I changed it here (both this book and
-; that one are included in books/doc/top-slow.lisp).
-(defthm alistp-pairlis$
-  (alistp (pairlis$ a b)))
 
 ;todo: strengthen to symbol-alistp:
 (defthm alistp-of-mv-nth-1-of-elaborate-mut-rec-option-map

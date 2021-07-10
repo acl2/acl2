@@ -18,6 +18,13 @@
          nil)
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
+;; Kept disabled for speed
+(defthmd assoc-equal-when-not-consp
+  (implies (not (consp alist))
+           (equal (assoc-equal x alist)
+                  nil))
+  :hints (("Goal" :in-theory (enable assoc-equal))))
+
 (defthm assoc-equal-when-not-consp-cheap
   (implies (not (consp alist))
            (equal (assoc-equal x alist)
