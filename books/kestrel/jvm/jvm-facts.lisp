@@ -1,3 +1,17 @@
+; Rules about the JVM model
+;
+; Copyright (C) 2008-2011 Eric Smith and Stanford University
+; Copyright (C) 2013-2021 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Note: Portions of this file may be taken from books/models/jvm/m5.  See the
+; LICENSE file and authorship information there as well.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
 ;This book was created by Eric Smith and includes a variety of facts about the JVM that seemed helpful for proofs.
