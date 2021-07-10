@@ -17606,7 +17606,7 @@
   :hints (("Goal" :in-theory (enable bvlt))))
 
 ;(include-book "packbv-axe")
-;(include-book "arrays-axe")
+;(include-book "lists-axe")
 
 ;move up
 ;fixme gen!
