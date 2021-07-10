@@ -93,6 +93,7 @@
 (include-book "get-args-not-done")
 (include-book "get-disjuncts")
 ;; (include-book "get-disjuncts-tests")
+(include-book "group-axe")
 (include-book "hit-counts")
 (include-book "if-rules")
 (include-book "instantiate-hyp")
