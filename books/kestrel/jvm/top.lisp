@@ -46,3 +46,7 @@
 (include-book "method-designator-strings")
 (include-book "get-method-info")
 (include-book "jvm")
+(include-book "jvm-rules")
+(include-book "jvm-facts")
+(include-book "jvm-facts0")
+(include-book "jvm-rules2")
