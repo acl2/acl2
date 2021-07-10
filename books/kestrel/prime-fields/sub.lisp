@@ -98,3 +98,19 @@
   (equal (mod (sub x y p) p)
          (sub x y p))
   :hints (("Goal" :in-theory (enable sub add neg))))
+
+;move?
+(defthm neg-of-add
+  (equal (neg (add x y p) p)
+         (add (neg x p)
+              (neg y p)
+              p))
+  :hints (("Goal" :in-theory (enable neg add sub acl2::mod-sum-cases))))
+
+;; -(x-y) becomes y-x
+;; But note that we'll often leave sub enabled
+(defthm neg-of-sub
+  (equal (neg (sub x y p) p)
+         (sub y x p))
+  :hints (("Goal" :in-theory (enable sub ;neg
+                                     ))))

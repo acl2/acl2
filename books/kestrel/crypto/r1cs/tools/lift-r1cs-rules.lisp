@@ -19,6 +19,7 @@
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
 (include-book "kestrel/arithmetic-light/lg" :dir :system)
+(include-book "kestrel/arithmetic-light/ifix" :dir :system)
 (include-book "kestrel/arithmetic-light/types" :dir :system) ; for acl2::rationalp-when-integerp
 (local (include-book "kestrel/bv/rules" :dir :system)) ;for acl2::slice-of-sum-cases, make local?
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -247,6 +248,7 @@
   :hints (("Goal"
            :cases ((equal (mod k p) (+ k p)))
            :in-theory (enable bitp add-of-constant-normalize-to-fep ADD
+                              ifix
                               acl2::mod-sum-cases))))
 
 (defthm slice-of-+-of-1-when-even

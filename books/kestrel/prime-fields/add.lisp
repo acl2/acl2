@@ -48,15 +48,18 @@
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-of-0-arg1-gen
-  (implies (posp p)
-           (equal (add 0 x p)
-                  (mod (ifix x) p)))
+  (equal (add 0 x p)
+         (mod (ifix x) (pos-fix p)))
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-of-0-arg2-gen
-  (implies (posp p)
-           (equal (add x 0 p)
-                  (mod (ifix x) p)))
+  (equal (add x 0 p)
+         (mod (ifix x) (pos-fix p)))
+  :hints (("Goal" :in-theory (enable add))))
+
+(defthm add-of-1-arg3
+  (equal (add x y 1)
+         0)
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-associative
@@ -158,3 +161,13 @@
                    (equal (mod (ifix y) p) (mod (ifix z) p))))
    :hints (("Goal" ;:do-not '(preprocess)
             :in-theory (enable add))))
+
+(defthm add-of-ifix-arg1
+  (equal (add (ifix x) y p)
+         (add x y p))
+  :hints (("Goal" :in-theory (enable add))))
+
+(defthm add-of-ifix-arg2
+  (equal (add x (ifix y) p)
+         (add x y p))
+  :hints (("Goal" :in-theory (enable add))))

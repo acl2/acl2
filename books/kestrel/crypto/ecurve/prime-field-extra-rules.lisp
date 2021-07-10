@@ -266,15 +266,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule neg-of-sub
-  (implies (and (posp p)
-                (fep a p)
-                (fep b p))
-           (equal (neg (sub a b p) p)
-                  (sub b a p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; (a / b) * c + d = (a * c + b * d) / b
 (defruled extend-fraction-to-sum
   (implies (and (rtl::primep p)
