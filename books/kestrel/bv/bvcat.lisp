@@ -976,11 +976,6 @@
                   (* (expt 2 (- i j)) x)))
   :hints (("Goal" :in-theory (enable expt-of-+))))
 
-(defthm ifix-when-integerp
-  (implies (integerp x)
-           (equal (ifix x)
-                  x)))
-
 ;can loop
 (defthmd *-of-half-and-expt-of-one-more
   (implies (integerp n)
