@@ -504,17 +504,30 @@
       (concatenate-symbol-names (list ,@args))
       mksym-package-symbol)))
 
+;; Convert SYM to a string in such a way that it could be read
+;; back in as SYM.
+(defund symbol-as-readable-string (sym)
+  (declare (xargs :guard (symbolp sym)
+                  :mode :program))
+  (mv-let (col str)
+    (fmt1-to-string "~x0"
+                    (acons #\0 sym nil)
+                    0
+                    :fmt-control-alist '((print-case . :downcase)
+                                         (fmt-soft-right-margin . 1000000)
+                                         (fmt-hard-right-margin . 1000000)))
+    (declare (ignore col))
+    str))
+
 (defmacro defpointer (from to &optional keyword-p)
   (declare (xargs :guard (and (symbolp from) (symbolp to))))
-  (let ((from-name (acl2::string-downcase (symbol-name         from)))
-        (to-pkg    (acl2::string-downcase (symbol-package-name to)))
-        (to-name   (acl2::string-downcase (symbol-name         to))))
+  (let ((from-name (acl2::string-downcase (symbol-name         from))))
     `(defxdoc ,from
        :parents (pointers)
        :short ,(concatenate
                 'string
                 "See @(see "
-                to-pkg "::" to-name
+                (symbol-as-readable-string to)
                 ")"
                 (if keyword-p
                     (concatenate
