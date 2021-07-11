@@ -10,4 +10,6 @@
 
 (in-package "ACL2")
 
+;; Axe syntax stuff:
 (include-book "axe-syntax-functions-jvm")
+(include-book "axe-syntax-functions-jvm2")
