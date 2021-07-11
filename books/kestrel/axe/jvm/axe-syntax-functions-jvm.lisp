@@ -17,8 +17,8 @@
 (include-book "kestrel/jvm/jvm" :dir :system) ; for jvm::pc
 ;(include-book "kestrel/axe/dags" :dir :system) ;for dargs
 ;(include-book "kestrel/axe/dag-arrays" :dir :system) ;for pseudo-dag-arrayp
-(include-book "kestrel/axe/dag-array-printing" :dir :system)
-(include-book "kestrel/axe/axe-syntax-functions" :dir :system) ; for count-myif-branches
+(include-book "../dag-array-printing")
+(include-book "../axe-syntax-functions") ; for count-myif-branches
 (include-book "kestrel/utilities/erp" :dir :system)
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
