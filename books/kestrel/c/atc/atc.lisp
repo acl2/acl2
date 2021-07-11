@@ -46,6 +46,7 @@
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
 (include-book "kestrel/std/system/uguard-plus" :dir :system)
+(include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "oslib/dirname" :dir :system)
 (include-book "oslib/file-types" :dir :system)
@@ -153,8 +154,19 @@
        (desc (msg "The target function ~x0" fn))
        ((er &) (acl2::ensure-function-is-logic-mode$ fn desc t nil))
        ((er &) (acl2::ensure-function-is-guard-verified$ fn desc t nil))
-       ((er &) (acl2::ensure-function-is-defined$ fn desc t nil)))
-    (acl2::value (and (acl2::irecursivep+ fn (w state)) t)))
+       ((er &) (acl2::ensure-function-is-defined$ fn desc t nil))
+       (recp (and (acl2::irecursivep+ fn (w state)) t))
+       ((when (and recp
+                   (not (equal (acl2::well-founded-relation+ fn (w state))
+                               'o<))))
+        (er-soft+ ctx t nil
+                  "The well-founded relation ~
+                   of the recursive target function ~x0 ~
+                   must be O<, but it ~x1 instead. ~
+                   Only recursive functions with well-founded relation O< ~
+                   are currently supported by ATC."
+                  fn (acl2::well-founded-relation+ fn (w state)))))
+    (acl2::value recp))
   :guard-hints (("Goal" :in-theory (enable
                                     acl2::ensure-value-is-function-name
                                     acl2::ensure-function-is-guard-verified

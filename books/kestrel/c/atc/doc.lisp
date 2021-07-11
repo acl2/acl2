@@ -186,6 +186,10 @@
       it may have any number of formal parameters, including none.")
 
     (xdoc::p
+     "If @('fni') is recursive,
+      its well-founded relation must be @(tsee o<).")
+
+    (xdoc::p
      "The guard of each @('fni') must include,
       for every formal parameter @('x'),
       a conjunct of one of the following forms,
