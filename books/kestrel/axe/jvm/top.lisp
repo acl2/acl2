@@ -17,3 +17,7 @@
 ;; Evaluators for axe-syntaxp and axe-bind-free functions:
 (include-book "axe-syntaxp-evaluator-jvm")
 (include-book "axe-bind-free-evaluator-jvm")
+
+;; Axe-specific rules:
+(include-book "jvm-rules-axe")
+(include-book "jvm-rules-axe2")
