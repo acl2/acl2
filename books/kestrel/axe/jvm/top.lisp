@@ -13,3 +13,7 @@
 ;; Axe syntax stuff:
 (include-book "axe-syntax-functions-jvm")
 (include-book "axe-syntax-functions-jvm2")
+
+;; Evaluators for axe-syntaxp and axe-bind-free functions:
+(include-book "axe-syntaxp-evaluator-jvm")
+(include-book "axe-bind-free-evaluator-jvm")
