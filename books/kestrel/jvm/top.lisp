@@ -55,3 +55,6 @@
 (include-book "pc-designators")
 (include-book "execution2")
 (include-book "do-inst-rules")
+(include-book "symbolic-execution-common")
+(include-book "symbolic-execution")
+(include-book "symbolic-execution2")
