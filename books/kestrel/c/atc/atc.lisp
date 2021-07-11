@@ -137,9 +137,17 @@
   :returns (mv erp (recursionp booleanp) state)
   :short "Process a target function @('fni') among @('fn1'), ..., @('fnp')."
   :long
-  (xdoc::topstring-p
-   "If there is no error,
-    we return a flag indicating whether the function is recursive or not.")
+  (xdoc::topstring
+   (xdoc::p
+    "Here we perform some of the checks prescribed in @(tsee atc),
+     namely the ones that are easy to perform
+     without analyzing the body of the function in detail.
+     The remaining checks are performed during code generation,
+     where it is more natural to make them,
+     as the functions' bodies are analyzed to translate them to C.")
+   (xdoc::p
+    "If there is no error,
+     we return a flag indicating whether the function is recursive or not."))
   (b* ((desc (msg "The target ~x0 input" fn))
        ((er &) (acl2::ensure-value-is-function-name$ fn desc t nil))
        (desc (msg "The target function ~x0" fn))
