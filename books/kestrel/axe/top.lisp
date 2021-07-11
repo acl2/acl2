@@ -93,6 +93,7 @@
 (include-book "get-args-not-done")
 (include-book "get-disjuncts")
 ;; (include-book "get-disjuncts-tests")
+(include-book "group-axe")
 (include-book "hit-counts")
 (include-book "if-rules")
 (include-book "instantiate-hyp")
@@ -107,6 +108,7 @@
 (include-book "lenconsmeta")
 (include-book "list-rules-axe")
 (include-book "list-rules")
+(include-book "lists-axe")
 (include-book "make-assumption-array")
 (include-book "make-axe-bind-free-evaluator")
 (include-book "make-axe-rules2")
@@ -213,3 +215,5 @@
 (include-book "wf-dagp")
 (include-book "worklist-array")
 (include-book "worklists")
+
+(include-book "jvm/top")
