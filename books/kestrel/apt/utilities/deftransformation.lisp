@@ -1,6 +1,6 @@
 ; A tool to automate the boilerplate stuff that a transformation does.
 ;
-; Copyright (C) 2017-2020 Kestrel Institute
+; Copyright (C) 2017-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,11 +12,17 @@
 
 ;; STATUS: IN-PROGRESS
 
-;; A tool to automate the boilerplate stuff that a transformation does.  For a
-;; transformation called XXX, this expects a funtion called XXX-event that 1)
-;; takes the required and optional args (in the order given in the call to
-;; deftransformation!) and 2) returns an error triple including the generated
-;; event (usually an encapsulate or progn).  deftransformation builds:
+;; For a transformation called XXX, deftransformation expects a function to
+;; exist called XXX-event, which takes the following arguments:
+;; - the transformation's required args (in the order given in the call to deftransformation)
+;; - and transformation's optional args (in the order given in the call to deftransformation)
+;; - a verbose arg, if deftransformation is called with :pass-print t)
+;; - a ctx, if deftransformation is called with :pass-context t
+;;
+;; The XXX-event function must return an error triple including the generated
+;; event (usually an encapsulate or progn).
+;;
+;; Deftransformation builds:
 ;;
 ;; 1. XXX-fn, which wraps XXX-event and handles redundancy, show-only, etc.
 ;;

@@ -16,7 +16,7 @@
 (include-book "bool-fix")
 
 (defund boolor (x y)
-  (declare (type t x y))
+  (declare (xargs :guard t))
   (if x t (if y t nil)))
 
 (defthm booleanp-of-boolor

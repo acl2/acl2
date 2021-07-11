@@ -27,7 +27,7 @@
 ;; 'FORMALS property.  ALIST maps function symbols to arities.  The length of
 ;; each new fake 'FORMALS property is the arity associated with the function in
 ;; the ALIST.
-(defun add-fake-fns-to-world (name-to-arity-alist wrld)
+(defund add-fake-fns-to-world (name-to-arity-alist wrld)
   (declare (xargs :guard (and (symbol-alistp name-to-arity-alist)
                               (nat-listp (strip-cdrs name-to-arity-alist))
                               (plist-worldp wrld))))
@@ -39,3 +39,9 @@
            ;; the names of the formals don't matter:
            (wrld (putprop fn 'formals (make-var-names arity 'fake-formal) wrld)))
       (add-fake-fns-to-world (rest name-to-arity-alist) wrld))))
+
+(defthm plist-worldp-of-add-fake-fns-to-world
+  (implies (and (plist-worldp wrld)
+                (symbol-alistp name-to-arity-alist))
+           (plist-worldp (add-fake-fns-to-world name-to-arity-alist wrld)))
+  :hints (("Goal" :in-theory (enable add-fake-fns-to-world))))

@@ -16,7 +16,7 @@
 (include-book "bool-fix")
 
 (defund booland (x y)
-  (declare (type t x y))
+  (declare (xargs :guard t))
   (if x (if y t nil) nil))
 
 (defthm booleanp-of-booland

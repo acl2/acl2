@@ -208,21 +208,40 @@
        (cons (rename-functions-in-untranslated-term-aux (first terms) alist permissivep (+ -1 count) wrld state)
              (rename-functions-in-untranslated-terms-aux (rest terms) alist permissivep (+ -1 count) wrld state))))))
 
-(defun rename-functions-in-untranslated-term (term
-                                              renaming ; the renaming to apply
-                                              fake-fns-arity-alist ; maps functions which may be mentioned in TERM (but don't yet exist) to their arities (TODO: figure this out automatically?)
-                                              state)
-  (declare (xargs :guard (and (symbol-alistp renaming)
-                              (symbol-listp (strip-cdrs renaming))
-                              (symbol-alistp fake-fns-arity-alist)
-                              (nat-listp (strip-cdrs fake-fns-arity-alist)))
+(defund rename-functions-in-untranslated-term-with-fake-world (term
+                                                               function-renaming ; the renaming to apply
+                                                               wrld ; must contain real or fake entries for all functions in TERM
+                                                               state ; needed for magic-macroexpand (why?)
+                                                               )
+  (declare (xargs :guard (and (symbol-alistp function-renaming)
+                              (symbol-listp (strip-cdrs function-renaming))
+                              (plist-worldp wrld))
+                  :mode :program ; since translation is done
+                  :stobjs state))
+  (rename-functions-in-untranslated-term-aux term
+                                             function-renaming
+                                             nil ;initially, don't be permissive
+                                             1000000000
+                                             wrld
+                                             state))
+
+(defund rename-functions-in-untranslated-term (term ; and untranslated term
+                                               function-renaming ; the renaming to apply
+                                               state ; needed for magic-macroexpand (why?)
+                                               )
+  (declare (xargs :guard (and (symbol-alistp function-renaming)
+                              (symbol-listp (strip-cdrs function-renaming)))
                   :mode :program ; since translation is done
                   :stobjs state))
   (let* ((wrld (w state))
-         (wrld-with-fake-fns (add-fake-fns-to-world fake-fns-arity-alist wrld)))
-    (rename-functions-in-untranslated-term-aux term
-                                               renaming
-                                               nil ;initially, don't be permissive
-                                               1000000000
-                                               wrld-with-fake-fns
-                                               state)))
+         (new-fns-arity-alist (pairlis$ (strip-cdrs function-renaming)
+                                        (fn-arities (strip-cars function-renaming) wrld)))
+         ;; New fns from the renaming may appear in TERM, but they are not yet
+         ;; in the world, so we make this fake world:
+         (fake-wrld (add-fake-fns-to-world new-fns-arity-alist wrld))
+         )
+    (rename-functions-in-untranslated-term-with-fake-world term
+                                                           function-renaming ; the renaming to apply
+                                                           fake-wrld ; contains real for fake entries for all functions in TERM
+                                                           state
+                                                           )))

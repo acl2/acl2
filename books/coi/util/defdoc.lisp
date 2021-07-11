@@ -128,7 +128,7 @@
 ; ))
 
 (defxdoc def::doc
-  :parents (def::doc)
+  :parents (acl2::miscellaneous)
   :short "A simple macro for easing the documentation process"
   :long "<p>The def::doc macro eases the process of constructing documentation
  strings for ACL2 symbols. See @(see doc).  Macro keywords are used to identify
