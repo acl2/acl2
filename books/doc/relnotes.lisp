@@ -129,7 +129,7 @@
     "This is a library about the ACL2 programming language.
      It includes a formalization of its evaluation semantics.
      (This is just the work of this library's author,
-     not an official semantics of the ACL programming language;
+     not an official semantics of the ACL2 programming language;
      see @(see evaluation) for an official description
      of the ACL2 evaluation semantics.")
 
@@ -141,7 +141,7 @@
     "A library that defines a @('2^64')-byte memory model that is
   logically a record but provides array-like performance during
   execution.")
-   
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
