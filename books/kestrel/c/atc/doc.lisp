@@ -232,7 +232,7 @@
 
     (xdoc::p
      "The " (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
-     " of each non-recursive @('fni') must be:")
+     " of each @('fni') must be:")
     (xdoc::ul
      (xdoc::li
       "A statement term for @('fni') transforming variables @('nil'),
