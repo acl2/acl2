@@ -4030,47 +4030,20 @@
 
 ; We next introduce uninterpreted :logic mode functions with
 ; execute-only-in-meta-level-functions semantics, as per defun-overrides calls
-; for mfc-ts-fn and such.
+; for mfc-ts-fn and such.  We use defproxy for now because state-p is still in
+; :program mode; a partial-encapsulate comes later in the boot-strap (see
+; boot-strap-pass-2-a.lisp).
 
 #+acl2-loop-only
-(partial-encapsulate
-  (((mfc-ap-fn * * state *) => *)
-   ((mfc-relieve-hyp-fn * * * * * * state *) => *)
-   ((mfc-relieve-hyp-ttree * * * * * * state *) => (mv * *))
-   ((mfc-rw+-fn * * * * * state *) => *)
-   ((mfc-rw+-ttree * * * * * state *) => (mv * *))
-   ((mfc-rw-fn * * * * state *) => *)
-   ((mfc-rw-ttree * * * * state *) => (mv * *))
-   ((mfc-ts-fn * * state *) => *)
-   ((mfc-ts-ttree * * state *) => (mv * *)))
-
-; Supporters = nil since each missing axiom equates a call of one of the
-; signature functions (above) on explicit arguments with its result.
-
-  nil
-  (logic)
-  (set-ignore-ok t)
-  (set-irrelevant-formals-ok t)
-  (local (defun mfc-ts-fn (term mfc state forcep)
-           t))
-  (local (defun mfc-ts-ttree (term mfc state forcep)
-           (mv t t)))
-  (local (defun mfc-rw-fn (term obj equiv-info mfc state forcep)
-           t))
-  (local (defun mfc-rw-ttree (term obj equiv-info mfc state forcep)
-           (mv t t)))
-  (local (defun mfc-rw+-fn (term alist obj equiv-info mfc state forcep)
-           t))
-  (local (defun mfc-rw+-ttree (term alist obj equiv-info mfc state forcep)
-           (mv t t)))
-  (local (defun mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc state
-                                        forcep)
-           t))
-  (local (defun mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc state
-                                           forcep)
-           (mv t t)))
-  (local (defun mfc-ap-fn (term mfc state forcep)
-           t)))
+(defproxy mfc-ap-fn (* * state *) => *)
+(defproxy mfc-relieve-hyp-fn (* * * * * * state *) => *)
+(defproxy mfc-relieve-hyp-ttree (* * * * * * state *) => (mv * *))
+(defproxy mfc-rw+-fn (* * * * * state *) => *)
+(defproxy mfc-rw+-ttree (* * * * * state *) => (mv * *))
+(defproxy mfc-rw-fn (* * * * state *) => *)
+(defproxy mfc-rw-ttree (* * * * state *) => (mv * *))
+(defproxy mfc-ts-fn (* * state *) => *)
+(defproxy mfc-ts-ttree (* * state *) => (mv * *))
 
 #-acl2-loop-only
 (progn
