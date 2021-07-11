@@ -54,3 +54,4 @@
 (include-book "execution")
 (include-book "pc-designators")
 (include-book "execution2")
+(include-book "do-inst-rules")
