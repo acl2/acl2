@@ -38,6 +38,7 @@
 (include-book "projects/sat/lrat/sorted/lrat-parser" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/strnatless" :dir :system)
+(include-book "std/strings/defs" :dir :system) ; previously came in via tshell
 (include-book "oslib/tempfile" :dir :system)
 (include-book "centaur/misc/tshell" :dir :system)
 (include-book "config")
