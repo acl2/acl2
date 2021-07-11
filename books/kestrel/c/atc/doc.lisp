@@ -187,7 +187,8 @@
 
     (xdoc::p
      "If @('fni') is recursive,
-      its well-founded relation must be @(tsee o<).")
+      it must be singly (not mutually) recursive,
+      and its well-founded relation must be @(tsee o<).")
 
     (xdoc::p
      "The guard of each @('fni') must include,

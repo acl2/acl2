@@ -155,8 +155,14 @@
        ((er &) (acl2::ensure-function-is-logic-mode$ fn desc t nil))
        ((er &) (acl2::ensure-function-is-guard-verified$ fn desc t nil))
        ((er &) (acl2::ensure-function-is-defined$ fn desc t nil))
-       (recp (and (acl2::irecursivep+ fn (w state)) t))
-       ((when (and recp
+       (rec (acl2::irecursivep+ fn (w state)))
+       ((when (and rec (> (len rec) 1)))
+        (er-soft+ ctx t nil
+                  "The recursive target function ~x0 ~
+                   must be singly recursive, ~
+                   but it is mutually recursive with ~x1 instead."
+                  fn (remove-eq fn rec)))
+       ((when (and rec
                    (not (equal (acl2::well-founded-relation+ fn (w state))
                                'o<))))
         (er-soft+ ctx t nil
@@ -166,7 +172,7 @@
                    Only recursive functions with well-founded relation O< ~
                    are currently supported by ATC."
                   fn (acl2::well-founded-relation+ fn (w state)))))
-    (acl2::value recp))
+    (acl2::value (and rec t)))
   :guard-hints (("Goal" :in-theory (enable
                                     acl2::ensure-value-is-function-name
                                     acl2::ensure-function-is-guard-verified
