@@ -22,5 +22,8 @@
 (include-book "jvm-rules-axe")
 (include-book "jvm-rules-axe2")
 
+;; Lists of rules
+(include-book "rule-lists-jvm")
+
 ;; Collect up JVM rules:
 (include-book "rules-in-rule-lists-jvm")

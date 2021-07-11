@@ -23,7 +23,7 @@
 (include-book "jvm-rules-axe")
 (include-book "kestrel/arithmetic-light/mod" :dir :system)
 
-(include-book "kestrel/axe/rule-lists-jvm" :dir :system)
+(include-book "rule-lists-jvm")
 
 (ensure-rules-known (first-loop-top-rules))
 (ensure-rules-known (phase-1-rules))
