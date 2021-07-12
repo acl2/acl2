@@ -215,5 +215,6 @@
 (include-book "wf-dagp")
 (include-book "worklist-array")
 (include-book "worklists")
+(include-book "call-axe-script")
 
 (include-book "jvm/top")
