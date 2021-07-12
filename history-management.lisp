@@ -2453,9 +2453,10 @@
          (t (io? summary nil state (erp ctx)
                  (print-failure1 erp ctx state))))))
 
-(defstub initialize-event-user (ctx qbody state) state)
-
-(defstub finalize-event-user (ctx qbody state) state)
+; The following two defproxy events will be "upgraded" to defstub events after
+; state-p, which is called in the guard for each, is in :logic mode.
+(defproxy initialize-event-user (* * state) => state)
+(defproxy finalize-event-user (* * state) => state)
 
 (defun lmi-seed (lmi)
 

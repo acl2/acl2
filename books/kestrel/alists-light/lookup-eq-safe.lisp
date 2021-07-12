@@ -24,6 +24,7 @@
   (let ((result (assoc-eq key alist)))
     (if result
         (cdr result)
+      ;; (break$)
       (hard-error
        'lookup-eq-safe
        "There is no binding for key ~x0 in the alist ~x1.~%"

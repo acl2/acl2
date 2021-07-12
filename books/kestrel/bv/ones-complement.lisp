@@ -19,8 +19,8 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/ifix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor-mod-expt" :dir :system))
-(local (include-book "kestrel/arithmetic-light/top" :dir :system)) ;reduce
 (local (include-book "meta/meta-plus-lessp" :dir :system))
 (local (include-book "meta/meta-plus-equal" :dir :system))
 

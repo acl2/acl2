@@ -93,6 +93,7 @@
 (include-book "get-args-not-done")
 (include-book "get-disjuncts")
 ;; (include-book "get-disjuncts-tests")
+(include-book "group-axe")
 (include-book "hit-counts")
 (include-book "if-rules")
 (include-book "instantiate-hyp")
@@ -107,6 +108,7 @@
 (include-book "lenconsmeta")
 (include-book "list-rules-axe")
 (include-book "list-rules")
+(include-book "lists-axe")
 (include-book "make-assumption-array")
 (include-book "make-axe-bind-free-evaluator")
 (include-book "make-axe-rules2")
@@ -180,7 +182,6 @@
 (include-book "rewriter-support")
 (include-book "rule-alists")
 (include-book "rule-limits")
-(include-book "rule-lists-jvm")
 (include-book "rule-lists")
 (include-book "rules1")
 (include-book "rules2")
@@ -213,3 +214,13 @@
 (include-book "wf-dagp")
 (include-book "worklist-array")
 (include-book "worklists")
+(include-book "call-axe-script")
+
+;;STP-related stuff:
+(include-book "stp-counterexamples")
+(include-book "translate-dag-to-stp")
+(include-book "prove-with-stp")
+(include-book "stp-clause-processor")
+(include-book "defthm-stp")
+
+(include-book "jvm/top")

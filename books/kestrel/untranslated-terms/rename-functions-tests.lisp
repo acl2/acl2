@@ -15,19 +15,22 @@
 
 (defstub foo (x y) t)
 
-(assert-equal (rename-functions-in-untranslated-term  '(foo (foo x 3) nil) '((foo . bar)) nil state)
+(assert-equal (rename-functions-in-untranslated-term
+               '(foo (foo x 3) nil) '((foo . bar)) state)
               '(bar (bar x 3) nil))
 
 ;; Test with a cond
-(assert-equal (rename-functions-in-untranslated-term  '(cond ((equal x 3) (natp 3))
-                                                             ((equal x 4) (natp 4)))
-                                                      '((natp . posp)) nil state)
+(assert-equal (rename-functions-in-untranslated-term
+               '(cond ((equal x 3) (natp 3))
+                      ((equal x 4) (natp 4)))
+               '((natp . posp)) state)
               '(COND ((EQUAL X 3) (POSP 3))
                      ((EQUAL X 4) (POSP 4))))
 
 ;; Test with a cond with a clause of length 1
-(assert-equal (rename-functions-in-untranslated-term  '(cond ((equal x 3))
-                                                             ((equal x 4) (natp 4)))
-                                                      '((natp . posp)) nil state)
+(assert-equal (rename-functions-in-untranslated-term
+               '(cond ((equal x 3))
+                      ((equal x 4) (natp 4)))
+               '((natp . posp)) state)
               '(COND ((EQUAL X 3))
                      ((EQUAL X 4) (POSP 4))))

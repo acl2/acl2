@@ -24,6 +24,9 @@
 ;; TODO: We could consider changing DEFUNS to MUTUAL-RECURSION in the result,
 ;; but functions defined with DEFUNS seem rare.
 
+;; TDOO: Consider using logical-defun, which works for :program mode functions
+;; too (but check that the :verify-guards xarg is right).
+
 (include-book "std/util/bstar" :dir :system) ;could drop even this
 
 ;; Similar to get-event-tuple in books/std/util/defredundant.lisp but without

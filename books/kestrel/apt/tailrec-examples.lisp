@@ -161,9 +161,10 @@
 ; (namely, the case in which the base branch comes first,
 ; and the case in which the base branch comes second).
 
-(assert-equal (get-event 'len (w state))
+(assert-equal (logical-defun 'len (w state))
               '(defun len (x)
-                 (declare (xargs :guard t :mode :logic))
+                 (declare (xargs :mode :logic))
+                 (declare (xargs :guard t))
                  (if (consp x)
                      (+ 1 (len (cdr x)))
                    0)))

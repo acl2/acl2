@@ -17,7 +17,7 @@
 (include-book "kestrel/bv/slice" :dir :system)
 (include-book "kestrel/bv/getbit" :dir :system)
 (include-book "kestrel/bv/repeatbit" :dir :system)
-(include-book "kestrel/jvm/java-types" :dir :system)
+(include-book "java-types")
 
 ;; A boolean must be stored in an int field as 0 or 1 (see 2.3.4).
 (defund acl2::java-boolean-as-int-p (i)

@@ -9546,25 +9546,13 @@
   (unix-truename-pathname pathname dir-p state))
 
 #+acl2-loop-only
-(partial-encapsulate
-  (((canonical-pathname * * state) => *))
+(defproxy canonical-pathname (* * state)
 
-; Supporters = nil since each missing axiom equates a call of
-; canonical-pathname on explicit arguments with its result.
+; We use defproxy for now because state-p is still in :program mode; a
+; partial-encapsulate comes later in the boot-strap (see
+; boot-strap-pass-2-a.lisp).
 
-  nil
-  (logic)
-  (local (defun canonical-pathname (x dir-p state)
-           (declare (xargs :mode :logic))
-           (declare (ignore dir-p state))
-           (if (stringp x) x nil)))
-  (defthm canonical-pathname-is-idempotent
-    (equal (canonical-pathname (canonical-pathname x dir-p state) dir-p state)
-           (canonical-pathname x dir-p state)))
-  (defthm canonical-pathname-type
-    (or (equal (canonical-pathname x dir-p state) nil)
-        (stringp (canonical-pathname x dir-p state)))
-    :rule-classes :type-prescription))
+  => *)
 
 (defun canonical-dirname! (pathname ctx state)
   (declare (xargs :guard t))
@@ -15173,7 +15161,11 @@
 ; Makefile support is available; see community books file
 ; books/Makefile-generic.
 
-(defstub acl2x-expansion-alist (expansion-alist state)
+(defproxy acl2x-expansion-alist (* state)
+
+; We use defproxy for now because state-p is still in :program mode; a
+; partial-encapsulate comes later in the boot-strap (see
+; boot-strap-pass-2-a.lisp).
 
 ; Users are welcome to attach their own function to acl2x-expansion-alist,
 ; because it is only called (by write-acl2x-file) to write out a .acl2x file,
@@ -15182,7 +15174,7 @@
 ; Indeed, for this reason, Jared Davis and Sol Swords requested the addition of
 ; state as a parameter.
 
-  t)
+  => *)
 
 (defun hons-copy-with-state (x state)
   (declare (xargs :guard (state-p state)))
@@ -31157,26 +31149,20 @@
 (defmacro defund (&rest def)
   (cons 'defun def))
 
-; The next three events define a :logic mode version of ev-fncall that has
-; unknown-constraints.  We originally put this in boot-strap-pass-2.lisp (a
-; precursor to the combination of boot-strap-pass-2-a.lisp and
-; boot-strap-pass-2-b.lisp), but it didn't work there, because add-trip doesn't
-; give special treatment for defun-overrides in pass 2 of the boot-strap, which
-; is the only time that the events in boot-strap-pass-2.lisp were evaluated.
+; The next three events introduce a :logic mode version of ev-fncall that has
+; unknown-constraints.  Note that magic-ev-fncall is introduced eventually with
+; partial-encapsulate, but we use defproxy here because state-p is still in
+; :program mode.
+
+; Historical Note from before this use of defproxy.  We originally put this in
+; boot-strap-pass-2.lisp (a precursor to the combination of
+; boot-strap-pass-2-a.lisp and boot-strap-pass-2-b.lisp), but it didn't work
+; there, because add-trip doesn't give special treatment for defun-overrides in
+; pass 2 of the boot-strap, which is the only time that the events in
+; boot-strap-pass-2.lisp were evaluated.
 
 #+acl2-loop-only
-(partial-encapsulate
-  (((magic-ev-fncall * * state * *) => (mv * *)))
-
-; Supporters = nil since each missing axiom equates a call of
-; magic-ev-fncall on explicit arguments with its result.
-
-  nil
-  (logic)
-  (local (defun magic-ev-fncall (fn args state hard-error-returns-nilp aok)
-           (declare (xargs :mode :logic)
-                    (ignore fn args state hard-error-returns-nilp aok))
-           (mv nil nil))))
+(defproxy magic-ev-fncall (* * state * *) => (mv * *))
 
 #-acl2-loop-only
 (progn

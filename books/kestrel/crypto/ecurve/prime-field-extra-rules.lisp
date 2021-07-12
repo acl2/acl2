@@ -255,15 +255,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled inv-of-neg
-  (implies (and (rtl::primep p)
-                (fep a p)
-                (not (equal a 0)))
-           (equal (inv (neg a p) p)
-                  (neg (inv a p) p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defrule div-of-neg-and-neg
   (implies (and (rtl::primep p)
                 (fep a p)
@@ -271,16 +262,7 @@
                 (not (equal b 0)))
            (equal (div (neg a p) (neg b p) p)
                   (div a b p)))
-  :enable (div inv-of-neg))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule neg-of-sub
-  (implies (and (posp p)
-                (fep a p)
-                (fep b p))
-           (equal (neg (sub a b p) p)
-                  (sub b a p))))
+  :enable (div pfield::inv-of-neg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -302,13 +284,4 @@
                             p)
                        b
                        p)))
-  :enable div)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule div-of-same
-  (implies (and (rtl::primep p)
-                (fep x p)
-                (not (equal x 0)))
-           (equal (div x x p) 1))
   :enable div)
