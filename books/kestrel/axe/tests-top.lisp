@@ -20,3 +20,7 @@
 (include-book "make-term-into-dag-basic-tests")
 (include-book "prune-with-contexts-tests")
 (include-book "prove-with-stp-tests")
+
+(include-book "rewriter-tests")
+(include-book "prune-tests")
+(include-book "tactic-prover-tests")
