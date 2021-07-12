@@ -17,3 +17,5 @@
 ;; Evaluators for axe-syntaxp and axe-bind-free functions:
 (include-book "axe-syntaxp-evaluator-jvm")
 (include-book "axe-bind-free-evaluator-jvm")
+
+(include-book "rewriter-jvm") ; newest JVM-aware rewriter
