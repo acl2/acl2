@@ -12,33 +12,35 @@
 
 (in-package "ACL2")
 
+; cert_param: (uses-stp)
+
 (include-book "stp-clause-processor")
 
-;; ;full syntax for the :clause-processor hint:
-;; (defthm stp-clause-processor-test-0
-;;   (not (not (equal (bvplus 32 x y) (bvplus 32 y x))))
+;full syntax for the :clause-processor hint:
+(defthm stp-clause-processor-test-0
+  (not (not (equal (bvplus 32 x y) (bvplus 32 y x))))
+  :hints (("Goal" :in-theory nil :clause-processor (stp-clause-processor clause nil state))))
+
+;short syntax for the :clause-processor hint:
+(defthm stp-clause-processor-test-0b
+  (not (not (equal (bvplus 32 x y) (bvplus 32 y x))))
+  :hints (("Goal" :in-theory nil :clause-processor stp-clause-processor)))
+
+;; (defthm mytest
+;;   (not (not (equal (bvplus 33 x y) (bvplus 32 z x))))
 ;;   :hints (("Goal" :in-theory nil :clause-processor (stp-clause-processor clause nil state))))
 
-;; ;short syntax for the :clause-processor hint:
-;; (defthm stp-clause-processor-test-0b
-;;   (not (not (equal (bvplus 32 x y) (bvplus 32 y x))))
-;;   :hints (("Goal" :in-theory nil :clause-processor stp-clause-processor)))
+(defthm-with-stp-clause-processor stp-clause-processor-test-1
+  (equal (bvplus 32 x y)
+         (bvplus 32 y x)))
 
-;; ;; (defthm mytest
-;; ;;   (not (not (equal (bvplus 33 x y) (bvplus 32 z x))))
-;; ;;   :hints (("Goal" :in-theory nil :clause-processor (stp-clause-processor clause nil state))))
+; Same as above but with double negation added
+(defthm-with-stp-clause-processor stp-clause-processor-test-2
+  (not (not (equal (bvplus 32 x y)
+                   (bvplus 32 y x)))))
 
-;; (defthm-with-stp-clause-processor stp-clause-processor-test-1
-;;   (equal (bvplus 32 x y)
-;;          (bvplus 32 y x)))
+;; (defthm-with-stp-clause-processor mytest (not (not (equal (bvplus 32 x y) (bvplus 33 y x)))))
 
-;; ; Same as above but with double negation added
-;; (defthm-with-stp-clause-processor stp-clause-processor-test-2
-;;   (not (not (equal (bvplus 32 x y)
-;;                    (bvplus 32 y x)))))
-
-;; ;; (defthm-with-stp-clause-processor mytest (not (not (equal (bvplus 32 x y) (bvplus 33 y x)))))
-
-;; ;; (defthm mytest
-;; ;;   (implies (equal 0 x) (equal (bvplus 32 x 0) 0))
-;; ;;   :hints (("Goal" :clause-processor (stp-clause-processor clause nil state))))
+;; (defthm mytest
+;;   (implies (equal 0 x) (equal (bvplus 32 x 0) 0))
+;;   :hints (("Goal" :clause-processor (stp-clause-processor clause nil state))))
