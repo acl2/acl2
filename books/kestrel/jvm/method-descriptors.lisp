@@ -44,6 +44,10 @@
   (all-typep (mv-nth 0 (parse-descriptors-from-front chars)))
   :hints (("Goal" :in-theory (enable parse-descriptors-from-front))))
 
+(defthm true-listp-of-mv-nth-0-of-parse-descriptors-from-front
+  (true-listp (mv-nth 0 (parse-descriptors-from-front chars)))
+  :hints (("Goal" :in-theory (enable parse-descriptors-from-front))))
+
 ;;;
 ;;; skip-descriptors-at-front
 ;;;
@@ -88,8 +92,8 @@
     (parse-descriptor-from-front chars)))
 
 (defthm return-typep-of-mv-nth-0-parse-return-type-from-front
-  (implies (mv-nth 0 (parse-return-type-from-front chars))
-           (return-typep (mv-nth 0 (parse-return-type-from-front chars))))
+  (iff (return-typep (mv-nth 0 (parse-return-type-from-front chars)))
+       (mv-nth 0 (parse-return-type-from-front chars)))
   :hints (("Goal" :in-theory (enable parse-return-type-from-front
                                      return-typep))))
 
@@ -139,6 +143,16 @@
            (all-typep (mv-nth 1 (parse-method-descriptor-from-front chars))))
   :hints (("Goal" :in-theory (enable parse-method-descriptor-from-front))))
 
+(defthm true-listp-of-mv-nth-1-of-parse-method-descriptor-from-front
+  (implies (mv-nth 0 (parse-method-descriptor-from-front chars))
+           (true-listp (mv-nth 1 (parse-method-descriptor-from-front chars))))
+  :hints (("Goal" :in-theory (enable parse-method-descriptor-from-front))))
+
+(defthm return-typep-of-mv-nth-2-of-parse-method-descriptor-from-front
+  (implies (mv-nth 0 (parse-method-descriptor-from-front chars))
+           (return-typep (mv-nth 2 (parse-method-descriptor-from-front chars))))
+  :hints (("Goal" :in-theory (enable parse-method-descriptor-from-front))))
+
 ;;;
 ;;; skip-method-descriptor-at-front
 ;;;
@@ -182,6 +196,17 @@
            (all-typep (mv-nth 1 (parse-method-descriptor-chars chars))))
   :hints (("Goal" :in-theory (enable parse-method-descriptor-chars))))
 
+(defthm true-listp-of-mv-nth-1-of-parse-method-descriptor-chars
+  (implies (not (mv-nth 0 (parse-method-descriptor-chars chars)))
+           (true-listp (mv-nth 1 (parse-method-descriptor-chars chars))))
+  :hints (("Goal" :in-theory (enable parse-method-descriptor-chars))))
+
+(defthm return-typep-of-mv-nth-2-of-parse-method-descriptor-chars
+  (implies (not (mv-nth 0 (parse-method-descriptor-chars chars)))
+           (return-typep (mv-nth 2 (parse-method-descriptor-chars chars))))
+  :hints (("Goal" :in-theory (enable parse-method-descriptor-chars))))
+
+
 ;;;
 ;;; parse-method-descriptor
 ;;;
@@ -190,6 +215,21 @@
 (defund parse-method-descriptor (str)
   (declare (xargs :guard (stringp str)))
   (parse-method-descriptor-chars (coerce str 'list)))
+
+(defthm true-listp-of-mv-nth-1-parse-method-descriptor
+  (implies (not (mv-nth 0 (parse-method-descriptor str)))
+           (true-listp (mv-nth 1 (parse-method-descriptor str))))
+  :hints (("Goal" :in-theory (enable parse-method-descriptor))))
+
+(defthm all-typep-of-mv-nth-1-parse-method-descriptor
+  (implies (not (mv-nth 0 (parse-method-descriptor str)))
+           (all-typep (mv-nth 1 (parse-method-descriptor str))))
+  :hints (("Goal" :in-theory (enable parse-method-descriptor))))
+
+(defthm return-typep-of-mv-nth-2-parse-method-descriptor
+  (implies (not (mv-nth 0 (parse-method-descriptor str)))
+           (return-typep (mv-nth 2 (parse-method-descriptor str))))
+  :hints (("Goal" :in-theory (enable parse-method-descriptor))))
 
 ;(parse-method-descriptor "()V")
 
@@ -253,7 +293,6 @@
                                       parse-method-descriptor
                                       parse-method-descriptor-chars
                                       parse-method-descriptor-from-front)))))
-
 
 ;;;
 ;;; return-type-from-method-descriptor
