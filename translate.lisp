@@ -879,6 +879,7 @@
  (((big-n) => *)
   ((decrement-big-n *) => *)
   ((zp-big-n *) => *))
+ (logic)
  (local (defun big-n ()
           0))
  (local (defun decrement-big-n (n)

@@ -101,6 +101,87 @@
 (verify-termination-boot-strap union-equal-to-end) ; and guards
 (verify-termination-boot-strap flatten-ands-in-lit!) ; and guards
 
+(verify-guards warranted-fns-of-world)
+
+; Convert defproxy events to :logic mode.
+(defstub initialize-event-user (* * state) => state)
+(defstub finalize-event-user (* * state) => state)
+(defstub acl2x-expansion-alist (* state) => *)
+
+#+acl2-loop-only
+(partial-encapsulate
+  (((canonical-pathname * * state) => *))
+
+; Supporters = nil since each missing axiom equates a call of
+; canonical-pathname on explicit arguments with its result.
+
+  nil
+  (local (defun canonical-pathname (x dir-p state)
+           (declare (xargs :mode :logic))
+           (declare (ignore dir-p state))
+           (if (stringp x) x nil)))
+  (defthm canonical-pathname-is-idempotent
+    (equal (canonical-pathname (canonical-pathname x dir-p state) dir-p state)
+           (canonical-pathname x dir-p state)))
+  (defthm canonical-pathname-type
+    (or (equal (canonical-pathname x dir-p state) nil)
+        (stringp (canonical-pathname x dir-p state)))
+    :rule-classes :type-prescription))
+
+#+acl2-loop-only
+(partial-encapsulate
+  (((magic-ev-fncall * * state * *) => (mv * *)))
+
+; Supporters = nil since each missing axiom equates a call of
+; magic-ev-fncall on explicit arguments with its result.
+
+  nil
+  (logic)
+  (local (defun magic-ev-fncall (fn args state hard-error-returns-nilp aok)
+           (declare (xargs :mode :logic)
+                    (ignore fn args state hard-error-returns-nilp aok))
+           (mv nil nil))))
+
+#+acl2-loop-only
+(partial-encapsulate
+  (((mfc-ap-fn * * state *) => *)
+   ((mfc-relieve-hyp-fn * * * * * * state *) => *)
+   ((mfc-relieve-hyp-ttree * * * * * * state *) => (mv * *))
+   ((mfc-rw+-fn * * * * * state *) => *)
+   ((mfc-rw+-ttree * * * * * state *) => (mv * *))
+   ((mfc-rw-fn * * * * state *) => *)
+   ((mfc-rw-ttree * * * * state *) => (mv * *))
+   ((mfc-ts-fn * * state *) => *)
+   ((mfc-ts-ttree * * state *) => (mv * *)))
+
+; Supporters = nil since each missing axiom equates a call of one of the
+; signature functions (above) on explicit arguments with its result.
+
+  nil
+  (logic)
+  (set-ignore-ok t)
+  (set-irrelevant-formals-ok t)
+  (local (defun mfc-ts-fn (term mfc state forcep)
+           t))
+  (local (defun mfc-ts-ttree (term mfc state forcep)
+           (mv t t)))
+  (local (defun mfc-rw-fn (term obj equiv-info mfc state forcep)
+           t))
+  (local (defun mfc-rw-ttree (term obj equiv-info mfc state forcep)
+           (mv t t)))
+  (local (defun mfc-rw+-fn (term alist obj equiv-info mfc state forcep)
+           t))
+  (local (defun mfc-rw+-ttree (term alist obj equiv-info mfc state forcep)
+           (mv t t)))
+  (local (defun mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc state
+                                        forcep)
+           t))
+  (local (defun mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc state
+                                           forcep)
+           (mv t t)))
+  (local (defun mfc-ap-fn (term mfc state forcep)
+           t)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -6097,8 +6097,10 @@
 
                       (maybe-push-undo-stack 'defun (car def) ignorep))
                      ((and boot-strap-flg
-                           (member-eq (car def)
-                                      *boot-strap-pass-2-acl2-loop-only-fns*)))
+                           (or (member-eq (car def)
+                                          *boot-strap-pass-2-acl2-loop-only-fns*)
+                               (member-eq (car def) ; see comment above
+                                          *defun-overrides*))))
                      (t (maybe-push-undo-stack 'defun (car def) ignorep)
 
 ; Note: If ignorep is '(defstobj . stobj), we save both the current def and the
@@ -8261,14 +8263,26 @@
 ; ld-skip-proofsp is as specified by the &optional parameter above.  It
 ; defaults to 'include-book, which means we skip LOCALs, all syntactic checks,
 ; and proofs.  By calling this function with pass-2-ld-skip-proofsp nil you can
-; arrange for it to try to prove its way through the second pass.  However, see
-; below.
+; arrange for it to try to prove its way through the second pass -- and indeed,
+; through the entire sources.  See below.
 
 ; Why Two Passes?  By doing things in two passes we make it possible to use all
 ; system functions in hints and other proof commands.  In the one-pass
 ; initialization we used to use, it was impossible to use theory expressions in
 ; the defthms in axioms.lisp because the necessary theory functions were not
 ; yet defined and so trans-eval balked on them.
+
+; However, we came to realize that many proofs skipped during the boot-strap
+; were ones that could be done by making a little effort, including proofs for
+; defun events marked :mode :logic and defthm events not in pass-2 files.  So
+; in July 2021 we made some changes so that when pass-2-ld-skip-proofsp is nil,
+; then the entire boot-strap is done without skipping proofs except where
+; explicitly indicated with skip-proofs -- either a skip-proofs wrapper or the
+; use of an optional new first argument, :skip-proofs, for
+; verify-termination-boot-strap.  WARNING: defthm events are skipped in
+; :program mode, so if you put a defthm event in other than a pass-2 file, be
+; sure to arrange that it will be in an encapsulate with (logic) included above
+; it -- otherwise the defthm event won't be part of the boot-strap world.
 
   (when (null system-books-dir)
     (let ((dir (getenv$-raw "ACL2_SYSTEM_BOOKS")))
@@ -8416,7 +8430,13 @@
                                              (cons #\. (coerce *lisp-extension*
                                                                'list)))
                                      'string))
-                                'initialize-acl2
+                                (if (eq pass-2-ld-skip-proofsp nil)
+
+; See the comment above about July 2021 changes to support a more complete
+; execution of proofs in this case.
+
+                                    nil
+                                  'initialize-acl2)
                                 :error)
                   *the-live-state*
                   nil)
