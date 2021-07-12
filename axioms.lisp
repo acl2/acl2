@@ -4234,7 +4234,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(5 . RATIONALP))
 (defconst *tau-booleanp-pair*
   #+non-standard-analysis
-  '(9 . BOOLEANP)
+  '(11 . BOOLEANP)
   #-non-standard-analysis
   '(8 . BOOLEANP))
 (defconst *tau-natp-pair*
@@ -4516,7 +4516,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; make it conditional upon #+:non-standard-analysis.
 
 (defun realfix (x)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :mode :logic))
   (if (real/rationalp x) x 0))
 
 (defun nfix (x)
@@ -24818,18 +24819,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (progn
 
 (defun i-small (x)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :mode :logic))
   (and (acl2-numberp x)
        (equal (standard-part x) 0)))
 
 (defun i-close (x y)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :mode :logic))
   (and (acl2-numberp x)
        (acl2-numberp y)
        (i-small (- x y))))
 
 (defun i-large (x)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :mode :logic))
   (and (acl2-numberp x)
        (not (equal x 0))
        (i-small (/ x))))
