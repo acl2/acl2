@@ -345,7 +345,7 @@
        (make/change (defprod-ctor-autodoc prod))
 
        (make-foo         prod.ctor-macro)
-       (change-foo       (std::da-changer-name prod.type-name))
+       (change-foo       (std::da-changer-name prod.ctor-name))
        ;; Unlike a standalone defprod, these don't have a fix function
        ;; They also don't have a recognizer
        )

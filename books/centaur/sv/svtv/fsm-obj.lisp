@@ -34,13 +34,13 @@
 (include-book "../mods/svmods")
 
 (fty::defmap svtv-namemap :key-type svar :val-type stringp :true-listp t
-  :parents (svtv-steps)
+  :parents (svtv-name-lhs-map)
   :short "A mapping from user-provided names (generally symbols) to signal
 names in SystemVerilog hierarchical syntax (strings)."
   :long "<p>See @(see svtv-namemap->lhsmap).</p>")
 
 (fty::defmap svtv-name-lhs-map :key-type svar :val-type lhs :true-listp t
-  :parents (svtv-steps)
+  :parents (svtv-data)
   :short "Mapping from user-provided names (generally symbols) to normalized internal names."
   :long "<p>See @(see svtv-namemap->lhsmap).</p>"
   ///
