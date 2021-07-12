@@ -182,7 +182,6 @@
 (include-book "rewriter-support")
 (include-book "rule-alists")
 (include-book "rule-limits")
-(include-book "rule-lists-jvm")
 (include-book "rule-lists")
 (include-book "rules1")
 (include-book "rules2")
