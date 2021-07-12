@@ -18,4 +18,14 @@
 (include-book "axe-syntaxp-evaluator-jvm")
 (include-book "axe-bind-free-evaluator-jvm")
 
+;; Axe-specific rules:
+(include-book "jvm-rules-axe")
+(include-book "jvm-rules-axe2")
+
+;; Lists of rules
+(include-book "rule-lists-jvm")
+
+;; Collect up JVM rules:
+(include-book "rules-in-rule-lists-jvm")
+
 (include-book "rewriter-jvm") ; newest JVM-aware rewriter
