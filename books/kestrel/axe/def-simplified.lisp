@@ -40,8 +40,8 @@
 (include-book "kestrel/bv/bvif2" :dir :system) ; for BVLT-OF-BVIF-ARG2-SAFE
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
 (include-book "kestrel/bv/arith" :dir :system) ; for <-OF-SUMS-CANCEL
-;(include-book "kestrel/axe/rules3" :dir :system) ; for EQUAL-OF-BVCHOP-OF-CAR-AND-BV-ARRAY-READ -- drop?
-(include-book "kestrel/axe/rules2" :dir :system) ;for LOOKUP-OF-BVIF -- drop?
+;(include-book "rules3") ; for EQUAL-OF-BVCHOP-OF-CAR-AND-BV-ARRAY-READ -- drop?
+(include-book "rules2") ;for LOOKUP-OF-BVIF -- drop?
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system) ; for LIST-TO-BV-ARRAY
 (include-book "kestrel/utilities/mv-nth" :dir :system) ; for MV-NTH-OF-CONS-ALT
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)

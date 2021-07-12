@@ -12,8 +12,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/axe/conjunctions-and-disjunctions" :dir :system) ; for possibly-negated-nodenumsp, etc
-(include-book "kestrel/axe/contexts" :dir :system) ; for max-nodenum-in-possibly-negated-nodenums-aux, etc.
+(include-book "conjunctions-and-disjunctions") ; for possibly-negated-nodenumsp, etc
+(include-book "contexts") ; for max-nodenum-in-possibly-negated-nodenums-aux, etc.
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))

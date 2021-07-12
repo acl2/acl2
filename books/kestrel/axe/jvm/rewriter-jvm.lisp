@@ -14,8 +14,8 @@
 
 ;; This book creates a rewriter for use in JVM lifting / symbolic execution.
 
-(include-book "kestrel/axe/make-rewriter-simple" :dir :system)
-(include-book "kestrel/axe/evaluator-basic" :dir :system) ;todo: consider an evaluator with some JVM functions built-in
+(include-book "../make-rewriter-simple")
+(include-book "../evaluator-basic") ;todo: consider an evaluator with some JVM functions built-in
 (include-book "axe-syntaxp-evaluator-jvm") ;jvm-specific
 (include-book "axe-bind-free-evaluator-jvm") ;jvm-specific
 

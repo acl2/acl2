@@ -15,8 +15,8 @@
 ;; This book defines JVM-related functions used in axe-syntaxp and axe-bind-free rules.
 
 (include-book "kestrel/jvm/jvm" :dir :system) ; for jvm::pc
-;(include-book "kestrel/axe/dags" :dir :system) ;for dargs
-;(include-book "kestrel/axe/dag-arrays" :dir :system) ;for pseudo-dag-arrayp
+;(include-book "../axe/dags") ;for dargs
+;(include-book "../axe/dag-arrays") ;for pseudo-dag-arrayp
 (include-book "../dag-array-printing")
 (include-book "../axe-syntax-functions") ; for count-myif-branches
 (include-book "kestrel/utilities/erp" :dir :system)
