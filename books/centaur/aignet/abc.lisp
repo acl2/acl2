@@ -32,6 +32,7 @@
 
 (include-book "aiger")
 (include-book "centaur/misc/tshell" :dir :system)
+(include-book "std/strings/defs" :dir :system) ; previously came in via tshell
 (local (include-book "std/strings/decimal" :dir :system))
 (defttag aignet-abc)
 
