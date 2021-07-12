@@ -27,3 +27,5 @@
 
 ;; Collect up JVM rules:
 (include-book "rules-in-rule-lists-jvm")
+
+(include-book "rewriter-jvm") ; newest JVM-aware rewriter
