@@ -465,6 +465,13 @@
     (and (jvm::pcp (first pcs))
          (acl2::all-pcp (rest pcs)))))
 
+(defthm all-pcp-of-revappend
+  (implies (and (acl2::all-pcp x)
+                (acl2::all-pcp y))
+           (acl2::all-pcp (revappend x y)))
+  :hints (("Goal" :induct t
+           :in-theory (enable acl2::all-pcp revappend))))
+
 (defthm pcp-of-car
   (implies (acl2::all-pcp pcs)
            (equal (pcp (car pcs))
@@ -510,7 +517,8 @@
              ;;fixme add the rest of the cases!
              (:new (and (= 1 (len (instruction-args inst)))
                         (class-namep (farg1 inst))
-                        (valid-pcp (+ 3 pc) valid-pcs)))
+                        (valid-pcp (+ 3 pc) valid-pcs) ;todo: either drop these or change to a more efficient check
+                        ))
              (:putfield (and (= 3 (len (instruction-args inst)))
                              (class-namep (farg1 inst))
                              (field-idp (farg2 inst))

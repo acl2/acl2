@@ -207,6 +207,11 @@
            (all-local-variable-table-entryp (revappend entries acc)))
   :hints (("Goal" :in-theory (enable all-local-variable-table-entryp))))
 
+(defthm all-local-variable-table-entryp-of-reverse
+  (implies (all-local-variable-table-entryp entries)
+           (all-local-variable-table-entryp (acl2::reverse entries)))
+  :hints (("Goal" :in-theory (enable acl2::reverse))))
+
 (defund local-variable-tablep (table)
   (declare (xargs :guard t))
   (and (true-listp table)
