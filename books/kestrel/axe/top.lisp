@@ -69,7 +69,6 @@
 (include-book "dag-to-term-with-lets")
 (include-book "dag-variable-alist")
 (include-book "dags")
-(include-book "dagify")
 (include-book "dargp-less-than")
 (include-book "dargp")
 (include-book "def-dag-builder-theorems")
@@ -87,7 +86,6 @@
 (include-book "equivalent-dags")
 (include-book "equivs")
 (include-book "evaluator-basic")
-(include-book "evaluator")
 ;; (include-book "evaluator-tests")
 (include-book "fixup-context")
 (include-book "get-args-not-done")
@@ -96,7 +94,6 @@
 (include-book "group-axe")
 (include-book "hit-counts")
 (include-book "if-rules")
-(include-book "instantiate-hyp")
 (include-book "instantiate-hyp-basic")
 (include-book "interpreted-function-alistp")
 (include-book "interpreted-function-alists")
@@ -224,3 +221,13 @@
 (include-book "defthm-stp")
 
 (include-book "jvm/top")
+
+;; Legacy Axe tools:
+(include-book "evaluator")
+(include-book "instantiate-hyp")
+(include-book "dagify")
+(include-book "sublis-var-and-eval")
+(include-book "prover")
+(include-book "rewriter")
+(include-book "prune")
+(include-book "tactic-prover")
