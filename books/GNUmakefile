@@ -226,6 +226,7 @@ $(info OS_HAS_ABC         := $(OS_HAS_ABC))
 $(info OS_HAS_GLUCOSE     := $(OS_HAS_GLUCOSE))
 $(info OS_HAS_IPASIR      := $(OS_HAS_IPASIR))
 $(info OS_HAS_SMTLINK     := $(OS_HAS_SMTLINK))
+$(info OS_HAS_STP         := $(OS_HAS_STP))
 $(info USE_QUICKLISP      := $(USE_QUICKLISP))
 $(info ACL2_USELESS_RUNES := $(ACL2_USELESS_RUNES))
 $(info Done with features.)
@@ -407,6 +408,11 @@ endif
 ifeq ($(OS_HAS_SMTLINK), )
 $(info Excluding books that need SMTLINK: [$(CERT_PL_USES_SMTLINK)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_SMTLINK), $(OK_CERTS))
+endif
+
+ifeq ($(OS_HAS_STP), )
+$(info Excluding books that need STP: [$(CERT_PL_USES_STP)])
+OK_CERTS := $(filter-out $(CERT_PL_USES_STP), $(OK_CERTS))
 endif
 
 
