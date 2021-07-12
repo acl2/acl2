@@ -28,6 +28,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-function-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
@@ -43,6 +44,7 @@
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/maybe-pseudo-event-formp" :dir :system)
+(include-book "kestrel/std/system/measure-plus" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
 (include-book "kestrel/std/system/uguard-plus" :dir :system)
@@ -112,6 +114,10 @@
   (xdoc::evmac-topic-implementation-item-input "print")
 
   xdoc::*evmac-topic-implementation-item-call*
+
+  "@('fn-appconds') is an alist
+   from the recursive functions among @('fn1'), ..., @('fnp')
+   to the names (keywords) of the corresponding applicability conditions."
 
   "@('prog-const') is the symbol specified by @('const-name').
    This is @('nil') if @('proofs') is @('nil')."
@@ -570,6 +576,30 @@
      that are generated only locally to the @(tsee encapsulate)."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-appconds ((fns symbol-listp) (wrld plist-worldp))
+  :returns (mv (appconds "A @(tsee acl2::evmac-appcond-listp).")
+               (fn-appconds "A @(tsee symbol-symbol-alistp)."))
+  :mode :program
+  :short "Generate the applicability conditions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Also return an alist from the recursive target functions
+     to the corresponding applicability condition names."))
+  (b* (((when (endp fns)) (mv nil nil))
+       (fn (car fns))
+       ((when (not (acl2::irecursivep+ fn wrld)))
+        (atc-gen-appconds (cdr fns) wrld))
+       (meas (acl2::measure+ fn wrld))
+       (name (acl2::packn-pos (list 'natp-of-measure-of- fn) :keyword))
+       (formula (untranslate `(natp ,meas) nil wrld))
+       (appcond (acl2::make-evmac-appcond :name name :formula formula))
+       ((mv appconds fn-appconds) (atc-gen-appconds (cdr fns) wrld)))
+    (mv (cons appcond appconds)
+        (acons fn name fn-appconds))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3780,13 +3810,15 @@
   :mode :program
   :short "Generate a C translation unit from the ACL2 target functions,
           and accompanying event."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We first generate the event for the named constant with the environment,
-     because its name must be passed to the ACL2 functions
-     that generate the external declarations that form the translation unit."))
-  (b* (((mv wf-thm-local-events wf-thm-exported-events)
+  (b* (((mv appcond-local-events names-to-avoid)
+        (if proofs
+            (b* (((mv appconds &) (atc-gen-appconds fn1...fnp (w state)))
+                 ((mv appcond-events & & names-to-avoid)
+                  (acl2::evmac-appcond-theorem-list appconds nil names-to-avoid
+                                                    print ctx state)))
+              (mv appcond-events names-to-avoid))
+          (mv nil nil)))
+       ((mv wf-thm-local-events wf-thm-exported-events)
         (atc-gen-wf-thm proofs prog-const wf-thm print))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
@@ -3798,7 +3830,8 @@
         (if proofs
             (atc-gen-prog-const prog-const tunit print)
           (mv nil nil)))
-       (local-events (append (and proofs (list local-const-event))
+       (local-events (append appcond-local-events
+                             (and proofs (list local-const-event))
                              wf-thm-local-events
                              fn-thm-local-events))
        (exported-events (append (and proofs (list exported-const-event))
