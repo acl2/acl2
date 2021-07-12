@@ -216,4 +216,11 @@
 (include-book "worklists")
 (include-book "call-axe-script")
 
+;;STP-related stuff:
+(include-book "stp-counterexamples")
+(include-book "translate-dag-to-stp")
+(include-book "prove-with-stp")
+(include-book "stp-clause-processor")
+(include-book "defthm-stp")
+
 (include-book "jvm/top")
