@@ -145,7 +145,9 @@
       the order of the (non-recursive) inputs @('fn1'), ..., @('fnp').")
 
     (xdoc::p
-     "Each function @('fni') must be in logic mode and guard-verified.")
+     "Each function @('fni') must be in logic mode and guard-verified.
+      The function must not occur in its own guard,
+      which is rare but allowed in ACL2.")
 
     (xdoc::p
      "The symbol name of each non-recursive @('fni')

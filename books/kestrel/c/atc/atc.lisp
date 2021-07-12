@@ -155,6 +155,11 @@
        ((er &) (acl2::ensure-function-is-logic-mode$ fn desc t nil))
        ((er &) (acl2::ensure-function-is-guard-verified$ fn desc t nil))
        ((er &) (acl2::ensure-function-is-defined$ fn desc t nil))
+       ((when (acl2::ffnnamep fn (acl2::uguard+ fn (w state))))
+        (er-soft+ ctx t nil
+                  "The target function ~x0 is used in its own guard. ~
+                   This is currently not supported in ATC."
+                  fn))
        (rec (acl2::irecursivep+ fn (w state)))
        ((when (and rec (> (len rec) 1)))
         (er-soft+ ctx t nil
