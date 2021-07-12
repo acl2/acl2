@@ -1314,6 +1314,9 @@ certification using @('make')."
  <li>@('uses-glucose'): only certify when Glucose (a SAT solver) is
  available</li>
 
+ <li>@('uses-stp'): only certify when STP (an SMT solver available <a href=
+ 'https://github.com/stp/stp'>here</a>) is available</li>
+
  <li>@('uses-quicklisp'): only certify when quicklisp is available</li>
 
  </ul>"))
