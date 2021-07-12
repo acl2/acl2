@@ -1,9 +1,19 @@
+; Tests for the Axe toolkit
+;
+; Copyright (C) 2021 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
 (include-book "dag-tests")
 (include-book "known-booleans-tests")
-(include-book "stp-clause-processor-tests")
-(include-book "defthm-stp-tests")
+;; (include-book "stp-clause-processor-tests")
+;; (include-book "defthm-stp-tests")
 (include-book "unroll-spec-basic-tests")
 (include-book "def-simplified-tests")
 (include-book "check-equivs-tests")
@@ -19,4 +29,4 @@
 (include-book "evaluator-tests")
 (include-book "make-term-into-dag-basic-tests")
 (include-book "prune-with-contexts-tests")
-(include-book "prove-with-stp-tests")
+;; (include-book "prove-with-stp-tests")
