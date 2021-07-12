@@ -131,14 +131,16 @@
                (warranted-fns-of-world1 (cdr x) wrld)))
         (t nil)))
 
-; Matt:  The following function used to be called badged-fns-of-world
 (defun warranted-fns-of-world (wrld)
 
 ; We return the list of all warranted functions in wrld, but in a way that can
 ; be guard-verified and can be proved to return a list of function symbols that
-; is a subset of the warranted functions of wrld.
+; is a subset of the warranted functions of wrld.  The guard verification comes
+; later during initialization (in boot-strap-pass-2-a.lisp).
 
-  (declare (xargs :mode :logic :guard (plist-worldp wrld)))
+  (declare (xargs :mode :logic
+                  :guard (plist-worldp wrld)
+                  :verify-guards nil))
   (and (alistp (table-alist 'badge-table wrld))
        (warranted-fns-of-world1
         (cdr (assoc-eq :badge-userfn-structure
@@ -164,11 +166,14 @@
 
  (((ev-fncall+-fns * * * * * * *) => *))
  nil
+
  (logic)
+
  (local (defun ev-fncall+-fns (fn args wrld big-n safe-mode gc-off strictp)
           (declare (ignore fn args big-n safe-mode gc-off))
           (and (not strictp)
                (warranted-fns-of-world wrld))))
+
  (local
   (defthm all-function-symbolps-ev-fncall+-fns-lemma
     (all-function-symbolps (warranted-fns-of-world1 x wrld) wrld)))
@@ -176,9 +181,20 @@
  (defthm all-function-symbolps-ev-fncall+-fns
    (let ((fns (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil)))
      (all-function-symbolps fns wrld)))
+
+ (local
+  (defthm subsetp-equal-cons
+    (implies (subsetp-equal x y)
+             (subsetp-equal x (cons a y)))))
+
+ (local
+  (defthm subsetp-equal-x-x
+    (subsetp-equal x x)))
+
  (defthm ev-fncall+-fns-is-subset-of-badged-fns-of-world
    (subsetp (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil)
             (warranted-fns-of-world wrld)))
+
  (defthm function-symbolp-ev-fncall+-fns-strictp
    (let ((fn (ev-fncall+-fns fn args wrld big-n safe-mode gc-off t)))
      (and (symbolp fn)
@@ -11858,6 +11874,7 @@
    :formals (failure-reason)
    :guard (and (consp failure-reason)
                (posp (car failure-reason)))))
+ (logic)
  (local (defun rw-cacheable-failure-reason (failure-reason)
           failure-reason)))
 

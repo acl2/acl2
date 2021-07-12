@@ -145,7 +145,9 @@
       the order of the (non-recursive) inputs @('fn1'), ..., @('fnp').")
 
     (xdoc::p
-     "Each function @('fni') must be in logic mode and guard-verified.")
+     "Each function @('fni') must be in logic mode and guard-verified.
+      The function must not occur in its own guard,
+      which is rare but allowed in ACL2.")
 
     (xdoc::p
      "The symbol name of each non-recursive @('fni')
@@ -184,6 +186,14 @@
       it must have at least one formal parameter.
       When @('fni') is non-recursive,
       it may have any number of formal parameters, including none.")
+
+    (xdoc::p
+     "If @('fni') is recursive,
+      it must be singly (not mutually) recursive,
+      its well-founded relation must be @(tsee o<),
+      and its measure must yield a natural number.
+      The latter requirement is checked via an applicability condition,
+      as described in the `Applicability Conditions' section.")
 
     (xdoc::p
      "The guard of each @('fni') must include,
@@ -232,7 +242,7 @@
 
     (xdoc::p
      "The " (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
-     " of each non-recursive @('fni') must be:")
+     " of each @('fni') must be:")
     (xdoc::ul
      (xdoc::li
       "A statement term for @('fni') transforming variables @('nil'),
@@ -832,6 +842,41 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::evmac-section
+    xdoc::*evmac-section-appconds-title*
+
+    (xdoc::p
+     "In addition to the requirements on the inputs stated above,
+      the following "
+     (xdoc::seetopic "acl2::event-macro-applicability-conditions"
+                     "applicability conditions")
+     " must be proved.
+      The proofs are attempted when ATC is called.
+      No hints can be supplied to ATC for these applicability conditions;
+      (possibly local) lemmas must be provided before calling ATC
+      that suffice for these applicability conditions
+      to be proved without hints.")
+
+    (xdoc::evmac-appcond
+     ":natp-of-measure-of-fn"
+     (xdoc::&&
+      (xdoc::p
+       "The measure of the recursive target function @('fn')
+        must yield a natural number:")
+      (xdoc::codeblock
+       "(natp <fn-measure>)")
+      (xdoc::p
+       "where @('<fn-measure>') is the measure of @('fn').")
+      (xdoc::p
+       "There is one such applicability condition
+        for each recursive target function @('fn').")))
+
+    (xdoc::p
+     "These applicability conditions do not need to be proved
+      if @(':proofs') is @('nil')."))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::evmac-section-generated
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -959,5 +1004,5 @@
     "Redundancy"
 
     (xdoc::p
-     "A call of @('atc') is redundant if an only if
-      it is identical to a previous successful call of @('atc')."))))
+     "A call of ATC is redundant if an only if
+      it is identical to a previous successful call of ATC."))))

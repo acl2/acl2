@@ -5094,23 +5094,25 @@
 )
 
 (encapsulate
- ((worse-than
-   (term1 term2) t
-   :guard
-   (and (pseudo-termp term1)
-        (pseudo-termp term2))))
- (local (defun worse-than (term1 term2)
-          (declare (ignore term1 term2)
-                   nil))))
+  ((worse-than
+    (term1 term2) t
+    :guard
+    (and (pseudo-termp term1)
+         (pseudo-termp term2))))
+  (logic)
+  (local (defun worse-than (term1 term2)
+           (declare (ignore term1 term2))
+           nil)))
 (encapsulate
- ((worse-than-or-equal
-   (term1 term2) t
-   :guard
-   (and (pseudo-termp term1)
-        (pseudo-termp term2))))
- (local (defun worse-than-or-equal (term1 term2)
-          (declare (ignore term1 term2)
-                   nil))))
+  ((worse-than-or-equal
+    (term1 term2) t
+    :guard
+    (and (pseudo-termp term1)
+         (pseudo-termp term2))))
+  (logic)
+  (local (defun worse-than-or-equal (term1 term2)
+           (declare (ignore term1 term2))
+           nil)))
 
 (defmacro worse-than-clk () 15)
 
