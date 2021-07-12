@@ -40,20 +40,23 @@ fi
 
 echo "CALLING STP"
 
-if [ -f "${NEWSTP}" ]; then
-    echo "Using NEWSTP, which is ${NEWSTP}."
-    ## Call a relatively new version of STP:
-    ## echo "Calling new STP: ${NEWSTP}."
-    ${NEWSTP} ${COUNTEREXAMPLE_ARGS} --max_num_confl $TIMEOUT -r ${INPUT_FILE} > ${OUTPUT_FILE}
-elif [ -f "${STP}" ]; then
-    ## Call a relatively old version of STP:
-    ${STP} ${COUNTEREXAMPLE_ARGS} -g $TIMEOUT -r ${INPUT_FILE} > ${OUTPUT_FILE}
-else
-    echo "ERROR: callstplimited.bash: Cannot find NEWSTP or STP"
-    echo "(NEWSTP environment var = ${NEWSTP})"
-    echo "(STP environment var = ${STP})"
-    exit 201
-fi
+## Requires a relatively new STP:
+stp ${COUNTEREXAMPLE_ARGS} --max_num_confl $TIMEOUT -r ${INPUT_FILE} > ${OUTPUT_FILE}
+
+# if [ -f "${NEWSTP}" ]; then
+#     echo "Using NEWSTP, which is ${NEWSTP}."
+#     ## Call a relatively new version of STP:
+#     ## echo "Calling new STP: ${NEWSTP}."
+#     ${NEWSTP} ${COUNTEREXAMPLE_ARGS} --max_num_confl $TIMEOUT -r ${INPUT_FILE} > ${OUTPUT_FILE}
+# elif [ -f "${STP}" ]; then
+#     ## Call a relatively old version of STP:
+#     ${STP} ${COUNTEREXAMPLE_ARGS} -g $TIMEOUT -r ${INPUT_FILE} > ${OUTPUT_FILE}
+# else
+#     echo "ERROR: callstplimited.bash: Cannot find NEWSTP or STP"
+#     echo "(NEWSTP environment var = ${NEWSTP})"
+#     echo "(STP environment var = ${STP})"
+#     exit 201
+# fi
 
 EXITSTATUS=$?
 # echo "STP exit status: $EXITSTATUS"
