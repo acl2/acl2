@@ -1,6 +1,7 @@
 (in-package "ACL2")
 
 ; cert_param: (uses_acl2r)
+; cert_param: (uses-smtlink)
 
 (include-book "arithmetic/top"       :dir :system)
 (include-book "std/util/top"         :dir :system)

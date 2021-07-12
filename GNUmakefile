@@ -738,15 +738,15 @@ $(PREFIXsaved_acl2): $(ACL2_DEPS)
 
 .PHONY: large-acl2r
 large-acl2r:
-	$(MAKE) large ACL2_REAL=r
+	@$(MAKE) -s large ACL2_REAL=r
 
 .PHONY: large-acl2d
 large-acl2d:
-	$(MAKE) large ACL2_DEVEL=d
+	@$(MAKE) -s large ACL2_DEVEL=d
 
 .PHONY: large-acl2p
 large-acl2p:
-	$(MAKE) large ACL2_PAR=p
+	@$(MAKE) -s large ACL2_PAR=p
 
 # Since ACL2_WAG is for implementors only, we don't bother making a
 # target for it.  Instead one just uses ACL2_WAG=w on the "make"

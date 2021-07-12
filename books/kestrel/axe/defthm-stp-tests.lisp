@@ -16,17 +16,17 @@
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)
 
-(deftest
-  (defthm-stp test1 (equal (bvplus 32 x y) (bvplus 32 y x))))
+;; (deftest
+;;   (defthm-stp test1 (equal (bvplus 32 x y) (bvplus 32 y x))))
 
-;; test of :rule-classes nil
-(deftest
-  (defthm-stp test2 (equal (bvplus 32 x y) (bvplus 32 x y)) :rule-classes nil))
+;; ;; test of :rule-classes nil
+;; (deftest
+;;   (defthm-stp test2 (equal (bvplus 32 x y) (bvplus 32 x y)) :rule-classes nil))
 
-;; this one is not true:
-(must-fail (defthm-stp test3 (equal (bvplus 32 x y) (bvplus 32 x z))))
+;; ;; this one is not true:
+;; (must-fail (defthm-stp test3 (equal (bvplus 32 x y) (bvplus 32 x z))))
 
-;; test :counterexample
-(must-fail (defthm-stp test3 (equal (bvplus 32 x y) (bvplus 32 x z)) :counterexample t))
+;; ;; test :counterexample
+;; (must-fail (defthm-stp test3 (equal (bvplus 32 x y) (bvplus 32 x z)) :counterexample t))
 
-(must-fail (defthm-stp test3 x :counterexample t))
+;; (must-fail (defthm-stp test3 x :counterexample t))

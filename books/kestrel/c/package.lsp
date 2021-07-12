@@ -29,6 +29,7 @@
                                   value))
              '(any
                bool
+               ctxp
                cw-event
                define-sk
                defmacro+

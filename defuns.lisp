@@ -12604,25 +12604,36 @@
                defs
                lst wrld))))))
 
+(defun verify-termination-boot-strap-fn1 (lst state event-form)
+  (let ((event-form (or event-form
+                        (cons 'VERIFY-TERMINATION lst))))
+    (er-let*
+        ((verify-termination-defs-lst (verify-termination1 lst state)))
+      (defuns-fn
+        verify-termination-defs-lst
+        state
+        event-form
+        #+:non-standard-analysis
+        nil))))
+
 (defun verify-termination-boot-strap-fn (lst state event-form)
   (cond
    ((global-val 'boot-strap-flg (w state))
-    (when-logic
+    (let* ((skipp (eq (car lst) ':skip-proofs))
+           (lst (if skipp (cdr lst) lst)))
+      (cond
+       (skipp
+        (state-global-let*
+         ((ld-skip-proofsp 'initialize-acl2))
+         (verify-termination-boot-strap-fn1 lst state event-form)))
+       (t
+        (when-logic
 
 ; It is convenient to use when-logic so that we skip verify-termination during
 ; pass1 of the boot-strap in axioms.lisp.
 
-     "VERIFY-TERMINATION"
-     (let ((event-form (or event-form
-                           (cons 'VERIFY-TERMINATION lst))))
-       (er-let*
-        ((verify-termination-defs-lst (verify-termination1 lst state)))
-        (defuns-fn
-          verify-termination-defs-lst
-          state
-          event-form
-          #+:non-standard-analysis
-          nil)))))
+         "VERIFY-TERMINATION"
+         (verify-termination-boot-strap-fn1 lst state event-form))))))
    (t
 
 ; We do not allow users to use 'verify-termination-boot-strap.  Why?  See the
