@@ -59,3 +59,10 @@
 (include-book "symbolic-execution")
 (include-book "symbolic-execution2")
 (include-book "control-flow")
+
+(include-book "class-file-parser")
+(include-book "read-and-parse-class-file")
+(include-book "events-for-class")
+(include-book "class-and-path-utils")
+(include-book "load-class")
+(include-book "load-class-from-hierarchy")
