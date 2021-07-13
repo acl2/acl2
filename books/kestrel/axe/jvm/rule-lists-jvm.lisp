@@ -857,14 +857,14 @@
             jvm::class-decl-superclass ;or just run it?
             jvm::class-decl-interfacep
 
-            jvm::get-super-class
+            jvm::get-superclass
             jvm::lookup-method-for-invokespecial
             jvm::lookup-method-for-invokespecial-aux-unroll
             jvm::lookup-method-for-invokespecial-aux-base-1
             jvm::lookup-method-for-invokespecial-aux-base-2
             jvm::lookup-method-for-invokespecial-aux-base-3
             jvm::lookup-method-for-invokespecial-aux-base-4
-            jvm::super-classp
+            jvm::superclassp
 ;jvm::classp
             jvm::bound-to-a-classp
             jvm::bound-to-an-interfacep
@@ -872,9 +872,9 @@
             ;; jvm::array-classp
 ;jvm::non-array-classp
             jvm::class-implements-interfacep
-            jvm::get-super-interfaces-aux-base
-            jvm::get-super-interfaces-aux-opener
-            acl2::get-super-interfaces
+            jvm::get-superinterfaces-aux-base
+            jvm::get-superinterfaces-aux-opener
+            acl2::get-superinterfaces
 ;     get-class-of-initialize-2d-array
 ;     get-class-field-of-initialize-2d-array
             jvm::intern-table-of-make-state
@@ -1018,9 +1018,9 @@
             jvm::static-field-map-of-make-state
             jvm::initialized-classes-of-make-state
 
-            jvm::get-super-classes-aux-opener
-            jvm::get-super-classes-aux-base
-            get-super-classes ;class-decl-superclasses ;should we add this to eval-fn?
+            jvm::get-superclasses-aux-opener
+            jvm::get-superclasses-aux-base
+            get-superclasses ;class-decl-superclasses ;should we add this to eval-fn?
 ;     jvm::method-sync
             jvm::method-program-constant-opener ; we keep method-program itself closed because it is used in 'poised' assumptions
             jvm::method-program-of-acons
