@@ -61,3 +61,4 @@
 (include-book "control-flow")
 
 (include-book "class-file-parser")
+(include-book "read-and-parse-class-file")
