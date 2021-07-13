@@ -1,8 +1,7 @@
 ; The formal unit testing tool
 ;
-; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
+; Copyright (C) 2020-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
