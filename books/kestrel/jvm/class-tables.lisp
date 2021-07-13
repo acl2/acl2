@@ -133,7 +133,7 @@
          (acl2::subsetp-equal interface-names all-class-names)))
 
 ;the last param is just an optimization, to avoid recomputing the domain of the class-table over and over.
-(defforall all-super-interfaces-bound (class-name class-table all-class-names)
+(defforall all-superinterfaces-bound (class-name class-table all-class-names)
     (all-interfaces-present (class-decl-interfaces (get-class-info class-name class-table)) all-class-names)
     ;alternative syntax: (lambda (class-name) (subsetp-eq (class-decl-interfaces (get-class-info class-name class-table)) all-class-names))
     :fixed (class-table all-class-names)
@@ -199,14 +199,14 @@
            (bound-in-class-tablep class-name class-table))
   :hints (("Goal" :in-theory (enable all-bound-in-class-tablep))))
 
-(defthm use-all-super-interfaces-bound-alt
-  (implies (and (all-super-interfaces-bound class-names class-table (set::2list (acl2::rkeys class-table)))
+(defthm use-all-superinterfaces-bound-alt
+  (implies (and (all-superinterfaces-bound class-names class-table (set::2list (acl2::rkeys class-table)))
                 (memberp class-name class-names))
            (all-bound-in-class-tablep (class-decl-interfaces (get-class-info class-name class-table)) class-table))
-  :hints (("Goal" :use (:instance acl2::use-all-super-interfaces-bound (acl2::free-class-name class-names)
+  :hints (("Goal" :use (:instance acl2::use-all-superinterfaces-bound (acl2::free-class-name class-names)
                                   (all-class-names (set::2list (acl2::rkeys class-table)))
                                   (acl2::x class-name))
-           :in-theory (e/d (all-bound-in-class-tablep-alt) ( acl2::use-all-super-interfaces-bound)))))
+           :in-theory (e/d (all-bound-in-class-tablep-alt) ( acl2::use-all-superinterfaces-bound)))))
 
 
 (defthm class-namep-of-class-decl-superclass-of-get-class-info
@@ -385,7 +385,7 @@
                 (and object-class-info ;Object is bound, and it's bound to a class
                      (true-listp (class-decl-access-flags object-class-info)) ;for guards (todo: drop?)
                      (not (class-decl-interfacep object-class-info))))
-              (check-bool (all-super-interfaces-bound key-list class-table key-list) ;All superinterfaces of any class/interface must also be in dom.
+              (check-bool (all-superinterfaces-bound key-list class-table key-list) ;All superinterfaces of any class/interface must also be in dom.
                           "ERROR: interfaces are wrong in class table!~%")
               (check-bool (all-super-classes-okayp key-list class-table) ;The super-class of every class must also be in dom.
                           "ERROR: super-classes are wrong in class table!~%")))))
@@ -605,7 +605,7 @@
 
 ;a workset algorithm
 ;note: this does not look up superclasses!
-(defun acl2::get-super-interfaces-aux (class-or-interface-names class-table count acc)
+(defun acl2::get-superinterfaces-aux (class-or-interface-names class-table count acc)
   (declare (xargs :measure (nfix (+ 1 count))
                   :guard (and (class-tablep class-table)
                               (all-class-namesp class-or-interface-names)
@@ -620,43 +620,43 @@
         acc
       (let* ((class-or-interface0-name (first class-or-interface-names))
              (class-info (get-class-info class-or-interface0-name class-table))
-             (direct-super-interfaces (class-decl-interfaces class-info)))
-        (acl2::get-super-interfaces-aux (append direct-super-interfaces
+             (direct-superinterfaces (class-decl-interfaces class-info)))
+        (acl2::get-superinterfaces-aux (append direct-superinterfaces
                                                 (rest class-or-interface-names))
                                         class-table
                                         (+ -1 count)
-                                        (union-equal direct-super-interfaces acc))))))
+                                        (union-equal direct-superinterfaces acc))))))
 
-(defthm get-super-interfaces-aux-base
+(defthm get-superinterfaces-aux-base
   (implies (endp class-or-interface-names)
-           (equal (acl2::get-super-interfaces-aux class-or-interface-names class-table count acc)
+           (equal (acl2::get-superinterfaces-aux class-or-interface-names class-table count acc)
                   acc)))
 
-(defthm get-super-interfaces-aux-opener
+(defthm get-superinterfaces-aux-opener
   (implies (and (not (zp count))
                 (not (endp class-or-interface-names)))
-           (equal (acl2::get-super-interfaces-aux class-or-interface-names class-table count acc)
+           (equal (acl2::get-superinterfaces-aux class-or-interface-names class-table count acc)
                   (let* ((class-or-interface0-name (first class-or-interface-names))
                          (class-info (get-class-info class-or-interface0-name class-table))
-                         (direct-super-interfaces (class-decl-interfaces class-info)))
-                    (acl2::get-super-interfaces-aux (append direct-super-interfaces
+                         (direct-superinterfaces (class-decl-interfaces class-info)))
+                    (acl2::get-superinterfaces-aux (append direct-superinterfaces
                                                             (rest class-or-interface-names))
                                                     class-table
                                                     (+ -1 count)
-                                                    (union-equal direct-super-interfaces acc))))))
+                                                    (union-equal direct-superinterfaces acc))))))
 
 ;write a tool to automate stuff like this?
-(defthm true-listp-of-get-super-interfaces-aux
+(defthm true-listp-of-get-superinterfaces-aux
   (implies (true-listp acc)
-           (true-listp (acl2::get-super-interfaces-aux class-or-interface-names class-table count acc))))
+           (true-listp (acl2::get-superinterfaces-aux class-or-interface-names class-table count acc))))
 
-(defun acl2::get-super-interfaces (class-or-interface-names class-table)
+(defun acl2::get-superinterfaces (class-or-interface-names class-table)
   (declare (xargs :guard (and (all-class-namesp class-or-interface-names)
                               (true-listp class-or-interface-names)
                               (class-tablep class-table)
                               (all-bound-in-class-tablep class-or-interface-names class-table))
                   :guard-hints (("Goal" :in-theory (enable class-tablep)))))
-  (acl2::get-super-interfaces-aux class-or-interface-names class-table 100000 nil))
+  (acl2::get-superinterfaces-aux class-or-interface-names class-table 100000 nil))
 
 ;BOZO is this up to date?
 ; Note that the definition below of the Thread class includes a 'run' method,
@@ -995,7 +995,7 @@
                               (class-tablep class-table)
                               (bound-in-class-tablep class-name class-table))))
   (let* ((super-class-names (acl2::get-super-classes class-name class-table))
-         (implemented-interfaces (acl2::get-super-interfaces super-class-names class-table)))
+         (implemented-interfaces (acl2::get-superinterfaces super-class-names class-table)))
     (if (member-equal interface-name implemented-interfaces)
         t
       nil)))

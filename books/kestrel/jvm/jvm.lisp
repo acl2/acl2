@@ -3253,7 +3253,7 @@
             (equal type-t "java.lang.Object")
           ;; T is an interface type:
           (or (equal type-t type-s)
-              (acl2::bool-fix (member-equal type-t (acl2::get-super-interfaces (list type-s) class-table))))))
+              (acl2::bool-fix (member-equal type-t (acl2::get-superinterfaces (list type-s) class-table))))))
     ;; S is an array type:
     (let ((s-component-type (get-array-component-type type-s)))
       (if (class-or-interface-namep type-t)

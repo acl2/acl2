@@ -872,9 +872,9 @@
             ;; jvm::array-classp
 ;jvm::non-array-classp
             jvm::class-implements-interfacep
-            jvm::get-super-interfaces-aux-base
-            jvm::get-super-interfaces-aux-opener
-            acl2::get-super-interfaces
+            jvm::get-superinterfaces-aux-base
+            jvm::get-superinterfaces-aux-opener
+            acl2::get-superinterfaces
 ;     get-class-of-initialize-2d-array
 ;     get-class-field-of-initialize-2d-array
             jvm::intern-table-of-make-state
