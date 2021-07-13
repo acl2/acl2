@@ -1277,7 +1277,7 @@
      but it will be soon extended to be a more general term
      that may depend on the function's parameter.
      Thus, to properly calculate the limit for this call,
-     we will have to instantiate the paraters with the arguments.")
+     we will have to instantiate the parameters with the arguments.")
    (xdoc::p
     "This is used on C-valued terms,
      so the called function must be non-recursive,
@@ -1313,7 +1313,8 @@
                (fn symbolp)
                (args pseudo-term-listp :hyp (pseudo-termp term))
                (xforming symbol-listp :hyp (atc-symbol-fninfo-alistp prec-fns))
-               (loop stmtp))
+               (loop stmtp)
+               (limit pseudo-termp :hyp (atc-symbol-fninfo-alistp prec-fns)))
   :short "Check if a term may represent a call of a loop function."
   :long
   (xdoc::topstring
@@ -1321,24 +1322,33 @@
     "We check whether
      the function has been previously processed
      (i.e. it is in the @('prec-fns') alist)
-     and it is recursive (indicated by
-     the presence of the loop statement in its information).
+     and it is recursive
+     (indicated by the presence of the loop statement in its information).
      If the checks succeed, we return
      the function symbol,
      its arguments,
      the variables transformed by the loop,
-     and the associated loop statement."))
+     the associated loop statement,
+     and the limit sufficient to execute the function call.")
+   (xdoc::p
+    "The limit retrieved from the function table
+     refers to the formal parameters.
+     We must instantiate it to the actual parameters
+     in order to obtain an appropriate limit for the call.
+     We will do that soon."))
   (case-match term
-    ((fn . args) (b* (((unless (symbolp fn)) (mv nil nil nil nil (irr-stmt)))
-                      ((when (eq fn 'quote)) (mv nil nil nil nil (irr-stmt)))
-                      (fn+info (assoc-eq fn prec-fns))
-                      ((unless (consp fn+info)) (mv nil nil nil nil (irr-stmt)))
-                      (info (cdr fn+info))
-                      (loop (atc-fn-info->loop? info))
-                      ((unless (stmtp loop)) (mv nil nil nil nil (irr-stmt)))
-                      (xforming (atc-fn-info->xforming info)))
-                   (mv t fn args xforming loop)))
-    (& (mv nil nil nil nil (irr-stmt)))))
+    ((fn . args)
+     (b* (((unless (symbolp fn)) (mv nil nil nil nil (irr-stmt) nil))
+          ((when (eq fn 'quote)) (mv nil nil nil nil (irr-stmt) nil))
+          (fn+info (assoc-eq fn prec-fns))
+          ((unless (consp fn+info)) (mv nil nil nil nil (irr-stmt) nil))
+          (info (cdr fn+info))
+          (loop (atc-fn-info->loop? info))
+          ((unless (stmtp loop)) (mv nil nil nil nil (irr-stmt) nil))
+          (xforming (atc-fn-info->xforming info))
+          (limit (atc-fn-info->limit info)))
+       (mv t fn args xforming loop limit)))
+    (& (mv nil nil nil nil (irr-stmt) nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2071,10 +2081,8 @@
    (xdoc::p
     "If the term is a call of a recursive target function on its formals,
      it represents a loop.
-     We retrieve the associated loop statement,
-     and we return it.
-     For now we return nil as limit,
-     but we will change that soon.")
+     We retrieve the associated loop statement and limit,
+     and we return them.")
    (xdoc::p
     "If the term is a single variable
      and @('xforming') is a singleton list with that variable,
@@ -2297,7 +2305,7 @@
                    (>= (len terms) 2)
                    (equal terms xforming)))
         (acl2::value (list nil nil nil)))
-       ((mv okp loop-fn loop-args loop-xforming loop-stmt)
+       ((mv okp loop-fn loop-args loop-xforming loop-stmt loop-limit)
         (atc-check-loop-fn term prec-fns))
        ((when okp)
         (b* ((formals (acl2::formals+ loop-fn (w state)))
@@ -2319,7 +2327,9 @@
                          which differs from the variables ~x3 ~
                          being transformed here."
                         fn loop-fn loop-xforming xforming)))
-          (acl2::value (list (list (block-item-stmt loop-stmt)) nil nil))))
+          (acl2::value (list (list (block-item-stmt loop-stmt))
+                             nil
+                             loop-limit))))
        ((unless (null xforming))
         (er-soft+ ctx t (list nil nil nil)
                   "A statement term transforming ~x0 in the function ~x1 ~
