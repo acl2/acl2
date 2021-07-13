@@ -45,10 +45,14 @@
 ;; 1. Ensure that a recent verson of STP is installed and findable on your
 ;; path.
 
-;; 2. Set the JAVA_BOOTSTRAP_CLASSES_ROOT environment variable to point to a
+;; 2. Ensure that the ACL2_ROOT environment variable points to your ACL2
+;; directory (which should contain a books/ subdirectory).  The directory name
+;; given should not end in a slash.
+
+;; 3. Set the JAVA_BOOTSTRAP_CLASSES_ROOT environment variable to point to a
 ;; hierarchy of .class files for the built-in Java bootstrap classes.  Such a
 ;; directory can be usually created by unzipping the rt.jar file that comes
-;; with Java.
+;; with Java.  The directory name given should not end in a slash.
 
 ;; NOTE: To run the Formal Unit Tester from an IDE such as IntelliJ IDEA,
 ;; relevant environment variables may need to be set in your .profile file,
