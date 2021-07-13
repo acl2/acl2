@@ -148,7 +148,18 @@ EOF
 fi
 
 echo "Determining whether STP is installed" 1>&2
+# First, we check that we can invoke an executable called 'stp' with a --version
+# option. We could check the version, but that is not straightforward and the
+# STP developers have said that version numbers are not being updated.
 if stp --version 2> /dev/null;
+then
+    # Require ACL2_DONT_USE_STP to be unset:
+    if [ -z "${ACL2_DONT_USE_STP}" ];
+    then
+        USE_STP="YES"
+    fi
+fi
+if [ -n "${USE_STP}" ];
 then
     cat >> Makefile-features <<EOF
 export OS_HAS_STP ?= 1
