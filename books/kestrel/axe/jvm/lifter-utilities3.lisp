@@ -98,7 +98,7 @@
                                  (run-until-return-from-stack-height-rules-smart)
                                  (rule-list-1001))
                   :monitor monitored-rules
-                  :interpreted-function-alist (make-interpreted-function-alist '(get-SUPER-CLASSES) (w state))
+                  :interpreted-function-alist (make-interpreted-function-alist '(get-SUPERCLASSES) (w state))
                   :assumptions hyps
                   ;; :print t
                   ;; :print-interval 100000
