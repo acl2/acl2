@@ -10,10 +10,9 @@
 
 (in-package "ACL2")
 
+(include-book "build/ifdef" :dir :system)
 (include-book "dag-tests")
 (include-book "known-booleans-tests")
-;; (include-book "stp-clause-processor-tests")
-;; (include-book "defthm-stp-tests")
 (include-book "unroll-spec-basic-tests")
 (include-book "def-simplified-tests")
 (include-book "check-equivs-tests")
@@ -29,4 +28,13 @@
 (include-book "evaluator-tests")
 (include-book "make-term-into-dag-basic-tests")
 (include-book "prune-with-contexts-tests")
-;; (include-book "prove-with-stp-tests")
+
+(include-book "rewriter-tests")
+(include-book "prune-tests")
+(include-book "tactic-prover-tests")
+
+(ifdef "OS_HAS_STP"
+       (include-book "stp-clause-processor-tests")
+       (include-book "defthm-stp-tests")
+       (include-book "prove-with-stp-tests")
+       :endif)

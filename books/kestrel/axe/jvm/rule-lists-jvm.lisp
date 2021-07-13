@@ -16,8 +16,8 @@
 ;; This file just gives their names.
 
 (include-book "kestrel/jvm/portcullis" :dir :system)
-(include-book "kestrel/axe/rule-lists" :dir :system)
-(include-book "kestrel/axe/rule-alists" :dir :system)
+(include-book "../rule-lists")
+(include-book "../rule-alists")
 
 ;; These are for concrete execution, which is not used much:
 (defun jvm-execution-rules ()

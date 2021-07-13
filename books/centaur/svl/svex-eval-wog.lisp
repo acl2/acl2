@@ -141,8 +141,6 @@
   :returns
   (sv::result 4vec-p
               "result of applying the function.")
-  :long
-  "documentation is available via :doc."
   (let* ((fn (fnsym-fix fn)))
     (svex-apply-cases-wog fn args)))
 

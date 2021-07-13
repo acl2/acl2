@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/axe/axe-types" :dir :system)
+(include-book "axe-types")
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 

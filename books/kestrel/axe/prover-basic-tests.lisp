@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/axe/prover-basic" :dir :system) ; todo: test separately?
-(include-book "kestrel/axe/prover-basic-clause-processor" :dir :system)
+(include-book "prover-basic") ; todo: test separately?
+(include-book "prover-basic-clause-processor")
 (include-book "kestrel/utilities/deftest" :dir :system)
 
 ;; TODO: Add more tests
