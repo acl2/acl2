@@ -801,12 +801,26 @@
      the name of the locally generated theorem that asserts
      that the measure of the function (when recursive) yields a natural number
      (@('nil') if the function is not recursive);
-     and a limit that suffices for @(tsee exec-fun)
-     to execute the function completely on any arguments
-     (currently 0 for recursive functions; this will be extended).
-     The latter is a term that may depend on the function's arguments,
-     when the function calls a loop function directly or indirectly;
-     the term is calculated when C code is generated for the function.")
+     and a limit that suffices to execute the code generated from the function,
+     as explained below.
+     The limit is a term that may depend on the function's parameters.
+     For a non-recursive function,
+     the term expresses a limit that suffices to execute @(tsee exec-fun)
+     on the C function generated from the ACL2 function
+     when the arguments of the C functions have values
+     symbolically expressed by the ACL2 function's formal parameters.
+     For a recursive function,
+     the term expressed a limit that suffices to execute @(tsee exec-stmt-while)
+     on the C loop generated from the ACL2 function
+     when the variables read by the C loop have values
+     symbolically expressed by the ACL2 function's formal parameters.
+     If none of the target ACL2 functions are recursive,
+     all the limit terms are quoted constants;
+     if there are recursive functions,
+     then those, and all their direct and indirect callers,
+     have limit terms that in general depend on each function's parameters.
+     All these limit terms are calculated
+     when the C code is generated from the ACL2 functions.")
    (xdoc::p
     "Note that exactly one of the first two fields is @('nil').
      This is an invariant."))
