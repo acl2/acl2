@@ -3555,7 +3555,17 @@
      This is like the applicabiliby condition,
      but we need a type prescription rule,
      and currenty the applicability condition utilities
-     do not support the specification of rule classes."))
+     do not support the specification of rule classes.")
+   (xdoc::p
+    "We also generate a local theorem that is
+     just like the termination theorem of the function
+     except that @(tsee o<) is replaced with @(tsee <).
+     The theorem is proved using the fact that
+     the measure yields a natural number,
+     which means that @(tsee o<) reduces to @(tsee <) (see above).
+     The purpose of this variant of the termination theorem
+     is to help establish the induction hypothesis
+     in the loop correctness theorem, as explained below."))
   (b* ((wrld (w state))
        (loop-test (stmt-while->test loop-stmt))
        (loop-body (stmt-while->body loop-stmt))
@@ -3629,9 +3639,30 @@
          :rule-classes :type-prescription
          :enable nil
          :hints `(("Goal" :by ,appcond-thm))))
+       (termination-of-fn-thm
+        (acl2::packn-pos (list 'termination-of- fn) fn))
+       ((mv termination-of-fn-thm names-to-avoid)
+        (acl2::fresh-logical-name-with-$s-suffix termination-of-fn-thm
+                                                 nil
+                                                 names-to-avoid
+                                                 wrld))
+       ((mv termination-of-fn-thm-event &)
+        (acl2::evmac-generate-defthm
+         termination-of-fn-thm
+         :formula (sublis-fn-simple (acons 'o< '< nil)
+                                    (termination-theorem fn wrld))
+         :rule-classes nil
+         :hints `(("Goal"
+                   :use ((:termination-theorem ,fn)
+                         ,natp-of-measure-of-fn-thm)
+                   :in-theory '(acl2::natp-compound-recognizer
+                                o-p
+                                o-finp
+                                o<)))))
        (events (list exec-stmt-while-for-fn-event
                      exec-stmt-while-for-fn-thm-event
-                     natp-of-measure-of-fn-thm-event)))
+                     natp-of-measure-of-fn-thm-event
+                     termination-of-fn-thm-event)))
     (acl2::value (list events
                        natp-of-measure-of-fn-thm
                        names-to-avoid))))
