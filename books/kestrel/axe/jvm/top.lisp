@@ -29,3 +29,8 @@
 (include-book "rules-in-rule-lists-jvm")
 
 (include-book "rewriter-jvm") ; newest JVM-aware rewriter
+
+;; JVM lifters:
+(include-book "lifter-utilities")
+(include-book "lifter-utilities2")
+(include-book "lifter-utilities3")
