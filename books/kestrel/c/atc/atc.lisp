@@ -2622,7 +2622,9 @@
   :returns (mv erp
                (val (tuple (stmt stmtp)
                            (xforming symbol-listp)
-                           val))
+                           (limit pseudo-termp)
+                           val)
+                    :hyp (atc-symbol-fninfo-alistp prec-fns))
                state)
   :short "Generate a C loop statement from an ACL2 term."
   :long
@@ -2646,10 +2648,30 @@
      which we return along with the loop statement.")
    (xdoc::p
     "Note that we push a new scope before processing the loop body.
-     This is because the loop body is a block, which opens a new scope in C."))
+     This is because the loop body is a block, which opens a new scope in C.")
+   (xdoc::p
+    "We return a limit that suffices
+     to execute @(tsee exec-while-stmt) on (the test and body of)
+     the loop statement, as follows.
+     We need 1 to get to executing the test,
+     which is pure and so does not contribute to the overall limit.
+     If the test is true, we need to add the limit to execute the body.
+     After that, @(tsee exec-stmt-while) is called recursively,
+     decrementing the limit:
+     given that we know that the loop function terminates,
+     its measure must suffice as the limit.
+     The loop function decreases the measure by at least 1 (maybe more)
+     at every recursive call, so the limit does not decrease any faster,
+     and we will never run out of the limit before the measure runs out.
+     Thus the measure is an over-approximation for the limit, which is sound.
+     We also note that the measure refers to the initial call of the function,
+     while here it would suffice
+     to take the measure at the first recursive call,
+     but taking the whole measure is simpler,
+     and again it is sound to over-appoximate."))
   (b* (((mv okp test then else) (acl2::check-if-call term))
        ((unless okp)
-        (er-soft+ ctx t (list (irr-stmt) nil)
+        (er-soft+ ctx t (list (irr-stmt) nil nil)
                   "When generating C loop code for the recursive function ~x0, ~
                    a term ~x1 that is not an IF has been encountered."
                   fn term))
@@ -2664,11 +2686,11 @@
                                                     fn
                                                     ctx
                                                     state))
-       ((when erp) (mv erp (list (irr-stmt) nil) state))
+       ((when erp) (mv erp (list (irr-stmt) nil nil) state))
        (wrld (w state))
        ((unless (plist-worldp wrld))
         (prog2$ (raise "Internal error: world does not satisfy PLIST-WORLDP.")
-                (acl2::value (list (irr-stmt) nil))))
+                (acl2::value (list (irr-stmt) nil nil))))
        (formals (acl2::formals+ fn wrld))
        ((mv okp xforming)
         (b* (((when (member-equal else formals)) (mv t (list else)))
@@ -2678,12 +2700,12 @@
               (mv t terms)))
           (mv nil nil)))
        ((unless okp)
-        (er-soft+ ctx t (list (irr-stmt) nil)
+        (er-soft+ ctx t (list (irr-stmt) nil nil)
                   "The non-recursive branch ~x0 of the function ~x1 ~
                    does not have the required form. ~
                    See the user documentation."
                   else fn))
-       ((mv erp (list body-items &) state)
+       ((mv erp (list body-items body-limit) state)
         (atc-gen-loop-body-stmt then
                                 (cons nil inscope)
                                 xforming
@@ -2691,13 +2713,19 @@
                                 prec-fns
                                 ctx
                                 state))
-       ((when erp) (mv erp (list (irr-stmt) nil) state))
+       ((when erp) (mv erp (list (irr-stmt) nil nil) state))
        (body-stmt (make-stmt-compound :items body-items))
        (stmt (make-stmt-while :test test-expr :body body-stmt))
        ((unless (symbol-listp xforming))
         (prog2$ (raise "Internal error: ~x0 is not a list of symbols.")
-                (acl2::value (list (irr-stmt) nil)))))
-    (acl2::value (list stmt xforming)))
+                (acl2::value (list (irr-stmt) nil nil))))
+       (wrld (w state))
+       ((unless (plist-worldp wrld))
+        (prog2$ (raise "Internal error: malformed world.")
+                (acl2::value (list (irr-stmt) nil nil))))
+       (meas (acl2::measure+ fn (w state)))
+       (limit `(binary-+ '1 (binary-+ ,body-limit ,meas))))
+    (acl2::value (list stmt xforming limit)))
   :prepwork
   ((local (include-book "std/typed-lists/symbol-listp" :dir :system)))
 
@@ -3749,11 +3777,10 @@
         (atc-gen-param-declon-list formals fn guard-conjuncts guard ctx state))
        ((when erp) (mv erp nil state))
        (body (acl2::ubody+ fn wrld))
-       ((mv erp (list loop-stmt loop-xforming) state)
+       ((mv erp (list loop-stmt loop-xforming loop-limit) state)
         (atc-gen-loop-stmt body (list scope) fn prec-fns ctx state))
        ((when erp) (mv erp nil state))
        (type? nil)
-       (limit nil)
        ((mv erp
             (list local-events
                   exported-events
@@ -3763,7 +3790,7 @@
             state)
         (atc-gen-fn-thms fn pointers type? loop-xforming scope prec-fns
                          proofs recursionp prog-const fn-thms
-                         print limit names-to-avoid ctx state))
+                         print loop-limit names-to-avoid ctx state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        ((mv erp
             (list more-local-events
@@ -3781,7 +3808,7 @@
                                :returns-value-thm fn-returns-value-thm
                                :correct-thm fn-correct-thm
                                :measure-nat-thm natp-of-measure-of-fn-thm
-                               :limit limit)))
+                               :limit loop-limit)))
     (acl2::value (list local-events
                        exported-events
                        (acons fn info prec-fns)
