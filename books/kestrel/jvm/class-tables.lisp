@@ -27,6 +27,7 @@
   :declares ((xargs :guard (all-class-namesp key)))
   :fixed class-table)
 
+;; The class-table is a map from class/interface names to class-infos.
 ;todo: make this an alist instead?
 (defund class-tablep0 (class-table)
   (declare (xargs :guard t))
@@ -385,7 +386,8 @@
                 (and object-class-info ;Object is bound, and it's bound to a class
                      (true-listp (class-decl-access-flags object-class-info)) ;for guards (todo: drop?)
                      (not (class-decl-interfacep object-class-info))))
-              (check-bool (all-super-interfaces-bound key-list class-table key-list) ;All superinterfaces of any class/interface must also be in dom.
+              ;; For each class in the class-table, its superinterfaces must also be in the class-table:
+              (check-bool (all-super-interfaces-bound key-list class-table key-list)
                           "ERROR: interfaces are wrong in class table!~%")
               (check-bool (all-super-classes-okayp key-list class-table) ;The super-class of every class must also be in dom.
                           "ERROR: super-classes are wrong in class table!~%")))))
