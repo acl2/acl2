@@ -14,7 +14,7 @@
 ;how much of this stuff is common with android?
 
 (include-book "heap0")
-(include-book "classes") ;for jvm::class-decl-non-static-fields, get-super-classes, and maybe other stuff
+(include-book "classes") ;for jvm::class-decl-non-static-fields, get-superclasses, and maybe other stuff
 (include-book "class-tables") ;for all-bound-in-class-tablep
 (include-book "kestrel/lists-light/all-equal-dollar" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -198,21 +198,21 @@
 
 (in-theory (disable jvm::class-namep)) ;fixme move up
 
-;; (defthm jvm::all-class-namesp-of-get-super-classes-aux
+;; (defthm jvm::all-class-namesp-of-get-superclasses-aux
 ;;   (implies (and (jvm::class-tablep class-table)
 ;;                 (jvm::bound-in-class-tablep class-name class-table)
 ;; ;                (NOT (class-decl-interfacep (jvm::get-class-info CLASS-NAME CLASS-TABLE)))
 ;;                 )
-;;            (jvm::all-class-namesp (jvm::get-super-classes-aux class-name class-table n)))
-;;   :hints (("Goal" :in-theory (enable jvm::get-super-classes-aux))))
+;;            (jvm::all-class-namesp (jvm::get-superclasses-aux class-name class-table n)))
+;;   :hints (("Goal" :in-theory (enable jvm::get-superclasses-aux))))
 
-;; (defthm subsetp-equal-of-get-super-classes-aux
+;; (defthm subsetp-equal-of-get-superclasses-aux
 ;;   (IMPLIES (AND ;(NOT (EQUAL :ARRAY (CAR CLASS-NAME)))
 ;;             ;;(NOT (class-decl-interfacep (jvm::get-class-info CLASS-NAME CLASS-TABLE)))
 ;;             (JVM::CLASS-NAMEP CLASS-NAME)
 ;;             (SET::IN CLASS-NAME (RKEYS CLASS-TABLE))
 ;;             (JVM::CLASS-TABLEP CLASS-TABLE))
-;;            (SUBSETP-EQUAL (JVM::GET-SUPER-CLASSES-AUX CLASS-NAME CLASS-TABLE count)
+;;            (SUBSETP-EQUAL (JVM::GET-SUPERCLASSES-AUX CLASS-NAME CLASS-TABLE count)
 ;;                          (SET::2LIST (RKEYS CLASS-TABLE))))
 ;;   :hints (("Goal" :in-theory (enable JVM::CLASS-TABLEP))))
 
@@ -232,7 +232,7 @@
 	     (set-fields ad
                          ;; initialize all the (non-static) fields in the class and its superclasses:
                          (gen-init-bindings (cons class-name
-                                                  (get-super-classes class-name class-table) ;(jvm::class-decl-superclasses (jvm::get-class-info class-name class-table))
+                                                  (get-superclasses class-name class-table) ;(jvm::class-decl-superclasses (jvm::get-class-info class-name class-table))
                                                   )
                                             class-table)
                          heap)))

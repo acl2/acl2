@@ -182,15 +182,15 @@
   (declare (xargs :guard t))
   (and (alistp class-info)
        (equal (strip-cars class-info)
-              '(:super-class :interfaces :access-flags :fields :static-fields :methods))
-       (let ((super-class (acl2::lookup-eq :super-class class-info))
+              '(:superclass :interfaces :access-flags :fields :static-fields :methods))
+       (let ((superclass (acl2::lookup-eq :superclass class-info))
              (interfaces (acl2::lookup-eq :interfaces class-info))
              (access-flags (acl2::lookup-eq :access-flags class-info))
              (fields (acl2::lookup-eq :fields class-info))
              (static-fields (acl2::lookup-eq :static-fields class-info))
              (methods (acl2::lookup-eq :methods class-info)))
-         (and (or (eq :none super-class)
-                  (class-namep super-class))
+         (and (or (eq :none superclass)
+                  (class-namep superclass))
               (true-listp interfaces)
               (all-class-namesp interfaces)
               (acl2::keyword-listp access-flags)
@@ -217,13 +217,13 @@
   (and
    (class-infop0 class-info)
    ;; Check the super class:
-   (let ((super-class (acl2::lookup-eq :super-class class-info)))
+   (let ((superclass (acl2::lookup-eq :superclass class-info)))
      (if (equal class-name "java.lang.Object")
-         (eq :none super-class)
+         (eq :none superclass)
        (if  (member-eq :acc_interface (acl2::lookup-eq :access-flags class-info))
            ;; The superclass of an interface is java.lang.Object (see JVMS: The ClassFile Structure)
-           (equal "java.lang.Object" super-class)
-         (class-namep super-class))))
+           (equal "java.lang.Object" superclass)
+         (class-namep superclass))))
    ;;... fixme add more tests
    ))
 
@@ -243,8 +243,7 @@
 ;a list of the direct superinterfaces implemented by the class (i.e., a list of strings):
 (defund class-decl-interfaces        (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :interfaces    class-info))
 ;just the name of the class (a string), or :none for java.lang.Object's superclass:
-;fixme standardize whether super-class is hyphenated
-(defund class-decl-superclass        (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :super-class   class-info))
+(defund class-decl-superclass        (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :superclass   class-info))
 (defund class-decl-non-static-fields (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :fields        class-info))
 (defund class-decl-static-fields     (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :static-fields class-info))
 ;format?
@@ -263,12 +262,12 @@
                   :guard-hints (("Goal" :in-theory (enable class-infop0)))))
   (and
    (class-infop0 class-info)
-   ;; the super-class is a class name (if there is a super-class):
-   (let ((super-class (acl2::lookup-eq :super-class class-info)))
+   ;; the superclass is a class name (if there is a superclass):
+   (let ((superclass (acl2::lookup-eq :superclass class-info)))
      (if (class-decl-interfacep class-info)
          ;; The superclass of an interface is java.lang.Object (see JVMS: The ClassFile Structure)
-         (equal "java.lang.Object" super-class)
-       (class-namep super-class)))
+         (equal "java.lang.Object" superclass)
+       (class-namep superclass)))
    ;;... fixme add more tests
    ))
 
@@ -350,9 +349,9 @@
            (true-listp (class-decl-access-flags class-info)))
   :hints (("Goal" :in-theory (enable class-infop class-infop0 class-decl-access-flags))))
 
-(defun make-class-info (super-class interfaces non-static-field-info-alist static-field-info-alist method-info-alist access-flags)
+(defun make-class-info (superclass interfaces non-static-field-info-alist static-field-info-alist method-info-alist access-flags)
   (declare (xargs :guard t)) ;todo: strengthen?
-  (acons :super-class super-class
+  (acons :superclass superclass
          (acons :interfaces interfaces
                 (acons :access-flags access-flags
                        (acons :fields non-static-field-info-alist
@@ -377,13 +376,13 @@
                 (field-info-alistp non-static-field-info-alist)
                 (method-info-alistp method-info-alist)
                 (implies (equal "java.lang.Object" class-name)
-                         (equal :none super-class))
+                         (equal :none superclass))
                 (implies (member-equal :acc_interface access-flags)
-                         (equal "java.lang.Object" super-class))
+                         (equal "java.lang.Object" superclass))
                 (implies (and (not (member-equal :acc_interface access-flags))
                               (not (equal "java.lang.Object" class-name)))
-                         (class-namep super-class)))
-           (class-infop (make-class-info super-class interfaces non-static-field-info-alist static-field-info-alist method-info-alist access-flags)
+                         (class-namep superclass)))
+           (class-infop (make-class-info superclass interfaces non-static-field-info-alist static-field-info-alist method-info-alist access-flags)
                         class-name))
   :hints (("Goal" :do-not-induct t
            :in-theory (enable class-infop
