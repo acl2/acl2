@@ -31,10 +31,10 @@
 
 (include-book "rewriter-tests")
 (include-book "prune-tests")
-(include-book "tactic-prover-tests")
 
 (ifdef "OS_HAS_STP"
        (include-book "stp-clause-processor-tests")
        (include-book "defthm-stp-tests")
        (include-book "prove-with-stp-tests")
+       (include-book "tactic-prover-tests")
        :endif)

@@ -134,7 +134,7 @@
          (acl2::subsetp-equal interface-names all-class-names)))
 
 ;the last param is just an optimization, to avoid recomputing the domain of the class-table over and over.
-(defforall all-super-interfaces-bound (class-name class-table all-class-names)
+(defforall all-superinterfaces-bound (class-name class-table all-class-names)
     (all-interfaces-present (class-decl-interfaces (get-class-info class-name class-table)) all-class-names)
     ;alternative syntax: (lambda (class-name) (subsetp-eq (class-decl-interfaces (get-class-info class-name class-table)) all-class-names))
     :fixed (class-table all-class-names)
@@ -200,14 +200,14 @@
            (bound-in-class-tablep class-name class-table))
   :hints (("Goal" :in-theory (enable all-bound-in-class-tablep))))
 
-(defthm use-all-super-interfaces-bound-alt
-  (implies (and (all-super-interfaces-bound class-names class-table (set::2list (acl2::rkeys class-table)))
+(defthm use-all-superinterfaces-bound-alt
+  (implies (and (all-superinterfaces-bound class-names class-table (set::2list (acl2::rkeys class-table)))
                 (memberp class-name class-names))
            (all-bound-in-class-tablep (class-decl-interfaces (get-class-info class-name class-table)) class-table))
-  :hints (("Goal" :use (:instance acl2::use-all-super-interfaces-bound (acl2::free-class-name class-names)
+  :hints (("Goal" :use (:instance acl2::use-all-superinterfaces-bound (acl2::free-class-name class-names)
                                   (all-class-names (set::2list (acl2::rkeys class-table)))
                                   (acl2::x class-name))
-           :in-theory (e/d (all-bound-in-class-tablep-alt) ( acl2::use-all-super-interfaces-bound)))))
+           :in-theory (e/d (all-bound-in-class-tablep-alt) ( acl2::use-all-superinterfaces-bound)))))
 
 
 (defthm class-namep-of-class-decl-superclass-of-get-class-info
@@ -220,37 +220,37 @@
            :in-theory (disable class-namep-of-class-decl-superclass))))
 
 ;; TODO: Compare this to what we say in class-infop
-(defund super-class-okayp (class-name class-table)
+(defund superclass-okayp (class-name class-table)
   (declare (xargs :guard (and (class-namep class-name)
                               (class-tablep0 class-table)
                               (bound-in-class-tablep class-name class-table)
                               (class-infop (get-class-info class-name class-table) class-name))))
   (let* ((class-info (get-class-info class-name class-table))
-         (super-class-name (class-decl-superclass class-info)))
+         (superclass-name (class-decl-superclass class-info)))
     (if (equal class-name "java.lang.Object")
         ;;java.lang.object has no superclass:
-        (equal :none super-class-name)
+        (equal :none superclass-name)
       ;; (if (class-decl-interfacep class-info)
-      ;;     ;; if it's an interface, it's super-class must be java.lang.Object:
-      ;;     (equal super-class-name ;Note: class-tablep checks that object is bound in the class file.
+      ;;     ;; if it's an interface, it's superclass must be java.lang.Object:
+      ;;     (equal superclass-name ;Note: class-tablep checks that object is bound in the class file.
       ;;            "java.lang.Object")
       ;;otherwise, it's a normal class:
-      (and (bound-in-class-tablep super-class-name class-table)
-           (let* ((super-class-info (get-class-info super-class-name class-table)))
-             (and (if super-class-info
+      (and (bound-in-class-tablep superclass-name class-table)
+           (let* ((superclass-info (get-class-info superclass-name class-table)))
+             (and (if superclass-info
                       t
-                    (prog2$ (cw "Note: Missing super-class: ~s0!~%" super-class-name)
+                    (prog2$ (cw "Note: Missing superclass: ~s0!~%" superclass-name)
                             nil))
-                  ;; the super-class must be a class, not an interface:
-                  (and (class-namep super-class-name)
-                       (class-infop super-class-info super-class-name)
-                       (not (class-decl-interfacep super-class-info))))))
+                  ;; the superclass must be a class, not an interface:
+                  (and (class-namep superclass-name)
+                       (class-infop superclass-info superclass-name)
+                       (not (class-decl-interfacep superclass-info))))))
 ;)
       )))
 
 ;class-name is really class-or-interface-name
-(defforall all-super-classes-okayp (class-name class-table)
-  (super-class-okayp class-name class-table)
+(defforall all-superclasses-okayp (class-name class-table)
+  (superclass-okayp class-name class-table)
   :fixed (class-table)
   :declares ((xargs :guard (and (true-listp class-name)
                                 (all-class-namesp class-name)
@@ -387,10 +387,10 @@
                      (true-listp (class-decl-access-flags object-class-info)) ;for guards (todo: drop?)
                      (not (class-decl-interfacep object-class-info))))
               ;; For each class in the class-table, its superinterfaces must also be in the class-table:
-              (check-bool (all-super-interfaces-bound key-list class-table key-list)
+              (check-bool (all-superinterfaces-bound key-list class-table key-list)
                           "ERROR: interfaces are wrong in class table!~%")
-              (check-bool (all-super-classes-okayp key-list class-table) ;The super-class of every class must also be in dom.
-                          "ERROR: super-classes are wrong in class table!~%")))))
+              (check-bool (all-superclasses-okayp key-list class-table) ;The superclass of every class must also be in dom.
+                          "ERROR: superclasses are wrong in class table!~%")))))
 
 (defthm class-tablep0-forward-to-class-tablep0
   (implies (class-tablep class-table)
@@ -460,34 +460,34 @@
            :in-theory (e/d (bound-in-class-tablep get-class-info)
                            (class-infop-of-get-class-info)))))
 
-(defund get-super-class (class-name class-table)
+(defund get-superclass (class-name class-table)
   (declare (xargs :guard (and (class-namep class-name)
                               (class-tablep class-table)
                               (bound-in-class-tablep class-name CLASS-TABLE))
                   :guard-hints (("Goal" :in-theory (enable class-tablep)))))
   (class-decl-superclass (get-class-info class-name class-table)))
 
-(defthm class-namep-of-get-super-class-none-1
-  (implies (super-class-okayp class-name class-table)
-           (equal (class-namep (get-super-class class-name class-table))
+(defthm class-namep-of-get-superclass-none-1
+  (implies (superclass-okayp class-name class-table)
+           (equal (class-namep (get-superclass class-name class-table))
                   (not (equal "java.lang.Object" class-name))))
-  :hints (("Goal" :in-theory (enable super-class-okayp  get-super-class))))
+  :hints (("Goal" :in-theory (enable superclass-okayp  get-superclass))))
 
-(defthm class-namep-of-get-super-class-none-2
-  (implies (and (all-super-classes-okayp class-names class-table) ;class-names is a free var
+(defthm class-namep-of-get-superclass-none-2
+  (implies (and (all-superclasses-okayp class-names class-table) ;class-names is a free var
                 (memberp class-name class-names))
-           (equal (class-namep (get-super-class class-name class-table))
+           (equal (class-namep (get-superclass class-name class-table))
                   (not (equal "java.lang.Object" class-name)))))
 
-(defthm class-namep-of-get-super-class-none-3
+(defthm class-namep-of-get-superclass-none-3
   (implies (and (class-tablep class-table)
                 (bound-in-class-tablep class-name CLASS-TABLE))
-           (equal (class-namep (get-super-class class-name class-table))
+           (equal (class-namep (get-superclass class-name class-table))
                   (not (equal "java.lang.Object" class-name))))
   :hints (("Goal" :in-theory (enable class-tablep bound-in-class-tablep))))
 
 ;count ensures termination
-(defun get-super-classes-aux (class-name class-table count)
+(defun get-superclasses-aux (class-name class-table count)
   (declare (xargs :measure (nfix (+ 1 count))
                   :guard (and (class-namep class-name)
                               (class-tablep class-table))
@@ -498,29 +498,29 @@
     (if (equal class-name "java.lang.Object")
         nil ;no super classes for Object!
       (if (not (bound-in-class-tablep class-name class-table))
-          (prog2$ (er hard? 'get-super-classes-aux "Class not found: ~x0." class-name)
+          (prog2$ (er hard? 'get-superclasses-aux "Class not found: ~x0." class-name)
                   (error-looking-up-class class-name class-table) ;will cause an error instead of being evaluated
                   )
-        (let* ((super-class (get-super-class class-name class-table)))
-          (cons super-class
-                (get-super-classes-aux super-class class-table (+ -1 count))))))))
+        (let* ((superclass (get-superclass class-name class-table)))
+          (cons superclass
+                (get-superclasses-aux superclass class-table (+ -1 count))))))))
 
-(defthm true-listp-of-get-super-classes-aux
-  (true-listp (get-super-classes-aux class-name class-table count)))
+(defthm true-listp-of-get-superclasses-aux
+  (true-listp (get-superclasses-aux class-name class-table count)))
 
 ;fixme use defopener?
-(defthm get-super-classes-aux-opener
+(defthm get-superclasses-aux-opener
   (implies (and (not (equal class-name "java.lang.Object"))
                 (not (zp count)))
-           (equal (get-super-classes-aux class-name class-table count)
+           (equal (get-superclasses-aux class-name class-table count)
                   (if (not (bound-in-class-tablep class-name class-table))
                       (error-looking-up-class class-name class-table) ;will cause an error instead of being evaluated
-                    (let* ((super-class (get-super-class class-name class-table)))
-                      (cons super-class
-                            (get-super-classes-aux super-class class-table (+ -1 count))))))))
+                    (let* ((superclass (get-superclass class-name class-table)))
+                      (cons superclass
+                            (get-superclasses-aux superclass class-table (+ -1 count))))))))
 
-(defthm get-super-classes-aux-base
-  (equal (get-super-classes-aux "java.lang.Object" class-table count)
+(defthm get-superclasses-aux-base
+  (equal (get-superclasses-aux "java.lang.Object" class-table count)
          nil))
 
 ;; ;rename to allow for none
@@ -532,54 +532,54 @@
 ;;            (class-namep (class-decl-superclass x)))
 ;;   :hints (("Goal" :in-theory (enable class-infop))))
 
-(defthm class-namep-of-get-super-class-special-case
+(defthm class-namep-of-get-superclass-special-case
   (implies (and (class-infop (get-class-info class-name class-table) class-name)
                 (not (equal class-name "java.lang.Object"))
                 ;(not (class-decl-interfacep (get-class-info class-name class-table)))
                 )
-           (class-namep (get-super-class class-name class-table)))
+           (class-namep (get-superclass class-name class-table)))
   :hints (("Goal" :use (:instance class-namep-of-class-decl-superclass (class-info (get-class-info class-name class-table)))
-           :in-theory (e/d (GET-SUPER-CLASS) (class-namep-of-class-decl-superclass)))))
+           :in-theory (e/d (GET-SUPERCLASS) (class-namep-of-class-decl-superclass)))))
 
-(defthm super-class-is-not-an-interface
+(defthm superclass-is-not-an-interface
   (implies (and (not (equal class-name "java.lang.Object"))
                 (memberp class-name keys) ; keys is a free var
-                (all-super-classes-okayp keys class-table)
+                (all-superclasses-okayp keys class-table)
                 (not (class-decl-interfacep (get-class-info class-name class-table))))
-           (not (class-decl-interfacep (get-class-info (get-super-class class-name class-table)
+           (not (class-decl-interfacep (get-class-info (get-superclass class-name class-table)
                                           class-table))))
-  :hints (("Goal" :in-theory (enable get-super-class all-super-classes-okayp super-class-okayp memberp))))
+  :hints (("Goal" :in-theory (enable get-superclass all-superclasses-okayp superclass-okayp memberp))))
 
-(defthm super-class-is-not-an-interface2
+(defthm superclass-is-not-an-interface2
   (implies (and (not (equal class-name "java.lang.Object"))
                 (bound-in-class-tablep class-name class-table)
                 (class-tablep class-table)
                 (not (class-decl-interfacep (get-class-info class-name class-table))))
-           (not (class-decl-interfacep (get-class-info (get-super-class class-name class-table) class-table))))
-  :hints (("Goal" :use (:instance super-class-is-not-an-interface (keys (set::2list (acl2::rkeys class-table))))
-           :in-theory (e/d (get-super-class class-tablep bound-in-class-tablep) (super-class-is-not-an-interface)))))
+           (not (class-decl-interfacep (get-class-info (get-superclass class-name class-table) class-table))))
+  :hints (("Goal" :use (:instance superclass-is-not-an-interface (keys (set::2list (acl2::rkeys class-table))))
+           :in-theory (e/d (get-superclass class-tablep bound-in-class-tablep) (superclass-is-not-an-interface)))))
 
-(defthm all-class-namesp-of-get-super-classes-aux
+(defthm all-class-namesp-of-get-superclasses-aux
   (implies (and (class-tablep class-table)
 ;                (not (class-decl-interfacep (get-class-info class-name class-table)))
                 )
-           (all-class-namesp (get-super-classes-aux class-name class-table n)))
+           (all-class-namesp (get-superclasses-aux class-name class-table n)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (get-super-classes-aux ;class-tablep
+           :in-theory (e/d (get-superclasses-aux ;class-tablep
                             bound-in-class-tablep) ()))))
 
-;returns the (proper) super-classes of class-name from most to least specific (ending with java.lang.Object)
-;fixme really this should be called get-super-class-names
-(defun acl2::get-super-classes (class-name class-table)
+;returns the (proper) superclasses of class-name from most to least specific (ending with java.lang.Object)
+;fixme really this should be called get-superclass-names
+(defun acl2::get-superclasses (class-name class-table)
   (declare (xargs :guard (and (class-tablep class-table)
                               (class-namep class-name))))
-  (get-super-classes-aux class-name class-table 1000000 ;fixme use (len (dom class-table)) instead, but that can cause problems for rewriting?
+  (get-superclasses-aux class-name class-table 1000000 ;fixme use (len (dom class-table)) instead, but that can cause problems for rewriting?
                          ))
 
 ;fixme uncomment
-;; (defthm string-listp-of-get-super-classes
+;; (defthm string-listp-of-get-superclasses
 ;;   (implies (class-tablep class-table)
-;;            (string-listp (acl2::get-super-classes class-name class-table))))
+;;            (string-listp (acl2::get-superclasses class-name class-table))))
 
 ;; (defthm all-keys-bound-to-class-infosp-when-subset-of-dom
 ;;   (implies  (and (class-tablep class-table)
@@ -607,7 +607,7 @@
 
 ;a workset algorithm
 ;note: this does not look up superclasses!
-(defun acl2::get-super-interfaces-aux (class-or-interface-names class-table count acc)
+(defun acl2::get-superinterfaces-aux (class-or-interface-names class-table count acc)
   (declare (xargs :measure (nfix (+ 1 count))
                   :guard (and (class-tablep class-table)
                               (all-class-namesp class-or-interface-names)
@@ -622,43 +622,43 @@
         acc
       (let* ((class-or-interface0-name (first class-or-interface-names))
              (class-info (get-class-info class-or-interface0-name class-table))
-             (direct-super-interfaces (class-decl-interfaces class-info)))
-        (acl2::get-super-interfaces-aux (append direct-super-interfaces
+             (direct-superinterfaces (class-decl-interfaces class-info)))
+        (acl2::get-superinterfaces-aux (append direct-superinterfaces
                                                 (rest class-or-interface-names))
                                         class-table
                                         (+ -1 count)
-                                        (union-equal direct-super-interfaces acc))))))
+                                        (union-equal direct-superinterfaces acc))))))
 
-(defthm get-super-interfaces-aux-base
+(defthm get-superinterfaces-aux-base
   (implies (endp class-or-interface-names)
-           (equal (acl2::get-super-interfaces-aux class-or-interface-names class-table count acc)
+           (equal (acl2::get-superinterfaces-aux class-or-interface-names class-table count acc)
                   acc)))
 
-(defthm get-super-interfaces-aux-opener
+(defthm get-superinterfaces-aux-opener
   (implies (and (not (zp count))
                 (not (endp class-or-interface-names)))
-           (equal (acl2::get-super-interfaces-aux class-or-interface-names class-table count acc)
+           (equal (acl2::get-superinterfaces-aux class-or-interface-names class-table count acc)
                   (let* ((class-or-interface0-name (first class-or-interface-names))
                          (class-info (get-class-info class-or-interface0-name class-table))
-                         (direct-super-interfaces (class-decl-interfaces class-info)))
-                    (acl2::get-super-interfaces-aux (append direct-super-interfaces
+                         (direct-superinterfaces (class-decl-interfaces class-info)))
+                    (acl2::get-superinterfaces-aux (append direct-superinterfaces
                                                             (rest class-or-interface-names))
                                                     class-table
                                                     (+ -1 count)
-                                                    (union-equal direct-super-interfaces acc))))))
+                                                    (union-equal direct-superinterfaces acc))))))
 
 ;write a tool to automate stuff like this?
-(defthm true-listp-of-get-super-interfaces-aux
+(defthm true-listp-of-get-superinterfaces-aux
   (implies (true-listp acc)
-           (true-listp (acl2::get-super-interfaces-aux class-or-interface-names class-table count acc))))
+           (true-listp (acl2::get-superinterfaces-aux class-or-interface-names class-table count acc))))
 
-(defun acl2::get-super-interfaces (class-or-interface-names class-table)
+(defun acl2::get-superinterfaces (class-or-interface-names class-table)
   (declare (xargs :guard (and (all-class-namesp class-or-interface-names)
                               (true-listp class-or-interface-names)
                               (class-tablep class-table)
                               (all-bound-in-class-tablep class-or-interface-names class-table))
                   :guard-hints (("Goal" :in-theory (enable class-tablep)))))
-  (acl2::get-super-interfaces-aux class-or-interface-names class-table 100000 nil))
+  (acl2::get-superinterfaces-aux class-or-interface-names class-table 100000 nil))
 
 ;BOZO is this up to date?
 ; Note that the definition below of the Thread class includes a 'run' method,
@@ -670,12 +670,11 @@
 
 
 ;; Test whether CLASS-NAME is a proper superclass of CLASS-NAME2.
-;todo: remove hyphen from name
-(defund super-classp (class-name class-name2 class-table)
+(defund superclassp (class-name class-name2 class-table)
   (declare (xargs :guard (and (class-tablep class-table)
                               (class-namep class-name)
                               (class-namep class-name2))))
-  (member-equal class-name (acl2::get-super-classes class-name2 class-table)))
+  (member-equal class-name (acl2::get-superclasses class-name2 class-table)))
 
 ;; Test whether CLASS-NAME is a proper subclass of CLASS-NAME2.
 ;todo: remove hyphen from name
@@ -683,7 +682,7 @@
   (declare (xargs :guard (and (class-tablep class-table)
                               (class-namep class-name)
                               (class-namep class-name2))))
-  (super-classp class-name2 class-name class-table))
+  (superclassp class-name2 class-name class-table))
 
 ;; Test whether CLASS-NAME is a proper subclass of CLASS-NAME2 or is the same class as CLASS-NAME2.
 (defund sub-class-or-same-classp (class-name class-name2 class-table)
@@ -694,12 +693,12 @@
       (sub-classp class-name class-name2 class-table)))
 
 ;; (thm
-;;  (implies (and (All-Super-Classes-Okayp (SET::2LIST (ACL2::RKEYS CLASS-TABLE))
+;;  (implies (and (All-Superclasses-Okayp (SET::2LIST (ACL2::RKEYS CLASS-TABLE))
 ;;                                         CLASS-TABLE
 ;;                                         (SET::2LIST (ACL2::RKEYS CLASS-TABLE)))
 ;;                (set::in class-or-interface-name (acl2::rkeys class-table))
 ;;                (not (equal "java.lang.Object" class-or-interface-name)))
-;;           (set::in (class-decl-super-class (get-class-info class-or-interface-name class-table))
+;;           (set::in (class-decl-superclass (get-class-info class-or-interface-name class-table))
 ;;                    (acl2::rkeys class-table)))
 ;;  :hints (("Goal" :in-theory (enable class-tablep))))
 
@@ -713,72 +712,72 @@
   :hints (("Goal" :in-theory (enable memberp)))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-(defthm in-get-super-class-and-rkeys-helper
-  (implies (and (all-super-classes-okayp keys class-table)
+(defthm in-get-superclass-and-rkeys-helper
+  (implies (and (all-superclasses-okayp keys class-table)
                 ;; (class-tablep class-table)
                 (memberp class-name keys)
                 (not (equal class-name "java.lang.Object"))
                 ;; (not (class-decl-interfacep (get-class-info class-name class-table)))
                 )
-           (set::in (get-super-class class-name class-table) (acl2::rkeys class-table)))
-  :hints (("Goal" :in-theory (enable ALL-SUPER-CLASSES-OKAYP
-                                     get-super-class
+           (set::in (get-superclass class-name class-table) (acl2::rkeys class-table)))
+  :hints (("Goal" :in-theory (enable ALL-SUPERCLASSES-OKAYP
+                                     get-superclass
                                      bound-in-class-tablep
-                                     all-super-classes-okayp
-                                     SUPER-CLASS-OKAYP;memberp
+                                     all-superclasses-okayp
+                                     SUPERCLASS-OKAYP;memberp
                                      class-decl-superclass class-tablep))))
 
 ;rename
-(defthm bound-in-class-tablep-of-get-super-class-helper
-  (implies (and (all-super-classes-okayp keys class-table)
+(defthm bound-in-class-tablep-of-get-superclass-helper
+  (implies (and (all-superclasses-okayp keys class-table)
                 ;; (class-tablep class-table)
                 (memberp class-name keys)
                 (not (equal class-name "java.lang.Object"))
                 ;; (not (class-decl-interfacep (get-class-info class-name class-table)))
                 )
-           (bound-in-class-tablep (get-super-class class-name class-table) class-table))
-  :hints (("Goal" :in-theory (enable ALL-SUPER-CLASSES-OKAYP
-                                     get-super-class
+           (bound-in-class-tablep (get-superclass class-name class-table) class-table))
+  :hints (("Goal" :in-theory (enable ALL-SUPERCLASSES-OKAYP
+                                     get-superclass
                                      bound-in-class-tablep
-                                     all-super-classes-okayp
-                                     SUPER-CLASS-OKAYP;memberp
+                                     all-superclasses-okayp
+                                     SUPERCLASS-OKAYP;memberp
                                      class-decl-superclass class-tablep))))
 
-(defthm bound-in-class-tablep-of-get-super-class
+(defthm bound-in-class-tablep-of-get-superclass
   (implies (and (class-tablep class-table)
                 (bound-in-class-tablep class-name class-table)
                 (not (equal class-name "java.lang.Object"))
                 ;; (not (class-decl-interfacep (get-class-info class-name class-table)))
                 )
-           (bound-in-class-tablep (get-super-class class-name class-table) class-table))
+           (bound-in-class-tablep (get-superclass class-name class-table) class-table))
   :hints (("Goal"
-           :use (:instance bound-in-class-tablep-of-get-super-class-helper (keys (set::2list (acl2::rkeys class-table))))
+           :use (:instance bound-in-class-tablep-of-get-superclass-helper (keys (set::2list (acl2::rkeys class-table))))
            :in-theory (enable class-tablep bound-in-class-tablep))))
 
-(defthm not-class-decl-interfacep-of-get-class-info-of-get-super-class-helper
-  (implies (and (all-super-classes-okayp keys class-table)
+(defthm not-class-decl-interfacep-of-get-class-info-of-get-superclass-helper
+  (implies (and (all-superclasses-okayp keys class-table)
                 ;; (class-tablep class-table)
                 (memberp class-name keys)
                 (not (equal class-name "java.lang.Object"))
                 ;; (not (class-decl-interfacep (get-class-info class-name class-table)))
                 )
-           (not (class-decl-interfacep (get-class-info (get-super-class class-name class-table) class-table))))
-  :hints (("Goal" :in-theory (enable all-super-classes-okayp
-                                     get-super-class
+           (not (class-decl-interfacep (get-class-info (get-superclass class-name class-table) class-table))))
+  :hints (("Goal" :in-theory (enable all-superclasses-okayp
+                                     get-superclass
                                      bound-in-class-tablep
-                                     all-super-classes-okayp
-                                     super-class-okayp;memberp
+                                     all-superclasses-okayp
+                                     superclass-okayp;memberp
                                      class-decl-superclass class-tablep))))
 
-(defthm not-class-decl-interfacep-of-get-class-info-of-get-super-class
+(defthm not-class-decl-interfacep-of-get-class-info-of-get-superclass
   (implies (and (class-tablep class-table)
                 (bound-in-class-tablep class-name class-table)
                 (not (equal class-name "java.lang.Object"))
                 ;; (not (class-decl-interfacep (get-class-info class-name class-table)))
                 )
-           (not (class-decl-interfacep (get-class-info (get-super-class class-name class-table) class-table))))
+           (not (class-decl-interfacep (get-class-info (get-superclass class-name class-table) class-table))))
   :hints (("Goal"
-           :use (:instance not-class-decl-interfacep-of-get-class-info-of-get-super-class-helper (keys (set::2list (acl2::rkeys class-table))))
+           :use (:instance not-class-decl-interfacep-of-get-class-info-of-get-superclass-helper (keys (set::2list (acl2::rkeys class-table))))
            :in-theory (enable class-tablep bound-in-class-tablep))))
 
 ;; (defthm in-of-class-decl-superclass-lemma-special-case
@@ -787,44 +786,44 @@
 ;;                 (not (equal class-name "java.lang.Object"))
 ;;                 (not (class-decl-interfacep (get-class-info class-name class-table)))
 ;;                 )
-;;            (bound-in-class-tablep (CLASS-DECL-SUPER-CLASS (get-class-info CLASS-NAME CLASS-TABLE)) ;(class-decl-superclass (get-class-info class-name class-table))
+;;            (bound-in-class-tablep (CLASS-DECL-SUPERCLASS (get-class-info CLASS-NAME CLASS-TABLE)) ;(class-decl-superclass (get-class-info class-name class-table))
 ;;                     class-table
 ;;                     ))
 ;;   :hints (("Goal" :use (:instance in-of-class-decl-superclass-lemma (keys (acl2::rkeys class-table)) (all-keys (acl2::rkeys class-table)))
 ;;            :in-theory (e/d (CLASS-TABLEP) (in-of-class-decl-superclass-lemma)))))
 
-(defthm super-class-is-not-interface
+(defthm superclass-is-not-interface
   (implies (and  (class-tablep class-table)
                 (not (equal "java.lang.Object" class-name))
                 ;(not (CLASS-DECL-interfacep (get-class-info CLASS-NAME CLASS-TABLE))) ;fixme
-                (super-class-okayp class-name class-table))
+                (superclass-okayp class-name class-table))
            (not (class-decl-interfacep (get-class-info (class-decl-superclass (get-class-info class-name class-table)) class-table))))
-  :hints (("Goal" :in-theory (enable super-class-okayp CLASS-TABLEP))))
+  :hints (("Goal" :in-theory (enable superclass-okayp CLASS-TABLEP))))
 
-(defthm super-class-okayp-when-bound-in-class-table
+(defthm superclass-okayp-when-bound-in-class-table
   (implies (and (class-tablep class-table)
                 (not (equal "java.lang.Object" class-name))
                 (bound-in-class-tablep class-name class-table))
-           (super-class-okayp class-name class-table))
+           (superclass-okayp class-name class-table))
   :hints (("Goal" :in-theory (enable class-tablep bound-in-class-tablep))))
 
-;; (defthm super-class-is-not-interface2
+;; (defthm superclass-is-not-interface2
 ;;   (implies (and (class-tablep class-table)
 ;;                 (not (equal "java.lang.Object" class-name))
 ;;                 (bound-in-class-tablep class-name class-table))
 ;;            (not (class-decl-interfacep (get-class-info (class-decl-superclass (get-class-info class-name class-table)) class-table)))))
 
-(defthm subset-of-get-super-classes-aux
+(defthm subset-of-get-superclasses-aux
   (implies (and (class-tablep class-table)
                 (bound-in-class-tablep class-name class-table)
 ;                (not (class-decl-interfacep (get-class-info class-name class-table))) ;fixme?
                 )
-           (all-bound-in-class-tablep (get-super-classes-aux class-name class-table n) class-table))
+           (all-bound-in-class-tablep (get-superclasses-aux class-name class-table n) class-table))
   :hints (("Goal"
     ;          :expand ((BOUND-IN-CLASS-TABLEP CLASS-NAME CLASS-TABLE))
-           :in-theory (e/d (get-super-classes-aux ;class-tablep ;class-decl-superclass
+           :in-theory (e/d (get-superclasses-aux ;class-tablep ;class-decl-superclass
                             ;;    BOUND-IN-CLASS-TABLEP
-                            ALL-SUPER-CLASSES-OKAYP
+                            ALL-SUPERCLASSES-OKAYP
                             acl2::SUBSETP-EQ
                             ) (CLASS-DECL-SUPERCLASS)))))
 
@@ -833,52 +832,52 @@
            (bound-in-class-tablep "java.lang.Object" class-table))
   :hints (("Goal" :in-theory (enable class-tablep BOUND-IN-CLASS-TABLEP))))
 
-;; (defthm super-class-bound-helper
+;; (defthm superclass-bound-helper
 ;;   (implies (and (class-tablep class-table)
 ;;                 (not (equal "java.lang.Object" class-name))
 ;;                 (not (class-decl-interfacep (get-class-info class-name class-table))) ;fixme
-;;                 (super-class-okayp class-name class-table))
-;;            (bound-in-class-tablep (get-super-class class-name class-table) class-table))
-;;   :hints (("Goal" :in-theory (enable super-class-okayp BOUND-IN-CLASS-TABLEP))))
+;;                 (superclass-okayp class-name class-table))
+;;            (bound-in-class-tablep (get-superclass class-name class-table) class-table))
+;;   :hints (("Goal" :in-theory (enable superclass-okayp BOUND-IN-CLASS-TABLEP))))
 
-;; (defthm super-class-bound-helper2
+;; (defthm superclass-bound-helper2
 ;;   (implies (and (class-tablep class-table)
 ;;                 (not (equal "java.lang.Object" class-name))
 ;; ;                (not (class-decl-interfacep (get-class-info class-name class-table))) ;fixme
-;;                 (super-class-okayp class-name class-table))
-;;            (bound-in-class-tablep (get-super-class class-name class-table) class-table))
-;;   :hints (("Goal" :in-theory (enable get-super-class))))
+;;                 (superclass-okayp class-name class-table))
+;;            (bound-in-class-tablep (get-superclass class-name class-table) class-table))
+;;   :hints (("Goal" :in-theory (enable get-superclass))))
 
-;; (defthm super-class-bound
+;; (defthm superclass-bound
 ;;   (implies (and (class-tablep class-table)
 ;;                 (not (equal "java.lang.Object" class-name))
 ;;                 (bound-in-class-tablep CLASS-NAME CLASS-TABLE))
-;;            (bound-in-class-tablep (get-super-class class-name class-table) class-table))
+;;            (bound-in-class-tablep (get-superclass class-name class-table) class-table))
 ;;   :hints (("Goal" :in-theory (enable class-tablep))))
 
-;; (defthm super-class-bound2
+;; (defthm superclass-bound2
 ;;   (implies (and (class-tablep class-table)
 ;;                 (not (equal "java.lang.Object" class-name))
 ;;                 (bound-in-class-tablep CLASS-NAME CLASS-TABLE))
-;;            (bound-in-class-tablep (get-super-class class-name class-table) class-table))
+;;            (bound-in-class-tablep (get-superclass class-name class-table) class-table))
 ;;   :hints (("Goal" :in-theory (enable class-tablep))))
 
-(defthm super-class-equal-none-1
-  (implies (super-class-okayp class-name class-table)
-           (equal (equal :none (get-super-class class-name class-table))
+(defthm superclass-equal-none-1
+  (implies (superclass-okayp class-name class-table)
+           (equal (equal :none (get-superclass class-name class-table))
                   (equal "java.lang.Object" class-name)))
-  :hints (("Goal" :in-theory (enable super-class-okayp  get-super-class))))
+  :hints (("Goal" :in-theory (enable superclass-okayp  get-superclass))))
 
-(defthm super-class-equal-none-2
-  (implies (and (all-super-classes-okayp class-names class-table) ;class-names is a free var
+(defthm superclass-equal-none-2
+  (implies (and (all-superclasses-okayp class-names class-table) ;class-names is a free var
                 (memberp class-name class-names))
-           (equal (equal :none (get-super-class class-name class-table))
+           (equal (equal :none (get-superclass class-name class-table))
                   (equal "java.lang.Object" class-name))))
 
-(defthm super-class-equal-none-3
+(defthm superclass-equal-none-3
   (implies (and (class-tablep class-table)
                 (bound-in-class-tablep class-name class-table))
-           (equal (equal :none (get-super-class class-name class-table))
+           (equal (equal :none (get-superclass class-name class-table))
                   (equal "java.lang.Object" class-name)))
   :hints (("Goal" :in-theory (enable class-tablep bound-in-class-tablep))))
 
@@ -948,12 +947,12 @@
                                   (true-listp-of-class-decl-access-flags-of-get-class-info))
            :use (:instance true-listp-of-class-decl-access-flags-of-get-class-info (class-name "java.lang.String")))))
 
-(defthm all-bound-in-class-tablep-of-get-super-classes
+(defthm all-bound-in-class-tablep-of-get-superclasses
   (implies (and (class-tablep class-table)
                 (bound-in-class-tablep class-name class-table)
 ;                (not (class-decl-interfacep (get-class-info class-name class-table))) ;fixme?
                 )
-           (all-bound-in-class-tablep (acl2::get-super-classes class-name class-table) class-table)))
+           (all-bound-in-class-tablep (acl2::get-superclasses class-name class-table) class-table)))
 
 (defun bound-to-a-classp (class-or-interface-name class-table)
   (declare (xargs :guard (and (class-namep class-or-interface-name)
@@ -996,8 +995,8 @@
                               (class-namep interface-name)
                               (class-tablep class-table)
                               (bound-in-class-tablep class-name class-table))))
-  (let* ((super-class-names (acl2::get-super-classes class-name class-table))
-         (implemented-interfaces (acl2::get-super-interfaces super-class-names class-table)))
+  (let* ((superclass-names (acl2::get-superclasses class-name class-table))
+         (implemented-interfaces (acl2::get-superinterfaces superclass-names class-table)))
     (if (member-equal interface-name implemented-interfaces)
         t
       nil)))
@@ -1005,25 +1004,25 @@
 
 
 ;;todo:
-(defthm all-bound-to-a-non-interfacep-of-get-super-classes-aux-helper
+(defthm all-bound-to-a-non-interfacep-of-get-superclasses-aux-helper
   (implies (and ;(not (class-decl-interfacep (get-class-info class-name class-table)))
             (bound-in-class-tablep class-name class-table)
-            (all-super-classes-okayp (SET::2LIST (ACL2::RKEYS CLASS-TABLE)) class-table)
+            (all-superclasses-okayp (SET::2LIST (ACL2::RKEYS CLASS-TABLE)) class-table)
             (member-equal class-name (SET::2LIST (ACL2::RKEYS CLASS-TABLE)))
             ;(class-namep class-name)
             (CLASS-TABLEP CLASS-TABLE))
-           (all-bound-to-a-non-interfacep (get-super-classes-aux class-name class-table count) class-table))
-  :hints (("Goal" :in-theory (e/d (GET-SUPER-CLASSES-AUX ALL-BOUND-TO-A-NON-INTERFACEP)
+           (all-bound-to-a-non-interfacep (get-superclasses-aux class-name class-table count) class-table))
+  :hints (("Goal" :in-theory (e/d (GET-SUPERCLASSES-AUX ALL-BOUND-TO-A-NON-INTERFACEP)
                                   ( ;ACL2::MEMBERP-OF-SET2LIST ;introduces set::in
                                    )))))
 
-(defthm all-bound-to-a-non-interfacep-of-get-super-classes-aux
+(defthm all-bound-to-a-non-interfacep-of-get-superclasses-aux
   (implies (and ;(not (class-decl-interfacep (get-class-info class-name class-table)))
             (bound-in-class-tablep class-name class-table)
             (class-tablep class-table)
      ;(class-namep class-name)
             )
-           (all-bound-to-a-non-interfacep (get-super-classes-aux class-name class-table 1000000) class-table))
+           (all-bound-to-a-non-interfacep (get-superclasses-aux class-name class-table 1000000) class-table))
   :hints (("Goal" :in-theory (enable CLASS-TABLEP BOUND-IN-CLASS-TABLEP))))
 
 (defthm class-namep-when-bound-in-class-tablep
