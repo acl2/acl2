@@ -1235,6 +1235,7 @@
 
 ;; Returns (mv foundp class-name).  Find the first of the CLASS-NAMES that
 ;; has a method with the given METHOD-ID.
+;; TODO: Need to handle signature polymorphic methods.
 (defund resolve-method-step-2-aux (method-id class-names class-table)
   (declare (xargs :guard (and (true-listp class-names)
                               (all-class-namesp class-names)
