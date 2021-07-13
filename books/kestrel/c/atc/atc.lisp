@@ -52,6 +52,7 @@
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "oslib/dirname" :dir :system)
 (include-book "oslib/file-types" :dir :system)
+(include-book "std/typed-alists/keyword-symbol-alistp" :dir :system)
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
@@ -797,6 +798,9 @@
      that the function returns a C value;
      the name of the locally generated theorem that asserts
      that the execution of the function is functionally correct;
+     the name of the locally generated theorem that asserts
+     that the measure of the function (when recursive) yields a natural number
+     (@('nil') if the function is not recursive);
      and a limit that suffices for @(tsee exec-fun)
      to execute the function completely on any arguments
      (currently 0 for recursive functions; this will be extended).
@@ -809,6 +813,7 @@
    (xforming symbol-listp)
    (returns-value-thm symbolp)
    (correct-thm symbolp)
+   (measure-nat-thm symbolp)
    (limit natp))
   :pred atc-fn-infop)
 
@@ -879,6 +884,27 @@
         (t (cons (atc-fn-info->correct-thm (cdr (car prec-fns)))
                  (atc-symbol-fninfo-alist-to-correct-thms
                   (cdr prec-fns))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-symbol-fninfo-alist-to-measure-nat-thms
+  ((prec-fns atc-symbol-fninfo-alistp))
+  :returns (thms symbol-listp :hyp :guard)
+  :short "Project all the measure theorems
+          out of a function information alist."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We skip over non-recursive functions,
+     which have @('nil') as that entry."))
+  (cond ((endp prec-fns) nil)
+        (t (b* ((thm (atc-fn-info->measure-nat-thm (cdr (car prec-fns)))))
+             (if thm
+                 (cons thm
+                       (atc-symbol-fninfo-alist-to-measure-nat-thms
+                        (cdr prec-fns)))
+               (atc-symbol-fninfo-alist-to-measure-nat-thms
+                (cdr prec-fns)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3469,6 +3495,7 @@
               :xforming nil
               :returns-value-thm fn-returns-value-thm
               :correct-thm fn-correct-thm
+              :measure-nat-thm nil
               :limit limit)))
     (acl2::value (list ext
                        local-events
@@ -3481,11 +3508,14 @@
 (define atc-gen-loop-correct-thm ((fn symbolp)
                                   (loop-stmt stmtp)
                                   (prog-const symbolp)
+                                  (fn-appconds symbol-symbol-alistp)
+                                  (appcond-thms acl2::keyword-symbol-alistp)
                                   (names-to-avoid symbol-listp)
                                   state)
   :guard (acl2::irecursivep+ fn (w state))
   :returns (mv erp
                (val "A @('(tuple (events pseudo-event-form-listp)
+                                 (natp-of-measure-of-fn-thm symbolp)
                                  (updated-names-to-avoid symbol-listp)
                                  val)').")
                state)
@@ -3503,7 +3533,7 @@
      we cannot use the function's induction scheme.
      But we cannot readily use
      the induction scheme of the execution functions,
-     or at least it seeme it would be cumbersome to do so,
+     or at least it seems it would be cumbersome to do so,
      because there are several of them, mutually recursive.
      What we really need is an induction scheme related to the loop.
      Thus we introduce a local function that is like @(tsee exec-stmt-while)
@@ -3518,7 +3548,14 @@
      For robustness, the termination proof for this new function,
      and the proof of the associated theorem,
      are carried out in exactly specified theories
-     that should always work."))
+     that should always work.")
+   (xdoc::p
+    "We also generate a local theorem asserting that
+     the measure of the function yields a natural number.
+     This is like the applicabiliby condition,
+     but we need a type prescription rule,
+     and currenty the applicability condition utilities
+     do not support the specification of rule classes."))
   (b* ((wrld (w state))
        (loop-test (stmt-while->test loop-stmt))
        (loop-body (stmt-while->body loop-stmt))
@@ -3560,7 +3597,7 @@
         (add-suffix exec-stmt-while-for-fn "-TO-EXEC-STMT-WHILE"))
        ((mv exec-stmt-while-for-fn-thm names-to-avoid)
         (acl2::fresh-logical-name-with-$s-suffix exec-stmt-while-for-fn-thm
-                                                 'function
+                                                 nil
                                                  names-to-avoid
                                                  wrld))
        ((mv exec-stmt-while-for-fn-thm-event &)
@@ -3575,9 +3612,29 @@
          :rule-classes nil
          :hints `(("Goal" :in-theory '(,exec-stmt-while-for-fn
                                        exec-stmt-while)))))
+       (appcond-thm
+        (cdr (assoc-eq (cdr (assoc-eq fn fn-appconds)) appcond-thms)))
+       (natp-of-measure-of-fn-thm
+        (acl2::packn-pos (list 'natp-of-measure-of- fn) fn))
+       ((mv natp-of-measure-of-fn-thm names-to-avoid)
+        (acl2::fresh-logical-name-with-$s-suffix natp-of-measure-of-fn-thm
+                                                 nil
+                                                 names-to-avoid
+                                                 wrld))
+       (meas (acl2::measure+ fn wrld))
+       ((mv natp-of-measure-of-fn-thm-event &)
+        (acl2::evmac-generate-defthm
+         natp-of-measure-of-fn-thm
+         :formula `(natp ,meas)
+         :rule-classes :type-prescription
+         :enable nil
+         :hints `(("Goal" :by ,appcond-thm))))
        (events (list exec-stmt-while-for-fn-event
-                     exec-stmt-while-for-fn-thm-event)))
-    (acl2::value (list events names-to-avoid))))
+                     exec-stmt-while-for-fn-thm-event
+                     natp-of-measure-of-fn-thm-event)))
+    (acl2::value (list events
+                       natp-of-measure-of-fn-thm
+                       names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3587,6 +3644,8 @@
                       (recursionp booleanp)
                       (prog-const symbolp)
                       (fn-thms symbol-symbol-alistp)
+                      (fn-appconds symbol-symbol-alistp)
+                      (appcond-thms acl2::keyword-symbol-alistp)
                       (print evmac-input-print-p)
                       (names-to-avoid symbol-listp)
                       (ctx ctxp)
@@ -3638,10 +3697,12 @@
        ((when erp) (mv erp (list nil nil nil nil) state))
        ((mv erp
             (list more-local-events
+                  natp-of-measure-of-fn-thm
                   names-to-avoid)
             state)
-        (atc-gen-loop-correct-thm fn loop-stmt prog-const names-to-avoid
-                                  state))
+        (atc-gen-loop-correct-thm fn loop-stmt prog-const
+                                  fn-appconds appcond-thms
+                                  names-to-avoid state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        (local-events (append local-events more-local-events))
        (info (make-atc-fn-info :type? type?
@@ -3649,6 +3710,7 @@
                                :xforming loop-xforming
                                :returns-value-thm fn-returns-value-thm
                                :correct-thm fn-correct-thm
+                               :measure-nat-thm natp-of-measure-of-fn-thm
                                :limit limit)))
     (acl2::value (list local-events
                        exported-events
@@ -3663,6 +3725,8 @@
                                  (recursionp booleanp)
                                  (prog-const symbolp)
                                  (fn-thms symbol-symbol-alistp)
+                                 (fn-appconds symbol-symbol-alistp)
+                                 (appcond-thms acl2::keyword-symbol-alistp)
                                  (print evmac-input-print-p)
                                  (names-to-avoid symbol-listp)
                                  (ctx ctxp)
@@ -3694,7 +3758,8 @@
                             names-to-avoid)
                       state)
                   (atc-gen-loop fn prec-fns proofs recursionp prog-const
-                                fn-thms print names-to-avoid ctx state))
+                                fn-thms fn-appconds appcond-thms
+                                print names-to-avoid ctx state))
                  ((when erp) (mv erp (list nil nil nil nil) state)))
               (acl2::value (list nil
                                  local-events
@@ -3717,7 +3782,7 @@
        ((er
          (list more-exts more-local-events more-exported-events names-to-avoid))
         (atc-gen-ext-declon-list rest-fns prec-fns proofs recursionp
-                                 prog-const fn-thms
+                                 prog-const fn-thms fn-appconds appcond-thms
                                  print names-to-avoid ctx state)))
     (acl2::value (list (append exts more-exts)
                        (append local-events more-local-events)
@@ -3810,20 +3875,21 @@
   :mode :program
   :short "Generate a C translation unit from the ACL2 target functions,
           and accompanying event."
-  (b* (((mv appcond-local-events names-to-avoid)
+  (b* (((mv appcond-local-events fn-appconds appcond-thms names-to-avoid)
         (if proofs
-            (b* (((mv appconds &) (atc-gen-appconds fn1...fnp (w state)))
-                 ((mv appcond-events & & names-to-avoid)
+            (b* (((mv appconds fn-appconds)
+                  (atc-gen-appconds fn1...fnp (w state)))
+                 ((mv appcond-events appcond-thms & names-to-avoid)
                   (acl2::evmac-appcond-theorem-list appconds nil names-to-avoid
                                                     print ctx state)))
-              (mv appcond-events names-to-avoid))
-          (mv nil nil)))
+              (mv appcond-events fn-appconds appcond-thms names-to-avoid))
+          (mv nil nil nil nil)))
        ((mv wf-thm-local-events wf-thm-exported-events)
         (atc-gen-wf-thm proofs prog-const wf-thm print))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
         (atc-gen-ext-declon-list fn1...fnp nil proofs recursionp
-                                 prog-const fn-thms
+                                 prog-const fn-thms fn-appconds appcond-thms
                                  print names-to-avoid ctx state))
        (tunit (make-transunit :declons exts))
        ((mv local-const-event exported-const-event)
