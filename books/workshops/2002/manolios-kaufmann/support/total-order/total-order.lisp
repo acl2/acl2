@@ -96,7 +96,7 @@
 	((stringp y) nil)
 	((symbolp x)
 	 (if (symbolp y)
-	     (not (symbol-< y x))
+	     (not (symbol< y x))
 	   t))
 	((symbolp y) nil)
 	(t (bad-atom<= x y))))
@@ -161,7 +161,7 @@
                  (atom z))
             (atom-order x z))
    :hints (("Goal"
-            :in-theory (enable string< symbol-<)))))
+            :in-theory (enable string< symbol<)))))
 
 (local
  (defthm atom-order-anti-symmetric
@@ -172,7 +172,7 @@
             (equal x y))
    :hints (("Goal"
             :in-theory (union-theories
-                        '(string< symbol-<)
+                        '(string< symbol<)
                         (disable code-char-char-code-is-identity))
             :use ((:instance symbol-equality (s1 x) (s2 y))
                   (:instance bad-atom<=-anti-symmetric)
@@ -195,7 +195,7 @@
             (or (atom-order x y)
 		(atom-order y x)))
    :hints (("Goal" :use (:instance bad-atom<=-total)
-            :in-theory (enable string< symbol-<)))
+            :in-theory (enable string< symbol<)))
    :rule-classes
    ((:forward-chaining :corollary
                        (implies (and (not (atom-order x y))

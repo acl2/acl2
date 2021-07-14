@@ -10,8 +10,8 @@
   (declare (xargs :mode :logic
                   :guard (and (symbol-listp lst1)
                               (symbol-listp lst2)
-                              (strict-symbol-<-sortedp lst1)
-                              (strict-symbol-<-sortedp lst2))))
+                              (strict-symbol<-sortedp lst1)
+                              (strict-symbol<-sortedp lst2))))
   (cond ((endp lst1) t)
         (t (let ((tail (member-eq (car lst1) lst2)))
              (and tail
@@ -31,6 +31,6 @@
  })
 
  <p>where the @(see guard) specifies that both arguments are true-lists of
- symbols, sorted by @(tsee symbol-<).  This computes the same result as
+ symbols, sorted by @(tsee symbol<).  This computes the same result as
  @('(subsetp-eq lst1 lst2)') (challenge: prove this!), but unlike @(tsee
  subsetp-eq), it does so in linear time.</p>")

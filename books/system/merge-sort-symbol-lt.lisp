@@ -4,7 +4,7 @@
 
 (in-package "ACL2")
 
-(verify-termination merge-symbol-<
+(verify-termination merge-symbol<
   #+acl2-devel ; otherwise fails to be redundant with :? measure
   (declare (xargs :measure (+ (len l1) (len l2)))))
 
@@ -14,7 +14,7 @@
               (acl2-count x)))
   :rule-classes :linear)
 
-(verify-termination merge-sort-symbol-<
+(verify-termination merge-sort-symbol<
   (declare (xargs :verify-guards nil)))
 
 (defthm symbol-listp-evens
@@ -22,14 +22,14 @@
            (symbol-listp (evens x)))
   :hints (("Goal" :induct (evens x))))
 
-(defthm symbol-listp-merge-symbol-<
+(defthm symbol-listp-merge-symbol<
   (implies (and (symbol-listp l1)
                 (symbol-listp l2)
                 (symbol-listp acc))
-           (symbol-listp (merge-symbol-< l1 l2 acc))))
+           (symbol-listp (merge-symbol< l1 l2 acc))))
 
-(defthm symbol-listp-merge-sort-symbol-<
+(defthm symbol-listp-merge-sort-symbol<
   (implies (symbol-listp x)
-           (symbol-listp (merge-sort-symbol-< x))))
+           (symbol-listp (merge-sort-symbol< x))))
 
-(verify-guards merge-sort-symbol-<)
+(verify-guards merge-sort-symbol<)

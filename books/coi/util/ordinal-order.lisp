@@ -294,8 +294,8 @@
     (symbolp x)
     (symbolp y))
    (equal (equal x y)
-	  (and (not (symbol-< x y))
-	       (not (symbol-< y x))))))
+	  (and (not (symbol< x y))
+	       (not (symbol< y x))))))
 
 
 (defthm equal-symboltoo-reduction
@@ -309,8 +309,8 @@
 			      equal-string-double-containment-expensive
 			      ))
 	  ("Subgoal 5" :in-theory (e/d
-				   (symbol-< equal-symbol-double-containment-expensive)
-				   (SYMBOL-<-TRICHOTOMY)))))
+				   (symbol< equal-symbol-double-containment-expensive)
+				   (SYMBOL<-TRICHOTOMY)))))
 
 (in-theory (disable symboltoo))
 

@@ -1517,7 +1517,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            signed-byte-p
            strip-cars
            strip-cdrs
-           symbol-<
+           symbol<
            unsigned-byte-p
            untouchable-marker
            xor
@@ -9131,7 +9131,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (length str1)
     (string> str1 str2)))
 
-(defun symbol-< (x y)
+(defun symbol< (x y)
   (declare (xargs :guard (and (symbolp x) (symbolp y))))
   (let ((x1 (symbol-name x))
         (y1 (symbol-name y)))
@@ -11068,7 +11068,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun ordered-symbol-alistp (x)
 
 ; An ordered-symbol-alist is an alist whose keys are symbols which are
-; in the symbol-< order.
+; in the symbol< order.
 
   (declare (xargs :guard t))
   (cond ((atom x) (null x))
@@ -11077,11 +11077,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (or (atom (cdr x))
                     (and (consp (cadr x))
                          (symbolp (caadr x))
-                         (symbol-< (caar x)
+                         (symbol< (caar x)
                                    (caadr x))))
                 (ordered-symbol-alistp (cdr x))))))
 
-(in-theory (disable symbol-<))
+(in-theory (disable symbol<))
 
 (defthm ordered-symbol-alistp-forward-to-symbol-alistp
   (implies (ordered-symbol-alistp x)
@@ -11095,7 +11095,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (list (cons key value)))
         ((eq key (caar l))
          (cons (cons key value) (cdr l)))
-        ((symbol-< key (caar l))
+        ((symbol< key (caar l))
          (cons (cons key value) l))
         (t (cons (car l)
                  (add-pair key value (cdr l))))))
@@ -11234,7 +11234,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (meter-maid 'getprops 100 symb)
          (sort (getprops1 (get symb (cdr (get world-name 'acl2-world-pair))))
                #'(lambda (x y)
-                   (symbol-< (car x) (car y)))))
+                   (symbol< (car x) (car y)))))
         ((endp world-alist)
          #+acl2-metering
          (meter-maid 'getprops 100 symb)
@@ -12537,7 +12537,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                acl2::*1*-package-prefix*
                                name))
         (proposed-imports ; avoid sort-symbol-listp for toothbrush
-         (remove-adjacent-duplicates-eq (sort (copy-list imports) 'symbol-<))))
+         (remove-adjacent-duplicates-eq (sort (copy-list imports) 'symbol<))))
     (assert pkg) ; see defpkg-raw
 
 ; We bind proposed-imports to the value of the imports argument.  We do not
@@ -15588,7 +15588,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                      (package-entry-name
                                                       package-entry))
                                              ans)))))
-            (sort ans (function symbol-<))))))
+            (sort ans (function symbol<))))))
   (strip-cars (global-table state-state)))
 
 (defun global-table-cars (state-state)
@@ -16541,14 +16541,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (not (string<-l x2 x1 i)))
    :hints (("Goal" :in-theory (disable member))))
 
- (defthm symbol-<-asymmetric
+ (defthm symbol<-asymmetric
    (implies (and (symbolp sym1)
                  (symbolp sym2)
-                 (symbol-< sym1 sym2))
-            (not (symbol-< sym2 sym1)))
+                 (symbol< sym1 sym2))
+            (not (symbol< sym2 sym1)))
    :hints (("Goal" :in-theory
             (set-difference-theories
-             (enable string< symbol-<)
+             (enable string< symbol<)
              '(string<-l)))))
 
  (defthm string<-l-transitive
@@ -16567,15 +16567,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
  (in-theory (disable string<-l))
 
- (defthm symbol-<-transitive
-   (implies (and (symbol-< x y)
-                 (symbol-< y z)
+ (defthm symbol<-transitive
+   (implies (and (symbol< x y)
+                 (symbol< y z)
                  (symbolp x)
                  (symbolp y)
                  (symbolp z))
-            (symbol-< x z))
+            (symbol< x z))
    :rule-classes ((:rewrite :match-free :all))
-   :hints (("Goal" :in-theory (enable symbol-< string<))))
+   :hints (("Goal" :in-theory (enable symbol< string<))))
 
  (local
   (defthm equal-char-code-rewrite
@@ -16623,25 +16623,25 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (equal (equal s1 s2) t))
     :hints (("Goal" :use symbol-equality))))
 
- (defthm symbol-<-trichotomy
+ (defthm symbol<-trichotomy
    (implies (and (symbolp x)
                  (symbolp y)
-                 (not (symbol-< x y)))
-            (iff (symbol-< y x)
+                 (not (symbol< x y)))
+            (iff (symbol< y x)
                  (not (equal x y))))
-   :hints (("Goal" :in-theory (enable symbol-< string<))))
+   :hints (("Goal" :in-theory (enable symbol< string<))))
 
  (defthm ordered-symbol-alistp-remove1-assoc-eq
    (implies (ordered-symbol-alistp l)
             (ordered-symbol-alistp (remove1-assoc-eq key l))))
 
- (defthm symbol-<-irreflexive
+ (defthm symbol<-irreflexive
    (implies (symbolp x)
-            (not (symbol-< x x)))
+            (not (symbol< x x)))
    :hints (("Goal" :use
-            ((:instance symbol-<-asymmetric
+            ((:instance symbol<-asymmetric
                         (sym1 x) (sym2 x)))
-            :in-theory (disable symbol-<-asymmetric))))
+            :in-theory (disable symbol<-asymmetric))))
 
  (defthm ordered-symbol-alistp-add-pair
    (implies (and (ordered-symbol-alistp gs)
@@ -16653,7 +16653,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (symbolp world-name)
                  (symbolp key))
             (ordered-symbol-alistp (getprops key world-name w)))
-   :hints (("Goal" :in-theory (enable symbol-<))))
+   :hints (("Goal" :in-theory (enable symbol<))))
 
  (local (defthm ordered-symbol-alistp-implies-symbol-alistp
           (implies (ordered-symbol-alistp x)
@@ -17280,12 +17280,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                (t ""))))
                    (t nil))))))
 
-(defun strict-symbol-<-sortedp (x)
+(defun strict-symbol<-sortedp (x)
   (declare (xargs :guard (symbol-listp x)))
   (cond ((or (endp x) (null (cdr x)))
          t)
-        (t (and (symbol-< (car x) (cadr x))
-                (strict-symbol-<-sortedp (cdr x))))))
+        (t (and (symbol< (car x) (cadr x))
+                (strict-symbol<-sortedp (cdr x))))))
 
 (defmacro chk-ruler-extenders (x type ctx wrld)
 
@@ -17304,7 +17304,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (cond (msg ,(cond ((eq type 'soft) `(er soft ctx err-str msg))
                            (t `(illegal ctx err-str (list (cons #\0 msg))))))
                ,@(and (eq type 'hard)
-                      `(((not (strict-symbol-<-sortedp x))
+                      `(((not (strict-symbol<-sortedp x))
                          (illegal ctx err-str
                                   (list (cons #\0 "it is not sorted"))))))
                (t ,(cond ((eq type 'soft) '(value t))
@@ -23721,7 +23721,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                           (strip-numeric-postfix sym)))
                               ans))))
                 (sort ans (function (lambda (x y)
-                                      (symbol-< (car x) (car y)))))))
+                                      (symbol< (car x) (car y)))))))
         (list :open-output-channels
               (let (ans)
                 (do-symbols
@@ -23734,7 +23734,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                      (strip-numeric-postfix sym)))
                          ans))))
                 (sort ans (function (lambda (x y)
-                                      (symbol-< (car x) (car y)))))))
+                                      (symbol< (car x) (car y)))))))
         (list :global-table (global-table-cars *the-live-state*))
         (list :t-stack
               (let (ans)
@@ -26076,13 +26076,13 @@ Lisp definition."
 
          #-acl2-loop-only
 
-;  We'd use (symbol-<= x y) if we had it.
+;  We'd use (symbol<= x y) if we had it.
 
-         (not (symbol-< y x))
+         (not (symbol< y x))
          #+acl2-loop-only
          (cond ((symbolp x)
                 (cond ((symbolp y)
-                       (not (symbol-< y x)))
+                       (not (symbol< y x)))
                       (t t)))
                ((symbolp y) nil)
                (t (bad-atom<= x y))))))
@@ -26159,7 +26159,7 @@ Lisp definition."
            (alphorder x z))
   :rule-classes ((:rewrite :match-free :all))
   :hints (("Goal"
-           :in-theory (enable string< symbol-<))))
+           :in-theory (enable string< symbol<))))
 
 (defthm alphorder-anti-symmetric
   (implies (and (not (consp x))
@@ -26169,7 +26169,7 @@ Lisp definition."
            (equal x y))
   :hints (("Goal"
            :in-theory (union-theories
-                       '(string< symbol-<)
+                       '(string< symbol<)
                        (disable code-char-char-code-is-identity))
            :use ((:instance symbol-equality (s1 x) (s2 y))
                  (:instance bad-atom<=-antisymmetric)
@@ -26190,7 +26190,7 @@ Lisp definition."
                 (not (consp y)))
            (or (alphorder x y) (alphorder y x)))
   :hints (("Goal" :use (:instance bad-atom<=-total)
-           :in-theory (enable string< symbol-<)))
+           :in-theory (enable string< symbol<)))
   :rule-classes
   ((:forward-chaining :corollary
                       (implies (and (not (alphorder x y))

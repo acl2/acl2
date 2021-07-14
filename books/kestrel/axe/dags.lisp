@@ -759,7 +759,7 @@
                              (weak-dagp dag-or-quotep))))
   (if (quotep dag-or-quotep)
       nil
-    (merge-sort-symbol-< (dag-fns-aux dag-or-quotep nil))))
+    (merge-sort-symbol< (dag-fns-aux dag-or-quotep nil))))
 
 (defthm symbol-listp-of-dag-fns
   (implies (weak-dagp dag-or-quotep)

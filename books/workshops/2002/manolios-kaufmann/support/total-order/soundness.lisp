@@ -74,7 +74,7 @@
 	((stringp y) nil)
 	((symbolp x)
 	 (if (symbolp y)
-	     (not (symbol-< y x))
+	     (not (symbol< y x))
 	   t))
 	((symbolp y) nil)
 	(t t)))
@@ -121,7 +121,7 @@
 		(atom z))
 	   (good-atom-order x z))
   :hints (("Goal"
-	   :in-theory (enable string< symbol-<))))
+	   :in-theory (enable string< symbol<))))
 
 (defthm good-atom-order-anti-symmetric
   (implies (and (good-atom x)
@@ -130,7 +130,7 @@
 	   (equal x y))
   :hints (("Goal"
 	   :in-theory (union-theories
-		       '(string< symbol-<)
+		       '(string< symbol<)
 		       (disable code-char-char-code-is-identity))
 	   :use ((:instance symbol-equality (s1 x) (s2 y))
 		 (:instance code-char-char-code-is-identity (c y))
@@ -152,7 +152,7 @@
 	   (or (good-atom-order x y)
 	       (good-atom-order y x)))
   :hints (("Goal"
-	   :in-theory (enable string< symbol-<)))
+	   :in-theory (enable string< symbol<)))
   :rule-classes
   ((:forward-chaining :corollary
 		      (implies (and (not (good-atom-order x y))

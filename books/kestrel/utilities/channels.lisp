@@ -23,9 +23,9 @@
 
 ;move?
 (local
- (defthm assoc-equal-when-ordered-symbol-alistp-and-symbol-<-of-caar
+ (defthm assoc-equal-when-ordered-symbol-alistp-and-symbol<-of-caar
    (implies (and (ordered-symbol-alistp alist)
-                 (symbol-< key (car (car alist))))
+                 (symbol< key (car (car alist))))
             (equal (assoc-equal key alist)
                    nil))
    :hints (("Goal" :in-theory (enable ordered-symbol-alistp assoc-equal)))))

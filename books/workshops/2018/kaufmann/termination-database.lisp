@@ -430,7 +430,7 @@
 ; It is functionally unnecessary to eliminate duplicates, but it might be the
 ; efficient thing to do.
 
-         (strict-merge-sort-symbol-< acc))
+         (strict-merge-sort-symbol< acc))
         (t (td-collect-fns (cdr id-lst)
                            td
                            (append (access td-entry
@@ -556,7 +556,7 @@
 ; By keeping the :fns sorted, we can use a linear-time subset test.  See the
 ; call of subsetp-eq-linear in td-ids-filter-by-subset-of-1.
 
-             (merge-sort-symbol-<
+             (merge-sort-symbol<
               (td-remove-stubs
                (all-ffn-symbs-lst-lst cl-list nil)
                nil))))

@@ -1027,11 +1027,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; verify-termination and guard verification:
-; strict-merge-symbol-<, strict-merge-sort-symbol-<, strict-symbol-<-sortedp,
+; strict-merge-symbol<, strict-merge-sort-symbol<, strict-symbol<-sortedp,
 ; and sort-symbol-listp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(verify-termination-boot-strap strict-merge-symbol-<
+(verify-termination-boot-strap strict-merge-symbol<
                                (declare (xargs :measure
                                                (+ (len l1) (len l2)))))
 
@@ -1039,8 +1039,8 @@
  ()
 
  (local
-  (defthm len-strict-merge-symbol-<
-    (<= (len (strict-merge-symbol-< l1 l2 acc))
+  (defthm len-strict-merge-symbol<
+    (<= (len (strict-merge-symbol< l1 l2 acc))
         (+ (len l1) (len l2) (len acc)))
     :rule-classes :linear))
 
@@ -1063,23 +1063,23 @@
              (symbol-listp (odds x)))))
 
  (local
-  (defthm symbol-listp-strict-merge-symbol-<
+  (defthm symbol-listp-strict-merge-symbol<
     (implies (and (symbol-listp l1)
                   (symbol-listp l2)
                   (symbol-listp acc))
-             (symbol-listp (strict-merge-symbol-< l1 l2 acc)))))
+             (symbol-listp (strict-merge-symbol< l1 l2 acc)))))
 
- (verify-termination-boot-strap strict-merge-sort-symbol-<
+ (verify-termination-boot-strap strict-merge-sort-symbol<
                                 (declare (xargs :measure (len l)
                                                 :verify-guards nil)))
 
- (defthm symbol-listp-strict-merge-sort-symbol-<
+ (defthm symbol-listp-strict-merge-sort-symbol<
 ; This lemma is non-local because it is needed for "make proofs", for
 ; guard-verification for new-verify-guards-fns1.
    (implies (symbol-listp x)
-            (symbol-listp (strict-merge-sort-symbol-< x))))
+            (symbol-listp (strict-merge-sort-symbol< x))))
 
- (verify-guards strict-merge-sort-symbol-<)
+ (verify-guards strict-merge-sort-symbol<)
 
  (verify-termination-boot-strap sort-symbol-listp) ; and guards
 
