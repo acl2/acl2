@@ -64,7 +64,7 @@
 ;; 3. Set the options as follows:
 ;; Name: Formal Unit Tester
 ;; Description: Formal Unit Tester
-;; Program: <insert the path to kestrel-acl2/axe/formal-unit-tester.sh>
+;; Program: <insert the path to [books]/kestrel/axe/jvm/formal-unit-tester.sh>
 ;; Arguments: $FilePath$
 
 ;; To run the tool in IntelliJ IDEA:
