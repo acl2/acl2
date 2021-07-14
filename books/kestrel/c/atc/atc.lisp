@@ -2094,8 +2094,15 @@
    (xdoc::p
     "If the term is a call of a recursive target function on its formals,
      it represents a loop.
-     We retrieve the associated loop statement and limit,
-     and we return them.")
+     We retrieve the associated loop statement and return it.
+     We also retrieve the associated limit term,
+     which, as explained in @(tsee atc-fn-info),
+     suffices to execute @(tsee exec-stmt-while).
+     But here we are executing lists of block items,
+     so we need to add 1 to go from @(tsee exec-block-item-list)
+     to the call to @(tsee exec-block-item),
+     another 1 to go from there to the call to @(tsee exec-stmt),
+     and another 1 to go from there to the call to @(tsee exec-stmt-while).")
    (xdoc::p
     "If the term is a single variable
      and @('xforming') is a singleton list with that variable,
@@ -2339,10 +2346,11 @@
                          that represents a loop transforming ~x2, ~
                          which differs from the variables ~x3 ~
                          being transformed here."
-                        fn loop-fn loop-xforming xforming)))
+                        fn loop-fn loop-xforming xforming))
+             (limit `(binary-+ '3 ,loop-limit)))
           (acl2::value (list (list (block-item-stmt loop-stmt))
                              nil
-                             loop-limit))))
+                             limit))))
        ((unless (null xforming))
         (er-soft+ ctx t (list nil nil nil)
                   "A statement term transforming ~x0 in the function ~x1 ~
