@@ -3594,6 +3594,93 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defines atc-gen-term-with-read-var-compustate
+  :short "Transform a term by replacing each ACL2 variable
+          with a reading of the correspoding C variable
+          from the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the generated correctness theorems for loops,
+     the ACL2 variables that are parameters of the loop function
+     correspond to local variables in the computation state
+     that are declared in scopes whose entering precedes the loop.
+     In the formulation of the correctness theorem for the loop,
+     we must replace the ACL2 variables
+     with calls of @(tsee read-var) on the correspoding C variables.
+     This ACL2 code here does that."))
+
+  (define atc-gen-term-with-read-var-compustate ((term pseudo-termp)
+                                                 (compst-var symbolp))
+    :returns new-term
+    (cond ((acl2::variablep term) `(read-var ',(symbol-name term)
+                                             ,compst-var))
+          ((acl2::fquotep term) term)
+          (t (acl2::fcons-term
+              (acl2::ffn-symb term)
+              (atc-gen-terms-with-read-var-compustate (acl2::fargs term)
+                                                      compst-var)))))
+
+  (define atc-gen-terms-with-read-var-compustate ((terms pseudo-term-listp)
+                                                  (compst-var symbolp))
+    :returns new-terms
+    (cond ((endp terms) nil)
+          (t (cons (atc-gen-term-with-read-var-compustate (car terms)
+                                                          compst-var)
+                   (atc-gen-terms-with-read-var-compustate (cdr terms)
+                                                           compst-var)))))
+
+  ///
+
+  (defret-mutual len-of-atc-gen-terms-with-read-var-compustate
+    (defret len-of-atc-gen-term-with-read-var-compustate
+      t
+      :rule-classes nil
+      :fn atc-gen-term-with-read-var-compustate)
+    (defret len-of-atc-gen-terms-with-read-var-compustate
+      (equal (len new-terms)
+             (len terms))
+      :fn atc-gen-terms-with-read-var-compustate))
+
+  (defret-mutual pseudo-termp-of-atc-gen-terms-with-read-var-compustate
+    (defret pseudo-termp-of-atc-gen-term-with-read-var-compustate
+      (pseudo-termp new-term)
+      :hyp :guard
+      :fn atc-gen-term-with-read-var-compustate)
+    (defret pseudo-term-listp-of-atc-gen-terms-with-read-var-compustate
+      (pseudo-term-listp new-terms)
+      :hyp :guard
+      :fn atc-gen-terms-with-read-var-compustate)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-loop-final-compustate ((mod-vars symbol-listp)
+                                       (compst-var symbolp))
+  :returns (term "An untranslated term.")
+  :short "Generate a term representing the final state
+          after the execution of a loop."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The correctness theorem of a loop says that
+     executing the loop on a generic computation state
+     (satisfying conditions in the hypotheses of the theorem)
+     yields a computation state obtained by modifying
+     one or more variables in the computation state.
+     These are the variables transformed by the loop,
+     which the correctness theorem binds to the results of the loop function,
+     and which have corresponding named variables in the computation state.
+     The modified computation state is expressed as
+     a nest of @(tsee write-var) calls.
+     This ACL2 code here generates that nest."))
+  (cond ((endp mod-vars) compst-var)
+        (t `(write-var ,(symbol-name (car mod-vars))
+                       ,(car mod-vars)
+                       ,(atc-gen-loop-final-compustate (cdr mod-vars)
+                                                       compst-var)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-loop-correct-thm ((fn symbolp)
                                   (loop-stmt stmtp)
                                   (prog-const symbolp)
