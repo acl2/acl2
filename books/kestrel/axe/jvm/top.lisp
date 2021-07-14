@@ -36,5 +36,6 @@
 (include-book "lifter-utilities3")
 (include-book "unroll-java-code-common")
 (include-book "unroll-java-code")
+(include-book "lifter")
 
 (include-book "formal-unit-tester")
