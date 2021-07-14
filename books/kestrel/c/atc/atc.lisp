@@ -3367,6 +3367,8 @@
         (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns))
        (correct-thms
         (atc-symbol-fninfo-alist-to-correct-thms prec-fns))
+       (measure-thms
+        (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns))
        (type-prescriptions
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
@@ -3377,7 +3379,8 @@
                                     '(,fn)
                                     ',type-prescriptions
                                     ',returns-value-thms
-                                    ',correct-thms)
+                                    ',correct-thms
+                                    ',measure-thms)
                  :use (:instance (:guard-theorem ,fn)
                        :extra-bindings-ok ,@instantiation)
                  :expand (:lambdas
