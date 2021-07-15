@@ -113,6 +113,14 @@
       dag
     (dag-to-term-aux (top-nodenum dag) dag)))
 
+;; This version avoids imposing invariant-risk on callers, because it has a guard of t.
+(defund dag-to-term-unguarded (dag)
+  (declare (xargs :guard t))
+  (if (or (weak-dagp dag)
+          (quotep dag))
+      (dag-to-term dag)
+    (er hard? 'dag-to-term-unguarded "Bad input: ~x0" dag)))
+
 (defthm pseudo-termp-of-dag-to-term
   (implies (pseudo-dagp dag)
            (pseudo-termp (dag-to-term dag)))

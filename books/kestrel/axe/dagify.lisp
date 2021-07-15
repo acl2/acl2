@@ -1218,6 +1218,14 @@
   (declare (xargs :guard (pseudo-termp term)))
   (make-term-into-dag term nil))
 
+;; This version avoids imposing invariant-risk on callers, because it has a guard of t.
+(defund dagify-term-unguarded (term)
+  (declare (xargs :guard t))
+  (if (pseudo-termp term)
+      (dagify-term term)
+    (mv :bad-term
+        (er hard? 'dagify-term-unguarded "Non-pseudo-term encountered: ~x0." term))))
+
 ;; (mutual-recursion
 ;;  (defun term-size (term)
 ;;    (declare (xargs :guard (pseudo-termp term)))
@@ -1234,6 +1242,14 @@
 (defund dagify-term2 (term)
   (declare (xargs :guard (pseudo-termp term)))
   (make-term-into-dag term nil))
+
+;; This version avoids imposing invariant-risk on callers, because it has a guard of t.
+(defund dagify-term2-unguarded (term)
+  (declare (xargs :guard t))
+  (if (pseudo-termp term)
+      (dagify-term2 term)
+    (mv :bad-term
+        (er hard? 'dagify-term2-unguarded "Non-pseudo-term encountered: ~x0." term))))
 
 ;; Suppresses any error and returns the dag.
 (defund dagify-term! (term)
@@ -2170,7 +2186,8 @@
     (if (weak-dagp item)
         (mv (erp-nil) item) ;already a DAG
       ;; translate the given form to obtain a pseudo-term and then make that into a DAG:
-      (dagify-term2 (translate-term item 'dag-or-term-to-dag wrld)))))
+      (dagify-term2-unguarded
+       (translate-term item 'dag-or-term-to-dag wrld)))))
 
 
 ;; does not translate the term
