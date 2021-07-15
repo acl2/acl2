@@ -8,12 +8,12 @@
 
 (in-package "ACL2")
 
-;gonna use symbol-< to order the elements of the list
+;gonna use symbol< to order the elements of the list
 (defun separate (pivot list less more)
   (declare (xargs :guard (and (symbol-listp list)
                               (symbolp pivot))))
   (if (consp list)
-      (if (symbol-< pivot (car list))
+      (if (symbol< pivot (car list))
           (separate pivot (cdr list) less (cons (car list) more))
         (separate pivot (cdr list) (cons (car list) less) more))
     (mv less more)))

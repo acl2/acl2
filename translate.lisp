@@ -2298,7 +2298,7 @@
 
 ; This function also returns the logical defun form submitted to ACL2 for fn,
 ; if any, provided fn does not have property 'non-executablep.  (We use this
-; fact in the definition of logical-defun.)  To understand that restriction,
+; fact in the definition of get-defun-event.)  To understand that restriction,
 ; note that install-event-defuns stores the original defun event in the
 ; function symbol's cltl-command except in the case that the function is
 ; non-executable; and, cltl-def-from-name2 looks up the defun form in the
@@ -4716,7 +4716,7 @@
          wrld)
         (t (scan-to-event (cdr wrld)))))
 
-(defun logical-defun (fn wrld)
+(defun get-defun-event (fn wrld)
 
 ; Returns the defun form for fn that was submitted to ACL2,, if there is one;
 ; else nil.
@@ -4773,7 +4773,7 @@
   (let ((trip (assoc-eq fn *primitive-formals-and-guards*)))
     (cond
      (trip (untranslate* (caddr trip) t wrld))
-     (t (let ((def (logical-defun fn wrld)))
+     (t (let ((def (get-defun-event fn wrld)))
           (cond
            ((null def)
             (er hard! 'guard-raw

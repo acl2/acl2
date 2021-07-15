@@ -202,7 +202,7 @@
 
 (defun acl2-traced-fns ()
   (sort (delete-duplicates (strip-cars (ccl:advisedp t)))
-        #'symbol-<))
+        #'symbol<))
 
 (let ((temp ccl::*warn-if-redefine-kernel*))
   (setf ccl::*warn-if-redefine-kernel* nil)

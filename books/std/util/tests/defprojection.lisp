@@ -139,12 +139,12 @@
 
 (local (in-theory (enable symbol-listp)))
 
-(defprojection symbol-<-foo-list (x)
-  (symbol-< :foo x)
+(defprojection symbol<-foo-list (x)
+  (symbol< :foo x)
   :guard (symbol-listp x))
 
-(defprojection symbol-<-bar-list (x)
-  (symbol-< 'bar x)
+(defprojection symbol<-bar-list (x)
+  (symbol< 'bar x)
   :guard (symbol-listp x))
 
 

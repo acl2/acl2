@@ -52,7 +52,7 @@ ACL2 !>
    ((and (mbt (consp (car btree)))
          (eq key (caar btree)))
     (list* (cons key val) (cadr btree) (cddr btree)))
-   ((symbol-< key (caar btree))
+   ((symbol< key (caar btree))
     (list* (car btree)
            (symbol-btree-update key val (cadr btree))
            (cddr btree)))
@@ -75,7 +75,7 @@ ACL2 !>
         ((and (mbt (consp (car btree)))
               (eq key (caar btree)))
          (car btree))
-        ((symbol-< key (caar btree))
+        ((symbol< key (caar btree))
          (symbol-btree-find key (cadr btree)))
         (t
          (symbol-btree-find key (cddr btree)))))
@@ -91,9 +91,9 @@ ACL2 !>
          (if (equal k1 k2)
              (cons k1 val)
            (symbol-btree-find k1 x)))
-  :hints(("Goal" :in-theory (disable symbol-<-transitive
-                                     symbol-<-trichotomy
-                                     symbol-<-asymmetric))))
+  :hints(("Goal" :in-theory (disable symbol<-transitive
+                                     symbol<-trichotomy
+                                     symbol<-asymmetric))))
 
 
 
@@ -152,7 +152,7 @@ ACL2 !>
   (declare (xargs :guard (symbol-alistp x)))
   (if (atom (cdr x))
       t
-    (and (symbol-< (caar x) (caadr x))
+    (and (symbol< (caar x) (caadr x))
          (symbol-alist-sortedp (cdr x)))))
 
 
@@ -181,27 +181,27 @@ ACL2 !>
             (and (symbol-alist-sortedp a)
                  (symbol-alist-sortedp b)
                  (or (atom a) (atom b)
-                     (and (symbol-< (caar (last a)) (caar b)) t))))
+                     (and (symbol< (caar (last a)) (caar b)) t))))
      :hints(("Goal" :in-theory
              (e/d (equal-of-booleans)
                   (true-listp-append
                    true-listp
-                   (:type-prescription symbol-<)
-                   symbol-<-transitive
-                   symbol-<-trichotomy
-                   symbol-<-asymmetric)))))
+                   (:type-prescription symbol<)
+                   symbol<-transitive
+                   symbol<-trichotomy
+                   symbol<-asymmetric)))))
 
 
-   (defthm symbol-alist-sortedp-and-symbol-<-last-implies-not-assoc
+   (defthm symbol-alist-sortedp-and-symbol<-last-implies-not-assoc
      (implies (and (symbol-alistp x)
                    (symbol-alist-sortedp x)
-                   (symbol-< (caar (last x)) key))
+                   (symbol< (caar (last x)) key))
               (not (assoc key x))))
 
-   (defthm symbol-alist-sortedp-and-symbol-<-first-implies-not-assoc
+   (defthm symbol-alist-sortedp-and-symbol<-first-implies-not-assoc
      (implies (and (symbol-alistp x)
                    (symbol-alist-sortedp x)
-                   (symbol-< key (caar x)))
+                   (symbol< key (caar x)))
               (not (assoc key x))))
 
    (defthm symbolp-caar-last-of-symbol-alistp
@@ -253,84 +253,84 @@ ACL2 !>
      (equal (car (append a b))
             (if (consp a) (car a) (car b))))
 
-   (defthm not-symbol-<-transitive1
-     (implies (and (not (symbol-< x y))
-                   (not (symbol-< y z))
+   (defthm not-symbol<-transitive1
+     (implies (and (not (symbol< x y))
+                   (not (symbol< y z))
                    (symbolp x) (symbolp y) (symbolp z))
-              (not (symbol-< x z)))
-     :hints (("goal" :use (:instance symbol-<-transitive
+              (not (symbol< x z)))
+     :hints (("goal" :use (:instance symbol<-transitive
                            (x z) (y y) (z x)))))
 
-   (defthm not-symbol-<-transitive2
-     (implies (and (not (symbol-< y z))
-                   (not (symbol-< x y))
+   (defthm not-symbol<-transitive2
+     (implies (and (not (symbol< y z))
+                   (not (symbol< x y))
                    (symbolp x) (symbolp y) (symbolp z))
-              (not (symbol-< x z)))
-     :hints (("goal" :use (:instance symbol-<-transitive
+              (not (symbol< x z)))
+     :hints (("goal" :use (:instance symbol<-transitive
                            (x z) (y y) (z x)))))
 
-   (defthm symbol-<-transitive1
-     (implies (and (symbol-< x y)
-                   (symbol-< y z)
+   (defthm symbol<-transitive1
+     (implies (and (symbol< x y)
+                   (symbol< y z)
                    (symbolp x) (symbolp y) (symbolp z))
-              (symbol-< x z)))
+              (symbol< x z)))
 
-   (defthm symbol-<-transitive2
-     (implies (and (symbol-< y z)
-                   (symbol-< x y)
+   (defthm symbol<-transitive2
+     (implies (and (symbol< y z)
+                   (symbol< x y)
                    (symbolp x) (symbolp y) (symbolp z))
-              (symbol-< x z)))
+              (symbol< x z)))
 
 
-   (defthm symbol-<=/<-transitive2
-     (implies (and (symbol-< y z)
-                   (not (symbol-< y x))
+   (defthm symbol<=/<-transitive2
+     (implies (and (symbol< y z)
+                   (not (symbol< y x))
                    (symbolp x) (symbolp y) (symbolp z))
-              (not (symbol-< z x))))
+              (not (symbol< z x))))
 
-   (defthm symbol-</<=-transitive1
-     (implies (and (symbol-< x y)
-                   (not (symbol-< z y))
+   (defthm symbol</<=-transitive1
+     (implies (and (symbol< x y)
+                   (not (symbol< z y))
                    (symbolp x) (symbolp y) (symbolp z))
-              (not (symbol-< z x))))
+              (not (symbol< z x))))
 
-   (defthm symbol-</<=-transitive2
-     (implies (and (not (symbol-< z y))
-                   (symbol-< x y)
+   (defthm symbol</<=-transitive2
+     (implies (and (not (symbol< z y))
+                   (symbol< x y)
                    (symbolp x) (symbolp y) (symbolp z))
-              (not (symbol-< z x))))
+              (not (symbol< z x))))
 
-   (defthm symbol-<=/<-transitive1
-     (implies (and (not (symbol-< y x))
-                   (symbol-< y z)
+   (defthm symbol<=/<-transitive1
+     (implies (and (not (symbol< y x))
+                   (symbol< y z)
                    (symbolp x) (symbolp y) (symbolp z))
-              (not (symbol-< z x))))
+              (not (symbol< z x))))
 
 
 
-   (local (in-theory (disable symbol-<-transitive)))
+   (local (in-theory (disable symbol<-transitive)))
 
-   (deftheory symbol-<-transitivity
-     '(symbol-<-transitive1
-       symbol-<-transitive2
-       not-symbol-<-transitive1
-       not-symbol-<-transitive2
-       symbol-</<=-transitive1
-       symbol-</<=-transitive2
-       symbol-<=/<-transitive1
-       symbol-<=/<-transitive2))
+   (deftheory symbol<-transitivity
+     '(symbol<-transitive1
+       symbol<-transitive2
+       not-symbol<-transitive1
+       not-symbol<-transitive2
+       symbol</<=-transitive1
+       symbol</<=-transitive2
+       symbol<=/<-transitive1
+       symbol<=/<-transitive2))
 
-   (in-theory (disable symbol-<-transitivity))
+   (in-theory (disable symbol<-transitivity))
 
    (defthm symbolp-caar-symbol-btree-to-alist
      (implies (symbol-btreep x)
               (symbolp (caar (symbol-btree-to-alist x)))))
 
-   (defthm not-symbol-<-last-sorted
+   (defthm not-symbol<-last-sorted
      (implies (and (symbol-alistp x)
                    (symbol-alist-sortedp x))
-              (not (symbol-< (caar (last x)) (caar x))))
-     :hints(("Goal" :in-theory (enable symbol-<-transitive1))))
+              (not (symbol< (caar (last x)) (caar x))))
+     :hints(("Goal" :in-theory (enable symbol<-transitive1))))
 
    (defthm caar-symbol-btree-update-to-alist-sorted
      (implies (and (symbol-btreep x)
@@ -338,18 +338,18 @@ ACL2 !>
                    (symbolp key))
               (equal (caar (symbol-btree-to-alist (symbol-btree-update
                                                    key val x)))
-                     (if (and x (symbol-< (caar (symbol-btree-to-alist x)) key))
+                     (if (and x (symbol< (caar (symbol-btree-to-alist x)) key))
                          (caar (symbol-btree-to-alist x))
                        key)))
-     :hints(("Goal" :in-theory (e/d (symbol-<-transitivity)
+     :hints(("Goal" :in-theory (e/d (symbol<-transitivity)
                                     (default-car default-cdr
                                       true-listp-symbol-btree-to-alist
                                       alistp
-                                      symbol-</<=-transitive2
-                                      not-symbol-<-transitive1
-                                      symbol-<-transitive1
-                                      symbol-</<=-transitive1
-                                      symbol-<=/<-transitive1
+                                      symbol</<=-transitive2
+                                      not-symbol<-transitive1
+                                      symbol<-transitive1
+                                      symbol</<=-transitive1
+                                      symbol<=/<-transitive1
                                       (:type-prescription
                                        symbol-btree-to-alist))))))
 
@@ -365,15 +365,15 @@ ACL2 !>
                    (symbolp key))
               (equal (caar (last (symbol-btree-to-alist (symbol-btree-update
                                                          key val x))))
-                     (if (and x (symbol-< key (caar (last (symbol-btree-to-alist x)))))
+                     (if (and x (symbol< key (caar (last (symbol-btree-to-alist x)))))
                          (caar (last (symbol-btree-to-alist x)))
                        key)))
-     :hints(("Goal" :in-theory (e/d (symbol-<-transitivity)
+     :hints(("Goal" :in-theory (e/d (symbol<-transitivity)
                                     (default-car default-cdr
                                       true-listp-symbol-btree-to-alist
                                       alistp
-                                      symbol-</<=-transitive2
-                                      symbol-<-transitive1
+                                      symbol</<=-transitive2
+                                      symbol<-transitive1
                                       (:type-prescription last)
                                       (:type-prescription symbol-btree-to-alist))))))))
 
@@ -600,7 +600,7 @@ ACL2 !>
                                (:type-prescription symbol-alist-sortedp)
                                (:type-prescription symbol-alistp)
                                true-listp-append
-                               (:type-prescription symbol-<)
+                               (:type-prescription symbol<)
                                (:type-prescription eqlable-alistp)
                                (:type-prescription alistp)
                                (:type-prescription binary-append)
@@ -637,7 +637,7 @@ ACL2 !>
                   :measure (+ (len l1) (len l2))))
   (cond ((endp l1) (revappend acc l2))
         ((endp l2) (revappend acc l1))
-        ((symbol-< (caar l1) (caar l2))
+        ((symbol< (caar l1) (caar l2))
          (merge-symbol-alist-< (cdr l1) l2 (cons (car l1) acc)))
         (t (merge-symbol-alist-< l1 (cdr l2) (cons (car l2) acc)))))
 
@@ -737,7 +737,7 @@ ACL2 !>
    ((or (endp btree)
         (and (mbt (consp (car btree)))
               (eq key (caar btree)))) 0)
-   ((symbol-< key (caar btree))
+   ((symbol< key (caar btree))
     (+ 1 (symbol-btree-key-depth key (cadr btree))))
    (t
     (+ 1 (symbol-btree-key-depth key (cddr btree))))))
@@ -752,7 +752,7 @@ ACL2 !>
         ((and (mbt (consp (car btree)))
               (eq key (caar btree)))
          (mv (car btree) (+ 0 depth)))
-        ((symbol-< key (caar btree))
+        ((symbol< key (caar btree))
          (symbol-btree-find/depth-aux key (cadr btree) (+ 1 depth)))
         (t
          (symbol-btree-find/depth-aux key (cddr btree) (+ 1 depth)))))
@@ -770,7 +770,7 @@ ACL2 !>
              ((and (mbt (consp (car btree)))
                    (eq key (caar btree)))
               (mv (car btree) 0))
-             ((symbol-< key (caar btree))
+             ((symbol< key (caar btree))
               (mv-let (pair depth)
                 (symbol-btree-find/depth key (cadr btree))
                 (mv pair (+ 1 depth))))
@@ -797,7 +797,7 @@ ACL2 !>
          (eq key (caar btree)))
     (mv (list* (cons key val) (cadr btree) (cddr btree))
         0))
-   ((symbol-< key (caar btree))
+   ((symbol< key (caar btree))
     (mv-let (sub depth)
       (symbol-btree-update/depth key val (cadr btree))
       (mv (list* (car btree)
@@ -829,7 +829,7 @@ ACL2 !>
     (mv (list* (cons key val) (cadr btree) (cddr btree))
         (car btree)
         0))
-   ((symbol-< key (caar btree))
+   ((symbol< key (caar btree))
     (mv-let (sub pair depth)
       (symbol-btree-update/find/depth key val (cadr btree))
       (mv (list* (car btree)

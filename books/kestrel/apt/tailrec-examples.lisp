@@ -161,7 +161,7 @@
 ; (namely, the case in which the base branch comes first,
 ; and the case in which the base branch comes second).
 
-(assert-equal (logical-defun 'len (w state))
+(assert-equal (get-defun-event 'len (w state))
               '(defun len (x)
                  (declare (xargs :mode :logic))
                  (declare (xargs :guard t))

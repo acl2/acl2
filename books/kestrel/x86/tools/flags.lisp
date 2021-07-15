@@ -294,7 +294,7 @@
   (implies (and (syntaxp (and (quotep flag1)
                               (quotep flag2)
                               (acl2::smaller-termp flag2 flag1)))
-;                (symbol-< flag1 flag2)
+;                (symbol< flag1 flag2)
                 (not (equal flag1 flag2))
                 (member-eq flag1 *flags*)
                 (member-eq flag2 *flags*)

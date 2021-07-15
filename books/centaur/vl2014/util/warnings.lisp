@@ -187,7 +187,7 @@ fatal warnings instead of non-fatal warnings.</p>"
   (b* (((vl-warning x) x)
        ((vl-warning y) y)
 
-       ((when (symbol-< x.type y.type)) t)
+       ((when (symbol< x.type y.type)) t)
        ((unless (eq x.type y.type)) nil)
 
        ((when (<< x.fn y.fn)) t)
