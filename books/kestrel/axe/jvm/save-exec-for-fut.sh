@@ -29,10 +29,10 @@ export ACL2_CUSTOMIZATION=NONE # Avoid confusion, since the caller may do this
 BASE_NAME="acl2-with-fut"
 
 # We could test the actual image, but the file extension differs on the Mac:
-if [[ ( ! -f ${BASE_NAME}) || ( ${BASE_NAME} -ot formal-unit-tester.cert) || ( ${BASE_NAME} -ot formal-unit-tester.lisp) ]] ;then
-    rm -f " ${BASE_NAME}"
-    rm -f " ${BASE_NAME}.lx86cl64"
-    rm -f " ${BASE_NAME}.dx86cl64"
+if [[ ( ! -f ${BASE_NAME} ) || ( ${BASE_NAME} -ot formal-unit-tester.cert ) || ( ${BASE_NAME} -ot formal-unit-tester.lisp ) ]] ;then
+    rm -f "${BASE_NAME}"
+    rm -f "${BASE_NAME}.lx86cl64"
+    rm -f "${BASE_NAME}.dx86cl64"
     echo "(Saving an image for the Formal Unit Tester:"
 
     (echo '(include-book "kestrel/utilities/exit-if-function-not-defined" :dir :system) (include-book "kestrel/jvm/portcullis" :dir :system) (include-book "kestrel/axe/jvm/formal-unit-tester" :dir :system :ttags :all) (exit-if-function-not-defined test-file-fn) :q (save-exec "'${BASE_NAME}'" "ACL2 after including fut.")' | ${ACL2})

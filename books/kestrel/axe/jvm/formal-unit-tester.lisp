@@ -414,14 +414,28 @@
                 ''0 ;; this branch is throwing an assert
                 ))))))))
 
+(defthm pseudo-termp-of-convert-assert-branches-in-term
+  (implies (pseudo-termp term)
+           (pseudo-termp (convert-assert-branches-in-term term)))
+  :hints (("Goal" :in-theory (enable convert-assert-branches-in-term))))
+
 ;; Returns (mv erp dag-or-quotep).
 ;;todo: Avoid going to a term
 (defun convert-assert-branches (dag)
-;  (declare (xargs :guard (pseudo-dagp dag))) ;todo
+  (declare (xargs :guard (pseudo-dagp dag)))
   (let* ((term (dag-to-term dag))
          (term (convert-assert-branches-in-term term))
          )
     (dagify-term term)))
+
+;; Returns (mv erp dag-or-quotep).
+;; This version avoids imposing invariant-risk on callers, because it has a guard of t.
+(defun convert-assert-branches-unguarded (dag)
+  (declare (xargs :guard t))
+  (if (not (pseudo-dagp dag))
+      (mv :bad-dag
+          (er hard? 'convert-assert-branches-unguarded "Bad dag: ~x0." dag))
+    (convert-assert-branches dag)))
 
 (defun assert-assumptions (class-name)
   (declare (xargs :guard (jvm::class-namep class-name)))
@@ -536,7 +550,7 @@
        ;; Handle the :assert case, if applicable:
        ((mv erp dag state)
         (if (eq variant :assert)
-            (b* (((mv erp dag) (convert-assert-branches dag))
+            (b* (((mv erp dag) (convert-assert-branches-unguarded dag))
                  ((when erp) (mv erp dag state))
                  ;; Simplify the DAG in case putting in the 0s and 1s allows it:
                  (- (cw "(Simplifying the dag to prove:~%"))
@@ -570,7 +584,7 @@
        (- (cw "(DAG to prove for ~s0 has size ~x1.)~%" method-designator-string dag-size))
        (- (and (< dag-size 1000)
                (progn$ (cw "(DAG is:~%")
-                       (cw "~X01" (dag-to-term dag) nil)
+                       (cw "~X01" (dag-to-term-unguarded dag) nil)
                        (cw ")~%"))))
        (- (cw "(Applying tactic prover:~%"))
        (type-assumptions-for-fields (type-assumptions-for-get-field-nodes dag (top-nodenum dag) nil))
