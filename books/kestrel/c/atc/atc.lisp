@@ -407,13 +407,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These include an undocumented @(':developer') option
-     to more easily test new incomplete features during development."))
+    "These include an undocumented @(':experimental') option
+     to more easily test experimental features."))
   (list :output-file
         :proofs
         :const-name
         :print
-        :developer)
+        :experimental)
   ///
   (assert-event (symbol-listp *atc-allowed-options*))
   (assert-event (no-duplicatesp-eq *atc-allowed-options*)))
@@ -430,7 +430,7 @@
                                  (wf-thm symbolp)
                                  (fn-thms symbol-symbol-alistp)
                                  (print evmac-input-print-p)
-                                 (developer booleanp)
+                                 (experimental booleanp)
                                  val)').")
                state)
   :mode :program
@@ -477,12 +477,12 @@
                   (cdr print-option)
                 :result))
        ((er &) (evmac-process-input-print print ctx state))
-       (developer-option (assoc-eq :developer options))
-       (developer (if developer-option
-                      (cdr developer-option)
-                    nil))
-       ((er &) (acl2::ensure-value-is-boolean$ developer
-                                               "The :DEVELOPER option"
+       (experimental-option (assoc-eq :experimental options))
+       (experimental (if experimental-option
+                         (cdr experimental-option)
+                       nil))
+       ((er &) (acl2::ensure-value-is-boolean$ experimental
+                                               "The :EXPERIMENTAL option"
                                                t
                                                nil)))
     (acl2::value (list fn1...fnp
@@ -493,7 +493,7 @@
                        wf-thm
                        fn-thms
                        print
-                       developer))))
+                       experimental))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3748,7 +3748,7 @@
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-returns-value-thm symbolp)
                                   (limit pseudo-termp)
-                                  (developer booleanp)
+                                  (experimental booleanp)
                                   (names-to-avoid symbol-listp)
                                   state)
   :guard (acl2::irecursivep+ fn (w state))
@@ -4034,10 +4034,10 @@
                             exec-stmt-while-for-fn-thm-event
                             natp-of-measure-of-fn-thm-event
                             termination-of-fn-thm-event
-                            (and developer
+                            (and experimental
                                  (list correct-lemma-event
                                        correct-thm-local-event))))
-       (exported-events (and developer
+       (exported-events (and experimental
                              (list correct-thm-exported-event))))
     (acl2::value (list local-events
                        exported-events
@@ -4056,7 +4056,7 @@
                       (fn-appconds symbol-symbol-alistp)
                       (appcond-thms acl2::keyword-symbol-alistp)
                       (print evmac-input-print-p)
-                      (developer booleanp)
+                      (experimental booleanp)
                       (names-to-avoid symbol-listp)
                       (ctx ctxp)
                       state)
@@ -4114,7 +4114,7 @@
         (atc-gen-loop-correct-thm fn pointers loop-xforming loop-stmt prec-fns
                                   prog-const fn-appconds appcond-thms fn-thms
                                   fn-returns-value-thm loop-limit
-                                  developer
+                                  experimental
                                   names-to-avoid state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        (local-events (append local-events more-local-events))
@@ -4142,7 +4142,7 @@
                                  (fn-appconds symbol-symbol-alistp)
                                  (appcond-thms acl2::keyword-symbol-alistp)
                                  (print evmac-input-print-p)
-                                 (developer booleanp)
+                                 (experimental booleanp)
                                  (names-to-avoid symbol-listp)
                                  (ctx ctxp)
                                  state)
@@ -4174,7 +4174,7 @@
                       state)
                   (atc-gen-loop fn prec-fns proofs recursionp prog-const
                                 fn-thms fn-appconds appcond-thms
-                                print developer names-to-avoid ctx state))
+                                print experimental names-to-avoid ctx state))
                  ((when erp) (mv erp (list nil nil nil nil) state)))
               (acl2::value (list nil
                                  local-events
@@ -4198,7 +4198,7 @@
          (list more-exts more-local-events more-exported-events names-to-avoid))
         (atc-gen-ext-declon-list rest-fns prec-fns proofs recursionp
                                  prog-const fn-thms fn-appconds appcond-thms
-                                 print developer names-to-avoid ctx state)))
+                                 print experimental names-to-avoid ctx state)))
     (acl2::value (list (append exts more-exts)
                        (append local-events more-local-events)
                        (append exported-events more-exported-events)
@@ -4277,7 +4277,7 @@
                            (wf-thm symbolp)
                            (fn-thms symbol-symbol-alistp)
                            (print evmac-input-print-p)
-                           (developer booleanp)
+                           (experimental booleanp)
                            (names-to-avoid symbol-listp)
                            (ctx ctxp)
                            state)
@@ -4306,7 +4306,7 @@
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
         (atc-gen-ext-declon-list fn1...fnp nil proofs recursionp
                                  prog-const fn-thms fn-appconds appcond-thms
-                                 print developer names-to-avoid ctx state))
+                                 print experimental names-to-avoid ctx state))
        (tunit (make-transunit :declons exts))
        ((mv local-const-event exported-const-event)
         (if proofs
@@ -4418,7 +4418,7 @@
                             (wf-thm symbolp)
                             (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
-                            (developer booleanp)
+                            (experimental booleanp)
                             (call pseudo-event-formp)
                             (ctx ctxp)
                             state)
@@ -4438,7 +4438,7 @@
   (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
        ((er (list tunit local-events exported-events &))
         (atc-gen-transunit fn1...fnp proofs recursionp prog-const wf-thm fn-thms
-                           print developer names-to-avoid ctx state))
+                           print experimental names-to-avoid ctx state))
        ((er file-gen-event) (atc-gen-file-event tunit output-file print state))
        (print-events (and (evmac-input-print->= print :result)
                           (atc-gen-print-result exported-events output-file)))
@@ -4477,7 +4477,7 @@
                   wf-thm
                   fn-thms
                   print
-                  developer))
+                  experimental))
         (atc-process-inputs args ctx state)))
     (atc-gen-everything fn1...fnp
                         output-file
@@ -4487,7 +4487,7 @@
                         wf-thm
                         fn-thms
                         print
-                        developer
+                        experimental
                         call
                         ctx
                         state)))
