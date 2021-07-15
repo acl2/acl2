@@ -2689,7 +2689,7 @@
      This is because the loop body is a block, which opens a new scope in C.")
    (xdoc::p
     "We return a limit that suffices
-     to execute @(tsee exec-while-stmt) on (the test and body of)
+     to execute @(tsee exec-stmt-while) on (the test and body of)
      the loop statement, as follows.
      We need 1 to get to executing the test,
      which is pure and so does not contribute to the overall limit.
