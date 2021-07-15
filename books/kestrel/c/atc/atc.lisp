@@ -430,7 +430,7 @@
                                  (wf-thm symbolp)
                                  (fn-thms symbol-symbol-alistp)
                                  (print evmac-input-print-p)
-                                 (experimental booleanp)
+                                 (experimental acl2::keyword-listp)
                                  val)').")
                state)
   :mode :program
@@ -481,10 +481,11 @@
        (experimental (if experimental-option
                          (cdr experimental-option)
                        nil))
-       ((er &) (acl2::ensure-value-is-boolean$ experimental
-                                               "The :EXPERIMENTAL option"
-                                               t
-                                               nil)))
+       ((unless (acl2::keyword-listp experimental))
+        (er-soft+ ctx t nil
+                  "The :EXPERIMENTAL option must be a list of keywords, ~
+                   but it is ~x0 instead."
+                  experimental)))
     (acl2::value (list fn1...fnp
                        recursionp
                        output-file
@@ -3748,7 +3749,7 @@
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-returns-value-thm symbolp)
                                   (limit pseudo-termp)
-                                  (experimental booleanp)
+                                  (experimental acl2::keyword-listp)
                                   (names-to-avoid symbol-listp)
                                   state)
   :guard (acl2::irecursivep+ fn (w state))
@@ -4034,10 +4035,10 @@
                             exec-stmt-while-for-fn-thm-event
                             natp-of-measure-of-fn-thm-event
                             termination-of-fn-thm-event
-                            (and experimental
+                            (and (member-eq :loop-proofs experimental)
                                  (list correct-lemma-event
                                        correct-thm-local-event))))
-       (exported-events (and experimental
+       (exported-events (and (member-eq :loop-proofs experimental)
                              (list correct-thm-exported-event))))
     (acl2::value (list local-events
                        exported-events
@@ -4056,7 +4057,7 @@
                       (fn-appconds symbol-symbol-alistp)
                       (appcond-thms acl2::keyword-symbol-alistp)
                       (print evmac-input-print-p)
-                      (experimental booleanp)
+                      (experimental acl2::keyword-listp)
                       (names-to-avoid symbol-listp)
                       (ctx ctxp)
                       state)
@@ -4142,7 +4143,7 @@
                                  (fn-appconds symbol-symbol-alistp)
                                  (appcond-thms acl2::keyword-symbol-alistp)
                                  (print evmac-input-print-p)
-                                 (experimental booleanp)
+                                 (experimental acl2::keyword-listp)
                                  (names-to-avoid symbol-listp)
                                  (ctx ctxp)
                                  state)
@@ -4277,7 +4278,7 @@
                            (wf-thm symbolp)
                            (fn-thms symbol-symbol-alistp)
                            (print evmac-input-print-p)
-                           (experimental booleanp)
+                           (experimental acl2::keyword-listp)
                            (names-to-avoid symbol-listp)
                            (ctx ctxp)
                            state)
@@ -4418,7 +4419,7 @@
                             (wf-thm symbolp)
                             (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
-                            (experimental booleanp)
+                            (experimental acl2::keyword-listp)
                             (call pseudo-event-formp)
                             (ctx ctxp)
                             state)
