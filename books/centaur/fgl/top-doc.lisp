@@ -35,4 +35,5 @@
 
 (xdoc::archive-matching-topics
  (let* ((from (cdr (assoc :from x))))
-   (str::strprefixp "[books]/centaur/fgl/" from)))
+   (or (str::strprefixp "[books]/centaur/fgl/" from)
+       (str::strprefixp "[books]/centaur/meta/" from))))
