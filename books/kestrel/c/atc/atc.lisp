@@ -404,10 +404,16 @@
 
 (defval *atc-allowed-options*
   :short "Keyword options accepted by @(tsee atc)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These include an undocumented @(':developer') option
+     to more easily test new incomplete features during development."))
   (list :output-file
         :proofs
         :const-name
-        :print)
+        :print
+        :developer)
   ///
   (assert-event (symbol-listp *atc-allowed-options*))
   (assert-event (no-duplicatesp-eq *atc-allowed-options*)))
@@ -424,6 +430,7 @@
                                  (wf-thm symbolp)
                                  (fn-thms symbol-symbol-alistp)
                                  (print evmac-input-print-p)
+                                 (developer booleanp)
                                  val)').")
                state)
   :mode :program
@@ -469,7 +476,15 @@
        (print (if print-option
                   (cdr print-option)
                 :result))
-       ((er &) (evmac-process-input-print print ctx state)))
+       ((er &) (evmac-process-input-print print ctx state))
+       (developer-option (assoc-eq :developer options))
+       (developer (if developer-option
+                      (cdr developer-option)
+                    nil))
+       ((er &) (acl2::ensure-value-is-boolean$ developer
+                                               "The :DEVELOPER option"
+                                               t
+                                               nil)))
     (acl2::value (list fn1...fnp
                        recursionp
                        output-file
@@ -477,7 +492,8 @@
                        prog-const
                        wf-thm
                        fn-thms
-                       print))))
+                       print
+                       developer))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2613,7 +2629,7 @@
                         that is on the arguments ~x1 ~
                         instead of its formal parameters ~x2."
                        fn args formals)))
-         (acl2::value (list nil nil))))
+         (acl2::value (list nil ''0))))
       (& (er-soft+ ctx t (list nil nil)
                    "When generating C code for the recursive function ~x0, ~
                     a term ~x1 has been encountered ~
@@ -3599,7 +3615,7 @@
 
 (defines atc-gen-term-with-read-var-compustate
   :short "Transform a term by replacing each ACL2 variable
-          with a reading of the correspoding C variable
+          with a reading of the corresponding C variable
           from the computation state."
   :long
   (xdoc::topstring
@@ -3611,13 +3627,21 @@
      In the formulation of the correctness theorem for the loop,
      we must replace the ACL2 variables
      with calls of @(tsee read-var) on the correspoding C variables.
-     This ACL2 code here does that."))
+     This ACL2 code here does that.")
+   (xdoc::p
+    "Note that we need to leave the compustation variable unchanged.
+     This variable may not occur in the guard of the loop function,
+     but we may be applying this transformation to
+     the result of @(tsee atc-gen-fn-guard-deref-compustate),
+     which introduces such a variable."))
 
   (define atc-gen-term-with-read-var-compustate ((term pseudo-termp)
                                                  (compst-var symbolp))
     :returns new-term
-    (cond ((acl2::variablep term) `(read-var ',(symbol-name term)
-                                             ,compst-var))
+    (cond ((acl2::variablep term) (if (eq term compst-var)
+                                      term
+                                    `(read-var (ident ',(symbol-name term))
+                                               ,compst-var)))
           ((acl2::fquotep term) term)
           (t (acl2::fcons-term
               (acl2::ffn-symb term)
@@ -3677,24 +3701,62 @@
      a nest of @(tsee write-var) calls.
      This ACL2 code here generates that nest."))
   (cond ((endp mod-vars) compst-var)
-        (t `(write-var ,(symbol-name (car mod-vars))
+        (t `(write-var (ident ,(symbol-name (car mod-vars)))
                        ,(car mod-vars)
                        ,(atc-gen-loop-final-compustate (cdr mod-vars)
                                                        compst-var)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-instantiation-for-loop-gthm ((formals symbol-listp)
+                                             (pointers symbol-listp)
+                                             (compst-var symbolp))
+  :returns (instantiation acl2::doublet-listp)
+  :short "Generate the instantiation for the lemma instance
+          of the guard theorem of a loop function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is an extension of @(tsee atc-gen-instantiation-deref-compustate)
+     that, after dereferencing any pointers,
+     also replaces variables with @(tsee read-var) calls."))
+  (b* (((when (endp formals)) nil)
+       (formal (car formals))
+       (inst (if (member-eq formal pointers)
+                 (atc-gen-term-with-read-var-compustate
+                  `(deref ,formal (compustate->heap ,compst-var))
+                  compst-var)
+               (atc-gen-term-with-read-var-compustate
+                formal
+                compst-var)))
+       (first (list formal inst))
+       (rest (atc-gen-instantiation-for-loop-gthm (cdr formals)
+                                                  pointers
+                                                  compst-var)))
+    (cons first rest)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-loop-correct-thm ((fn symbolp)
+                                  (pointers symbol-listp)
+                                  (xforming symbol-listp)
                                   (loop-stmt stmtp)
+                                  (prec-fns atc-symbol-fninfo-alistp)
                                   (prog-const symbolp)
                                   (fn-appconds symbol-symbol-alistp)
                                   (appcond-thms acl2::keyword-symbol-alistp)
+                                  (fn-thms symbol-symbol-alistp)
+                                  (fn-returns-value-thm symbolp)
+                                  (limit pseudo-termp)
+                                  (developer booleanp)
                                   (names-to-avoid symbol-listp)
                                   state)
   :guard (acl2::irecursivep+ fn (w state))
   :returns (mv erp
-               (val "A @('(tuple (events pseudo-event-form-listp)
+               (val "A @('(tuple (local-events pseudo-event-form-listp)
+                                 (exported-events pseudo-event-form-listp)
                                  (natp-of-measure-of-fn-thm symbolp)
+                                 (fn-correct-thm symbolp)
                                  (updated-names-to-avoid symbol-listp)
                                  val)').")
                state)
@@ -3744,7 +3806,51 @@
      which means that @(tsee o<) reduces to @(tsee <) (see above).
      The purpose of this variant of the termination theorem
      is to help establish the induction hypothesis
-     in the loop correctness theorem, as explained below."))
+     in the loop correctness theorem, as explained below.")
+   (xdoc::p
+    "We generate the correctness theorem as a lemma first,
+     then the actual theorem.
+     The only difference between the two is that
+     the lemma uses the specialization of @(tsee exec-stmt-while)
+     that is generated as discussed above,
+     while the theorem uses the general @(tsee exec-stmt-while);
+     the reason is so we can have the right induction, as discussed above.
+     As explained shortly,
+     the formula involves (some of) the loop function's formals,
+     so we take those into account to generate variables for
+     the computation state, the function environment, and the limit.
+     The hypotheses include the guard of the loop function,
+     but we need to replace any pointers with their dereferenced arrays
+     (see @(tsee atc-gen-fn-correct-thm)),
+     and in addition,
+     as discussed in @(tsee atc-gen-term-with-read-var-compustate),
+     we need to replace the parameters of the loop function
+     with @(tsee read-var) calls that read the corresponding variables.
+     The other hypotheses are the same as in @(tsee atc-gen-fn-correct-thm),
+     with the addition of a hypothesis that
+     the number of frames in the computation state is not zero;
+     this is always the case when executing a loop.
+     The arguments of the loop function call are obtained by
+     replacing its formals with the corresponding @(tsee read-var) calls.
+     The lemma is proved via proof builder instructions,
+     by first applying induction
+     and then calling the prover on all the induction subgoals.
+     For robustness, first to set the theory to contain
+     just the specialized @(tsee exec-stmt-while),
+     then we apply induction, which therefore must be on that function.
+     The hints for the subgoals are for the symbolic execution,
+     similar to the ones in @(tsee atc-gen-fn-correct-thm),
+     without the @(':expand') hint and with the addition of:
+     (i) the return value theorem of the loop function,
+     which is reasonable since the function is recursive,
+     and so it is called inside its body;
+     (ii) the definition of the specialized @(tsee exec-stmt-while);
+     (iii) the rule saying that the measure yields a natural number; and
+     (iv) the termination theorem of the loop function,
+     suitably instantiated.
+     Given the correctness lemma, the correctness theorem is easily proved,
+     via the lemma and the generate theorem that equates
+     the specialized @(tsee exec-stmt-while) to the general one."))
   (b* ((wrld (w state))
        (loop-test (stmt-while->test loop-stmt))
        (loop-body (stmt-while->body loop-stmt))
@@ -3838,12 +3944,105 @@
                                 o-p
                                 o-finp
                                 o<)))))
-       (events (list exec-stmt-while-for-fn-event
-                     exec-stmt-while-for-fn-thm-event
-                     natp-of-measure-of-fn-thm-event
-                     termination-of-fn-thm-event)))
-    (acl2::value (list events
+       (correct-thm (cdr (assoc-eq fn fn-thms)))
+       (correct-lemma (add-suffix correct-thm "-LEMMA"))
+       ((mv correct-lemma names-to-avoid)
+        (acl2::fresh-logical-name-with-$s-suffix correct-lemma
+                                                 nil
+                                                 names-to-avoid
+                                                 wrld))
+       (formals (acl2::formals+ fn wrld))
+       (compst-var (acl2::genvar 'atc "COMPST" nil formals))
+       (fenv-var (acl2::genvar 'atc "FENV" nil formals))
+       (limit-var (acl2::genvar 'atc "LIMIT" nil formals))
+       (limit (atc-gen-term-with-read-var-compustate limit compst-var))
+       (guard (acl2::uguard fn wrld))
+       (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var))
+       (hyps (atc-gen-term-with-read-var-compustate hyps compst-var))
+       (hyps (acl2::conjoin (list `(compustatep ,compst-var)
+                                  `(not
+                                    (equal
+                                     (compustate-frames-number ,compst-var) 0))
+                                  hyps
+                                  `(equal ,fenv-var (init-fun-env ,prog-const))
+                                  `(integerp ,limit-var)
+                                  `(>= ,limit-var ,limit))))
+       (hyps (acl2::flatten-ands-in-lit hyps))
+       (hyps `(and ,@(acl2::untranslate-lst hyps t wrld)))
+       (args (atc-gen-terms-with-read-var-compustate formals compst-var))
+       (binding (if (endp (cdr xforming))
+                    (car xforming)
+                  `(mv ,@xforming)))
+       (final-compst (atc-gen-loop-final-compustate xforming compst-var))
+       (concl-lemma `(equal (,exec-stmt-while-for-fn ,compst-var ,limit-var)
+                            (b* ((,binding (,fn ,@args)))
+                              (mv nil ,final-compst))))
+       (concl-thm `(equal (exec-stmt-while  ',loop-test
+                                            ',loop-body
+                                            ,compst-var
+                                            ,fenv-var
+                                            ,limit-var)
+                          (b* ((,binding (,fn ,@args)))
+                            (mv nil ,final-compst))))
+       (returns-value-thms
+        (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns))
+       (returns-value-thms (cons fn-returns-value-thm returns-value-thms))
+       (correct-thms
+        (atc-symbol-fninfo-alist-to-correct-thms prec-fns))
+       (measure-thms
+        (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns))
+       (measure-thms (cons natp-of-measure-of-fn-thm measure-thms))
+       (type-prescriptions
+        (loop$ for callable in (strip-cars prec-fns)
+               collect `(:t ,callable)))
+       (tthm-instantiation
+        (acl2::alist-to-doublets (pairlis$ formals args)))
+       (gthm-instantiation (atc-gen-instantiation-for-loop-gthm formals
+                                                                pointers
+                                                                compst-var))
+       (lemma-hints `(("Goal"
+                       :do-not-induct t
+                       :in-theory (append *atc-all-rules*
+                                          '(,fn)
+                                          '(,exec-stmt-while-for-fn)
+                                          ',type-prescriptions
+                                          ',returns-value-thms
+                                          ',correct-thms
+                                          ',measure-thms)
+                       :use ((:instance (:guard-theorem ,fn)
+                              :extra-bindings-ok ,@gthm-instantiation)
+                             (:instance ,termination-of-fn-thm
+                              :extra-bindings-ok ,@tthm-instantiation)))))
+       (lemma-instructions
+        `((:in-theory '(,exec-stmt-while-for-fn))
+          :induct
+          (:repeat (:prove :hints ,lemma-hints))))
+       (thm-hints `(("Goal"
+                     :in-theory nil
+                     :use (,correct-lemma ,exec-stmt-while-for-fn-thm))))
+       ((mv correct-lemma-event &)
+        (evmac-generate-defthm correct-lemma
+                               :formula `(implies ,hyps ,concl-lemma)
+                               :instructions lemma-instructions
+                               :enable nil))
+       ((mv correct-thm-local-event correct-thm-exported-event)
+        (evmac-generate-defthm correct-thm
+                               :formula `(implies ,hyps ,concl-thm)
+                               :hints thm-hints
+                               :enable nil))
+       (local-events (list* exec-stmt-while-for-fn-event
+                            exec-stmt-while-for-fn-thm-event
+                            natp-of-measure-of-fn-thm-event
+                            termination-of-fn-thm-event
+                            (and developer
+                                 (list correct-lemma-event
+                                       correct-thm-local-event))))
+       (exported-events (and developer
+                             (list correct-thm-exported-event))))
+    (acl2::value (list local-events
+                       exported-events
                        natp-of-measure-of-fn-thm
+                       correct-thm
                        names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3857,6 +4056,7 @@
                       (fn-appconds symbol-symbol-alistp)
                       (appcond-thms acl2::keyword-symbol-alistp)
                       (print evmac-input-print-p)
+                      (developer booleanp)
                       (names-to-avoid symbol-listp)
                       (ctx ctxp)
                       state)
@@ -3887,17 +4087,17 @@
        (guard-conjuncts (flatten-ands-in-lit guard))
        ((mv erp (list & scope pointers) state)
         (atc-gen-param-declon-list formals fn guard-conjuncts guard ctx state))
-       ((when erp) (mv erp nil state))
+       ((when erp) (mv erp (list nil nil nil nil) state))
        (body (acl2::ubody+ fn wrld))
        ((mv erp (list loop-stmt loop-xforming loop-limit) state)
         (atc-gen-loop-stmt body (list scope) fn prec-fns ctx state))
-       ((when erp) (mv erp nil state))
+       ((when erp) (mv erp (list nil nil nil nil) state))
        (type? nil)
        ((mv erp
             (list local-events
                   exported-events
                   fn-returns-value-thm
-                  fn-correct-thm
+                  &
                   names-to-avoid)
             state)
         (atc-gen-fn-thms fn pointers type? loop-xforming scope prec-fns
@@ -3906,14 +4106,19 @@
        ((when erp) (mv erp (list nil nil nil nil) state))
        ((mv erp
             (list more-local-events
+                  more-exported-events
                   natp-of-measure-of-fn-thm
+                  fn-correct-thm
                   names-to-avoid)
             state)
-        (atc-gen-loop-correct-thm fn loop-stmt prog-const
-                                  fn-appconds appcond-thms
+        (atc-gen-loop-correct-thm fn pointers loop-xforming loop-stmt prec-fns
+                                  prog-const fn-appconds appcond-thms fn-thms
+                                  fn-returns-value-thm loop-limit
+                                  developer
                                   names-to-avoid state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        (local-events (append local-events more-local-events))
+       (exported-events (append exported-events more-exported-events))
        (info (make-atc-fn-info :type? type?
                                :loop? loop-stmt
                                :xforming loop-xforming
@@ -3937,6 +4142,7 @@
                                  (fn-appconds symbol-symbol-alistp)
                                  (appcond-thms acl2::keyword-symbol-alistp)
                                  (print evmac-input-print-p)
+                                 (developer booleanp)
                                  (names-to-avoid symbol-listp)
                                  (ctx ctxp)
                                  state)
@@ -3968,7 +4174,7 @@
                       state)
                   (atc-gen-loop fn prec-fns proofs recursionp prog-const
                                 fn-thms fn-appconds appcond-thms
-                                print names-to-avoid ctx state))
+                                print developer names-to-avoid ctx state))
                  ((when erp) (mv erp (list nil nil nil nil) state)))
               (acl2::value (list nil
                                  local-events
@@ -3992,7 +4198,7 @@
          (list more-exts more-local-events more-exported-events names-to-avoid))
         (atc-gen-ext-declon-list rest-fns prec-fns proofs recursionp
                                  prog-const fn-thms fn-appconds appcond-thms
-                                 print names-to-avoid ctx state)))
+                                 print developer names-to-avoid ctx state)))
     (acl2::value (list (append exts more-exts)
                        (append local-events more-local-events)
                        (append exported-events more-exported-events)
@@ -4071,6 +4277,7 @@
                            (wf-thm symbolp)
                            (fn-thms symbol-symbol-alistp)
                            (print evmac-input-print-p)
+                           (developer booleanp)
                            (names-to-avoid symbol-listp)
                            (ctx ctxp)
                            state)
@@ -4099,7 +4306,7 @@
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
         (atc-gen-ext-declon-list fn1...fnp nil proofs recursionp
                                  prog-const fn-thms fn-appconds appcond-thms
-                                 print names-to-avoid ctx state))
+                                 print developer names-to-avoid ctx state))
        (tunit (make-transunit :declons exts))
        ((mv local-const-event exported-const-event)
         (if proofs
@@ -4211,6 +4418,7 @@
                             (wf-thm symbolp)
                             (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
+                            (developer booleanp)
                             (call pseudo-event-formp)
                             (ctx ctxp)
                             state)
@@ -4230,7 +4438,7 @@
   (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
        ((er (list tunit local-events exported-events &))
         (atc-gen-transunit fn1...fnp proofs recursionp prog-const wf-thm fn-thms
-                           print names-to-avoid ctx state))
+                           print developer names-to-avoid ctx state))
        ((er file-gen-event) (atc-gen-file-event tunit output-file print state))
        (print-events (and (evmac-input-print->= print :result)
                           (atc-gen-print-result exported-events output-file)))
@@ -4268,7 +4476,8 @@
                   prog-const
                   wf-thm
                   fn-thms
-                  print))
+                  print
+                  developer))
         (atc-process-inputs args ctx state)))
     (atc-gen-everything fn1...fnp
                         output-file
@@ -4278,6 +4487,7 @@
                         wf-thm
                         fn-thms
                         print
+                        developer
                         call
                         ctx
                         state)))
