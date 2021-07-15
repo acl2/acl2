@@ -37,6 +37,7 @@
 (include-book "integer-range-lists")
 (include-book "integers-from-to")
 (include-book "integers-from-to-as-set")
+(include-book "invariant-risk")
 (include-book "keyword-value-lists")
 (include-book "lists/top")
 (include-book "magic-macroexpand")
