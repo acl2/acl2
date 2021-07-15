@@ -21,11 +21,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "At this time, we plan to represent arrays as sequences of values
-     that can read and written.
+    "At this time, we represent arrays as
+     sequences of values that can read and written.
      These array representations can be passed around, and manipulated by,
      ACL2 functions that represent C functions,
-     and ATC will translate those to corresponding array manipulations.")
+     and ATC translates those to corresponding array manipulations.")
    (xdoc::p
     "We represent arrays as values of fixtypes that wrap lists of C values.
      We provide operations to read and write elements,
@@ -46,12 +46,12 @@
     "This array model is similar to "
     (xdoc::seetopic "java::atj-java-primitive-array-model"
                     "ATJ's model of Java primitive arrays")
-    ". C arrays differ from Java arrays:
+    ". But C arrays differ from Java arrays:
      in particular, Java arrays are self-contained objects,
      whose length and other attributes can be programmatically queried;
      in contrast, C arrays are more of a ``view'' of certain memory regions.
      Nonetheless, at the level of ACL2 manipulations,
-     the two kinds of array differ less (at least for certain mundane uses),
+     the two kinds of arrays differ less (at least for certain mundane uses),
      because, even though C does not provide ``direct access'' to
      an array's length and other attributes,
      there is nonetheless an implicit notion of array,
@@ -59,19 +59,26 @@
      that is conceptually created and passed around and manipulated.")
    (xdoc::p
     "Similarly to the use of the Java array model in ATJ,
-     the C arrays modeled here will have to be treated in a stobj-like manner
+     the C arrays modeled here have to be treated in a stobj-like manner
      by the ACL2 functions to be translated to C.
      In general, each of these ACL2 functions
-     will take zero or more arrays as inputs (possibly among other inputs),
-     and will have to return, in an @(tsee mv),
+     takes zero or more arrays as inputs (possibly among other inputs),
+     and must return, in an @(tsee mv),
      all the arrays that it possibly modifies,
-     along with the regular return result of the function;
-     the arrays that are only read by the function
-     do not have to be returned.
-     Inside the function, the arrays must be udpated (if at all)
+     along with the regular return result of the function (if any);
+     the arrays that are only read by the function do not have to be returned.
+     Inside the function, the arrays must be updated (if at all)
      in a single-threaded way, analogously to stobjs.
      Upcoming extensions of ATC will ensure that this discipline is followed,
-     analogously to what ATJ does."))
+     analogously to what ATJ does.")
+   (xdoc::p
+    "Our initial model of arrays assumes that different arrays do not overlap.
+     That is,
+     either two arrays are the same array (when they have the same pointer),
+     or they are completely disjoint.
+     The model does not capture
+     the situation of an array being a subarray of another one.
+     We may extend the model in the future."))
   :order-subtopics t
   :default-parent t)
 
@@ -97,7 +104,7 @@
      [C] only provides minimum requirements for the sizes of integer types,
      not maximum requirements:
      other than practical considerations,
-     mathematically nothing prevents some integer types
+     nothing, mathematically, prevents some integer types
      to consists of thousands or millions of bits.")
    (xdoc::p
     "Because of all of the above,
