@@ -24,4 +24,4 @@
   (xdoc::topstring
    (xdoc::p
     "This is as introduced (hence the @('i') in the name) by the user."))
-  (car (last (logical-defun fn wrld))))
+  (car (last (get-defun-event fn wrld))))

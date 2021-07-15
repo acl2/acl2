@@ -236,7 +236,7 @@
       l
     (last (cdr l))))
 
-(defun symbol-< (x y)
+(defun symbol< (x y)
   (declare (xargs :guard (and (symbolp x) (symbolp y))))
   (let ((x1 (symbol-name x))
         (y1 (symbol-name y)))
@@ -274,7 +274,7 @@
         (t
          (cond ((symbolp x)
                 (cond ((symbolp y)
-                       (not (symbol-< y x)))
+                       (not (symbol< y x)))
                       (t t)))
                ((symbolp y) nil)
                (t (acl2::bad-atom<= x y))))))

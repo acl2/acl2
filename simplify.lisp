@@ -8837,10 +8837,10 @@
 ; We admit the following sorting functions in :logic mode, verify their guards,
 ; and prove properties of them in community book books/misc/sort-symbols.lisp.
 
-(defun strict-merge-symbol-< (l1 l2 acc)
+(defun strict-merge-symbol< (l1 l2 acc)
 
-; If l1 and l2 are strictly ordered by symbol-< and above acc, which is also
-; thus strictly ordered, then the result is strictly ordered by symbol-<.
+; If l1 and l2 are strictly ordered by symbol< and above acc, which is also
+; thus strictly ordered, then the result is strictly ordered by symbol<.
 
   (declare (xargs :guard (and (symbol-listp l1)
                               (symbol-listp l2)
@@ -8853,12 +8853,12 @@
   (cond ((endp l1) (revappend acc l2))
         ((endp l2) (revappend acc l1))
         ((eq (car l1) (car l2))
-         (strict-merge-symbol-< (cdr l1) (cdr l2) (cons (car l1) acc)))
-        ((symbol-< (car l1) (car l2))
-         (strict-merge-symbol-< (cdr l1) l2 (cons (car l1) acc)))
-        (t (strict-merge-symbol-< l1 (cdr l2) (cons (car l2) acc)))))
+         (strict-merge-symbol< (cdr l1) (cdr l2) (cons (car l1) acc)))
+        ((symbol< (car l1) (car l2))
+         (strict-merge-symbol< (cdr l1) l2 (cons (car l1) acc)))
+        (t (strict-merge-symbol< l1 (cdr l2) (cons (car l2) acc)))))
 
-(defun strict-merge-sort-symbol-< (l)
+(defun strict-merge-sort-symbol< (l)
 
 ; Produces a result with the same elements as the list l of symbols, but
 ; strictly ordered by symbol-name.
@@ -8870,16 +8870,16 @@
 
                   :mode :program))
   (cond ((endp (cdr l)) l)
-        (t (strict-merge-symbol-<
-            (strict-merge-sort-symbol-< (evens l))
-            (strict-merge-sort-symbol-< (odds l))
+        (t (strict-merge-symbol<
+            (strict-merge-sort-symbol< (evens l))
+            (strict-merge-sort-symbol< (odds l))
             nil))))
 
 (defun sort-symbol-listp (x)
   (declare (xargs :guard (symbol-listp x)))
-  (cond ((strict-symbol-<-sortedp x)
+  (cond ((strict-symbol<-sortedp x)
          x)
-        (t (strict-merge-sort-symbol-< x))))
+        (t (strict-merge-sort-symbol< x))))
 
 ; Now that sort-symbol-listp has been defined, we can define
 ; set-ruler-extenders.
@@ -8909,17 +8909,17 @@
   (declare (ignore x))
   nil)
 
-(defun strict-merge-sort-symbol-<-cdrs (alist)
+(defun strict-merge-sort-symbol<-cdrs (alist)
   (cond ((endp alist) nil)
         (t (acons (caar alist)
-                  (strict-merge-sort-symbol-< (cdar alist))
-                  (strict-merge-sort-symbol-<-cdrs (cdr alist))))))
+                  (strict-merge-sort-symbol< (cdar alist))
+                  (strict-merge-sort-symbol<-cdrs (cdr alist))))))
 
 (defun runes-to-class-alist (runes)
-  (strict-merge-sort-symbol-<-cdrs
+  (strict-merge-sort-symbol<-cdrs
    (runes-to-class-alist1
     runes
-    (pairlis$ (strict-merge-sort-symbol-< (strip-cars runes))
+    (pairlis$ (strict-merge-sort-symbol< (strip-cars runes))
               nil))))
 
 (defun extract-and-classify-lemmas (ttree ignore-lst forced-runes)

@@ -105,7 +105,7 @@
                   (equal (safe-access-command-tuple-form (cddar wrld))
                          '(exit-boot-strap-mode))))
          (pair-fns-with-measured-subsets
-          (strict-merge-sort-symbol-< acc)
+          (strict-merge-sort-symbol< acc)
           installed-wrld
           nil))
         ((and (eq (cadar wrld) 'symbol-class)
@@ -644,6 +644,32 @@
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Deprecation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro defdeprecate (old new version)
+
+; Old is the first parameter so that meta-. can find its definition (based on
+; defdeprecate).
+
+  (declare (type string version)) ; e.g., "8.4"
+  `(progn
+     (defmacro ,old (&rest args)
+       (prog2$
+        (cw "~%**DEPRECATED** in ACL2 Version ~s0: ~x1.  Use ~x2 instead.~|"
+            ,version ',old ',new)
+        (cons ',new args)))
+     (add-macro-alias ,old ,new)
+     (value-triple ',old)))
+
+(defdeprecate symbol-< symbol< "8.4")
+(defdeprecate strict-symbol-<-sortedp strict-symbol<-sortedp "8.4")
+(defdeprecate strict-merge-symbol-< strict-merge-symbol< "8.4")
+(defdeprecate strict-merge-sort-symbol-< strict-merge-sort-symbol< "8.4")
+(defdeprecate strict-merge-sort-symbol-<-cdrs strict-merge-sort-symbol<-cdrs "8.4")
+(defdeprecate merge-symbol-< merge-symbol< "8.4")
+(defdeprecate merge-sort-symbol-< merge-sort-symbol< "8.4")
+(defdeprecate logical-defun get-defun-event "8.4")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End

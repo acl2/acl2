@@ -382,15 +382,15 @@ eg:n/a")
       (mv :vacuous hyp-vals A r. BE.))))
 
 ; sort utility for use in record-testrun.
-(defun merge-car-symbol-< (l1 l2)
+(defun merge-car-symbol< (l1 l2)
   (declare (xargs :measure (+ (acl2-count l1) (acl2-count l2))))
   (cond ((endp l1) l2)
         ((endp l2) l1)
-        ((symbol-< (car (car l1)) (car (car l2)))
+        ((symbol< (car (car l1)) (car (car l2)))
          (cons (car l1)
-               (merge-car-symbol-< (cdr l1) l2)))
+               (merge-car-symbol< (cdr l1) l2)))
         (t (cons (car l2)
-                 (merge-car-symbol-< l1 (cdr l2))))))
+                 (merge-car-symbol< l1 (cdr l2))))))
 
 (defthm acl2-count-evens-strong
   (implies (consp (cdr x))
@@ -403,10 +403,10 @@ eg:n/a")
   :rule-classes :linear)
 
 
-(defun merge-sort-car-symbol-< (l)
+(defun merge-sort-car-symbol< (l)
   (cond ((endp (cdr l)) l)
-        (t (merge-car-symbol-< (merge-sort-car-symbol-< (evens l))
-                               (merge-sort-car-symbol-< (odds l))))))
+        (t (merge-car-symbol< (merge-sort-car-symbol< (evens l))
+                              (merge-sort-car-symbol< (odds l))))))
 
 ; TODO: This function is in the inner loop. See if it can be furthur
 ; optimized.
@@ -417,7 +417,7 @@ eg:n/a")
          (mv test-outcomes%-p gcs%-p))
    :doc 
    "?: records (accumulates) the outcome of a single test trial run ")
-  (b* ((A (merge-sort-car-symbol-< A))
+  (b* ((A (merge-sort-car-symbol< A))
        (gcs% (gcs-1+ runs)))
 ;   in
     (case test-result

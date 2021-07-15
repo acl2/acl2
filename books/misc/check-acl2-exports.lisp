@@ -203,10 +203,7 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    CTXP
-    DOUBLET-LISTP
-    GET-GUARD-CHECKING
-    MONITOR!
+    ACL2-UNWIND-PROTECT
 
   ))
 

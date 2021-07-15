@@ -7413,7 +7413,7 @@
          ((defun defund defn defproxy defun-nx defun-one-output defstub
             defmacro defmacro-untouchable defabbrev
             defun@par defmacro-last defun-overrides
-            defun-with-guard-check defun-sk)
+            defun-with-guard-check defun-sk defdeprecate)
           (our-update-ht (cadr form) form ht when-pass-2-p))
          (save-def
           (note-fns-in-form (cadr form) ht when-pass-2-p))
@@ -8168,10 +8168,10 @@
 
 (defun check-some-builtins-for-executability ()
 
-; The function logical-defun produces the logical definition of a given
+; The function get-defun-event produces the logical definition of a given
 ; function symbol if there is one.  It does so by fetching the event for that
 ; symbol, but if that event is verify-termination-boot-strap, then
-; logical-defun uses cltl-def-from-name to fetch the definition.  Now
+; get-defun-event uses cltl-def-from-name to fetch the definition.  Now
 ; cltl-def-from-name generally returns the logical defun form, but for
 ; non-executable functions it returns a defun form intended for use in raw Lisp
 ; only (whose body is a call of throw-or-attach).  Here, we make sure that we
@@ -8179,7 +8179,7 @@
 
 ; If we run across an error from this check, we can allow an exception for the
 ; offending function(s) provided we deal with those exceptions in the
-; definition of logical-defun.
+; definition of get-defun-event.
 
 ; This check might be coded more efficiently by walking through the world,, but
 ; it has taken only 0.06 seconds, which seems fine.
@@ -8193,7 +8193,7 @@
     (or (null ans)
         (interface-er
          "The initial ACL2 world has the following non-empty list of ~
-          functions for which get-logical-defun will produce the wrong ~
+          functions for which get-defun-event will produce the wrong ~
           result:~%~x0.~%See ACL2 function check-executable-builtins for an ~
           explanation, or contact the ACL2 implementors."
          ans))))

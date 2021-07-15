@@ -5571,7 +5571,7 @@
            "You provided signatures for ~&0, but ~#0~[that function ~
             was~/those functions were~] not defined in :logic mode by the ~
             encapsulated event list.  See :DOC encapsulate."
-           (merge-sort-symbol-< udf-fns)))
+           (merge-sort-symbol< udf-fns)))
       (t (value nil)))
      (declare (ignore val))
      (mv-let
@@ -8222,7 +8222,7 @@
            (update-proof-supporters-alist-3
             (cdr names) local-alist
             old
-            (strict-merge-symbol-< car-names-supporters new nil)
+            (strict-merge-symbol< car-names-supporters new nil)
             wrld)))))
 
 (defun posn-first-non-event (names wrld idx)
@@ -8237,7 +8237,7 @@
           (t (mv-let (rest-old-event-names rest-new-names)
                      (update-proof-supporters-alist-3
                       (nthcdr n names) local-alist nil nil wrld)
-                     (strict-merge-symbol-<
+                     (strict-merge-symbol<
                       (append (take n names) rest-old-event-names)
                       rest-new-names
                       nil))))))
@@ -14760,14 +14760,14 @@
 
 (defun set-difference-eq-sorted (lst1 lst2 ans)
 
-; Lst1 and lst2 are sorted by symbol-<.  If ans is nil, then we return the
-; difference of lst1 and lst2, sorted by symbol-<.
+; Lst1 and lst2 are sorted by symbol<.  If ans is nil, then we return the
+; difference of lst1 and lst2, sorted by symbol<.
 
   (cond ((null lst1) (reverse ans))
         ((null lst2) (revappend ans lst1))
         ((eq (car lst1) (car lst2))
          (set-difference-eq-sorted (cdr lst1) (cdr lst2) ans))
-        ((symbol-< (car lst1) (car lst2))
+        ((symbol< (car lst1) (car lst2))
          (set-difference-eq-sorted (cdr lst1) lst2 (cons (car lst1) ans)))
         (t (set-difference-eq-sorted lst1 (cdr lst2) ans))))
 

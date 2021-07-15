@@ -308,12 +308,12 @@
           (er hard 'type-assumptions-for-param "Unrecognized type: ~x0." type))))))
 
 ;; Sort vars by putting all vars that are also in guide-vars first (in
-;; the same order as in guide-vars), then the order used by symbol-<.
+;; the same order as in guide-vars), then the order used by symbol<.
 (defun sort-vars-with-guidance (vars guide-vars)
   (declare (xargs :guard (and (symbol-listp guide-vars)
                               (symbol-listp vars))))
   (if (endp guide-vars)
-      (merge-sort-symbol-< vars)
+      (merge-sort-symbol< vars)
     (let ((guide-var (first guide-vars)))
       (if (member-eq guide-var vars)
           (cons guide-var (sort-vars-with-guidance (remove-eq guide-var vars) (rest guide-vars)))
