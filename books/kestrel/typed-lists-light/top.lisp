@@ -34,6 +34,9 @@
 
 (include-book "items-have-len")
 
+(include-book "map-code-char")
+(include-book "bytes-to-printable-string")
+
 (include-book "bit-listp")
 (include-book "bit-listp-rules")
 
