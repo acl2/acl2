@@ -407,13 +407,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These include an undocumented @(':developer') option
-     to more easily test new incomplete features during development."))
+    "These include an undocumented @(':experimental') option
+     to more easily test experimental features."))
   (list :output-file
         :proofs
         :const-name
         :print
-        :developer)
+        :experimental)
   ///
   (assert-event (symbol-listp *atc-allowed-options*))
   (assert-event (no-duplicatesp-eq *atc-allowed-options*)))
@@ -430,7 +430,7 @@
                                  (wf-thm symbolp)
                                  (fn-thms symbol-symbol-alistp)
                                  (print evmac-input-print-p)
-                                 (developer booleanp)
+                                 (experimental acl2::keyword-listp)
                                  val)').")
                state)
   :mode :program
@@ -477,14 +477,15 @@
                   (cdr print-option)
                 :result))
        ((er &) (evmac-process-input-print print ctx state))
-       (developer-option (assoc-eq :developer options))
-       (developer (if developer-option
-                      (cdr developer-option)
-                    nil))
-       ((er &) (acl2::ensure-value-is-boolean$ developer
-                                               "The :DEVELOPER option"
-                                               t
-                                               nil)))
+       (experimental-option (assoc-eq :experimental options))
+       (experimental (if experimental-option
+                         (cdr experimental-option)
+                       nil))
+       ((unless (acl2::keyword-listp experimental))
+        (er-soft+ ctx t nil
+                  "The :EXPERIMENTAL option must be a list of keywords, ~
+                   but it is ~x0 instead."
+                  experimental)))
     (acl2::value (list fn1...fnp
                        recursionp
                        output-file
@@ -493,7 +494,7 @@
                        wf-thm
                        fn-thms
                        print
-                       developer))))
+                       experimental))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1285,6 +1286,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-array-write ((var symbolp) (val pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (arr symbolp :hyp :guard)
+               (sub pseudo-termp :hyp :guard)
+               (elem pseudo-termp :hyp :guard))
+  :short "Check if a @(tsee let) binding may represent an array write."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An array write, i.e. an assignment to an array element,
+     is represented by a @(tsee let) binding of the form")
+   (xdoc::codeblock
+    "(let ((<arr> (uchar-array-write-sint <arr> <sub> <elem>))) ...)")
+   (xdoc::p
+    "where @('array') is a variable of array type,
+     which must occur identically as
+     both the @(tsee let) variable
+     and as the first argument of @(tsee uchar-array-write-sint),
+     @('<sub>') is an expression that yields the index of the element to write,
+     @('<elem>') is an expression that yields the element to write,
+     and @('...') represents the code that follows the array assignment.
+     This function takes as arguments
+     the variable and value of a @(tsee let) binder,
+     and checks if they have the form described above.
+     If they do, the components are returned for further processing.")
+   (xdoc::p
+    "This is part of our initial experimental support for array writes.
+     Before that becomes fully supported and no longer experimental,
+     we may need to extend this function with additional checks."))
+  (case-match val
+    ((fn arr sub elem)
+     (case fn
+       (uchar-array-write-sint (if (eq arr var)
+                                   (mv t arr sub elem)
+                                 (mv nil nil nil nil)))
+       (t (mv nil nil nil nil))))
+    (& (mv nil nil nil nil)))
+  ///
+
+  (defret acl2-count-of-atc-check-array-write-sub
+    (implies yes/no
+             (< (acl2-count sub)
+                (acl2-count val)))
+    :rule-classes :linear)
+
+  (defret acl2-count-of-atc-check-array-write-elem
+    (implies yes/no
+             (< (acl2-count elem)
+                (acl2-count val)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-callable-fn ((term pseudo-termp)
                                (prec-fns atc-symbol-fninfo-alistp))
   :returns (mv (yes/no booleanp)
@@ -1978,6 +2032,7 @@
                       (xforming symbol-listp)
                       (fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
+                      (experimental acl2::keyword-listp)
                       (ctx ctxp)
                       state)
   :returns (mv erp
@@ -2061,8 +2116,13 @@
      the block items for the bound term,
      it still has enough limit to executed the block items for the body term.")
    (xdoc::p
-    "If the term is a @(tsee let), there are three cases.
-     If the term involves the @(tsee declar) wrapper,
+    "If the term is a @(tsee let), there are four cases.
+     If the binding has the form of an array write,
+     and if the @(':experimental') input to ATC allows array writes,
+     we generate an array assignment;
+     before this feature can be turned from experimental to fully supported,
+     we may need to perform some additional checks here.
+     Otherwise, if the term involves the @(tsee declar) wrapper,
      we ensure that a variable with the same symbol name is not already in scope
      (i.e. in the symbol table)
      and that the name is a portable ASCII identifier;
@@ -2086,6 +2146,8 @@
    (xdoc::p
     "In the @(tsee let) case whose translation is explained above,
      the limit is calculated as follows.
+     For the case of an array write, the limit is irrelevant for now;
+     we do not generate proofs for array writes.
      For the case of the transforming term, we add up the two limits,
      similarly to the @(tsee mv-let) case.
      For the other cases, we have one block item followed by block items.
@@ -2132,6 +2194,19 @@
      This is the end of a list of block items that transforms that variable.
      See the user documentation.")
    (xdoc::p
+    "If the @(':experimental') input to ATC allows array writes,
+     we also allow @(tsee mv) calls
+     whose first argument represents a pure C-valued expression to return,
+     and whose remaining aguments are presumably modified arrays.
+     For now we do not check the remaining arguments:
+     we simply ignore them.
+     Indeed, no code needs to be generated for them,
+     because their returning just represents side effects
+     which are implicit in the C code,
+     in the same way as other transformed variables.
+     Before making array write support non-experimental,
+     we will carefully check these arguments, along with other constraints.")
+   (xdoc::p
     "If the term does not have any of the forms above,
      we treat it as a C-valued term.
      But we must check that @('xforming') is @('nil'),
@@ -2153,10 +2228,12 @@
        ((when okp)
         (b* (((mv mbtp &) (acl2::check-mbt-call test))
              ((when mbtp)
-              (atc-gen-stmt then inscope xforming fn prec-fns ctx state))
+              (atc-gen-stmt then inscope xforming fn prec-fns
+                            experimental ctx state))
              ((mv mbt$p &) (acl2::check-mbt$-call test))
              ((when mbt$p)
-              (atc-gen-stmt then inscope xforming fn prec-fns ctx state))
+              (atc-gen-stmt then inscope xforming fn prec-fns
+                            experimental ctx state))
              ((mv erp test-expr state) (atc-gen-expr-bool test
                                                           inscope
                                                           fn
@@ -2169,6 +2246,7 @@
                             xforming
                             fn
                             prec-fns
+                            experimental
                             ctx
                             state))
              ((er (list else-items else-type else-limit))
@@ -2177,6 +2255,7 @@
                             xforming
                             fn
                             prec-fns
+                            experimental
                             ctx
                             state))
              ((unless (equal then-type else-type))
@@ -2227,16 +2306,44 @@
                          does not have the required form."
                         fn val))
              ((er (list xform-items & xform-limit))
-              (atc-gen-stmt val inscope vars fn prec-fns ctx state))
+              (atc-gen-stmt val inscope vars fn prec-fns
+                            experimental ctx state))
              ((er (list body-items body-type body-limit))
-              (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
+              (atc-gen-stmt body inscope xforming fn prec-fns
+                            experimental ctx state))
              (items (append xform-items body-items))
              (type body-type)
              (limit `(binary-+ ,xform-limit ,body-limit)))
           (acl2::value (list items type limit))))
        ((mv okp var val body wrapper?) (atc-check-let term))
        ((when okp)
-        (b* (((mv type? innermostp errorp) (atc-check-var var inscope))
+        (b* (((mv okp arr sub elem) (atc-check-array-write var val))
+             ((when (and okp
+                         (member-eq :array-writes experimental)))
+              (b* (((mv erp (list arr-expr &) state)
+                    (atc-gen-expr-cval-pure arr inscope fn ctx state))
+                   ((when erp) (mv erp (list nil nil nil) state))
+                   ((mv erp (list sub-expr &) state)
+                    (atc-gen-expr-cval-pure sub inscope fn ctx state))
+                   ((when erp) (mv erp (list nil nil nil) state))
+                   ((mv erp (list elem-expr &) state)
+                    (atc-gen-expr-cval-pure elem inscope fn ctx state))
+                   ((when erp) (mv erp (list nil nil nil) state))
+                   (asg (make-expr-binary
+                         :op (binop-asg)
+                         :arg1 (make-expr-arrsub :arr arr-expr
+                                                 :sub sub-expr)
+                         :arg2 elem-expr))
+                   (stmt (stmt-expr asg))
+                   (item (block-item-stmt stmt))
+                   ((er (list body-items body-type body-limit))
+                    (atc-gen-stmt body inscope xforming fn prec-fns
+                                  experimental ctx state))
+                   (limit `(binary-+ '4 ,body-limit)))
+                (acl2::value (list (cons item body-items)
+                                   body-type
+                                   limit))))
+             ((mv type? innermostp errorp) (atc-check-var var inscope))
              ((when errorp)
               (er-soft+ ctx t (list nil nil nil)
                         "When generating C code for the function ~x0, ~
@@ -2276,7 +2383,8 @@
                    (item (block-item-declon declon))
                    (inscope (atc-add-var var init-type inscope))
                    ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
+                    (atc-gen-stmt body inscope xforming fn prec-fns
+                                  experimental ctx state))
                    (type body-type)
                    (limit `(binary-+ '3 (binary-+ ,init-limit ,body-limit))))
                 (acl2::value (list (cons item body-items)
@@ -2308,7 +2416,8 @@
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
                    ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
+                    (atc-gen-stmt body inscope xforming fn prec-fns
+                                  experimental ctx state))
                    (type body-type)
                    (limit `(binary-+ '4 (binary-+ ,rhs-limit ,body-limit))))
                 (acl2::value (list (cons item body-items)
@@ -2326,9 +2435,11 @@
                          This is disallowed."
                         fn val))
              ((er (list xform-items & xform-limit))
-              (atc-gen-stmt val inscope (list var) fn prec-fns ctx state))
+              (atc-gen-stmt val inscope (list var) fn prec-fns
+                            experimental ctx state))
              ((er (list body-items body-type body-limit))
-              (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
+              (atc-gen-stmt body inscope xforming fn prec-fns
+                            experimental ctx state))
              (items (append xform-items body-items))
              (type body-type)
              (limit `(binary-+ ,xform-limit ,body-limit)))
@@ -2341,6 +2452,16 @@
                    (>= (len terms) 2)
                    (equal terms xforming)))
         (acl2::value (list nil nil nil)))
+       ((when (and okp
+                   (member-eq :array-writes experimental)
+                   (consp terms)))
+        (b* (((mv erp (list expr type) state)
+              (atc-gen-expr-cval-pure (car terms) inscope fn ctx state))
+             ((when erp) (mv erp (list nil nil nil) state)))
+          (acl2::value
+           (list (list (block-item-stmt (make-stmt-return :value expr)))
+                 type
+                 ''0))))
        ((mv okp loop-fn loop-args loop-xforming loop-stmt loop-limit)
         (atc-check-loop-fn term prec-fns))
        ((when okp)
@@ -2396,6 +2517,16 @@
     (true-listp (car val))
     :rule-classes :type-prescription)
 
+  (defrulel true-listp-when-keyword-listp
+    (implies (acl2::keyword-listp x)
+             (true-listp x)))
+
+  (defrulel pseudo-termp-when-symbolp
+    (implies (symbolp x)
+             (pseudo-termp x)))
+
+  (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
+
   (verify-guards atc-gen-stmt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2405,6 +2536,7 @@
                                 (xforming symbol-listp)
                                 (fn symbolp)
                                 (prec-fns atc-symbol-fninfo-alistp)
+                                (experimental acl2::keyword-listp)
                                 (ctx ctxp)
                                 state)
   :returns (mv erp
@@ -2439,6 +2571,7 @@
                                       xforming
                                       fn
                                       prec-fns
+                                      experimental
                                       ctx
                                       state))
              ((er (list else-items else-limit))
@@ -2447,6 +2580,7 @@
                                       xforming
                                       fn
                                       prec-fns
+                                      experimental
                                       ctx
                                       state))
              (limit `(binary-+ '5 (binary-+ ,then-limit ,else-limit))))
@@ -2487,7 +2621,8 @@
                          does not have the required form."
                         fn val))
              ((mv erp (list xform-items & xform-limit) state)
-              (atc-gen-stmt val inscope vars fn prec-fns ctx state))
+              (atc-gen-stmt val inscope vars fn prec-fns
+                            experimental ctx state))
              ((when erp) (mv erp (list nil nil) state))
              ((er (list body-items body-limit))
               (atc-gen-loop-body-stmt body
@@ -2495,6 +2630,7 @@
                                       xforming
                                       fn
                                       prec-fns
+                                      experimental
                                       ctx
                                       state))
              (items (append xform-items body-items))
@@ -2502,7 +2638,32 @@
           (acl2::value (list items limit))))
        ((mv okp var val body wrapper?) (atc-check-let term))
        ((when okp)
-        (b* (((mv type? innermostp errorp) (atc-check-var var inscope))
+        (b* (((mv okp arr sub elem) (atc-check-array-write var val))
+             ((when (and okp
+                         (member-eq :array-writes experimental)))
+              (b* (((mv erp (list arr-expr &) state)
+                    (atc-gen-expr-cval-pure arr inscope fn ctx state))
+                   ((when erp) (mv erp (list nil nil) state))
+                   ((mv erp (list sub-expr &) state)
+                    (atc-gen-expr-cval-pure sub inscope fn ctx state))
+                   ((when erp) (mv erp (list nil nil) state))
+                   ((mv erp (list elem-expr &) state)
+                    (atc-gen-expr-cval-pure elem inscope fn ctx state))
+                   ((when erp) (mv erp (list nil nil) state))
+                   (asg (make-expr-binary
+                         :op (binop-asg)
+                         :arg1 (make-expr-arrsub :arr arr-expr
+                                                 :sub sub-expr)
+                         :arg2 elem-expr))
+                   (stmt (stmt-expr asg))
+                   (item (block-item-stmt stmt))
+                   ((er (list body-items body-limit))
+                    (atc-gen-loop-body-stmt body inscope xforming fn prec-fns
+                                            experimental ctx state))
+                   (limit `(binary-+ '4 ,body-limit)))
+                (acl2::value (list (cons item body-items)
+                                   limit))))
+             ((mv type? innermostp errorp) (atc-check-var var inscope))
              ((when errorp)
               (er-soft+ ctx t (list nil nil)
                         "When generating C code for the function ~x0, ~
@@ -2547,6 +2708,7 @@
                                             xforming
                                             fn
                                             prec-fns
+                                            experimental
                                             ctx
                                             state))
                    (limit `(binary-+ '3 (binary-+ ,init-limit ,body-limit))))
@@ -2583,6 +2745,7 @@
                                             xforming
                                             fn
                                             prec-fns
+                                            experimental
                                             ctx
                                             state))
                    (limit `(binary-+ '4 (binary-+ ,rhs-limit ,body-limit))))
@@ -2600,7 +2763,8 @@
                          This is disallowed."
                         fn val))
              ((mv erp (list xform-items & xform-limit) state)
-              (atc-gen-stmt val inscope (list var) fn prec-fns ctx state))
+              (atc-gen-stmt val inscope (list var) fn prec-fns
+                            experimental ctx state))
              ((when erp) (mv erp (list nil nil) state))
              ((er (list body-items body-limit))
               (atc-gen-loop-body-stmt body
@@ -2608,6 +2772,7 @@
                                       xforming
                                       fn
                                       prec-fns
+                                      experimental
                                       ctx
                                       state))
              (items (append xform-items body-items))
@@ -2647,6 +2812,14 @@
         :name cons-true-listp-of-atc-gen-loop-body-stmt-val
         :rule-classes :type-prescription))
 
+  (defrulel true-listp-when-keyword-listp
+    (implies (acl2::keyword-listp x)
+             (true-listp x)))
+
+  (defrulel pseudo-termp-when-symbolp
+    (implies (symbolp x)
+             (pseudo-termp x)))
+
   (verify-guards atc-gen-loop-body-stmt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2655,6 +2828,7 @@
                            (inscope atc-symbol-type-alist-listp)
                            (fn symbolp)
                            (prec-fns atc-symbol-fninfo-alistp)
+                           (experimental acl2::keyword-listp)
                            (ctx ctxp)
                            state)
   :returns (mv erp
@@ -2715,10 +2889,10 @@
                   fn term))
        ((mv mbtp &) (acl2::check-mbt-call test))
        ((when mbtp)
-        (atc-gen-loop-stmt then inscope fn prec-fns ctx state))
+        (atc-gen-loop-stmt then inscope fn prec-fns experimental ctx state))
        ((mv mbt$p &) (acl2::check-mbt$-call test))
        ((when mbt$p)
-        (atc-gen-loop-stmt then inscope fn prec-fns ctx state))
+        (atc-gen-loop-stmt then inscope fn prec-fns experimental ctx state))
        ((mv erp test-expr state) (atc-gen-expr-bool test
                                                     inscope
                                                     fn
@@ -2749,6 +2923,7 @@
                                 xforming
                                 fn
                                 prec-fns
+                                experimental
                                 ctx
                                 state))
        ((when erp) (mv erp (list (irr-stmt) nil nil) state))
@@ -2954,6 +3129,7 @@
                                       (scope atc-symbol-type-alistp)
                                       (prec-fns atc-symbol-fninfo-alistp)
                                       (proofs booleanp)
+                                      (experimental acl2::keyword-listp)
                                       (names-to-avoid symbol-listp)
                                       (ctx ctxp)
                                       state)
@@ -3056,7 +3232,8 @@
      the subgoals that arise without them have the form
      @('(<recognizer> nil)')."))
   (b* ((wrld (w state))
-       ((when (not proofs))
+       ((when (or (not proofs)
+                  (member-eq :array-writes experimental)))
         (acl2::value (list nil nil names-to-avoid)))
        (types1 (and type? (list type?)))
        (types2 (atc-gen-fn-returns-value-thm-aux1 xforming scope))
@@ -3250,6 +3427,7 @@
                                 (prog-const symbolp)
                                 (fn-thms symbol-symbol-alistp)
                                 (limit pseudo-termp)
+                                (experimental acl2::keyword-listp)
                                 (wrld plist-worldp))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                (exported-events "A @(tsee pseudo-event-form-listp).")
@@ -3354,7 +3532,8 @@
    (xdoc::p
     "This theorem is not generated if @(':proofs') is @('nil')."))
   (b* (((when (or (not proofs)
-                  recursionp))
+                  recursionp
+                  (member-eq :array-writes experimental)))
         (mv nil nil nil))
        (name (cdr (assoc-eq fn fn-thms)))
        (formals (acl2::formals+ fn wrld))
@@ -3424,6 +3603,7 @@
                          (fn-thms symbol-symbol-alistp)
                          (print evmac-input-print-p)
                          (limit pseudo-termp)
+                         (experimental acl2::keyword-listp)
                          (names-to-avoid symbol-listp)
                          (ctx ctxp)
                          state)
@@ -3444,13 +3624,14 @@
                   names-to-avoid)
             state)
         (atc-gen-fn-returns-value-thm fn type? xforming scope prec-fns
-                                      proofs names-to-avoid ctx state))
+                                      proofs experimental
+                                      names-to-avoid ctx state))
        ((when erp) (mv erp (list nil nil nil nil nil) state))
        ((mv fn-correct-local-events
             fn-correct-exported-events
             fn-correct-thm)
         (atc-gen-fn-correct-thm fn pointers prec-fns proofs recursionp
-                                prog-const fn-thms limit wrld))
+                                prog-const fn-thms limit experimental wrld))
        (progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the theorem ~x0..."
@@ -3515,6 +3696,7 @@
                             (prog-const symbolp)
                             (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
+                            (experimental acl2::keyword-listp)
                             (names-to-avoid symbol-listp)
                             (ctx ctxp)
                             state)
@@ -3570,6 +3752,7 @@
                                                    nil
                                                    fn
                                                    prec-fns
+                                                   experimental
                                                    ctx
                                                    state))
        ((unless (typep type))
@@ -3595,7 +3778,7 @@
             state)
         (atc-gen-fn-thms fn pointers type nil scope prec-fns
                          proofs recursionp prog-const fn-thms print
-                         limit names-to-avoid ctx state))
+                         limit experimental names-to-avoid ctx state))
        ((when erp) (mv erp (list (irr-ext-declon) nil nil nil nil) state))
        (info (make-atc-fn-info
               :type? type
@@ -3748,7 +3931,7 @@
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-returns-value-thm symbolp)
                                   (limit pseudo-termp)
-                                  (developer booleanp)
+                                  (experimental acl2::keyword-listp)
                                   (names-to-avoid symbol-listp)
                                   state)
   :guard (acl2::irecursivep+ fn (w state))
@@ -4034,10 +4217,10 @@
                             exec-stmt-while-for-fn-thm-event
                             natp-of-measure-of-fn-thm-event
                             termination-of-fn-thm-event
-                            (and developer
+                            (and (member-eq :loop-proofs experimental)
                                  (list correct-lemma-event
                                        correct-thm-local-event))))
-       (exported-events (and developer
+       (exported-events (and (member-eq :loop-proofs experimental)
                              (list correct-thm-exported-event))))
     (acl2::value (list local-events
                        exported-events
@@ -4056,7 +4239,7 @@
                       (fn-appconds symbol-symbol-alistp)
                       (appcond-thms acl2::keyword-symbol-alistp)
                       (print evmac-input-print-p)
-                      (developer booleanp)
+                      (experimental acl2::keyword-listp)
                       (names-to-avoid symbol-listp)
                       (ctx ctxp)
                       state)
@@ -4090,7 +4273,8 @@
        ((when erp) (mv erp (list nil nil nil nil) state))
        (body (acl2::ubody+ fn wrld))
        ((mv erp (list loop-stmt loop-xforming loop-limit) state)
-        (atc-gen-loop-stmt body (list scope) fn prec-fns ctx state))
+        (atc-gen-loop-stmt body (list scope) fn prec-fns
+                           experimental ctx state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        (type? nil)
        ((mv erp
@@ -4102,7 +4286,8 @@
             state)
         (atc-gen-fn-thms fn pointers type? loop-xforming scope prec-fns
                          proofs recursionp prog-const fn-thms
-                         print loop-limit names-to-avoid ctx state))
+                         print loop-limit experimental
+                         names-to-avoid ctx state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        ((mv erp
             (list more-local-events
@@ -4114,7 +4299,7 @@
         (atc-gen-loop-correct-thm fn pointers loop-xforming loop-stmt prec-fns
                                   prog-const fn-appconds appcond-thms fn-thms
                                   fn-returns-value-thm loop-limit
-                                  developer
+                                  experimental
                                   names-to-avoid state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        (local-events (append local-events more-local-events))
@@ -4142,7 +4327,7 @@
                                  (fn-appconds symbol-symbol-alistp)
                                  (appcond-thms acl2::keyword-symbol-alistp)
                                  (print evmac-input-print-p)
-                                 (developer booleanp)
+                                 (experimental acl2::keyword-listp)
                                  (names-to-avoid symbol-listp)
                                  (ctx ctxp)
                                  state)
@@ -4174,7 +4359,7 @@
                       state)
                   (atc-gen-loop fn prec-fns proofs recursionp prog-const
                                 fn-thms fn-appconds appcond-thms
-                                print developer names-to-avoid ctx state))
+                                print experimental names-to-avoid ctx state))
                  ((when erp) (mv erp (list nil nil nil nil) state)))
               (acl2::value (list nil
                                  local-events
@@ -4187,7 +4372,8 @@
                     state)
                 (atc-gen-ext-declon fn prec-fns proofs recursionp
                                     prog-const fn-thms
-                                    print names-to-avoid ctx state))
+                                    print experimental
+                                    names-to-avoid ctx state))
                ((when erp) (mv erp (list nil nil nil nil) state)))
             (acl2::value (list (list ext)
                                local-events
@@ -4198,7 +4384,7 @@
          (list more-exts more-local-events more-exported-events names-to-avoid))
         (atc-gen-ext-declon-list rest-fns prec-fns proofs recursionp
                                  prog-const fn-thms fn-appconds appcond-thms
-                                 print developer names-to-avoid ctx state)))
+                                 print experimental names-to-avoid ctx state)))
     (acl2::value (list (append exts more-exts)
                        (append local-events more-local-events)
                        (append exported-events more-exported-events)
@@ -4277,7 +4463,7 @@
                            (wf-thm symbolp)
                            (fn-thms symbol-symbol-alistp)
                            (print evmac-input-print-p)
-                           (developer booleanp)
+                           (experimental acl2::keyword-listp)
                            (names-to-avoid symbol-listp)
                            (ctx ctxp)
                            state)
@@ -4306,7 +4492,7 @@
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
         (atc-gen-ext-declon-list fn1...fnp nil proofs recursionp
                                  prog-const fn-thms fn-appconds appcond-thms
-                                 print developer names-to-avoid ctx state))
+                                 print experimental names-to-avoid ctx state))
        (tunit (make-transunit :declons exts))
        ((mv local-const-event exported-const-event)
         (if proofs
@@ -4418,7 +4604,7 @@
                             (wf-thm symbolp)
                             (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
-                            (developer booleanp)
+                            (experimental acl2::keyword-listp)
                             (call pseudo-event-formp)
                             (ctx ctxp)
                             state)
@@ -4438,7 +4624,7 @@
   (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
        ((er (list tunit local-events exported-events &))
         (atc-gen-transunit fn1...fnp proofs recursionp prog-const wf-thm fn-thms
-                           print developer names-to-avoid ctx state))
+                           print experimental names-to-avoid ctx state))
        ((er file-gen-event) (atc-gen-file-event tunit output-file print state))
        (print-events (and (evmac-input-print->= print :result)
                           (atc-gen-print-result exported-events output-file)))
@@ -4477,7 +4663,7 @@
                   wf-thm
                   fn-thms
                   print
-                  developer))
+                  experimental))
         (atc-process-inputs args ctx state)))
     (atc-gen-everything fn1...fnp
                         output-file
@@ -4487,7 +4673,7 @@
                         wf-thm
                         fn-thms
                         print
-                        developer
+                        experimental
                         call
                         ctx
                         state)))
