@@ -212,9 +212,14 @@
      [C] allows any integer type for array indices.
      As in @(tsee uchar-array-index-okp), the index is a mathematical integer;
      see the explanation there."))
-  (make-uchar-array :elements (update-nth index
-                                          (uchar-fix element)
-                                          (uchar-array->elements array)))
+  (b* ((array (uchar-array-fix array))
+       (index (ifix index))
+       (element (uchar-fix element)))
+    (if (mbt (uchar-array-index-okp array index))
+        (make-uchar-array :elements (update-nth index
+                                                element
+                                                (uchar-array->elements array)))
+      array))
   :guard-hints (("Goal" :in-theory (enable uchar-array-index-okp)))
   :hooks (:fix)
 
