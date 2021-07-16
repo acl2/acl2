@@ -240,6 +240,23 @@
            (natp (dag-size dag)))
   :hints (("Goal" :in-theory (enable dag-size
                                      car-of-car-when-pseudo-dagp-cheap))))
+;;;
+;;; dag-size-unguarded
+;;;
+
+;; This version avoids imposing invariant-risk on callers, because it has a guard of t.
+(defund dag-size-unguarded (dag)
+  (declare (xargs :guard t))
+  (if (and (pseudo-dagp dag)
+           (< (len dag) 2147483647) ;weaken?
+           )
+      (dag-size dag)
+    (prog2$ (er hard? 'dag-size-unguarded "Bad DAG: ~x0." dag)
+            0)))
+
+(defthm natp-of-dag-size-unguarded
+  (natp (dag-size-unguarded dag))
+  :hints (("Goal" :in-theory (enable dag-size-unguarded))))
 
 ;;;
 ;;; dag-or-quotep-size
