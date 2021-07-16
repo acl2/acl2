@@ -1341,9 +1341,9 @@ certification using @('make')."
  available</li>
 
  <li>@('uses-stp'): only certify when STP (an SMT solver available <a href=
- 'https://github.com/stp/stp'>here</a>) is available</li> (to suppress the use
+ 'https://github.com/stp/stp'>here</a>) is available (to suppress the use
  of STP, even when an executable for it seems to be available, set environment
- variable ACL2_DONT_USE_STP to any non-empty value)
+ variable ACL2_DONT_USE_STP to any non-empty value)</li>
 
  <li>@('uses-quicklisp'): only certify when quicklisp is available</li>
 
