@@ -21,33 +21,13 @@
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "std/io/read-file-bytes" :dir :system)
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
+(include-book "kestrel/bv/getbit-def" :dir :system)
+(include-book "kestrel/typed-lists-light/bytes-to-printable-string" :dir :system)
+(include-book "kestrel/typed-lists-light/map-code-char" :dir :system)
 (local (include-book "std/typed-lists/integer-listp" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
-(include-book "kestrel/bv/getbit-def" :dir :system)
-
-(defun print-able-char-code-p (code)
-  (declare (xargs :guard (unsigned-byte-p 8 code)))
-  (and (<= 32 code)
-       (<= code 126)))
-
-;; Turn a code into a char, but turn unprintable things into dots.
-(defun code-char-printable (code)
-  (declare (xargs :guard (unsigned-byte-p 8 code)))
-  (if (print-able-char-code-p code)
-      (code-char code)
-    #\.))
-
-(defun map-code-char-printable (codes)
-  (declare (xargs :guard (acl2::all-unsigned-byte-p 8 codes)))
-  (if (atom codes)
-      nil
-    (cons (code-char-printable (first codes))
-          (map-code-char-printable (rest codes)))))
-
-(defun bytes-to-printable-string (bytes)
-  (acl2::coerce (map-code-char-printable bytes) 'string))
 
 ;todo: use len-at-least
 (defun at-least-n-bytes-left (n bytes)
@@ -342,12 +322,6 @@
     (if (eql 0 (first bytes))
         nil
       (cons (first bytes) (keep-bytes-until-0 (rest bytes))))))
-
-(defun map-code-char (codes)
-  (if (endp codes)
-      nil
-    (cons (code-char (first codes))
-          (map-code-char (rest codes)))))
 
 ;; the string will be null-terminated if shorter than name-bytes, and we drop the null
 (defun name-to-string (name-bytes)
