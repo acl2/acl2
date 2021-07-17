@@ -4381,9 +4381,9 @@
 (defun possibly-clean-up-dirty-lambda-objects-lst (terms wrld lamp)
 
 ; We copy each term in terms and clean up every dirty well-formed quoted lambda
-; objects we find.  This funtion checks (not (global-val 'boot-strap-flg wrld))
-; once for every element of terms.  This is less efficient than checking it
-; once and then running the may-contain-dirty-lambda-objectsp check on each
+; objects we find.  This function checks (not (global-val 'boot-strap-flg
+; wrld)) once for every element of terms.  This is less efficient than checking
+; it once and then running the may-contain-dirty-lambda-objectsp check on each
 ; term, but that would require having a lot of nearly duplicate code.
 
   (cond
