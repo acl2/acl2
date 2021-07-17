@@ -1581,7 +1581,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-function-environment-rules
-  :short "Rules related to C funtion environments."
+  :short "Rules related to C function environments."
   :long
   (xdoc::topstring
    (xdoc::p

@@ -4565,7 +4565,7 @@
      the inputs @(tsee pkg-witness) and @(tsee pkg-imports),
      even when these functions do not appear in the call graph.
      Thus, eliminate them from the result
-     if they are not among the funtions to translate."))
+     if they are not among the functions to translate."))
   (b* ((inv-call-graph (depgraph::invert call-graph))
        (callers (depgraph::transdeps (list 'pkg-witness 'pkg-imports)
                                      inv-call-graph))
