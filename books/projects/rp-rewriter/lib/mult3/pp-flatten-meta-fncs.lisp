@@ -62,13 +62,18 @@
   (if (atom lst)
       (mv 0 0)
     (b* (((mv rest rest-size) (and-list-hash-aux (cdr lst)))
-         (cur (car lst))
-         (cur (case-match cur
-                (('bit-of & ('quote x))
-                 (+ 5 (ifix x)))
-                (& 0))))
-      (mv (logapp rest-size rest cur)
-          (+ 14 rest-size)))))
+         (cur (ex-from-rp (car lst))))
+      (case-match cur
+        (('bit-of & ('quote x))
+         (mv (logapp rest-size rest (+ 5 (ifix x)))
+             (+ 14 rest-size)))
+        (('s ('quote x) & &)
+         (mv (+ rest (ifix x))
+             (+ 14 rest-size)))
+        (('c ('quote x) & & &)
+         (mv (+ rest (ifix x))
+             (+ 14 rest-size)))
+        (& (mv rest rest-size))))))
 
       ;; (if (equal rest 0)
       ;;     cur
@@ -265,10 +270,7 @@
                (equal term ''1)
                (equal term ''0))
            t)
-          (t (and (has-bitp-rp orig)
-                  (not (include-fnc term 's-c-res))
-                  (not (include-fnc term 'c))
-                  (not (include-fnc term 's)))))))
+          (t (and (has-bitp-rp orig))))))
 
       ;; (('binary-and x y)
       ;;  (and (pp-term-p x)

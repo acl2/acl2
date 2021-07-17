@@ -4739,3 +4739,50 @@
            :in-theory (e/d (4vec-?*
                             sv::3vec-?*)
                            ()))))
+
+
+(def-rp-rule 4vec-sign-ext-to-4vec-concat
+  (implies (and (integerp x)
+                (posp size))
+           (equal (sv::4vec-sign-ext size x)
+                  (logapp (1- size) x (- (4vec-part-select (1- size) 1
+                                                      x)))))
+  :hints (("Goal"
+           :in-theory (e/d (sv::4vec-sign-ext
+                            acl2::LOGEXT
+                            4VEC-RSH
+                            4VEC-CONCAT
+                            SV::4VEC->LOWER
+                            4VEC-SHIFT-CORE 
+                            4VEC-PART-SELECT)
+                           ()))))
+
+
+(def-rp-rule integerp-of-4VEC-bit?
+     (implies (and (integerp test)
+                   (integerp then)
+                   (integerp else))
+              (integerp (SV::4VEC-bit? test then else)))
+     :hints (("Goal"
+              :in-theory (e/d (SV::4VEC-SIGN-EXT
+                               SV::4vec->upper
+                               sv::4vec->lower
+                               SV::4VEC-bit?
+                               SV::3VEC-BIT?
+                               )
+                              ()))))
+
+(def-rp-rule integerp-of-4VEC-?*
+     (implies (and (integerp test)
+                   (integerp then)
+                   (integerp else))
+              (integerp (SV::4VEC-?* test then else)))
+     :hints (("Goal"
+              :in-theory (e/d (SV::4VEC-SIGN-EXT
+                               SV::4vec->upper
+                               sv::4vec->lower
+                               4VEC-?*
+                               sv::3vec-?*
+                               4VEC-FIX
+                               )
+                              ()))))
