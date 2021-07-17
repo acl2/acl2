@@ -162,12 +162,12 @@ all:
 	@if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
 	then \
 		echo "[Makefile-generic]: Preparing to make 'all'" ;\
+		echo '[Makefile-generic]: Using ACL2=$(ACL2)' ;\
 		if [ "$$ACL2_PCERT" != "" ] ;\
 		then \
 			echo "[Makefile-generic]: NOTE: Using provisional certification." ;\
 		fi \
 	fi
-	@echo 'Using ACL2=$(ACL2)'
 	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) \
 	  $(BOOKS_CERT) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
 
