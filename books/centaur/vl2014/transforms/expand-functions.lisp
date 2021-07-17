@@ -249,7 +249,7 @@ approach.</p>")
 ;;   :parents (vl-depsort-functions)
 ;;   :short "Build a dependency graph for function definitions."
 ;;   ((x vl-fundecllist-p))
-;;   :returns (alist "Alist associating funtion names (strings) to the the lists
+;;   :returns (alist "Alist associating function names (strings) to the the lists
 ;;                    of all functions that are called in their bodies (string
 ;;                    lists, perhaps with duplicates).  Suitable for sorting with
 ;;                    @(see depgraph::toposort)."
@@ -756,7 +756,7 @@ concerned.  But, I think it's nice to at least explicitly check for the
         (mv nil
             (fatal :type :vl-bad-function-stmt
                    :msg "In ~a0, the assignment to ~a1 is not permitted; we ~
-                         only allow assignments to the funtion's variables ~
+                         only allow assignments to the function's variables ~
                          and its name."
                    :args (list function x1.lvalue))
             written-vars read-vars read-inputs))
@@ -2475,4 +2475,3 @@ consider memoizing @(see vl-fnname->template).</p>"
        (res (change-vl-design x :mods (vl-modulelist-expand-functions x.mods ss))))
     (vl-scopestacks-free)
     res))
-
