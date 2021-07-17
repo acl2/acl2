@@ -422,6 +422,10 @@
   ///
   (add-rp-rule bitp-of-bit-of))
 
+
+(define medw-compress (term)
+  term)
+
 (rp::def-rw-opener-error
  s-spec-opener-error
  (rp::s-spec x))
@@ -1053,6 +1057,7 @@
     (def-formula-checks
       mult-formula-checks
       (binary-append
+       medw-compress
        --
        sum-list
        binary-and

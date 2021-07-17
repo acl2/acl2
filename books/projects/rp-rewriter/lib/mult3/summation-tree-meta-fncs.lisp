@@ -127,11 +127,11 @@
          (('and-list ('quote hash) &)
           (ifix hash))
          (('-- ('and-list ('quote hash) &))
-          (ifix hash))
+          (- (ifix hash)))
          (''1
           1)
          (''-1
-          1)
+          -1)
          (& 0))))
 
   (defwarrant pp-instance-hash$inline)
@@ -3320,6 +3320,8 @@
                                      quarternaryp)))
     res))
 
+(verify-guards cons-count)
+
 (define s-c-spec-meta ((term rp-termp))
   :returns (mv (res rp-termp
                     :hyp (rp-termp term))
@@ -3351,6 +3353,7 @@
                 (c-res (if bitp ''0
                          (c-spec-meta-aux s pp-lst c-lst
                                           to-be-coughed-c-lst quarternaryp)))
+                ;;(- (if (< (cons-count s-res) 40) (cw "s-res is ~p0 and c-res is  ~p1 and input ~p2 ~%~%~%" s-res c-res term) nil))
                 (res `(cons ,s-res (cons ,c-res 'nil))))
              res))
           (('c-s-spec sum)

@@ -157,8 +157,13 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                                   (cons #\0 pp-lst)
                                   (cons #\0 c-lst)))
                 (list `(c '(0 . 0) ,(create-list-instance s-lst)
-                    ,(create-list-instance pp-lst)
-                    ,(create-list-instance c-lst))))))
+                          ,(create-list-instance pp-lst)
+                          ,(create-list-instance c-lst)))))
+       #|((when (and (consp res-c-lst)
+                   (equal (cadr (car res-c-lst))
+                          ''(21028607959612274058 . 21028607959612274058))))
+        nil)||#
+       )
     res-c-lst))
 
 (define medw-compress-c-arg-lst-aux-aux ((c rp-termp)
@@ -179,7 +184,7 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
          (compress (and (rp-equal-cnt c c2 1)
                         (if sign-matters
                             (not (equal c-is-signed c2-is-signed))
-                          
+
                           t)))
          ((when compress)
           (if c2-is-signed
@@ -278,9 +283,6 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                  (if compressed
                      (mv (cons (car c-lst) rest) t)
                    (mv c-lst nil))))))))
-
-
-
 
 
 (progn
@@ -454,14 +456,18 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                 t))
            (& (mv nil nil nil nil))))
         ((unless valid)
-         (mv nil nil))
+         (mv (list c) nil))
         ((mv c-arg-lst compressed1)
          (medw-compress-c-arg-lst c-arg-lst t (expt 2 30)))
-        ((mv pp-arg-lst c-arg-lst compressed2)
-         (medw-compress-pp-arg-lst pp-arg-lst c-arg-lst t))
-        ((mv c-arg-lst compressed3)
+        ((mv c-arg-lst compressed2)
          (medw-compress-c-lst c-arg-lst (1- limit)))
-        (compressed (or compressed1 compressed2 compressed3)))
+        ((mv pp-arg-lst c-arg-lst compressed3)
+         (medw-compress-pp-arg-lst pp-arg-lst c-arg-lst t))
+        ((mv c-arg-lst compressed4)
+         (if compressed3
+             (medw-compress-c-lst c-arg-lst (1- limit))
+           (mv c-arg-lst nil)))
+        (compressed (or compressed1 compressed2 compressed3 compressed4)))
      (if compressed
          (b* ((c-lst1 (create-c-instance-medwc-filtered
                        s-arg-lst pp-arg-lst c-arg-lst)))
@@ -492,20 +498,19 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
 
    (b* (((when (zp limit)) (mv c-lst nil))
         ((when (atom c-lst)) (mv c-lst nil))
-        ((mv res-c compressed1)
+        ((mv res-c-lst1 compressed1)
          (medw-compress-c (car c-lst) (1- limit)))
-        ((mv res-c-lst compressed2)
+        ((mv res-c-lst2 compressed2)
          (medw-compress-c-lst (cdr c-lst) (1- limit))))
-     (if (or compressed1 compressed2)
-         (mv (s-sum-merge-aux res-c res-c-lst) t)
-       (mv c-lst nil))))
+     (cond ((and compressed1 compressed2)
+            (mv (s-sum-merge-aux res-c-lst1 res-c-lst2) t))
+           (compressed1
+            (mv (s-sum-merge-aux res-c-lst1 (cdr c-lst)) t))
+           (compressed2
+            (mv (s-sum-merge-aux (list (car c-lst)) res-c-lst2) t))
+           (t  (mv c-lst nil)))))
  ///
  (verify-guards medw-compress-c-lst))
-
-
-
-
-
 
 
 
@@ -584,9 +589,9 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
  ///
  (verify-guards medw-compress-c-lst))||#
 
-
 (define medw-compress-s ((s rp-termp))
-  :returns (res-term rp-termp :hyp (rp-termp s))
+  :returns (mv (res-term rp-termp :hyp (rp-termp s))
+               (dont-rw))
   (b* ((s-orig s)
        (s (ex-from-rp s))
        ((mv pp-lst c-lst valid)
@@ -597,14 +602,32 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                t))
           (& (mv nil nil nil))))
        ((unless valid)
-        s-orig)
+        (mv s-orig nil))
        ((mv c-lst &)
         (medw-compress-c-arg-lst c-lst nil (expt 2 30)))
        ((mv pp-lst c-lst &)
         (medw-compress-pp-arg-lst pp-lst c-lst nil))
        ((mv c-lst &)
-        (medw-compress-c-lst c-lst (expt 2 30)))
-       ((mv s-res-lst pp-res-lst c-res-lst)
+        (medw-compress-c-lst c-lst (expt 2 30))))
+    (mv (s-spec-meta-aux ''nil pp-lst c-lst)
+        t)))
+
+       #|((mv s-res-lst pp-res-lst c-res-lst)
         (create-s-instance (create-list-instance pp-lst)
-                           (create-list-instance c-lst))))
-    (create-s-c-res-instance s-res-lst pp-res-lst c-res-lst t)))
+                           (create-list-instance c-lst)))||#
+    #|(mv `(s-spec (cons
+                  ,(create-s-c-res-instance s-res-lst pp-res-lst c-res-lst t)
+                  'nil))
+        `(nil (nil t t)))||#
+
+(define medw-compress-meta ((term rp-termp))
+  :returns (mv (res rp-termp :hyp (rp-termp term))
+               (dont-rw))
+  (case-match term
+    (('medw-compress term)
+     (b* ((term2 (ex-from-rp term)))
+       (case-match term2
+         (('s & & &)
+          (medw-compress-s term2))
+         (& (mv term nil)))))
+    (& (mv term nil))))

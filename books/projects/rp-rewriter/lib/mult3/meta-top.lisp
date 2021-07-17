@@ -38,14 +38,19 @@
 
 (include-book "fnc-defs")
 
-(include-book "summation-tree-meta-fncs")
+(include-book "medw-compress")
 
-(local
- (include-book "summation-tree-meta-fncs-correct")) 
+(include-book "summation-tree-meta-fncs")
 
 (include-book "equal-meta")
 
 (include-book "adder-rules-meta")
+
+(local
+ (include-book "summation-tree-meta-fncs-correct"))
+
+(local
+ (include-book "medw-compress-correct"))
 
 ;;(include-book "verify-guards")
 
@@ -215,6 +220,13 @@
 (rp::add-meta-rule
  :meta-fnc s-c-spec-meta
  :trig-fnc c-s-spec
+ :valid-syntaxp t
+ :formula-checks mult-formula-checks
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc medw-compress-meta
+ :trig-fnc medw-compress
  :valid-syntaxp t
  :formula-checks mult-formula-checks
  :returns (mv term dont-rw))

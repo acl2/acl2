@@ -236,11 +236,6 @@
 
 
 
-
-
-
-
-
 (defret medw-compress-c-arg-lst-aux-aux-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -397,8 +392,8 @@
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (booleanp sign-matters)
-                compressed
-                (valid-sc-subterms c-lst a))
+
+                (force (valid-sc-subterms c-lst a)))
            (and (implies sign-matters
                          (equal (sum-list-eval res-c-lst a)
                                 (sum-list-eval c-lst a)))
@@ -499,58 +494,16 @@
                             RP-EVLT-OF-EX-FROM-RP)
                            ))))
 
+
+
+
+
 (local
  (encapsulate
    nil
 
    (local
     (use-arith-5 t))
-
-   (skip-proofs
-    (defthm m2-of-f2-of-the-same
-     (implies (equal (m2 c) (m2 d))
-              (equal (equal (m2 (sum a (f2 (sum c x))))
-                            (m2 (sum b (f2 (sum d x)))))
-                     (equal (m2 (sum a (f2 c)))
-                            (m2 (sum b (f2 d))))))
-     ;;:otf-flg t
-     :hints (("Goal"
-              :in-theory (e/d (m2 f2 sum
-                                  floor mod
-                                  rw-dir2)
-                              (+-IS-SUM
-                               rw-dir1
-                               ;;(:REWRITE ACL2::|(mod x 2)| . 1)
-                               floor2-if-f2
-                               mod2-is-m2))))))
-
-   (defthm m2-of-f2-of-the-same-2
-     (implies (equal (m2 c) (m2 d))
-              (equal (equal (m2 (sum a (f2 (sum c x))))
-                            (m2 (sum b b1 (f2 (sum d x)))))
-                     (equal (m2 (sum a (f2 c)))
-                            (m2 (sum b b1 (f2 d))))))
-     :otf-flg t
-     :hints (("Goal"
-              :use ((:instance m2-of-f2-of-the-same
-                               (b (sum b b1))))
-              :in-theory (e/d ()
-                              (m2-of-f2-of-the-same)))))
-
-   (defthm m2-of-f2-of-the-same-3
-     (implies (equal (m2 c) (m2 d))
-              (equal (equal (m2 (sum a a1 (f2 (sum c x1 x2))))
-                            (m2 (sum b b1 (f2 (sum x1 d x2)))))
-                     (equal (m2 (sum a a1 (f2 c)))
-                            (m2 (sum b b1 (f2 d))))))
-     :otf-flg t
-     :hints (("Goal"
-              :use ((:instance m2-of-f2-of-the-same
-                               (b (sum b b1))
-                               (x (sum x1 x2))
-                               (a (sum a a1))))
-              :in-theory (e/d ()
-                              (m2-of-f2-of-the-same)))))
 
    
 
@@ -631,7 +584,7 @@
    (defthm d2-of-repeated-2
      (and (equal (d2 (sum x y a a b))
                  (sum a (d2 (sum x y b)))
-          ))
+                 ))
      :hints (("Goal"
               :in-theory (e/d (d2 f2 sum m2)
                               (floor2-if-f2
@@ -664,6 +617,68 @@
             (m2 (sum x y))))
 
    ))
+
+
+(local
+ (encapsulate
+   nil
+
+
+   (local
+    (defthm dummy-d-2-of-repeated-2
+      (and (equal (d2 (sum x y a a))
+                  (sum a (d2 (sum x y)))))))
+
+   (local
+    (defthm dummy-m2-of-repeated-3
+      (and (equal (m2 (sum x y z a a k))
+                  (m2 (sum x y z k))))))
+   
+    (defthm m2-of-f2-of-the-same
+      (implies (equal (m2 c) (m2 d))
+               (equal (equal (m2 (sum a (f2 (sum c x))))
+                             (m2 (sum b (f2 (sum d x)))))
+                      (equal (m2 (sum a (f2 c)))
+                             (m2 (sum b (f2 d))))))
+      ;;:otf-flg t
+      :hints (("Goal"
+               :in-theory (e/d (
+                                   equal-of-m2-to-the-same-side
+                                   floor mod
+                                   rw-dir2)
+                               (+-IS-SUM
+                                rw-dir1
+                                ;;(:REWRITE ACL2::|(mod x 2)| . 1)
+                                floor2-if-f2
+                                mod2-is-m2)))))
+
+    (defthm m2-of-f2-of-the-same-2
+      (implies (equal (m2 c) (m2 d))
+               (equal (equal (m2 (sum a (f2 (sum c x))))
+                             (m2 (sum b b1 (f2 (sum d x)))))
+                      (equal (m2 (sum a (f2 c)))
+                             (m2 (sum b b1 (f2 d))))))
+      :otf-flg t
+      :hints (("Goal"
+               :use ((:instance m2-of-f2-of-the-same
+                                (b (sum b b1))))
+               :in-theory (e/d ()
+                               (m2-of-f2-of-the-same)))))
+
+   (defthm m2-of-f2-of-the-same-3
+     (implies (equal (m2 c) (m2 d))
+              (equal (equal (m2 (sum a a1 (f2 (sum c x1 x2))))
+                            (m2 (sum b b1 (f2 (sum x1 d x2)))))
+                     (equal (m2 (sum a a1 (f2 c)))
+                            (m2 (sum b b1 (f2 d))))))
+     :otf-flg t
+     :hints (("Goal"
+              :use ((:instance m2-of-f2-of-the-same
+                               (b (sum b b1))
+                               (x (sum x1 x2))
+                               (a (sum a a1))))
+              :in-theory (e/d ()
+                              (m2-of-f2-of-the-same)))))))
 
 ;;:i-am-here
 
@@ -775,7 +790,7 @@
                     (and (equal (m2 (f2 (sum (sum-list-eval res-c-pp-arg-lst a)
                                              other)))
                                 (m2 (sum (sum-list-eval pp-lst a)
-                                         (sum-list-eval res-pp-lst a)     
+                                         (sum-list-eval res-pp-lst a)
                                          (f2 (sum (sum-list-eval c-pp-arg-lst a) other)))))
                          (equal (m2 (sum b c (f2 (sum (sum-list-eval
                                                        res-c-pp-arg-lst a)
@@ -800,7 +815,6 @@
    (implies (equal (m2 (sum k l m n)) 0)
             (equal (m2 (sum k l m n a )) (m2 a)))))
 
-
 ;; (local
 ;;  (defthmd medw-compress-pp-arg-lst-correct-dummy-lemma0
 ;;    (equal (equal (m2 (sum (f2 (sum a y))
@@ -824,21 +838,20 @@
 ;;             :cases ((evenp (sum a b)))
 ;;             :in-theory (e/d (equal-of-m2-to-the-same-side)
 ;;                             (evenp))))))
-                     
-
 
 (defret medw-compress-pp-arg-lst-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (booleanp sign-matters)
-                (valid-sc-subterms pp-lst a)
-                (valid-sc-subterms c-lst a))
+                )
            (and
             (implies (not compressed)
                      (and (equal res-pp-lst pp-lst)
                           (equal res-c-lst c-lst)))
             (implies (and sign-matters
-                          compressed)
+                          (force (valid-sc-subterms pp-lst a))
+                          (force (valid-sc-subterms c-lst a))
+                          (case-split compressed))
                      (equal (sum-list-eval res-c-lst a)
                             (sum (-- (sum-list-eval res-pp-lst a))
                                  (sum-list-eval pp-lst a)
@@ -846,23 +859,27 @@
                      )
 
             (implies (and (not sign-matters)
-                          compressed)
-                     (equal (m2 (sum (sum-list-eval res-c-lst a)
-                                     (sum-list-eval res-pp-lst a)))
-                            (m2 (sum 
-                                     (sum-list-eval pp-lst a)
-                                     (sum-list-eval c-lst a))))
+                          (force (valid-sc-subterms pp-lst a))
+                          (force (valid-sc-subterms c-lst a))
+                          (case-split compressed))
+                     (equal (m2 (sum (sum-list-eval res-pp-lst a)
+                                     (sum-list-eval res-c-lst  a)))
+                            (m2 (sum
+                                 (sum-list-eval pp-lst a)
+                                 (sum-list-eval c-lst a))))
                      )
-            (valid-sc-subterms res-pp-lst a)
-            (valid-sc-subterms res-c-lst a)
+            (implies (and (force (valid-sc-subterms pp-lst a))
+                          (force (valid-sc-subterms c-lst a)))
+                     (and (valid-sc-subterms res-pp-lst a)
+                          (valid-sc-subterms res-c-lst a))))
             #|(implies (and (not sign-matters)
-            compressed)
-            (equal (m2 (sum (sum-list-eval res-pp-lst a)
-            (f2 (sum-list-eval res-c-pp-arg-lst a))))
-            (m2 (sum (sum-list-eval pp-lst a)
+            compressed) ;
+            (equal (m2 (sum (sum-list-eval res-pp-lst a) ;
+            (f2 (sum-list-eval res-c-pp-arg-lst a)))) ;
+            (m2 (sum (sum-list-eval pp-lst a) ;
             (f2 (sum-list-eval c-pp-arg-lst a))))))||#
 
-            ))
+            )
   :fn  medw-compress-pp-arg-lst
   :hints (("Goal"
            :do-not-induct t
@@ -879,7 +896,7 @@
                              rp-evlt-of-ex-from-rp-reverse
                              pp-order-equals-implies)
                            (RP-EVL-OF-EX-FROM-RP
-                            
+
                             (:REWRITE RP-EVL-OF-VARIABLE)
                             (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                             (:REWRITE RP-EVL-OF-ZP-CALL)
@@ -928,6 +945,124 @@
 
                            ))))
 
-;;:i-am-here
 
 
+(defret-mutual
+  medw-compress-c-correct
+  (defret medw-compress-c-correct
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (valid-sc c a))
+             (and
+
+              (implies compressed
+                       (equal (sum-list-eval res-c-lst a)
+                              (ifix (rp-evlt c a))))
+              (valid-sc-subterms res-c-lst a)))
+    :fn medw-compress-c)
+  (defret medw-compress-c-lst-correct
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  )
+             (and (implies (not compressed)
+                           (equal res-c-lst
+                                  c-lst))
+                  (implies (and (case-split compressed)
+                                (valid-sc-subterms c-lst a))
+                           (equal (sum-list-eval res-c-lst a)
+                                  (sum-list-eval c-lst a)))
+                  (implies (valid-sc-subterms c-lst a)
+                           (valid-sc-subterms res-c-lst a))))
+    :fn medw-compress-c-lst)
+  :hints (("Goal"
+           :do-not-induct t
+           :expand ((MEDW-COMPRESS-C C LIMIT))
+           :in-theory (e/d* (medw-compress-c-lst
+                             medw-compress-c
+                             ;;regular-eval-lemmas-with-ex-from-rp
+                             ;;regular-eval-lemmas
+                             (:REWRITE REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS)
+                             (:REWRITE REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             rp-evlt-of-ex-from-rp-reverse
+                             pp-order-equals-implies)
+                            (RP-EVLT-OF-EX-FROM-RP
+                             EX-FROM-RP
+                             (:DEFINITION INCLUDE-FNC)
+                             valid-sc
+                             (:DEFINITION EVAL-AND-ALL)
+                             (:REWRITE NOT-INCLUDE-RP)
+                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
+                             (:REWRITE WHEN-EX-FROM-RP-IS-1)
+                             (:REWRITE DEFAULT-CAR)
+                             (:REWRITE VALID-SC-SUBTERMS-CONS)
+                             (:REWRITE --OF-SUM)
+                             (:REWRITE --OF---)
+                             (:DEFINITION RP-TRANS)
+
+                             ;;(:REWRITE VALID-SC-SUBTERMS-CDR)
+                             )))))
+
+
+(local
+ (defthmd rp-evlt-of-ex-from-rp-reverse-atom
+   (implies (syntaxp (atom term))
+            (equal (rp-evl (rp-trans term) a)
+                   (rp-evl (rp-trans (ex-from-rp term))
+                           a)))))
+
+(defret medw-compress-s-is-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc s a)
+                (rp-termp s))
+           (and (equal (rp-evlt res-term a)
+                       (rp-evlt s a))
+                (valid-sc res-term a)))
+  :fn medw-compress-s
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d* (medw-compress-s
+                             regular-eval-lemmas-with-ex-from-rp
+                             regular-eval-lemmas
+                            
+                             rp-evlt-of-ex-from-rp-reverse-atom
+                             pp-order-equals-implies)
+                            (RP-EVLT-OF-EX-FROM-RP
+                             EX-FROM-RP
+                             (:DEFINITION INCLUDE-FNC)
+                             valid-sc
+                             (:DEFINITION EVAL-AND-ALL)
+                             (:REWRITE NOT-INCLUDE-RP)
+                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
+                             (:REWRITE WHEN-EX-FROM-RP-IS-1)
+                             (:REWRITE DEFAULT-CAR)
+                             (:REWRITE VALID-SC-SUBTERMS-CONS)
+                             (:REWRITE --OF-SUM)
+                             (:REWRITE --OF---)
+                             (:DEFINITION RP-TRANS)
+
+                             ;;(:REWRITE VALID-SC-SUBTERMS-CDR)
+                             )))))
+
+(create-regular-eval-lemma medw-compress 1 MULT-FORMULA-CHECKS)
+
+(defret medw-compress-meta-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (rp-termp term)
+                (valid-sc term a))
+           (and (valid-sc res a)
+                (equal (rp-evlt res a)
+                       (rp-evlt term a))
+                (dont-rw-syntaxp dont-rw)))
+  :fn medw-compress-meta
+  :hints (("Goal"
+           :in-theory (e/d (medw-compress-meta
+                            MEDW-COMPRESS
+                            REGULAR-RP-EVL-OF_MEDW-COMPRESS_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP
+                            REGULAR-RP-EVL-OF_MEDW-COMPRESS_WHEN_MULT-FORMULA-CHECKS)
+                           (valid-sc
+                            rp-termp
+                            rp-trans)))))
