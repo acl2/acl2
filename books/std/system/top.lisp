@@ -13,6 +13,7 @@
 (include-book "system/top" :dir :system)
 
 (include-book "acceptable-rewrite-rule-p")
+(include-book "invariant-risk")
 (include-book "irrelevant-formals")
 (include-book "non-parallel-book")
 

@@ -13314,6 +13314,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (compress1 name l))
                      (t l)))))))
 
+(defun aset1-trusted (name l n val)
+
+; This is an untouchable version of aset1 that doesn't have invariant-risk (see
+; *boot-strap-invariant-risk-alist*).  It is untouchable for a good reason --
+; invariant risk may be missed for functions that call aset1-trusted.  See :DOC
+; aset1-trusted.
+
+  (declare (xargs :guard (and (array1p name l)
+                              (integerp n)
+                              (>= n 0)
+                              (< n (car (dimensions name l))))))
+  (aset1 name l n val))
+
 (defun aref2 (name l i j)
   #+acl2-loop-only
   (declare (xargs :guard (and (array2p name l)
@@ -21895,6 +21908,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; need to prevent that, not merely to make maybe-install-acl2-defaults-table
 ; untouchable!)
 
+    aset1-trusted ; version of aset1 without invariant-risk
     ))
 
 (defconst *initial-untouchable-vars*

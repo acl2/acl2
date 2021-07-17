@@ -1041,6 +1041,10 @@
      chk-irrelevant-formals-ok) have been added, to perform an @(see
      irrelevant-formals) check on a given definition or list of definitions.")
 
+   (xdoc::p
+    "New utilities have been added to find the sources of @(see invariant-risk)
+     for given functions.  See @('[books]/std/system/invariant-risk.lisp').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/testing" "Standard Testing Library"))

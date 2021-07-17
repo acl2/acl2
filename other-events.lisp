@@ -1422,19 +1422,6 @@
                                 (add-to-set-eq (caar wrld) ans)))
         (t (collect-world-globals (cdr wrld) ans))))
 
-(defconst *boot-strap-invariant-risk-symbols*
-
-; The following should contain all function symbols that might violate an ACL2
-; invariant.  See check-invariant-risk-state-p.
-
-; We don't include compress1 or compress2 because we believe they don't write
-; out of bounds.
-
-  '(aset1 ; could write past the end of the real array
-    aset2 ; could write past the end of the real array
-    extend-32-bit-integer-stack
-    aset-32-bit-integer-stack))
-
 (defun primordial-world-globals (operating-system)
 
 ; This function is the standard place to initialize a world global.
@@ -1563,7 +1550,6 @@
                          enter-boot-strap-mode exit-boot-strap-mode
                          lp acl2-defaults-table let let*
                          complex complex-rationalp
-                         ,@*boot-strap-invariant-risk-symbols*
 
 ; The following became necessary after Version_8.2, when we starting storing a
 ; new 'recognizer-alist property on symbols (in the primordial-world) in place
@@ -1622,60 +1608,6 @@
 
           ))
 
-(defun initialize-invariant-risk (wrld)
-
-; We put a non-nil 'invariant-risk property on every function that might
-; violate some ACL2 invariant, if called on arguments that fail to satisfy that
-; function's guard.  Also see put-invariant-risk.
-
-; At one point we thought we should do this for all functions that have raw
-; code and have state as a formal:
-
-;;; (initialize-invariant-risk-1
-;;;  *initial-program-fns-with-raw-code*
-;;;  (initialize-invariant-risk-1
-;;;   *initial-logic-fns-with-raw-code*
-;;;   wrld
-;;;   wrld)
-;;;  wrld)
-
-; where:
-
-;;; (defun initialize-invariant-risk-1 (fns wrld wrld0)
-;;;
-;;; ; We could eliminate wrld0 and do our lookups in wrld, but the extra
-;;; ; properties in wrld not in wrld0 are all 'invariant-risk, so looking up
-;;; ; 'formals properties in wrld0 may be more efficient.
-;;;
-;;;   (cond ((endp fns) wrld)
-;;;         (t (initialize-invariant-risk-1
-;;;             (cdr fns)
-;;;             (if (member-eq 'state
-;;;
-;;; ; For robustness we do not call formals here, because it causes an error in
-;;; ; the case that it is not given a known function symbol, as can happen (for
-;;; ; example) with a member of the list *initial-program-fns-with-raw-code*.
-;;; ; In that case, the following getprop will return nil, in which case the
-;;; ; above member-eq test is false, which works out as expected.
-;;;
-;;;                            (getprop (car fns) 'formals nil wrld0))
-;;;                 (putprop (car fns) 'invariant-risk (car fns) wrld)
-;;;               wrld)
-;;;             wrld0))))
-
-; But we see almost no way to violate an invariant by misguided updates of the
-; (fictional) live state.  For example, state-p1 specifies that the
-; global-table is an ordered-symbol-alistp, but there is no way to get one's
-; hands directly on the global-table; and state-p1 also specifies that
-; plist-worldp holds of the logical world, and we ensure that by making set-w
-; and related functions untouchable.  The only exceptions are those in
-; *boot-strap-invariant-risk-symbols*, as is checked by the function
-; check-invariant-risk-state-p.  If new exceptions arise, then we should add
-; them to the value of *boot-strap-invariant-risk-symbols*.
-
-  (putprop-x-lst2 *boot-strap-invariant-risk-symbols* 'invariant-risk
-                  *boot-strap-invariant-risk-symbols* wrld))
-
 ;; Historical Comment from Ruben Gamboa:
 ;; I added the treatment of *non-standard-primitives*
 
@@ -1693,10 +1625,14 @@
 (defun primordial-world (operating-system)
 
 ; Warning: Names converted during the boot-strap from :program mode to :logic
-; mode will, we believe, have many properties erased by renew-name.  That is
-; why, for example, we call initialize-invariant-risk at the end of the
-; boot-strap, in end-prehistoric-world.  Consider whether a property should be
-; set there rather than here.
+; mode will, we believe, have many properties erased by renew-name.  Consider
+; whether a property should be set in end-prehistoric-world rather than here.
+; But be careful; through Version_8.3 we had that issue in mind when we called
+; a function to initialize invariant-risk for certain function symbols (see
+; *boot-strap-invariant-risk-alist*)a at the end of the boot-strap, in
+; end-prehistoric-world, instead of here.  But then the 'invariant-risk
+; property was never set for aset1-lst, even though it calls aset1, which has
+; invariant-risk.
 
   (let ((names (strip-cars *primitive-formals-and-guards*))
         (arglists (strip-cadrs *primitive-formals-and-guards*))
@@ -3205,7 +3141,7 @@
                    'return-last-table
                    'table-alist
                    *initial-return-last-table*
-                   (initialize-invariant-risk wrld)))))
+                   wrld))))
          (thy (current-theory1 wrld nil nil))
          (wrld2 (update-current-theory thy (length thy) wrld1)))
     (add-command-landmark

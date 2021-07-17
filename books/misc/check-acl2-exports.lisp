@@ -203,8 +203,6 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    ACL2-UNWIND-PROTECT
-
   ))
 
 (defconst *special-ops*

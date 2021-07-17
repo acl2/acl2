@@ -339,6 +339,7 @@
      HONS-CLEAR!                               ; bad -- requires trust tag
      HONS-WASH!                                ; bad -- requires trust tag
      UNTOUCHABLE-MARKER                        ; bad -- untouchable
+     ASET1-TRUSTED                             ; bad -- untouchable
 
 ; At one time we considered disallowing these functions but we now allow them.
 ; We list them here just to document that we considered them and concluded that
