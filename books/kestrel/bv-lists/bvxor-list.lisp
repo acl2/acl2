@@ -1,3 +1,4 @@
+
 ; BV List Library: bvxor-list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
@@ -33,6 +34,11 @@
 (defthm len-of-bvxor-list
   (equal (len (bvxor-list size x y))
          (len x))
+  :hints (("Goal" :in-theory (enable bvxor-list))))
+
+(defthm consp-of-bvxor-list
+  (equal (consp (bvxor-list size x y))
+         (consp x))
   :hints (("Goal" :in-theory (enable bvxor-list))))
 
 (defthm nth-of-bvxor-list
