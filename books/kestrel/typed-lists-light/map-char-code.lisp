@@ -20,7 +20,7 @@
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 ;; Apply char-code to each element of CHARS, returning a list of bytes
-(defun map-char-code (chars)
+(defund map-char-code (chars)
   (declare (xargs :guard (character-listp chars)))
   (if (endp chars)
       nil
@@ -28,4 +28,16 @@
           (map-char-code (rest chars)))))
 
 (defthm all-unsigned-byte-p-8-of-map-char-code
-  (all-unsigned-byte-p 8 (map-char-code chars)))
+  (all-unsigned-byte-p 8 (map-char-code chars))
+  :hints (("Goal" :in-theory (enable map-char-code))))
+
+(defthm len-of-map-char-code
+  (equal (len (map-char-code chars))
+         (len chars))
+  :hints (("Goal" :in-theory (enable map-char-code))))
+
+(defthm map-char-code-of-cons
+  (equal (map-char-code (cons char chars))
+         (cons (char-code char)
+               (map-char-code chars)))
+  :hints (("Goal" :in-theory (enable map-char-code))))
