@@ -72,3 +72,5 @@
 (include-book "list-patterns")
 
 (include-book "bvplus-list")
+
+(include-book "logext-list")
