@@ -1,0 +1,2 @@
+(include-book "std/portcullis" :dir :system) ; for "XDOC" package
+; cert-flags: ? t :ttags :all

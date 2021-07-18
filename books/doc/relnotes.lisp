@@ -1166,6 +1166,11 @@
     "One line of file @('Makefile-generic') has been tweaked to avoid the
      @('+make') construct, which may help avoid errors in FreeBSD systems.")
 
+   (xdoc::p
+    "Building of the combined ACL2+Books manual (by certifying
+     @('doc/top.lisp')) has been made more efficient (more than 20% reduction
+     measured when such changes were made).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Testing")

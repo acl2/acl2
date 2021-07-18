@@ -47,6 +47,9 @@
 
 (defconst *acl2-doc-search-separator* "###---###---###---###---###")
 
+; Here is old code that has been replaced so as to speed up printing; see a
+; comment about fms! in acl2-doc-print-topic-index below.
+#||
 (defun acl2-doc-fix-symbol-msg (sym)
   (cond ((eq (intern$ (symbol-name sym) "ACL2") sym)
          (msg "~s0" (symbol-name sym)))
@@ -59,29 +62,73 @@
         (t (msg "~@0 ~@1"
                 (acl2-doc-fix-symbol-msg (car lst))
                 (acl2-doc-fix-symbol-lst-msg (cdr lst))))))
+||#
 
-(defun acl2-doc-print-topic (tuple channel state)
+(defun acl2-doc-print-fix-symbol (sym channel state)
+  (cond ((eq (intern$ (symbol-name sym) "ACL2") sym)
+         (princ$ (symbol-name sym) channel state))
+        (t (pprogn (princ$ (symbol-package-name sym) channel state)
+                   (princ$ "::" channel state)
+                   (princ$ (symbol-name sym) channel state)))))
+
+(defun acl2-doc-print-fix-symbol-lst (lst channel state)
+  (cond ((endp lst) state)
+        ((endp (cdr lst))
+         (acl2-doc-print-fix-symbol (car lst) channel state))
+        (t (pprogn 
+            (acl2-doc-print-fix-symbol (car lst) channel state)
+            (princ$ " " channel state)
+            (acl2-doc-print-fix-symbol-lst (cdr lst) channel state)))))
+
+(defun acl2-doc-print-topic-index (tuple channel state)
 
 ; Warning: Do not set the buffer to read-only here, because this
 ; function may be called repeatedly for the same buffer, e.g., by
 ; function acl2-doc-search-buffer.
 
-  (fms! "~s0~|Topic: ~@1~|Parent list: (~@2)~|~@3~%~s4~|"
-        (list (cons #\0 *acl2-doc-search-separator*)
-              (cons #\1 (acl2-doc-fix-symbol-msg (nth 0 tuple)))
-              (cons #\2 (acl2-doc-fix-symbol-lst-msg (nth 1 tuple)))
-              (cons #\3 (if (equal (length tuple) 4)
-                            (if (eq (nth 0 tuple) 'TOP)
-                                ""
-                              (msg ":DOC source: ~s0~|" (nth 3 tuple)))
-                          ":DOC source: ACL2 Sources~|"))
-              (cons #\4 (nth 2 tuple)))
-        channel state nil))
+; The fms! call that is commented out just below is equivalent to the code
+; below it, but is much slower.  Replacing that fms! call reduced the time for
+; acl2-doc-print-topic-index-lst under save-rendered, when building the full
+; ACL2+books manual 7/18/2021, from 52.50 seconds to 2.74 seconds.
 
-(defun acl2-doc-print-topic-lst (tuple-lst channel state)
+; (fms! "~s0~|Topic: ~@1~|Parent list: (~@2)~|~@3~%~s4~|"
+;       (list (cons #\0 *acl2-doc-search-separator*)
+;             (cons #\1 (acl2-doc-fix-symbol-msg (nth 0 tuple)))
+;             (cons #\2 (acl2-doc-fix-symbol-lst-msg (nth 1 tuple)))
+;             (cons #\3 (if (equal (length tuple) 4)
+;                           (if (eq (nth 0 tuple) 'TOP)
+;                               ""
+;                             (msg ":DOC source: ~s0~|" (nth 3 tuple)))
+;                         ":DOC source: ACL2 Sources~|"))
+;             (cons #\4 (nth 2 tuple)))
+;       channel state nil)
+
+  (pprogn (newline channel state)
+          (princ$ *acl2-doc-search-separator* channel state)
+          (newline channel state)
+          (princ$ "Topic: " channel state)
+          (acl2-doc-print-fix-symbol (nth 0 tuple) channel state)
+          (newline channel state)
+          (princ$ "Parent list: (" channel state)
+          (acl2-doc-print-fix-symbol-lst (nth 1 tuple) channel state)
+          (princ$ ")" channel state)
+          (newline channel state)
+          (if (equal (length tuple) 4)
+              (if (eq (nth 0 tuple) 'TOP)
+                  state
+                (pprogn (princ$ ":DOC source: " channel state)
+                        (princ$ (nth 3 tuple) channel state)
+                        (newline channel state)))
+            (pprogn (princ$ ":DOC source: ACL2 Sources" channel state)
+                    (newline channel state)))
+          (princ$ (nth 2 tuple) channel state)
+          (newline channel state)))
+
+(defun acl2-doc-print-topic-index-lst (tuple-lst channel state)
   (cond ((endp tuple-lst) state)
-        (t (pprogn (acl2-doc-print-topic (car tuple-lst) channel state)
-                   (acl2-doc-print-topic-lst (cdr tuple-lst) channel state)))))
+        (t (pprogn
+            (acl2-doc-print-topic-index (car tuple-lst) channel state)
+            (acl2-doc-print-topic-index-lst (cdr tuple-lst) channel state)))))
 
 (defun save-rendered (outfile
                       header
@@ -141,6 +188,15 @@
           (state (fms! "(in-package \"ACL2\")~|~%(defconst ~x0 '~|"
                        (list (cons #\0 topic-list-name))
                        channel state nil))
+
+; I tried replacing the fms! call below with mostly princ$ calls, but I needed
+; a prin1$ call for (at least) the main doc string of each topic (to escape
+; characters as necessary, especially double-quote (")).  However, the measured
+; time reduction was slight, however; 16.77 seconds reduced to 16.03 seconds.
+; The bytes allocated were reduced more noticeably, 12,642,544 down to 1,456;
+; however, that's trivial compared to more than 22GB allocated by render-topics
+; when saving rendered-doc-combined.lsp.
+
           (state (time$ (fms! "~x0"
                               (list (cons #\0 rendered))
                               channel state nil)))
@@ -155,7 +211,8 @@
           ((unless channel)
            (cw "can't open ~s0 for output." search-file)
            (acl2::silent-error state))
-          (state (acl2-doc-print-topic-lst rendered channel state))
+          (state (time$ (acl2-doc-print-topic-index-lst rendered channel
+                                                        state)))
           (state (close-output-channel channel state)))
        (value '(value-triple :ok))))))
 
