@@ -33,4 +33,5 @@
           (map-code-char-printable (rest codes)))))
 
 (defun bytes-to-printable-string (bytes)
+  (declare (xargs :guard (acl2::all-unsigned-byte-p 8 bytes)))
   (acl2::coerce (map-code-char-printable bytes) 'string))
