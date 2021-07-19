@@ -1394,6 +1394,8 @@ checking, and add direction/name annotations.</p>"
        (new-x     (make-vl-arguments-plain :args plainargs)))
     (mv (ok) new-x)))
 
+
+
 (define vl-modinst-argresolve
   :short "Resolve arguments in a @(see vl-modinst-p)."
   ((x        vl-modinst-p)
@@ -1416,6 +1418,24 @@ checking, and add direction/name annotations.</p>"
         (mv (fatal :type :vl-unresolved-instance
                    :msg "~a0 refers to undefined module ~m1."
                    :args (list x x.modname))
+            x))
+       (submod-warnings (if (eq (tag submod) :vl-module)
+                            (vl-module->warnings submod)
+                          (vl-interface->warnings submod)))
+       ;; For e.g. lint purposes, we may want to allow instances of modules
+       ;; that have certain fatal warnings.  We'll eliminate these by
+       ;; propagate-errors if we want to.  But practically speaking often we
+       ;; get nonsensical bad instance warnings when instantiating a module
+       ;; that has a parse error, which causes it to appear as though it has no
+       ;; ports.  We'll catch this problem here so that the warning is more
+       ;; explicit.
+       (submod-parse-errors (vl-keep-warnings '(:vl-parse-error) submod-warnings))
+       ((when submod-parse-errors)
+        (mv (fatal :type :vl-instance-of-unparsed
+                   :msg "~a0 refers to ~s1 ~m2, which has a parse error."
+                   :args (list x
+                               (if (eq (tag submod) :vl-module) "module" "interface")
+                               x.modname))
             x))
        (submod.ports (if (eq (tag submod) :vl-module)
                          (vl-module->ports submod)
