@@ -61,14 +61,14 @@ This comment motivates the macro install-not-normalized, defined below.
                                name))
 
 (defun install-not-normalized-fn-1 (name wrld ens clique defthm-name enable)
-  (declare (xargs :mode :program ; because of logical-defun call
+  (declare (xargs :mode :program ; because of get-defun-event call
                   :guard (and (symbolp name)
                               (symbolp defthm-name)
                               (plist-worldp wrld)
                               (enabled-structure-p ens)
                               (symbol-listp clique))))
   (let* ((formals (formals name wrld))
-         (name-def (or (logical-defun name wrld)
+         (name-def (or (get-defun-event name wrld)
                        (er hard? 'install-not-normalized-fn-1
                            "There is no defun associated with the name, ~x0."
                            name)))

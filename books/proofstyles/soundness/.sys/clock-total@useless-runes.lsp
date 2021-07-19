@@ -6,7 +6,7 @@
 (CLOCK-FN)
 (|clock function is natural|)
 (|clock function is minimal|
- (4 2 (:TYPE-PRESCRIPTION |clock function is natural|))
+ (6 3 (:TYPE-PRESCRIPTION |clock function is natural|))
  )
 (|clock function produces exitpoint|)
 (|clock function produces postcondition|)

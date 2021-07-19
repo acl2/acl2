@@ -52,6 +52,7 @@
    (include-book "snodes")
    (include-book "to-hons-aig")
    (include-book "transforms")
+   (include-book "simplify-marked")
    ;; (include-book "types")
    (include-book "vecsim")
    ))

@@ -873,8 +873,8 @@
 (defthm thread-classp-returns-false
   (implies (and (not (equal class-name "java.lang.Thread"))
                 (not (equal class-name "java.lang.ThreadGroup")) ;why?
-                (not (member-equal "java.lang.Thread" (get-super-classes class-name class-table)))
-                (not (member-equal "java.lang.ThreadGroup" (get-super-classes class-name class-table))) ;why?
+                (not (member-equal "java.lang.Thread" (get-superclasses class-name class-table)))
+                (not (member-equal "java.lang.ThreadGroup" (get-superclasses class-name class-table))) ;why?
                 )
            (equal (jvm::thread-classp class-name class-table)
                   nil))

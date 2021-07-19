@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/axe/rules-in-rule-lists" :dir :system) ;todo: remove some list stuff from this?
+(include-book "../rules-in-rule-lists") ;todo: remove some list stuff from this?
 
 (include-book "kestrel/jvm/jvm-facts" :dir :system)
 (include-book "kestrel/jvm/jvm-rules" :dir :system)

@@ -1041,6 +1041,10 @@
      chk-irrelevant-formals-ok) have been added, to perform an @(see
      irrelevant-formals) check on a given definition or list of definitions.")
 
+   (xdoc::p
+    "New utilities have been added to find the sources of @(see invariant-risk)
+     for given functions.  See @('[books]/std/system/invariant-risk.lisp').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/testing" "Standard Testing Library"))
@@ -1161,6 +1165,11 @@
    (xdoc::p
     "One line of file @('Makefile-generic') has been tweaked to avoid the
      @('+make') construct, which may help avoid errors in FreeBSD systems.")
+
+   (xdoc::p
+    "Building of the combined ACL2+Books manual (by certifying
+     @('doc/top.lisp')) has been made more efficient (more than 20% reduction
+     measured when such changes were made).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

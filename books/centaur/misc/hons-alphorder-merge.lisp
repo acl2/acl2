@@ -88,7 +88,7 @@ and @('hons-alphorder-merge') is nothing more than @(see set::union).</p>"
   (defun hons-alphorder-merge (a b)
     (declare (xargs :guard (and (atom-listp a)
                                 (atom-listp b))
-                    :guard-hints(("Goal" :in-theory (enable alphorder symbol-<)))
+                    :guard-hints(("Goal" :in-theory (enable alphorder symbol<)))
                     :measure (+ (len a) (len b))))
     (cond ((atom a) b)
           ((atom b) a)

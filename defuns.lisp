@@ -6594,6 +6594,47 @@
                                acc
                              (cons (car names) acc))))))
 
+(defconst *boot-strap-invariant-risk-alist*
+
+; We put a non-nil 'invariant-risk property on every function that might
+; violate some ACL2 invariant, if called on arguments that fail to satisfy that
+; function's guard.  Also see put-invariant-risk.
+
+; This constant should map to t all function symbols that might violate an ACL2
+; invariant.  See check-invariant-risk.  We don't include compress1 or
+; compress2 because we believe they don't write out of bounds.  We explicitly
+; map some function symbols to nil to indicate that our trust that they don't
+; have invariant-risk (in spite of calling a function that does).
+
+; In the case of mutual-recursion, only the first name in the nest should be a
+; key of this alist; see put-invariant-risk.
+
+; At one point we thought we should mark with invariant-risk all functions that
+; have raw code and have state as a formal.  But we see almost no way to
+; violate an invariant by misguided updates of the (fictional) live state.  For
+; example, state-p1 specifies that the global-table is an
+; ordered-symbol-alistp, but there is no way to get one's hands directly on the
+; global-table; and state-p1 also specifies that plist-worldp holds of the
+; logical world, and we ensure that by making set-w and related functions
+; untouchable.  The only exceptions are those mapped to t below, as is checked
+; by the function check-invariant-risk.  If new exceptions arise, then we
+; should map them to t below.
+
+  '((aset1 . t) ; could write past the end of the real array
+    (aset2 . t) ; could write past the end of the real array
+    (aset-32-bit-integer-stack . t)
+    (extend-32-bit-integer-stack . t)
+    (aset1-lst . t)
+    (old-check-sum-obj . nil)
+    (check-sum-inc . nil)
+    (update-iprint-ar-fal . nil)
+
+; Aset1-trusetd is an untouchable version of aset1 that we use in our source
+; code when we believe that there is no invariant-risk.  We could create
+; similar trusted analogues of other built-ins mapped to t above.
+
+    (aset1-trusted . nil)))
+
 (defun put-invariant-risk (names bodies non-executablep symbol-class guards
                                  wrld)
 
@@ -6632,9 +6673,33 @@
              (cond
               ((null new-fns) ; optimization
                wrld)
-              (t (put-invariant-risk1 new-fns
-                                      (all-fnnames1-exec t bodies nil)
-                                      wrld)))))))
+              (t (let ((pair
+
+; The following assoc-eq will be false except during the boot-strap unless the
+; function is being redefined.  It was tempting to rule out redefinition, but
+; the user who redefines a system function is essentially taking on the role of
+; implementor.  That responsibility, together with a likely desire to preserve
+; the special status of the function symbol with respect to invariant-risk,
+; seems to make it appropriate not to exempt redefinition here.
+
+; There's potentially a hole created by testing only (car new-fns), since if
+; new-fns has more than one element (presumably because of mutual-recursion)
+; then maybe it's one of those other members of new-fns besides the first that
+; is a key of *boot-strap-invariant-risk-alist*.  We'll just have to be aware
+; of that when forming *boot-strap-invariant-risk-alist*.
+
+                        (assoc-eq (car new-fns)
+                                  *boot-strap-invariant-risk-alist*)))
+                   (cond
+                    (pair (if (cdr pair)
+                              (putprop-x-lst1 new-fns
+                                              'invariant-risk
+                                              (car new-fns)
+                                              wrld)
+                            wrld))
+                    (t (put-invariant-risk1 new-fns
+                                            (all-fnnames1-exec t bodies nil)
+                                            wrld))))))))))
 
 (defun defuns-fn-short-cut (loop$-recursion-checkedp
                             loop$-recursion

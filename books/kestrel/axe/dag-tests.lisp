@@ -15,8 +15,8 @@
 ;; Note that currently this tests fairly sophisticated utils that depend on
 ;; skip-proofs, whereas it may be better in general to use simpler dag utlis.
 
-(include-book "kestrel/axe/dagify" :dir :system) ;for dagify-term!, brings in skip-proofs
-(include-book "kestrel/axe/dag-to-term-with-lets" :dir :system)
+(include-book "dagify") ;for dagify-term!, brings in skip-proofs
+(include-book "dag-to-term-with-lets")
 (include-book "kestrel/utilities/deftest" :dir :system)
 (include-book "std/testing/assert-equal" :dir :system)
 (include-book "std/testing/must-fail" :dir :system)

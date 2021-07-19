@@ -7140,14 +7140,14 @@
 (defun rune-< (x y)
   (cond
    ((eq (car x) (car y))
-    (or (symbol-< (cadr x) (cadr y))
+    (or (symbol< (cadr x) (cadr y))
         (and (eq (cadr x) (cadr y))
              (cond ((null (cddr x))
                     (cddr y))
                    ((null (cddr y))
                     nil)
                    (t (< (cddr x) (cddr y)))))))
-   ((symbol-< (car x) (car y))
+   ((symbol< (car x) (car y))
     t)
    (t
     nil)))

@@ -17,12 +17,12 @@
   (declare (xargs :guard (and (tip-p x)
                               (tip-p y))))
   ;; orders integers and symbols, with integers first, ordered by <,
-  ;; and symbols next, ordered by symbol-<.
+  ;; and symbols next, ordered by symbol<.
   (cond ((integerp x)
          (cond ((integerp y) (< x y))
                (t t)))
         ((integerp y) nil)
-        (t (symbol-< x y))))
+        (t (symbol< x y))))
 
 (in-theory (disable olessp))
 

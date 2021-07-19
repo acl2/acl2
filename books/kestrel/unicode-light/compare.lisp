@@ -13,19 +13,10 @@
 
 (include-book "code-point-to-utf-8-chars")
 (include-book "unicode/utf8-encode" :dir :system)
+(include-book "kestrel/typed-lists-light/map-char-code" :dir :system)
 (local (include-book "kestrel/bv/logand" :dir :system))
 (local (include-book "kestrel/bv/logior" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
-
-;dup
-;; Apply char-code to each element of CHARS.
-(defun map-char-code (chars)
-  (declare (xargs :guard (character-listp chars)
-                  :guard-hints (("Goal" :in-theory (enable character-listp)))))
-  (if (endp chars)
-      nil
-    (cons (char-code (first chars))
-          (map-char-code (rest chars)))))
 
 ;; Show that our encoding into chars is compatible with the unicode books' encoding into bytes
 (thm

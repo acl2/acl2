@@ -16,21 +16,21 @@
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(defund acl2::symbol-<-of-cars (x y)
+(defund acl2::symbol<-of-cars (x y)
   (declare (xargs :guard (and (consp x)
                               (consp y)
                               (symbolp (car x))
                               (symbolp (car y)))))
-  (symbol-< (car x) (car y)))
+  (symbol< (car x) (car y)))
 
 (defun acl2::consp-and-symbolp-car (x)
   (declare (xargs :guard t))
   (and (consp x)
        (symbolp (car x))))
 
-(acl2::defmergesort acl2::merge-symbol-<-of-cars
-                    acl2::merge-sort-symbol-<-of-cars
-                    acl2::symbol-<-of-cars
+(acl2::defmergesort acl2::merge-symbol<-of-cars
+                    acl2::merge-sort-symbol<-of-cars
+                    acl2::symbol<-of-cars
                     acl2::consp-and-symbolp-car)
 
 (defthm consp-of-nth-when-symbol-alistp
@@ -46,12 +46,12 @@
            (acl2::all-consp-and-symbolp-car alist))
   :hints (("Goal" :in-theory (enable symbol-alistp acl2::all-consp-and-symbolp-car))))
 
-(defthm symbol-alistp-of-merge-symbol-<-of-cars
+(defthm symbol-alistp-of-merge-symbol<-of-cars
   (implies (and (symbol-alistp x)
                 (symbol-alistp y)
                 (symbol-alistp acc))
-           (symbol-alistp (acl2::merge-symbol-<-of-cars x y acc)))
-  :hints (("Goal" :in-theory (enable acl2::merge-symbol-<-of-cars))))
+           (symbol-alistp (acl2::merge-symbol<-of-cars x y acc)))
+  :hints (("Goal" :in-theory (enable acl2::merge-symbol<-of-cars))))
 
 ;defforall could do these too?
 (defthm symbol-alistp-of-mv-nth-0-of-split-list-fast-aux
@@ -74,10 +74,10 @@
            (symbol-alistp (mv-nth 1 (acl2::split-list-fast lst))))
   :hints (("Goal" :in-theory (enable acl2::split-list-fast))))
 
-(defthm symbol-alistp-of-merge-sort-symbol-<-of-cars
+(defthm symbol-alistp-of-merge-sort-symbol<-of-cars
   (implies(symbol-alistp alist)
-          (symbol-alistp (acl2::merge-sort-symbol-<-of-cars alist)))
-  :hints (("Goal" :in-theory (enable acl2::merge-sort-symbol-<-of-cars))))
+          (symbol-alistp (acl2::merge-sort-symbol<-of-cars alist)))
+  :hints (("Goal" :in-theory (enable acl2::merge-sort-symbol<-of-cars))))
 
 (defun make-valuation-from-keyword-vars-aux (vars acc)
   (declare (xargs :guard (symbol-listp vars)))
@@ -111,7 +111,7 @@
 ;; (potentially very deep) nest of calls to acons.
 (defun make-valuation-from-keyword-vars2 (vars)
   (declare (xargs :guard (symbol-listp vars)))
-  (make-valuation-from-keyword-vars2-aux (acl2::merge-sort-symbol-< vars)))
+  (make-valuation-from-keyword-vars2-aux (acl2::merge-sort-symbol< vars)))
 
 (defun make-fep-assumptions-from-keyword-vars-aux (vars prime acc)
   (declare (xargs :guard (symbol-listp vars)))
@@ -165,7 +165,7 @@
 
 ;; Makes a nest of calls to filter-and-combine-symbol-alists
 ;; Alist may pair r1cs vars (which may be keywords) with their correspinding acl2 vars
-;; Alist should be sorted by symbol-< applied to the cars of its entries.
+;; Alist should be sorted by symbol< applied to the cars of its entries.
 (defun make-efficient-symbolic-valuation-for-alist-aux (alist)
   (declare (xargs :guard (symbol-alistp alist)
                   :measure (len alist)))
@@ -185,4 +185,4 @@
 ;; (potentially very deep) nest of calls to acons.
 (defun make-efficient-symbolic-valuation-for-alist (alist)
   (declare (xargs :guard (symbol-alistp alist)))
-  (make-efficient-symbolic-valuation-for-alist-aux (acl2::merge-sort-symbol-<-of-cars alist)))
+  (make-efficient-symbolic-valuation-for-alist-aux (acl2::merge-sort-symbol<-of-cars alist)))

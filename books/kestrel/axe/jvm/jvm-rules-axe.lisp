@@ -20,8 +20,8 @@
 (include-book "kestrel/jvm/int-subtypes" :dir :system)
 (local (include-book "kestrel/jvm/jvm-facts" :dir :system))
 (include-book "axe-syntax-functions-jvm") ;for get-stack-height-and-pc-to-step-from-myif-nest
-(include-book "kestrel/axe/known-booleans" :dir :system)
-(include-book "kestrel/axe/bv-list-rules-axe" :dir :system)
+(include-book "../known-booleans")
+(include-book "../bv-list-rules-axe")
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 
 ;; Declare some JVM-related functions to be known-booleans:

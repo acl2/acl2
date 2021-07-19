@@ -29,14 +29,14 @@
 
 ;BBOZO handle negations! -well, we handle xoring with 1, right?
 
-(include-book "kestrel/axe/equivalent-dags" :dir :system)
-(include-book "kestrel/axe/add-bitxor-nest-to-dag-array" :dir :system)
-(include-book "kestrel/axe/add-bvxor-nest-to-dag-array" :dir :system)
-(include-book "kestrel/axe/supporting-nodes" :dir :system) ;for drop-non-supporters-array
-(include-book "kestrel/axe/dag-array-builders2" :dir :system)
-(include-book "kestrel/axe/def-dag-builder-theorems" :dir :system)
-(include-book "kestrel/axe/translation-array" :dir :system)
-(include-book "kestrel/axe/merge-sort-less-than" :dir :system)
+(include-book "equivalent-dags")
+(include-book "add-bitxor-nest-to-dag-array")
+(include-book "add-bvxor-nest-to-dag-array")
+(include-book "supporting-nodes") ;for drop-non-supporters-array
+(include-book "dag-array-builders2")
+(include-book "def-dag-builder-theorems")
+(include-book "translation-array")
+(include-book "merge-sort-less-than")
 (include-book "kestrel/bv/bitxor" :dir :system)
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))

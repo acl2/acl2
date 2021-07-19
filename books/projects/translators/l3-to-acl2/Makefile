@@ -19,7 +19,7 @@ ACL2_DIR ?= $(shell cd ../../../.. ; pwd)
 endif
 endif
 
-$(warning ACL2_DIR is $(ACL2_DIR))
+# $(warning ACL2_DIR is $(ACL2_DIR))
 
 export ACL2 ?= $(ACL2_DIR)/saved_acl2
 export ACL2_SYSTEM_BOOKS ?= $(ACL2_DIR)/books

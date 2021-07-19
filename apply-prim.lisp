@@ -339,6 +339,7 @@
      HONS-CLEAR!                               ; bad -- requires trust tag
      HONS-WASH!                                ; bad -- requires trust tag
      UNTOUCHABLE-MARKER                        ; bad -- untouchable
+     ASET1-TRUSTED                             ; bad -- untouchable
 
 ; At one time we considered disallowing these functions but we now allow them.
 ; We list them here just to document that we considered them and concluded that
@@ -533,10 +534,10 @@
     (MATCH-CLAUSE)
     (MATCH-CLAUSE-LIST ACL2-COUNT CLAUSES)
     (MATCH-TESTS-AND-BINDINGS ACL2-COUNT PAT)
-    (MERGE-SORT-SYMBOL-< ACL2-COUNT L)
+    (MERGE-SORT-SYMBOL< ACL2-COUNT L)
     (MERGE-SORT-TERM-ORDER ACL2-COUNT L)
-    (MERGE-SYMBOL-< BINARY-+ (LEN L1)
-                    (LEN L2))
+    (MERGE-SYMBOL< BINARY-+ (LEN L1)
+                   (LEN L2))
     (MERGE-TERM-ORDER BINARY-+ (ACL2-COUNT L1)
                       (ACL2-COUNT L2))
     (META-EXTRACT-CONTEXTUAL-FACT)

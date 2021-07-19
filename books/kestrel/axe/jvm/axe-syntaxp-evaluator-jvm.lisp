@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/axe/jvm/axe-syntax-functions-jvm" :dir :system) ; for no-state-to-step-p and perhaps others
+(include-book "axe-syntax-functions-jvm") ; for no-state-to-step-p and perhaps others
 (include-book "axe-syntax-functions-jvm2") ; for no-state-to-step-for-loop-lifter-p and perhaps others
 (include-book "../axe-syntax-functions-bv")
 (include-book "../make-axe-syntaxp-evaluator")

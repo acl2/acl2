@@ -162,12 +162,12 @@ all:
 	@if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
 	then \
 		echo "[Makefile-generic]: Preparing to make 'all'" ;\
+		echo '[Makefile-generic]: Using ACL2=$(ACL2)' ;\
 		if [ "$$ACL2_PCERT" != "" ] ;\
 		then \
 			echo "[Makefile-generic]: NOTE: Using provisional certification." ;\
 		fi \
 	fi
-	@echo 'Using ACL2=$(ACL2)'
 	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) \
 	  $(BOOKS_CERT) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
 
@@ -558,7 +558,7 @@ dependencies:
 
 .PHONY: clean
 clean:
-	rm -f workxxx* *@expansion.lsp *.out *.date *.*cert *.*cert.time *.pcert0 *.pcert1 *cert*.temp \
+	@rm -f workxxx* *@expansion.lsp *.out *.date *.*cert *.*cert.time *.pcert0 *.pcert1 *cert*.temp \
 	*.acl2x *.port Makefile-deps *.h *.c *.o *.sbin *.lbin *.fasl *.ufsl \
 	*.64ufasl *.ufasl *.pfsl *.dfsl *.dx32fsl *.lx32fsl *.d64fsl \
 	*.dx64fsl *.lx64fsl *.bin *.sparcf *.axpf *.x86f *.ppcf *.fas \

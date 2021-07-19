@@ -556,8 +556,8 @@
 ;;                   (interface-names (class-decl-interfaces class-decl)))
 ;;            (RESOLVE-FIELD-AUX-induction field-id interface-names class-table (+ -1 (nfix ctr))))
 ;;            (let* ((class-decl (get-class-info class-or-interface-name class-table))
-;;                   (super-class (class-decl-superclass class-decl)))
-;;              (RESOLVE-FIELD-AUX-induction field-id super-class class-table (+ -1 (nfix ctr)))))))
+;;                   (superclass (class-decl-superclass class-decl)))
+;;              (RESOLVE-FIELD-AUX-induction field-id superclass class-table (+ -1 (nfix ctr)))))))
 
 ;; (thm
 ;;  (and
@@ -657,13 +657,13 @@
 
 (defthm jvm-statep-of-invoke-static-initializer-for-next-class-helper
   (implies (and (class-namep class-name)
-                (all-class-namesp super-class-names)
+                (all-class-namesp superclass-names)
                 (jvm-statep s)
                 (bound-in-class-tablep class-name (class-table s))
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th)
                 (not (memberp class-name (initialized-classes s))))
-           (jvm-statep (invoke-static-initializer-for-next-class-helper class-name super-class-names th s)))
+           (jvm-statep (invoke-static-initializer-for-next-class-helper class-name superclass-names th s)))
   :hints (("Goal" :in-theory (enable invoke-static-initializer-for-next-class-helper))))
 
 (defthm jvm-statep-of-invoke-static-initializer-for-next-class
@@ -835,7 +835,7 @@
 
 ;; Only open if the class name and its super classes have been figured out:
 (acl2::defopeners invoke-static-initializer-for-next-class-helper :hyps ((syntaxp (quotep jvm::class-name))
-                                                                         (syntaxp (quotep jvm::super-class-names))))
+                                                                         (syntaxp (quotep jvm::superclass-names))))
 
 ;; Only open if the class name is a constant and is bound in the class-table (TODO: rephrase to not call 'g'?):
 (acl2::defopeners invoke-static-initializer-for-next-class :hyps ((syntaxp (quotep jvm::class-name))
