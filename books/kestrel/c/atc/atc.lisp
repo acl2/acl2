@@ -3974,16 +3974,34 @@
      are carried out in exactly specified theories
      that should always work.")
    (xdoc::p
-    "We also generate a local theorem asserting that
+    "Also unsurprisingly, the correctness theorem involves
+     the measure of the loop function.
+     The measure may be a complex term.
+     An early version of ATC was using the measure terms
+     directly in the generated theorems,
+     but that caused sometimes proof failures due to
+     ACL2 sometimes modifying those measure terms during a proof
+     (e.g. due to equalities involving measure subterms
+     arising from case analyses):
+     after the terms were modified,
+     some of the generated theorems about the measure terms
+     no longer apply, making the proof fail.
+     Thus, we ``protect'' the measure terms from modifications
+     by generating and functions for them,
+     and using those functions in the generated theorems.")
+   (xdoc::p
+    "We generate a local theorem asserting that
      the measure of the function yields a natural number.
-     This is like the applicabiliby condition,
+     This will soon use the generated measure function mentioned above.
+     This is like the applicability condition,
      but we need a type prescription rule,
      and currenty the applicability condition utilities
      do not support the specification of rule classes.")
    (xdoc::p
-    "We also generate a local theorem that is
+    "We generate a local theorem that is
      just like the termination theorem of the function
      except that @(tsee o<) is replaced with @(tsee <).
+     This will soon use the generated measure function mentioned above.
      The theorem is proved using the fact that
      the measure yields a natural number,
      which means that @(tsee o<) reduces to @(tsee <) (see above).
@@ -4090,6 +4108,20 @@
          :rule-classes nil
          :hints `(("Goal" :in-theory '(,exec-stmt-while-for-fn
                                        exec-stmt-while)))))
+       (measure-of-fn (acl2::packn-pos (list 'measure-of- fn) fn))
+       ((mv measure-of-fn names-to-avoid)
+        (acl2::fresh-logical-name-with-$s-suffix measure-of-fn
+                                                 'function
+                                                 names-to-avoid
+                                                 wrld))
+       (fn-formals (acl2::formals+ fn wrld))
+       ((mv measure-of-fn-event &)
+        (acl2::evmac-generate-defun
+         measure-of-fn
+         :formals fn-formals
+         :body (acl2::measure+ fn wrld)
+         :verify-guards nil
+         :enable nil))
        (appcond-thm
         (cdr (assoc-eq (cdr (assoc-eq fn fn-appconds)) appcond-thms)))
        (natp-of-measure-of-fn-thm
@@ -4104,9 +4136,12 @@
         (acl2::evmac-generate-defthm
          natp-of-measure-of-fn-thm
          :formula `(natp ,meas)
+         ;; :formula `(natp (,measure-of-fn ,@formals)) -- soon
          :rule-classes :type-prescription
          :enable nil
-         :hints `(("Goal" :by ,appcond-thm))))
+         :hints `(("Goal"
+                   ;; :in-theory '(,measure-of-fn) -- soon
+                   :use ,appcond-thm))))
        (termination-of-fn-thm
         (acl2::packn-pos (list 'termination-of- fn) fn))
        ((mv termination-of-fn-thm names-to-avoid)
@@ -4215,6 +4250,7 @@
                                :enable nil))
        (local-events (list* exec-stmt-while-for-fn-event
                             exec-stmt-while-for-fn-thm-event
+                            measure-of-fn-event
                             natp-of-measure-of-fn-thm-event
                             termination-of-fn-thm-event
                             (and (member-eq :loop-proofs experimental)
@@ -4632,6 +4668,8 @@
          `(encapsulate ()
             (evmac-prepare-proofs)
             (local (acl2::use-trivial-ancestors-check))
+            (set-ignore-ok t)
+            (set-irrelevant-formals-ok t)
             ,@local-events
             ,@exported-events
             ,file-gen-event))
