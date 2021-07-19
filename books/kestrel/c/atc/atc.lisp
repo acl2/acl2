@@ -2428,7 +2428,7 @@
                       (acl2::value (list nil nil nil))))
              ((unless (atc-xforming-term-for-let val prec-fns))
               (er-soft+ ctx t (list nil nil nil)
-                        "When generating C code for the funcion ~x0, ~
+                        "When generating C code for the function ~x0, ~
                          we encountered an unwrapped term ~x1 ~
                          to which a LET variable is bound ~
                          that is neither an IF or a loop function call. ~
@@ -2756,7 +2756,7 @@
                       (acl2::value (list nil nil))))
              ((unless (atc-xforming-term-for-let val prec-fns))
               (er-soft+ ctx t (list nil nil)
-                        "When generating C code for the funcion ~x0, ~
+                        "When generating C code for the function ~x0, ~
                          we encountered an unwrapped term ~x1 ~
                          to which a LET variable is bound ~
                          that is neither an IF or a loop function call. ~
