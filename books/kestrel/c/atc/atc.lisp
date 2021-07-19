@@ -3920,6 +3920,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-measure-fn ((fn symbolp)
+                            (names-to-avoid symbol-listp)
+                            (wrld plist-worldp))
+  :guard (acl2::irecursivep+ fn wrld)
+  :returns (mv (event "A @(tsee pseudo-event-formp).")
+               (name "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate a measure function for a recursive target function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The correctness theorem for a loop involves
+     the measure of the loop function.
+     The measure may be a complex term.
+     An early version of ATC was using the measure terms
+     directly in the generated theorems,
+     but that caused proof failures sometimes,
+     due to ACL2 sometimes modifying those measure terms during a proof
+     (e.g. due to equalities involving measure subterms
+     arising from case analyses):
+     after the terms were modified,
+     some of the generated theorems about the measure terms
+     no longer apply, making the proof fail.
+     Thus, we ``protect'' the measure terms from modifications
+     by generating functions for them,
+     and using those functions in the generated theorems.")
+   (xdoc::p
+    "The code of this ACL2 function generates a measure function
+     for the recursive target function @('fn').
+     The funcion is not guard-verified,
+     because its is only logical."))
+  (b* ((name (acl2::packn-pos (list 'measure-of- fn) fn))
+       ((mv name names-to-avoid)
+        (acl2::fresh-logical-name-with-$s-suffix name
+                                                 'function
+                                                 names-to-avoid
+                                                 wrld))
+       ((mv event &)
+        (acl2::evmac-generate-defun
+         name
+         :formals (acl2::formals+ fn wrld)
+         :body (untranslate (acl2::measure+ fn wrld) nil wrld)
+         :verify-guards nil
+         :enable nil)))
+    (mv event name names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-loop-correct-thm ((fn symbolp)
                                   (pointers symbol-listp)
                                   (xforming symbol-listp)
@@ -3973,22 +4022,6 @@
      and the proof of the associated theorem,
      are carried out in exactly specified theories
      that should always work.")
-   (xdoc::p
-    "Also unsurprisingly, the correctness theorem involves
-     the measure of the loop function.
-     The measure may be a complex term.
-     An early version of ATC was using the measure terms
-     directly in the generated theorems,
-     but that caused sometimes proof failures due to
-     ACL2 sometimes modifying those measure terms during a proof
-     (e.g. due to equalities involving measure subterms
-     arising from case analyses):
-     after the terms were modified,
-     some of the generated theorems about the measure terms
-     no longer apply, making the proof fail.
-     Thus, we ``protect'' the measure terms from modifications
-     by generating and functions for them,
-     and using those functions in the generated theorems.")
    (xdoc::p
     "We generate a local theorem asserting that
      the measure of the function yields a natural number.
@@ -4108,20 +4141,6 @@
          :rule-classes nil
          :hints `(("Goal" :in-theory '(,exec-stmt-while-for-fn
                                        exec-stmt-while)))))
-       (measure-of-fn (acl2::packn-pos (list 'measure-of- fn) fn))
-       ((mv measure-of-fn names-to-avoid)
-        (acl2::fresh-logical-name-with-$s-suffix measure-of-fn
-                                                 'function
-                                                 names-to-avoid
-                                                 wrld))
-       (fn-formals (acl2::formals+ fn wrld))
-       ((mv measure-of-fn-event &)
-        (acl2::evmac-generate-defun
-         measure-of-fn
-         :formals fn-formals
-         :body (acl2::measure+ fn wrld)
-         :verify-guards nil
-         :enable nil))
        (appcond-thm
         (cdr (assoc-eq (cdr (assoc-eq fn fn-appconds)) appcond-thms)))
        (natp-of-measure-of-fn-thm
@@ -4209,7 +4228,6 @@
         (atc-symbol-fninfo-alist-to-correct-thms prec-fns))
        (measure-thms
         (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns))
-       (measure-thms (cons natp-of-measure-of-fn-thm measure-thms))
        (type-prescriptions
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
@@ -4226,7 +4244,8 @@
                                           ',type-prescriptions
                                           ',returns-value-thms
                                           ',correct-thms
-                                          ',measure-thms)
+                                          ',measure-thms
+                                          '(,natp-of-measure-of-fn-thm))
                        :use ((:instance (:guard-theorem ,fn)
                               :extra-bindings-ok ,@gthm-instantiation)
                              (:instance ,termination-of-fn-thm
@@ -4250,7 +4269,6 @@
                                :enable nil))
        (local-events (list* exec-stmt-while-for-fn-event
                             exec-stmt-while-for-fn-thm-event
-                            measure-of-fn-event
                             natp-of-measure-of-fn-thm-event
                             termination-of-fn-thm-event
                             (and (member-eq :loop-proofs experimental)
@@ -4298,9 +4316,14 @@
      We process the function body as a loop term,
      and update the @('prec-fns') alist with information about the function.")
    (xdoc::p
+    "We also generate the measure function for @('fn') here.
+     See @(tsee atc-gen-measure-fn).")
+   (xdoc::p
     "No C external declaration is generated for this function,
      because this function just represents a loop used in oher functions."))
   (b* ((wrld (w state))
+       ((mv measure-fn-event & names-to-avoid)
+        (atc-gen-measure-fn fn names-to-avoid wrld))
        (formals (acl2::formals+ fn wrld))
        (guard (acl2::uguard+ fn wrld))
        (guard-conjuncts (flatten-ands-in-lit guard))
@@ -4338,7 +4361,9 @@
                                   experimental
                                   names-to-avoid state))
        ((when erp) (mv erp (list nil nil nil nil) state))
-       (local-events (append local-events more-local-events))
+       (local-events (append (list measure-fn-event)
+                             local-events
+                             more-local-events))
        (exported-events (append exported-events more-exported-events))
        (info (make-atc-fn-info :type? type?
                                :loop? loop-stmt
