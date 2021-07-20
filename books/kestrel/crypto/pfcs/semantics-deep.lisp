@@ -128,8 +128,28 @@
     (implies (and (assignmentp asg)
                   (assignment-for-prime-p asg p)
                   (consp (omap::in var asg)))
-             (pfield::fep (cdr (omap::in var asg)) p))
-    :enable (assignment-for-prime-p)))
+             (pfield::fep (cdr (omap::in var asg)) p)))
+
+  (defrule assignment-for-prime-p-of-tail
+    (implies (and (assignmentp asg)
+                  (assignment-for-prime-p asg p))
+             (assignment-for-prime-p (omap::tail asg) p)))
+
+  (defrule assignment-for-prime-p-of-update
+    (implies (and (assignmentp asg)
+                  (assignment-for-prime-p asg p)
+                  (fep nat p))
+             (assignment-for-prime-p (omap::update var nat asg) p))
+    :enable (assignment-for-prime-p omap::update)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (and (fep (cdr pair) p)
+                     (assignment-for-prime-p asg p))
+                (assignment-for-prime-p (cons pair asg) p))
+       :enable (assignment-for-prime-p
+                omap::head
+                omap::tail)
+       :expand ((assignment-for-prime-p (cons pair asg) p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
