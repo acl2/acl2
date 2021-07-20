@@ -3557,7 +3557,9 @@
    (xdoc::p
     "This theorem is not generated if @(':proofs') is @('nil')."))
   (b* (((when (or (not proofs)
-                  recursionp
+                  (and recursionp
+                       (not (member-eq :loop-proofs experimental)))
+                  (acl2::irecursivep+ fn wrld) ; generated elsewhere
                   (member-eq :array-writes experimental)))
         (mv nil nil nil))
        (name (cdr (assoc-eq fn fn-thms)))
