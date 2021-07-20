@@ -501,7 +501,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
        (look (vl-scopestack-find-item name ss))
        ((unless look)
         (mv nil
-            (fatal :type :vl-bad-instance
+            (fatal :type :vl-dotstar-missing-var
                    :msg "~a0: using .* syntax to instantiate ~m1, but there is ~
                          no declaration for port ~s2."
                    :args (list inst inst.modname name))
@@ -543,7 +543,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
              (mod/if (vl-scopestack-find-definition look.modname ss))
              ((unless mod/if)
               (mv nil
-                  (fatal :type :vl-bad-instance
+                  (fatal :type :vl-dotstar-missing-intfc
                          :msg "~a0: trying to resolve .* connection for ~
                                ~w1 (type ~m2): but ~m2 is not defined."
                          :args (list inst name look.modname))
@@ -556,7 +556,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
                                               :atts       nil)))
                 (mv t (ok) (list new-arg)))))
           (mv nil
-              (fatal :type :vl-bad-instance
+              (fatal :type :vl-dotstar-bad-intfc
                      :msg "~a0: using .* syntax to instantiate ~m1 would ~
                            result in connecting port ~s2 to ~a3, which is ~
                            an instance of a ~x4."
@@ -574,7 +574,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
           (mv t (ok) (list new-arg)))))
 
     (mv nil
-        (fatal :type :vl-bad-instance
+        (fatal :type :vl-dotstar-bad-port-connection
                :msg "~a0: using .* syntax to instantiate ~m1 would result in ~
                      connecting port ~s2 to ~a3, which has unsupported type ~
                      ~x4."
@@ -623,7 +623,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
        (portnames (vl-portlist->names ports))
        ((when (member nil portnames))
         (mv nil
-            (fatal :type :vl-bad-instance
+            (fatal :type :vl-named-args-for-unnamed-ports
                    :msg "~a0 has named arguments, which is illegal since ~m1 ~
                          has unnamed ports."
                    :args (list inst inst.modname))
@@ -707,7 +707,7 @@ named arguments with missing ports, and only issue non-fatal warnings.</p>"
         ;; BOZO do other Verilog tools tolerate this and just supply Zs
         ;; instead?  Maybe we should tolerate this, too.
         (mv nil
-            (fatal :type :vl-bad-instance
+            (fatal :type :vl-named-args-for-unnamed-ports
                    :msg "~a0 has named arguments, which is illegal since ~m1 ~
                          has unnamed ports."
                    :args (list inst inst.modname))
@@ -716,7 +716,7 @@ named arguments with missing ports, and only issue non-fatal warnings.</p>"
        ((unless (mbe :logic (uniquep actual-names)
                      :exec (same-lengthp actual-names sorted-actuals)))
         (mv nil
-            (fatal :type :vl-bad-instance
+            (fatal :type :vl-instance-multiple-connections
                    :msg "~a0 illegally has multiple connections for port~s1 ~
                          ~&2."
                    :args (let ((dupes (duplicated-members actual-names)))
@@ -729,7 +729,7 @@ named arguments with missing ports, and only issue non-fatal warnings.</p>"
         ;; error, and tools like Verilog-XL and NCVerilog reject it.
         (b* ((extra (difference sorted-actuals sorted-formals)))
           (mv nil
-              (fatal :type :vl-bad-instance
+              (fatal :type :vl-instance-nonexistent-port
                      :msg "~a0 illegally connects to the following ~s1 in ~
                            ~m2: ~&3"
                      :args (list inst
@@ -748,7 +748,7 @@ named arguments with missing ports, and only issue non-fatal warnings.</p>"
           ;; NON-FATAL warning, because this is allowed by tools like
           ;; Verilog-XL and NCVerilog.
           (b* ((missing (difference sorted-formals sorted-actuals)))
-            (warn :type :vl-bad-instance
+            (warn :type :vl-instance-missing-ports
                   :msg "~a0 omits the following ~s1 from ~m2: ~&3"
                   :args (list inst
                               (if (vl-plural-p missing) "ports" "port")
@@ -1027,14 +1027,14 @@ hierarchical identifiers that point at modports.</p>"
        (expr (vl-plainarg->expr arg))
        ((unless expr)
         ;; Blank argument -- this doesn't seem to be allowed; see failtest/port5d.v
-        (mv (fatal :type :vl-bad-instance
+        (mv (fatal :type :vl-instance-blank-interface-port
                    :msg "~a0: interface port ~s1 is blank."
                    :args (list inst port.name))
             arg))
        ((unless (vl-expr-case expr :vl-index))
         ;; Something like .myiface(3 + 4) or whatever.  failtest/iface14.v and
         ;; failtest/port5c.v
-        (mv (fatal :type :vl-bad-instance
+        (mv (fatal :type :vl-instance-interface-port-bad-connection
                    :msg "~a0: interface port argument isn't an interface: .~s1(~a2)"
                    :args (list inst port.name expr))
             arg))
@@ -1060,7 +1060,7 @@ hierarchical identifiers that point at modports.</p>"
        ((mv err trace ?context tail)
         (vl-follow-scopeexpr expr.scope ss :strictp nil))
        ((when err)
-        (mv (fatal :type :vl-bad-instance ;; failtest/iface18.v
+        (mv (fatal :type :vl-instance-interface-port-unresolved ;; failtest/iface18.v
                    :msg "~a0: error resolving interface port argument .~s1(~a2): ~@3"
                    :args (list inst port.name expr err))
             arg))
@@ -1073,13 +1073,13 @@ hierarchical identifiers that point at modports.</p>"
               ;; Connecting .ifport(foo) where foo is a module/UDP instance
               ;; instead of an interface instance.  See also failtest/iface24.v
               ;; and failtest/iface25.v
-              (mv (fatal :type :vl-bad-instance
+              (mv (fatal :type :vl-instance-interface-port-bad-connection
                          :msg "~a0: interface port argument isn't an interface: .~s1(~a2)"
                          :args (list inst port.name expr))
                   arg))
              ((unless (equal step1.item.modname port.ifname))
               ;; See failtest/port1.v
-              (mv (fatal :type :vl-bad-instance
+              (mv (fatal :type :vl-instance-interface-port-bad-connection
                          :msg "~a0: type error: interface port ~s1 (type ~s2) ~
                                is connected to ~a3 (type ~s4)."
                          :args (list inst port.name port.ifname expr step1.item.modname))
@@ -1090,7 +1090,7 @@ hierarchical identifiers that point at modports.</p>"
         (b* (((vl-interfaceport step1.item))
              ((unless (equal step1.item.ifname port.ifname))
               ;; See failtest/port1b.v
-              (mv (fatal :type :vl-bad-instance
+              (mv (fatal :type :vl-instance-interface-port-bad-connection
                          :msg "~a0: type error: interface port ~s1 (type ~s2) ~
                                is connected to ~a3 (type ~s4)."
                          :args (list inst port.name port.ifname expr step1.item.ifname))
@@ -1109,7 +1109,7 @@ hierarchical identifiers that point at modports.</p>"
 
        ((unless (vl-scopeitem-modport-p step1.item))
         ;; See also failtest/ifport2.v, 
-        (mv (fatal :type :vl-bad-instance
+        (mv (fatal :type :vl-instance-interface-port-bad-connection
                    :msg "~a0: interface port argument isn't an interface: .~s1(~a2)"
                    :args (list inst port.name expr))
             arg))
@@ -1117,7 +1117,7 @@ hierarchical identifiers that point at modports.</p>"
        ;; come in arrays.
        ((when (or (consp expr.indices)
                   (not (vl-partselect-case expr.part :none))))
-        (mv (fatal :type :vl-bad-instance
+        (mv (fatal :type :vl-instance-modport-indexing
                    :msg "~a0: array indexing can't be applied to modport: .~s1(~a2)"
                    :args (list inst port.name expr))
             arg))
@@ -1125,7 +1125,7 @@ hierarchical identifiers that point at modports.</p>"
        ((unless (vl-hidexpr-case tail :end))
         ;; If there's stuff in the tail, there's additional indexing *through*
         ;; the modport?  That doesn't seem like it makes any sense.
-        (mv (fatal :type :vl-bad-instance
+        (mv (fatal :type :vl-instance-modport-indexing
                    :msg "~a0: error resolving interface port argument .~s1(~a2): ~
                          trying to index through modport ~s3 with ~a4."
                    :args (list inst port.name expr step1.item.name tail))
@@ -1139,7 +1139,7 @@ hierarchical identifiers that point at modports.</p>"
         ;;         otherinterface bar (consumer);
         ;;     endinterface
         ;; but that certainly makes no sense.
-        (mv (fatal :type :vl-bad-instance
+        (mv (fatal :type :vl-instance-interface-port-bad-connection
                    :msg "~a0: interface port argument isn't an interface: .~s1(~a2)"
                    :args (list inst port.name expr))
             arg))
@@ -1166,7 +1166,7 @@ hierarchical identifiers that point at modports.</p>"
         ;; are used on explicit interface instances.  If we want to relax this
         ;; and allow them on interface ports, we'll need to add another case
         ;; here for step2.item being an interfaceport.
-        (mv (fatal :type :vl-bad-instance
+        (mv (fatal :type :vl-instance-interface-port-bad-connection
                    :msg "~a0: unsupported interface port argument .~s1(~a2). ~
                          We currently only support arguments with modport ~
                          specifiers for direct interface instantiations, but ~
@@ -1189,7 +1189,7 @@ hierarchical identifiers that point at modports.</p>"
             arg))
        ((vl-interface iface))
        ((unless (equal iface.name port.ifname))
-        (mv (fatal :type :vl-bad-instance
+        (mv (fatal :type :vl-instance-interface-port-bad-connection
                    :msg "~a0: type error: interface port ~s1 (type ~s2) is ~
                          connected to ~a3 (type ~s4)."
                    :args (list inst port.name port.ifname expr iface.name))
@@ -1199,7 +1199,7 @@ hierarchical identifiers that point at modports.</p>"
         ;; SystemVerilog-2012 25.5, page 718: "If a port connection specifies a
         ;; modport list name in both the module instance and module header
         ;; declaration, then the two modport list names shall be identical."
-        (mv (fatal :type :vl-bad-instance
+        (mv (fatal :type :vl-instance-interface-port-bad-connection
                    :msg "~a0: modport clash for .~s1(~a2).  In submodule ~s3 ~
                          the port is declared as modport ~s4, so you can't ~
                          instantiate it with modport ~s5."
@@ -1221,7 +1221,7 @@ hierarchical identifiers that point at modports.</p>"
         ;; This probably won't be too hard to support: we'll need to somehow
         ;; move these indices into the new index expression we build.  I'm not
         ;; sure what that's going to look like, yet.
-        (mv (fatal :type :vl-bad-instance
+        (mv (fatal :type :vl-instance-interface-port-unsupported
                    :msg "~a0: reducing interface port .~s1(~a2) by dropping ~
                          modport ~s3: indices on pre-modport expression?  ~
                          BOZO we might need to support this for interface ~
@@ -1373,7 +1373,7 @@ checking, and add direction/name annotations.</p>"
        ((unless (same-lengthp plainargs ports))
         (b* ((nports   (len ports))
              (nargs    (len plainargs)))
-          (mv (fatal :type :vl-bad-instance
+          (mv (fatal :type :vl-instance-wrong-arity
                      ;; Wow this is hideous
                      :msg "~a0 ~s1 ~x2 ~s3, but module ~m4 ~s5 ~x6 ~s7."
                      :args (list inst
@@ -1394,6 +1394,8 @@ checking, and add direction/name annotations.</p>"
        (new-x     (make-vl-arguments-plain :args plainargs)))
     (mv (ok) new-x)))
 
+
+
 (define vl-modinst-argresolve
   :short "Resolve arguments in a @(see vl-modinst-p)."
   ((x        vl-modinst-p)
@@ -1413,9 +1415,27 @@ checking, and add direction/name annotations.</p>"
        ((unless (and submod
                      (or (eq (tag submod) :vl-module)
                          (eq (tag submod) :vl-interface))))
-        (mv (fatal :type :vl-bad-instance
+        (mv (fatal :type :vl-unresolved-instance
                    :msg "~a0 refers to undefined module ~m1."
                    :args (list x x.modname))
+            x))
+       (submod-warnings (if (eq (tag submod) :vl-module)
+                            (vl-module->warnings submod)
+                          (vl-interface->warnings submod)))
+       ;; For e.g. lint purposes, we may want to allow instances of modules
+       ;; that have certain fatal warnings.  We'll eliminate these by
+       ;; propagate-errors if we want to.  But practically speaking often we
+       ;; get nonsensical bad instance warnings when instantiating a module
+       ;; that has a parse error, which causes it to appear as though it has no
+       ;; ports.  We'll catch this problem here so that the warning is more
+       ;; explicit.
+       (submod-parse-errors (vl-keep-warnings '(:vl-parse-error) submod-warnings))
+       ((when submod-parse-errors)
+        (mv (fatal :type :vl-instance-of-unparsed
+                   :msg "~a0 refers to ~s1 ~m2, which has a parse error."
+                   :args (list x
+                               (if (eq (tag submod) :vl-module) "module" "interface")
+                               x.modname))
             x))
        (submod.ports (if (eq (tag submod) :vl-module)
                          (vl-module->ports submod)
