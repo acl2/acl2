@@ -26,7 +26,7 @@
               (natp var-darg)
               (let ((var-expr (aref1 'acl2::dag-array acl2::dag-array var-darg)))
                 (and (symbolp var-expr)
-                     (symbol-< var-expr unquoted-key)))))))
+                     (symbol< var-expr unquoted-key)))))))
 
 (defun acl2::var-not-less-than-unquoted-keyp (var-darg key-darg acl2::dag-array)
   (declare (xargs :guard (and (or (acl2::myquotep var-darg)
@@ -41,4 +41,4 @@
               (natp var-darg)
               (let ((var-expr (aref1 'acl2::dag-array acl2::dag-array var-darg)))
                 (and (symbolp var-expr)
-                     (not (symbol-< var-expr unquoted-key))))))))
+                     (not (symbol< var-expr unquoted-key))))))))

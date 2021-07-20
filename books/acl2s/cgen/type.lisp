@@ -598,7 +598,7 @@
 ;;                    (t t)))
 ;;             ((symbolp x)
 ;;              (if (symbolp y)
-;;                  (and (not (eq x y)) (symbol-< x y) t)
+;;                  (and (not (eq x y)) (symbol< x y) t)
 ;;                (not (or (integerp y)
 ;;                         (stringp y)
 ;;                         (characterp y)

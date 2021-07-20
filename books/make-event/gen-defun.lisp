@@ -35,7 +35,7 @@
                         body ~X12 failed because the function symbol ~x0 ~
                         occurs in the body."
                        name tbody (evisc-tuple 4 3 nil nil)))
-                  (t (let ((vars (merge-sort-symbol-< (all-vars body))))
+                  (t (let ((vars (merge-sort-symbol< (all-vars body))))
                        (value `(defun ,name ,vars
                                  ,@(and stobjs
                                         `((declare (xargs :stobjs ,stobjs))))

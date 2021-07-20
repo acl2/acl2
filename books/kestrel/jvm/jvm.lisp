@@ -456,7 +456,7 @@
   (declare (xargs :guard (and (class-namep class-name)
                               (class-tablep class-table))))
   (let* (;(class-info (get-class-info class-name class-table))
-         (psupers (acl2::get-super-classes class-name class-table);(class-decl-superclasses class-info)
+         (psupers (acl2::get-superclasses class-name class-table);(class-decl-superclasses class-info)
           )
          (supers (cons class-name psupers)))
     (or (memberp "java.lang.Thread" supers)
@@ -1235,6 +1235,7 @@
 
 ;; Returns (mv foundp class-name).  Find the first of the CLASS-NAMES that
 ;; has a method with the given METHOD-ID.
+;; TODO: Need to handle signature polymorphic methods.
 (defund resolve-method-step-2-aux (method-id class-names class-table)
   (declare (xargs :guard (and (true-listp class-names)
                               (all-class-namesp class-names)
@@ -1269,7 +1270,7 @@
                               (not (bound-to-an-interfacep class-name class-table)))))
   (resolve-method-step-2-aux (cons method-name method-descriptor)
                              ;; we search the given class and then its superclasses
-                             (cons class-name (acl2::get-super-classes class-name class-table))
+                             (cons class-name (acl2::get-superclasses class-name class-table))
                              class-table))
 
 (defthm resolve-method-step-2-type
@@ -2234,7 +2235,7 @@
              (sub-class-or-same-classp d c class-table)
              (implies (not static-flag)
                       (or (sub-class-or-same-classp t-class d class-table)
-                          (super-classp t-class d class-table))))
+                          (superclassp t-class d class-table))))
         (and (or protected-flag
                  default-access)
              (and (bound-to-a-classp c class-table)
@@ -2287,8 +2288,8 @@
                (if (or (bound-to-an-interfacep c class-table) ;(class-decl-interfacep class-info) ;an interface doesn't have a superclass
                        (equal "java.lang.Object" c)) ;TODO: Could check for a superclass of :none
                    nil                               ; field lookup fails
-                 (let* ((super-class (get-super-class c class-table))) ;fixme optimize to reuse the class-info
-                   (lookup-field field-id super-class class-table (+ -1 (nfix ctr))))))))))))
+                 (let* ((superclass (get-superclass c class-table))) ;fixme optimize to reuse the class-info
+                   (lookup-field field-id superclass class-table (+ -1 (nfix ctr))))))))))))
 
  (defund lookup-field-lst (field-id class-or-interface-names class-table ctr)
    (declare (xargs :measure (+ 1 (nfix ctr))
@@ -2336,8 +2337,8 @@
 ;; (thm
 ;;  (implies (and (class-tablep CLASS-TABLE)
 ;;                (NOT (EQUAL "java.lang.Object" C)))
-;;           (CLASS-NAMEP (GET-SUPER-CLASS C CLASS-TABLE)))
-;;  :hints (("Goal" :in-theory (enable class-tablep GET-SUPER-CLASS))))
+;;           (CLASS-NAMEP (GET-SUPERCLASS C CLASS-TABLE)))
+;;  :hints (("Goal" :in-theory (enable class-tablep GET-SUPERCLASS))))
 
 (defthm-flag-lookup-field
  (defthm class-namep-of-lookup-field
@@ -2679,10 +2680,10 @@
         (modify th s
                 :initialized-classes (cons class-to-initialize initialized-classes)))))
 
-;; We leave this disabled and prove an opener for the case when the class-name and super-classes are constants.
-(defund invoke-static-initializer-for-next-class-helper (class-name super-class-names th s)
+;; We leave this disabled and prove an opener for the case when the class-name and superclasses are constants.
+(defund invoke-static-initializer-for-next-class-helper (class-name superclass-names th s)
 ;  (declare (xargs :guard (and (class-namep class-name))))
-  (let* ((all-classes (cons class-name super-class-names))
+  (let* ((all-classes (cons class-name superclass-names))
          (classes-in-order (acl2::reverse-list all-classes)) ;we start with the "oldest" ancestor class
          ;; we know that at least one class will need to be initialized
          ;; the one to be inititalized on this iteration will be the oldest ancestor class
@@ -2696,7 +2697,7 @@
 ;; We leave this disabled and prove an opener for the case when the class-name is a constant.
 (defund invoke-static-initializer-for-next-class (class-name th s)
   (invoke-static-initializer-for-next-class-helper class-name
-                                                   (acl2::get-super-classes class-name (class-table s))
+                                                   (acl2::get-superclasses class-name (class-table s))
                                                    th
                                                    s))
 
@@ -3242,7 +3243,7 @@
                   (array-typep type-t))
               ;; T is a class type:
               (or (equal type-s type-t)
-                  (acl2::bool-fix (member-equal type-t (acl2::get-super-classes type-s class-table))))
+                  (acl2::bool-fix (member-equal type-t (acl2::get-superclasses type-s class-table))))
             ;; T is an interface type:
             (class-implements-interfacep type-s type-t class-table))
         ;; S is an interface type:
@@ -3252,7 +3253,7 @@
             (equal type-t "java.lang.Object")
           ;; T is an interface type:
           (or (equal type-t type-s)
-              (acl2::bool-fix (member-equal type-t (acl2::get-super-interfaces (list type-s) class-table))))))
+              (acl2::bool-fix (member-equal type-t (acl2::get-superinterfaces (list type-s) class-table))))))
     ;; S is an array type:
     (let ((s-component-type (get-array-component-type type-s)))
       (if (class-or-interface-namep type-t)
@@ -3332,7 +3333,7 @@
                      type-s
                      type-t
                      ;;(array-classp type-s)
-                     ;;(acl2::get-super-classes type-s class-table)
+                     ;;(acl2::get-superclasses type-s class-table)
                      )
                s))))))))
 
@@ -3797,7 +3798,7 @@
                               (not (bound-to-an-interfacep class-name class-table)))))
   (let ((method-or-nil (lookup-method-in-classes (cons method-name descriptor)
                                                  ;;we search the given class and then its superclasses (fixme what about interfaces?)
-                                                 (cons class-name (acl2::get-super-classes class-name class-table))
+                                                 (cons class-name (acl2::get-superclasses class-name class-table))
                                                  class-table)))
     (if method-or-nil
         method-or-nil
@@ -3836,13 +3837,13 @@
             (mv nil ;no error
                 possible-method-info
                 class-name)
-          (let ((c-super-class (get-super-class class-name class-table)))
-            (if (eq :none c-super-class)
+          (let ((c-superclass (get-superclass class-name class-table)))
+            (if (eq :none c-superclass)
                 (mv (list "ERROR in INVOKESPECIAL.  Class has no super class." :debug-info class-name) ;error
                     nil nil)
               ;;(error-looking-up-method-for-invokespecial class-name method-name method-descriptor class-table)
               ;;todo: should be an AbstractMethodError
-              (lookup-method-for-invokespecial-aux c-super-class
+              (lookup-method-for-invokespecial-aux c-superclass
                                                    method-name
                                                    method-descriptor
                                                    class-table
@@ -3896,15 +3897,15 @@
                (c (if (and (not (equal current-class-name *dummy-class-name*))
                            (not (equal "<init>" method-name)) ;todo: more checks! see the docs
                            (bound-to-a-non-interfacep class-name class-table)
-                           (super-classp class-name current-class-name class-table)
+                           (superclassp class-name current-class-name class-table)
                            (member-eq :acc_super (class-decl-access-flags (get-class-info current-class-name class-table))) ;; assuming "the class file" refers to the current class
                            )
-                      (get-super-class current-class-name class-table) ;fixme, what if this is java.lang.Object? getting the super-class won't work
+                      (get-superclass current-class-name class-table) ;fixme, what if this is java.lang.Object? getting the superclass won't work
                     class-name)))
           ;;fixme - do we do the right thing here?
           (lookup-method-for-invokespecial-aux c
                                                method-name descriptor class-table
-                                               (+ 1 (len (acl2::get-super-classes c class-table))) ;sufficient to ensure we handle all the super classes.
+                                               (+ 1 (len (acl2::get-superclasses c class-table))) ;sufficient to ensure we handle all the super classes.
                                                ))))))
 
 
@@ -4537,7 +4538,7 @@
                                    acl2::set-fields)
                                   (string-has-been-internedp
                                    string-to-char-list
-                                   acl2::get-super-classes)))))
+                                   acl2::get-superclasses)))))
 
 ;;     (if looked-up-string ;if the string is already in the table
 ;;         (mv looked-up-string heap)

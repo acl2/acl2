@@ -36,7 +36,7 @@
   (implies (and (syntaxp (and (symbolp var)
                               (quotep key)
                               (symbolp (unquote key))
-                              (symbol-< var (unquote key))))
+                              (symbol< var (unquote key))))
                 (member-equal var x))
            (member-equal var (append-with-key key x y)))
   :hints (("Goal" :in-theory (enable append-with-key))))
@@ -46,7 +46,7 @@
   (implies (and (syntaxp (and (symbolp var)
                               (quotep key)
                               (symbolp (unquote key))
-                              (not (symbol-< var (unquote key)))))
+                              (not (symbol< var (unquote key)))))
                 (member-equal var y))
            (member-equal var (append-with-key key x y)))
   :hints (("Goal" :in-theory (enable append-with-key))))
@@ -74,9 +74,9 @@
       (let* ((first-half (reverse-list first-half-rev))
              (key (first second-half)))
         `(append-with-key ',key ;note that the key is quoted
-                          ;; all are symbol-< than the key:
+                          ;; all are symbol< than the key:
                           ,(make-append-with-key-nest-aux first-half)
-                          ;; none are symbol-< than the key:
+                          ;; none are symbol< than the key:
                           ,(make-append-with-key-nest-aux second-half))))))
 
 (defthm pseudo-termp-of-make-append-with-key-nest-aux
@@ -87,7 +87,7 @@
 (defund make-append-with-key-nest (vars)
   (declare (xargs :guard (and (symbol-listp vars)
                               (consp vars))))
-  (make-append-with-key-nest-aux (merge-sort-symbol-< vars)))
+  (make-append-with-key-nest-aux (merge-sort-symbol< vars)))
 
 (defthm pseudo-termp-of-make-append-with-key-nest
   (implies (symbol-listp vars)

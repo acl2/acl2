@@ -53,7 +53,7 @@
   :hints (("Goal" :in-theory (enable assoc-equal
                                      assoc-equal-unguarded))))
 
-(defund symbol-<-unguarded (x y)
+(defund symbol<-unguarded (x y)
   (declare (xargs :guard t))
   (let ((x1 (if (symbolp x) (symbol-name x) ""))
         (y1 (if (symbolp y) (symbol-name y) "")))
@@ -62,10 +62,10 @@
                 (string< (if (symbolp x) (symbol-package-name x) "")
                          (if (symbolp y) (symbol-package-name y) ""))))))
 
-(defthm symbol-<-unguarded-correct
-  (equal (symbol-<-unguarded x y)
-         (symbol-< x y))
-  :hints (("Goal" :in-theory (enable symbol-<-unguarded symbol-<))))
+(defthm symbol<-unguarded-correct
+  (equal (symbol<-unguarded x y)
+         (symbol< x y))
+  :hints (("Goal" :in-theory (enable symbol<-unguarded symbol<))))
 
 (defund numerator-unguarded (x)
   (declare (xargs :guard t))

@@ -316,8 +316,8 @@
               ((ARG2 (NTH 1 ARGS))
                (ARG1 (NTH 0 ARGS)))
               (IF
-               (EQ 'SYMBOL-< FN)
-               (MV T (SYMBOL-<-UNGUARDED ARG1 ARG2))
+               (EQ 'SYMBOL< FN)
+               (MV T (SYMBOL<-UNGUARDED ARG1 ARG2))
               (IF
                (EQ 'SET::IN FN)
                (MV T (SET::IN-UNGUARDED ARG1 ARG2))
@@ -1771,8 +1771,8 @@
              ((ARG2 (UNQUOTE (NTH 1 ARGS)))
               (ARG1 (UNQUOTE (NTH 0 ARGS))))
              (IF
-              (EQ 'symbol-< FN)
-              (MV T (symbol-<-unguarded ARG1 ARG2))
+              (EQ 'symbol< FN)
+              (MV T (symbol<-unguarded ARG1 ARG2))
               (IF
                (EQ 'SET::IN FN)
                (MV T (SET::IN-UNGUARDED ARG1 ARG2))

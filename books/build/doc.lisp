@@ -1246,8 +1246,13 @@ to the head node before returning control to the Makefile.</p>")
                  distributed-builds cert_param acl2::ifdef acl2::ifndef))
 
 
-; added by Matt K., 8/14/2014
+; added by Matt K., 8/14/2014 (revised 7/14/2021)
 (defxdoc cert_param
+
+; The list of legal cert_param values listed below comes from
+; books/build/cert.pl, from the definition of my %reqparams as well as calls of
+; cert_get_param.
+
   :parents (cert.pl)
   :short "Restricting and modifying @(see community-books)
 certification using @('make')."
@@ -1281,12 +1286,11 @@ certification using @('make')."
 
  <p>The meaning of an activated @('cert_param') is generally clear from its
  name, as follows.  Additional @('cert_param') values might be supported in the
- future; you can browse @(see community-books) files @('build/cert.pl') and
- @('build/certlib.pl') for additional supported values.  The @('acl2x'),
- @('acl2xskip'), and @('reloc_stub') values affect only the book itself, not
- books that include it.  However, the other values affect not only the
- certification of the indicated book but also apply to all books that include
- it (and recursively).</p>
+ future; you can browse @(see community-books) file @('build/cert.pl') for
+ additional supported values.  The @('acl2x'), @('acl2xskip'), and
+ @('reloc_stub') values affect only the book itself, not books that include it.
+ However, the other values affect not only the certification of the indicated
+ book but also apply to all books that include it (and recursively).</p>
 
  <ul>
 
@@ -1306,7 +1310,23 @@ certification using @('make')."
  <li>@('non-acl2r'): only certify when the @(see real) numbers are NOT
  supported, i.e., when NOT using ACL2(r)</li>
 
- <li>@('reloc_stub'): print a suitable ``relocation stub'' warning</li>
+ <li>@('non-allegro'): only certify when the host Lisp is NOT Allegro CL</li>
+
+ <li>@('non-cmucl'): only certify when the host Lisp is NOT cmucl</li>
+
+ <li>@('non-gcl'): only certify when the host Lisp is NOT gcl</li>
+
+ <li>@('non-lispworks'): only certify when the host Lisp is NOT LispWorks</li>
+
+ <li>@('non-sbcl'): only certify when the host Lisp is NOT sbcl</li>
+
+ <li>@('pcert'): use provisional certification (see @(see
+ acl2::provisional-certification))</li>
+
+ <li>@('reloc-stub'): print a suitable ``relocation stub'' warning</li>
+
+ <li>@('uses-abc'): only certify when the external equivalence/model-checking
+ tool ABC is available</li>
 
  <li>@('uses-acl2r'): only certify when the @(see real) numbers are supported,
  i.e., with ACL2(r)</li>
@@ -1314,13 +1334,42 @@ certification using @('make')."
  <li>@('uses-glucose'): only certify when Glucose (a SAT solver) is
  available</li>
 
+ <li>@('uses-ipasir'): only certify when Ipasir (a simple C interface to
+ incremental SAT solvers) is available</li>
+
+ <li>@('uses-smtlink'): only certify when Smtlink (see @(see smt::smtlink)) is
+ available</li>
+
  <li>@('uses-stp'): only certify when STP (an SMT solver available <a href=
- 'https://github.com/stp/stp'>here</a>) is available</li>
+ 'https://github.com/stp/stp'>here</a>) is available (to suppress the use
+ of STP, even when an executable for it seems to be available, set environment
+ variable @('ACL2_DONT_USE_STP') to any non-empty value)</li>
 
  <li>@('uses-quicklisp'): only certify when quicklisp is available</li>
 
  </ul>"))
 
+; The following defpointer forms were added by Matt K., 7/14/2021.
+(acl2::defpointer acl2x cert_param)
+(acl2::defpointer acl2xskip cert_param)
+(acl2::defpointer ansi-only cert_param)
+(acl2::defpointer ccl-only cert_param)
+(acl2::defpointer hons-only cert_param)
+(acl2::defpointer non-acl2r cert_param)
+(acl2::defpointer non-allegro cert_param)
+(acl2::defpointer non-cmucl cert_param)
+(acl2::defpointer non-gcl cert_param)
+(acl2::defpointer non-lispworks cert_param)
+(acl2::defpointer non-sbcl cert_param)
+(acl2::defpointer pcert cert_param)
+(acl2::defpointer reloc-stub cert_param)
+(acl2::defpointer uses-abc cert_param)
+(acl2::defpointer uses-acl2r cert_param)
+(acl2::defpointer uses-glucose cert_param)
+(acl2::defpointer uses-ipasir cert_param)
+(acl2::defpointer uses-smtlink cert_param)
+(acl2::defpointer uses-stp cert_param)
+(acl2::defpointer uses-quicklisp cert_param)
 
 (defxdoc acl2::ifdef
   :parents (cert.pl)

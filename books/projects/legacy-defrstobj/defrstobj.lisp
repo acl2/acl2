@@ -535,7 +535,7 @@
                                               ,field2-setter))))
           (defthm ,(mksym field1-setter '-of- field2-setter)
             (implies (and (,weak-stp ,stobj-name)
-                          (syntaxp (symbol-< ',field1 ',field2))
+                          (syntaxp (symbol< ',field1 ',field2))
                           )
                      (equal (,field1-setter val1 (,field2-setter val2 ,stobj-name))
                             (,field2-setter val2 (,field1-setter val1 ,stobj-name))))

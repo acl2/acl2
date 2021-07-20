@@ -302,7 +302,7 @@
                          (y))
   (cond ((symbolp x)
          (cond ((symbolp y)
-                (symbol-< x y))
+                (symbol< x y))
                (t nil)))
         ((integerp x)
          (cond ((integerp y)

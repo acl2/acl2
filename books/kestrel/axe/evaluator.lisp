@@ -773,7 +773,7 @@
                   (group group arg1 arg2)
                   (group2 group2 arg1 arg2)
                   (set::in set::in-unguarded arg1 arg2)
-                  (symbol-< symbol-<-unguarded arg1 arg2))
+                  (symbol< symbol<-unguarded arg1 arg2))
                 (acons 3
                        '((repeat-tail repeat-tail arg1 arg2 arg3) ;; can this blow up?
                          (negated-elems-listp negated-elems-listp-unguarded arg1 arg2 arg3)

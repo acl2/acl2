@@ -207,7 +207,7 @@
  (1 1 (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
  )
 (BITOPS::CROCK
- (58 58 (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
+ (59 59 (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
  (45 1 (:LINEAR BITOPS::|(< a (ash a b)) when (posp a)|))
  (22 1 (:REWRITE POSP-REDEFINITION))
  (19 2 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))

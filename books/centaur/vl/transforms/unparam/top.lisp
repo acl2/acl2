@@ -918,8 +918,8 @@ for each usertype is stored in the res field.</p>"
                          (eq (tag mod) :vl-interface))))
         (vl-unparam-debug "~a0: can't find module ~a1.~%" inst inst.modname)
         (mv nil
-            (fatal :type :vl-bad-instance
-                   :msg "~a0: trying to instantiate undefined module ~s1."
+            (fatal :type :vl-unresolved-instance
+                   :msg "~a0 refers to undefined module ~m1."
                    :args (list inst inst.modname))
             inst nil elabindex ledger))
 
@@ -948,7 +948,7 @@ for each usertype is stored in the res field.</p>"
 
        ((when err)
         (mv nil
-            (fatal :type :vl-bad-instance
+            (fatal :type :vl-instance-bad-interfaceports
                    :msg "~a0: Interfaceport processing failed: ~@1"
                    :args (list inst err))
             inst nil elabindex ledger))

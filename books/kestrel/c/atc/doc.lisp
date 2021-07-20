@@ -799,7 +799,7 @@
       so they do not need the explicit designation `pure'
       because they are the only boolean terms handled by ATC.
       Recursive ACL2 functions represent C loops,
-      where those recursive funtions are called.")
+      where those recursive functions are called.")
 
     (xdoc::p
      "The body of the C function represented by each non-recursive @('fni')

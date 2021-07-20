@@ -118,7 +118,7 @@
 ;;            (all-stored-axe-rulep (revappend x y)))
 ;;   :hints (("Goal" :in-theory (enable revappend))))
 
-;; TODO: For predictability, we could secondarily sort by name, using symbol-<.
+;; TODO: For predictability, we could secondarily sort by name, using symbol<.
 (defun higher-priority (stored-rule1 stored-rule2 priorities)
   (declare (xargs :guard (and (stored-axe-rulep stored-rule1)
                               (stored-axe-rulep stored-rule2)

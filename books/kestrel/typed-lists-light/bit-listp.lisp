@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; See also bit-listp-rules.lisp
+
 ;; match the version in books/kestrel/utilities/typed-lists/bit-listp.
 (defun bit-listp (x)
   (declare (xargs :normalize nil

@@ -67,7 +67,7 @@
     not
     len
     (assoc-equal assoc-equal-unguarded)
-    (symbol-< symbol-<-unguarded)
+    (symbol< symbol<-unguarded)
     unsigned-byte-p
     unsigned-byte-p-forced
     fix

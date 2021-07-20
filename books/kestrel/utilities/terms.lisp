@@ -401,6 +401,12 @@
       (farg1 term) ;negation of (not x) is just x
     `(not ,term)))
 
+;; Kept disabled for speed
+;; Matches the one in std.
+(defthmd pseudo-term-listp-when-symbol-listp
+  (implies (symbol-listp syms)
+           (pseudo-term-listp syms)))
+
 (defthm pseudo-term-listp-when-symbol-listp-cheap
   (implies (symbol-listp x)
            (pseudo-term-listp x))

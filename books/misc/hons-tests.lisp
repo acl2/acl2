@@ -1139,7 +1139,7 @@
          (if (characterp v2)
              nil
            (if (symbolp v2)
-               (symbol-< v1 v2)
+               (symbol< v1 v2)
              t)))
         (t (if (acl2-numberp v2)
                (if (< (imagpart v1) (imagpart v2))

@@ -107,7 +107,7 @@
              '(1 2 6 120))
 
 ; This is an example we also used in user-thms.lisp showing that we could pass
-; COLLECT as the funtional arg to a mapping function and have it get its
+; COLLECT as the functional arg to a mapping function and have it get its
 ; functional arg from the data -- provided the data contains tame functional
 ; arguments.
 

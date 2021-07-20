@@ -11476,7 +11476,7 @@
 (defun merge-rw-caches (alist1 alist2)
 
 ; Each of alist1 and alist2 is a symbol-alist sorted by car according to
-; symbol-<.  The value of each key is a sorted-rw-cache-list.  We return a
+; symbol<.  The value of each key is a sorted-rw-cache-list.  We return a
 ; symbol-alist, sorted that same way, such that each key's value is the
 ; suitable combination of its values in the two alists.  We avoid some consing
 ; by returning an additional value: a flag which, if true, implies that the
@@ -11494,12 +11494,12 @@
                          (cond ((and flg flg2) (mv t alist2))
                                (flg2 (mv nil (cons (car alist2) rest)))
                                (t (mv nil (acons (caar alist2) objs rest)))))))
-        ((symbol-< (caar alist1) (caar alist2))
+        ((symbol< (caar alist1) (caar alist2))
          (mv-let (flg rest)
                  (merge-rw-caches (cdr alist1) alist2)
                  (declare (ignore flg))
                  (mv nil (cons (car alist1) rest))))
-        (t ; (symbol-< (caar alist2) (caar alist1))
+        (t ; (symbol< (caar alist2) (caar alist1))
          (mv-let (flg rest)
                  (merge-rw-caches alist1 (cdr alist2))
                  (cond (flg (mv t alist2))
@@ -11514,7 +11514,7 @@
 (defun merge-symbol-alistp (a1 a2)
   (cond ((endp a1) a2)
         ((endp a2) a1)
-        ((symbol-< (caar a1) (caar a2))
+        ((symbol< (caar a1) (caar a2))
          (cons (car a1)
                (merge-symbol-alistp (cdr a1) a2)))
         (t
@@ -11524,7 +11524,7 @@
 (defun merge-sort-symbol-alistp (alist)
   (cond ((endp (cdr alist)) alist)
         ((endp (cddr alist))
-         (cond ((symbol-< (car (car alist)) (car (cadr alist)))
+         (cond ((symbol< (car (car alist)) (car (cadr alist)))
                 alist)
                (t (list (cadr alist) (car alist)))))
         (t (let* ((n (length alist))

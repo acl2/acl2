@@ -796,7 +796,7 @@ system/toothbrush/success.txt:
 	@echo "Note: Skipping $@ for host Lisp $(ACL2_HOST_LISP)."
 else
 system/toothbrush/success.txt: system/toothbrush-deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 endif # ifeq ($(TB_LISP), )
 
 # We only make the books under SULFA if a documented test for an
@@ -812,38 +812,38 @@ clause-processors/SULFA/target.cert: \
 
 projects/translators/l3-to-acl2/target.cert: \
   projects/translators/l3-to-acl2-deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1 clean"
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1 clean"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1"
 
 workshops/1999/multiplier/proof.cert: \
   workshops/1999/deps-multiplier.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert: \
   workshops/2003/greve-wilding-vanfleet/deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 workshops/2003/kaufmann/support/input/defs-in.cert: \
   workshops/2003/kaufmann/deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 workshops/2003/kaufmann/support/rtl/package-defs.cert: \
   workshops/2003/kaufmann/deps.cert \
   workshops/2003/kaufmann/support/tool/simplify-defuns.cert \
   workshops/2003/kaufmann/support/tool/wrapper.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 # The following has no dependencies, so doesn't need a "deps" file.
 workshops/2004/sumners-ray/support/success.txt:
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 .PHONY: projects/apply-model/phony
 projects/apply-model/phony: projects/apply-model-deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 .PHONY: projects/apply-model-2/phony
 projects/apply-model-2/phony: projects/apply-model-2-deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 endif # ifeq ($(ACL2_HAS_REALS), )
 
