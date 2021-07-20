@@ -119,7 +119,7 @@
   (b* ((asg (assignment-fix asg)))
     (or (omap::empty asg)
         (b* (((mv & nat) (omap::head asg)))
-          (and (pfield::fep nat p)
+          (and (fep nat p)
                (assignment-for-prime-p (omap::tail asg) p)))))
   :hooks (:fix)
   ///
@@ -128,26 +128,28 @@
     (implies (and (assignmentp asg)
                   (assignment-for-prime-p asg p)
                   (consp (omap::in var asg)))
-             (pfield::fep (cdr (omap::in var asg)) p)))
+             (fep (cdr (omap::in var asg)) p)))
 
   (defrule assignment-for-prime-p-of-tail
     (implies (and (assignmentp asg)
                   (assignment-for-prime-p asg p))
              (assignment-for-prime-p (omap::tail asg) p)))
 
+  (defrule assignment-for-prime-p-of-nil
+    (assignment-for-prime-p nil p))
+
   (defrule assignment-for-prime-p-of-update
     (implies (and (assignmentp asg)
                   (assignment-for-prime-p asg p)
                   (fep nat p))
              (assignment-for-prime-p (omap::update var nat asg) p))
-    :enable (assignment-for-prime-p omap::update)
+    :enable omap::update
     :prep-lemmas
     ((defrule lemma
        (implies (and (fep (cdr pair) p)
                      (assignment-for-prime-p asg p))
                 (assignment-for-prime-p (cons pair asg) p))
-       :enable (assignment-for-prime-p
-                omap::head
+       :enable (omap::head
                 omap::tail)
        :expand ((assignment-for-prime-p (cons pair asg) p))))))
 
@@ -205,7 +207,7 @@
                   (assignmentp asg)
                   (assignment-for-prime-p asg p)
                   (eval-expr asg expr p))
-             (pfield::fep (eval-expr asg expr p) p))
+             (fep (eval-expr asg expr p) p))
     :enable fep-of-cdr-of-in-when-assignment-for-prime-p)
 
   (verify-guards eval-expr))
