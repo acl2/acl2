@@ -409,7 +409,7 @@
       This theorem is only generated if some result is being transformed.")
     (xdoc::li
      "A new @(':newp-of-new-name') input has been added
-      to specify the name fo the @('newp-of-new') theorem.
+      to specify the name of the @('newp-of-new') theorem.
       This input is allowed only if some result is being transformed,
       because otherwise no @('newp-of-new') theorems is generated.")
     (xdoc::li
