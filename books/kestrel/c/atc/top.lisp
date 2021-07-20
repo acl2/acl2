@@ -14,3 +14,4 @@
 (include-book "atc")
 (include-book "doc")
 (include-book "tutorial")
+(include-book "term-recognizers")
