@@ -3785,7 +3785,8 @@
        ((unless (typep type))
         (acl2::value
          (raise "Internal error: the function ~x0 has no return type." fn)))
-       ((when (type-case type :pointer))
+       ((when (and (type-case type :pointer)
+                   (not (member-eq :array-writes experimental))))
         (acl2::value
          (raise "Internal error: ~
                  the return type ~x0 of function ~x1 cannot be a pointer."
