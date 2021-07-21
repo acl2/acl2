@@ -10,7 +10,7 @@
 
 (in-package "YUL")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "concrete-syntax")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
