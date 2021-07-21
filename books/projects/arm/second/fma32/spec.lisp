@@ -1,0 +1,61 @@
+;; David Russinoff <david.russinoff@arm.com>
+;; Cuong Chau <cuong.chau@arm.com>
+
+;; June 2021
+
+(in-package "RTL")
+
+(include-book "projects/arm/utils/rtl-utils" :dir :system)
+
+;; ======================================================================
+
+(defund decode-fma-rmode (rmode)
+  (declare (xargs :guard (natp rmode)))
+  (case rmode
+    (0 'rup)
+    (1 'rdn)
+    (2 'rtz)
+    (3 'rne)
+    (4 'rna)
+    (5 'rto)))
+
+(defund fma32-spec (a b c d rmode scaleop)
+  (let* ((asgn (sgnf a (sp)))
+         (bsgn (sgnf b (sp)))
+         (csgn (sgnf c (sp)))
+         (psgn (logxor asgn bsgn))
+	 (u (* (if (= scaleop 1)
+                   (expt 2 (si d 32))
+                 1)
+               (+ (* (decode a (sp)) (decode b (sp)))
+                  (decode c (sp)))))
+         (mode (decode-fma-rmode rmode))
+         (r (rnd-ext u mode 24))
+	 (d (drnd-ext u mode (sp)))
+	 (sgn (if (< u 0) 1 0)))
+    (cond ((or (nanp a (sp)) (nanp b (sp)) (nanp c (sp))
+               (and (zerp a (sp)) (infp b (sp)))
+               (and (zerp b (sp)) (infp a (sp)))
+               (and (or (infp a (sp)) (infp b (sp)))
+                    (infp c (sp))
+                    (not (= psgn csgn))))
+           (indef (sp)))
+          ((or (infp a (sp)) (infp b (sp)))
+           (iencode psgn (sp)))
+          ((infp c (sp))
+	   (iencode csgn (sp)))
+          ((= u 0)
+           (zencode (if (= psgn csgn) psgn (if (= mode 'rdn) 1 0)) (sp)))
+         ((> (abs r) (lpn (sp)))
+          (if (or (and (eql mode 'rdn) (> r 0))
+                  (and (eql mode 'rup) (< r 0))
+                  (eql mode 'rtz))
+              (nencode (* (sgn r) (lpn (sp))) (sp))
+	    (iencode sgn (sp))))
+	((< (abs u) (spn (sp)))
+	 (if (= d 0)
+	     (zencode sgn (sp))
+	   (if (= (abs d) (spn (sp)))
+	       (nencode d (sp))
+	     (dencode d (sp)))))
+        (t (nencode r (sp))))))
