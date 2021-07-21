@@ -230,7 +230,14 @@
             :elt-type uchar
             :true-listp t
             :elementp-of-nil nil
-            :pred uchar-listp))))
+            :pred uchar-listp)))
+
+  ///
+
+  (defrule len-of-uchar-array->elements-of-uchar-array-write
+    (equal (len (uchar-array->elements (uchar-array-write array index element)))
+           (len (uchar-array->elements array)))
+    :enable uchar-array-index-okp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -248,4 +255,11 @@
      @(tsee uchar-array-index-okp) and @(tsee sint-integer-value)."))
   (uchar-array-write array (sint-integer-value index) element)
   :guard-hints (("Goal" :in-theory (enable uchar-array-sint-index-okp)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule len-of-uchar-array->elements-of-uchar-array-write-sint
+    (equal
+     (len (uchar-array->elements (uchar-array-write-sint array index element)))
+     (len (uchar-array->elements array)))))

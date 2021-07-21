@@ -265,7 +265,7 @@
     (xdoc::p
      "A <i>statement term for</i> @('fni')
       <i>transforming variables</i> @('vars'),
-      where @('fn') is a target function
+      where @('fni') is a target function
       and  @('vars') is a list of distinct symbols,
       is inductively defined as one of the following:")
     (xdoc::ul
@@ -548,7 +548,7 @@
      (xdoc::li
       "A pure C-valued term for @('fni').")
      (xdoc::li
-      "A call of a target function @('fnj') with @('j < i'),
+      "A call of a non-recursive target function @('fnj') with @('j < i'),
        on pure C-valued terms for @('fni').
        The restriction @('j < i') means that
        no (direct or indirect) recursion is allowed in the C code
