@@ -13,7 +13,7 @@
 (include-book "kestrel/abnf/parser" :dir :system)
 (include-book "kestrel/abnf/abstractor" :dir :system)
 
-; (depends-on "abnf-grammar.txt")
+; (depends-on "abnf-grammar-old.txt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -48,7 +48,7 @@
 
   (make-event
    (mv-let (tree state)
-     (abnf::parse-grammar-from-file (str::cat (cbd) "abnf-grammar.txt")
+     (abnf::parse-grammar-from-file (str::cat (cbd) "abnf-grammar-old.txt")
                                     state)
      (acl2::value `(defconst *grammar*
                      (abnf::abstract-rulelist ',tree)))))
