@@ -53,6 +53,7 @@
 (include-book "kestrel/ethereum/portcullis" :dir :system)
 (include-book "kestrel/bitcoin/portcullis" :dir :system)
 (include-book "kestrel/utilities/omaps/portcullis" :dir :system)
+(include-book "kestrel/yul/portcullis" :dir :system)
 
 ; Book release notes are sometimes disorganized.
 ; They are often cleaned up before a release.
