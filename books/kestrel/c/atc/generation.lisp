@@ -15,9 +15,7 @@
 (include-book "pretty-printer" :ttags ((:open-output-channel!)))
 (include-book "static-semantics")
 (include-book "dynamic-semantics")
-(include-book "arrays")
-(include-book "conditional-expressions")
-(include-book "let-designations")
+(include-book "shallow-embedding")
 (include-book "proof-support")
 (include-book "table")
 
