@@ -15,6 +15,8 @@
 (include-book "integer-operations")
 (include-book "integer-conversions")
 (include-book "arrays")
+(include-book "conditional-expressions")
+(include-book "let-designations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
