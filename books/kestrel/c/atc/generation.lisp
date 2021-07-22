@@ -43,6 +43,8 @@
 
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
 
+(local (in-theory (disable ctxp)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; to speed up the proofs in this file:
@@ -1991,7 +1993,24 @@
                        type
                        limit)))
 
-  :prepwork ((local (in-theory (disable natp)))) ; for speed
+  :prepwork (;; for speed:
+             (local
+              (in-theory
+               (disable
+                natp
+                member-equal
+                default-car
+                default-cdr
+                default-symbol-name
+                true-list-listp
+                acl2::true-listp-of-car-when-true-list-listp
+                acl2::true-list-listp-of-cdr-when-true-list-listp
+                acl2::true-listp-of-cdar-when-keyword-truelist-alistp
+                acl2::symbol-listp-when-not-consp
+                acl2::true-list-listp-when-not-consp
+                symbolp-of-caar-when-atc-symbol-fninfo-alistp
+                symbolp-of-car-when-member-equal-of-atc-symbol-fninfo-alistp
+                set::sets-are-true-lists-cheap))))
 
   :verify-guards nil ; done below
 
@@ -2290,6 +2309,25 @@
                     where a loop body term was expected ~
                     (see user documentation)."
                    fn term))))
+
+  :prepwork (;; for speed:
+             (local
+              (in-theory
+               (disable
+                natp
+                member-equal
+                default-car
+                default-cdr
+                default-symbol-name
+                true-list-listp
+                acl2::true-listp-of-car-when-true-list-listp
+                acl2::true-list-listp-of-cdr-when-true-list-listp
+                acl2::true-listp-of-cdar-when-keyword-truelist-alistp
+                acl2::symbol-listp-when-not-consp
+                acl2::true-list-listp-when-not-consp
+                symbolp-of-caar-when-atc-symbol-fninfo-alistp
+                symbolp-of-car-when-member-equal-of-atc-symbol-fninfo-alistp
+                set::sets-are-true-lists-cheap))))
 
   :verify-guards nil ; done below
 
