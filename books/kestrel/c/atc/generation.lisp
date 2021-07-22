@@ -228,7 +228,11 @@
   (xdoc::topstring
    (xdoc::p
     "This is added to the innermost scope.
-     The symbol table has always at least one scope."))
+     The symbol table has always at least one scope.")
+   (xdoc::p
+    "This is always called after checking that
+     the variable is not already in scope.
+     So it unconditionally adds the variable without checking first."))
   (cons (acons var type (car inscope))
         (cdr inscope)))
 
