@@ -1603,6 +1603,111 @@ unnamed (plain) arguments followed by some named arguments.</p>"
 
 
 
+  (deftagsum vl-paramvalue
+    :parents (vl-paramargs)
+    :short "Representation for the actual values given to parameters."
+    :long "<p>In Verilog-2005, the values for a parameterized module were always
+ordinary expressions, e.g., 3 and 5 below.</p>
+
+@({
+      myalu #(.delay(3), .width(5)) alu1 (...);
+})
+
+<p>However, in SystemVerilog-2012 there can also be type parameters.  For
+instance, a valid instance might look like:</p>
+
+@({
+      myalu #(.delay(3), .Bustype(logic [63:0])) myinst (...);
+})
+
+<p>The @('vl-paramvalue-p') is a sum-of-products style type that basically
+corresponds to the SystemVerilog @('param_exprewssion') grammar rule:</p>
+
+@({
+     param_expression ::= mintypmax_expression | data_type | '$'
+})
+
+<p>But note that @('$') is a valid @(see vl-expr-p) so this essentially
+collapses into only two cases: expression or data type.</p>"
+    :measure (two-nats-measure (acl2-count x) 60)
+    :base-case-override :expr
+    (:type ((type vl-datatype)))
+    (:expr ((expr vl-expr))))
+
+
+  (fty::deflist vl-paramvaluelist
+    :elt-type vl-paramvalue-p
+    :true-listp nil
+    :elementp-of-nil nil
+    :measure (two-nats-measure (acl2-count x) 0)
+    ///
+    ;; (defthm vl-paramvaluelist-p-when-vl-exprlist-p
+    ;;   (implies (vl-exprlist-p x)
+    ;;            (vl-paramvaluelist-p x))
+    ;;   :hints(("Goal" :induct (len x))))
+    )
+
+  (defoption vl-maybe-paramvalue vl-paramvalue-p
+    :parents (vl-paramargs)
+    :measure (two-nats-measure (acl2-count x) 65)
+    ///
+    (defthm type-when-vl-maybe-paramvalue-p
+      (implies (vl-maybe-paramvalue-p x)
+               (or (consp x)
+                   (not x)))
+      :hints(("Goal" :in-theory (enable vl-maybe-paramvalue-p)))
+      :rule-classes :compound-recognizer))
+
+  (defprod vl-namedparamvalue
+    :parents (vl-paramargs)
+    :short "Representation of a single, named parameter argument."
+    :tag :vl-namedparamvalue
+    :layout :tree
+    :measure (two-nats-measure (acl2-count x) 70)
+
+    ((name     stringp :rule-classes :type-prescription
+               "The name of the parameter, e.g., @('size') in @('.size(3)')")
+
+     (value    vl-maybe-paramvalue-p
+               "The value being given to this parameter, e.g., @('3') in @('.size(3)').
+              In Verilog-2005 this is usually an expression but might also be
+              @('nil') because the value can be omitted.  SystemVerilog-2012
+              extends this to also allow data types.")))
+
+  (fty::deflist vl-namedparamvaluelist
+              :elt-type vl-namedparamvalue-p
+              :true-listp nil
+              :elementp-of-nil nil
+              :measure (two-nats-measure (acl2-count x) 0))
+
+  (deftagsum vl-paramargs
+    :short "Representation of the values to use for a module instance's
+  parameters (not ports)."
+
+    :long "<p>There are two kinds of argument lists for the parameters of module
+instantiations, which we call <i>plain</i> and <i>named</i> arguments.</p>
+
+@({
+  myalu #(3, 6) alu1 (...);                  <-- \"plain\" arguments
+  myalu #(.size(3), .delay(6)) alu2 (...);   <-- \"named\" arguments
+})
+
+<p>A @('vl-paramargs-p') structure represents an argument list of either
+variety.</p>"
+
+    :measure (two-nats-measure (acl2-count x) 5)
+    :base-case-override :vl-paramargs-plain
+    (:vl-paramargs-named
+     :base-name vl-paramargs-named
+     ((args vl-namedparamvaluelist-p)))
+
+    (:vl-paramargs-plain
+     :base-name vl-paramargs-plain
+     ((args vl-paramvaluelist-p))))
+
+  (defoption vl-maybe-paramargs vl-paramargs
+    :measure (two-nats-measure (acl2-count x) 10))
+
 ; -----------------------------------------------------------------------------
 ;
 ;                             ** Datatypes **
@@ -1764,7 +1869,11 @@ unnamed (plain) arguments followed by some named arguments.</p>"
       (pdims  vl-dimensionlist-p
               "Packed dimensions for this user type.")
       (udims  vl-dimensionlist-p
-              "Unpacked dimensions for this user type."))
+              "Unpacked dimensions for this user type.")
+      (virtual-intfc booleanp
+                     "Indicates a virtual interface type, which we don't really support.")
+      (intfc-params vl-maybe-paramargs
+                    "Parameter values -- relevant for the virtual-intfc case"))
      :long "<h3>Notes about the @('res') Field</h3>
 
             <p>Originally, to deal with user-defined types, we tried to just
@@ -2876,3 +2985,6 @@ simple expression, or a @('new') expression.</p>"
             "Arguments to the new class or array."))))
 
 (defoption vl-maybe-rhs vl-rhs)
+
+
+
