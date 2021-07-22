@@ -11,6 +11,7 @@
 (in-package "YUL")
 
 (include-book "grammar-old")
+(include-book "grammar-new")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
