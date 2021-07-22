@@ -281,6 +281,17 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "yul::yul" "Yul Library"))
+
+   (xdoc::p
+    "This is a library about the Yul intermediate language,
+     currently used in the Ethereum Solidity compiler
+     but designed for more general use.
+     This library includes a formalization of some aspects of the language.
+     There are plans to extend this to cover more aspects.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "zcash::zcash" "Zcash Library"))
 
    (xdoc::p
