@@ -847,11 +847,11 @@
      We also return the result type of the function
      and the limit sufficient to execute the function.")
    (xdoc::p
-    "For now this limit is always a quoted constant,
-     but it will be soon extended to be a more general term
-     that may depend on the function's parameter.
-     Thus, to properly calculate the limit for this call,
-     we will have to instantiate the parameters with the arguments.")
+    "The limit retrieved from the function table
+     refers to the formal parameters.
+     We must instantiate it to the actual parameters
+     in order to obtain an appropriate limit for the call.
+     We will do that soon.")
    (xdoc::p
     "This is used on C-valued terms,
      so the called function must be non-recursive,
