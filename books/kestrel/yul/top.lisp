@@ -11,6 +11,7 @@
 (in-package "YUL")
 
 (include-book "concrete-syntax")
+(include-book "abstract-syntax")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
