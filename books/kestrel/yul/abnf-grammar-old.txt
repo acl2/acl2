@@ -12,6 +12,7 @@
 ; derived from the official grammar in
 ; [Yul: Specification of Yul]
 ; (https://docs.soliditylang.org/en/latest/yul.html#specification-of-yul).
+; This is the old grammar of Yul; see :DOC CONCRETE-SYNTAX.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

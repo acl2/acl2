@@ -13,25 +13,27 @@
 (include-book "kestrel/abnf/parser" :dir :system)
 (include-book "kestrel/abnf/abstractor" :dir :system)
 
-; (depends-on "abnf-grammar.txt")
+; (depends-on "abnf-grammar-old.txt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ grammar
+(defxdoc+ grammar-old
   :parents (concrete-syntax)
-  :short "ABNF grammar of Yul."
+  :short "ABNF old grammar of Yul."
   :long
   (xdoc::topstring
    (xdoc::p
     "We use our "
     (xdoc::seetopic "abnf::grammar-parser" "verified ABNF grammar parser")
-    " to parse the ABNF grammar of Yul into a representation in ACL2."))
+    " to parse the ABNF grammar of Yul into a representation in ACL2.")
+   (xdoc::p
+    "This is the old grammar of Yul; see @(see concrete-syntax)."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection *grammar*
+(defsection *grammar-old*
   :short "The parsed ABNF grammar of Yul."
   :long
   (xdoc::topstring
@@ -48,19 +50,20 @@
 
   (make-event
    (mv-let (tree state)
-     (abnf::parse-grammar-from-file (str::cat (cbd) "abnf-grammar.txt")
+     (abnf::parse-grammar-from-file (str::cat (cbd) "abnf-grammar-old.txt")
                                     state)
-     (acl2::value `(defconst *grammar*
+     (acl2::value `(defconst *grammar-old*
                      (abnf::abstract-rulelist ',tree)))))
 
-  (defruled rulelist-wfp-of-*grammar*
-    (abnf::rulelist-wfp *grammar*))
+  (defruled rulelist-wfp-of-*grammar-old*
+    (abnf::rulelist-wfp *grammar-old*))
 
-  (defruled rulelist-closedp-of-*grammar*
-    (abnf::rulelist-closedp *grammar*))
+  (defruled rulelist-closedp-of-*grammar-old*
+    (abnf::rulelist-closedp *grammar-old*))
 
-  (defruled unicode-only-*grammar*
-    (abnf::rulelist-in-termset-p *grammar* (acl2::integers-from-to 0 #x10ffff))
+  (defruled unicode-only-*grammar-old*
+    (abnf::rulelist-in-termset-p *grammar-old*
+                                 (acl2::integers-from-to 0 #x10ffff))
     :enable (abnf::rule-in-termset-p
              abnf::repetition-in-termset-p
              abnf::element-in-termset-p

@@ -53,6 +53,7 @@
 (include-book "kestrel/ethereum/portcullis" :dir :system)
 (include-book "kestrel/bitcoin/portcullis" :dir :system)
 (include-book "kestrel/utilities/omaps/portcullis" :dir :system)
+(include-book "kestrel/yul/portcullis" :dir :system)
 
 ; Book release notes are sometimes disorganized.
 ; They are often cleaned up before a release.
@@ -278,6 +279,17 @@
     "This library can be used to read in sections of ELF/Mach-O files into ACL2.
      An older version of these books used to live in the @(tsee x86isa::x86isa)
      library.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "yul::yul" "Yul Library"))
+
+   (xdoc::p
+    "This is a library about the Yul intermediate language,
+     currently used in the Ethereum Solidity compiler
+     but designed for more general use.
+     This library includes a formalization of some aspects of the language.
+     There are plans to extend this to cover more aspects.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
