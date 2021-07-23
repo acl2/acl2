@@ -3773,22 +3773,88 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-termination-theorem-for-fn ((fn symbolp)
+                                            (measure-of-fn symbolp)
+                                            (measure-formals symbol-listp)
+                                            (natp-of-measure-of-fn-thm symbolp)
+                                            (names-to-avoid symbol-listp)
+                                            (ctx ctxp)
+                                            state)
+  :guard (acl2::irecursivep+ fn (w state))
+  :returns (mv erp
+               (val "A @('(tuple (event pseudo-event-formp)
+                                 (name symbolp)
+                                 (updated-names-to-avoid symbol-listp)
+                                 val)').")
+               state)
+  :mode :program
+  :short "Generate the version of the termination theorem
+          tailored to the limits and measure function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We generate a local theorem that is
+     just like the termination theorem of the function
+     except that @(tsee o<) is replaced with @(tsee <),
+     and that the measure terms are abstracted to
+     calls of the generated measure functions.
+     The theorem is proved using the fact that
+     the measure yields a natural number,
+     which means that @(tsee o<) reduces to @(tsee <) (see above).
+     The purpose of this variant of the termination theorem
+     is to help establish the induction hypothesis
+     in the loop correctness theorem, as explained below."))
+  (b* ((wrld (w state))
+       (termination-of-fn-thm
+        (acl2::packn-pos (list 'termination-of- fn) fn))
+       ((mv termination-of-fn-thm names-to-avoid)
+        (acl2::fresh-logical-name-with-$s-suffix termination-of-fn-thm
+                                                 nil
+                                                 names-to-avoid
+                                                 wrld))
+       ((er tthm-formula)
+        (atc-gen-loop-tthm-formula (termination-theorem fn wrld)
+                                   fn
+                                   measure-of-fn
+                                   measure-formals
+                                   ctx
+                                   state))
+       ((mv termination-of-fn-thm-event &)
+        (acl2::evmac-generate-defthm
+         termination-of-fn-thm
+         :formula tthm-formula
+         :rule-classes nil
+         :hints `(("Goal"
+                   :use ((:termination-theorem ,fn)
+                         ,natp-of-measure-of-fn-thm)
+                   :in-theory '(,measure-of-fn
+                                acl2::natp-compound-recognizer
+                                o-p
+                                o-finp
+                                o<))))))
+    (acl2::value
+     (list termination-of-fn-thm-event
+           termination-of-fn-thm
+           names-to-avoid))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-loop-correct-thm ((fn symbolp)
                                   (pointers symbol-listp)
                                   (xforming symbol-listp)
-                                  (loop-stmt stmtp)
+                                  (loop-test exprp)
+                                  (loop-body stmtp)
                                   (prec-fns atc-symbol-fninfo-alistp)
                                   (prog-const symbolp)
-                                  (fn-appconds symbol-symbol-alistp)
-                                  (appcond-thms acl2::keyword-symbol-alistp)
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-returns-value-thm symbolp)
-                                  (measure-of-fn symbolp)
-                                  (measure-formals symbol-listp)
+                                  (exec-stmt-while-for-fn symbolp)
+                                  (exec-stmt-while-for-fn-thm symbolp)
+                                  (termination-of-fn-thm symbolp)
+                                  (natp-of-measure-of-fn-thm symbolp)
                                   (limit pseudo-termp)
                                   (experimental acl2::keyword-listp)
                                   (names-to-avoid symbol-listp)
-                                  ctx
                                   state)
   :guard (acl2::irecursivep+ fn (w state))
   :returns (mv erp
@@ -3803,18 +3869,6 @@
   :short "Generate the correctness theorem for a loop."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "We generate a local theorem that is
-     just like the termination theorem of the function
-     except that @(tsee o<) is replaced with @(tsee <),
-     and that the measure terms are abstracted to
-     calls of the generated measure functions.
-     The theorem is proved using the fact that
-     the measure yields a natural number,
-     which means that @(tsee o<) reduces to @(tsee <) (see above).
-     The purpose of this variant of the termination theorem
-     is to help establish the induction hypothesis
-     in the loop correctness theorem, as explained below.")
    (xdoc::p
     "We generate the correctness theorem as a lemma first,
      then the actual theorem.
@@ -3860,54 +3914,6 @@
      via the lemma and the generate theorem that equates
      the specialized @(tsee exec-stmt-while) to the general one."))
   (b* ((wrld (w state))
-       (loop-test (stmt-while->test loop-stmt))
-       (loop-body (stmt-while->body loop-stmt))
-       ((mv exec-stmt-while-events
-            exec-stmt-while-for-fn
-            exec-stmt-while-for-fn-thm
-            names-to-avoid)
-        (atc-gen-exec-stmt-while-for-loop fn
-                                          loop-stmt
-                                          prog-const
-                                          names-to-avoid
-                                          wrld))
-       ((mv natp-of-measure-of-fn-thm-event
-            natp-of-measure-of-fn-thm
-            names-to-avoid)
-        (atc-gen-natp-of-measure-of-fn fn
-                                       fn-appconds
-                                       appcond-thms
-                                       measure-of-fn
-                                       measure-formals
-                                       names-to-avoid
-                                       wrld))
-       (termination-of-fn-thm
-        (acl2::packn-pos (list 'termination-of- fn) fn))
-       ((mv termination-of-fn-thm names-to-avoid)
-        (acl2::fresh-logical-name-with-$s-suffix termination-of-fn-thm
-                                                 nil
-                                                 names-to-avoid
-                                                 wrld))
-       ((er tthm-formula)
-        (atc-gen-loop-tthm-formula (termination-theorem fn wrld)
-                                   fn
-                                   measure-of-fn
-                                   measure-formals
-                                   ctx
-                                   state))
-       ((mv termination-of-fn-thm-event &)
-        (acl2::evmac-generate-defthm
-         termination-of-fn-thm
-         :formula tthm-formula
-         :rule-classes nil
-         :hints `(("Goal"
-                   :use ((:termination-theorem ,fn)
-                         ,natp-of-measure-of-fn-thm)
-                   :in-theory '(,measure-of-fn
-                                acl2::natp-compound-recognizer
-                                o-p
-                                o-finp
-                                o<)))))
        (correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-lemma (add-suffix correct-thm "-LEMMA"))
        ((mv correct-lemma names-to-avoid)
@@ -3994,12 +4000,9 @@
                                :formula `(implies ,hyps ,concl-thm)
                                :hints thm-hints
                                :enable nil))
-       (local-events (append exec-stmt-while-events
-                             (list natp-of-measure-of-fn-thm-event)
-                             (list termination-of-fn-thm-event)
-                             (and (member-eq :loop-proofs experimental)
-                                  (list correct-lemma-event
-                                        correct-thm-local-event))))
+       (local-events (and (member-eq :loop-proofs experimental)
+                          (list correct-lemma-event
+                                correct-thm-local-event)))
        (exported-events (and (member-eq :loop-proofs experimental)
                              (list correct-thm-exported-event))))
     (acl2::value (list local-events
@@ -4074,6 +4077,39 @@
                          print loop-limit experimental
                          names-to-avoid ctx state))
        ((when erp) (mv erp (list nil nil nil nil) state))
+       (loop-test (stmt-while->test loop-stmt))
+       (loop-body (stmt-while->body loop-stmt))
+       ((mv exec-stmt-while-events
+            exec-stmt-while-for-fn
+            exec-stmt-while-for-fn-thm
+            names-to-avoid)
+        (atc-gen-exec-stmt-while-for-loop fn
+                                          loop-stmt
+                                          prog-const
+                                          names-to-avoid
+                                          wrld))
+       ((mv natp-of-measure-of-fn-thm-event
+            natp-of-measure-of-fn-thm
+            names-to-avoid)
+        (atc-gen-natp-of-measure-of-fn fn
+                                       fn-appconds
+                                       appcond-thms
+                                       measure-of-fn
+                                       measure-formals
+                                       names-to-avoid
+                                       wrld))
+       ((mv erp
+            (list termination-of-fn-thm-event
+                  termination-of-fn-thm)
+            state)
+        (atc-gen-termination-theorem-for-fn fn
+                                            measure-of-fn
+                                            measure-formals
+                                            natp-of-measure-of-fn-thm
+                                            names-to-avoid
+                                            ctx
+                                            state))
+       ((when erp) (mv erp (list nil nil nil nil nil) state))
        ((mv erp
             (list more-local-events
                   more-exported-events
@@ -4081,14 +4117,27 @@
                   fn-correct-thm
                   names-to-avoid)
             state)
-        (atc-gen-loop-correct-thm fn pointers loop-xforming loop-stmt prec-fns
-                                  prog-const fn-appconds appcond-thms fn-thms
-                                  fn-returns-value-thm measure-of-fn
-                                  measure-formals loop-limit
-                                  experimental names-to-avoid ctx state))
+        (atc-gen-loop-correct-thm fn
+                                  pointers
+                                  loop-xforming
+                                  loop-test
+                                  loop-body
+                                  prec-fns
+                                  prog-const
+                                  fn-thms
+                                  fn-returns-value-thm
+                                  exec-stmt-while-for-fn
+                                  exec-stmt-while-for-fn-thm
+                                  termination-of-fn-thm
+                                  natp-of-measure-of-fn-thm
+                                  loop-limit experimental
+                                  names-to-avoid state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        (local-events (append (list measure-of-fn-event)
                              local-events
+                             exec-stmt-while-events
+                             (list natp-of-measure-of-fn-thm-event)
+                             (list termination-of-fn-thm-event)
                              more-local-events))
        (exported-events (append exported-events more-exported-events))
        (info (make-atc-fn-info :type? type?
