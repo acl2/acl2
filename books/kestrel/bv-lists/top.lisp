@@ -16,6 +16,9 @@
 
 (include-book "byte-listp")
 
+(include-book "bit-listp")
+(include-book "bit-listp-rules")
+
 (include-book "all-unsigned-byte-p")
 (include-book "all-unsigned-byte-p2")
 (include-book "all-all-unsigned-byte-p")
