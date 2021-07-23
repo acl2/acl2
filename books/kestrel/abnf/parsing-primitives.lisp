@@ -23,7 +23,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These funtions may be useful when writing
+    "These functions may be useful when writing
      parsers for languages specified via ABNF grammars.
      These functions are being moved here
      from the ABNF grammar parser:

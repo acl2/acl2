@@ -3472,15 +3472,6 @@
  <p>This is the final topic under @(see developers-guide).<br/>HAPPY
  DEVELOPING!</p>")
 
-(defxdoc stobj-fields-of-abstract-stobjs
-  :parents (developers-guide)
-  :short "<color rgb='#c00000'>To-do list for @(see stobj) fields of abstract stobjs</color>"
-  :long "<p>Although the code is complete for @(see stobj) fields of abstract
- stobjs, without known errors as of this writing (May 2021), nevertheless there
- remains some testing, comments, and documentation to complete.  See text file
- @('books/system/doc/stobj-fields-of-abstract-stobjs.txt') for a list.  Matt
- Kaufmann intends to take are of these by the end of July 2021.</p>")
-
 (xdoc::order-subtopics developers-guide
                        ()
                        t)

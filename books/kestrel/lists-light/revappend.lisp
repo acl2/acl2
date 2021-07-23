@@ -53,6 +53,12 @@
   :hints (("Goal" :use (:instance revappend-of-append-arg2 (acc nil))
            :in-theory (disable revappend-of-append-arg2))))
 
+;; reverse of revappend-normalize-acc
+(defthmd append-of-revappend-of-nil-arg1
+  (equal (append (revappend x nil) y)
+         (revappend x y))
+  :hints (("Goal" :in-theory (enable revappend-normalize-acc))))
+
 (defthm revappend-of-append-arg1
   (equal (revappend (append x y) z)
          (append (revappend y nil)

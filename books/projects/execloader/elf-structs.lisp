@@ -112,22 +112,33 @@
         nil)
        ((section-info section-info) (car section-info-list))
        ((elf-section-header section-info.header)))
-    (cons section-info.header.name-str (section-names (cdr section-info-list)))))
+    (cons section-info.header.name-str (section-names (cdr section-info-list))))
+  ///
+  (defthm cdr-section-names
+    (equal (section-names (cdr sec-info-list))
+           (cdr (section-names sec-info-list)))))
 
-(define get-section-info ((name stringp "Name of a section header; e.g., \".symtab\"")
-                          (section-info-list section-info-list-p))
-  :short "Get a @(tsee section-info-p) in @('section-info-list-p') corresponding to @('name')"
+(define get-section-info1 ((name stringp "Name of a section header; e.g., \".symtab\"")
+                           (section-info-list section-info-list-p)
+                           (section-names string-listp))
+  :guard (subsetp-equal (section-names section-info-list) section-names)
   :returns (section-info section-info-p :hyp (section-info-list-p section-info-list))
   (b* (((when (atom section-info-list))
         (prog2$
          (raise "Section ~s0 not found! List of sections found: ~x1."
-                name (section-names section-info-list))
+                name section-names)
          (make-section-info)))
        ((section-info section-info) (car section-info-list))
        ((elf-section-header section-info.header))
        ((when (equal (str::trim section-info.header.name-str) (str::trim name)))
         section-info))
-    (get-section-info name (cdr section-info-list))))
+    (get-section-info1 name (cdr section-info-list) section-names)))
+
+(define get-section-info ((name stringp "Name of a section header; e.g., \".symtab\"")
+                          (section-info-list section-info-list-p))
+  :short "Get a @(tsee section-info-p) in @('section-info-list-p') corresponding to @('name')"
+  :returns (section-info section-info-p :hyp (section-info-list-p section-info-list))
+  (get-section-info1 name section-info-list (section-names section-info-list)))
 
 ;; ----------------------------------------------------------------------
 

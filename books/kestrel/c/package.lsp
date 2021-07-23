@@ -29,6 +29,7 @@
                                   value))
              '(any
                bool
+               ctxp
                cw-event
                define-sk
                defmacro+
@@ -54,11 +55,13 @@
                maybe-pseudo-event-formp
                mbt$
                msg-listp
+               mv-nth-of-cons
                nat
                pos-listp
                pseudo-event-form-listp
                pseudo-event-formp
                run-when
+               str-fix
                symbol-symbol-alistp
                tuple
                std::defret-mutual)))

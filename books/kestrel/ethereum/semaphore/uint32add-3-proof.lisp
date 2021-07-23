@@ -259,7 +259,7 @@
                  pfield::mul-combine-constants-alt
                  pfield::mul-of-constant-normalize-to-fep
                  pfield::mul-of-1-arg1
-                 pfield::mul-becomes-neg
+                 pfield::mul-of--1-becomes-neg-alt
                  acl2::bvchop-of-bvchop
                  acl2::getbit-of-bvchop
                  acl2::bvchop-of-bvplus-same
@@ -273,16 +273,8 @@
                (pfield::bitp-idiom-1
                 pfield::bitp-idiom-1-alt)
                ;; introduce bvcats:
-               (add-of-mul-and-mul-when-bitps-and-adjacent-coeffs
-                add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-alt
-                add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-extra
-                add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-extra-alt
-                add-of-mul-and-mul-when-bvs-bvcat-version
-                add-of-mul-and-mul-when-bvs-bvcat-version-alt
-                add-of-mul-and-mul-when-bvs-bvcat-version-extra
-                add-of-mul-and-mul-when-bvs-bvcat-version-extra-alt
-                acl2::bvcat-associative
-                )
+               ((pfield::bvcat-intro-rules)
+                acl2::bvcat-associative)
                ;;pull out the coeffs:
                (add-of-mul-normalize-based-on-second-coeff)
                ;; commute negs forward and deal with carry bit:

@@ -10,7 +10,7 @@ step closer to the actual implementation we defined in programs.lisp, and we
 prove the correspondence of each with the precious one. The idea is that in the
 functions lower-part and upper-part we defined previously, we never really made
 explicit the way the array looks after the split. We do it here using the
-function merge-func. We also add a funtion walk, which explicitly models the
+function merge-func. We also add a function walk, which explicitly models the
 index returned by split-qs.
 
 |#

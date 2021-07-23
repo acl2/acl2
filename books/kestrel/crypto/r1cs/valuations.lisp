@@ -10,7 +10,7 @@
 
 (in-package "R1CS")
 
-(include-book "fe-listp")
+(include-book "kestrel/prime-fields/fe-listp" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 
 ;; A true list of variables, with no duplicates

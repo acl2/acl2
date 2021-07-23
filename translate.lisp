@@ -879,6 +879,7 @@
  (((big-n) => *)
   ((decrement-big-n *) => *)
   ((zp-big-n *) => *))
+ (logic)
  (local (defun big-n ()
           0))
  (local (defun decrement-big-n (n)
@@ -2297,7 +2298,7 @@
 
 ; This function also returns the logical defun form submitted to ACL2 for fn,
 ; if any, provided fn does not have property 'non-executablep.  (We use this
-; fact in the definition of logical-defun.)  To understand that restriction,
+; fact in the definition of get-defun-event.)  To understand that restriction,
 ; note that install-event-defuns stores the original defun event in the
 ; function symbol's cltl-command except in the case that the function is
 ; non-executable; and, cltl-def-from-name2 looks up the defun form in the
@@ -3969,16 +3970,67 @@
 ; the primitives, it cannot be called in boot-strap.  But
 ; remove-guard-holders-weak can be and is!  Thus, the standard idiom for
 ; cleaning up a formula is (possibly-clean-up-dirty-lambda-objects
-; (remove-guard-holders-weak term) wrld) where the inner expression cleans up
-; the term outside any lambda objects and the outer one cleans up the
+; (remove-guard-holders-weak term lamp) wrld) where the inner expression cleans
+; up the term outside any lambda objects and the outer one cleans up the
 ; well-formed lambdas.  For convenience we define (remove-guard-holders term
 ; wrld) to be exactly that composition.  Occasionally you will see just
-; (remove-guard-holders-weak term) because we're nervous about messing with the
-; lambdas.
+; (remove-guard-holders-weak term lamp) because we're nervous about messing
+; with the lambdas.
 
 (mutual-recursion
 
-(defun remove-guard-holders1 (changedp0 term)
+(defun dumb-occur-var (var term)
+
+; This function determines if variable var occurs free in the given term.  This
+; is the same as dumb-occur, but optimized for the case that var is a variable.
+
+  (declare (xargs :guard (and (symbolp var) (pseudo-termp term))))
+  (cond ((eq var term) t)
+        ((variablep term) nil)
+        ((fquotep term) nil)
+        (t (dumb-occur-var-lst var (fargs term)))))
+
+(defun dumb-occur-var-lst (var lst)
+  (declare (xargs :guard (and (symbolp var) (pseudo-term-listp lst))))
+  (cond ((endp lst) nil)
+        (t (or (dumb-occur-var var (car lst))
+               (dumb-occur-var-lst var (cdr lst))))))
+)
+
+(defun trivial-lambda-p (formals args body)
+
+; For the term ((lambda formals body) . args), if this Boolean function returns
+; t then that term is provably equal to body.  What's more, such elimination of
+; a trivial lambda preserves the ev$ property discussed in
+; remove-guard-holders1, as shown in a comment there.
+
+; Note that this function does not recognize the translation of a term of the
+; form (let ((x term)) x), even though we also consider that to be trivial and
+; worthy of simplification by remove-guard-holders1.
+
+; We tried defining this function as indicated in the commented-out section
+; below, the idea being that if a variable is not used then its binding is
+; irrelevant.  However, we encountered at least 30 regression failures due to
+; that decision.  That seemed sufficiently many that we decided not to be so
+; generous.  Besides, we wonder if -- for example -- replacing (let ((x (cw
+; "..." ...))) (declare (ignore x)) term) with just term is such a good idea.
+
+  (declare (xargs :guard (and (symbol-listp formals)
+                              (true-listp args)
+                              (equal (length formals) (length args))
+                              (pseudo-termp body))))
+; Deleted experimental code; see comment above.
+; (cond ((endp formals) t)
+;       ((or (eq (car formals) (car args))
+;            (not (dumb-occur-var (car formals) body)))
+;        (trivial-lambda-p (cdr formals) (cdr args) body))
+;       (t nil))
+  (declare (ignore body))
+  (equal formals args))
+
+(mutual-recursion
+
+(defun remove-guard-holders1 (changedp0 term lamp)
 
 ; Warning: If you change this function, consider changing :DOC guard-holders.
 
@@ -3986,10 +4038,14 @@
 ; and where if changedp is nil, then changedp0 is nil and new-term is identical
 ; to term.  The second part can be restated as follows: if changedp0 is true
 ; then changedp is true (a kind of monotonicity), and if the resulting term is
-; distinct from the input term then changedp is true.  Intuitively, if changedp
-; is true then new-term might be distinct from term but we don't know that
-; (especially if changedp0 is true), but if changedp is nil then we know that
-; new-term is just term.
+; distinct from the input term then changedp is true.  Thus if changedp is true
+; then new-term might be distinct from term but we don't know that (especially
+; if changedp0 is true), but if changedp is nil then we know that new-term is
+; just term.
+
+; The parameter name "LAMP" is intended to suggest "LAMbda remove Property".
+; When true, we should remove trivial lambdas (see the comment about these in
+; trivial-lambda-p, which recognizes one class of trivial lambdas).
 
 ; See the Essay on the Removal of Guard Holders.
 
@@ -3999,47 +4055,64 @@
 ; provably equal to term.  But since this function is used to clean up the
 ; bodies of tame but dirty lambda objects in :FN slots (see
 ; clean-up-dirty-lambda-objects) it must also satisfy the ``ev$ property'': the
-; ev$ of tame input must be provably equal to the ev$ of the output.  There is
-; an easy way to ensure that remove-guard-holders-weak has the ev$ property:
-; remove-guard-holders1 ``merely lifts'' ordinary subterms to ordinary slots.
-; We call this the ``Merely Lifts'' principle and it is a sufficient but not
-; necessary condition to guarantee the ev$ property.
+; ev$ of tame input must be provably equal to the ev$ of the output of
+; remove-guard-holders1 on that input.
 
-; We will illustrate the ``Merely Lifts'' principle in a moment, but we first
-; make two important observations about tameness: First, if any ordinary
-; subterm of a term is untame then the term itself is untame, or
-; contrapositively, if a term is tame, every ordinary subterm is tame.  Second,
-; if a term, z, is tame, then (ev$ z s) = z/s, or colloquially, ``tame terms
-; evaluate to themselves.''
+; Before we argue that the ev$ property holds, we make an important observation
+; about tameness: If any ordinary subterm of a term is untame then the term
+; itself is untame; or contrapositively, if a term is tame, every ordinary
+; subterm is tame.
 
-; So now we illustrate the Merely Lifts principle and show how it insures the
-; ev$ property.  Let term be (g u (f a b)) and assume the second slots of both
-; g and f are ordinary (i.e., have ilk NIL).  We assume term is tame.  But if
-; (g u (f a b)) is tame, then so is (f a b) and so is b.  Finally, assume that
-; remove-guard-holders-weak merely lifts the b out of (f a b), producing (g u
-; b) which we assume is provably equal to (g u (f a b)).  Then (g u b) is tame
-; because the only difference between (g u (f a b)) and (g u b) is in an
-; ordinary slot in which one tame term has been replaced by another.  Thus (ev$
-; (remove-guard-holders-weak '(g u (f a b))) s) = (ev$ '(g u b) s) = (g u b)/s,
-; but (ev$ '(g u (f a b)) s) = (g u (f a b))/s.  But since (g u b) is provably
-; equal to (g u (f a b)), their mutual instantiations by s are provably equal.
-; So if every transformation made by remove-guard-holders-weak is a lift of
-; ordinary to ordinary, that is, if remove-guard-holders-weak merely lifts, it
-; has the ev$ property.
+; So now we illustrate why the ev$ property holds.  A proof would be by
+; induction along remove-guard-holders1, but here we just consider a single
+; (inductive) step of the reduction.  Such a step typically replaces a call of
+; a one of the built-in functions HIDE, RETURN-LAST, MV-LIST, or THE-CHECK by
+; its last argument.  (We'll discuss the other cases later below.)  So let f be
+; such a function and consider the transformation of a tame term (g u (f a b))
+; to (g u b).  Note that (g u b) is still tame, essentially by the important
+; observation above; and note that f is built.  So each term in the following
+; sequence is provably equal to the next, and thus the first and last are
+; provably equal as required for the ev$ property.
 
-; How could it do more than merely lift?  It could, for example, lift b out but
-; then embed it in a non-tame expression, e.g., produce (g u (h b)) where h is
-; an unwarranted identity function.  In that case, remove-guard-holders-weak
-; would satisfy its minimal requirement of provable equality without having the
-; ev$ property because the attempt to ev (g u (h b)) would produce an
-; untame-ev$ term, which is not provably equal to anything besides itself.
+; (ev$ '(g u (f a b)) a)
+; (apply$ 'g (list (eval$ 'u s)
+;                  (apply$ 'f (list (eval$ 'a s) (eval$ 'b s)))))
+; (apply$ 'g (list (eval$ 'u s)
+;                  (f (eval$ 'a s) (eval$ 'b s))))
+; (apply$ 'g (list (eval$ 'u s)
+;                  (eval$ 'b s))).
+; (ev$ '(g u b) a)
+
+; The case that f is CONS-WITH-HINT is similar, as each of the following is
+; provably equal to the next.
+
+; (eval$ '(cons-with-hint t1 t2 h) a)
+; (cons-with-hint (eval$ 't1 a) (eval$ 't2 a) (eval$ 'h a))
+; (cons (eval$ 't1 a) (eval$ 't2 a))
+; (eval$ '(cons t1 t2) a)
+
+; The removal of trivial lambdas is similarly justified, where for the last
+; step, we note that the bindings in a to variables other than x and y are
+; irrelevant for evaluating '(foo x y).  This example actually is more general
+; that what we now recognize as "trivial", in that lambda formal z is not bound
+; to itself but doesn't occur in the lambda body; see trivial-lambda-p.
+
+; (ev$ '((lambda (x y z) (foo x y)) x y t0) a)
+; (apply$ '(lambda (x y z) (foo x y))
+;         (list (eval$ x a) (eval$ y a) (eval$ t0 a)))
+; (apply$-lambda '(lambda (x y z) (foo x y))
+;                (list (eval$ x a) (eval$ y a) (eval$ t0 a)))
+; (apply$-lambda-logical '(lambda (x y z) (foo x y))
+;                        (list (eval$ x a) (eval$ y a) (eval$ t0 a)))
+; (ev$ '(foo x y)
+;      (pairlis$ '(x y z)
+;                (list (eval$ x a) (eval$ y a) (eval$ t0 a))))
+; (ev$ '(foo x y) a)
 
 ; WARNING: The take home lesson from the discussion above is: Be careful if you
 ; change remove-guard-holders1 so as not to introduce any unbadged functions or
 ; untame expressions or the requirements for warrants that are not already
-; implied by the subterms in term!  The simplest thing to do is to follow the
-; Merely Lifts principle and always just lift out an ordinary subterm into an
-; ordinary slot.
+; implied by the subterms in term!
 
 ; WARNING: The resulting term is in quote normal form.  We take advantage of
 ; this fact in our implementation of :by hints, in function
@@ -4048,14 +4121,14 @@
 ; interpret-term-as-rewrite-rule, as commented there.
 
 ; WARNING.  Remove-guard-holders-weak is used in induction-machine-for-fn1, and
-; termination-machine, so (remove-guard-holders-weak term) needs to be provably
-; equal to term, for every term and suitable ilk, in the ground-zero theory.
-; In fact, because of the use in constraint-info, it needs to be the case that
-; for any axiomatic event e, (remove-guard-holders-weak e) can be substituted
-; for e without changing the logical power of the set of axioms.  Actually, we
-; want to view the logical axiom added by e as though remove-guard-holders-weak
-; had been applied to it, and hence RETURN-LAST, MV-LIST, and CONS-WITH-HINT
-; appear in *non-instantiable-primitives*.
+; termination-machine, so (remove-guard-holders-weak term nil) needs to be
+; provably equal to term, for every term and suitable ilk, in the ground-zero
+; theory.  In fact, because of the use in constraint-info, it needs to be the
+; case that for any axiomatic event e, (remove-guard-holders-weak e lamp) can
+; be substituted for e without changing the logical power of the set of axioms.
+; Actually, we want to view the logical axiom added by e as though
+; remove-guard-holders-weak had been applied to it, and hence RETURN-LAST,
+; MV-LIST, and CONS-WITH-HINT appear in *non-instantiable-primitives*.
 
 ; Special functions recognized by this function are: RETURN-LAST, MV-LIST,
 ; CONS-WITH-HINT, and THE-CHECK.
@@ -4084,15 +4157,15 @@
 ; to the bottom with things like (prog2$ (illegal ...) body) and (prog2$ T
 ; body), we just open up the prog2$ early, throwing away the dcl-guardian.
 
-    (remove-guard-holders1 t (car (last (fargs term)))))
+    (remove-guard-holders1 t (car (last (fargs term))) lamp))
    ((eq (ffn-symb term) 'CONS-WITH-HINT)
     (mv-let
       (changedp1 arg1)
-      (remove-guard-holders1 nil (fargn term 1))
+      (remove-guard-holders1 nil (fargn term 1) lamp)
       (declare (ignore changedp1))
       (mv-let
         (changedp2 arg2)
-        (remove-guard-holders1 nil (fargn term 2))
+        (remove-guard-holders1 nil (fargn term 2) lamp)
         (declare (ignore changedp2))
         (mv t (mcons-term* 'cons arg1 arg2)))))
    ((flambdap (ffn-symb term))
@@ -4100,7 +4173,7 @@
       term
       ((('LAMBDA ('VAR) ('THE-CHECK & & 'VAR))
         val)
-       (remove-guard-holders1 t val))
+       (remove-guard-holders1 t val lamp))
       ((('LAMBDA formals ('RETURN-LAST ''MBE1-RAW & logic))
         . args)
 
@@ -4111,33 +4184,42 @@
 
        (mv-let
          (changedp1 args1)
-         (remove-guard-holders1-lst args)
+         (remove-guard-holders1-lst args lamp)
          (declare (ignore changedp1))
          (mv-let
            (changedp2 logic2)
-           (remove-guard-holders1 nil logic)
+           (remove-guard-holders1 nil logic lamp)
            (declare (ignore changedp2))
            (mv t (subcor-var formals args1 logic2)))))
       (&
        (mv-let
          (changedp1 lambda-body)
          (remove-guard-holders1 nil
-                                (lambda-body (ffn-symb term)))
-         (mv-let
-           (changedp2 args)
-           (remove-guard-holders1-lst (fargs term))
-           (cond ((or changedp1 changedp2)
-                  (mv t
-                      (mcons-term
-                       (if changedp1
-                           (make-lambda (lambda-formals (ffn-symb term))
-                                        lambda-body)
-                         (ffn-symb term))
-                       args)))
-                 (t (mv changedp0 term))))))))
+                                (lambda-body (ffn-symb term))
+                                lamp)
+         (let ((lambda-formals (lambda-formals (ffn-symb term))))
+           (mv-let
+             (changedp2 args)
+             (remove-guard-holders1-lst (fargs term) lamp)
+             (cond ((and lamp
+                         (consp lambda-formals)
+                         (null (cdr lambda-formals))
+                         (eq (car lambda-formals) lambda-body))
+                    (mv t (car args)))
+                   ((and lamp
+                         (trivial-lambda-p lambda-formals args lambda-body))
+                    (mv t lambda-body))
+                   ((or changedp1 changedp2)
+                    (mv t
+                        (mcons-term
+                         (if changedp1
+                             (make-lambda lambda-formals lambda-body)
+                           (ffn-symb term))
+                         args)))
+                   (t (mv changedp0 term)))))))))
    (t (mv-let
         (changedp1 args)
-        (remove-guard-holders1-lst (fargs term))
+        (remove-guard-holders1-lst (fargs term) lamp)
         (cond ((null changedp1)
                (cond ((quote-listp args)
                       (let ((new-term (mcons-term (ffn-symb term)
@@ -4148,64 +4230,72 @@
                      (t (mv changedp0 term))))
               (t (mv t (mcons-term (ffn-symb term) args))))))))
 
-(defun remove-guard-holders1-lst (lst)
+(defun remove-guard-holders1-lst (lst lamp)
+
+; See the warnings and other comments in remove-guard-holders1.
+
   (declare (xargs :guard (pseudo-term-listp lst)
                   :measure (acl2-count lst)))
   (cond ((endp lst) (mv nil nil))
         (t (mv-let (changedp1 a)
-                   (remove-guard-holders1 nil (car lst))
+                   (remove-guard-holders1 nil (car lst) lamp)
                    (mv-let (changedp2 b)
-                           (remove-guard-holders1-lst (cdr lst))
+                           (remove-guard-holders1-lst (cdr lst) lamp)
                            (cond ((or changedp1 changedp2)
                                   (mv t (cons a b)))
                                  (t (mv nil lst))))))))
 )
 
-(defun remove-guard-holders-weak (term)
+(defun remove-guard-holders-weak (term lamp)
 
-; Return a term equal to term, but slightly simplified.  See also the warning
-; in remove-guard-holders1.
+; Return a term equal to term, but slightly simplified.  See the warnings and
+; other comments in remove-guard-holders1.
 
   (declare (xargs :guard (pseudo-termp term)))
   (mv-let (changedp result)
-          (remove-guard-holders1 nil term)
+          (remove-guard-holders1 nil term lamp)
           (declare (ignore changedp))
           result))
 
-(defun remove-guard-holders-weak-lst (lst)
+(defun remove-guard-holders-weak-lst (lst lamp)
 
 ; Return a list of terms element-wise equal to lst, but slightly simplified.
+; See the warnings and other comments in remove-guard-holders1.
 
   (declare (xargs :guard (pseudo-term-listp lst)))
   (mv-let (changedp result)
-          (remove-guard-holders1-lst lst)
+          (remove-guard-holders1-lst lst lamp)
           (declare (ignore changedp))
           result))
 
-(defun remove-guard-holders1-lst-lst (lst)
+(defun remove-guard-holders1-lst-lst (lst lamp)
+
+; See the warnings and other comments in remove-guard-holders1.
+
   (declare (xargs :guard (pseudo-term-list-listp lst)))
   (cond ((null lst) (mv nil nil))
         (t (mv-let (changedp1 a)
-                   (remove-guard-holders1-lst (car lst))
+                   (remove-guard-holders1-lst (car lst) lamp)
                    (mv-let (changedp2 b)
-                           (remove-guard-holders1-lst-lst (cdr lst))
+                           (remove-guard-holders1-lst-lst (cdr lst) lamp)
                            (cond ((or changedp1 changedp2)
                                   (mv t (cons a b)))
                                  (t (mv nil lst))))))))
 
-(defun remove-guard-holders-weak-lst-lst (lst)
+(defun remove-guard-holders-weak-lst-lst (lst lamp)
 
 ; Return a list of clauses element-wise equal to lst, but slightly simplified.
+; See the warnings and other comments in remove-guard-holders1.
 
   (declare (xargs :guard (pseudo-term-list-listp lst)))
   (mv-let (changedp result)
-          (remove-guard-holders1-lst-lst lst)
+          (remove-guard-holders1-lst-lst lst lamp)
           (declare (ignore changedp))
           result))
 
 (mutual-recursion
 
-(defun clean-up-dirty-lambda-objects (term ilk wrld)
+(defun clean-up-dirty-lambda-objects (term ilk wrld lamp)
 
 ; Warning: This function must not be called during boot-strap, so check
 ; (global-val 'boot-strap-flg wrld) before calling this function.
@@ -4236,9 +4326,11 @@
                       (expand-all-lambdas
                        (clean-up-dirty-lambda-objects
                         (remove-guard-holders-weak
-                         (lambda-object-body evg))
+                         (lambda-object-body evg)
+                         lamp)
                         nil
-                        wrld)))))
+                        wrld
+                        lamp)))))
               (t term)))
             (t term))))
    ((and (eq (ffn-symb term) 'HIDE)
@@ -4251,8 +4343,9 @@
            (clean-up-dirty-lambda-objects
             (lambda-body (ffn-symb term))
             nil
-            wrld))
-     (clean-up-dirty-lambda-objects-lst (fargs term) nil wrld)))
+            wrld
+            lamp))
+     (clean-up-dirty-lambda-objects-lst (fargs term) nil wrld lamp)))
    (t (let ((bdg (executable-badge (ffn-symb term) wrld)))
         (fcons-term (ffn-symb term)
                     (clean-up-dirty-lambda-objects-lst
@@ -4261,15 +4354,17 @@
                              (eq (access apply$-badge bdg :ilks) t))
                          nil
                          (access apply$-badge bdg :ilks))
-                     wrld))))))
+                     wrld
+                     lamp))))))
 
-(defun clean-up-dirty-lambda-objects-lst (terms ilks wrld)
+(defun clean-up-dirty-lambda-objects-lst (terms ilks wrld lamp)
   (cond
    ((endp terms) nil)
-   (t (cons (clean-up-dirty-lambda-objects (car terms) (car ilks) wrld)
-            (clean-up-dirty-lambda-objects-lst (cdr terms) (cdr ilks) wrld))))))
+   (t (cons (clean-up-dirty-lambda-objects (car terms) (car ilks) wrld lamp)
+            (clean-up-dirty-lambda-objects-lst (cdr terms) (cdr ilks) wrld
+                                               lamp))))))
 
-(defun possibly-clean-up-dirty-lambda-objects (term wrld)
+(defun possibly-clean-up-dirty-lambda-objects (term wrld lamp)
 
 ; We copy term and clean up every dirty well-formed lambda object occurring in
 ; a :FN slot.  We only do this if we're not in boot-strap and if we have reason
@@ -4280,33 +4375,37 @@
   (cond
    ((and (not (global-val 'boot-strap-flg wrld))
          (may-contain-dirty-lambda-objectsp term))
-    (clean-up-dirty-lambda-objects term nil wrld))
+    (clean-up-dirty-lambda-objects term nil wrld lamp))
    (t term)))
 
-(defun possibly-clean-up-dirty-lambda-objects-lst (terms wrld)
+(defun possibly-clean-up-dirty-lambda-objects-lst (terms wrld lamp)
 
 ; We copy each term in terms and clean up every dirty well-formed quoted lambda
-; objects we find.  This funtion checks (not (global-val 'boot-strap-flg wrld))
-; once for every element of terms.  This is less efficient than checking it
-; once and then running the may-contain-dirty-lambda-objectsp check on each
+; objects we find.  This function checks (not (global-val 'boot-strap-flg
+; wrld)) once for every element of terms.  This is less efficient than checking
+; it once and then running the may-contain-dirty-lambda-objectsp check on each
 ; term, but that would require having a lot of nearly duplicate code.
 
   (cond
    ((endp terms) nil)
-   (t (cons (possibly-clean-up-dirty-lambda-objects (car terms) wrld)
-            (possibly-clean-up-dirty-lambda-objects-lst (cdr terms) wrld)))))
+   (t (cons (possibly-clean-up-dirty-lambda-objects (car terms) wrld lamp)
+            (possibly-clean-up-dirty-lambda-objects-lst (cdr terms) wrld
+                                                        lamp)))))
 
-(defun possibly-clean-up-dirty-lambda-objects-lst-lst (terms-lst wrld)
+(defun possibly-clean-up-dirty-lambda-objects-lst-lst (terms-lst wrld lamp)
 
 ; Again, we test the 'boot-strap-flg repeatedly when only one test would
 ; suffice.  So we're sacrificing a little efficiency for code simplicity.
 
   (cond
    ((endp terms-lst) nil)
-   (t (cons (possibly-clean-up-dirty-lambda-objects-lst (car terms-lst) wrld)
+   (t (cons (possibly-clean-up-dirty-lambda-objects-lst
+             (car terms-lst) wrld lamp)
             (possibly-clean-up-dirty-lambda-objects-lst-lst
-             (cdr terms-lst)
-             wrld)))))
+             (cdr terms-lst) wrld lamp)))))
+
+(defstub remove-guard-holders-lamp () t)
+(defattach remove-guard-holders-lamp constant-t-function-arity-0)
 
 (defun remove-guard-holders (term wrld)
 
@@ -4314,14 +4413,16 @@
 ; quoted lambda objects.  See remove-guard-holders-weak for a version that does
 ; not take a world argument and does not simplify quoted lambda objects.
 
-; See the warning in remove-guard-holders1.
+; See the warnings and other comments in remove-guard-holders1.
 
   (declare (xargs :guard (and (pseudo-termp term)
                               (plist-worldp wrld))))
-  (cond (wrld (possibly-clean-up-dirty-lambda-objects
-               (remove-guard-holders-weak term)
-               wrld))
-        (t (remove-guard-holders-weak term))))
+  (let ((lamp (remove-guard-holders-lamp)))
+    (cond (wrld (possibly-clean-up-dirty-lambda-objects
+                 (remove-guard-holders-weak term lamp)
+                 wrld
+                 lamp))
+          (t (remove-guard-holders-weak term lamp)))))
 
 (defun remove-guard-holders-lst (lst wrld)
 
@@ -4330,12 +4431,16 @@
 ; for a version that does not take a world argument and does not simplify
 ; quoted lambda objects.
 
+; See the warnings and other comments in remove-guard-holders1.
+
   (declare (xargs :guard (and (pseudo-term-listp lst)
                               (plist-worldp wrld))))
-  (cond (wrld (possibly-clean-up-dirty-lambda-objects-lst
-               (remove-guard-holders-weak-lst lst)
-               wrld))
-        (t (remove-guard-holders-weak-lst lst))))
+  (let ((lamp (remove-guard-holders-lamp)))
+    (cond (wrld (possibly-clean-up-dirty-lambda-objects-lst
+                 (remove-guard-holders-weak-lst lst lamp)
+                 wrld
+                 lamp))
+          (t (remove-guard-holders-weak-lst lst lamp)))))
 
 (defun remove-guard-holders-lst-lst (lst wrld)
 
@@ -4344,12 +4449,16 @@
 ; remove-guard-holders-weak-lst-lst for a version that does not take a world
 ; argument and does not simplify quoted lambda objects.
 
+; See the warnings and other comments in remove-guard-holders1.
+
   (declare (xargs :guard (and (pseudo-term-list-listp lst)
                               (plist-worldp wrld))))
-  (cond (wrld (possibly-clean-up-dirty-lambda-objects-lst-lst
-               (remove-guard-holders-weak-lst-lst lst)
-               wrld))
-        (t (remove-guard-holders-weak-lst-lst lst))))
+  (let ((lamp (remove-guard-holders-lamp)))
+    (cond (wrld (possibly-clean-up-dirty-lambda-objects-lst-lst
+                 (remove-guard-holders-weak-lst-lst lst lamp)
+                 wrld
+                 lamp))
+          (t (remove-guard-holders-weak-lst-lst lst lamp)))))
 
 (defun lambda-object-guard (x)
 
@@ -4607,7 +4716,7 @@
          wrld)
         (t (scan-to-event (cdr wrld)))))
 
-(defun logical-defun (fn wrld)
+(defun get-defun-event (fn wrld)
 
 ; Returns the defun form for fn that was submitted to ACL2,, if there is one;
 ; else nil.
@@ -4664,7 +4773,7 @@
   (let ((trip (assoc-eq fn *primitive-formals-and-guards*)))
     (cond
      (trip (untranslate* (caddr trip) t wrld))
-     (t (let ((def (logical-defun fn wrld)))
+     (t (let ((def (get-defun-event fn wrld)))
           (cond
            ((null def)
             (er hard! 'guard-raw
@@ -11655,7 +11764,8 @@
                                lst1
                                (cons (cdar alist) lst2)))))
 
-(defun no-duplicatesp-checks-for-stobj-let-actuals/alist (alist producer-vars)
+(defun no-duplicate-indices-checks-for-stobj-let-actuals/alist
+    (alist producer-vars)
   (cond
    ((endp alist) nil)
    (t
@@ -11665,15 +11775,15 @@
             (let ((indices (strip-cdrs pairs)))
               (and (nat-listp indices)
                    (no-duplicatesp indices))))
-        (no-duplicatesp-checks-for-stobj-let-actuals/alist (cdr alist)
-                                                           producer-vars))
+        (no-duplicate-indices-checks-for-stobj-let-actuals/alist
+         (cdr alist) producer-vars))
        (t
         (mv-let (producer-indices other-indices)
           (split-values-by-keys producer-vars pairs nil nil)
           (cond
            ((null producer-indices)
-            (no-duplicatesp-checks-for-stobj-let-actuals/alist (cdr alist)
-                                                               producer-vars))
+            (no-duplicate-indices-checks-for-stobj-let-actuals/alist
+             (cdr alist) producer-vars))
            (t
             (cons `(with-guard-checking
                     t
@@ -11702,7 +11812,7 @@
                     (chk-no-stobj-array-index-aliasing
                      (list ,@producer-indices)
                      (list ,@other-indices)))
-                  (no-duplicatesp-checks-for-stobj-let-actuals/alist
+                  (no-duplicate-indices-checks-for-stobj-let-actuals/alist
                    (cdr alist) producer-vars)))))))))))
 
 (defun concrete-accessor (accessor tuples-lst)
@@ -11718,7 +11828,7 @@
              (assert$ accessor$c
                       (concrete-accessor accessor$c (cdr tuples-lst)))))))
 
-(defun no-duplicatesp-checks-for-stobj-let-actuals-1
+(defun no-duplicate-indices-checks-for-stobj-let-actuals-1
     (bound-vars exprs producer-vars tuples-lst alist)
 
 ; It is useful to introduce the notion that st$c "ultimately underlies" a stobj
@@ -11739,12 +11849,12 @@
 
   (cond
    ((endp exprs)
-    (let ((lst (no-duplicatesp-checks-for-stobj-let-actuals/alist
+    (let ((lst (no-duplicate-indices-checks-for-stobj-let-actuals/alist
                 alist producer-vars)))
       (if (cdr lst)
           (cons 'progn$ lst)
         (car lst))))
-   (t (no-duplicatesp-checks-for-stobj-let-actuals-1
+   (t (no-duplicate-indices-checks-for-stobj-let-actuals-1
        (cdr bound-vars)
        (cdr exprs)
        producer-vars
@@ -11773,9 +11883,9 @@
 ; records, where st$c is the corresponding foundational stobj and
 ; absstobj-tuples is a list of tuples (name logic exec . updater), where
 ; updater is non-nil only when name is a child stobj accessor (hence exec is a
-; child stobj accessofr for st$c).  The first tuple is for the recognizer, the
-; second is for the creator, and the rest are for the exports, in order of
-; the exports in the original defabsstobj event.
+; child stobj accessor for st$c).  The first tuple is for the recognizer, the
+; second is for the creator, and the rest are for the exports, in order of the
+; exports in the original defabsstobj event.
 
   (st$c . absstobj-tuples)
   t)
@@ -11787,10 +11897,16 @@
                    (absstobj-tuples-lst (access absstobj-info abs-info :st$c)
                                         wrld))))))
 
-(defun no-duplicatesp-checks-for-stobj-let-actuals
+(defun no-duplicate-indices-checks-for-stobj-let-actuals
+
+; This function is called in translate11, to lay down a prog2$ call whose first
+; argument is a call of chk-no-stobj-array-index-aliasing, which is a function
+; whose body is nil but whose guard insists that array indices from stobj-let
+; bindings are suitably distinct.
+
     (bound-vars exprs producer-vars st wrld)
   (let ((tuples-lst (absstobj-tuples-lst st wrld)))
-    (no-duplicatesp-checks-for-stobj-let-actuals-1
+    (no-duplicate-indices-checks-for-stobj-let-actuals-1
      bound-vars exprs producer-vars tuples-lst nil)))
 
 (defun stobj-let-fn (x)
@@ -12029,9 +12145,9 @@
 ; that this is congruent to stobj.  First-acc is the first accessor, which is
 ; just used in the error message when another accessor's stobj doesn't match.
 
-; We do an additional check in chk-stobj-let/accessors to ensure, in the
-; abstract stobj case, that two different accessors aren't aliases for the same
-; underlying concrete stobj accessor.  See chk-stobj-let/accessors
+; We do an additional check in chk-stobj-let/accessors to ensure that two
+; different accessors aren't aliases for the same underlying concrete stobj
+; accessor.  See chk-stobj-let/accessors.
 
   (cond ((endp bound-vars) nil)
         (t (let* ((var (car bound-vars))
@@ -12080,23 +12196,6 @@
                           (car (stobjs-out (caar actuals) wrld))
                           (caar actuals)
                           stobj))
-                    ((member-equal actual (cdr actuals))
-
-; This case fixes a soundness bug for duplicated actuals (see :DOC note-8-0).
-; It effectively checks no-duplicatesp-equal of the actuals, but doing it here
-; one-by-one has the advantage that we can easily say which actual is
-; duplicated.  Alternatively, we could check only that scalar accessor
-; functions are not used more than once.  This is a bit stronger since it also
-; disallows duplicate array accesses (though they would be disallowed by guards
-; anyway).  If we ever relax the strict syntactic restrictions on actuals --
-; e.g., allow accessors from multiple congruent stobjs -- this check will need
-; to become smarter.
-
-                     (msg "The bindings of a stobj-let must contain no ~
-                           duplicated expressions, but in the following form, ~
-                           more than one variable is bound to the expression, ~
-                           ~x0."
-                          actual))
                     (t (chk-stobj-let/bindings stobj acc-stobj first-acc
                                                (cdr bound-vars)
                                                (cdr actuals)
@@ -12177,7 +12276,7 @@
         (t (cons (list (caar alist) (cdar alist))
                  (alist-to-doublets (cdr alist))))))
 
-(defun chk-stobj-let/accessors2 (alist producer-vars wrld)
+(defun chk-stobj-let/accessors2 (alist producer-vars concretep wrld)
 
 ; Alist contains entries (fn$c (var1 . expr1) (var2 . expr2) ... (varn
 ; . exprn)), where each expri is a call of a child stobj accessor that
@@ -12186,9 +12285,14 @@
 ; involving the field accessed by fn$c that is not completely read-only.
 ; Otherwise we return nil.
 
+; Concretep is used in the construction of the message (if non-nil) returned by
+; this function.  It is true iff the child stobj accessors are (implicitly)
+; from a parent stobj that is concrete.
+
   (cond
    ((endp alist) nil)
-   (t (let* ((msg1 (chk-stobj-let/accessors2 (cdr alist) producer-vars wrld))
+   (t (let* ((msg1 (chk-stobj-let/accessors2 (cdr alist) producer-vars
+                                             concretep wrld))
              (key (caar alist))
              (indexp (consp key))
              (fn$c (if indexp
@@ -12198,14 +12302,16 @@
                          (reverse (cdar alist))))
              (bad-vars (strip-cars (restrict-alist producer-vars pairs)))
              (msg2 (and bad-vars
-                        (msg "The stobj-let bindings ~x0 ultimately access ~
-                              the same field ~x1 of concrete stobj ~x2~@3.  ~
-                              Since variable~#4~[ ~&4 is~/s ~&4 are~] to be ~
-                              updated (i.e., ~#4~[it is~/they are~] among the ~
+                        (msg "The stobj-let bindings ~x0~@1 access ~
+                              the same field ~x2 of~@3 stobj ~x4~@5.  ~
+                              Since variable~#6~[ ~&6 is~/s ~&6 are~] to be ~
+                              updated (i.e., ~#6~[it is~/they are~] among the ~
                               stobj-let form's producer variables), this ~
                               aliasing is illegal."
                              (alist-to-doublets pairs)
+                             (if concretep "" " ultimately")
                              fn$c
+                             (if concretep "" " concrete")
                              (getpropc fn$c 'stobj-function nil wrld)
                              (if indexp
                                  " (with identical array indices)"
@@ -12219,37 +12325,40 @@
 (defun chk-stobj-let/accessors1 (bound-vars actuals producer-vars
                                             tuples tuples-lst wrld alist)
 
-; Tuples is the :absstobj-tuples field of an absstobj-info record for an
-; abstract stobj st, actuals is the values in the bindings of a stobj-let form,
-; and tuples-lst is the list of :absstobj-tuples for the chain of foundational
-; stobjs starting with the foundational stobj for st.  We look for aliasing
-; caused by ultimately invoking the same concrete stobj export.  However we do
-; not handle aliasing caused by non-identiccal array indices; for that, see
-; no-duplicatesp-checks-for-stobj-let-actuals-1, which generates guard
+; This function returns a msgp if there is aliasing caused by ultimately
+; invoking the same concrete stobj export of a stobj-let form (which is
+; implicit here; see discussion of inputs below).  However we do not handle
+; aliasing caused by non-identical array indices; for that, see
+; no-duplicate-indices-checks-for-stobj-let-actuals-1, which generates guard
 ; obligations rather than causing an error like the present function (but more
 ; precisely, the present function can return a msg, which is passed up the call
 ; chain until causing an error in defabsstobj-fn1).
 
-; We assume that we are here because of a chk-stobj-let call that invoked
-; chk-stobj-let/accessors after a corresponding check already done with
-; chk-stobj-let/bindings (see comment on assert$ below).
+; Actuals is the list of expressions in the bindings of a stobj-let form for a
+; stobj st, and producer-vars is the producer variables of that stobj-let form.
+; If st is a concrete stobj then tuples and tuples-lst are nil.  But if st is
+; an abstract stobj, then tuples is the :absstobj-tuples field of the
+; absstobj-info record for st, and tuples-lst is the list of :absstobj-tuples
+; for the chain of foundational stobjs starting with the foundational stobj for
+; st.
 
-; Note that duplicated actuals are already checked in chk-stobj-let/bindings;
-; here we are checking that two (distinct) actuals do not represent the same
-; update for the same concrete stobj.  We could actually avoid that previous
-; check in the case of abstract stobjs because the check is done here, but we
-; need the other check anyhow for concrete stobjs.  The price seems small for
-; the duplicated effort here, so we aren't concerned about that.
+; We assume that we are here because of a chk-stobj-let call that invoked
+; chk-stobj-let/accessors after a corresponding check already done successfully
+; with chk-stobj-let/bindings (see comment on assert$ below).
 
   (cond
    ((endp bound-vars) ; equivalently, (endp actuals)
-    (chk-stobj-let/accessors2 alist producer-vars wrld))
+    (chk-stobj-let/accessors2 alist producer-vars
+                              (null tuples) ; implicit stobj is concrete
+                              wrld))
    (t (let* ((var (car bound-vars))
              (actual (car actuals))
              (fn (car actual))
-             (tuple (assoc-eq fn tuples))
-             (fn$c0 (caddr tuple))
-             (fn$c (concrete-accessor fn$c0 tuples-lst))
+             (fn$c (cond (tuples ; abstract stobj case
+                          (let* ((tuple (assoc-eq fn tuples))
+                                 (fn$c0 (caddr tuple)))
+                            (concrete-accessor fn$c0 tuples-lst)))
+                         (t fn)))
              (index (and (= (length actual) 3)
                          (cadr actual)))
              (key (if index
@@ -12286,22 +12395,27 @@
 ; aliases for the same underlying concrete stobj accessor.  This notion of
 ; "underlying" refers to following the chain of foundational stobjs until a
 ; concrete stobj is reached.  (This is the notion of "ultimately underlies"
-; introduced in no-duplicatesp-checks-for-stobj-let-actuals-1.)
+; introduced in no-duplicate-indices-checks-for-stobj-let-actuals-1.)
 
 ; Note that this function checks (by way of chk-stobj-let/accessors1) for
 ; aliasing in the form of explicit duplication of accessors (modulo the
 ; corresponding underlying concrete stobj accessor) in the bindings of a
-; stobj-let form.  See no-duplicatesp-checks-for-stobj-let-actuals-1 for how we
-; deal with duplicate array indices by generating a runtime check that, in
-; turn, generates a suitable guard obligation.
+; stobj-let form.  See no-duplicate-indices-checks-for-stobj-let-actuals-1 for
+; how we deal with duplicate array indices by generating a runtime check that,
+; in turn, generates a suitable guard obligation.
 
   (let ((abs-info (getpropc st 'absstobj-info nil wrld)))
-    (and abs-info ; st is an abstract stobj
-         (let* ((tuples (access absstobj-info abs-info :absstobj-tuples))
-                (st$c (access absstobj-info abs-info :st$c))
-                (tuples-lst (absstobj-tuples-lst st$c wrld)))
-           (chk-stobj-let/accessors1 bound-vars actuals producer-vars
-                                     tuples tuples-lst wrld nil)))))
+    (cond
+     (abs-info ; st is an abstract stobj
+      (let* ((tuples (access absstobj-info abs-info :absstobj-tuples))
+             (st$c (access absstobj-info abs-info :st$c))
+             (tuples-lst (absstobj-tuples-lst st$c wrld)))
+        (assert$
+         tuples ; as expected for abstract stobjs in chk-stobj-let/accessors1
+         (chk-stobj-let/accessors1 bound-vars actuals producer-vars
+                                   tuples tuples-lst wrld nil))))
+     (t (chk-stobj-let/accessors1 bound-vars actuals producer-vars
+                                  nil nil wrld nil)))))
 
 (defun chk-stobj-let (bound-vars actuals stobj producer-vars bindings
                                  known-stobjs wrld)
@@ -12326,12 +12440,11 @@
           (msg "The name ~x0 is not the name of a field accessor for the ~
                 stobj ~x1, or even one congruent to it."
                first-accessor stobj))
-         ((chk-stobj-let/bindings
-           stobj acc-stobj first-accessor bound-vars actuals wrld))
-         ((chk-stobj-let/updaters bindings producer-vars acc-stobj wrld))
-         ((chk-stobj-let/accessors acc-stobj bound-vars actuals producer-vars
-                                   wrld))
-         (t nil))))))
+         (t (or (chk-stobj-let/bindings stobj acc-stobj first-accessor
+                                        bound-vars actuals wrld)
+                (chk-stobj-let/updaters bindings producer-vars acc-stobj wrld)
+                (chk-stobj-let/accessors acc-stobj bound-vars actuals
+                                         producer-vars wrld))))))))
 
 (defun all-nils-or-x (x lst)
   (declare (xargs :guard (and (symbolp x)
@@ -17204,11 +17317,8 @@
               (let ((actual-stobjs-out
                      (translate-deref stobjs-out bindings))
                     (dups-check
-                     (no-duplicatesp-checks-for-stobj-let-actuals bound-vars
-                                                                  actuals
-                                                                  producer-vars
-                                                                  stobj
-                                                                  wrld))
+                     (no-duplicate-indices-checks-for-stobj-let-actuals
+                      bound-vars actuals producer-vars stobj wrld))
                     (producer-stobjs
                      (collect-non-x
                       nil

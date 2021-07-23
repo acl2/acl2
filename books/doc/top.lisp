@@ -89,6 +89,8 @@
 
 (include-book "centaur/acre/top" :dir :system)
 
+(include-book "centaur/bigmem/bigmem" :dir :system)
+
 (include-book "centaur/bridge/top" :dir :system)
 
 (include-book "centaur/clex/example" :dir :system)
@@ -247,7 +249,7 @@
 (include-book "centaur/memoize/old/profile" :dir :system)
 (include-book "centaur/memoize/old/watch" :dir :system)
 
-(include-book "acl2s/doc" :dir :system)
+(include-book "acl2s/top-doc" :dir :system)
 (include-book "projects/smtlink/top" :dir :system :ttags :all)
 
 (include-book "centaur/ipasir/ipasir-tools" :dir :system)

@@ -36,6 +36,7 @@
 (include-book "centaur/gl/portcullis" :dir :system)
 (include-book "centaur/defrstobj/portcullis" :dir :system)
 (include-book "centaur/defrstobj2/portcullis" :dir :system)
+(include-book "centaur/bigmem/portcullis" :dir :system)
 (include-book "kestrel/java/portcullis" :dir :system)
 (include-book "kestrel/ethereum/portcullis" :dir :system)
 (include-book "kestrel/bitcoin/portcullis" :dir :system)

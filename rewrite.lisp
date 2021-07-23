@@ -131,14 +131,16 @@
                (warranted-fns-of-world1 (cdr x) wrld)))
         (t nil)))
 
-; Matt:  The following function used to be called badged-fns-of-world
 (defun warranted-fns-of-world (wrld)
 
 ; We return the list of all warranted functions in wrld, but in a way that can
 ; be guard-verified and can be proved to return a list of function symbols that
-; is a subset of the warranted functions of wrld.
+; is a subset of the warranted functions of wrld.  The guard verification comes
+; later during initialization (in boot-strap-pass-2-a.lisp).
 
-  (declare (xargs :mode :logic :guard (plist-worldp wrld)))
+  (declare (xargs :mode :logic
+                  :guard (plist-worldp wrld)
+                  :verify-guards nil))
   (and (alistp (table-alist 'badge-table wrld))
        (warranted-fns-of-world1
         (cdr (assoc-eq :badge-userfn-structure
@@ -164,11 +166,14 @@
 
  (((ev-fncall+-fns * * * * * * *) => *))
  nil
+
  (logic)
+
  (local (defun ev-fncall+-fns (fn args wrld big-n safe-mode gc-off strictp)
           (declare (ignore fn args big-n safe-mode gc-off))
           (and (not strictp)
                (warranted-fns-of-world wrld))))
+
  (local
   (defthm all-function-symbolps-ev-fncall+-fns-lemma
     (all-function-symbolps (warranted-fns-of-world1 x wrld) wrld)))
@@ -176,9 +181,20 @@
  (defthm all-function-symbolps-ev-fncall+-fns
    (let ((fns (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil)))
      (all-function-symbolps fns wrld)))
+
+ (local
+  (defthm subsetp-equal-cons
+    (implies (subsetp-equal x y)
+             (subsetp-equal x (cons a y)))))
+
+ (local
+  (defthm subsetp-equal-x-x
+    (subsetp-equal x x)))
+
  (defthm ev-fncall+-fns-is-subset-of-badged-fns-of-world
    (subsetp (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil)
             (warranted-fns-of-world wrld)))
+
  (defthm function-symbolp-ev-fncall+-fns-strictp
    (let ((fn (ev-fncall+-fns fn args wrld big-n safe-mode gc-off t)))
      (and (symbolp fn)
@@ -11460,7 +11476,7 @@
 (defun merge-rw-caches (alist1 alist2)
 
 ; Each of alist1 and alist2 is a symbol-alist sorted by car according to
-; symbol-<.  The value of each key is a sorted-rw-cache-list.  We return a
+; symbol<.  The value of each key is a sorted-rw-cache-list.  We return a
 ; symbol-alist, sorted that same way, such that each key's value is the
 ; suitable combination of its values in the two alists.  We avoid some consing
 ; by returning an additional value: a flag which, if true, implies that the
@@ -11478,12 +11494,12 @@
                          (cond ((and flg flg2) (mv t alist2))
                                (flg2 (mv nil (cons (car alist2) rest)))
                                (t (mv nil (acons (caar alist2) objs rest)))))))
-        ((symbol-< (caar alist1) (caar alist2))
+        ((symbol< (caar alist1) (caar alist2))
          (mv-let (flg rest)
                  (merge-rw-caches (cdr alist1) alist2)
                  (declare (ignore flg))
                  (mv nil (cons (car alist1) rest))))
-        (t ; (symbol-< (caar alist2) (caar alist1))
+        (t ; (symbol< (caar alist2) (caar alist1))
          (mv-let (flg rest)
                  (merge-rw-caches alist1 (cdr alist2))
                  (cond (flg (mv t alist2))
@@ -11498,7 +11514,7 @@
 (defun merge-symbol-alistp (a1 a2)
   (cond ((endp a1) a2)
         ((endp a2) a1)
-        ((symbol-< (caar a1) (caar a2))
+        ((symbol< (caar a1) (caar a2))
          (cons (car a1)
                (merge-symbol-alistp (cdr a1) a2)))
         (t
@@ -11508,7 +11524,7 @@
 (defun merge-sort-symbol-alistp (alist)
   (cond ((endp (cdr alist)) alist)
         ((endp (cddr alist))
-         (cond ((symbol-< (car (car alist)) (car (cadr alist)))
+         (cond ((symbol< (car (car alist)) (car (cadr alist)))
                 alist)
                (t (list (cadr alist) (car alist)))))
         (t (let* ((n (length alist))
@@ -11749,26 +11765,6 @@
     (or ttree2-or-nil
         ttree1-or-nil)))
 
-(mutual-recursion
-
-(defun dumb-occur-var (var term)
-
-; This function determines if variable var occurs free in the given term.  This
-; is the same as dumb-occur, but optimized for the case that var is a variable.
-
-  (declare (xargs :guard (and (symbolp var) (pseudo-termp term))))
-  (cond ((eq var term) t)
-        ((variablep term) nil)
-        ((fquotep term) nil)
-        (t (dumb-occur-var-lst var (fargs term)))))
-
-(defun dumb-occur-var-lst (var lst)
-  (declare (xargs :guard (and (symbolp var) (pseudo-term-listp lst))))
-  (cond ((endp lst) nil)
-        (t (or (dumb-occur-var var (car lst))
-               (dumb-occur-var-lst var (cdr lst))))))
-)
-
 (defun restrict-alist-to-all-vars1 (alist term)
 
 ; Return the result of restricting alist to those pairs whose key is a variable
@@ -11878,6 +11874,7 @@
    :formals (failure-reason)
    :guard (and (consp failure-reason)
                (posp (car failure-reason)))))
+ (logic)
  (local (defun rw-cacheable-failure-reason (failure-reason)
           failure-reason)))
 

@@ -3391,7 +3391,7 @@
 ; might have.  But we decided to stick with the ``just do what the user said''
 ; approach.
 
-;   (let ((term (remove-lambdas (remove-guard-holders term))))
+;   (let ((term (remove-lambdas (remove-guard-holders term wrld))))
 ;     (cond ((or (variablep term)
 ;                (fquotep term)
 ;                (not (eq (ffn-symb term) 'implies)))
@@ -11086,12 +11086,29 @@
   (let ((supporters (instantiable-ancestors (all-fnnames tterm) wrld nil)))
     (value supporters)))
 
+(defmacro when-logic-or-boot-strap (str x)
+
+; It is IMPERATIVE that this is ONLY used when its second argument is a form
+; that evaluates to an error triple.  Keep this function in sync with
+; boot-translate.
+
+; This version of when-logic was introduced when we improved initialize-acl2 in
+; July 2021 to do a more thorough job with "make proofs".  It was helpful at
+; that point to ensure that every defaxiom event is evaluated during pass 1 of
+; the boot-strap.
+
+  `(if (and (eq (default-defun-mode-from-state state)
+                :program)
+            (not (f-get-global 'boot-strap-flg state)))
+       (skip-when-logic (quote ,str) state)
+     ,x))
+
 (defun defaxiom-fn (name term state rule-classes event-form)
 
 ; Important Note: Don't change the formals of this function without reading the
 ; *initial-event-defmacros* discussion in axioms.lisp.
 
-  (when-logic
+  (when-logic-or-boot-strap
    "DEFAXIOM"
    (with-ctx-summarized
     (make-ctx-for-event event-form (cons 'defaxiom name))

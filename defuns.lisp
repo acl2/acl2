@@ -1769,7 +1769,7 @@
    ((eq (ffn-symb body) 'if)
     (let ((test
 
-; Since (remove-guard-holders-weak x) is provably equal to x, the machine we
+; Since (remove-guard-holders-weak x _) is provably equal to x, the machine we
 ; generate using it below is equivalent to the machine generated without it.
 ; It might be sound also to call possibly-clean-up-dirty-lambda-objects (i.e.,
 ; to call remove-guard-holders instead of remove-guard-holders-weak) so that
@@ -1777,7 +1777,11 @@
 ; :fn (or :fn?), but we don't expect to pay much of a price by playing it safe
 ; here and in termination-machine.
 
-           (remove-guard-holders-weak (fargn body 1))))
+; For why we pass nil as the second argument of remove-guard-holders-weak,
+; below, see a comment about remove-guard-holders-weak in the definition of
+; termination-machine-rec.
+
+           (remove-guard-holders-weak (fargn body 1) nil)))
       (cond
        ((member-eq-all 'if ruler-extenders) ; other case is easier to follow
         (mv-let
@@ -1954,8 +1958,13 @@
 ; possibly-clean-up-dirty-lambda-objects anytime we're removing guard holders
 ; we do not do so here and just play it safe until we get burned!
 
+; For why we pass nil as the second argument of remove-guard-holders-weak,
+; below, see a comment about remove-guard-holders-weak in the definition of
+; termination-machine-rec.
+
   (let* ((tests0 (remove-guard-holders-weak-lst
-                  (access tests-and-calls tc :tests))))
+                  (access tests-and-calls tc :tests)
+                  nil)))
     (mv-let
      (var const)
      (term-equated-to-constant-in-termlist tests0)
@@ -1985,7 +1994,8 @@
        (make tests-and-calls
              :tests tests
              :calls (remove-guard-holders-weak-lst
-                     (access tests-and-calls tc :calls)))))))
+                     (access tests-and-calls tc :calls)
+                     nil))))))
 
 (defun simplify-tests-and-calls-lst (tc-list)
 
@@ -6584,6 +6594,47 @@
                                acc
                              (cons (car names) acc))))))
 
+(defconst *boot-strap-invariant-risk-alist*
+
+; We put a non-nil 'invariant-risk property on every function that might
+; violate some ACL2 invariant, if called on arguments that fail to satisfy that
+; function's guard.  Also see put-invariant-risk.
+
+; This constant should map to t all function symbols that might violate an ACL2
+; invariant.  See check-invariant-risk.  We don't include compress1 or
+; compress2 because we believe they don't write out of bounds.  We explicitly
+; map some function symbols to nil to indicate that our trust that they don't
+; have invariant-risk (in spite of calling a function that does).
+
+; In the case of mutual-recursion, only the first name in the nest should be a
+; key of this alist; see put-invariant-risk.
+
+; At one point we thought we should mark with invariant-risk all functions that
+; have raw code and have state as a formal.  But we see almost no way to
+; violate an invariant by misguided updates of the (fictional) live state.  For
+; example, state-p1 specifies that the global-table is an
+; ordered-symbol-alistp, but there is no way to get one's hands directly on the
+; global-table; and state-p1 also specifies that plist-worldp holds of the
+; logical world, and we ensure that by making set-w and related functions
+; untouchable.  The only exceptions are those mapped to t below, as is checked
+; by the function check-invariant-risk.  If new exceptions arise, then we
+; should map them to t below.
+
+  '((aset1 . t) ; could write past the end of the real array
+    (aset2 . t) ; could write past the end of the real array
+    (aset-32-bit-integer-stack . t)
+    (extend-32-bit-integer-stack . t)
+    (aset1-lst . t)
+    (old-check-sum-obj . nil)
+    (check-sum-inc . nil)
+    (update-iprint-ar-fal . nil)
+
+; Aset1-trusetd is an untouchable version of aset1 that we use in our source
+; code when we believe that there is no invariant-risk.  We could create
+; similar trusted analogues of other built-ins mapped to t above.
+
+    (aset1-trusted . nil)))
+
 (defun put-invariant-risk (names bodies non-executablep symbol-class guards
                                  wrld)
 
@@ -6622,9 +6673,33 @@
              (cond
               ((null new-fns) ; optimization
                wrld)
-              (t (put-invariant-risk1 new-fns
-                                      (all-fnnames1-exec t bodies nil)
-                                      wrld)))))))
+              (t (let ((pair
+
+; The following assoc-eq will be false except during the boot-strap unless the
+; function is being redefined.  It was tempting to rule out redefinition, but
+; the user who redefines a system function is essentially taking on the role of
+; implementor.  That responsibility, together with a likely desire to preserve
+; the special status of the function symbol with respect to invariant-risk,
+; seems to make it appropriate not to exempt redefinition here.
+
+; There's potentially a hole created by testing only (car new-fns), since if
+; new-fns has more than one element (presumably because of mutual-recursion)
+; then maybe it's one of those other members of new-fns besides the first that
+; is a key of *boot-strap-invariant-risk-alist*.  We'll just have to be aware
+; of that when forming *boot-strap-invariant-risk-alist*.
+
+                        (assoc-eq (car new-fns)
+                                  *boot-strap-invariant-risk-alist*)))
+                   (cond
+                    (pair (if (cdr pair)
+                              (putprop-x-lst1 new-fns
+                                              'invariant-risk
+                                              (car new-fns)
+                                              wrld)
+                            wrld))
+                    (t (put-invariant-risk1 new-fns
+                                            (all-fnnames1-exec t bodies nil)
+                                            wrld))))))))))
 
 (defun defuns-fn-short-cut (loop$-recursion-checkedp
                             loop$-recursion
@@ -12594,25 +12669,36 @@
                defs
                lst wrld))))))
 
+(defun verify-termination-boot-strap-fn1 (lst state event-form)
+  (let ((event-form (or event-form
+                        (cons 'VERIFY-TERMINATION lst))))
+    (er-let*
+        ((verify-termination-defs-lst (verify-termination1 lst state)))
+      (defuns-fn
+        verify-termination-defs-lst
+        state
+        event-form
+        #+:non-standard-analysis
+        nil))))
+
 (defun verify-termination-boot-strap-fn (lst state event-form)
   (cond
    ((global-val 'boot-strap-flg (w state))
-    (when-logic
+    (let* ((skipp (eq (car lst) ':skip-proofs))
+           (lst (if skipp (cdr lst) lst)))
+      (cond
+       (skipp
+        (state-global-let*
+         ((ld-skip-proofsp 'initialize-acl2))
+         (verify-termination-boot-strap-fn1 lst state event-form)))
+       (t
+        (when-logic
 
 ; It is convenient to use when-logic so that we skip verify-termination during
 ; pass1 of the boot-strap in axioms.lisp.
 
-     "VERIFY-TERMINATION"
-     (let ((event-form (or event-form
-                           (cons 'VERIFY-TERMINATION lst))))
-       (er-let*
-        ((verify-termination-defs-lst (verify-termination1 lst state)))
-        (defuns-fn
-          verify-termination-defs-lst
-          state
-          event-form
-          #+:non-standard-analysis
-          nil)))))
+         "VERIFY-TERMINATION"
+         (verify-termination-boot-strap-fn1 lst state event-form))))))
    (t
 
 ; We do not allow users to use 'verify-termination-boot-strap.  Why?  See the

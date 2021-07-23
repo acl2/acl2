@@ -1265,7 +1265,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection montogomery-zero-identity
+(defsection twisted-edwards-zero-identity
   :short "Left and right identity properties of the neutral point."
 
   (defrule twisted-edwards-add-of-twisted-edwards-zero-left

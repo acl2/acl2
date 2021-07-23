@@ -13,8 +13,8 @@
 (in-package "ACL2")
 
 (include-book "interpreted-function-alistp")
+(include-book "kestrel/utilities/remove-guard-holders" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system) ; for get-fns-in-term
-(local (include-book "kestrel/utilities/remove-guard-holders" :dir :system))
 
 ; this does not take pains to add subfunctions called by fn
 ;todo: call fn-formals?
@@ -37,13 +37,13 @@
               (prog2$ (er hard? 'add-to-interpreted-function-alist "Bad body for ~x0: ~x1" fn body)
                       alist)
             (let ((match (lookup-eq fn alist))
-                  ;; We call remove-guard-holders-weak to get rid of calls of
+                  ;; We call remove-guard-holders-and-clean-up-lambdas to get rid of calls of
                   ;; return-last (and other things).  Note that this will get
                   ;; the :logic part of an MBE.  We might prefer the :exec
                   ;; part, but its correctness assumes the guards hold.  If the
                   ;; :logic part is too slow, consider building the function
                   ;; into an evaluator.
-                  (body (remove-guard-holders-weak body)))
+                  (body (remove-guard-holders-and-clean-up-lambdas body)))
               (if match
                   (if (equal match (list formals body))
                       ;;consistent with previous definition:

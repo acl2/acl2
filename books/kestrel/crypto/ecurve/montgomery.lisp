@@ -953,7 +953,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection montogomery-zero-identity
+(defsection montgomery-zero-identity
   :short "Left and right identity properties of the neutral point."
 
   (defrule montgomery-add-of-montgomery-zero-left
@@ -1524,7 +1524,7 @@
 
   (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
-  (defruledl montogomery-mul-nonneg-of-scalar-addition
+  (defruledl montgomery-mul-nonneg-of-scalar-addition
     (implies (and (montgomery-add-closure)
                   (montgomery-add-associativity)
                   (point-on-montgomery-p point curve)
@@ -1546,7 +1546,7 @@
                     (montgomery-add (montgomery-mul scalar1 point curve)
                                     (montgomery-mul scalar2 point curve)
                                     curve)))
-    :enable (montgomery-mul montogomery-mul-nonneg-of-scalar-addition))
+    :enable (montgomery-mul montgomery-mul-nonneg-of-scalar-addition))
 
   (defruledl montgomery-mul-of-scalar-addition-when-nonneg-converse
     (implies (and (montgomery-add-closure)
@@ -1573,7 +1573,7 @@
                                     (montgomery-mul scalar2 point curve)
                                     curve)))
     :enable (montgomery-mul
-             montogomery-mul-nonneg-of-scalar-addition))
+             montgomery-mul-nonneg-of-scalar-addition))
 
   (local
    (acl2::defisar

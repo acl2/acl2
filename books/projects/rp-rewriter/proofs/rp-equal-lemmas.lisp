@@ -593,7 +593,7 @@
                                insert-ex-from-rp-rp-trans)
                               (ex-from-rp
                                trans-list
-                               
+
                                RP-EVLT-OF-EX-FROM-RP))))))
 
   (defthm rp-evlt-of-rp-equal
@@ -765,8 +765,12 @@
                    (equal (cdr a) (cdr b))
                    (is-synp a))
               (is-synp b))
+; Removed by Matt K. 7/2021 (is-synp-implies removed in aux-function-lemmas.lisp)
+#||
      :hints (("goal" :in-theory (disable is-synp-implies)
-              :use ((:instance is-synp-implies (term a)))))))
+              :use ((:instance is-synp-implies (term a)))))
+||#
+     ))
 
   (local
    (defthm lemma9-lemma3
@@ -881,6 +885,9 @@
                                      (EVL-OF-EXTRACT-FROM-RP
                                       EVL-OF-EXTRACT-FROM-SYNP))))))
 
+; Matt K. mod 7/2021: The following lemma is no longer accepted due to a
+; strengthening of remove-guard-holders.
+#||
   (local
    (defthm lemma4
      (implies (SHOULD-TERM-BE-IN-CONS rule-lhs term)
@@ -891,6 +898,7 @@
                    (equal (car (put-term-in-cons term))
                           (car rule-lhs))))
      :hints (("Goal" :in-theory (enable put-term-in-cons should-term-be-in-cons)))))
+||#
 
   (local
    (defthm lemma5

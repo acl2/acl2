@@ -225,7 +225,7 @@
                                        (append (bind-bindings-aux bindings a)
                                                a))))
               t))||#
-     
+
      (implies (and
                ;(not (consp term))
                ;(symbolp term)
@@ -607,6 +607,9 @@
      :hints (("Goal"
               :in-theory (e/d (is-rp) ())))))
 
+; Matt K. mod 7/2021: The following lemma is no longer accepted due to a
+; strengthening of remove-guard-holders.
+#||
   (local
    (defthm lemma3
      (implies (is-if term)
@@ -614,6 +617,7 @@
                 (& NIL)))
      :hints (("Goal"
               :in-theory (e/d (is-if) ())))))
+||#
 
   (local
    (in-theory (disable is-synp)))
@@ -863,7 +867,7 @@
                                   EX-FROM-RP-LEMMA1))))))
 
      (defthm lemma202
-       (implies (and 
+       (implies (and
                      (rp-termp term)
                      (alistp a)
                      (bindings-alistp bindings)
@@ -960,7 +964,7 @@
               :in-theory (e/d (is-rp
                                is-synp) ())))))
 
-  
+
   (local
    (defthm include-fnc-lemma
      (implies (and (NOT (INCLUDE-FNC TERM 'LIST))

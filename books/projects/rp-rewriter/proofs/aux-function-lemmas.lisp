@@ -172,11 +172,16 @@
   (local
    (in-theory (enable is-rp)))
 
+;; Removed in July 2021 by Matt Kaufmann since the right-hand sides of the
+;; generated rules are now all constants, due to enhancements to
+;; remove-guard-holders.
+#||
   (defthm is-synp-implies
     (implies (is-synp term)
              (CASE-MATCH TERM (('SYNP & & &) T)
                (& NIL)))
     :hints (("Goal" :in-theory (enable is-synp))))
+||#
 
   (defthm pseudo-termlistp-extract-from-rp
     (implies (and (rp-termp term)

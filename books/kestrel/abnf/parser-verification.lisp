@@ -10,6 +10,11 @@
 
 (in-package "ABNF")
 
+; Matt K. mod for July 2021 modification to remove-guard-holders, which was
+; causing parse-exact-when-tree-match to fail.
+#!acl2
+(defattach-system remove-guard-holders-lamp constant-nil-function-arity-0)
+
 (include-book "parser")
 
 (local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))

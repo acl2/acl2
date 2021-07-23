@@ -12,8 +12,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/axe/make-axe-rules" :dir :system)
-(include-book "kestrel/axe/rule-alists" :dir :system)
+(include-book "make-axe-rules")
+(include-book "rule-alists")
 
 ;;;
 ;;; tagged-rule-setp

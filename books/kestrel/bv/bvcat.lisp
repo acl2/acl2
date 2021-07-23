@@ -393,10 +393,25 @@
                   (bvchop (+ 1 high1) x)))
   :hints (("Goal" :in-theory (enable natp))))
 
-
 (defthm bvcat-of-getbit-and-x-adjacent
   (implies (natp n)
            (equal (bvcat 1 (getbit n x) n x)
+                  (bvchop (+ 1 n) x))))
+
+;; In case we are not dropping bvchop inside bvcat
+(defthmd bvcat-of-slice-and-bvchop-adjacent
+  (implies (and (equal size1 (+ 1 high1 (- low1)))
+                (<= low1 high1)
+                (natp low1)
+                (natp high1))
+           (equal (bvcat size1 (slice high1 low1 x) low1 (bvchop low1 x))
+                  (bvchop (+ 1 high1) x)))
+  :hints (("Goal" :in-theory (enable natp))))
+
+;; In case we are not dropping bvchop inside bvcat
+(defthmd bvcat-of-getbit-and-bvchop-adjacent
+  (implies (natp n)
+           (equal (bvcat 1 (getbit n x) n (bvchop n x))
                   (bvchop (+ 1 n) x))))
 
 (defthmd getbit-of-bvcat-low
@@ -976,11 +991,6 @@
                   (* (expt 2 (- i j)) x)))
   :hints (("Goal" :in-theory (enable expt-of-+))))
 
-(defthm ifix-when-integerp
-  (implies (integerp x)
-           (equal (ifix x)
-                  x)))
-
 ;can loop
 (defthmd *-of-half-and-expt-of-one-more
   (implies (integerp n)
@@ -1111,6 +1121,31 @@
            (equal (bvcat 1 (getbit n x) size2 (bvcat n x size y))
                   (bvcat (+ 1 n) (slice n 0 x) size y)))
   :hints (("Goal" :in-theory (enable natp))))
+
+;; In case we are not dropping bvchop inside bvcat
+(defthmd bvcat-of-getbit-and-bvchop-adjacent-2
+  (implies (and (natp size)
+                (natp n)
+                (equal size2 (+ n size)))
+           (equal (bvcat 1 (getbit n x)
+                         size2 (bvcat n (bvchop n x) size y))
+                  (bvcat (+ 1 n) (slice n 0 x) size y)))
+  :hints (("Goal" :in-theory (enable natp))))
+
+;; In case we are not dropping bvchop inside bvcat
+(defthmd bvcat-of-slice-and-bvchop-adjacent-2
+  (implies (and (equal size2 (+ low size))
+                (equal size3 (+ high 1 (- low)))
+                (<= low high)
+                (natp size)
+                (natp low)
+                (natp high))
+           (equal (bvcat size3 (slice high low x)
+                         size2 (bvcat low (bvchop low x)
+                                      size y))
+                  (bvcat (+ 1 high)
+                         (slice high 0 x)
+                         size y))))
 
 ;;rules to tighten bvcat... (drop these since we have the gen one?)
 

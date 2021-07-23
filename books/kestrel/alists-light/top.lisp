@@ -20,9 +20,11 @@
 ;; Books about new functions:
 (include-book "acons-unique")
 (include-book "clear-key")
+(include-book "keep-pairs")
 (include-book "lookup-eq")
 (include-book "lookup-equal")
 (include-book "lookup")
+(include-book "lookup-eq-required")
 (include-book "lookup-eq-safe")
 (include-book "lookup-equal-safe")
 (include-book "lookup-safe")

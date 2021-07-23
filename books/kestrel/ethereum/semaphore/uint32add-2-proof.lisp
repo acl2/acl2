@@ -166,10 +166,6 @@
                |main.nums_bits[1][24]| |main.nums_bits[1][25]| |main.nums_bits[1][26]|
                |main.nums_bits[1][27]| |main.nums_bits[1][28]| |main.nums_bits[1][29]|
                |main.nums_bits[1][30]| |main.nums_bits[1][31]| )
- ;; :monitor '(add-of-mul-and-mul-when-bitps-and-adjacent-coeffs
- ;;             add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-alt
- ;;             add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-extra
- ;;             add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-extra-alt)
  :global-rules '(acl2::integerp-of-bvcat
                  acl2::integerp-of-bitxor
                  acl2::integerp-of-bvnot
@@ -225,7 +221,7 @@
                  PFIELD::MUL-COMBINE-CONSTANTS-alt
                  PFIELD::MUL-OF-CONSTANT-NORMALIZE-TO-FEP
                  PFIELD::MUL-OF-1-ARG1
-                 PFIELD::MUL-BECOMES-NEG
+                 pfield::mul-of--1-becomes-neg-alt
                  (acl2::unsigned-byte-p-rules)
                  ACL2::BVCHOP-OF-BVCHOP
                  ACL2::GETBIT-OF-BVCHOP
@@ -240,16 +236,8 @@
                (pfield::bitp-idiom-1
                 pfield::bitp-idiom-1-alt)
                ;; introduce bvcats:
-               (add-of-mul-and-mul-when-bitps-and-adjacent-coeffs
-                add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-alt
-                add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-extra
-                add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-extra-alt
-                add-of-mul-and-mul-when-bvs-bvcat-version
-                add-of-mul-and-mul-when-bvs-bvcat-version-alt
-                add-of-mul-and-mul-when-bvs-bvcat-version-extra
-                add-of-mul-and-mul-when-bvs-bvcat-version-extra-alt
-                acl2::bvcat-associative
-                )
+               ((pfield::bvcat-intro-rules)
+                acl2::bvcat-associative)
                ( ;;pull out the coeffs:
                 ADD-OF-MUL-NORMALIZE-COEFFS
                 )

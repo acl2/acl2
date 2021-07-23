@@ -1,7 +1,6 @@
-; Top book for Kestrel's x86 directory
+; Top-level book for Kestrel x86 library
 ;
-; Copyright (C) 2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,10 +10,6 @@
 
 (in-package "ACL2")
 
-;; Roughly ordered by according to dependencies:
 (include-book "portcullis")
-(include-book "bitops")
-(include-book "linear-memory")
-(include-book "register-readers-and-writers")
-(include-book "flags")
-(include-book "conditions")
+(include-book "parsers/top")
+(include-book "tools/top")

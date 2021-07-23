@@ -62,7 +62,7 @@ syntactically correct CCDFG is something that can be transformed
     (if (not var) lst
       (if (equal var (caar lst))
           (acons var val (cdr lst))
-        (if (symbol-< (caar lst) var)
+        (if (symbol< (caar lst) var)
             (cons (car lst)
                   (replace-var var val (cdr lst)))
           (acons var val lst))))))

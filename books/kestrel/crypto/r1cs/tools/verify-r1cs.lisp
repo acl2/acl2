@@ -13,7 +13,7 @@
 (include-book "axe-prover-r1cs") ; since this calls prove-implication-with-r1cs-prover
 (include-book "kestrel/utilities/doc" :dir :system)
 (include-book "kestrel/axe/conjoin-term-with-dag" :dir :system)
-(include-book "kestrel/crypto/r1cs/fe-listp-fast" :dir :system)
+(include-book "kestrel/prime-fields/fe-listp-fast" :dir :system)
 (include-book "kestrel/crypto/r1cs/proof-support" :dir :system) ;for make-bitp-claims
 (include-book "kestrel/axe/known-booleans" :dir :system)
 

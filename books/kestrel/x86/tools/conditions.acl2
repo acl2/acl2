@@ -1,0 +1,14 @@
+; Portcullis commands and cert-flags for conditions.lisp
+;
+; Copyright (C) 2021 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "projects/x86isa/portcullis/portcullis" :dir :system)
+(include-book "../portcullis")
+
+; cert-flags: ? T :TTAGS :ALL

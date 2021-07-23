@@ -22,7 +22,7 @@
 (defun field-< (x y)
   (if (symbolp x)
       (and (symbolp y)
-           (symbol-< x y))
+           (symbol< x y))
     (or (symbolp y)
         (< x y))))
 

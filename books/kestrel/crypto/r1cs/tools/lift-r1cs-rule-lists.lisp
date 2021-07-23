@@ -35,7 +35,7 @@
     pfield::mul-of-mod-arg1
     pfield::mul-of-mod-arg2
     pfield::mod-of-mul
-    pfield::mul-becomes-neg
+    ;; pfield::mul-of--1-becomes-neg ; may cause problems with (negated) bvcat reassembly
     pfield::integerp-of-neg
     pfield::mod-of-neg
     pfield::neg-of-0
@@ -75,7 +75,7 @@
             pfield::equal-of-add-of-add-of-neg-arg2-arg2
             mul-normalize-constant-arg1
             add-of-constant-normalize-to-fep ;todo: normalize to small pos or neg numbers instead?
-            pfield::mul-of--1-becomes-neg-gen ;todo: be consistent about negative constants
+            pfield::mul-of--1-becomes-neg ; TODO: may cause problems with (negated) bvcat reassembly ;todo: be consistent about negative constants
             ;;primes::primep-of-bn-254-group-prime-constant
             ;;bitp-of-add-of-constant-negated-special ;;caused problems, possibly a loop, after adding fns to the evaluator.  TODO: why?
             pfield::neg-of-add

@@ -57,44 +57,58 @@
       (let ((function-name (first item)))
         ;; Must be a "call" of a 0-ary function:
         (if (consp (fn-formals function-name (w state)))
-            (er hard? 'elaborate-rule-items "~x0 is not 0-ary." function-name)
+            (er hard? 'elaborate-rule-item "~x0 is not 0-ary." function-name)
           ;; 0-ary function, so evaluate it
           (mv-let (erp rule-names)
             (magic-ev-fncall function-name nil state nil nil)
             (if erp
-                (er hard? 'elaborate-rule-items "Error evaluating ~x0." function-name)
+                (er hard? 'elaborate-rule-item "Error evaluating ~x0." function-name)
               (if (not (symbol-listp rule-names))
-                  (er hard? 'elaborate-rule-items "~x0 evaluated to something other than a list of symbols." function-name)
+                  (er hard? 'elaborate-rule-item "~x0 evaluated to something other than a list of symbols." function-name)
                 rule-names)))))
     ;; Must be the name of a rule:
     (if (symbolp item)
         (list item)
-      (er hard? 'elaborate-rule-items "Bad rule-item: ~x0." item))))
+      (er hard? 'elaborate-rule-item "Bad rule-item: ~x0." item))))
 
 (defthm symbol-listp-of-elaborate-rule-item
   (symbol-listp (elaborate-rule-item item state))
   :hints (("Goal" :in-theory (enable elaborate-rule-item))))
 
 ;;Returns a list of rule-names.
-(defund elaborate-rule-items (items acc state)
+(defund elaborate-rule-items-aux (items acc state)
   (declare (xargs :guard (and (rule-item-listp items)
                               (symbol-listp acc))
                   :stobjs state))
   (if (endp items)
       (reverse acc)
-    (elaborate-rule-items (rest items)
+    (elaborate-rule-items-aux (rest items)
                           (append (elaborate-rule-item (first items) state)
                                   acc)
                           state)))
 
-(defthm true-listp-of-elaborate-rule-items
+(defthm true-listp-of-elaborate-rule-items-aux
   (implies (true-listp acc)
-           (true-listp (elaborate-rule-items items acc state)))
+           (true-listp (elaborate-rule-items-aux items acc state)))
+  :hints (("Goal" :in-theory (enable elaborate-rule-items-aux))))
+
+(defthm symbol-listp-of-elaborate-rule-items-aux
+  (implies (symbol-listp acc)
+           (symbol-listp (elaborate-rule-items-aux items acc state)))
+  :hints (("Goal" :in-theory (enable elaborate-rule-items-aux))))
+
+(defund elaborate-rule-items (items state)
+  (declare (xargs :guard (rule-item-listp items)
+                  :stobjs state))
+  (elaborate-rule-items-aux items nil state))
+
+(defthm true-listp-of-elaborate-rule-items
+  (true-listp (elaborate-rule-items items state))
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable elaborate-rule-items))))
 
 (defthm symbol-listp-of-elaborate-rule-items
-  (implies (symbol-listp acc)
-           (symbol-listp (elaborate-rule-items items acc state)))
+  (symbol-listp (elaborate-rule-items items state))
   :hints (("Goal" :in-theory (enable elaborate-rule-items))))
 
 ;;Returns a list of rule-names.
@@ -104,10 +118,10 @@
                   :stobjs state))
   (if (endp item-lists)
       nil
-    (cons (elaborate-rule-items (first item-lists) nil state)
+    (cons (elaborate-rule-items (first item-lists) state)
           (elaborate-rule-item-lists (rest item-lists) state))))
 
-(defthm symbol-list-listp-of-elaborate-rule-items
+(defthm symbol-list-listp-of-elaborate-rule-item-lists
   (symbol-list-listp (elaborate-rule-item-lists item-lists state))
   :hints (("Goal" :in-theory (enable elaborate-rule-item-lists))))
 

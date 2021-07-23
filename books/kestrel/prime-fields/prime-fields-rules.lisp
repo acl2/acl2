@@ -11,6 +11,7 @@
 (in-package "PFIELD")
 
 (include-book "prime-fields")
+(include-book "../arithmetic-light/ifix") ; since some rules introduce ifix
 (local (include-book "support"))
 (local (include-book "../number-theory/divides"))
 (local (include-book "../arithmetic-light/times"))
@@ -333,14 +334,6 @@
                               acl2::equal-of-0-and-mod
                               acl2::integerp-of-*-three))))
 
-(defthm neg-of-add
-  (equal (neg (add x y p) p)
-         (add (neg x p)
-              (neg y p)
-              p))
-  :hints (("Goal" :do-not '(preprocess)
-           :in-theory (enable neg add sub mul acl2::mod-sum-cases))))
-
 ;move
 ;gen
 (defthm mod-of-expt-of-mod
@@ -616,11 +609,6 @@
                     a)))
   :hints (("Goal" :cases ((equal 0 a)))))
 
-(defthm mul-of-0
-  (equal (mul 0 y p)
-         0)
-  :hints (("Goal" :in-theory (enable mul))))
-
 ;; a cancellation rule
 (defthm equal-of-mul-and-mul-same
   (implies (and (fep x p)
@@ -727,17 +715,28 @@
   :hints (("Goal" :in-theory (enable equal-of-div))))
 
 ;gen?
+;; In this version, the constant is actually -1.
 (defthm mul-of--1-becomes-neg
-  (implies (and (integerp x)
-                (posp p))
+  (implies (posp p)
            (equal (mul -1 x p)
                   (neg x p)))
   :hints (("Goal" :in-theory (enable mul neg sub))))
 
-;; p-1 represents -1.
+;; (* -1 y) becomes (neg y)
+;; In this version, the constant is p-1.
 (defthm mul-of--1-becomes-neg-alt
-  (implies (and (posp p)
-                (integerp x))
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep p)))
+                (equal x (+ -1 p))
+                (posp p))
+           (equal (mul x y p)
+                  (neg y p)))
+  :hints (("Goal" :in-theory (enable mul neg sub acl2::mod-sum-cases))))
+
+;; p-1 represents -1.
+;subsumed by mul-of-+-same-arg2
+(defthmd mul-of--1-becomes-neg-alt-other
+  (implies (posp p)
            (equal (mul (+ -1 p) x p)
                   (neg x p)))
   :hints (("Goal" :in-theory (enable mul neg sub ACL2::MOD-SUM-CASES))))
@@ -808,16 +807,6 @@
                   x))
   :hints (("Goal" :cases ((rationalp p))
            :in-theory (enable fep))))
-
-;; (* -1 y) becomes (neg y)
-(defthm mul-becomes-neg
-  (implies (and (syntaxp (and (quotep x)
-                              (quotep p)))
-                (equal x (+ -1 p))
-                (posp p))
-           (equal (mul x y p)
-                  (neg y p)))
-  :hints (("Goal" :in-theory (enable mul neg sub acl2::mod-sum-cases))))
 
 (defthmd integerp-when-fep
   (implies (fep x p)
@@ -1107,11 +1096,6 @@
 
 (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
 (local (include-book "kestrel/number-theory/primes" :dir :system))
-
-(defthm mul-of-0-arg3
-  (equal (mul x y 0)
-         0)
-  :hints (("Goal" :in-theory (enable mul))))
 
 (defthm pow-of-neg
   (implies (and (posp p)

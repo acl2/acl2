@@ -23,6 +23,7 @@
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/add-to-set-equal" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
+(local (include-book "kestrel/lists-light/last" :dir :system))
 
 ;todo: use list fix to combine these into a nice rule?
 
@@ -47,86 +48,6 @@
 
 
 ;dups (but some of these are now guard verified)
-
-;I guess this works for lambdas too, since they must be complete (i.e., the lambda formals must include all vars that are free in the lambda body)
-;TODO: Compare to all-vars1
-(mutual-recursion
- (defund get-vars-from-term-aux (term acc)
-   (declare (xargs :guard (and (true-listp acc)
-                               (pseudo-termp term))
-                   :verify-guards nil ;;done below
-                   ))
-   (if (atom term)
-       (add-to-set-eq term acc)
-     (let ((fn (ffn-symb term)))
-       (if (eq 'quote fn)
-           acc
-         (get-vars-from-terms-aux (fargs term) acc)))))
-
- (defund get-vars-from-terms-aux (terms acc)
-   (declare (xargs :guard (and (true-listp acc)
-                               (true-listp terms)
-                               (pseudo-term-listp terms))))
-   (if (endp terms)
-       acc
-     (get-vars-from-terms-aux (cdr terms)
-                          (get-vars-from-term-aux (car terms) acc)))))
-
-(make-flag get-vars-from-term-aux)
-
-(defthm-flag-get-vars-from-term-aux
-  (defthm true-listp-of-get-vars-from-term-aux
-    (implies (true-listp acc)
-             (true-listp (get-vars-from-term-aux term acc)))
-    :flag get-vars-from-term-aux)
-  (defthm true-listp-of-get-vars-from-terms-aux
-    (implies (true-listp acc)
-             (true-listp (get-vars-from-terms-aux terms acc)))
-    :flag get-vars-from-terms-aux)
-  :hints (("Goal" :in-theory (enable get-vars-from-term-aux get-vars-from-terms-aux))))
-
-(verify-guards get-vars-from-term-aux)
-
-(defun get-vars-from-term (term)
-  (declare (xargs :guard (pseudo-termp term)))
-  (get-vars-from-term-aux term nil))
-
-(defun get-vars-from-terms (terms)
-  (declare (xargs :guard (pseudo-term-listp terms)))
-  (get-vars-from-terms-aux terms nil))
-
-(defthm-flag-get-vars-from-term-aux
-  (defthm symbol-listp-of-get-vars-from-term-aux
-    (implies (and (pseudo-termp term)
-                  (symbol-listp acc))
-             (symbol-listp (get-vars-from-term-aux term acc)))
-    :flag get-vars-from-term-aux)
-  (defthm symbol-listp-of-get-vars-from-terms-aux
-    (implies (and (pseudo-term-listp terms)
-                  (symbol-listp acc))
-             (symbol-listp (get-vars-from-terms-aux terms acc)))
-    :flag get-vars-from-terms-aux)
-  :hints (("Goal" :in-theory (enable get-vars-from-term-aux get-vars-from-terms-aux))))
-
-(defthm symbol-listp-of-get-vars-from-terms
-  (implies (pseudo-term-listp terms)
-           (symbol-listp (get-vars-from-terms terms)))
-  :hints (("Goal" :in-theory (enable get-vars-from-terms))))
-
-(defthm symbol-listp-of-get-vars-from-term
-  (implies (pseudo-termp term)
-           (symbol-listp (get-vars-from-term term)))
-  :hints (("Goal" :in-theory (enable get-vars-from-term))))
-
-(defthm true-listp-of-get-vars-from-terms
-  (implies (pseudo-term-listp terms)
-           (true-listp (get-vars-from-terms terms)))
-  :hints (("Goal" :in-theory (enable get-vars-from-terms))))
-
-(defthm true-listp-of-get-vars-from-term
-  (implies (pseudo-termp term)
-           (true-listp (get-vars-from-term term)))
-  :hints (("Goal" :in-theory (enable get-vars-from-term))))
 
 ;recognize an alist from pseudo-terms to pseudo-terms
 (defun pseudo-term-alistp (alist)
@@ -159,8 +80,8 @@
     (let* ((pair (first alist))
            (key (car pair))
            (val (cdr pair)))
-      (if (or (intersection-eq (get-vars-from-term key) vars)
-              (intersection-eq (get-vars-from-term val) vars)) ;todo: do we want this check?  if not, we can simplify this routine
+      (if (or (intersection-eq (free-vars-in-term key) vars)
+              (intersection-eq (free-vars-in-term val) vars)) ;todo: do we want this check?  if not, we can simplify this routine
           (drop-pairs-that-mention-vars (rest alist) vars) ;drop the pair
         (cons pair (drop-pairs-that-mention-vars (rest alist) vars))))))
 
@@ -227,7 +148,7 @@
   (if (endp terms)
       nil
     (let ((term (first terms)))
-      (if (intersection-eq (get-vars-from-term term) vars)
+      (if (intersection-eq (free-vars-in-term term) vars)
           (drop-terms-that-mention-vars (rest terms) vars) ;drop the term
         (cons term (drop-terms-that-mention-vars (rest terms) vars))))))
 
@@ -346,6 +267,11 @@
            (symbol-listp (get-fns-in-term term)))
   :hints (("Goal" :in-theory (enable get-fns-in-term))))
 
+(defthm true-listp-of-get-fns-in-term
+  (true-listp (get-fns-in-term term))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable get-fns-in-term))))
+
 (defund get-fns-in-terms (terms)
   (declare (xargs :guard (pseudo-term-listp terms)))
   (get-fns-in-terms-aux terms nil))
@@ -427,14 +353,42 @@
 
 ;returns a term with one level of lambda removed...
 ;fixme what if the body is also a lambda?
-(defun beta-reduce (lambda-expr)
+(defund beta-reduce (lambda-expr)
   (declare (xargs :guard (my-lambda-applicationp lambda-expr)))
   (let* ((lambda-part (first lambda-expr))
          (formals (second lambda-part))
          (body (car (last lambda-part))) ;previously we took the third part, but declares sometime intervene?
          (actuals (cdr lambda-expr)))
     (sublis-var-simple (pairlis$ formals actuals)
-                   body)))
+                       body)))
+
+;move
+(local
+ (defthm car-last-when-length-known
+   (implies (and (equal (len x) k)
+                 (posp k))
+            (equal (car (last x))
+                   (nth (+ -1 k) x)))))
+
+;move
+(local
+ (defthm pseudo-termp-of-car-of-last-of-car
+  (implies (and (pseudo-termp term)
+                (consp term)
+                (consp (cdr (car term))))
+           (pseudo-termp (car (last (car term)))))
+  :hints (("Goal" :in-theory (disable len)
+           :expand ((pseudo-termp term))))))
+
+(defthm pseudo-termp-of-beta-reduce
+  (implies (and (pseudo-termp term)
+                (consp term)
+                (consp (car term)))
+           (pseudo-termp (beta-reduce term)))
+  :hints (("Goal" :expand ((pseudo-termp term)
+                           (nth 2 (car term))
+                           (nth 1 (cdr (car term))))
+           :in-theory (enable beta-reduce nth))))
 
 ;; where should this go?
 ;; Negate TERM by adding or removing a call of not (avoids double negation)
@@ -446,6 +400,12 @@
            )
       (farg1 term) ;negation of (not x) is just x
     `(not ,term)))
+
+;; Kept disabled for speed
+;; Matches the one in std.
+(defthmd pseudo-term-listp-when-symbol-listp
+  (implies (symbol-listp syms)
+           (pseudo-term-listp syms)))
 
 (defthm pseudo-term-listp-when-symbol-listp-cheap
   (implies (symbol-listp x)
@@ -472,12 +432,11 @@
                          (length b))))))
   :hints (("Goal" :in-theory (enable pseudo-termp))))
 
+;move
 (defthm pseudo-termp-car-last
   (implies (pseudo-term-listp term)
-           (pseudo-termp (car (last term)))))
-
-
-
+           (pseudo-termp (car (last term))))
+  :hints (("Goal" :in-theory (enable last))))
 
 ;; (thm
 ;;  (implies (natp n)

@@ -26,7 +26,7 @@
      we need a dynamic (i.e. execution) semantics
      of (the needed portion of) C.
      The dynamic semantics serves to prove that
-     the generated C code is funtionally equivalent to
+     the generated C code is functionally equivalent to
      the ACL2 code from which it is generated.
      Here we provide an initial formal dynamic semantics,
      which should support the generation of proofs

@@ -47,7 +47,7 @@
   ;      shell/telnet buffers.
   ; "control-<RETURN>" sets shell/telnet directory buffer to current directory.
 ; From current buffer to shell buffer
-  ; "control-t l" prints appropiate ACL2 LD form to the end of the shell
+  ; "control-t l" prints appropriate ACL2 LD form to the end of the shell
   ;      buffer, to cause evaluation of the active region in the current
   ;      buffer.
   ; "control-t control-l" prints just as above, but inhibits output and proofs;

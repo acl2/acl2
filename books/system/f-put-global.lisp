@@ -112,7 +112,7 @@
 
 (defthmd not-in-ordered-symbol-alist-when-<-first
   (implies (and (ordered-symbol-alistp a)
-                (symbol-< k (caar a)))
+                (symbol< k (caar a)))
            (not (assoc k a)))
   :hints (("goal" :induct (ordered-symbol-alistp a)
            :in-theory (enable not-in-ordered-symbol-alist-when-not-symbol

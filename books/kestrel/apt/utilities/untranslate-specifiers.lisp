@@ -13,7 +13,8 @@
 
 (in-package "APT")
 
-(include-book "kestrel/utilities/error-checking/top" :dir :system)
+(include-book "std/util/defval" :dir :system)
+(include-book "kestrel/error-checking/def-error-checker" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

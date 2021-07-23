@@ -19,4 +19,4 @@
 (include-book "kestrel/crypto/primes/bn-254-group-prime" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/axe/conjoin-term-with-dag" :dir :system)
-(include-book "kestrel/crypto/r1cs/fe-listp-fast" :dir :system)
+(include-book "kestrel/prime-fields/fe-listp-fast" :dir :system)

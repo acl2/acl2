@@ -164,7 +164,7 @@
        ((unless (uniquep (vl-paramdecllist->names formals)))
         ;; Not a great place to check for this, but better safe than sorry.
         (mv nil
-            (fatal :type :vl-bad-instance
+            (fatal :type :vl-paramdecl-names-not-unique
                    :msg "parameters are not unique: ~&1."
                    :args (list nil (duplicated-members (vl-paramdecllist->names formals))))
             nil)))
@@ -177,7 +177,7 @@
 
             ((unless (uniquep actual-names))
              (mv nil
-                 (fatal :type :vl-bad-instance
+                 (fatal :type :vl-instance-paramargs-duplicates
                         :msg "multiple occurrences of parameter arguments: ~&1."
                         :args (list nil (duplicated-members actual-names)))
                  nil))
@@ -186,7 +186,7 @@
              ;; Actuals that are NOT actually declarations.
              (difference (mergesort actual-names) (mergesort formal-names)))
             (warnings (if illegal-names
-                          (warn :type :vl-bad-instance
+                          (warn :type :vl-instance-paramargs-nonexistent
                                 :msg "parameter~s1 ~&2 ~s3."
                                 :args (list nil
                                             (if (vl-plural-p illegal-names) "s" "")
@@ -205,7 +205,7 @@
             (num-actuals (len actuals.args))
             ((unless (<= num-actuals num-formals))
              (mv nil
-                 (fatal :type :vl-bad-instance
+                 (fatal :type :vl-instance-paramargs-wrong-arity
                         :msg "too many parameter values: ~x1 (non-local) ~
                               parameter~s2, but is given ~x3 parameter argument~s4."
                         :args (list nil

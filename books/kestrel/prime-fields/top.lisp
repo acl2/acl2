@@ -24,10 +24,14 @@
 ;; (include-book "prime-fields-alt") ;incompatible
 (include-book "prime-fields-rules")
 ;; (include-book "prime-fields-rules-axe") ;; uncomment after fixing name clash on perm
+(include-book "bv-rules-axe")
 (include-book "bind-free-rules")
 ;; (include-book "equal-of-add-rules") ;incompatible with the bind-free rules
 (include-book "doc")
 (include-book "rule-lists")
 (include-book "printing")
+
+(include-book "fe-listp")
+(include-book "fe-listp-fast")
 
 (include-book "bitp-idioms")

@@ -2839,7 +2839,7 @@
                              (sum (rp-evlt c/d1 a)
                                   (rp-evlt c/d2 a))))))
       :flag c/d-merge)
-    :hints (("Subgoal *1/27"
+    :hints (("Subgoal *1/35" ; Matt K. mod 7/21 for "Subgoal *1/27" (remove-guard-holders mod)
              :use ((:instance can-c-merge-fast-correct
                               (c/d1 (ex-from-rp c/d1))
                               (c/d2 (ex-from-rp c/d2)))
@@ -3374,10 +3374,10 @@
                              c-res
                              ;;regular-eval-lemmas-with-ex-from-rp
                              RP-EVLT-OF-EX-FROM-RP-REVERSE-2
-                             
+
                              new-sum-merge-aux-correct-lemma1
                              new-sum-merge-aux-correct-lemma2
-                             
+
                              #|(:REWRITE
                               REGULAR-RP-EVL-OF_C-RES_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)||#
                              (:REWRITE

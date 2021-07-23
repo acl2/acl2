@@ -14,13 +14,13 @@
 
 ;;TODO: What about xor simplification?  maybe ok to delay?
 
-(include-book "kestrel/axe/rewriter-basic" :dir :system)
-(include-book "kestrel/axe/rule-lists" :dir :system)
-(include-book "kestrel/axe/dag-to-term" :dir :system)
-(include-book "kestrel/axe/dag-size-fast" :dir :system) ; for dag-or-quotep-size-less-thanp
-(include-book "kestrel/axe/dag-to-term-with-lets" :dir :system)
-(include-book "kestrel/axe/rules-in-rule-lists" :dir :system)
-(include-book "kestrel/axe/evaluator" :dir :system) ;; since this calls dag-val-with-axe-evaluator to embed the resulting dag in a function, introduces a skip-proofs
+(include-book "rewriter-basic")
+(include-book "rule-lists")
+(include-book "dag-to-term")
+(include-book "dag-size-fast") ; for dag-or-quotep-size-less-thanp
+(include-book "dag-to-term-with-lets")
+(include-book "rules-in-rule-lists")
+(include-book "evaluator") ;; since this calls dag-val-with-axe-evaluator to embed the resulting dag in a function, introduces a skip-proofs
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)

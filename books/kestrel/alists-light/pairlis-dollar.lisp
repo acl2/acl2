@@ -11,6 +11,10 @@
 
 (in-package "ACL2")
 
+(defthm alistp-of-pairlis$
+  (alistp (pairlis$ x y))
+  :hints (("Goal" :in-theory (enable pairlis$))))
+
 (defthm symbol-alistp-of-pairlis$
   (equal (symbol-alistp (pairlis$ x y))
          (symbol-listp (true-list-fix x)))

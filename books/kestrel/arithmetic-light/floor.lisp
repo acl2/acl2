@@ -85,6 +85,24 @@
                             (i (- (numerator (* i1 (/ j)))))
                             (j (denominator (* i1 (/ j)))))))))
 
+(defthm floor-weak-monotone-linear-1
+  (implies (and (<= free i)
+                (<= 0 j)
+                (rationalp free)
+                (rationalp i)
+                (rationalp j))
+           (<= (floor free j) (floor i j)))
+  :rule-classes ((:linear :trigger-terms ((floor i j)))))
+
+(defthm floor-weak-monotone-linear=-2
+  (implies (and (<= i free)
+                (<= 0 j)
+                (rationalp free)
+                (rationalp i)
+                (rationalp j))
+           (<= (floor i j) (floor free j)))
+  :rule-classes ((:linear :trigger-terms ((floor i j)))))
+
 (defthmd floor-when-multiple
   (implies (integerp (* i (/ j)))
            (equal (floor i j)
@@ -183,7 +201,6 @@
                 (rationalp j)
                 (< 0 j))
            (<= (* j (floor i j)) i))
-  :rule-classes (:rewrite (:linear :trigger-terms ((* j (floor i j)))))
   :hints (("Goal" :use ((:instance my-floor-upper-bound)
                         (:instance <-of-*-and-*-cancel
                                    (x2 (floor i j))
@@ -198,7 +215,7 @@
                 (rationalp j))
            (< (floor i j) (/ i j))))
 
-(defthm floor-upper-bound-strong-linear
+(defthm floor-upper-bound-strong-linear-cheap
   (implies (and (not (integerp (* (/ j) i)))
                 (rationalp i)
                 (rationalp j))
@@ -548,6 +565,7 @@
   (implies (integerp x)
            (<= (floor x 2) (/ x 2))))
 
+;drop?
 (defthm floor-bound-better-linear
   (implies (integerp x)
            (<= (floor x 2) (/ x 2)))
@@ -596,9 +614,12 @@
                   0))
   :hints (("Goal" :cases ((rationalp i)))))
 
+;todo: compare to *-of-floor-upper-bound-linear
 (defthm floor-upper-bound-alt-linear
-  (implies (and (natp i)
-                (natp j))
+  (implies (and (<= 0 i)
+                (rationalp i)
+                (<= 0 j)
+                (rationalp j))
            (<= (* j (floor i j)) i))
   :rule-classes ((:linear))
   :hints (("Goal" :in-theory (enable mod))))

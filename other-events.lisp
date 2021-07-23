@@ -1422,19 +1422,6 @@
                                 (add-to-set-eq (caar wrld) ans)))
         (t (collect-world-globals (cdr wrld) ans))))
 
-(defconst *boot-strap-invariant-risk-symbols*
-
-; The following should contain all function symbols that might violate an ACL2
-; invariant.  See check-invariant-risk-state-p.
-
-; We don't include compress1 or compress2 because we believe they don't write
-; out of bounds.
-
-  '(aset1 ; could write past the end of the real array
-    aset2 ; could write past the end of the real array
-    extend-32-bit-integer-stack
-    aset-32-bit-integer-stack))
-
 (defun primordial-world-globals (operating-system)
 
 ; This function is the standard place to initialize a world global.
@@ -1563,7 +1550,6 @@
                          enter-boot-strap-mode exit-boot-strap-mode
                          lp acl2-defaults-table let let*
                          complex complex-rationalp
-                         ,@*boot-strap-invariant-risk-symbols*
 
 ; The following became necessary after Version_8.2, when we starting storing a
 ; new 'recognizer-alist property on symbols (in the primordial-world) in place
@@ -1622,60 +1608,6 @@
 
           ))
 
-(defun initialize-invariant-risk (wrld)
-
-; We put a non-nil 'invariant-risk property on every function that might
-; violate some ACL2 invariant, if called on arguments that fail to satisfy that
-; function's guard.  Also see put-invariant-risk.
-
-; At one point we thought we should do this for all functions that have raw
-; code and have state as a formal:
-
-;;; (initialize-invariant-risk-1
-;;;  *initial-program-fns-with-raw-code*
-;;;  (initialize-invariant-risk-1
-;;;   *initial-logic-fns-with-raw-code*
-;;;   wrld
-;;;   wrld)
-;;;  wrld)
-
-; where:
-
-;;; (defun initialize-invariant-risk-1 (fns wrld wrld0)
-;;;
-;;; ; We could eliminate wrld0 and do our lookups in wrld, but the extra
-;;; ; properties in wrld not in wrld0 are all 'invariant-risk, so looking up
-;;; ; 'formals properties in wrld0 may be more efficient.
-;;;
-;;;   (cond ((endp fns) wrld)
-;;;         (t (initialize-invariant-risk-1
-;;;             (cdr fns)
-;;;             (if (member-eq 'state
-;;;
-;;; ; For robustness we do not call formals here, because it causes an error in
-;;; ; the case that it is not given a known function symbol, as can happen (for
-;;; ; example) with a member of the list *initial-program-fns-with-raw-code*.
-;;; ; In that case, the following getprop will return nil, in which case the
-;;; ; above member-eq test is false, which works out as expected.
-;;;
-;;;                            (getprop (car fns) 'formals nil wrld0))
-;;;                 (putprop (car fns) 'invariant-risk (car fns) wrld)
-;;;               wrld)
-;;;             wrld0))))
-
-; But we see almost no way to violate an invariant by misguided updates of the
-; (fictional) live state.  For example, state-p1 specifies that the
-; global-table is an ordered-symbol-alistp, but there is no way to get one's
-; hands directly on the global-table; and state-p1 also specifies that
-; plist-worldp holds of the logical world, and we ensure that by making set-w
-; and related functions untouchable.  The only exceptions are those in
-; *boot-strap-invariant-risk-symbols*, as is checked by the function
-; check-invariant-risk-state-p.  If new exceptions arise, then we should add
-; them to the value of *boot-strap-invariant-risk-symbols*.
-
-  (putprop-x-lst2 *boot-strap-invariant-risk-symbols* 'invariant-risk
-                  *boot-strap-invariant-risk-symbols* wrld))
-
 ;; Historical Comment from Ruben Gamboa:
 ;; I added the treatment of *non-standard-primitives*
 
@@ -1693,10 +1625,14 @@
 (defun primordial-world (operating-system)
 
 ; Warning: Names converted during the boot-strap from :program mode to :logic
-; mode will, we believe, have many properties erased by renew-name.  That is
-; why, for example, we call initialize-invariant-risk at the end of the
-; boot-strap, in end-prehistoric-world.  Consider whether a property should be
-; set there rather than here.
+; mode will, we believe, have many properties erased by renew-name.  Consider
+; whether a property should be set in end-prehistoric-world rather than here.
+; But be careful; through Version_8.3 we had that issue in mind when we called
+; a function to initialize invariant-risk for certain function symbols (see
+; *boot-strap-invariant-risk-alist*)a at the end of the boot-strap, in
+; end-prehistoric-world, instead of here.  But then the 'invariant-risk
+; property was never set for aset1-lst, even though it calls aset1, which has
+; invariant-risk.
 
   (let ((names (strip-cars *primitive-formals-and-guards*))
         (arglists (strip-cadrs *primitive-formals-and-guards*))
@@ -3205,7 +3141,7 @@
                    'return-last-table
                    'table-alist
                    *initial-return-last-table*
-                   (initialize-invariant-risk wrld)))))
+                   wrld))))
          (thy (current-theory1 wrld nil nil))
          (wrld2 (update-current-theory thy (length thy) wrld1)))
     (add-command-landmark
@@ -5571,7 +5507,7 @@
            "You provided signatures for ~&0, but ~#0~[that function ~
             was~/those functions were~] not defined in :logic mode by the ~
             encapsulated event list.  See :DOC encapsulate."
-           (merge-sort-symbol-< udf-fns)))
+           (merge-sort-symbol< udf-fns)))
       (t (value nil)))
      (declare (ignore val))
      (mv-let
@@ -6471,7 +6407,8 @@
 ; problems then we can think harder about whether it is sound.
 
            (remove-guard-holders-weak-lst
-            (constraints-list infectious-fns wrld formula-lst1 nil))))
+            (constraints-list infectious-fns wrld formula-lst1 nil)
+            (remove-guard-holders-lamp))))
      (mv constraints constrained-fns subversive-fns infectious-fns fns))))
 
 (defun bogus-exported-compliants (names exports-with-sig-ancestors sig-fns
@@ -7793,7 +7730,11 @@
                 (equal-mod-elide-locals-lst (cdr lst1) (cdr lst2))))))
 )
 
-(defun corresponding-encap-events (old-evs new-evs ans)
+(defun corresponding-encap-events (old-evs new-evs r-e-p ans)
+
+; The parameter r-e-p is for the "record expansions property" as discussed in a
+; comment in function corresponding-encaps.
+
   (cond
    ((endp old-evs)
     (and (null new-evs)
@@ -7803,32 +7744,107 @@
    (t (let ((old-ev (car old-evs))
             (new-ev (car new-evs)))
         (cond ((equal old-ev new-ev)
-               (corresponding-encap-events (cdr old-evs) (cdr new-evs) ans))
-              ((and (eq (car old-ev) 'record-expansion)
+               (corresponding-encap-events (cdr old-evs) (cdr new-evs) r-e-p ans))
+              ((and r-e-p
+                    (eq (car old-ev) 'record-expansion)
                     (equal (cadr old-ev) new-ev))
                (corresponding-encap-events (cdr old-evs) (cdr new-evs)
-                                           :expanded))
+                                           r-e-p :expanded))
               ((equal-mod-elide-locals old-ev new-ev)
                (corresponding-encap-events (cdr old-evs) (cdr new-evs)
-                                           :expanded))
+                                           r-e-p :expanded))
               (t nil))))))
 
-(defun corresponding-encaps (old new)
+(defun corresponding-encaps (old new r-e-p)
+
+; See the comment below for a discussion of parameter r-e-p.
+
   (assert$
    (eq (car new) 'encapsulate)
    (and (eq (car old) 'encapsulate)
         (true-listp new)
         (equal (cadr old) (cadr new))
-        (corresponding-encap-events (cddr old) (cddr new) t))))
+        (corresponding-encap-events (cddr old)
+                                    (cddr new)
+
+; Warning: The following comment is referenced in :DOC redundant-encapsulate.
+; If it is modified or moved, then consider modifying that documentation
+; accordingly.
+
+; The parameter r-e-p says whether to consider event E in the new encapsulate
+; to correspond to an event (record-expansion E ...) in the old encapsulate.
+; It is nil when this check is taking place during include-book, and otherwise
+; is t.
+
+; As noted in the Essay on Make-event, we defeat one of the criteria for events
+; to "match up" (correspond) in an old and new encapsulate, when checking
+; redundancy of the new encapsulate: the case that the old event is a call of
+; record-expansion and the new event equals the first argument of that call.
+; The example below shows why: these three books certified before adding the
+; r-e-p argument to corresponding-encap-events, which we are setting here to
+; nil during include-book.  After the addition of that argument, top.lisp no
+; longer certifies.
+
+;   $ cat sub-book-1.lisp
+;   (in-package "ACL2")
+;   (encapsulate ()
+;     (record-expansion (defun f () 2)
+;                       (defun f () 1)))
+;   (defthm f-is-1
+;     (equal (f) 1))
+;   $ cat sub-book-2.lisp
+;   (in-package "ACL2")
+;   (encapsulate ()
+;     (defun f () 2))
+;   (defthm f-is-2
+;     (equal (f) 2))
+;   $ cat top.lisp
+;   (in-package "ACL2")
+;   (include-book "sub-book-1")
+;   (include-book "sub-book-2")
+;   (defthm nil-is-true
+;     nil
+;     :hints (("Goal" :use (f-is-1 f-is-2) :in-theory nil))
+;     :rule-classes nil)
+;   $
+
+; Here is how one can think about the criterion mentioned above, i.e., for the
+; new event E to be the first argument of the old event (record-expansion E
+; ...).  When certifying a book, and also when evaluating events directly under
+; LD, the expansion of a make-event call -- where that call might be the result
+; of macroexpansion -- the expansion hasn't yet been determined, and ACL2 has a
+; right to determine the expansion in any reasonable manner.  The criterion
+; above, based on record-expansion in the event in the old encapsulate, is
+; sufficiently reasonable.  However, when including a certified book, the
+; expansion is already determined by the book's certificate -- assuming the
+; book is certified, but we have decided not to complicate this code with a
+; restriction to the certified case.  Theorems in the included book may well
+; depend on that expansion, as in the examples sub-book-1.lisp and
+; sub-book-2.lisp above.  It is not reasonable (or sound!) to change those
+; expansions, which is why, in the include-book case, we pass nil for the
+; "record expansions property" argument (r-e-p) of corresponding-encap-events.
+
+; By the way, in ordinary usage as opposed to the counterfeit calls of
+; record-expansion in sub-book-1.lisp and sub-book-2.lisp above, this r-e-p =
+; nil restriction (below) in the include-book case is probably no restriction
+; at all.  That's because the relevant event stored in the new encapsulate is
+; itself likely a call of record-expansion, which is unlikely to be the first
+; argument of record-expansion in the corresponding event of the old
+; encapsulate.
+
+                                    r-e-p
+                                    t))))
 
 (defun redundant-encapsulate-tuplep (event-form mode ruler-extenders vge
-                                                event-number wrld)
+                                                event-number wrld r-e-p)
 
 ; We return non-nil iff the non-prehistoric (if that's where we start) part of
 ; wrld later than the given absolute event number (unless it's nil) contains an
 ; event-tuple whose form is essentially equal to event-form.  We return t if
 ; they are equal, else we return the old form.  See also the Essay on
 ; Make-event.
+
+; See corresponding-encaps for a discussion of argument r-e-p.
 
   (cond ((or (null wrld)
              (and (eq (caar wrld) 'command-landmark)
@@ -7844,8 +7860,8 @@
               (eq (cadar wrld) 'global-value)
               (let* ((old-event-form (access-event-tuple-form (cddar wrld)))
                      (equal? (and (eq (car old-event-form) 'encapsulate)
-                                  (corresponding-encaps old-event-form
-                                                        event-form))))
+                                  (corresponding-encaps
+                                   old-event-form event-form r-e-p))))
                 (and equal?
                      (let ((adt (table-alist 'acl2-defaults-table wrld)))
                        (and
@@ -7858,7 +7874,7 @@
                             old-event-form
                           t)))))))
         (t (redundant-encapsulate-tuplep event-form mode ruler-extenders vge
-                                         event-number (cdr wrld)))))
+                                         event-number (cdr wrld) r-e-p))))
 
 (defun redundant-encapsulatep (signatures ev-lst event-form wrld)
 
@@ -7905,8 +7921,10 @@
                   (event-tuple (cddr (car wrld-tail)))
                   (old-event-form (access-event-tuple-form
                                    event-tuple))
-                  (equal? (corresponding-encaps old-event-form
-                                                event-form)))
+                  (equal? (corresponding-encaps
+                           old-event-form
+                           event-form
+                           (null (global-val 'include-book-path wrld)))))
              (and
               equal?
               (let ((old-adt
@@ -7946,7 +7964,8 @@
                 (default-verify-guards-eagerness-from-table new-adt)
                 (and name
                      (getpropc name 'absolute-event-number nil wrld))
-                wrld)))))))
+                wrld
+                (null (global-val 'include-book-path wrld)))))))))
 
 (defun mark-missing-as-hidden-p (a1 a2)
 
@@ -8139,7 +8158,7 @@
            (update-proof-supporters-alist-3
             (cdr names) local-alist
             old
-            (strict-merge-symbol-< car-names-supporters new nil)
+            (strict-merge-symbol< car-names-supporters new nil)
             wrld)))))
 
 (defun posn-first-non-event (names wrld idx)
@@ -8154,7 +8173,7 @@
           (t (mv-let (rest-old-event-names rest-new-names)
                      (update-proof-supporters-alist-3
                       (nthcdr n names) local-alist nil nil wrld)
-                     (strict-merge-symbol-<
+                     (strict-merge-symbol<
                       (append (take n names) rest-old-event-names)
                       rest-new-names
                       nil))))))
@@ -9463,25 +9482,13 @@
   (unix-truename-pathname pathname dir-p state))
 
 #+acl2-loop-only
-(partial-encapsulate
-  (((canonical-pathname * * state) => *))
+(defproxy canonical-pathname (* * state)
 
-; Supporters = nil since each missing axiom equates a call of
-; canonical-pathname on explicit arguments with its result.
+; We use defproxy for now because state-p is still in :program mode; a
+; partial-encapsulate comes later in the boot-strap (see
+; boot-strap-pass-2-a.lisp).
 
-  nil
-  (logic)
-  (local (defun canonical-pathname (x dir-p state)
-           (declare (xargs :mode :logic))
-           (declare (ignore dir-p state))
-           (if (stringp x) x nil)))
-  (defthm canonical-pathname-is-idempotent
-    (equal (canonical-pathname (canonical-pathname x dir-p state) dir-p state)
-           (canonical-pathname x dir-p state)))
-  (defthm canonical-pathname-type
-    (or (equal (canonical-pathname x dir-p state) nil)
-        (stringp (canonical-pathname x dir-p state)))
-    :rule-classes :type-prescription))
+  => *)
 
 (defun canonical-dirname! (pathname ctx state)
   (declare (xargs :guard t))
@@ -14689,14 +14696,14 @@
 
 (defun set-difference-eq-sorted (lst1 lst2 ans)
 
-; Lst1 and lst2 are sorted by symbol-<.  If ans is nil, then we return the
-; difference of lst1 and lst2, sorted by symbol-<.
+; Lst1 and lst2 are sorted by symbol<.  If ans is nil, then we return the
+; difference of lst1 and lst2, sorted by symbol<.
 
   (cond ((null lst1) (reverse ans))
         ((null lst2) (revappend ans lst1))
         ((eq (car lst1) (car lst2))
          (set-difference-eq-sorted (cdr lst1) (cdr lst2) ans))
-        ((symbol-< (car lst1) (car lst2))
+        ((symbol< (car lst1) (car lst2))
          (set-difference-eq-sorted (cdr lst1) lst2 (cons (car lst1) ans)))
         (t (set-difference-eq-sorted lst1 (cdr lst2) ans))))
 
@@ -15090,7 +15097,11 @@
 ; Makefile support is available; see community books file
 ; books/Makefile-generic.
 
-(defstub acl2x-expansion-alist (expansion-alist state)
+(defproxy acl2x-expansion-alist (* state)
+
+; We use defproxy for now because state-p is still in :program mode; a
+; partial-encapsulate comes later in the boot-strap (see
+; boot-strap-pass-2-a.lisp).
 
 ; Users are welcome to attach their own function to acl2x-expansion-alist,
 ; because it is only called (by write-acl2x-file) to write out a .acl2x file,
@@ -15099,7 +15110,7 @@
 ; Indeed, for this reason, Jared Davis and Sol Swords requested the addition of
 ; state as a parameter.
 
-  t)
+  => *)
 
 (defun hons-copy-with-state (x state)
   (declare (xargs :guard (state-p state)))
@@ -20011,9 +20022,9 @@
 ; (That said, there are clearly issues to address to ensure that raw Lisp
 ; evaluation involving live stobjs is truly modeled by our evaluator.  The
 ; anti-aliasing restriction implemented in
-; no-duplicatesp-checks-for-stobj-let-actuals is an example of how we avoid
-; a non-applicative child stobj modification that would not be modeled by our
-; purely functional object-level evaluator.)
+; no-duplicate-indices-checks-for-stobj-let-actuals is an example of how we
+; avoid a non-applicative child stobj modification that would not be modeled by
+; our purely functional object-level evaluator.)
 
 ; We introduce two kinds of evaluation: the :EXEC evaluator models how ACL2
 ; actually does evaluation (again, avoiding consideration of live stobjs),
@@ -20880,7 +20891,7 @@
                        (cons 'defabsstobj
                              (make defstobj-redundant-raw-lisp-discriminator-value
                                    :event ',event-form
-                                   :creator ',creator
+                                   :creator ',creator-name
                                    :congruent-stobj-rep ',congruent-stobj-rep
                                    :non-memoizable
                                    ',(non-memoizable-stobj-raw st$c)
@@ -31074,26 +31085,20 @@
 (defmacro defund (&rest def)
   (cons 'defun def))
 
-; The next three events define a :logic mode version of ev-fncall that has
-; unknown-constraints.  We originally put this in boot-strap-pass-2.lisp (a
-; precursor to the combination of boot-strap-pass-2-a.lisp and
-; boot-strap-pass-2-b.lisp), but it didn't work there, because add-trip doesn't
-; give special treatment for defun-overrides in pass 2 of the boot-strap, which
-; is the only time that the events in boot-strap-pass-2.lisp were evaluated.
+; The next three events introduce a :logic mode version of ev-fncall that has
+; unknown-constraints.  Note that magic-ev-fncall is introduced eventually with
+; partial-encapsulate, but we use defproxy here because state-p is still in
+; :program mode.
+
+; Historical Note from before this use of defproxy.  We originally put this in
+; boot-strap-pass-2.lisp (a precursor to the combination of
+; boot-strap-pass-2-a.lisp and boot-strap-pass-2-b.lisp), but it didn't work
+; there, because add-trip doesn't give special treatment for defun-overrides in
+; pass 2 of the boot-strap, which is the only time that the events in
+; boot-strap-pass-2.lisp were evaluated.
 
 #+acl2-loop-only
-(partial-encapsulate
-  (((magic-ev-fncall * * state * *) => (mv * *)))
-
-; Supporters = nil since each missing axiom equates a call of
-; magic-ev-fncall on explicit arguments with its result.
-
-  nil
-  (logic)
-  (local (defun magic-ev-fncall (fn args state hard-error-returns-nilp aok)
-           (declare (xargs :mode :logic)
-                    (ignore fn args state hard-error-returns-nilp aok))
-           (mv nil nil))))
+(defproxy magic-ev-fncall (* * state * *) => (mv * *))
 
 #-acl2-loop-only
 (progn

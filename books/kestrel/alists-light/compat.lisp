@@ -12,5 +12,5 @@
 
 ;; Makes sure we can include both this libary and std/alists without any name
 ;; clashes:
-(include-book "top")
 (include-book "std/alists/top" :dir :system)
+(include-book "top")

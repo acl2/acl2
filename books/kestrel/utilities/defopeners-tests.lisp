@@ -105,16 +105,18 @@
 
   (must-be-redundant
    (DEFTHM SUM-LIST4-BASE-2
-     (IMPLIES (IF (NOT (ENDP LST)) (ENDP (CDR LST)) 'NIL)
+     (IMPLIES (AND (NOT (ENDP LST))
+                   (LET ((REST (CDR LST))) (ENDP REST)))
               (EQUAL (SUM-LIST4 LST)
-                     ((LAMBDA (REST LST) (CAR LST))
-                      (CDR LST) LST)))))
+                     (CAR LST)))))
 
   (must-be-redundant
    (DEFTHM SUM-LIST4-UNROLL
-     (IMPLIES (IF (NOT (ENDP LST)) (NOT (ENDP (CDR LST))) 'NIL)
+     (IMPLIES (AND (NOT (ENDP LST))
+                   (not (LET ((REST (CDR LST)))
+                             (ENDP REST))))
               (EQUAL (SUM-LIST4 LST)
-                     ((LAMBDA (REST LST) (BINARY-+ (CAR LST) (SUM-LIST4 (CDR LST)))) (CDR LST) LST))))))
+                     (BINARY-+ (CAR LST) (SUM-LIST4 (CDR LST))))))))
 
 ;test of the mutual recursion version
 (deftest
@@ -217,3 +219,36 @@
               (EQUAL (MYREV X)
                      (BINARY-APPEND (MYREV (CDR X))
                                     (CONS (CAR X) 'NIL)))))))
+
+;; Example showing repeated terms in the generated rules
+(deftest
+  (defun weird-len (x)
+    (if (atom x)
+        0
+      (let ((res (len (cdr x))))
+        (if (equal res 4)
+            5
+          (if (equal res 5)
+              6
+            ;; consider also a version where res is passed to the recursive call:
+            (+ 1 (weird-len (cdr x))))))))
+  (defopeners weird-len)
+
+  (must-be-redundant
+   ;; TODO: Note that (len (cdr x)) appears 3 times in this.  Improve
+   ;; defopeners to avoid that, perhaps using a binding hyp (but consider that
+   ;; you can't have more than one binding hyp for a var, but you can re-bind
+   ;; a let var).  There is also repetition in some of the base case rules
+   (DEFTHM WEIRD-LEN-UNROLL
+     (IMPLIES (AND (NOT (ATOM X))
+                   (not (LET ((RES (LEN (CDR X))))
+                             (EQUAL RES '4)))
+                   (not (LET ((RES (LEN (CDR X))))
+                             (EQUAL RES '5))))
+              (EQUAL (WEIRD-LEN X)
+                     (BINARY-+ '1 (WEIRD-LEN (CDR X)))))
+     :HINTS
+     (("Goal"
+       :EXPAND ((WEIRD-LEN X))
+       :IN-THEORY (UNION-THEORIES '(WEIRD-LEN$NOT-NORMALIZED)
+                                  (THEORY 'MINIMAL-THEORY)))))))

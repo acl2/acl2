@@ -172,6 +172,7 @@
 (include-book "kestrel/utilities/copy-def" :dir :system) ; includes tools/flag
 (include-book "utilities/process-keyword-args")
 (include-book "utilities/pattern-matching-ext")
+(include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/trans-eval-error-triple" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)

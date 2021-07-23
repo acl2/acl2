@@ -41,10 +41,20 @@
            (alistp (union-equal x y)))
   :hints (("Goal" :in-theory (enable union-equal))))
 
-;; (defthm alistp-of-revappend
-;;   (implies (and (alistp x)
-;;                 (alistp y))
-;;            (alistp (revappend x y))))
+;todo: name clash with std without the -2
+(defthm alistp-of-revappend-2
+  (equal (alistp (revappend x y))
+         (and (alistp (true-list-fix x))
+              (alistp y)))
+  :hints (("Goal" :in-theory (enable alistp revappend))))
+
+;todo: name clash with std without the -2
+(defthm alistp-of-reverse-2
+  (equal (alistp (reverse x))
+         (if (stringp x)
+             nil ; unusual case
+           (alistp (true-list-fix x))))
+  :hints (("Goal" :in-theory (enable alistp))))
 
 (defthmd consp-of-nth-when-alistp
   (implies (alistp alist)

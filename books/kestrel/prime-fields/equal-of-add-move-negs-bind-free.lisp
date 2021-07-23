@@ -129,7 +129,7 @@
                 (fep y p))
            (equal (equal x y)
                   (equal (add negs x p) (add negs y p))))
-  :hints (("Goal" :in-theory (enable add equal-of-add-and-add-cancel))))
+  :hints (("Goal" :in-theory (enable add equal-of-add-and-add-cancel ifix))))
 
 ;; Having both of these enabled will cause loops (other loops may be possible
 ;; as well, so its best not to include books defining both of these rules).

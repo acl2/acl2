@@ -1515,7 +1515,7 @@
     (mv-let (temp1 bound-vars actuals producer-vars stobj)
       (stobj-let-fn x)
       (let* ((temp2 (oneify temp1 fns w program-p))
-             (dups-check (no-duplicatesp-checks-for-stobj-let-actuals
+             (dups-check (no-duplicate-indices-checks-for-stobj-let-actuals
                           bound-vars actuals producer-vars stobj w)))
         (cond (dups-check
                `(prog2$ (flet ((chk-no-stobj-array-index-aliasing
@@ -6097,8 +6097,10 @@
 
                       (maybe-push-undo-stack 'defun (car def) ignorep))
                      ((and boot-strap-flg
-                           (member-eq (car def)
-                                      *boot-strap-pass-2-acl2-loop-only-fns*)))
+                           (or (member-eq (car def)
+                                          *boot-strap-pass-2-acl2-loop-only-fns*)
+                               (member-eq (car def) ; see comment above
+                                          *defun-overrides*))))
                      (t (maybe-push-undo-stack 'defun (car def) ignorep)
 
 ; Note: If ignorep is '(defstobj . stobj), we save both the current def and the
@@ -7411,7 +7413,7 @@
          ((defun defund defn defproxy defun-nx defun-one-output defstub
             defmacro defmacro-untouchable defabbrev
             defun@par defmacro-last defun-overrides
-            defun-with-guard-check defun-sk)
+            defun-with-guard-check defun-sk defdeprecate)
           (our-update-ht (cadr form) form ht when-pass-2-p))
          (save-def
           (note-fns-in-form (cadr form) ht when-pass-2-p))
@@ -7696,9 +7698,37 @@
                (collect-monadic-booleans (cdr fns) ens wrld)))
         (t (collect-monadic-booleans (cdr fns) ens wrld))))
 
-(defun check-invariant-risk-state-p ()
+(defun check-invariant-risk ()
 
-; See the comment about this function in initialize-invariant-risk.
+; First we check that the only invariant-risk functions are the ones we expect.
+
+  (let ((bad (remove-duplicates-eq
+              (loop for trip in (w *the-live-state*)
+                    when
+                    (and (eq (cadr trip) 'invariant-risk)
+                         (not (or (cdr (assoc-eq
+                                        (car trip)
+                                        *boot-strap-invariant-risk-alist*))
+                                  (member-eq (car trip)
+
+; Put any acceptable exceptions -- i.e., function symbols with invariant risk
+; that are not mapped to t in *boot-strap-invariant-risk-alist* -- into the
+; following list.
+
+                                             '()))))
+                    collect (car trip)))))
+    (or (null bad)
+        (error "Each function symbol in the following non-empty list ~%~
+                has unexpected invariant-risk:~%~s.~%~
+                You can eliminate this error by doing the following for ~%~
+                each such symbol: either map it to nil in ~%~
+                *BOOT-STRAP-INVARIANT-RISK-ALIST*, or else add it to the ~%~
+                list of ``acceptable exceptions'' in the definition of ~%~
+                check-invariant-risk."
+               bad)))
+
+; See the comment about the following check in
+; *boot-strap-invariant-risk-alist*.
 
   (let ((bad
          (loop for tuple in *super-defun-wart-table*
@@ -7718,10 +7748,9 @@
 ; evaluation in the ACL2 loop cannot cause state-p to become false of the live
 ; state -- unless of course one makes changes using ttags, such as removing
 ; symbols from the list of untouchable.  If that claim is false of any of these
-; function symbols, then it should be added to the value of
-; *boot-strap-invariant-risk-symbols* so that it can be given an
-; 'invariant-risk property by initialize-invariant-risk.  Also see
-; put-invariant-risk.
+; function symbols, then it should be mapped to t in
+; *boot-strap-invariant-risk-alist* so that it can be given an 'invariant-risk
+; property by put-invariant-risk.
 
                                     '(READ-CHAR$
                                       READ-BYTE$
@@ -7741,13 +7770,16 @@
                                       CLOSE-INPUT-CHANNEL
                                       CLOSE-OUTPUT-CHANNEL))))
                collect (car tuple))))
-    (or (subsetp-eq bad
-                    *boot-strap-invariant-risk-symbols*)
-        (error "It is necessary to modify ~s to include the following ~
-                list:~%~s"
-               '*boot-strap-invariant-risk-symbols*
-               (set-difference-eq bad
-                                  *boot-strap-invariant-risk-symbols*)))))
+    (or (loop for x in bad
+              always
+              (cdr (assoc-eq x *boot-strap-invariant-risk-alist*)))
+        (error "It is probably necessary to modify ~s to map each symbol in ~%~
+                the following list to t:~%~s"
+               '*boot-strap-invariant-risk-alist*
+               (loop for x in bad
+                     when
+                     (not (cdr (assoc-eq x *boot-strap-invariant-risk-alist*)))
+                     collect x)))))
 
 (defun check-built-in-constants (&aux (state *the-live-state*))
 
@@ -7776,10 +7808,9 @@
 ; will be assigned, is not as outlandish as it might at first seem.  We check
 ; that the actual assignment is correct (using this function) after booting.
 
-; First we do a check on *boot-strap-invariant-risk-symbols* and
-; *boot-strap-invariant-risk-symbols*.
+; First we do a check that built-in symbols have invariant-risk as expected.
 
-  (check-invariant-risk-state-p)
+  (check-invariant-risk)
 
   (let ((str "The defconst of ~x0 is ~x1 but should be ~x2.  To fix ~
               the error, change the offending defconst to the value ~
@@ -8020,8 +8051,9 @@
       (when bad
         (interface-er
          "The value of *blacklisted-apply$-fns* fails to include ~&0.  This ~
-          is an error because all functions from *ttag-fns* and ~
-          *initial-untouchable-fns* must be in *blacklisted-apply$-fns*."
+          is an error because all defined functions from *ttag-fns* and ~
+          *initial-untouchable-fns* with all-nils stobjs-in and stobjs-out ~
+          must be in *blacklisted-apply$-fns*."
          bad)))
 
 ; The following is a start on checking that we don't have superfluous symbols
@@ -8166,10 +8198,10 @@
 
 (defun check-some-builtins-for-executability ()
 
-; The function logical-defun produces the logical definition of a given
+; The function get-defun-event produces the logical definition of a given
 ; function symbol if there is one.  It does so by fetching the event for that
 ; symbol, but if that event is verify-termination-boot-strap, then
-; logical-defun uses cltl-def-from-name to fetch the definition.  Now
+; get-defun-event uses cltl-def-from-name to fetch the definition.  Now
 ; cltl-def-from-name generally returns the logical defun form, but for
 ; non-executable functions it returns a defun form intended for use in raw Lisp
 ; only (whose body is a call of throw-or-attach).  Here, we make sure that we
@@ -8177,7 +8209,7 @@
 
 ; If we run across an error from this check, we can allow an exception for the
 ; offending function(s) provided we deal with those exceptions in the
-; definition of logical-defun.
+; definition of get-defun-event.
 
 ; This check might be coded more efficiently by walking through the world,, but
 ; it has taken only 0.06 seconds, which seems fine.
@@ -8191,7 +8223,7 @@
     (or (null ans)
         (interface-er
          "The initial ACL2 world has the following non-empty list of ~
-          functions for which get-logical-defun will produce the wrong ~
+          functions for which get-defun-event will produce the wrong ~
           result:~%~x0.~%See ACL2 function check-executable-builtins for an ~
           explanation, or contact the ACL2 implementors."
          ans))))
@@ -8261,14 +8293,26 @@
 ; ld-skip-proofsp is as specified by the &optional parameter above.  It
 ; defaults to 'include-book, which means we skip LOCALs, all syntactic checks,
 ; and proofs.  By calling this function with pass-2-ld-skip-proofsp nil you can
-; arrange for it to try to prove its way through the second pass.  However, see
-; below.
+; arrange for it to try to prove its way through the second pass -- and indeed,
+; through the entire sources.  See below.
 
 ; Why Two Passes?  By doing things in two passes we make it possible to use all
 ; system functions in hints and other proof commands.  In the one-pass
 ; initialization we used to use, it was impossible to use theory expressions in
 ; the defthms in axioms.lisp because the necessary theory functions were not
 ; yet defined and so trans-eval balked on them.
+
+; However, we came to realize that many proofs skipped during the boot-strap
+; were ones that could be done by making a little effort, including proofs for
+; defun events marked :mode :logic and defthm events not in pass-2 files.  So
+; in July 2021 we made some changes so that when pass-2-ld-skip-proofsp is nil,
+; then the entire boot-strap is done without skipping proofs except where
+; explicitly indicated with skip-proofs -- either a skip-proofs wrapper or the
+; use of an optional new first argument, :skip-proofs, for
+; verify-termination-boot-strap.  WARNING: defthm events are skipped in
+; :program mode, so if you put a defthm event in other than a pass-2 file, be
+; sure to arrange that it will be in an encapsulate with (logic) included above
+; it -- otherwise the defthm event won't be part of the boot-strap world.
 
   (when (null system-books-dir)
     (let ((dir (getenv$-raw "ACL2_SYSTEM_BOOKS")))
@@ -8416,7 +8460,13 @@
                                              (cons #\. (coerce *lisp-extension*
                                                                'list)))
                                      'string))
-                                'initialize-acl2
+                                (if (eq pass-2-ld-skip-proofsp nil)
+
+; See the comment above about July 2021 changes to support a more complete
+; execution of proofs in this case.
+
+                                    nil
+                                  'initialize-acl2)
                                 :error)
                   *the-live-state*
                   nil)

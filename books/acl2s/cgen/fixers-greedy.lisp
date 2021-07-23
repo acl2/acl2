@@ -341,7 +341,7 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
   (case-match hyp
     ((& x (f . args)) (list x (acl2::cons-term f args)))
     ((& (f . args) x) (list x (acl2::cons-term f args)))
-    ((& x y) (if (acl2::symbol-< x y) (list x y) (list y x)))))
+    ((& x y) (if (acl2::symbol< x y) (list x y) (list y x)))))
 
 (defun make-dummy-equality-frule-instance (eq-hyp)
   (b* (((list x equal-to-term) (destruct-var-equality-hyp eq-hyp))

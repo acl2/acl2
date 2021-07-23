@@ -492,8 +492,8 @@
     :rule-classes :linear))
 
 (define write-mem$c ((addr :type (unsigned-byte 64))
-                   (val  :type (unsigned-byte 8))
-                   (mem$c  good-mem$cp))
+                     (val  :type (unsigned-byte 8))
+                     (mem$c  good-mem$cp))
   :returns (new-mem$c)
   (b* ((i1       (the (unsigned-byte 22) (get-i1 addr)))
        (i2       (the (unsigned-byte 22) (get-i2 addr)))
@@ -559,7 +559,7 @@
   :hints (("Goal" :in-theory (e/d (write-mem$c) (l1p)))))
 
 (define read-mem$c ((addr :type (unsigned-byte 64))
-                  (mem$c  good-mem$cp))
+                    (mem$c  good-mem$cp))
   :returns (val (unsigned-byte-p 8 val) :hyp (mem$cp mem$c))
   (b* ((i1       (the (unsigned-byte 22) (get-i1 addr)))
        (i2       (the (unsigned-byte 22) (get-i2 addr)))
@@ -675,3 +675,81 @@
 ;; (memsum)
 
 ||#
+
+;; ----------------------------------------------------------------------
+
+(defxdoc bigmem-concrete-stobj
+  :pkg "BIGMEM"
+  :parents (bigmem)
+  :short "Concrete stobj set-up corresponding to @('bigmem')'s @('mem') stobj"
+  :long
+  "<p>The @('mem$c') stobj provides a fast, array-like,
+  allocate-on-demand implementation of a @('2^64') byte
+  array.</p>
+
+  <p> Here are the definitions of the stobjs involved: </p>
+
+  @(def mem$c)
+  @(def l1)
+  @(def page)
+
+  <p>Here's how a memory access works. A 64-bit address is split into
+  three parts: MSB @('22') bits called @('i1'), then @('22') bits
+  called @('i2'), and finally, LSB @('20') bits called
+  @('offset').</p>
+
+  <ul>
+
+   <li><p>@('i1') is used to index into @('level1'); i.e., it gets the
+   @('i1')-th @('l1') in @('level1').</p></li>
+
+   <li><p>@('i2') is used to index into the @('pages') field of
+   @('l1') obtained above; i.e., it gets the @('i2')-th @('page') from
+   @('pages').</p>
+
+  <p>Note that @('pages') is a resizable array; if @('i2') is not less
+   than the length of @('pages'), we first resize @('pages') to
+   @('2^22') (@('i2') is @('22') bits wide) and then get the newly
+   created @('i2')-th @('page').</p>
+
+   <p>The check @(' (< i2 (pages-length l1)) ') has pretty bad
+   execution performance, so we optimize this by checking the value of
+   @('pages_vld') (a simple scalar field of type @('bit')) instead.
+   The default value of @('pages_vld') is @('0'), which corresponds to
+   @(' (pages-length l1) == 0 '). Whenever we resize @('pages'), we
+   always resize it to @('2^22') elements and then set @('pages_vld')
+   to @('1'). In other words, we maintain the invariant that if
+   @('pages_vld') is @('0'), then @(' (pages-length l1) ') is @('0'),
+   and otherwise it is @('2^22').  Since @('i2') is @('22') bits wide,
+   we know that if @('pages_vld') is @('1'), we don't have to resize
+   @('pages').</p>
+
+   </li>
+
+   <li><p>@('offset') is used to index into the @('pg') field of
+  @('page') obtained above; i.e., it accesses the @('offset')-th byte
+  in @('pg').  Note that like @('pages') above, @('pg') is also a
+  resizable array and we do the same kind of resizing here that we do
+  for @('pages').</p></li>
+
+  </ul>
+
+  <p>A benefit of this set-up is that it does not occupy too much
+  memory. At the very beginning, when no memory accesses have
+  occurred, @('level1') of @('mem$c') may have @('2^22') elements of
+  type @('l1'), but each of those @('l1')s has an array field
+  @('pages') of length zero and one scalar bit field. When a memory
+  access does happen, we resize @('pages') to @('2^22') @('page')
+  elements, each of which has an array field @('pg') of length zero
+  and one scalar bit field.  We only allocate @('2^20') bytes for the
+  @('pg') in the @('page') selected by @('i2'). Of course, if we read
+  from a memory location for which @('pages_vld') or @('pg_vld') is
+  @('0'), then we simply return the default value, @('0'), without
+  resizing any array fields. Also, if there's spatial locality (i.e.,
+  if the memory accesses pertain to addresses which share @('i1')
+  and/or @('i2') --- a common enough scenario), this set-up is pretty
+  fast because we don't have to resize arrays as often.</p>"
+
+  )
+
+;; ----------------------------------------------------------------------

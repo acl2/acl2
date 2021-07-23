@@ -809,6 +809,7 @@ sub parallelism_stats {
     my $running_total = 0;
     foreach my $key (keys %$basecosts) {
 	my $selfcost = (exists $basecosts->{$key}) ? $basecosts->{$key} : 0.0 ;
+	$selfcost = ($selfcost >= 0) ? $selfcost : 0.0;
 	$running_total = $running_total + $selfcost;
 	my $totalcost = (exists $costs->{$key}) ? $costs->{$key}->{"totaltime"} : 0.0;
 	push (@starts_ends, [$totalcost-$selfcost, $start]);

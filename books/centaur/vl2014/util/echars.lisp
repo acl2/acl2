@@ -406,7 +406,7 @@ bounds."
 (xdoc::delete-topic vl-echar-p)
 
 (defxdoc vl-echar-p
-  :parents (extended-characters)
+  :parents (extended-characters vl-echar-raw)
   :short "Representation of a single extended character."
   :long "<p>Historically, a @('vl-echar-p') was an ordinary aggregate with a
 character and a location.  This was nice and simple, but required a lot of

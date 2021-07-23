@@ -10,6 +10,7 @@
 (include-book "std/lists/top" :dir :system)
 
 #|
+
 Here is the top-level defunc control flow:
 
 Test phase:
@@ -64,6 +65,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                    ,(dynamic-defunc-events ...)
                    ,(program-mode-defunc-events ...)
                    ,(make-show-failure-msg-ev ...))))))
+
 ||#
 
 (defdata-alias bool boolean)
@@ -73,6 +75,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 #!ACL2
 (defun function-guard-obligation (fun-name state)
   (declare (xargs :mode :program
+                  :guard (symbolp fun-name)
                   :stobjs (state)))
   (b* (((mv cl-set &) (guard-clauses-for-clique (list fun-name)
                                                 T ;debug-p
@@ -85,8 +88,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        ;;(- (cw "fn: ~x0 and body-contract-obligation: ~x1~%" fun-name guard-ob))
        )
     (value guard-ob)))
-
-
 
 (mutual-recursion
  (defun simple-termp (x)
@@ -112,7 +113,23 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (t (and (simple-termp (car lst))
                  (simple-term-listp (cdr lst)))))))
 
+(defthm append-alistp
+  (implies (and (alistp x)
+                (alistp y))
+           (alistp (append x y))))
+
+(defthm rev-alistp
+  (implies (alistp x)
+           (alistp (rev x))))
+
+(defthm alistp-extract-keywords
+  (implies (alistp l)
+           (alistp (mv-nth 0 (extract-keywords ctx k d l b)))))
+
 (defun xargs-kwd-alist1 (decls keywords ctx al)
+  (declare (xargs :guard (and (keyword-listp keywords)
+                              (no-duplicatesp keywords)
+                              (alistp al))))
   (if (atom decls)
       al
     (if (and (consp (car decls))
@@ -127,9 +144,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
       (xargs-kwd-alist1 (cdr decls) keywords ctx al))))
 
 (def-const *our-xargs-keywords*
-  (append '(:CONSIDER-CCMS :CONSIDER-ONLY-CCMS :TERMINATION-METHOD
-                           :CCG-PRINT-PROOFS :TIME-LIMIT
-                           :CCG-HIERARCHY)
+  (append '(:consider-ccms :consider-only-ccms :termination-method
+                           :ccg-print-proofs :time-limit
+                           :ccg-hierarchy)
           acl2::*xargs-keywords*))
 
 (defun xargs-kwd-alist (decls ctx)
@@ -137,11 +154,20 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (xargs-kwd-alist1 decls *our-xargs-keywords* ctx nil))
 
 #!ACL2
-(verify-termination find-runed-lemma (declare (xargs :measure (if (null lst) 0 (1+ (acl2-count lst))))))
+(verify-termination
+ find-runed-lemma
+ (declare (xargs :measure (if (null lst) 0 (1+ (acl2-count lst))))))
+
+#|
+#!ACL2
+(verify-guards find-runed-lemma)
+|#
 
 ;returns controller pocket
 #!ACL2
 (defun controller-alist (nm wrld)
+  (declare (xargs :guard (plist-worldp wrld)
+                  :verify-guards nil))
   (if (and (not (symbolp nm))
            (not (function-symbolp nm wrld)))
       nil
@@ -163,6 +189,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         nil))))
 
 (defun c-is-t (c)
+  (declare (xargs :guard t))
   (or (equal c 't) (equal c ''t)))
 
 (defun type-of-pred-aux (pred tbl)
@@ -241,12 +268,14 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (unalias-pred (car oc) ptbl)))
 
 (defun map-force-list (l)
+  (declare (xargs :guard (true-listp l)))
   (if (endp l)
       l
     (cons `(force ,(car l))
           (map-force-list (cdr l)))))
 
 (defun map-force-ic (ic)
+  (declare (xargs :guard (or (booleanp ic) (true-listp ic))))
   (cond ((equal ic 't) 't)
         ((and (consp ic)
               (equal (car ic) 'acl2::and))
@@ -254,11 +283,17 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         (t `(force ,ic))))
 
 (defun wrap-test-skip (skip? x)
-  (if skip? `(test-then-skip-proofs ,x) x))
+  (declare (xargs :guard (booleanp skip?)))
+  (if skip?
+      `(test-then-skip-proofs ,x)
+    x))
 
-(acl2::program)
 (defun add-output-contract-check (body output-contract fun-name fun-args wrld)
   "To body, we insert a runtime check for output-contract."
+  (declare (xargs :mode :program
+                  :guard (and (symbolp fun-name)
+                              (true-listp fun-args)
+                              (plist-worldp wrld))))
   (b* (;(ctx 'add-output-contract-check)
        ((mv ?erp tbody)
         (acl2::pseudo-translate body (list (cons fun-name fun-args)) wrld))
@@ -277,20 +312,32 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
              "**Output contract violation**: ~x0 with argument list ~x1 returned ~x2.~%"
              ',fun-name (list ,@fun-args) ,return-var)))))
 
-(defun get-undef-name (pred d? typed-undef pkg w)
-  (declare (xargs :mode :program :guard (symbolp pred)))
-  (b* ((tbl (type-metadata-table w))
-       (ptbl (pred-alias-table w))
+(defun get-undef-name (pred d? typed-undef pkg wrld)
+  (declare (xargs :guard (and (symbolp pred) (booleanp d?)
+                              (booleanp typed-undef) (pkgp pkg)
+                              (plist-worldp wrld))
+                  :verify-guards nil))
+  (b* ((tbl (type-metadata-table wrld))
+       (ptbl (pred-alias-table wrld))
        (type (type-of-pred pred tbl ptbl))
        (undef-name (if (and type typed-undef)
                        (make-symbl `(acl2s - ,type ,(if d? '-d- '-) undefined) pkg)
                      (if d? 'acl2s-d-undefined 'acl2s-undefined))))
-    (if (acl2::arity undef-name w)
+    (if (acl2::arity undef-name wrld)
         undef-name
       'acl2s::acl2s-undefined)))
 
+
 (defun make-defun-body/logic
     (name formals ic oc body make-staticp d? typed-undef pkg wrld)
+  (declare (xargs :mode :program
+                  :guard (and (symbolp name)
+                              (symbol-listp formals)
+                              (booleanp make-staticp)
+                              (booleanp d?)
+                              (booleanp typed-undef)
+                              (pkgp pkg)
+                              (plist-worldp wrld))))
   (b* ((ptbl (pred-alias-table wrld))
        (with-ic-body
         (if (c-is-t ic)
@@ -307,23 +354,40 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
       (add-output-contract-check with-ic-body oc name formals wrld))))
 
 (defun make-defun-body/exec (name formals oc body make-staticp wrld)
+  (declare (xargs :mode :program
+                  :guard (and (symbolp name)
+                              (symbol-listp formals)
+                              (booleanp make-staticp)
+                              (plist-worldp wrld))))
   (if make-staticp
       body
     (add-output-contract-check body oc name formals wrld)))
 
-(verify-termination acl2::body)
-(verify-termination acl2::find-runed-type-prescription)
-(verify-termination acl2::truncated-class)
+; #!ACL2 (verify-termination body)
+
+#!ACL2 (verify-termination
+        find-runed-type-prescription
+        (declare (xargs :measure (if (null lst) 0 (1+ (acl2-count lst))))))
+
+#!ACL2 (verify-termination
+        truncated-class
+        (declare (xargs :measure (if (null classes) 0 (1+ (acl2-count classes))))))
+
 (verify-termination corollary)
 (verify-termination formula)
-(verify-termination type-of-pred)
-(verify-termination get-undef-name (declare (xargs :verify-guards nil)))
+;(verify-termination type-of-pred)
+;(verify-termination get-undef-name (declare (xargs :verify-guards nil)))
 
 (defun make-generic-typed-defunc-events
     (name formals ic oc decls body kwd-alist make-staticp d? pkg wrld)
   "Generate events which simulate a typed ACL2s language."
+  (declare (xargs :guard (and (symbolp name)
+                              (symbol-listp formals)
+                              (booleanp make-staticp)
+                              (booleanp d?)
+                              (pkgp pkg)
+                              (plist-worldp wrld))))
   (declare (ignorable wrld d? decls))
-  (declare (xargs :mode :program))
   `(with-output
     :off :all
     (make-event
@@ -433,10 +497,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                                           )))))
            ))))))
 
-(logic)
-
 (defun make-contract-body (name ic oc formals d? rem-hyps? f-c-thm? typed-undef pkg w)
-  (declare (xargs :mode :program))
+;  (declare (xargs :mode :program))
   (b* ((ptbl (pred-alias-table w))
        (pred (pred-of-oc name formals oc ptbl))
        (undef-name (get-undef-name pred d? typed-undef pkg w)))

@@ -13,7 +13,7 @@
 
 (in-package "APT")
 
-(include-book "kestrel/utilities/error-checking/top" :dir :system)
+(include-book "kestrel/error-checking/def-error-checker" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

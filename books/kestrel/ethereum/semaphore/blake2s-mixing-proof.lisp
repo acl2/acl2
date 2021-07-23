@@ -1240,7 +1240,7 @@
                  pfield::mul-combine-constants-alt
                  pfield::mul-of-constant-normalize-to-fep
                  pfield::mul-of-1-arg1
-                 pfield::mul-becomes-neg
+                 pfield::mul-of--1-becomes-neg-alt
                  acl2::bvchop-of-bvchop
                  acl2::getbit-of-bvchop
                  acl2::bvchop-of-bvplus-same
@@ -1296,26 +1296,21 @@
                (pfield::bitp-idiom-1
                 pfield::bitp-idiom-1-alt)
                ;; introduce bvcats:
-               ( ;; These get the process started, by combining 2 bits:
-                add-of-mul-and-mul-when-bitps-and-adjacent-coeffs
-                add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-alt
-                ;; We may need these, even to get the process started, if there are extra addends not involved in this cat:
-                add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-extra
-                add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-extra-alt
+               ((pfield::bvcat-intro-rules)
                 ;; These 4 add a bit to the top of a bvcat:
                 ;; add-of-mul-and-mul-when-bitp-and-bvcat
                 ;; add-of-mul-and-mul-when-bitp-and-bvcat-extra
                 ;; add-of-mul-and-mul-when-bitp-and-bvcat-alt
                 ;; add-of-mul-and-mul-when-bitp-and-bvcat-extra-alt
                 ;; These 8 add a bit to the bottom of a bvcat:
-                add-of-mul-and-mul-when-bvcat-and-bitp ; may cause a bit to be put into the wrong bvcat?
-                add-of-mul-and-mul-when-bvcat-and-bitp-alt
-                add-of-mul-and-mul-when-bvcat-and-bitp-extra ; may cause a bit to be put into the wrong bvcat?
-                add-of-mul-and-mul-when-bvcat-and-bitp-extra-alt
-                ;; add-of-mul-of-2-and-bvcat-and-bit ; may cause a bit to be put into the wrong bvcat?
-                add-of-mul-of-2-and-bvcat-and-bit-alt
-                ;; add-of-mul-of-2-and-bvcat-and-bit-extra ; may cause a bit to be put into the wrong bvcat?
-                add-of-mul-of-2-and-bvcat-and-bit-extra-alt
+                pfield::add-of-mul-and-mul-when-bvcat-and-bitp ; may cause a bit to be put into the wrong bvcat?
+                pfield::add-of-mul-and-mul-when-bvcat-and-bitp-alt
+                pfield::add-of-mul-and-mul-when-bvcat-and-bitp-extra ; may cause a bit to be put into the wrong bvcat?
+                pfield::add-of-mul-and-mul-when-bvcat-and-bitp-extra-alt
+                ;; pfield::add-of-mul-of-2-and-bvcat-and-bit ; may cause a bit to be put into the wrong bvcat?
+                pfield::add-of-mul-of-2-and-bvcat-and-bit-alt
+                ;; pfield::add-of-mul-of-2-and-bvcat-and-bit-extra ; may cause a bit to be put into the wrong bvcat?
+                pfield::add-of-mul-of-2-and-bvcat-and-bit-extra-alt
                 ;; These combine 2 bvcats:
                 ;; add-of-mul-and-mul-when-bvs-bvcat-version
                 ;; add-of-mul-and-mul-when-bvs-bvcat-version-alt

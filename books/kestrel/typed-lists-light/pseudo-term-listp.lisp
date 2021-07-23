@@ -38,6 +38,12 @@
               (pseudo-term-listp y)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp union-equal))))
 
+(defthm pseudo-term-listp-of-intersection-equal
+  (implies (and (pseudo-term-listp x)
+                (pseudo-term-listp y))
+           (pseudo-term-listp (intersection-equal x y)))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp intersection-equal))))
+
 ;; The non-standard variable names are to match STD
 (defthm pseudo-term-listp-of-remove-equal
   (implies (pseudo-term-listp x)
@@ -57,4 +63,10 @@
   (equal (pseudo-term-listp (cons a x))
          (and (pseudo-termp a)
               (pseudo-term-listp x)))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
+(defthm pseudo-term-listp-of-revappend
+  (equal (pseudo-term-listp (revappend x y))
+         (and (pseudo-term-listp (true-list-fix x))
+              (pseudo-term-listp y)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp))))

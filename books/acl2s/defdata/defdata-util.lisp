@@ -195,9 +195,14 @@
                 (booleanp x);t or nil
                 (acl2::legal-constantp x)))))
 
+(defthm keyword-list-is-symbol-list
+  (implies (keyword-listp x)
+           (symbol-listp x))
+  :rule-classes (:forward-chaining))
+
 (defthm proper-symbol-is-symbol
-  (and (implies (proper-symbolp x)
-                (symbolp x)))
+  (implies (proper-symbolp x)
+           (symbolp x))
   :rule-classes (:compound-recognizer
                  :forward-chaining))
 

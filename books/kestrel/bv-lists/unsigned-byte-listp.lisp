@@ -19,8 +19,6 @@
 (include-book "unsigned-byte-listp-def")
 (local (include-book "../utilities/equal-of-booleans"))
 
-
-
 (defthmd unsigned-byte-listp-rewrite
   (equal (unsigned-byte-listp n x)
          (and (all-unsigned-byte-p n x)
@@ -86,11 +84,18 @@
   (implies (unsigned-byte-listp size x)
            (equal (integerp (nth n x))
                   (< (nfix n) (len x))))
-  :hints (("Goal" :in-theory (e/d ( nth)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable nth))))
 
 (defthmd all-unsigned-byte-p-when-unsigned-byte-listp
   (implies (unsigned-byte-listp size x)
+           (all-unsigned-byte-p size x))
+  :hints (("Goal" :in-theory (enable all-unsigned-byte-p
+                                     unsigned-byte-listp))))
+
+(defthm all-unsigned-byte-p-when-unsigned-byte-listp-cheap
+  (implies (and (unsigned-byte-listp size2 x) ;free variable makes this cheap
+                (equal size2 size)               ;gen?
+                )
            (all-unsigned-byte-p size x))
   :hints (("Goal" :in-theory (enable all-unsigned-byte-p
                                      unsigned-byte-listp))))

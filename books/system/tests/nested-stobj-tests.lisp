@@ -1413,3 +1413,19 @@ ACL2 !>
    (mv x scal-and-arr)))
 
 )))
+
+; After 6/28/2021, duplicate expressions in the stobj-let bindings do not cause
+; failure provided the bound stobjs aren't among the producer variables.
+(local-test
+ :defs
+ ((defstobj s1 s1-fld)
+  (defstobj s2 s2-fld :congruent-to s1)
+  (defstobj top (st :type s1))
+  (defun foo (top)
+    (declare (xargs :stobjs top))
+    (stobj-let ((s1 (st top))
+                (s2 (st top)))
+               (val1 val2)
+               (mv (s1-fld s1)
+                   (s2-fld s2))
+               (mv val1 val2 top)))))

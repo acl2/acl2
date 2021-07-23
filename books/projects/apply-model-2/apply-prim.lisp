@@ -105,13 +105,14 @@
 ; used, then only defined functions that avoid stobjs can have warrants, and
 ; the ttag and untouchable restrictions already prevent warrants.
 
-   '(SYNP                                      ; bad
-     WORMHOLE1                                 ; restricts arguments
-     WORMHOLE-EVAL                             ; restricts arguments
-     SYS-CALL                                  ; bad -- requires trust tag
-     HONS-CLEAR!                               ; bad -- requires trust tag
-     HONS-WASH!                                ; bad -- requires trust tag
-     UNTOUCHABLE-MARKER                        ; bad -- untouchable
+   '(SYNP                                   ; bad
+     WORMHOLE1                              ; restricts arguments
+     WORMHOLE-EVAL                          ; restricts arguments
+     SYS-CALL                               ; bad -- requires trust tag
+     HONS-CLEAR!                            ; bad -- requires trust tag
+     HONS-WASH!                             ; bad -- requires trust tag
+     UNTOUCHABLE-MARKER                     ; bad -- untouchable
+     ASET1-TRUSTED                          ; bad -- untouchable (added 7/2021)
 
 ; At one time we considered disallowing these functions but we now allow them.
 ; We list them here just to document that we considered them and concluded that

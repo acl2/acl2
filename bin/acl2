@@ -1,6 +1,11 @@
 #!/bin/sh
 
-cd $(dirname "$0") ; export invoking_dir=$PWD ; cd - 2>&1 /dev/null
-echo "$invoking_dir"
-export parent_dir=`dirname "$invoking_dir"`
-$parent_dir/saved_acl2 "$@"
+{ cd $(dirname "$0") ; invoking_dir="`pwd`" ; cd - ; } > /dev/null
+my_acl2=$(dirname "$invoking_dir")/saved_acl2
+if [ -x "$my_acl2" ] ; then \
+    "$my_acl2" "$@" ;\
+elif [ -e "$my_acl2" ] ; then \
+    echo "Error: File \"$my_acl2\" is not an executable file." ;\
+else \
+    echo "Error: File \"$my_acl2\" does not exist." ;\
+fi

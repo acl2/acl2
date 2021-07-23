@@ -70,11 +70,11 @@
            (consecutivep (strip-cars (cdr x))))
   :hints (("Goal" :in-theory (enable strip-cars))))
 
-;todo: conflict in dagify2
+;dup
 (local
  (defthm all-<-of-strip-cars-of-cdr
-  (implies (all-< (strip-cars x) bound)
-           (all-< (strip-cars (cdr x)) bound))
+  (implies (all-< (strip-cars alist) bound)
+           (all-< (strip-cars (cdr alist)) bound))
   :hints (("Goal" :in-theory (enable strip-cars)))))
 
 (defthm strip-cars-of-reverse-list

@@ -13,6 +13,7 @@
 
 (include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
 (mutual-recursion
  ;; Gather all the vars that are bound in lambdas in TERM.  Vars that are bound
@@ -50,9 +51,21 @@
     (implies (pseudo-termp term)
              (symbol-listp (bound-vars-in-term term)))
     :flag bound-vars-in-term)
-  (defthm theorem-for-bound-vars-in-terms
+  (defthm symbol-listp-of-bound-vars-in-terms
     (implies (pseudo-term-listp terms)
              (symbol-listp (bound-vars-in-terms terms)))
     :flag bound-vars-in-terms)
   :hints (("Goal" :expand (pseudo-term-listp term)
            :in-theory (enable pseudo-term-listp))))
+
+(defthm-flag-bound-vars-in-term
+  (defthm true-listp-of-bound-vars-in-term
+    (true-listp (bound-vars-in-term term))
+    :flag bound-vars-in-term)
+  (defthm true-listp-of-bound-vars-in-terms
+    (true-listp (bound-vars-in-terms terms))
+    :flag bound-vars-in-terms)
+  :hints (("Goal" :expand (pseudo-term-listp term)
+           :in-theory (enable pseudo-term-listp))))
+
+(verify-guards bound-vars-in-term)

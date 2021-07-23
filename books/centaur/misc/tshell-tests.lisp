@@ -30,6 +30,7 @@
 
 (in-package "ACL2")
 (include-book "tshell")
+(include-book "std/strings/defs" :dir :system) ; for str::strprefixp
 
 ; Well, this is pretty pathetic.  But it's hard to test much here, e.g., how
 ; can we emulate interrupts, etc.?

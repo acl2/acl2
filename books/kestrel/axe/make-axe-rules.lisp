@@ -21,6 +21,7 @@
 (include-book "kestrel/utilities/conjuncts-and-disjuncts" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system)
+(include-book "kestrel/utilities/remove-guard-holders" :dir :system)
 ;(include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "known-booleans")
 (include-book "axe-rule-lists")
@@ -28,7 +29,6 @@
 (include-book "kestrel/std/system/theorem-symbolp" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
 ;(local (include-book "kestrel/std/system/all-vars" :dir :system))
-(local (include-book "kestrel/utilities/remove-guard-holders" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -1476,7 +1476,7 @@
                 ;; If we don't handle return-last, the axe rule for
                 ;; string-append causes a loop.  Also, this should make it
                 ;; faster to open functions defined using MBE:
-                (body (remove-guard-holders-weak body) ;(strip-return-last body)
+                (body (remove-guard-holders-and-clean-up-lambdas body) ;(strip-return-last body)
                       )
                 (body (drop-unused-lambda-bindings body))
                 (lhs (cons name formals))
@@ -1490,7 +1490,7 @@
                 (rule-classes (defthm-rule-classes name wrld))
                 ;;otherwise, unrolling rules of functions using mbe can loop):
                 (theorem-body ;(strip-return-last theorem-body)
-                 (remove-guard-holders-weak theorem-body))
+                 (remove-guard-holders-and-clean-up-lambdas theorem-body))
                 (theorem-body (drop-unused-lambda-bindings theorem-body))
                 ((mv erp rules)
                  (make-axe-rules-from-theorem theorem-body name rule-classes known-boolean-fns print wrld))
@@ -1563,6 +1563,11 @@
     (if erp
         (er hard? 'make-axe-rules! "Error making Axe rules.")
       axe-rules)))
+
+(defthm axe-rule-listp-of-of-make-axe-rules!
+  (implies (symbol-listp rule-names)
+           (axe-rule-listp (make-axe-rules! rule-names wrld)))
+  :hints (("Goal" :in-theory (enable make-axe-rules!))))
 
 ;; Returns (mv erp rules) where rules is a list of axe-rules.
 ;; This version removes duplicate rules first.  (That may happen later anyway
@@ -1660,3 +1665,29 @@
 ;;       nil
 ;;     (cons (remove-rules-from-rule-set rules (first rule-sets))
 ;;           (remove-rules-from-rule-sets rules (rest rule-sets)))))
+
+;;;
+;;; axe-rules-that-introduce
+;;;
+
+;; Can be used to determine which rules introduce a given function symbol
+(defund filter-axe-rules-for-rhses-mentioning (fn axe-rules)
+  (declare (xargs :guard (and (symbolp fn)
+                              (axe-rule-listp axe-rules))
+                  :guard-hints (("Goal" :in-theory (enable len-when-axe-rulep)))))
+  (if (endp axe-rules)
+      nil
+    (let* ((axe-rule (first axe-rules))
+           (rhs (rule-rhs axe-rule))
+           (rhs-fns (get-fns-in-term rhs)))
+      (if (member-eq fn rhs-fns)
+          (cons (rule-symbol axe-rule)
+                (filter-axe-rules-for-rhses-mentioning fn (rest axe-rules)))
+        (filter-axe-rules-for-rhses-mentioning fn (rest axe-rules))))))
+
+(defund axe-rules-that-introduce (fn rule-names wrld)
+  (declare (xargs :guard (and (symbolp fn)
+                              (symbol-listp rule-names)
+                              (ilks-plist-worldp wrld))))
+  (let ((axe-rules (make-axe-rules! rule-names wrld)))
+    (filter-axe-rules-for-rhses-mentioning fn axe-rules)))

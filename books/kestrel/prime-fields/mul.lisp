@@ -15,6 +15,7 @@
 (include-book "fep")
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/times"))
+(local (include-book "../arithmetic-light/plus"))
 
 ;; Compute the product of x and y modulo the prime.
 (defund mul (x y p)
@@ -60,6 +61,11 @@
 
 (defthm mul-of-0-arg2
   (equal (mul x 0 p)
+         0)
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-of-0-arg3
+  (equal (mul x y 0)
          0)
   :hints (("Goal" :in-theory (enable mul))))
 
@@ -125,4 +131,37 @@
   (implies (and (< 0 p)
                 (integerp p))
            (< (mul x y p) p))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-of-+-same-arg1-arg1
+  (equal (mul (+ p x) y p)
+         (mul x y p))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-of-+-same-arg1-arg2
+  (equal (mul (+ x p) y p)
+         (mul x y p))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-of-+-same-arg2-arg2
+  (equal (mul x (+ y p) p)
+         (mul x y p))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-of--1-and--1
+  (implies (posp p)
+           (equal (mul -1 -1 p)
+                  (if (equal p 1)
+                      0 ; unusual case
+                    1)))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-of-ifix-arg1
+  (equal (mul (ifix x) y p)
+         (mul x y p))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-of-ifix-arg2
+  (equal (mul x (ifix y) p)
+         (mul x y p))
   :hints (("Goal" :in-theory (enable mul))))

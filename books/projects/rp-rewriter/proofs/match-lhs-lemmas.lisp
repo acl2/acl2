@@ -111,6 +111,9 @@
                                                sublhs context acc-bindings))))
     :flag rp-match-lhs-subterms))
 
+; Matt K. mod 7/2021: The following lemma is no longer accepted due to a
+; strengthening of remove-guard-holders.
+#||
 (local
  (defthm should-term-be-in-cons-lemma1
    (implies (should-term-be-in-cons rule-lhs term)
@@ -120,12 +123,17 @@
                  (case-match rule-lhs (('cons & &) t)
                    (& nil))))
    :hints (("Goal" :in-theory (enable should-term-be-in-cons)))))
+||#
 
+; Matt K. mod 7/2021: The following lemma is no longer accepted due to a
+; strengthening of remove-guard-holders.
+#||
 (local
  (defthm is-snyp-props
    (implies (is-synp term)
             (case-match term (('synp & & &) t)
               (& nil)))))
+||#
 
 (defmacro bindings-from (x)
   `(mv-nth 1 ,x))
@@ -376,7 +384,8 @@
                               (:DEFINITION MEMBER-EQUAL)
                               (:DEFINITION FALIST-CONSISTENT)
                               (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
-                              (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
+; Obsolete (see Matt K. comment above):
+;                             (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
                               (:REWRITE NOT-INCLUDE-RP)
                               (:DEFINITION FALIST-CONSISTENT-AUX)
                               (:REWRITE ACL2::O-P-O-INFP-CAR)
@@ -438,7 +447,8 @@
                             (:DEFINITION VALID-RULEP-SK)
                             (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
                             (:DEFINITION VALID-SC)
-                            (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
+; Obsolete (see Matt K. comment above):
+;                           (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
                             (:REWRITE
                              ACL2::TRUE-LIST-LISTP-IMPLIES-ALWAYS$-TRUE-LISTP)
                             (:DEFINITION FALIST-CONSISTENT))))))
@@ -458,7 +468,8 @@
                                (:DEFINITION VALID-RULEP-SK)
                                (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
                                (:DEFINITION VALID-SC)
-                               (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
+; Obsolete (see Matt K. comment above):
+;                              (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
                                (:REWRITE
                                 ACL2::TRUE-LIST-LISTP-IMPLIES-ALWAYS$-TRUE-LISTP)
                                (:DEFINITION FALIST-CONSISTENT))))))
@@ -470,7 +481,8 @@
                                                    context iff-flg state))))
   :hints (("Goal"
            :in-theory (disable (:DEFINITION LEN)
-                               (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
+; Obsolete (see Matt K. comment above):
+;                              (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
                                (:REWRITE RP-EQUAL2-BINDINGS-1TO1-CONSP)
                                (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA4)
                                (:REWRITE DEFAULT-<-1)
@@ -684,7 +696,8 @@
                               (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
                               (:REWRITE VALID-SC-CONS)
                               (:DEFINITION INCLUDE-FNC)
-                              (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
+; Obsolete (see Matt K. comment above):
+;                             (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
                               (:REWRITE VALID-SC-CADR)
                               (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                               (:TYPE-PRESCRIPTION INCLUDE-FNC)
@@ -786,7 +799,8 @@
                              (ex-from-rp-lemma1
 
                               (:DEFINITION ACL2::APPLY$-BADGEP)
-                              (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
+; Obsolete (see Matt K. comment above):
+;                             (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
                               (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
                               (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
                               (:DEFINITION RP-TERMP))))))
@@ -846,7 +860,8 @@
                               (:DEFINITION TRUE-LISTP)
                               (:REWRITE VALID-SC-CONS)
                               (:REWRITE NOT-INCLUDE-RP)
-                              (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
+; Obsolete (see Matt K. comment above):
+;                             (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
                               (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                               (:DEFINITION FALIST-CONSISTENT)
@@ -973,7 +988,9 @@
   (local
    (in-theory (e/d (bind-bindings-aux
                     put-term-in-cons)
-                   ((:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
+                   (
+; Obsolete (see Matt K. comment above):
+;                   (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
                     (:REWRITE ACL2::O-P-O-INFP-CAR)
                     (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                     (:DEFINITION ACL2::APPLY$-BADGEP)
@@ -1507,7 +1524,8 @@
                               rp-equal2-is-symmetric
                               no-free-variablep
                               VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP
-                              SHOULD-TERM-BE-IN-CONS-LEMMA1
+; Obsolete (see Matt K. comment above):
+;                             SHOULD-TERM-BE-IN-CONS-LEMMA1
                               INCLUDE-FNC
                               rule-syntaxp
                               weak-custom-rewrite-rule-p

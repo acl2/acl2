@@ -103,3 +103,9 @@
 (defthmd true-listp-when-symbol-listp-rewrite-unlimited
   (implies (symbol-listp x)
            (true-listp x)))
+
+; may be nil, which is a symbol!
+(defthm symbolp-of-car-of-last-when-symbol-listp
+  (implies (symbol-listp x)
+           (symbolp (car (last x))))
+  :hints (("Goal" :in-theory (enable symbol-listp))))

@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "defthm-axe-basic")
-(include-book "kestrel/axe/rules-in-rule-lists" :dir :system)
+(include-book "rules-in-rule-lists")
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)
 

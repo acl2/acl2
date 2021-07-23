@@ -10,7 +10,7 @@ clean: clean-more
 
 .PHONY: clean-more
 clean-more:
-	rm -f evaluation-apply.lisp evaluation-user-defs.lisp Makefile-deps
+	@rm -f evaluation-apply.lisp evaluation-user-defs.lisp Makefile-deps
 
 REBUILD_MAKEFILE_DEPS := $(shell \
   rm -f Makefile-deps Makefile-deps.out && \
@@ -18,6 +18,6 @@ REBUILD_MAKEFILE_DEPS := $(shell \
    cp -pf ../apply.lisp evaluation-apply.lisp) && \
   (diff user-defs.lisp evaluation-user-defs.lisp 2>&1 > /dev/null || \
    cp -pf user-defs.lisp evaluation-user-defs.lisp) && \
-  $(ACL2_SYSTEM_BOOKS)/build/cert.pl --include-excludes -s Makefile-deps *.lisp)
+  $(ACL2_SYSTEM_BOOKS)/build/cert.pl --quiet --include-excludes -s Makefile-deps *.lisp)
 
 include Makefile-deps

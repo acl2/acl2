@@ -94,7 +94,7 @@
 
 #|
 The following is the beginning of the lemmas needed to verify the guards
-given for the compute-consensus and tree-compatibility funtions.
+given for the compute-consensus and tree-compatibility functions.
 
 SKIP!!!
 (skip-proofs

@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-; cert_param: (uses_acl2r)
+; cert_param: (uses-acl2r, uses-smtlink)
 
 (include-book "arithmetic/top"       :dir :system)
 (include-book "std/util/top"         :dir :system)
@@ -21,14 +21,14 @@
 		:fix   realfix
 		:equiv real-equiv)
 
-  (fty::deflist real-vec 
+  (fty::deflist real-vec
                 :elt-type real ;; deflist needs a fixing function (see deffixtype above)
                 :true-listp t)
 
  ;; Witness is just the same as regular proof for the reals.  All proofs
  ;; dependent on reasoning about the reals are encapsulated and local.  Only
  ;; the inner product space axioms and other basic properties are exported.
- (encapsulate 
+ (encapsulate
   (((a-vec-p *) => *)
    ((vector-zero-p  *) => *)
    ((vector-compatible * *) => *)
@@ -90,8 +90,8 @@
    (defthm transitivity-of-vector-compatible
     (implies (and (vector-compatible u v) (vector-compatible v w))
              (vector-compatible u w)))
- 
-   (local 
+
+   (local
     (define vector-add ((u a-vec-p) (v a-vec-p))
       :guard (vector-compatible u v)
       :returns (sum a-vec-p)
@@ -139,8 +139,8 @@
 	(implies (and (a-vec-p u) (a-vec-p v) (vector-compatible u v)
                           (vector-zero-p u))
                      (equal (vector-add u v) v)))
- 
-   (local 
+
+   (local
     (define scalar-vector-prod ((a realp) (v a-vec-p))
       :returns (prod a-vec-p)
       :enabled t
@@ -172,7 +172,7 @@
 
    (defthm scalar-vector-prod-when-vector-zero
     (implies (vector-zero-p v) (vector-zero-p (scalar-vector-prod a v))))
- 
+
    (defthm compatibility-of-scalar-vector-prod
     (implies (and (realp a) (a-vec-p v))
              (vector-compatible (scalar-vector-prod a v) v)))
@@ -211,26 +211,26 @@
 	:hints (("GOAL" :in-theory (enable vector-zero-p vector-add))))
 
   ;; This lemma wasn't needed for the non-abstract version
-   (local 
-    (defthmd lemma-1 
+   (local
+    (defthmd lemma-1
      (implies (and (real-vec-p v) (realp a))
  	      (real-vec-p (scalar-vector-prod a (cdr v))))
-     :hints (("Goal" :induct (len v))))) 
- 
+     :hints (("Goal" :induct (len v)))))
+
    (defthm distributivity-scalarsum-vector-prod
      (implies (and (realp a) (realp b) (a-vec-p v))
               (equal (vector-add (scalar-vector-prod a v)
  		                (scalar-vector-prod b v))
  	            (scalar-vector-prod (+ a b) v)))
      :hints (("Goal" :in-theory (enable lemma-1))))
- 
+
   ;; Again, this wasn't needed for the non-abstract version
-   (local 
-    (defthmd lemma-2 
+   (local
+    (defthmd lemma-2
      (implies (and (real-vec-p u) (real-vec-p v))
  	     (real-vec-p (vector-add (cdr u) (cdr v))))
-     :hints (("Goal" :induct (len v))))) 
- 
+     :hints (("Goal" :induct (len v)))))
+
    ;; The prefered direction for the rewrite tuple for
    ;;   distributivity-scalarsum-vector-prod seems obvious.
    ;;   For the next theorem, I'm guessing it's better to "simplify"
@@ -243,8 +243,8 @@
  		                (scalar-vector-prod a v))))
      :hints (("Goal" :in-theory (enable lemma-1 lemma-2))))
  		;; need to enable both "obvious" lemmas
- 
-   (local 
+
+   (local
     (define inner-prod ((u a-vec-p) (v a-vec-p))
       :guard (vector-compatible u v)
       :returns (prod realp)
@@ -268,16 +268,16 @@
     (realp (inner-prod u v)))
 
   (defthm inner-prod-when-left-zero
-    (implies (vector-zero-p u) 
+    (implies (vector-zero-p u)
 	     (equal (inner-prod u v) 0)))
 
   (defthm inner-prod-when-right-zero
-    (implies (vector-zero-p v) 
+    (implies (vector-zero-p v)
 	     (equal (inner-prod u v) 0)))
 
   (defthm commutativity-of-inner-prod
     (equal (inner-prod v u) (inner-prod u v)))
-  
+
   (defthm positivity-of-inner-prod (<= 0 (inner-prod v v)))
 
   (defthm positivity-of-inner-prod-strict
@@ -288,7 +288,7 @@
   (defthm definiteness-of-inner-prod
     (implies (and (a-vec-p v) (equal (inner-prod v v) 0))
              (and (vector-zero-p v))))
- 
+
    (defthm bilinearity-of-inner-prod-scalar
      (implies (and (vector-compatible u v) (realp a) (realp b))
  	           (equal (inner-prod (scalar-vector-prod a u)
@@ -303,7 +303,7 @@
  	                  (+ (inner-prod v x) (inner-prod v y))))
      :hints (("Goal" :in-theory (enable lemma-2))))
  		;; have to enable the other obvious lemma
- 
+
    (defthm distributivity-of-inner-prod-right
      (implies (and (vector-compatible u x) (vector-compatible v x))
               (equal (inner-prod (vector-add u v) x)
@@ -547,16 +547,16 @@
    :hints(("Goal" :cases ((vector-zero-p v)))))
 
  ;; Proof that cs1 equality implies linear dependence, i.e.
- ;;  	bu + av = 0 
+ ;;  	bu + av = 0
  ;; for some nonzero a, b, and given v nonzero.
- ;; In this case, b=1 and a=<u,v>/<v,v>=(aa u v) 
- (encapsulate 
+ ;; In this case, b=1 and a=<u,v>/<v,v>=(aa u v)
+ (encapsulate
    ()
- ;; true because 
+ ;; true because
  ;; <u,v>^2 = <u,u> <v,v> implies
  ;; 0 = <u,u> - <u,v><u,v>/<v,v> = ... = <u-av,u-av>
  (local (defthm lemma-1
-  (implies (and (vector-compatible u v) 
+  (implies (and (vector-compatible u v)
 		(a-vec-p u)
 		(a-vec-p v)
 		(not (vector-zero-p v))
@@ -591,7 +591,7 @@
 	:returns ((ok booleanp))
 	:level 0))
       :hypotheses (
-       ((implies (not (vector-zero-p v)) 
+       ((implies (not (vector-zero-p v))
 		 (not (equal (inner-prod v v) 0))))
        ((equal (+ (inner-prod u u)
 		  (* (- 2) (aa u v) (inner-prod u v))
@@ -600,7 +600,7 @@
 			   (vector-add u (scalar-vector-prod (- (aa u v)) v)))))))))))
 
   (defthm cs1-equality-implies-linear-dependence-nz
-   (implies (and (vector-compatible u v) 
+   (implies (and (vector-compatible u v)
 		 (a-vec-p u)
 		 (a-vec-p v)
 		 (not (vector-zero-p v))
@@ -626,22 +626,22 @@
 
  ;; Proof that linear dependence implies cs1-equality, i.e.
  ;;   u = av implies <u,v>^2 = <u,u><v,v>
- (encapsulate 
+ (encapsulate
   ()
   ;; Had to take this lemma out of the smtlink hints for some reason
   (local (defthm lemma-1
-   (implies (and (a-vec-p v) (realp a)) 
+   (implies (and (a-vec-p v) (realp a))
  	   (equal (inner-prod v (scalar-vector-prod a v))
  		  (* a (inner-prod v v))))
    :hints (("GOAL" :use ((:instance bilinearity-of-inner-prod-scalar (a 1) (b a) (u v)))))))
- 
-  ;; True because 
-  ;; <u, v> <u, v> = <av, v> <av, v> 
+
+  ;; True because
+  ;; <u, v> <u, v> = <av, v> <av, v>
   ;;		   = aa <v,v> <v,v>
   ;;		   = <av, av> <v,v>
   ;;		   = <u, u>   <v,v>
   (defthm linear-dependence-implies-cs1-equality
-   (implies (and (vector-compatible u v) 
+   (implies (and (vector-compatible u v)
  		(a-vec-p u)
  		(a-vec-p v)
  		(realp a)
@@ -682,7 +682,7 @@
         ((equal (inner-prod (scalar-vector-prod a v)
  			   v)
  	       (* a (inner-prod v v)))))))))))
-	   	 
+
 ;; Proof of cs2 from cs1, conditions for cs2 equivalence, and some
 ;; useful lemmas about the equivalence of cs1 and cs2. ACL2 way of
 ;; proving cs2 from cs1 works but want to use Smtlink in the future
@@ -721,7 +721,7 @@
 
   (defthm cs2
    (implies (vector-compatible u v)
-            (b* ((uv (inner-prod u v)) 
+            (b* ((uv (inner-prod u v))
          	 (uu (inner-prod u u))
         	 (vv (inner-prod v v)))
                 (<= (abs uv) (* (acl2-sqrt uu) (acl2-sqrt vv)))))
@@ -731,13 +731,13 @@
   ;; recognise the "obvious" substitution for the L/RHS's and kept on
   ;; trying to reason about square roots. Smtlink was easier.
   (defthm linear-dependence-implies-cs2-equality
-   (implies (and (vector-compatible u v) 
+   (implies (and (vector-compatible u v)
  		(a-vec-p u)
  		(a-vec-p v)
  		(realp a)
  		(equal u (scalar-vector-prod a v)))
-            (equal (abs (inner-prod u v)) 
-		   (* (acl2-sqrt (inner-prod u u)) 
+            (equal (abs (inner-prod u v))
+		   (* (acl2-sqrt (inner-prod u u))
 		      (acl2-sqrt (inner-prod v v)))))
    :hints
     (("Goal"
@@ -769,10 +769,10 @@
 	 :returns ((rt realp))
 	 :level 0))
        :hypotheses(
-	((equal (acl2-sqrt (* (inner-prod u v) (inner-prod u v))) 
+	((equal (acl2-sqrt (* (inner-prod u v) (inner-prod u v)))
 		(abs (inner-prod u v))))
 	((equal (acl2-sqrt (* (inner-prod u u) (inner-prod v v)))
-		(* (acl2-sqrt (inner-prod u u)) 
+		(* (acl2-sqrt (inner-prod u u))
 		   (acl2-sqrt (inner-prod v v)))))
 	((equal (* (inner-prod u v) (inner-prod u v))
 		(* (inner-prod u u) (inner-prod v v)))
@@ -781,7 +781,7 @@
   ;; Square roots are tricky for ACL2 and Smtlink individually. Use
   ;; both together to avoid introducing excess and needless lemmas.
   (defthmd cs2-equality-iff-cs1-equality
-   (implies (and (vector-compatible u v) 
+   (implies (and (vector-compatible u v)
 		 (a-vec-p u)
 		 (a-vec-p v))
        	    (equal (equal (abs (inner-prod u v))
@@ -821,10 +821,10 @@
 	 :level 0))
        :hypotheses(
 	;; hypotheses for the reverse direction
-	((equal (acl2-sqrt (* (inner-prod u v) (inner-prod u v))) 
+	((equal (acl2-sqrt (* (inner-prod u v) (inner-prod u v)))
 		(abs (inner-prod u v))))
 	((equal (acl2-sqrt (* (inner-prod u u) (inner-prod v v)))
-		(* (acl2-sqrt (inner-prod u u)) 
+		(* (acl2-sqrt (inner-prod u u))
 		   (acl2-sqrt (inner-prod v v)))))
 	;; hypotheses for the forward direction
 	((equal (* (* (acl2-sqrt (inner-prod u u))

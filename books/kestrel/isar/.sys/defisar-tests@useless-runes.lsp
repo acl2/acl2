@@ -7,3 +7,7 @@
 (P=>R<Q>)
 (P=>R<R>)
 (P=>R)
+(P=>R-WITH-LET<P>)
+(P=>R-WITH-LET<Q>)
+(P=>R-WITH-LET<R>)
+(P=>R-WITH-LET)

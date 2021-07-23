@@ -45,7 +45,7 @@
            (or (zerp a (dp)) (fzerp a fz)))))
 
 ;; The special case data result:
-      
+
 (defun fmul64-fused-spec-special-val (a b fz dn)
   (cond ((inf-times-zero a b fz)
          (indef (dp)))

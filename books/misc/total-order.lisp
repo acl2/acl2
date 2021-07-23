@@ -103,7 +103,7 @@ speedup for our expected kinds of data:</p>
                     ;; call and two string compares.  And if it hits,
                     ;; it's a big win.
                     (or (eq x y)
-                        (not (symbol-< y x)))
+                        (not (symbol< y x)))
                   ;; Ugh.  We should just know this is true, but we have
                   ;; to consider these cases because of bad atoms:
                   (not (or (integerp y)
@@ -217,7 +217,7 @@ speedup for our expected kinds of data:</p>
                           ;; call and two string compares.  And if it hits,
                           ;; it's a big win.
                           (or (eq x y)
-                              (not (symbol-< y x)))
+                              (not (symbol< y x)))
                         ;; Ugh.  We should just know this is true, but we have
                         ;; to consider these cases because of bad atoms:
                         (not (or (integerp y)
@@ -318,7 +318,7 @@ is probably faster because:</p>
                      ((symbolp x)
                       (if (symbolp y)
                           (and (not (eq x y))
-                               (symbol-< x y)
+                               (symbol< x y)
                                t)
                         (not (or (integerp y)
                                  (stringp y)
