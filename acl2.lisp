@@ -1728,7 +1728,7 @@ which is saved just in case it's needed later.")
 ; semantics for ACL2 source files, to be read using *acl2-readtable*, while the
 ; host Lisp's semantics are expected for compiled files.  But consider files
 ; like .cert and @expansion.lsp files, i.e., files that may be written by the
-; host Lisp (see the call of prin1 in print-object$-ser) but are read by ACL2.
+; host Lisp (see the call of prin1 in print-object$-fn) but are read by ACL2.
 ; Perhaps the issue goes away if we are using the serialize reader and writer,
 ; as must be the case when we install a reader for #\Y.  We may think all this
 ; through when there is sufficient reason to do so.  For now, the only problem
