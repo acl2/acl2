@@ -3724,6 +3724,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-natp-of-measure-of-fn ((fn symbolp)
+                                       (fn-appconds symbol-symbol-alistp)
+                                       (appcond-thms acl2::keyword-symbol-alistp)
+                                       (measure-of-fn symbolp)
+                                       (measure-formals symbol-listp)
+                                       (names-to-avoid symbol-listp)
+                                       (wrld plist-worldp))
+  :guard (acl2::irecursivep+ fn wrld)
+  :returns (mv (event "A @(tsee pseudo-event-formp).")
+               (name "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate type prescription theorem asserting that
+          the measure of the recursive function @('fn')
+          yields a natural number."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like the applicability condition,
+     except that it uses the generated measure function
+     (to treat the measure as a black box,
+     as discussed in @(tsee atc-gen-measure-of-fn)),
+     and that it is a type prescription rule
+     (which seems needed, as opposed a rewrite rule,
+     based on proof experiments)."))
+  (b* ((appcond-thm
+        (cdr (assoc-eq (cdr (assoc-eq fn fn-appconds)) appcond-thms)))
+       (natp-of-measure-of-fn-thm
+        (acl2::packn-pos (list 'natp-of-measure-of- fn) fn))
+       ((mv natp-of-measure-of-fn-thm names-to-avoid)
+        (acl2::fresh-logical-name-with-$s-suffix natp-of-measure-of-fn-thm
+                                                 nil
+                                                 names-to-avoid
+                                                 wrld))
+       ((mv natp-of-measure-of-fn-thm-event &)
+        (acl2::evmac-generate-defthm
+         natp-of-measure-of-fn-thm
+         :formula `(natp (,measure-of-fn ,@measure-formals))
+         :rule-classes :type-prescription
+         :enable nil
+         :hints `(("Goal"
+                   :in-theory '(,measure-of-fn)
+                   :use ,appcond-thm)))))
+    (mv natp-of-measure-of-fn-thm-event
+        natp-of-measure-of-fn-thm
+        names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-loop-correct-thm ((fn symbolp)
                                   (pointers symbol-listp)
                                   (xforming symbol-listp)
@@ -3754,15 +3803,6 @@
   :short "Generate the correctness theorem for a loop."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "We generate a local theorem asserting that
-     the measure of the function yields a natural number.
-     This is like the applicability condition,
-     except that it uses the generated measure function
-     (to treat the measure as a black box,
-     as discussed in @(tsee atc-gen-measure-of-fn)),
-     and that it is a type prescription rule
-     (a rewrite rule might work too here).")
    (xdoc::p
     "We generate a local theorem that is
      just like the termination theorem of the function
@@ -3831,24 +3871,16 @@
                                           prog-const
                                           names-to-avoid
                                           wrld))
-       (appcond-thm
-        (cdr (assoc-eq (cdr (assoc-eq fn fn-appconds)) appcond-thms)))
-       (natp-of-measure-of-fn-thm
-        (acl2::packn-pos (list 'natp-of-measure-of- fn) fn))
-       ((mv natp-of-measure-of-fn-thm names-to-avoid)
-        (acl2::fresh-logical-name-with-$s-suffix natp-of-measure-of-fn-thm
-                                                 nil
-                                                 names-to-avoid
-                                                 wrld))
-       ((mv natp-of-measure-of-fn-thm-event &)
-        (acl2::evmac-generate-defthm
-         natp-of-measure-of-fn-thm
-         :formula `(natp (,measure-of-fn ,@measure-formals))
-         :rule-classes :type-prescription
-         :enable nil
-         :hints `(("Goal"
-                   :in-theory '(,measure-of-fn)
-                   :use ,appcond-thm))))
+       ((mv natp-of-measure-of-fn-thm-event
+            natp-of-measure-of-fn-thm
+            names-to-avoid)
+        (atc-gen-natp-of-measure-of-fn fn
+                                       fn-appconds
+                                       appcond-thms
+                                       measure-of-fn
+                                       measure-formals
+                                       names-to-avoid
+                                       wrld))
        (termination-of-fn-thm
         (acl2::packn-pos (list 'termination-of- fn) fn))
        ((mv termination-of-fn-thm names-to-avoid)
