@@ -479,7 +479,8 @@ rules:</p>
                (bind := (vl-parse-bind-directive atts))
                (return (list bind))))
 
-         ((when (eq type1 :vl-kwd-class))
+         ((when (or (eq type1 :vl-kwd-class)
+                    (eq type1 :vl-kwd-virtual)))
           (seq tokstream
                (class := (vl-parse-class-declaration atts))
                (return (list class))))
