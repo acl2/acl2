@@ -43,8 +43,6 @@
 
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
 
-(local (in-theory (disable ctxp)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; to speed up the proofs in this file:
