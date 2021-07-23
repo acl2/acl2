@@ -15995,12 +15995,12 @@
                             outfile)
                         state))
                (t (pprogn
-                   (print-object$-ser (cons full-book-name
-                                            (bookdata-alist full-book-name
-                                                            wrld))
-                                      nil ; serialize-character
-                                      channel
-                                      state)
+                   (print-object$-fn (cons full-book-name
+                                           (bookdata-alist full-book-name
+                                                           wrld))
+                                     nil ; serialize-character
+                                     channel
+                                     state)
                    (close-output-channel channel state)))))))))
 
 (defun fromto (i j)

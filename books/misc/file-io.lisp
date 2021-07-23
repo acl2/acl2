@@ -37,7 +37,9 @@
  list of length 1 containing a filename; and @('ctx') is a context (see @(see
  ctx)).  By default or if :quiet is nil, a message of the form @('\"Writing
  file [x]\"') is printed to @(see standard-co); otherwise, no such message is
- printed.</p>")
+ printed.</p>
+
+ <p>Also see @(see print-object$) and @(see print-object$+).</p>")
 
 (program)
 

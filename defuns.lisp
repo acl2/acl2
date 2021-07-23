@@ -6477,7 +6477,7 @@
     (LIST-ALL-PACKAGE-NAMES      (STATE)         (NIL STATE))
     (PRINC$                      (NIL NIL STATE) (STATE))
     (WRITE-BYTE$                 (NIL NIL STATE) (STATE))
-    (PRINT-OBJECT$-SER           (NIL NIL NIL STATE) (STATE))
+    (PRINT-OBJECT$-FN            (NIL NIL NIL STATE) (STATE))
     (GET-GLOBAL                  (NIL STATE)     (NIL))
     (BOUNDP-GLOBAL               (NIL STATE)     (NIL))
     (MAKUNBOUND-GLOBAL           (NIL STATE)     (STATE))

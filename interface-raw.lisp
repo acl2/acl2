@@ -7757,7 +7757,7 @@
                                       READ-OBJECT
                                       PRINC$
                                       WRITE-BYTE$
-                                      PRINT-OBJECT$-SER
+                                      PRINT-OBJECT$-FN
                                       MAKUNBOUND-GLOBAL
                                       PUT-GLOBAL
                                       EXTEND-T-STACK

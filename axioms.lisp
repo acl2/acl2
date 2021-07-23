@@ -7358,7 +7358,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Warning: Keep this in sync with check-print-base.
 
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :mode :logic))
   (and (member print-base '(2 8 10 16))
        t))
 
@@ -14282,7 +14283,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     aset-t-stack aref-t-stack read-char$ aref-32-bit-integer-stack
     open-output-channel open-output-channel-p1 princ$ read-object
     big-clock-negative-p peek-char$ shrink-32-bit-integer-stack read-run-time
-    read-byte$ read-idate t-stack-length1 print-object$-ser
+    read-byte$ read-idate t-stack-length1 print-object$-fn
     get-output-stream-string$-fn
 
     mv-list return-last
@@ -16880,6 +16881,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (set-forms-from-bindings (cdr bindings))))))
 
 (defconst *print-control-defaults*
+
+; Warning: Keep this in sync with print-control-alistp.
+
   `((print-base ',(cdr (assoc-eq 'print-base *initial-global-table*))
                 set-print-base)
     (print-case ',(cdr (assoc-eq 'print-case *initial-global-table*))
@@ -17547,22 +17551,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro acl2-print-case (&optional (st 'state))
   `(print-case ,st))
 
+(defun check-print-case (print-case ctx)
+  (declare (xargs :guard t :mode :logic))
+  (if (or (eq print-case :upcase)
+          (eq print-case :downcase))
+      nil
+    (hard-error ctx
+                "The value ~x0 is illegal as an ACL2 print-case, which must ~
+                 be :UPCASE or :DOWNCASE."
+                (list (cons #\0 print-case)))))
+
 (defun set-print-case (case state)
   (declare (xargs :guard (and (or (eq case :upcase) (eq case :downcase))
                               (state-p state))))
-  (prog2$ (or (eq case :upcase)
-              (eq case :downcase)
-              (illegal 'set-print-case
-                       "The value ~x0 is illegal as an ACL2 print-case, which ~
-                        must be :UPCASE or :DOWNCASE."
-                       (list (cons #\0 case))))
+  (prog2$ (check-print-case case 'set-print-case)
           (f-put-global 'print-case case state)))
-
-(defmacro set-acl2-print-case (case)
-  (declare (ignore case))
-  '(er soft 'set-acl2-print-case
-       "Macro ~x0 has been replaced by function ~x1."
-       'set-acl2-print-case 'set-print-case))
 
 (defmacro print-base (&optional (st 'state))
   `(f-get-global 'print-base ,st))
@@ -17581,7 +17584,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Warning: Keep this in sync with print-base-p, and keep the format warning
 ; below in sync with princ$.
 
-  (declare (xargs :guard t))
+  (declare (xargs :guard t :mode :logic))
   (if (print-base-p print-base)
       nil
     (hard-error ctx
@@ -17631,12 +17634,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (prog2$ (check-print-base base 'set-print-base)
           (f-put-global 'print-base base state)))
 
-(defmacro set-acl2-print-base (base)
-  (declare (ignore base))
-  '(er soft 'set-acl2-print-base
-       "Macro ~x0 has been replaced by function ~x1."
-       'set-acl2-print-base 'set-print-base))
-
 (defun set-print-circle (x state)
   (declare (xargs :guard (state-p state)))
   (f-put-global 'print-circle x state))
@@ -17657,39 +17654,39 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (state-p state)))
   (f-put-global 'print-readably x state))
 
-(defun check-null-or-natp (n fn)
-  (declare (xargs :guard t))
+(defun check-null-or-natp (n var)
+  (declare (xargs :guard t :mode :logic))
   (or (null n)
       (natp n)
-      (hard-error fn
-                  "The argument of ~x0 must be ~x1 or a positive integer, but ~
+      (hard-error 'check-null-or-natp
+                  "The value of ~x0 must be ~x1 or a positive integer, but ~
                    ~x2 is neither."
-                  (list (cons #\0 fn)
+                  (list (cons #\0 var)
                         (cons #\1 nil)
                         (cons #\2 n)))))
 
 (defun set-print-length (n state)
   (declare (xargs :guard (and (or (null n) (natp n))
                               (state-p state))))
-  (prog2$ (check-null-or-natp n 'set-print-length)
+  (prog2$ (check-null-or-natp n 'print-length)
           (f-put-global 'print-length n state)))
 
 (defun set-print-level (n state)
   (declare (xargs :guard (and (or (null n) (natp n))
                               (state-p state))))
-  (prog2$ (check-null-or-natp n 'set-print-level)
+  (prog2$ (check-null-or-natp n 'print-level)
           (f-put-global 'print-level n state)))
 
 (defun set-print-lines (n state)
   (declare (xargs :guard (and (or (null n) (natp n))
                               (state-p state))))
-  (prog2$ (check-null-or-natp n 'set-print-lines)
+  (prog2$ (check-null-or-natp n 'print-lines)
           (f-put-global 'print-lines n state)))
 
 (defun set-print-right-margin (n state)
   (declare (xargs :guard (and (or (null n) (natp n))
                               (state-p state))))
-  (prog2$ (check-null-or-natp n 'set-print-right-margin)
+  (prog2$ (check-null-or-natp n 'print-right-margin)
           (f-put-global 'print-right-margin n state)))
 
 #-acl2-loop-only
@@ -17706,67 +17703,95 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote *open-output-channel-key*)
         (list 'quote *non-existent-stream*)))
 
+(defun raw-print-vars-alist (print-control-defaults-tail)
+
+; At the top level, print-control-defaults-tail is *print-control-defaults*.
+
+  (declare (xargs :guard (symbol-alistp print-control-defaults-tail)))
+  (cond
+   ((endp print-control-defaults-tail) nil)
+   (t
+    (cons (let ((sym (caar print-control-defaults-tail)))
+            (cons (intern (concatenate 'string "*" (symbol-name sym) "*")
+                          "ACL2")
+                  sym))
+          (raw-print-vars-alist (cdr print-control-defaults-tail))))))
+
+(defconst *raw-print-vars-alist*
+
+; We use this value in the definition of with-print-controls.  To avoid some
+; code duplication, we compute it from *print-control-defaults*.
+
+; Note that *print-lines* is only defined when #+cltl2.  But we always set
+; feature :cltl2 now, so that's OK.
+
+; At one time we did something with *print-pprint-dispatch* for #+cltl2.  But
+; as of May 2013, ANSI GCL does not comprehend this variable.  So we skip
+; including (*print-pprint-dispatch* nil . nil).  In fact we skip it for all
+; host Lisps, assuming that users who mess with *print-pprint-dispatch* in raw
+; Lisp take responsibility for knowing what they're doing!
+
+  (raw-print-vars-alist *print-control-defaults*))
+
+#-acl2-loop-only
+(defun with-print-controls-defaults (bindings body)
+  `(let ,(loop for pair in *raw-print-vars-alist*
+               when (not (assoc-eq (car pair) bindings))
+               collect
+               (let ((lisp-var (car pair))
+                     (acl2-var (cdr pair)))
+                 (list lisp-var
+                       (cadr (assoc-eq acl2-var
+                                       *print-control-defaults*)))))
+     ,@body))
+
+#-acl2-loop-only
+(defun with-print-controls-alist (alist bindings body)
+
+; Alist takes priority over bindings.
+
+  (let ((var (gensym)))
+    `(let ((,var ,alist)
+           ,@(loop for pair in *raw-print-vars-alist*
+                   when (not (assoc-eq (car pair) bindings))
+                   collect
+                   (let ((lisp-var (car pair))
+                         (acl2-var (cdr pair)))
+                     (list lisp-var
+                           `(f-get-global ',acl2-var *the-live-state*)))))
+       (progv (strip-cars ,var)
+              (strip-cdrs ,var)
+              ,@body))))
+
 #-acl2-loop-only
 (defmacro with-print-controls (default bindings &rest body)
 
+; Default is either the symbol, :DEFAULTS, or else an expression whose value is
+; a pair whose car is a duplicate-free list of keys contained in the keys of
+; *print-control-defaults* and whose cdr is a corresponding list of legal
+; values for those keys.
+
 ; Warning; If you bind *print-base* to value pb (in bindings), then you should
-; strongly consider binding *print-radix* to t if pb exceeds 10 and to nil
+; strongly consider binding *print-radix* to nil if pb is 10 and to t
 ; otherwise.
 
-  (when (not (member-eq default '(:defaults :current)))
-    (error "The first argument of with-print-controls must be :DEFAULTS ~
-            or :CURRENT."))
-  (let ((raw-print-vars-alist
-         '((*print-base* print-base . (f-get-global 'print-base state))
-           (*print-case* print-case . (f-get-global 'print-case state))
-           (*print-circle* print-circle . (f-get-global 'print-circle state))
-           (*print-escape* print-escape . (f-get-global 'print-escape state))
-           (*print-length* print-length . (f-get-global 'print-length state))
-           (*print-level* print-level . (f-get-global 'print-level state))
-           #+cltl2
-           (*print-lines* print-lines . (f-get-global 'print-lines state))
-           #+cltl2
-           (*print-miser-width* nil . nil)
-           (*print-pretty* print-pretty . (f-get-global 'print-pretty state))
-           (*print-radix* print-radix . (f-get-global 'print-radix state))
-           (*print-readably* print-readably . (f-get-global 'print-readably
-                                                            state))
-
-; At one time we did something with *print-pprint-dispatch* for #+cltl2.  But
-; as of May 2013, ANSI GCL does not comprehend this variable.  So we skip it
-; here.  In fact we skip it for all host Lisps, assuming that users who mess
-; with *print-pprint-dispatch* in raw Lisp take responsibility for knowing what
-; they're doing!
-
-;          #+cltl2
-;          (*print-pprint-dispatch* nil . nil)
-           #+cltl2
-           (*print-right-margin*
-            print-right-margin . (f-get-global 'print-right-margin state)))))
-    (when (not (and (alistp bindings)
-                    (let ((vars (strip-cars bindings)))
-                      (and (subsetp-eq vars (strip-cars raw-print-vars-alist))
-                           (no-duplicatesp vars)))))
-      (error "With-print-controls has illegal bindings:~%  ~s"
-             bindings))
-    `(let ((state *the-live-state*))
-       (let ((*read-base* 10) ; just to be safe
-             (*readtable* *acl2-readtable*)
-             #+cltl2 (*read-eval* nil) ; to print without using #.
-             (*package* (find-package-fast (current-package state)))
-             ,@bindings)
-         (let ,(loop for triple in raw-print-vars-alist
-                     when (not (assoc-eq (car triple) bindings))
-                     collect
-                     (let ((lisp-var (car triple))
-                           (acl2-var (cadr triple)))
-                       (list lisp-var
-                             (cond ((and acl2-var
-                                         (eq default :defaults))
-                                    (cadr (assoc-eq acl2-var
-                                                    *print-control-defaults*)))
-                                   (t (cddr triple))))))
-              ,@body)))))
+  (when (not (and (alistp bindings)
+                  (let ((vars (strip-cars bindings)))
+                    (and (subsetp-eq vars (strip-cars *raw-print-vars-alist*))
+                         (no-duplicatesp vars)))))
+    (error "With-print-controls has illegal bindings:~%  ~s"
+           bindings))
+  `(let ((state *the-live-state*))
+     (let ((*read-base* 10) ; just to be safe
+           (*readtable* *acl2-readtable*)
+           (*package* (find-package-fast (current-package state)))
+           #+cltl2 (*print-miser-width* nil)
+           #+cltl2 (*read-eval* nil) ; to print without using #.
+           ,@bindings)
+       ,(cond ((equal default :DEFAULTS)
+               (with-print-controls-defaults bindings body))
+              (t
+               (with-print-controls-alist default bindings body))))))
 
 #-acl2-loop-only
 (defun print-number-base-16-upcase-digits (x stream)
@@ -18015,66 +18040,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                        (member c '(#\Y #\Z)))))))
   (set-serialize-character-fn c t state))
 
-(defun print-object$-ser (x serialize-character channel state-state)
-
-; Wart: We use state-state instead of state because of a bootstrap problem.
-
-; This function is a version of print-object$ that allows specification of the
-; serialize-character, which can be nil (the normal case for #-hons), #\Y, or
-; #\Z (the normal case for #+hons).  However, we currently treat this as nil in
-; the #-hons version.
-
-; See print-object$ for additional comments.
-
-  (declare (ignorable serialize-character) ; only used when #+hons
-           (xargs :guard (and (state-p1 state-state)
-                              (member serialize-character '(nil #\Y #\Z))
-                              (symbolp channel)
-                              (open-output-channel-p1 channel
-                                                      :object state-state))))
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-         (cond (*wormholep*
-
-; There is no standard object output channel and hence this channel is
-; directed to some unknown user-specified sink and we can't touch it.
-
-                (wormhole-er 'print-object$ (list x channel))))
-         (let ((stream (get-output-stream-from-channel channel)))
-           (declare (special acl2_global_acl2::current-package))
-
-; Note: If you change the following bindings, consider changing the
-; corresponding bindings in print-object$.
-
-           (with-print-controls
-            :current
-            ((*print-circle* (and *print-circle-stream*
-                                  (f-get-global 'print-circle state-state))))
-            (terpri stream)
-            (or #+hons
-                (cond (serialize-character
-                       (write-char #\# stream)
-                       (write-char serialize-character stream)
-                       (ser-encode-to-stream x stream)
-                       t))
-                (prin1 x stream))
-            (force-output stream)))
-         (return-from print-object$-ser *the-live-state*)))
-  (let ((entry (cdr (assoc-eq channel (open-output-channels state-state)))))
-    (update-open-output-channels
-     (add-pair channel
-               (cons (car entry)
-                     (cons x
-                           (cdr entry)))
-               (open-output-channels state-state))
-     state-state)))
-
+; The following may have been created in support of print-object$.
 (defthm all-boundp-preserves-assoc-equal
   (implies (and (all-boundp tbl1 tbl2)
                 (assoc-equal x tbl1))
            (assoc-equal x tbl2))
   :rule-classes nil)
 
+; The following may have been created in support of print-object$.
 (local
  (defthm all-boundp-initial-global-table
   (implies (and (state-p1 state)
@@ -18086,36 +18059,24 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        (tbl2 (nth 2 state))))
            :in-theory (disable all-boundp)))))
 
-(defun print-object$ (x channel state)
-
-; WARNING: In the HONS version, be sure to use with-output-object-channel-sharing
-; rather than calling open-output-channel directly, so that
-; *print-circle-stream* is initialized.
-
-; We believe that if in a single Common Lisp session, one prints an object and
-; then reads it back in with print-object$ and read-object, one will get back
-; an equal object under the assumptions that (a) the package structure has not
-; changed between the print and the read and (b) that *package* has the same
-; binding.  On a toothbrush, all calls of defpackage will occur before any
-; read-objecting or print-object$ing, so the package structure will be the
-; same.  It is up to the user to set current-package back to what it was at
-; print time if he hopes to read back in the same object.
-
-; Warning: For soundness, we need to avoid using iprinting when writing to
-; certificate files.  We do all such writing with print-object$, so we rely on
-; print-object$ not to use iprinting.
-
-  (declare (xargs :guard (and (state-p state)
-
-; We might want to modify state-p (actually, state-p1) so that the following
-; conjunct is not needed.
-
-                              (member (get-serialize-character state)
-                                      '(nil #\Y #\Z))
-                              (symbolp channel)
-                              (open-output-channel-p channel
-                                                     :object state))))
-  (print-object$-ser x (get-serialize-character state) channel state))
+(defun print-object$+-alist (x)
+  (declare (xargs :guard (keyword-value-listp x)))
+  (cond ((endp x) nil)
+        ((eq (car x) ':header)
+         (print-object$+-alist (cddr x)))
+        ((eq (car x) ':serialize-character)
+         (print-object$+-alist (cddr x)))
+        (t (let ((sym (car (rassoc-eq (intern$ (symbol-name (car x)) "ACL2")
+                                      *raw-print-vars-alist*))))
+             (prog2$
+              (or sym
+                  (hard-error 'print-object$+
+                              "The symbol ~x0 is not a legal keyword for ~x1"
+                              (list (cons #\0 (car x))
+                                    (cons #\1 'print-object$+))))
+              `(acons ',sym
+                      ,(cadr x)
+                      ,(print-object$+-alist (cddr x))))))))
 
 #-acl2-loop-only
 (defmacro set-acl2-readtable-case (mode)
@@ -18126,42 +18087,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     nil)
   #-gcl
   '(setf (readtable-case *acl2-readtable*) :preserve))
-
-(defun print-object$-preserving-case (x channel state)
-
-; Logically, this function is just print-object$.  Is it unsound to identify
-; these functions, since they print differently?  We think not, because the
-; only way to see what resides in a file is with the various ACL2 reading
-; functions, which all use a file-clock.  See the discussion of "deus ex
-; machina" in :doc current-package.
-
-  (declare (xargs :guard (and (state-p state)
-                              (eq (get-serialize-character state)
-
-; It's not clear that it makes sense to print preserving case when doing
-; serialize printing.  If that capability is needed we can address weakening the
-; guard to match the guard of print-object$.
-
-                                  nil)
-                              (symbolp channel)
-                              (open-output-channel-p channel
-                                                     :object state))))
-  #-acl2-loop-only
-  (cond ((live-state-p state)
-         (cond
-          #+gcl
-          ((not (fboundp 'system::set-readtable-case))
-           (cerror "Use print-object$ instead"
-                   "Sorry, but ~s is not supported in this older version of ~%~
-                    GCL (because raw Lisp function ~s is undefined)."
-                   'print-object$-preserving-case
-                   'system::set-readtable-case))
-          (t
-           (return-from print-object$-preserving-case
-             (let ((*acl2-readtable* (copy-readtable *acl2-readtable*)))
-               (set-acl2-readtable-case :preserve)
-               (print-object$ x channel state)))))))
-  (print-object$ x channel state))
 
 ;  We start the file-clock at one to avoid any possible confusion with
 ; the wired in standard-input/output channels, whose names end with

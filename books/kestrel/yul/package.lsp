@@ -14,5 +14,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpkg "YUL" (append *std-pkg-symbols*
-                      '(defxdoc+)))
+(defpkg "YUL" (append (set-difference-eq
+                       *std-pkg-symbols*
+                       '(block
+                         funcall))
+                      '(bool
+                        defxdoc+
+                        nat
+                        str::hex-digit-char)))
