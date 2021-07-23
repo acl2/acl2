@@ -1781,7 +1781,7 @@
               (er-soft+ ctx t (list nil nil nil)
                         "When generating C code for the function ~x0, ~
                          an attempt is made to modify the variables ~x1, ~
-                         not all of which are in scope."))
+                         not all of which are in scope." fn vars))
              ((unless (atc-vars-assignablep vars innermostp-list xforming))
               (er-soft+ ctx t (list nil nil nil)
                         "When generating C code for the function ~x0, ~
