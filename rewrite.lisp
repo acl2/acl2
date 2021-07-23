@@ -12349,14 +12349,6 @@
     (cons-tag-trees (erase-rw-cache ttree1)
                     (erase-rw-cache ttree2)))))
 
-(defun alist-keys-subsetp (x keys)
-  (declare (xargs :guard (and (alistp x)
-                              (symbol-listp keys))))
-  (cond ((endp x) t)
-        ((member-eq (caar x) keys)
-         (alist-keys-subsetp (cdr x) keys))
-        (t nil)))
-
 (defmacro tag-tree-tags-subsetp (ttree tags)
 
 ; Note: Tag-tree primitive
