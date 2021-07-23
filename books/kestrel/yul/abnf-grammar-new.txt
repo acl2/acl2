@@ -113,7 +113,7 @@ assignment = path ":=" expression
 
 variable-declaration = %s"let" identifier [ ":=" expression ]
                      / %s"let" identifier *( "," identifier )
-                       [ ":=" expression ]
+                       [ ":=" function-call ]
 
 block = "{" *statement "}"
 

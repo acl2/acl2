@@ -3617,49 +3617,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-loop-correct-thm ((fn symbolp)
-                                  (pointers symbol-listp)
-                                  (xforming symbol-listp)
-                                  (loop-stmt stmtp)
-                                  (prec-fns atc-symbol-fninfo-alistp)
-                                  (prog-const symbolp)
-                                  (fn-appconds symbol-symbol-alistp)
-                                  (appcond-thms acl2::keyword-symbol-alistp)
-                                  (fn-thms symbol-symbol-alistp)
-                                  (fn-returns-value-thm symbolp)
-                                  (measure-of-fn symbolp)
-                                  (measure-formals symbol-listp)
-                                  (limit pseudo-termp)
-                                  (experimental acl2::keyword-listp)
-                                  (names-to-avoid symbol-listp)
-                                  ctx
-                                  state)
-  :guard (acl2::irecursivep+ fn (w state))
-  :returns (mv erp
-               (val "A @('(tuple (local-events pseudo-event-form-listp)
-                                 (exported-events pseudo-event-form-listp)
-                                 (natp-of-measure-of-fn-thm symbolp)
-                                 (fn-correct-thm symbolp)
-                                 (updated-names-to-avoid symbol-listp)
-                                 val)').")
-               state)
+(define atc-gen-exec-stmt-while-for-loop ((fn symbolp)
+                                          (loop-stmt stmtp)
+                                          (prog-const symbolp)
+                                          (names-to-avoid symbol-listp)
+                                          (wrld plist-worldp))
+  :guard (acl2::irecursivep+ fn wrld)
+  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
+               (exec-stmt-while-for-fn "A @(tsee symbolp).")
+               (exec-stmt-while-for-fn-thm "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
-  :short "Generate the correctness theorem for a loop."
+  :short "Generate a version of @(tsee exec-stmt-while)
+          specialized to the loop represented by @('fn')."
   :long
   (xdoc::topstring
    (xdoc::p
     "The correctness theorem for a loop says that
      the execution of the loop (via @(tsee exec-stmt-while))
-     is suitably equivalent to the corresponding ACL2 recursive function @('fn').
+     is suitably equivalent to
+     the corresponding ACL2 recursive function @('fn').
      The theorem is proved by induction, unsurprisingly.
      However, due to the form in which the function appears in the theorem,
      namely that the function is not applied to ACL2 variables,
      we cannot use the function's induction scheme.
      But we cannot readily use
-     the induction scheme of the execution functions,
-     or at least it seems it would be cumbersome to do so,
-     because there are several of them, mutually recursive.
-     What we really need is an induction scheme related to the loop.
+     the induction scheme of the execution functions
+     of the C dynamic semantics,
+     or at least it looks cumbersome to do so,
+     because there are several of them, mutually recursive.")
+   (xdoc::p
+    "What we really need is an induction scheme related to the loop.
      Thus we introduce a local function that is like @(tsee exec-stmt-while)
      but specialized to the loop generated from @('fn');
      this function is singly recursive, providing the needed induction scheme.
@@ -3672,74 +3660,8 @@
      For robustness, the termination proof for this new function,
      and the proof of the associated theorem,
      are carried out in exactly specified theories
-     that should always work.")
-   (xdoc::p
-    "We generate a local theorem asserting that
-     the measure of the function yields a natural number.
-     This is like the applicability condition,
-     except that it uses the generated measure function
-     (to treat the measure as a black box,
-     as discussed in @(tsee atc-gen-measure-of-fn)),
-     and that it is a type prescription rule
-     (a rewrite rule might work too here).")
-   (xdoc::p
-    "We generate a local theorem that is
-     just like the termination theorem of the function
-     except that @(tsee o<) is replaced with @(tsee <),
-     and that the measure terms are abstracted to
-     calls of the generated measure functions.
-     The theorem is proved using the fact that
-     the measure yields a natural number,
-     which means that @(tsee o<) reduces to @(tsee <) (see above).
-     The purpose of this variant of the termination theorem
-     is to help establish the induction hypothesis
-     in the loop correctness theorem, as explained below.")
-   (xdoc::p
-    "We generate the correctness theorem as a lemma first,
-     then the actual theorem.
-     The only difference between the two is that
-     the lemma uses the specialization of @(tsee exec-stmt-while)
-     that is generated as discussed above,
-     while the theorem uses the general @(tsee exec-stmt-while);
-     the reason is so we can have the right induction, as discussed above.
-     As explained shortly,
-     the formula involves (some of) the loop function's formals,
-     so we take those into account to generate variables for
-     the computation state, the function environment, and the limit.
-     The hypotheses include the guard of the loop function,
-     but we need to replace any pointers with their dereferenced arrays
-     (see @(tsee atc-gen-fn-correct-thm)),
-     and in addition,
-     as discussed in @(tsee atc-gen-term-with-read-var-compustate),
-     we need to replace the parameters of the loop function
-     with @(tsee read-var) calls that read the corresponding variables.
-     The other hypotheses are the same as in @(tsee atc-gen-fn-correct-thm),
-     with the addition of a hypothesis that
-     the number of frames in the computation state is not zero;
-     this is always the case when executing a loop.
-     The arguments of the loop function call are obtained by
-     replacing its formals with the corresponding @(tsee read-var) calls.
-     The lemma is proved via proof builder instructions,
-     by first applying induction
-     and then calling the prover on all the induction subgoals.
-     For robustness, first to set the theory to contain
-     just the specialized @(tsee exec-stmt-while),
-     then we apply induction, which therefore must be on that function.
-     The hints for the subgoals are for the symbolic execution,
-     similar to the ones in @(tsee atc-gen-fn-correct-thm),
-     without the @(':expand') hint and with the addition of:
-     (i) the return value theorem of the loop function,
-     which is reasonable since the function is recursive,
-     and so it is called inside its body;
-     (ii) the definition of the specialized @(tsee exec-stmt-while);
-     (iii) the rule saying that the measure yields a natural number; and
-     (iv) the termination theorem of the loop function,
-     suitably instantiated.
-     Given the correctness lemma, the correctness theorem is easily proved,
-     via the lemma and the generate theorem that equates
-     the specialized @(tsee exec-stmt-while) to the general one."))
-  (b* ((wrld (w state))
-       (loop-test (stmt-while->test loop-stmt))
+     that should always work."))
+  (b* ((loop-test (stmt-while->test loop-stmt))
        (loop-body (stmt-while->body loop-stmt))
        (exec-stmt-while-for-fn
         (acl2::packn-pos (list 'exec-stmt-while-for- fn) fn))
@@ -3793,8 +3715,41 @@
                                            limit))
          :rule-classes nil
          :hints `(("Goal" :in-theory '(,exec-stmt-while-for-fn
-                                       exec-stmt-while)))))
-       (appcond-thm
+                                       exec-stmt-while))))))
+    (mv (list exec-stmt-while-for-fn-event
+              exec-stmt-while-for-fn-thm-event)
+        exec-stmt-while-for-fn
+        exec-stmt-while-for-fn-thm
+        names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-natp-of-measure-of-fn ((fn symbolp)
+                                       (fn-appconds symbol-symbol-alistp)
+                                       (appcond-thms acl2::keyword-symbol-alistp)
+                                       (measure-of-fn symbolp)
+                                       (measure-formals symbol-listp)
+                                       (names-to-avoid symbol-listp)
+                                       (wrld plist-worldp))
+  :guard (acl2::irecursivep+ fn wrld)
+  :returns (mv (event "A @(tsee pseudo-event-formp).")
+               (name "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate type prescription theorem asserting that
+          the measure of the recursive function @('fn')
+          yields a natural number."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like the applicability condition,
+     except that it uses the generated measure function
+     (to treat the measure as a black box,
+     as discussed in @(tsee atc-gen-measure-of-fn)),
+     and that it is a type prescription rule
+     (which seems needed, as opposed a rewrite rule,
+     based on proof experiments)."))
+  (b* ((appcond-thm
         (cdr (assoc-eq (cdr (assoc-eq fn fn-appconds)) appcond-thms)))
        (natp-of-measure-of-fn-thm
         (acl2::packn-pos (list 'natp-of-measure-of- fn) fn))
@@ -3811,7 +3766,45 @@
          :enable nil
          :hints `(("Goal"
                    :in-theory '(,measure-of-fn)
-                   :use ,appcond-thm))))
+                   :use ,appcond-thm)))))
+    (mv natp-of-measure-of-fn-thm-event
+        natp-of-measure-of-fn-thm
+        names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-termination-theorem-for-fn ((fn symbolp)
+                                            (measure-of-fn symbolp)
+                                            (measure-formals symbol-listp)
+                                            (natp-of-measure-of-fn-thm symbolp)
+                                            (names-to-avoid symbol-listp)
+                                            (ctx ctxp)
+                                            state)
+  :guard (acl2::irecursivep+ fn (w state))
+  :returns (mv erp
+               (val "A @('(tuple (event pseudo-event-formp)
+                                 (name symbolp)
+                                 (updated-names-to-avoid symbol-listp)
+                                 val)').")
+               state)
+  :mode :program
+  :short "Generate the version of the termination theorem
+          tailored to the limits and measure function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We generate a local theorem that is
+     just like the termination theorem of the function
+     except that @(tsee o<) is replaced with @(tsee <),
+     and that the measure terms are abstracted to
+     calls of the generated measure functions.
+     The theorem is proved using the fact that
+     the measure yields a natural number,
+     which means that @(tsee o<) reduces to @(tsee <) (see above).
+     The purpose of this variant of the termination theorem
+     is to help establish the induction hypothesis
+     in the loop correctness theorem, as explained below."))
+  (b* ((wrld (w state))
        (termination-of-fn-thm
         (acl2::packn-pos (list 'termination-of- fn) fn))
        ((mv termination-of-fn-thm names-to-avoid)
@@ -3838,7 +3831,89 @@
                                 acl2::natp-compound-recognizer
                                 o-p
                                 o-finp
-                                o<)))))
+                                o<))))))
+    (acl2::value
+     (list termination-of-fn-thm-event
+           termination-of-fn-thm
+           names-to-avoid))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-loop-correct-thm ((fn symbolp)
+                                  (pointers symbol-listp)
+                                  (xforming symbol-listp)
+                                  (loop-test exprp)
+                                  (loop-body stmtp)
+                                  (prec-fns atc-symbol-fninfo-alistp)
+                                  (prog-const symbolp)
+                                  (fn-thms symbol-symbol-alistp)
+                                  (fn-returns-value-thm symbolp)
+                                  (exec-stmt-while-for-fn symbolp)
+                                  (exec-stmt-while-for-fn-thm symbolp)
+                                  (termination-of-fn-thm symbolp)
+                                  (natp-of-measure-of-fn-thm symbolp)
+                                  (limit pseudo-termp)
+                                  (experimental acl2::keyword-listp)
+                                  (names-to-avoid symbol-listp)
+                                  state)
+  :guard (acl2::irecursivep+ fn (w state))
+  :returns (mv erp
+               (val "A @('(tuple (local-events pseudo-event-form-listp)
+                                 (exported-events pseudo-event-form-listp)
+                                 (natp-of-measure-of-fn-thm symbolp)
+                                 (fn-correct-thm symbolp)
+                                 (updated-names-to-avoid symbol-listp)
+                                 val)').")
+               state)
+  :mode :program
+  :short "Generate the correctness theorem for a loop."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We generate the correctness theorem as a lemma first,
+     then the actual theorem.
+     The only difference between the two is that
+     the lemma uses the specialization of @(tsee exec-stmt-while)
+     that is generated as discussed above,
+     while the theorem uses the general @(tsee exec-stmt-while);
+     the reason is so we can have the right induction, as discussed above.
+     As explained shortly,
+     the formula involves (some of) the loop function's formals,
+     so we take those into account to generate variables for
+     the computation state, the function environment, and the limit.
+     The hypotheses include the guard of the loop function,
+     but we need to replace any pointers with their dereferenced arrays
+     (see @(tsee atc-gen-fn-correct-thm)),
+     and in addition,
+     as discussed in @(tsee atc-gen-term-with-read-var-compustate),
+     we need to replace the parameters of the loop function
+     with @(tsee read-var) calls that read the corresponding variables.
+     The other hypotheses are the same as in @(tsee atc-gen-fn-correct-thm),
+     with the addition of a hypothesis that
+     the number of frames in the computation state is not zero;
+     this is always the case when executing a loop.
+     The arguments of the loop function call are obtained by
+     replacing its formals with the corresponding @(tsee read-var) calls.
+     The lemma is proved via proof builder instructions,
+     by first applying induction
+     and then calling the prover on all the induction subgoals.
+     For robustness, first to set the theory to contain
+     just the specialized @(tsee exec-stmt-while),
+     then we apply induction, which therefore must be on that function.
+     The hints for the subgoals are for the symbolic execution,
+     similar to the ones in @(tsee atc-gen-fn-correct-thm),
+     without the @(':expand') hint and with the addition of:
+     (i) the return value theorem of the loop function,
+     which is reasonable since the function is recursive,
+     and so it is called inside its body;
+     (ii) the definition of the specialized @(tsee exec-stmt-while);
+     (iii) the rule saying that the measure yields a natural number; and
+     (iv) the termination theorem of the loop function,
+     suitably instantiated.
+     Given the correctness lemma, the correctness theorem is easily proved,
+     via the lemma and the generate theorem that equates
+     the specialized @(tsee exec-stmt-while) to the general one."))
+  (b* ((wrld (w state))
        (correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-lemma (add-suffix correct-thm "-LEMMA"))
        ((mv correct-lemma names-to-avoid)
@@ -3925,13 +4000,9 @@
                                :formula `(implies ,hyps ,concl-thm)
                                :hints thm-hints
                                :enable nil))
-       (local-events (list* exec-stmt-while-for-fn-event
-                            exec-stmt-while-for-fn-thm-event
-                            natp-of-measure-of-fn-thm-event
-                            termination-of-fn-thm-event
-                            (and (member-eq :loop-proofs experimental)
-                                 (list correct-lemma-event
-                                       correct-thm-local-event))))
+       (local-events (and (member-eq :loop-proofs experimental)
+                          (list correct-lemma-event
+                                correct-thm-local-event)))
        (exported-events (and (member-eq :loop-proofs experimental)
                              (list correct-thm-exported-event))))
     (acl2::value (list local-events
@@ -4006,6 +4077,39 @@
                          print loop-limit experimental
                          names-to-avoid ctx state))
        ((when erp) (mv erp (list nil nil nil nil) state))
+       (loop-test (stmt-while->test loop-stmt))
+       (loop-body (stmt-while->body loop-stmt))
+       ((mv exec-stmt-while-events
+            exec-stmt-while-for-fn
+            exec-stmt-while-for-fn-thm
+            names-to-avoid)
+        (atc-gen-exec-stmt-while-for-loop fn
+                                          loop-stmt
+                                          prog-const
+                                          names-to-avoid
+                                          wrld))
+       ((mv natp-of-measure-of-fn-thm-event
+            natp-of-measure-of-fn-thm
+            names-to-avoid)
+        (atc-gen-natp-of-measure-of-fn fn
+                                       fn-appconds
+                                       appcond-thms
+                                       measure-of-fn
+                                       measure-formals
+                                       names-to-avoid
+                                       wrld))
+       ((mv erp
+            (list termination-of-fn-thm-event
+                  termination-of-fn-thm)
+            state)
+        (atc-gen-termination-theorem-for-fn fn
+                                            measure-of-fn
+                                            measure-formals
+                                            natp-of-measure-of-fn-thm
+                                            names-to-avoid
+                                            ctx
+                                            state))
+       ((when erp) (mv erp (list nil nil nil nil nil) state))
        ((mv erp
             (list more-local-events
                   more-exported-events
@@ -4013,14 +4117,27 @@
                   fn-correct-thm
                   names-to-avoid)
             state)
-        (atc-gen-loop-correct-thm fn pointers loop-xforming loop-stmt prec-fns
-                                  prog-const fn-appconds appcond-thms fn-thms
-                                  fn-returns-value-thm measure-of-fn
-                                  measure-formals loop-limit
-                                  experimental names-to-avoid ctx state))
+        (atc-gen-loop-correct-thm fn
+                                  pointers
+                                  loop-xforming
+                                  loop-test
+                                  loop-body
+                                  prec-fns
+                                  prog-const
+                                  fn-thms
+                                  fn-returns-value-thm
+                                  exec-stmt-while-for-fn
+                                  exec-stmt-while-for-fn-thm
+                                  termination-of-fn-thm
+                                  natp-of-measure-of-fn-thm
+                                  loop-limit experimental
+                                  names-to-avoid state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        (local-events (append (list measure-of-fn-event)
                              local-events
+                             exec-stmt-while-events
+                             (list natp-of-measure-of-fn-thm-event)
+                             (list termination-of-fn-thm-event)
                              more-local-events))
        (exported-events (append exported-events more-exported-events))
        (info (make-atc-fn-info :type? type?
