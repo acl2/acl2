@@ -113,8 +113,8 @@
    :hex-number (< (str::hex-digit-chars-value (hex-digit-list->chars lit.get))
                   (expt 2 256))
    :string (<= (len lit.content) 32)
-   :hex-string (and (< 0 (len lit.get))
-                    (<= (len lit.get) 32)))
+   :hex-string (and (< 0 (len lit.content))
+                    (<= (len lit.content) 32)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

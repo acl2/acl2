@@ -232,14 +232,17 @@
      or not (i.e. single).
      This captures the full concrete syntax information.")
    (xdoc::p
-    "We represent a hex string as a list of hex pairs.
+    "We represent a hex string as a list of hex pairs,
+     plus a flag saying whether the surrounding quotes are double
+     or not (i.e. single).
      We do not capture the optional underscores for now."))
   (:boolean ((get bool)))
   (:dec-number ((get nat)))
   (:hex-number ((get hex-digit-list)))
   (:string ((content string-element-list)
             (double-quote-p bool)))
-  (:hex-string ((get hex-pair-list)))
+  (:hex-string ((content hex-pair-list)
+                (double-quote-p bool)))
   :pred literalp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
