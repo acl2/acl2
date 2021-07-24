@@ -13,6 +13,7 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/fty/hex-digit-char" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -115,6 +116,15 @@
   :true-listp t
   :elementp-of-nil nil
   :pred hex-digit-listp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection hex-digit-list->chars ((x hex-digit-listp))
+  :returns (chars str::hex-digit-char-listp)
+  :short "Extract the characters from a list of hex digits."
+  (hex-digit->get x)
+  ///
+  (fty::deffixequiv hex-digit-list->chars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
