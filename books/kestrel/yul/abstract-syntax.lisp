@@ -279,6 +279,22 @@
 
   (fty::deftagsum statement
     :short "Fixtype of statements."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We use different constructors for
+       declaration of single vs. multiple variables.
+       We also use different constructors for
+       assignments to single or mulitple paths.
+       This way, we can restrict the use of function calls
+       for multiple variables/targets,
+       as opposed to general expressions for single variables/targets.
+       The requirements that
+       the lists of multiple variables or paths contain at least two elements
+       are given in the static semantics.
+       Also the requirement that switch statements have at least one case
+       (literal or default)
+       is given in the static semantics."))
     (:block ((get block)))
     (:variable-single ((name identifier)
                        (init expression-option)))
