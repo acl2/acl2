@@ -98,7 +98,6 @@
                symbol-symbol-alistp
                tuple
                ubody+
-               uguard
                uguard+
                untranslate-lst
                variablep

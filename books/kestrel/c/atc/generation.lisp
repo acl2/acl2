@@ -2807,7 +2807,7 @@
        (name (add-suffix fn "-RETURNS-VALUE"))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
-       (guard (untranslate (uguard fn wrld) t wrld))
+       (guard (untranslate (uguard+ fn wrld) t wrld))
        (formula `(implies ,guard ,conclusion))
        (hints `(("Goal"
                  ,@(and (irecursivep+ fn wrld)
@@ -3093,7 +3093,7 @@
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
        (args (atc-gen-fn-args-deref-compustate formals pointers compst-var))
-       (guard (uguard fn wrld))
+       (guard (uguard+ fn wrld))
        (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var))
        (hyps (conjoin (list `(compustatep ,compst-var)
                             hyps
@@ -3921,7 +3921,7 @@
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
        (limit (atc-gen-term-with-read-var-compustate limit compst-var))
-       (guard (uguard fn wrld))
+       (guard (uguard+ fn wrld))
        (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var))
        (hyps (atc-gen-term-with-read-var-compustate hyps compst-var))
        (hyps (conjoin (list `(compustatep ,compst-var)
