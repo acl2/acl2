@@ -225,8 +225,8 @@
     "We represent a hex string as a list of hex pairs.
      We do not capture the optional underscores for now."))
   (:boolean ((get bool)))
-  (:decimal ((get nat)))
-  (:hex ((get hex-digit-list)))
+  (:dec-number ((get nat)))
+  (:hex-number ((get hex-digit-list)))
   (:string ((content string-element-list)
             (double-quote-p bool)))
   (:hex-string ((get hex-pair-list)))
