@@ -54,4 +54,6 @@
 
 (include-book "all-greater")
 
+(include-book "all-alistp")
+
 (include-book "doc")
