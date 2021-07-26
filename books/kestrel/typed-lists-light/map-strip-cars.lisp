@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/typed-lists-light/all-alistp" :dir :system)
+(include-book "all-alistp")
 (include-book "kestrel/sequences/defmap" :dir :system)
 
 (defmap map-strip-cars (x) (strip-cars x) :declares ((xargs :guard (all-alistp x))))
