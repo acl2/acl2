@@ -658,7 +658,7 @@ introduced by it.</p>")
 
 (define pseudo-term-quote (val)
   :parents (pseudo-term-fty)
-  :short "Constructor for :quote psuedo-terms."
+  :short "Constructor for :quote pseudo-terms."
   :returns (term pseudo-termp)
   :prepwork ((local (in-theory (enable pseudo-term-kind
                                        pseudo-term-quote->val
@@ -1570,7 +1570,7 @@ operates over FTY-style pseudo-term accessors and constructors:</p>
        :hints (("goal" :use ((:functional-instance base-ev-of-pseudo-term-lambda
                               (base-ev <ev>)
                               (base-ev-list <ev-list>))))))
-     
+
      (defthmd <ev>-of-pseudo-term-call
        (implies (syntaxp (not (equal a ''nil)))
                 (equal (<ev> (pseudo-term-call fn args) a)
