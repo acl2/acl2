@@ -66,27 +66,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc bls12-377-scalar-field-prime
-  :short "The prime @($r$)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The prime @($r$) is the scalar field size of
-     the curve @($E_{BLS}$), and is also the base field size of
-     the twisted Edwards curve @($E_{Ed/BLS}$).")
-   (xdoc::p
-    "@($r$) is computed from the
-     <see topic='@(url bls12-377-parameter-x)'>parameter x</see>:
-     @([
-        r = x^4 - x^2 + 1
-      ])")
-   (xdoc::p
-    "Figure 16 lists its value in hexadecimal:")
-   (xdoc::codeblock
-    "0x12ab655e9a2ca55660b44d1e5c37b00159aa76fed00000010a11800000000001")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; show that r was computed from x as stated
 (assert-event
  (equal (bls12-377-scalar-field-prime)
