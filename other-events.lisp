@@ -11587,7 +11587,32 @@
                   (sysfile-to-filename-include-book-alist
                    post-alist3-sysfile
                    t ; local-markers-allowedp
-                   state)))
+                   state))
+                 (unexpected-from-sysfile
+
+; We will consider the book to be uncertified if the full-book-name doesn't
+; match the sysfile expansion stored for the book in its certificate.  Before
+; this change, we could include a community book in its own directory using its
+; relative pathname (free of "/"), and it would be considered certified -- and
+; would return a pathname based on the system-books-dir for the current ACL2
+; executable!  Maybe that's not so serious, or we could just fix that specific
+; problem; but more serious is that sub-books would also have bad resolutions
+; of sysfile references.  We could restrict this check to the case that there
+; is at least one sysfile reference in the certificate file for a subbook.  But
+; it seems best (and simpler) to point out to the user the sysfile mismatch for
+; the top-level book.
+
+; Note that (caar post-alist3-sysfile) represents the book being included.
+; When the book was certified, the post-alist was created after pass 1 from
+; (global-val 'include-book-alist-all (w state)), so the topmost entry is the
+; most recent, hence for the book being included.
+
+                  (and (consp post-alist3-abs0)
+                       (consp (car post-alist3-abs0))
+                       (sysfile-p (caar post-alist3-sysfile))
+                       (not (equal (caar post-alist3-abs0)
+                                   file1))
+                       (caar post-alist3-abs0))))
             (er-let* ((pre-alist-abs
                        (cond ((eq pre-alist-abs0 :error)
                               (ill-formed-certificate-er
@@ -11633,9 +11658,10 @@
 
                        )))
                ((and (not light-chkp)
-                     (not (include-book-alist-subsetp
-                           pre-alist-abs
-                           actual-alist)))
+                     (or unexpected-from-sysfile
+                         (not (include-book-alist-subsetp
+                               pre-alist-abs
+                               actual-alist))))
 
 ; Note: Sometimes I have wondered how the expression above deals with
 ; LOCAL entries in the alists in question, because
@@ -11656,6 +11682,22 @@
                    ((and (equal warning-summary "Uncertified")
                          (warning-disabled-p "Uncertified"))
                     (value nil))
+                   (unexpected-from-sysfile
+                    (include-book-er1 file1 file2
+
+; The uses of ~| below are to ensure that both book names start in column 0, to
+; make it easy to see their difference.  We avoid concluding with a newline
+; because two spaces may be printed before printing another sentence, for
+; example, during certification: " This is illegal because we are currently
+; attempting certify-book; see :DOC certify-book."
+
+                                      (msg "The book being ~
+                                            included,~|~s0,~%is not in the ~
+                                            location expected for the ACL2 ~
+                                            executable being used:~|~s1."
+                                           file1
+                                           unexpected-from-sysfile)
+                                      warning-summary ctx state))
                    (t (mv-let (msgs state)
                         (tilde-*-book-hash-phrase pre-alist-abs
                                                   actual-alist

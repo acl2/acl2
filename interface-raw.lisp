@@ -8269,18 +8269,19 @@
                   state)))
 
 (defun initialize-acl2 (&optional (pass-2-ld-skip-proofsp 'include-book)
+                                  &aux
                                   (acl2-pass-2-files *acl2-pass-2-files*)
                                   system-books-dir
                                   skip-comp-exec
-                                  &aux
 
 ; We avoid proclaiming types dynamically, instead doing so only via the
 ; acl2-proclaims.lisp mechanism.  See the Essay on Proclaiming.
 
                                   (*do-proclaims* nil))
 
-; Note: if system-books-dir is supplied, it should be a Unix-style
-; pathname (either absolute or not [doesn't matter which]).
+; The first three &aux arguments were optional arguments before July, 2021.  If
+; system-books-dir is made an optional argument and then supplied, it should be
+; a Unix-style pathname (either absolute or not [doesn't matter which]).
 
 ; This function first lds all of the *acl2-files*, except
 ; boot-strap-pass-2-*.lisp and *-raw.lisp, in default-defun-mode :program
