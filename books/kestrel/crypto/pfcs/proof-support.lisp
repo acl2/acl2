@@ -66,4 +66,110 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled exec-proof-tree-list-yields-constraints
+  :short "A list of proof trees proves a list of constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That it, if running a list of proof tres is succesful,
+     the result must be an assertion of a list of constraints."))
+  (b* ((outcome (exec-proof-tree-list ptrees sys p)))
+    (implies (proof-outcome-case outcome :assertion)
+             (b* ((asser (proof-outcome-assertion->get outcome)))
+               (assertion-case asser :constraints))))
+  :expand (exec-proof-tree-list ptrees sys p))
+
+(defruled exec-proof-tree-when-constraint-equal
+  :short "Characterization of a proof tree for an equality constraint."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If running a proof tree is successful
+     and returns an assertion for a single list of constraints,
+     then the proof tree must be one for an equality,
+     and its components (assignment and expressions)
+     must coincide with the ones from the assertion.")
+   (xdoc::p
+    "This is used to prove @(tsee constraint-satp-of-equal)."))
+  (b* ((outcome (exec-proof-tree ptree sys p)))
+    (implies
+     (proof-outcome-case outcome :assertion)
+     (b* ((asser (proof-outcome-assertion->get outcome)))
+       (implies
+        (assertion-case asser :constraint)
+        (b* ((constr (assertion-constraint->constr asser)))
+          (implies
+           (constraint-case constr :equal)
+           (and (proof-tree-case ptree :equal)
+                (equal (proof-tree-equal->asg ptree)
+                       (assertion-constraint->asg asser))
+                (equal (proof-tree-equal->left ptree)
+                       (constraint-equal->left constr))
+                (equal (proof-tree-equal->right ptree)
+                       (constraint-equal->right constr))
+                (equal (eval-expr (assertion-constraint->asg asser)
+                                  (constraint-equal->left constr)
+                                  p)
+                       (eval-expr (assertion-constraint->asg asser)
+                                  (constraint-equal->right constr)
+                                  p))
+                (eval-expr (assertion-constraint->asg asser)
+                           (constraint-equal->left constr)
+                           p))))))))
+  :expand ((exec-proof-tree ptree sys p))
+  :enable exec-proof-tree-list-yields-constraints)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled constraint-satp-of-equal
+  :short "Proof rule for equality constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This says that the satisfaction of an equality constraint
+     reduces to the two expressions being equal and non-erroneous.")
+   (xdoc::p
+    "This rule lets us dispense with the existentially quantified proof tree
+     for the common case of equality constraints."))
+  (implies (and (assignment-for-prime-p asg p)
+                (constraint-case constr :equal))
+           (b* ((left (constraint-equal->left constr))
+                (right (constraint-equal->right constr)))
+             (iff (constraint-satp asg constr sys p)
+                  (and (equal (eval-expr asg left p)
+                              (eval-expr asg right p))
+                       (eval-expr asg left p)))))
+  :use (only-if-direction if-direction)
+
+  :prep-lemmas
+  ((defruled only-if-direction
+     (implies (constraint-case constr :equal)
+              (b* ((left (constraint-equal->left constr))
+                   (right (constraint-equal->right constr)))
+                (implies (constraint-satp asg constr sys p)
+                         (and (equal (eval-expr asg left p)
+                                     (eval-expr asg right p))
+                              (eval-expr asg left p)))))
+     :enable constraint-satp
+     :use (:instance exec-proof-tree-when-constraint-equal
+           (ptree (constraint-satp-witness asg constr sys p))))
+
+   (defruled if-direction
+     (implies (and (assignment-for-prime-p asg p)
+                   (constraint-case constr :equal))
+              (b* ((left (constraint-equal->left constr))
+                   (right (constraint-equal->right constr)))
+                (implies (and (equal (eval-expr asg left p)
+                                     (eval-expr asg right p))
+                              (eval-expr asg left p))
+                         (constraint-satp asg constr sys p))))
+     :use (:instance constraint-satp-suff
+           (ptree (make-proof-tree-equal
+                   :asg asg
+                   :left (constraint-equal->left constr)
+                   :right (constraint-equal->right constr))))
+     :enable exec-proof-tree)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: add proof rules
