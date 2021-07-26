@@ -903,7 +903,7 @@ the @(':hyp') keyword.</p>
 <p>Using the following mutual recursion as an example:</p>
 @({
  (defines pseudo-term-vars
-   (define pseudo-term-vars ((x psuedo-termp))
+   (define pseudo-term-vars ((x pseudo-termp))
      :returns (vars)
      ...)
    (define pseudo-term-list-vars ((x pseudo-term-listp))

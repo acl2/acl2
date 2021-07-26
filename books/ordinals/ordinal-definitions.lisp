@@ -182,7 +182,7 @@
     (make-ord (o-first-expt x) (o-first-coeff x) (padd (o-rst x) y (1- n)))))
 
 (defun pmult (x y n)
-  "Psuedo-multiplication function"
+  "Pseudo-multiplication function"
   (declare (xargs :guard (and (o-p x)
 			      (o-p y)
 			      (natp n)

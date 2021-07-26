@@ -152,7 +152,7 @@ to be eliminated).</li>
 <li>@(':defthm-macro-name') lets you name the new macro that will be generated
 for proving theorems by inducting with the flag function.  By default it is
 named @('defthm-[flag-function-name]'), i.e., for the above example, it would
-be called @('defthm-flag-psuedo-termp').</li>
+be called @('defthm-flag-pseudo-termp').</li>
 
 <li>@(':flag-var') specifies the name of the variable to use for the flag.  By
 default it is just called @('flag'), and we rarely change it.  To be more
@@ -1530,4 +1530,3 @@ on (say) x, but does a similar substitution on y, e.g.,</p>
 (defmacro def-doublevar-induction (name &key orig-fn old-var new-var hints take)
   `(make-event
     (def-doublevar-induction-fn ',name ',orig-fn ',old-var ',new-var ',hints ',take (w state))))
-
