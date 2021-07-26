@@ -13,6 +13,7 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/fty/hex-digit-char" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -115,6 +116,15 @@
   :true-listp t
   :elementp-of-nil nil
   :pred hex-digit-listp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection hex-digit-list->chars ((x hex-digit-listp))
+  :returns (chars str::hex-digit-char-listp)
+  :short "Extract the characters from a list of hex digits."
+  (hex-digit->get x)
+  ///
+  (fty::deffixequiv hex-digit-list->chars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -222,14 +232,17 @@
      or not (i.e. single).
      This captures the full concrete syntax information.")
    (xdoc::p
-    "We represent a hex string as a list of hex pairs.
+    "We represent a hex string as a list of hex pairs,
+     plus a flag saying whether the surrounding quotes are double
+     or not (i.e. single).
      We do not capture the optional underscores for now."))
   (:boolean ((get bool)))
-  (:decimal ((get nat)))
-  (:hex ((get hex-digit-list)))
+  (:dec-number ((get nat)))
+  (:hex-number ((get hex-digit-list)))
   (:string ((content string-element-list)
             (double-quote-p bool)))
-  (:hex-string ((get hex-pair-list)))
+  (:hex-string ((content hex-pair-list)
+                (double-quote-p bool)))
   :pred literalp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -279,6 +292,22 @@
 
   (fty::deftagsum statement
     :short "Fixtype of statements."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We use different constructors for
+       declaration of single vs. multiple variables.
+       We also use different constructors for
+       assignments to single or mulitple paths.
+       This way, we can restrict the use of function calls
+       for multiple variables/targets,
+       as opposed to general expressions for single variables/targets.
+       The requirements that
+       the lists of multiple variables or paths contain at least two elements
+       are given in the static semantics.
+       Also the requirement that switch statements have at least one case
+       (literal or default)
+       is given in the static semantics."))
     (:block ((get block)))
     (:variable-single ((name identifier)
                        (init expression-option)))

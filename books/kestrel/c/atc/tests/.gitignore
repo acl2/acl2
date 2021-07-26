@@ -39,3 +39,5 @@ nonstrict
 
 operators.c
 operators
+
+ops-diff-types.c

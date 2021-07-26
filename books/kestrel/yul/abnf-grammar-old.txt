@@ -17,6 +17,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Most of the ABNF rules below correspond exactly to the rules in [Yul].
+; We use the same capitalization of the nonterminals as in [Yul],
+; but note that ABNF rule names are case-insensitive
+; (which is not a problem because no Yul nonterminals differ
+; only in uppercase vs. lowercase).
 ; We add some additional rules here,
 ; which correspond to some regex constructs used in [Yul],
 ; as indicated by the comments below saying 'corresponds to ...'.

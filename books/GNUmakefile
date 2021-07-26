@@ -183,6 +183,8 @@ ACL2 := acl2
 endif # ifeq ($(ACL2),)
 export ACL2
 
+export ACL2_DOC_GENERATE_SUPPORTING_FILES
+
 .SUFFIXES:
 .SUFFIXES: .cert .lisp
 
@@ -1187,6 +1189,12 @@ regression: $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
 # default, so we should probably remove this comment and the couple sentences
 # before it.
 .PHONY: regression-everything
+
+# Build acl2-doc supporting files when running regression-everything
+# unless it is specified not to do so.
+ifndef ACL2_DOC_GENERATE_SUPPORTING_FILES
+regression-everything: ACL2_DOC_GENERATE_SUPPORTING_FILES=t
+endif
 
 regression-everything: $(OK_CERTS)
 
