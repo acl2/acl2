@@ -624,23 +624,26 @@ then restart the ACL2-Doc browser to view that manual."
     (cond
      ((null sym)
 
-;;; We have found that (sexp-at-point) returns nil when standing in
-;;; text that ends in a square bracket followed by a period, e.g.,
+;;; We have found that (sexp-at-point) returns nil when standing in text (in
+;;; acl2-doc mode) that ends in a square bracket followed by a period, e.g.,
 ;;; "[loop-stopper]."  So we try again.
 
       (setq sym
             (save-excursion
               (if (< (point) (point-max))
-                  (forward-char 1))     ; in case we are at "["
+                  (forward-char 1)) ; in case we are at "["
               (let* ((saved-point (point))
-                     (start (and (re-search-backward "[^]]*[[]" nil t)
-                                 (match-beginning 0))))
+                     (start (if (looking-at "[[]")
+                                (point)
+                              (and (search-backward "[" nil t)
+                                   (match-beginning 0)))))
                 (and start
-                     (let ((end (and (re-search-forward "[^ ]*]" nil t)
+                     (let ((end (and (search-forward "]" nil t)
                                      (match-end 0))))
                        (and end
                             (<= saved-point end)
                             (goto-char (1+ start))
+                            (not (search-forward " " end t))
                             (read (current-buffer))))))))
       (when sym
         (setq arrayp t)))
