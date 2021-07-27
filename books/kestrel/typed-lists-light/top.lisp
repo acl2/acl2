@@ -51,4 +51,8 @@
 
 (include-book "all-greater")
 
+;; Stuff about lists of alists:
+(include-book "all-alistp")
+(include-book "map-strip-cars")
+
 (include-book "doc")
