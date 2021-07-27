@@ -69,6 +69,14 @@
   :elementp-of-nil nil
   :pred identifier-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defset identifier-set
+  :short "Fixtype of osets of identifiers."
+  :elt-type identifier
+  :elementp-of-nil nil
+  :pred identifier-setp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod path
