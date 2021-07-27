@@ -20,5 +20,6 @@
                          funcall))
                       '(bool
                         defxdoc+
+                        maybe-natp
                         nat
                         str::hex-digit-char)))
