@@ -35,6 +35,7 @@
          (name (second verify-guards)))
     `(,verify-guards-variant ,name)))
 
+;; todo: rename, since we are dropping the hints
 (defun clean-up-hints-in-defun (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))))
