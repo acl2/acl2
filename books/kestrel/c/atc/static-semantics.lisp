@@ -720,7 +720,7 @@
                      :supplied (type-fix arr-type))))
        ((unless (type-integerp sub-type))
         (error (list :subscript-mistype (expr-fix sub-expr)
-                     :required (type-sint)
+                     :required :integer
                      :supplied (type-fix sub-type)))))
     (type-pointer->referenced arr-type))
   :hooks (:fix))
@@ -907,10 +907,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now, we only allow simple assignment expressions,
-     with a left-hand side consisting of a variable in scope
-     and a right-hand side consisting of a function call or pure expression.
-     The two sides must have the same type,
+    "For now, we only allow simple assignment expressions, with:")
+   (xdoc::ul
+    (xdoc::li
+     "A left-hand side consisting of
+      either a variable in scope
+      or an array subscripting expression
+      where the array is a variable in scope.")
+    (xdoc::li
+     "A right-hand side consisting of a function call or a pure expression."))
+   (xdoc::p
+    "The two sides must have the same type,
      which is more restrictive than [C:6.5.16.1].
      We do not return any type information because
      an expression statement throws away the expression's value;
@@ -922,11 +929,34 @@
        (right (expr-binary->arg2 e))
        ((unless (binop-case op :asg))
         (error (list :expr-asg-not-asg op)))
-       ((unless (expr-case left :ident))
-        (error (list :expr-asg-left-not-var left)))
-       (var (expr-ident->get left))
-       (ltype (var-table-lookup var vartab))
-       ((when (not ltype)) (error (list :expr-asg-var-not-found var)))
+       (ltype (cond ((expr-case left :ident)
+                     (b* ((var (expr-ident->get left))
+                          (ltype (var-table-lookup var vartab))
+                          ((when (not ltype))
+                           (error (list :expr-asg-var-not-found var))))
+                       ltype))
+                    ((expr-case left :arrsub)
+                     (b* ((arr (expr-arrsub->arr left))
+                          (sub (expr-arrsub->sub left))
+                          ((unless (expr-case arr :ident))
+                           (error (list :expr-asg-arrsub-not-var left)))
+                          (var (expr-ident->get arr))
+                          (arr-type (var-table-lookup var vartab))
+                          ((when (not arr-type))
+                           (error (list :expr-asg-arrsub-array-not-found left)))
+                          ((unless (type-case arr-type :pointer))
+                           (error (list :array-mistype arr
+                                        :required :pointer
+                                        :supplied arr-type)))
+                          (sub-type (check-expr-pure sub vartab))
+                          ((when (errorp sub-type)) sub-type)
+                          ((unless (type-integerp sub-type))
+                           (error (list :subscript-mistype sub
+                                        :required :integer
+                                        :supplid sub-type))))
+                       (type-pointer->referenced arr-type)))
+                    (t (error (list :expr-asg-disallowed left)))))
+       ((when (errorp ltype)) ltype)
        (rtype (check-expr-call-or-pure right funtab vartab))
        ((when (errorp rtype)) rtype)
        ((unless (equal ltype rtype))
@@ -1110,7 +1140,7 @@
                      (error (list :stmt-compound-error stype))))
                  (change-stmt-type stype :variables vartab))
      :expr (b* ((wf (check-expr-call-or-asg s.get funtab vartab))
-                ((when (not wf)) (error (list :expr-stmt-error wf))))
+                ((when (errorp wf)) (error (list :expr-stmt-error wf))))
              (make-stmt-type :return-types (set::insert (type-void) nil)
                              :variables (var-table-fix vartab)))
      :null (error :unsupported-null-stmt)
