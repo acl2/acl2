@@ -1669,6 +1669,21 @@
                       nil))))
         (t (recognize-badge-userfn-structure-op1 new-lst old-lst))))
 
+(defun get-defun-body (fn ctx wrld)
+  (declare (xargs :mode :program))
+  (let ((body (car (last (get-defun-event fn wrld)))))
+    (and body
+         (mv-let (erp tbody)
+           (translate-cmp body t nil t ctx wrld
+                          (default-state-vars nil
+                            :temp-touchable-vars t
+                            :temp-touchable-fns t))
+           (cond ((null erp) tbody)
+                 (t (er hard ctx
+                        "An attempt to translate the body of function symbol ~
+                         ~x0 failed unexpectedly."
+                        fn)))))))
+
 (defun ok-defbadge (fn wrld)
 
 ; We determine whether it is ok to call defbadge on fn.  We return (mv msg flg
@@ -1693,7 +1708,8 @@
   (let ((bdg (and (symbolp fn)
                   (get-badge fn wrld)))
         (body (and (symbolp fn)
-                   (body fn nil wrld))))
+                   (or (body fn nil wrld)
+                       (get-defun-body fn 'defbadge wrld)))))
     (cond
      (bdg (mv nil t bdg))
      ((not (and (symbolp fn)

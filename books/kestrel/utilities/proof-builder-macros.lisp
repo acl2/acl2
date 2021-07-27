@@ -321,7 +321,7 @@ Use one or more previously-proved theorems efficiently."
                 ,(vb verbose
                      `(:prove
                        :hints (("Goal"
-                                :use ,@lmi-lst
+                                :use ,lmi-lst
                                 ,@(and thy
                                        `(:in-theory ,thy)))))))))
            (instr2b (if (or (null theory)

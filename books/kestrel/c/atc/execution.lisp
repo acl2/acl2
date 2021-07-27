@@ -1187,15 +1187,20 @@
   (xdoc::topstring
    (xdoc::p
     "For now we only support casts between integer types.
-     None involving pointers."))
+     None involving pointers.")
+   (xdoc::p
+    "We reject casts to @('void'),
+     because a scalar type is required [C:6.5.4/2]."))
   (b* ((arg (value-result-fix arg))
        ((when (errorp arg)) arg)
        (type (type-name-to-type tyname))
        (err (error (list :cast-undefined :from arg :to type)))
-       (todo (error (list :cast-todo :from arg :to type))))
+       (todo (error (list :cast-todo :from arg :to type)))
+       (void (error (list :cast-void :from arg :to type))))
     (cond ((ucharp arg)
            (type-case
             type
+            :void void
             :char todo
             :uchar arg
             :schar (if (schar-from-uchar-okp arg) (schar-from-uchar arg) err)
@@ -1211,6 +1216,7 @@
           ((scharp arg)
            (type-case
             type
+            :void void
             :char todo
             :uchar (uchar-from-schar arg)
             :schar arg
@@ -1226,6 +1232,7 @@
           ((ushortp arg)
            (type-case
             type
+            :void void
             :char todo
             :uchar (uchar-from-ushort arg)
             :schar (if (schar-from-ushort-okp arg) (schar-from-ushort arg) err)
@@ -1241,6 +1248,7 @@
           ((sshortp arg)
            (type-case
             type
+            :void void
             :char todo
             :uchar (uchar-from-sshort arg)
             :schar (if (schar-from-sshort-okp arg) (schar-from-sshort arg) err)
@@ -1256,6 +1264,7 @@
           ((uintp arg)
            (type-case
             type
+            :void void
             :char todo
             :uchar (uchar-from-uint arg)
             :schar (if (schar-from-uint-okp arg) (schar-from-uint arg) err)
@@ -1271,6 +1280,7 @@
           ((sintp arg)
            (type-case
             type
+            :void void
             :char todo
             :uchar (uchar-from-sint arg)
             :schar (if (schar-from-sint-okp arg) (schar-from-sint arg) err)
@@ -1286,6 +1296,7 @@
           ((ulongp arg)
            (type-case
             type
+            :void void
             :char todo
             :uchar (uchar-from-ulong arg)
             :schar (if (schar-from-ulong-okp arg) (schar-from-ulong arg) err)
@@ -1301,6 +1312,7 @@
           ((slongp arg)
            (type-case
             type
+            :void void
             :char todo
             :uchar (uchar-from-slong arg)
             :schar (if (schar-from-slong-okp arg) (schar-from-slong arg) err)
@@ -1316,6 +1328,7 @@
           ((ullongp arg)
            (type-case
             type
+            :void void
             :char todo
             :uchar (uchar-from-ullong arg)
             :schar (if (schar-from-ullong-okp arg) (schar-from-ullong arg) err)
@@ -1331,6 +1344,7 @@
           ((sllongp arg)
            (type-case
             type
+            :void void
             :char todo
             :uchar (uchar-from-sllong arg)
             :schar (if (schar-from-sllong-okp arg) (schar-from-sllong arg) err)
@@ -1493,9 +1507,7 @@
     "We go through formal parameters and actual arguments,
      pairing them up into the scope.
      We return an error if they do not match in number or types,
-     or if there are repeated parameters.")
-   (xdoc::p
-    "For now we return an error if we encounter a pointer declarator."))
+     or if there are repeated parameters."))
   (b* ((formals (param-declon-list-fix formals))
        (actuals (value-list-fix actuals))
        ((when (endp formals))
@@ -1765,7 +1777,10 @@
       "If the block item is a declaration,
        we first execute the expression,
        then we add the variable to the top scope of the top frame.
-       The initializer value must have the same type as the variable.")
+       The initializer value must have the same type as the variable,
+       which automatically excludes the case of the variable being @('void'),
+       since @(tsee type-of-value) never returns @('void')
+       (under the guard).")
      (xdoc::p
       "If the block item is a statement,
        we execute it like any other statement."))

@@ -2739,7 +2739,8 @@
          (rest-args-1 (if (and rest-args
                                (car rest-args)
                                (not (keywordp (car rest-args))))
-                          '(:hints :none)
+                          (append '(:hints :none)
+                                  (cdr rest-args))
                         rest-args)))
      (if (not (keyword-value-listp rest-args-1))
          (pprogn (print-no-change

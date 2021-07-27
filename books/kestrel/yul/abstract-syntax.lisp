@@ -69,6 +69,14 @@
   :elementp-of-nil nil
   :pred identifier-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defset identifier-set
+  :short "Fixtype of osets of identifiers."
+  :elt-type identifier
+  :elementp-of-nil nil
+  :pred identifier-setp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod path
@@ -79,7 +87,16 @@
     "A path is a non-empty sequence of identifiers, separated by dots.
      Here we define a path as a list of identifiers,
      wrapped in a one-field product type.
-     In the future we may add an invariant that the list is not empty."))
+     In the future we may add an invariant that the list is not empty.")
+   (xdoc::p
+    "Representing paths as a wrapped list of identifiers,
+     as opposed to just a list of identifiers,
+     lets us make a finer distinction between
+     lists of identifiers representing paths (when wrapped),
+     and just lists of identifiers that may be used for other purposes.
+     In other words, the wrapping conveys that it is a path,
+     and that the identifiers in the list are separated by dots
+     (if written in concrete syntax)."))
   ((get identifier-list))
   :tag :path
   :pred pathp)
