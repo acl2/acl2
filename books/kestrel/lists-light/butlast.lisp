@@ -40,3 +40,8 @@
          (butlast (cdr lst) n))
   :hints (("Goal" :expand (len (cdr lst))
            :in-theory (enable butlast))))
+
+(defthm butlast-of-nil
+  (equal (butlast nil n)
+         nil)
+  :hints (("Goal" :in-theory (enable butlast))))
