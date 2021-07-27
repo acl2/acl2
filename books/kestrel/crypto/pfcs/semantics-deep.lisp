@@ -119,7 +119,7 @@
   (b* ((asg (assignment-fix asg)))
     (or (omap::empty asg)
         (b* (((mv & nat) (omap::head asg)))
-          (and (pfield::fep nat p)
+          (and (fep nat p)
                (assignment-for-prime-p (omap::tail asg) p)))))
   :hooks (:fix)
   ///
@@ -128,8 +128,30 @@
     (implies (and (assignmentp asg)
                   (assignment-for-prime-p asg p)
                   (consp (omap::in var asg)))
-             (pfield::fep (cdr (omap::in var asg)) p))
-    :enable (assignment-for-prime-p)))
+             (fep (cdr (omap::in var asg)) p)))
+
+  (defrule assignment-for-prime-p-of-tail
+    (implies (and (assignmentp asg)
+                  (assignment-for-prime-p asg p))
+             (assignment-for-prime-p (omap::tail asg) p)))
+
+  (defrule assignment-for-prime-p-of-nil
+    (assignment-for-prime-p nil p))
+
+  (defrule assignment-for-prime-p-of-update
+    (implies (and (assignmentp asg)
+                  (assignment-for-prime-p asg p)
+                  (fep nat p))
+             (assignment-for-prime-p (omap::update var nat asg) p))
+    :enable omap::update
+    :prep-lemmas
+    ((defrule lemma
+       (implies (and (fep (cdr pair) p)
+                     (assignment-for-prime-p asg p))
+                (assignment-for-prime-p (cons pair asg) p))
+       :enable (omap::head
+                omap::tail)
+       :expand ((assignment-for-prime-p (cons pair asg) p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -185,7 +207,7 @@
                   (assignmentp asg)
                   (assignment-for-prime-p asg p)
                   (eval-expr asg expr p))
-             (pfield::fep (eval-expr asg expr p) p))
+             (fep (eval-expr asg expr p) p))
     :enable fep-of-cdr-of-in-when-assignment-for-prime-p)
 
   (verify-guards eval-expr))
@@ -236,24 +258,12 @@
      They are essentially logical formulas,
      asserting that the mathematical semantic function
      returns the boolean `true' on given inputs.
-     There are four kinds of assertions define here:")
+     There are two kinds of assertions define here:")
    (xdoc::ul
     (xdoc::li
-     "Assertions saying that an assignment makes two expressions equal.
-      This is for equality constraints.")
+     "Assertions saying that an assignment makes a constraint true.")
     (xdoc::li
-     "Assertions saying that an assignment makes a named relation
-      true on given expressions.
-      This is for constraints that are
-      applications of relations to expressions.")
-    (xdoc::li
-     "Assertions saying that an assignment makes a constraint true.
-      This reduces to the two kinds of assertions above, as defined later,
-      but it is needed to treat the two kinds of constraint uniformly.")
-    (xdoc::li
-     "Assertions saying that an assignment makes a list of constraints true.
-      This is where we need, as mentioned above,
-      the uniform treatment of the two kinds of constraints."))
+     "Assertions saying that an assignment makes a list of constraints true."))
    (xdoc::p
     "The components of the assertions defined here
      correspond to the inputs of the mathematical semantic function
@@ -264,12 +274,6 @@
      and so it is provided externally;
      see the definition of the semantic function
      in terms of the proof system."))
-  (:equal ((asg assignment)
-           (left expression)
-           (right expression)))
-  (:relation ((asg assignment)
-              (name symbol)
-              (args expression-list)))
   (:constraint ((asg assignment)
                 (constr constraint)))
   (:constraints ((asg assignment)
@@ -278,65 +282,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum proof-tree
-  :short "Fixtype of semantic proof trees."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Besides assertions (defined in @(tsee assertion)),
-     the proof system includes proofs, more precisely proof trees.
-     These are structures that, when properly formed,
-     provide a proof of an assertion.
-     Here we only define the structure of the proof trees;
-     how they prove an assertion is defined later.")
-   (xdoc::p
-    "A proof tree must have enough information that
-     it is easy to check whether it proves an assertion or not.
-     We have five kinds of proof trees,
-     corresponding to the four kinds of assertions as follows:")
-   (xdoc::ul
-    (xdoc::li
-     "Proof trees that prove equality assertions.
-      These are isomorphic to equality assertions,
-      since it is easy to check whether an assignment
-      makes two expressions the same.
-      This kind of proof tree has no subtrees;
-      it is found at the leaves of larger proof trees.")
-    (xdoc::li
-     "Proof trees that prove relation application assertions.
-      These consist of the same components of the assertion,
-      plus a subtree that must prove the satisfaction of
-      the constraints in the body that defines the relation,
-      for some assignment that extends the one that assigns
-      the values of the expressions to the formal parameters.
-      This is formalized later; the above is just a sketch.")
-    (xdoc::li
-     "Proof trees that prove single constraints.
-      These have a single proof tree that depends on the kind of constraint.
-      Similarly to the third kind of assertions,
-      this third kind of proof trees
-      serves to treat proof trees for single constraints uniformly.")
-    (xdoc::li
-     "Proof trees that prove the empty list of constraints.
-      These include assignments so that they can be composed
-      with proof trees for non-empty lists of constraints.")
-    (xdoc::li
-     "Proof trees that prove a non-empty list of constraints.
-      These have two subtrees,
-      one for the first (single) constraint,
-      and one for (the list of) remaining constraints.")))
-  (:equal ((asg assignment)
-           (left expression)
-           (right expression)))
-  (:relation ((asg assignment)
-              (name symbol)
-              (args expression-list)
-              (sub proof-tree)))
-  (:constraint ((sub proof-tree)))
-  (:constraints-nil ((asg assignment)))
-  (:constraints-cons ((first proof-tree)
-                      (rest proof-tree)))
-  :pred proof-treep)
+(fty::deftypes proof-trees
+
+  (fty::deftagsum proof-tree
+    :short "Fixtype of semantic proof trees."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Besides assertions (defined in @(tsee assertion)),
+       the proof system includes proofs, more precisely proof trees.
+       These are structures that, when properly formed,
+       provide proofs of assertions.
+       Here we only define the structure of the proof trees;
+       how they prove assertions is defined later.")
+     (xdoc::p
+      "A proof tree must have enough information that
+       it is easy to check whether it proves an assertion or not.
+       We have three kinds of proof trees:")
+     (xdoc::ul
+      (xdoc::li
+       "Proof trees that prove equality constraint assertions.
+        This kind of proof tree has no subtrees;
+        it is found at the leaves of larger proof trees.")
+      (xdoc::li
+       "Proof trees that prove relation application assertions.
+        These include a subtree that must prove the satisfaction of
+        the constraints in the body that defines the relation,
+        for some assignment that extends the one that assigns
+        the values of the expressions to the formal parameters.
+        This is formalized later; the one just given is only a sketch.")
+      (xdoc::li
+       "Proof trees that prove lists of constraints.
+        These consists of a list of subtrees,
+        one for each constraint in the list,
+        in the same order,
+        as formalized later.")))
+    (:equal ((asg assignment)
+             (left expression)
+             (right expression)))
+    (:relation ((asg assignment)
+                (name symbol)
+                (args expression-list)
+                (sub proof-tree)))
+    (:constraints ((sub proof-tree-list)))
+    :pred proof-treep)
+
+  (fty::deflist proof-tree-list
+    :short "Fixtype of lists of semantics proof trees."
+    :elt-type proof-tree
+    :true-listp t
+    :elementp-of-nil nil
+    :pred proof-tree-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -362,13 +358,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-proof-tree ((ptree proof-treep) (sys systemp) (p rtl::primep))
-  :returns (outcome proof-outcomep)
+(defines exec-proof-tree
   :short "Execute a proof tree."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Executing a proof tree means checking if provides a valid proof
+    "Executing a proof tree means checking if it provides a valid proof,
      and in that case computing the assertion it proves.
      If the proof is invalid, a failure indication is returned
      (this could be extended to include more information in the future).
@@ -410,118 +405,104 @@
      discussed in @(see semantics-deeply-embedded),
      in some sense.")
    (xdoc::p
-    "To execute a proof tree for a constraint,
-     we execute the subtree,
-     propagating errors and failures.
-     In case of success, we wrap the resulting
-     equality or relation application assertion
-     into a constraint assertion.")
-   (xdoc::p
-    "To execute a proof tree for the empty list of constraints,
-     we produce a successful outcome with the empty list of constraints.")
-   (xdoc::p
-    "To execute a proof tree for a non-empty list of constraints,
-     we first execute the two subtrees, propagating errors and failures.
-     Then we check that
-     the first one proves a single constraint,
-     the second one proves a list of constraints,
-     they both prove the same assignment,
-     and we produce an assertion with that assignment
-     and with the list of all the constraints."))
-  (proof-tree-case
-   ptree
-   :equal
-   (b* (((unless (assignment-for-prime-p ptree.asg p))
-         (proof-outcome-error))
-        (left (eval-expr ptree.asg ptree.left p))
-        ((unless left) (proof-outcome-error))
-        (right (eval-expr ptree.asg ptree.right p))
-        ((unless right) (proof-outcome-error)))
-     (if (equal left right)
-         (proof-outcome-assertion
-          (make-assertion-equal :asg ptree.asg
-                                :left ptree.left
-                                :right ptree.right))
-       (proof-outcome-fail)))
-   :relation
-   (b* (((unless (assignment-for-prime-p ptree.asg p))
-         (proof-outcome-error))
-        ((mv okp vals) (eval-expr-list ptree.asg ptree.args p))
-        ((unless okp) (proof-outcome-error))
-        (def (lookup-definition ptree.name sys))
-        ((unless def) (proof-outcome-error))
-        ((definition def) def)
-        ((unless (= (len def.para) (len vals)))
-         (proof-outcome-error))
-        (asg-para-vals (omap::from-lists def.para vals))
-        (outcome (exec-proof-tree ptree.sub sys p)))
-     (proof-outcome-case
-      outcome
-      :error (proof-outcome-error)
-      :fail (proof-outcome-fail)
-      :assertion
-      (assertion-case
-       outcome.get
-       :equal (proof-outcome-fail)
-       :relation (proof-outcome-fail)
-       :constraint (proof-outcome-fail)
-       :constraints
-       (if (and (omap::submap asg-para-vals outcome.get.asg)
-                (equal def.body outcome.get.constrs))
+    "To execute a proof tree for a list of constraints,
+     we execute all the subtrees, propagating errors and failures.
+     If they all succeed, all with the same assignment,
+     the outcome is an assertion consisting of
+     the constraints proved by the subtrees."))
+
+  (define exec-proof-tree ((ptree proof-treep) (sys systemp) (p rtl::primep))
+    :returns (outcome proof-outcomep)
+    (proof-tree-case
+     ptree
+     :equal
+     (b* (((unless (assignment-for-prime-p ptree.asg p))
+           (proof-outcome-error))
+          (left (eval-expr ptree.asg ptree.left p))
+          ((unless left) (proof-outcome-error))
+          (right (eval-expr ptree.asg ptree.right p))
+          ((unless right) (proof-outcome-error)))
+       (if (equal left right)
            (proof-outcome-assertion
-            (make-assertion-relation :asg ptree.asg
-                                     :name ptree.name
-                                     :args ptree.args))
-         (proof-outcome-fail)))))
-   :constraint
-   (b* ((outcome (exec-proof-tree ptree.sub sys p)))
-     (proof-outcome-case
-      outcome
-      :error (proof-outcome-error)
-      :fail (proof-outcome-fail)
-      :assertion
-      (assertion-case
-       outcome.get
-       :equal (proof-outcome-assertion
-               (make-assertion-constraint
-                :asg outcome.get.asg
-                :constr (make-constraint-equal
-                         :left outcome.get.left
-                         :right outcome.get.right)))
-       :relation (proof-outcome-assertion
-                  (make-assertion-constraint
-                   :asg outcome.get.asg
-                   :constr (make-constraint-relation
-                            :name outcome.get.name
-                            :args outcome.get.args)))
-       :constraint (proof-outcome-fail)
-       :constraints (proof-outcome-fail))))
-   :constraints-nil
-   (proof-outcome-assertion
-    (make-assertion-constraints :asg ptree.asg
-                                :constrs nil))
-   :constraints-cons
-   (b* ((outcome1 (exec-proof-tree ptree.first sys p))
-        ((when (proof-outcome-case outcome1 :error)) (proof-outcome-error))
-        ((when (proof-outcome-case outcome1 :fail)) (proof-outcome-fail))
-        (outcome2 (exec-proof-tree ptree.rest sys p))
-        ((when (proof-outcome-case outcome2 :error)) (proof-outcome-error))
-        ((when (proof-outcome-case outcome2 :fail)) (proof-outcome-fail))
-        (asr1 (proof-outcome-assertion->get outcome1))
-        (asr2 (proof-outcome-assertion->get outcome2))
-        ((unless (assertion-case asr1 :constraint)) (proof-outcome-fail))
-        ((unless (assertion-case asr2 :constraints)) (proof-outcome-fail))
-        (asg1 (assertion-constraint->asg asr1))
-        (asg2 (assertion-constraints->asg asr2))
-        ((unless (equal asg1 asg2)) (proof-outcome-fail))
-        (constr (assertion-constraint->constr asr1))
-        (constrs (assertion-constraints->constrs asr2)))
-     (proof-outcome-assertion
-      (make-assertion-constraints :asg asg1
-                                  :constrs (cons constr constrs)))))
-  :measure (proof-tree-count ptree)
-  :verify-guards :after-returns
-  :hooks (:fix))
+            (make-assertion-constraint
+             :asg ptree.asg
+             :constr (make-constraint-equal :left ptree.left
+                                            :right ptree.right)))
+         (proof-outcome-fail)))
+     :relation
+     (b* (((unless (assignment-for-prime-p ptree.asg p))
+           (proof-outcome-error))
+          ((mv okp vals) (eval-expr-list ptree.asg ptree.args p))
+          ((unless okp) (proof-outcome-error))
+          (def (lookup-definition ptree.name sys))
+          ((unless def) (proof-outcome-error))
+          ((definition def) def)
+          ((unless (= (len def.para) (len vals)))
+           (proof-outcome-error))
+          (asg-para-vals (omap::from-lists def.para vals))
+          (outcome (exec-proof-tree ptree.sub sys p)))
+       (proof-outcome-case
+        outcome
+        :error (proof-outcome-error)
+        :fail (proof-outcome-fail)
+        :assertion
+        (assertion-case
+         outcome.get
+         :constraint (proof-outcome-fail)
+         :constraints
+         (if (and (omap::submap asg-para-vals outcome.get.asg)
+                  (equal def.body outcome.get.constrs))
+             (proof-outcome-assertion
+              (make-assertion-constraint
+               :asg ptree.asg
+               :constr (make-constraint-relation :name ptree.name
+                                                 :args ptree.args)))
+           (proof-outcome-fail)))))
+     :constraints
+     (exec-proof-tree-list ptree.sub sys p))
+    :measure (proof-tree-count ptree))
+
+  (define exec-proof-tree-list ((ptrees proof-tree-listp)
+                                (sys systemp)
+                                (p rtl::primep))
+    :returns (outcome proof-outcomep)
+    (b* (((when (endp ptrees))
+          (proof-outcome-assertion
+           (make-assertion-constraints :asg nil :constrs nil)))
+         (outcome (exec-proof-tree (car ptrees) sys p)))
+      (proof-outcome-case
+       outcome
+       :error (proof-outcome-error)
+       :fail (proof-outcome-fail)
+       :assertion
+       (assertion-case
+        outcome.get
+        :constraints (proof-outcome-fail)
+        :constraint
+        (b* ((outcome1 (exec-proof-tree-list (cdr ptrees) sys p)))
+          (proof-outcome-case
+           outcome1
+           :error (proof-outcome-error)
+           :fail (proof-outcome-fail)
+           :assertion
+           (assertion-case
+            outcome1.get
+            :constraint (proof-outcome-fail)
+            :constraints
+            (if (equal outcome.get.asg outcome1.get.asg)
+                (proof-outcome-assertion
+                 (make-assertion-constraints
+                  :asg outcome.get.asg
+                  :constrs (cons outcome.get.constr
+                                 outcome1.get.constrs)))
+              (proof-outcome-fail))))))))
+    :measure (proof-tree-list-count ptrees))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards exec-proof-tree)
+
+  (fty::deffixequiv-mutual exec-proof-tree))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

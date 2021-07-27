@@ -56,7 +56,7 @@
     "We provide
      a wrapper to indicate a declaration,
      a wrapper to indicate an assignment,
-     and no wrapper to indicate a transformation via staetements.
+     and no wrapper to indicate a transformation via statements.
      The no-wrapper indication for the latter case matches @(tsee mv-let),
      which also transforms variables via statements and also has no wrappers.")
    (xdoc::p

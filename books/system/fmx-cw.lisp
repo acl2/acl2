@@ -184,3 +184,35 @@
 (local (defun test2 (x)
          (declare (xargs :guard t))
          (fmx!-cw "~@0" (msg "Hello~|~x0~|" x))))
+
+; Start guard verification for print-control-p.  At one time this was necessary
+; for admitting ACL2 source function print-object$-fn as a guard-verified
+; logic-mode function, but it isn't now (see a comment about this in the :guard
+; of that function's definition).  But we ight as well keep the events below.
+
+(local
+ (defthm search-from-start-type-prescription
+   (implies (natp start2)
+            (or (equal (search-from-start s1 s2 start2 end2)
+                       nil)
+                (natp (search-from-start s1 s2 start2 end2))))
+   :rule-classes :type-prescription))
+
+(local
+ (defthm search-from-start-lower-bound
+   (implies (search-from-start s1 s2 start2 end2)
+            (<= start2
+                (search-from-start s1 s2 start2 end2)))
+   :rule-classes :linear))
+
+(local
+ (defthm search-from-start-upper-bound
+   (implies (and (< start2 end2)
+                 (search-from-start s1 s2 start2 end2))
+            (< (search-from-start s1 s2 start2 end2)
+               end2))
+   :rule-classes :linear))
+
+(verify-termination comment-string-p1) ; and guards
+(verify-termination comment-string-p) ; and guards
+(verify-termination print-control-p) ; and guards

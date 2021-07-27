@@ -721,7 +721,7 @@
     acl2::open-output-channel-p1
     acl2::princ$
     acl2::write-byte$
-    acl2::print-object$-ser ; Matt K. change shortly after v4-3
+    acl2::print-object$-fn ; Matt K. change shortly after v4-3 and again 7/2021
     acl2::open-input-channel
     acl2::close-input-channel
     acl2::open-output-channel

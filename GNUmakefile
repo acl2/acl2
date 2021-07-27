@@ -518,7 +518,7 @@ init: acl2-proclaims.lisp
 	rm -f ${PREFIXosaved_acl2}
 	echo '(load "init.lisp")' > workxxx
 	echo '(in-package "ACL2")' >> workxxx
-	echo '(save-acl2 (quote (initialize-acl2 (quote include-book) acl2::*acl2-pass-2-files*)) "${PREFIXsaved_acl2}")' >> workxxx
+	echo '(save-acl2 (quote (initialize-acl2 (quote include-book))) "${PREFIXsaved_acl2}")' >> workxxx
 	echo '(exit-lisp)' >> workxxx
 	${LISP} < workxxx
 	@$(MAKE) check_init_ok
@@ -552,7 +552,7 @@ proofs: compile-ok
 	rm -f workxxx
 	echo '(load "init.lisp")' > workxxx
 	echo '(acl2::load-acl2 :load-acl2-proclaims nil)' >> workxxx
-	echo '(acl2::initialize-acl2 nil acl2::*acl2-pass-2-files*)' >> workxxx
+	echo '(acl2::initialize-acl2 nil)' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
 	${LISP} < workxxx
 	@$(MAKE) check_init_ok
