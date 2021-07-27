@@ -1407,6 +1407,7 @@
      type specifier sequences for types.
      This ACL2 function does that."))
   (type-case type
+             :void (tyspecseq-void)
              :char (tyspecseq-char)
              :schar (tyspecseq-schar)
              :sshort (tyspecseq-sshort)
