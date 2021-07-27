@@ -346,9 +346,11 @@
      This fixtype captures (some of) these sequences.")
    (xdoc::p
     "For now we only capture type specifier sequences for
-     the plain @('char') type and
+     the @('void') type,
+     the plain @('char') type, and
      the standard signed and unsigned integer types (except @('_Bool')).
      We only capture one sequence for each, implicitly."))
+  (:void ())
   (:char ())
   (:schar ())
   (:sshort ())
@@ -562,7 +564,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Declarations are perhaps the more complex part of the C syntax.
+    "Declarations are perhaps the most complex part of the C syntax.
      For now we capture only a very limited form of declarations,
      namely the ones consisting of
      a type specifier sequence from @(tsee tyspecseq),
