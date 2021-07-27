@@ -843,6 +843,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-expr-call ((fun identp)
+                         (args expr-listp)
+                         (funtab fun-tablep)
+                         (vartab var-tablep))
+  :returns (type type-resultp)
+  :short "Check an expression that is a function call."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called after checking that the expression is a function call,
+     and thus passing its component (name and arguments) here.")
+   (xdoc::p
+    "We check the argument expressions,
+     which must be pure (because we restrict them to be so).
+     We retrieve the function type from the function table
+     and we compare the input types with the argument types;
+     this is more restrictive than allowed in [C],
+     but it is adequate for now.
+     We return the output type."))
+  (b* ((fun (ident-fix fun))
+       (args (expr-list-fix args))
+       (types (check-expr-pure-list args vartab))
+       ((when (errorp types))
+        (error (list :call-args-error fun args types)))
+       (ftype (fun-table-lookup fun funtab))
+       ((unless ftype) (error (list :fun-not-found fun)))
+       ((unless (equal (fun-type->inputs ftype) types))
+        (error (list :call-args-mistype fun args
+                     :required (fun-type->inputs ftype)
+                     :supplied types))))
+    (fun-type->output ftype))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-expr-call-or-pure ((e exprp)
                                  (funtab fun-tablep)
                                  (vartab var-tablep))
@@ -852,31 +887,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the expression is a function call,
-     we check the argument expressions,
-     which must be pure (because we restrict them to be so).
-     We retrieve the function type from the function table
-     and we compare the input types with the argument types;
-     this is more restrictive than allowed in [C],
-     but it is adequate for now.
-     We return the output type.")
+    "If the expression is a function call, we check it as such.")
    (xdoc::p
     "If the expression is not a function call,
      it must be a pure expression,
      which we resort to check it as such."))
   (if (expr-case e :call)
-      (b* ((e.args (expr-call->args e))
-           (e.fun (expr-call->fun e))
-           (types (check-expr-pure-list e.args vartab))
-           ((when (errorp types))
-            (error (list :call-args-error e.fun e.args types)))
-           (ftype (fun-table-lookup e.fun funtab))
-           ((unless ftype) (error (list :fun-not-found e.fun)))
-           ((unless (equal (fun-type->inputs ftype) types))
-            (error (list :call-args-mistype e.fun e.args
-                         :required (fun-type->inputs ftype)
-                         :supplied types))))
-        (fun-type->output ftype))
+      (check-expr-call (expr-call->fun e) (expr-call->args e) funtab vartab)
     (check-expr-pure e vartab))
   :hooks (:fix))
 
@@ -890,9 +907,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used for the expression of an expression statement.
-     For now, we only allow simple assignment expressions
-     as expressions of expression statements,
+    "For now, we only allow simple assignment expressions,
      with a left-hand side consisting of a variable in scope
      and a right-hand side consisting of a function call or pure expression.
      The two sides must have the same type,
@@ -919,6 +934,36 @@
                      :required ltype
                      :supplied rtype))))
     :wellformed)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-expr-call-or-asg ((e exprp)
+                                (funtab fun-tablep)
+                                (vartab var-tablep))
+  :returns (wf? wellformed-resultp)
+  :short "Check an expression that must be a function call or an assignment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the expression is a function call, we check it as such.")
+   (xdoc::p
+    "If the expression is not a function call,
+     it must be an assignment expression,
+     which we resort to check it as such.")
+   (xdoc::p
+    "Even if the expression is a function call, we retun no type here.
+     This is because this ACL2 function is used
+     when checking expression statements,
+     whose value (if any) is discarded."))
+  (if (expr-case e :call)
+      (b* ((type (check-expr-call (expr-call->fun e)
+                                  (expr-call->args e)
+                                  funtab
+                                  vartab))
+           ((when (errorp type)) type))
+        :wellformed)
+    (check-expr-asg e funtab vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -996,7 +1041,11 @@
      In fact, a compound statement does not update the variable table:
      we return the original variable table.")
    (xdoc::p
-    "As expression statements, we only allow simple assignments to variables.")
+    "As expression statements, we only allow
+     function calls and simple assignments to variables,
+     where the assigned expression must be a function call or pure.
+     We only allow function calls with pure arguments
+     (see @(tsee check-expr-call)).")
    (xdoc::p
     "For a conditional statement with both branches,
      after ensuring that the test expression has scalar type,
@@ -1060,8 +1109,8 @@
                     ((when (errorp stype))
                      (error (list :stmt-compound-error stype))))
                  (change-stmt-type stype :variables vartab))
-     :expr (b* ((wf (check-expr-asg s.get funtab vartab))
-                ((when (not wf)) wf))
+     :expr (b* ((wf (check-expr-call-or-asg s.get funtab vartab))
+                ((when (not wf)) (error (list :expr-stmt-error wf))))
              (make-stmt-type :return-types (set::insert (type-void) nil)
                              :variables (var-table-fix vartab)))
      :null (error :unsupported-null-stmt)
