@@ -34,7 +34,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define identifier-wfp ((iden identifierp))
+(define check-identifier ((iden identifierp))
   :returns (yes/no booleanp)
   :short "Check if an identifier is well-formed."
   :long
@@ -57,14 +57,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist identifier-list-wfp (x)
+(std::deflist check-identifier-list (x)
   :guard (identifier-listp x)
   :short "Check if all the identifiers in a list are well-formed."
-  (identifier-wfp x))
+  (check-identifier x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define path-wfp ((path pathp))
+(define check-path ((path pathp))
   :returns (yes/no booleanp)
   :short "Check if a path is well-formed."
   :long
@@ -77,12 +77,12 @@
      but for now we state it as part of the static semantics."))
   (b* ((idens (path->get path)))
     (and (consp idens)
-         (identifier-list-wfp idens)))
+         (check-identifier-list idens)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define literal-wfp ((lit literalp))
+(define check-literal ((lit literalp))
   :returns (yes/no booleanp)
   :short "Check if a literal is well-formed."
   :long
@@ -119,4 +119,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: add symbol tables and define wfp of expressions, statements, etc.
+; TODO: add symbol tables and define check-expressions, check-statements, etc.
