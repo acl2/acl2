@@ -602,6 +602,8 @@ kinds of @('list_of_arguments').</p>")
          (when (vl-is-token? :vl-kwd-virtual)
            ;; data_type ::= ... | virtual [ interface ] interface_identifier [ parameter_value_assignment ] [ . modport_identifier ]
            ;; (return-raw (vl-parse-error "virtual interfaces are not yet implemented."))
+           (when t
+             (return-raw (vl-parse-error "Virtual interface datatypes are not supported")))
            (:= (vl-match))
            (id  := (vl-match-token :vl-idtoken))
            (when (vl-is-token? :vl-pound)
