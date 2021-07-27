@@ -47,7 +47,7 @@
 
 (include-book "std/io/read-file-lines-no-newlines" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
-(include-book "kestrel/utilities/strings" :dir :system)
+(include-book "strings")
 
 (verify-termination cbd-fn) ;todo: move
 

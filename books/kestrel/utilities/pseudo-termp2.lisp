@@ -13,7 +13,7 @@
 
 ;; This book includes rules that mix pseudo-termp with non-built-in functions.
 
-(include-book "kestrel/utilities/polarity" :dir :system)
+(include-book "polarity")
 
 (defthm pseudo-termp-strengthen-when-not-consp-cheap
   (implies (and (syntaxp (want-to-strengthen (pseudo-termp term)))
