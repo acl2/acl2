@@ -38,7 +38,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only model the plain @('char') type and
+    "For now we only model
+     the @('void') type,
+     the plain @('char') type, and
      the standard signed and unsigned integer types (except @('_Bool'),
      as well as pointer types.
      The referenced type of a pointer type may be any type (that we model),
@@ -49,6 +51,7 @@
      than its syntactic counterpart @(tsee tyname):
      the latter only allows one level of pointers currently.
      In any case, initially we make a limited use of pointer types."))
+  (:void ())
   (:char ())
   (:schar ())
   (:sshort ())
@@ -187,6 +190,7 @@
      This ACL2 function returns the denoted type."))
   (b* ((tyspecseq (tyname->specs tyname))
        (type (tyspecseq-case tyspecseq
+                             :void (type-void)
                              :char (type-char)
                              :schar (type-schar)
                              :sshort (type-sshort)
