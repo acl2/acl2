@@ -19,12 +19,15 @@
                               (symbolp new-fn))))
   (pack$ old-fn '-becomes- new-fn))
 
+;; Makes a theorem equating an arbitrary call of FN with a call of NEW-FN on the same arguments.
 ;; REC is either nil (function is non-recursive), :single, or :mutual.
 ;; TODO: Improve this to use the $not-normalized rules if indicated for fn and/or new-fn (add options for this)
-(defun make-equivalent-function-defthm (fn new-fn rec
-                                           thm-enable ;whether the theorem should be enabled
-                                           enables ;drop?
-                                           state)
+(defun make-equivalent-function-defthm (fn
+                                        new-fn
+                                        rec
+                                        thm-enable ;whether the theorem should be enabled
+                                        enables ;drop?
+                                        state)
   (declare (xargs :stobjs state
                   :guard (and (symbolp fn)
                               (symbolp new-fn)
