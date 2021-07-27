@@ -934,18 +934,14 @@
      The information consists of:")
    (xdoc::ul
     (xdoc::li
-     "A non-empty set of optional types that describe
+     "A non-empty set of types that describes
       the possible values returned by the statement.
       These are determined by the @('return') statements;
       in the presence of conditionals,
       the possible types in the two branches are merged (i.e. unioned).
-      The non-type @('nil') is used to describe statements
+      The type @('void') is used to describe statements
       that do not return a value,
-      but instead transfer control to the next statement (if any).
-      We plan to use @('void') instead of @('nil') soon
-      (we have just added @('void') to our model of "
-     (xdoc::seetopic "atc-types" "types")
-     ".")
+      but instead transfer control to the next statement (if any).")
     (xdoc::li
      "A possibly updated variable table.
       This is updated by block items that are declarations.
@@ -955,9 +951,9 @@
       could just return a set of optional types (see above).
       However, for uniformity we have all three functions
       return also a possibly updated variable table.")))
-  ((return-types type-option-set :reqfix (if (set::empty return-types)
-                                             (set::insert nil nil)
-                                           return-types))
+  ((return-types type-set :reqfix (if (set::empty return-types)
+                                      (set::insert (type-void) nil)
+                                    return-types))
    (variables var-table))
   :require (not (set::empty return-types))
   :pred stmt-typep)
@@ -1014,8 +1010,8 @@
     "For a @('while') statement,
      we ensure that the test has a scalar type,
      and we check the body.
-     We put together @('nil') and the return types from the body:
-     the @('nil') accounts for the case in which
+     We put together @('void') and the return types from the body:
+     the @('void') accounts for the case in which
      the body is never executed (i.e. the test is initially false).
      We return the initial variable table, unchanged;
      any change in the body is local to the body.")
@@ -1031,7 +1027,7 @@
      We also ensure that the initializer has the same type as the variable
      (which is more restrictive than [C:6.7.9]),
      and we extend and return the variable table with the variable.
-     We return the singleton set with @('nil'),
+     We return the singleton set with @('void'),
      because a declaration never returns a value
      and proceeds with the next block item;
      note that we do not return the empty set of return types.")
@@ -1039,20 +1035,20 @@
     "For a block item that is a statement, we check the statement.")
    (xdoc::p
     "If a list of block items is empty, we return
-     the singleton set with @('nil')
+     the singleton set with @('void')
      (because execution then continues after the block)
      and the variable table unchanged.
      If the list is not empty, we check the first item.
-     If @('nil') is not among the return types,
+     If @('void') is not among the return types,
      it means that the rest of the block is dead code:
      execution never proceeds past the first block item;
      thus, we do not even check the rest of the block
      and we return the result of checking the first block item
      as the result of checking the whole block.
-     If @('nil') is among the return types of the first block item,
+     If @('void') is among the return types of the first block item,
      we check the rest of the block,
      and we combine (i.e. take the union of) all the return types,
-     after removing @('nil') from the types of the first block item."))
+     after removing @('void') from the types of the first block item."))
 
   (define check-stmt ((s stmtp) (funtab fun-tablep) (vartab var-tablep))
     :returns (stype stmt-type-resultp)
@@ -1066,7 +1062,7 @@
                  (change-stmt-type stype :variables vartab))
      :expr (b* ((wf (check-expr-asg s.get funtab vartab))
                 ((when (not wf)) wf))
-             (make-stmt-type :return-types (set::insert nil nil)
+             (make-stmt-type :return-types (set::insert (type-void) nil)
                              :variables (var-table-fix vartab)))
      :null (error :unsupported-null-stmt)
      :if (b* ((type (check-expr-pure s.test vartab))
@@ -1080,7 +1076,7 @@
                (error (list :if-then-error stype-then))))
            (make-stmt-type
             :return-types (set::union (stmt-type->return-types stype-then)
-                                      (set::insert nil nil))
+                                      (set::insert (type-void) nil))
             :variables vartab))
      :ifelse (b* ((type (check-expr-pure s.test vartab))
                   ((when (errorp type)) (error (list :if-test-error type)))
@@ -1100,7 +1096,7 @@
                 :variables vartab))
      :switch (error (list :unsupported-switch s.ctrl s.body))
      :while (b* ((type (check-expr-pure s.test vartab))
-                 ((when (errorp type)) (error (list :if-test-error type)))
+                 ((when (errorp type)) (error (list :while-test-error type)))
                  ((unless (type-scalarp type))
                   (error (list :while-test-mistype s.test s.body
                                :required :scalar
@@ -1109,7 +1105,7 @@
                  ((when (errorp stype-body))
                   (error (list :while-error stype-body))))
               (make-stmt-type
-               :return-types (set::insert nil
+               :return-types (set::insert (type-void)
                                           (stmt-type->return-types stype-body))
                :variables vartab))
      :dowhile (error (list :unsupported-dowhile s.body s.test))
@@ -1149,7 +1145,7 @@
                            :supplied init-type)))
                   (vartab (var-table-add-var var type vartab))
                   ((when (errorp vartab)) (error (list :declon-error vartab))))
-               (make-stmt-type :return-types (set::insert nil nil)
+               (make-stmt-type :return-types (set::insert (type-void) nil)
                                :variables vartab))
      :stmt (check-stmt item.get funtab vartab))
     :measure (block-item-count item))
@@ -1159,12 +1155,12 @@
                                  (vartab var-tablep))
     :returns (stype stmt-type-resultp)
     (b* (((when (endp items))
-          (make-stmt-type :return-types (set::insert nil nil)
+          (make-stmt-type :return-types (set::insert (type-void) nil)
                           :variables vartab))
          (stype (check-block-item (car items) funtab vartab))
          ((when (errorp stype)) (error (list :block-item-error stype)))
-         ((unless (set::in nil (stmt-type->return-types stype))) stype)
-         (rtypes1 (set::delete nil (stmt-type->return-types stype)))
+         ((unless (set::in (type-void) (stmt-type->return-types stype))) stype)
+         (rtypes1 (set::delete (type-void) (stmt-type->return-types stype)))
          (vartab (stmt-type->variables stype))
          (stype (check-block-item-list (cdr items) funtab vartab))
          ((when (errorp stype)) (error (list :block-item-list-error stype)))
