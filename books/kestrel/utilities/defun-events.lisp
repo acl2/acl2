@@ -14,12 +14,7 @@
 
 (include-book "declares0")
 (local (include-book "kestrel/lists-light/len" :dir :system))
-
-;move
-(defthm butlast-of-nil
-  (equal (butlast nil n)
-         nil)
-  :hints (("Goal" :in-theory (enable butlast))))
+(local (include-book "kestrel/lists-light/butlast" :dir :system))
 
 ;; (defthm symbol-listp-of-butlast
 ;;   (implies (and (SYMBOL-LISTP X)
@@ -39,7 +34,8 @@
        (member-eq (first defun) *defun-types*) ;TODO: Handle defun-inline, etc.?  define (maybe not)  Handle anything we might call fixup-defun on...
        (symbolp (second defun))     ;the function name
        (symbol-listp (third defun)) ;the formals
-       ;; what to say about the body?  may contain macros?
+       ;; not much to say about the body, since it is an untranslated term
+       ;; todo: should we allow a doc-string before the declares?
        (all-declarep (butlast (cdr (cdr (cdr defun))) 1)) ;skip the defun, name, formals, and body.
        ))
 

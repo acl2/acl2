@@ -581,7 +581,8 @@
 
 ;; Print theorems with CW (with hints elided)
 (defun cw-theorems (thms)
-  (declare (xargs :guard (defthm-form-listp thms)))
+  (declare (xargs :guard (defthm-form-listp thms)
+                  :guard-hints (("Goal" :in-theory (enable defthm-form-listp)))))
   (if (endp thms)
       nil
     (let* ((thm (first thms))
