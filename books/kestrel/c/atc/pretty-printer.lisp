@@ -270,8 +270,9 @@
    "As noted in @(tsee tyspecseq),
     for now we only capture one sequence for each type,
     so we need to pick what to print here.
-    We pick the minimal choice for each type.")
+    We pick the shortest (or only) choice for each type.")
   (tyspecseq-case tss
+                  :void "void"
                   :char "char"
                   :schar "signed char"
                   :sshort "short"
