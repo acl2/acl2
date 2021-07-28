@@ -1936,22 +1936,34 @@
           (acl2::value (list items type limit))))
        ((when (and (symbolp term)
                    (equal xforming (list term))))
-        (acl2::value (list nil nil nil)))
+        (acl2::value (list nil nil ''0)))
+       ((when (and (symbolp term)
+                   (member-eq :array-writes experimental)
+                   (b* ((type? (atc-get-var term inscope)))
+                     (and type?
+                          (type-case type? :pointer)))))
+        (acl2::value (list nil (type-void) ''0)))
        ((mv okp terms) (check-list-call term))
        ((when (and okp
                    (>= (len terms) 2)
                    (equal terms xforming)))
-        (acl2::value (list nil nil nil)))
+        (acl2::value (list nil nil ''0)))
        ((when (and okp
                    (member-eq :array-writes experimental)
                    (consp terms)))
-        (b* (((mv erp (list expr type) state)
-              (atc-gen-expr-cval-pure (car terms) inscope fn ctx state))
-             ((when erp) (mv erp (list nil nil nil) state)))
-          (acl2::value
-           (list (list (block-item-stmt (make-stmt-return :value expr)))
-                 type
-                 ''0))))
+        (b* ((first (car terms)))
+          (if (and (symbolp first)
+                   (b* ((type? (atc-get-var first inscope)))
+                     (and type?
+                          (type-case type? :pointer))))
+              (acl2::value (list nil (type-void) ''0))
+            (b* (((mv erp (list expr type) state)
+                  (atc-gen-expr-cval-pure first inscope fn ctx state))
+                 ((when erp) (mv erp (list nil nil nil) state)))
+              (acl2::value
+               (list (list (block-item-stmt (make-stmt-return :value expr)))
+                     type
+                     ''0))))))
        ((mv okp loop-fn loop-args loop-xforming loop-stmt loop-limit)
         (atc-check-loop-fn term prec-fns))
        ((when okp)

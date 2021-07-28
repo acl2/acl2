@@ -174,19 +174,22 @@ when using the "time" command for such runs.</p>
 72693.740u 1565.148s 2:58:36.10 692.9%  0+0k 3778176+7630768io 1250pf+0w
 </pre>
 
-<p><i>Further troubleshooting with SBCL</i></p>
+<p><i>Creating an SBCL executable</i></p>
 
-<p>(1) The default SBCL may provide insufficient heap memory to build
-  ACL2.  The SBCL option <code>--dynamic-space-size 2000</code> has
-  been found to solve that problem, for example using a script like
-  the following for SBCL.</p>
+<p>If you build SBCL from source as discussed above, you can make an
+  SBCL executable by creating an executable file on your path, as
+  follows.  Note that the option <code>--dynamic-space-size
+  2000</code> may be necessary so that there is sufficient heap memory
+  to build ACL2.</p>
 
 <pre>
 #!/bin/sh
 &lt;sbcl-dir-path&gt;/run-sbcl.sh --dynamic-space-size 2000 "$@"
 </pre>
 
-<p>(2) We have seen the error, "An mprotect call failed with ENOMEM."
+<p><i>Further troubleshooting with SBCL</i></p>
+
+<p>We have seen the error, "An mprotect call failed with ENOMEM."
 A solution has been to rebuild the SBCL executable  after editing the
   SBCL source file <code>src/compiler/x86-64/parms.lisp</code>,
   replacing the line<br/>

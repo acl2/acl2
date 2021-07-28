@@ -31,7 +31,7 @@
                                              c::uchar-array-write)))))
   (let ((|a| (c::uchar-array-write-sint |a| |i| (c::uchar-from-sint
                                                  (c::sint-dec-const 88)))))
-    (mv (c::uchar-array-read-sint |a| |i|) |a|)))
+    |a|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,9 +96,20 @@
     (mv-let (|b| |i|)
       (|copy$loop| |a| |b| |len| |i|)
       (declare (ignore |i|))
-      (mv (c::sint-dec-const 0) |b|))))
+      |b|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (c::atc |f| |copy$loop| |copy| :output-file "arrays-write.c"
         :experimental (:array-writes))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#|
+
+On macOS or Linux, you can compile and run this code as follows:
+
+  gcc -o arrays-write arrays-write.c arrays-write-test.c
+  ./arrays-write
+
+|#
