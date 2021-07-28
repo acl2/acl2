@@ -87,8 +87,7 @@
 
 #||
 *Defunt note*: Evaluating
-(LOCAL (INCLUDE-BOOK
-        "misc/symbol-btree" :DIR :SYSTEM))
+(LOCAL (INCLUDE-BOOK "misc/symbol-btree" :DIR :SYSTEM))
 to define function SYMBOL-BTREE-TO-ALIST-AUX.
 ||#
 
@@ -104,8 +103,7 @@ to define function SYMBOL-BTREE-TO-ALIST-AUX.
 
 #||
 *Defunt note*: Evaluating
-(LOCAL (INCLUDE-BOOK
-        "std/strings/decimal" :DIR :SYSTEM))
+(LOCAL (INCLUDE-BOOK "std/strings/decimal" :DIR :SYSTEM))
 to define function STR::BASIC-NATCHARS.
 ||#
 
@@ -119,8 +117,7 @@ to define function STR::BASIC-NATCHARS.
 
 #||
 *Defunt note*: Evaluating 
-(LOCAL (INCLUDE-BOOK
-        "projects/irv/irv" :DIR :SYSTEM))
+(LOCAL (INCLUDE-BOOK "projects/irv/irv" :DIR :SYSTEM))
 to define function <-MERGE.
 ||#
 
@@ -142,16 +139,14 @@ to define function <-MERGE.
 #||
 *Defunt note*: Executing the following form in order to define the
 well-founded relation, NAT-LIST-<:
-(INCLUDE-BOOK
- "std/basic/two-nats-measure" :DIR :SYSTEM)
+(INCLUDE-BOOK "std/basic/two-nats-measure" :DIR :SYSTEM)
 ||#
 
 ; *Defunt note*: Using termination theorem for DFS-COLLECT.
 
 #||
 *Defunt note*: Evaluating
-(LOCAL (INCLUDE-BOOK
-        "centaur/misc/dfs-measure" :DIR :SYSTEM))
+(LOCAL (INCLUDE-BOOK "centaur/misc/dfs-measure" :DIR :SYSTEM))
 to define function DFS-COLLECT.
 ||#
 
