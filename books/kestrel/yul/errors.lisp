@@ -107,3 +107,7 @@
 
   (defmacro defresult (type desc &key name enable)
     `(make-event (defresult-fn ',type ',desc ',name ',enable (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult nat "natural numbers")

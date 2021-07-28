@@ -22,6 +22,6 @@
                       '(any
                         bool
                         defxdoc+
-                        maybe-natp
                         nat
+                        nat-resultp
                         str::hex-digit-char)))

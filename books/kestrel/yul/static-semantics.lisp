@@ -11,7 +11,9 @@
 (in-package "YUL")
 
 (include-book "abstract-syntax")
+(include-book "errors")
 
+(include-book "kestrel/fty/defunit" :dir :system)
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -34,8 +36,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defunit wellformed
+  :short "Fixtype of the well-formedness indicator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is returned by the ACL2 static semantic checking functions
+     when an abstract syntactic entity passes the static semantic checks
+     and there is no additional information to return.
+     When the static semantic checks fail,
+     those functions return errors instead;
+     see @(tsee wellformed-result)."))
+  :value :wellformed
+  :pred wellformedp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult wellformed "the @(tsee wellformed) indicator")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-identifier ((iden identifierp))
-  :returns (yes/no booleanp)
+  :returns (wf? wellformed-resultp)
   :short "Check if an identifier is well-formed."
   :long
   (xdoc::topstring
@@ -50,22 +72,30 @@
     "We may move these requirements into an invariant of @(tsee identifier),
      but for now we state them as part of the static semantics."))
   (b* ((chars (str::explode (identifier->get iden))))
-    (and (consp chars)
-         (acl2::alpha/uscore/dollar-char-p (car chars))
-         (acl2::alpha/digit/uscore/dollar-charlist-p (cdr chars))))
+    (if (and (consp chars)
+             (acl2::alpha/uscore/dollar-char-p (car chars))
+             (acl2::alpha/digit/uscore/dollar-charlist-p (cdr chars)))
+        :wellformed
+      (error (list :bad-identifier (identifier-fix iden)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist check-identifier-list (x)
-  :guard (identifier-listp x)
+(define check-identifier-list ((idens identifier-listp))
+  :returns (wf? wellformed-resultp)
   :short "Check if all the identifiers in a list are well-formed."
-  (check-identifier x))
+  (b* (((when (endp idens)) :wellformed)
+       (wf? (check-identifier (car idens)))
+       ((when (errorp wf?)) wf?)
+       (wf? (check-identifier-list (cdr idens)))
+       ((when (errorp wf?)) wf?))
+    :wellformed)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-path ((path pathp))
-  :returns (yes/no booleanp)
+  :returns (wf? wellformed-resultp)
   :short "Check if a path is well-formed."
   :long
   (xdoc::topstring
@@ -75,15 +105,17 @@
     "We may move the non-emptiness requirement
      into an invariant of @(tsee path),
      but for now we state it as part of the static semantics."))
-  (b* ((idens (path->get path)))
-    (and (consp idens)
-         (check-identifier-list idens)))
+  (b* ((idens (path->get path))
+       ((unless (consp idens)) (error (list :empty-path)))
+       (wf? (check-identifier-list idens))
+       ((when (errorp wf?)) wf?))
+    :wellformed)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-literal ((lit literalp))
-  :returns (yes/no booleanp)
+  :returns (wf? wellformed-resultp)
   :short "Check if a literal is well-formed."
   :long
   (xdoc::topstring
@@ -105,16 +137,26 @@
      such as that a string surrounded by double quotes
      cannot contain (unescaped) double quotes.
      Those are simply syntactic restrictions."))
-  (literal-case
-   lit
-   :boolean t
-   :dec-number (< lit.get
-                  (expt 2 256))
-   :hex-number (< (str::hex-digit-chars-value (hex-digit-list->chars lit.get))
-                  (expt 2 256))
-   :string (<= (len lit.content) 32)
-   :hex-string (and (< 0 (len lit.content))
-                    (<= (len lit.content) 32)))
+  (b* ((err (error (list :bad-literal (literal-fix lit)))))
+    (literal-case
+     lit
+     :boolean :wellformed
+     :dec-number (if (< lit.get
+                        (expt 2 256))
+                     :wellformed
+                   err)
+     :hex-number (if (< (str::hex-digit-chars-value
+                         (hex-digit-list->chars lit.get))
+                        (expt 2 256))
+                     :wellformed
+                   err)
+     :string (if (<= (len lit.content) 32)
+                 :wellformed
+               err)
+     :hex-string (if (and (< 0 (len lit.content))
+                          (<= (len lit.content) 32))
+                     :wellformed
+                   err)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -134,10 +176,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption funtype-option
-  funtype
-  :short "Fixtype of optional function types."
-  :pred funtype-optionp)
+(defresult funtype "function types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,19 +192,25 @@
   :val-type funtype
   :pred funtablep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult funtable "function tables")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define get-funtype ((name identifierp) (funtab funtablep))
-  :returns (funty? funtype-optionp
-                   :hints (("Goal" :in-theory (enable funtype-optionp))))
+  :returns (funty? funtype-resultp)
   :short "Look up a function in a function table."
   :long
   (xdoc::topstring
    (xdoc::p
     "The lookup is by name.
      If a function is found, we return its type.
-     Otherwise we return @('nil')."))
-  (cdr (omap::in (identifier-fix name) (funtable-fix funtab)))
+     Otherwise we return an error."))
+  (b* ((pair (omap::in (identifier-fix name) (funtable-fix funtab))))
+    (if (consp pair)
+        (cdr pair)
+      (error (list :function-not-found (identifier-fix name)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -176,7 +221,7 @@
   (xdoc::topstring
    (xdoc::p
     "If successful, return the number of values that the expression yields.
-     Otherwise, return @('nil').")
+     Otherwise, return an error.")
    (xdoc::p
     "It is not yet clear how paths with more than one identifier
      come about in generic Yul:
@@ -210,17 +255,19 @@
   (define check-expression ((e expressionp)
                             (var-acc identifier-setp)
                             (funtab funtablep))
-    :returns (results acl2::maybe-natp)
+    :returns (results? nat-resultp)
     (expression-case
      e
      :path
-     (and (consp e.get)
-          (not (consp (cdr e.get)))
-          (set::in (car e.get) (identifier-set-fix var-acc))
-          1)
+     (if (and (consp e.get)
+              (not (consp (cdr e.get)))
+              (set::in (car e.get) (identifier-set-fix var-acc)))
+         1
+       (error (list :bad-path e.get)))
      :literal
-     (and (check-literal e.get)
-          1)
+     (b* ((wf? (check-literal e.get))
+          ((when (errorp wf?)) wf?))
+       1)
      :funcall
      (check-funcall e.get var-acc funtab))
     :measure (expression-count e))
@@ -228,28 +275,38 @@
   (define check-expression-list ((es expression-listp)
                                  (var-acc identifier-setp)
                                  (funtab funtablep))
-    :returns (number acl2::maybe-natp)
+    :returns (number? nat-resultp)
     (b* (((when (endp es)) 0)
          (n? (check-expression (car es) var-acc funtab))
-         ((unless (equal n? 1)) nil)
+         ((when (errorp n?)) n?)
+         ((unless (= n? 1))
+          (error (list :multi-value-argument (expression-fix (car es)))))
          (n? (check-expression-list (cdr es) var-acc funtab))
-         ((unless (natp n?)) nil))
+         ((when (errorp n?)) n?))
       (1+ n?))
     :measure (expression-list-count es))
 
   (define check-funcall ((call funcallp)
                          (var-acc identifier-setp)
                          (funtab funtablep))
-    :returns (results acl2::maybe-natp)
+    :returns (results? nat-resultp)
     (b* (((funcall call) call)
          (funty? (get-funtype call.name funtab))
-         ((unless (funtypep funty?)) nil)
+         ((when (errorp funty?)) funty?)
          (n? (check-expression-list call.args var-acc funtab))
-         ((unless (equal n? (funtype->in funty?))) nil))
+         ((when (errorp n?)) n?)
+         ((unless (= n? (funtype->in funty?)))
+          (error (list :mismatched-formals-actuals
+                       :required (funtype->in funty?)
+                       :supplied n?))))
       (funtype->out funty?))
     :measure (funcall-count call))
 
+  :verify-guards nil ; done below
   ///
+  (verify-guards check-expression
+    :hints
+    (("Goal" :in-theory (enable acl2::natp-when-nat-resultp-and-not-errorp))))
 
   (fty::deffixequiv-mutual check-expression))
 
