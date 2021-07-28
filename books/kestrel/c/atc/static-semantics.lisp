@@ -720,7 +720,7 @@
                      :supplied (type-fix arr-type))))
        ((unless (type-integerp sub-type))
         (error (list :subscript-mistype (expr-fix sub-expr)
-                     :required (type-sint)
+                     :required :integer
                      :supplied (type-fix sub-type)))))
     (type-pointer->referenced arr-type))
   :hooks (:fix))
@@ -843,6 +843,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-expr-call ((fun identp)
+                         (args expr-listp)
+                         (funtab fun-tablep)
+                         (vartab var-tablep))
+  :returns (type type-resultp)
+  :short "Check an expression that is a function call."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called after checking that the expression is a function call,
+     and thus passing its component (name and arguments) here.")
+   (xdoc::p
+    "We check the argument expressions,
+     which must be pure (because we restrict them to be so).
+     We retrieve the function type from the function table
+     and we compare the input types with the argument types;
+     this is more restrictive than allowed in [C],
+     but it is adequate for now.
+     We return the output type."))
+  (b* ((fun (ident-fix fun))
+       (args (expr-list-fix args))
+       (types (check-expr-pure-list args vartab))
+       ((when (errorp types))
+        (error (list :call-args-error fun args types)))
+       (ftype (fun-table-lookup fun funtab))
+       ((unless ftype) (error (list :fun-not-found fun)))
+       ((unless (equal (fun-type->inputs ftype) types))
+        (error (list :call-args-mistype fun args
+                     :required (fun-type->inputs ftype)
+                     :supplied types))))
+    (fun-type->output ftype))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-expr-call-or-pure ((e exprp)
                                  (funtab fun-tablep)
                                  (vartab var-tablep))
@@ -852,31 +887,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the expression is a function call,
-     we check the argument expressions,
-     which must be pure (because we restrict them to be so).
-     We retrieve the function type from the function table
-     and we compare the input types with the argument types;
-     this is more restrictive than allowed in [C],
-     but it is adequate for now.
-     We return the output type.")
+    "If the expression is a function call, we check it as such.")
    (xdoc::p
     "If the expression is not a function call,
      it must be a pure expression,
      which we resort to check it as such."))
   (if (expr-case e :call)
-      (b* ((e.args (expr-call->args e))
-           (e.fun (expr-call->fun e))
-           (types (check-expr-pure-list e.args vartab))
-           ((when (errorp types))
-            (error (list :call-args-error e.fun e.args types)))
-           (ftype (fun-table-lookup e.fun funtab))
-           ((unless ftype) (error (list :fun-not-found e.fun)))
-           ((unless (equal (fun-type->inputs ftype) types))
-            (error (list :call-args-mistype e.fun e.args
-                         :required (fun-type->inputs ftype)
-                         :supplied types))))
-        (fun-type->output ftype))
+      (check-expr-call (expr-call->fun e) (expr-call->args e) funtab vartab)
     (check-expr-pure e vartab))
   :hooks (:fix))
 
@@ -890,12 +907,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used for the expression of an expression statement.
-     For now, we only allow simple assignment expressions
-     as expressions of expression statements,
-     with a left-hand side consisting of a variable in scope
-     and a right-hand side consisting of a function call or pure expression.
-     The two sides must have the same type,
+    "For now, we only allow simple assignment expressions, with:")
+   (xdoc::ul
+    (xdoc::li
+     "A left-hand side consisting of
+      either a variable in scope
+      or an array subscripting expression
+      where the array is a variable in scope.")
+    (xdoc::li
+     "A right-hand side consisting of a function call or a pure expression."))
+   (xdoc::p
+    "The two sides must have the same type,
      which is more restrictive than [C:6.5.16.1].
      We do not return any type information because
      an expression statement throws away the expression's value;
@@ -907,11 +929,34 @@
        (right (expr-binary->arg2 e))
        ((unless (binop-case op :asg))
         (error (list :expr-asg-not-asg op)))
-       ((unless (expr-case left :ident))
-        (error (list :expr-asg-left-not-var left)))
-       (var (expr-ident->get left))
-       (ltype (var-table-lookup var vartab))
-       ((when (not ltype)) (error (list :expr-asg-var-not-found var)))
+       (ltype (cond ((expr-case left :ident)
+                     (b* ((var (expr-ident->get left))
+                          (ltype (var-table-lookup var vartab))
+                          ((when (not ltype))
+                           (error (list :expr-asg-var-not-found var))))
+                       ltype))
+                    ((expr-case left :arrsub)
+                     (b* ((arr (expr-arrsub->arr left))
+                          (sub (expr-arrsub->sub left))
+                          ((unless (expr-case arr :ident))
+                           (error (list :expr-asg-arrsub-not-var left)))
+                          (var (expr-ident->get arr))
+                          (arr-type (var-table-lookup var vartab))
+                          ((when (not arr-type))
+                           (error (list :expr-asg-arrsub-array-not-found left)))
+                          ((unless (type-case arr-type :pointer))
+                           (error (list :array-mistype arr
+                                        :required :pointer
+                                        :supplied arr-type)))
+                          (sub-type (check-expr-pure sub vartab))
+                          ((when (errorp sub-type)) sub-type)
+                          ((unless (type-integerp sub-type))
+                           (error (list :subscript-mistype sub
+                                        :required :integer
+                                        :supplid sub-type))))
+                       (type-pointer->referenced arr-type)))
+                    (t (error (list :expr-asg-disallowed left)))))
+       ((when (errorp ltype)) ltype)
        (rtype (check-expr-call-or-pure right funtab vartab))
        ((when (errorp rtype)) rtype)
        ((unless (equal ltype rtype))
@@ -919,6 +964,36 @@
                      :required ltype
                      :supplied rtype))))
     :wellformed)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-expr-call-or-asg ((e exprp)
+                                (funtab fun-tablep)
+                                (vartab var-tablep))
+  :returns (wf? wellformed-resultp)
+  :short "Check an expression that must be a function call or an assignment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the expression is a function call, we check it as such.")
+   (xdoc::p
+    "If the expression is not a function call,
+     it must be an assignment expression,
+     which we resort to check it as such.")
+   (xdoc::p
+    "Even if the expression is a function call, we retun no type here.
+     This is because this ACL2 function is used
+     when checking expression statements,
+     whose value (if any) is discarded."))
+  (if (expr-case e :call)
+      (b* ((type (check-expr-call (expr-call->fun e)
+                                  (expr-call->args e)
+                                  funtab
+                                  vartab))
+           ((when (errorp type)) type))
+        :wellformed)
+    (check-expr-asg e funtab vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -934,18 +1009,14 @@
      The information consists of:")
    (xdoc::ul
     (xdoc::li
-     "A non-empty set of optional types that describe
+     "A non-empty set of types that describes
       the possible values returned by the statement.
       These are determined by the @('return') statements;
       in the presence of conditionals,
       the possible types in the two branches are merged (i.e. unioned).
-      The non-type @('nil') is used to describe statements
+      The type @('void') is used to describe statements
       that do not return a value,
-      but instead transfer control to the next statement (if any).
-      We plan to use @('void') instead of @('nil') soon
-      (we have just added @('void') to our model of "
-     (xdoc::seetopic "atc-types" "types")
-     ".")
+      but instead transfer control to the next statement (if any).")
     (xdoc::li
      "A possibly updated variable table.
       This is updated by block items that are declarations.
@@ -955,9 +1026,9 @@
       could just return a set of optional types (see above).
       However, for uniformity we have all three functions
       return also a possibly updated variable table.")))
-  ((return-types type-option-set :reqfix (if (set::empty return-types)
-                                             (set::insert nil nil)
-                                           return-types))
+  ((return-types type-set :reqfix (if (set::empty return-types)
+                                      (set::insert (type-void) nil)
+                                    return-types))
    (variables var-table))
   :require (not (set::empty return-types))
   :pred stmt-typep)
@@ -1000,7 +1071,11 @@
      In fact, a compound statement does not update the variable table:
      we return the original variable table.")
    (xdoc::p
-    "As expression statements, we only allow simple assignments to variables.")
+    "As expression statements, we only allow
+     function calls and simple assignments to variables,
+     where the assigned expression must be a function call or pure.
+     We only allow function calls with pure arguments
+     (see @(tsee check-expr-call)).")
    (xdoc::p
     "For a conditional statement with both branches,
      after ensuring that the test expression has scalar type,
@@ -1014,8 +1089,8 @@
     "For a @('while') statement,
      we ensure that the test has a scalar type,
      and we check the body.
-     We put together @('nil') and the return types from the body:
-     the @('nil') accounts for the case in which
+     We put together @('void') and the return types from the body:
+     the @('void') accounts for the case in which
      the body is never executed (i.e. the test is initially false).
      We return the initial variable table, unchanged;
      any change in the body is local to the body.")
@@ -1031,7 +1106,7 @@
      We also ensure that the initializer has the same type as the variable
      (which is more restrictive than [C:6.7.9]),
      and we extend and return the variable table with the variable.
-     We return the singleton set with @('nil'),
+     We return the singleton set with @('void'),
      because a declaration never returns a value
      and proceeds with the next block item;
      note that we do not return the empty set of return types.")
@@ -1039,20 +1114,20 @@
     "For a block item that is a statement, we check the statement.")
    (xdoc::p
     "If a list of block items is empty, we return
-     the singleton set with @('nil')
+     the singleton set with @('void')
      (because execution then continues after the block)
      and the variable table unchanged.
      If the list is not empty, we check the first item.
-     If @('nil') is not among the return types,
+     If @('void') is not among the return types,
      it means that the rest of the block is dead code:
      execution never proceeds past the first block item;
      thus, we do not even check the rest of the block
      and we return the result of checking the first block item
      as the result of checking the whole block.
-     If @('nil') is among the return types of the first block item,
+     If @('void') is among the return types of the first block item,
      we check the rest of the block,
      and we combine (i.e. take the union of) all the return types,
-     after removing @('nil') from the types of the first block item."))
+     after removing @('void') from the types of the first block item."))
 
   (define check-stmt ((s stmtp) (funtab fun-tablep) (vartab var-tablep))
     :returns (stype stmt-type-resultp)
@@ -1064,9 +1139,9 @@
                     ((when (errorp stype))
                      (error (list :stmt-compound-error stype))))
                  (change-stmt-type stype :variables vartab))
-     :expr (b* ((wf (check-expr-asg s.get funtab vartab))
-                ((when (not wf)) wf))
-             (make-stmt-type :return-types (set::insert nil nil)
+     :expr (b* ((wf (check-expr-call-or-asg s.get funtab vartab))
+                ((when (errorp wf)) (error (list :expr-stmt-error wf))))
+             (make-stmt-type :return-types (set::insert (type-void) nil)
                              :variables (var-table-fix vartab)))
      :null (error :unsupported-null-stmt)
      :if (b* ((type (check-expr-pure s.test vartab))
@@ -1080,7 +1155,7 @@
                (error (list :if-then-error stype-then))))
            (make-stmt-type
             :return-types (set::union (stmt-type->return-types stype-then)
-                                      (set::insert nil nil))
+                                      (set::insert (type-void) nil))
             :variables vartab))
      :ifelse (b* ((type (check-expr-pure s.test vartab))
                   ((when (errorp type)) (error (list :if-test-error type)))
@@ -1100,7 +1175,7 @@
                 :variables vartab))
      :switch (error (list :unsupported-switch s.ctrl s.body))
      :while (b* ((type (check-expr-pure s.test vartab))
-                 ((when (errorp type)) (error (list :if-test-error type)))
+                 ((when (errorp type)) (error (list :while-test-error type)))
                  ((unless (type-scalarp type))
                   (error (list :while-test-mistype s.test s.body
                                :required :scalar
@@ -1109,7 +1184,7 @@
                  ((when (errorp stype-body))
                   (error (list :while-error stype-body))))
               (make-stmt-type
-               :return-types (set::insert nil
+               :return-types (set::insert (type-void)
                                           (stmt-type->return-types stype-body))
                :variables vartab))
      :dowhile (error (list :unsupported-dowhile s.body s.test))
@@ -1149,7 +1224,7 @@
                            :supplied init-type)))
                   (vartab (var-table-add-var var type vartab))
                   ((when (errorp vartab)) (error (list :declon-error vartab))))
-               (make-stmt-type :return-types (set::insert nil nil)
+               (make-stmt-type :return-types (set::insert (type-void) nil)
                                :variables vartab))
      :stmt (check-stmt item.get funtab vartab))
     :measure (block-item-count item))
@@ -1159,12 +1234,12 @@
                                  (vartab var-tablep))
     :returns (stype stmt-type-resultp)
     (b* (((when (endp items))
-          (make-stmt-type :return-types (set::insert nil nil)
+          (make-stmt-type :return-types (set::insert (type-void) nil)
                           :variables vartab))
          (stype (check-block-item (car items) funtab vartab))
          ((when (errorp stype)) (error (list :block-item-error stype)))
-         ((unless (set::in nil (stmt-type->return-types stype))) stype)
-         (rtypes1 (set::delete nil (stmt-type->return-types stype)))
+         ((unless (set::in (type-void) (stmt-type->return-types stype))) stype)
+         (rtypes1 (set::delete (type-void) (stmt-type->return-types stype)))
          (vartab (stmt-type->variables stype))
          (stype (check-block-item-list (cdr items) funtab vartab))
          ((when (errorp stype)) (error (list :block-item-list-error stype)))

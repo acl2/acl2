@@ -35,7 +35,7 @@
 
 On macOS or Linux, you can compile and run this code as follows:
 
-  gcc -o array array.c array-test.c
-  ./array
+  gcc -o arrays arrays.c arrays-test.c
+  ./arrays
 
 |#

@@ -77,6 +77,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defset type-set
+  :short "Fixtype of osets of types."
+  :elt-type type
+  :elementp-of-nil nil
+  :pred type-setp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defoption type-option
   type
   :short "Fixtype of optional types."
