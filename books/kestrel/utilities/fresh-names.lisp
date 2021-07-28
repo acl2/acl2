@@ -13,7 +13,7 @@
 
 ;; STATUS: IN-PROGRESS
 
-(include-book "kestrel/utilities/pack" :dir :system)
+(include-book "pack")
 
 ;rename fresh-symbol-aux ?
 (defun fresh-var-name (base-name current-num syms-to-avoid)

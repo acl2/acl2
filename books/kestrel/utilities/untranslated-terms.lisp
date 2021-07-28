@@ -35,8 +35,8 @@
 (include-book "quote")
 (include-book "lets")
 (include-book "lambdas")
-(include-book "kestrel/utilities/doublets2" :dir :system)
-(include-book "kestrel/utilities/pack" :dir :system)
+(include-book "doublets2")
+(include-book "pack")
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 ;(include-book "../sequences/defforall") ;drop (after replacing the defforall-simple below)?
 ;(include-book "../sequences/generics-utilities") ;for make-pairs (TODO: move that and rename to mention doublets)
