@@ -1803,6 +1803,108 @@
                             bitp-implies-integerp)
 ()))))||#
 
+
+
+(create-regular-eval-lemma binary-and 2 mult-formula-checks)
+
+(defthm and$-of-1-2
+  (equal (and$ a b 1)
+         (and$ a b))
+  :hints (("Goal"
+           :in-theory (e/d (and$) ()))))
+
+
+
+(defret and-list-to-binary-and-aux-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state))
+           (equal (rp-evlt res a)
+                  (and-list 0 (rp-evlt-lst lst a))))
+  :fn and-list-to-binary-and-aux
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (AND-LIST-TO-BINARY-AND-AUX LST)
+           :expand ((:free (x y) (and-list 0 (cons x y)))
+                    (AND-LIST-TO-BINARY-AND-AUX LST)
+                    ) 
+           :in-theory (e/d* (regular-eval-lemmas-with-ex-from-rp
+                             ;;and-list
+                             (:induction and-list-to-binary-and-aux)
+                             regular-eval-lemmas)
+                            ((:DEFINITION RP-TRANS)
+                             (:REWRITE RP-TRANS-OPENER)
+                             (:REWRITE CONSP-OF-RP-EVL-OF-TRANS-LIST)
+                             (:REWRITE CONSP-OF-RP-TRANS-LST)
+                             (:TYPE-PRESCRIPTION RP-TRANS-LST)
+                             (:REWRITE RP-EVL-LST-OF-CONS)
+                             (:DEFINITION RP-TRANS-LST))))))
+
+(defret and-list-to-binary-and-aux-valid-sc
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc-subterms lst a))
+           (valid-sc res a))
+  :fn and-list-to-binary-and-aux
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (AND-LIST-TO-BINARY-AND-AUX LST)
+           :expand ((:free (x y) (and-list 0 (cons x y)))
+                    (AND-LIST-TO-BINARY-AND-AUX LST)
+                    ) 
+           :in-theory (e/d* (valid-sc is-rp is-if
+                             ;;and-list
+                             (:induction and-list-to-binary-and-aux)
+                             )
+                            ((:DEFINITION RP-TRANS)
+                             (:REWRITE RP-TRANS-OPENER)
+                             (:REWRITE CONSP-OF-RP-EVL-OF-TRANS-LIST)
+                             (:REWRITE CONSP-OF-RP-TRANS-LST)
+                             (:TYPE-PRESCRIPTION RP-TRANS-LST)
+                             (:REWRITE RP-EVL-LST-OF-CONS)
+                             (:DEFINITION RP-TRANS-LST))))))
+
+(create-regular-eval-lemma and-list 2 mult-formula-checks)
+
+(defthm remove-hash-arg-of-and-list
+  (implies (syntaxp (and (not (equal hash 0))
+                         (not (equal hash ''0))))
+           (equal (and-list hash lst)
+                  (and-list 0 lst)))
+  :hints (("Goal"
+           :in-theory (e/d (and-list) ()))))
+
+(defret and-list-to-binary-and-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                valid)
+           (and (equal (rp-evlt res a)
+                       (rp-evlt term a))
+                (integerp (rp-evlt res a))
+                (integerp (rp-evlt term a))))
+  :fn and-list-to-binary-and
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d* (and-list-to-binary-and
+                             and-list
+                             BINARY-FNC-P
+                             regular-eval-lemmas
+                             regular-eval-lemmas-with-ex-from-rp)
+                            ()))))
+
+(defret and-list-to-binary-and-valid-sc
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                valid
+                (valid-sc term a))
+           (valid-sc res a))
+  :fn and-list-to-binary-and
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d* (and-list-to-binary-and
+                             and-list)
+                           ()))))
+  
+
 (defthmd rp-evlt-ex-from-rp-of-quoted
   (implies (quotep x)
            (equal (rp-evlt (ex-from-rp x) a)

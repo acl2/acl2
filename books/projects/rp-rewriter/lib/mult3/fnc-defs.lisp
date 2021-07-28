@@ -426,6 +426,8 @@
 (define medw-compress (term)
   term)
 
+(add-rp-rule medw-compress :disabled nil)
+
 (rp::def-rw-opener-error
  s-spec-opener-error
  (rp::s-spec x))
@@ -747,6 +749,26 @@
            (make-readable-lst (cdr lst))))))
 
 
+(mutual-recursion
+ (defun count-fnc (term fnc)
+   (declare (xargs :guard (symbolp fnc)
+                   :verify-guards nil))
+   (if (or (atom term) (quotep term))
+       0
+     (+ (if (eq (car term) fnc)
+            1
+          0)
+       (count-fnc-subterms (cdr term)
+                           fnc))))
+ 
+ (defun count-fnc-subterms (subterms fnc)
+   (declare (xargs :guard (symbolp fnc)))
+   (if (atom subterms)
+       0
+     (+ (count-fnc (car subterms) fnc)
+        (count-fnc-subterms (cdr subterms)
+                            fnc)))))
+
 (progn
   (define s-c-res-p (term)
     :inline t
@@ -976,10 +998,9 @@
     (defthm pp-p-implies-fc
       (implies (pp-p term)
                (case-match term (('pp &) t)))
-      :rule-classes :forward-chaining))
-  
+      :rule-classes :forward-chaining)))
 
-  )
+
 (defmacro ss (&rest args)
   `(s-spec (list . ,args)))
 

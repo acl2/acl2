@@ -2565,14 +2565,14 @@
                            (SUM-OF-IFIX)))))
 
 
-(defthmd RP-EVLt-LST-OF-CONS
+#|(defthmd RP-EVLt-LST-OF-CONS
   (implies (consp lst)
            (equal (rp-evlt-lst lst a)
                   (cons (rp-evlt (car lst) a)
                         (rp-evlt-lst (cdr lst) a))))
   :hints (("Goal"
 ;:expand (rp-evlt-lst lst a)
-           :in-theory (e/d () ()))))
+           :in-theory (e/d () ()))))||#
 
 (defthm rp-evlt-of-list
   (equal (rp-evlt (cons 'list lst) a)

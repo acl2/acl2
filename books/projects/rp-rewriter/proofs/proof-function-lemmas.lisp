@@ -666,6 +666,20 @@
   :hints (("Goal"
            :in-theory (e/d () ()))))
 
+(defthm rp-evlt-of-trans-list-lemma
+   (equal (rp-evlt (trans-list lst) a)
+          (rp-evlt-lst lst a))
+   :hints (("goal" :do-not-induct t
+            :induct (trans-list lst)
+            :in-theory (e/d nil nil))))
+
+(defthm valid-sc-of-trans-list-lemma
+   (implies (valid-sc-subterms lst a)
+            (valid-sc (trans-list lst) a))
+   :hints (("goal" :do-not-induct t
+            :induct (trans-list lst)
+            :in-theory (e/d (valid-sc is-if is-rp)
+                            ()))))
 
 (defthm rp-state-preservedp-implies-valid-rp-statep
   (implies (and ;;(rp-statep rp-state)
@@ -691,3 +705,4 @@
                             (:TYPE-PRESCRIPTION VALID-RP-STATEP)
                             (:TYPE-PRESCRIPTION VALID-RULESP)
                             RP-STATEP)))))
+

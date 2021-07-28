@@ -57,6 +57,31 @@
 (local
  (in-theory (disable +-IS-SUM)))
 
+
+(acl2::Defines
+ search-for-c-with-hash
+ (define search-for-c-with-hash (term hash-code (limit natp))
+   :measure (nfix limit)
+   (cond
+    ((zp limit)
+     nil)
+    (t (case-match term
+         (('c hash1 arg1 arg2 arg3)
+          (or (equal hash1 hash-code)
+              (search-for-c-with-hash arg1 hash-code (1- limit))
+              (search-for-c-with-hash arg2 hash-code (1- limit))
+              (search-for-c-with-hash arg3 hash-code (1- limit))))
+         (& (and (consp term)
+                 (search-for-c-with-hash-lst (cdr term) hash-code (1-
+                                                                   limit))))))))
+
+ (define search-for-c-with-hash-lst (lst hash-code (limit natp))
+   :measure (nfix limit)
+   (and (not (zp limit))
+        (consp lst)
+        (or (search-for-c-with-hash (car lst) hash-code (1- limit))
+            (search-for-c-with-hash-lst (cdr lst) hash-code (1- limit))))))
+
 (define negated-termp (term)
   :inline t
   (case-match term (('-- &) t))
@@ -68,9 +93,14 @@
 
 (progn
   (encapsulate
-    (((stingy-pp-clean) => *))
+    (((stingy-pp-clean) => *)
+     ((super-stingy-pp-clean) => *))
     (local
      (defun stingy-pp-clean ()
+       nil))
+
+    (local
+     (defun super-stingy-pp-clean ()
        nil)))
 
   (define return-t ()
@@ -83,15 +113,25 @@
         `(defattach  stingy-pp-clean return-t)
       `(defattach  stingy-pp-clean return-nil)))
 
+  (defmacro enable-super-stingy-pp-clean (enabled)
+    (if enabled
+        `(defattach  super-stingy-pp-clean return-t)
+      `(defattach  super-stingy-pp-clean return-nil)))
+
   (enable-stingy-pp-clean nil)
+  (enable-super-stingy-pp-clean nil)
 
   (define clean-pp-args-cond (s-lst c-lst)
-    (or (not (stingy-pp-clean))
-        (and (equal s-lst nil)
-             (or (atom c-lst)
-                 (atom (cdr c-lst))
-                 ;;(atom (cddr c-lst))
-                 )))))
+    (cond ((super-stingy-pp-clean)
+           nil)
+          ((stingy-pp-clean)
+           (and (equal s-lst nil)
+                (or (atom c-lst)
+                    (atom (cdr c-lst))
+                    ;;(atom (cddr c-lst))
+                    )))
+          (t t)))
+  )
 
 (define get-c-args ((c rp-termp))
   :inline t
@@ -1691,7 +1731,8 @@
            (b* ((s (create-list-instance s-lst))
                 (pp (create-list-instance pp-lst))
                 (c (create-list-instance c-lst))
-                (hash-code (calculate-c-hash s pp c)))
+                (hash-code (calculate-c-hash s pp c))
+                )
              (mv nil nil (list `(c ',hash-code ,s ,pp ,c))))))))
 
 (define create-s-instance ((pp rp-termp)
@@ -2488,13 +2529,15 @@
              (create-c-instance nil
                                 (list-to-lst s-arg-pp)
                                 (list-to-lst s-arg-c)))
+
+            
             (to-be-coughed-c-lst2 (negate-lst to-be-coughed-c-lst2))
             (to-be-coughed-pp-lst2 (negate-lst to-be-coughed-pp-lst2))
 
             (to-be-coughed-pp-lst (pp-sum-merge-aux to-be-coughed-pp-lst
                                                     to-be-coughed-pp-lst2))
-            (to-be-coughed-c-lst (pp-sum-merge-aux to-be-coughed-c-lst
-                                                   to-be-coughed-c-lst2))
+            (to-be-coughed-c-lst (s-sum-merge-aux to-be-coughed-c-lst
+                                                  to-be-coughed-c-lst2))
             (arg-pp-lst (pp-sum-merge-aux arg-pp-lst
                                           (list-to-lst s-arg-pp)))
             ((mv & & arg-c-lst &)
@@ -3201,6 +3244,37 @@
      (or (search-for-1 (car lst))
          (search-for-1-lst (cdr lst))))))||#
 
+
+#|(rp::and-list-to-binary-and '(RP::AND-LIST '327716
+                                       (LIST (RP::BIT-OF OP1_LO '15)
+                                             (RP::BIT-OF OP2_LO '31))))||#
+
+(define and-list-to-binary-and-aux ((lst rp-term-listp))
+  :returns (res rp-termp :hyp (rp-term-listp lst))
+  :verify-guards :after-returns
+  (if (atom lst)
+      ''1
+    (if (atom (cdr lst))
+        `(binary-and ,(CAR lst) '1)
+      (if (atom (cddr lst))
+          `(binary-and ,(car lst) ,(cadr lst))
+        `(binary-and ,(car lst) ,(and-list-to-binary-and-aux (cdr lst)))))))
+
+(define and-list-to-binary-and ((term rp-termp))
+  :returns (mv (res rp-termp :hyp (rp-termp term))
+               (valid booleanp))
+  (case-match term
+    (('and-list & ''nil)
+     (mv ''1 t))
+    (('and-list & ('list . lst))
+     (mv (and-list-to-binary-and-aux lst) t))
+    (('bit-of & &)
+     (mv term t))
+    (& (if (binary-fnc-p term)
+           (mv term t)
+         (mv term nil)))))
+            
+
 (define create-s-c-res-instance ((s-lst rp-term-listp)
                                  (pp-lst rp-term-listp)
                                  (c-lst rp-term-listp)
@@ -3232,7 +3306,17 @@
                      (unquote-all pp-lst)
                      (unquote-all c-lst)))
         (t
-         (b* ((term `(s-c-res ,(create-list-instance s-lst)
+         (b* (((mv term valid) ;; if there is only one and-list, return its
+               ;; binary-and equivalent instead. 
+               (if (and (not c-lst)
+                        (not s-lst)
+                        (consp pp-lst)
+                        (not (cdr pp-lst)))
+                   (and-list-to-binary-and (car pp-lst))
+                 (mv nil nil)))
+              ((when valid) term)
+
+              (term `(s-c-res ,(create-list-instance s-lst)
                               ,(create-list-instance pp-lst)
                               ,(create-list-instance c-lst))))
            (if bitp
@@ -3249,7 +3333,7 @@
                           (rp-term-listp c-lst)))
   (b* (((mv pp-lst c-lst) (s-of-s-fix-lst (list-to-lst s) pp-lst c-lst))
        #| (pp-lst-before-clean pp-lst)||#
-       (c-lst (s-fix-pp-args-aux c-lst))
+       (c-lst (if (super-stingy-pp-clean) c-lst (s-fix-pp-args-aux c-lst)))
        (pp-lst (if (clean-pp-args-cond nil c-lst)
                    (s-fix-pp-args-aux pp-lst)
                  pp-lst))
@@ -3278,7 +3362,10 @@
             (c-of-s-fix-lst arg-s-lst arg-pp-lst arg-c-lst to-be-coughed-c-lst)
           (mv arg-pp-lst arg-c-lst nil nil to-be-coughed-c-lst)))
 
-       ((mv coughed-c-lst-from-args arg-c-lst) (c-fix-arg-aux arg-c-lst t))
+       ((mv coughed-c-lst-from-args arg-c-lst)
+        (if (super-stingy-pp-clean)
+            (mv nil arg-c-lst)
+          (c-fix-arg-aux arg-c-lst t)))
        (to-be-coughed-c-lst (s-sum-merge-aux to-be-coughed-c-lst coughed-c-lst-from-args))
 
        ((mv coughed-s-lst arg-s-lst)
@@ -3321,6 +3408,9 @@
     res))
 
 (verify-guards cons-count)
+
+ 
+
 
 (define s-c-spec-meta ((term rp-termp))
   :returns (mv (res rp-termp
@@ -3395,7 +3485,44 @@
              (if bitp
                  ''0
                (c-spec-meta-aux s pp-lst c-lst to-be-coughed-c-lst quarternaryp))))
-          (& term))))
+          (& term)))
+
+       (& (and (or #|(search-for-c-with-hash result ''(6847164902991054420 . 6847164902991054420)
+                                           10)||#
+
+                   #|(search-for-c-with-hash result ''(169123349075 . 169123349075)
+                                           10)||#
+
+                   #|(search-for-c-with-hash result ''(791926217769956 . 791926217769956)
+                                           10)||#
+
+                   (search-for-c-with-hash result ''(165102633740 . 165102633740)
+                                           10)
+
+                   (search-for-c-with-hash result ''(769929959958050 . 769929959958050)
+                                           10)
+
+                #|(search-for-c-with-hash result ''(-439661027736439
+                                                . -439661027736439)
+                                           10)||#
+                   #|(search-for-c-with-hash result ''(169139489625 . 169139489625)
+                                           100)||#
+                   #|(search-for-c-with-hash result ''(440039570885521 . 440039570885521)
+                                           10)||#
+                   #|(search-for-c-with-hash result ''(126184818255 . 126184818255)
+                                           10)||#
+                   #|(search-for-c-with-hash result ''(726267644772690
+                                                     . 726267644772690)
+                                           100000)||#)
+              (cw "---------------------------------------------
+found-c-with-hash-code: 
+input term: ~p0 
+result ~p1 
+ ~%"
+                  term result)))
+                          
+
+       )
     (mv result t)))
 
 #|

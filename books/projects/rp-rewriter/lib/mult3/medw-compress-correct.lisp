@@ -109,6 +109,59 @@
                              valid-sc-subterms
                              )))))
 
+
+
+
+(local
+ (defthmd rp-evlt-of-ex-from-rp-reverse-atom
+   (implies (syntaxp (atom term))
+            (equal (rp-evl (rp-trans term) a)
+                   (rp-evl (rp-trans (ex-from-rp term))
+                           a)))))
+
+(defret medw-compress-safe-cons-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state))
+           (and (equal (sum-list-eval res a)
+                       (sum (rp-evlt e a)
+                            (sum-list-eval lst a)))
+                (implies (and (valid-sc e a)
+                              (valid-sc-subterms lst a))
+                         (valid-sc-subterms res a))))
+  :fn medw-compress-safe-cons
+  :hints (("Goal"
+           :do-not-induct t
+           :expand ((SUM-LIST-EVAL (CONS E LST) A)
+                    (SUM-LIST-EVAL LST A))
+           :in-theory (e/d* (medw-compress-safe-cons
+                             regular-eval-lemmas
+                             rp-evlt-of-ex-from-rp-reverse-atom
+                             regular-eval-lemmas-with-ex-from-rp
+                             )
+                            (NOT-INCLUDE-RP-MEANS-VALID-SC
+                             rp-evlt-of-ex-from-rp
+                             rp-trans
+                             rp-equal
+                             rp-equal-cnt
+                             (:REWRITE IFIX-OPENER)
+                             (:REWRITE LIGHT-PP-TERM-P-INTEGERP)
+                             (:REWRITE SUM-OF-NEGATED-ELEMENTS)
+                             (:REWRITE MINUS-OF-MINUS)
+                             (:DEFINITION VALID-SC)
+                             (:DEFINITION EX-FROM-RP)
+                             (:DEFINITION EVAL-AND-ALL)
+                             (:REWRITE NOT-INCLUDE-RP)
+                             (:REWRITE VALID-SC-EX-FROM-RP)
+                             (:REWRITE MINUS-OF-SUM)
+                             (:DEFINITION INCLUDE-FNC)
+                             (:REWRITE VALID-SC-CADR)
+                             NOT-INCLUDE-RP-MEANS-VALID-SC-LST
+                             INCLUDE-FNC-SUBTERMS
+                             SUM-LIST-EVAL
+                             VALID-SC-SUBTERMS-CONS
+                             valid-sc-subterms
+                             )))))
+
 (local
  (encapsulate
    nil
@@ -1005,12 +1058,6 @@
                              )))))
 
 
-(local
- (defthmd rp-evlt-of-ex-from-rp-reverse-atom
-   (implies (syntaxp (atom term))
-            (equal (rp-evl (rp-trans term) a)
-                   (rp-evl (rp-trans (ex-from-rp term))
-                           a)))))
 
 (defret medw-compress-s-is-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -1027,6 +1074,41 @@
                              regular-eval-lemmas-with-ex-from-rp
                              regular-eval-lemmas
                             
+                             rp-evlt-of-ex-from-rp-reverse-atom
+                             pp-order-equals-implies)
+                            (RP-EVLT-OF-EX-FROM-RP
+                             EX-FROM-RP
+                             (:DEFINITION INCLUDE-FNC)
+                             valid-sc
+                             (:DEFINITION EVAL-AND-ALL)
+                             (:REWRITE NOT-INCLUDE-RP)
+                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
+                             (:REWRITE WHEN-EX-FROM-RP-IS-1)
+                             (:REWRITE DEFAULT-CAR)
+                             (:REWRITE VALID-SC-SUBTERMS-CONS)
+                             (:REWRITE --OF-SUM)
+                             (:REWRITE --OF---)
+                             (:DEFINITION RP-TRANS)
+
+                             ;;(:REWRITE VALID-SC-SUBTERMS-CDR)
+                             )))))
+
+
+(defret medw-compress-s-c-res-is-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc s-c-res a)
+                (rp-termp s-c-res))
+           (and (equal (rp-evlt res-term a)
+                       (rp-evlt s-c-res a))
+                (valid-sc res-term a)))
+  :fn medw-compress-s-c-res
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d* (medw-compress-s-c-res
+                             regular-eval-lemmas-with-ex-from-rp
+                             regular-eval-lemmas
+                             S-C-RES
                              rp-evlt-of-ex-from-rp-reverse-atom
                              pp-order-equals-implies)
                             (RP-EVLT-OF-EX-FROM-RP

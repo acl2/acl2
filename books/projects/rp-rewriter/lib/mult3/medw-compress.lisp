@@ -160,11 +160,49 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                           ,(create-list-instance pp-lst)
                           ,(create-list-instance c-lst)))))
        #|((when (and (consp res-c-lst)
-                   (equal (cadr (car res-c-lst))
-                          ''(21028607959612274058 . 21028607959612274058))))
+                   (or (equal (cadr (car res-c-lst))
+                              ''(21028607959612274058 . 21028607959612274058))
+                       (equal (cadr (car res-c-lst))
+                              ''(2784280923853611132773766
+                                 . 2784280923853611132773766))
+
+                       (equal (cadr (car res-c-lst))
+                              ''(-138355915544097072752114080265364
+                                 . -138355915544097072752114080265364))
+                       
+            #|           (equal (cadr (car res-c-lst))
+                              ''(-1154151986687440 . -1154151986687440))||#
+            #|           (equal (cadr (car res-c-lst))
+                              ''(-439661027736439 . -439661027736439))||#
+            #|           (equal (cadr (car res-c-lst))
+                              ''(21028607959612274058 . 21028607959612274058))||#)))
         nil)||#
        )
     res-c-lst))
+
+
+
+(define medw-compress-safe-cons ((e rp-termp)
+                                 (lst rp-term-listp))
+  :returns (res rp-term-listp :hyp (and (rp-termp e)
+                                        (rp-term-listp lst)))
+  (cond ((atom lst)
+         (cons e lst))
+        (t (b* ((e2 (ex-from-rp e))
+                (lst-e (ex-from-rp (car lst)))
+                ((mv e2 e2-is-negative)
+                 (case-match e2
+                   (('-- x) (mv x t))
+                   (& (mv e2 nil))))
+                ((mv lst-e lst-e-is-negative)
+                 (case-match lst-e
+                   (('-- x) (mv x t))
+                   (& (mv lst-e nil)))))
+             (if (and (not (equal lst-e-is-negative
+                                  e2-is-negative))
+                      (rp-equal-cnt lst-e e2 1))
+                 (cdr lst)
+               (cons e lst))))))
 
 (define medw-compress-c-arg-lst-aux-aux ((c rp-termp)
                                          (c-is-signed booleanp)
@@ -188,13 +226,13 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                           t)))
          ((when compress)
           (if c2-is-signed
-              (mv (cons c2 (cdr cur-c-c-lst)) t)
-            (mv (cons `(-- ,(car cur-c-c-lst)) (cdr cur-c-c-lst)) t)))
+              (mv (medw-compress-safe-cons c2 (cdr cur-c-c-lst)) t)
+            (mv (medw-compress-safe-cons `(-- ,(car cur-c-c-lst)) (cdr cur-c-c-lst)) t)))
          ((mv res-cur-c-c-lst compressed)
           (medw-compress-c-arg-lst-aux-aux c c-is-signed (cdr cur-c-c-lst)
                                            sign-matters)))
       (if compressed
-          (mv (cons (car cur-c-c-lst) res-cur-c-c-lst) t)
+          (mv (medw-compress-safe-cons (car cur-c-c-lst) res-cur-c-c-lst) t)
         (mv cur-c-c-lst nil)))))
 
 (define medw-compress-c-arg-lst-aux ((c rp-termp)
@@ -224,7 +262,7 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                 (medw-compress-c-arg-lst-aux c c-is-signed (cdr c-lst)
                                              sign-matters)))
             (if compressed
-                (mv (cons (car c-lst) rest-new-c-lst) t)
+                (mv (medw-compress-safe-cons (car c-lst) rest-new-c-lst) t)
               (mv c-lst nil))))
          ((mv res-c-c-lst compressed)
           (medw-compress-c-arg-lst-aux-aux c
@@ -243,7 +281,7 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
               (medw-compress-c-arg-lst-aux c c-is-signed (cdr c-lst)
                                            sign-matters)))
           (if compressed
-              (mv (cons (car c-lst) rest-new-c-lst) t)
+              (mv (medw-compress-safe-cons (car c-lst) rest-new-c-lst) t)
             (mv c-lst nil)))))))
 
 (define medw-compress-c-arg-lst ((c-lst rp-term-listp)
@@ -251,6 +289,7 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                                  (limit natp))
   :returns (mv (res-c-lst rp-term-listp :hyp (rp-term-listp c-lst))
                (compressed booleanp))
+  :verify-guards :after-returns
   :measure (nfix limit)
   (cond ((zp limit) (mv c-lst nil))
         ((atom c-lst)
@@ -281,7 +320,7 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                                               sign-matters
                                               (1- limit))))
                  (if compressed
-                     (mv (cons (car c-lst) rest) t)
+                     (mv (medw-compress-safe-cons (car c-lst) rest) t)
                    (mv c-lst nil))))))))
 
 
@@ -297,6 +336,7 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                                    :hyp (and (rp-term-listp pp-lst)
                                              (rp-term-listp c-pp-arg-lst)))
                  (compressed booleanp))
+    :verify-guards :after-returns
     :measure (+ (acl2-count pp-lst)
                 (acl2-count c-pp-arg-lst))
     :prepwork ((local
@@ -336,8 +376,9 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                  (case-match cur1 (('-- x) (mv x t)) (& (mv cur1 nil))))
                 ((mv cur2 cur2-is-signed)
                  (case-match cur2 (('-- x) (mv x t)) (& (mv cur2 nil))))
-                ((mv order equals)
+                ((mv order &)
                  (pp-order cur1 cur2))
+                (equals (rp-equal-cnt cur1 cur2 1))
                 (compress (and equals
                                (if sign-matters
                                    (if c-is-signed
@@ -355,14 +396,14 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                                                sign-matters))
                 ((when compress)
                  (mv res-pp-lst
-                     (cons (if cur2-is-signed
-                               cur2 `(-- ,cur2-orig))
-                           res-c-pp-arg-lst)
+                     (medw-compress-safe-cons (if cur2-is-signed
+                                                  cur2 `(-- ,cur2-orig))
+                                              res-c-pp-arg-lst)
                      t))
                 ((unless res-compressed)
                  (mv pp-lst c-pp-arg-lst nil)))
-             (mv (if (or equals order) (cons cur1-orig res-pp-lst) res-pp-lst)
-                 (if (or equals (not order)) (cons cur2-orig res-c-pp-arg-lst)
+             (mv (if (or equals order) (medw-compress-safe-cons cur1-orig res-pp-lst) res-pp-lst)
+                 (if (or equals (not order)) (medw-compress-safe-cons cur2-orig res-c-pp-arg-lst)
                    res-c-pp-arg-lst)
                  t)))))
 
@@ -608,9 +649,36 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
        ((mv pp-lst c-lst &)
         (medw-compress-pp-arg-lst pp-lst c-lst nil))
        ((mv c-lst &)
-        (medw-compress-c-lst c-lst (expt 2 30))))
+        (medw-compress-c-lst c-lst (expt 2 30)))
+       )
     (mv (s-spec-meta-aux ''nil pp-lst c-lst)
         t)))
+
+(define medw-compress-s-c-res ((s-c-res rp-termp))
+  :returns (mv (res-term rp-termp :hyp (rp-termp s-c-res))
+               (dont-rw))
+  (b* ((orig s-c-res)
+       (s-c-res (ex-from-rp s-c-res))
+       ((mv s-lst pp-lst c-lst valid)
+        (case-match s-c-res
+          (('s-c-res s pp c)
+           (mv (list-to-lst s)
+               (list-to-lst pp)
+               (list-to-lst c)
+               t))
+          (& (mv nil nil nil nil))))
+       ((unless valid)
+        (mv orig nil))
+       ((mv c-lst com1)
+        (medw-compress-c-arg-lst c-lst t (expt 2 30)))
+       ((mv pp-lst c-lst com2)
+        (medw-compress-pp-arg-lst pp-lst c-lst t))
+       ((mv c-lst com3)
+        (medw-compress-c-lst c-lst (expt 2 30))))
+    (if (or com1 com2 com3)
+        (mv (create-s-c-res-instance s-lst pp-lst c-lst nil) t)
+      (mv  orig nil))))
+
 
        #|((mv s-res-lst pp-res-lst c-res-lst)
         (create-s-instance (create-list-instance pp-lst)
@@ -629,5 +697,10 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
        (case-match term2
          (('s & & &)
           (medw-compress-s term2))
+         (('s-c-res & & &)
+          (medw-compress-s-c-res term2))
          (& (mv term nil)))))
     (& (mv term nil))))
+
+
+

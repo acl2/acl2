@@ -44,5 +44,6 @@
 (include-book "equal-meta")
 (include-book "mv-nth-meta")
 (include-book "implies-meta")
+(include-book "cons-to-list-meta")
 
 (attach-meta-fncs built-in-metas)
