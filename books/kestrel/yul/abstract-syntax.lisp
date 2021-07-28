@@ -375,7 +375,7 @@
 
   (fty::defprod fundef
     :short "Fixtype of function definitions."
-    ((nme identifier)
+    ((name identifier)
      (inputs identifier-list)
      (outputs identifier-list)
      (body block))
