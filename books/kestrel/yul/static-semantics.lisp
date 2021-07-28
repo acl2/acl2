@@ -215,6 +215,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define add-funtype ((name identifierp) (in natp) (out natp) (funtab funtablep))
+  :returns (funtab? funtable-resultp)
+  :short "Add a function and its type to a function table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Return an error if a function with that name is already in the table."))
+  (b* ((pair (omap::in (identifier-fix name) (funtable-fix funtab))))
+    (if (consp pair)
+        (error (list :duplicate-function (identifier-fix name)))
+      (omap::update (identifier-fix name)
+                    (make-funtype :in in :out out)
+                    (funtable-fix funtab))))
+  ///
+  (fty::deffixequiv add-funtype :hints (("Goal" :in-theory (disable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines check-expression
   :short "Check if an expression is well-formed."
   :long
@@ -309,6 +327,41 @@
     (("Goal" :in-theory (enable acl2::natp-when-nat-resultp-and-not-errorp))))
 
   (fty::deffixequiv-mutual check-expression))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-functions-in-block ((block blockp) (funtab funtablep))
+  :returns (funtab? funtable-resultp)
+  :short "Extend a function table with
+          all the function definitions in a block."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "According to [Yul: Specification of Yul: Scoping Rules],
+     all the functions defined in a block are accessible in the whole block,
+     even before they are defined in the block.
+     Thus, just before checking a block,
+     we extend the function table
+     with all the function definitions in the block.
+     The function table already contains the functions
+     already accessible just before the block start,
+     which are also accessible in the block,
+     so extending the function table (as opposed to creating a new one)
+     is appropriate here.")
+   (xdoc::p
+    "As soon as a duplication function is found, we stop with an error."))
+  (b* (((when (endp block)) (funtable-fix funtab))
+       (stmt (car block))
+       ((unless (statement-case stmt :fundef))
+        (add-functions-in-block (cdr block) funtab))
+       ((fundef fundef) (statement-fundef->get stmt))
+       (funtab? (add-funtype fundef.name
+                             (len fundef.inputs)
+                             (len fundef.outputs)
+                             funtab))
+       ((when (errorp funtab?)) funtab?))
+    (add-functions-in-block (cdr block) funtab?))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
