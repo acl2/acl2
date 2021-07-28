@@ -38,9 +38,6 @@
 (include-book "map-code-char")
 (include-book "bytes-to-printable-string")
 
-(include-book "bit-listp")
-(include-book "bit-listp-rules")
-
 (include-book "maxelem")
 (include-book "maxelem2")
 (include-book "minelem")

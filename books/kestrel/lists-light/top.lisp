@@ -73,6 +73,7 @@
 (include-book "count-occs")
 (include-book "prefixp")
 (include-book "prefixp2")
+(include-book "remove-nth")
 
 (include-book "len-at-least")
 

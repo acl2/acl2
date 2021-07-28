@@ -13,7 +13,7 @@
 ;; These rules call axe-syntaxp
 
 (include-book "kestrel/axe/known-booleans" :dir :system)
-(include-book "kestrel/typed-lists-light/bit-listp" :dir :system)
+(include-book "kestrel/bv-lists/bit-listp" :dir :system)
 (include-book "kestrel/prime-fields/fe-listp" :dir :system)
 (include-book "kestrel/axe/axe-syntax-functions" :dir :system) ;for syntactic-variablep
 (include-book "axe-syntax-functions-r1cs")
