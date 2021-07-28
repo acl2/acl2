@@ -278,3 +278,16 @@
   (declare (xargs :guard (and (keywordp xarg)
                               (mutual-recursion-formp mutual-recursion))))
   `(mutual-recursion ,@(replace-xarg-in-defuns xarg val (fargs mutual-recursion))))
+
+;; Removes hints (and similar things) from a defun's xargs.
+(defun remove-hints-from-defun (defun)
+  (declare (xargs :guard (defun-formp defun)
+                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
+  (let* ((declares (get-declares-from-defun defun))
+         (declares (remove-xarg-in-declares :hints declares))
+         (declares (remove-xarg-in-declares :otf-flg declares))
+         (declares (remove-xarg-in-declares :measure-debug declares))
+         (declares (remove-xarg-in-declares :guard-hints declares))
+         (declares (remove-xarg-in-declares :guard-simplify declares))
+         (declares (remove-xarg-in-declares :guard-debug declares)))
+    (replace-declares-in-defun defun declares)))

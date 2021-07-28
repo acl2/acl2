@@ -12,7 +12,7 @@
 
 ;; STATUS: In-progress
 
-(include-book "kestrel/utilities/forms" :dir :system)
+(include-book "forms")
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/add-to-set-equal" :dir :system))
 

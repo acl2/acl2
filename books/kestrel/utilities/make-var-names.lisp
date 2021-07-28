@@ -14,7 +14,7 @@
 
 ;; todo: compare to new-var-names
 
-(include-book "kestrel/utilities/pack" :dir :system)
+(include-book "pack")
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 

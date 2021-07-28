@@ -19,7 +19,7 @@
 ;; XARGS (or several), etc.
 
 (include-book "keyword-value-lists2")
-(include-book "kestrel/utilities/conjunctions" :dir :system)
+(include-book "conjunctions")
 (include-book "std/lists/list-defuns" :dir :system) ;for flatten
 (include-book "std/util/bstar" :dir :system)
 

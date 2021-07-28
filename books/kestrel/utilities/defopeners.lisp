@@ -43,8 +43,8 @@
 (include-book "pack")
 (include-book "conjunctions")
 (include-book "misc/install-not-normalized" :dir :system)
-(include-book "kestrel/utilities/user-interface" :dir :system) ;for control-screen-output
-(include-book "defthm-events")
+(include-book "user-interface") ;for control-screen-output
+(include-book "defthm-forms")
 (include-book "kestrel/alists-light/keep-pairs" :dir :system)
 (include-book "remove-guard-holders")
 (local (include-book "state"))
