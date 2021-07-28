@@ -17,8 +17,10 @@
 (defpkg "YUL" (append (set-difference-eq
                        *std-pkg-symbols*
                        '(block
+                         error
                          funcall))
-                      '(bool
+                      '(any
+                        bool
                         defxdoc+
                         maybe-natp
                         nat
