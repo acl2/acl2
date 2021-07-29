@@ -64,7 +64,7 @@
   :parents (kestrel-utilities system-utilities-non-built-in)
   :short "A way to call the prover from a program."
   :long "<p>For examples, see community book
- @('books/kestrel/utilities/prove-interface-tests.lisp').</p>
+ @('books/tools/prove-dollar-tests.lisp').</p>
 
  @({
  General Form:

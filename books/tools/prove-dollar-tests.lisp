@@ -4,16 +4,16 @@
 
 (in-package "ACL2")
 
-(include-book "prove-interface")
+(include-book "prove-dollar")
 
 (include-book "std/testing/assert-bang-stobj" :dir :system)
 (include-book "std/testing/must-eval-to-t" :dir :system)
 (include-book "std/testing/must-fail" :dir :system)
 
-(defmacro must-succeed-pi (form) ; prove-interface version of must-succeed
+(defmacro must-succeed-pi (form) ; prove-dollar version of must-succeed
   `(local (must-eval-to-t ,form)))
 
-(defmacro must-fail-pi (form) ; prove-interface version of must-succeed
+(defmacro must-fail-pi (form) ; prove-dollar version of must-succeed
   `(local (must-fail (must-eval-to-t ,form))))
 
 ; Returns (mv nil t state).
