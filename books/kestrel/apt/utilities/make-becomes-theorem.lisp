@@ -23,11 +23,11 @@
 ;; Makes a theorem equating an arbitrary call of FN with a call of NEW-FN on the same arguments.
 ;; REC is either nil (function is non-recursive), :single, or :mutual.
 ;; TODO: Improve this to use the $not-normalized rules if indicated for fn and/or new-fn (add options for this)
-(defun make-becomes-theorem (fn
-                             new-fn
-                             rec
-                             thm-enable ;whether the theorem should be enabled
-                             enables    ;drop?
+(defun make-becomes-theorem (fn ; name of the old function
+                             new-fn ; name of the new function (must have the same params)
+                             rec ; nil (for non-recursive), :single, or :mutual
+                             thm-enable ;whether the "becomes theorem" should be enabled
+                             enables ; rules to always enable in the proof ; drop??
                              state)
   (declare (xargs :stobjs state
                   :guard (and (symbolp fn)
