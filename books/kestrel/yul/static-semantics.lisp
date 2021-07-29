@@ -365,4 +365,298 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: add checking of statements etc.
+(defresult identifier-set "osets of identifiers")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-variable-single ((name identifierp)
+                               (init expression-optionp)
+                               (var-acc identifier-setp)
+                               (var-vis identifier-setp)
+                               (funtab funtablep))
+  :returns (var-acc? identifier-set-resultp)
+  :short "Check if a single variable declaration is well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee check-statement):
+     see that function's documentation for background.")
+   (xdoc::p
+    "The name of the variable must be a well-formed identifier
+     that is not visible (including accessible).
+     The expression is checked if present,
+     and it must return exactly one result."))
+  (b* ((name (identifier-fix name))
+       (init (expression-option-fix init))
+       (wf? (check-identifier name))
+       ((when (errorp wf?)) wf?)
+       ((when (or (set::in name (identifier-set-fix var-acc))
+                  (set::in name (identifier-set-fix var-vis))))
+        (error (list :var-redeclare name)))
+       ((when (not init)) (identifier-set-fix var-acc))
+       (results? (check-expression init var-acc funtab))
+       ((when (errorp results?)) results?)
+       ((unless (= results? 1))
+        (error (list :declare-single-var-mismatch name results?))))
+    (set::insert name (identifier-set-fix var-acc)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-variable-multi ((names identifier-listp)
+                              (init funcall-optionp)
+                              (var-acc identifier-setp)
+                              (var-vis identifier-setp)
+                              (funtab funtablep))
+  :returns (var-acc? identifier-set-resultp)
+  :short "Check if a multiple variable declaration is well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee check-statement):
+     see that function's documentation for background.")
+   (xdoc::p
+    "The name of the variables must be well-formed identifiers
+     that are not visible (including accessible).
+     They must also be distinct and at least two.
+     The expression is checked if present,
+     and it must return the same number of results
+     as the number of variables."))
+  (b* ((names (identifier-list-fix names))
+       (init (funcall-option-fix init))
+       (wf? (check-identifier-list names))
+       ((when (errorp wf?)) wf?)
+       ((when (or (not (set::empty (set::intersect
+                                    (set::mergesort names)
+                                    (identifier-set-fix var-acc))))
+                  (not (set::empty (set::intersect
+                                    (set::mergesort names)
+                                    (identifier-set-fix var-vis))))))
+        (error (list :vars-redeclare names)))
+       ((unless (no-duplicatesp-equal names))
+        (error (list :duplicate-var-declare names)))
+       ((unless (>= (len names) 2))
+        (error (list :declare-zero-one-var names)))
+       ((when (not init)) (identifier-set-fix var-acc))
+       (results? (check-funcall init var-acc funtab))
+       ((when (errorp results?)) results?)
+       ((unless (= results? (len names)))
+        (error (list :declare-multi-var-mismatch names results?))))
+    (set::union (set::mergesort names) (identifier-set-fix var-acc)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-assign-single ((target pathp)
+                             (value expressionp)
+                             (var-acc identifier-setp)
+                             (funtab funtablep))
+  :returns (wf? wellformed-resultp)
+  :short "Check if a single assignment is well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Similarly to @(tsee check-expression),
+     for now we require the path to be a singleton;
+     see discussion there about non-singleton paths.")
+   (xdoc::p
+    "We check the expression, and and ensure that it returns one result.")
+   (xdoc::p
+    "The set of accessible variables is unchanged,
+     so we do not return an updated set."))
+  (b* ((idents (path->get target))
+       ((unless (and (consp idents)
+                     (endp (cdr idents))
+                     (set::in (car idents) (identifier-set-fix var-acc))))
+        (error (list :bad-path (path-fix target))))
+       (results? (check-expression value var-acc funtab))
+       ((when (errorp results?)) results?)
+       ((unless (= results? 1))
+        (error (list :assign-single-var-mismatch (path-fix target) results?))))
+    :wellformed)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-assign-multi ((targets path-listp)
+                            (value funcallp)
+                            (var-acc identifier-setp)
+                            (funtab funtablep))
+  :returns (wf? wellformed-resultp)
+  :short "Check if a multiple assignment is well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Similarly to @(tsee check-expression),
+     for now we require each path to be a singleton;
+     see discussion there about non-singleton paths.")
+   (xdoc::p
+    "We check the expression, and and ensure that it returns
+     a number of results equal to the number of variables.
+     The variables must be two or more.")
+   (xdoc::p
+    "The set of accessible variables is unchanged,
+     so we do not return an updated set."))
+  (b* (((unless (check-assign-multi-aux targets var-acc))
+        (error (list :bad-paths (path-list-fix targets))))
+       ((unless (>= (len targets) 2))
+        (error (list :assign-zero-one-path (path-list-fix targets))))
+       (results? (check-funcall value var-acc funtab))
+       ((when (errorp results?)) results?)
+       ((unless (= results? (len targets)))
+        (error (list :assign-single-var-mismatch
+                 (path-list-fix targets) results?))))
+    :wellformed)
+  :hooks (:fix)
+
+  :prepwork
+  ((define check-assign-multi-aux ((targets path-listp)
+                                   (var-acc identifier-setp))
+     :returns (yes/no booleanp)
+     :parents nil
+     (or (endp targets)
+         (and (b* ((idents (path->get (car targets))))
+                (and (consp idents)
+                     (endp (cdr idents))
+                     (set::in (car idents) (identifier-set-fix var-acc))))
+              (check-assign-multi-aux (cdr targets) var-acc)))
+     :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines check-statement
+  :short "Check if a statement is well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A statement is checked in the context of
+     a set of accessible (and visible) variables (@('var-acc')),
+     a set of inaccessible but visible variables (@('var-vis')),
+     and a function table.
+     The two sets of variables form a symbol table for variables.
+     The notions of `visible' and `accessible' are described
+     in [Yul: Specification of Yul: Scoping Rules].
+     Thus, all of the variables in @('var-acc') and @('var-vis')
+     are actually visible (not only the ones in @('var-vis')),
+     but only the ones in @('var-acc') are also accessible,
+     while the ones in @('var-vis') are visible but not accessible.")
+   (xdoc::p
+    "If the checking of a statement is successful,
+     we return a possibly updated set of accessible variables.
+     The set is updated only via variable declarations,
+     while the other kinds of statements leave the set unchanged.
+     The set may be changed in blocks nested in the statement,
+     but those changes do not surface outside those blocks.
+     Note also that the function table is not updated
+     while checking function definition statements:
+     as explained in @(tsee add-functions-in-block),
+     the function definitions in a block are collected,
+     and used to extend the function table,
+     before processing the statements in a block.")
+   (xdoc::p
+    "To check a block, we check its statements,
+     threading throught the set of accessible variables,
+     and discard the final set of accessible variables,
+     because those updates are local to the block.")
+   (xdoc::p
+    "We use separate ACL2 functions to check declarations and assignments,
+     as their checking does not involve the mutual recursion.")
+   (xdoc::p
+    "For a function call used as a statement,
+     we check the function call and ensure it returns no results.")
+   (xdoc::p
+    "For an @('if') statement, we check test, which must return one result,
+     and we check the body block.
+     Since the body is a block,
+     the updated set of accessible variables is discarded.")
+   (xdoc::p
+    "For a @('for') statement, we first check the initialization block.
+     We use the updated set of accessible variables
+     to check the other components,
+     because the scope of the initialization block
+     extends to the whole statement, as explained
+     in [Yul: Specification of Yul: Scoping Rules].
+     The test must return one result."))
+
+  (define check-statement ((stmt statementp)
+                           (var-acc identifier-setp)
+                           (var-vis identifier-setp)
+                           (funtab funtablep))
+    :returns (var-acc? identifier-set-resultp)
+    (statement-case
+     stmt
+     :block
+     (b* ((var-acc? (check-block stmt.get var-acc var-vis funtab))
+          ((when (errorp var-acc?)) var-acc?))
+       (identifier-set-fix var-acc))
+     :variable-single
+     (check-variable-single stmt.name stmt.init var-acc var-vis funtab)
+     :variable-multi
+     (check-variable-multi stmt.names stmt.init var-acc var-vis funtab)
+     :assign-single
+     (b* ((wf? (check-assign-single stmt.target stmt.value var-acc funtab))
+          ((when (errorp wf?)) wf?))
+       (identifier-set-fix var-acc))
+     :assign-multi
+     (b* ((wf? (check-assign-multi stmt.targets stmt.value var-acc funtab))
+          ((when (errorp wf?)) wf?))
+       (identifier-set-fix var-acc))
+     :funcall
+     (b* ((results? (check-funcall stmt.get var-acc funtab))
+          ((when (errorp results?)) results?)
+          ((unless (= results? 0))
+           (error (list :discarded-values stmt.get))))
+       (identifier-set-fix var-acc))
+     :if
+     (b* ((results? (check-expression stmt.test var-acc funtab))
+          ((when (errorp results?)) results?)
+          ((unless (= results? 1))
+           (error (list :multi-valued-if-test stmt.test)))
+          (var-acc? (check-block stmt.body var-acc var-vis funtab))
+          ((when (errorp var-acc?)) var-acc?))
+       (identifier-set-fix var-acc))
+     :for
+     (b* ((var-acc-init? (check-block stmt.init var-acc var-vis funtab))
+          ((when (errorp var-acc-init?)) var-acc-init?)
+          (results? (check-expression stmt.test var-acc-init? funtab))
+          ((when (errorp results?)) results?)
+          ((unless (= results? 1))
+           (error (list :multi-valued-for-test stmt.test)))
+          (var-acc-update? (check-block stmt.update
+                                        var-acc-init?
+                                        var-vis
+                                        funtab))
+          ((when (errorp var-acc-update?)) var-acc-update?)
+          (var-acc-body? (check-block stmt.body
+                                      var-acc-init?
+                                      var-vis
+                                      funtab))
+          ((when (errorp var-acc-body?)) var-acc-body?))
+       (identifier-set-fix var-acc))
+     :switch (error :todo)
+     :leave (error :todo)
+     :break (error :todo)
+     :continue (error :todo)
+     :fundef (error :todo))
+    :measure (statement-count stmt))
+
+  (define check-block ((block blockp)
+                       (var-acc identifier-setp)
+                       (var-vis identifier-setp)
+                       (funtab funtablep))
+    :returns (var-acc? identifier-set-resultp)
+    (b* (((when (endp block)) (identifier-set-fix var-acc))
+         (var-acc? (check-statement (car block) var-acc var-vis funtab))
+         ((when (errorp var-acc?)) var-acc?))
+      (check-block (cdr block) var-acc? var-vis funtab))
+    :measure (block-count block))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards check-statement
+    :hints
+    (("Goal"
+      :in-theory
+      (enable identifier-setp-when-identifier-set-resultp-and-not-errorp))))
+
+  (fty::deffixequiv-mutual check-statement))
