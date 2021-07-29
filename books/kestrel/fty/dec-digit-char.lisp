@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection dec-digit-char
+  :parents (dec-digit-char-p)
   :short "Fixtype of decimal digit characters."
   :long
   (xdoc::topstring
