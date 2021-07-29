@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection hex-digit-char
+  :parents (hex-digit-char-p)
   :short "Fixtype of hexadecimal digit characters."
   :long
   (xdoc::topstring

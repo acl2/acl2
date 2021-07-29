@@ -77,6 +77,13 @@
   :elementp-of-nil nil
   :pred identifier-setp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule identifier-setp-of-mergesort
+  (implies (identifier-listp x)
+           (identifier-setp (set::mergesort x)))
+  :enable set::mergesort)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod path
@@ -348,6 +355,7 @@
     (:break ())
     (:continue ())
     (:fundef ((get fundef)))
+    :pred statementp
     :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::deflist block
@@ -375,7 +383,7 @@
 
   (fty::defprod fundef
     :short "Fixtype of function definitions."
-    ((nme identifier)
+    ((name identifier)
      (inputs identifier-list)
      (outputs identifier-list)
      (body block))

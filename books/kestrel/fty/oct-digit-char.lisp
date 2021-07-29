@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection oct-digit-char
+  :parents (oct-digit-char-p)
   :short "Fixtype of octal digit characters."
   :long
   (xdoc::topstring

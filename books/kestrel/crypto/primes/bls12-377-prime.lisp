@@ -63,7 +63,7 @@
            (46 1 1 1 1)
            (() () () () ()))))
 
-  :parents (bls12-377-domain-parameters)
+  :parents (ecurve::bls12-377-domain-parameters)
 
   :short "The prime @($r$)."
 
