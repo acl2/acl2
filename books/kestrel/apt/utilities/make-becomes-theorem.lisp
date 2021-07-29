@@ -44,18 +44,22 @@
               (,new-fn ,@formals))
        :hints ,(if (eq rec :mutual) ;weird format for make-flag hints:
                    `('(:in-theory (append '(,fn ,new-fn ,@enables) (theory 'minimal-theory))
+                                  :do-not '(generalize eliminate-destructors)
                                   :expand ((,fn ,@formals)
                                            (,new-fn ,@formals))))
                  (if (eq rec :single)
-                     `(("Goal" :induct (,fn ,@formals)
+                     `(("Goal" :induct (,fn ,@formals) ; should we induct in the new or old function (old, since we know it is recursive?)?
                         :do-not '(generalize eliminate-destructors)
                         :in-theory (append '(,fn ,new-fn ,@enables) (theory 'minimal-theory))))
-                   `(("Goal" :in-theory (append '(,fn ,new-fn ,@enables)
-                                                (theory 'minimal-theory) ;TODO: use nil?
-                                                )))))
+                   ;; non-recursive case:
+                   `(("Goal" :in-theory (append '(,fn ,new-fn ,@enables) (theory 'minimal-theory))
+                      :do-not '(generalize eliminate-destructors)
+                      :do-not-induct t))))
+       ;; Put in a flag for defthm-flag-xxx if appropriate:
        ,@(and (eq rec :mutual) (list :flag fn)))))
 
 ;; Make the "becomes theorems" for the given FNS, using the FUNCTION-RENAMING to get their new names.
+;; TODO: This could wrap the theorems in a call to defthm-flag-xxx.
 (defun make-becomes-theorems (fns
                               enables-for-each
                               function-renaming
