@@ -348,6 +348,7 @@
     (:break ())
     (:continue ())
     (:fundef ((get fundef)))
+    :pred statementp
     :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::deflist block
