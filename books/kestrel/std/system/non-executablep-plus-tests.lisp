@@ -30,6 +30,7 @@
  (assert! (non-executablep+ 'g (w state))))
 
 (must-succeed*
- (defun-sk h (x y) (exists z (equal z (cons x y)))
-   :witness-dcls ((declare (xargs :non-executable nil))))
+ (defun-sk h (x y)
+   (declare (xargs :non-executable nil))
+   (exists z (equal z (cons x y))))
  (assert! (not (non-executablep+ 'h (w state)))))

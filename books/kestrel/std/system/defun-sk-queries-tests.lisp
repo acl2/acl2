@@ -168,7 +168,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
- (defun-sk f () (exists b (atom b)) :witness-dcls nil)
+ (defun-sk f () (exists b (atom b)))
  (assert! (defun-sk-p 'f (w state)))
  (assert! (defun-sk-namep 'f (w state)))
  (assert-equal (defun-sk-body 'f (w state)) '(exists b (atom b)))
@@ -176,7 +176,7 @@
  (assert-equal (defun-sk-bound-vars 'f (w state)) '(b))
  (assert-equal (defun-sk-imatrix 'f (w state)) '(atom b))
  (assert-equal (defun-sk-witness 'f (w state)) 'f-witness)
- (assert-equal (defun-sk-options 'f (w state)) '((:witness-dcls . nil)))
+ (assert-equal (defun-sk-options 'f (w state)) nil)
  (assert-equal (defun-sk-strengthen 'f (w state)) nil)
  (assert-equal (defun-sk-classicalp 'f (w state)) t)
  (assert-equal (defun-sk-rewrite-kind 'f (w state)) :default)
@@ -187,8 +187,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
- (defun-sk f () (exists b (atom b))
-   :witness-dcls ((declare (xargs :verify-guards nil))))
+ (defun-sk f ()
+   (declare (xargs :verify-guards nil))
+   (exists b (atom b)))
  (assert! (defun-sk-p 'f (w state)))
  (assert! (defun-sk-namep 'f (w state)))
  (assert-equal (defun-sk-body 'f (w state)) '(exists b (atom b)))
@@ -196,8 +197,7 @@
  (assert-equal (defun-sk-bound-vars 'f (w state)) '(b))
  (assert-equal (defun-sk-imatrix 'f (w state)) '(atom b))
  (assert-equal (defun-sk-witness 'f (w state)) 'f-witness)
- (assert-equal (defun-sk-options 'f (w state))
-               '((:witness-dcls . ((declare (xargs :verify-guards nil))))))
+ (assert-equal (defun-sk-options 'f (w state)) nil)
  (assert-equal (defun-sk-strengthen 'f (w state)) nil)
  (assert-equal (defun-sk-classicalp 'f (w state)) t)
  (assert-equal (defun-sk-rewrite-kind 'f (w state)) :default)
@@ -634,7 +634,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
- (defun-sk f (a) (forall (b1 b2 b3) (* a b1 b2 b3)) :witness-dcls nil)
+ (defun-sk f (a) (forall (b1 b2 b3) (* a b1 b2 b3)))
  (assert! (defun-sk-p 'f (w state)))
  (assert! (defun-sk-namep 'f (w state)))
  (assert-equal (defun-sk-body 'f (w state)) '(forall (b1 b2 b3) (* a b1 b2 b3)))
@@ -642,7 +642,7 @@
  (assert-equal (defun-sk-bound-vars 'f (w state)) '(b1 b2 b3))
  (assert-equal (defun-sk-imatrix 'f (w state)) '(* a b1 b2 b3))
  (assert-equal (defun-sk-witness 'f (w state)) 'f-witness)
- (assert-equal (defun-sk-options 'f (w state)) '((:witness-dcls . nil)))
+ (assert-equal (defun-sk-options 'f (w state)) nil)
  (assert-equal (defun-sk-strengthen 'f (w state)) nil)
  (assert-equal (defun-sk-classicalp 'f (w state)) t)
  (assert-equal (defun-sk-rewrite-kind 'f (w state)) :default)

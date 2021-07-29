@@ -181,14 +181,12 @@
                   verbose)))))
     (value
      `((,defun-sk? ,fn-simp ,formals
+         ,@(and (not non-executable)
+                '((declare (xargs :non-executable nil))))
+         ,@(and guard-decl
+                (list guard-decl))
          (,quantifier ,bound-vars ,untrans-simp-body)
          :quant-ok t
-         ,@(and (or (not non-executable) guard-decl)
-                `(:witness-dcls
-                  (,@(and (not non-executable)
-                          '((declare (xargs :non-executable nil))))
-                   ,@(and guard-decl
-                          (list guard-decl)))))
          ,@(and strengthen
                 '(:strengthen t))
          ,@(and skolem-name

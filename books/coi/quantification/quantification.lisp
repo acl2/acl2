@@ -573,13 +573,14 @@
 
       (local (in-theory (cons 'acl2::MV-NTH-TO-VAL (theory 'acl2::minimal-theory))))
 
-      (defun-sk ,name ,args ,body
+      (defun-sk ,name ,args
+	,@witness-dcls
+        ,body
 	,@(rekey :doc doc)
 	,@(rekey :quant-ok quant-ok)
 	,@(rekey :skolem-name skolem-name)
 	,@(rekey :thm-name thm-name)
 	,@(rekey :rewrite rewrite)
-	,@(rekey :witness-dcls witness-dcls)
         ,@(rekey :strengthen strengthen))
 
       (in-theory (disable ,thm-name))
@@ -1542,14 +1543,14 @@ ACL2 !>
 (acl2::defxdoc def::un-sk
   :short "An extension of defun-sk that supports automated skolemization and instantiation of quantified formulae"
   :parents (defun-sk)
-  :long "<p> 
+  :long "<p>
 The @('def::un-sk') macro is an extension of @(tsee defun-sk) that supports
 automated skolemization and instantiation of quantified formulae via the
 computed hints @('quant::inst?') and @('quant::skosimp').
 </p>
 <p>Usage:</p> @({
   (include-book \"coi/quantification/quantification\" :dir :system)
-               
+
   (def::un-sk forall-zen (a)
     (forall (x y) (implies (boo a x) (hoo a y))))
 
@@ -1571,7 +1572,7 @@ computed hints @('quant::inst?') and @('quant::skosimp').
   ;; This is kind of a cool theorem
 
   (defthmd forall-is-not-exists
-    (iff (forall-zen q) 
+    (iff (forall-zen q)
          (not (exists-zen q)))
     :hints ((quant::skosimp)
  	    (quant::inst?)))

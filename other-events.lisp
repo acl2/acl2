@@ -17855,6 +17855,12 @@
 ; Since this is just a macro, we only do a little bit of vanilla checking,
 ; leaving it to the real events to implement the most rigorous checks.
 
+  (prog2$
+   (or (null witness-dcls)
+       (cw "~%**NOTE**: The keyword :WITNESS-DCLS of ~x0 is deprecated and ~
+            will likely no longer be supported after ACL2 Version 8.4.  Use ~
+            DECLARE forms instead.  See :DOC defun-sk.~|"
+           'defun-sk))
   (let ((bound-vars (and (true-listp body) ;this is to guard cadr
                          (cadr body)
                          (if (atom (cadr body))
@@ -17942,7 +17948,7 @@
                'forall
              'exists)
            body))
-     (t nil))))
+     (t nil)))))
 
 (defun definition-rule-name (name)
   (declare (xargs :guard (symbolp name)))

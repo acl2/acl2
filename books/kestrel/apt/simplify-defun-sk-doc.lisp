@@ -542,27 +542,27 @@
 
  @({
  (defun-sk foo (lst1 lst2)
+  (declare (xargs :guard (and (true-listp lst1)
+                              (true-listp lst2))
+                  :verify-guards nil))
    (forall x (equal (member-equal x (fix-true-list lst1))
-                    (member-equal x (fix-true-list lst2))))
-   :witness-dcls ((declare (xargs :guard (and (true-listp lst1)
-                                              (true-listp lst2))
-                                  :verify-guards nil))))
+                    (member-equal x (fix-true-list lst2)))))
  (simplify-defun-sk foo :assumptions :guard)
  })
 
- <p>Here is the result.  Notice that it is the same as before, except that the
- @(':WITNESS-DCLS') is preserved.</p>
+ <p>Here is the result.  Notice that the simplified body is the same as
+ before.</p>
 
  @({
  (DEFUN-SK FOO$1 (LST1 LST2)
+           (DECLARE (XARGS :NON-EXECUTABLE NIL))
+                          (DECLARE (XARGS :GUARD (AND (TRUE-LISTP LST1)
+                                                      (TRUE-LISTP LST2))
+                                          :VERIFY-GUARDS NIL))
            (FORALL (X)
                    (EQUAL (MEMBER-EQUAL X LST1)
                           (MEMBER-EQUAL X LST2)))
-           :QUANT-OK T
-           :WITNESS-DCLS ((DECLARE (XARGS :NON-EXECUTABLE NIL))
-                          (DECLARE (XARGS :GUARD (AND (TRUE-LISTP LST1)
-                                                      (TRUE-LISTP LST2))
-                                          :VERIFY-GUARDS NIL))))
+           :QUANT-OK T)
  })
 
  <p>Unlike @(tsee simplify-defun), @('simplify-defun-sk') does not support
