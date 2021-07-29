@@ -715,7 +715,7 @@
 
 ; Eric's suggestion:
 
-;   (include-book "utilities/defun-events")
+;   (include-book "utilities/defun-forms")
 ;   (include-book "utilities/declares0")
 ;
 ;   ;; Returns (mv normalize-presentp xarg-val-if-present)
