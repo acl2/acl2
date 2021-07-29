@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection bin-digit-char
+  :parents (bin-digit-char-p)
   :short "Fixtype of binary digit characters."
   :long
   (xdoc::topstring

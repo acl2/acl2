@@ -9,3 +9,4 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (include-book "../../number-theory/portcullis") ; for PRIMES package
+(include-book "../ecurve/portcullis") ; for PRIMES package
