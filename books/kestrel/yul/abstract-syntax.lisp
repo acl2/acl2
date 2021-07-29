@@ -77,6 +77,13 @@
   :elementp-of-nil nil
   :pred identifier-setp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule identifier-setp-of-mergesort
+  (implies (identifier-listp x)
+           (identifier-setp (set::mergesort x)))
+  :enable set::mergesort)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod path
