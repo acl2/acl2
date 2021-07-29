@@ -13,6 +13,8 @@
 
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/utilities/world" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
+(include-book "function-renamingp")
 
 ;; Generate the name of the "becomes" theorem that replaces OLD-FN with NEW-FN.
 (defun becomes-theorem-name (old-fn new-fn)
@@ -52,3 +54,21 @@
                                                 (theory 'minimal-theory) ;TODO: use nil?
                                                 )))))
        ,@(and (eq rec :mutual) (list :flag fn)))))
+
+;; Make the "becomes theorems" for the given FNS, using the FUNCTION-RENAMING to get their new names.
+(defun make-becomes-theorems (fns
+                              enables-for-each
+                              function-renaming
+                              thm-enable ; whether all the theorems should be enabled
+                              enables state)
+  (declare (xargs :stobjs state :guard (and (symbol-listp fns)
+                                            (booleanp thm-enable)
+                                            (true-listp enables)
+                                            (true-list-listp enables-for-each)
+                                            (function-renamingp function-renaming))))
+  (if (endp fns)
+      nil
+    (let ((fn (first fns))
+          (enables-for-this (first enables-for-each)))
+      (cons (make-becomes-theorem fn (lookup-eq-safe fn function-renaming) :mutual thm-enable (append enables enables-for-this) state)
+            (make-becomes-theorems (rest fns) (rest enables-for-each) function-renaming thm-enable enables state)))))
