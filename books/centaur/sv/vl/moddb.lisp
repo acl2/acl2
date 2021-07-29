@@ -398,14 +398,14 @@ current one.  We translate module @('a') as follows:</p>
        ((mv err1 type) (vl-interface-mocktype x ss))
        ((unless (vl-datatype-resolved-p type))
         (mv (vmsg "Mocktype of interface ~a0 not resolved: ~a1"
-                  x type)
+                  (vl-interface->name x) type)
             nil))
        ((mv err2 size) (vl-datatype-size type)))
     (mv (vmsg-concat err1
                      (or err2
                          (and (not size)
                               (vmsg "Mocktype of interface ~a0 couldn't be sized: ~a1"
-                                    x type))))
+                                    (vl-interface->name x) type))))
         size)))
        
       
@@ -502,7 +502,7 @@ constructed separately.)</p>"
        (warnings (vl-err->fatal err
                                 :type :vl-interface->svex-fail
                                 :msg "Failed to resolve the size of ~a0"
-                                :args (list iface)))
+                                :args (list ifname)))
        ((unless (posp size))
         (mv warnings nil nil 0 0))
        (arraysize (if arraywidth (* arraywidth size) size))

@@ -125,12 +125,16 @@
     (equal (vl-datatype-resolved-p (make-vl-usertype :name name
                                                      :res res
                                                      :pdims pdims
-                                                     :udims udims))
+                                                     :udims udims
+                                                     :virtual-intfc virtual-intfc
+                                                     :intfc-params intfc-params))
            (and res (vl-datatype-resolved-p res)))
     :hints (("Goal" :expand (vl-datatype-resolved-p (make-vl-usertype :name name
                                                                       :res res
                                                                       :pdims pdims
-                                                                      :udims udims)))))
+                                                                      :udims udims
+                                                                      :virtual-intfc virtual-intfc
+                                                                      :intfc-params intfc-params)))))
 
   (defthm vl-structmemberlist-resolved-p-of-struct-members
     (implies (and (vl-datatype-case x :vl-struct)
