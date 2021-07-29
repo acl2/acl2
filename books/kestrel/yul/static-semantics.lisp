@@ -270,39 +270,39 @@
      returns the number of expressions,
      checking that they are all single-valued."))
 
-  (define check-expression ((e expressionp)
+  (define check-expression ((expr expressionp)
                             (var-acc identifier-setp)
                             (funtab funtablep))
     :returns (results? nat-resultp)
     (expression-case
-     e
+     expr
      :path
-     (if (and (consp e.get)
-              (not (consp (cdr e.get)))
-              (set::in (car e.get) (identifier-set-fix var-acc)))
+     (if (and (consp expr.get)
+              (not (consp (cdr expr.get)))
+              (set::in (car expr.get) (identifier-set-fix var-acc)))
          1
-       (error (list :bad-path e.get)))
+       (error (list :bad-path expr.get)))
      :literal
-     (b* ((wf? (check-literal e.get))
+     (b* ((wf? (check-literal expr.get))
           ((when (errorp wf?)) wf?))
        1)
      :funcall
-     (check-funcall e.get var-acc funtab))
-    :measure (expression-count e))
+     (check-funcall expr.get var-acc funtab))
+    :measure (expression-count expr))
 
-  (define check-expression-list ((es expression-listp)
+  (define check-expression-list ((exprs expression-listp)
                                  (var-acc identifier-setp)
                                  (funtab funtablep))
     :returns (number? nat-resultp)
-    (b* (((when (endp es)) 0)
-         (n? (check-expression (car es) var-acc funtab))
+    (b* (((when (endp exprs)) 0)
+         (n? (check-expression (car exprs) var-acc funtab))
          ((when (errorp n?)) n?)
          ((unless (= n? 1))
-          (error (list :multi-value-argument (expression-fix (car es)))))
-         (n? (check-expression-list (cdr es) var-acc funtab))
+          (error (list :multi-value-argument (expression-fix (car exprs)))))
+         (n? (check-expression-list (cdr exprs) var-acc funtab))
          ((when (errorp n?)) n?))
       (1+ n?))
-    :measure (expression-list-count es))
+    :measure (expression-list-count exprs))
 
   (define check-funcall ((call funcallp)
                          (var-acc identifier-setp)
