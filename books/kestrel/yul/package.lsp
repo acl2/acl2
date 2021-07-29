@@ -24,4 +24,6 @@
                         defxdoc+
                         nat
                         nat-resultp
+                        patbind-nat-result-err
+                        patbind-nat-result-ok
                         str::hex-digit-char)))
