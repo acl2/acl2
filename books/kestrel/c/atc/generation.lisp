@@ -3990,7 +3990,8 @@
                        :use ((:instance (:guard-theorem ,fn)
                               :extra-bindings-ok ,@gthm-instantiation)
                              (:instance ,termination-of-fn-thm
-                              :extra-bindings-ok ,@tthm-instantiation)))))
+                              :extra-bindings-ok ,@tthm-instantiation))
+                       :expand :lambdas)))
        (lemma-instructions
         `((:in-theory '(,exec-stmt-while-for-fn))
           :induct
