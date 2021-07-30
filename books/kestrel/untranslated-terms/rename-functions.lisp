@@ -177,22 +177,22 @@
                   (let* ((args (fargs term))
                          (args (rename-functions-in-untranslated-terms-aux args alist permissivep (+ -1 count) wrld state))
                          (new-fn (if (consp fn)
-                                 ;; ((lambda (...vars...) ...declares... body) ...args...)
-                                 ;;if it's a lambda application, replace calls in the body:
-                                 ;; TODO: Consider unclosed lambdas (translation closes them)
-                                 (let* ((lambda-formals (ulambda-formals fn))
-                                        (declares (ulambda-declares fn))
-                                        (lambda-body (ulambda-body fn))
-                                        (new-lambda-body (rename-functions-in-untranslated-term-aux lambda-body alist permissivep (+ -1 count) wrld state))
-                                        (new-fn (make-ulambda lambda-formals declares new-lambda-body)))
-                                   new-fn)
-                               ;;if it's not a lambda:
-                               (let ((res (assoc-eq fn alist)))
-                                 (if res
-                                     ;; Rename this function:
-                                     (cdr res)
-                                   ;; Don't rename:
-                                   fn)))))
+                                     ;; ((lambda (...vars...) ...declares... body) ...args...)
+                                     ;;if it's a lambda application, replace calls in the body:
+                                     ;; TODO: Consider unclosed lambdas (translation closes them)
+                                     (let* ((lambda-formals (ulambda-formals fn))
+                                            (declares (ulambda-declares fn))
+                                            (lambda-body (ulambda-body fn))
+                                            (new-lambda-body (rename-functions-in-untranslated-term-aux lambda-body alist permissivep (+ -1 count) wrld state))
+                                            (new-fn (make-ulambda lambda-formals declares new-lambda-body)))
+                                       new-fn)
+                                   ;;if it's not a lambda:
+                                   (let ((res (assoc-eq fn alist)))
+                                     (if res
+                                         ;; Rename this function:
+                                         (cdr res)
+                                       ;; Don't rename:
+                                       fn)))))
                     (cons new-fn args)))))))))))
 
  ;; rename all functions calls in TERMS according to ALIST
