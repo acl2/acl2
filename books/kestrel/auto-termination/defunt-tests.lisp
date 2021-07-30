@@ -99,32 +99,26 @@ to define function SYMBOL-BTREE-TO-ALIST-AUX.
 
 (defunt f4 (x y)
 
-; *Defunt note*: Using termination theorem for NAT-TO-CHARLIST1.
+; *Defunt note*: Using termination theorem for STR::BASIC-NATCHARS.
 
 #||
 *Defunt note*: Evaluating
-(LOCAL (INCLUDE-BOOK "clause-processors/generalize" :DIR :SYSTEM))
-to define function NAT-TO-CHARLIST1.
+(LOCAL (INCLUDE-BOOK "std/strings/decimal" :DIR :SYSTEM))
+to define function STR::BASIC-NATCHARS.
 ||#
 
   (cond ((zp x) y)
         (t (f4 (floor x 10)
                (cons x y)))))
 
-#||
-;; Shilpi Goel (06/23/2021): The file
-;; projects/x86isa/machine/concrete-state does not exist anymore.  I
-;; talked to Matt Kaufmann and he said it's okay to comment out
-;; my-merge for now.
-
 (defunt my-merge (x y)
 
-; *Defunt note*: Using termination theorem for X86ISA::MERGE-<-INTO->.
+; *Defunt note*: Using termination theorem for <-MERGE.
 
 #||
-*Defunt note*: Evaluating
-; (LOCAL (INCLUDE-BOOK "projects/x86isa/machine/concrete-state" :DIR :SYSTEM))
-to define function X86ISA::MERGE-<-INTO->.
+*Defunt note*: Evaluating 
+(LOCAL (INCLUDE-BOOK "projects/irv/irv" :DIR :SYSTEM))
+to define function <-MERGE.
 ||#
 
   (cond ((endp x) y)
@@ -134,16 +128,12 @@ to define function X86ISA::MERGE-<-INTO->.
                (my-merge (cdr x) y)))
         (t (cons (car y)
                  (my-merge x (cdr y))))))
-||#
 
 (defunt count-up-to (bound from)
 ; *Defunt note*: Using termination theorem for COMPRESS211.
    (cond ((zp (- bound from)) 0)
          (t (cons from (count-up-to bound (+ 1 from))))))
 
-; (include-book "centaur/misc/suffixp" :dir :system) ; for suffixp call below
-; We modify the include-book above simply to avoid a relocation warning.
-(include-book "std/lists/suffixp" :dir :system) ; for suffixp call below
 (DEFUNt DFS-COLLECT-new (NODES EDGES STACK)
 
 #||

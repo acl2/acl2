@@ -61,7 +61,28 @@
        ;; 9586122913090633729
        (11 (2 3 7 13 499)
            (46 1 1 1 1)
-           (() () () () ())))))
+           (() () () () ()))))
+
+  :parents (ecurve::bls12-377-domain-parameters)
+
+  :short "The prime @($r$)."
+
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The prime @($r$) is the scalar field size of
+     the curve @($E_{BLS}$), and is also the base field size of
+     the twisted Edwards curve @($E_{Ed/BLS}$).")
+   (xdoc::p
+    "@($r$) is computed from the
+     <see topic='@(url ecurve::bls12-377-parameter-x)'>parameter x</see>:
+     @([
+        r = x^4 - x^2 + 1
+      ])")
+   (xdoc::p
+    "Figure 16 lists its value in hexadecimal:")
+   (xdoc::codeblock
+    "0x12ab655e9a2ca55660b44d1e5c37b00159aa76fed00000010a11800000000001")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

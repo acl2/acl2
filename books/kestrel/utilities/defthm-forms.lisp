@@ -19,6 +19,7 @@
 
 (defconst *defthm-types* '(defthm defthmd))
 
+;; Recognize a defthm form, which must be a call of defthm or defthmd.
 (defund defthm-formp (defthm)
   (declare (xargs :guard t))
   (and (true-listp defthm)
@@ -29,9 +30,16 @@
        (keyword-value-listp (cdr (cdr (cdr defthm)))) ;skip the defthm, name, and body.
        ))
 
-;; Drops :hints, :otf-flg, and :instructions from DEFTHM.
-;; Also removes :flags used for make-flag
-;todo: rename clean-up-defthm (since we delete more than just the hints)
+;; Recognize a true list of defthm-forms.
+(defund defthm-form-listp (forms)
+  (declare (xargs :guard t))
+  (if (atom forms)
+      (null forms)
+    (and (defthm-formp (first forms))
+         (defthm-form-listp (rest forms)))))
+
+;; Drops :hints, :otf-flg, and :instructions from DEFTHM.  Also removes any
+;; :flag argument used for make-flag.
 (defund clean-up-defthm (defthm)
   (declare (xargs :guard (defthm-formp defthm)
                   :guard-hints (("Goal" :in-theory (enable defthm-formp)))))
@@ -39,22 +47,18 @@
          (name (second defthm))
          (body (third defthm))
          (keyword-value-list (cdddr defthm))
+         ;; we keep only the :rule-classes, dropping any :hints, :instructions, and :otf-flg.
          (rule-classes-supplied (assoc-keyword :rule-classes keyword-value-list))
          (rule-classes (cadr rule-classes-supplied)))
     `(,defthm-variant ,name
        ,body
        ,@(and rule-classes-supplied `(:rule-classes ,rule-classes)))))
 
-;removes :hints, etc and also the :flag arguments
+;; Removes :hints, etc and also the :flag arguments from make-flag (if any).
 (defun clean-up-defthms (defthms)
+  (declare (xargs :guard (defthm-form-listp defthms)
+                  :guard-hints (("Goal" :in-theory (enable defthm-form-listp)))))
   (if (atom defthms)
       nil
     (cons (clean-up-defthm (first defthms))
           (clean-up-defthms (rest defthms)))))
-
-(defun defthm-form-listp (forms)
-  (declare (xargs :guard t))
-  (if (atom forms)
-      (null forms)
-    (and (defthm-formp (first forms))
-         (defthm-form-listp (rest forms)))))

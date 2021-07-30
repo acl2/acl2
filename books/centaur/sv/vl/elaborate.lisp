@@ -359,6 +359,12 @@ information is stored in the elabindex before translating the expression.</p>")
                  new-elabindex)
     (b* (((vl-usertype x) (vl-datatype-fix x))
          (warnings nil)
+         ((when x.virtual-intfc)
+          (mv nil
+              (fatal :type :vl-virtual-intfc-unsupported
+                     :msg "Virtual interface datatypes aren't yet supported: ~a0"
+                     :args (list x))
+              x elabindex))
          (hid (vl-scopeexpr->hid x.name))
          ;; BOZO Maybe we should use a different type than scopeexpr for a usertype name
          ((unless (vl-hidexpr-case hid :end))

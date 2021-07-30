@@ -390,29 +390,57 @@ then restart the ACL2-Doc browser to view that manual."
   (acl2-doc-top)
   (acl2-doc-download-aux (acl2-doc-search-url) (acl2-doc-search-file-name)))
 
+(defun manual-index-pathname ()
+  (let* ((rendered (acl2-doc-pathname))
+	 (rendered-length (length rendered))
+	 (suffix "system/doc/rendered-doc-combined.lsp")
+	 (suffix-length (length suffix)))
+;;; Sanity check:
+    (or (equal (substring rendered (- rendered-length suffix-length))
+	       "system/doc/rendered-doc-combined.lsp")
+	(error "Impementation error in acl2-doc: unexpected suffix,\n%s"
+	       (substring rendered (- rendered-length suffix-length))))
+    (concat
+     (substring rendered 0 (- rendered-length suffix-length))
+     "doc/manual/index.html")))
+
 (defun acl2-doc-fetch ()
-  (let ((pathname (acl2-doc-pathname)))
-    (or (file-exists-p pathname)
-        (let ((pathname-gz (acl2-doc-gzipped-file pathname)))
-          (cond
-           ((and (file-exists-p pathname-gz)
-                 (y-or-n-p
-                  (format "Run gunzip on %s? "
-                          pathname-gz)))
-            (shell-command-to-string
-             (format "gunzip %s"
-                     pathname-gz))
-            (or (file-exists-p pathname)
-                (error "Execution of gunzip seems to have failed!")))
-           ((let ((url (acl2-doc-url)))
-              (and url
-                   (y-or-n-p
-                    (format "Download %s and install as %s? "
-                            url
-                            pathname))))
-            (acl2-doc-download))
-           (t (error "File %s not found."
-                     pathname)))))))
+  (let* ((pathname (acl2-doc-pathname))
+	 (pathname-exists (file-exists-p pathname))
+	 (url (acl2-doc-url))
+	 (pathname-gz (acl2-doc-gzipped-file pathname))
+	 (manual-index-pathname (manual-index-pathname)))
+    (cond
+     ((and pathname-exists
+	   (or (null url) ;; no download option
+	       (null manual-index-pathname) ; no writes dates to compare
+	       (file-newer-than-file-p pathname manual-index-pathname)
+	       (yes-or-no-p ; minibuffer display is better than y-or-n-p
+		"Use outdated manual?  (Reply no for download option.) "))))
+     ((and (file-exists-p pathname-gz)
+	   (y-or-n-p
+	    (format
+	     "Run gunzip on %s~a? "
+	     pathname-gz
+	     (if (file-newer-than-file-p pathname
+					 (manual-index-pathname))
+		 ""
+	       ", even though you can download a newer version"))))
+      (shell-command-to-string
+       (format "gunzip %s"
+	       pathname-gz))
+      (or (file-exists-p pathname)
+	  (error "Execution of gunzip seems to have failed!")))
+     ((and url
+	   (y-or-n-p
+	    (format "Download %s and install as %s? "
+		    url pathname)))
+      (acl2-doc-download))
+     ((or pathname-exists url)
+      (error "Update of manual aborted"))
+     (t (error
+	 "File %s not found, and\nno URL specified for the manual named %s"
+	 pathname *acl2-doc-manual-name*)))))
 
 (defun acl2-doc-reset (manual-name)
   (let ((old-name (acl2-doc-manual-name)))
@@ -596,23 +624,26 @@ then restart the ACL2-Doc browser to view that manual."
     (cond
      ((null sym)
 
-;;; We have found that (sexp-at-point) returns nil when standing in
-;;; text that ends in a square bracket followed by a period, e.g.,
+;;; We have found that (sexp-at-point) returns nil when standing in text (in
+;;; acl2-doc mode) that ends in a square bracket followed by a period, e.g.,
 ;;; "[loop-stopper]."  So we try again.
 
       (setq sym
             (save-excursion
               (if (< (point) (point-max))
-                  (forward-char 1))     ; in case we are at "["
+                  (forward-char 1)) ; in case we are at "["
               (let* ((saved-point (point))
-                     (start (and (re-search-backward "[^]]*[[]" nil t)
-                                 (match-beginning 0))))
+                     (start (if (looking-at "[[]")
+                                (point)
+                              (and (search-backward "[" nil t)
+                                   (match-beginning 0)))))
                 (and start
-                     (let ((end (and (re-search-forward "[^ ]*]" nil t)
+                     (let ((end (and (search-forward "]" nil t)
                                      (match-end 0))))
                        (and end
                             (<= saved-point end)
                             (goto-char (1+ start))
+                            (not (search-forward " " end t))
                             (read (current-buffer))))))))
       (when sym
         (setq arrayp t)))

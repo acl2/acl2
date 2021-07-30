@@ -53,7 +53,6 @@
 (include-book "oset-theorems")
 (include-book "osets")
 (include-book "proof-builder-macros")
-(include-book "prove-interface")
 (include-book "signed-byte-fixing")
 (include-book "signed-byte-list-fixing")
 (include-book "skip-in-book")

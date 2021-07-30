@@ -8244,3 +8244,304 @@
     (concatenate 'string p *directory-separator-string* s))))
 
 )
+
+; Print-object$ etc.
+
+(defconst *newline-string*
+  (string #\Newline))
+
+(defun comment-string-p1 (s i end)
+
+; We assume that i points to the start of a line of s.
+
+  (declare (type (unsigned-byte 29) end)
+           (xargs :measure (nfix (- end i))
+                  :guard (and (natp i)
+                              (stringp s)
+                              (= end (length s))
+                              (<= i end))))
+  (cond
+   ((not (mbt (and (unsigned-byte-p 29 end)
+                   (natp i)
+                   (stringp s)
+                   (= end (length s))
+                   (<= i end))))
+    (er hard 'comment-string-p1
+        "Guard violation!"))
+   (t (let ((j (scan-past-whitespace s i end)))
+        (cond
+         ((= j end) t)
+         ((eql (char s i) #\;)
+          (let ((p (search *newline-string* s :start2 j)))
+            (or (null p)
+                (comment-string-p1 s (1+ p) end))))
+         (t nil))))))
+
+(defun comment-string-p (s)
+  (declare (xargs :guard t))
+  (and (stringp s)
+       (let ((len (length s)))
+         (and (unsigned-byte-p 29 len)
+              (comment-string-p1 s 0 len)))))
+
+(defrec print-control
+
+; The alist maps Lisp variables to values, like the bindings in calls of
+; with-print-controls..  So a key might be *PRINT-BASE* but not PRINT-BASE or
+; :PRINT-BASE.
+
+  (header . alist)
+  nil)
+
+(defconst *print-control-defaults*
+
+; Warning: Keep this in sync with print-control-alistp.
+
+  `((print-base ',(cdr (assoc-eq 'print-base *initial-global-table*))
+                set-print-base)
+    (print-case ',(cdr (assoc-eq 'print-case *initial-global-table*))
+                set-print-case)
+    (print-circle ',(cdr (assoc-eq 'print-circle *initial-global-table*))
+                  set-print-circle)
+    (print-escape ',(cdr (assoc-eq 'print-escape *initial-global-table*))
+                  set-print-escape)
+    (print-length ',(cdr (assoc-eq 'print-length *initial-global-table*))
+                  set-print-length)
+    (print-level ',(cdr (assoc-eq 'print-level *initial-global-table*))
+                 set-print-level)
+    (print-lines ',(cdr (assoc-eq 'print-lines *initial-global-table*))
+                 set-print-lines)
+    (print-pretty ',(cdr (assoc-eq 'print-pretty *initial-global-table*))
+                  set-print-pretty)
+    (print-radix ',(cdr (assoc-eq 'print-radix *initial-global-table*))
+                  set-print-radix)
+    (print-readably ',(cdr (assoc-eq 'print-readably *initial-global-table*))
+                    set-print-readably)
+    (print-right-margin ',(cdr (assoc-eq 'print-right-margin
+                                         *initial-global-table*))
+                        set-print-right-margin)))
+
+(defun print-control-alistp (alist)
+
+; Warning: Keep this in sync with *print-control-defaults*.
+
+  (declare (xargs :guard (alistp alist) :mode :logic))
+  (cond
+   ((endp alist) t)
+   ((let ((key (caar alist))
+          (val (cdar alist)))
+      (case key
+        (*print-base* (print-base-p val))
+        (*print-case* (member-eq val '(:upcase :downcase)))
+        ((*print-length* *print-level* *print-lines* *print-right-margin*)
+         (check-null-or-natp val key))
+        ((*print-circle* *print-escape* *print-pretty* *print-radix*
+                         *print-readably*)
+         t)
+        (otherwise
+         (hard-error 'print-control-p
+                     "The symbol ~x0 is not a legal print control variable."
+                     (list (cons #\0 key))))))
+    (print-control-alistp (cdr alist)))
+   (t nil)))
+
+(defconst *raw-print-vars-keys*
+  (strip-cars *raw-print-vars-alist*))
+
+(defun alist-keys-subsetp (x keys)
+  (declare (xargs :guard (and (alistp x)
+                              (symbol-listp keys))))
+  (cond ((endp x) t)
+        ((member-eq (caar x) keys)
+         (alist-keys-subsetp (cdr x) keys))
+        (t nil)))
+
+(defun print-control-p (x)
+  (declare (xargs :guard t))
+  (and (weak-print-control-p x)
+       (or (null (access print-control x :header))
+           (comment-string-p (access print-control x :header)))
+       (alistp (access print-control x :alist))
+       (alist-keys-subsetp (access print-control x :alist)
+                           *raw-print-vars-keys*)
+       (print-control-alistp (access print-control x :alist))))
+
+(defun print-object$-fn (x control channel state-state)
+
+; Wart: We use state-state instead of state because of a bootstrap problem.
+
+; This function is a version of print-object$ that allows specification of the
+; serialize-character, which can be nil, #\Y, or #\Z (the normal case).  It
+; also allows, if serialize-character is not specified, the specification of a
+; header (comment) to print and of print-controls.
+
+; See print-object$ for additional comments.
+
+  (declare (ignorable control)
+           (xargs :guard (and (state-p1 state-state)
+
+; We considered placing the following conjunct here.
+;   (or (member control '(nil #\Y #\Z))
+;       (print-control-p control))
+
+; When trying that, we also added print-object$-fn to
+; *system-verify-guards-alist* (together with print-control-p and some of its
+; supporting function symbols).  Unfortunately, we ran into problems applying
+; verify-termination to print-object$-fn (in books/system/fmx-cw.lisp), because
+; it has raw Lisp code.  On further reflection it seemed that we can just do a
+; runtime check on print-control-p, which is presumably a cheap check compared
+; to printing.
+
+                              (symbolp channel)
+                              (open-output-channel-p1 channel
+                                                      :object state-state))))
+  #-acl2-loop-only
+  (when (live-state-p state-state)
+    (when *wormholep*
+
+; There is no standard object output channel and hence this channel is
+; directed to some unknown user-specified sink and we can't touch it.
+
+      (wormhole-er 'print-object$ (list x channel)))
+    (let ((stream (get-output-stream-from-channel channel))
+          (controlp (and control
+                         (not (characterp control)))))
+      (when (and controlp
+                 (not (print-control-p control)))
+; See comment about this check in the :guard above.
+        (er hard 'print-object$-fn
+            "Illegal print-control record, ~x0"
+            control))
+
+; Note: If you change the following bindings, consider changing the
+; corresponding bindings in print-object$.
+
+      (with-print-controls
+       (and controlp
+            (access print-control control :alist))
+       ((*print-circle* (and *print-circle-stream*
+                             (f-get-global 'print-circle state-state))))
+       (let ((header (if controlp
+                         (access print-control control :header)
+                       *newline-string*)))
+         (when header ; hence (stringp header)
+           (princ$ header channel state-state)
+           (unless (eql (char header (1- (length header))) #\Newline)
+             (terpri stream))))
+       (or #+hons
+           (let ((serialize-character
+                  (and (not controlp)
+                       control)))
+             (cond (serialize-character
+                    (write-char #\# stream)
+                    (write-char serialize-character stream)
+                    (ser-encode-to-stream x stream)
+                    t)))
+           (prin1 x stream))
+       (force-output stream)))
+    (return-from print-object$-fn state-state))
+  (let ((entry (cdr (assoc-eq channel (open-output-channels state-state)))))
+    (update-open-output-channels
+     (add-pair channel
+               (cons (car entry)
+                     (cons x
+                           (cdr entry)))
+               (open-output-channels state-state))
+     state-state)))
+
+(defun print-object$ (x channel state)
+
+; WARNING: In the HONS version, be sure to use with-output-object-channel-sharing
+; rather than calling open-output-channel directly, so that
+; *print-circle-stream* is initialized.
+
+; We believe that if in a single Common Lisp session, one prints an object and
+; then reads it back in with print-object$ and read-object, one will get back
+; an equal object under the assumptions that (a) the package structure has not
+; changed between the print and the read and (b) that *package* has the same
+; binding.  On a toothbrush, all calls of defpackage will occur before any
+; read-objecting or print-object$ing, so the package structure will be the
+; same.  It is up to the user to set current-package back to what it was at
+; print time if he hopes to read back in the same object.
+
+; Warning: For soundness, we need to avoid using iprinting when writing to
+; certificate files.  We do all such writing with print-object$, so we rely on
+; print-object$ not to use iprinting.
+
+  (declare (xargs :guard (and (state-p state)
+
+; We might want to modify state-p (actually, state-p1) so that the following
+; conjunct is not needed.
+
+                              (symbolp channel)
+                              (open-output-channel-p channel
+                                                     :object state))))
+  (print-object$-fn x (get-serialize-character state) channel state))
+
+(defun print-object$-preserving-case (x channel state)
+
+; Logically, this function is just print-object$.  Is it unsound to identify
+; these functions, since they print differently?  We think not, because the
+; only way to see what resides in a file is with the various ACL2 reading
+; functions, which all use a file-clock.  See the discussion of "deus ex
+; machina" in :doc current-package.
+
+  (declare (xargs :guard (and (state-p state)
+                              (eq (get-serialize-character state)
+
+; It's not clear that it makes sense to print preserving case when doing
+; serialize printing.  If that capability is needed we can address weakening the
+; guard to match the guard of print-object$.
+
+                                  nil)
+                              (symbolp channel)
+                              (open-output-channel-p channel
+                                                     :object state))))
+  #-acl2-loop-only
+  (cond ((live-state-p state)
+         (cond
+          #+gcl
+          ((not (fboundp 'system::set-readtable-case))
+           (cerror "Use print-object$ instead"
+                   "Sorry, but ~s is not supported in this older version of ~%~
+                    GCL (because raw Lisp function ~s is undefined)."
+                   'print-object$-preserving-case
+                   'system::set-readtable-case))
+          (t
+           (return-from print-object$-preserving-case
+             (let ((*acl2-readtable* (copy-readtable *acl2-readtable*)))
+               (set-acl2-readtable-case :preserve)
+               (print-object$ x channel state)))))))
+  (print-object$ x channel state))
+
+(defmacro print-object$+ (x channel
+                            &rest args
+                            &key
+                            (header 'nil headerp)
+                            (serialize-character 'nil serialize-character-p)
+                            &allow-other-keys)
+  (declare (xargs :guard (keyword-value-listp args)))
+  (cond
+   ((and serialize-character-p
+         (not (eq serialize-character nil))
+         (not (equal serialize-character ''nil))
+         (cddr args))
+    (er hard 'print-object$+
+        "It is illegal for a call of ~x0 to specify a value for ~
+         :SERIALIZE-CHARACTER other than ~x1 or ~x2 when at least one other ~
+         keyword argument is supplied."
+        'print-object$+
+        nil
+        ''nil))
+   (t `(print-object$-fn ,x
+                         ,(if (and serialize-character-p
+                                   (not (eq serialize-character nil))
+                                   (not (equal serialize-character ''nil)))
+                              serialize-character
+                            `(make print-control
+                                   :header ,(if headerp
+                                                header
+                                              *newline-string*)
+                                   :alist ,(print-object$+-alist args)))
+                         ,channel
+                         state))))

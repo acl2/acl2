@@ -1349,24 +1349,23 @@
  ()
  (defun-sk logic.provablep (x axioms thms atbl)
    ;; A formula is provable if there exists some proof of it.
+   #-skip-guards
+   (declare (xargs ;:non-executable t
+
+             ;; ACL2 4.0 change: must verify guards later to avoid new
+             ;; checking about guards inside encapsulates.
+             :verify-guards nil
+             :guard (and (logic.formulap x)
+                         (logic.formula-listp axioms)
+                         (logic.formula-listp thms)
+                         (logic.arity-tablep atbl))))
+   #+skip-guards
+   (declare (xargs ;:non-executable t
+             :verify-guards nil))
    (acl2::exists proof
                  (and (logic.appealp proof)
                       (logic.proofp proof axioms thms atbl)
                       (equal (logic.conclusion proof) x)))
-   :witness-dcls
-   #-skip-guards
-   ((declare (xargs ;:non-executable t
-
-              ;; ACL2 4.0 change: must verify guards later to avoid new
-              ;; checking about guards inside encapsulates.
-              :verify-guards nil
-              :guard (and (logic.formulap x)
-                          (logic.formula-listp axioms)
-                          (logic.formula-listp thms)
-                          (logic.arity-tablep atbl)))))
-   #+skip-guards
-   ((declare (xargs ;:non-executable t
-              :verify-guards nil)))
    :skolem-name logic.provable-witness)
 
  ;; ACL2 4.0 change: verify guards here instead of inline

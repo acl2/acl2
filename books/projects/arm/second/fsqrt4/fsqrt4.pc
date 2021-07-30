@@ -1,0 +1,748 @@
+//*************************************************
+// fsqrt4: Multi-Precision Radix-4 SRT Square Root
+//*************************************************
+
+// Formats:
+
+enum Format {HP, SP, DP};
+
+// Data classes:
+
+enum Class {ZERO, INF, SNAN, QNAN, NORM, DENORM};
+
+// Rounding modes:
+
+enum Rmode {RNE, RUP, RDN, RTZ};
+
+// Flags:
+
+enum Flags {IOC, DZC, OFC, UFC, IXC, IDC=7};
+
+// Extract operand components, apply FZ, identify data class, and record denormal:
+
+<bool, ui11, ui52, Class, ui8> analyze(ui64 op, ui2 fmt, bool fz, ui8 flags) {
+
+  // Extract fields:
+  bool sign;
+  si13 exp;
+  ui52 man, manMSB;
+  bool expIsMax;
+  switch (fmt) {
+  case DP:
+    sign = op[63];
+    exp = op[62:52];
+    expIsMax = exp == 0x7FF;
+    man = op[51:0];
+    manMSB = 0x8000000000000;
+    break;
+  case SP:
+    sign = op[31];
+    exp = op[30:23];
+    expIsMax = exp == 0xFF;
+    man = op[22:0];
+    manMSB = 0x400000;
+    break;
+  case HP:
+    sign = op[15];
+    exp = op[14:10];
+    expIsMax = exp == 0x1F;
+    man = op[9:0];
+    manMSB = 0x200;
+  }
+
+  // Classify:
+  Class c;
+  if (expIsMax) {
+    if (man == 0) {
+      c = INF;
+    }
+    else if (man & manMSB) {
+      c = QNAN;
+    }
+    else  {
+      c = SNAN;
+    }
+  }
+  else if (exp == 0) {
+    if (man == 0) {
+      c = ZERO;
+    }
+    else if (fz) {
+      c = ZERO;
+      if (fmt != HP) {
+        flags[IDC] = 1;
+      }
+    }
+    else  {
+      c = DENORM;
+    }
+  }
+  else  {
+    c = NORM;
+  }
+  
+  return <sign, exp, man, c, flags>;
+}
+
+// Count leading zeroes of a nonzero 53-bit vector.
+// After k iterations of the loop, where 0 <= k <= 6, the value of n 
+// is 2^(6-k) and the low n entries of z and c are as follows:
+// Consider the partition of x into n bit slices of width 2^k.
+// For 0 <= i < n, the i^th slice is x[2^k*(i+1)-1:2^k*i].
+// Let L(i) be the number of leading zeroes of this slice.  Then
+//   z[i] = 1 <=> L(i) = 2^k;
+//   L(i) < 2^k => c[i] = L(i).
+
+ui7 CLZ53(ui53 s) {
+  ui64 x = 0;
+  x[63:11] = s;
+  bool z[64];
+  ui6 c[64];
+  for (uint i = 0; i < 64; i++) {
+    z[i] = !x[i];
+    c[i] = 0;
+  }
+  uint n = 64;
+  for (uint k = 0; k < 6; k++) {
+    n = n / 2;
+    for (uint i = 0; i < n; i++) {
+      c[i] = z[2 * i + 1] ? c[2 * i] : c[2 * i + 1];
+      c[i][k] = z[2 * i + 1];
+      z[i] = z[2 * i + 1] && z[2 * i];
+    }
+  }
+  return c[0];
+}
+
+// Compute Q, incremented Q, and sticky bit: 
+
+<ui53, ui53, bool> computeQ(ui55 root, ui55 rootM1, ui55 rootP, ui55 rootM1P, ui59 RP, ui59 RN, bool lsbIs2) {
+
+  ui53 Qtrunc, Qinc;
+  bool stk;
+
+  // Sign of remainder:
+  ui59 rem = RP + ~RN + 1;
+  bool remSign = rem[58];
+  bool remZero = (RP ^ RN) == 0;
+  ui55 rootLo = remSign ? rootM1 : root;
+  ui55 rootLoP = remSign ? rootM1P : rootP;
+  if (lsbIs2) {
+    stk = rootLo[0] || !remZero;
+    Qtrunc = rootLo[53:1];
+    Qinc = rootLoP[53:1];
+  }
+  else  {
+    stk = !remZero;
+    Qtrunc = rootLo;
+    Qinc = rootLoP;
+  }
+  
+  return <Qtrunc, Qinc, stk>;
+}
+
+// Right-shift a 64-bit vector.  (This may have to be redefined to match RTL.)
+
+<ui64, bool> rShft64(ui64 x, ui6 s) {
+  ui64 xs = x >> s;
+  bool stk = x != (xs << s);
+  return <xs, stk>;
+}
+
+// Compute rounded result for both normal and denormal cases:
+
+<ui53, bool, ui53, bool>
+rounder(ui53 Qtrunc, ui53 Qinc, bool stk, bool sign, si13 expQ, ui2 rmode, ui2 fmt) {
+
+  // Rounding decision for normal case:
+  bool lsb = Qtrunc[1], grd = Qtrunc[0];
+  ui53 Qrnd;
+  if ((rmode == RNE) && grd && (lsb || stk) || (rmode == RUP) && !sign && (grd || stk) || (rmode == RDN) && sign && (grd || stk)) {
+    Qrnd = Qinc[53:1];
+  }
+  else  {
+    Qrnd = Qtrunc[53:1];
+  }
+  bool inx = grd || stk;
+
+  // Right-shifted quotient and rounding decision for subnormal case:
+  ui64 QDen = 0;
+  switch (fmt) {
+  case DP: QDen[53] = 1; QDen[52:0] = Qtrunc[52:0]; break;
+  case SP: QDen[24] = 1; QDen[23:0] = Qtrunc[23:0]; break;
+  case HP: QDen[11] = 1; QDen[10:0] = Qtrunc[10:0];
+  }
+  
+  ui12 shft12 = 1 - expQ;
+  ui6 shft = shft12 >= 64 ? 63 : shft12;
+  bool lsbDen, grdDen, stkDen;
+  ui64 Qshft;
+  <Qshft, stkDen> = rShft64(QDen, shft);
+  lsbDen = Qshft[1];
+  grdDen = Qshft[0];
+  stkDen = stkDen || stk;
+  ui54 QrndDen;
+  if ((rmode == RNE) && grdDen && (lsbDen || stkDen) || (rmode == RUP) && !sign && (grdDen || stkDen) || (rmode == RDN) && sign && (grdDen || stkDen)) {
+    QrndDen = Qshft[53:1] + 1;
+  }
+  else  {
+    QrndDen = Qshft[53:1];
+  }
+  bool inxDen = grdDen || stkDen;
+  return <Qrnd, inx, QrndDen, inxDen>;
+}
+
+// Final result:
+
+<ui64, ui8> final
+(ui53 Qrnd, bool inx, ui53 QrndDen, bool inxDen, bool sign, si13 expQ, ui2 rmode, bool fz, ui2 fmt, ui8 flags) {
+
+  // Selection of infinity or max normal for overflow case:
+  bool selMaxNorm = rmode == RDN && !sign || rmode == RUP && sign || rmode == RTZ;
+  
+  ui64 D = 0;  // data result
+  
+  switch (fmt) {
+  
+  case DP:
+    D[63] = sign;
+    if (expQ >= 0x7FF) { // overflow
+      if (selMaxNorm) {
+        D[62:52] = 0x7FE;
+        D[51:0] = 0xFFFFFFFFFFFFF;
+      }
+      else  {
+        D[62:52] = 0x7FF;
+        D[51:0] = 0;
+      }
+      flags[OFC] = 1; // overflow
+      flags[IXC] = 1; // inexact
+    }
+    else if (expQ <= 0) { // subnormal
+      if (fz) {
+        flags[UFC] = 1; // underflow but not inexact
+      }
+      else  {
+        ui11 exp = QrndDen[52];
+        D[62:52] = exp;
+        D[51:0] = QrndDen[51:0];
+        flags[IXC] = flags[IXC] || inxDen;
+        flags[UFC] = flags[UFC] || inxDen;
+      }
+    }
+    else  { // normal
+      D[62:52] = expQ;
+      D[51:0] = Qrnd[51:0];
+      flags[IXC] = flags[IXC] || inx;
+    }
+    break;
+    
+  case SP:
+    D[31] = sign;
+    if (expQ >= 0xFF) { // overflow
+      if (selMaxNorm) {
+        D[30:23] = 0xFE;
+        D[22:0] = 0x7FFFFF;
+      }
+      else  {
+        D[30:23] = 0xFF;
+        D[22:0] = 0;
+      }
+      flags[OFC] = 1; // overflow
+      flags[IXC] = 1; // inexact
+    }
+    else if (expQ <= 0) { // subnormal
+      if (fz) {
+        flags[UFC] = 1; // underflow but not inexact
+      }
+      else  {
+        ui8 exp = QrndDen[23];
+        D[30:23] = exp;
+        D[22:0] = QrndDen[22:0];
+        flags[IXC] = flags[IXC] || inxDen;
+        flags[UFC] = flags[UFC] || inxDen;
+      }
+    }
+    else  { // normal
+      D[30:23] = expQ;
+      D[22:0] = Qrnd[22:0];
+      flags[IXC] = flags[IXC] || inx;
+    }
+    break;
+    
+  case HP:
+    D[15] = sign;
+    if (expQ >= 0x1F) { // overflow
+      if (selMaxNorm) {
+        D[14:10] = 0x1E;
+        D[9:0] = 0x3FF;
+      }
+      else  {
+        D[14:10] = 0x1F;
+        D[9:0] = 0;
+      }
+      flags[OFC] = 1; // overflow
+      flags[IXC] = 1; // inexact
+    }
+    else if (expQ <= 0) { // subnormal
+      if (fz) {
+        flags[UFC] = 1; // underflow but not inexact
+      }
+      else  {
+        ui5 exp = QrndDen[10];
+        D[14:10] = exp;
+        D[9:0] = QrndDen[9:0];
+        flags[IXC] = flags[IXC] || inxDen;
+        flags[UFC] = flags[UFC] || inxDen;
+      }
+    }
+    else  { // normal
+      D[14:10] = expQ;
+      D[9:0] = Qrnd[9:0];
+      flags[IXC] = flags[IXC] || inx;
+    }
+    break;
+  }
+  return <D, flags>;
+}
+
+<ui64, ui8> specialCase(bool signa, ui64 opa, Class classa, ui2 fmt, bool dn, ui8 flags) {
+  ui64 D = 0;
+  ui64 aTrunc, manMSB, defNaN, zero = 0;
+  switch (fmt) {
+  case DP:
+    aTrunc = opa[63:0];
+    zero[63] = signa;
+    defNaN = 0x7FF8000000000000;
+    manMSB = 0x8000000000000;
+    break;
+  case SP:
+    aTrunc = opa[31:0];
+    zero[31] = signa;
+    defNaN = 0x7FC00000;
+    manMSB = 0x400000;
+    break;
+  case HP:
+    aTrunc = opa[15:0];
+    zero[15] = signa;
+    defNaN = 0x7E00;
+    manMSB = 0x200;
+    break;
+  }
+  if (classa == SNAN) {
+    D = dn ? defNaN : aTrunc | manMSB;
+    flags[IOC] = 1;
+  }
+  else if (classa == QNAN) {
+    D = dn ? defNaN : aTrunc;
+  }
+  else if (classa == ZERO) {
+    D = zero;
+  }
+  else if (signa) {
+    D = defNaN;
+    flags[IOC] = 1;
+  }
+  else  {
+    D = aTrunc;
+  }
+  return <D, flags>;
+}
+
+// Normalize denormal operand and compute predicted result exponent:
+
+<ui53, si13, ui11> normalize(si13 expa, ui52 mana, ui2 fmt) {
+  ui53 siga = 0;
+  uint bias;
+  switch (fmt) {
+  case DP:
+    siga = mana;
+    bias = 0x3FF;
+    break;
+  case SP:
+    siga[51:29] = mana;
+    bias = 0x7F;
+    break;
+  case HP:
+    siga[51:42] = mana;
+    bias = 0xF;
+  }
+  if (expa == 0) {
+    ui6 clz = CLZ53(siga);
+    siga <<= clz;
+    expa = 1 - clz;
+  }
+  else  {
+    siga[52] = 1;
+  }
+  ui12 expQ = expa + bias;
+  return <siga, expa, expQ[11:1]>;
+}
+
+// Power of 2:
+
+<ui64, ui8> sqrtPow2(ui11 expQ, bool expOdd, ui2 rmode, ui2 fmt) {
+  ui64 D = 0;
+  ui8 flags = 0;
+  uint manWidth;
+  ui52 manSqrt2;
+  switch (fmt) {
+  case DP:
+    manWidth = 52;
+    manSqrt2 = rmode == RNE || rmode == RUP ? 0x6A09E667F3BCD : 0x6A09E667F3BCC;
+    break;
+  case SP:
+    manWidth = 23;
+    manSqrt2 = rmode == RUP ? 0x3504F4 : 0x3504F3;
+    break;
+  case HP:
+    manWidth = 10;
+    manSqrt2 = rmode == RUP ? 0x5A9 : 0x5A8;
+    break;
+  }
+  if (!expOdd) {
+    D = manSqrt2;
+    flags[IXC] = 1;
+  }
+  D[manWidth + 10:manWidth] = expQ;
+  return <D, flags>;
+}
+
+// First iteration:
+      
+<ui59, ui59, ui55, ui55, int, uint> firstIter(ui53 siga, bool expOdd) {
+  ui59 RP = 0, RN = 0;
+  ui55 root = 0, rootM1 = 0;
+  int q;
+  uint i;
+  
+  if (expOdd) {
+    // x = siga/4 = .01xxx...
+    // R0 = x - 1 = 1111.01xxx...
+    // RP = 4*R0 = 1101.xxx...
+    RP[58:56] = 6;
+    RP[55:3] = siga;
+    if (siga[51]) {
+      // -5/2 <= 4*R0 < -2
+      q = -1;
+      root[53:52] = 3;   // 0.11000...
+      rootM1[53:52] = 2; // 0.10000...
+      // R1 = 4*R0 - (-1) * (2*Q0 + (-1)/4) = 4*R0 + 7/4
+      // RN = -7/4 = 1110.0100..
+      RN[58:53] = 0x39; // 1110.0100...
+      i = 4; // Q1 = 0.1100
+    }
+    else  {
+      // 4*R0 < -5/2
+      q = -2;
+      root[53:52] = 2;   // 0.10000...
+      rootM1[53:52] = 1; // 0.01000...
+      // R1 = 4*R0 - (-2) * (2*Q0 + (-2)/4) = 4*R0 + 3
+      // RN = -3 = 1101.00...
+      RN[58:55] = 0xD; // 1110.0100...
+      i = 0; // Q1 = 0.1000
+    }
+  }
+  else  { // expa even
+    // x = siga/2 = .1xxx...
+    // R0 = x - 1 = 1111.1xxx...
+    // RP = 4*R0 = 111x.xx...
+    RP[58:57] = 3;
+    RP[56:4] = siga;
+    if (siga[51]) {
+      // -1 <= 4*R0 < 0
+      q = 0;
+      root[54] = 1;      // 1.0000
+      rootM1[53:52] = 3; // .11000...
+      // R1 = 4*R0 = RP, RN = 0
+      i = 8; // Q1 = 1.0000
+    }
+    else  {
+      // -2 <= 4*R0 < -1
+      q = -1;
+      root[53:52] = 3;   // 0.11000... 
+      rootM1[53:52] = 2; // 0.10000...
+      // R1 = 4*R0 - (-1) * (2*Q0 + (-1)/4) = 4*R0 + 7/4
+      // RN = -7/4 = 1110.0100...
+      RN[58:53] = 0x39;
+      i = 4;
+    }
+  }
+  
+  return <RP, RN, root, rootM1, q, i>;
+}
+
+//   Derive the next quotient digit q_(j+1) from the root interval i and remainder R_j:
+
+int nextDigit(ui59 RP, ui59 RN, uint i, uint j) {
+  ui59 RP4 = RP << 2, RN4 = RN << 2;
+  ui8 RS8 = RP4[58:51] + ~RN4[58:51] + (RP4[50] || !RN4[50]);
+  si7 RS7 = RS8[7:1];
+  si7 mp2, mp1, mz0, mn1;
+  switch (i) {
+  case 0: mp2 = 12; mp1 = 4; mz0 = -4; mn1 = j == 1 ? -11 : -12; break;
+  case 1: mp2 = j == 2 ? 15 : 13; mp1 = 4; mz0 = -4; mn1 = -13; break;
+  case 2: mp2 = 15; mp1 = 4; mz0 = -4; mn1 = -15; break;
+  case 3: mp2 = 16; mp1 = 6; mz0 = -6; mn1 = -16; break;
+  case 4: mp2 = 18; mp1 = 6; mz0 = -6; mn1 = -18; break;
+  case 5: mp2 = 20; mp1 = 8; mz0 = -6; mn1 = -20; break;
+  case 6: mp2 = 20; mp1 = 8; mz0 = -8; mn1 = -20; break;
+  case 7: mp2 = 22; mp1 = 8; mz0 = -8; mn1 = -22; break;
+  case 8: mp2 = 24; mp1 = 8; mz0 = -8; mn1 = -24;
+  }
+  int q;
+  if (RS7 >= mp2) {
+    q = 2;
+  }
+  else if (RS7 >= mp1) {
+    q = 1;
+  }
+  else if (RS7 >= mz0) {
+    q = 0;
+  }
+  else if (RS7 >= mn1) {
+    q = -1;
+  }
+  else  {
+    q = -2;
+  }
+  return q;
+}
+
+// Derive the next remainder R_(j+1) from the remainder R_j and the quotient digit q_(j+1):
+
+<ui59, ui59> nextRem(ui59 RP, ui59 RN, ui55 root, ui55 rootM1, int q, uint j, ui2 fmt) {
+  ui59 RP4 = RP << 2, RN4 = RN << 2;
+  ui59 D = 0, Dcomp = 0;
+  switch (q) {
+  case 1:
+    Dcomp[56:2] = root;
+    Dcomp[53 - 2 * j + 2:53 - 2 * j] = 1;
+    D = ~Dcomp;
+    break;
+  case 2:
+    Dcomp[57:3] = root;
+    Dcomp[54 - 2 * j + 2:54 - 2 * j] = 2;
+    D = ~Dcomp;
+    break;
+  case -1:
+    D[56:2] = rootM1;
+    D[53 - 2 * j + 2:53 - 2 * j] = 7;
+    break;
+  case -2:
+    D[57:3] = rootM1;
+    D[54 - 2 * j + 2:54 - 2 * j] = 6;
+    break;
+  default:
+    break;
+  }
+  ui59 sum = RP4 ^ RN4 ^ D;
+  ui59 car = RP4 & ~RN4 | (RP4 | ~RN4) & D;
+  if (q == 0) {
+    return <RP4, RN4>;
+  }
+  else  {
+    ui59 nextRP = 0, nextRN = 0;
+    switch (fmt) {
+    case DP:
+      nextRP[0] = q > 0;
+      nextRP[58:1] = car[57:0];
+      nextRN = sum;
+      break;
+    case SP:
+      nextRP[29] = q > 0;
+      nextRP[58:30] = car[57:29];
+      nextRN[58:29] = sum[58:29];
+      break;
+    case HP:
+      nextRP[42] = q > 0;
+      nextRP[58:43] = car[57:42];
+      nextRN[58:42] = sum[58:42];
+    }
+    return <nextRP, nextRN>;
+  }
+}
+
+// Update root and decremented root with next digit:
+
+<ui55, ui55> nextRoot(ui55 root, ui55 rootM1, int q, uint j) {
+  ui55 rootNew, rootM1New;
+  rootNew = q >= 0 ? root : rootM1;
+  rootNew[52 - 2 * j + 1:52 - 2 * j] = q;
+  rootM1New = q > 0 ? root : rootM1;
+  rootM1New[52 - 2 * j + 1:52 - 2 * j] = q - 1;
+  return <rootNew, rootM1New>;
+}
+
+// Add rounding increment to root and decremented root:
+
+<ui55, ui55> incRoot(int q, ui55 root, ui55 rootM1, int qLast, ui55 rootLast, ui55 rootM1Last, bool lsbIs2, ui5 N) {
+  ui55 rootP, rootM1P;
+  uint base = 54 - 2 * N;
+  if (lsbIs2) {
+    if (q >= 0) {
+      rootP = qLast >= -1 ? rootLast : rootM1Last;
+      rootP[base + 2 + 1:base + 2] = qLast + 1;
+    }
+    else  {
+      rootP = root;
+    }
+    rootP[base + 1:base] = q;
+    if (q >= 1) {
+      rootM1P = qLast >= -1 ? rootLast : rootM1Last;
+      rootM1P[base + 2 + 1:base + 2] = qLast + 1;
+    }
+    else  {
+      rootM1P = root;
+    }
+    rootM1P[base + 1:base] = q - 1;
+  }
+  else  {
+    if (q == 2) {
+      rootP = qLast >= -1 ? rootLast : rootM1Last;
+      rootP[base + 2 + 1:base + 2] = qLast + 1;
+      rootP[base + 1:base] = 0;
+      rootM1P = root;
+      rootM1P[base + 1:base] = 3;
+    }
+    else  {
+      rootP = root;
+      rootP[base + 1:base] = q + 2;
+      rootM1P = q >= -1 ? root : rootM1;
+      rootM1P[base + 1:base] = q + 1;
+    }
+  }
+  return <rootP, rootM1P>;
+}
+
+// Inputs of fsqrt4:
+//   opa[63:0]: Encoding of radicand (for SP and HP, operand is low bits)
+//   fmt: 2-bit encoding of FP format (DP = 2, SP = 1, HP = 0)
+//   fz: force denormals to 0
+//   dn: replace NaN operand with default
+//   mode[1:0]: encoding of rounding mode
+
+// Outputs of fsqrt4:
+//   D[63:0]: Data result (in low bits)
+//   flags[7:0]: exception flags
+
+<ui64, ui8> fsqrt4(ui64 opa, ui2 fmt, bool fz, bool dn, ui2 rmode) {
+
+  // Analyze operand:
+  bool signa;
+  ui11 expa;
+  ui52 mana;
+  Class classa;
+  ui8 flags = 0;
+  <signa, expa, mana, classa> = analyze(opa, fmt, fz, flags);
+
+  // Detect early exit:
+  if (classa == ZERO || classa == INF || classa == SNAN || classa == QNAN || signa) {
+    return specialCase(signa, opa, classa, fmt, dn, flags);
+  }
+  
+  else  {
+  
+    bool expInc = classa == NORM && rmode == RUP;
+
+    // Normalize denormal and compute predicted result exponent:
+    ui53 siga;    // significand
+    si13 expShft; // adjusted exponent
+    ui11 expQ;    // predicted result exponent
+    <siga, expShft, expQ> = normalize(expa, mana, fmt);
+
+    bool expOdd = expShft[0];
+    
+    if (classa == NORM && mana == 0) {
+      return sqrtPow2(expQ, expOdd, rmode, fmt);
+    }
+    
+    else  {
+    
+      ui59 RP, RN;               // redundant remainder
+      int q;                     // root digit;
+      int qLast;                 // root digit before penultimate iteration
+      ui55 root, rootM1;         // root and decremented root
+      ui55 rootLast, rootM1Last; // root and decremented root upon entering final cycle
+      ui55 rootP, rootM1P;       // final root and decremented root plus rounding increment
+      uint i;                    // root interval, 0 <= i <= 8
+
+      // First iteration:
+      <RP, RN, root, rootM1> = firstIter(siga, expOdd);
+      
+      expInc &= q == 0;
+      
+      ui5 N; // number of iterations
+      switch (fmt) {
+      case DP: N = 27; break;
+      case SP: N = 13; break;
+      case HP: N = 6;
+      }
+      bool lsbIs2 = fmt == SP;
+      
+      for (uint j = 1; j < N; j++) {
+      
+        q = nextDigit(RP, RN, i, j);
+        if (j == N - 2) {
+          // Save these values during the first iteration of the final cycle,
+          // to be used during the final iteration to compute quotP and quotM1P:	
+          qLast = q;
+          rootLast = root;
+          rootM1Last = rootM1;
+        }
+	
+        if (j == 1) {
+          i = i + q;
+        }
+	
+        <RP, RN> = nextRem(RP, RN, root, rootM1, q, j, fmt);
+	
+        if (j == N - 1) {
+          // Compute rounded root and decremented root on last iteration:
+          <rootP, rootM1P> = incRoot(q, root, rootM1, qLast, rootLast, rootM1Last, lsbIs2, N);
+        }
+        <root, rootM1> = nextRoot(root, rootM1, q, j);
+	
+        expInc &= j < N - 1 ? q == 0 : fmt == SP ? q == -2 : q == -1;
+      }
+      
+      ui11 expRnd = expInc ? expQ + 1 : expQ;
+      
+      ui55 rootShft, rootM1Shft, rootPShft, rootM1PShft;
+      switch (fmt) {
+      case HP:
+        rootShft = root[54:42];
+        rootM1Shft = rootM1[54:42];
+        rootPShft = rootP[54:42];
+        rootM1PShft = rootM1P[54:42];
+        break;
+      case SP:
+        rootShft = root[54:28];
+        rootM1Shft = rootM1[54:28];
+        rootPShft = rootP[54:28];
+        rootM1PShft = rootM1P[54:28];
+        break;
+      case DP:
+        rootShft = root;
+        rootM1Shft = rootM1;
+        rootPShft = rootP;
+        rootM1PShft = rootM1P;
+        break;
+      default:
+        break;
+      }
+      // Select inputs to rounder:
+      ui53 Qtrunc, Qinc;
+      bool stk;
+      <Qtrunc, Qinc, stk> = computeQ(rootShft, rootM1Shft, rootPShft, rootM1PShft, RP, RN, lsbIs2);
+
+      // Round:
+      ui53 Qrnd, QrndDen;
+      bool inx, inxDen;
+      <Qrnd, inx, QrndDen, inxDen> = rounder(Qtrunc, Qinc, stk, 0, expRnd, rmode, fmt);
+
+      // Compute exceptions and assemble final result:
+      return final(Qrnd, inx, QrndDen, inxDen, 0, expRnd, rmode, fz, fmt, flags);
+    }
+  }
+}

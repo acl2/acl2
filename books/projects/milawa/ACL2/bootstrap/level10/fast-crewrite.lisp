@@ -41,7 +41,7 @@
 
 #||
 
-;; this shoudln't be needed anymore
+;; this shouldn't be needed anymore
 
 (%autoadmit rw.aux-fast-crewrite)
 

@@ -11,7 +11,8 @@
 (in-package "ACL2")
 
 (include-book "bit-listp")
-(include-book "kestrel/lists-light/memberp" :dir :system)
+(local (include-book "kestrel/lists-light/memberp" :dir :system))
+(include-book "kestrel/lists-light/memberp-def" :dir :system)
 
 (defthm bitp-when-bit-listp-and-memberp
   (implies (and (bit-listp free)

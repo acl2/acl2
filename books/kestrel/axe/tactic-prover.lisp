@@ -21,7 +21,7 @@
 (include-book "prune")
 (include-book "dag-size")
 (include-book "dagify") ;todo
-(include-book "kestrel/utilities/prove-interface" :dir :system)
+(include-book "tools/prove-dollar" :dir :system)
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system) ; for extend-progn

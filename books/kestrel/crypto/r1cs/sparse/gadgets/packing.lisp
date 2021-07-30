@@ -13,7 +13,7 @@
 (include-book "kestrel/crypto/r1cs/sparse/r1cs" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
 (include-book "kestrel/bv-lists/packbv-def" :dir :system)
-(include-book "kestrel/typed-lists-light/bit-listp" :dir :system)
+(include-book "kestrel/bv-lists/bit-listp" :dir :system)
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-lst" :dir :system)
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))

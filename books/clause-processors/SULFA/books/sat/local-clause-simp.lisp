@@ -120,8 +120,9 @@
 ; writing to an input channel; but I'm not inclined to put in the effort, since
 ; I don't know the details of this work.
 
-(defun print-object$-ser-wrapper (x serialize-character channel state)
-  (print-object$-ser x serialize-character channel state))
+; Matt K. mod, 7/2021: print-object$-ser is now print-object$-fn.
+(defun print-object$-fn-wrapper (x serialize-character channel state)
+  (print-object$-fn x serialize-character channel state))
 
 ;; Add a clause to the SAT input channel
 (defun add-cnf-clause (clause $sat state)
@@ -134,8 +135,8 @@
      (mv $sat state))
     (clause
      (let* (($sat (update-num-f-clauses (1+ (num-f-clauses $sat)) $sat))
-            (state (print-object$-ser-wrapper clause nil (sat-input-channel $sat)
-                                              state)))
+            (state (print-object$-fn-wrapper clause nil (sat-input-channel $sat)
+                                             state)))
        (mv $sat state)))
     (t
      ;; At this point we have reduced the clause to false!
@@ -145,12 +146,12 @@
       (f-var $sat)
       (++f-var $sat)
       (let* (($sat (update-num-f-clauses (+ 2 (num-f-clauses $sat)) $sat))
-             (state (print-object$-ser-wrapper (list f-var)
-                                               nil
-                                               (sat-input-channel $sat)
-                                               state))
-             (state (print-object$-ser-wrapper (list (- f-var))
-                                               nil
-                                               (sat-input-channel $sat)
-                                               state)))
+             (state (print-object$-fn-wrapper (list f-var)
+                                              nil
+                                              (sat-input-channel $sat)
+                                              state))
+             (state (print-object$-fn-wrapper (list (- f-var))
+                                              nil
+                                              (sat-input-channel $sat)
+                                              state)))
         (mv $sat state)))))))

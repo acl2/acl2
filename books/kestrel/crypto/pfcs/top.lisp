@@ -14,6 +14,7 @@
 (include-book "abstract-syntax-operations")
 (include-book "well-formedness")
 (include-book "semantics")
+(include-book "proof-support")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -53,6 +53,7 @@
 (include-book "kestrel/ethereum/portcullis" :dir :system)
 (include-book "kestrel/bitcoin/portcullis" :dir :system)
 (include-book "kestrel/utilities/omaps/portcullis" :dir :system)
+(include-book "kestrel/yul/portcullis" :dir :system)
 
 ; Book release notes are sometimes disorganized.
 ; They are often cleaned up before a release.
@@ -281,6 +282,17 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "yul::yul" "Yul Library"))
+
+   (xdoc::p
+    "This is a library about the Yul intermediate language,
+     currently used in the Ethereum Solidity compiler
+     but designed for more general use.
+     This library includes a formalization of some aspects of the language.
+     There are plans to extend this to cover more aspects.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "zcash::zcash" "Zcash Library"))
 
    (xdoc::p
@@ -409,7 +421,7 @@
       This theorem is only generated if some result is being transformed.")
     (xdoc::li
      "A new @(':newp-of-new-name') input has been added
-      to specify the name fo the @('newp-of-new') theorem.
+      to specify the name of the @('newp-of-new') theorem.
       This input is allowed only if some result is being transformed,
       because otherwise no @('newp-of-new') theorems is generated.")
     (xdoc::li

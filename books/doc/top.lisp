@@ -81,7 +81,18 @@
 (include-book "ihs/logops-lemmas" :dir :system)
 (include-book "ihs/math-lemmas" :dir :system)
 
-(include-book "centaur/bitops/top" :dir :system)
+; Matt K. comment, July 2021.  I considered using xdoc::archive-matching-topics
+; to create an analogue of centaur/bitops/top-doc.lisp to include in
+; doc/top.lisp in place of centaur/bitops/top.lisp, to reduce the time a bit
+; for building the manual.  But that led to 36 more duplicated topics (of which
+; 20 had bitops::bitops/extra-defs as a parent).  I also considered doing
+; similarly for centaur/satlink/top, but got extra duplicates there as well.
+; My guess is that by including only the top-doc.lisp version, some books that
+; had been redundant with centaur/bitops/top.lisp were not redundant with
+; centaur/bitops/top-doc.lisp (and similarly for centaur/satlink/), leading to
+; the duplication.
+
+(include-book "centaur/bitops/top" :dir :system) ; see July 2021 comment above
 (include-book "centaur/bitops/congruences" :dir :system)
 (include-book "centaur/bitops/defaults" :dir :system)
 (include-book "centaur/bitops/sparseint" :dir :system)
@@ -107,7 +118,7 @@
 (include-book "centaur/bed/top" :dir :system)
 
 
-(include-book "centaur/satlink/top" :dir :system)
+(include-book "centaur/satlink/top" :dir :system) ; see July 2021 comment above
 (include-book "centaur/satlink/check-config" :dir :system)
 (include-book "centaur/satlink/benchmarks" :dir :system)
 
@@ -127,7 +138,7 @@
 (include-book "centaur/misc/spacewalk" :dir :system)
 (include-book "centaur/misc/dag-measure" :dir :system)
 
-(include-book "centaur/svl/top" :dir :system)
+(include-book "centaur/svl/top-doc" :dir :system)
 
 ;; BOZO conflicts with something in 4v-sexpr?
 
@@ -177,6 +188,7 @@
 (include-book "tools/without-subsumption" :dir :system)
 (include-book "tools/rewrite-dollar" :dir :system)
 (include-book "tools/open-trace-file-bang" :dir :system)
+(include-book "tools/prove-dollar" :dir :system)
 (include-book "coi/util/rewrite-equiv" :dir :system)
 
 ;; This book memoizes several functions including translate11, translate11-lst,
@@ -250,7 +262,7 @@
 (include-book "centaur/memoize/old/watch" :dir :system)
 
 (include-book "acl2s/top-doc" :dir :system)
-(include-book "projects/smtlink/top" :dir :system :ttags :all)
+(include-book "projects/smtlink/top-doc" :dir :system :ttags :all)
 
 (include-book "centaur/ipasir/ipasir-tools" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
@@ -480,10 +492,91 @@
  (progn$ (cw "--- Done Writing ACL2+Books Manual -----------------------------~%")
          :invisible))
 
+(local
+ (defmacro doc-rebuild ()
 
+; It is sometimes useful to make tweaks to the documentation and then quickly
+; be able to see your changes.  This macro can be used to do this, as follows:
+;
+; SETUP:
+;
+;  (ld "doc.lisp")  ;; slow, takes a few minutes to get all the books loaded
+;
+; DEVELOPMENT LOOP: {
+;
+;   1. make documentation changes in new-doc.lsp; e.g., you can add new topics
+;      there with defxdoc, or use commands like change-parents, etc.
+;
+;   2. type (doc-rebuild) to rebuild the manual with your changes; this only
+;      takes 20-30 seconds
+;
+;   3. view your changes, make further edits
+;
+; }
+;
+; Finally, move your changes out of new-doc.lsp and integrate them properly
+; into the other sources, and do a proper build.
+
+   `(er-progn
+     (ubt! 'doc-rebuild-label)
+     (ld ;; newline to fool dependency scanner
+      "new-doc.lsp")
+     (xdoc::save "./manual"
+                 :redef-okp t
+                 :zip-p nil
+                 :logo-image "./acl2-big.png"
+                 :error t)
+     (value `(value-triple :manual)))))
+
+
+#||
+
+(redef-errors (get-xdoc-table (w state)))
+
+(defun collect-topics-with-name (name topics)
+  (if (atom topics)
+      nil
+    (if (equal (cdr (assoc :name (car topics))) name)
+        (cons (Car topics) (collect-topics-with-name name (Cdr topics)))
+      (collect-topics-with-name name (Cdr topics)))))
+
+(b* (((list a b) (collect-topics-with-name 'oslib::lisp-type (get-xdoc-table (w state)))))
+  (equal a b))
+
+(b* (((list a b) (collect-topics-with-name 'acl2::ADD-LISTFIX-RULE (get-xdoc-table (w state)))))
+  (equal a b))
+
+
+
+(defun map-topic-names (x)
+  (if (atom x)
+      nil
+    (cons (cdr (assoc :name (car x)))
+          (map-topic-names (cdr x)))))
+
+(map-topic-names (get-xdoc-table (w state)))
+
+
+(b* (((list a b) (collect-topics-with-name 'oslib::lisp-type (get-xdoc-table (w state)))))
+  (equal a b))
+
+
+
+(collect-topics-with-name 'acl2::add-listfix-rule (get-xdoc-table (w state)))
+||#
 
 ; Support for the Emacs-based Manual
-;
+
+(defconsts (& *acl2_doc_generate_supporting_files* state)
+  (getenv$ "ACL2_DOC_GENERATE_SUPPORTING_FILES" state))
+(make-event (if (or (null *acl2_doc_generate_supporting_files*)
+                    (member-string-equal *acl2_doc_generate_supporting_files*
+                                         '("" "SKIP")))
+                '(value-triple :SKIP-ACL2_DOC_GENERATE_SUPPORTING_FILES)
+; else build the supporting files for acl2-doc
+(quote
+(progn
+
 ; Historically this was part of system/doc/render-doc-combined.lisp.  However,
 ; that file ended up being quite expensive and in the critical path.  Most of
 ; the expense was that it just had to include-book doc/top.lisp, which takes
@@ -546,79 +639,7 @@
                        "../../bin/make-tags-acl2-doc.sh"
                        state)) )
 ) ; end encapsulate
-
-(local
- (defmacro doc-rebuild ()
-
-; It is sometimes useful to make tweaks to the documentation and then quickly
-; be able to see your changes.  This macro can be used to do this, as follows:
-;
-; SETUP:
-;
-;  (ld "doc.lisp")  ;; slow, takes a few minutes to get all the books loaded
-;
-; DEVELOPMENT LOOP: {
-;
-;   1. make documentation changes in new-doc.lsp; e.g., you can add new topics
-;      there with defxdoc, or use commands like change-parents, etc.
-;
-;   2. type (doc-rebuild) to rebuild the manual with your changes; this only
-;      takes 20-30 seconds
-;
-;   3. view your changes, make further edits
-;
-; }
-;
-; Finally, move your changes out of new-doc.lsp and integrate them properly
-; into the other sources, and do a proper build.
-
-   `(er-progn
-     (ubt! 'doc-rebuild-label)
-     (ld ;; newline to fool dependency scanner
-      "new-doc.lsp")
-     (xdoc::save "./manual"
-                 :redef-okp t
-                 :zip-p nil
-                 :logo-image "./acl2-big.png"
-                 :error t)
-     (value `(value-triple :manual)))))
-
-
-
-
-
-#||
-
-(redef-errors (get-xdoc-table (w state)))
-
-(defun collect-topics-with-name (name topics)
-  (if (atom topics)
-      nil
-    (if (equal (cdr (assoc :name (car topics))) name)
-        (cons (Car topics) (collect-topics-with-name name (Cdr topics)))
-      (collect-topics-with-name name (Cdr topics)))))
-
-(b* (((list a b) (collect-topics-with-name 'oslib::lisp-type (get-xdoc-table (w state)))))
-  (equal a b))
-
-(b* (((list a b) (collect-topics-with-name 'acl2::ADD-LISTFIX-RULE (get-xdoc-table (w state)))))
-  (equal a b))
-
-
-
-(defun map-topic-names (x)
-  (if (atom x)
-      nil
-    (cons (cdr (assoc :name (car x)))
-          (map-topic-names (cdr x)))))
-
-(map-topic-names (get-xdoc-table (w state)))
-
-
-(b* (((list a b) (collect-topics-with-name 'oslib::lisp-type (get-xdoc-table (w state)))))
-  (equal a b))
-
-
-
-(collect-topics-with-name 'acl2::add-listfix-rule (get-xdoc-table (w state)))
-||#
+) ; end progn
+) ; end quote
+) ; end if
+) ; end make-event

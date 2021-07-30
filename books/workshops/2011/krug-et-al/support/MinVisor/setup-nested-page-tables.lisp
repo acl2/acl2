@@ -2980,10 +2980,10 @@ or
    (DEFUN-NX $$$NEXT-EXITPOINT-SUB (S1)
      (Y86 S1 ($$$STEPS-TO-EXITPOINT-SUB S1)))
    (DEFUN-SK $$$EXISTS-EXITPOINT-SUB (S1)
+     (DECLARE (XARGS :NORMALIZE NIL))
      (EXISTS N
              (LET* ((S1 (Y86 S1 N)))
-                   (NOT ($$$INSUB S1))))
-     :WITNESS-DCLS ((DECLARE (XARGS :NORMALIZE NIL))))
+                   (NOT ($$$INSUB S1)))))
    (DEFTHM $$$CORRECTNESS-OF-SUB
      (IMPLIES (AND ($$$PRESUB S1)
                    ($$$EXISTS-EXITPOINT-SUB S1))
@@ -5107,10 +5107,10 @@ or
    (DEFUN-NX $$$NEXT-EXITPOINT-SUB (S1)
      (Y86 S1 ($$$STEPS-TO-EXITPOINT-SUB S1)))
    (DEFUN-SK $$$EXISTS-EXITPOINT-SUB (S1)
+     (DECLARE (XARGS :NORMALIZE NIL))
      (EXISTS N
              (LET* ((S1 (Y86 S1 N)))
-                   (NOT ($$$INSUB S1))))
-     :WITNESS-DCLS ((DECLARE (XARGS :NORMALIZE NIL))))
+                   (NOT ($$$INSUB S1)))))
    (DEFTHM $$$CORRECTNESS-OF-SUB
      (IMPLIES (AND ($$$PRESUB S1)
                    ($$$EXISTS-EXITPOINT-SUB S1))
@@ -6835,10 +6835,10 @@ or
    (DEFUN-NX $$$NEXT-EXITPOINT-SUB (S1)
      (Y86 S1 ($$$STEPS-TO-EXITPOINT-SUB S1)))
    (DEFUN-SK $$$EXISTS-EXITPOINT-SUB (S1)
+     (DECLARE (XARGS :NORMALIZE NIL))
      (EXISTS N
              (LET* ((S1 (Y86 S1 N)))
-                   (NOT ($$$INSUB S1))))
-     :WITNESS-DCLS ((DECLARE (XARGS :NORMALIZE NIL))))
+                   (NOT ($$$INSUB S1)))))
    (DEFTHM $$$CORRECTNESS-OF-SUB
      (IMPLIES (AND ($$$PRESUB S1)
                    ($$$EXISTS-EXITPOINT-SUB S1))

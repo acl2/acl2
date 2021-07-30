@@ -267,8 +267,8 @@
   (assert! (theorem-namep 'th (w state))))
 
 (defun-sk2 wit-dcl (x y)
-  (exists (z w) (equal (?f (?g x y)) (cons z w)))
-  :witness-dcls ((declare (xargs :guard (natp (?f x))))))
+  (declare (xargs :guard (natp (?f x))))
+  (exists (z w) (equal (?f (?g x y)) (cons z w))))
 
 (defun-sk2 strong (x y)
   (forall (z w) (equal (?f (?g x y)) (cons z w)))

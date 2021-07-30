@@ -14,12 +14,7 @@
 
 (include-book "declares0")
 (local (include-book "kestrel/lists-light/len" :dir :system))
-
-;move
-(defthm butlast-of-nil
-  (equal (butlast nil n)
-         nil)
-  :hints (("Goal" :in-theory (enable butlast))))
+(local (include-book "kestrel/lists-light/butlast" :dir :system))
 
 ;; (defthm symbol-listp-of-butlast
 ;;   (implies (and (SYMBOL-LISTP X)
@@ -39,7 +34,8 @@
        (member-eq (first defun) *defun-types*) ;TODO: Handle defun-inline, etc.?  define (maybe not)  Handle anything we might call fixup-defun on...
        (symbolp (second defun))     ;the function name
        (symbol-listp (third defun)) ;the formals
-       ;; what to say about the body?  may contain macros?
+       ;; not much to say about the body, since it is an untranslated term
+       ;; todo: should we allow a doc-string before the declares?
        (all-declarep (butlast (cdr (cdr (cdr defun))) 1)) ;skip the defun, name, formals, and body.
        ))
 
@@ -282,3 +278,16 @@
   (declare (xargs :guard (and (keywordp xarg)
                               (mutual-recursion-formp mutual-recursion))))
   `(mutual-recursion ,@(replace-xarg-in-defuns xarg val (fargs mutual-recursion))))
+
+;; Removes hints (and similar things) from a defun's xargs.
+(defun remove-hints-from-defun (defun)
+  (declare (xargs :guard (defun-formp defun)
+                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
+  (let* ((declares (get-declares-from-defun defun))
+         (declares (remove-xarg-in-declares :hints declares))
+         (declares (remove-xarg-in-declares :otf-flg declares))
+         (declares (remove-xarg-in-declares :measure-debug declares))
+         (declares (remove-xarg-in-declares :guard-hints declares))
+         (declares (remove-xarg-in-declares :guard-simplify declares))
+         (declares (remove-xarg-in-declares :guard-debug declares)))
+    (replace-declares-in-defun defun declares)))

@@ -27,7 +27,7 @@
 ;; TODO: Avoid formulas that are equivalent up to variable renaming.
 
 (include-book "prover-basic")
-(include-book "kestrel/utilities/prove-interface" :dir :system)
+(include-book "tools/prove-dollar" :dir :system)
 
 ;; Returns state
 (defun compare-axe-and-acl2-on-formula (formula state)
