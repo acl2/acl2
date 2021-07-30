@@ -51,6 +51,10 @@ typedef ac_int<13, true> si13;
 typedef ac_int<65, true> si65;
 typedef ac_int<128, true> si128;
 
+//********************************
+// idiv8: 64-bit Integer Division
+//********************************
+
 // Count leading zeroes of a nonzero 64-bit vector.
 // After k iterations of the loop, where 0 <= k <= 6, the value of n 
 // is 2^(6-k) and the low n entries of z and c are as follows:

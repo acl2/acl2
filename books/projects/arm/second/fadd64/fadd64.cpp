@@ -32,6 +32,10 @@ typedef ac_int<109, false> ui109;
 typedef ac_int<117, false> ui117;
 typedef ac_int<128, false> ui128;
 
+//******************************************************
+// fadd64: Double-Precision Addition and FMA
+//******************************************************
+
 // Rounding modes:
 
 enum Rmode {RNE, RUP, RDN, RTZ};
