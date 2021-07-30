@@ -60,7 +60,7 @@
      a ``sub-macro'' that generates only the recognizer and theorems about it,
      without the fixtype (and without the fixer and equivalence),
      similarly to @(tsee std::deflist) and @(tsee std::defalist).
-     That sub-macro could be called @('omap::defomet').")
+     That sub-macro could be called @('omap::defomap').")
 
    (xdoc::p
     "This macro differs from @(tsee fty::defmap),
