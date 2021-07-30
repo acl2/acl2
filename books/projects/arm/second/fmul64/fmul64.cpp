@@ -72,6 +72,10 @@ typedef ac_int<116, false> ui116;
 typedef ac_int<14, true> si14;
 typedef ac_int<64, true> si64;
 
+//******************************************************
+// fmul64: Double-Precision Multiplication and Scaling
+//******************************************************
+
 // Formats:
 
 enum Format {HP=1, SP, DP};

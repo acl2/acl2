@@ -51,6 +51,10 @@ typedef ac_int<4, true> si4;
 typedef ac_int<13, true> si13;
 typedef ac_int<57, true> si57;
 
+//*********************************************
+// fdiv2: Multi-Precision Radix-2 SRT Division
+//*********************************************
+
 // Formats:
 
 enum Format {HP = 1, SP, DP};

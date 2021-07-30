@@ -1,3 +1,7 @@
+//*************************************************
+// fsqrt4: Multi-Precision Radix-4 SRT Square Root
+//*************************************************
+
 // Formats:
 
 enum Format {HP, SP, DP};
