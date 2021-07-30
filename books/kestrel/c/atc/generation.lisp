@@ -3905,19 +3905,22 @@
      The lemma is proved via proof builder instructions,
      by first applying induction
      and then calling the prover on all the induction subgoals.
-     For robustness, first to set the theory to contain
+     For robustness, first we set the theory to contain
      just the specialized @(tsee exec-stmt-while),
      then we apply induction, which therefore must be on that function.
      The hints for the subgoals are for the symbolic execution,
      similar to the ones in @(tsee atc-gen-fn-correct-thm),
-     without the @(':expand') hint and with the addition of:
+     where the @(':expand') hint applies to the loop function,
+     for robustness (as ACL2's heuristics sometimes prevent
+     the opening of recursive function definitions,
+     but here we know that we always want to open it).
+     The hints also include:
      (i) the return value theorem of the loop function,
      which is reasonable since the function is recursive,
      and so it is called inside its body;
      (ii) the definition of the specialized @(tsee exec-stmt-while);
      (iii) the rule saying that the measure yields a natural number; and
-     (iv) the termination theorem of the loop function,
-     suitably instantiated.
+     (iv) the termination theorem of the loop function, suitably instantiated.
      Given the correctness lemma, the correctness theorem is easily proved,
      via the lemma and the generate theorem that equates
      the specialized @(tsee exec-stmt-while) to the general one."))
@@ -3981,7 +3984,6 @@
        (lemma-hints `(("Goal"
                        :do-not-induct t
                        :in-theory (append *atc-all-rules*
-                                          '(,fn)
                                           '(,exec-stmt-while-for-fn)
                                           ',type-prescriptions
                                           ',returns-value-thms
@@ -3992,7 +3994,8 @@
                               :extra-bindings-ok ,@gthm-instantiation)
                              (:instance ,termination-of-fn-thm
                               :extra-bindings-ok ,@tthm-instantiation))
-                       :expand :lambdas)))
+                       :expand (:lambdas
+                                (,fn ,@args)))))
        (lemma-instructions
         `((:in-theory '(,exec-stmt-while-for-fn))
           :induct
