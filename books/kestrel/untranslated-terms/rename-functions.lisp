@@ -176,7 +176,7 @@
                   ;; It's a function or lambda application:
                   (let* ((args (fargs term))
                          (args (rename-functions-in-untranslated-terms-aux args alist permissivep (+ -1 count) wrld state))
-                         (fn (if (consp fn)
+                         (new-fn (if (consp fn)
                                  ;; ((lambda (...vars...) ...declares... body) ...args...)
                                  ;;if it's a lambda application, replace calls in the body:
                                  ;; TODO: Consider unclosed lambdas (translation closes them)
@@ -193,7 +193,7 @@
                                      (cdr res)
                                    ;; Don't rename:
                                    fn)))))
-                    (cons fn args)))))))))))
+                    (cons new-fn args)))))))))))
 
  ;; rename all functions calls in TERMS according to ALIST
  (defun rename-functions-in-untranslated-terms-aux (terms alist permissivep count wrld state)
