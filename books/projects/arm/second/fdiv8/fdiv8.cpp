@@ -47,6 +47,10 @@ typedef ac_int<65, false> ui65;
 typedef ac_int<71, false> ui71;
 typedef ac_int<13, true> si13;
 
+//**************************************
+// Multi-Precision Radix-8 SRT Division
+//**************************************
+
 // Formats:
 
 enum Format {HP, SP, DP};

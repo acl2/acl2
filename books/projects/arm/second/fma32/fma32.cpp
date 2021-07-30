@@ -60,6 +60,10 @@ typedef ac_int<128, false> ui128;
 typedef ac_int<10, true> si10;
 typedef ac_int<32, true> si32;
 
+//**************************************
+// fma32: FMA of a Graphics Processor
+//**************************************
+
 // The multiplier returns an unnormalized representation of the product, {pSign, pExp[8:0], pMant[47:0]},
 // with exponent bias 255 and 47 fractional bits, i.e., the value represented is
 //    (-1)^pSign * 2^(pExp - 255 - 47) * pMant.
