@@ -36,12 +36,12 @@
 ;; TODO: Add support for chunked execution, like unroll-java-code has.
 
 
-(include-book "kestrel/axe/jvm/lifter-utilities2" :dir :system)
+(include-book "lifter-utilities2")
 (include-book "kestrel/typed-lists-light/map-strip-cars" :dir :system)
 (include-book "kestrel/utilities/doc" :dir :system)
 (include-book "kestrel/utilities/unify" :dir :system)
-(include-book "kestrel/axe/jvm/unroll-java-code" :dir :system) ;for unroll-java-code-rules
-(include-book "kestrel/axe/dag-to-term-with-lets" :dir :system)
+(include-book "unroll-java-code") ;for unroll-java-code-rules
+(include-book "../dag-to-term-with-lets")
 
 ;; Used by Axe
 (defthm natp-of-+

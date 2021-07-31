@@ -63,6 +63,18 @@ my @old_not_new = ();
 my @new_not_old = ();
 
 foreach my $key (keys %$old_costs) {
+    if ($old_costs->{$key} == -1.00) {
+	delete $old_costs->{$key};
+    }
+}
+
+foreach my $key (keys %$new_costs) {
+    if ($new_costs->{$key} == -1.00) {
+	delete $new_costs->{$key};
+    }
+}
+
+foreach my $key (keys %$old_costs) {
     if (exists $new_costs->{$key}) {
 	$keyhash{$key} = 1;
     } else {
