@@ -34,3 +34,5 @@
                '((natp . posp)) state)
               '(COND ((EQUAL X 3))
                      ((EQUAL X 4) (POSP 4))))
+
+;; TODO: Add tests of case, case-match, b*, etc.
