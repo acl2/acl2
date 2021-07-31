@@ -30,13 +30,13 @@
 (include-book "kestrel/x86/tools/read-over-write-rules" :dir :system)
 (include-book "kestrel/x86/tools/write-over-write-rules" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
-(include-book "kestrel/axe/rules-in-rule-lists" :dir :system)
-;(include-book "kestrel/axe/rules2" :dir :system) ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
-;(include-book "kestrel/axe/rules1" :dir :system) ;for ACL2::FORCE-OF-NON-NIL, etc.
-(include-book "kestrel/axe/rewriter" :dir :system) ;brings in skip-proofs, TODO: Consider using rewriter-basic (but it needs versions of simp-dag and simplify-terms-using-each-other)
-;(include-book "axe/basic-rules" :dir :kestrel-acl2)
-(include-book "kestrel/axe/step-increments" :dir :system)
-(include-book "kestrel/axe/dag-size" :dir :system)
+(include-book "../rules-in-rule-lists")
+;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
+;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
+(include-book "../rewriter") ;brings in skip-proofs, TODO: Consider using rewriter-basic (but it needs versions of simp-dag and simplify-terms-using-each-other)
+;(include-book "../basic-rules")
+(include-book "../step-increments")
+(include-book "../dag-size")
 (include-book "kestrel/lists-light/take" :dir :system)
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
 (include-book "kestrel/lists-light/append" :dir :system)
