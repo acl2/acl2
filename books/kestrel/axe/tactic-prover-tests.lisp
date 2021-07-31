@@ -17,7 +17,7 @@
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)
 (include-book "tactic-prover")
-(include-book "kestrel/axe/rules-in-rule-lists" :dir :system) ;for equal-same, etc
+(include-book "rules-in-rule-lists") ;for equal-same, etc
 
 ;A simple test
 (deftest
@@ -100,11 +100,11 @@
 ;TODO: should fail (elem 1 is not necessarily greater than 8), but the array read in the assumption is getting cut out
 ;; (deftest
 ;;   ;;todo: include less?
-;;   (include-book "kestrel/axe/axe-rules-mixed" :dir :system)
-;;   (include-book "kestrel/axe/axe-rules" :dir :system) ;include less?  but some of these rules are now used during decompilation
+;;   (include-book "axe-rules-mixed")
+;;   (include-book "axe-rules") ;include less?  but some of these rules are now used during decompilation
 ;;   (include-book "kestrel/jvm/jvm-rules" :dir :system)
-;;   (include-book "kestrel/axe/jvm/jvm-rules-axe" :dir :system)
-;;   (include-book "kestrel/axe/math-rules" :dir :system)
+;;   (include-book "jvm/jvm-rules-axe")
+;;   (include-book "math-rules")
 ;;   (defthmd if-becomes-boolif-axe
 ;;     (implies (and (axe-syntaxp (and (known-booleanp b dag-array)))
 ;;;                  (axe-syntaxp (and (known-booleanp c dag-array)))
