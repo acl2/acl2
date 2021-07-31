@@ -68,6 +68,7 @@
                fquotep
                fresh-logical-name-with-$s-suffix
                fsubcor-var
+               fsublis-var
                fsublis-var-lst
                genvar
                get-ruleset
@@ -95,6 +96,7 @@
                run-when
                str-fix
                symbol-fix
+               symbol-pseudoterm-alistp
                symbol-symbol-alistp
                tuple
                ubody+
