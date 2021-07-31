@@ -95,12 +95,11 @@ function status_init()
 	    var row = jQuery("<tr></tr>");
 	    var col;
 
+	    // (Sol): Seems best to have most important items in first
+	    // columns since if the page gets wide it might not all
+	    // fit on one screen.
   	    col = jQuery("<td></td>");
-	    col.append(render_bucket("Typedefs", buckets[":VL-TYPEDEF"]));
-	    row.append(col);
-
-  	    col = jQuery("<td></td>");
-	    col.append(render_bucket("Interfaces", buckets[":VL-INTERFACE"]));
+	    col.append(render_bucket("Modules", buckets[":VL-MODULE"]));
 	    row.append(col);
 
   	    col = jQuery("<td></td>");
@@ -112,11 +111,15 @@ function status_init()
 	    row.append(col);
 
   	    col = jQuery("<td></td>");
-	    col.append(render_bucket("Modules", buckets[":VL-MODULE"]));
+	    col.append(render_bucket("Typedefs", buckets[":VL-TYPEDEF"]));
 	    row.append(col);
 
 	    col = jQuery("<td></td>");
 	    col.append(render_bucket("Parameters", buckets[":VL-PARAMDECL"]));
+	    row.append(col);
+
+  	    col = jQuery("<td></td>");
+	    col.append(render_bucket("Interfaces", buckets[":VL-INTERFACE"]));
 	    row.append(col);
 
 	    delete buckets[":VL-TYPEDEF"];

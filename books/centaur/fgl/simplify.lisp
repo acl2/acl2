@@ -34,6 +34,7 @@
 
 
 (include-book "logicman-transform")
+(include-book "bfrs-replace")
 (include-book "centaur/aignet/simplify-marked" :dir :system)
 (include-book "interp-st-bfrs-ok")
 (include-book "add-primitives")
@@ -43,6 +44,29 @@
 (local (include-book "std/lists/nth" :dir :system))
 (local (include-book "centaur/misc/hons-sets" :dir :system))
 (local (std::add-default-post-define-hook :fix))
+
+
+(local (defthm bit-listp-of-lit-eval-list
+         #!aignet
+         (bit-listp (lit-eval-list x invals regvals aignet))))
+
+;; (define bools->bits ((x boolean-listp))
+;;   :returns (bits aignet::bit-listp)
+;;   (if (atom x)
+;;       nil
+;;     (cons (bool->bit (car x))
+;;           (bools->bits (cdr x)))))
+
+(defsection bits->bools->bits
+  (local (in-theory (enable bools->bits bits->bools)))
+
+  (defthm bits->bools-of-bools->bits
+    (equal (bits->bools (bools->bits x))
+           (acl2::boolean-list-fix x)))
+
+  (defthm bools->bits-of-bits->bools
+    (equal (bools->bits (bits->bools x))
+           (aignet::bit-list-fix x))))
 
 (define bfrlist->aignet-lits ((x bfr-listp) &optional ((bfrstate bfrstate-p) 'bfrstate))
   :guard (bfrstate-mode-is :aignet)
@@ -57,7 +81,45 @@
              (<= (aignet::lits-max-id-val lits) (bfrstate->bound bfrstate)))
     :hints(("Goal" :in-theory (enable aignet::lits-max-id-val
                                       bfr->aignet-lit bfr-fix aignet-lit->bfr)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret len-of-<fn>
+    (equal (len lits) (len x)))
+
+  (defret eval-of-<fn>
+    (implies (and (equal bfrstate (logicman->bfrstate logicman))
+                  (bfrstate-mode-is :aignet))
+             (equal (aignet::lit-eval-list lits (alist-to-bitarr (aignet::stype-count :pi (logicman->aignet logicman))
+                                                                 env nil)
+                                           nil (logicman->aignet logicman))
+                    (bools->bits (bfr-list-eval x env))))
+    :hints(("Goal" :in-theory (enable bfr-list-eval bools->bits bfr-eval)))))
+
+(define aignet-lits->bfrlist ((x satlink::lit-listp) &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :guard (and (bfrstate-mode-is :aignet)
+              (<= (aignet::lits-max-id-val x) (bfrstate->bound bfrstate)))
+  :returns (bfrs (implies (bfrstate-mode-is :aignet)
+                          (bfr-listp bfrs)))
+  (if (atom x)
+      nil
+    (cons (aignet-lit->bfr (car x))
+          (aignet-lits->bfrlist (cdr x))))
+  ///
+  (defret len-of-<fn>
+    (equal (len bfrs) (len x)))
+
+  (defret eval-of-<fn>
+    (implies (and (equal bfrstate (logicman->bfrstate logicman))
+                  (bfrstate-mode-is :aignet)
+                  (<= (aignet::lits-max-id-val x) (bfrstate->bound bfrstate)))
+             (equal (bfr-list-eval bfrs env)
+                    (bits->bools (aignet::lit-eval-list x (alist-to-bitarr (aignet::stype-count :pi (logicman->aignet logicman))
+                                                                           env nil)
+                                                        nil (logicman->aignet logicman)))))
+    :hints(("Goal" :in-theory (enable bfr-list-eval bits->bools bfr-eval bounded-lit-fix)))))
+    
+
+                              
 
 #!aignet
 (define aignet-copies-above-n-in-bounds ((n natp) litarr aignet)
@@ -1453,6 +1515,593 @@
              :in-theory (disable lits-max-id-val-of-<fn> <fn>)))))
 
 
+(local
+ #!aignet
+ (defthm lits-max-id-val-<=-fanin-count
+   (iff (< (fanin-count aignet) (lits-max-id-val x))
+        (not (aignet-lit-listp x aignet)))
+   :hints(("Goal" :in-theory (enable lits-max-id-val aignet-lit-listp aignet-idp)))))
+
+
+(local
+ #!aignet
+ (defsection lit-eval-list-of-aignet-simplify-with-tracking
+   (defthm len-of-lit-eval-list
+     (equal (len (lit-eval-list x invals regvals aignet))
+            (len x))
+     :hints(("Goal" :in-theory (enable lit-eval-list))))
+
+   (defthm nth-of-lit-eval-list
+     (implies (< (nfix n) (len x))
+              (equal (nth n (lit-eval-list x invals regvals aignet))
+                     (lit-eval (nth n x) invals regvals aignet)))
+     :hints(("Goal" :in-theory (enable nth lit-eval-list))))
+
+   (defret lit-eval-list-of-aignet-simplify-with-tracking
+     (implies (and (aignet-lit-listp pres-lits aignet)
+                   (equal (aignet-eval-conjunction assum-lits invals regvals aignet) 1))
+              (equal (lit-eval-list new-pres-lits invals regvals new-aignet)
+                     (lit-eval-list pres-lits invals regvals aignet)))
+     :fn aignet-simplify-with-tracking
+     :hints ((and stable-under-simplificationp
+                  (acl2::equal-by-nths-hint))))
+
+   (defthm repeat-0-bit-list-equiv-nil
+     (bits-equiv (acl2::repeat n 0) nil)
+     :hints(("Goal" :in-theory (enable bits-equiv))))
+
+   (defcong bits-equiv equal (lit-eval-list x invals regvals aignet) 2)
+   (defcong bits-equiv equal (lit-eval-list x invals regvals aignet) 3)
+
+   (defthm lit-eval-list-of-aignet-fanins
+     (equal (lit-eval-list x invals regvals (aignet-fanins aignet))
+            (lit-eval-list x invals regvals aignet)))))
+
+
+
+(local (defthm boolean-listp-of-bfr-list-eval
+         (boolean-listp (bfr-list-eval x env))
+         :hints(("Goal" :in-theory (enable bfr-list-eval)))))
+
+(define fgl-simplify-object-ordered-logicman ((x fgl-object-p
+                                                 "Object whose symbolic value will be preserved by the transform.")
+                                              (transforms)
+                                              &key
+                                              ((tracked-obj
+                                                fgl-object-p
+                                                "Object that is not preserved but whose
+                                         bits' formulas are tracked through possibly
+                                         non-preserving transforms, for heuristic
+                                         use by the transforms")
+                                               'nil)
+                                              ((assum-lits aignet::lit-listp) 'nil)
+                                              ;; (use-pathcond 't)
+                                              ;; (use-constraint 'nil)
+                                              (logicman 'logicman)
+                                              ;; (pathcond 'pathcond)
+                                              ;; (constraint-pathcond 'constraint-pathcond)
+                                              (state 'state))
+  :guard (and (lbfr-mode-is :aignet)
+              (lbfr-listp (fgl-object-bfrlist x))
+              (lbfr-listp (fgl-object-bfrlist tracked-obj))
+              (lbfr-listp assum-lits)
+              (no-duplicatesp-equal (aignet::lit-list-vars assum-lits))
+              ;; (ec-call (bfr-pathcond-p-fn pathcond (logicman->bfrstate)))
+              ;; (ec-call (bfr-pathcond-p-fn constraint-pathcond (logicman->bfrstate)))
+              )
+  :returns (mv ;; (new-litarr)
+               ;; (new-litarr2)
+            (new-x fgl-object-p)
+            (new-logicman)
+            ;; (new-pathcond)
+            ;; (new-constraint-pathcond)
+            (new-state))
+  :guard-hints (("goal" :in-theory (enable logicman->bfrstate
+                                           aignet-lit-listp-when-bfr-listp)
+                 ;; :expand ((:free (litarr aignet)
+                 ;;           (aignet::aignet-copies-above-n-in-bounds
+                 ;;            0 (aignet::update-nth-lit 0 0 litarr) aignet)))
+                 :do-not-induct t))
+  :prepwork ((local (defthmd aignet-lit-listp-when-bfr-listp
+                      (implies (and (lbfr-listp lits)
+                                    (aignet::lit-listp lits)
+                                    (lbfr-mode-is :aignet))
+                               (aignet::aignet-lit-listp lits (logicman->aignet logicman)))
+                      :hints(("Goal" :in-theory (enable bfr-listp aignet::lit-listp
+                                                        bfr-p aignet::aignet-idp))))))
+  ;; :guard-debug t
+  :hooks nil ;; bozo
+  (b* (((acl2::local-stobjs  aignet::mark aignet::copy aignet::aignet2)
+        (mv new-x logicman aignet::mark aignet::copy aignet::aignet2 state))
+       ;; (size (+ 1 (bfrstate->bound (logicman->bfrstate))))
+       ;; (bitarr (resize-bits size bitarr))
+       ;; ((mv bitarr seen) (fgl-object-mark-bfrs x bitarr nil))
+       (obj-lits (bfrlist->aignet-lits (fgl-object-bfrlist x) (logicman->bfrstate)))
+       ;; (- (fast-alist-free seen))
+       (track-lits (bfrlist->aignet-lits (fgl-object-bfrlist tracked-obj) (logicman->bfrstate))))
+    (stobj-let
+     ((aignet (logicman->aignet logicman))
+      (strash (logicman->strash logicman)))
+
+     (new-obj strash aignet aignet::mark aignet::copy aignet::aignet2 state)
+
+     (b* ((aignet::aignet2 (aignet::aignet-raw-copy-fanins-top aignet aignet::aignet2))
+          ((mv aignet::aignet2 ?new-assums new-obj-lits ?new-track-lits state)
+           (aignet::aignet-simplify-with-tracking
+            aignet::aignet2 assum-lits obj-lits track-lits transforms state))
+          (aignet::copy (resize-lits (aignet::num-fanins aignet::aignet2) aignet::copy))
+          (aignet::mark (resize-bits 0 aignet::mark))
+          (aignet::mark (resize-bits (aignet::num-fanins aignet::aignet2) aignet::mark))
+          (aignet::copy (aignet::aignet-copy-set-ins 0 aignet::aignet2 aignet::copy aignet))
+          (aignet::copy (aignet::aignet-copy-set-regs 0 aignet::aignet2 aignet::copy aignet))
+          
+          ((mv aignet::mark aignet::copy strash aignet)
+           (aignet::aignet-copy-dfs-list new-obj-lits aignet::aignet2 aignet::mark aignet::copy strash
+                                         (aignet::make-gatesimp) aignet))
+          ;;  ;; presumably already the case, but we need to make sure for some
+          ;;  ;; dumb reason to do with literal<->bfr conversion
+          ;; ;; (litarr (aignet::set-lit 0 0 litarr))
+          ;; ((mv litarr2 aignet::mark aignet::copy strash aignet)
+          ;;  (aignet::aignet-dfs-copy-back-marked-nodes
+          ;;   0 bitarr litarr2 aignet::aignet2 aignet::mark aignet::copy strash (aignet::make-gatesimp) aignet))
+          ;; (litarr2 (aignet::set-lit 0 0 litarr2))
+          ;; ((mv litarr aignet::mark aignet::copy strash aignet)
+          ;;  (aignet::aignet-dfs-copy-back-lits
+          ;;   assum-lits litarr aignet::aignet2 aignet::mark aignet::copy strash (aignet::make-gatesimp) aignet))
+          ;; (litarr (aignet::set-lit 0 0 litarr))
+          (new-new-obj-lits (aignet::lit-list-copies new-obj-lits aignet::copy))
+          (new-bfrs (aignet-lits->bfrlist new-new-obj-lits
+                                          (bfrstate (bfrmode :aignet) (1- (aignet::num-fanins aignet)))))
+          ((mv new-obj ?rest-bfrs) (fgl-object-replace-bfrlist x new-bfrs))
+          )
+       (mv new-obj strash aignet aignet::mark aignet::copy aignet::aignet2 state))
+
+     (mv new-obj logicman aignet::mark aignet::copy aignet::aignet2 state)))
+  ///
+  ;; (defret contra-of-<fn>
+  ;;   (implies (and (logicman-pathcond-eval env pathcond)
+  ;;                 (logicman-pathcond-eval env constraint-pathcond)
+  ;;                 (lbfr-mode-is :aignet))
+  ;;            (not contra))
+  ;;   :hints(("Goal" :in-theory (enable contra-of-combine-pathcond-lits))))
+
+  (defret logicman-extension-p-of-<fn>
+    (logicman-extension-p new-logicman logicman)
+    :hints(("Goal" :in-theory (enable logicman-extension-p))))
+
+  (defret logicman-get-of-<fn>
+    (implies (and (not (equal (logicman-field-fix k) :strash))
+                  (not (equal (logicman-field-fix k) :aignet)))
+             (equal (logicman-get k new-logicman)
+                    (logicman-get k logicman))))
+
+  ;; (local
+  ;;  #!aignet
+  ;;  (defthm <=-fanin-count-when-aignet-litp
+  ;;    (implies (aignet-litp lit aignet)
+  ;;             (<= (lit->var lit) (fanin-count aignet)))
+  ;;    :hints(("Goal" :in-theory (enable aignet-idp)))))
+
+  (local (defthm bfrs-markedp-necc-bind
+           (implies (and (member-equal bfr immed-bfrs)
+                         (bfrs-markedp immed-bfrs bitarr))
+                    (bfr-markedp bfr bitarr))
+           :hints(("Goal" :in-theory (enable bfrs-markedp-necc)))))
+
+  (local (defthm take-of-equal-len
+           (implies (equal len (len x))
+                    (equal (take len x)
+                           (true-list-fix x)))))
+
+  (local (defthm logicman->bfrstate-of-update-logicman->aignet
+           (implies (lbfr-mode-is :aignet)
+                    (equal (logicman->bfrstate (update-logicman->aignet aignet logicman))
+                           (bfrstate (lbfr-mode)
+                                     (aignet::fanin-count aignet))))
+           :hints(("Goal" :in-theory (enable logicman->bfrstate)))))
+
+  (defret bfr-listp-of-<fn>
+    (implies (lbfr-mode-is :aignet)
+             (bfr-listp (fgl-object-bfrlist new-x) (logicman->bfrstate new-logicman))))
+
+
+  (local (defthm logicman-extension-p-of-update-logicman->aignet
+           (implies (and (bind-logicman-extension new old)
+                         (aignet::aignet-extension-p aignet (logicman->aignet new))
+                         (equal (aignet::stype-count :reg aignet)
+                                (aignet::stype-count :reg (logicman->aignet new))))
+                    (logicman-extension-p (update-logicman->aignet aignet new) old))
+           :hints(("Goal" :in-theory (enable logicman-extension-p)))))
+  
+
+
+  (defret eval-of-<fn>
+    (implies (and (lbfr-mode-is :aignet)
+                  (lbfr-listp (fgl-object-bfrlist x))
+                  (lbfr-listp (fgl-object-bfrlist tracked-obj))
+                  (equal (aignet::aignet-eval-conjunction
+                          assum-lits
+                          (alist-to-bitarr (bfr-nvars logicman)
+                                           (fgl-env->bfr-vals env)
+                                           nil)
+                          nil
+                          (logicman->aignet logicman))
+                         1))
+             (equal (fgl-object-eval new-x env new-logicman)
+                    (fgl-object-eval x env logicman)))
+    :hints(("Goal" :in-theory (enable bfr-nvars))))
+
+
+ ;; (defret bfr-litarr-correct-p-litarr2-of-<fn>
+ ;;    (implies (and (lbfr-mode-is :aignet)
+ ;;                  (lbfr-listp (fgl-object-bfrlist x))
+ ;;                  (lbfr-listp (fgl-object-bfrlist tracked-obj))
+ ;;                  (equal (aignet::aignet-eval-conjunction
+ ;;                          assum-lits
+ ;;                          (alist-to-bitarr (bfr-nvars logicman) env nil) nil
+ ;;                          (logicman->aignet logicman))
+ ;;                         1))
+ ;;             (bfr-litarr-correct-p (fgl-object-bfrlist x) env
+ ;;                                   new-litarr2 new-logicman logicman))
+ ;;    :hints(("Goal" :in-theory (e/d (bfr-litarr-correct-p-by-witness
+ ;;                                    ;; contra-of-combine-pathcond-lits
+ ;;                                    ;; bfr-eval bfr-map bfr->aignet-lit bfr-fix aignet-lit->bfr
+ ;;                                    logicman->bfrstate
+ ;;                                    ;; bfr-eval
+ ;;                                    bfr-nvars)
+ ;;                                   (aignet::bit-list-fix-of-repeat)))
+ ;;           (and stable-under-simplificationp
+ ;;                (let ((witness (acl2::find-call-lst 'BFR-LITARR-correct-p-witness clause)))
+ ;;                  (and witness
+ ;;                       `(:clause-processor
+ ;;                         (acl2::simple-generalize-cp
+ ;;                          clause
+ ;;                          '((,witness . bfr)))))))
+ ;;           (and stable-under-simplificationp
+ ;;                '(:cases ((equal (satlink::lit->var
+ ;;                                  (bfr->aignet-lit bfr (logicman->bfrstate)))
+ ;;                                 0))))))
+
+
+
+
+  ;; (local (defthm aignet-copies-in-bounds-of-update-nth-lit
+  ;;          (implies (and (aignet-litp lit aignet)
+  ;;                        (aignet-copies-in-bounds
+
+
+  ;; (local (defthm bfr-litarr-p-of-update-nth-lit-0
+  ;;          (implies (bfr-litarr-p bfrs litarr bound)
+  ;;                   (bfr-litarr-p bfrs (aignet::update-nth-lit n 0 litarr) bound))
+  ;;          :hints(("Goal" :in-theory (enable bfr-litarr-p)
+  ;;                  :induct t)
+  ;;                 (and stable-under-simplificationp
+  ;;                      '(:in-theory (enable bfr-map bfr-p aignet::lit-copy))))))
+
+
+
+  ;; (defret bfr-litarr-p-litarr2-of-<fn>
+  ;;   (implies (and (equal bound (bfrstate->bound (logicman->bfrstate new-logicman)))
+  ;;                 (lbfr-mode-is :aignet)
+  ;;                 (lbfr-listp (fgl-object-bfrlist x))
+  ;;                 (lbfr-listp (fgl-object-bfrlist tracked-obj)))
+  ;;            (bfr-litarr-p (fgl-object-bfrlist x) new-litarr2 bound))
+  ;;   :hints(("Goal" :in-theory (enable logicman->bfrstate))))
+
+  ;; (defret bfr-litarr-p-litarr-of-<fn>
+  ;;   (implies (and (equal bound (bfrstate->bound (logicman->bfrstate new-logicman)))
+  ;;                 (lbfr-mode-is :aignet)
+  ;;                 ;; (lbfr-listp (fgl-object-bfrlist x))
+  ;;                 (no-duplicatesp-equal (aignet::lit-list-vars assum-lits))
+  ;;                 (aignet::lit-listp assum-lits))
+  ;;            (bfr-litarr-p ;; (mv-nth 1 (combine-pathcond-lits
+  ;;                          ;;            use-pathcond pathcond
+  ;;                          ;;            use-constraint constraint-pathcond))
+  ;;             assum-lits new-litarr bound)))
+
+    ;; :hints(("Goal" :in-theory (enable bfr-litarr-p-by-witness))
+    ;;        (and stable-under-simplificationp
+    ;;             (let ((witness (acl2::find-call-lst 'BFR-LITARR-P-WITNESS clause)))
+    ;;               (and witness
+    ;;                    `(:clause-processor
+    ;;                      (acl2::simple-generalize-cp
+    ;;                       clause
+    ;;                       '((,witness . bfr)))))))))
+
+  ;; (local (defthm nth-mark-when-bfr-markedp
+  ;;          (implies (and (bfr-markedp bfr bitarr)
+  ;;                        (not (equal bfr t))
+  ;;                        bfr
+  ;;                        (not (equal bfr 0)))
+  ;;                   (equal (equal 1 (nth (satlink::lit->var bfr) bitarr))
+  ;;                          t))
+  ;;          :hints(("Goal" :in-theory (enable bfr-markedp)))))
+
+
+  ;; (local
+  ;;  #!aignet
+  ;;  (defthm id-eval-of-var-when-aignet-lit-fix-equal-1
+  ;;    (implies (equal (aignet-lit-fix lit aignet) 1)
+  ;;             (equal (id-eval (lit->var lit) invals regvals aignet)
+  ;;                    (b-not (lit->neg lit))))
+  ;;    :hints(("Goal" :in-theory (enable aignet-lit-fix aignet-id-fix
+  ;;                                      satlink::equal-of-make-lit)
+  ;;            :expand ((id-eval (lit->var lit) invals regvals aignet))))))
+
+  ;; (local
+  ;;  #!aignet
+  ;;  (defthm id-eval-of-var-when-aignet-lit-fix-equal-0
+  ;;    (implies (equal (aignet-lit-fix lit aignet) 0)
+  ;;             (equal (id-eval (lit->var lit) invals regvals aignet)
+  ;;                    (lit->neg lit)))
+  ;;    :hints(("Goal" :in-theory (enable aignet-lit-fix aignet-id-fix
+  ;;                                      satlink::equal-of-make-lit)
+  ;;            :expand ((id-eval (lit->var lit) invals regvals aignet))))))
+
+  ;; (local
+  ;;  #!aignet
+  ;;  (defthm lit-eval-when-known-id-eval
+  ;;    (implies (and (equal v (id-eval (lit->var lit) invals regvals aignet))
+  ;;                  (syntaxp (quotep v)))
+  ;;             (equal (lit-eval lit invals regvals aignet)
+  ;;                    (b-xor v (lit->neg lit))))
+  ;;    :hints (("goal" :expand ((lit-eval lit invals regvals aignet))))))
+
+  ;; (local
+  ;;  #!aignet
+  ;;  (progn
+  ;;    (defthm id-eval-of-repeat-nil-regs
+  ;;      (equal (id-eval id invals (acl2::repeat k nil) aignet)
+  ;;             (id-eval id invals nil aignet))
+  ;;      :hints (("goal" :induct (id-eval-ind id aignet)
+  ;;               :expand ((:free (invals regvals)
+  ;;                         (id-eval id invals regvals aignet)))
+  ;;               :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits))))
+
+  ;;    (defthm lit-eval-of-repeat-nil
+  ;;      (equal (lit-eval lit invals (acl2::repeat k nil) aignet)
+  ;;             (lit-eval lit invals nil aignet))
+  ;;      :hints (("goal"
+  ;;               :expand ((:free (invals regvals)
+  ;;                         (lit-eval lit invals regvals aignet))))))))
+  ;; ;; (local
+  ;; ;;  #!aignet
+  ;; ;;  (defthm lit-eval-when-aignet-lit-fix-equal-0
+  ;; ;;    (implies (equal (aignet-lit-fix lit aignet) 0)
+  ;; ;;             (equal (lit-eval lit invals regvals aignet)
+  ;; ;;                    0))
+  ;; ;;    :hints(("Goal" :in-theory (enable aignet-lit-fix aignet-id-fix
+  ;; ;;                                      satlink::equal-of-make-lit)
+  ;; ;;            :expand ((id-eval (lit->var lit) invals regvals aignet)
+  ;; ;;                     (lit-eval lit invals regvals aignet))))))
+
+  ;; (local
+  ;;  (defthm bfr-eval-aignet-mode
+  ;;    (implies (lbfr-mode-is :aignet)
+  ;;             (equal (bfr-eval x env logicman)
+  ;;                    (bit->bool (aignet::lit-eval
+  ;;                                (bfr->aignet-lit x (logicman->bfrstate))
+  ;;                                (alist-to-bitarr (aignet::num-ins (logicman->aignet logicman))
+  ;;                                                 env nil)
+  ;;                                nil (logicman->aignet logicman)))))
+  ;;    :hints(("Goal" :in-theory (enable bfr-eval)))))
+
+  ;; (local (defthm bfr->aignet-lit-of-bfr-map
+  ;;          (implies (and (bfr-p (bfr-map bfr litarr) bfrstate2)
+  ;;                        (bfrstate-mode-is :aignet bfrstate2)
+  ;;                        (bfr-p bfr (bfrstate (bfrmode :aignet) (+ -1 (len litarr))))
+  ;;                        ;; (equal (aignet::nth-lit 0 litarr) 0)
+  ;;                        ;; (<= 1 (len litarr))
+  ;;                        )
+  ;;                   (equal (bfr->aignet-lit (bfr-map bfr litarr) bfrstate2)
+  ;;                          (cond ((eq bfr t) 1)
+  ;;                                ((eq bfr nil) 0)
+  ;;                                (t (aignet::lit-copy (bfr->aignet-lit bfr (bfrstate
+  ;;                                                                           (bfrmode :aignet)
+  ;;                                                                           (+ -1 (len litarr))))
+  ;;                                                     litarr)))))
+  ;;          :hints(("Goal" :in-theory (enable bfr->aignet-lit bfr-fix bfr-p bfr-map aignet::lit-copy
+  ;;                                            satlink::lit-negate-cond
+  ;;                                            satlink::equal-of-make-lit
+  ;;                                            aignet-lit->bfr
+  ;;                                            bounded-lit-fix
+  ;;                                            bfr-fix)
+  ;;                  :do-not-induct t))))
+
+
+  ;; (local
+  ;;  (defthm nth-equal-1-of-bfr->aignet-lit
+  ;;    (implies (and (bfrstate-mode-is :aignet)
+  ;;                  (not (equal (satlink::lit->var (bfr->aignet-lit bfr bfrstate)) 0)))
+  ;;             (equal (equal (nth (satlink::lit->var (bfr->aignet-lit bfr bfrstate)) bitarr) 1)
+  ;;                    (bfr-markedp bfr bitarr)))
+  ;;    :hints(("Goal" :in-theory (enable bfr-markedp bfr->aignet-lit bfr-fix aignet-lit->bfr
+  ;;                                      bounded-lit-fix)))))
+
+  ;; (local (defthm lit-copy-when-lit->var-equal-0
+  ;;          (implies (equal (satlink::lit->var x) 0)
+  ;;                   (equal (aignet::lit-copy x copy)
+  ;;                          (satlink::lit-negate-cond (aignet::nth-lit 0 copy)
+  ;;                                                    (satlink::lit->neg x))))
+  ;;          :hints(("Goal" :in-theory (enable aignet::lit-copy)))))
+
+  ;; ;; (local
+  ;; ;;  (defthm stype-count-equals-bfr-nvars
+  ;; ;;    (equal (equal
+
+  ;; (local
+  ;;  #!aignet
+  ;;  (defthm lit-copy-of-update-nth-lit-0-0
+  ;;          (equal (lit-copy lit (update-nth-lit 0 0 litarr))
+  ;;                 (cond ((equal (lit-fix lit) 0) 0)
+  ;;                       ((equal (lit-fix lit) 1) 1)
+  ;;                       (t (lit-copy lit litarr))))
+  ;;          :hints(("Goal" :in-theory (enable lit-copy satlink::lit-negate-cond)))))
+
+
+
+  ;; (local (defthm lit->var-0-of-bfr->aignet-lit
+  ;;          (implies (and (bfr-p bfr (bfrstate (bfrmode :aignet) bound))
+  ;;                        (not (equal bfr t))
+  ;;                        bfr)
+  ;;                   (not (equal (satlink::lit->var (bfr->aignet-lit bfr (bfrstate (bfrmode :aignet) bound))) 0)))
+  ;;          :hints(("Goal" :in-theory (e/d (bfr->aignet-lit bfr-p))
+  ;;                  :use ((:instance satlink::equal-of-make-lit
+  ;;                         (a 0)
+  ;;                         (var (satlink::lit->var bfr))
+  ;;                         (neg (satlink::lit->neg bfr)))
+  ;;                        (:instance satlink::equal-of-make-lit
+  ;;                         (a 1)
+  ;;                         (var (satlink::lit->var bfr))
+  ;;                         (neg (satlink::lit->neg bfr))))))))
+
+
+  ;; (local (in-theory (disable acl2::repeat-when-zp nth
+  ;;                            default-+-2 default-+-1
+  ;;                            aignet::fanin-count-of-atom)))
+
+  ;; (defret bfr-litarr-correct-p-litarr2-of-<fn>
+  ;;   (implies (and (lbfr-mode-is :aignet)
+  ;;                 (lbfr-listp (fgl-object-bfrlist x))
+  ;;                 (lbfr-listp (fgl-object-bfrlist tracked-obj))
+  ;;                 (equal (aignet::aignet-eval-conjunction
+  ;;                         assum-lits
+  ;;                         (alist-to-bitarr (bfr-nvars logicman) env nil) nil
+  ;;                         (logicman->aignet logicman))
+  ;;                        1))
+  ;;            (bfr-litarr-correct-p (fgl-object-bfrlist x) env
+  ;;                                  new-litarr2 new-logicman logicman))
+  ;;   :hints(("Goal" :in-theory (e/d (bfr-litarr-correct-p-by-witness
+  ;;                                   ;; contra-of-combine-pathcond-lits
+  ;;                                   ;; bfr-eval bfr-map bfr->aignet-lit bfr-fix aignet-lit->bfr
+  ;;                                   logicman->bfrstate
+  ;;                                   ;; bfr-eval
+  ;;                                   bfr-nvars)
+  ;;                                  (aignet::bit-list-fix-of-repeat)))
+  ;;          (and stable-under-simplificationp
+  ;;               (let ((witness (acl2::find-call-lst 'BFR-LITARR-correct-p-witness clause)))
+  ;;                 (and witness
+  ;;                      `(:clause-processor
+  ;;                        (acl2::simple-generalize-cp
+  ;;                         clause
+  ;;                         '((,witness . bfr)))))))
+  ;;          (and stable-under-simplificationp
+  ;;               '(:cases ((equal (satlink::lit->var
+  ;;                                 (bfr->aignet-lit bfr (logicman->bfrstate)))
+  ;;                                0))))))
+
+
+
+
+  ;; (local
+  ;;  (defthm lit->var-of-bfr->aignet-lit
+  ;;    (implies (bfr-p bfr bfrstate)
+  ;;             (equal (satlink::lit->var (bfr->aignet-lit bfr bfrstate))
+  ;;                    (satlink::lit->var bfr)))
+  ;;    :hints(("Goal" :in-theory (enable bfr->aignet-lit)))))
+
+  ;; (local (defthm member-lit->var-of-lit-list-vars
+  ;;          (implies (member lit lits)
+  ;;                   (member (satlink::lit->var lit) (aignet::lit-list-vars lits)))
+  ;;          :hints(("Goal" :in-theory (enable aignet::lit-list-vars)))))
+
+  ;; (defret bfr-litarr-correct-p-litarr-of-<fn>
+  ;;   (implies (and (lbfr-mode-is :aignet)
+  ;;                 ;; (lbfr-listp (fgl-object-bfrlist x))
+  ;;                 (lbfr-listp assum-lits)
+  ;;                 (aignet::lit-listp assum-lits)
+  ;;                 (no-duplicatesp-equal (aignet::lit-list-vars assum-lits))
+  ;;                 ;; (lbfr-listp (fgl-object-bfrlist tracked-obj))
+  ;;                 ;; (logicman-pathcond-eval env pathcond)
+  ;;                 ;; (logicman-pathcond-eval env constraint-pathcond)
+  ;;                 ;; (not contra)
+  ;;                 ;; (bfr-pathcond-p pathcond (logicman->bfrstate))
+  ;;                 ;; (bfr-pathcond-p constraint-pathcond (logicman->bfrstate))
+  ;;                 ;; (equal (aignet::nth-lit 0 litarr) 0)
+  ;;                 )
+  ;;            (bfr-litarr-correct-p ;; (mv-nth 1 (combine-pathcond-lits
+  ;;                                  ;;    use-pathcond pathcond
+  ;;                                  ;;    use-constraint constraint-pathcond))
+  ;;             assum-lits env new-litarr new-logicman logicman))
+  ;;   :hints(("Goal" :in-theory (e/d (bfr-litarr-correct-p-by-witness
+  ;;                                   ;; contra-of-combine-pathcond-lits
+  ;;                                   ;; bfr-eval bfr-map bfr->aignet-lit bfr-fix aignet-lit->bfr
+  ;;                                   logicman->bfrstate
+  ;;                                   bfr-nvars
+  ;;                                   aignet-lit-listp-when-bfr-listp)
+  ;;                                  (aignet::bit-list-fix-of-repeat)))
+  ;;          (and stable-under-simplificationp
+  ;;               (let ((witness (acl2::find-call-lst 'BFR-LITARR-correct-p-witness clause)))
+  ;;                 (and witness
+  ;;                      `(:clause-processor
+  ;;                        (acl2::simple-generalize-cp
+  ;;                         clause
+  ;;                         '((,witness . bfr)))))))
+  ;;          (and stable-under-simplificationp
+  ;;               '(:cases ((equal (satlink::lit->var
+  ;;                                 (bfr->aignet-lit bfr (logicman->bfrstate)))
+  ;;                                0))))))
+
+  ;; ;; (defret bfr-litarr-correct-p-all-envs-of-<fn>
+  ;; ;;   (implies (and (lbfr-mode-is :aignet)
+  ;; ;;                 (lbfr-listp (fgl-object-bfrlist x))
+  ;; ;;                 (lbfr-listp (fgl-object-bfrlist tracked-obj))
+  ;; ;;                 ;; (equal (aignet::nth-lit 0 litarr) 0)
+  ;; ;;                 )
+  ;; ;;            (bfr-litarr-correct-p-all-envs (fgl-object-bfrlist x)
+  ;; ;;                                  new-litarr new-logicman logicman))
+  ;; ;;   :hints(("Goal" :in-theory (e/d (bfr-litarr-correct-p-all-envs)
+  ;; ;;                                  (<fn>)))))
+
+  ;; (defret litarr-len-of-<fn>
+  ;;   (implies (and (lbfr-mode-is :aignet)
+  ;;                 ;; (lbfr-listp (fgl-object-bfrlist x))
+  ;;                 ;; (bfr-pathcond-p pathcond (logicman->bfrstate))
+  ;;                 ;; (bfr-pathcond-p constraint-pathcond (logicman->bfrstate))
+  ;;                 ;; (lbfr-listp (fgl-object-bfrlist tracked-obj))
+  ;;                 (lbfr-listp assum-lits)
+  ;;                 (aignet::lit-listp assum-lits)
+  ;;                 )
+  ;;            (equal (len new-litarr)
+  ;;                   (+ 1 (bfrstate->bound (logicman->bfrstate logicman)))))
+  ;;   :hints(("Goal" :in-theory (enable logicman->bfrstate
+  ;;                                     aignet-lit-listp-when-bfr-listp))))
+
+  ;; (defret litarr2-len-of-<fn>
+  ;;   (implies (and (lbfr-mode-is :aignet)
+  ;;                 (lbfr-listp (fgl-object-bfrlist x))
+  ;;                 (lbfr-listp (fgl-object-bfrlist tracked-obj))
+  ;;                 ;; (bfr-pathcond-p pathcond (logicman->bfrstate))
+  ;;                 ;; (bfr-pathcond-p constraint-pathcond (logicman->bfrstate))
+  ;;                 ;; (lbfr-listp (fgl-object-bfrlist tracked-obj))
+  ;;                 )
+  ;;            (equal (len new-litarr2)
+  ;;                   (+ 1 (bfrstate->bound (logicman->bfrstate logicman)))))
+  ;;   :hints(("Goal" :in-theory (enable logicman->bfrstate))))
+
+
+  (defret stype-count-of-<fn>
+    (b* ((new-aignet (logicman->aignet new-logicman))
+         (aignet (logicman->aignet logicman)))
+      (and (equal (aignet::stype-count :pi new-aignet)
+                  (aignet::stype-count :pi aignet))
+           (equal (aignet::stype-count :reg new-aignet)
+                  (aignet::stype-count :reg aignet))
+           (equal (aignet::stype-count :po new-aignet)
+                  (aignet::stype-count :po aignet))
+           (equal (aignet::stype-count :nxst new-aignet)
+                  (aignet::stype-count :nxst aignet)))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state)))
+
+  (defret bfr-nvars-of-<fn>
+    (equal (bfr-nvars new-logicman)
+           (bfr-nvars logicman))))
+
+
+
+
 
 
 (define fgl-simplify-object-logicman ((x fgl-object-p
@@ -2331,8 +2980,151 @@
   :enabled t
   x)
 
+
+
+(define fgl-simplify-ordered-impl ((x fgl-object-p
+                                     "Object whose symbolic value will be preserved by the transform.")
+                                  (transforms)
+                                  &key
+                                  ((tracked-obj
+                                    fgl-object-p
+                                    "Object that is not preserved but whose bits' formulas
+                                are tracked through possibly non-preserving transforms,
+                                for heuristic use by the transforms")
+                                   'nil)
+                                  (use-pathcond 't)
+                                  (use-constraint 'nil)
+                                  (logicman 'logicman)
+                                  (pathcond 'pathcond)
+                                  (constraint-pathcond 'constraint-pathcond)
+                                  (state 'state))
+  :guard (and (lbfr-mode-is :aignet)
+              (lbfr-listp (fgl-object-bfrlist x))
+              (lbfr-listp (fgl-object-bfrlist tracked-obj))
+              (ec-call (bfr-pathcond-p-fn pathcond (logicman->bfrstate)))
+              (ec-call (bfr-pathcond-p-fn constraint-pathcond (logicman->bfrstate))))
+  :returns (mv (new-x fgl-object-p)
+               (new-logicman)
+               (new-state))
+  :hooks nil
+  :guard-hints (("goal" :in-theory (enable logicman->bfrstate)))
+  :guard-debug t
+  (b* (((mv contra assum-lits)
+        (combine-pathcond-lits use-pathcond pathcond use-constraint constraint-pathcond))
+       ((when contra)
+        (mv nil logicman state))
+       ((mv new-obj logicman state)
+        (fgl-simplify-object-ordered-logicman
+         x transforms
+         :tracked-obj tracked-obj
+         :assum-lits assum-lits)))
+    (mv new-obj logicman state))
+  ///
+
+  (defret logicman-extension-p-of-<fn>
+    (logicman-extension-p new-logicman logicman)
+    :hints(("Goal" :in-theory (enable logicman-extension-p))))
+
+  (defret logicman-get-of-<fn>
+    (implies (and (not (equal (logicman-field-fix k) :strash))
+                  (not (equal (logicman-field-fix k) :aignet)))
+             (equal (logicman-get k new-logicman)
+                    (logicman-get k logicman))))
+
+  ;; (local
+  ;;  (defret eval-of-<fn>-all-envs-bind
+  ;;    (implies (and (bind-free '((logicman . logicman)))
+  ;;                  (bfr-litarr-correct-p-all-envs (fgl-object-bfrlist x)
+  ;;                                                 litarr logicman2 logicman))
+  ;;             (equal (fgl-object-eval new-x env logicman2)
+  ;;                    (fgl-object-eval x env logicman)))
+  ;;    :hints (("goal" :use eval-of-<fn>
+  ;;             :in-theory (disable eval-of-<fn>)))
+  ;;    :fn fgl-object-map-bfrs))
+
+  ;; (local
+  ;;  (defret eval-of-<fn>-rw
+  ;;    (implies (and (bind-logicman-extension logicman2 logicman)
+  ;;                  (bfr-litarr-correct-p (fgl-object-bfrlist x)
+  ;;                                        (fgl-env->bfr-vals env)
+  ;;                                        litarr logicman2 logicman))
+  ;;             (equal (fgl-object-eval new-x env logicman2)
+  ;;                    (fgl-object-eval x env logicman)))
+  ;;    :fn fgl-object-map-bfrs))
+
+  ;; (local
+  ;;  (defret contra-of-<fn>-rw
+  ;;    (b* (((mv ?contra1 assum-lits)
+  ;;          (combine-pathcond-lits
+  ;;           use-pathcond pathcond use-constraint constraint-pathcond)))
+  ;;      (implies (and (bind-free '((env . (fgl-env->bfr-vals$inline env))) (env))
+  ;;                    (logicman-pathcond-eval env pathcond logicman)
+  ;;                    (logicman-pathcond-eval env constraint-pathcond logicman)
+  ;;                    (bfr-litarr-correct-p
+  ;;                     assum-lits env litarr logicman logicman)
+  ;;                    (lbfr-mode-is :aignet logicman))
+  ;;               (not contra)))
+  ;;    :fn pathconds-map-bfrs))
+
+  ;; (local (defthm bfr-litarr-correct-p-of-logicman-extension
+  ;;          (implies (and (bind-logicman-extension old older)
+  ;;                        (bfr-listp bfrs (logicman->bfrstate older)))
+  ;;                   (iff (bfr-litarr-correct-p bfrs env litarr new old)
+  ;;                        (bfr-litarr-correct-p bfrs env litarr new older)))
+  ;;          :hints(("Goal" :in-theory (enable bfr-listp bfr-litarr-correct-p)))))
+
+
+  (defret eval-of-<fn>
+    (implies (and (lbfr-mode-is :aignet)
+                  (lbfr-listp (fgl-object-bfrlist x))
+                  (lbfr-listp (fgl-object-bfrlist tracked-obj))
+                  (bfr-pathcond-p pathcond (logicman->bfrstate))
+                  (bfr-pathcond-p constraint-pathcond (logicman->bfrstate))
+                  (logicman-pathcond-eval (fgl-env->bfr-vals env) pathcond logicman)
+                  (logicman-pathcond-eval (fgl-env->bfr-vals env) constraint-pathcond logicman))
+             (equal (fgl-object-eval new-x env new-logicman)
+                    (fgl-object-eval x env logicman)))
+    :hints(("Goal" :in-theory (enable contra-of-combine-pathcond-lits))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state)))
+
+  (defret bfr-nvars-of-<fn>
+    (equal (bfr-nvars new-logicman)
+           (bfr-nvars logicman)))
+
+  (defret bfr-listp-of-<fn>
+    (implies (and (lbfr-mode-is :aignet)
+                  (lbfr-listp (fgl-object-bfrlist x))
+                  (lbfr-listp (fgl-object-bfrlist tracked-obj)))
+             (lbfr-listp (fgl-object-bfrlist new-x) new-logicman))))
+
+
+(define fgl-simplify-ordered (x transforms
+                             &key
+                             ((tracked-obj
+                               "Object that is not preserved but whose bits' formulas
+                                are tracked through possibly non-preserving transforms,
+                                for heuristic use by the transforms")
+                              'nil)
+                             ((use-pathcond
+                               "Assume the path condition true when simplifying the formulas")
+                              't)
+                             ((use-constraint
+                               "Assume the constraint condition true when simplifying the formulas")
+                              't))
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  :enabled t
+  x)
+
+
+
+
+
 (def-formula-checks fgl-simplify-formula-checks
-  (fgl-simplify-object-fn))
+  (fgl-simplify-object-fn fgl-simplify-ordered-fn))
 
 ;; (local (in-theory (enable BFR-LISTP-WHEN-NOT-MEMBER-WITNESS)))
 (local (include-book "primitive-lemmas"))
@@ -2375,5 +3167,26 @@
                    (b* ((interp-st (interp-st-set-error :unreachable interp-st)))
                      (mv t new-x interp-st state))
                  (mv t new-x interp-st state))))
+  :returns (mv successp ans interp-st state)
+  :formula-check fgl-simplify-formula-checks)
+
+
+
+(def-fgl-primitive fgl-simplify-ordered-fn (x transforms tracked-obj use-pathcond use-constraint)
+  (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
+        (cw "Warning: skipping simplify transform because we're not in aignet mode~%")
+        (mv nil nil interp-st state))
+       ((unless (fgl-object-case transforms :g-concrete))
+        (fgl-interp-error :msg "Fgl-simplify-object: transforms must be a concrete object)"
+                          :debug-obj transforms
+                          :nvals 2))
+       (transforms (g-concrete->val transforms)))
+    (stobj-let ((logicman (interp-st->logicman interp-st))
+                (pathcond (interp-st->pathcond interp-st))
+                (constraint-pathcond (interp-st->constraint interp-st)))
+               (new-x logicman state)
+               (fgl-simplify-ordered-impl
+                x transforms :tracked-obj tracked-obj :use-pathcond use-pathcond :use-constraint use-constraint)
+               (mv t new-x interp-st state)))
   :returns (mv successp ans interp-st state)
   :formula-check fgl-simplify-formula-checks)

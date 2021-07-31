@@ -129,32 +129,46 @@
                               
 
 (define print-fraig-stats-initial (fraig-stats)
-  (cw "Fraig initial equiv classes: ~x0     const lits: ~x1    class lits: ~x2~%"
+  (cw "Fraig initial equiv classes: ~x0     const lits: ~x1    class lits: ~x2~%Lits remaining: ~x3 (~s4)~%"
       (fraig-initial-nclasses fraig-stats)
       (fraig-initial-nconst-lits fraig-stats)
-      (fraig-initial-nclass-lits fraig-stats)))
+      (fraig-initial-nclass-lits fraig-stats)
+      (+ (fraig-initial-nconst-lits fraig-stats)
+         (fraig-initial-nclass-lits fraig-stats))
+      "100.00%"))
 
 (define print-fraig-stats-noninitial (classes ipasir fraig-stats &key ((start-node natp) '0))
   :guard (and (non-exec (not (eq (ipasir::ipasir$a->status ipasir) :undef)))
               (<= start-node (classes-size classes)))
-  (b* (((mv nclasses nconst-lits nclass-lits) (classes-counts classes :start-node start-node)))
-    (cw! "Current gates: ~x0  built: ~x1 coincident: ~x2 proved: ~x3~%"
+  (b* (((mv nclasses nconst-lits nclass-lits) (classes-counts classes :start-node start-node))
+       (norig-lits (+ (fraig-initial-nconst-lits fraig-stats)
+                      (fraig-initial-nclass-lits fraig-stats)))
+       ((when (eql norig-lits 0))
+        nil)
+       (nremaining-lits (+ nconst-lits nclass-lits))
+       (percent-times-100 (let ((div (floor (* 20000 nremaining-lits) norig-lits)))
+                                     (+ (ash div -1) (logand 1 div)))) ;; round nearest
+       (percent-msg (msg "~x0.~x1~x2%" (floor percent-times-100 100)
+                                  (mod (floor percent-times-100 10) 10)
+                                  (mod percent-times-100 10))))
+    (cw! "~@1 (~x0) of lits remaining. Classes: ~x2 Const lits: ~x3 Class lits: ~x4~%"
+         (+ nconst-lits nclass-lits) percent-msg nclasses nconst-lits nclass-lits)
+    
+    (cw! "      ~x0 gates processed, ~x1 built, ~x2 coincident, ~x3 proved~%"
         (fraig-gates-processed fraig-stats)
         (- (fraig-gates-processed fraig-stats)
            (+ (fraig-coincident-nodes fraig-stats)
               (fraig-unsat-checks fraig-stats)))
         (fraig-coincident-nodes fraig-stats)
         (fraig-unsat-checks fraig-stats))
-    (cw! "       classes: ~x0     const lits: ~x1    class lits: ~x2~%"
-        nclasses nconst-lits nclass-lits)
-    (cw! "       Refinements: resims: ~x0 class lits: ~x1 const lits: ~x2 classes: ~x3 last-chance: ~x4 last-chance(forced): ~x5 last-chance/forced/proved: ~x6~%"
-        (fraig-resims fraig-stats)
-        (fraig-class-lits-refined fraig-stats)
-        (fraig-const-lits-refined fraig-stats)
-        (fraig-classes-refined fraig-stats)
-        (fraig-last-chance-refines fraig-stats)
-        (fraig-last-chance-refines-forced fraig-stats)
-        (fraig-last-chance-refines-forced-proved fraig-stats))
+    ;; (cw! "       Refinements: resims: ~x0 class lits: ~x1 const lits: ~x2 classes: ~x3 last-chance: ~x4 last-chance(forced): ~x5 last-chance/forced/proved: ~x6~%"
+    ;;     (fraig-resims fraig-stats)
+    ;;     (fraig-class-lits-refined fraig-stats)
+    ;;     (fraig-const-lits-refined fraig-stats)
+    ;;     (fraig-classes-refined fraig-stats)
+    ;;     (fraig-last-chance-refines fraig-stats)
+    ;;     (fraig-last-chance-refines-forced fraig-stats)
+    ;;     (fraig-last-chance-refines-forced-proved fraig-stats))
     (cw! "       SAT checks: ~x0  unsat: ~x1 sat: ~x2 failed: ~x3~%"
         (+ (fraig-unsat-checks fraig-stats)
            (fraig-sat-checks fraig-stats)

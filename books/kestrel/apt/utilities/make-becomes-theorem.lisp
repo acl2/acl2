@@ -25,11 +25,13 @@
 ;; Makes a theorem equating an arbitrary call of FN with a call of NEW-FN on the same arguments.
 ;; REC is either nil (function is non-recursive), :single, or :mutual.
 ;; TODO: Improve this to use the $not-normalized rules if indicated for fn and/or new-fn (add options for this)
+;; The BASE-THEORY is often (theory 'minimal-theory).
 (defun make-becomes-theorem (fn ; name of the old function
                              new-fn ; name of the new function (must have the same params)
                              rec ; nil (for non-recursive), :single, or :mutual
                              thm-enable ;whether the "becomes theorem" should be enabled
                              enables ; rules to always enable in the proof ; drop??
+                             base-theory ; ex: '(theory 'minimal-theory) or '(current-theory :here)
                              state)
   (declare (xargs :stobjs state
                   :guard (and (symbolp fn)
@@ -43,16 +45,16 @@
        (equal (,fn ,@formals)
               (,new-fn ,@formals))
        :hints ,(if (eq rec :mutual) ;weird format for make-flag hints:
-                   `('(:in-theory (append '(,fn ,new-fn ,@enables) (theory 'minimal-theory))
+                   `('(:in-theory (append '(,fn ,new-fn ,@enables) ,base-theory)
                                   :do-not '(generalize eliminate-destructors)
                                   :expand ((,fn ,@formals)
                                            (,new-fn ,@formals))))
                  (if (eq rec :single)
                      `(("Goal" :induct (,fn ,@formals) ; should we induct in the new or old function (old, since we know it is recursive?)?
                         :do-not '(generalize eliminate-destructors)
-                        :in-theory (append '(,fn ,new-fn ,@enables) (theory 'minimal-theory))))
+                        :in-theory (append '(,fn ,new-fn ,@enables) ,base-theory)))
                    ;; non-recursive case:
-                   `(("Goal" :in-theory (append '(,fn ,new-fn ,@enables) (theory 'minimal-theory))
+                   `(("Goal" :in-theory (append '(,fn ,new-fn ,@enables) ,base-theory)
                       :do-not '(generalize eliminate-destructors)
                       :do-not-induct t))))
        ;; Put in a flag for defthm-flag-xxx if appropriate:
@@ -64,7 +66,9 @@
                               enables-for-each
                               function-renaming
                               thm-enable ; whether all the theorems should be enabled
-                              enables state)
+                              enables
+                              base-theory ; ex: (theory 'minimal-theory) or (current-theory :here)
+                              state)
   (declare (xargs :stobjs state :guard (and (symbol-listp fns)
                                             (booleanp thm-enable)
                                             (true-listp enables)
@@ -74,5 +78,5 @@
       nil
     (let ((fn (first fns))
           (enables-for-this (first enables-for-each)))
-      (cons (make-becomes-theorem fn (lookup-eq-safe fn function-renaming) :mutual thm-enable (append enables enables-for-this) state)
-            (make-becomes-theorems (rest fns) (rest enables-for-each) function-renaming thm-enable enables state)))))
+      (cons (make-becomes-theorem fn (lookup-eq-safe fn function-renaming) :mutual thm-enable (append enables enables-for-this) base-theory state)
+            (make-becomes-theorems (rest fns) (rest enables-for-each) function-renaming thm-enable enables base-theory state)))))
