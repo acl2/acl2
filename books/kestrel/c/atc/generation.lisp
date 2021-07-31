@@ -38,6 +38,7 @@
 (include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "std/typed-alists/keyword-symbol-alistp" :dir :system)
+(include-book "std/typed-alists/symbol-pseudoterm-alistp" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
@@ -45,7 +46,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; to speed up the proofs in this file:
+; these belong to a more general library
+
+(defruledl symbol-pseudoterm-alistp-rewrite-for-fsublis-var
+  (equal (symbol-pseudoterm-alistp alist)
+         (and (symbol-alistp alist)
+              (pseudo-term-listp (strip-cdrs alist)))))
+
+(defruled pseudo-termp-of-fsublist-var-when-symbol-pseudoterm-alistp
+  (implies (and (symbol-pseudoterm-alistp alist)
+                (pseudo-termp term))
+           (pseudo-termp (fsublis-var alist term)))
+  :enable symbol-pseudoterm-alistp-rewrite-for-fsublis-var)
+
+(defruled pseudo-term-listp-of-fsublist-var-lst-when-symbol-pseudoterm-alistp
+  (implies (and (symbol-pseudoterm-alistp alist)
+                (pseudo-term-listp terms))
+           (pseudo-term-listp (fsublis-var-lst alist terms)))
+  :enable symbol-pseudoterm-alistp-rewrite-for-fsublis-var)
+
+(defrule symbol-pseudoterm-alistp-of-pairlis$
+  (implies (and (symbol-listp keys)
+                (pseudo-term-listp vals))
+           (symbol-pseudoterm-alistp (pairlis$ keys vals))))
+
+(defruled pseudo-term-listp-of-strip-cdrs-when-symbol-pseudoterm-alistp
+  (implies (symbol-pseudoterm-alistp alist)
+           (pseudo-term-listp (strip-cdrs alist))))
+
+(defruled symbol-alistp-when-symbol-pseudoterm-alistp
+  (implies (symbol-pseudoterm-alistp x)
+           (symbol-alistp x)))
+
+(defrule symbol-alistp-of-append
+  (equal (symbol-alistp (append a b))
+         (and (symbol-alistp (true-list-fix a))
+              (symbol-alistp b))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; to speed up some proofs in this file:
 
 (defrulel tuplep-of-2-of-list
   (std::tuplep 2 (list x y)))
@@ -1516,7 +1556,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-make-mv-nth-terms ((indices nat-listp) (term pseudo-termp))
+  :returns (terms pseudo-term-listp :hyp (pseudo-termp term))
+  :short "Create a list of @(tsee mv-nth)s applied to a term
+          for a list of indices."
+  (cond ((endp indices) nil)
+        (t (cons `(mv-nth ',(car indices) ,term)
+                 (atc-make-mv-nth-terms (cdr indices) term))))
+  ///
+  (defret len-of-atc-make-mv-nth-terms
+    (equal (len terms)
+           (len indices))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-stmt ((term pseudo-termp)
+                      (var-term-alist symbol-pseudoterm-alistp)
                       (inscope atc-symbol-type-alist-listp)
                       (xforming symbol-listp)
                       (fn symbolp)
@@ -1541,6 +1596,16 @@
    (xdoc::p
     "At the same time, we check that the term is a statement term,
      as described in the user documentation.")
+   (xdoc::p
+    "Along with the term, we pass an alist from symbols to terms
+     that collects the @(tsee let) and @(tsee mv-let) bindings
+     encountered along the way.
+     These are eventually used to properly instantiate
+     limits associated to function calls,
+     because those limits apply to the functions' formals,
+     which must therefore be replaced not just with the actuals of the call,
+     but with those actuals with variables replaced with terms
+     according to the bindings that lead to the call.")
    (xdoc::p
     "The @('xforming') parameter of this ACL2 function
      is the list of variables being transformed by this statement.
@@ -1717,11 +1782,11 @@
        ((when okp)
         (b* (((mv mbtp &) (check-mbt-call test))
              ((when mbtp)
-              (atc-gen-stmt then inscope xforming fn prec-fns
+              (atc-gen-stmt then var-term-alist inscope xforming fn prec-fns
                             experimental ctx state))
              ((mv mbt$p &) (check-mbt$-call test))
              ((when mbt$p)
-              (atc-gen-stmt then inscope xforming fn prec-fns
+              (atc-gen-stmt then var-term-alist inscope xforming fn prec-fns
                             experimental ctx state))
              ((mv erp test-expr state) (atc-gen-expr-bool test
                                                           inscope
@@ -1731,6 +1796,7 @@
              ((when erp) (mv erp (list nil nil nil) state))
              ((er (list then-items then-type then-limit))
               (atc-gen-stmt then
+                            var-term-alist
                             (cons nil inscope)
                             xforming
                             fn
@@ -1740,6 +1806,7 @@
                             state))
              ((er (list else-items else-type else-limit))
               (atc-gen-stmt else
+                            var-term-alist
                             (cons nil inscope)
                             xforming
                             fn
@@ -1766,7 +1833,7 @@
                                 :else (make-stmt-compound :items else-items))))
             type
             limit))))
-       ((mv okp & vars & & val body) (check-mv-let-call term))
+       ((mv okp & vars indices & val body) (check-mv-let-call term))
        ((when okp)
         (b* (((unless (> (len vars) 1))
               (mv (raise "Internal error: MV-LET ~x0 has less than 2 variables."
@@ -1796,10 +1863,14 @@
                          does not have the required form."
                         fn val))
              ((er (list xform-items & xform-limit))
-              (atc-gen-stmt val inscope vars fn prec-fns
+              (atc-gen-stmt val var-term-alist inscope vars fn prec-fns
                             experimental ctx state))
+             (val-instance (fsublis-var var-term-alist val))
+             (vals (atc-make-mv-nth-terms indices val-instance))
+             (var-term-alist-body (append (pairlis$ vars vals) var-term-alist))
              ((er (list body-items body-type body-limit))
-              (atc-gen-stmt body inscope xforming fn prec-fns
+              (atc-gen-stmt body var-term-alist-body inscope xforming
+                            fn prec-fns
                             experimental ctx state))
              (items (append xform-items body-items))
              (type body-type)
@@ -1807,7 +1878,9 @@
           (acl2::value (list items type limit))))
        ((mv okp var val body wrapper?) (atc-check-let term))
        ((when okp)
-        (b* (((mv okp arr sub elem) (atc-check-array-write var val))
+        (b* ((val-instance (fsublis-var var-term-alist val))
+             (var-term-alist-body (acons var val-instance var-term-alist))
+             ((mv okp arr sub elem) (atc-check-array-write var val))
              ((when (and okp
                          (member-eq :array-writes experimental)))
               (b* (((mv erp (list arr-expr &) state)
@@ -1827,7 +1900,8 @@
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
                    ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body inscope xforming fn prec-fns
+                    (atc-gen-stmt body var-term-alist-body inscope xforming
+                                  fn prec-fns
                                   experimental ctx state))
                    (limit `(binary-+ '4 ,body-limit)))
                 (acl2::value (list (cons item body-items)
@@ -1873,7 +1947,8 @@
                    (item (block-item-declon declon))
                    (inscope (atc-add-var var init-type inscope))
                    ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body inscope xforming fn prec-fns
+                    (atc-gen-stmt body var-term-alist-body inscope xforming
+                                  fn prec-fns
                                   experimental ctx state))
                    (type body-type)
                    (limit `(binary-+ '3 (binary-+ ,init-limit ,body-limit))))
@@ -1906,7 +1981,8 @@
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
                    ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body inscope xforming fn prec-fns
+                    (atc-gen-stmt body var-term-alist inscope xforming
+                                  fn prec-fns
                                   experimental ctx state))
                    (type body-type)
                    (limit `(binary-+ '4 (binary-+ ,rhs-limit ,body-limit))))
@@ -1925,10 +2001,12 @@
                          This is disallowed."
                         fn val))
              ((er (list xform-items & xform-limit))
-              (atc-gen-stmt val inscope (list var) fn prec-fns
+              (atc-gen-stmt val var-term-alist-body inscope (list var)
+                            fn prec-fns
                             experimental ctx state))
              ((er (list body-items body-type body-limit))
-              (atc-gen-stmt body inscope xforming fn prec-fns
+              (atc-gen-stmt body var-term-alist-body inscope xforming
+                            fn prec-fns
                             experimental ctx state))
              (items (append xform-items body-items))
              (type body-type)
@@ -2004,24 +2082,28 @@
                        type
                        limit)))
 
-  :prepwork (;; for speed:
-             (local
+  :prepwork ((local
               (in-theory
-               (disable
-                natp
-                member-equal
-                default-car
-                default-cdr
-                default-symbol-name
-                true-list-listp
-                acl2::true-listp-of-car-when-true-list-listp
-                acl2::true-list-listp-of-cdr-when-true-list-listp
-                acl2::true-listp-of-cdar-when-keyword-truelist-alistp
-                acl2::symbol-listp-when-not-consp
-                acl2::true-list-listp-when-not-consp
-                symbolp-of-caar-when-atc-symbol-fninfo-alistp
-                symbolp-of-car-when-member-equal-of-atc-symbol-fninfo-alistp
-                set::sets-are-true-lists-cheap))))
+               (e/d
+                (symbol-pseudoterm-alistp-rewrite-for-fsublis-var
+                 pseudo-termp-of-fsublist-var-when-symbol-pseudoterm-alistp
+                 pseudo-term-listp-of-strip-cdrs-when-symbol-pseudoterm-alistp
+                 symbol-alistp-when-symbol-pseudoterm-alistp)
+                ;; for speed:
+                (natp
+                 member-equal
+                 default-car
+                 default-cdr
+                 default-symbol-name
+                 true-list-listp
+                 acl2::true-listp-of-car-when-true-list-listp
+                 acl2::true-list-listp-of-cdr-when-true-list-listp
+                 acl2::true-listp-of-cdar-when-keyword-truelist-alistp
+                 acl2::symbol-listp-when-not-consp
+                 acl2::true-list-listp-when-not-consp
+                 symbolp-of-caar-when-atc-symbol-fninfo-alistp
+                 symbolp-of-car-when-member-equal-of-atc-symbol-fninfo-alistp
+                 set::sets-are-true-lists-cheap)))))
 
   :verify-guards nil ; done below
 
@@ -2045,12 +2127,14 @@
              (pseudo-termp x)))
 
   (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
+  (local (include-book "std/alists/strip-cdrs" :dir :system))
 
-  (verify-guards atc-gen-stmt))
+  (verify-guards atc-gen-stmt :hints (("Goal" :do-not-induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-body-stmt ((term pseudo-termp)
+                                (var-term-alist symbol-pseudoterm-alistp)
                                 (inscope atc-symbol-type-alist-listp)
                                 (xforming symbol-listp)
                                 (fn symbolp)
@@ -2086,6 +2170,7 @@
              ((when erp) (mv erp (list nil nil) state))
              ((er (list then-items then-limit))
               (atc-gen-loop-body-stmt then
+                                      var-term-alist
                                       (cons nil inscope)
                                       xforming
                                       fn
@@ -2095,6 +2180,7 @@
                                       state))
              ((er (list else-items else-limit))
               (atc-gen-loop-body-stmt else
+                                      var-term-alist
                                       (cons nil inscope)
                                       xforming
                                       fn
@@ -2111,7 +2197,7 @@
                                 :then (make-stmt-compound :items then-items)
                                 :else (make-stmt-compound :items else-items))))
             limit))))
-       ((mv okp & vars & & val body) (check-mv-let-call term))
+       ((mv okp & vars indices & val body) (check-mv-let-call term))
        ((when okp)
         (b* (((unless (> (len vars) 1))
               (mv (raise "Internal error: MV-LET ~x0 has less than 2 variables."
@@ -2140,11 +2226,15 @@
                          does not have the required form."
                         fn val))
              ((mv erp (list xform-items & xform-limit) state)
-              (atc-gen-stmt val inscope vars fn prec-fns
+              (atc-gen-stmt val var-term-alist inscope vars fn prec-fns
                             experimental ctx state))
              ((when erp) (mv erp (list nil nil) state))
+             (val-instance (fsublis-var var-term-alist val))
+             (vals (atc-make-mv-nth-terms indices val-instance))
+             (var-term-alist-body (append (pairlis$ vars vals) var-term-alist))
              ((er (list body-items body-limit))
               (atc-gen-loop-body-stmt body
+                                      var-term-alist-body
                                       inscope
                                       xforming
                                       fn
@@ -2157,7 +2247,9 @@
           (acl2::value (list items limit))))
        ((mv okp var val body wrapper?) (atc-check-let term))
        ((when okp)
-        (b* (((mv okp arr sub elem) (atc-check-array-write var val))
+        (b* ((val-instance (fsublis-var var-term-alist val))
+             (var-term-alist-body (acons var val-instance var-term-alist))
+             ((mv okp arr sub elem) (atc-check-array-write var val))
              ((when (and okp
                          (member-eq :array-writes experimental)))
               (b* (((mv erp (list arr-expr &) state)
@@ -2177,7 +2269,8 @@
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
                    ((er (list body-items body-limit))
-                    (atc-gen-loop-body-stmt body inscope xforming fn prec-fns
+                    (atc-gen-loop-body-stmt body var-term-alist-body
+                                            inscope xforming fn prec-fns
                                             experimental ctx state))
                    (limit `(binary-+ '4 ,body-limit)))
                 (acl2::value (list (cons item body-items)
@@ -2223,6 +2316,7 @@
                    (inscope (atc-add-var var init-type inscope))
                    ((er (list body-items body-limit))
                     (atc-gen-loop-body-stmt body
+                                            var-term-alist-body
                                             inscope
                                             xforming
                                             fn
@@ -2260,6 +2354,7 @@
                    (item (block-item-stmt stmt))
                    ((er (list body-items body-limit))
                     (atc-gen-loop-body-stmt body
+                                            var-term-alist-body
                                             inscope
                                             xforming
                                             fn
@@ -2282,11 +2377,13 @@
                          This is disallowed."
                         fn val))
              ((mv erp (list xform-items & xform-limit) state)
-              (atc-gen-stmt val inscope (list var) fn prec-fns
+              (atc-gen-stmt val var-term-alist-body inscope (list var)
+                            fn prec-fns
                             experimental ctx state))
              ((when erp) (mv erp (list nil nil) state))
              ((er (list body-items body-limit))
               (atc-gen-loop-body-stmt body
+                                      var-term-alist-body
                                       inscope
                                       xforming
                                       fn
@@ -2479,6 +2576,7 @@
                   else fn))
        ((mv erp (list body-items body-limit) state)
         (atc-gen-loop-body-stmt then
+                                nil
                                 (cons nil inscope)
                                 xforming
                                 fn
@@ -3313,6 +3411,7 @@
         (atc-gen-param-declon-list formals fn guard-conjuncts guard ctx state))
        (body (ubody+ fn wrld))
        ((er (list items type limit)) (atc-gen-stmt body
+                                                   nil
                                                    (list scope)
                                                    nil
                                                    fn
