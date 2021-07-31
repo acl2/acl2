@@ -159,16 +159,15 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                 (list `(c '(0 . 0) ,(create-list-instance s-lst)
                           ,(create-list-instance pp-lst)
                           ,(create-list-instance c-lst)))))
-       #|((when (and (consp res-c-lst)
-                   (or (equal (cadr (car res-c-lst))
-                              ''(21028607959612274058 . 21028607959612274058))
-                       (equal (cadr (car res-c-lst))
+       ((when (and (consp res-c-lst)
+                   (or #|(equal (cadr (car res-c-lst))
+                              ''(21161355940515948765 . 21161355940515948765))||#
+                       #|(equal (cadr (car res-c-lst))
                               ''(2784280923853611132773766
-                                 . 2784280923853611132773766))
+                                 . 2784280923853611132773766))||#
 
-                       (equal (cadr (car res-c-lst))
-                              ''(-138355915544097072752114080265364
-                                 . -138355915544097072752114080265364))
+                       #|(equal (cadr (car res-c-lst))
+                              ''(21161355940515948765 . 21161355940515948765))||#
                        
             #|           (equal (cadr (car res-c-lst))
                               ''(-1154151986687440 . -1154151986687440))||#
@@ -176,7 +175,7 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                               ''(-439661027736439 . -439661027736439))||#
             #|           (equal (cadr (car res-c-lst))
                               ''(21028607959612274058 . 21028607959612274058))||#)))
-        nil)||#
+        nil)
        )
     res-c-lst))
 
@@ -650,6 +649,8 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
         (medw-compress-pp-arg-lst pp-lst c-lst nil))
        ((mv c-lst &)
         (medw-compress-c-lst c-lst (expt 2 30)))
+       (pp-lst (s-fix-pp-args-aux pp-lst))
+       (c-lst (s-fix-pp-args-aux c-lst))
        )
     (mv (s-spec-meta-aux ''nil pp-lst c-lst)
         t)))

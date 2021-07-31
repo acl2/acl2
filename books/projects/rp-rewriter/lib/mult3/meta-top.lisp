@@ -40,6 +40,8 @@
 
 (include-book "medw-compress")
 
+(include-book "unpack-booth")
+
 (include-book "summation-tree-meta-fncs")
 
 (include-book "equal-meta")
@@ -52,8 +54,10 @@
 (local
  (include-book "medw-compress-correct"))
 
-;;(include-book "verify-guards")
+(local
+ (include-book "unpack-booth-correct"))
 
+;;(include-book "verify-guards")
 
 ;;(include-book "4vec-to-binary-fncs-meta")
 
@@ -231,3 +235,10 @@
  :formula-checks mult-formula-checks
  :returns (mv term dont-rw))
 
+
+(rp::add-meta-rule
+ :meta-fnc unpack-booth-meta
+ :trig-fnc unpack-booth
+ :valid-syntaxp t
+ :formula-checks mult-formula-checks
+ :returns (mv term dont-rw))

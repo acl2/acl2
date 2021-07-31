@@ -957,10 +957,34 @@
             term-))
           (t term))))
 
+(progn
+  (encapsulate
+    (((unpack-booth-later-enabled) => *))
+    (local
+     (defun unpack-booth-later-enabled ()
+       nil)))
+
+  (define return-t ()
+    t)
+  (define return-nil ()
+    nil)
+  
+  (defmacro enable-unpack-booth-later (enable)
+    (if enable
+        `(defattach unpack-booth-later-enabled return-t)
+      `(defattach unpack-booth-later-enabled return-nil)))
+
+  (enable-unpack-booth-later t))
+
 (define pp-flatten ((term pp-term-p)
-                    (sign booleanp))
+                    (sign booleanp)
+                    &key
+                    (unpack-now 'nil))
   (b* ((term (pp-remove-extraneous-sc term)))
-    (cond ((and (case-match term
+    (cond ((and (not unpack-now)
+                (unpack-booth-later-enabled))
+           (list (if sign `(-- ,term) term)))
+          ((and (case-match term
                   (('binary-and ('bit-of & &) ('bit-of & &)) t))
                 (not (rp-equal (cadr term) (caddr term))))
            (b* ((cur-single
@@ -977,6 +1001,11 @@
                   #|(result (If pp-lists (cons 'list result) ''nil))||#
                   )
                pp-lst)))))
+
+
+(memoize 'pp-flatten-fn
+         :aokp t
+         :condition 'unpack-now)
 
 (progn
 
@@ -1269,7 +1298,7 @@
 
 (defthm rp-term-listp-of-pp-flatten
   (implies (rp-termp term)
-           (rp-term-listp (pp-flatten term sign)))
+           (rp-term-listp (pp-flatten term sign :unpack-now unpack-now)))
   :hints (("Goal"
            :in-theory (e/d (pp-flatten) ()))))
 
@@ -1472,7 +1501,7 @@
 
 (defthm pp-flatten-returns-valid-sc
   (implies (force (valid-sc term a))
-           (VALID-SC-SUBTERMS (pp-flatten term sign) a))
+           (VALID-SC-SUBTERMS (pp-flatten term sign :unpack-now unpack-now) a))
   :hints (("Goal"
            :in-theory (e/d (pp-flatten
                             CREATE-AND-LIST-INSTANCE

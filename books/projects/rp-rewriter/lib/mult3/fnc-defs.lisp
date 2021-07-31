@@ -424,9 +424,14 @@
 
 
 (define medw-compress (term)
-  term)
+  term
+  ///
+  (add-rp-rule medw-compress :disabled nil))
 
-(add-rp-rule medw-compress :disabled nil)
+(define unpack-booth (term)
+  (ifix term)
+  ///
+  (add-rp-rule unpack-booth :disabled nil))
 
 (rp::def-rw-opener-error
  s-spec-opener-error
@@ -1079,6 +1084,7 @@
       mult-formula-checks
       (binary-append
        medw-compress
+       unpack-booth
        --
        sum-list
        binary-and
