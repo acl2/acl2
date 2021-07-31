@@ -23,7 +23,7 @@
 ;(include-book "kestrel/x86/linear-memory" :dir :system)
 (include-book "kestrel/utilities/defconst-computed" :dir :system)
 (include-book "kestrel/axe/rules2" :dir :system) ;drop?
-;(include-book "axe/bv-rules-axe" :dir :kestrel-acl2)
+;(include-book "kestrel/axe/bv-rules-axe" :dir :system)
 ;(include-book "kestrel/axe/rules1" :dir :system)
 ;(include-book "kestrel/axe/axe-rules-mixed" :dir :system)
 (include-book "run-until-return")
