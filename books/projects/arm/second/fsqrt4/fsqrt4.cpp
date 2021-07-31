@@ -56,6 +56,10 @@ typedef ac_int<7, true> si7;
 typedef ac_int<8, true> si8;
 typedef ac_int<13, true> si13;
 
+//*************************************************
+// fsqrt4: Multi-Precision Radix-4 SRT Square Root
+//*************************************************
+
 // Formats:
 
 enum Format {HP, SP, DP};

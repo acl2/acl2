@@ -1,3 +1,7 @@
+//*********************************************
+// fdiv2: Multi-Precision Radix-2 SRT Division
+//*********************************************
+
 // Formats:
 
 enum Format {HP=1, SP, DP};

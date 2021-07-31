@@ -455,10 +455,10 @@
         (,run ,s (,steps-to-exitpoint-sub ,@params)))
 
       (defun-sk ,exists-exitpoint-sub ,params
+        (declare (xargs :normalize nil))
         (exists n
                 (let* ((,s (,run ,s n)))
-                  (not (,insub ,@params))))
-        :witness-dcls ((declare (xargs :normalize nil))))
+                  (not (,insub ,@params)))))
 
       (defthm $$$correctness-of-sub
         (implies (and ($$$presub ,@params)
@@ -860,8 +860,8 @@
 
  (local
   (defun-sk try-exists-exitpoint (p q st)
-    (exists n (not (try-insub p q (try-run st n))))
-    :witness-dcls  ((declare (xargs :normalize nil)))))
+    (declare (xargs :normalize nil))
+    (exists n (not (try-insub p q (try-run st n))))))
 
  (local
   (defthm correctness-of-try

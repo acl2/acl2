@@ -1,3 +1,6 @@
+//**************************************
+// fma32: FMA of a Graphics Processor
+//**************************************
 
 // The multiplier returns an unnormalized representation of the product, {pSign, pExp[8:0], pMant[47:0]},
 // with exponent bias 255 and 47 fractional bits, i.e., the value represented is

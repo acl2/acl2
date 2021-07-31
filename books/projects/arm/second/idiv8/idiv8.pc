@@ -1,3 +1,6 @@
+//********************************
+// idiv8: 64-bit Integer Division
+//********************************
 
 // Count leading zeroes of a nonzero 64-bit vector.
 // After k iterations of the loop, where 0 <= k <= 6, the value of n 

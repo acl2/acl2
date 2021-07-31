@@ -15,16 +15,19 @@
 ;; This book defines JVM-related functions used in axe-syntaxp and axe-bind-free rules.
 
 (include-book "kestrel/jvm/jvm" :dir :system) ; for jvm::pc
-;(include-book "../axe/dags") ;for dargs
-;(include-book "../axe/dag-arrays") ;for pseudo-dag-arrayp
+;(include-book "../dags") ;for dargs
+;(include-book "../dag-arrays") ;for pseudo-dag-arrayp
 (include-book "../dag-array-printing")
 (include-book "../axe-syntax-functions") ; for count-myif-branches
 (include-book "kestrel/utilities/erp" :dir :system)
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
 (in-theory (disable member-equal-becomes-memberp)) ;causes problems
+
+(local (in-theory (disable myquotep natp-of-nth-from-all-natp))) ; for speed
 
 ;call-stack is now either a nodenum or a quotep
 ;now pops count as -1 (because terms are often represented as a push of a new frame onto a pop of the old stack)
@@ -305,7 +308,7 @@
                          (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nest))))
                 (not (consp (strip-steps nest dag-array))))
            (natp (strip-steps nest dag-array)))
-  :hints (("Goal" :in-theory (enable strip-steps))))
+  :hints (("Goal" :in-theory (enable strip-steps myquotep))))
 
 (defthm integerp-of-strip-steps
   (implies (and (or (myquotep nest)
@@ -313,7 +316,7 @@
                          (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nest))))
                 (not (consp (strip-steps nest dag-array))))
            (integerp (strip-steps nest dag-array)))
-  :hints (("Goal" :in-theory (enable strip-steps))))
+  :hints (("Goal" :in-theory (enable integerp-when-natp))))
 
 (defthm <=-of-strip-steps-and-0
   (implies (and (or (myquotep nest)
@@ -321,7 +324,7 @@
                          (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nest))))
                 (not (consp (strip-steps nest dag-array))))
            (<= 0 (strip-steps nest dag-array)))
-  :hints (("Goal" :in-theory (enable strip-steps))))
+  :hints (("Goal" :in-theory (enable <=-of-0-when-0-natp))))
 
 (defthm <-of-strip-steps
   (Implies (and (or (myquotep nest)
@@ -330,7 +333,7 @@
                 (not (consp (STRIP-STEPS nest DAG-ARRAY))))
            (< (STRIP-STEPS nest DAG-ARRAY)
               (alen1 'DAG-ARRAY DAG-ARRAY)))
-  :hints (("Goal" :in-theory (enable STRIP-STEPS))))
+  :hints (("Goal" :in-theory (enable strip-steps myquotep))))
 
 ;;NEST is usually a nodenum in DAG-ARRAY that represents a MYIF nest with
 ;;make-states at the leaves, but the leaves may also be calls of the exception
@@ -460,7 +463,7 @@
 (defthm rationalp-of-mv-nth-1-of-get-stack-height-and-pc-to-step-from-myif-nest-helper
   (implies (eq :ready (mv-nth 0 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array)))
            (rationalp (mv-nth 1 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array))))
-  :hints (("Goal" :in-theory (enable get-stack-height-and-pc-to-step-from-myif-nest-helper))))
+  :hints (("Goal" :in-theory (enable get-stack-height-and-pc-to-step-from-myif-nest-helper rationalp-when-natp))))
 
 (defthm rationalp-of-mv-nth-0-of-get-stack-height-and-pc-to-step-from-myif-nest-helper
   (implies (eq :ready (mv-nth 0 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array)))
@@ -473,7 +476,7 @@
                                      get-pc-from-frame))))
 
 (verify-guards get-stack-height-and-pc-to-step-from-myif-nest-helper :otf-flg t
-  :hints (("Goal" :in-theory (enable car-becomes-nth-of-0 natp))))
+  :hints (("Goal" :in-theory (enable car-becomes-nth-of-0 natp ACL2-NUMBERP-when-natp))))
 
 ;; ;bozo combine this walk of the nest with the main one?
 ;; (skip- proofs

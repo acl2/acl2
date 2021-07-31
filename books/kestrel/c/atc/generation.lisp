@@ -3947,7 +3947,8 @@
                             `(>= ,limit-var ,limit))))
        (hyps (flatten-ands-in-lit hyps))
        (hyps `(and ,@(untranslate-lst hyps t wrld)))
-       (args (atc-gen-terms-with-read-var-compustate formals compst-var))
+       (args (atc-gen-fn-args-deref-compustate formals pointers compst-var))
+       (args (atc-gen-terms-with-read-var-compustate args compst-var))
        (binding (if (endp (cdr xforming))
                     (car xforming)
                   `(mv ,@xforming)))
@@ -3990,7 +3991,8 @@
                        :use ((:instance (:guard-theorem ,fn)
                               :extra-bindings-ok ,@gthm-instantiation)
                              (:instance ,termination-of-fn-thm
-                              :extra-bindings-ok ,@tthm-instantiation)))))
+                              :extra-bindings-ok ,@tthm-instantiation))
+                       :expand :lambdas)))
        (lemma-instructions
         `((:in-theory '(,exec-stmt-while-for-fn))
           :induct

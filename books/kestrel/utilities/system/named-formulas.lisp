@@ -14,7 +14,7 @@
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
-(include-book "kestrel/utilities/prove-interface" :dir :system)
+(include-book "tools/prove-dollar" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "std/typed-alists/symbol-truelist-alistp" :dir :system)
 
