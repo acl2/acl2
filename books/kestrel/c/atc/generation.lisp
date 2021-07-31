@@ -869,14 +869,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-callable-fn ((term pseudo-termp)
+                               (var-term-alist symbol-pseudoterm-alistp)
                                (prec-fns atc-symbol-fninfo-alistp))
-  :returns (mv (yes/no booleanp)
-               (fn symbolp :hyp (atc-symbol-fninfo-alistp prec-fns))
-               (args pseudo-term-listp :hyp (pseudo-termp term))
-               (type typep :hyp (atc-symbol-fninfo-alistp prec-fns))
-               (limit pseudo-termp
-                      :hyp (atc-symbol-fninfo-alistp prec-fns)
-                      :rule-classes :type-prescription))
+  :returns (mv
+            (yes/no booleanp)
+            (fn symbolp :hyp (atc-symbol-fninfo-alistp prec-fns))
+            (args pseudo-term-listp :hyp (pseudo-termp term))
+            (type typep :hyp (atc-symbol-fninfo-alistp prec-fns))
+            (limit
+             pseudo-termp
+             :hyp (and (atc-symbol-fninfo-alistp prec-fns)
+                       (symbol-pseudoterm-alistp var-term-alist))
+             :hints
+             (("Goal"
+               :in-theory
+               (enable
+                pseudo-termp-of-fsublist-var-when-symbol-pseudoterm-alistp)))))
   :short "Check if a term may represent a call to a callable target function."
   :long
   (xdoc::topstring
@@ -889,8 +897,11 @@
     "The limit retrieved from the function table
      refers to the formal parameters.
      We must instantiate it to the actual parameters
-     in order to obtain an appropriate limit for the call.
-     We will do that soon.")
+     in order to obtain an appropriate limit for the call,
+     but we also need to substitute all the bindings
+     in order to obtain the real arguments of the call
+     from the point of view of the top level of
+     where this call term occurs.")
    (xdoc::p
     "This is used on C-valued terms,
      so the called function must be non-recursive,
@@ -907,7 +918,8 @@
                       (type (atc-fn-info->type? info))
                       ((when (null type))
                        (mv nil nil nil (irr-type) nil))
-                      (limit (atc-fn-info->limit info)))
+                      (limit (atc-fn-info->limit info))
+                      (limit (fsublis-var var-term-alist limit)))
                    (mv t fn args type limit)))
     (& (mv nil nil nil (irr-type) nil)))
   ///
@@ -921,13 +933,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-loop-fn ((term pseudo-termp)
+                           (var-term-alist symbol-pseudoterm-alistp)
                            (prec-fns atc-symbol-fninfo-alistp))
-  :returns (mv (yes/no booleanp)
-               (fn symbolp)
-               (args pseudo-term-listp :hyp (pseudo-termp term))
-               (xforming symbol-listp :hyp (atc-symbol-fninfo-alistp prec-fns))
-               (loop stmtp)
-               (limit pseudo-termp :hyp (atc-symbol-fninfo-alistp prec-fns)))
+  :returns (mv
+            (yes/no booleanp)
+            (fn symbolp)
+            (args pseudo-term-listp :hyp (pseudo-termp term))
+            (xforming symbol-listp :hyp (atc-symbol-fninfo-alistp prec-fns))
+            (loop stmtp)
+            (limit
+             pseudo-termp
+             :hyp (and (atc-symbol-fninfo-alistp prec-fns)
+                       (symbol-pseudoterm-alistp var-term-alist))
+             :hints
+             (("Goal"
+               :in-theory
+               (enable
+                pseudo-termp-of-fsublist-var-when-symbol-pseudoterm-alistp)))))
   :short "Check if a term may represent a call of a loop function."
   :long
   (xdoc::topstring
@@ -947,8 +969,11 @@
     "The limit retrieved from the function table
      refers to the formal parameters.
      We must instantiate it to the actual parameters
-     in order to obtain an appropriate limit for the call.
-     We will do that soon."))
+     in order to obtain an appropriate limit for the call,
+     but we also need to substitute all the bindings
+     in order to obtain the real arguments of the call
+     from the point of view of the top level of
+     where this call term occurs."))
   (case-match term
     ((fn . args)
      (b* (((unless (symbolp fn)) (mv nil nil nil nil (irr-stmt) nil))
@@ -959,7 +984,8 @@
           (loop (atc-fn-info->loop? info))
           ((unless (stmtp loop)) (mv nil nil nil nil (irr-stmt) nil))
           (xforming (atc-fn-info->xforming info))
-          (limit (atc-fn-info->limit info)))
+          (limit (atc-fn-info->limit info))
+          (limit (fsublis-var var-term-alist limit)))
        (mv t fn args xforming loop limit)))
     (& (mv nil nil nil nil (irr-stmt) nil))))
 
@@ -1405,7 +1431,7 @@
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
   (b* (((mv okp called-fn args type limit)
-        (atc-check-callable-fn term prec-fns))
+        (atc-check-callable-fn term nil prec-fns))
        ((when okp)
         (b* (((mv erp arg-exprs state) (atc-gen-expr-cval-pure-list args
                                                                     inscope
@@ -1584,7 +1610,9 @@
                            (type type-optionp)
                            (limit pseudo-termp)
                            val)
-                    :hyp (atc-symbol-fninfo-alistp prec-fns))
+                    :hyp (and (pseudo-termp term)
+                              (atc-symbol-fninfo-alistp prec-fns)
+                              (symbol-pseudoterm-alistp var-term-alist)))
                state)
   :short "Generate a C statement from an ACL2 term."
   :long
@@ -2043,7 +2071,7 @@
                      type
                      ''0))))))
        ((mv okp loop-fn loop-args loop-xforming loop-stmt loop-limit)
-        (atc-check-loop-fn term prec-fns))
+        (atc-check-loop-fn term var-term-alist prec-fns))
        ((when okp)
         (b* ((formals (formals+ loop-fn (w state)))
              ((unless (equal formals loop-args))
@@ -2085,8 +2113,7 @@
   :prepwork ((local
               (in-theory
                (e/d
-                (symbol-pseudoterm-alistp-rewrite-for-fsublis-var
-                 pseudo-termp-of-fsublist-var-when-symbol-pseudoterm-alistp
+                (pseudo-termp-of-fsublist-var-when-symbol-pseudoterm-alistp
                  pseudo-term-listp-of-strip-cdrs-when-symbol-pseudoterm-alistp
                  symbol-alistp-when-symbol-pseudoterm-alistp)
                 ;; for speed:
@@ -2146,7 +2173,9 @@
                (val (tuple (items block-item-listp)
                            (limit pseudo-termp)
                            val)
-                    :hyp (atc-symbol-fninfo-alistp prec-fns))
+                    :hyp (and (pseudo-termp term)
+                              (symbol-pseudoterm-alistp var-term-alist)
+                              (atc-symbol-fninfo-alistp prec-fns)))
                state)
   :short "Generate a C statement in a loop body from an ACL2 term."
   :long
@@ -2418,24 +2447,27 @@
                     (see user documentation)."
                    fn term))))
 
-  :prepwork (;; for speed:
-             (local
+  :prepwork ((local
               (in-theory
-               (disable
-                natp
-                member-equal
-                default-car
-                default-cdr
-                default-symbol-name
-                true-list-listp
-                acl2::true-listp-of-car-when-true-list-listp
-                acl2::true-list-listp-of-cdr-when-true-list-listp
-                acl2::true-listp-of-cdar-when-keyword-truelist-alistp
-                acl2::symbol-listp-when-not-consp
-                acl2::true-list-listp-when-not-consp
-                symbolp-of-caar-when-atc-symbol-fninfo-alistp
-                symbolp-of-car-when-member-equal-of-atc-symbol-fninfo-alistp
-                set::sets-are-true-lists-cheap))))
+               (e/d
+                (pseudo-termp-of-fsublist-var-when-symbol-pseudoterm-alistp
+                 pseudo-term-listp-of-strip-cdrs-when-symbol-pseudoterm-alistp
+                 symbol-alistp-when-symbol-pseudoterm-alistp)
+                ;; for speed:
+                (natp
+                 member-equal
+                 default-car
+                 default-cdr
+                 default-symbol-name
+                 true-list-listp
+                 acl2::true-listp-of-car-when-true-list-listp
+                 acl2::true-list-listp-of-cdr-when-true-list-listp
+                 acl2::true-listp-of-cdar-when-keyword-truelist-alistp
+                 acl2::symbol-listp-when-not-consp
+                 acl2::true-list-listp-when-not-consp
+                 symbolp-of-caar-when-atc-symbol-fninfo-alistp
+                 symbolp-of-car-when-member-equal-of-atc-symbol-fninfo-alistp
+                 set::sets-are-true-lists-cheap)))))
 
   :verify-guards nil ; done below
 
@@ -2473,7 +2505,8 @@
                            (xforming symbol-listp)
                            (limit pseudo-termp)
                            val)
-                    :hyp (atc-symbol-fninfo-alistp prec-fns)
+                    :hyp (and (pseudo-termp term)
+                              (atc-symbol-fninfo-alistp prec-fns))
                     :hints (("Goal" :in-theory (disable member-equal))))
                state)
   :short "Generate a C loop statement from an ACL2 term."
