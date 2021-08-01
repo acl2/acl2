@@ -14,8 +14,15 @@
 (include-book "open-output-channel")
 (include-book "open-output-channel-bang")
 
+;; Books about built-in functions:
 (include-book "read-byte-dollar")
 (include-book "read-object")
+
+;; Functions defined in this library:
+(include-book "read-object-from-file")
+(include-book "read-file-into-byte-list")
+(include-book "read-file-into-character-list")
+(include-book "read-file-into-stobj")
 
 (include-book "write-byte-dollar")
 (include-book "write-bytes-to-channel")
@@ -35,10 +42,5 @@
 (include-book "file-write-date-dollar")
 (include-book "file-length-dollar")
 (include-book "file-is-newer-thanp")
-
-(include-book "read-object-from-file")
-(include-book "read-file-into-byte-list")
-(include-book "read-file-into-character-list")
-(include-book "read-file-into-stobj")
 
 (include-book "doc")

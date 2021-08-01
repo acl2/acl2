@@ -2,6 +2,7 @@
 ; Application of Integration by Substitution
 ;
 ; Copyright (C) 2021 University of Wyoming
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 ;
 ;
 ; Main Author: Jagadish Bapanapally (jagadishb285@gmail.com)
@@ -493,6 +494,14 @@
 
 	   )))
 
+; Matt K. addition to speed up proofs:
+(local (deftheory slow-rules-1 '((:REWRITE SMALL-IF-<-SMALL)
+                                 (:DEFINITION I-LARGE)
+                                 (:REWRITE I-CLOSE-LIMITED-2)
+                                 (:REWRITE DEFAULT-<-1)
+                                 (:REWRITE STANDARD-PART-OF-TIMES)
+                                 (:REWRITE REALP-DIFFERENTIAL-RDFN2))))
+
 (defthmd differential-f-sine-std-equals
   (implies (and
 	    (standardp x)
@@ -514,7 +523,9 @@
 			   )
 		(:instance differential-f-sine-definition)
 		)
-	  :in-theory (enable nsa-theory)
+	  :in-theory (e/d (nsa-theory)
+; Matt K. addition to speed up proofs:
+                          (slow-rules-1))
 	  ))
   )
 
@@ -920,6 +931,19 @@
 	  )
   )
 
+; Matt K. addition to speed up proofs:
+(local (deftheory slow-rules-2 '(I-CLOSE-LARGE-2
+                                 LIMITED-SQUEEZE
+                                 LARGE-IF->-LARGE
+                                 STANDARD-PART-OF-UMINUS
+                                 LEMMA-103
+                                 SQRT-EPSILON-DELTA
+                                 I-CLOSE-SYMMETRIC
+                                 STANDARD-PART-OF-TIMES
+                                 STANDARD-PART-OF-PLUS
+                                 LEMMA-24
+                                 )))
+
 (encapsulate
  nil
  (local (include-book "arithmetic/equalities" :dir :system))
@@ -991,13 +1015,16 @@
 		 (inside-interval-p x1 (fi-domain)))
 	    (i-close  (/ (- (acl2-sine (* 2 x)) (acl2-sine (* 2 x1))) (- x x1)) (* 2 (acl2-cosine (* 2 x)))))
    :hints (("Goal"
+            :in-theory (disable slow-rules-2) ; Matt K. addition to speed up proofs:
 	    :use (:instance differential-f-sine-o-f2-derivative
 			    (x x)
 			    (eps (- x1 x))
 			    )
 	    )
 	   ("Subgoal 2"
-	    :in-theory (enable nsa-theory)
+	    :in-theory (e/d (nsa-theory)
+                            (slow-rules-2) ; Matt K. addition to speed up proofs:
+                            )
 	    )
 	   ("Subgoal 1"
 	    :use (:instance lemma-1
@@ -1076,7 +1103,9 @@
 		  (:instance cosine-positive-in-0-pi/2)
 		  (:instance cosine-pi/2)
 		  (:instance acl2-cos-0-=-1))
-	    :in-theory (enable interval-definition-theory)
+	    :in-theory (e/d (interval-definition-theory)
+                            (slow-rules-2) ; Matt K. addition to speed up proofs:
+                            )
 	    ))))
 
 (local
@@ -1160,6 +1189,19 @@
    )
  )
 
+; Matt K. addition to speed up proofs:
+(local (deftheory slow-rules-3 '((:LINEAR SQRT-EPSILON-DELTA)
+                                 (:REWRITE LEMMA-103)
+                                 (:REWRITE 0-<-*)
+                                 (:REWRITE LEMMA-24)
+                                 (:REWRITE I-CLOSE-LARGE-2)
+                                 (:REWRITE <-MINUS-ZERO)
+                                 (:REWRITE NON-STANDARD-BETWEEN-STANDARDS-2)
+                                 (:REWRITE NON-STANDARD-BETWEEN-STANDARDS)
+                                 (:REWRITE COSINE-POSITIVE-IN-3PI/2-2PI)
+                                 (:LINEAR INTERVAL-LEFT-<=-RIGHT)
+                                 (:REWRITE COSINE-POSITIVE-IN-0-PI/2))))
+
 (defthmd circle-sub-prime-is-derivative
   (implies (and (standardp x)
 		(inside-interval-p x (fi-domain))
@@ -1212,6 +1254,7 @@
 		 (:instance rcdfn-f (x x))
 		 (:instance rcdfn-f (x x1))
 		 )
+           :in-theory (disable slow-rules-3) ; Matt K. addition to speed up proofs:
 	   ))
   )
 
@@ -1237,6 +1280,7 @@
 			    (x1 (* (rad) (acl2-cosine x)))
 			    (x2 (* (rad) (acl2-cosine x1))))
 		 )
+           :in-theory (disable slow-rules-3) ; Matt K. addition to speed up proofs:
 	   ))
   )
 
