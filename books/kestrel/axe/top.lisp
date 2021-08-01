@@ -219,8 +219,6 @@
 (include-book "stp-clause-processor")
 (include-book "defthm-stp")
 
-(include-book "jvm/top")
-
 ;; Legacy Axe tools:
 (include-book "evaluator")
 (include-book "instantiate-hyp")
@@ -230,3 +228,7 @@
 (include-book "rewriter")
 (include-book "prune")
 (include-book "tactic-prover")
+
+(include-book "jvm/top")
+
+(include-book "x86/top")
