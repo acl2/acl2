@@ -4284,13 +4284,17 @@
                                   loop-limit experimental
                                   names-to-avoid state))
        ((when erp) (mv erp (list nil nil nil nil) state))
-       (local-events (append (list measure-of-fn-event)
-                             local-events
-                             exec-stmt-while-events
-                             (list natp-of-measure-of-fn-thm-event)
-                             (list termination-of-fn-thm-event)
-                             more-local-events))
-       (exported-events (append exported-events more-exported-events))
+       (local-events (and proofs
+                          (not (member-eq :array-writes experimental))
+                          (append (list measure-of-fn-event)
+                                  local-events
+                                  exec-stmt-while-events
+                                  (list natp-of-measure-of-fn-thm-event)
+                                  (list termination-of-fn-thm-event)
+                                  more-local-events)))
+       (exported-events (and proofs
+                             (not (member-eq :array-writes experimental))
+                             (append exported-events more-exported-events)))
        (info (make-atc-fn-info :type? type?
                                :loop? loop-stmt
                                :xforming loop-xforming
