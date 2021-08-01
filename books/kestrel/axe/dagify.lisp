@@ -31,6 +31,7 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
+(local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
@@ -41,6 +42,9 @@
                            subsetp-equal
                            ;; axe-treep
                            all-axe-treep
+                           ;; for speed:
+                           largest-non-quotep-bound
+                           largest-non-quotep-bound-alt
                            )))
 
 ;dup

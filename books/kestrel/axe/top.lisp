@@ -228,6 +228,7 @@
 (include-book "rewriter")
 (include-book "prune")
 (include-book "tactic-prover")
+(include-book "unroll-spec")
 
 (include-book "jvm/top")
 
