@@ -420,7 +420,7 @@ then restart the ACL2-Doc browser to view that manual."
      ((and (file-exists-p pathname-gz)
 	   (y-or-n-p
 	    (format
-	     "Run gunzip on %s~a? "
+	     "Run gunzip on %s%s? "
 	     pathname-gz
 	     (if (file-newer-than-file-p pathname
 					 (manual-index-pathname))
