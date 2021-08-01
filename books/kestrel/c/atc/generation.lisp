@@ -1386,6 +1386,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-expr-cval ((term pseudo-termp)
+                           (var-term-alist symbol-pseudoterm-alistp)
                            (inscope atc-symbol-type-alist-listp)
                            (fn symbolp)
                            (prec-fns atc-symbol-fninfo-alistp)
@@ -1396,7 +1397,8 @@
                            (type typep)
                            (limit pseudo-termp)
                            val)
-                    :hyp (atc-symbol-fninfo-alistp prec-fns))
+                    :hyp (and (symbol-pseudoterm-alistp var-term-alist)
+                              (atc-symbol-fninfo-alistp prec-fns)))
                state)
   :short "Generate a C expression from an ACL2 term
           that must be a C-valued term."
@@ -1431,7 +1433,7 @@
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
   (b* (((mv okp called-fn args type limit)
-        (atc-check-callable-fn term nil prec-fns))
+        (atc-check-callable-fn term var-term-alist prec-fns))
        ((when okp)
         (b* (((mv erp arg-exprs state) (atc-gen-expr-cval-pure-list args
                                                                     inscope
@@ -1959,7 +1961,8 @@
                                but it is not."
                               (symbol-name var) var fn))
                    ((mv erp (list init-expr init-type init-limit) state)
-                    (atc-gen-expr-cval val inscope fn prec-fns ctx state))
+                    (atc-gen-expr-cval val var-term-alist inscope
+                                       fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil nil nil) state))
                    ((when (type-case init-type :pointer))
                     (er-soft+ ctx t (list nil nil nil)
@@ -1992,7 +1995,8 @@
              ((when (eq wrapper? 'assign))
               (b* ((prev-type type?)
                    ((mv erp (list rhs-expr rhs-type rhs-limit) state)
-                    (atc-gen-expr-cval val inscope fn prec-fns ctx state))
+                    (atc-gen-expr-cval val var-term-alist inscope
+                                       fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil nil nil) state))
                    ((unless (equal prev-type rhs-type))
                     (er-soft+ ctx t (list nil nil nil)
@@ -2103,7 +2107,7 @@
                    but with the term ~x2 instead."
                   xforming fn term))
        ((mv erp (list expr type limit) state)
-        (atc-gen-expr-cval term inscope fn prec-fns ctx state))
+        (atc-gen-expr-cval term var-term-alist inscope fn prec-fns ctx state))
        ((when erp) (mv erp (list nil nil nil) state))
        (limit `(binary-+ '3 ,limit)))
     (acl2::value (list (list (block-item-stmt (make-stmt-return :value expr)))
@@ -2328,7 +2332,8 @@
                                but it is not."
                               (symbol-name var) var fn))
                    ((mv erp (list init-expr init-type init-limit) state)
-                    (atc-gen-expr-cval val inscope fn prec-fns ctx state))
+                    (atc-gen-expr-cval val var-term-alist inscope
+                                       fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil nil) state))
                    ((when (type-case init-type :pointer))
                     (er-soft+ ctx t (list nil nil)
@@ -2365,7 +2370,8 @@
              ((when (eq wrapper? 'assign))
               (b* ((prev-type type?)
                    ((mv erp (list rhs-expr rhs-type rhs-limit) state)
-                    (atc-gen-expr-cval val inscope fn prec-fns ctx state))
+                    (atc-gen-expr-cval val var-term-alist inscope
+                                       fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil nil) state))
                    ((unless (equal prev-type rhs-type))
                     (er-soft+ ctx t (list nil nil)
@@ -4278,13 +4284,17 @@
                                   loop-limit experimental
                                   names-to-avoid state))
        ((when erp) (mv erp (list nil nil nil nil) state))
-       (local-events (append (list measure-of-fn-event)
-                             local-events
-                             exec-stmt-while-events
-                             (list natp-of-measure-of-fn-thm-event)
-                             (list termination-of-fn-thm-event)
-                             more-local-events))
-       (exported-events (append exported-events more-exported-events))
+       (local-events (and proofs
+                          (not (member-eq :array-writes experimental))
+                          (append (list measure-of-fn-event)
+                                  local-events
+                                  exec-stmt-while-events
+                                  (list natp-of-measure-of-fn-thm-event)
+                                  (list termination-of-fn-thm-event)
+                                  more-local-events)))
+       (exported-events (and proofs
+                             (not (member-eq :array-writes experimental))
+                             (append exported-events more-exported-events)))
        (info (make-atc-fn-info :type? type?
                                :loop? loop-stmt
                                :xforming loop-xforming
