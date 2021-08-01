@@ -516,6 +516,13 @@
     "The @(tsee apt::propagate-iso) transformation has been added.")
 
    (xdoc::p
+    "A new transformation has been added: @(tsee apt::simplify), the
+     `simplification transformation'.  It transforms a given definition or
+     @(see term) using ACL2 reasoning, in particular by applying the
+     currently (or specified) @(see enable)d @(see rewrite) rules.  The result
+     is generally simpler than the input but logically equivalent to it.")
+
+   (xdoc::p
     "The @(tsee apt::isodata) transformation has been improved as follows:")
    (xdoc::ul
     (xdoc::li
@@ -589,12 +596,6 @@
      "A new @(':new-to-old-enable') input has been added
       to specify whether the @('new-to-old') theorem is enabled or not.
       If this input is absent, it is taken from the APT defaults table."))
-
-   (xdoc::p
-    "The @(tsee apt::simplify) transformation has been improved by allowing the
-     use of keyword @(':guard') for the @(':assumptions'), not only as the
-     entire value of @(':assumptions') as before, but also as a member of a
-     specified list of assumptions.")
 
    (xdoc::p
     "The @(tsee apt::tailrec) transformation has been improved as follows:")
