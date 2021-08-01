@@ -31,6 +31,7 @@
 
 (include-book "rewriter-tests")
 (include-book "prune-tests")
+(include-book "unroll-spec-tests")
 
 (ifdef "OS_HAS_STP"
        (include-book "stp-clause-processor-tests")
