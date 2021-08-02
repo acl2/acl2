@@ -1,7 +1,7 @@
 ; An evaluator supporting R1CS Axe reasoning
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,7 @@
 
 (in-package "PFIELD")
 
-;; A simple version of the Axe evaluator with verified guards and without skip-proofs.
+;; An Axe evaluator for R1CS proofs (really, for proofs about prime-fields).
 
 (include-book "kestrel/axe/evaluator-basic" :dir :system)
 (include-book "kestrel/prime-fields/unguarded-defuns" :dir :system)
