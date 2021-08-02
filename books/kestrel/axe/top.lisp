@@ -223,6 +223,7 @@
 (include-book "rewriter")
 (include-book "unroll-spec")
 (include-book "tactic-prover")
+(include-book "query")
 (include-book "defthm-axe")
 
 ;; The JVM-specific Axe tools:
