@@ -3123,7 +3123,6 @@
                                 (pointers symbol-listp)
                                 (prec-fns atc-symbol-fninfo-alistp)
                                 (proofs booleanp)
-                                (recursionp booleanp)
                                 (prog-const symbolp)
                                 (fn-thms symbol-symbol-alistp)
                                 (limit pseudo-termp)
@@ -3232,8 +3231,6 @@
    (xdoc::p
     "This theorem is not generated if @(':proofs') is @('nil')."))
   (b* (((when (or (not proofs)
-                  (and recursionp
-                       (not (member-eq :loop-proofs experimental)))
                   (irecursivep+ fn wrld) ; generated elsewhere
                   (member-eq :array-writes experimental)))
         (mv nil nil nil))
@@ -3300,7 +3297,6 @@
                          (scope atc-symbol-type-alistp)
                          (prec-fns atc-symbol-fninfo-alistp)
                          (proofs booleanp)
-                         (recursionp booleanp)
                          (prog-const symbolp)
                          (fn-thms symbol-symbol-alistp)
                          (print evmac-input-print-p)
@@ -3332,7 +3328,7 @@
        ((mv fn-correct-local-events
             fn-correct-exported-events
             fn-correct-thm)
-        (atc-gen-fn-correct-thm fn pointers prec-fns proofs recursionp
+        (atc-gen-fn-correct-thm fn pointers prec-fns proofs
                                 prog-const fn-thms limit experimental wrld))
        (progress-start?
         (and (evmac-input-print->= print :info)
@@ -3394,7 +3390,6 @@
 (define atc-gen-ext-declon ((fn symbolp)
                             (prec-fns atc-symbol-fninfo-alistp)
                             (proofs booleanp)
-                            (recursionp booleanp)
                             (prog-const symbolp)
                             (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
@@ -3481,7 +3476,7 @@
                   names-to-avoid)
             state)
         (atc-gen-fn-thms fn pointers type nil scope prec-fns
-                         proofs recursionp prog-const fn-thms print
+                         proofs prog-const fn-thms print
                          limit experimental names-to-avoid ctx state))
        ((when erp) (mv erp (list (irr-ext-declon) nil nil nil nil) state))
        (info (make-atc-fn-info
@@ -3999,7 +3994,6 @@
                                   (termination-of-fn-thm symbolp)
                                   (natp-of-measure-of-fn-thm symbolp)
                                   (limit pseudo-termp)
-                                  (experimental keyword-listp)
                                   (names-to-avoid symbol-listp)
                                   state)
   :guard (irecursivep+ fn (w state))
@@ -4151,11 +4145,9 @@
                                :formula `(implies ,hyps ,concl-thm)
                                :hints thm-hints
                                :enable nil))
-       (local-events (and (member-eq :loop-proofs experimental)
-                          (list correct-lemma-event
-                                correct-thm-local-event)))
-       (exported-events (and (member-eq :loop-proofs experimental)
-                             (list correct-thm-exported-event))))
+       (local-events (list correct-lemma-event
+                           correct-thm-local-event))
+       (exported-events (list correct-thm-exported-event)))
     (acl2::value (list local-events
                        exported-events
                        natp-of-measure-of-fn-thm
@@ -4167,7 +4159,6 @@
 (define atc-gen-loop ((fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
                       (proofs booleanp)
-                      (recursionp booleanp)
                       (prog-const symbolp)
                       (fn-thms symbol-symbol-alistp)
                       (fn-appconds symbol-symbol-alistp)
@@ -4224,7 +4215,7 @@
                   names-to-avoid)
             state)
         (atc-gen-fn-thms fn pointers type? loop-xforming scope prec-fns
-                         proofs recursionp prog-const fn-thms
+                         proofs prog-const fn-thms
                          print loop-limit experimental
                          names-to-avoid ctx state))
        ((when erp) (mv erp (list nil nil nil nil) state))
@@ -4281,7 +4272,7 @@
                                   exec-stmt-while-for-fn-thm
                                   termination-of-fn-thm
                                   natp-of-measure-of-fn-thm
-                                  loop-limit experimental
+                                  loop-limit
                                   names-to-avoid state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        (local-events (and proofs
@@ -4312,7 +4303,6 @@
 (define atc-gen-ext-declon-list ((fns symbol-listp)
                                  (prec-fns atc-symbol-fninfo-alistp)
                                  (proofs booleanp)
-                                 (recursionp booleanp)
                                  (prog-const symbolp)
                                  (fn-thms symbol-symbol-alistp)
                                  (fn-appconds symbol-symbol-alistp)
@@ -4348,7 +4338,7 @@
                             prec-fns
                             names-to-avoid)
                       state)
-                  (atc-gen-loop fn prec-fns proofs recursionp prog-const
+                  (atc-gen-loop fn prec-fns proofs prog-const
                                 fn-thms fn-appconds appcond-thms
                                 print experimental names-to-avoid ctx state))
                  ((when erp) (mv erp (list nil nil nil nil) state)))
@@ -4361,7 +4351,7 @@
                     (list
                      ext local-events exported-events prec-fns names-to-avoid)
                     state)
-                (atc-gen-ext-declon fn prec-fns proofs recursionp
+                (atc-gen-ext-declon fn prec-fns proofs
                                     prog-const fn-thms
                                     print experimental
                                     names-to-avoid ctx state))
@@ -4373,7 +4363,7 @@
                                names-to-avoid)))))
        ((er
          (list more-exts more-local-events more-exported-events names-to-avoid))
-        (atc-gen-ext-declon-list rest-fns prec-fns proofs recursionp
+        (atc-gen-ext-declon-list rest-fns prec-fns proofs
                                  prog-const fn-thms fn-appconds appcond-thms
                                  print experimental names-to-avoid ctx state)))
     (acl2::value (list (append exts more-exts)
@@ -4449,7 +4439,6 @@
 
 (define atc-gen-transunit ((fn1...fnp symbol-listp)
                            (proofs booleanp)
-                           (recursionp booleanp)
                            (prog-const symbolp)
                            (wf-thm symbolp)
                            (fn-thms symbol-symbol-alistp)
@@ -4481,7 +4470,7 @@
         (atc-gen-wf-thm proofs prog-const wf-thm print))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
-        (atc-gen-ext-declon-list fn1...fnp nil proofs recursionp
+        (atc-gen-ext-declon-list fn1...fnp nil proofs
                                  prog-const fn-thms fn-appconds appcond-thms
                                  print experimental names-to-avoid ctx state))
        (tunit (make-transunit :declons exts))
@@ -4590,7 +4579,6 @@
 (define atc-gen-everything ((fn1...fnp symbol-listp)
                             (output-file stringp)
                             (proofs booleanp)
-                            (recursionp booleanp)
                             (prog-const symbolp)
                             (wf-thm symbolp)
                             (fn-thms symbol-symbol-alistp)
@@ -4614,7 +4602,7 @@
      Thus, we locally install the simpler ancestor check."))
   (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
        ((er (list tunit local-events exported-events &))
-        (atc-gen-transunit fn1...fnp proofs recursionp prog-const wf-thm fn-thms
+        (atc-gen-transunit fn1...fnp proofs prog-const wf-thm fn-thms
                            print experimental names-to-avoid ctx state))
        ((er file-gen-event) (atc-gen-file-event tunit output-file print state))
        (print-events (and (evmac-input-print->= print :result)

@@ -93,7 +93,7 @@
   (b* (((when (atc-table-lookup call (w state)))
         (acl2::value '(value-triple :redundant)))
        ((er (list fn1...fnp
-                  recursionp
+                  &
                   output-file
                   proofs
                   prog-const
@@ -105,7 +105,6 @@
     (atc-gen-everything fn1...fnp
                         output-file
                         proofs
-                        recursionp
                         prog-const
                         wf-thm
                         fn-thms
