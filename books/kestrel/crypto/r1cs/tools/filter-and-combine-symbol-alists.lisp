@@ -16,7 +16,7 @@
 ;; usually represented as nests of calls to ACONS.  But resolving a lookup in
 ;; such a symbolic alist during rewriting can require a number of rewrite steps
 ;; that is linear in the number of ACONS calls.  Instead, we can represent a
-;; symbol-alist as a nest of calls of FILTER-AND-COMBINE-SYMBOL-ALISTS.  The
+;; symbol-alist as a tree of calls of FILTER-AND-COMBINE-SYMBOL-ALISTS.  The
 ;; depth of such a tree can be logarithmic in the number of ACONS terms that
 ;; would appear in the standard representation.  So, resolving a lookup using
 ;; the rule LOOKUP-EQUAL-OF-FILTER-AND-COMBINE-SYMBOL-ALISTS-SAFE should be
