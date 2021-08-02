@@ -360,10 +360,12 @@
        (experimental (if experimental-option
                          (cdr experimental-option)
                        nil))
-       ((unless (acl2::keyword-listp experimental))
+       ((unless (subsetp-eq experimental '(:array-writes)))
         (er-soft+ ctx t nil
-                  "The :EXPERIMENTAL option must be a list of keywords, ~
-                   but it is ~x0 instead."
+                  "The :EXPERIMENTAL option must be ~
+                   a list of keywords among ~x0, ~
+                   but it is ~x1 instead."
+                  (list :array-writes)
                   experimental)))
     (acl2::value (list fn1...fnp
                        output-file
