@@ -82,36 +82,47 @@
             (character-listp (mv-nth 1 (split-chars-at-double-newline chars acc))))
    :hints (("Goal" :in-theory (enable split-chars-at-double-newline)))))
 
-(defund xdoc::paras-aux (chars)
-  (declare (xargs :guard (character-listp chars)
+;; Splits the CHARS into chunks, separated by blank lines, and wraps each chunk
+;; in a call to WRAPPER.
+(defund wrap-separated-chunks (chars wrapper)
+  (declare (xargs :guard (and (character-listp chars)
+                              (symbolp wrapper))
                   :measure (len chars)))
   (let ((chars (skip-newlines chars)))
     (if (endp chars)
         nil
       (mv-let (chars-before-double-newline chars-after-double-newline)
         (split-chars-at-double-newline chars nil)
-        (cons `(xdoc::p ,(coerce chars-before-double-newline 'string))
-              (xdoc::paras-aux chars-after-double-newline))))))
+        (cons `(,wrapper ,(coerce chars-before-double-newline 'string))
+              (wrap-separated-chunks chars-after-double-newline wrapper))))))
+
+;; Splits the string into chunks, separated by blank lines, and wraps each chunk
+;; in a call to WRAPPER.
+(defund wrap-separated-chunks-of-string (string wrapper)
+  (declare (xargs :guard (and (stringp string)
+                              (symbolp wrapper))))
+  (wrap-separated-chunks (coerce string 'list) wrapper))
 
 ;; Returns a list of calls to xdoc::p, one for each paragraph (separated by newlines) in STR.
-(defund xdoc::paras (str)
-  (declare (xargs :guard (stringp str)))
-  (xdoc::paras-aux (coerce str 'list)))
+;; When evaluated, these calls produce xdoc trees.
+(defund xdoc::paras (string)
+  (declare (xargs :guard (stringp string)))
+  (wrap-separated-chunks-of-string string 'xdoc::p))
 
 ;; Splits STR into paragraphs at blank lines.
-;; Returns a "top-level" xdoc string suitable for use as a :short or :long string.
+;; Returns a "top-level" xdoc string suitable for use as a :long string.
 (defmacro xdoc::topparas (str)
   (declare (xargs :guard (stringp str)))
-  `(xdoc::topstring (xdoc::&& ,@(xdoc::paras str))))
+  `(xdoc::topstring ,@(xdoc::paras str)))
 
 ;; Makes an xdoc tree for an ordered list, given a string, interpreting blank
 ;; lines as separators between list items.
-(defmacro xdoc::ol-from-string (str)
-  (declare (xargs :guard (stringp str)))
-  `(xdoc::ol (xdoc::topparas ,str)))
+(defmacro xdoc::ol-from-string (string)
+  (declare (xargs :guard (stringp string)))
+  `(xdoc::ol ,@(wrap-separated-chunks-of-string string 'xdoc::li)))
 
 ;; Makes an xdoc tree for an unordered list, given a string, interpreting blank
 ;; lines as separators between list items.
-(defmacro xdoc::ul-from-string (str)
-  (declare (xargs :guard (stringp str)))
-  `(xdoc::ul (xdoc::topparas ,str)))
+(defmacro xdoc::ul-from-string (string)
+  (declare (xargs :guard (stringp string)))
+  `(xdoc::ul ,@(wrap-separated-chunks-of-string string 'xdoc::li)))

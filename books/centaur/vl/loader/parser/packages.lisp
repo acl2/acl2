@@ -132,7 +132,8 @@
        (when gen
          (return (list gen)))
        (atts := (vl-parse-0+-attribute-instances))
-       (when (vl-is-token? :vl-kwd-class)
+       (when (or (vl-is-token? :vl-kwd-class)
+                 (vl-is-token? :vl-kwd-virtual))
          (:= (vl-parse-class-declaration atts))
          (return nil))
        (items := (vl-parse-modelement-aux atts))

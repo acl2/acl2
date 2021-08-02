@@ -1,0 +1,124 @@
+; Yul Library
+;
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (coglio@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This file contains an ABNF grammar of Yul,
+; derived from the official grammar in
+; [Yul: Specification of Yul]
+; (https://docs.soliditylang.org/en/latest/yul.html#specification-of-yul).
+; This is the old grammar of Yul; see :DOC CONCRETE-SYNTAX.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Most of the ABNF rules below correspond exactly to the rules in [Yul].
+; We use the same capitalization of the nonterminals as in [Yul],
+; but note that ABNF rule names are case-insensitive
+; (which is not a problem because no Yul nonterminals differ
+; only in uppercase vs. lowercase).
+; We add some additional rules here,
+; which correspond to some regex constructs used in [Yul],
+; as indicated by the comments below saying 'corresponds to ...'.
+; It is not clear from [Yul] what the underlying character set is,
+; but it seems reasonable to assume Unicode;
+; this assumption is explicated in the comments in the rules below
+; whose definition depends on the character set,
+; whose [Yul] formulation does not make the character set explicit.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+Block = "{" *Statement "}"
+
+Statement = Block
+          / FunctionDefinition
+          / VariableDeclaration
+          / Assignment
+          / If
+          / Expression
+          / Switch
+          / ForLoop
+          / BreakContinue
+          / Leave
+
+FunctionDefinition = %s"function" Identifier
+                     "(" [ TypedIdentifierList ] ")"
+                     [ "->" TypedIdentifierList ]
+                     Block
+
+VariableDeclaration = %s"let" TypedIdentifierList [ ":=" Expression ]
+
+Assignment = IdentifierList ":=" Expression
+
+Expression = FunctionCall / Identifier / Literal
+
+If = %s"if" Expression Block
+
+Switch = %s"switch" Expression ( 1*Case [ Default ] / Default )
+
+Case = %s"case" Literal Block
+
+Default = %s"default" Block
+
+ForLoop = %s"for" Block Expression Block Block
+
+BreakContinue = %s"break" / %s"continue"
+
+Leave = %s"leave"
+
+FunctionCall = Identifier "(" [ Expression *( "," Expression ) ] ")"
+
+; corresponds to [a-z]:
+LowercaseLetter = %x61-7A
+
+; corresponds to [A-Z]:
+UppercaseLetter = %x41-5A
+
+; corresponds to [a-zA-Z_$]:
+IdentifierStart = LowercaseLetter / UppercaseLetter / "_" / "$"
+
+; corresponds to [a-zA-Z_$0-9.]:
+IdentifierRest = IdentifierStart / DecimalDigit / "."
+
+Identifier = IdentifierStart *IdentifierRest
+
+IdentifierList = Identifier *( "," Identifier)
+
+TypeName = Identifier
+
+TypedIdentifierList = Identifier [ ":" TypeName ]
+                      *( "," Identifier [ ":" TypeName ] )
+
+Literal = ( NumberLiteral / StringLiteral / TrueLiteral / FalseLiteral )
+          [ ":" TypeName ]
+
+NumberLiteral = HexNumber / DecimalNumber
+
+; corresponds to '"':
+dquote = %x22
+
+; corresponds to [^"\r\n\\], assuming Unicode:
+not-dquote-cr-lf = %x0-9 / %xB-C / %xE-21 / %x23-5B / %x5D-10FFFF
+
+; corresponds to . (any), assuming Unicode:
+Any = %x0-10FFFF
+
+StringLiteral = dquote *( not-dquote-cr-lf / "\" Any ) dquote
+
+TrueLiteral = %s"true"
+
+FalseLiteral = %s"false"
+
+; corresponds to [0-9]:
+DecimalDigit = %x30-39
+
+; corresponds to [0-9a-fA-F]:
+HexDigit = DecimalDigit / %i"a" / %i"b" / %i"c" / %i"d" / %i"e" / %i"f"
+
+HexNumber = %s"0x" 1*HexDigit
+
+DecimalNumber = 1*DecimalDigit

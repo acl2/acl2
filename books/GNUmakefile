@@ -183,6 +183,8 @@ ACL2 := acl2
 endif # ifeq ($(ACL2),)
 export ACL2
 
+export ACL2_DOC_GENERATE_SUPPORTING_FILES
+
 .SUFFIXES:
 .SUFFIXES: .cert .lisp
 
@@ -226,6 +228,7 @@ $(info OS_HAS_ABC         := $(OS_HAS_ABC))
 $(info OS_HAS_GLUCOSE     := $(OS_HAS_GLUCOSE))
 $(info OS_HAS_IPASIR      := $(OS_HAS_IPASIR))
 $(info OS_HAS_SMTLINK     := $(OS_HAS_SMTLINK))
+$(info OS_HAS_STP         := $(OS_HAS_STP))
 $(info USE_QUICKLISP      := $(USE_QUICKLISP))
 $(info ACL2_USELESS_RUNES := $(ACL2_USELESS_RUNES))
 $(info Done with features.)
@@ -407,6 +410,11 @@ endif
 ifeq ($(OS_HAS_SMTLINK), )
 $(info Excluding books that need SMTLINK: [$(CERT_PL_USES_SMTLINK)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_SMTLINK), $(OK_CERTS))
+endif
+
+ifeq ($(OS_HAS_STP), )
+$(info Excluding books that need STP: [$(CERT_PL_USES_STP)])
+OK_CERTS := $(filter-out $(CERT_PL_USES_STP), $(OK_CERTS))
 endif
 
 
@@ -790,7 +798,7 @@ system/toothbrush/success.txt:
 	@echo "Note: Skipping $@ for host Lisp $(ACL2_HOST_LISP)."
 else
 system/toothbrush/success.txt: system/toothbrush-deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 endif # ifeq ($(TB_LISP), )
 
 # We only make the books under SULFA if a documented test for an
@@ -806,38 +814,38 @@ clause-processors/SULFA/target.cert: \
 
 projects/translators/l3-to-acl2/target.cert: \
   projects/translators/l3-to-acl2-deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1 clean"
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1 clean"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1"
 
 workshops/1999/multiplier/proof.cert: \
   workshops/1999/deps-multiplier.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert: \
   workshops/2003/greve-wilding-vanfleet/deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 workshops/2003/kaufmann/support/input/defs-in.cert: \
   workshops/2003/kaufmann/deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 workshops/2003/kaufmann/support/rtl/package-defs.cert: \
   workshops/2003/kaufmann/deps.cert \
   workshops/2003/kaufmann/support/tool/simplify-defuns.cert \
   workshops/2003/kaufmann/support/tool/wrapper.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 # The following has no dependencies, so doesn't need a "deps" file.
 workshops/2004/sumners-ray/support/success.txt:
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 .PHONY: projects/apply-model/phony
 projects/apply-model/phony: projects/apply-model-deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 .PHONY: projects/apply-model-2/phony
 projects/apply-model-2/phony: projects/apply-model-2-deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 endif # ifeq ($(ACL2_HAS_REALS), )
 
@@ -1182,6 +1190,12 @@ regression: $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
 # before it.
 .PHONY: regression-everything
 
+# Build acl2-doc supporting files when running regression-everything
+# unless it is specified not to do so.
+ifndef ACL2_DOC_GENERATE_SUPPORTING_FILES
+regression-everything: ACL2_DOC_GENERATE_SUPPORTING_FILES=t
+endif
+
 regression-everything: $(OK_CERTS)
 
 .PHONY: all
@@ -1452,7 +1466,7 @@ BOOKS_BKCHK_OUT := $(filter-out hacking/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out workshops/2007/dillinger-et-al/code/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out acl2s/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top.bkchk.out, $(BOOKS_BKCHK_OUT))
-BOOKS_BKCHK_OUT := $(filter-out doc/top-fast.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out doc/top-slow.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out build/test/%, $(BOOKS_BKCHK_OUT))
 # Uses redefinition:
 BOOKS_BKCHK_OUT := $(filter-out system/tests/cert-data/redef.bkchk.out, $(BOOKS_BKCHK_OUT))

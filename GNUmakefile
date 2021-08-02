@@ -518,7 +518,7 @@ init: acl2-proclaims.lisp
 	rm -f ${PREFIXosaved_acl2}
 	echo '(load "init.lisp")' > workxxx
 	echo '(in-package "ACL2")' >> workxxx
-	echo '(save-acl2 (quote (initialize-acl2 (quote include-book) acl2::*acl2-pass-2-files*)) "${PREFIXsaved_acl2}")' >> workxxx
+	echo '(save-acl2 (quote (initialize-acl2 (quote include-book))) "${PREFIXsaved_acl2}")' >> workxxx
 	echo '(exit-lisp)' >> workxxx
 	${LISP} < workxxx
 	@$(MAKE) check_init_ok
@@ -552,7 +552,7 @@ proofs: compile-ok
 	rm -f workxxx
 	echo '(load "init.lisp")' > workxxx
 	echo '(acl2::load-acl2 :load-acl2-proclaims nil)' >> workxxx
-	echo '(acl2::initialize-acl2 nil acl2::*acl2-pass-2-files*)' >> workxxx
+	echo '(acl2::initialize-acl2 nil)' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
 	${LISP} < workxxx
 	@$(MAKE) check_init_ok
@@ -738,15 +738,15 @@ $(PREFIXsaved_acl2): $(ACL2_DEPS)
 
 .PHONY: large-acl2r
 large-acl2r:
-	$(MAKE) large ACL2_REAL=r
+	@$(MAKE) -s large ACL2_REAL=r
 
 .PHONY: large-acl2d
 large-acl2d:
-	$(MAKE) large ACL2_DEVEL=d
+	@$(MAKE) -s large ACL2_DEVEL=d
 
 .PHONY: large-acl2p
 large-acl2p:
-	$(MAKE) large ACL2_PAR=p
+	@$(MAKE) -s large ACL2_PAR=p
 
 # Since ACL2_WAG is for implementors only, we don't bother making a
 # target for it.  Instead one just uses ACL2_WAG=w on the "make"

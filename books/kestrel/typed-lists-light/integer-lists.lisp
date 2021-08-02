@@ -11,8 +11,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
-(include-book "kestrel/typed-lists-light/all-natp" :dir :system)
+(include-book "all-integerp")
+(include-book "all-natp")
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))

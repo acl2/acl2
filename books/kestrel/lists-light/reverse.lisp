@@ -39,3 +39,8 @@
   (equal (consp (reverse x))
          (consp x))
   :hints (("Goal" :in-theory (enable reverse))))
+
+(defthm car-of-reverse
+  (equal (car (reverse x))
+         (car (last x)))
+  :hints (("Goal" :in-theory (enable reverse))))

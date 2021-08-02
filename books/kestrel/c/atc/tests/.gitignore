@@ -1,6 +1,9 @@
 arrays.c
 arrays
 
+arrays-write.c
+arrays-write
+
 assign.c
 assign
 
@@ -36,3 +39,5 @@ nonstrict
 
 operators.c
 operators
+
+ops-diff-types.c

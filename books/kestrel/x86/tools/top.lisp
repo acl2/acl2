@@ -12,6 +12,8 @@
 (in-package "ACL2")
 
 ;; Roughly ordered by according to dependencies:
+
+(include-book "symsim")
 (include-book "bitops")
 (include-book "linear-memory")
 (include-book "register-readers-and-writers")
@@ -29,3 +31,14 @@
 (include-book "support2")
 
 (include-book "assumptions")
+(include-book "assumptions32")
+(include-book "assumptions64")
+
+(include-book "support-axe")
+
+(include-book "run-until-return")
+(include-book "support")
+
+(include-book "rule-lists")
+
+(include-book "unroll-x86-code-old")

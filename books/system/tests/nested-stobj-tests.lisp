@@ -1258,7 +1258,7 @@ ACL2 !>
 
 (must-fail
 
-; The following should cause an error, or else the next assertion coudl fail:
+; The following should cause an error, or else the next assertion could fail:
 
  (cause-invariant-violation-program n-arr)
  :expected :hard)

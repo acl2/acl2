@@ -14,13 +14,13 @@
 
 ;;TODO: What about xor simplification?  maybe ok to delay?
 
-(include-book "kestrel/axe/rewriter-basic" :dir :system)
-(include-book "kestrel/axe/rule-lists" :dir :system)
-(include-book "kestrel/axe/dag-to-term" :dir :system)
-(include-book "kestrel/axe/dag-size-fast" :dir :system) ; for dag-or-quotep-size-less-thanp
-(include-book "kestrel/axe/dag-to-term-with-lets" :dir :system)
-(include-book "kestrel/axe/rules-in-rule-lists" :dir :system)
-(include-book "kestrel/axe/evaluator" :dir :system) ;; since this calls dag-val-with-axe-evaluator to embed the resulting dag in a function, introduces a skip-proofs
+(include-book "rewriter-basic")
+(include-book "rule-lists")
+(include-book "dag-to-term")
+(include-book "dag-size-fast") ; for dag-or-quotep-size-less-thanp
+(include-book "dag-to-term-with-lets")
+(include-book "rules-in-rule-lists")
+(include-book "evaluator") ;; since this calls dag-val-with-axe-evaluator to embed the resulting dag in a function, introduces a skip-proofs
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
@@ -73,7 +73,7 @@
                               ;; (booleanp simplify-xorsp) ;todo: strengthen
                               (booleanp produce-function)
                               (booleanp disable-function)
-                              (member-eq function-type '(:auto :lets))
+                              (member-eq function-type '(:term :lets :embedded-dag :auto))
                               (or (symbol-listp function-params)
                                   (eq :auto function-params))
                               (booleanp produce-theorem)))
@@ -149,16 +149,22 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                     diff1 nil
                                     diff2 nil)
                               function-params))))
-       (function-body (if (eq :auto function-type)
+       ;; Handle a :function-type of :auto
+       (function-type (if (eq :auto function-type)
                           (if (dag-or-quotep-size-less-thanp dag 1000)
-                              (dag-to-term dag)
+                              :term
+                            :embedded-dag)
+                        function-type))
+       (function-body (if (eq :term function-type)
+                          (dag-to-term dag)
+                        (if (eq :embedded-dag function-type)
                             `(dag-val-with-axe-evaluator ,defconst-name
                                                          ,(make-acons-nest dag-vars)
                                                          ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns (w state)) (w state))
                                                          '0 ;array depth (not very important)
-                                                         ))
-                        ;; function-type must be :lets:
-                        (dag-to-term-with-lets dag)))
+                                                         )
+                          ;; function-type must be :lets:
+                          (dag-to-term-with-lets dag))))
        (new-term (and produce-theorem (dag-to-term dag)))
        (defconst-name-string (symbol-name defconst-name))
        (theorem-name (and produce-theorem (pack$ (subseq defconst-name-string 1 (- (length defconst-name-string) 1)) '-unroll-spec-basic-theorem)))
@@ -187,29 +193,9 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                 )
         state)))
 
-;; ;; TODO: update
-;; (defxdoc unroll-spec-basic
-;;   :parents (axe)
-;;   :short "Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations."
-;;   :long "<h3>General Form:</h3>
-
-;; @({
-;;      (unroll-spec-basic
-;;         defconst-name             ;; The name of the DAG to create (will be a defconst)
-;;         term                 ;; The term to simplify
-;;         [:rules]             ;; If non-nil, rules to use to completely replace the usual set of rules
-;;         [:extra-rules]       ;; Rules to add to the usual set of rules, Default: nil
-;;         [:remove-rules]      ;; Rules to remove from the usual set of rules, Default: nil
-;;         [:assumptions]       ;; Assumptions to use when unrolling, Default: nil
-;;         [:monitor]           ;; List of symbols to monitor, Default: nil
-;;         )
-;; })
-
-;; <p>To inspect the resulting form, you can use @('print-list') on the generated defconst.</p>")
-
 ;TODO: Automate even more by unrolling all functions down to the BV and array ops?
 (defmacro unroll-spec-basic (&whole whole-form
-                                    defconst-name ;; The name of the dag to create
+                                    defconst-name ;; The name of the DAG constant to create
                                     term          ;; The term to simplify
                                     &key
                                     (extra-rules 'nil) ; to add to the usual set of rules
@@ -248,3 +234,28 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                            ,print
                                            ',whole-form
                                            state)))
+
+;; (defxdoc unroll-spec-basic
+;;   :parents (axe)
+;;   :short "Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations."
+;;   :long "<h3>General Form:</h3>
+;; @({
+;;      (unroll-spec-basic
+;;         defconst-name        ;; The name of the DAG defconst to create
+;;         term                 ;; The term to simplify
+;;         [:rules]             ;; If non-nil, rules to use to completely replace the usual set of rules
+;;         [:extra-rules]       ;; Rules to add to the usual set of rules, Default: nil
+;;         [:remove-rules]      ;; Rules to remove from the usual set of rules, Default: nil
+;;         [:assumptions]       ;; Assumptions to use when unrolling, Default: nil
+;;         [:monitor]           ;; List of symbols to monitor, Default: nil
+;;         [:interpreted-function-alist]           ;; Definitions of non-built-in functions to evaluate; Default: nil
+;;         [:memoizep]           ;; Whether to memoize during rewriting, Default: nil
+;;         [:count-hitsp]           ;; Whether to count rule hits rewriting, Default: nil
+;;         [:produce-function]           ;; Whether to produce a function (in addition to a defconst), Default: nil
+;;         [:disable-function]           ;; Whether to disable the produced function, Default: nil
+;;         [:function-type]           ;; How to create a function for the DAG (:term, :embedded-dag, :lets, or :auto), Default:: auto
+;;         [:function-params]           ;; The param to use for the produced function (specifies their order)
+;;         [:produce-theorem]           ;; Whether to create a theorem stating that the dag is equal to the orignal term (using skip-proofs).
+;;         [:print]           ;; How much to print
+;;         )
+;; })")

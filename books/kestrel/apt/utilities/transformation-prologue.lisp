@@ -11,32 +11,34 @@
 (in-package "ACL2")
 
 ;; Returns a (possibly-empty) list of events, setting the default-defun-mode to
-;; :logic if needed.
+;; :logic if needed.  Note that the effect is local to the enclosing book or
+;; encapsulate.
 (defun maybe-switch-to-logic-mode (wrld)
   (declare (xargs :guard (and (plist-worldp wrld)
                               (alistp (table-alist 'acl2-defaults-table wrld)))))
-  (let ((mode (default-defun-mode wrld)))
-    (if (eq mode :logic)
-        nil ;already in logic mode
-      `((logic)))))
+  (if (eq (default-defun-mode wrld) :logic)
+      nil ; already in logic mode, so do nothing
+    `((logic))))
 
-;; Returns a (possibly-empty) list of events, clearing any default-hints.
+;; Returns a (possibly-empty) list of events, clearing any default-hints.  Note
+;; that the effect is local to the enclosing book or encapsulate.
 (defun maybe-clear-default-hints (wrld)
   (declare (xargs :guard (and (plist-worldp wrld)
                               (alistp (table-alist 'default-hints-table wrld)))))
-  (let ((default-hints (default-hints wrld)))
-    (if default-hints
-        `((set-default-hints nil)) ;this macro-expands to a call of local
-      nil)))
+  (if (default-hints wrld)
+      `((set-default-hints nil)) ;this macro-expands to a call of local
+    ;; No default-hints, so do nothing:
+    nil))
 
 ;; Returns a (possibly-empty) list of events, clearing any override-hints.
+;; Note that the effect is local to the enclosing book or encapsulate.
 (defun maybe-clear-override-hints (wrld)
   (declare (xargs :guard (and (plist-worldp wrld)
                               (alistp (table-alist 'default-hints-table wrld)))))
-  (let ((override-hints (override-hints wrld)))
-    (if override-hints
-        `((set-override-hints nil)) ;this macro-expands to a call of local
-      nil)))
+  (if (override-hints wrld)
+      `((set-override-hints nil)) ;this macro-expands to a call of local
+    ;; No override-hints, so do nothing:
+    nil))
 
 ;; Returns a list of standard events for transforming FN.  These go at the
 ;; beginning of the encapsulate.  Everything in this is local to the

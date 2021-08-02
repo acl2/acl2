@@ -2331,7 +2331,7 @@
      this situation means that the same array is aliased (in Java)
      and possibly subjected to different modifications through the aliases.
      We pass a flag to @('atj-analyze-arrays-in-term') indicating whether
-     the funtion called is a lambda expression or a named function:
+     the function called is a lambda expression or a named function:
      in the latter case, we also ensure that arguments of array types
      are variables, and not other function calls
      (note that they cannot be quoted constants).

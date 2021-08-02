@@ -11,5 +11,6 @@
 (in-package "ACL2")
 
 ;; Any name clash with std would cause an error:
+(include-book "../utilities/channels")
 (include-book "top")
 (include-book "std/io/top" :dir :system)

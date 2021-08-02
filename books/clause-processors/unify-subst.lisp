@@ -101,20 +101,20 @@
 
 
 
-;; (define symbol-<-merge ((x symbol-listp)
-;;                         (y symbol-listp))
+;; (define symbol<-merge ((x symbol-listp)
+;;                        (y symbol-listp))
 ;;   :measure (+ (len x) (len y))
 ;;   :returns (merge symbol-listp :hyp :guard)
 ;;   (b* (((when (atom x)) y)
 ;;        ((when (atom y)) x)
 ;;        ((when (equal (car x) (car y)))
-;;         (cons (car x) (symbol-<-merge (cdr x) (cdr y))))
-;;        ((when (symbol-< (car x) (car y)))
-;;         (cons (car x) (symbol-<-merge (cdr x) y))))
-;;     (cons (car y) (symbol-<-merge x (cdr y))))
+;;         (cons (car x) (symbol<-merge (cdr x) (cdr y))))
+;;        ((when (symbol< (car x) (car y)))
+;;         (cons (car x) (symbol<-merge (cdr x) y))))
+;;     (cons (car y) (symbol<-merge x (cdr y))))
 ;;   ///
-;;   (defthm member-symbol-<-merge
-;;     (iff (member v (symbol-<-merge x y))
+;;   (defthm member-symbol<-merge
+;;     (iff (member v (symbol<-merge x y))
 ;;          (or (member v x) (member v y)))))
 
 (define all-keys-bound (keys (alist alistp))

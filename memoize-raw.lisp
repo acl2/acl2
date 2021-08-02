@@ -5186,7 +5186,7 @@
   (let ((ctx 'top-level)
         (fns (if (eq fns :clear)
                  :clear
-               (strict-merge-sort-symbol-<
+               (strict-merge-sort-symbol<
                 (loop for fn in fns
                       collect (canonical-sibling fn wrld)))))
         (special-name *special-cltl-cmd-attachment-mark-name*))

@@ -101,6 +101,91 @@
 (verify-termination-boot-strap union-equal-to-end) ; and guards
 (verify-termination-boot-strap flatten-ands-in-lit!) ; and guards
 
+(verify-guards warranted-fns-of-world)
+
+; Convert defproxy events to :logic mode.
+(defstub initialize-event-user (* * state) => state)
+(defstub finalize-event-user (* * state) => state)
+(defstub acl2x-expansion-alist (* state) => *)
+
+#+acl2-loop-only
+(partial-encapsulate
+  (((canonical-pathname * * state) => *))
+
+; Supporters = nil since each missing axiom equates a call of
+; canonical-pathname on explicit arguments with its result.
+
+  nil
+  (local (defun canonical-pathname (x dir-p state)
+           (declare (xargs :mode :logic))
+           (declare (ignore dir-p state))
+           (if (stringp x) x nil)))
+  (defthm canonical-pathname-is-idempotent
+    (equal (canonical-pathname (canonical-pathname x dir-p state) dir-p state)
+           (canonical-pathname x dir-p state)))
+  (defthm canonical-pathname-type
+    (or (equal (canonical-pathname x dir-p state) nil)
+        (stringp (canonical-pathname x dir-p state)))
+    :rule-classes :type-prescription))
+
+#+acl2-loop-only
+(partial-encapsulate
+  (((magic-ev-fncall * * state * *) => (mv * *)))
+
+; Supporters = nil since each missing axiom equates a call of
+; magic-ev-fncall on explicit arguments with its result.
+
+  nil
+  (logic)
+  (local (defun magic-ev-fncall (fn args state hard-error-returns-nilp aok)
+           (declare (xargs :mode :logic)
+                    (ignore fn args state hard-error-returns-nilp aok))
+           (mv nil nil))))
+
+#+acl2-loop-only
+(partial-encapsulate
+  (((mfc-ap-fn * * state *) => *)
+   ((mfc-relieve-hyp-fn * * * * * * state *) => *)
+   ((mfc-relieve-hyp-ttree * * * * * * state *) => (mv * *))
+   ((mfc-rw+-fn * * * * * state *) => *)
+   ((mfc-rw+-ttree * * * * * state *) => (mv * *))
+   ((mfc-rw-fn * * * * state *) => *)
+   ((mfc-rw-ttree * * * * state *) => (mv * *))
+   ((mfc-ts-fn * * state *) => *)
+   ((mfc-ts-ttree * * state *) => (mv * *)))
+
+; Supporters = nil since each missing axiom equates a call of one of the
+; signature functions (above) on explicit arguments with its result.
+
+  nil
+  (logic)
+  (set-ignore-ok t)
+  (set-irrelevant-formals-ok t)
+  (local (defun mfc-ts-fn (term mfc state forcep)
+           t))
+  (local (defun mfc-ts-ttree (term mfc state forcep)
+           (mv t t)))
+  (local (defun mfc-rw-fn (term obj equiv-info mfc state forcep)
+           t))
+  (local (defun mfc-rw-ttree (term obj equiv-info mfc state forcep)
+           (mv t t)))
+  (local (defun mfc-rw+-fn (term alist obj equiv-info mfc state forcep)
+           t))
+  (local (defun mfc-rw+-ttree (term alist obj equiv-info mfc state forcep)
+           (mv t t)))
+  (local (defun mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc state
+                                        forcep)
+           t))
+  (local (defun mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc state
+                                           forcep)
+           (mv t t)))
+  (local (defun mfc-ap-fn (term mfc state forcep)
+           t)))
+
+(verify-termination-boot-strap print-object$-fn) ; and guards
+(verify-termination-boot-strap print-object$) ; and guards
+(verify-termination-boot-strap print-object$-preserving-case) ; and guards
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -946,11 +1031,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; verify-termination and guard verification:
-; strict-merge-symbol-<, strict-merge-sort-symbol-<, strict-symbol-<-sortedp,
+; strict-merge-symbol<, strict-merge-sort-symbol<, strict-symbol<-sortedp,
 ; and sort-symbol-listp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(verify-termination-boot-strap strict-merge-symbol-<
+(verify-termination-boot-strap strict-merge-symbol<
                                (declare (xargs :measure
                                                (+ (len l1) (len l2)))))
 
@@ -958,8 +1043,8 @@
  ()
 
  (local
-  (defthm len-strict-merge-symbol-<
-    (<= (len (strict-merge-symbol-< l1 l2 acc))
+  (defthm len-strict-merge-symbol<
+    (<= (len (strict-merge-symbol< l1 l2 acc))
         (+ (len l1) (len l2) (len acc)))
     :rule-classes :linear))
 
@@ -982,23 +1067,23 @@
              (symbol-listp (odds x)))))
 
  (local
-  (defthm symbol-listp-strict-merge-symbol-<
+  (defthm symbol-listp-strict-merge-symbol<
     (implies (and (symbol-listp l1)
                   (symbol-listp l2)
                   (symbol-listp acc))
-             (symbol-listp (strict-merge-symbol-< l1 l2 acc)))))
+             (symbol-listp (strict-merge-symbol< l1 l2 acc)))))
 
- (verify-termination-boot-strap strict-merge-sort-symbol-<
+ (verify-termination-boot-strap strict-merge-sort-symbol<
                                 (declare (xargs :measure (len l)
                                                 :verify-guards nil)))
 
- (defthm symbol-listp-strict-merge-sort-symbol-<
+ (defthm symbol-listp-strict-merge-sort-symbol<
 ; This lemma is non-local because it is needed for "make proofs", for
 ; guard-verification for new-verify-guards-fns1.
    (implies (symbol-listp x)
-            (symbol-listp (strict-merge-sort-symbol-< x))))
+            (symbol-listp (strict-merge-sort-symbol< x))))
 
- (verify-guards strict-merge-sort-symbol-<)
+ (verify-guards strict-merge-sort-symbol<)
 
  (verify-termination-boot-strap sort-symbol-listp) ; and guards
 
@@ -1056,6 +1141,9 @@
 
 ; Avoid ugly output from, e.g., (thm (equal (print-call-history) 3)).
 (in-theory (disable (:e print-call-history)))
+
+; Alessandro Coglio observed significant speed-up from the following disable.
+(in-theory (disable ctxp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; meta-extract support

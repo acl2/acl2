@@ -38,7 +38,7 @@
 ; because of promotion of a function to :logic mode, but also because of
 ; redefinition.  So we sort.
 
-  (strict-merge-sort-symbol-<
+  (strict-merge-sort-symbol<
    (event-names-rec wrld omit-boot-strap nil)))
 
 (defun initial-substringp-rec (bound s1 s2)

@@ -38,6 +38,7 @@
 (include-book "fty/top")
 (include-book "isar/top")
 (include-book "java/top")
+;; (include-book "jvm/top")  ;; TODO: Uncomment when stable
 (include-book "json/top")
 ;(include-book "lists-light/top") ; TODO: Name clash on take-opener
 (include-book "number-theory/top")
@@ -51,4 +52,5 @@
 (include-book "unicode-light/top")
 (include-book "utilities/top")
 (include-book "x86/top")
+(include-book "yul/top")
 (include-book "zcash/top")

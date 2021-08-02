@@ -14,7 +14,7 @@
 
 (include-book "kestrel/alists-light/acons-unique" :dir :system)
 (include-book "kestrel/alists-light/alistp" :dir :system)
-(include-book "kestrel/axe/dag-size" :dir :system)
+(include-book "dag-size")
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))

@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "simplify-xors")
-(include-book "kestrel/axe/make-term-into-dag-array-basic" :dir :system)
+(include-book "make-term-into-dag-array-basic")
 (include-book "std/testing/assert-equal" :dir :system)
 
 ;(defmap aref1-list (array-name array indices) (aref1 array-name array indices) :fixed (array-name array))

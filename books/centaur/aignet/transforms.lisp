@@ -371,8 +371,8 @@ for translating between ABC and aignet does not support xors.</p>"
 
 (fty::deftranssum m-assumption-n-output-comb-transform
   :short "Configuration object for any combinational transform supported by @(see
-          apply-m-assumtion-n-output-output-transform-default)."
-  :parents (aignet-m-assumption-n-output-transform)
+          apply-m-assumption-n-output-output-transform-default)."
+  :parents (aignet-m-assumption-n-output-transforms)
   (comb-transform
    n-outputs-unreachability-config
    n-outputs-dom-supergates-sweep-config
@@ -390,7 +390,7 @@ for translating between ABC and aignet does not support xors.</p>"
     (:m-assum-n-output-observability-config "M-assumption N-output observability")
     (otherwise (comb-transform->name x))))
 
-(define apply-m-assumtion-n-output-output-transform-default ((m natp)
+(define apply-m-assumption-n-output-output-transform-default ((m natp)
                                                              (n natp)
                                                              (aignet)
                                                              (aignet2)
@@ -478,4 +478,4 @@ for translating between ABC and aignet does not support xors.</p>"
 
 
 
-(defattach apply-m-assumption-n-output-transform apply-m-assumtion-n-output-output-transform-default)
+(defattach apply-m-assumption-n-output-transform apply-m-assumption-n-output-output-transform-default)

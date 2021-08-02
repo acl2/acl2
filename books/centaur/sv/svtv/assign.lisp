@@ -57,7 +57,7 @@
                               (modidx natp)
                               (moddb moddb-ok)
                               (aliases))
-  :parents (svtv-steps)
+  :parents (svtv-name-lhs-map)
   :short "Processes a list of nicknames for SystemVerilog-syntax signals into an internal form."
   :long "<p></p>"
   :guard (svtv-mod-alias-guard modidx moddb aliases)

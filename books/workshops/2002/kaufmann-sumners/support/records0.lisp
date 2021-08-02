@@ -358,7 +358,7 @@ existing key if it wants to set a key's value to nil.
         (t (caar r2))))
 
 (local
-(defthm assoc-eq-symbol-<
+(defthm assoc-eq-symbol<
   (implies (and (rcdp s)
                 (<< field (caar s)))
            (equal (assoc-equal field s) nil))))

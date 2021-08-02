@@ -83,7 +83,7 @@ ports because we expect @(see argresolve) to have done that.</p>")
        ((vl-modinst x) x)
        (target-mod (vl-scopestack-find-definition x.modname ss))
        ((unless (and target-mod (eq (tag target-mod) :vl-module)))
-        (mv (fatal :type :vl-bad-instance
+        (mv (fatal :type :vl-unresolved-instance
                    :msg "~a0 refers to undefined module ~m1."
                    :args (list x x.modname))
             x))
@@ -98,11 +98,21 @@ ports because we expect @(see argresolve) to have done that.</p>")
        (ports         (vl-module->ports target-mod))
        (plainargs     (vl-arguments-plain->args x.portargs))
        ((unless (same-lengthp plainargs ports))
-        (mv (fatal :type :vl-bad-instance
-                   :msg "~a0: bad arity.  Expected ~x1 arguments but found ~
-                         ~x2 arguments."
-                   :args (list x (len ports) (len plainargs)))
-            x))
+        ;; note: same warning is in argresolve.lisp
+        (b* ((nports   (len ports))
+             (nargs    (len plainargs)))
+          (mv (fatal :type :vl-instance-wrong-arity
+                     ;; Wow this is hideous
+                     :msg "~a0 ~s1 ~x2 ~s3, but module ~m4 ~s5 ~x6 ~s7."
+                     :args (list x
+                                 (if (< nargs nports) "only has" "has")
+                                 nargs
+                                 (if (= nargs 1) "argument" "arguments")
+                                 x.modname
+                                 (if (< nargs nports) "has" "only has")
+                                 nports
+                                 (if (= nports 1) "port" "ports")))
+              x)))
        (new-plainargs (vl-plainarglist-drop-blankports plainargs ports))
        (new-arguments (make-vl-arguments-plain :args new-plainargs))
        (new-x         (change-vl-modinst x :portargs new-arguments)))

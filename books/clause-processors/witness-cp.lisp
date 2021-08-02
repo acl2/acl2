@@ -2046,13 +2046,14 @@ witness-disable just as they are used in the ruleset argument of WITNESS.</p>")
                       in-package-of))))
 
   `(progn
-     ,@(and define `((defun-sk ,name ,vars ,quant-expr
+     ,@(and define `((defun-sk ,name ,vars
+                       ,@witness-dcls
+                       ,quant-expr
                        :quant-ok ,quant-ok
                        :skolem-name ,skolem-name
                        :thm-name ,thm-name
                        :rewrite ,rewrite
-                       :strengthen ,strengthen
-                       :witness-dcls ,witness-dcls)))
+                       :strengthen ,strengthen)))
      (defquantexpr ,name
        :predicate ,qcall
        :quantifier ,(if exists-p :exists :forall)

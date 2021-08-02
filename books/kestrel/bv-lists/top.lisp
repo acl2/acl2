@@ -14,6 +14,11 @@
 (include-book "unsigned-byte-listp-def")
 (include-book "unsigned-byte-listp")
 
+(include-book "byte-listp")
+
+(include-book "bit-listp")
+(include-book "bit-listp-rules")
+
 (include-book "all-unsigned-byte-p")
 (include-book "all-unsigned-byte-p2")
 (include-book "all-all-unsigned-byte-p")
@@ -40,6 +45,7 @@
 (include-book "bits-and-bytes-inversions-little")
 
 (include-book "bvxor-list")
+(include-book "bvxor-list-rules")
 (include-book "bvnot-list")
 (include-book "bvchop-list")
 (include-book "getbit-list")
@@ -69,3 +75,5 @@
 (include-book "list-patterns")
 
 (include-book "bvplus-list")
+
+(include-book "logext-list")

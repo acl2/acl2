@@ -314,12 +314,12 @@ interfaces.</p>")
   (b* (((vl-modinst x) (vl-modinst-fix x))
        (def (vl-scopestack-find-definition x.modname ss))
        ((unless def)
-        (fatal :type :vl-bad-instance
+        (fatal :type :vl-interface-instance-undefined
                :msg "~a0 refers to undefined interface ~m1."
                :args (list x x.modname)))
        ((unless (mbe :logic (vl-interface-p def)
                      :exec (eq (tag def) :vl-interface)))
-        (fatal :type :vl-bad-instance
+        (fatal :type :vl-interface-instantiates-noninterface
                :msg "~a0: can't instantiate ~s1 within an interface ~
                      (interfaces can instantiate other interfaces, but can't ~
                      have ~s2 instances.)"

@@ -325,7 +325,6 @@ elements.")
   :template immdeps
   :types (vl-maybe-gatedelay
           vl-arguments
-          vl-paramargs
           vl-paramtype
           vl-maybe-delayoreventcontrol
           vl-exprdist

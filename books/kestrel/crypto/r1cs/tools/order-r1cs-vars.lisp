@@ -229,12 +229,13 @@
                   (cons (first new-vars) done-vars) ; we know it's not already present
                   `(:constrains ,(first new-vars) ,constraint))
             ;; More than one new var:
-            ;; This can happen if some of the vars are actually constrained elsewhere but we fail to recognize those other constraints
+            ;; This can happen if some of the vars are actually constrained elsewhere but we fail to recognize those
+            ;; other constraints (so they are not truly new in this constraint).
             (if (or (vars-are-concatenated-in-constraintp new-vars constraint p)
                     (vars-are-concatenated-in-constraintp (acl2::reverse-list new-vars) constraint p))
                 ;; the multiple vars are part of the same bvcat:
                 (mv t
-                    (cons new-vars ;; add the whole list (we know none are already present)
+                    (cons new-vars ;; add the whole list (we know none are already present in done-vars)
                           done-vars)
                     `(:constrains-all ,new-vars ,constraint))
               (if t ;; todo: restrict this to something like the check above (but we saw a non-contiguous set of bits being concatenated - bit 32 was missing)
@@ -252,7 +253,6 @@
                 (done-varsp done-vars))
            (done-varsp (mv-nth 1 (order-vars-in-r1cs-constraint constraint done-vars p))))
   :hints (("Goal" :in-theory (enable order-vars-in-r1cs-constraint done-varsp))))
-
 
 ;; Makes 1 pass through the constraints.
 ;; Returns (mv tagged-constraints unhandled-constraints done-vars).
@@ -307,6 +307,7 @@
   :hints (("Goal" :in-theory (enable order-r1cs-vars-aux-aux))))
 
 ;; Returns (mv tagged-constraints done-vars).
+;; TODO: Idea: Consider first handling all "obvious" constraints (e.g., defining single new var, or a concatenation of several new vars, in terms of old vars).  Then, when nothing more can be done, allow less obvious constraints (a bunch of new vars constrained in terms of old vars).  Then go back to obvious ones again.
 (defund order-r1cs-vars-aux (constraints done-vars tagged-constraints-acc p)
   (declare (xargs :guard (and (r1cs-constraint-listp constraints)
                               (done-varsp done-vars)

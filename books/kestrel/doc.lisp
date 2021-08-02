@@ -47,6 +47,8 @@
 (include-book "strings-light/doc")
 (include-book "typed-lists-light/doc")
 (include-book "utilities/top")
+(include-book "utilities/ubi-doc")
+(include-book "yul/top")
 (include-book "zcash/top")
 
 ; (depends-on "images/kestrel-logo.png")

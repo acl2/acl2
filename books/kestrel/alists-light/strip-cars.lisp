@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+(local (include-book "kestrel/lists-light/revappend" :dir :system))
+
 (in-theory (disable strip-cars))
 
 (defthm consp-of-strip-cars
@@ -81,3 +83,15 @@
   (equal (strip-cars (pairlis$ x y))
          (true-list-fix x))
   :hints (("Goal" :in-theory (enable strip-cars))))
+
+(defthm strip-cars-of-revappend
+  (equal (strip-cars (revappend x y))
+         (revappend (strip-cars x) (strip-cars y)))
+  :hints (("Goal" :in-theory (enable strip-cars
+                                     revappend
+                                     append-of-revappend-of-nil-arg1))))
+
+(defthm strip-cars-of-reverse
+  (equal (strip-cars (reverse x))
+         (reverse (strip-cars x)))
+  :hints (("Goal" :in-theory (enable reverse))))

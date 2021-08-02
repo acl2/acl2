@@ -45,7 +45,7 @@
                 (union-eq a (union-eq b c)))))
 
 
-;; Historical note: We used to define this using symbol-<-merge instead of
+;; Historical note: We used to define this using symbol<-merge instead of
 ;; union-eq in the simple-term-vars-lst, hoping for better performance.
 ;; However, we think that an accumulator-based version like ACL2's built-in
 ;; all-vars/all-vars1/all-vars1-lst is probably generally better since it does

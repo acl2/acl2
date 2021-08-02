@@ -1,4 +1,3 @@
-; Defabsstobj Example 4
 ; Copyright (C) 2021, Regents of the University of Texas
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 

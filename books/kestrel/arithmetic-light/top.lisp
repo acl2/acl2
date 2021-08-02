@@ -52,6 +52,7 @@
 (include-book "min")
 (include-book "max")
 (include-book "natp")
+(include-book "ifix")
 
 (include-book "limit-expt")
 

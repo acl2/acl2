@@ -272,7 +272,7 @@
 ; ~ev[]")
 
 (defxdoc adviser::adviser
-  :parents (adviser::adviser)
+  :parents (acl2::miscellaneous)
   :short "A extensible hint suggestion daemon"
   :long "<p>Adviser is a a hint computation service.  When the adviser book is
  loaded, this service is installed into the ACL2 world as a default hint.  This

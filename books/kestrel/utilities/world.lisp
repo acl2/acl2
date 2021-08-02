@@ -29,7 +29,7 @@
 
 (defthm alistp-of-getprops
   (alistp (getprops key world-name w))
-  :hints (("Goal" :in-theory (enable symbol-<))))
+  :hints (("Goal" :in-theory (enable symbol<))))
 
 ;; TODO: Add a check for a primitive function (using *primitive-formals-and-guards*)
 

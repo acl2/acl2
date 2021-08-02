@@ -375,8 +375,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 (verify-termination corollary)
 (verify-termination formula)
-;(verify-termination type-of-pred)
-;(verify-termination get-undef-name (declare (xargs :verify-guards nil)))
 
 (defun make-generic-typed-defunc-events
     (name formals ic oc decls body kwd-alist make-staticp d? pkg wrld)

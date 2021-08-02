@@ -165,10 +165,15 @@ prove that a fixing function induces an equivalence relation, e.g.,</p>
        ,@(and (not already-definedp)
               (list
                (if qvars
-                   `(,(if defquant 'defquant 'defun-sk) ,equivname (x y)
-                     (forall ,qvars ,equivterms)
-                     ,@(and witness-dcls-p
-                            `(:witness-dcls ,witness-dcls)))
+; Matt K. mod, 7/2021: avoid :witness-dcls for defun-sk.
+                   (if defquant
+                       `(defquant ,equivname (x y)
+                          (forall ,qvars ,equivterms)
+                          ,@(and witness-dcls-p
+                                 `(:witness-dcls ,witness-dcls)))
+                     `(defun-sk ,equivname (x y)
+                        ,@witness-dcls
+                        (forall ,qvars ,equivterms)))
                  `(defun ,equivname (x y)
                     ,equivterms))))
 

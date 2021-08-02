@@ -16,7 +16,7 @@
 (include-book "bool-fix")
 
 (defund boolif (test x y)
-  (declare (type t test x y))
+  (declare (xargs :guard t))
   (if (if test x y)
       t
     nil))

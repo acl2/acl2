@@ -1422,19 +1422,6 @@
                                 (add-to-set-eq (caar wrld) ans)))
         (t (collect-world-globals (cdr wrld) ans))))
 
-(defconst *boot-strap-invariant-risk-symbols*
-
-; The following should contain all function symbols that might violate an ACL2
-; invariant.  See check-invariant-risk-state-p.
-
-; We don't include compress1 or compress2 because we believe they don't write
-; out of bounds.
-
-  '(aset1 ; could write past the end of the real array
-    aset2 ; could write past the end of the real array
-    extend-32-bit-integer-stack
-    aset-32-bit-integer-stack))
-
 (defun primordial-world-globals (operating-system)
 
 ; This function is the standard place to initialize a world global.
@@ -1563,7 +1550,6 @@
                          enter-boot-strap-mode exit-boot-strap-mode
                          lp acl2-defaults-table let let*
                          complex complex-rationalp
-                         ,@*boot-strap-invariant-risk-symbols*
 
 ; The following became necessary after Version_8.2, when we starting storing a
 ; new 'recognizer-alist property on symbols (in the primordial-world) in place
@@ -1622,60 +1608,6 @@
 
           ))
 
-(defun initialize-invariant-risk (wrld)
-
-; We put a non-nil 'invariant-risk property on every function that might
-; violate some ACL2 invariant, if called on arguments that fail to satisfy that
-; function's guard.  Also see put-invariant-risk.
-
-; At one point we thought we should do this for all functions that have raw
-; code and have state as a formal:
-
-;;; (initialize-invariant-risk-1
-;;;  *initial-program-fns-with-raw-code*
-;;;  (initialize-invariant-risk-1
-;;;   *initial-logic-fns-with-raw-code*
-;;;   wrld
-;;;   wrld)
-;;;  wrld)
-
-; where:
-
-;;; (defun initialize-invariant-risk-1 (fns wrld wrld0)
-;;;
-;;; ; We could eliminate wrld0 and do our lookups in wrld, but the extra
-;;; ; properties in wrld not in wrld0 are all 'invariant-risk, so looking up
-;;; ; 'formals properties in wrld0 may be more efficient.
-;;;
-;;;   (cond ((endp fns) wrld)
-;;;         (t (initialize-invariant-risk-1
-;;;             (cdr fns)
-;;;             (if (member-eq 'state
-;;;
-;;; ; For robustness we do not call formals here, because it causes an error in
-;;; ; the case that it is not given a known function symbol, as can happen (for
-;;; ; example) with a member of the list *initial-program-fns-with-raw-code*.
-;;; ; In that case, the following getprop will return nil, in which case the
-;;; ; above member-eq test is false, which works out as expected.
-;;;
-;;;                            (getprop (car fns) 'formals nil wrld0))
-;;;                 (putprop (car fns) 'invariant-risk (car fns) wrld)
-;;;               wrld)
-;;;             wrld0))))
-
-; But we see almost no way to violate an invariant by misguided updates of the
-; (fictional) live state.  For example, state-p1 specifies that the
-; global-table is an ordered-symbol-alistp, but there is no way to get one's
-; hands directly on the global-table; and state-p1 also specifies that
-; plist-worldp holds of the logical world, and we ensure that by making set-w
-; and related functions untouchable.  The only exceptions are those in
-; *boot-strap-invariant-risk-symbols*, as is checked by the function
-; check-invariant-risk-state-p.  If new exceptions arise, then we should add
-; them to the value of *boot-strap-invariant-risk-symbols*.
-
-  (putprop-x-lst2 *boot-strap-invariant-risk-symbols* 'invariant-risk
-                  *boot-strap-invariant-risk-symbols* wrld))
-
 ;; Historical Comment from Ruben Gamboa:
 ;; I added the treatment of *non-standard-primitives*
 
@@ -1693,10 +1625,14 @@
 (defun primordial-world (operating-system)
 
 ; Warning: Names converted during the boot-strap from :program mode to :logic
-; mode will, we believe, have many properties erased by renew-name.  That is
-; why, for example, we call initialize-invariant-risk at the end of the
-; boot-strap, in end-prehistoric-world.  Consider whether a property should be
-; set there rather than here.
+; mode will, we believe, have many properties erased by renew-name.  Consider
+; whether a property should be set in end-prehistoric-world rather than here.
+; But be careful; through Version_8.3 we had that issue in mind when we called
+; a function to initialize invariant-risk for certain function symbols (see
+; *boot-strap-invariant-risk-alist*)a at the end of the boot-strap, in
+; end-prehistoric-world, instead of here.  But then the 'invariant-risk
+; property was never set for aset1-lst, even though it calls aset1, which has
+; invariant-risk.
 
   (let ((names (strip-cars *primitive-formals-and-guards*))
         (arglists (strip-cadrs *primitive-formals-and-guards*))
@@ -3205,7 +3141,7 @@
                    'return-last-table
                    'table-alist
                    *initial-return-last-table*
-                   (initialize-invariant-risk wrld)))))
+                   wrld))))
          (thy (current-theory1 wrld nil nil))
          (wrld2 (update-current-theory thy (length thy) wrld1)))
     (add-command-landmark
@@ -5571,7 +5507,7 @@
            "You provided signatures for ~&0, but ~#0~[that function ~
             was~/those functions were~] not defined in :logic mode by the ~
             encapsulated event list.  See :DOC encapsulate."
-           (merge-sort-symbol-< udf-fns)))
+           (merge-sort-symbol< udf-fns)))
       (t (value nil)))
      (declare (ignore val))
      (mv-let
@@ -8222,7 +8158,7 @@
            (update-proof-supporters-alist-3
             (cdr names) local-alist
             old
-            (strict-merge-symbol-< car-names-supporters new nil)
+            (strict-merge-symbol< car-names-supporters new nil)
             wrld)))))
 
 (defun posn-first-non-event (names wrld idx)
@@ -8237,7 +8173,7 @@
           (t (mv-let (rest-old-event-names rest-new-names)
                      (update-proof-supporters-alist-3
                       (nthcdr n names) local-alist nil nil wrld)
-                     (strict-merge-symbol-<
+                     (strict-merge-symbol<
                       (append (take n names) rest-old-event-names)
                       rest-new-names
                       nil))))))
@@ -9546,25 +9482,13 @@
   (unix-truename-pathname pathname dir-p state))
 
 #+acl2-loop-only
-(partial-encapsulate
-  (((canonical-pathname * * state) => *))
+(defproxy canonical-pathname (* * state)
 
-; Supporters = nil since each missing axiom equates a call of
-; canonical-pathname on explicit arguments with its result.
+; We use defproxy for now because state-p is still in :program mode; a
+; partial-encapsulate comes later in the boot-strap (see
+; boot-strap-pass-2-a.lisp).
 
-  nil
-  (logic)
-  (local (defun canonical-pathname (x dir-p state)
-           (declare (xargs :mode :logic))
-           (declare (ignore dir-p state))
-           (if (stringp x) x nil)))
-  (defthm canonical-pathname-is-idempotent
-    (equal (canonical-pathname (canonical-pathname x dir-p state) dir-p state)
-           (canonical-pathname x dir-p state)))
-  (defthm canonical-pathname-type
-    (or (equal (canonical-pathname x dir-p state) nil)
-        (stringp (canonical-pathname x dir-p state)))
-    :rule-classes :type-prescription))
+  => *)
 
 (defun canonical-dirname! (pathname ctx state)
   (declare (xargs :guard t))
@@ -11663,7 +11587,32 @@
                   (sysfile-to-filename-include-book-alist
                    post-alist3-sysfile
                    t ; local-markers-allowedp
-                   state)))
+                   state))
+                 (unexpected-from-sysfile
+
+; We will consider the book to be uncertified if the full-book-name doesn't
+; match the sysfile expansion stored for the book in its certificate.  Before
+; this change, we could include a community book in its own directory using its
+; relative pathname (free of "/"), and it would be considered certified -- and
+; would return a pathname based on the system-books-dir for the current ACL2
+; executable!  Maybe that's not so serious, or we could just fix that specific
+; problem; but more serious is that sub-books would also have bad resolutions
+; of sysfile references.  We could restrict this check to the case that there
+; is at least one sysfile reference in the certificate file for a subbook.  But
+; it seems best (and simpler) to point out to the user the sysfile mismatch for
+; the top-level book.
+
+; Note that (caar post-alist3-sysfile) represents the book being included.
+; When the book was certified, the post-alist was created after pass 1 from
+; (global-val 'include-book-alist-all (w state)), so the topmost entry is the
+; most recent, hence for the book being included.
+
+                  (and (consp post-alist3-abs0)
+                       (consp (car post-alist3-abs0))
+                       (sysfile-p (caar post-alist3-sysfile))
+                       (not (equal (caar post-alist3-abs0)
+                                   file1))
+                       (caar post-alist3-abs0))))
             (er-let* ((pre-alist-abs
                        (cond ((eq pre-alist-abs0 :error)
                               (ill-formed-certificate-er
@@ -11709,9 +11658,10 @@
 
                        )))
                ((and (not light-chkp)
-                     (not (include-book-alist-subsetp
-                           pre-alist-abs
-                           actual-alist)))
+                     (or unexpected-from-sysfile
+                         (not (include-book-alist-subsetp
+                               pre-alist-abs
+                               actual-alist))))
 
 ; Note: Sometimes I have wondered how the expression above deals with
 ; LOCAL entries in the alists in question, because
@@ -11732,6 +11682,22 @@
                    ((and (equal warning-summary "Uncertified")
                          (warning-disabled-p "Uncertified"))
                     (value nil))
+                   (unexpected-from-sysfile
+                    (include-book-er1 file1 file2
+
+; The uses of ~| below are to ensure that both book names start in column 0, to
+; make it easy to see their difference.  We avoid concluding with a newline
+; because two spaces may be printed before printing another sentence, for
+; example, during certification: " This is illegal because we are currently
+; attempting certify-book; see :DOC certify-book."
+
+                                      (msg "The book being ~
+                                            included,~|~s0,~%is not in the ~
+                                            location expected for the ACL2 ~
+                                            executable being used:~|~s1."
+                                           file1
+                                           unexpected-from-sysfile)
+                                      warning-summary ctx state))
                    (t (mv-let (msgs state)
                         (tilde-*-book-hash-phrase pre-alist-abs
                                                   actual-alist
@@ -14772,14 +14738,14 @@
 
 (defun set-difference-eq-sorted (lst1 lst2 ans)
 
-; Lst1 and lst2 are sorted by symbol-<.  If ans is nil, then we return the
-; difference of lst1 and lst2, sorted by symbol-<.
+; Lst1 and lst2 are sorted by symbol<.  If ans is nil, then we return the
+; difference of lst1 and lst2, sorted by symbol<.
 
   (cond ((null lst1) (reverse ans))
         ((null lst2) (revappend ans lst1))
         ((eq (car lst1) (car lst2))
          (set-difference-eq-sorted (cdr lst1) (cdr lst2) ans))
-        ((symbol-< (car lst1) (car lst2))
+        ((symbol< (car lst1) (car lst2))
          (set-difference-eq-sorted (cdr lst1) lst2 (cons (car lst1) ans)))
         (t (set-difference-eq-sorted lst1 (cdr lst2) ans))))
 
@@ -15173,7 +15139,11 @@
 ; Makefile support is available; see community books file
 ; books/Makefile-generic.
 
-(defstub acl2x-expansion-alist (expansion-alist state)
+(defproxy acl2x-expansion-alist (* state)
+
+; We use defproxy for now because state-p is still in :program mode; a
+; partial-encapsulate comes later in the boot-strap (see
+; boot-strap-pass-2-a.lisp).
 
 ; Users are welcome to attach their own function to acl2x-expansion-alist,
 ; because it is only called (by write-acl2x-file) to write out a .acl2x file,
@@ -15182,7 +15152,7 @@
 ; Indeed, for this reason, Jared Davis and Sol Swords requested the addition of
 ; state as a parameter.
 
-  t)
+  => *)
 
 (defun hons-copy-with-state (x state)
   (declare (xargs :guard (state-p state)))
@@ -16067,12 +16037,12 @@
                             outfile)
                         state))
                (t (pprogn
-                   (print-object$-ser (cons full-book-name
-                                            (bookdata-alist full-book-name
-                                                            wrld))
-                                      nil ; serialize-character
-                                      channel
-                                      state)
+                   (print-object$-fn (cons full-book-name
+                                           (bookdata-alist full-book-name
+                                                           wrld))
+                                     nil ; serialize-character
+                                     channel
+                                     state)
                    (close-output-channel channel state)))))))))
 
 (defun fromto (i j)
@@ -17885,6 +17855,12 @@
 ; Since this is just a macro, we only do a little bit of vanilla checking,
 ; leaving it to the real events to implement the most rigorous checks.
 
+  (prog2$
+   (or (null witness-dcls)
+       (cw "~%**NOTE**: The keyword :WITNESS-DCLS of ~x0 is deprecated and ~
+            will likely no longer be supported after ACL2 Version 8.4.  Use ~
+            DECLARE forms instead.  See :DOC defun-sk.~|"
+           'defun-sk))
   (let ((bound-vars (and (true-listp body) ;this is to guard cadr
                          (cadr body)
                          (if (atom (cadr body))
@@ -17972,7 +17948,7 @@
                'forall
              'exists)
            body))
-     (t nil))))
+     (t nil)))))
 
 (defun definition-rule-name (name)
   (declare (xargs :guard (symbolp name)))
@@ -20963,7 +20939,7 @@
                        (cons 'defabsstobj
                              (make defstobj-redundant-raw-lisp-discriminator-value
                                    :event ',event-form
-                                   :creator ',creator
+                                   :creator ',creator-name
                                    :congruent-stobj-rep ',congruent-stobj-rep
                                    :non-memoizable
                                    ',(non-memoizable-stobj-raw st$c)
@@ -31157,26 +31133,20 @@
 (defmacro defund (&rest def)
   (cons 'defun def))
 
-; The next three events define a :logic mode version of ev-fncall that has
-; unknown-constraints.  We originally put this in boot-strap-pass-2.lisp (a
-; precursor to the combination of boot-strap-pass-2-a.lisp and
-; boot-strap-pass-2-b.lisp), but it didn't work there, because add-trip doesn't
-; give special treatment for defun-overrides in pass 2 of the boot-strap, which
-; is the only time that the events in boot-strap-pass-2.lisp were evaluated.
+; The next three events introduce a :logic mode version of ev-fncall that has
+; unknown-constraints.  Note that magic-ev-fncall is introduced eventually with
+; partial-encapsulate, but we use defproxy here because state-p is still in
+; :program mode.
+
+; Historical Note from before this use of defproxy.  We originally put this in
+; boot-strap-pass-2.lisp (a precursor to the combination of
+; boot-strap-pass-2-a.lisp and boot-strap-pass-2-b.lisp), but it didn't work
+; there, because add-trip doesn't give special treatment for defun-overrides in
+; pass 2 of the boot-strap, which is the only time that the events in
+; boot-strap-pass-2.lisp were evaluated.
 
 #+acl2-loop-only
-(partial-encapsulate
-  (((magic-ev-fncall * * state * *) => (mv * *)))
-
-; Supporters = nil since each missing axiom equates a call of
-; magic-ev-fncall on explicit arguments with its result.
-
-  nil
-  (logic)
-  (local (defun magic-ev-fncall (fn args state hard-error-returns-nilp aok)
-           (declare (xargs :mode :logic)
-                    (ignore fn args state hard-error-returns-nilp aok))
-           (mv nil nil))))
+(defproxy magic-ev-fncall (* * state * *) => (mv * *))
 
 #-acl2-loop-only
 (progn

@@ -433,7 +433,7 @@
                (t (symbolp y))))
         ((symbolp x)
          (cond ((symbolp y)
-                (symbol-< x y))
+                (symbol< x y))
                (t nil)))
         (t
          nil))

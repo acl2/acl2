@@ -14,13 +14,13 @@
 (include-book "std/testing/eval" :dir :system) ;for ensure-soft-error
 (include-book "known-booleans")
 
-(defun foo (x y z)
+(defun foo1 (x y z)
   (if (< x (+ y z))
       t
     nil))
 
-(add-known-boolean foo)
-(add-known-boolean foo) ;okay to do it twice
+(add-known-boolean foo1)
+(add-known-boolean foo1) ;okay to do it twice
 
 (ensure-soft-error (add-known-boolean len)) ; len does not return a boolean
 

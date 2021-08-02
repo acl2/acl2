@@ -367,16 +367,16 @@
 ; Test some options
 (deftest
   (defun-sk foo (lst)
+    (declare (xargs :non-executable nil))
     (forall x (not (member x (fix-true-listp lst))))
     :strengthen t
-    :rewrite :direct
-    :witness-dcls ((declare (xargs :non-executable nil))))
+    :rewrite :direct)
   (simplify foo)
   (must-be-redundant
     (DEFUN-SK FOO$1 (LST)
+      (DECLARE (XARGS :NON-EXECUTABLE NIL))
       (FORALL (X) (NOT (MEMBER-EQUAL X LST)))
       :QUANT-OK T
-      :WITNESS-DCLS ((DECLARE (XARGS :NON-EXECUTABLE NIL)))
       :STRENGTHEN T
       :REWRITE :DIRECT)
     (DEFTHM FOO-BECOMES-FOO$1

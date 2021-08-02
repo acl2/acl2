@@ -302,7 +302,7 @@
     "Quantifier second-order functions and their instances
      may depend on function variables
      via their matrices
-     and via their guards (which are introduced via @(':witness-dcls')).")
+     and via their guards (which are introduced via @(tsee declare) forms).")
    (xdoc::p
     "The returned list may contain duplicates."))
   (let* ((matrix (defun-sk-matrix fun wrld))

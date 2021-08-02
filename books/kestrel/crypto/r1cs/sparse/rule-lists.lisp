@@ -36,7 +36,7 @@
     car-cons
     cdr-cons
     acl2::equal-self
-    ))
+    acl2::ifix-when-integerp))
 
 (defun r1cs-proof-rules ()
   (declare (xargs :guard t))

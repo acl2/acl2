@@ -120,11 +120,13 @@
   :renames ((vl-expr vl-expr-type-disambiguate-aux)
             (vl-patternkey vl-patternkey-type-disambiguate-aux)
             (vl-slicesize vl-slicesize-type-disambiguate-aux)
-            (vl-casttype vl-casttype-type-disambiguate-aux))
+            (vl-casttype vl-casttype-type-disambiguate-aux)
+            (vl-paramvalue vl-paramvalue-type-disambiguate-aux))
   :type-fns ((vl-expr vl-expr-type-disambiguate)
              (vl-patternkey vl-patternkey-type-disambiguate)
              (vl-slicesize vl-slicesize-type-disambiguate)
-             (vl-casttype vl-casttype-type-disambiguate))
+             (vl-casttype vl-casttype-type-disambiguate)
+             (vl-paramvalue vl-paramvalue-type-disambiguate))
   :field-fns ((atts :skip))
   :measure (two-nats-measure :count 0)
 
@@ -192,7 +194,25 @@
                     (if type
                         (make-vl-casttype-type :type type)
                       x1)))
-        :otherwise (mv warnings x1)))))
+        :otherwise (mv warnings x1))))
+
+  (define vl-paramvalue-type-disambiguate ((x vl-paramvalue-p)
+                                           (ss vl-scopestack-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x vl-paramvalue-p))
+    :measure (two-nats-measure (vl-paramvalue-count x) 1)
+    (vl-paramvalue-case x
+      :type (b* (((mv warnings type)
+                  (vl-datatype-type-disambiguate x.type ss)))
+              (mv warnings (change-vl-paramvalue-type x :type type)))
+      :expr (b* (((mv warnings expr)
+                  (vl-expr-type-disambiguate x.expr ss))
+                 ((wmv warnings type)
+                  (vl-expr-to-datatype expr ss)))
+              (mv warnings
+                  (if type
+                      (make-vl-paramvalue-type :type type)
+                    (change-vl-paramvalue-expr x :expr expr)))))))
 
 (fty::defvisitors vl-stmt-type-disambiguate-deps
   :template type-disambiguate
@@ -246,26 +266,11 @@
         (vl-stmt-type-disambiguate-aux x ss)))))
 
 
-(fty::defvisitors vl-paramvalue-type-disambiguate-deps
-  :template type-disambiguate
-  :dep-types (vl-paramvalue))
+;; (fty::defvisitors vl-paramvalue-type-disambiguate-deps
+;;   :template type-disambiguate
+;;   :dep-types (vl-paramvalue))
 
-(define vl-paramvalue-type-disambiguate ((x vl-paramvalue-p)
-                                         (ss vl-scopestack-p))
-  :returns (mv (warnings vl-warninglist-p)
-               (new-x vl-paramvalue-p))
-  (vl-paramvalue-case x
-    :type (b* (((mv warnings type)
-                (vl-datatype-type-disambiguate x.type ss)))
-            (mv warnings (change-vl-paramvalue-type x :type type)))
-    :expr (b* (((mv warnings expr)
-                (vl-expr-type-disambiguate x.expr ss))
-               ((wmv warnings type)
-                (vl-expr-to-datatype expr ss)))
-            (mv warnings
-                (if type
-                    (make-vl-paramvalue-type :type type)
-                  (change-vl-paramvalue-expr x :expr expr))))))
+
 
 
 (fty::defvisitors vl-fundecl-type-disambiguate-deps

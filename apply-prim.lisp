@@ -339,6 +339,7 @@
      HONS-CLEAR!                               ; bad -- requires trust tag
      HONS-WASH!                                ; bad -- requires trust tag
      UNTOUCHABLE-MARKER                        ; bad -- untouchable
+     ASET1-TRUSTED                             ; bad -- untouchable
 
 ; At one time we considered disallowing these functions but we now allow them.
 ; We list them here just to document that we considered them and concluded that
@@ -455,6 +456,8 @@
     (COLLECT-BY-POSITION ACL2-COUNT FULL-DOMAIN)
     (COLLECT-LAMBDA-KEYWORDPS ACL2-COUNT LST)
     (COLLECT-NON-X ACL2-COUNT LST)
+    (COMMENT-STRING-P)
+    (COMMENT-STRING-P1 NFIX (BINARY-+ END (UNARY-- I)))
     (CONS-TERM1-MV2)
     (DEF-BODY)
     (DEFUN-MODE)
@@ -533,10 +536,10 @@
     (MATCH-CLAUSE)
     (MATCH-CLAUSE-LIST ACL2-COUNT CLAUSES)
     (MATCH-TESTS-AND-BINDINGS ACL2-COUNT PAT)
-    (MERGE-SORT-SYMBOL-< ACL2-COUNT L)
+    (MERGE-SORT-SYMBOL< ACL2-COUNT L)
     (MERGE-SORT-TERM-ORDER ACL2-COUNT L)
-    (MERGE-SYMBOL-< BINARY-+ (LEN L1)
-                    (LEN L2))
+    (MERGE-SYMBOL< BINARY-+ (LEN L1)
+                   (LEN L2))
     (MERGE-TERM-ORDER BINARY-+ (ACL2-COUNT L1)
                       (ACL2-COUNT L2))
     (META-EXTRACT-CONTEXTUAL-FACT)
@@ -546,6 +549,7 @@
     (OBSERVATION1-CW)
     (OVERRIDE-HINTS)
     (PLIST-WORLDP-WITH-FORMALS ACL2-COUNT ALIST)
+    (PRINT-CONTROL-P)
     (PUSH-IO-RECORD)
     (RELATIVIZE-BOOK-PATH)
     (REMOVE-GUARD-HOLDERS-WEAK)

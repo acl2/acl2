@@ -53,6 +53,7 @@
 (include-book "kestrel/ethereum/portcullis" :dir :system)
 (include-book "kestrel/bitcoin/portcullis" :dir :system)
 (include-book "kestrel/utilities/omaps/portcullis" :dir :system)
+(include-book "kestrel/yul/portcullis" :dir :system)
 
 ; Book release notes are sometimes disorganized.
 ; They are often cleaned up before a release.
@@ -122,6 +123,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "ACL2 Arrays Library")
+
+   (xdoc::p "A library to support reasoning about programs that use ACL2
+   arrays (e.g., those satisfying @(tsee array1p)).  Includes operations that make
+   such arrays exapandable.  Includes a tool for defining typed ACL2 arrays.  See
+   @('[books]/kestrel/acl2-arrays/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "acl2pl::acl2-programming-language"
                              "ACL2 Programming Language Library"))
 
@@ -129,9 +139,25 @@
     "This is a library about the ACL2 programming language.
      It includes a formalization of its evaluation semantics.
      (This is just the work of this library's author,
-     not an official semantics of the ACL programming language;
+     not an official semantics of the ACL2 programming language;
      see @(see evaluation) for an official description
-     of the ACL2 evaluation semantics.")
+     of the ACL2 evaluation semantics.)")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Algorithm Theories Library")
+
+   (xdoc::p "A library has been started to collect algorithm schemes, starting
+   with a scheme for a generic tail recursive function. See
+   @('[books]/kestrel/algorithm-theories/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Arrays-2D Library")
+
+   (xdoc::p "A formalization of two-dimensional arrays as lists of lists (both
+   with arbitrary elements and with elements that are known to be bit-
+   vectors).  See @('[books]/kestrel/arrays-2d/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -141,7 +167,7 @@
     "A library that defines a @('2^64')-byte memory model that is
   logically a record but provides array-like performance during
   execution.")
-   
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
@@ -203,6 +229,31 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "JSON Parser")
+
+   (xdoc::p "A JSON parser implemented in ACL2, including Unicode support.  See
+   @('[books]/kestrel/json-parser/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "JVM Library")
+
+   (xdoc::p "Kestrel's model of the Java Virtual Machine, including support for
+   code proofs and lifting.  Works with Kestrel's Axe toolkit.  Also includes a
+   class file parser.  See @('[books]/kestrel/jvm/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Number Theory Library")
+
+   (xdoc::p "A library about number theory, dealing with notions like
+   primality, divisibility, quadratic residues, etc.  Includes the defprime and
+   defprime-alias tools to introduce standard reasoning machinery about
+   primes.  Includes a proof of the Tonelli-Shanks Modular Square Root Algorithm.
+   See @('[books]/kestrel/number-theory/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "obag::obags" "Ordered Bags Library"))
 
    (xdoc::p
@@ -248,6 +299,30 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Random Library")
+
+   (xdoc::p "A lightweight library containing some simple random number
+   generators.  See @('[books]/kestrel/random/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "exld::execloader"
+                             "Read and Parse ELF/Mach-O Binary Files"))
+
+   (xdoc::p
+    "This library can be used to read in sections of ELF/Mach-O files into ACL2.
+     An older version of these books used to live in the @(tsee x86isa::x86isa)
+     library.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Sequences Library")
+
+   (xdoc::p "A library for defining higher-order operations over lists (defforall,
+   defexists, defmap, and deffilter).  See @('[books]/kestrel/sequences/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "simpl-imp::imp-language"
                              "Simple Programming Language Imp"))
 
@@ -271,13 +346,65 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "exld::execloader"
-                             "Read and Parse ELF/Mach-O Binary Files"))
+   (xdoc::h4 "Strings-Light Library")
+
+   (xdoc::p "A lightweight library about strings, including changing case,
+   splitting strings and character lists, etc.  See
+   @('[books]/kestrel/strings-light/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Terms-Light Library")
+
+   (xdoc::p "A lightweight library of operations on terms (e.g., finding free
+   and bound vars and applying variable substitutions).  See
+   @('[books]/kestrel/terms-light/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Typed-Lists-Light Library")
+
+   (xdoc::p "A lightweight library dealing with lists of objects of particular
+   types (rather than lists in general).  For example, lists of integers, of
+   symbols, of pseudo-terms, etc.  See
+   @('[books]/kestrel/typed-lists-light/').")
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Unicode-Light Library")
+
+   (xdoc::p "A lightweight library about Unicode, dealing with UTF-8 encoding and
+   UTF-16 surrogate code points.  See @('[books]/kestrel/unicode-light/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Untranslated Term Library")
+
+   (xdoc::p "A new library for manipulating untranslated terms, which allows
+   structure to be maintained that would be lost by translation.  See
+   @('[books]/kestrel/untranslated-terms/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "X86 Library (Kestrel)")
 
    (xdoc::p
-    "This library can be used to read in sections of ELF/Mach-O files into ACL2.
-     An older version of these books used to live in the @(tsee x86isa::x86isa)
-     library.")
+    "This library contains Kestrel's x86 proof machinery, which complements the
+   X86ISA model.  This library focuses on readability of proof terms and
+   supporting the lifting of x86 code into logic with the Axe toolkit.  It also
+   includes parsers for PE and Mach-O executables.  See
+   @('[books]/kestrel/x86/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "yul::yul" "Yul Library"))
+
+   (xdoc::p
+    "This is a library about the Yul intermediate language,
+     currently used in the Ethereum Solidity compiler
+     but designed for more general use.
+     This library includes a formalization of some aspects of the language.
+     There are plans to extend this to cover more aspects.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -310,6 +437,14 @@
      These parsing primitives may be useful to write parsers
      for other languages specified by ABNF grammars
      (besides ABNF itself, which is what the grammar parser does).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Alists-Light Library")
+
+   (xdoc::p "New rules and books have been added, including books on
+   @('alistp'), @('clear-key'), and @('keep-pairs'). See
+   @('[books]/kestrel/alists-light/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -378,6 +513,16 @@
      (e.g. for raising the level of abstraction in program analysis).")
 
    (xdoc::p
+    "The @(tsee apt::propagate-iso) transformation has been added.")
+
+   (xdoc::p
+    "A new transformation has been added: @(tsee apt::simplify), the
+     `simplification transformation'.  It transforms a given definition or
+     @(see term) using ACL2 reasoning, in particular by applying the
+     currently (or specified) @(see enable)d @(see rewrite) rules.  The result
+     is generally simpler than the input but logically equivalent to it.")
+
+   (xdoc::p
     "The @(tsee apt::isodata) transformation has been improved as follows:")
    (xdoc::ul
     (xdoc::li
@@ -409,7 +554,7 @@
       This theorem is only generated if some result is being transformed.")
     (xdoc::li
      "A new @(':newp-of-new-name') input has been added
-      to specify the name fo the @('newp-of-new') theorem.
+      to specify the name of the @('newp-of-new') theorem.
       This input is allowed only if some result is being transformed,
       because otherwise no @('newp-of-new') theorems is generated.")
     (xdoc::li
@@ -419,7 +564,7 @@
       because otherwise no @('newp-of-new') theorems is generated."))
 
    (xdoc::p
-    "The @(tsee apt::restrict) transformation has been improved as folows:")
+    "The @(tsee apt::restrict) transformation has been improved as follows:")
    (xdoc::ul
     (xdoc::li
      "The transformation has been simplified
@@ -451,12 +596,6 @@
      "A new @(':new-to-old-enable') input has been added
       to specify whether the @('new-to-old') theorem is enabled or not.
       If this input is absent, it is taken from the APT defaults table."))
-
-   (xdoc::p
-    "The @(tsee apt::simplify) transformation has been improved by allowing the
-     use of keyword @(':guard') for the @(':assumptions'), not only as the
-     entire value of @(':assumptions') as before, but also as a member of a
-     specified list of assumptions.")
 
    (xdoc::p
     "The @(tsee apt::tailrec) transformation has been improved as follows:")
@@ -532,7 +671,7 @@
     (xdoc::li
      "Now the transformation also generates a theorem
       that rewrites the wrapper function in terms of the old function
-      (when the @(':wrapper') input is @('t').
+      (when the @(':wrapper') input is @('t')).
       The name and enablement of this theorem are controlled
       by two new inputs
       @(':wrapper-to-old-name') and @(':wrapper-to-old-enable').
@@ -541,7 +680,7 @@
      ".")
     (xdoc::li
      "The heuristics for inferring the domain of the binary operator
-      (when the @(':domain') input is, generally by default, @(':auto'),
+      (when the @(':domain') input is, generally by default, @(':auto'))
       have been extended to infer more cases automatically.")
     (xdoc::li
      "The target function's @(tsee if) body,
@@ -561,9 +700,96 @@
     "New design notes about specifications and refinements have been added,
      along with a manual page that describes various forms of specifications.")
 
+   (xdoc::p
+    "A variety of APT-related utilities have been added, including @('deftransformation'), which
+     can be used to generate transformations (taking care of much of the boilerplate code).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Arithmetic-Light Library")
+
+   (xdoc::p "Many new rules and books have been added, including books on
+   @('integer-length') @('ceiling-of-lg'), evenness and oddness, @('truncate'),
+   @('rem'), @('ash'), @('min'), @('max'), @('<='), @('abs'), and @('natp').
+   Commonly used rules about arithmetic types have been collected, and a
+   utility has been added to prevent calls of @('expt') on huge exponents.  See
+   @('[books]/kestrel/arithmetic-light/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Axe Toolkit")
+
+   (xdoc::p "Major additions have been made to the open-source Axe toolkit,
+   which now includes most of Axe.  The library now includes Axe's connection
+   to the STP solver as well as machinery to make customized Axe rewriters and
+   provers.  A basic (general-purpose) prover and rewriter are included, as are
+   a legacy prover and rewriter.  Utilities to unroll specifications through
+   rewriting are included, as is the Axe Tactic Prover.  Many rules that have
+   been useful in Axe proofs are also included.  See @('[books]/kestrel/axe/').")
+
+   (xdoc::p "A toolkit for using Axe to reason about JVM code has been added.
+   It includes utilities to lift JVM code into logic.  A Formal Unit Tester
+   tool is also included, to support small solver-backed proofs about bounded
+   executions of programs.  See @('[books]/kestrel/axe/jvm/').")
+
+   (xdoc::p "A toolkit for using Axe to reason about x86 code has been added.
+   It includes utilities to lift x86 code into logic. See
+   @('[books]/kestrel/axe/x86/').")
+
+   (xdoc::p "A toolkit for using Axe to reason about R1CSes has been added.  It
+   includes utilities to lift R1CSes into logic and verify them.  See
+   @('[books]/kestrel/crypto/r1cs/tools/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Booleans Library")
+
+   (xdoc::p "New rules and defcongs have been added.  See
+   @('[books]/kestrel/booleans/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "BV Library")
+
+   (xdoc::p
+    "Extensive additions have been made, including over 1000 new rules.  Books
+    have been added covering many more BV operations, including subtraction,
+    arithmetic negation, multiplicaton, shifts, bitwise @('OR') and @('AND'),
+    logical negation, signed and unsigned comparisons, signed and unsigned
+    division and remainder, trimming, sign extension, various single-bit
+    operations, bit-vector-valued conditionals, converting between bits and
+    booleans, recognizing bits and (signed and unsigned) bytes, repeating a
+    bit, and counting the number of 1 bits.  Rules have been added to
+    characterize signed addition overflow and underflow and to turn BV ops into
+    more common or more idiomatic operations.  A formalization of one's
+    complement numbers and addition has been added.  Various syntactic
+    functions have been added for BV-valued terms.  See
+    @('[books]/kestrel/bv/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "BV-Lists Library")
+
+   (xdoc::p "[bv-lists] Many new rules and books have been added.  New books
+   include ones about @('bv-arrayp'), @('bv-array-read'), @('bv-array-write'),
+   @('all-all-unsigned-byte-p'), @('width-of-widest-int'), @('bvnot-list'),
+   @('getbit-list'), @('map-slice'), @('bvplus-list'), @('logext-list'),
+   @('bv-nth'), @('map-packbv'), @('all-signed-byte-p'), conversions between
+   lists and bv-arrays, @('packbv-little'), and @('byte-listp').  Utilities
+   have been added that deal with about patterns in the elements of BV lists.
+   See @('[books]/kestrel/bv-lists/')")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "crypto::cryptography" "Cryptographic Library"))
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 "BLAKE Library")
+
+   (xdoc::p "Formal specifications of the BLAKE2s, BLAKE2s-extended, and
+   BLAKE-256 hash functions have been added. See
+   @('[books]/kestrel/crypto/blake/').")
 
    ;;;;;;;;;;;;;;;;;;;;
 
@@ -604,6 +830,15 @@
     (xdoc::seetopic "ecurve::edwards-bls12" "Edwards BLS12 elliptic curve")
     " has been added.")
 
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "r1cs::r1cs" "Rank-1 Constraint Systems (R1CS)"))
+
+   (xdoc::p "A formal semantics for rank-1 constraint systems (R1CSes) has been
+   added.  These are often used by zero-knowledge proofs.  Extensive reasoning
+   support for reasoning about R1CSes has also been added, including verified R1CS
+   gadgets and support for applying the Axe toolkit.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "error-checking" "Error Checking Library"))
@@ -622,7 +857,11 @@
     "Some theorems about hex-prefix encoding have been added.")
 
    (xdoc::p
-    "A sub-library for the Semaphore gadget has been added.")
+    "A sub-library for the Semaphore gadget has been added.  This includes
+    various specifications and proofs of Semaphore-related R1CSes, including a
+    mixing function from BLAKE2s and 3 variants of the MiMC hash function.  It
+    also includes Semaphore-specialized Axe tools to lift R1CSes into logic and
+    verify them.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -673,6 +912,18 @@
     "ELF reader now gets the contents of all the sections listed in
     the headers of a given ELF binary. Also, the package name has been
     changed from @('EL') to @('EXLD').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "file-io-light" "File-Io-Light Library"))
+
+   (xdoc::p
+    "Various lightweight utilities have been added to read and write files (of
+    bytes, characters, and objects).  These include a utility to read the bytes
+    of a file into a stobj array.  Reasoning support has also been added for
+    various built-in I/O functions.  Related utilities have been added, such as
+    to check whether a file exists or is newer than a given date.  See
+    @('[books]/kestrel/file-io-light/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -887,11 +1138,45 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Library Wrappers")
+
+   (xdoc::p
+    "A library wrapper for @('sublistp') has been added, as has a robust variant of
+    @('make-flag').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Lists-Light Library")
+
+   (xdoc::p
+    "Many rules, congruences, and new books have been added.  New books cover
+   the functions @('subsequencep'), @('subsequencep-equal'), @('last-elem'),
+   @('subrange'), @('update-subrange'), @('finalcdr'), @('all-equal$'),
+   @('all-eql$'), @('all-same'), @('all-same-eql'), @('add-to-end'),
+   @('first-non-member'), @('group')/@('ungroup') (for splitting and
+   flattening), @('count-occs'), @('prefixp'), @('len-at-least'),
+   @('remove-equal'), @('remove-duplicates-equal'), @('find-index'), and
+   @('remove-nth'). See @('[books]/kestrel/prime-fields/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
 
    (xdoc::p
     "Added an operation to create an omap
      from a list of keys and a corresponding list of values.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Prime-Fields")
+
+   (xdoc::p
+    "Many new rules have been added, and existing rules have been improved.
+    These include many rules for recogizing R1CS gadgets.  The library is more
+    organized, and some proofs have been made faster.  @('bind-free') rules
+    have been added for canceling addends and moving negations.  Utilities have
+    been added for naming and printing special constants. See
+   @('[books]/kestrel/prime-fields/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1041,6 +1326,10 @@
      chk-irrelevant-formals-ok) have been added, to perform an @(see
      irrelevant-formals) check on a given definition or list of definitions.")
 
+   (xdoc::p
+    "New utilities have been added to find the sources of @(see invariant-risk)
+     for given functions.  See @('[books]/std/system/invariant-risk.lisp').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/testing" "Standard Testing Library"))
@@ -1146,6 +1435,80 @@
      a (possibly infinite) set of integers.
      This is similar to @(tsee defmax-nat).")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Utilities Library (Kestrel)")
+
+   (xdoc::p
+    "A large number of utilities have been added, covering a wide range of
+     topics.  These include dealing with event forms, making fresh names,
+     manipulating hints, dealing with untranslated terms, building simple list
+     structures, dealing with quoted entities, building strings, checking
+     whether a symbol has properties, dealing with runes, parsing options,
+     processing keyword args, and recognizing legal variable names.
+
+     New utilities also deal with importing and legal variable names, format
+     strings, printing, translation, manipulating terms, invariant risk,
+     submitting events to ACL2, creating temp dirs, process IDs, usernames,
+     calling scripts, macroexpansion and translation, asserts,
+     untranslated-terms, redundant events, guard-holders, ruler-extenders,
+     lets/lambdas, fake worlds, clause identifiers, @('progn'), unification,
+     dependencies, ensuring rules are known, quieting @('make-event'), checking
+     for closed lambdas, processing @('defun') and @('defthm') forms, processing
+     declares, the ACL2 state, @('system-books-dir'), fixing functions,
+     @('acl2-count'), @('make-ord'), @('coerce'), @('map-symbol-name'), tuples,
+     @('myif'), and @'(mv-nth').")
+
+   (xdoc::p "Various improvements have been made to @('defopeners') and
+   @('defopeners-mut-rec').")
+
+   (xdoc::p "New utilities support computing a constant using @('make-event'),
+   reading a value from a file into a @('defconst'), and printing constants
+   nicely.")
+
+   (xdoc::p "A new ACL2 Lint tool can detect common ACL2 errors.")
+
+   (xdoc::p "Reasoning about I/O channels has been improved.")
+
+   (xdoc::p "A new tool, @('bind-from-rules') can bind free variables in rules
+   by searching existing rules.")
+
+   (xdoc::p "A new data structure, string trees, can efficiently represent a
+   sequence of strings (e.g., for writing to a file).")
+
+   (xdoc::p "A new tool supports polarity-based rewriting, whereby a term can be
+   either strengthened or weakened depending on whether it is an assumption or
+   a conclusion.")
+
+   (xdoc::p "Sorting utilities have been added, including @('split-list-fast'),
+   @('merge-sort-generic'), and @('defmergesort').")
+
+   (xdoc::p "Various xdoc-related utilities have been added, including new xdoc
+   constructors (such as one that creates paragraphs from blocks of text
+   separated by blank lines).  A new tool, @('gen-xdoc-for-file') can generate
+   xdoc topics for the events (defuns, defthms, etc.) in a file by extracting
+   the actual relevant text (the definition and any immediately preceding or
+   following comment lines) from the file.  Helpful wrappers for xdoc
+   archiving utilities have also been added; these can help speed up manual
+   building.")
+
+   (xdoc::p "See @('[books]/kestrel/utilities/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Xdoc Library")
+
+   (xdoc::p
+    "The web-based manual now includes a clickable link to GitHub at the top of
+    each documentation topic from the Community Books.  The link lets you view
+    the contents of the source file that introduced that topic.")
+
+   (xdoc::p
+    "The file @('[books]/doc/top-slow.lisp') no longer actually builds a manual.
+    Instead, it serves as a top-level book to detect name conflicts between
+    community books.  Manual building is now taken care of by
+    @('[books]/doc/top.lisp').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Licensing Changes")
@@ -1161,6 +1524,11 @@
    (xdoc::p
     "One line of file @('Makefile-generic') has been tweaked to avoid the
      @('+make') construct, which may help avoid errors in FreeBSD systems.")
+
+   (xdoc::p
+    "Building of the combined ACL2+Books manual (by certifying
+     @('doc/top.lisp')) has been made more efficient (more than 20% reduction
+     measured when such changes were made).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

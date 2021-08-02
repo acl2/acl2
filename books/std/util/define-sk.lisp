@@ -241,7 +241,7 @@ forms.</dd>
   :parents (define-sk)
   :short "Explanation of the @(':implies :smart') option for @(see define-sk)."
 
-  :long "<p>By default, the @(see define-sk) macro does handles calls of
+  :long "<p>By default, the @(see define-sk) macro handles calls of
 @('implies') in its function's body in a ``smart'' way.  Below we explain what
 problem this special handling is meant to help with and the way it works.</p>
 
@@ -254,12 +254,12 @@ problem this special handling is meant to help with and the way it works.</p>
 
 @({
     (defun-sk all-greaterp (min list)
+      (declare (xargs :guard (and (integerp min)
+                                  (integer-listp list))
+                      :verify-guards nil))
       (forall (elem)
               (implies (member elem list)
-                       (< min elem)))
-      :witness-dcls ((declare (xargs :guard (and (integerp min)
-                                                 (integer-listp list))
-                                     :verify-guards nil))))
+                       (< min elem))))
 })
 
 <p>Unfortunately, the above produces a lousy @('-necc') theorem that isn't
@@ -294,14 +294,14 @@ function, so when we call @('(< min elem)'), we haven't yet established that
 
 @({
     (defun-sk all-greaterp (min list)
+      (declare (xargs :guard (and (integerp min)
+                                  (integer-listp list))
+                      :verify-guards nil))
       (forall (elem)
               (if (member elem list)
                   (< min elem)
                 t))
-      :rewrite :direct
-      :witness-dcls ((declare (xargs :guard (and (integerp min)
-                                                 (integer-listp list))
-                                     :verify-guards nil))))
+      :rewrite :direct)
 })
 
 <p>But now we run into a different problem: the @('-necc') theorem now ends up
@@ -877,9 +877,9 @@ so execution differences don't matter.</p>")
 
        (main-def
         `(defun-sk ,name-fn ,formal-names
+           ,@witness-dcls
            (,quantifier ,bound-var-names ,exec-body)
            ,@(and rewrite      `(:rewrite ,rewrite))
-           ,@(and witness-dcls `(:witness-dcls ,witness-dcls))
            ,@(and strengthen   `(:strengthen ,strengthen))
            ,@(and quant-ok     `(:quant-ok ,quant-ok))
            ,@(and skolem-name  `(:skolem-name ,skolem-name))

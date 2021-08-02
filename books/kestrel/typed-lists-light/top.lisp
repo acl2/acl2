@@ -34,8 +34,9 @@
 
 (include-book "items-have-len")
 
-(include-book "bit-listp")
-(include-book "bit-listp-rules")
+(include-book "map-char-code")
+(include-book "map-code-char")
+(include-book "bytes-to-printable-string")
 
 (include-book "maxelem")
 (include-book "maxelem2")
@@ -49,5 +50,9 @@
 (include-book "all-less-than-or-equal-all")
 
 (include-book "all-greater")
+
+;; Stuff about lists of alists:
+(include-book "all-alistp")
+(include-book "map-strip-cars")
 
 (include-book "doc")

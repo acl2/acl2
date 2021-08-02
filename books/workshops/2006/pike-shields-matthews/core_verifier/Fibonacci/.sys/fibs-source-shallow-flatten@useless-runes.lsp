@@ -1,6 +1,6 @@
 (|$ind_measure_fibs_2|)
 (|$ind_block_fibs_2|
- (52 41 (:REWRITE DEFAULT-+-1))
+ (56 45 (:REWRITE DEFAULT-+-1))
  (16 16 (:META CANCEL_PLUS-LESSP-CORRECT))
  (16 14 (:REWRITE DEFAULT-*-2))
  (16 14 (:REWRITE DEFAULT-*-1))

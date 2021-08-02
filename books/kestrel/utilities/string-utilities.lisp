@@ -274,6 +274,10 @@
             (mv (reverse rest-string)
                 (reverse string-after-item)))))
 
+(defthm stringp-of-mv-nth-1-of-read-string-to-last-terminator
+  (stringp (mv-nth 1 (read-string-to-last-terminator str terminator)))
+  :hints (("Goal" :in-theory (enable read-string-to-last-terminator))))
+
 ;(read-string-to-last-terminator "abcXdefXghiXjkl" #\X)
 
 ;returns the substring of STR before the last occurrence of CHAR

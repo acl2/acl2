@@ -29,8 +29,8 @@
       (process-block-sequence file-text state fat32$c fd-table
                               file-table output-path))
      ((mv channel state) (open-output-channel :string :object state))
-     (state (print-object$-ser fd-table nil channel state))
-     (state (print-object$-ser file-table nil channel state))
+     (state (print-object$-fn fd-table nil channel state))
+     (state (print-object$-fn file-table nil channel state))
      ((mv & str2 state) (get-output-stream-string$ channel state))
      (state (princ$ "fd-table and file-table, respectively, are" *standard-co* state))
      (state (newline *standard-co* state))

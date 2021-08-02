@@ -1517,7 +1517,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            signed-byte-p
            strip-cars
            strip-cdrs
-           symbol-<
+           symbol<
            unsigned-byte-p
            untouchable-marker
            xor
@@ -1938,7 +1938,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (equal x y))
 
 (defun booleanp (x)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :mode :logic))
   (if (eq x t)
       t
     (eq x nil)))
@@ -2119,7 +2120,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; acl2-count is a nonnegative integer.
 
 (defun integer-abs (x)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t :mode :logic))
   (if (integerp x)
       (if (< x 0) (- x) x)
       0))
@@ -2189,7 +2190,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (t (len1 (cdr x) (the fixnum (+ (the fixnum acc) 1)))))))
 
 (defun len (x)
-  (declare (xargs :guard t :mode :logic))
+  (declare (xargs :guard t :mode :program))
   #-acl2-loop-only
   (return-from len
                (let ((val (len1 x 0)))
@@ -2205,7 +2206,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (if (true-listp x)
                              t
                              (stringp x))
-                  :mode :logic))
+                  :mode :program))
   (if (stringp x)
       (len (coerce x 'list))
       (len x)))
@@ -2224,7 +2225,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; definition of acl2-count and does not seem to affect the common
 ; recursions and inductions.
 
-  (declare (xargs :guard t))
+  (declare (xargs :guard t :mode :program))
   (if (consp x)
       (+ 1
          (acl2-count (car x))
@@ -2241,6 +2242,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (if (stringp x)
                   (length x)
                   0)))))
+
+(verify-termination-boot-strap :skip-proofs
+                               len (declare (xargs :mode :logic)))
+(verify-termination-boot-strap :skip-proofs
+                               length (declare (xargs :mode :logic)))
+(verify-termination-boot-strap :skip-proofs
+                               acl2-count (declare (xargs :mode :logic)))
 
 ; The following rewrite rule may be useful for termination proofs, but
 ; at this point it seems premature to claim any kind of understanding
@@ -3679,6 +3687,33 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((null (cdr rst)) (list 'binary-* 1 (car rst)))
         (t (xxxjoin 'binary-* rst))))
 
+(defaxiom nonnegative-product
+
+; Note that in (* x x), x might be complex.  So, we do not want to force the
+; hypothesis below.
+
+; This axiom can be proved.  John Cowles has proved some such axioms and we
+; have proved others in our efforts to verify the guards in our code.
+; Eventually we may replace some of these axioms by theorems.  But not now
+; because things are too fluid.
+
+;; Historical Comment from Ruben Gamboa:
+;; This axiom was strengthened to include the reals.  Amusingly,
+;; it was also weakened, since it leaves open the possibility that for
+;; rational x, x*x is irrational.  Luckily, the type-system knows this
+;; isn't the case, so hopefully we have not weakened ACL2.
+
+  (implies (real/rationalp x)
+           (and (real/rationalp (* x x))
+                (<= 0 (* x x))))
+
+; We need the :type-prescription rule class below.  Without it, ACL2 cannot
+; prove (implies (rationalp x) (<= 0 (* x x))); primitive type-set reasoning
+; will not notice that both arguments of * are identical.
+
+  :rule-classes ((:type-prescription
+                  :typed-term (* x x))))
+
 ;; Historical Comment from Ruben Gamboa:
 ;; This function was modified to accept all complex arguments,
 ;; not just the complex-rationalps
@@ -3794,7 +3829,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (equal (+ x y) (+ y x)))
 
 (defun fix (x)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :mode :logic))
   (if (acl2-numberp x)
       x
     0))
@@ -3980,7 +4016,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; After adding the non-standard predicates, this number grew to 110.
 
 (defconst *force-xnume*
-  (let ((x 132))
+  (let ((x 165))
     #+:non-standard-analysis
     (+ x 12)
     #-:non-standard-analysis
@@ -4196,62 +4232,28 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(6 . RATIONALP)
   #-non-standard-analysis
   '(5 . RATIONALP))
+(defconst *tau-booleanp-pair*
+  #+non-standard-analysis
+  '(11 . BOOLEANP)
+  #-non-standard-analysis
+  '(8 . BOOLEANP))
 (defconst *tau-natp-pair*
   #+non-standard-analysis
-  '(20 . NATP)
+  '(21 . NATP)
   #-non-standard-analysis
-  '(17 . NATP))
+  '(18 . NATP))
 (defconst *tau-bitp-pair*
-  #+non-standard-analysis
-  '(21 . BITP)
-  #-non-standard-analysis
-  '(18 . BITP))
+  (cons (+ 1 (car *tau-natp-pair*))
+        'BITP))
 (defconst *tau-posp-pair*
-  #+non-standard-analysis
-  '(22 . POSP)
-  #-non-standard-analysis
-  '(19 . POSP))
+  (cons (+ 2 (car *tau-natp-pair*))
+        'POSP))
 (defconst *tau-minusp-pair*
-  #+non-standard-analysis
-  '(28 . MINUSP)
-  #-non-standard-analysis
-  '(25 . MINUSP))
-(defconst *tau-booleanp-pair*
-  #-non-standard-analysis
-  '(32 . BOOLEANP)
-  #+non-standard-analysis
-  '(35 . BOOLEANP)
-  )
+  (cons (+ 14 (car *tau-natp-pair*))
+        'MINUSP))
 
 ; Note: The constants declared above are checked for accuracy after bootstrap
 ; by check-built-in-constants in interface-raw.lisp.
-
-; The following axiom can be proved.  John Cowles has proved some of these and
-; we have proved others in our efforts to verify the guards in our code.
-; Eventually we will replace some of these axioms by theorems.  But not now
-; because things are too fluid.
-
-;; Historical Comment from Ruben Gamboa:
-;; This axiom was strengthened to include the reals.  Amusingly,
-;; it was also weakened, since it leaves open the possibility that for
-;; rational x, x*x is irrational.  Luckily, the type-system knows this
-;; isn't the case, so hopefully we have not weakened ACL2.
-
-(defaxiom nonnegative-product
-
-; Note that in (* x x), x might be complex.  So, we do not want to force the
-; hypothesis below.
-
-  (implies (real/rationalp x)
-           (and (real/rationalp (* x x))
-                (<= 0 (* x x))))
-
-; We need the :type-prescription rule class below.  Without it, ACL2 cannot
-; prove (implies (rationalp x) (<= 0 (* x x))); primitive type-set reasoning
-; will not notice that both arguments of * are identical.
-
-  :rule-classes ((:type-prescription
-                  :typed-term (* x x))))
 
 ; (add-schema Induction Schema
 ;             (and (implies (not (integerp x)) (p x))
@@ -4494,6 +4496,188 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (t ; (equal test 'equal)
     `(rassoc-equal ,x ,alist))))
 
+(defun ifix (x)
+  (declare (xargs :guard t))
+  (if (integerp x) x 0))
+
+(defun rfix (x)
+  (declare (xargs :guard t))
+  (if (rationalp x) x 0))
+
+;; Historical Comment from Ruben Gamboa:
+;; I added "realfix" to coerce numbers into reals.  I would have
+;; liked to use "rfix" for it, but "rfix" was taken for the
+;; rationals.  "ifix" as in "irrational-fix" would be a misnomer,
+;; since it's the identity functions for rationals as well as
+;; irrationals.  In desperation, we called it realfix, even though
+;; that makes it more awkward to use than the other "fix" functions.
+
+; Since the next function, realfix, is referred to by other :doc topics, do not
+; make it conditional upon #+:non-standard-analysis.
+
+(defun realfix (x)
+  (declare (xargs :guard t
+                  :mode :logic))
+  (if (real/rationalp x) x 0))
+
+(defun nfix (x)
+  (declare (xargs :guard t))
+  (if (and (integerp x) (>= x 0))
+      x
+    0))
+
+; We make 1+ and 1- macros in order to head off the potentially common error of
+; using these as nonrecursive functions on left-hand sides of rewrite rules.
+
+#+acl2-loop-only
+(defmacro 1+ (x)
+  (list '+ 1 x))
+
+#+acl2-loop-only
+(defmacro 1- (x)
+  (list '- x 1))
+
+(defun natp (x)
+  (declare (xargs :guard t :mode :logic))
+  (and (integerp x)
+       (<= 0 x)))
+
+(defthm natp-compound-recognizer
+  (equal (natp x)
+         (and (integerp x)
+              (<= 0 x)))
+  :rule-classes :compound-recognizer)
+
+(defun nat-alistp (x) ; used in the guards of some system functions
+  (declare (xargs :guard t))
+  (cond ((atom x) (eq x nil))
+        (t (and (consp (car x))
+                (natp (car (car x)))
+                (nat-alistp (cdr x))))))
+
+(defthm nat-alistp-forward-to-eqlable-alistp
+  (implies (nat-alistp x)
+           (eqlable-alistp x))
+  :rule-classes :forward-chaining)
+
+; Ordinal stuff.  It seems more or less impossible to get o<g and o< admitted
+; during boot-strapping unless we cheat by declaring them explicitly :mode
+; :logic so that they will be admitted in the first pass of the build.  But
+; then we also need to declare functions on which they depend to be :mode
+; :logic as well (since :logic mode functions cannot have :program mode
+; functions in their bodies).
+
+(defun bitp (x)
+  (declare (xargs :guard t :mode :logic))
+  (or (eql x 0)
+      (eql x 1)))
+
+(defthm bitp-compound-recognizer
+  (equal (bitp x)
+         (or (equal x 0)
+             (equal x 1)))
+  :rule-classes :compound-recognizer)
+
+(defthm bitp-as-inequality
+  (implies (bitp x) (and (natp x) (< x 2)))
+  :rule-classes :tau-system)
+
+(defun posp (x)
+  (declare (xargs :guard t :mode :logic))
+  (and (integerp x)
+       (< 0 x)))
+
+(defthm posp-compound-recognizer
+  (equal (posp x)
+         (and (integerp x)
+              (< 0 x)))
+  :rule-classes :compound-recognizer)
+
+(defun o-finp (x)
+  (declare (xargs :guard t :mode :logic))
+  (atom x))
+
+(defmacro o-infp (x)
+  `(not (o-finp ,x)))
+
+(defun o-first-expt (x)
+  (declare (xargs :guard (or (o-finp x) (consp (car x))) :mode :logic))
+  (if (o-finp x)
+      0
+    (caar x)))
+
+(defun o-first-coeff (x)
+  (declare (xargs :guard (or (o-finp x) (consp (car x))) :mode :logic))
+  (if (o-finp x)
+      x
+    (cdar x)))
+
+(defun o-rst (x)
+  (declare (xargs :guard (consp x) :mode :logic))
+  (cdr x))
+
+(defun o<g (x)
+
+; This function is used only for guard proofs.
+
+  (declare (xargs :guard t :mode :program))
+  (if (atom x)
+      (rationalp x)
+    (and (consp (car x))
+         (rationalp (o-first-coeff x))
+         (o<g (o-first-expt x))
+         (o<g (o-rst x)))))
+
+(defun o< (x y)
+  (declare (xargs :guard (and (o<g x) (o<g y)) :mode :program))
+  (cond ((o-finp x)
+         (or (o-infp y) (< x y)))
+        ((o-finp y) nil)
+        ((not (equal (o-first-expt x) (o-first-expt y)))
+         (o< (o-first-expt x) (o-first-expt y)))
+        ((not (= (o-first-coeff x) (o-first-coeff y)))
+         (< (o-first-coeff x) (o-first-coeff y)))
+        (t (o< (o-rst x) (o-rst y)))))
+
+(verify-termination-boot-strap :skip-proofs
+                               o<g (declare (xargs :mode :logic)))
+(verify-termination-boot-strap :skip-proofs
+                               o< (declare (xargs :mode :logic)))
+
+(defmacro o> (x y)
+  `(o< ,y ,x))
+
+(defmacro o<= (x y)
+  `(not (o< ,y ,x)))
+
+(defmacro o>= (x y)
+  `(not (o< ,x ,y)))
+
+(defun o-p (x)
+  (declare (xargs :guard t
+                  :verify-guards nil))
+  (if (o-finp x)
+      (natp x)
+    (and (consp (car x))
+         (o-p (o-first-expt x))
+         (not (eql 0 (o-first-expt x)))
+         (posp (o-first-coeff x))
+         (o-p (o-rst x))
+         (o< (o-first-expt (o-rst x))
+             (o-first-expt x)))))
+
+(defthm o-p-implies-o<g
+  (implies (o-p a)
+           (o<g a)))
+
+(verify-guards o-p)
+
+(defun make-ord (fe fco rst)
+  (declare (xargs :guard (and (posp fco)
+                              (o-p fe)
+                              (o-p rst))))
+  (cons (cons fe fco) rst))
+
 (defconst *standard-chars*
   '(#\Newline #\Space
     #\! #\" #\# #\$ #\% #\& #\' #\( #\) #\* #\+ #\, #\- #\. #\/ #\0 #\1
@@ -4530,7 +4714,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (equal l nil))))
 
 (defun character-listp (l)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :mode :logic))
   (cond ((atom l) (equal l nil))
         (t (and (characterp (car l))
                 (character-listp (cdr l))))))
@@ -4629,7 +4814,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
                   (or (stringp x)
                       (symbolp x)
-                      (characterp x))))
+                      (characterp x))
+                  :mode :logic))
   (cond
    ((stringp x) x)
    ((symbolp x) (symbol-name x))
@@ -4930,7 +5116,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (char-downcase y)))
 
 (defun atom-listp (lst)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :mode :logic))
   (cond ((atom lst) (eq lst nil))
         (t (and (atom (car lst))
                 (atom-listp (cdr lst))))))
@@ -4949,7 +5136,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Keep this in sync with bad-atom.
 
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :mode :logic))
   (cond ((atom lst) (eq lst nil))
         (t (and (or (acl2-numberp (car lst))
                     (symbolp (car lst))
@@ -4967,69 +5155,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (<= 0 i)
                 (< i (len x)))
            (characterp (nth i x))))
-
-(defun ifix (x)
-  (declare (xargs :guard t))
-  (if (integerp x) x 0))
-
-(defun rfix (x)
-  (declare (xargs :guard t))
-  (if (rationalp x) x 0))
-
-;; Historical Comment from Ruben Gamboa:
-;; I added "realfix" to coerce numbers into reals.  I would have
-;; liked to use "rfix" for it, but "rfix" was taken for the
-;; rationals.  "ifix" as in "irrational-fix" would be a misnomer,
-;; since it's the identity functions for rationals as well as
-;; irrationals.  In desperation, we called it realfix, even though
-;; that makes it more awkward to use than the other "fix" functions.
-
-; Since the next function, realfix, is referred to by other :doc topics, do not
-; make it conditional upon #+:non-standard-analysis.
-
-(defun realfix (x)
-  (declare (xargs :guard t))
-  (if (real/rationalp x) x 0))
-
-(defun nfix (x)
-  (declare (xargs :guard t))
-  (if (and (integerp x) (>= x 0))
-      x
-    0))
-
-; We make 1+ and 1- macros in order to head off the potentially common error of
-; using these as nonrecursive functions on left-hand sides of rewrite rules.
-
-#+acl2-loop-only
-(defmacro 1+ (x)
-  (list '+ 1 x))
-
-#+acl2-loop-only
-(defmacro 1- (x)
-  (list '- x 1))
-
-(defun natp (x)
-  (declare (xargs :guard t :mode :logic))
-  (and (integerp x)
-       (<= 0 x)))
-
-(defthm natp-compound-recognizer
-  (equal (natp x)
-         (and (integerp x)
-              (<= 0 x)))
-  :rule-classes :compound-recognizer)
-
-(defun nat-alistp (x) ; used in the guards of some system functions
-  (declare (xargs :guard t))
-  (cond ((atom x) (eq x nil))
-        (t (and (consp (car x))
-                (natp (car (car x)))
-                (nat-alistp (cdr x))))))
-
-(defthm nat-alistp-forward-to-eqlable-alistp
-  (implies (nat-alistp x)
-           (eqlable-alistp x))
-  :rule-classes :forward-chaining)
 
 (defun standard-string-p1 (x n)
   (declare (xargs :guard (and (stringp x)
@@ -5117,119 +5242,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((string-equal str (car (car alist)))
          (car alist))
         (t (assoc-string-equal str (cdr alist)))))
-
-; Ordinal stuff.  It seems more or less impossible to get o<g and o< admitted
-; during boot-strapping unless we cheat by declaring them explicitly :mode
-; :logic so that they will be admitted in the first pass of the build.  But
-; then we also need to declare functions on which they depend to be :mode
-; :logic as well (since :logic mode functions cannot have :program mode
-; functions in their bodies).
-
-(defun bitp (x)
-  (declare (xargs :guard t :mode :logic))
-  (or (eql x 0)
-      (eql x 1)))
-
-(defthm bitp-compound-recognizer
-  (equal (bitp x)
-         (or (equal x 0)
-             (equal x 1)))
-  :rule-classes :compound-recognizer)
-
-(defthm bitp-as-inequality
-  (implies (bitp x) (and (natp x) (< x 2)))
-  :rule-classes :tau-system)
-
-(defun posp (x)
-  (declare (xargs :guard t :mode :logic))
-  (and (integerp x)
-       (< 0 x)))
-
-(defthm posp-compound-recognizer
-  (equal (posp x)
-         (and (integerp x)
-              (< 0 x)))
-  :rule-classes :compound-recognizer)
-
-(defun o-finp (x)
-  (declare (xargs :guard t :mode :logic))
-  (atom x))
-
-(defmacro o-infp (x)
-  `(not (o-finp ,x)))
-
-(defun o-first-expt (x)
-  (declare (xargs :guard (or (o-finp x) (consp (car x))) :mode :logic))
-  (if (o-finp x)
-      0
-    (caar x)))
-
-(defun o-first-coeff (x)
-  (declare (xargs :guard (or (o-finp x) (consp (car x))) :mode :logic))
-  (if (o-finp x)
-      x
-    (cdar x)))
-
-(defun o-rst (x)
-  (declare (xargs :guard (consp x) :mode :logic))
-  (cdr x))
-
-(defun o<g (x)
-
-; This function is used only for guard proofs.
-
-  (declare (xargs :guard t :mode :logic))
-  (if (atom x)
-      (rationalp x)
-    (and (consp (car x))
-         (rationalp (o-first-coeff x))
-         (o<g (o-first-expt x))
-         (o<g (o-rst x)))))
-
-(defun o< (x y)
-  (declare (xargs :guard (and (o<g x) (o<g y)) :mode :logic))
-  (cond ((o-finp x)
-         (or (o-infp y) (< x y)))
-        ((o-finp y) nil)
-        ((not (equal (o-first-expt x) (o-first-expt y)))
-         (o< (o-first-expt x) (o-first-expt y)))
-        ((not (= (o-first-coeff x) (o-first-coeff y)))
-         (< (o-first-coeff x) (o-first-coeff y)))
-        (t (o< (o-rst x) (o-rst y)))))
-
-(defmacro o> (x y)
-  `(o< ,y ,x))
-
-(defmacro o<= (x y)
-  `(not (o< ,y ,x)))
-
-(defmacro o>= (x y)
-  `(not (o< ,x ,y)))
-
-(defun o-p (x)
-  (declare (xargs :guard t
-                  :verify-guards nil))
-  (if (o-finp x)
-      (natp x)
-    (and (consp (car x))
-         (o-p (o-first-expt x))
-         (not (eql 0 (o-first-expt x)))
-         (posp (o-first-coeff x))
-         (o-p (o-rst x))
-         (o< (o-first-expt (o-rst x))
-             (o-first-expt x)))))
-
-(defthm o-p-implies-o<g
-  (implies (o-p a)
-           (o<g a)))
-
-(verify-guards o-p)
-
-(defun make-ord (fe fco rst)
-  (declare (xargs :guard (and (posp fco)
-                              (o-p fe)
-                              (o-p rst))))
-  (cons (cons fe fco) rst))
 
 (defun list*-macro (lst)
   (declare (xargs :guard (and (true-listp lst)
@@ -5547,7 +5559,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; books/misc/check-acl2-exports.lisp.
 
 (defun member-symbol-name (str l)
-  (declare (xargs :guard (symbol-listp l)))
+  (declare (xargs :guard (symbol-listp l)
+                  :mode :logic))
   (cond ((endp l) nil)
         ((equal str (symbol-name (car l))) l)
         (t (member-symbol-name str (cdr l)))))
@@ -5603,6 +5616,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defaxiom symbol-listp-pkg-imports
   (symbol-listp (pkg-imports pkg))
   :rule-classes ((:forward-chaining :trigger-terms ((pkg-imports pkg)))))
+
+(encapsulate
+  ()
+  (table acl2-defaults-table :defun-mode :logic)
+  (verify-termination-boot-strap member-eq-exec$guard-check)
+  (verify-termination-boot-strap member-eql-exec$guard-check)
+  (verify-termination-boot-strap member-eq-exec)
+  (verify-termination-boot-strap member-eql-exec)
+  (verify-termination-boot-strap member-equal)
+  (verify-termination-boot-strap no-duplicatesp-eq-exec$guard-check)
+  (verify-termination-boot-strap no-duplicatesp-eql-exec$guard-check)
+  (verify-termination-boot-strap no-duplicatesp-eq-exec)
+  (verify-termination-boot-strap no-duplicatesp-eql-exec)
+  (verify-termination-boot-strap no-duplicatesp-equal)
+  )
 
 (defaxiom no-duplicatesp-eq-pkg-imports
   (no-duplicatesp-eq (pkg-imports pkg))
@@ -6251,30 +6279,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        :exec
        (first-n-ac n l nil)))
 
-(encapsulate
-  ()
-
-  (local
-   (defthm
-     take-guard-lemma-1
-     (equal (first-n-ac i l ac)
-            (revappend ac (take i l)))))
-
-  (verify-guards take))
-
-(defthm true-listp-take
-
-; This rule was not needed until we added verify-termination-boot-strap for
-; first-n-ac and take.
-
-  (true-listp (take n l))
-  :rule-classes :type-prescription)
-
 #+acl2-loop-only
 (defun butlast (lst n)
   (declare (xargs :guard (and (true-listp lst)
                               (integerp n)
-                              (<= 0 n))))
+                              (<= 0 n))
+                  :mode :program))
   (let ((lng (len lst))
         (n (nfix n)))
     (if (<= lng n)
@@ -7348,7 +7358,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Warning: Keep this in sync with check-print-base.
 
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :mode :logic))
   (and (member print-base '(2 8 10 16))
        t))
 
@@ -7373,61 +7384,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (cons (digit-to-char (mod n print-base))
                   ans)))))
 
-; Bishop Brock has contributed the lemma justify-integer-floor-recursion that
-; follows.  Although he has proved this lemma as part of a larger proof effort,
-; we are not yet in a hurry to isolate its proof just now.
-
-(local
- (skip-proofs
-  (defthm justify-integer-floor-recursion
-
-; To use this, be sure to disable acl2-count and floor.  If you leave
-; acl2-count enabled, then prove a version of this appropriate to that setting.
-
-    (implies
-     (and (integerp i)
-          (integerp j)
-          (not (equal i 0))
-          (not (equal i -1))
-          (> j 1))
-     (< (acl2-count (floor i j)) (acl2-count i)))
-    :rule-classes :linear)))
-
-(verify-termination-boot-strap
- explode-nonnegative-integer
- (declare (xargs :mode :logic
-                 :verify-guards nil
-                 :hints (("Goal" :in-theory (disable acl2-count floor))))))
-
-(defthm true-listp-explode-nonnegative-integer
-
-; This was made non-local in order to support the verify-termination-boot-strap
-; for chars-for-tilde-@-clause-id-phrase/periods in file
-; boot-strap-pass-2-a.lisp.
-
-  (implies (true-listp ans)
-           (true-listp (explode-nonnegative-integer n print-base ans)))
-  :rule-classes :type-prescription)
-
-(local
- (skip-proofs
-  (defthm mod-n-linear
-    (implies (and (not (< n 0))
-                  (integerp n)
-                  (print-base-p print-base))
-             (and (not (< (mod n print-base) 0))
-                  (not (< (1- print-base) (mod n print-base)))))
-    :rule-classes :linear)))
-
-(local
- (defthm integerp-mod
-   (implies (and (integerp n) (< 0 n) (print-base-p print-base))
-            (integerp (mod n print-base)))
-   :rule-classes :type-prescription))
-
-(verify-guards explode-nonnegative-integer
-               :hints (("Goal" :in-theory (disable mod))))
-
 (defun make-var-lst1 (root sym n acc)
   (declare (xargs :guard (and (symbolp sym)
                               (character-listp root)
@@ -7445,20 +7401,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                             sym)
                            acc)))))
 
-(encapsulate
- ()
-
- (local
-  (defthm character-listp-explode-nonnegative-integer
-    (implies (character-listp ans)
-             (character-listp (explode-nonnegative-integer n 10 ans)))))
-
- (verify-termination-boot-strap make-var-lst1))
-
 (defun make-var-lst (sym n)
   (declare (xargs :guard (and (symbolp sym)
                               (integerp n)
-                              (<= 0 n))))
+                              (<= 0 n))
+                  :mode :program))
   (make-var-lst1 (coerce (symbol-name sym) 'list) sym n nil))
 
 #+acl2-loop-only
@@ -7527,7 +7474,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (xargs :guard (and (true-listp x)
                               (true-listp tests)
-                              (symbolp name))))
+                              (symbolp name))
+                  :mode :program))
   (let* ((len (length x))
          (len-2 (- len 2))
          (kwd/val
@@ -8021,7 +7969,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (and (true-listp form)
                               (true-listp (caddr form))
                               (member-eq (car form) '(defun-nx defund-nx)))
-                  :verify-guards nil))
+                  :mode :program))
   (let ((defunx (if (eq (car form) 'defun-nx) 'defun 'defund))
         (name (cadr form))
         (formals (caddr form))
@@ -8036,7 +7984,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (and (true-listp form)
                               (true-listp (caddr form))
                               (member-eq (car form) '(defun-nx defund-nx)))
-                  :verify-guards nil))
+                  :mode :program))
   `(with-output :stack :push :off :all
        (progn (encapsulate
                 ()
@@ -8064,7 +8012,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun update-mutual-recursion-for-defun-nx-1 (defs)
   (declare (xargs :guard (mutual-recursion-guardp defs)
-                  :verify-guards nil))
+                  :mode :program))
   (cond ((endp defs)
          nil)
         ((eq (caar defs) 'defun-nx)
@@ -8079,7 +8027,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun update-mutual-recursion-for-defun-nx (defs)
   (declare (xargs :guard (mutual-recursion-guardp defs)
-                  :verify-guards nil))
+                  :mode :program))
   (cond ((or (assoc-eq 'defun-nx defs)
              (assoc-eq 'defund-nx defs))
          (update-mutual-recursion-for-defun-nx-1 defs))
@@ -8117,11 +8065,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; t if the declarations in def are minimally well-formed and there is an xargs
 ; declaration of :mode :program.
 
-  (declare (xargs :guard (true-listp def)))
+  (declare (xargs :guard (true-listp def)
+                  :mode :program))
   (program-declared-p1 (butlast (cddr def) 1)))
 
 (defun some-program-declared-p (defs)
-  (declare (xargs :guard (true-list-listp defs)))
+  (declare (xargs :guard (true-list-listp defs)
+                  :mode :program))
   (cond ((endp defs) nil)
         (t (or (program-declared-p (car defs))
                (some-program-declared-p (cdr defs))))))
@@ -8210,63 +8160,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (t
         form)))))
 
-; Now we define the weak notion of term that guards metafunctions.
-
-(mutual-recursion
-
-(defun pseudo-termp (x)
-  (declare (xargs :guard t :mode :logic))
-  (cond ((atom x) (symbolp x))
-        ((eq (car x) 'quote)
-         (and (consp (cdr x))
-              (null (cdr (cdr x)))))
-        ((not (true-listp x)) nil)
-        ((not (pseudo-term-listp (cdr x))) nil)
-        (t (or (symbolp (car x))
-
-; For most function applications we do not check that the number of
-; arguments matches the number of formals.  However, for lambda
-; applications we do make that check.  The reason is that the
-; constraint on an evaluator dealing with lambda applications must use
-; pairlis$ to pair the formals with the actuals and pairlis$ insists on
-; the checks below.
-
-               (and (true-listp (car x))
-                    (equal (length (car x)) 3)
-                    (eq (car (car x)) 'lambda)
-                    (symbol-listp (cadr (car x)))
-                    (pseudo-termp (caddr (car x)))
-                    (equal (length (cadr (car x)))
-                           (length (cdr x))))))))
-
-(defun pseudo-term-listp (lst)
-  (declare (xargs :guard t))
-  (cond ((atom lst) (equal lst nil))
-        (t (and (pseudo-termp (car lst))
-                (pseudo-term-listp (cdr lst))))))
-
-)
-
-(defthm pseudo-term-listp-forward-to-true-listp
-  (implies (pseudo-term-listp x)
-           (true-listp x))
-  :rule-classes :forward-chaining)
-
-; For the encapsulate of too-many-ifs-post-rewrite
-(encapsulate
- ()
- (table acl2-defaults-table :defun-mode :logic)
- (verify-guards pseudo-termp))
-
-(defun pseudo-term-list-listp (l)
-  (declare (xargs :guard t))
-  (if (atom l)
-      (equal l nil)
-    (and (pseudo-term-listp (car l))
-         (pseudo-term-list-listp (cdr l)))))
-
-(verify-guards pseudo-term-list-listp)
-
 (defmacro variablep (x) (list 'atom x))
 
 (defmacro nvariablep (x) (list 'consp x))
@@ -8323,6 +8216,94 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (cons (kwote (car lst)) (kwote-lst (cdr lst))))))
 
 (defmacro unquote (x) (list 'cadr x))
+
+; We originally added the following three defthm forms at the request of Jared
+; Davis, who noted that many book that seem to depend on community book
+; books/arithmetic/top.lisp can get by with just these three theorems.  We
+; might consider adding analogues for multiplication as well, but that could
+; break a lot of books.  Since we already build in linear arithmetic but not
+; (by default) non-linear arithmetic, we think it not unreasonable to include
+; these rules only for addition and not multiplication.
+; When we strengthened "make proofs" so that proof were no longer restricted to
+; pass 2 of the boot-strap, we found that these lemmas might be necessary
+; anyhow.
+
+(encapsulate
+ ()
+; Prove in pass 1 of initialize-acl2:
+(table acl2-defaults-table :defun-mode :logic)
+
+(defthm commutativity-2-of-+
+  (equal (+ x (+ y z))
+         (+ y (+ x z))))
+
+(defthm fold-consts-in-+
+  (implies (and (syntaxp (quotep x))
+                (syntaxp (quotep y)))
+           (equal (+ x (+ y z))
+                  (+ (+ x y) z))))
+
+(defthm distributivity-of-minus-over-+
+  (equal (- (+ x y))
+         (+ (- x) (- y))))
+)
+
+; Now we define the weak notion of term that guards metafunctions.
+
+(mutual-recursion
+
+(defun pseudo-termp (x)
+  (declare (xargs :guard t :mode :logic))
+  (cond ((atom x) (symbolp x))
+        ((eq (car x) 'quote)
+         (and (consp (cdr x))
+              (null (cdr (cdr x)))))
+        ((not (true-listp x)) nil)
+        ((not (pseudo-term-listp (cdr x))) nil)
+        (t (or (symbolp (car x))
+
+; For most function applications we do not check that the number of
+; arguments matches the number of formals.  However, for lambda
+; applications we do make that check.  The reason is that the
+; constraint on an evaluator dealing with lambda applications must use
+; pairlis$ to pair the formals with the actuals and pairlis$ insists on
+; the checks below.
+
+               (and (true-listp (car x))
+                    (equal (length (car x)) 3)
+                    (eq (car (car x)) 'lambda)
+                    (symbol-listp (cadr (car x)))
+                    (pseudo-termp (caddr (car x)))
+                    (equal (length (cadr (car x)))
+                           (length (cdr x))))))))
+
+(defun pseudo-term-listp (lst)
+  (declare (xargs :guard t))
+  (cond ((atom lst) (equal lst nil))
+        (t (and (pseudo-termp (car lst))
+                (pseudo-term-listp (cdr lst))))))
+
+)
+
+(defthm pseudo-term-listp-forward-to-true-listp
+  (implies (pseudo-term-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining)
+
+; For the encapsulate of too-many-ifs-post-rewrite
+(encapsulate
+ ()
+ (table acl2-defaults-table :defun-mode :logic)
+ (verify-guards pseudo-termp))
+
+(defun pseudo-term-list-listp (l)
+  (declare (xargs :guard t))
+  (if (atom l)
+      (equal l nil)
+    (and (pseudo-term-listp (car l))
+         (pseudo-term-list-listp (cdr l)))))
+
+(verify-guards pseudo-term-list-listp)
 
 ; Lambda Object Accessor Functions
 
@@ -8996,38 +8977,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (t ; (equal test 'equal)
     `(position-equal ,x ,seq))))
 
-(encapsulate
-  ()
-  (local (defthm hack
-           (implies (integerp i)
-                    (equal (+ -1 1 i)
-                           i))))
-  (local
-   (defthm standard-string-p1-forward-to-standard-char-p
-     (implies (and (standard-string-p1 s n) ; n is free
-                   (stringp s)
-                   (integerp n)
-                   (natp i)
-                   (< i n))
-              (standard-char-p (nth i (coerce s 'list))))))
-
-  (verify-termination-boot-strap string-equal1))
-
-; The following was probably formerly needed for the event just above,
-; (verify-termination-boot-strap string-equal1).  It's no longer necessary for
-; that but it's a nice rule nonetheless.
-(defthm standard-char-p-nth
-  (implies (and (standard-char-listp chars)
-                (<= 0 i)
-                (< i (len chars)))
-           (standard-char-p (nth i chars)))
-  :hints (("Goal" :in-theory (enable standard-char-listp))))
-
-(verify-termination-boot-strap string-equal)
-(verify-termination-boot-strap assoc-string-equal)
-(verify-termination-boot-strap member-string-equal)
-(verify-termination-boot-strap xxxjoin)
-
 #+acl2-loop-only
 (progn
 
@@ -9183,7 +9132,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (length str1)
     (string> str1 str2)))
 
-(defun symbol-< (x y)
+(defun symbol< (x y)
   (declare (xargs :guard (and (symbolp x) (symbolp y))))
   (let ((x1 (symbol-name x))
         (y1 (symbol-name y)))
@@ -11120,7 +11069,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun ordered-symbol-alistp (x)
 
 ; An ordered-symbol-alist is an alist whose keys are symbols which are
-; in the symbol-< order.
+; in the symbol< order.
 
   (declare (xargs :guard t))
   (cond ((atom x) (null x))
@@ -11129,11 +11078,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (or (atom (cdr x))
                     (and (consp (cadr x))
                          (symbolp (caadr x))
-                         (symbol-< (caar x)
+                         (symbol< (caar x)
                                    (caadr x))))
                 (ordered-symbol-alistp (cdr x))))))
 
-(in-theory (disable symbol-<))
+(in-theory (disable symbol<))
 
 (defthm ordered-symbol-alistp-forward-to-symbol-alistp
   (implies (ordered-symbol-alistp x)
@@ -11147,7 +11096,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (list (cons key value)))
         ((eq key (caar l))
          (cons (cons key value) (cdr l)))
-        ((symbol-< key (caar l))
+        ((symbol< key (caar l))
          (cons (cons key value) l))
         (t (cons (car l)
                  (add-pair key value (cdr l))))))
@@ -11286,7 +11235,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (meter-maid 'getprops 100 symb)
          (sort (getprops1 (get symb (cdr (get world-name 'acl2-world-pair))))
                #'(lambda (x y)
-                   (symbol-< (car x) (car y)))))
+                   (symbol< (car x) (car y)))))
         ((endp world-alist)
          #+acl2-metering
          (meter-maid 'getprops 100 symb)
@@ -11303,7 +11252,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (getprops symb world-name (cdr world-alist)))))
 
 (verify-termination-boot-strap getprops (declare (xargs :mode :logic
-                                             :verify-guards nil)))
+                                                        :verify-guards nil)))
 
 ; We don't verify the guards for getprops until we have LOCAL, which really
 ; means, until LOCAL has STATE-GLOBAL-LET*.
@@ -12589,7 +12538,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                acl2::*1*-package-prefix*
                                name))
         (proposed-imports ; avoid sort-symbol-listp for toothbrush
-         (remove-adjacent-duplicates-eq (sort (copy-list imports) 'symbol-<))))
+         (remove-adjacent-duplicates-eq (sort (copy-list imports) 'symbol<))))
     (assert pkg) ; see defpkg-raw
 
 ; We bind proposed-imports to the value of the imports argument.  We do not
@@ -13365,6 +13314,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                          (maximum-length name l))
                       (compress1 name l))
                      (t l)))))))
+
+(defun aset1-trusted (name l n val)
+
+; This is an untouchable version of aset1 that doesn't have invariant-risk (see
+; *boot-strap-invariant-risk-alist*).  It is untouchable for a good reason --
+; invariant risk may be missed for functions that call aset1-trusted.  See :DOC
+; aset1-trusted.
+
+  (declare (xargs :guard (and (array1p name l)
+                              (integerp n)
+                              (>= n 0)
+                              (< n (car (dimensions name l))))))
+  (aset1 name l n val))
 
 (defun aref2 (name l i j)
   #+acl2-loop-only
@@ -14321,7 +14283,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     aset-t-stack aref-t-stack read-char$ aref-32-bit-integer-stack
     open-output-channel open-output-channel-p1 princ$ read-object
     big-clock-negative-p peek-char$ shrink-32-bit-integer-stack read-run-time
-    read-byte$ read-idate t-stack-length1 print-object$-ser
+    read-byte$ read-idate t-stack-length1 print-object$-fn
     get-output-stream-string$-fn
 
     mv-list return-last
@@ -15640,7 +15602,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                      (package-entry-name
                                                       package-entry))
                                              ans)))))
-            (sort ans (function symbol-<))))))
+            (sort ans (function symbol<))))))
   (strip-cars (global-table state-state)))
 
 (defun global-table-cars (state-state)
@@ -16116,6 +16078,135 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          ,cleanup
          ,cleanup)))))
 
+; With state-global-let* defined, we are now able to use LOCAL.
+
+(encapsulate
+  ()
+  (local (defthm hack
+           (implies (integerp i)
+                    (equal (+ -1 1 i)
+                           i))))
+  (local
+   (defthm standard-string-p1-forward-to-standard-char-p
+     (implies (and (standard-string-p1 s n) ; n is free
+                   (stringp s)
+                   (integerp n)
+                   (natp i)
+                   (< i n))
+              (standard-char-p (nth i (coerce s 'list))))))
+
+  (verify-termination-boot-strap string-equal1))
+
+; The following was probably formerly needed for the event just above,
+; (verify-termination-boot-strap string-equal1).  It's no longer necessary for
+; that but it's a nice rule nonetheless.
+(defthm standard-char-p-nth
+  (implies (and (standard-char-listp chars)
+                (<= 0 i)
+                (< i (len chars)))
+           (standard-char-p (nth i chars)))
+  :hints (("Goal" :in-theory (enable standard-char-listp))))
+
+(verify-termination-boot-strap string-equal)
+(verify-termination-boot-strap assoc-string-equal)
+(verify-termination-boot-strap member-string-equal)
+(verify-termination-boot-strap xxxjoin)
+
+; Bishop Brock has contributed the lemma justify-integer-floor-recursion that
+; follows.  Although he has proved this lemma as part of a larger proof effort,
+; we are not yet in a hurry to isolate its proof just now.
+
+(local
+ (skip-proofs
+  (defthm justify-integer-floor-recursion
+
+; To use this, be sure to disable acl2-count and floor.  If you leave
+; acl2-count enabled, then prove a version of this appropriate to that setting.
+
+    (implies
+     (and (integerp i)
+          (integerp j)
+          (not (equal i 0))
+          (not (equal i -1))
+          (> j 1))
+     (< (acl2-count (floor i j)) (acl2-count i)))
+    :rule-classes :linear)))
+
+(verify-termination-boot-strap
+ explode-nonnegative-integer
+ (declare (xargs :mode :logic
+                 :verify-guards nil
+                 :hints (("Goal" :in-theory (disable acl2-count floor))))))
+
+(defthm true-listp-explode-nonnegative-integer
+
+; This was made non-local in order to support the verify-termination-boot-strap
+; for chars-for-tilde-@-clause-id-phrase/periods in file
+; boot-strap-pass-2-a.lisp.
+
+  (implies (true-listp ans)
+           (true-listp (explode-nonnegative-integer n print-base ans)))
+  :rule-classes :type-prescription)
+
+(local
+ (skip-proofs
+  (defthm mod-n-linear
+    (implies (and (not (< n 0))
+                  (integerp n)
+                  (print-base-p print-base))
+             (and (not (< (mod n print-base) 0))
+                  (not (< (1- print-base) (mod n print-base)))))
+    :rule-classes :linear)))
+
+(local
+ (defthm integerp-mod
+   (implies (and (integerp n) (< 0 n) (print-base-p print-base))
+            (integerp (mod n print-base)))
+   :rule-classes :type-prescription))
+
+(verify-guards explode-nonnegative-integer
+               :hints (("Goal" :in-theory (disable mod))))
+
+(encapsulate
+ ()
+
+ (local
+  (defthm character-listp-explode-nonnegative-integer
+    (implies (character-listp ans)
+             (character-listp (explode-nonnegative-integer n 10 ans)))))
+
+ (verify-termination-boot-strap make-var-lst1))
+
+(verify-termination-boot-strap make-var-lst)
+
+(defthm true-listp-take
+
+; This rule was not needed until we added verify-termination-boot-strap for
+; first-n-ac and take.
+
+  (true-listp (take n l))
+  :rule-classes :type-prescription)
+
+(encapsulate
+  ()
+
+  (local
+   (defthm
+     take-guard-lemma-1
+     (equal (first-n-ac i l ac)
+            (revappend ac (take i l)))))
+
+  (verify-guards take))
+
+(verify-termination-boot-strap butlast)
+(verify-termination-boot-strap defun-nx-form)
+(verify-termination-boot-strap defun-nx-fn)
+(verify-termination-boot-strap update-mutual-recursion-for-defun-nx-1)
+(verify-termination-boot-strap update-mutual-recursion-for-defun-nx)
+(verify-termination-boot-strap program-declared-p)
+(verify-termination-boot-strap some-program-declared-p)
+(verify-termination-boot-strap parse-args-and-test)
+
 #-acl2-loop-only
 (progn
 
@@ -16464,14 +16555,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (not (string<-l x2 x1 i)))
    :hints (("Goal" :in-theory (disable member))))
 
- (defthm symbol-<-asymmetric
+ (defthm symbol<-asymmetric
    (implies (and (symbolp sym1)
                  (symbolp sym2)
-                 (symbol-< sym1 sym2))
-            (not (symbol-< sym2 sym1)))
+                 (symbol< sym1 sym2))
+            (not (symbol< sym2 sym1)))
    :hints (("Goal" :in-theory
             (set-difference-theories
-             (enable string< symbol-<)
+             (enable string< symbol<)
              '(string<-l)))))
 
  (defthm string<-l-transitive
@@ -16490,15 +16581,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
  (in-theory (disable string<-l))
 
- (defthm symbol-<-transitive
-   (implies (and (symbol-< x y)
-                 (symbol-< y z)
+ (defthm symbol<-transitive
+   (implies (and (symbol< x y)
+                 (symbol< y z)
                  (symbolp x)
                  (symbolp y)
                  (symbolp z))
-            (symbol-< x z))
+            (symbol< x z))
    :rule-classes ((:rewrite :match-free :all))
-   :hints (("Goal" :in-theory (enable symbol-< string<))))
+   :hints (("Goal" :in-theory (enable symbol< string<))))
 
  (local
   (defthm equal-char-code-rewrite
@@ -16546,25 +16637,25 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (equal (equal s1 s2) t))
     :hints (("Goal" :use symbol-equality))))
 
- (defthm symbol-<-trichotomy
+ (defthm symbol<-trichotomy
    (implies (and (symbolp x)
                  (symbolp y)
-                 (not (symbol-< x y)))
-            (iff (symbol-< y x)
+                 (not (symbol< x y)))
+            (iff (symbol< y x)
                  (not (equal x y))))
-   :hints (("Goal" :in-theory (enable symbol-< string<))))
+   :hints (("Goal" :in-theory (enable symbol< string<))))
 
  (defthm ordered-symbol-alistp-remove1-assoc-eq
    (implies (ordered-symbol-alistp l)
             (ordered-symbol-alistp (remove1-assoc-eq key l))))
 
- (defthm symbol-<-irreflexive
+ (defthm symbol<-irreflexive
    (implies (symbolp x)
-            (not (symbol-< x x)))
+            (not (symbol< x x)))
    :hints (("Goal" :use
-            ((:instance symbol-<-asymmetric
+            ((:instance symbol<-asymmetric
                         (sym1 x) (sym2 x)))
-            :in-theory (disable symbol-<-asymmetric))))
+            :in-theory (disable symbol<-asymmetric))))
 
  (defthm ordered-symbol-alistp-add-pair
    (implies (and (ordered-symbol-alistp gs)
@@ -16576,7 +16667,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (symbolp world-name)
                  (symbolp key))
             (ordered-symbol-alistp (getprops key world-name w)))
-   :hints (("Goal" :in-theory (enable symbol-<))))
+   :hints (("Goal" :in-theory (enable symbol<))))
 
  (local (defthm ordered-symbol-alistp-implies-symbol-alistp
           (implies (ordered-symbol-alistp x)
@@ -16790,6 +16881,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (set-forms-from-bindings (cdr bindings))))))
 
 (defconst *print-control-defaults*
+
+; Warning: Keep this in sync with print-control-alistp.
+
   `((print-base ',(cdr (assoc-eq 'print-base *initial-global-table*))
                 set-print-base)
     (print-case ',(cdr (assoc-eq 'print-case *initial-global-table*))
@@ -17203,12 +17297,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                (t ""))))
                    (t nil))))))
 
-(defun strict-symbol-<-sortedp (x)
+(defun strict-symbol<-sortedp (x)
   (declare (xargs :guard (symbol-listp x)))
   (cond ((or (endp x) (null (cdr x)))
          t)
-        (t (and (symbol-< (car x) (cadr x))
-                (strict-symbol-<-sortedp (cdr x))))))
+        (t (and (symbol< (car x) (cadr x))
+                (strict-symbol<-sortedp (cdr x))))))
 
 (defmacro chk-ruler-extenders (x type ctx wrld)
 
@@ -17227,7 +17321,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (cond (msg ,(cond ((eq type 'soft) `(er soft ctx err-str msg))
                            (t `(illegal ctx err-str (list (cons #\0 msg))))))
                ,@(and (eq type 'hard)
-                      `(((not (strict-symbol-<-sortedp x))
+                      `(((not (strict-symbol<-sortedp x))
                          (illegal ctx err-str
                                   (list (cons #\0 "it is not sorted"))))))
                (t ,(cond ((eq type 'soft) '(value t))
@@ -17457,22 +17551,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro acl2-print-case (&optional (st 'state))
   `(print-case ,st))
 
+(defun check-print-case (print-case ctx)
+  (declare (xargs :guard t :mode :logic))
+  (if (or (eq print-case :upcase)
+          (eq print-case :downcase))
+      nil
+    (hard-error ctx
+                "The value ~x0 is illegal as an ACL2 print-case, which must ~
+                 be :UPCASE or :DOWNCASE."
+                (list (cons #\0 print-case)))))
+
 (defun set-print-case (case state)
   (declare (xargs :guard (and (or (eq case :upcase) (eq case :downcase))
                               (state-p state))))
-  (prog2$ (or (eq case :upcase)
-              (eq case :downcase)
-              (illegal 'set-print-case
-                       "The value ~x0 is illegal as an ACL2 print-case, which ~
-                        must be :UPCASE or :DOWNCASE."
-                       (list (cons #\0 case))))
+  (prog2$ (check-print-case case 'set-print-case)
           (f-put-global 'print-case case state)))
-
-(defmacro set-acl2-print-case (case)
-  (declare (ignore case))
-  '(er soft 'set-acl2-print-case
-       "Macro ~x0 has been replaced by function ~x1."
-       'set-acl2-print-case 'set-print-case))
 
 (defmacro print-base (&optional (st 'state))
   `(f-get-global 'print-base ,st))
@@ -17491,7 +17584,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Warning: Keep this in sync with print-base-p, and keep the format warning
 ; below in sync with princ$.
 
-  (declare (xargs :guard t))
+  (declare (xargs :guard t :mode :logic))
   (if (print-base-p print-base)
       nil
     (hard-error ctx
@@ -17541,12 +17634,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (prog2$ (check-print-base base 'set-print-base)
           (f-put-global 'print-base base state)))
 
-(defmacro set-acl2-print-base (base)
-  (declare (ignore base))
-  '(er soft 'set-acl2-print-base
-       "Macro ~x0 has been replaced by function ~x1."
-       'set-acl2-print-base 'set-print-base))
-
 (defun set-print-circle (x state)
   (declare (xargs :guard (state-p state)))
   (f-put-global 'print-circle x state))
@@ -17567,39 +17654,39 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (state-p state)))
   (f-put-global 'print-readably x state))
 
-(defun check-null-or-natp (n fn)
-  (declare (xargs :guard t))
+(defun check-null-or-natp (n var)
+  (declare (xargs :guard t :mode :logic))
   (or (null n)
       (natp n)
-      (hard-error fn
-                  "The argument of ~x0 must be ~x1 or a positive integer, but ~
+      (hard-error 'check-null-or-natp
+                  "The value of ~x0 must be ~x1 or a positive integer, but ~
                    ~x2 is neither."
-                  (list (cons #\0 fn)
+                  (list (cons #\0 var)
                         (cons #\1 nil)
                         (cons #\2 n)))))
 
 (defun set-print-length (n state)
   (declare (xargs :guard (and (or (null n) (natp n))
                               (state-p state))))
-  (prog2$ (check-null-or-natp n 'set-print-length)
+  (prog2$ (check-null-or-natp n 'print-length)
           (f-put-global 'print-length n state)))
 
 (defun set-print-level (n state)
   (declare (xargs :guard (and (or (null n) (natp n))
                               (state-p state))))
-  (prog2$ (check-null-or-natp n 'set-print-level)
+  (prog2$ (check-null-or-natp n 'print-level)
           (f-put-global 'print-level n state)))
 
 (defun set-print-lines (n state)
   (declare (xargs :guard (and (or (null n) (natp n))
                               (state-p state))))
-  (prog2$ (check-null-or-natp n 'set-print-lines)
+  (prog2$ (check-null-or-natp n 'print-lines)
           (f-put-global 'print-lines n state)))
 
 (defun set-print-right-margin (n state)
   (declare (xargs :guard (and (or (null n) (natp n))
                               (state-p state))))
-  (prog2$ (check-null-or-natp n 'set-print-right-margin)
+  (prog2$ (check-null-or-natp n 'print-right-margin)
           (f-put-global 'print-right-margin n state)))
 
 #-acl2-loop-only
@@ -17616,67 +17703,95 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote *open-output-channel-key*)
         (list 'quote *non-existent-stream*)))
 
+(defun raw-print-vars-alist (print-control-defaults-tail)
+
+; At the top level, print-control-defaults-tail is *print-control-defaults*.
+
+  (declare (xargs :guard (symbol-alistp print-control-defaults-tail)))
+  (cond
+   ((endp print-control-defaults-tail) nil)
+   (t
+    (cons (let ((sym (caar print-control-defaults-tail)))
+            (cons (intern (concatenate 'string "*" (symbol-name sym) "*")
+                          "ACL2")
+                  sym))
+          (raw-print-vars-alist (cdr print-control-defaults-tail))))))
+
+(defconst *raw-print-vars-alist*
+
+; We use this value in the definition of with-print-controls.  To avoid some
+; code duplication, we compute it from *print-control-defaults*.
+
+; Note that *print-lines* is only defined when #+cltl2.  But we always set
+; feature :cltl2 now, so that's OK.
+
+; At one time we did something with *print-pprint-dispatch* for #+cltl2.  But
+; as of May 2013, ANSI GCL does not comprehend this variable.  So we skip
+; including (*print-pprint-dispatch* nil . nil).  In fact we skip it for all
+; host Lisps, assuming that users who mess with *print-pprint-dispatch* in raw
+; Lisp take responsibility for knowing what they're doing!
+
+  (raw-print-vars-alist *print-control-defaults*))
+
+#-acl2-loop-only
+(defun with-print-controls-defaults (bindings body)
+  `(let ,(loop for pair in *raw-print-vars-alist*
+               when (not (assoc-eq (car pair) bindings))
+               collect
+               (let ((lisp-var (car pair))
+                     (acl2-var (cdr pair)))
+                 (list lisp-var
+                       (cadr (assoc-eq acl2-var
+                                       *print-control-defaults*)))))
+     ,@body))
+
+#-acl2-loop-only
+(defun with-print-controls-alist (alist bindings body)
+
+; Alist takes priority over bindings.
+
+  (let ((var (gensym)))
+    `(let ((,var ,alist)
+           ,@(loop for pair in *raw-print-vars-alist*
+                   when (not (assoc-eq (car pair) bindings))
+                   collect
+                   (let ((lisp-var (car pair))
+                         (acl2-var (cdr pair)))
+                     (list lisp-var
+                           `(f-get-global ',acl2-var *the-live-state*)))))
+       (progv (strip-cars ,var)
+              (strip-cdrs ,var)
+              ,@body))))
+
 #-acl2-loop-only
 (defmacro with-print-controls (default bindings &rest body)
 
+; Default is either the symbol, :DEFAULTS, or else an expression whose value is
+; a pair whose car is a duplicate-free list of keys contained in the keys of
+; *print-control-defaults* and whose cdr is a corresponding list of legal
+; values for those keys.
+
 ; Warning; If you bind *print-base* to value pb (in bindings), then you should
-; strongly consider binding *print-radix* to t if pb exceeds 10 and to nil
+; strongly consider binding *print-radix* to nil if pb is 10 and to t
 ; otherwise.
 
-  (when (not (member-eq default '(:defaults :current)))
-    (error "The first argument of with-print-controls must be :DEFAULTS ~
-            or :CURRENT."))
-  (let ((raw-print-vars-alist
-         '((*print-base* print-base . (f-get-global 'print-base state))
-           (*print-case* print-case . (f-get-global 'print-case state))
-           (*print-circle* print-circle . (f-get-global 'print-circle state))
-           (*print-escape* print-escape . (f-get-global 'print-escape state))
-           (*print-length* print-length . (f-get-global 'print-length state))
-           (*print-level* print-level . (f-get-global 'print-level state))
-           #+cltl2
-           (*print-lines* print-lines . (f-get-global 'print-lines state))
-           #+cltl2
-           (*print-miser-width* nil . nil)
-           (*print-pretty* print-pretty . (f-get-global 'print-pretty state))
-           (*print-radix* print-radix . (f-get-global 'print-radix state))
-           (*print-readably* print-readably . (f-get-global 'print-readably
-                                                            state))
-
-; At one time we did something with *print-pprint-dispatch* for #+cltl2.  But
-; as of May 2013, ANSI GCL does not comprehend this variable.  So we skip it
-; here.  In fact we skip it for all host Lisps, assuming that users who mess
-; with *print-pprint-dispatch* in raw Lisp take responsibility for knowing what
-; they're doing!
-
-;          #+cltl2
-;          (*print-pprint-dispatch* nil . nil)
-           #+cltl2
-           (*print-right-margin*
-            print-right-margin . (f-get-global 'print-right-margin state)))))
-    (when (not (and (alistp bindings)
-                    (let ((vars (strip-cars bindings)))
-                      (and (subsetp-eq vars (strip-cars raw-print-vars-alist))
-                           (no-duplicatesp vars)))))
-      (error "With-print-controls has illegal bindings:~%  ~s"
-             bindings))
-    `(let ((state *the-live-state*))
-       (let ((*read-base* 10) ; just to be safe
-             (*readtable* *acl2-readtable*)
-             #+cltl2 (*read-eval* nil) ; to print without using #.
-             (*package* (find-package-fast (current-package state)))
-             ,@bindings)
-         (let ,(loop for triple in raw-print-vars-alist
-                     when (not (assoc-eq (car triple) bindings))
-                     collect
-                     (let ((lisp-var (car triple))
-                           (acl2-var (cadr triple)))
-                       (list lisp-var
-                             (cond ((and acl2-var
-                                         (eq default :defaults))
-                                    (cadr (assoc-eq acl2-var
-                                                    *print-control-defaults*)))
-                                   (t (cddr triple))))))
-              ,@body)))))
+  (when (not (and (alistp bindings)
+                  (let ((vars (strip-cars bindings)))
+                    (and (subsetp-eq vars (strip-cars *raw-print-vars-alist*))
+                         (no-duplicatesp vars)))))
+    (error "With-print-controls has illegal bindings:~%  ~s"
+           bindings))
+  `(let ((state *the-live-state*))
+     (let ((*read-base* 10) ; just to be safe
+           (*readtable* *acl2-readtable*)
+           (*package* (find-package-fast (current-package state)))
+           #+cltl2 (*print-miser-width* nil)
+           #+cltl2 (*read-eval* nil) ; to print without using #.
+           ,@bindings)
+       ,(cond ((equal default :DEFAULTS)
+               (with-print-controls-defaults bindings body))
+              (t
+               (with-print-controls-alist default bindings body))))))
 
 #-acl2-loop-only
 (defun print-number-base-16-upcase-digits (x stream)
@@ -17925,66 +18040,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                        (member c '(#\Y #\Z)))))))
   (set-serialize-character-fn c t state))
 
-(defun print-object$-ser (x serialize-character channel state-state)
-
-; Wart: We use state-state instead of state because of a bootstrap problem.
-
-; This function is a version of print-object$ that allows specification of the
-; serialize-character, which can be nil (the normal case for #-hons), #\Y, or
-; #\Z (the normal case for #+hons).  However, we currently treat this as nil in
-; the #-hons version.
-
-; See print-object$ for additional comments.
-
-  (declare (ignorable serialize-character) ; only used when #+hons
-           (xargs :guard (and (state-p1 state-state)
-                              (member serialize-character '(nil #\Y #\Z))
-                              (symbolp channel)
-                              (open-output-channel-p1 channel
-                                                      :object state-state))))
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-         (cond (*wormholep*
-
-; There is no standard object output channel and hence this channel is
-; directed to some unknown user-specified sink and we can't touch it.
-
-                (wormhole-er 'print-object$ (list x channel))))
-         (let ((stream (get-output-stream-from-channel channel)))
-           (declare (special acl2_global_acl2::current-package))
-
-; Note: If you change the following bindings, consider changing the
-; corresponding bindings in print-object$.
-
-           (with-print-controls
-            :current
-            ((*print-circle* (and *print-circle-stream*
-                                  (f-get-global 'print-circle state-state))))
-            (terpri stream)
-            (or #+hons
-                (cond (serialize-character
-                       (write-char #\# stream)
-                       (write-char serialize-character stream)
-                       (ser-encode-to-stream x stream)
-                       t))
-                (prin1 x stream))
-            (force-output stream)))
-         (return-from print-object$-ser *the-live-state*)))
-  (let ((entry (cdr (assoc-eq channel (open-output-channels state-state)))))
-    (update-open-output-channels
-     (add-pair channel
-               (cons (car entry)
-                     (cons x
-                           (cdr entry)))
-               (open-output-channels state-state))
-     state-state)))
-
+; The following may have been created in support of print-object$.
 (defthm all-boundp-preserves-assoc-equal
   (implies (and (all-boundp tbl1 tbl2)
                 (assoc-equal x tbl1))
            (assoc-equal x tbl2))
   :rule-classes nil)
 
+; The following may have been created in support of print-object$.
 (local
  (defthm all-boundp-initial-global-table
   (implies (and (state-p1 state)
@@ -17996,36 +18059,24 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        (tbl2 (nth 2 state))))
            :in-theory (disable all-boundp)))))
 
-(defun print-object$ (x channel state)
-
-; WARNING: In the HONS version, be sure to use with-output-object-channel-sharing
-; rather than calling open-output-channel directly, so that
-; *print-circle-stream* is initialized.
-
-; We believe that if in a single Common Lisp session, one prints an object and
-; then reads it back in with print-object$ and read-object, one will get back
-; an equal object under the assumptions that (a) the package structure has not
-; changed between the print and the read and (b) that *package* has the same
-; binding.  On a toothbrush, all calls of defpackage will occur before any
-; read-objecting or print-object$ing, so the package structure will be the
-; same.  It is up to the user to set current-package back to what it was at
-; print time if he hopes to read back in the same object.
-
-; Warning: For soundness, we need to avoid using iprinting when writing to
-; certificate files.  We do all such writing with print-object$, so we rely on
-; print-object$ not to use iprinting.
-
-  (declare (xargs :guard (and (state-p state)
-
-; We might want to modify state-p (actually, state-p1) so that the following
-; conjunct is not needed.
-
-                              (member (get-serialize-character state)
-                                      '(nil #\Y #\Z))
-                              (symbolp channel)
-                              (open-output-channel-p channel
-                                                     :object state))))
-  (print-object$-ser x (get-serialize-character state) channel state))
+(defun print-object$+-alist (x)
+  (declare (xargs :guard (keyword-value-listp x)))
+  (cond ((endp x) nil)
+        ((eq (car x) ':header)
+         (print-object$+-alist (cddr x)))
+        ((eq (car x) ':serialize-character)
+         (print-object$+-alist (cddr x)))
+        (t (let ((sym (car (rassoc-eq (intern$ (symbol-name (car x)) "ACL2")
+                                      *raw-print-vars-alist*))))
+             (prog2$
+              (or sym
+                  (hard-error 'print-object$+
+                              "The symbol ~x0 is not a legal keyword for ~x1"
+                              (list (cons #\0 (car x))
+                                    (cons #\1 'print-object$+))))
+              `(acons ',sym
+                      ,(cadr x)
+                      ,(print-object$+-alist (cddr x))))))))
 
 #-acl2-loop-only
 (defmacro set-acl2-readtable-case (mode)
@@ -18036,42 +18087,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     nil)
   #-gcl
   '(setf (readtable-case *acl2-readtable*) :preserve))
-
-(defun print-object$-preserving-case (x channel state)
-
-; Logically, this function is just print-object$.  Is it unsound to identify
-; these functions, since they print differently?  We think not, because the
-; only way to see what resides in a file is with the various ACL2 reading
-; functions, which all use a file-clock.  See the discussion of "deus ex
-; machina" in :doc current-package.
-
-  (declare (xargs :guard (and (state-p state)
-                              (eq (get-serialize-character state)
-
-; It's not clear that it makes sense to print preserving case when doing
-; serialize printing.  If that capability is needed we can address weakening the
-; guard to match the guard of print-object$.
-
-                                  nil)
-                              (symbolp channel)
-                              (open-output-channel-p channel
-                                                     :object state))))
-  #-acl2-loop-only
-  (cond ((live-state-p state)
-         (cond
-          #+gcl
-          ((not (fboundp 'system::set-readtable-case))
-           (cerror "Use print-object$ instead"
-                   "Sorry, but ~s is not supported in this older version of ~%~
-                    GCL (because raw Lisp function ~s is undefined)."
-                   'print-object$-preserving-case
-                   'system::set-readtable-case))
-          (t
-           (return-from print-object$-preserving-case
-             (let ((*acl2-readtable* (copy-readtable *acl2-readtable*)))
-               (set-acl2-readtable-case :preserve)
-               (print-object$ x channel state)))))))
-  (print-object$ x channel state))
 
 ;  We start the file-clock at one to avoid any possible confusion with
 ; the wired in standard-input/output channels, whose names end with
@@ -21818,6 +21833,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; need to prevent that, not merely to make maybe-install-acl2-defaults-table
 ; untouchable!)
 
+    aset1-trusted ; version of aset1 without invariant-risk
     ))
 
 (defconst *initial-untouchable-vars*
@@ -22040,16 +22056,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #-acl2-loop-only
 (defun-one-output bad-lisp-atomp (x)
-
-; At one time LispWorks printed a warning for this function:
-
-;   Eliminating a test of a variable with a declared type : ACL2::X [type ATOM]
-
-; We were told in December 2016 that this compiler bug would be fixed in the
-; next LispWorks release, and that the bug is only in printing of the warning,
-; not in the code generated by the compiler.  The warning is indeed gone in
-; LispWorks 7.1.
-
   (declare (type atom x))
   (cond ((typep x 'integer)
 
@@ -23654,7 +23660,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                           (strip-numeric-postfix sym)))
                               ans))))
                 (sort ans (function (lambda (x y)
-                                      (symbol-< (car x) (car y)))))))
+                                      (symbol< (car x) (car y)))))))
         (list :open-output-channels
               (let (ans)
                 (do-symbols
@@ -23667,7 +23673,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                      (strip-numeric-postfix sym)))
                          ans))))
                 (sort ans (function (lambda (x y)
-                                      (symbol-< (car x) (car y)))))))
+                                      (symbol< (car x) (car y)))))))
         (list :global-table (global-table-cars *the-live-state*))
         (list :t-stack
               (let (ans)
@@ -24541,6 +24547,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (+ (imagpart x) (imagpart y)))
   :hints (("Goal" :use add-def-complex)))
 
+(encapsulate
+  ()
+  (logic)
+  (verify-termination-boot-strap make-character-list))
+
 (defaxiom completion-of-coerce
   (equal (coerce x y)
          (cond
@@ -24747,18 +24758,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (progn
 
 (defun i-small (x)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :mode :logic))
   (and (acl2-numberp x)
        (equal (standard-part x) 0)))
 
 (defun i-close (x y)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :mode :logic))
   (and (acl2-numberp x)
        (acl2-numberp y)
        (i-small (- x y))))
 
 (defun i-large (x)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :mode :logic))
   (and (acl2-numberp x)
        (not (equal x 0))
        (i-small (/ x))))
@@ -25905,7 +25919,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Keep this in sync with good-atom-listp.
 
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :mode :logic))
   (not (or (consp x)
            (acl2-numberp x)
            (symbolp x)
@@ -26000,13 +26015,13 @@ Lisp definition."
 
          #-acl2-loop-only
 
-;  We'd use (symbol-<= x y) if we had it.
+;  We'd use (symbol<= x y) if we had it.
 
-         (not (symbol-< y x))
+         (not (symbol< y x))
          #+acl2-loop-only
          (cond ((symbolp x)
                 (cond ((symbolp y)
-                       (not (symbol-< y x)))
+                       (not (symbol< y x)))
                       (t t)))
                ((symbolp y) nil)
                (t (bad-atom<= x y))))))
@@ -26083,7 +26098,7 @@ Lisp definition."
            (alphorder x z))
   :rule-classes ((:rewrite :match-free :all))
   :hints (("Goal"
-           :in-theory (enable string< symbol-<))))
+           :in-theory (enable string< symbol<))))
 
 (defthm alphorder-anti-symmetric
   (implies (and (not (consp x))
@@ -26093,7 +26108,7 @@ Lisp definition."
            (equal x y))
   :hints (("Goal"
            :in-theory (union-theories
-                       '(string< symbol-<)
+                       '(string< symbol<)
                        (disable code-char-char-code-is-identity))
            :use ((:instance symbol-equality (s1 x) (s2 y))
                  (:instance bad-atom<=-antisymmetric)
@@ -26114,7 +26129,7 @@ Lisp definition."
                 (not (consp y)))
            (or (alphorder x y) (alphorder y x)))
   :hints (("Goal" :use (:instance bad-atom<=-total)
-           :in-theory (enable string< symbol-<)))
+           :in-theory (enable string< symbol<)))
   :rule-classes
   ((:forward-chaining :corollary
                       (implies (and (not (alphorder x y))
@@ -28744,28 +28759,6 @@ Lisp definition."
        (<? (tau-interval-hi-rel int)
            (fix x)
            (tau-interval-hi int))))
-
-; We added the following three defthm forms at the request of Jared Davis, who
-; noted that many book that seem to depend on community book
-; books/arithmetic/top.lisp can get by with just these three theorems.  We
-; might consider adding analogues for multiplication as well, but that could
-; break a lot of books.  Since we already build in linear arithmetic but not
-; (by default) non-linear arithmetic, we think it not unreasonable to include
-; these rules only for addition and not multiplication.
-
-(defthm commutativity-2-of-+
-  (equal (+ x (+ y z))
-         (+ y (+ x z))))
-
-(defthm fold-consts-in-+
-  (implies (and (syntaxp (quotep x))
-                (syntaxp (quotep y)))
-           (equal (+ x (+ y z))
-                  (+ (+ x y) z))))
-
-(defthm distributivity-of-minus-over-+
-  (equal (- (+ x y))
-         (+ (- x) (- y))))
 
 ; The following was moved here from other-events.lisp (and tweaked slightly in
 ; order to be guard-verified) so that it is included in the toothbrush.

@@ -24,7 +24,7 @@
 (include-book "kestrel/alists-light/pairlis-dollar-fast" :dir :system)
 (include-book "kestrel/utilities/world" :dir :system)
 (include-book "kestrel/alists-light/acons-unique" :dir :system)
-(include-book "all-alistp")
+(include-book "kestrel/typed-lists-light/all-alistp" :dir :system)
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 
 ;; TODO: Consider adding special handling for BOOLIF and BVIF.
