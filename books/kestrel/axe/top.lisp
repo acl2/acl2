@@ -217,6 +217,7 @@
 (include-book "sublis-var-and-eval")
 (include-book "prune")
 (include-book "result-array-stobj")
+(include-book "defconst-computed2")
 
 ;; Legacy Axe tools (many of these depend on skip-proofs):
 (include-book "prover")
