@@ -229,6 +229,7 @@
 (include-book "prune")
 (include-book "tactic-prover")
 (include-book "unroll-spec")
+(include-book "defthm-axe")
 
 (include-book "jvm/top")
 
