@@ -216,6 +216,7 @@
 (include-book "dagify")
 (include-book "sublis-var-and-eval")
 (include-book "prune")
+(include-book "result-array-stobj")
 
 ;; Legacy Axe tools (many of these depend on skip-proofs):
 (include-book "prover")
