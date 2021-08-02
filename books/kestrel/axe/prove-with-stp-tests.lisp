@@ -18,7 +18,6 @@
 (include-book "kestrel/bv/bv-tests" :dir :system)
 (include-book "std/testing/must-fail" :dir :system)
 
-;Moving these out of axe.lisp so you can build Axe without STP (e.g., to build the decompiler).
 ;If Axe ever tries to call STP and you don't have it, you may get an inscrutable error.
 
 ;TODO: Distinguish between STP failure to prove and a translation error
