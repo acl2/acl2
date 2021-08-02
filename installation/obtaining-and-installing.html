@@ -38,7 +38,7 @@
   </UL>
   <LI><A HREF="#Running">Running Without Building an Executable Image</A>
   <LI><A HREF="#Summary">Summary of ACL2 System Distribution</A>
-  <LI><A HREF="#Bleeding-edge">Bleeding-edge Distributions via SVN</A>
+  <LI><A HREF="#GitHub">GitHub Distributions</A>
 </UL>
 
 <p><hr size=4 noshade><p>
@@ -174,8 +174,8 @@ have been some problems with long file names when using at least one other tar
 program.  You may want to use the -i option, "<code>tar xpvfi
 8.3.tar</code>", if you have problems with other than Gnu tar.  You
 can see if you have Gnu tar by running "<code>tar -v</code>".)  The
-resulting tarball and its extracted directory will consist of
-about 120 MB and 300+ MB, respectively.  Additional space is
+resulting tarball and its extracted directory may consist of
+about 100 MB and 300+ MB, respectively.  Additional space is
 required to build an executable image, for example, perhaps a little
 more than 150 MB if you use CCL and 200 MB if you use SBCL; and more
 will be required to <A HREF="using.html#Certifying">certify books</A>.
@@ -193,12 +193,8 @@ will be required to <A HREF="using.html#Certifying">certify books</A>.
 
 <p>
 
-<b>Note</b>: You can also fetch the latest "bleeding-edge" version of
-the ACL2 system and the community books using git, as shown below.
-(These generally work very well, but the authors of ACL2 issue this
-disclaimer at startup: <i>On rare occasions development snapshots may
-be incomplete, fragile, or unable to pass the usual regression
-tests.</i>)
+<b>Note</b>: You can also fetch the latest GitHub distribution
+the ACL2 system and the community books, as shown below.
 
 <pre>
 git clone https://github.com/acl2/acl2
@@ -624,6 +620,7 @@ which in turn contains the ACL2 source files as well as the following
   GNUmakefile   ; For GNU make
   TAGS          ; Handy for looking at source files with emacs
   TAGS-acl2-doc ; Handy for finding code in books, e.g., with the acl2-doc browser
+  bin/          ; Contains an executable script, bin/acl2, which invokes ACL2
   doc/          ; ACL2 documentation
   emacs/        ; Some helpful emacs utilities
   installation/ ; Installation instructions (start with installation.html)
@@ -641,19 +638,14 @@ Some gzip'd tar'd executables; see <code><a href="http://www.cs.utexas.edu/users
 </ul>
 
 <BR><HR noshade size=8><BR>
-<H2><A NAME="Bleeding-edge">Bleeding-edge Distributions via Git</A></H2>
+<H2><A NAME="GitHub">Github Distributions</A></H2>
 
 We strongly recommend that ACL2 users update their local copies of the
 system and community books at each ACL2 release.  While that should
 suffice for many ACL2 users, nevertheless for those who prefer to
 obtain the latest developments, the ACL2 source code and community
 books have been made available between ACL2 releases, by way of
-revision control using git.  These GitHub versions generally work very
-well, but the authors of ACL2 issue this disclaimer at startup:
-<i>The authors of ACL2 consider git distributions to be experimental;
-while they will likely be fully functional in most cases, they could
-however be incomplete, fragile, and unable to pass our own
-regression.</i>  See
+revision control using git.  See
 the <a href="https://github.com/acl2/acl2">project website</a> for
 more information.
 
