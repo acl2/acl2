@@ -75,9 +75,6 @@
    to the names of the generated respective correctness theorems.
    This is @('nil') if @('proofs') is @('nil')."
 
-  "@('recursionp') is a flag indicating whether
-   any target function is recursive or not."
-
   xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -93,7 +90,6 @@
   (b* (((when (atc-table-lookup call (w state)))
         (acl2::value '(value-triple :redundant)))
        ((er (list fn1...fnp
-                  &
                   output-file
                   proofs
                   prog-const

@@ -31,7 +31,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-process-function (fn (ctx ctxp) state)
-  :returns (mv erp (recursionp booleanp) state)
+  :returns (mv erp (nothing null) state)
   :short "Process a target function @('fni') among @('fn1'), ..., @('fnp')."
   :long
   (xdoc::topstring
@@ -41,10 +41,7 @@
      without analyzing the body of the function in detail.
      The remaining checks are performed during code generation,
      where it is more natural to make them,
-     as the functions' bodies are analyzed to translate them to C.")
-   (xdoc::p
-    "If there is no error,
-     we return a flag indicating whether the function is recursive or not."))
+     as the functions' bodies are analyzed to translate them to C."))
   (b* ((desc (msg "The target ~x0 input" fn))
        ((er &) (acl2::ensure-value-is-function-name$ fn desc t nil))
        (desc (msg "The target function ~x0" fn))
@@ -73,7 +70,7 @@
                    Only recursive functions with well-founded relation O< ~
                    are currently supported by ATC."
                   fn (acl2::well-founded-relation+ fn (w state)))))
-    (acl2::value (and rec t)))
+    (acl2::value nil))
   :guard-hints (("Goal" :in-theory (enable
                                     acl2::ensure-value-is-function-name
                                     acl2::ensure-function-is-guard-verified
@@ -83,28 +80,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-process-function-list ((fns true-listp) (ctx ctxp) state)
-  :returns (mv erp (recursionp booleanp) state)
+  :returns (mv erp (nothing null) state)
   :short "Lift @(tsee atc-process-function) to lists."
-  :long
-  (xdoc::topstring-p
-   "If there is no error,
-    we return a flag indicating whether any function is recursive or not.")
   (b* (((when (endp fns)) (acl2::value nil))
-       ((er recursionp1) (atc-process-function (car fns) ctx state))
-       ((er recursionp2) (atc-process-function-list (cdr fns) ctx state)))
-    (acl2::value (or recursionp1 recursionp2))))
+       ((er &) (atc-process-function (car fns) ctx state))
+       ((er &) (atc-process-function-list (cdr fns) ctx state)))
+    (acl2::value nil))
+  :prepwork ((local (in-theory (disable null)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-process-fn1...fnp ((fn1...fnp true-listp) (ctx ctxp) state)
-  :returns (mv erp (recursionp booleanp) state)
+  :returns (mv erp (nothing null) state)
   :verify-guards nil
   :short "Process the target functions @('fn1'), ..., @('fnp')."
-  :long
-  (xdoc::topstring-p
-   "If there is no error,
-    we return a flag indicating whether any function is recursive or not.")
-  (b* (((er recursionp) (atc-process-function-list fn1...fnp ctx state))
+  (b* (((er &) (atc-process-function-list fn1...fnp ctx state))
        ((unless (consp fn1...fnp))
         (er-soft+ ctx t nil
                   "At least one target function must be supplied."))
@@ -113,7 +103,8 @@
                 (msg "The list of target functions ~x0" fn1...fnp)
                 t
                 nil)))
-    (acl2::value recursionp)))
+    (acl2::value nil))
+  :prepwork ((local (in-theory (disable null)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -312,7 +303,6 @@
 (define atc-process-inputs ((args true-listp) (ctx ctxp) state)
   :returns (mv erp
                (val "A @('(tuple (fn1...fnp symbol-listp)
-                                 (recursionp booleanp)
                                  (output-file stringp)
                                  (proofs booleanp)
                                  (prog-const symbolp)
@@ -331,7 +321,7 @@
                               one or more target functions ~
                               followed by the options ~&0."
                              *atc-allowed-options*))
-       ((er recursionp) (atc-process-fn1...fnp fn1...fnp ctx state))
+       ((er &) (atc-process-fn1...fnp fn1...fnp ctx state))
        (output-file-option (assoc-eq :output-file options))
        ((mv output-file output-file?)
         (if output-file-option
@@ -376,7 +366,6 @@
                    but it is ~x0 instead."
                   experimental)))
     (acl2::value (list fn1...fnp
-                       recursionp
                        output-file
                        proofs
                        prog-const
