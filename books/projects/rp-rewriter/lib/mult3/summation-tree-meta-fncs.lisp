@@ -1345,9 +1345,9 @@
        (b* (((when (or (binary-fnc-p pp1)
                        (binary-fnc-p pp2)))
              (mv nil nil))
-            #|((unless (or (equal pp1 ''1)
-            (and (and-subsetp pp2 pp1))))
-            (mv nil nil))||#
+            ((unless (or (equal pp1 ''1)
+                         (and (and-subsetp pp2 pp1))))
+             (mv nil nil))
             ((mv new-pp-lst success) (single-c-to-pp-lst pp1 pp2 ''0))
             ((unless success)
              (mv nil nil)))
@@ -1367,12 +1367,14 @@
                                (() (mv 0 t))
                                (& (mv 0 nil))))
        ((unless pp-valid) nil)
+       (total-cnt pp-cnt)
        ((mv s-cnt s-valid)
         (case-match s-lst
           (()
            (mv 0 t))
           ((x)
-           (mv 1 (b* ((x (ex-from-rp x)))
+           (mv 1 (b* (((when (> (1+ total-cnt) 2)) nil)
+                      (x (ex-from-rp x)))
                    (case-match x
                      (('s & pp-arg c-arg)
                       (pattern0-syntax-check nil
@@ -1380,7 +1382,8 @@
                                              (list-to-lst c-arg)
                                              (1- limit)))))))
           ((x y)
-           (mv 2 (b* ((x (ex-from-rp x))
+           (mv 2 (b* (((when (> (+ 2 total-cnt) 2)) nil)
+                      (x (ex-from-rp x))
                       (y (ex-from-rp y)))
                    (and
                     (case-match x
@@ -1397,12 +1400,14 @@
                                               (1- limit))))))))
           (& (mv 0 nil))))
        ((Unless s-valid) nil)
+       (total-cnt (+ pp-cnt s-cnt))
        ((mv c-cnt c-valid)
         (case-match c-lst
           (()
            (mv 0 t))
           ((x)
-           (mv 1 (b* ((x (ex-from-rp x)))
+           (mv 1 (b* (((when (> (1+ total-cnt) 2)) nil)
+                      (x (ex-from-rp x)))
                    (case-match x
                      (('c & s-arg pp-arg c-arg)
                       (pattern0-syntax-check (list-to-lst s-arg)
@@ -1410,7 +1415,8 @@
                                              (list-to-lst c-arg)
                                              (1- limit)))))))
           ((x y)
-           (mv 2 (b* ((x (ex-from-rp x))
+           (mv 2 (b* (((when (> (+ 2 total-cnt) 2)) nil)
+                      (x (ex-from-rp x))
                       (y (ex-from-rp y)))
                    (and
                     (case-match x
@@ -1501,6 +1507,7 @@
  :flag-local nil
 
  :returns-hints (("Goal"
+                  :expand ((PATTERN0-REDUCE-AUX NIL PP-LST NIL LIMIT))
                   :do-not-induct t
                   :in-theory (e/d () ())))
 
@@ -1546,7 +1553,8 @@
  :verify-guards nil
 
  (define pattern0-reduce-aux-s-lst ((s-lst rp-term-listp)
-                                    (limit natp))
+                                    (limit natp)
+                                    (search-limit integerp))
    :returns (mv (s1 rp-termp :hyp (rp-term-listp s-lst))
                 (s2 rp-termp :hyp (rp-term-listp s-lst))
                 (s-cnt natp)
@@ -1556,7 +1564,9 @@
        (mv ''nil ''nil 0 nil)
      (case-match s-lst
        ((s1 s2)
-        (b* ((s1 (ex-from-rp s1))
+        (b* (((when (< (- search-limit 2) 0))
+              (mv ''nil ''nil 0 nil))
+             (s1 (ex-from-rp s1))
              (s2 (ex-from-rp s2))
              ((unless (and (single-s-p s1)
                            (single-s-p s2)))
@@ -1579,7 +1589,9 @@
              (s2 `(binary-xor ,term1 ,term2)))
           (mv s1 s2 2 t)))
        ((s1)
-        (b* ((s1 (ex-from-rp s1))
+        (b* (((when (< (- search-limit 1) 0))
+              (mv ''nil ''nil 0 nil))
+             (s1 (ex-from-rp s1))
              ((unless (single-s-p s1))
               (mv ''nil ''nil 0 nil))
              ((mv term1 term2 s1-valid)
@@ -1597,7 +1609,8 @@
         (mv ''nil ''nil 0 nil)))))
 
  (define pattern0-reduce-aux-c-lst ((c-lst rp-term-listp)
-                                    (limit natp))
+                                    (limit natp)
+                                    (search-limit integerp))
    :returns (mv (c1 rp-termp :hyp (rp-term-listp c-lst))
                 (c2 rp-termp :hyp (rp-term-listp c-lst))
                 (c-cnt natp)
@@ -1607,7 +1620,9 @@
        (mv ''nil ''nil 0 nil)
      (case-match c-lst
        ((c1 c2)
-        (b* ((c1 (ex-from-rp c1))
+        (b* (((when (< (- search-limit 2) 0))
+              (mv ''nil ''nil 0 nil))
+             (c1 (ex-from-rp c1))
              (c2 (ex-from-rp c2))
              ((unless (and (single-c-p c1)
                            (single-c-p c2)))
@@ -1630,7 +1645,9 @@
              (c2 `(binary-and ,term1 ,term2)))
           (mv c1 c2 2 t)))
        ((c1)
-        (b* ((c1 (ex-from-rp c1))
+        (b* (((when (< (- search-limit 1) 0))
+              (mv ''nil ''nil 0 nil))
+             (c1 (ex-from-rp c1))
              ((unless (single-c-p c1))
               (mv ''nil ''nil 0 nil))
              ((mv term1 term2 c1-valid)
@@ -1664,16 +1681,16 @@
    ;;:verify-guards nil
 
    (b* (((when (zp limit)) (mv ''nil ''nil nil))
-        ((mv s1 s2 s-cnt s-valid)
-         (pattern0-reduce-aux-s-lst s-lst (1- limit)))
-        ((unless s-valid)
-         (mv ''nil ''nil nil))
         ((mv pp1 pp2 pp-cnt pp-valid)
          (pattern0-reduce-aux-pp-lst pp-lst))
         ((unless pp-valid)
          (mv ''nil ''nil nil))
+        ((mv s1 s2 s-cnt s-valid)
+         (pattern0-reduce-aux-s-lst s-lst (1- limit) (- 2 pp-cnt)))
+        ((unless s-valid)
+         (mv ''nil ''nil nil))
         ((mv c1 c2 c-cnt c-valid)
-         (pattern0-reduce-aux-c-lst c-lst (1- limit)))
+         (pattern0-reduce-aux-c-lst c-lst (1- limit) (+ 2 (- pp-cnt) (- s-cnt))))
         ((unless c-valid)
          (mv ''nil ''nil nil)))
      (cond ((and (= s-cnt 0) (= pp-cnt 0) (= c-cnt 2))
@@ -1691,6 +1708,15 @@
            (t
             (mv ''nil ''nil nil)))))
  ///
+
+ (local
+  (defthm dummy-lemma
+    (and (implies (and (natp x)
+                  (natp y))
+                  (and (integerp (+ 2 (- x) (- y)))))
+         (implies (natp x)
+                  (integerp (+ 2 (- x)))))))
+ 
  (verify-guards  pattern0-reduce-aux
    :hints (("Goal"
             :in-theory (e/d ()
@@ -1727,7 +1753,8 @@
                    (pp-term-p pp-term2)))
      :fn pattern0-reduce-aux)
    :hints (("Goal"
-            :expand ((:free (x) (pp-term-p (cons 'binary-and x)))
+            :expand ((PATTERN0-REDUCE-AUX NIL PP-LST NIL LIMIT)
+                     (:free (x) (pp-term-p (cons 'binary-and x)))
                      (:free (x) (pp-term-p (cons 'binary-xor x)))
                      (:free (x) (ex-from-rp (cons 'binary-and x)))
                      (:free (x) (ex-from-rp (cons 'binary-xor x))))
@@ -1792,13 +1819,15 @@
                           (:free (x) (ex-from-rp (cons 'binary-and x))))
                  :in-theory (e/d (is-rp) (pp-term-p))))
 
-  (and (pattern0-syntax-check s-lst pp-lst c-lst (expt 2 30))
+  (and (pattern0-syntax-check s-lst pp-lst c-lst 10)
        (b* (((mv pp-term1 pp-term2 valid)
-             (pattern0-reduce-aux s-lst pp-lst c-lst (expt 2 30)))
-            ((unless valid) (cw "c-pattern0-reduce match somehow invalid(3) ~%"))
+             (pattern0-reduce-aux s-lst pp-lst c-lst 10))
+            ((unless valid) nil)
             (flatten-res (pp-flatten `(binary-and ,pp-term1 ,pp-term2) nil :unpack-now t))
             ((when (not flatten-res))
              (progn$ (cw "c-pattern0-reduce match (3)! ~%")
+                     #|(cw "s-lst: ~p0, pp-lst: ~p1, c-lst: ~p2 ~%"
+                         s-lst pp-lst c-lst)||#
                      t)))
          nil
          ))
@@ -1894,10 +1923,10 @@
 
   (b* ((pp-lst (list-to-lst pp))
        (c-lst (list-to-lst c)))
-    (if (pattern0-syntax-check nil pp-lst c-lst (expt 2 30))
+    (if (pattern0-syntax-check nil pp-lst c-lst 10)
         (b* (((mv pp-term1 pp-term2 valid)
-              (pattern0-reduce-aux nil pp-lst c-lst (expt 2 30)))
-             ((unless valid) (cw "s-pattern0-reduce match somehow invalid(3) ~%"))
+              (pattern0-reduce-aux nil pp-lst c-lst 10))
+             ((unless valid) nil)
              (flatten-res (pp-flatten `(binary-xor ,pp-term1 ,pp-term2) nil :unpack-now t))
              ((when (not flatten-res))
               (progn$ (cw "s-pattern0-reduce match (1,2,3)! ~%")
@@ -2138,9 +2167,9 @@
          (mv new-pp-lst t)))
       ;;(mv `(rp 'bitp (sum-list ,(create-list-instance new-pp-lst))) t)
       (('list pp1 pp2)
-       (b* (#|((unless (or (equal pp1 ''1)
-            (and (and-subsetp pp2 pp1))))
-            (mv nil nil))||#
+       (b* (((unless (or (equal pp1 ''1)
+                         (and (and-subsetp pp2 pp1))))
+             (mv nil nil))
             ((when (or (binary-fnc-p pp1)
                        (binary-fnc-p pp2)))
              (mv nil nil))

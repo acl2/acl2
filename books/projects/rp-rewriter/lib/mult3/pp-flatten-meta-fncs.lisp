@@ -974,7 +974,7 @@
         `(defattach unpack-booth-later-enabled return-t)
       `(defattach unpack-booth-later-enabled return-nil)))
 
-  (enable-unpack-booth-later t))
+  (enable-unpack-booth-later nil))
 
 (define pp-flatten ((term pp-term-p)
                     (sign booleanp)

@@ -1878,7 +1878,8 @@
   :mutual-recursion pattern0-reduce-aux
   :hints (("Goal"
            :do-not-induct t
-           :expand ((:free (x) (valid-sc (cons 'binary-and x) a))
+           :expand ((pattern0-reduce-aux nil pp-lst nil limit)
+                    (:free (x) (valid-sc (cons 'binary-and x) a))
                     (:free (x) (valid-sc (cons 'binary-xor x) a)))
            :in-theory (e/d (is-rp is-if
                                   pattern0-reduce-aux
@@ -1943,7 +1944,7 @@
     :rule-classes :forward-chaining
     :hints (("Goal"
              :do-not-induct t
-             :expand (PATTERN0-REDUCE-AUX-S-LST S-LST LIMIT)
+             :expand (PATTERN0-REDUCE-AUX-S-LST S-LST LIMIT SEARCH-LIMIT)
              :in-theory (e/d (pattern0-reduce-aux-s-lst) ()))))
 
   (defret pattern0-reduce-aux-s-lst-cnt-implies-2
@@ -1955,7 +1956,7 @@
     :rule-classes :forward-chaining
     :hints (("Goal"
              :do-not-induct t
-             :expand (PATTERN0-REDUCE-AUX-S-LST S-LST LIMIT)
+             :expand (PATTERN0-REDUCE-AUX-S-LST S-LST LIMIT SEARCH-LIMIT)
              :in-theory (e/d (pattern0-reduce-aux-s-lst) ()))))
 
   (defret pattern0-reduce-aux-s-lst-cnt-implies-3
@@ -1966,7 +1967,7 @@
     :rule-classes :forward-chaining
     :hints (("Goal"
              :do-not-induct t
-             :expand (PATTERN0-REDUCE-AUX-S-LST S-LST LIMIT)
+             :expand (PATTERN0-REDUCE-AUX-S-LST S-LST LIMIT SEARCH-LIMIT)
              :in-theory (e/d (pattern0-reduce-aux-s-lst) ()))))
 
   (defret pattern0-reduce-aux-c-lst-cnt-implies-1
@@ -1979,7 +1980,7 @@
     :rule-classes :forward-chaining
     :hints (("Goal"
              :do-not-induct t
-             :expand (PATTERN0-REDUCE-AUX-C-LST C-LST LIMIT)
+             :expand (PATTERN0-REDUCE-AUX-C-LST C-LST LIMIT SEARCH-LIMIT)
              :in-theory (e/d (pattern0-reduce-aux-c-lst) ()))))
 
   (defret pattern0-reduce-aux-c-lst-cnt-implies-2
@@ -1991,7 +1992,7 @@
     :rule-classes :forward-chaining
     :hints (("Goal"
              :do-not-induct t
-             :expand (PATTERN0-REDUCE-AUX-C-LST C-LST LIMIT)
+             :expand (PATTERN0-REDUCE-AUX-C-LST C-LST LIMIT SEARCH-LIMIT)
              :in-theory (e/d (pattern0-reduce-aux-c-lst) ()))))
 
   (defret pattern0-reduce-aux-c-lst-cnt-implies-3
@@ -2002,7 +2003,7 @@
     :rule-classes :forward-chaining
     :hints (("Goal"
              :do-not-induct t
-             :expand (PATTERN0-REDUCE-AUX-C-LST C-LST LIMIT)
+             :expand (PATTERN0-REDUCE-AUX-C-LST C-LST LIMIT SEARCH-LIMIT)
              :in-theory (e/d (pattern0-reduce-aux-c-lst) ())))))
 
 (defthmd sum-list-eval-consp
@@ -2140,7 +2141,8 @@
   :mutual-recursion pattern0-reduce-aux
   :hints (("Goal"
 
-           :expand ((:free (x) (pp-term-p (cons 'binary-and x)))
+           :expand ((PATTERN0-REDUCE-AUX NIL PP-LST NIL LIMIT)
+                    (:free (x) (pp-term-p (cons 'binary-and x)))
                     (:free (x) (pp-term-p (cons 'binary-xor x)))
                     (:free (x) (ex-from-rp (cons 'binary-and x)))
                     (:free (x) (ex-from-rp (cons 'binary-xor x))))
@@ -2205,24 +2207,24 @@
                            (sum-list-eval s-lst a)))
                   0))
   :fn c-pattern0-reduce
-  :hints (("Goal"
+  :hints (("goal"
            :do-not-induct t
            :expand ((:free (x)
                            (pp-term-p (cons 'binary-and x)))
                     (:free (x)
                            (ex-from-rp (cons 'binary-and x))))
-           :use ((:instance PP-FLATTEN-CORRECT
-                            (term (LIST 'BINARY-AND
-                                        (MV-NTH 0
-                                                (PATTERN0-REDUCE-AUX S-LST PP-LST C-LST 1073741824))
-                                        (MV-NTH 1
-                                                (PATTERN0-REDUCE-AUX S-LST PP-LST C-LST 1073741824))))
+           :use ((:instance pp-flatten-correct
+                            (term (list 'binary-and
+                                        (mv-nth 0
+                                                (pattern0-reduce-aux s-lst pp-lst c-lst 10))
+                                        (mv-nth 1
+                                                (pattern0-reduce-aux s-lst pp-lst c-lst 10))))
                             (sign nil)
                             (unpack-now t)))
            ;;:use ((:instance c-pattern0-reduce-correct-lemma
            :in-theory (e/d (c-pattern0-reduce
                             is-rp)
-                           (PP-FLATTEN-CORRECT)))))
+                           (pp-flatten-correct)))))
 
 (defret s-pattern0-reduce-correct
   (implies (and (valid-sc pp a)
@@ -2245,10 +2247,10 @@
                                    'BINARY-xor
                                    (MV-NTH 0
                                            (PATTERN0-REDUCE-AUX nil
-                                                                (list-to-lst pp) (list-to-lst c) 1073741824))
+                                                                (list-to-lst pp) (list-to-lst c) 10))
                                    (MV-NTH 1
                                            (PATTERN0-REDUCE-AUX nil
-                                                                (list-to-lst pp) (list-to-lst c) 1073741824))))
+                                                                (list-to-lst pp) (list-to-lst c) 10))))
                             (sign nil)
                             (unpack-now t)))
            ;;:use ((:instance c-pattern0-reduce-correct-lemma
