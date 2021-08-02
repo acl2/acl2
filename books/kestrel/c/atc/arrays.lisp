@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-arrays
-  :parents (atc-dynamic-semantics)
+  :parents (atc-shallow-embedding)
   :short "A model of C arrays for ATC."
   :long
   (xdoc::topstring
