@@ -157,3 +157,8 @@
            (equal (lognot (+ (expt 2 n) i))
                   (+ (- (expt 2 n)) (lognot i))))
   :hints (("Goal" :in-theory (enable lognot))))
+
+(defthm signed-byte-p-of-lognot
+  (implies (signed-byte-p size i)
+           (signed-byte-p size (lognot i)))
+  :hints (("Goal" :in-theory (enable lognot))))
