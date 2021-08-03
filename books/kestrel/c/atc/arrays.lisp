@@ -247,11 +247,12 @@
 
        )))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-indexed-integer-arrays ((etype typep) (itype typep))
+(define atc-def-integer-arrays-indices ((etype typep) (itype typep))
   :guard (and (type-integerp etype)
               (type-integerp itype))
+  :returns (event pseudo-event-formp)
   :short "Event to generate the part of the model of arrays of an integer type
           that involves indices of an integer type."
   :long
@@ -347,10 +348,51 @@
 
        )))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(make-event (atc-def-integer-arrays (type-uchar)))
+(define atc-def-integer-arrays-loop-inner ((etype typep) (itypes type-listp))
+  :guard (and (type-integerp etype)
+              (type-integer-listp itypes))
+  :returns (events pseudo-event-form-listp)
+  :short "Events to generate the array operations that involve indices,
+          for a given array element type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the inner loop for generating our model of arrays."))
+  (cond ((endp itypes) nil)
+        (t (cons (atc-def-integer-arrays-indices etype (car itypes))
+                 (atc-def-integer-arrays-loop-inner etype (cdr itypes))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(make-event (atc-def-indexed-integer-arrays (type-uchar) (type-sint)))
+(define atc-def-integer-arrays-loop-outer ((etypes type-listp)
+                                           (itypes type-listp))
+  :guard (and (type-integer-listp etypes)
+              (type-integer-listp itypes))
+  :returns (events pseudo-event-form-listp)
+  :short "Events to generate the model of arrays
+          for the given array element types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the outer loop for generating our model of arrays."))
+  (cond ((endp etypes) nil)
+        (t (append (list (atc-def-integer-arrays (car etypes)))
+                   (atc-def-integer-arrays-loop-inner (car etypes) itypes)
+                   (atc-def-integer-arrays-loop-outer (cdr etypes) itypes)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ (b* ((types (list (type-schar)
+                   (type-uchar)
+                   (type-sshort)
+                   (type-ushort)
+                   (type-sint)
+                   (type-uint)
+                   (type-slong)
+                   (type-ulong)
+                   (type-sllong)
+                   (type-ullong))))
+   `(progn ,@(atc-def-integer-arrays-loop-outer types types))))
