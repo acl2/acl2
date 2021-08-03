@@ -223,7 +223,25 @@
      (xdoc::li
       "@('(ullongp x)'), representing @('unsigned long long').")
      (xdoc::li
-      "@('(uchar-arrayp x)'), representing @('unsigned char *')."))
+      "@('(schar-arrayp x)'), representing @('signed char *').")
+     (xdoc::li
+      "@('(uchar-arrayp x)'), representing @('unsigned char *').")
+     (xdoc::li
+      "@('(sshort-arrayp x)'), representing @('signed short *').")
+     (xdoc::li
+      "@('(ushort-arrayp x)'), representing @('unsigned short *').")
+     (xdoc::li
+      "@('(sint-arrayp x)'), representing @('signed int *').")
+     (xdoc::li
+      "@('(uint-arrayp x)'), representing @('unsigned int *').")
+     (xdoc::li
+      "@('(slong-arrayp x)'), representing @('signed long *').")
+     (xdoc::li
+      "@('(ulong-arrayp x)'), representing @('unsigned long *').")
+     (xdoc::li
+      "@('(sllong-arrayp x)'), representing @('signed long long *').")
+     (xdoc::li
+      "@('(ullong-arrayp x)'), representing @('unsigned long long *')."))
     (xdoc::p
      "The conjuncts may be at any level of nesting,
       but must be easily extractable by flattening
@@ -687,8 +705,21 @@
        implict conversions are represented implicitly,
        e.g. via the function for a unary operator that promoteds the operand.")
      (xdoc::li
-      "A call of @(tsee uchar-array-read-sint) on C-valued terms for @('fni').
-       This represents an array subscripting expression.")
+      "A call of @(tsee <type1>-array-read-<type2>)
+       on C-valued terms for @('fni'),
+       where @('<type1>') and @('<type2>') are among"
+      (xdoc::ul
+       (xdoc::li "@('schar')")
+       (xdoc::li "@('uchar')")
+       (xdoc::li "@('sshort')")
+       (xdoc::li "@('ushort')")
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
+      "This represents an array subscripting expression.")
      (xdoc::li
       "A call of @(tsee sint-from-boolean) on a boolean term for @('fni').
        This converts a boolean term
