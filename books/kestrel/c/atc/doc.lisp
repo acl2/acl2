@@ -705,7 +705,7 @@
        implict conversions are represented implicitly,
        e.g. via the function for a unary operator that promoteds the operand.")
      (xdoc::li
-      "A call of @(tsee <type1>-array-read-<type2>)
+      "A call of @('<type1>-array-read-<type2>')
        on C-valued terms for @('fni'),
        where @('<type1>') and @('<type2>') are among"
       (xdoc::ul

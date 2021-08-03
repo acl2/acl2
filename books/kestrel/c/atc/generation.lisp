@@ -867,7 +867,7 @@
     "where @('array') is a variable of array type,
      which must occur identically as
      both the @(tsee let) variable
-     and as the first argument of @(tsee <type1>-array-write-<type2>),
+     and as the first argument of @('<type1>-array-write-<type2>'),
      @('<sub>') is an expression that yields the index of the element to write,
      @('<elem>') is an expression that yields the element to write,
      and @('...') represents the code that follows the array assignment.
