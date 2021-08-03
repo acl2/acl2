@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function update-nth.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -127,3 +127,13 @@
                   (if (equal (nfix m) (nfix n))
                       val (nth m l))))
   :hints (("Goal" :in-theory (enable nth))))
+
+;matches std except has one less nfix
+(defthm nthcdr-of-update-nth-simpler
+  (equal (nthcdr n1 (update-nth n2 val x))
+         (if (< (nfix n2) (nfix n1))
+             (nthcdr n1 x)
+           (update-nth (- n2 (nfix n1)) val (nthcdr n1 x))))
+  :hints (("Goal" ;:induct (sub1-sub1-cdr-induct n key l)
+           :expand (update-nth n2 val (nthcdr (+ -1 n1) (cdr x)))
+           :in-theory (enable update-nth nthcdr))))

@@ -1016,16 +1016,6 @@
 ;; ;move
 ;; (theory-invariant (incompatible (:rewrite nthcdr-of-true-list-fix) (:rewrite true-list-fix-of-nthcdr)))
 
-;matches std except has one less nfix
-(defthm nthcdr-of-update-nth-simpler
-  (equal (nthcdr n1 (update-nth n2 val x))
-         (if (< (nfix n2) (nfix n1))
-             (nthcdr n1 x)
-           (update-nth (- n2 (nfix n1)) val (nthcdr n1 x))))
-  :hints (("Goal" ;:induct (sub1-sub1-cdr-induct n key l)
-           :expand (UPDATE-NTH n2 VAL (NTHCDR (+ -1 N1) (CDR x)))
-           :in-theory (enable update-nth nthcdr))))
-
 (defthm nthcdr-of-bv-array-write
   (implies (and (<= n (len lst))
                 (equal (len lst) len) ;bozo
@@ -1039,8 +1029,6 @@
   :hints (("Goal" :in-theory (e/d (UPDATE-NTH2 bv-array-write ceiling-of-lg NTHCDR-of-true-list-fix)
                                   (;LIST::FIX-OF-NTHCDR
                                    )))))
-
-
 
 (defthm nthcdr-of-bv-array-write-better
   (implies (and (<= n len)
