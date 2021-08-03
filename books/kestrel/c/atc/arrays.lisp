@@ -149,6 +149,7 @@
        (<type>-arrayp (pack <type>-array 'p))
        (<type>-array-fix (pack <type>-array '-fix))
        (<type>-array->elements (pack <type>-array '->elements))
+       (<type>-array-length (pack <type>-array '-length))
        (<type>-array-index-okp (pack <type> '-array-index-okp))
        (<type>-array-read (pack <type>-array '-read))
        (<type>-array-write (pack <type>-array '-write))
@@ -171,6 +172,16 @@
                                            (list (,<type> 0)))))
          :require (consp elements)
          :pred ,<type>-arrayp)
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,<type>-array-length ((array ,<type>-arrayp))
+         :returns (length natp :rule-classes (:rewrite :type-prescription))
+         :short ,(str::cat "Length of an array of "
+                           type-string
+                           ".")
+         (len (,<type>-array->elements array))
+         :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
