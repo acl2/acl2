@@ -82,6 +82,11 @@
     (cons (cons ent (make-svtv-probe :signal signal :time phase))
           (defsvtv-probes-for-phases (1+ (lnfix phase)) (cdr phases) signal))))
 
+(local (defthm probealist-p-of-append
+         (implies (and (svtv-probealist-p x)
+                       (svtv-probealist-p y))
+                  (svtv-probealist-p (append x y)))))
+
 (define defsvtv-compute-probes ((outs true-list-listp))
   :returns (probes svtv-probealist-p)
   (if (atom outs)

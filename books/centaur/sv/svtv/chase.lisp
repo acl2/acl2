@@ -32,7 +32,7 @@
 
 (include-book "debug")
 (include-book "chase-base")
-
+(include-book "assign")
 
 (define svtv-chase-inalist-to-evaldata ((inalist svex-env-p)
                                         &key
@@ -184,6 +184,72 @@
        ((mv svtv-chase-data state) (svtv-chase-repl)))
     (mv svtv-chase-data state)))
 
+
+
+(define svtv-output-line->probealist ((var svar-p)
+                                      (phases true-listp)
+                                      (phase natp))
+  :returns (probes svtv-probealist-p)
+  (b* (((when (atom phases)) nil)
+       (ent (car phases))
+       ((when (svtv-dontcare-p ent))
+        (svtv-output-line->probealist var (cdr phases) (1+ (lnfix phase))))
+       ((unless (svar-p ent))
+        (cw "Error: bad output line entry: ~x0~%" ent)
+        (svtv-output-line->probealist var (cdr phases) (1+ (lnfix phase)))))
+    (cons (cons ent (make-svtv-probe :signal var :time phase))
+          (svtv-output-line->probealist var (cdr phases) (1+ (lnfix phase))))))
+
+(local (defthm probealist-p-of-append
+         (implies (and (svtv-probealist-p x)
+                       (svtv-probealist-p y))
+                  (svtv-probealist-p (append x y)))
+         :hints(("Goal" :in-theory (enable svtv-probealist-p)))))
+
+
+(define svtv-outputs->probealist ((outs true-list-listp))
+  :guard (svarlist-p (alist-keys outs))
+  :guard-hints (("goal" :in-theory (enable alist-keys)))
+  :returns (probes svtv-probealist-p)
+  (if (atom outs)
+      nil
+    (append (and (consp (car outs))
+                 (svtv-output-line->probealist (caar outs) (cdar outs) 0))
+            (svtv-outputs->probealist (cdr outs)))))
+
+
+(define svtv-chase-probes ((x svtv-p)
+                           (modidx natp)
+                           (moddb moddb-ok)
+                           (aliases))
+  :guard (svtv-mod-alias-guard modidx moddb aliases)
+  :prepwork ((local (defthm svarlist-p-when-string-listp
+                      (implies (string-listp x)
+                               (svarlist-p x))
+                      :hints(("Goal" :in-theory (enable svarlist-p svar-p)))))
+             (local (defthm svtv-namemap-p-of-pairlis$
+                      (implies (and (svarlist-p x)
+                                    (string-listp y)
+                                    (eql (len x) (len y)))
+                               (svtv-namemap-p (pairlis$ x y))))))
+  :returns (mv err
+               (namemap svtv-name-lhs-map-p)
+               (probes svtv-probealist-p))
+  (b* (((svtv x))
+       (x.outs (append x.orig-outs x.orig-internals))
+       (outnames (alist-keys x.outs))
+       ((unless (string-listp outnames))
+        (mv "Bad svtv? Output signals contained non-strings"
+            nil nil))
+       (user-names (pairlis$ outnames outnames))
+       ((mv errs namemap) (svtv-namemap->lhsmap user-names modidx moddb aliases))
+       ((when errs)
+        (mv (msg "Failed to find some signal names: ~@0" (msg-list errs))
+            nil nil)))
+    (mv nil namemap (svtv-outputs->probealist x.outs))))
+       
+
+
 (define svtv-chase ((x svtv-p)
                     (env svex-env-p)
                     &key
@@ -250,6 +316,17 @@ env)').</p>
        ((when err)
         (mv debugdata moddb aliases svtv-chase-data state))
        (debugdata (svtv-debug-set-svtv x :rewrite rewrite))
+       ((mv err namemap probes)
+        (svtv-chase-probes x (debugdata->modidx debugdata) moddb aliases))
+       (svtv-chase-data (if err
+                            (prog2$ (cw "Svtv-chase: failed to convert ~
+                                         outputs to signals--- the '~x0' ~
+                                         directive will not be available.  ~
+                                         Error: ~@1"
+                                        '(o name) err)
+                                    svtv-chase-data)
+                          (b* ((svtv-chase-data (set-svtv-chase-data->namemap namemap svtv-chase-data)))
+                            (set-svtv-chase-data->probes probes svtv-chase-data))))
        ((mv svtv-chase-data state)
         (svtv-chase-update env)))
     (mv debugdata moddb aliases svtv-chase-data state)))
