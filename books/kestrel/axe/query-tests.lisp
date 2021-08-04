@@ -12,6 +12,8 @@
 
 (in-package "ACL2")
 
+; cert_param: (uses-stp)
+
 ;; TODO: Add more tests.
 
 ;; I am not sure sure if STP will always give back the same counterexample on a

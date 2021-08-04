@@ -521,6 +521,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-symbol-4part ((sym symbolp))
+  :returns (mv (yes/no booleanp)
+               (part1 symbolp)
+               (part2 symbolp)
+               (part3 symbolp)
+               (part4 symbolp))
+  :short "Check if a symbol consists of four parts separated by dash."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the symbol has the form @('<part1>-<part2>-<part3>-<part4>'),
+     with @('<part1>') and @('<part2>') and @('<part3>') and @('<part4>')
+     non-empty and without dashes,
+     we return an indication of success and the four parts.
+     Otherwise, we return an indication of failure and @('nil') as the parts.
+     The four returned symbols, when the function is successful,
+     are interned in the same package as the input symbol."))
+  (b* ((parts (str::strtok! (symbol-name sym) (list #\-)))
+       ((unless (= (len parts) 4)) (mv nil nil nil nil nil))
+       (part1 (intern-in-package-of-symbol (first parts) sym))
+       (part2 (intern-in-package-of-symbol (second parts) sym))
+       (part3 (intern-in-package-of-symbol (third parts) sym))
+       (part4 (intern-in-package-of-symbol (fourth parts) sym)))
+    (mv t part1 part2 part3 part4))
+  :prepwork
+  ((local (include-book "std/typed-lists/string-listp" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-integer-fixtype-to-type ((fixtype symbolp))
   :returns (type type-optionp)
   :short "Integer type corresponding to a fixtype name, if any."
@@ -785,8 +814,7 @@
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
-     that represent C array read operations
-     (currently just @(tsee uchar-array-read-sint)),
+     that represent C array read operations,
      we return the two argument terms.")
    (xdoc::p
     "We also return the result C type of the operator.")
@@ -795,9 +823,16 @@
      we return an indication of failure."))
   (case-match term
     ((fn arr sub)
-     (case fn
-       (uchar-array-read-sint (mv t arr sub (type-uchar)))
-       (t (mv nil nil nil (irr-type)))))
+     (b* (((when (not (symbolp fn))) (mv nil nil nil (irr-type)))
+          ((mv okp etype array read itype) (atc-check-symbol-4part fn))
+          ((when (not okp)) (mv nil nil nil (irr-type)))
+          ((unless (eq array 'array)) (mv nil nil nil (irr-type)))
+          ((unless (eq read 'read)) (mv nil nil nil (irr-type)))
+          ((unless (atc-integer-fixtype-to-type itype))
+           (mv nil nil nil (irr-type)))
+          (type (atc-integer-fixtype-to-type etype))
+          ((when (not type)) (mv nil nil nil (irr-type))))
+       (mv t arr sub type)))
     (& (mv nil nil nil (irr-type))))
   ///
 
@@ -827,12 +862,12 @@
     "An array write, i.e. an assignment to an array element,
      is represented by a @(tsee let) binding of the form")
    (xdoc::codeblock
-    "(let ((<arr> (uchar-array-write-sint <arr> <sub> <elem>))) ...)")
+    "(let ((<arr> (<type1>-array-write-<type2> <arr> <sub> <elem>))) ...)")
    (xdoc::p
     "where @('array') is a variable of array type,
      which must occur identically as
      both the @(tsee let) variable
-     and as the first argument of @(tsee uchar-array-write-sint),
+     and as the first argument of @('<type1>-array-write-<type2>'),
      @('<sub>') is an expression that yields the index of the element to write,
      @('<elem>') is an expression that yields the element to write,
      and @('...') represents the code that follows the array assignment.
@@ -846,11 +881,18 @@
      we may need to extend this function with additional checks."))
   (case-match val
     ((fn arr sub elem)
-     (case fn
-       (uchar-array-write-sint (if (eq arr var)
-                                   (mv t arr sub elem)
-                                 (mv nil nil nil nil)))
-       (t (mv nil nil nil nil))))
+     (b* (((when (not (symbolp fn))) (mv nil nil nil nil))
+          ((mv okp etype array write itype) (atc-check-symbol-4part fn))
+          ((when (not okp)) (mv nil nil nil nil))
+          ((unless (eq array 'array)) (mv nil nil nil nil))
+          ((unless (eq write 'write)) (mv nil nil nil nil))
+          ((unless (atc-integer-fixtype-to-type itype))
+           (mv nil nil nil nil))
+          (type (atc-integer-fixtype-to-type etype))
+          ((when (not type)) (mv nil nil nil nil)))
+       (if (eq arr var)
+           (mv t arr sub elem)
+         (mv nil nil nil nil))))
     (& (mv nil nil nil nil)))
   ///
 
@@ -2693,7 +2735,16 @@
                (ulongp (type-ulong))
                (sllongp (type-sllong))
                (ullongp (type-ullong))
+               (schar-arrayp (type-pointer (type-schar)))
                (uchar-arrayp (type-pointer (type-uchar)))
+               (sshort-arrayp (type-pointer (type-sshort)))
+               (ushort-arrayp (type-pointer (type-ushort)))
+               (sint-arrayp (type-pointer (type-sint)))
+               (uint-arrayp (type-pointer (type-uint)))
+               (slong-arrayp (type-pointer (type-slong)))
+               (ulong-arrayp (type-pointer (type-ulong)))
+               (sllong-arrayp (type-pointer (type-sllong)))
+               (ullong-arrayp (type-pointer (type-ullong)))
                (t nil)))
        ((when (not type))
         (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state))
@@ -2967,6 +3018,7 @@
                   *atc-integer-ops-1-return-rewrite-rules*
                   *atc-integer-ops-2-return-rewrite-rules*
                   *atc-integer-convs-return-rewrite-rules*
+                  *atc-array-definition-rules*
                   '(,fn
                     ,@(atc-symbol-fninfo-alist-to-returns-value-thms prec-fns)
                     sintp-of-sint-dec-const
@@ -2988,7 +3040,16 @@
                     ullongp-of-ullong-oct-const
                     ullongp-of-ullong-hex-const
                     sintp-of-sint-from-boolean
-                    ucharp-of-uchar-array-read-sint
+                    scharp-of-schar-array-read
+                    ucharp-of-uchar-array-read
+                    sshortp-of-sshort-array-read
+                    ushortp-of-ushort-array-read
+                    sintp-of-sint-array-read
+                    uintp-of-uint-array-read
+                    slongp-of-slong-array-read
+                    ulongp-of-ulong-array-read
+                    sllongp-of-sllong-array-read
+                    ullongp-of-ullong-array-read
                     mv-nth-of-cons
                     (:e zp)
                     (:e ucharp)

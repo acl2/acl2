@@ -82,11 +82,11 @@
 
 ; shorthand for and 
 (defmacro ^ (&rest args)
-  (and-macro args))
+  `(and ,@args))
 
 ; shorthand for or
 (defmacro v (&rest args)
-  (or-macro args))
+  `(or ,@args))
 
 #|
 
