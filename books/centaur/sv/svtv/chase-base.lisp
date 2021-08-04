@@ -943,9 +943,6 @@ What you can enter at the SVTV-CHASE prompt:
  (G \"path\" phase) Go to the signal named by the given path at the given phase
 
  (O name)           Go to the signal/phase corresponding to the named pipeline output.
-                    Note: Currently the output mappings enabling this are only available
-                    when chase has been initialized using svtv-data-chase-pipeline or 
-                    svtv-data-chase-defsvtv$.
 
  (R MSB LSB)        Select the given MSB:LSB range of the current signal
 
