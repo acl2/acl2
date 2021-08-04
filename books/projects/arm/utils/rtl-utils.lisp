@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; June 2021
+;; July 2021
 
 (in-package "RTL")
 
@@ -652,6 +652,15 @@
            (equal (sigf x f)
                   (manf x f)))
   :hints (("Goal" :in-theory (enable sigf manf sigw))))
+
+(defthmd nanp-is-unique-format
+  (implies (nanp x f)
+           (and (not (infp x f))
+                (not (zerp x f))
+                (not (normp x f))
+                (not (denormp x f))))
+  :hints (("Goal" :in-theory (enable nanp infp zerp normp denormp
+                                     encodingp expw formatp))))
 
 (defthmd zerp-is-unique-format
   (implies (zerp x f)

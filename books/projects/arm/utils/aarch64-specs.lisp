@@ -201,7 +201,8 @@
                                                            binary-inf-sgn
                                                            binary-zero-sgn
                                                            sgnf)))))
-  (if (or (infp a f) (if (eql op 'div) (zerp b f) (infp b f)))
+  (if (or (infp a f)
+          (if (eql op 'div) (zerp b f) (infp b f)))
       (mv (iencode (binary-inf-sgn op a f b f) f) fpsr)
     (let* ((asgn (sgnf a f))
            (bsgn (sgnf b f))
@@ -349,3 +350,85 @@
     (if result
         (mv result fpsr)
       (aarch64-sqrt-comp a fpcr fpsr f))))
+
+;; ======================================================================
+
+;; Extend ARM-FSCALE-SPEC to AArch64
+
+(defun aarch64-fscale-pre-comp (a fpcr fpsr f)
+  (declare (xargs :guard (and (encodingp a f)
+                              (natp fpcr)
+                              (natp fpsr))
+                  :guard-hints (("Goal" :in-theory (enable encodingp
+                                                           zencode
+                                                           set-flag
+                                                           sgnf)))))
+  (mv-let
+    (a fpsr)
+    (if (and (denormp a f)
+             (or (and (not (equal f (hp)))
+                      (= (bitn fpcr *fz*) 1)
+                      (= (bitn fpcr *ah*) 0))
+                 (and (equal f (hp))
+                      (= (bitn fpcr *fz16*) 1))
+                 (and (not (equal f (hp)))
+                      (= (bitn fpcr *fiz*) 1))))
+        (mv (zencode (sgnf a f) f)
+            (if (and (not (equal f (hp)))
+                     (= (bitn fpcr *fz*) 1)
+                     (= (bitn fpcr *ah*) 0))
+                (set-flag *idc* fpsr)
+              fpsr))
+      (mv a
+          (if (and (denormp a f)
+                   (not (equal f (hp)))
+                   (= (bitn fpcr *fiz*) 0)
+                   (= (bitn fpcr *ah*) 1))
+              (set-flag *idc* fpsr)
+            fpsr)))
+    (mv a
+        (if (nanp a f)
+            (aarch64-process-nan-1 a fpcr f)
+          ())
+        (if (snanp a f)
+            (set-flag *ioc* fpsr)
+          fpsr))))
+
+(defun aarch64-fscale-comp (a b fpcr fpsr f)
+  (declare (xargs :guard (and (encodingp a f)
+                              (natp b)
+                              (natp fpcr)
+                              (natp fpsr))
+                  :guard-hints (("Goal" :in-theory (enable encodingp
+                                                           zerp-decode-rel)))))
+  (if (or (zerp a f) (infp a f))
+      (mv a fpsr)
+    (let* ((fwidth (+ 1 (expw f) (sigw f)))
+           (aval (decode a f))
+           (bval (si b fwidth))
+           (u (* aval (expt 2 bval))))
+      (aarch64-post-comp u fpcr fpsr f))))
+
+(defthm encodingp-nth0-of-aarch64-fscale-pre-comp
+  (implies (encodingp a f)
+           (encodingp (mv-nth 0 (aarch64-fscale-pre-comp a fpcr fpsr f))
+                      f))
+  :hints (("Goal" :in-theory (enable encodingp zencode))))
+
+(defthm natp-nth2-of-aarch64-fscale-pre-comp
+  (implies (natp fpsr)
+           (natp (mv-nth 2 (aarch64-fscale-pre-comp a fpcr fpsr f))))
+  :hints (("Goal" :in-theory (enable set-flag)))
+  :rule-classes :type-prescription)
+
+(defun aarch64-fscale-spec (a b fpcr fpsr f)
+  (declare (xargs :guard (and (encodingp a f)
+                              (natp b)
+                              (natp fpcr)
+                              (natp fpsr))
+                  :guard-hints (("Goal"
+                                 :in-theory (disable aarch64-fscale-pre-comp)))))
+  (mv-let (a result fpsr) (aarch64-fscale-pre-comp a fpcr fpsr f)
+    (if result
+        (mv result fpsr)
+      (aarch64-fscale-comp a b fpcr fpsr f))))
