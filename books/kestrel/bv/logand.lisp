@@ -533,3 +533,11 @@
                         (:instance logand-of-mod-and-mod
                                    (j j)))
            :in-theory (disable mod-sum-cases))))
+
+(defthm signed-byte-p-of-logand
+  (implies (and (signed-byte-p size i)
+                (signed-byte-p size j))
+           (signed-byte-p size (logand i j)))
+  :hints (("Goal" :cases ((and (<= 0 i) (<= 0 j))
+                          (and (not (<= 0 i)) (<= 0 j))
+                          (and (<= 0 i) (not (<= 0 j)))))))

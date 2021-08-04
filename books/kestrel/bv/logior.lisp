@@ -334,3 +334,9 @@
            (< (logior i j) 256))
   :hints (("Goal" :use (:instance  <-of-logior-and-expt-of-2 (n 8))
            :in-theory (disable  <-of-logior-and-expt-of-2))))
+
+(defthm signed-byte-p-of-logior
+  (implies (and (signed-byte-p size i)
+                (signed-byte-p size j))
+           (signed-byte-p size (logior i j)))
+  :hints (("Goal" :in-theory (e/d (logior) (signed-byte-p)))))

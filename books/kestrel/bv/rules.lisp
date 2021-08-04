@@ -4870,6 +4870,7 @@
        (list x y n)
      (induct-floor-by-2-floor-by-2-sub-1 (floor x 2) (floor y 2) (+ -1 n)))))
 
+;; You can chop one argument of logand down to the size of the other argument
 (defthm logand-of-bvchop
   (implies (and (unsigned-byte-p m x)
                 (integerp y)
