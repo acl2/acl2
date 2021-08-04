@@ -31,8 +31,8 @@
 
 (in-package "SV")
 
-(include-book "fsm-base")
-
+(include-book "../svex/lists") ;fsm-base")
+(include-book "../svex/alist-equiv")
 
 (defprod svtv-probe
   ((signal svar-p)

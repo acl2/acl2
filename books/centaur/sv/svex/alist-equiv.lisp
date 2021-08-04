@@ -130,3 +130,78 @@
                    (equal (svex-alist-keys x) (svex-alist-keys y)))
               (equal (svex-alist-eval-equiv! x y) t))
      :hints ((witness))))
+
+
+
+
+(defsection svex-envlists-similar
+  (def-universal-equiv svex-envlists-similar
+    :qvars (n)
+    :equiv-terms ((svex-envs-similar (nth n x))
+                  (equal (len x)))
+    :defquant t)
+
+  (defexample svex-envlists-similar-nth-ex
+    :pattern (nth n x)
+    :templates (n)
+    :instance-rulename svex-envlists-similar-instancing)
+
+  (defcong svex-envlists-similar svex-envs-similar (car x) 1
+    :hints (("goal" :use ((:instance svex-envlists-similar-necc (n 0) (y x-equiv))))))
+
+  (defcong svex-envlists-similar svex-envlists-similar (cdr x) 1
+    :hints (("goal" :use ((:instance svex-envlists-similar-necc
+                           (n (+ (nfix (svex-envlists-similar-witness (cdr x) (cdr x-equiv))) 1))
+                           (y x-equiv)))
+             :expand ((:free (x y) (svex-envlists-similar (cdr x) y))
+                      (:free (x y) (svex-envlists-similar y (cdr x)))))))
+
+  (defcong svex-envlists-similar equal (len x) 1
+    :hints (("goal" :in-theory (enable svex-envlists-similar))))
+
+  (defcong svex-envlists-similar equal (consp x) 1
+    :hints (("goal" :in-theory (enable svex-envlists-similar))))
+
+  (defcong svex-envlists-similar svex-envs-similar (nth n x) 2 :hints ((witness)))
+
+  (defcong svex-envs-similar svex-envlists-similar (cons a b) 1
+    :hints ((witness)
+            (and stable-under-simplificationp
+                 '(:expand ((:free (a) (nth n0 (cons a b))))))))
+
+  (defcong svex-envlists-similar svex-envlists-similar (cons a b) 2
+    :hints ((witness :ruleset (svex-envlists-similar-witnessing))
+            (and stable-under-simplificationp
+                 '(:expand ((:free (a) (nth n0 (cons a b)))))))))
+
+
+(defsection svex-envlists-equivalent
+  (def-universal-equiv svex-envlists-equivalent
+    :qvars (n)
+    :equiv-terms ((svex-envs-equivalent (nth n x))
+                  (equal (len x)))
+    :defquant t)
+
+  (defexample svex-envlists-equivalent-nth-ex
+    :pattern (nth n x)
+    :templates (n)
+    :instance-rulename svex-envlists-equivalent-instancing)
+
+  (defrefinement svex-envlists-equivalent svex-envlists-similar
+    :hints ((witness)))
+
+
+  (defcong svex-envlists-equivalent svex-envs-equivalent (car x) 1
+    :hints (("goal" :use ((:instance svex-envlists-equivalent-necc (n 0) (y x-equiv))))))
+
+  (defcong svex-envlists-equivalent svex-envlists-equivalent (cdr x) 1
+    :hints (("goal" :use ((:instance svex-envlists-equivalent-necc
+                           (n (+ (nfix (svex-envlists-equivalent-witness (cdr x) (cdr x-equiv))) 1))
+                           (y x-equiv)))
+             :expand ((:free (x y) (svex-envlists-equivalent (cdr x) y))
+                      (:free (x y) (svex-envlists-equivalent y (cdr x)))))))
+
+  (defcong svex-envlists-equivalent svex-envs-equivalent (nth n x) 2
+    :hints ((witness))))
+
+

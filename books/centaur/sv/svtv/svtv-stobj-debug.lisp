@@ -287,6 +287,8 @@
 (define svtv-data-chase-phase-fsm ((ins svex-envlist-p)
                                    (initst svex-env-p)
                                    &key
+                                   ((probes svtv-probealist-p) 'nil)
+                                   ((namemap svtv-name-lhs-map-p) 'nil)
                                    (svtv-data 'svtv-data)
                                    (svtv-chase-data 'svtv-chase-data)
                                    (state 'state))
@@ -303,6 +305,8 @@
                   :nextstate (make-fast-alist fsm.nextstate)
                   :inputs (make-fast-alists ins)
                   :initst (make-fast-alist initst)))
+       (svtv-chase-data (set-svtv-chase-data->probes probes svtv-chase-data))
+       (svtv-chase-data (set-svtv-chase-data->namemap namemap svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->evaldata evaldata svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->updates (make-fast-alist fsm.values) svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->delays (make-fast-alist flatnorm.delays) svtv-chase-data))
@@ -328,9 +332,34 @@
     (svtv-data-debug-phase-fsm base-ins initst :filename filename)))
 
 
+
+(define svtv-probealist-cycle-adjust-aux ((x svtv-probealist-p)
+                                          (cycle-len posp)
+                                          (cycle-outphase natp))
+  :returns (new-x svtv-probealist-p)
+  (b* (((when (atom x))
+        nil)
+       ((unless (mbt (consp (car x))))
+        (svtv-probealist-cycle-adjust-aux (cdr x) cycle-len cycle-outphase))
+       ((cons var (svtv-probe pr)) (car x)))
+    (cons (cons (svar-fix var) (change-svtv-probe pr :time (+ (* pr.time (lposfix cycle-len))
+                                                   (lnfix cycle-outphase))))
+          (svtv-probealist-cycle-adjust-aux (cdr x) cycle-len cycle-outphase))))
+
+(define svtv-probealist-cycle-adjust ((x svtv-probealist-p)
+                                      (phases svtv-cyclephaselist-p))
+  :returns (new-x svtv-probealist-p)
+  (b* ((len (pos-fix (len phases)))
+       (outphase (or (svtv-cycle-output-phase phases) 0)))
+    (svtv-probealist-cycle-adjust-aux x len outphase)))
+       
+
+
 (define svtv-data-chase-cycle-fsm ((ins svex-envlist-p)
                                    (initst svex-env-p)
                                    &key
+                                   ((probes svtv-probealist-p) 'nil)
+                                   ((namemap svtv-name-lhs-map-p) 'nil)
                                    (svtv-data 'svtv-data)
                                    (svtv-chase-data 'svtv-chase-data)
                                    (state 'state))
@@ -340,8 +369,10 @@
               (equal (alist-keys initst)
                      (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
   :returns (mv new-svtv-chase-data new-state)
-  (b* ((base-ins (svtv-cycle-run-fsm-inputs ins (svtv-data->cycle-phases svtv-data))))
-    (svtv-data-chase-phase-fsm base-ins initst)))
+  (b* ((phases (svtv-data->cycle-phases svtv-data))
+       (base-ins (svtv-cycle-run-fsm-inputs ins phases))
+       (probes (svtv-probealist-cycle-adjust probes phases)))
+    (svtv-data-chase-phase-fsm base-ins initst :probes probes :namemap namemap)))
 
 
 ;; (defthm svex-alist-keys-of-svtv-data->cycle-nextstate
@@ -443,8 +474,11 @@
         (svtv-pipeline-setup-to-cycle-inputs env
                                              setup
                                              (svtv-data->phase-fsm svtv-data)
-                                             (svtv-data->namemap svtv-data))))
-    (svtv-data-chase-cycle-fsm cycle-ins initst)))
+                                             (svtv-data->namemap svtv-data)))
+       ((pipeline-setup setup))
+       (namemap (and (svtv-data->namemap-validp svtv-data)
+                     (svtv-data->namemap svtv-data))))
+    (svtv-data-chase-cycle-fsm cycle-ins initst :probes setup.probes :namemap namemap)))
 
 (define svtv-data-chase-pipeline ((env svex-env-p)
                                   &key
@@ -616,26 +650,6 @@
        
        
     
-(define svtv-probealist-cycle-adjust-aux ((x svtv-probealist-p)
-                                          (cycle-len posp)
-                                          (cycle-outphase natp))
-  :returns (new-x svtv-probealist-p)
-  (b* (((when (atom x))
-        nil)
-       ((unless (mbt (consp (car x))))
-        (svtv-probealist-cycle-adjust-aux (cdr x) cycle-len cycle-outphase))
-       ((cons var (svtv-probe pr)) (car x)))
-    (cons (cons (svar-fix var) (change-svtv-probe pr :time (+ (* pr.time (lposfix cycle-len))
-                                                   (lnfix cycle-outphase))))
-          (svtv-probealist-cycle-adjust-aux (cdr x) cycle-len cycle-outphase))))
-
-(define svtv-probealist-cycle-adjust ((x svtv-probealist-p)
-                                      (phases svtv-cyclephaselist-p))
-  :returns (new-x svtv-probealist-p)
-  (b* ((len (pos-fix (len phases)))
-       (outphase (or (svtv-cycle-output-phase phases) 0)))
-    (svtv-probealist-cycle-adjust-aux x len outphase)))
-       
        
 (define svtv-fsm-run-probes ((ins svex-envlist-p)
                              (initst svex-env-p)
