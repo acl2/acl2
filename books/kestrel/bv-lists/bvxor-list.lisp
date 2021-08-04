@@ -68,14 +68,14 @@
 
 (defthm take-of-bvxor-list
   (implies (and (natp n)
-                (< n (len x)))
+                (<= n (len x)))
            (equal (take n (bvxor-list size x y))
                   (bvxor-list size (take n x) (take n y))))
   :hints (("Goal" :in-theory (enable take bvxor-list))))
 
 (defthm nthcdr-of-bvxor-list
   (implies (and (natp n)
-                (< n (len x)))
+                (<= n (len x)))
            (equal (nthcdr n (bvxor-list size x y))
                   (bvxor-list size (nthcdr n x) (nthcdr n y))))
   :hints (("Goal" :in-theory (enable nthcdr bvxor-list))))
