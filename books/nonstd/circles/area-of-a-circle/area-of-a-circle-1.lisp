@@ -2,6 +2,7 @@
 ; Application of Integration by Substitution
 ;
 ; Copyright (C) 2021 University of Wyoming
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 ;
 ;
 ; Main Author: Jagadish Bapanapally (jagadishb285@gmail.com)
@@ -280,6 +281,8 @@
 	    (> (* x1 x1) (* x1 x2)))
    ))
 
+; Matt K. addition to speed up proofs:
+(in-theory (disable sqrt-epsilon-delta))
 
 (local
  (defthm ineq-lemma2
@@ -593,6 +596,8 @@
 			    (x (* (rad) (/ (- (acl2-sine x) (acl2-sine x1)) (- x x1))))
 			    (y (* (rad) (acl2-cosine x))))
 		 )
+; Matt K. addition to speed up proofs:
+           :in-theory (disable ineq-lemma3)
 	   ))
   )
 

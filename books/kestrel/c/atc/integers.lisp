@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-integers
-  :parents (atc-dynamic-semantics)
+  :parents (atc-shallow-embedding)
   :short "A model of C integers for ATC."
   :long
   (xdoc::topstring

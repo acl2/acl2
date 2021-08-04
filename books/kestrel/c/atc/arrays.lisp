@@ -16,13 +16,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-arrays
-  :parents (atc-dynamic-semantics)
+  :parents (atc-shallow-embedding)
   :short "A model of C arrays for ATC."
   :long
   (xdoc::topstring
    (xdoc::p
     "At this time, we represent arrays as
-     sequences of values that can read and written.
+     sequences of values that can be read and written.
      These array representations can be passed around, and manipulated by,
      ACL2 functions that represent C functions,
      and ATC translates those to corresponding array manipulations.")
@@ -30,10 +30,6 @@
     "We represent arrays as values of fixtypes that wrap lists of C values.
      We provide operations to read and write elements,
      essentially wrappers of @(tsee nth) and @(tsee update-nth).")
-   (xdoc::p
-    "Initially we are providing a model of arrays of @('unsigned char')s,
-     which are very common (at least in our envisioned initial use cases).
-     We will provide models of arrays of other types, as needed.")
    (xdoc::p
     "This fairly simple model should suffice to generate C code
      that manipulates arrays in some interesting ways.
@@ -78,188 +74,356 @@
      or they are completely disjoint.
      The model does not capture
      the situation of an array being a subarray of another one.
-     We may extend the model in the future."))
+     We may extend the model in the future.")
+   (xdoc::p
+    "We provide a model of arrays of all the integer types
+     supported in ATC's model of C,
+     i.e. arrays of @('unsigned chars')s, arrays of @('int')s, etc.
+     [C:6.5.2.1/2] explains that array indexing @('a[i]') boils down to
+     addition between the pointer @('a') and the integer @('i'),
+     and [C:6.5.6/2] allows the integer to have any integer type.
+     This means that, for each possible array type,
+     there are versions of the read and write operations (which use indices)
+     for all the integer types supported in ATC's model of C.
+     Since all these functions follow a common pattern,
+     we generate arary types and functions programmatically,
+     as done for the "
+    (xdoc::seetopic "atc-integers" "integers")
+    ".")
+   (xdoc::p
+    "[C:6.2.5/20] requires arrays to be non-empty,
+     i.e. to contain at least one element,
+     i.e. to have positive length.
+     As noted in @(see atc-arrays), arrays are indexed via integers.
+     [C] only provides minimum requirements for the sizes of integer types,
+     not maximum requirements:
+     other than practical considerations,
+     nothing, mathematically, prevents some integer types
+     to consists of thousands or millions of bits.
+     So our model of arrays requires them to be non-empty
+     but puts no maximum limits on their length.")
+   (xdoc::p
+    "For each integer type @('<type>'),
+     besides the fixtype of arrays of that type,
+     we generate functions
+     @('<type>-array-read') and @('<type>-array-write')
+     that take ACL2 integers as indices;
+     these functions do not directly represent C constructs,
+     but are useful to make the definition of the ones that do more concise.
+     We generate functions
+     @('<type>-array-read-<type1>') and @('<type>-array-write-<type1>'),
+     which represent C constructs:
+     that convert the index to an ACL2 integer
+     and then call the two functions above.
+     We also generate convenience functions
+     to test whether indices are in range
+     and to return the length of the arrays:
+     these do not represent C constructs,
+     but are useful in guards for example."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod uchar-array
-  :short "Fixtype of (ATC's model of) C @('unsigned char') arrays."
+(define atc-def-integer-arrays ((type typep))
+  :guard (type-integerp type)
+  :returns (event pseudo-event-formp)
+  :short "Event to generate the core model of arrays of an integer type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "[C:6.2.5/20] requires arrays to be non-empty,
-     i.e. to contain at least one element,
-     i.e. to have positive length.")
-   (xdoc::p
-    "[C] does not appear to impose any upper limit on the length of an array.
-     [C:6.5.2.1/2] explains that array indexing @('a[i]') boils down to
-     addition between the pointer @('a') and the integer @('i'),
-     and [C:6.5.6/2] allows the integer to have any integer type.
-     Integer types consist of not just @('int'),
-     but also the standard ones (e.g. @('unsigned short'))
-     and the extended ones
-     [C:6.2.5/4-7].
-     [C] only provides minimum requirements for the sizes of integer types,
-     not maximum requirements:
-     other than practical considerations,
-     nothing, mathematically, prevents some integer types
-     to consists of thousands or millions of bits.")
-   (xdoc::p
-    "Because of all of the above,
-     our model of C arrays puts no maximum length constraints on arrays.
-     (This is in contrast with Java,
-     where arrays have a bounded length and may be also empty.)
-     We model arrays as (wrappers of) lists of arbitrary positive length.")
-   (xdoc::p
-    "This is sufficient to represent all the actual arrays of interest, clearly.
-     If one uses an @('int') to access an array
-     whose length exceeds the maximum value of @('int'),
-     that simply means that the access can only apply to part of the array.")
-   (xdoc::p
-    "So this fixtype is just a wrapper of lists,
-     with a non-emptiness requirement.
-     The wrapper provides better abstraction,
-     and facilitates changes."))
-  ((elements uchar-list :reqfix (if (consp elements)
-                                    elements
-                                  (list (uchar 0)))))
-  :require (consp elements)
-  :pred uchar-arrayp)
+    "Here we generate the fixtype,
+     and the internally used functions
+     that use ACL2 integers as indices.
+     Note that indices are 0-indexed.
+     We also generate the function that returns the length of an array,
+     as an ACL2 integer."))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (b* ((type-string (atc-integer-type-string type))
+       (<type> (atc-integer-type-fixtype type))
+       (<type>p (pack <type> 'p))
+       (<type>-fix (pack <type> '-fix))
+       (<type>-list (pack <type> '-list))
+       (<type>-listp (pack <type>-list 'p))
+       (<type>-array (pack <type> '-array))
+       (<type>-arrayp (pack <type>-array 'p))
+       (<type>-array-fix (pack <type>-array '-fix))
+       (<type>-array->elements (pack <type>-array '->elements))
+       (<type>-array-length (pack <type>-array '-length))
+       (<type>-array-index-okp (pack <type> '-array-index-okp))
+       (<type>-array-read (pack <type>-array '-read))
+       (<type>-array-write (pack <type>-array '-write))
+       (len-of-<type>-array->elements-of-<type>-array-write
+        (pack 'len-of- <type>-array->elements '-of- <type>-array-write))
+       (<type>-array-length-of-<type>-array-write
+        (pack <type> '-array-length-of- <type>-array-write)))
 
-(define uchar-array-index-okp ((array uchar-arrayp) (index integerp))
-  :returns (yes/no booleanp)
-  :short "Check if an integer is a valid index (i.e. in range)
-          for a C @('unsigned char') array."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used as guard for array read and write operations.
-     Note that the integer here is a mathematical one,
-     to provide uniformity across the different C integer types.
-     Recall that functions like @(tsee slong-integer-value)
-     can be used, in ACL2 representations of C code,
-     to turn C integers into ACL2 integers.")
-   (xdoc::p
-    "Since arrays are zero-indexed in C,
-     the index is valid if it is non-negative and below the length."))
-  (integer-range-p 0 (len (uchar-array->elements array)) (ifix index))
-  :hooks (:fix))
+    `(progn
+
+       ,@(and (type-case type :char)
+              (raise "Type ~x0 not supported." type))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (fty::defprod ,<type>-array
+         :short ,(str::cat "Fixtype of (ATC's model of) arrays of "
+                           type-string
+                           ".")
+         ((elements ,<type>-list :reqfix (if (consp elements)
+                                             elements
+                                           (list (,<type> 0)))))
+         :require (consp elements)
+         :pred ,<type>-arrayp)
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,<type>-array-length ((array ,<type>-arrayp))
+         :returns (length natp :rule-classes (:rewrite :type-prescription))
+         :short ,(str::cat "Length of an array of "
+                           type-string
+                           ".")
+         (len (,<type>-array->elements array))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,<type>-array-index-okp ((array ,<type>-arrayp) (index integerp))
+         :returns (yes/no booleanp)
+         :short ,(str::cat "Check if an integer is
+                            a valid index (i.e. in range)
+                            for an array of "
+                           type-string
+                           ".")
+         (integer-range-p 0 (,<type>-array-length array) (ifix index))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,<type>-array-read ((array ,<type>-arrayp) (index integerp))
+         :guard (,<type>-array-index-okp array index)
+         :returns (element ,<type>p)
+         :short ,(str::cat "Read an element from an array of "
+                           type-string
+                           ", using an integer index.")
+         (,<type>-fix (nth index (,<type>-array->elements array)))
+         :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp
+                                                  ,<type>-array-length)))
+         :hooks (:fix)
+
+         :prepwork
+         ;; to generate theorems about NTH:
+         ((local (include-book "std/lists/nth" :dir :system))
+          (local (fty::deflist ,<type>-list
+                   :elt-type ,<type>
+                   :true-listp t
+                   :elementp-of-nil nil
+                   :pred ,<type>-listp))))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,<type>-array-write ((array ,<type>-arrayp)
+                                    (index integerp)
+                                    (element ,<type>p))
+         :guard (,<type>-array-index-okp array index)
+         :returns (new-array ,<type>-arrayp)
+         :short ,(str::cat "Write an element to an array of"
+                           type-string
+                           ", using an integer index.")
+         (b* ((array (,<type>-array-fix array))
+              (index (ifix index))
+              (element (,<type>-fix element)))
+           (if (mbt (,<type>-array-index-okp array index))
+               (,<type>-array (update-nth index
+                                          element
+                                          (,<type>-array->elements array)))
+             array))
+         :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp
+                                                  ,<type>-array-length)))
+         :hooks (:fix)
+
+         :prepwork
+         ;; to generate theorems about UPDATE-NTH:
+         ((local (include-book "std/lists/update-nth" :dir :system))
+          (local (fty::deflist ,<type>-list
+                   :elt-type ,<type>
+                   :true-listp t
+                   :elementp-of-nil nil
+                   :pred ,<type>-listp)))
+
+         ///
+
+         (defrule ,len-of-<type>-array->elements-of-<type>-array-write
+           (equal (len (,<type>-array->elements
+                        (,<type>-array-write array index element)))
+                  (len (,<type>-array->elements array)))
+           :enable (,<type>-array-index-okp
+                    ,<type>-array-length))
+
+         (defrule ,<type>-array-length-of-<type>-array-write
+           (equal (,<type>-array-length
+                   (,<type>-array-write array index element))
+                  (,<type>-array-length array))
+           :enable (,<type>-array-index-okp
+                    ,<type>-array-length)))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define uchar-array-sint-index-okp ((array uchar-arrayp) (index sintp))
-  :returns (yes/no booleanp)
-  :short "Check if a C @('int') is a valid index (i.e. in range)
-          for a C @('unsigned char') array."
-  (uchar-array-index-okp array (sint-integer-value index))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define uchar-array-read ((array uchar-arrayp) (index integerp))
-  :guard (uchar-array-index-okp array index)
-  :returns (element ucharp)
-  :short "Read an element in an @('unsigned char') array,
-          using an integer index."
+(define atc-def-integer-arrays-indices ((etype typep) (itype typep))
+  :guard (and (type-integerp etype)
+              (type-integerp itype))
+  :returns (event pseudo-event-formp)
+  :short "Event to generate the part of the model of arrays of an integer type
+          that involves indices of an integer type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As mentioned in @(tsee uchar-array),
-     [C] allows any integer type for array indices.
-     As in @(tsee uchar-array-index-okp), the index is a mathematical integer;
-     see the explanation there."))
-  (uchar-fix (nth index (uchar-array->elements array)))
-  :guard-hints (("Goal" :in-theory (enable uchar-array-index-okp)))
-  :hooks (:fix)
+    "Here @('etype') is the type of the array elements,
+     while @('itype') is the type of the array indices."))
 
-  :prepwork
-  ;; to generate theorems about NTH:
-  ((local (include-book "std/lists/nth" :dir :system))
-   (local (fty::deflist uchar-list
-            :elt-type uchar
-            :true-listp t
-            :elementp-of-nil nil
-            :pred uchar-listp))))
+  (b* ((etype-string (atc-integer-type-string etype))
+       (itype-string (atc-integer-type-string itype))
+       (<etype> (atc-integer-type-fixtype etype))
+       (<itype> (atc-integer-type-fixtype itype))
+       (<etype>p (pack <etype> 'p))
+       (<itype>p (pack <itype> 'p))
+       (<etype>-array (pack <etype> '-array))
+       (<etype>-arrayp (pack <etype>-array 'p))
+       (<etype>-array->elements (pack <etype>-array '->elements))
+       (<etype>-array-length (pack <etype>-array '-length))
+       (<etype>-array-index-okp (pack <etype> '-array-index-okp))
+       (<etype>-array-read (pack <etype>-array '-read))
+       (<etype>-array-write (pack <etype>-array '-write))
+       (<itype>-integer-value (pack <itype> '-integer-value))
+       (<etype>-array-<itype>-index-okp (pack
+                                         <etype> '-array- <itype> '-index-okp))
+       (<etype>-array-read-<itype> (pack <etype> '-array-read- <itype>))
+       (<etype>-array-write-<itype> (pack <etype> '-array-write- <itype>))
+       (len-of-<etype>-array->elements-of-<etype>-array-write-<itype>
+        (pack
+         'len-of- <etype>-array->elements '-of- <etype>-array-write-<itype>))
+       (<etype>-array-length-of-<etype>-array-write-<itype>
+        (pack <etype> '-array-length-of- <etype>-array-write-<itype>)))
+
+    `(progn
+
+       ,@(and (type-case etype :char)
+              (raise "Type ~x0 not supported." etype))
+
+       ,@(and (type-case itype :char)
+              (raise "Type ~x0 not supported." itype))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,<etype>-array-<itype>-index-okp ((array ,<etype>-arrayp)
+                                                 (index ,<itype>p))
+         :returns (yes/no booleanp)
+         :short ,(str::cat "Check if an index of "
+                           itype-string
+                           " is valid for an array of type "
+                           etype-string
+                           ".")
+         (,<etype>-array-index-okp array (,<itype>-integer-value index))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,<etype>-array-read-<itype> ((array ,<etype>-arrayp)
+                                            (index ,<itype>p))
+         :guard (,<etype>-array-<itype>-index-okp array index)
+         :returns (element ,<etype>p)
+         :short ,(str::cat "Read an element from an array of "
+                           etype-string
+                           ", using an index of "
+                           itype-string
+                           ".")
+         (,<etype>-array-read array (,<itype>-integer-value index))
+         :guard-hints (("Goal"
+                        :in-theory (enable ,<etype>-array-<itype>-index-okp)))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,<etype>-array-write-<itype> ((array ,<etype>-arrayp)
+                                             (index ,<itype>p)
+                                             (element ,<etype>p))
+         :guard (,<etype>-array-<itype>-index-okp array index)
+         :returns (new-array ,<etype>-arrayp)
+         :short ,(str::cat "Write an element to an array of "
+                           etype-string
+                           ", using an index of "
+                           itype-string
+                           ".")
+         (,<etype>-array-write array (,<itype>-integer-value index) element)
+         :guard-hints (("Goal"
+                        :in-theory (enable ,<etype>-array-<itype>-index-okp)))
+         :hooks (:fix)
+
+         ///
+
+         (defrule ,len-of-<etype>-array->elements-of-<etype>-array-write-<itype>
+           (equal
+            (len (,<etype>-array->elements
+                  (,<etype>-array-write-<itype> array index element)))
+            (len (,<etype>-array->elements array))))
+
+         (defrule ,<etype>-array-length-of-<etype>-array-write-<itype>
+           (equal (,<etype>-array-length
+                   (,<etype>-array-write-<itype> array index element))
+                  (,<etype>-array-length array))))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define uchar-array-read-sint ((array uchar-arrayp) (index sintp))
-  :guard (uchar-array-sint-index-okp array index)
-  :returns (element ucharp)
-  :short "Read an element in an @('unsigned char') array,
-          using an @('int') index."
-  (uchar-array-read array (sint-integer-value index))
-  :guard-hints (("Goal" :in-theory (enable uchar-array-sint-index-okp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define uchar-array-write ((array uchar-arrayp)
-                           (index integerp)
-                           (element ucharp))
-  :guard (uchar-array-index-okp array index)
-  :returns (new-array uchar-arrayp)
-  :short "Write an element in an @('unsigned char') array,
-          using an integer index."
+(define atc-def-integer-arrays-loop-inner ((etype typep) (itypes type-listp))
+  :guard (and (type-integerp etype)
+              (type-integer-listp itypes))
+  :returns (events pseudo-event-form-listp)
+  :short "Events to generate the array operations that involve indices,
+          for a given array element type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As mentioned in @(tsee uchar-array),
-     [C] allows any integer type for array indices.
-     As in @(tsee uchar-array-index-okp), the index is a mathematical integer;
-     see the explanation there."))
-  (b* ((array (uchar-array-fix array))
-       (index (ifix index))
-       (element (uchar-fix element)))
-    (if (mbt (uchar-array-index-okp array index))
-        (make-uchar-array :elements (update-nth index
-                                                element
-                                                (uchar-array->elements array)))
-      array))
-  :guard-hints (("Goal" :in-theory (enable uchar-array-index-okp)))
-  :hooks (:fix)
-
-  :prepwork
-  ;; to generate theorems about UPDATE-NTH:
-  ((local (include-book "std/lists/update-nth" :dir :system))
-   (local (fty::deflist uchar-list
-            :elt-type uchar
-            :true-listp t
-            :elementp-of-nil nil
-            :pred uchar-listp)))
-
-  ///
-
-  (defrule len-of-uchar-array->elements-of-uchar-array-write
-    (equal (len (uchar-array->elements (uchar-array-write array index element)))
-           (len (uchar-array->elements array)))
-    :enable uchar-array-index-okp))
+    "This is the inner loop for generating our model of arrays."))
+  (cond ((endp itypes) nil)
+        (t (cons (atc-def-integer-arrays-indices etype (car itypes))
+                 (atc-def-integer-arrays-loop-inner etype (cdr itypes))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define uchar-array-write-sint ((array uchar-arrayp)
-                                (index sintp)
-                                (element ucharp))
-  :guard (uchar-array-sint-index-okp array index)
-  :returns (new-array uchar-arrayp)
-  :short "Write an element in an @('unsigned char') array,
-          using an @('int') index."
+(define atc-def-integer-arrays-loop-outer ((etypes type-listp)
+                                           (itypes type-listp))
+  :guard (and (type-integer-listp etypes)
+              (type-integer-listp itypes))
+  :returns (events pseudo-event-form-listp)
+  :short "Events to generate the model of arrays
+          for the given array element types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is temporary, since its role will be replaced by
-     @(tsee uchar-array-index-okp) and @(tsee sint-integer-value)."))
-  (uchar-array-write array (sint-integer-value index) element)
-  :guard-hints (("Goal" :in-theory (enable uchar-array-sint-index-okp)))
-  :hooks (:fix)
+    "This is the outer loop for generating our model of arrays."))
+  (cond ((endp etypes) nil)
+        (t (append (list (atc-def-integer-arrays (car etypes)))
+                   (atc-def-integer-arrays-loop-inner (car etypes) itypes)
+                   (atc-def-integer-arrays-loop-outer (cdr etypes) itypes)))))
 
-  ///
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defrule len-of-uchar-array->elements-of-uchar-array-write-sint
-    (equal
-     (len (uchar-array->elements (uchar-array-write-sint array index element)))
-     (len (uchar-array->elements array)))))
+(make-event
+ (b* ((types (list (type-schar)
+                   (type-uchar)
+                   (type-sshort)
+                   (type-ushort)
+                   (type-sint)
+                   (type-uint)
+                   (type-slong)
+                   (type-ulong)
+                   (type-sllong)
+                   (type-ullong))))
+   `(progn ,@(atc-def-integer-arrays-loop-outer types types))))

@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-integer-formats
-  :parents (atc-integers)
+  :parents (atc-shallow-embedding)
   :short "A model of C integer formats for ATC."
   :long
   (xdoc::topstring

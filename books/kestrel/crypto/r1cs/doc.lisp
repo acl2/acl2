@@ -52,8 +52,7 @@ operators available in R1CSes.  See gadgets.lisp.")
 very large) logical representation, essentially a conjunction of
 equalities involving the prime field operators ADD and MUL.  This
 lifter is based on our Axe Rewriter.  It can also apply a variety of
-verified simplification rules to the R1CS.  See
-lift-r1cs/lift-r1cs-new.lisp.")
+verified simplification rules to the R1CS.  See lift-r1cs.lisp.")
 
 (xdoc::p "Once lifted, an R1CS can be verified using the Axe Prover.  Typically,
 one proves that the R1CS implies its formal specification.  The formal

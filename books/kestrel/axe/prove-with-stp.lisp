@@ -1479,7 +1479,7 @@
 ;fixme use a worklist?
 ;todo: compare to gather-nodes-to-translate
 ;todo: this assumes the miter is pure, but what about :irrelevant?
-;move to axe.lisp?
+;move to equivalence-checker.lisp?
 (defun gather-nodes-for-translation (n
                                      dag-array-name
                                      dag-array
@@ -1531,7 +1531,7 @@
 ;;     (let ((current (aref1 array-name array index)))
 ;;       (max-array-elem (+ -1 index) (max (nfix current) max-so-far) array-name array))))
 
-;Used in axe.lisp
+;Used in equivalence-checker.lisp
 ;fixme use a worklist algorithm?
 ;returns (mv nodenums-to-translate ;in decreasing order
 ;            cut-nodenum-type-alist

@@ -70,7 +70,7 @@
       (r1cs-var-to-lifted-var-alist (rest vars) package (acons var new-var acc)))))
 
 ;; Returns (mv erp event state).
-(defun lift-r1cs-new-fn (name-of-defconst
+(defun lift-r1cs-fn (name-of-defconst
                          vars ; may be keywords, in which case we switch to PACKAGE (if not :auto) or to the acl2 package
                          constraints
                          prime
@@ -103,16 +103,16 @@
        (r1cs-var-to-lifted-var-alist (r1cs-var-to-lifted-var-alist vars package nil))
        (lifted-vars (strip-cdrs r1cs-var-to-lifted-var-alist))
        ((acl2::when (not (no-duplicatesp lifted-vars))) ;todo: optimize by sorting
-        (er hard? 'lift-r1cs-new-fn "Duplicate var(s) detected in ~X01." lifted-vars nil)
+        (er hard? 'lift-r1cs-fn "Duplicate var(s) detected in ~X01." lifted-vars nil)
         (mv :duplicate-vars nil state))
        (term-to-simplify `(r1cs::r1cs-constraints-holdp ',constraints
                                                         ,(make-efficient-symbolic-valuation-for-alist r1cs-var-to-lifted-var-alist)
                                                         ',prime))
        ((acl2::when (and (not (eq :auto rules)) extra-rules))
-        (er hard? 'lift-r1cs-new-fn ":rules and :extra-rules should not both be given.")
+        (er hard? 'lift-r1cs-fn ":rules and :extra-rules should not both be given.")
         (mv :bad-input nil state))
        ((acl2::when (and (not (eq :auto rules)) remove-rules))
-        (er hard? 'lift-r1cs-new-fn ":rules and :remove-rules should not both be given.")
+        (er hard? 'lift-r1cs-fn ":rules and :remove-rules should not both be given.")
         (mv :bad-input nil state)))
   (acl2::def-simplified-fn name-of-defconst
                            term-to-simplify
@@ -151,7 +151,7 @@
 ;; Lifts an R1CS into a logical term, represented as an Axe DAG.  Takes an
 ;; R1CS, given as a list of variables, a list of constraints, and a prime.
 ;; Creates a constant DAG named <name-of-defconst>.
-(defmacro lift-r1cs-new (&whole whole-form
+(defmacro lift-r1cs (&whole whole-form
                                 name-of-defconst ; name of the defconst to create, will hold the lifted R1CS
                                 ;; r1cs ;todo: currentlty can't make the r1cs (due to prime tests?)
                                 vars ;; the variables of the R1CS to lift
@@ -166,7 +166,7 @@
                                 (memoizep 'nil) ;; memoization can slow down R1CS lifting a lot, due to many terms with the same single nodenum (the valuation?) being put into the same memo slot
                                 (count-hitsp 'nil)
                                 (print 'nil))
-  `(acl2::make-event-quiet (lift-r1cs-new-fn ',name-of-defconst
+  `(acl2::make-event-quiet (lift-r1cs-fn ',name-of-defconst
                                              ,vars
                                              ,constraints
                                              ,prime
