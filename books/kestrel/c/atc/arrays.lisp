@@ -154,7 +154,9 @@
        (<type>-array-read (pack <type>-array '-read))
        (<type>-array-write (pack <type>-array '-write))
        (len-of-<type>-array->elements-of-<type>-array-write
-        (pack 'len-of- <type>-array->elements '-of- <type>-array-write)))
+        (pack 'len-of- <type>-array->elements '-of- <type>-array-write))
+       (<type>-array-length-of-<type>-array-write
+        (pack <type> '-array-length-of- <type>-array-write)))
 
     `(progn
 
@@ -192,7 +194,7 @@
                             for an array of "
                            type-string
                            ".")
-         (integer-range-p 0 (len (,<type>-array->elements array)) (ifix index))
+         (integer-range-p 0 (,<type>-array-length array) (ifix index))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -204,7 +206,8 @@
                            type-string
                            ", using an integer index.")
          (,<type>-fix (nth index (,<type>-array->elements array)))
-         :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp)))
+         :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp
+                                                  ,<type>-array-length)))
          :hooks (:fix)
 
          :prepwork
@@ -234,7 +237,8 @@
                                           element
                                           (,<type>-array->elements array)))
              array))
-         :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp)))
+         :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp
+                                                  ,<type>-array-length)))
          :hooks (:fix)
 
          :prepwork
@@ -252,7 +256,15 @@
            (equal (len (,<type>-array->elements
                         (,<type>-array-write array index element)))
                   (len (,<type>-array->elements array)))
-           :enable ,<type>-array-index-okp))
+           :enable (,<type>-array-index-okp
+                    ,<type>-array-length))
+
+         (defrule ,<type>-array-length-of-<type>-array-write
+           (equal (,<type>-array-length
+                   (,<type>-array-write array index element))
+                  (,<type>-array-length array))
+           :enable (,<type>-array-index-okp
+                    ,<type>-array-length)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -281,6 +293,7 @@
        (<etype>-array (pack <etype> '-array))
        (<etype>-arrayp (pack <etype>-array 'p))
        (<etype>-array->elements (pack <etype>-array '->elements))
+       (<etype>-array-length (pack <etype>-array '-length))
        (<etype>-array-index-okp (pack <etype> '-array-index-okp))
        (<etype>-array-read (pack <etype>-array '-read))
        (<etype>-array-write (pack <etype>-array '-write))
@@ -291,7 +304,9 @@
        (<etype>-array-write-<itype> (pack <etype> '-array-write- <itype>))
        (len-of-<etype>-array->elements-of-<etype>-array-write-<itype>
         (pack
-         'len-of- <etype>-array->elements '-of- <etype>-array-write-<itype>)))
+         'len-of- <etype>-array->elements '-of- <etype>-array-write-<itype>))
+       (<etype>-array-length-of-<etype>-array-write-<itype>
+        (pack <etype> '-array-length-of- <etype>-array-write-<itype>)))
 
     `(progn
 
@@ -353,7 +368,12 @@
            (equal
             (len (,<etype>-array->elements
                   (,<etype>-array-write-<itype> array index element)))
-            (len (,<etype>-array->elements array)))))
+            (len (,<etype>-array->elements array))))
+
+         (defrule ,<etype>-array-length-of-<etype>-array-write-<itype>
+           (equal (,<etype>-array-length
+                   (,<etype>-array-write-<itype> array index element))
+                  (,<etype>-array-length array))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

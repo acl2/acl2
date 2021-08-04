@@ -24,11 +24,7 @@
    (xargs
     :guard (and (c::uchar-arrayp |a|)
                 (c::sintp |i|)
-                (c::uchar-array-sint-index-okp |a| |i|))
-    :guard-hints (("Goal" :in-theory (enable c::uchar-array-sint-index-okp
-                                             c::uchar-array-index-okp
-                                             c::uchar-array-write-sint
-                                             c::uchar-array-write)))))
+                (c::uchar-array-sint-index-okp |a| |i|))))
   (let ((|a| (c::uchar-array-write-sint |a| |i| (c::uchar-from-sint
                                                  (c::sint-dec-const 88)))))
     |a|))
@@ -40,9 +36,9 @@
                               (c::uchar-arrayp |b|)
                               (c::sintp |len|)
                               (c::sintp |i|)
-                              (equal (len (c::uchar-array->elements |a|))
+                              (equal (c::uchar-array-length |a|)
                                      (c::sint->get |len|))
-                              (equal (len (c::uchar-array->elements |b|))
+                              (equal (c::uchar-array-length |b|)
                                      (c::sint->get |len|))
                               (<= 0
                                   (c::sint->get |i|))
@@ -58,8 +54,6 @@
                                          c::add-sint-sint
                                          c::add-sint-sint-okp
                                          c::sint-integerp-alt-def
-                                         c::uchar-array-write-sint
-                                         c::uchar-array-write
                                          c::sint-integer-value
                                          c::assign)))
                   :measure (nfix (- (c::sint->get |len|)
@@ -88,9 +82,9 @@
   (declare (xargs :guard (and (c::uchar-arrayp |a|)
                               (c::uchar-arrayp |b|)
                               (c::sintp |len|)
-                              (equal (len (c::uchar-array->elements |a|))
+                              (equal (c::uchar-array-length |a|)
                                      (c::sint->get |len|))
-                              (equal (len (c::uchar-array->elements |b|))
+                              (equal (c::uchar-array-length |b|)
                                      (c::sint->get |len|)))))
   (let ((|i| (c::declar (c::sint-dec-const 0))))
     (mv-let (|b| |i|)
