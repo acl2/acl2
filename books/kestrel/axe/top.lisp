@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+;; Supporting utilities:
 (include-book "add-bitxor-nest-to-dag-array")
 (include-book "add-bvxor-nest-to-dag-array")
 (include-book "alist-suitable-for-hypsp")
@@ -38,7 +39,6 @@
 (include-book "bv-rules-axe")
 (include-book "bv-rules")
 (include-book "check-equivs")
-;; (include-book "check-equivs-tests")
 (include-book "conjoin-term-with-dag")
 (include-book "conjunctions-and-disjunctions")
 (include-book "consecutivep2")
@@ -72,9 +72,6 @@
 (include-book "dargp")
 (include-book "def-dag-builder-theorems")
 (include-book "def-simplified")
-;; (include-book "def-simplified-tests")
-(include-book "defthm-axe-basic")
-;; (include-book "defthm-axe-basic-tests")
 (include-book "depth-array")
 (include-book "doc")
 (include-book "elaborate-rule-items")
@@ -85,11 +82,9 @@
 (include-book "equivalent-dags")
 (include-book "equivs")
 (include-book "evaluator-basic")
-;; (include-book "evaluator-tests")
 (include-book "fixup-context")
 (include-book "get-args-not-done")
 (include-book "get-disjuncts")
-;; (include-book "get-disjuncts-tests")
 (include-book "group-axe")
 (include-book "hit-counts")
 (include-book "if-rules")
@@ -98,7 +93,6 @@
 (include-book "interpreted-function-alists")
 (include-book "keep-atoms")
 (include-book "known-booleans")
-;; (include-book "known-booleans-tests")
 (include-book "known-predicates")
 (include-book "leaves-of-normalized-bvxor-nest")
 (include-book "lenconsmeta")
@@ -109,9 +103,7 @@
 (include-book "make-axe-bind-free-evaluator")
 (include-book "make-axe-rules2")
 (include-book "make-axe-rules")
-;; (include-book "make-axe-rules-tests")
 (include-book "make-axe-syntaxp-evaluator")
-;; (include-book "make-axe-syntaxp-evaluator-tests")
 (include-book "make-clause-processor-simple")
 (include-book "make-conjunction-dag")
 (include-book "make-dag-constant-alist")
@@ -121,8 +113,6 @@
 (include-book "make-evaluator-common")
 (include-book "make-evaluator")
 (include-book "make-evaluator-simple")
-;; (include-book "make-evaluator-simple-tests")
-;; (include-book "make-evaluator-tests")
 (include-book "make-implication-dag")
 (include-book "make-instantiation-code-simple-free-vars")
 (include-book "make-instantiation-code-simple")
@@ -156,9 +146,6 @@
 (include-book "numeric-lists")
 (include-book "packbv-axe")
 (include-book "print-constant")
-(include-book "prover-basic-clause-processor")
-(include-book "prover-basic")
-;; (include-book "prover-basic-tests")
 (include-book "prover-common")
 (include-book "prover-stress-test")
 (include-book "prune-with-contexts")
@@ -172,8 +159,6 @@
 (include-book "replace-using-assumptions")
 (include-book "replace-var-rules")
 (include-book "result-array")
-(include-book "rewriter-basic")
-;; (include-book "rewriter-basic-tests")
 (include-book "rewriter-common")
 (include-book "rewriter-support")
 (include-book "rule-alists")
@@ -204,13 +189,19 @@
 (include-book "unify-term-and-dag-fast")
 (include-book "unify-term-and-dag")
 (include-book "unify-tree-and-dag")
-(include-book "unroll-spec-basic")
-;; (include-book "unroll-spec-basic-tests")
 (include-book "util2")
 (include-book "wf-dagp")
 (include-book "worklist-array")
 (include-book "worklists")
 (include-book "call-axe-script")
+
+;; Newest top-level Axe tools ("basic" means that these are for general-purpose
+;; use, rather than specialized for the JVM, or for x86, etc.):
+(include-book "rewriter-basic")
+(include-book "prover-basic")
+(include-book "prover-basic-clause-processor")
+(include-book "unroll-spec-basic")
+(include-book "defthm-axe-basic")
 
 ;;STP-related stuff:
 (include-book "stp-counterexamples")
@@ -219,17 +210,25 @@
 (include-book "stp-clause-processor")
 (include-book "defthm-stp")
 
-;; Legacy Axe tools:
+;; Legacy Axe utilities (many of these depend on skip-proofs):
 (include-book "evaluator")
 (include-book "instantiate-hyp")
 (include-book "dagify")
 (include-book "sublis-var-and-eval")
+(include-book "prune")
+(include-book "result-array-stobj")
+(include-book "defconst-computed2")
+
+;; Legacy Axe tools (many of these depend on skip-proofs):
 (include-book "prover")
 (include-book "rewriter")
-(include-book "prune")
-(include-book "tactic-prover")
 (include-book "unroll-spec")
+(include-book "tactic-prover")
+(include-book "query")
+(include-book "defthm-axe")
 
+;; The JVM-specific Axe tools:
 (include-book "jvm/top")
 
+;; The x86-specific Axe tools:
 (include-book "x86/top")

@@ -10,6 +10,8 @@
 
 (in-package "R1CS")
 
+;; TODO: Switch package to ACL2?  These are not r1cs-specific.
+
 (include-book "../portcullis")
 (include-book "kestrel/axe/dag-arrays" :dir :system)
 

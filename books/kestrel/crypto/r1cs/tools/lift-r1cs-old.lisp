@@ -10,7 +10,7 @@
 
 (in-package "R1CS")
 
-;; NOTE: This tool is deprecated.  Use lift-r1cs-new instead.
+;; NOTE: This tool is deprecated.  Use lift-r1cs instead.
 
 ;; This is for R1CSes in sparse form
 

@@ -23,7 +23,7 @@
     (er hard? 'make-axe-rule-safe "Bad input to make-axe-rule-safe (perhaps things are not pseudo-terms). LHS: ~x0. RHS: ~x1. HYPS: ~x2." lhs rhs hyps)))
 
 ;;Returns (mv lhs rhs) or throws an error if it's not a theorem with a single conclusion conjunct and no hyps ("simple" means no hyps here)
-;; Used in axe.lisp.
+;; Used in equivalence-checker.lisp.
 (defund lhs-and-rhs-of-simple-rule (rule-name wrld)
   (declare (xargs :guard (and (symbolp rule-name)
                               (plist-worldp wrld))))
