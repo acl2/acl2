@@ -137,3 +137,11 @@
   :hints (("Goal" ;:induct (sub1-sub1-cdr-induct n key l)
            :expand (update-nth n2 val (nthcdr (+ -1 n1) (cdr x)))
            :in-theory (enable update-nth nthcdr))))
+
+(defthm nthcdr-of-update-nth-when-<
+  (implies (and (< n2 n1)
+                (natp n2)
+                (natp n1))
+           (equal (nthcdr n1 (update-nth n2 val list))
+                  (nthcdr n1 list)))
+  :hints (("Goal" :in-theory (enable update-nth nthcdr))))
