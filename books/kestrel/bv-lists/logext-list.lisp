@@ -16,9 +16,7 @@
 (include-book "kestrel/bv/logext" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
-;disable?
-;use defmap
-(defun logext-list (size lst)
+(defund logext-list (size lst)
   (declare (type (integer 1 *) size)
            (xargs :guard (all-integerp lst)))
   (if (atom lst)
@@ -116,7 +114,8 @@
   (equal (logext-list size (cdr lst))
          (cdr (logext-list size lst))))
 
-(theory-invariant (incompatible (:rewrite cdr-of-logext-list) (:rewrite logext-list-of-cdr)))
+(theory-invariant (incompatible (:rewrite cdr-of-logext-list)
+                                (:rewrite logext-list-of-cdr)))
 
 (defthm take-of-logext-list
   (implies (and (<= n (len lst))
