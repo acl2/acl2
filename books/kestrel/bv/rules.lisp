@@ -70,6 +70,7 @@
 (local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/evenp" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "floor-mod-expt"))
@@ -81,6 +82,7 @@
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;move
 ;(local (include-book "kestrel/library-wrappers/arithmetic-top-with-meta" :dir :system)) ; for EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+
 
 (local (in-theory (disable ;EQUAL-/
                            logapp-0
@@ -385,14 +387,6 @@
            (equal (LOGEXT k (LOGAPP 1 0 x))
                   (logapp 1 0 (logext (+ -1 k) x))))
   :hints (("Goal" :in-theory (enable logapp))))
-
-
-
-(defthm evenp-of-expt2
-  (implies (natp m)
-           (equal (evenp (expt 2 m))
-                  (not (equal m 0))))
-  :hints (("Goal" :in-theory (enable evenp))))
 
 (defthm oddp-of-times-expt
   (implies (and (natp m)
@@ -4688,37 +4682,13 @@
                   (getbit n y)))
   :hints (("Goal" :in-theory (enable getbit-of-bvxor-core))))
 
-(local
- (defun induct-floor-by-2-floor-by-2-sub-1 (x y n)
-   (if (zp n)
-       (list x y n)
-     (induct-floor-by-2-floor-by-2-sub-1 (floor x 2) (floor y 2) (+ -1 n)))))
-
-;; You can chop one argument of logand down to the size of the other argument
-(defthm logand-of-bvchop
-  (implies (and (unsigned-byte-p m x)
-                (integerp y)
-                (natp m))
-           (equal (logand x (bvchop m y))
-                  (logand x y)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (bvchop ;fl ;FLOOR-TYPE-1 floor-bounded-by-/ MOD-X-Y-=-X+Y-FOR-RATIONALS mod-minus
-                                   mod-expt-split
-                                   )
-                           (mod-of-expt-of-2
-                            ;;mod-of-expt-of-2-constant-version
-                            ))
-           :expand ((LOGAND X (MOD Y (EXPT 2 M)))
-                    (LOGAND X Y)
-                    (MOD (* 2 (FLOOR Y 2)) (EXPT 2 M)))
-           :induct (INDUCT-FLOOR-BY-2-FLOOR-BY-2-SUB-1 x y m))))
-
 (defthmd bvand-of-bvnot-same-helper
   (implies (unsigned-byte-p size x)
            (equal (bvand size x (bvnot size x))
                   0))
   :hints (("Goal" :cases ((Natp size))
-           :in-theory (e/d (bvand bvnot) (BVAND-COMMUTATIVE)))))
+           :in-theory (e/d (bvand bvnot logand-of-bvchop)
+                           (bvand-commutative)))))
 
 (defthm bvand-of-bvnot-same
   (equal (bvand size x (bvnot size x))
