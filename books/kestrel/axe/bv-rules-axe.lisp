@@ -1292,7 +1292,7 @@
            (equal (bvand size x y)
                   (bvand xsize x y)))
   :hints (("Goal" :cases ((integerp y))
-           :in-theory (enable BVAND logand-bvchop-when-usb))))
+           :in-theory (enable bvand-tighten-1 logand-bvchop-when-usb))))
 
 (defthmd bvand-with-small-arg2
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))

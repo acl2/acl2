@@ -17,7 +17,26 @@
 (include-book "ihs/basic-definitions" :dir :system) ;for logmaskp
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor-mod-expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "unsigned-byte-p"))
+
+(defthm slice-of-logand
+  (equal (slice low high (logand x y))
+         (logand (slice low high x)
+                 (slice low high y)))
+  :hints (("Goal" :cases ((equal low high) (< low high))
+           :in-theory (e/d (slice) (slice-becomes-bvchop slice-becomes-getbit BVCHOP-1-BECOMES-GETBIT
+                                                          BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+
+(defthm getbit-of-logand
+  (equal (getbit bit (logand x y))
+         (logand  (getbit bit x)
+                  (getbit bit y)))
+  :hints (("Goal" :in-theory (e/d (getbit)
+                                  (slice-becomes-getbit bvchop-1-becomes-getbit)))))
 
 (defund bvand (size x y)
   (declare (type integer x y)
@@ -258,3 +277,72 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvand-simple (size 1))
            :in-theory (disable unsigned-byte-p-of-bvand
                                unsigned-byte-p-of-bvand-simple))))
+
+(defthm getbit-of-bvand
+  (implies (and (< bit size)
+                (natp bit)
+                (natp size))
+           (equal (getbit bit (bvand size x y))
+                  (bvand 1 (getbit bit x)
+                           (getbit bit y))))
+  :hints (("Goal" :in-theory (enable bvand))))
+
+(defthm getbit-of-bvand-eric
+  (implies (and (< 1 size) ;if size is 0 or 1, other rules should fire?
+                (< n size) ;other case?
+                (natp n)
+                (integerp size)
+                )
+           (equal (getbit n (bvand size x y))
+                  (bvand 1 (getbit n x) (getbit n y))))
+  :hints (("Goal" :cases ((and (integerp x) (integerp y))
+                          (and (integerp x) (not (integerp y)))
+                          (and (not (integerp x)) (integerp y)))
+           :in-theory (enable getbit-when-val-is-not-an-integer))))
+
+(local
+ (defun induct-floor-by-2-floor-by-2-sub-1 (x y n)
+   (if (zp n)
+       (list x y n)
+     (induct-floor-by-2-floor-by-2-sub-1 (floor x 2) (floor y 2) (+ -1 n)))))
+
+;; You can chop one argument of logand down to the size of the other argument
+(defthmd logand-of-bvchop
+  (implies (and (unsigned-byte-p m x)
+                (integerp y))
+           (equal (logand x (bvchop m y))
+                  (logand x y)))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (bvchop ;fl ;FLOOR-TYPE-1 floor-bounded-by-/ MOD-X-Y-=-X+Y-FOR-RATIONALS mod-minus
+                                   mod-expt-split FLOOR-WHEN-INTEGERP-OF-QUOTIENT
+                                   )
+                           (mod-of-expt-of-2
+                            ;;mod-of-expt-of-2-constant-version
+                            ))
+           :expand ((LOGAND X (MOD Y (EXPT 2 M)))
+                    (LOGAND X Y)
+                    (MOD (* 2 (FLOOR Y 2)) (EXPT 2 M)))
+           :induct (INDUCT-FLOOR-BY-2-FLOOR-BY-2-SUB-1 x y m))))
+
+;; You can chop one argument of bvand down to the size of the other argument
+(defthmd bvand-tighten-1
+  (implies (and (unsigned-byte-p newsize x)
+                (< newsize size)
+                (integerp y)
+                (natp size)
+                (natp newsize))
+           (equal (bvand size x y)
+                  (bvand newsize x y)))
+  :hints (("Goal" :in-theory (enable bvand
+                                     logand-of-bvchop))))
+
+(defthmd bvand-tighten-2
+  (implies (and (unsigned-byte-p newsize y)
+                (< newsize size)
+                (integerp x)
+                (natp size)
+                (natp newsize))
+           (equal (bvand size x y)
+                  (bvand newsize x y)))
+  :hints (("Goal" :in-theory (enable bvand
+                                     logand-of-bvchop))))

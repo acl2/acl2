@@ -1381,3 +1381,23 @@
   (equal (bvchop 32 x)
          (bvcat 1 (getbit 31 x)
                 31 (bvchop 31 x))))
+
+;; For when the first 3 args are constants
+(defthm bvcat-lower-bound-linear-arg2-constant
+  (implies (and (syntaxp (and (quotep highval) ; this case
+                              (quotep highsize)
+                              (quotep lowsize)))
+                (natp lowsize))
+           (<= (* (expt 2 lowsize) (bvchop highsize highval))
+               (bvcat highsize highval lowsize lowval)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable bvcat logapp))))
+
+(defthm bvcat-lower-bound-linear-arg4-constant
+  (implies (and (syntaxp (and (quotep lowval) ; this case
+                              (quotep lowsize)))
+                (natp lowsize))
+           (<= (bvchop lowsize lowval)
+               (bvcat highsize highval lowsize lowval)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable bvcat logapp))))

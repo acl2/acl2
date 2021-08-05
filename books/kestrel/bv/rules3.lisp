@@ -196,7 +196,7 @@
                  )
             (equal (bvand size k x)
                    (bvand newsize k x)))
-   :hints (("Goal" :in-theory (enable bvand))))
+   :hints (("Goal" :in-theory (enable bvand-tighten-1))))
 
 ;fixme change to go to bvif?
 (defthmd getbit-of-if

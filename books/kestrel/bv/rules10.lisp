@@ -169,7 +169,7 @@
                 )
            (equal (logand x y)
                   (bvand size x y)))
-  :hints (("Goal" :in-theory (enable bvand))))
+  :hints (("Goal" :in-theory (enable bvand logand-of-bvchop))))
 
 (defthmd floor-of-/
   (equal (FLOOR X (/ y))
