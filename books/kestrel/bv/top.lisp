@@ -154,6 +154,7 @@
 (include-book "single-bit")
 
 ;; Mixed rules:
+(include-book "bvcat-rules")
 (include-book "rules0")
 (include-book "rules")
 (include-book "rules2")
