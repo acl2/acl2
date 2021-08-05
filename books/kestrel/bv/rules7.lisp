@@ -14,6 +14,7 @@
 (include-book "bvcat")
 (include-book "bitnot")
 (include-book "bitxor")
+(include-book "bitand")
 (include-book "bvxor")
 (include-book "rotate")
 (local (include-book "rules"))
@@ -103,6 +104,14 @@
 
 (defthmd bitp-when-equal-of-bitxor-2
   (implies (equal (bitxor free-y free-z) x)
+           (bitp x)))
+
+(defthmd bitp-when-equal-of-bitand-1
+  (implies (equal x (bitand free-y free-z))
+           (bitp x)))
+
+(defthmd bitp-when-equal-of-bitand-2
+  (implies (equal (bitand free-y free-z) x)
            (bitp x)))
 
 ;; This can let you prove X satisfies bitp without waiting for substitution to
