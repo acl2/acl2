@@ -259,3 +259,11 @@
          (if (<= (nfix n) (len x))
              (true-listp x)
            t)))
+
+(defthmd nthcdr-last-one
+  (implies (and (equal (len x) (+ 1 n))
+                (natp n)
+                (true-listp x))
+           (equal (nthcdr n x)
+                  (list (nth n x))))
+  :hints (("Goal" :in-theory (enable NTHCDR))))
