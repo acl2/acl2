@@ -1083,7 +1083,11 @@
     (def-formula-checks
       mult-formula-checks
       (binary-append
+       ifix
        medw-compress
+       acl2::logcar$inline
+       acl2::logcdr$inline
+       acl2::logbit
        unpack-booth
        --
        sum-list

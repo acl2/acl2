@@ -2486,7 +2486,7 @@
             (if sign
             (-- (rp-evlt term a))
             (rp-evlt term a)))||#
-            (equal (sum-list (RP-EVLt-lst (pp-flatten term sign :unpack-now unpack-now) a))
+            (equal (sum-list (RP-EVLt-lst (pp-flatten term sign :disabled disabled) a))
                    (if sign
                        (-- (rp-evlt (PP-REMOVE-EXTRANEOUS-SC term) a))
                      (rp-evlt (PP-REMOVE-EXTRANEOUS-SC term) a)))
@@ -2526,7 +2526,7 @@
             (if sign
             (-- (rp-evlt term a))
             (rp-evlt term a)))||#
-            (equal (sum-list (RP-EVLt-lst (pp-flatten term sign :unpack-now unpack-now) a))
+            (equal (sum-list (RP-EVLt-lst (pp-flatten term sign :disabled disabled) a))
                    (if sign
                        (-- (rp-evlt term a))
                      (rp-evlt term a)))

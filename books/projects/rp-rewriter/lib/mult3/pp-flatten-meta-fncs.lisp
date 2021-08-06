@@ -898,7 +898,7 @@
                      (pp-lists-to-term-pp-lst (cdr lst)))
              (cons cur
                    (pp-lists-to-term-pp-lst (cdr lst))))))))
- 
+
 (define pp-remove-extraneous-sc (term)
   :returns (res-term pp-term-p :hyp (pp-term-p term)
                      :hints (("Goal"
@@ -934,7 +934,7 @@
                                             (cddr term-))
                             (cdr term-))
             term-))
-           
+
           ((or (BINARY-NOT-p term-)
                (pp-p term-))
            (cons-with-hint (car term-)
@@ -947,42 +947,25 @@
           ((BINARY-?-p term-)
            (cons-with-hint
             (car term-)
-            (cons-with-hint (pp-remove-extraneous-sc (cadr term-))
-                            (cons-with-hint (pp-remove-extraneous-sc (caddr term-))
-                                            (cons-with-hint (pp-remove-extraneous-sc (cadddr term-))
-                                                            nil
-                                                            (cdddr term-))
-                                            (cddr term-))
-                            (cdr term-))
+            (cons-with-hint
+             (pp-remove-extraneous-sc (cadr term-))
+             (cons-with-hint
+              (pp-remove-extraneous-sc (caddr term-))
+              (cons-with-hint
+               (pp-remove-extraneous-sc (cadddr term-))
+               nil
+               (cdddr term-))
+              (cddr term-))
+             (cdr term-))
             term-))
           (t term))))
-
-(progn
-  (encapsulate
-    (((unpack-booth-later-enabled) => *))
-    (local
-     (defun unpack-booth-later-enabled ()
-       nil)))
-
-  (define return-t ()
-    t)
-  (define return-nil ()
-    nil)
-  
-  (defmacro enable-unpack-booth-later (enable)
-    (if enable
-        `(defattach unpack-booth-later-enabled return-t)
-      `(defattach unpack-booth-later-enabled return-nil)))
-
-  (enable-unpack-booth-later nil))
 
 (define pp-flatten ((term pp-term-p)
                     (sign booleanp)
                     &key
-                    (unpack-now 'nil))
+                    (disabled 'nil))
   (b* ((term (pp-remove-extraneous-sc term)))
-    (cond ((and (not unpack-now)
-                (unpack-booth-later-enabled))
+    (cond (disabled
            (list (if sign `(-- ,term) term)))
           ((and (case-match term
                   (('binary-and ('bit-of & &) ('bit-of & &)) t))
@@ -1002,10 +985,15 @@
                   )
                pp-lst)))))
 
+(define pp-flatten-memoized ((term pp-term-p)
+                             (sign booleanp))
+  :enabled t
+  (pp-flatten term sign :disabled nil))
 
-(memoize 'pp-flatten-fn
-         :aokp t
-         :condition 'unpack-now)
+(memoize 'pp-flatten-memoized
+         ;;:aokp t
+         ;;:condition '(not disabled)
+         )
 
 (progn
 
@@ -1126,7 +1114,6 @@
                   (implies valid
                            (pp-lists-p pp-lists))))
 
-
   (define sort-sum-meta (term)
     :returns (mv result
                  (dont-rw dont-rw-syntaxp))
@@ -1153,7 +1140,6 @@
                    term)
                (hard-error 'sort-sum-meta "" nil)
                (mv term t))))))
-
 
 
 (value-triple (hons-clear t))
@@ -1288,7 +1274,6 @@
    :hints (("Goal"
             :in-theory (e/d (pp-lists-to-term-pp-lst) ())))))
 
-
 (defret rp-termp-of-<fn>
   (implies (rp-termp term)
            (rp-termp res-term))
@@ -1298,7 +1283,7 @@
 
 (defthm rp-term-listp-of-pp-flatten
   (implies (rp-termp term)
-           (rp-term-listp (pp-flatten term sign :unpack-now unpack-now)))
+           (rp-term-listp (pp-flatten term sign :disabled disabled)))
   :hints (("Goal"
            :in-theory (e/d (pp-flatten) ()))))
 
@@ -1480,7 +1465,6 @@
                              is-if
                              is-rp) ())))))
 
-
 (defret valid-sc-of-pp-remove-extraneous-sc
   (implies (force (valid-sc term a))
            (valid-sc res-term a))
@@ -1501,7 +1485,7 @@
 
 (defthm pp-flatten-returns-valid-sc
   (implies (force (valid-sc term a))
-           (VALID-SC-SUBTERMS (pp-flatten term sign :unpack-now unpack-now) a))
+           (VALID-SC-SUBTERMS (pp-flatten term sign :disabled disabled) a))
   :hints (("Goal"
            :in-theory (e/d (pp-flatten
                             CREATE-AND-LIST-INSTANCE

@@ -109,9 +109,6 @@
                              valid-sc-subterms
                              )))))
 
-
-
-
 (local
  (defthmd rp-evlt-of-ex-from-rp-reverse-atom
    (implies (syntaxp (atom term))
@@ -286,8 +283,6 @@
                               (mod2-is-m2 +-IS-SUM ifix)))))
 
    ))
-
-
 
 (defret medw-compress-c-arg-lst-aux-aux-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -547,18 +542,12 @@
                             RP-EVLT-OF-EX-FROM-RP)
                            ))))
 
-
-
-
-
 (local
  (encapsulate
    nil
 
    (local
     (use-arith-5 t))
-
-   
 
    (defthm m2-of-dummy
      (equal (equal (m2 (sum x a y))
@@ -671,11 +660,9 @@
 
    ))
 
-
 (local
  (encapsulate
    nil
-
 
    (local
     (defthm dummy-d-2-of-repeated-2
@@ -686,37 +673,37 @@
     (defthm dummy-m2-of-repeated-3
       (and (equal (m2 (sum x y z a a k))
                   (m2 (sum x y z k))))))
-   
-    (defthm m2-of-f2-of-the-same
-      (implies (equal (m2 c) (m2 d))
-               (equal (equal (m2 (sum a (f2 (sum c x))))
-                             (m2 (sum b (f2 (sum d x)))))
-                      (equal (m2 (sum a (f2 c)))
-                             (m2 (sum b (f2 d))))))
-      ;;:otf-flg t
-      :hints (("Goal"
-               :in-theory (e/d (
-                                   equal-of-m2-to-the-same-side
-                                   floor mod
-                                   rw-dir2)
-                               (+-IS-SUM
-                                rw-dir1
-                                ;;(:REWRITE ACL2::|(mod x 2)| . 1)
-                                floor2-if-f2
-                                mod2-is-m2)))))
 
-    (defthm m2-of-f2-of-the-same-2
-      (implies (equal (m2 c) (m2 d))
-               (equal (equal (m2 (sum a (f2 (sum c x))))
-                             (m2 (sum b b1 (f2 (sum d x)))))
-                      (equal (m2 (sum a (f2 c)))
-                             (m2 (sum b b1 (f2 d))))))
-      :otf-flg t
-      :hints (("Goal"
-               :use ((:instance m2-of-f2-of-the-same
-                                (b (sum b b1))))
-               :in-theory (e/d ()
-                               (m2-of-f2-of-the-same)))))
+   (defthm m2-of-f2-of-the-same
+     (implies (equal (m2 c) (m2 d))
+              (equal (equal (m2 (sum a (f2 (sum c x))))
+                            (m2 (sum b (f2 (sum d x)))))
+                     (equal (m2 (sum a (f2 c)))
+                            (m2 (sum b (f2 d))))))
+     ;;:otf-flg t
+     :hints (("Goal"
+              :in-theory (e/d (
+                               equal-of-m2-to-the-same-side
+                               floor mod
+                               rw-dir2)
+                              (+-IS-SUM
+                               rw-dir1
+                               ;;(:REWRITE ACL2::|(mod x 2)| . 1)
+                               floor2-if-f2
+                               mod2-is-m2)))))
+
+   (defthm m2-of-f2-of-the-same-2
+     (implies (equal (m2 c) (m2 d))
+              (equal (equal (m2 (sum a (f2 (sum c x))))
+                            (m2 (sum b b1 (f2 (sum d x)))))
+                     (equal (m2 (sum a (f2 c)))
+                            (m2 (sum b b1 (f2 d))))))
+     :otf-flg t
+     :hints (("Goal"
+              :use ((:instance m2-of-f2-of-the-same
+                               (b (sum b b1))))
+              :in-theory (e/d ()
+                              (m2-of-f2-of-the-same)))))
 
    (defthm m2-of-f2-of-the-same-3
      (implies (equal (m2 c) (m2 d))
@@ -925,14 +912,14 @@
                           (force (valid-sc-subterms c-lst a)))
                      (and (valid-sc-subterms res-pp-lst a)
                           (valid-sc-subterms res-c-lst a))))
-            #|(implies (and (not sign-matters)
-            compressed) ;
-            (equal (m2 (sum (sum-list-eval res-pp-lst a) ;
-            (f2 (sum-list-eval res-c-pp-arg-lst a)))) ;
-            (m2 (sum (sum-list-eval pp-lst a) ;
-            (f2 (sum-list-eval c-pp-arg-lst a))))))||#
+           #|(implies (and (not sign-matters)
+           compressed) ;
+           (equal (m2 (sum (sum-list-eval res-pp-lst a) ;
+           (f2 (sum-list-eval res-c-pp-arg-lst a)))) ;
+           (m2 (sum (sum-list-eval pp-lst a) ;
+           (f2 (sum-list-eval c-pp-arg-lst a))))))||#
 
-            )
+           )
   :fn  medw-compress-pp-arg-lst
   :hints (("Goal"
            :do-not-induct t
@@ -998,8 +985,6 @@
 
                            ))))
 
-
-
 (defret-mutual
   medw-compress-c-correct
   (defret medw-compress-c-correct
@@ -1027,6 +1012,7 @@
                   (implies (valid-sc-subterms c-lst a)
                            (valid-sc-subterms res-c-lst a))))
     :fn medw-compress-c-lst)
+  :mutual-recursion medw-compress-c
   :hints (("Goal"
            :do-not-induct t
            :expand ((MEDW-COMPRESS-C C LIMIT))
@@ -1057,8 +1043,6 @@
                              ;;(:REWRITE VALID-SC-SUBTERMS-CDR)
                              )))))
 
-
-
 (defret medw-compress-s-is-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -1073,7 +1057,7 @@
            :in-theory (e/d* (medw-compress-s
                              regular-eval-lemmas-with-ex-from-rp
                              regular-eval-lemmas
-                            
+
                              rp-evlt-of-ex-from-rp-reverse-atom
                              pp-order-equals-implies)
                             (RP-EVLT-OF-EX-FROM-RP
@@ -1092,7 +1076,6 @@
 
                              ;;(:REWRITE VALID-SC-SUBTERMS-CDR)
                              )))))
-
 
 (defret medw-compress-s-c-res-is-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -1128,6 +1111,200 @@
                              ;;(:REWRITE VALID-SC-SUBTERMS-CDR)
                              )))))
 
+;;:i-am-here
+
+(defthmd RP-EVLt-OF-FNCALL-ARGS
+  (implies (and (Not (equal fn 'quote))
+                (Not (equal fn 'list))
+                (Not (equal fn 'falist)))
+           (equal (rp-evlt (cons fn args) a)
+                  (RP-EVL (CONS FN (KWOTE-LST (RP-EVLT-LST ARGS A)))
+                          NIL)))
+  :hints (("Goal"
+           :expand ((:free (args)
+                           (rp-trans (cons fn args))))
+           :in-theory (e/d (RP-EVL-OF-FNCALL-ARGS
+                            rp-trans)
+                           ()))))
+
+(defthmd RP-EVLt-OF-FNCALL-ARGS2
+  (implies (and (NOT (EQUAL (CAR term) 'S))
+                (NOT (EQUAL (CAR term)
+                            'S-C-RES))
+                (NOT (EQUAL (CAR term) 'C))
+                (NOT (EQUAL (CAR term) 'QUOTE))
+                (NOT (EQUAL (CAR term) 'FALIST))
+                (NOT (EQUAL (CAR term) 'LIST))
+                (NOT (EQUAL (CAR term) 'IF))
+                (consp term))
+           (equal (rp-evlt term a)
+                  (RP-EVL (CONS (car term)
+                                (KWOTE-LST (RP-EVLT-LST (cdr term) A)))
+                          NIL)))
+  :hints (("Goal"
+           :expand ((:free (args)
+                           (rp-trans (cons fn args))))
+           :in-theory (e/d (RP-EVL-OF-FNCALL-ARGS
+                            rp-trans)
+                           ()))))
+
+(defthmd RP-EVL-OF-FNCALL-ARGS2
+  (implies (and (Not (equal fn 'quote))
+                )
+           (equal (rp-evl (cons fn args) a)
+                  (RP-EVL (CONS FN (KWOTE-LST (RP-EVL-LST ARGS A)))
+                          NIL)))
+  :hints (("Goal"
+           :expand ((:free (args)
+                           (rp-trans (cons fn args))))
+           :in-theory (e/d (RP-EVL-OF-FNCALL-ARGS
+                            rp-trans)
+                           ()))))
+
+(defthmd valid-sc-of-ex-from-rp-reverse
+  (implies (syntaxp (atom term))
+           (equal (valid-sc term a)
+                  (and (EVAL-AND-ALL (CONTEXT-FROM-RP TERM NIL)
+                                     A)
+                       (valid-sc (ex-from-rp term) a))))
+  :hints (("Goal"
+           :expand ((VALID-SC TERM A)
+                    (CONTEXT-FROM-RP TERM NIL))
+           :do-not-induct t
+           :in-theory (e/d (valid-sc
+                            is-if
+                            is-rp)
+                           (;;EVAL-AND-ALL
+                            ;;context-from-rp
+                            )))))
+
+
+(DEFTHMd
+  RP-EVLT-OF-EX-FROM-RP-with-syntaxp
+  (IMPLIES (SYNTAXP (consp term))
+           (EQUAL (RP-EVL (RP-TRANS (EX-FROM-RP TERM))
+                          A)
+                  (RP-EVL (RP-TRANS TERM) A)
+                  )))
+
+(DEFTHMd
+  RP-EVLT-OF-EX-FROM-RP-REVERSE-2
+  (IMPLIES (SYNTAXP (atom term))
+           (EQUAL (RP-EVL (RP-TRANS TERM) A)
+                  (RP-EVL (RP-TRANS (EX-FROM-RP TERM))
+                          A))))
+
+(defthm is-rp-dummy-lemma
+  (implies (rp-termp term)
+           (not (is-rp (cons (car (ex-from-rp term)) rest))))
+  :hints (("Goal"
+           :induct (ex-from-rp term)
+           :do-not-induct t
+           :in-theory (e/d (is-rp
+                            ex-from-rp)
+                           ()))))
+
+(defthm open-valid-sc-when-is-if
+  (implies (is-if term)
+           (equal (valid-sc term a)
+                  (and 
+                       (VALID-SC (CADR TERM) A)
+                       (IF (RP-EVLT (CADR TERM) A)
+                           (VALID-SC (CADDR TERM) A)
+                           (VALID-SC (CADDDR TERM) A)))))
+  :hints (("Goal"
+           :expand (valid-sc term a)
+           :in-theory (e/d () (valid-sc)))))
+
+(defthm open-valid-sc-when-is-if-2
+  (implies (is-if (EX-FROM-RP TERM))
+           (equal (valid-sc term a)
+                  (and (EVAL-AND-ALL (CONTEXT-FROM-RP TERM NIL)
+                                     A)
+                       (VALID-SC (CADR (EX-FROM-RP TERM)) A)
+                       (IF (RP-EVLT (CADR (EX-FROM-RP TERM)) A)
+                           (VALID-SC (CADDR (EX-FROM-RP TERM)) A)
+                           (VALID-SC (CADDDR (EX-FROM-RP TERM)) A)))))
+  :hints (("Goal"
+           :expand (valid-sc (ex-from-rp term) a)
+           :in-theory (e/d (valid-sc-of-ex-from-rp-reverse) (valid-sc))
+           )))
+
+(create-regular-eval-lemma if 3 MULT-FORMULA-CHECKS)
+
+(defthm is-if-lemma
+  (is-if `(if ,x ,y ,z))
+  :hints (("Goal"
+           :in-theory (e/d (is-if) ()))))
+
+(defthm rp-evlt-when-list
+  (implies (and (consp term)
+                (equal (car term) 'list))
+           (equal (rp-evlt term a)
+                  (RP-EVLT-LST (CDR term) A))))
+
+(defret-mutual
+  medw-compress-any-correct
+  (defret medw-compress-any-correct
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (rp-termp term)
+                  (valid-sc term a))
+             (and (equal (rp-evlt res a)
+                         (rp-evlt term a))
+                  (valid-sc res a)))
+    :fn medw-compress-any)
+  (defret medw-compress-any-lst-correct
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (valid-sc-subterms lst a)
+                  (rp-term-listp lst)
+                  )
+             (and (equal (rp-evlt-lst res-lst a)
+                         (rp-evlt-lst lst a))
+                  (valid-sc-subterms res-lst a)
+                  ))
+    :fn medw-compress-any-lst)
+  :mutual-recursion medw-compress-any
+  :hints (("Goal"
+           :do-not-induct t
+           :expand (;;(rp-trans (ex-from-rp term))
+                    ;;(VALID-SC (EX-FROM-RP TERM) A)
+                    (:free (x y) (valid-sc (cons x y) a))
+                    )
+           :in-theory (e/d* (medw-compress-any
+                             ;;valid-sc-of-ex-from-rp-reverse
+                             medw-compress-any-lst
+                             regular-eval-lemmas
+                             RP-EVLT-OF-EX-FROM-RP-with-syntaxp
+                             RP-EVLt-OF-FNCALL-ARGS
+                             ;;RP-EVL-OF-FNCALL-ARGS
+                             ;;RP-EVL-OF-FNCALL-ARGS2
+                             RP-EVLt-OF-FNCALL-ARGS2
+                             RP-EVLT-OF-EX-FROM-RP-REVERSE-2
+                             ;;is-if is-rp
+                             valid-sc-subterms
+                             regular-eval-lemmas-with-ex-from-rp)
+                            ((:DEFINITION EX-FROM-RP)
+                             valid-sc
+                             ;;VALID-SC-EX-FROM-RP-2
+                             ;;valid-sc-subterms
+                             (:REWRITE IS-IF-RP-TERMP)
+                             rp-evlt-of-ex-from-rp
+                             rp-termp
+                             rp-term-listp
+                             cons-equal
+                             (:REWRITE NOT-INCLUDE-RP)
+                             (:DEFINITION INCLUDE-FNC)
+                             (:REWRITE DEFAULT-CDR)
+                             (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                             (:REWRITE RP-EVL-OF-RP-EQUAL2)
+                             rp-trans-is-term-when-list-is-absent
+                             rp-trans
+                             RP-TRANS-LST
+                             RP-TRANS-OPENER
+                             )))))
+
 (create-regular-eval-lemma medw-compress 1 MULT-FORMULA-CHECKS)
 
 (defret medw-compress-meta-correct
@@ -1141,10 +1318,11 @@
                 (dont-rw-syntaxp dont-rw)))
   :fn medw-compress-meta
   :hints (("Goal"
+           :expand ((:free (x)
+                           (valid-sc (cons 'equal x) a)))
            :in-theory (e/d (medw-compress-meta
                             MEDW-COMPRESS
-                            REGULAR-RP-EVL-OF_MEDW-COMPRESS_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP
-                            REGULAR-RP-EVL-OF_MEDW-COMPRESS_WHEN_MULT-FORMULA-CHECKS)
+                            )
                            (valid-sc
                             rp-termp
                             rp-trans)))))

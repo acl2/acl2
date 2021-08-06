@@ -48,13 +48,15 @@
 
 (include-book "adder-rules")
 
-(include-book "centaur/svl/top" :dir :system)
+(include-book "centaur/svl/top-bare" :dir :system)
 
 (include-book "doc")
 
 (local
  (include-book "lemmas"))
 
+
+;;(value-triple (clear-memoize-tables))
 (attach-meta-fncs svl-mult-rules)
 
 (local
@@ -1065,7 +1067,17 @@
            (integerp (temp-ha-spec x y))))
 
 
-
+(rp::def-rp-rule
+ sign-ext-compress
+ (implies (bitp x)
+          (and (equal (svl::4vec-concat$ 1 x (rp::-- x))
+                      (rp::-- x))
+               (equal (logapp 1 x (rp::-- x))
+                      (rp::-- x))
+               (equal (svl::4vec-concat$ 1 x (unary-- x))
+                      (rp::-- x))))
+ :hints (("Goal"
+          :in-theory (e/d (bitp) ()))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1079,6 +1091,9 @@
          (sv::svex-alist-eval x y)))
 
 (bump-all-meta-rules)
+
+(bump-down-rp-rule (:META medw-compress-meta . equal))
+(bump-down-rp-rule (:META make-sc-fgl-ready-meta-main . equal))
 
 
 

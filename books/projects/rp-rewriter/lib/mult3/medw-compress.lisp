@@ -161,25 +161,23 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                           ,(create-list-instance c-lst)))))
        ((when (and (consp res-c-lst)
                    (or #|(equal (cadr (car res-c-lst))
-                              ''(21161355940515948765 . 21161355940515948765))||#
-                       #|(equal (cadr (car res-c-lst))
-                              ''(2784280923853611132773766
-                                 . 2784280923853611132773766))||#
+                    ''(21161355940515948765 . 21161355940515948765))||#
+                    #|(equal (cadr (car res-c-lst))
+                    ''(2784280923853611132773766
+                    . 2784280923853611132773766))||#
 
-                       #|(equal (cadr (car res-c-lst))
-                              ''(21161355940515948765 . 21161355940515948765))||#
-                       
-            #|           (equal (cadr (car res-c-lst))
-                              ''(-1154151986687440 . -1154151986687440))||#
-            #|           (equal (cadr (car res-c-lst))
-                              ''(-439661027736439 . -439661027736439))||#
-            #|           (equal (cadr (car res-c-lst))
-                              ''(21028607959612274058 . 21028607959612274058))||#)))
+                    #|(equal (cadr (car res-c-lst))
+                    ''(21161355940515948765 . 21161355940515948765))||#
+
+                    #|           (equal (cadr (car res-c-lst))
+                    ''(-1154151986687440 . -1154151986687440))||#
+                    #|           (equal (cadr (car res-c-lst))
+                    ''(-439661027736439 . -439661027736439))||#
+                    #|           (equal (cadr (car res-c-lst))
+                    ''(21028607959612274058 . 21028607959612274058))||#)))
         nil)
        )
     res-c-lst))
-
-
 
 (define medw-compress-safe-cons ((e rp-termp)
                                  (lst rp-term-listp))
@@ -321,7 +319,6 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                  (if compressed
                      (mv (medw-compress-safe-cons (car c-lst) rest) t)
                    (mv c-lst nil))))))))
-
 
 (progn
   (define medw-compress-pp-arg-lst-aux ((pp-lst rp-term-listp)
@@ -552,9 +549,6 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
  ///
  (verify-guards medw-compress-c-lst))
 
-
-
-
 #|(acl2::defines
  medw-compress-c-for-pp
  :verify-guards nil
@@ -630,8 +624,7 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
  (verify-guards medw-compress-c-lst))||#
 
 (define medw-compress-s ((s rp-termp))
-  :returns (mv (res-term rp-termp :hyp (rp-termp s))
-               (dont-rw))
+  :returns (res-term rp-termp :hyp (rp-termp s))
   (b* ((s-orig s)
        (s (ex-from-rp s))
        ((mv pp-lst c-lst valid)
@@ -642,7 +635,7 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                t))
           (& (mv nil nil nil))))
        ((unless valid)
-        (mv s-orig nil))
+        s-orig)
        ((mv c-lst &)
         (medw-compress-c-arg-lst c-lst nil (expt 2 30)))
        ((mv pp-lst c-lst &)
@@ -652,12 +645,10 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
        (pp-lst (s-fix-pp-args-aux pp-lst))
        (c-lst (s-fix-pp-args-aux c-lst))
        )
-    (mv (s-spec-meta-aux ''nil pp-lst c-lst)
-        t)))
+    (s-spec-meta-aux ''nil pp-lst c-lst)))
 
 (define medw-compress-s-c-res ((s-c-res rp-termp))
-  :returns (mv (res-term rp-termp :hyp (rp-termp s-c-res))
-               (dont-rw))
+  :returns (res-term rp-termp :hyp (rp-termp s-c-res))
   (b* ((orig s-c-res)
        (s-c-res (ex-from-rp s-c-res))
        ((mv s-lst pp-lst c-lst valid)
@@ -669,7 +660,7 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                t))
           (& (mv nil nil nil nil))))
        ((unless valid)
-        (mv orig nil))
+        orig)
        ((mv c-lst com1)
         (medw-compress-c-arg-lst c-lst t (expt 2 30)))
        ((mv pp-lst c-lst com2)
@@ -677,31 +668,126 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
        ((mv c-lst com3)
         (medw-compress-c-lst c-lst (expt 2 30))))
     (if (or com1 com2 com3)
-        (mv (create-s-c-res-instance s-lst pp-lst c-lst nil) t)
-      (mv  orig nil))))
+        (create-s-c-res-instance s-lst pp-lst c-lst nil)
+      orig)))
 
 
-       #|((mv s-res-lst pp-res-lst c-res-lst)
-        (create-s-instance (create-list-instance pp-lst)
-                           (create-list-instance c-lst)))||#
-    #|(mv `(s-spec (cons
-                  ,(create-s-c-res-instance s-res-lst pp-res-lst c-res-lst t)
-                  'nil))
-        `(nil (nil t t)))||#
+(acl2::defines
+ medw-compress-any
+
+ :flag-defthm-macro defthm-medw-compress-any
+ :flag-local nil
+
+ :hints (("Goal"
+          :in-theory (e/d (measure-lemmas) ())))
+
+ :returns-hints (("Goal"
+                  :do-not-induct t
+                  :expand ((:free (x y)
+                                  (rp-termp (cons x y))))
+                  :in-theory (e/d () (rp-termp
+                                      ex-from-rp)
+                                  )))
+ :prepwork
+ ((local
+   (defthm dummy-lemma0
+     (implies (and
+               (consp (ex-from-rp term)))
+              (o< 1 (cons-count term)))
+     :hints (("goal"
+              :do-not-induct t
+              :induct (ex-from-rp term)
+              :expand ((cons-count term))
+              :in-theory (e/d (ex-from-rp
+                               cons-count)
+                              (+-is-sum))))))
+
+  (local
+   (defthm dummy-lemma1
+     (and (implies (and
+                    (not (consp (ex-from-rp term)))
+                    (rp-termp term))
+                   (symbolp (ex-from-rp term)))
+          (implies (and (consp (ex-from-rp term))
+                        (rp-termp term))
+                   (symbolp (car (ex-from-rp term))))
+          (implies (and (consp (ex-from-rp term))
+                        (rp-termp term))
+                   (car (ex-from-rp term)))
+          (implies (and
+                    (rp-termp term))
+                   (ex-from-rp term)))
+     :hints (("Goal"
+              :in-theory (e/d (rp-termp ex-from-rp)
+                              ())))))
+
+  (local
+   (defthm rp-termp-of-trans-list
+     (implies (rp-term-listp lst)
+              (rp-termp (trans-list lst)))
+     :hints (("Goal"
+              :do-not-induct t
+              :induct (trans-list lst)
+              :in-theory (e/d () ()))))))
+
+ (define medw-compress-any ((term rp-termp))
+   :returns (res rp-termp :hyp (rp-termp term))
+   :measure (cons-count term)
+   :verify-guards nil
+   (b* ((term (ex-from-rp term)))
+     (case-match term
+       (('s . &)
+        (if (single-s-p term) ;; makes proofs easier somehow
+            (medw-compress-s term)
+          term))
+       (('s-c-res . &)
+        (if (single-s-c-res-p term)
+            (medw-compress-s-c-res term)
+          term))
+       (('c . &)
+        (b* (((unless (single-c-p term)) term)
+             ((mv res-c-lst compressed)
+              (medw-compress-c term (expt 20 30))))
+          (if compressed
+              `(sum-list ,(create-list-instance res-c-lst))
+            term)))
+       (('quote . &)
+        term)
+       (('falist . &)
+        term)
+       (('list . lst)
+        (trans-list (medw-compress-any-lst lst)))
+       (('if . &) ;; just to make proofs a little bit easier.
+        (if (is-if term)
+            `(if ,(medw-compress-any (cadr term))
+                 ,(medw-compress-any (caddr term))
+               ,(medw-compress-any (cadddr term)))
+          term))
+       ((fnc . args)
+        `(,fnc . ,(medw-compress-any-lst args)))
+
+       (& term))))
+ (define medw-compress-any-lst ((lst rp-term-listp))
+   :returns (res-lst rp-term-listp :hyp (rp-term-listp lst))
+   :measure (cons-count lst)
+   (if (atom lst)
+       nil
+     (cons-with-hint (medw-compress-any (car lst))
+                     (medw-compress-any-lst (cdr lst))
+                     lst)))
+
+ ///
+
+ (verify-guards medw-compress-any-lst))
+
 
 (define medw-compress-meta ((term rp-termp))
   :returns (mv (res rp-termp :hyp (rp-termp term))
                (dont-rw))
   (case-match term
-    (('medw-compress term)
-     (b* ((term2 (ex-from-rp term)))
-       (case-match term2
-         (('s & & &)
-          (medw-compress-s term2))
-         (('s-c-res & & &)
-          (medw-compress-s-c-res term2))
-         (& (mv term nil)))))
-    (& (mv term nil))))
-
-
-
+    (('equal x y)
+     (mv `(equal ,(medw-compress-any x)
+                 ,(medw-compress-any y))
+         `(nil t t)))
+    (&
+     (mv (medw-compress-any term) t))))

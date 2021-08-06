@@ -1636,7 +1636,7 @@
                 (booleanp sign)
                 (force (valid-sc term a))
                 (rp-evl-meta-extract-global-facts))
-           (equal (sum-list-eval (pp-flatten term sign :unpack-now unpack-now) a)
+           (equal (sum-list-eval (pp-flatten term sign :disabled disabled) a)
                   (if sign
                       (-- (rp-evlt term a))
                     (rp-evlt term a))))
@@ -2220,7 +2220,7 @@
                                         (mv-nth 1
                                                 (pattern0-reduce-aux s-lst pp-lst c-lst 10))))
                             (sign nil)
-                            (unpack-now t)))
+                            (disabled nil)))
            ;;:use ((:instance c-pattern0-reduce-correct-lemma
            :in-theory (e/d (c-pattern0-reduce
                             is-rp)
@@ -2242,7 +2242,7 @@
                            (pp-term-p (cons 'binary-xor x)))
                     (:free (x)
                            (ex-from-rp (cons 'binary-xor x))))
-           :use ((:instance PP-FLATTEN-CORRECT
+           :use ((:instance pp-flatten-correct
                             (term (LIST
                                    'BINARY-xor
                                    (MV-NTH 0
@@ -2252,7 +2252,7 @@
                                            (PATTERN0-REDUCE-AUX nil
                                                                 (list-to-lst pp) (list-to-lst c) 10))))
                             (sign nil)
-                            (unpack-now t)))
+                            (disabled nil)))
            ;;:use ((:instance c-pattern0-reduce-correct-lemma
            :in-theory (e/d (s-pattern0-reduce
                             is-rp)

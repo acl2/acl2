@@ -89,17 +89,36 @@
              (case-match term (('-- &) t)))
     :rule-classes :forward-chaining))
 
+
+
+(progn
+  (encapsulate
+    (((unpack-booth-later-enabled) => *))
+    (local
+     (defun unpack-booth-later-enabled ()
+       nil)))
+
+  (define return-t ()
+    t)
+  (define return-nil ()
+    nil)
+  
+  (defmacro enable-unpack-booth-later (enable)
+    (if enable
+        `(defattach unpack-booth-later-enabled return-t)
+      `(defattach unpack-booth-later-enabled return-nil)))
+
+  (enable-unpack-booth-later nil))
+
 (progn
   (encapsulate
     (((stingy-pp-clean) => *)
-     ((super-stingy-pp-clean) => *))
+     )
     (local
      (defun stingy-pp-clean ()
        nil))
 
-    (local
-     (defun super-stingy-pp-clean ()
-       nil)))
+    )
 
   (define return-t ()
     t)
@@ -111,17 +130,13 @@
         `(defattach  stingy-pp-clean return-t)
       `(defattach  stingy-pp-clean return-nil)))
 
-  (defmacro enable-super-stingy-pp-clean (enabled)
-    (if enabled
-        `(defattach  super-stingy-pp-clean return-t)
-      `(defattach  super-stingy-pp-clean return-nil)))
+  
 
   (enable-stingy-pp-clean nil)
-  (enable-super-stingy-pp-clean nil)
+  
 
   (define clean-pp-args-cond (s-lst c-lst)
-    (cond ((super-stingy-pp-clean)
-           nil)
+    (cond 
           ((unpack-booth-later-enabled)
            nil)
           ((stingy-pp-clean)
@@ -1110,7 +1125,7 @@
     :inline t
     (create-list-instance (negate-lst (list-to-lst term) enabled))))
 
-(progn
+#|(progn
   (encapsulate
     (((c-pattern1-reduce-enabled) => *))
     (local
@@ -1122,7 +1137,7 @@
         `(defattach c-pattern1-reduce-enabled return-t)
       `(defattach c-pattern1-reduce-enabled return-nil)))
 
-  (enable-c-pattern1-reduce t))
+  (enable-c-pattern1-reduce t))||#
 
 (define c-pattern1-reduce ((s-lst rp-term-listp)
                            (pp-lst rp-term-listp)
@@ -1143,7 +1158,7 @@
                                     (rp-term-listp c-lst))))
   (cond
    ;;(s-lst (mv s-lst pp-lst c-lst))
-   ((not (c-pattern1-reduce-enabled)) (mv s-lst pp-lst c-lst))
+   ;;((not (c-pattern1-reduce-enabled)) (mv s-lst pp-lst c-lst))
    (t
     (case-match c-lst
       ((('c & c-s c-pp &))
@@ -1231,8 +1246,7 @@
     (mv (pp-flatten `(binary-xor ,pp1
                                  (binary-xor ,pp2
                                              ,pp3))
-                    nil
-                    :unpack-now t)
+                    nil)
         t))
   ///
   (verify-guards single-s-to-pp-lst
@@ -1260,8 +1274,7 @@
     (mv (pp-flatten `(binary-or (binary-and ,pp1 ,pp2)
                                 (binary-or (binary-and ,pp2 ,pp3)
                                            (binary-and ,pp1 ,pp3)))
-                    nil
-                    :unpack-now t)
+                    nil)
         t))
   ///
   (verify-guards single-c-to-pp-lst
@@ -1284,7 +1297,7 @@
 
   (enable-pattern2-reduce t))
 
-(progn
+#|(progn
   (encapsulate
     (((pattern2-aggressive-reduce-enabled) => *))
     (local
@@ -1296,7 +1309,7 @@
         `(defattach pattern2-aggressive-reduce-enabled return-t)
       `(defattach pattern2-aggressive-reduce-enabled return-nil)))
 
-  (enable-pattern2-aggressive-reduce nil))
+  (enable-pattern2-aggressive-reduce nil))||#
 
 (define c-pattern2-reduce ((s-lst rp-term-listp)
                            (pp-lst rp-term-listp)
@@ -1312,13 +1325,14 @@
                      (pattern2-reduce-enabled)))
         (mv nil nil))
 
-       (aggressive (pattern2-aggressive-reduce-enabled)))
+       ;;(aggressive (pattern2-aggressive-reduce-enabled))
+       )
     (case-match pp-lst
       ((''1 pp1 pp2 pp3)
        (b* (((unless (and (not (binary-fnc-p pp1))
                           (not (binary-fnc-p pp2))
                           (not (binary-fnc-p pp3))
-                          (or aggressive
+                          (or 
                               (equal pp1 ''1)
                               (and (and-subsetp pp2 pp1)
                                    (and-subsetp pp3 pp1)))))
@@ -1332,7 +1346,7 @@
        (b* (((unless (and (not (binary-fnc-p pp1))
                           (not (binary-fnc-p pp2))
                           (not (binary-fnc-p pp3))
-                          (or aggressive
+                          (or 
                               (equal pp1 ''1)
                               (and (and-subsetp pp2 pp1)
                                    (and-subsetp pp3 pp1)))))
@@ -1823,7 +1837,7 @@
        (b* (((mv pp-term1 pp-term2 valid)
              (pattern0-reduce-aux s-lst pp-lst c-lst 10))
             ((unless valid) nil)
-            (flatten-res (pp-flatten `(binary-and ,pp-term1 ,pp-term2) nil :unpack-now t))
+            (flatten-res (pp-flatten `(binary-and ,pp-term1 ,pp-term2) nil))
             ((when (not flatten-res))
              (progn$ (cw "c-pattern0-reduce match (3)! ~%")
                      #|(cw "s-lst: ~p0, pp-lst: ~p1, c-lst: ~p2 ~%"
@@ -1927,7 +1941,7 @@
         (b* (((mv pp-term1 pp-term2 valid)
               (pattern0-reduce-aux nil pp-lst c-lst 10))
              ((unless valid) nil)
-             (flatten-res (pp-flatten `(binary-xor ,pp-term1 ,pp-term2) nil :unpack-now t))
+             (flatten-res (pp-flatten `(binary-xor ,pp-term1 ,pp-term2) nil))
              ((when (not flatten-res))
               (progn$ (cw "s-pattern0-reduce match (1,2,3)! ~%")
                       ;;(cw "s-lst:~p0 pp-lst:~p1 c-lst:~p2  ~%" s-lst pp-lst c-lst)
@@ -2107,18 +2121,27 @@
             (compressed (light-compress-s-c `(s '0 ,pp ,c))))
          (case-match compressed
            (('s & ''nil ('list single-c))
-            (b* (((mv max min valid) (get-max-min-val single-c))
-                 ((unless (and valid
-                               (= max 0)
-                               (= min -1)))
-                  (mv nil nil nil))
-                 ((mv res coughed-s coughed-pp) (decompress-s-c single-c))
-                 ((unless (equal coughed-s ''nil))
-                  (mv nil nil nil))
-                 (coughed-pp (negate-list-instance coughed-pp)))
-              (mv (list-to-lst coughed-pp)
-                  (list `(-- ,res))
-                  t)))
+            (b* (((mv max min valid) (get-max-min-val single-c)))
+                 (cond  ((and valid
+                              (= max 0)
+                              (= min -1))
+                         (b* (((mv res coughed-s coughed-pp) (decompress-s-c single-c))
+                              ((unless (equal coughed-s ''nil))
+                               (mv nil nil nil))
+                              (coughed-pp (negate-list-instance coughed-pp)))
+                           (mv (list-to-lst coughed-pp)
+                               (list `(-- ,res))
+                               t)))
+                        #|((and valid
+                              (= max 1)
+                              (= min 0))
+                         (b* (((mv res coughed-s coughed-pp) (decompress-s-c single-c))
+                              ((unless (equal coughed-s ''nil))
+                               (mv nil nil nil)))
+                           (mv (list-to-lst coughed-pp)
+                               (list res)
+                               t)))||#
+                        (t (mv nil nil nil)))))
            (& (mv nil nil nil)))))
       (& (mv nil nil nil)))))
 
@@ -2135,13 +2158,14 @@
                      (pattern2-reduce-enabled)))
         (mv nil nil))
 
-       (aggressive (pattern2-aggressive-reduce-enabled)))
+       ;;(aggressive (pattern2-aggressive-reduce-enabled))
+       )
     (case-match pp
       (('list ''1 pp1 pp2 pp3)
        (b* (((unless (and (not (binary-fnc-p pp1))
                           (not (binary-fnc-p pp2))
                           (not (binary-fnc-p pp3))
-                          (or aggressive
+                          (or 
                               (equal pp1 ''1)
                               (and (and-subsetp pp2 pp1)
                                    (and-subsetp pp3 pp1)))))
@@ -2155,7 +2179,7 @@
        (b* (((unless (and (not (binary-fnc-p pp1))
                           (not (binary-fnc-p pp2))
                           (not (binary-fnc-p pp3))
-                          (or aggressive
+                          (or 
                               (equal pp1 ''1)
                               (and (and-subsetp pp2 pp1)
                                    (and-subsetp pp3 pp1)))))
@@ -2371,7 +2395,9 @@
 
                 (res `(c ',hash-code ,s ,pp ,c))
                 ((mv max-val min-val valid)
-                 (get-max-min-val res))
+                 (if (< (len pp-lst) 4) ;; minimize the calls made to get-max-min-val
+                     (get-max-min-val res)
+                   (mv 0 0 nil)))
                 ((when (and valid
                             (equal max-val 1)
                             (equal min-val 0)))
@@ -3053,21 +3079,22 @@
  ///
  (verify-guards c-sum-merge-aux-fn))
 
-(acl2::memoize-partial
- ((single-c-try-merge* single-c-try-merge-fn)
-  (c-sum-merge-lst-aux* c-sum-merge-lst-aux-fn)
-  (c-sum-merge-lst* c-sum-merge-lst-fn)
-  (c-sum-merge-lst-lst* c-sum-merge-lst-lst-fn)
-  (c-sum-merge* c-sum-merge-fn)
-  (c-sum-merge-aux* c-sum-merge-aux-fn
-                    :condition t
-; As per the memoize call in verify-guards.lisp:
-                    :memo-table-init-size 1000000
-                    :aokp t))
- :condition nil)
+
 
 ;;;;;;;;;;
 ;;:i-am-here
+
+(acl2::memoize-partial
+          ((single-c-try-merge* single-c-try-merge-fn)
+           (c-sum-merge-lst-aux* c-sum-merge-lst-aux-fn)
+           (c-sum-merge-lst* c-sum-merge-lst-fn)
+           (c-sum-merge-lst-lst* c-sum-merge-lst-lst-fn)
+           (c-sum-merge* c-sum-merge-fn)
+           (c-sum-merge-aux* c-sum-merge-aux-fn
+                             :condition t
+                             :memo-table-init-size 1000000
+                             :aokp t))
+          :condition nil)
 
 (progn
   (encapsulate
@@ -3630,6 +3657,7 @@
 
 ;;(include-book "pp-flatten-wrapper")
 
+
 (define new-sum-merge-aux ((sum-lst rp-term-listp))
   :verify-guards nil
   ;;:returns (mv s pp-lst c-lst to-be-coughed-c-lst)
@@ -3702,7 +3730,8 @@
         (mv s pp-lst c-lst to-be-coughed-c-lst)))
      ((pp-term-p ABS-TERM-W/-SC)
       (b* (;;(abs-term (4vec->pp-term abs-term))
-           (pp-lst2 (pp-flatten abs-term-w/-sc negated))
+           (pp-lst2 (pp-flatten abs-term-w/-sc negated
+                                :disabled (unpack-booth-later-enabled)))
            ((mv pp-lst2 recollected-c-lst) (recollect-pp-lst-to-sc-main pp-lst2))
            (c-lst (s-sum-merge-aux recollected-c-lst c-lst))
            (pp-lst (pp-sum-merge-aux pp-lst pp-lst2)))
@@ -3996,7 +4025,7 @@
                           (rp-term-listp c-lst)))
   (b* (((mv pp-lst c-lst) (s-of-s-fix-lst (list-to-lst s) pp-lst c-lst))
        #| (pp-lst-before-clean pp-lst)||#
-       (c-lst (if (super-stingy-pp-clean) c-lst (s-fix-pp-args-aux c-lst)))
+       (c-lst (s-fix-pp-args-aux c-lst))
        (pp-lst (if (clean-pp-args-cond nil c-lst)
                    (s-fix-pp-args-aux pp-lst)
                  pp-lst))
@@ -4026,9 +4055,7 @@
           (mv arg-pp-lst arg-c-lst nil nil to-be-coughed-c-lst)))
 
        ((mv coughed-c-lst-from-args arg-c-lst)
-        (if (super-stingy-pp-clean)
-            (mv nil arg-c-lst)
-          (c-fix-arg-aux arg-c-lst t)))
+        (c-fix-arg-aux arg-c-lst t))
        (to-be-coughed-c-lst (s-sum-merge-aux to-be-coughed-c-lst coughed-c-lst-from-args))
 
        ((mv coughed-s-lst arg-s-lst)

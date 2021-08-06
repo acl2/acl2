@@ -38,6 +38,8 @@
 
 (include-book "fnc-defs")
 
+(include-book "make-sc-fgl-ready")
+
 (include-book "medw-compress")
 
 (include-book "unpack-booth")
@@ -235,6 +237,13 @@
  :formula-checks mult-formula-checks
  :returns (mv term dont-rw))
 
+(rp::add-meta-rule
+ :meta-fnc medw-compress-meta
+ :trig-fnc equal
+ :valid-syntaxp t
+ :disabledp t
+ :formula-checks mult-formula-checks
+ :returns (mv term dont-rw))
 
 (rp::add-meta-rule
  :meta-fnc unpack-booth-meta
