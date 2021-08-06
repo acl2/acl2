@@ -74,6 +74,7 @@
 (include-book "world")
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
 (include-book "std/strings/substrp" :dir :system)
+(include-book "tools/prove-dollar" :dir :system)
 
 (defun all-defuns-in-world (world triple-to-stop-at whole-world acc)
   (declare (xargs :guard (and (plist-worldp world)
@@ -95,7 +96,7 @@
 
 ;dup
 (defun enquote-list (items)
-  (declare (type t items))
+  (declare (xargs :guard t))
   (if (atom items)
       nil
     (cons (enquote (car items))
@@ -545,7 +546,7 @@
                           (cw ")~%~%")))))
              (nil nil))))
     ;; Check the test recursively:
-    (check-term (farg1 term) subst type-alist
+    (lint-term (farg1 term) subst type-alist
                 nil ; we use nil here because we handle the test above
                 thing-being-checked suppress state)
     (b* (((mv & & then-type-alist else-type-alist &)
@@ -556,20 +557,20 @@
            nil ;; for (if x x y) don't check x twice.  this can come from (or x y).
          (if (quotep (farg2 term))
              nil ; don't check constant if-branches (very common to implement ands or ors)
-           (check-term (farg2 term) subst then-type-alist
+           (lint-term (farg2 term) subst then-type-alist
                        iff-flag ; lets us catch branches that are resolvable but not constants, assuming the whole IF is in an IFF context
                        thing-being-checked suppress state)))
        ;; check the else-branch:
        (if (quotep (farg3 term))
            nil ; don't check constant if-branches (very common to implement ands or ors)
-         (check-term (farg3 term) subst else-type-alist
+         (lint-term (farg3 term) subst else-type-alist
                      iff-flag ; lets us catch branches that are resolvable but not constants, assuming the whole IF is in an IFF context
                      thing-being-checked suppress state))))
     (and (equal (farg2 term) (farg3 term))
          (cw "(In ~s0, both branches of ~x1 are the same.)~%~%" (thing-being-checked-to-string thing-being-checked) term))))
 
  ;; add constant-surprising arg...
- (defun check-term (term subst type-alist iff-flag thing-being-checked suppress state)
+ (defun lint-term (term subst type-alist iff-flag thing-being-checked suppress state)
    (declare (xargs :guard (pseudo-termp term)
                    :mode :program
                    :stobjs state))
@@ -605,7 +606,7 @@
               nil
             (if (eq 'if fn) ; separate because we process the args differently
                 (check-call-of-if term subst type-alist iff-flag thing-being-checked suppress state)
-              (prog2$ (check-terms (fargs term) subst type-alist
+              (prog2$ (lint-terms (fargs term) subst type-alist
                                    nil ; iff-flag
                                    thing-being-checked suppress state)
                       ;; TODO: Use the subst for these?
@@ -624,7 +625,7 @@
                                   (if (eq fn 'illegal)
                                       (check-call-of-illegal term thing-being-checked suppress)
                                     (if (consp fn) ;check for lambda
-                                        (check-term (lambda-body fn)
+                                        (lint-term (lambda-body fn)
                                                     ;; new subst, since we are in a lambda body
                                                     (pairlis$ (lambda-formals fn)
                                                               (sublis-var-simple-lst subst (fargs term)))
@@ -633,15 +634,33 @@
                                            (quote-listp (fargs term))
                                            (cw "(In ~s0, ground term ~x1 is present.)~%~%" (thing-being-checked-to-string thing-being-checked) term))))))))))))))))))
 
- (defun check-terms (terms subst type-alist iff-flag thing-being-checked suppress state)
+ (defun lint-terms (terms subst type-alist iff-flag thing-being-checked suppress state)
    (declare (xargs :guard (and (true-listp terms)
                                (pseudo-term-listp terms))
                    :stobjs state))
    (if (endp terms)
        nil
-     (prog2$ (check-term (car terms) subst type-alist iff-flag thing-being-checked suppress state)
-             (check-terms (cdr terms) subst type-alist iff-flag thing-being-checked suppress state)))))
+     (prog2$ (lint-term (car terms) subst type-alist iff-flag thing-being-checked suppress state)
+             (lint-terms (cdr terms) subst type-alist iff-flag thing-being-checked suppress state)))))
 
+;; Returns state.
+(defun check-for-contradiction (description term state)
+  (declare (xargs :guard (and (stringp description)
+                              (pseudo-termp term)
+                              )
+                  :stobjs state
+                  :mode :program))
+  (b* (((mv erp res state)
+        (prove$ `(not ,term) :step-limit 1000))
+       ((when erp)
+        (er hard? 'check-for-contradiction "Error checking for contradiction in ~s0: ~X12." description term nil)
+        state))
+    (if res
+        (prog2$ (cw " ~s0 is provably contradictory.~%" description)
+                state)
+      state)))
+
+;; Returns state.
 (defun check-defun (fn assume-guards suppress state)
   (declare (xargs :stobjs state
                   :mode :program))
@@ -663,38 +682,47 @@
                  guard-debug-res
                  (cw "(~x0 has a :guard-debug xarg, ~x1.)~%~%" fn (second guard-debug-res)))
             (and (not (equal guard *t*)) ;; a guard of T is resolvable but uninterseting
-                 (check-term guard
+                 (lint-term guard
                              nil ;empty substitution
                              nil ;type-alist
                              t   ;iff-flag
                              (concatenate 'string "guard of " (symbol-to-string fn))
                              suppress state))
-            (check-term body
+            (lint-term body
                         nil ;empty substitution
                         type-alist
                         nil ;iff-flag
                         fn
-                        suppress state))))
+                        suppress state)
+            (let ((state (check-for-contradiction (concatenate 'string "Guard of " (symbol-name fn)) guard state)))
+              state))))
 
+;; Returns state.
 (defun check-defuns (fns assume-guards suppress skip-fns state)
   (declare (xargs :stobjs state
                   :guard (and ;todo: more
                           (symbol-listp skip-fns))
                   :mode :program))
   (if (atom fns)
-      nil
+      state
     (let* ((fn (first fns))
-           (checkp (not (member-eq fn skip-fns))))
-      (prog2$ (and checkp
-                   (progn$ (cw "Checking ~x0.~%" fn)
-                           (check-defun fn assume-guards suppress state)))
-              (check-defuns (rest fns) assume-guards suppress skip-fns state)))))
+           (checkp (not (member-eq fn skip-fns)))
+           (state (if checkp
+                      (progn$ (cw "Checking ~x0.~%" fn)
+                              (check-defun fn assume-guards suppress state))
+                    state)))
+      (check-defuns (rest fns) assume-guards suppress skip-fns state))))
 
 ;todo: add support for more here
 (defconst *warning-types*
-  '(:ground-term :guard-debug :equality-variant :context :resolvable-test
-                 :equal-self))
+  '(:ground-term
+    :guard-debug
+    :equality-variant
+    :context
+    :resolvable-test
+    :equal-self))
 
+;; Returns state
 (defun run-linter-fn (check assume-guards suppress skip-fns state)
   (declare (xargs :stobjs state
                   :guard (and (member-eq check '(:user :all))
