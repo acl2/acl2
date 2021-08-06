@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -877,6 +877,19 @@ implementations.")
          (quiet nil)
          (t (error "Unable to determine git commit hash.")))))
 
+(defvar *acl2-release-p*
+
+; Notes to developers (users should ignore this!):
+
+;   (1) Replace the value below by t when making a release, then to nil after a
+;       release.
+
+;   (2) More generally, see UT CS file
+;       /projects/acl2/devel-misc/release.cmds
+;       for release instructions.
+
+  t)
+
 (defun acl2-snapshot-info ()
   (let* ((var "ACL2_SNAPSHOT_INFO")
          (s (getenv$-raw var))
@@ -892,25 +905,13 @@ implementations.")
                    "~% +   (Note from the environment when this executable was ~
                     saved:~72t+~% +    ~a)~72t+"
                    s))
+          (*acl2-release-p* "")
           (t (let ((h (git-commit-hash t)))
                (cond (h
                       (format nil
                               "~% +   (Git commit hash: ~a)~72t+"
                               h))
                      (t (error err-string var))))))))
-
-(defvar *acl2-release-p*
-
-; Notes to developers (users should ignore this!):
-
-;   (1) Replace the value below by t when making a release, then to nil after a
-;       release.
-
-;   (2) More generally, see UT CS file
-;       /projects/acl2/devel-misc/release.cmds
-;       for release instructions.
-
-  nil)
 
 (defvar *saved-string*
   (concatenate

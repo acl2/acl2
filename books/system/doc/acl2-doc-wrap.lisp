@@ -69,7 +69,7 @@
 ; who are looking at an older version of ACL2 will see the corresponding
 ; ACL2+Books Manual at this link.
 
-  "http://www.cs.utexas.edu/users/moore/acl2/v8-3/")
+  "http://www.cs.utexas.edu/users/moore/acl2/v8-4/")
 
 (defconst *installation-url*
 
