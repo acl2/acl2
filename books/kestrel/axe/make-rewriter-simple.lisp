@@ -441,8 +441,7 @@
                                       (triesp tries)
                                       (rule-limitsp limits))
                           :measure (nfix count)
-                          :guard-debug t ;todo
-                          :verify-guards nil ;see below
+                          :verify-guards nil ; done below
                           ))
           (if (or (not (mbt (natp count)))
                   (= 0 count))
