@@ -122,7 +122,7 @@
        (defun-nx-name (file-name-to-r1cs-maker-fn-name cj-filename))
        (event (make-r1cs-event constraints vars prime-form
                                defun-constraints-name defun-vars-name defun-nx-name))
-       (- (cw "Created R1CS event.~%" cj-filename)))
+       (- (cw "Created R1CS event.~%")))
     (mv (erp-nil) event defun-nx-name state)))
 
 ;Returns (mv erp event state).
