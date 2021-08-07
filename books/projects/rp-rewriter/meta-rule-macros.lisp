@@ -461,38 +461,39 @@ attach-meta-fncs) from being executed. </li>
         (create-rp-rw-meta-rule-fn-aux2 rp-rw-all-meta-rules))
        #|(meta-rule-validity-lemmas (get-meta-rule-validity-lemma meta-rules))||#
        )
-    `(encapsulate
-       nil
+    `(
+       
 
-       (defun ,formula-checks-fnc-name (state)
-         (declare (xargs :stobjs (state)))
-         ,formula-checks-fn-body)
+      (defun ,formula-checks-fnc-name (state)
+        (declare (xargs :stobjs (state)))
+        ,formula-checks-fn-body)
 
-       (defun ,fnc-name (term meta-fnc-name dont-rw context rp-state state )
-         (declare (xargs :guard (rp-termp term)
-                         :stobjs (rp-state state)))
-         (declare (ignorable term meta-fnc-name dont-rw context rp-state state))
-         (cond
-          . ,new-fnc-body))
+      (defun ,fnc-name (term meta-fnc-name dont-rw context rp-state state )
+        (declare (xargs :guard (rp-termp term)
+                        :stobjs (rp-state state)))
+        (declare (ignorable term meta-fnc-name dont-rw context rp-state state))
+        (cond
+         . ,new-fnc-body))
 
-       (local
-        (in-theory (theory 'minimal-theory)))
+       
 
-       (table rp-rw 'main-formula-checks-fnc-name ',formula-checks-fnc-name)
-       (table rp-rw 'meta-rule-caller-fnc-name ',fnc-name)
-       (table rp-rw 'added-meta-rules ',rp-rw-all-meta-rules)
+      (table rp-rw 'main-formula-checks-fnc-name ',formula-checks-fnc-name)
+      (table rp-rw 'meta-rule-caller-fnc-name ',fnc-name)
+      (table rp-rw 'added-meta-rules ',rp-rw-all-meta-rules)
 
-       (local
-        (in-theory (e/d (,formula-checks-fnc-name
-                         ,fnc-name
-                         rp-state-preservedp-of-the-same-rp-state
-                         ,@(create-rp-rw-meta-rule-fn-aux3 rp-rw-all-meta-rules)
-                         (:e dont-rw-syntaxp))
-                        ())))
+      (local
+       (in-theory (e/d 
+                   ())))
 
-       (defattach
-         (rp-formula-checks ,formula-checks-fnc-name)
-         (rp-rw-meta-rule ,fnc-name)))))
+      (defattach
+        (rp-formula-checks ,formula-checks-fnc-name)
+        (rp-rw-meta-rule ,fnc-name)
+        :hints (("Goal"
+                 :in-theory '(,formula-checks-fnc-name
+                              ,fnc-name
+                              rp-state-preservedp-of-the-same-rp-state
+                              ,@(create-rp-rw-meta-rule-fn-aux3 rp-rw-all-meta-rules)
+                              (:e dont-rw-syntaxp))))))))
 
 (defun attach-meta-fncs-fn (prefix state)
   (declare (xargs :stobjs (state)
@@ -501,7 +502,7 @@ attach-meta-fncs) from being executed. </li>
   `(progn
      (table rp-rw 'added-meta-rules
             ',(table-alist 'rp-rw-all-meta-rules (w state)))
-     ,(create-rp-rw-meta-rule-fn prefix (w state))))
+     ,@(create-rp-rw-meta-rule-fn prefix (w state))))
 
 (defmacro attach-meta-fncs (prefix)
   `(make-event
@@ -664,7 +665,9 @@ symbol for the updated meta-rule caller function. ~%"
                      (equal (rp-evlt x a)
                             (,fn . ,(loop$ for i from 1 to argc
                                            collect `(rp-evlt (nth ,i x)
-                                                             a)))))))
+                                                             a))))))
+       :hints (("Goal"
+                :in-theory (e/d (rp-trans trans-list) ()))))
      (acl2::add-to-ruleset regular-eval-lemmas '(,(sa 'regular-rp-evl-of fn 'when formula-checks)))
      (defthmd ,(sa 'regular-rp-evl-of fn 'when formula-checks 'with-ex-from-rp)
        (implies (and (rp-evl-meta-extract-global-facts :state state)

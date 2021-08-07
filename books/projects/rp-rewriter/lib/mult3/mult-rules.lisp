@@ -301,7 +301,7 @@
                                   (bit-of-p (ex-from-rp-loose side2))
                                   (binary-fnc-p (ex-from-rp-loose side2)))||#)))
            (equal (equal side1 side2)
-                  (equal (s-spec (list side1 side2))
+                  (equal (medw-compress (unpack-booth (s-spec (list 2 side1 side2))))
                          0)))
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))

@@ -231,3 +231,11 @@
     :flag rp-trans-lst)
   :hints (("Goal"
            :in-theory (e/d (rp-evl-of-fncall-args) ()))))
+
+(defthm rp-evlt-lst-of-cons
+  (implies (consp acl2::x-lst)
+           (equal (rp-evlt-lst acl2::x-lst acl2::a)
+                  (cons (rp-evlt (car acl2::x-lst) acl2::a)
+                        (rp-evlt-lst (cdr acl2::x-lst)
+                                     acl2::a))))
+  :hints (("goal" :expand ((rp-trans acl2::x-lst)))))
