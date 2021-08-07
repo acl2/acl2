@@ -899,6 +899,8 @@
      :hints (("goal"
               :do-not-induct t
               :induct (pp-lists-to-term-and$ cur)
+              :expand ((:free (x y)
+                              (bit-listp (cons x y))))
               :in-theory (e/d (pp-lists-to-term-and$)
                               (bitp
                                rp-evl-lst-of-cons
@@ -2295,11 +2297,15 @@
    :hints (("Goal"
             :induct (PP-LISTS-TO-TERM-AND$ lst)
             :do-not-induct t
-            ;; :expand ((:free (x y)
-            ;;                 (RP-EVL-OF-TRANS-LIST (cons x y) a)))
+            :expand ((:free (x y)
+                            (rp-trans (cons 'binary-and y))))
             :in-theory (e/d (PP-LISTS-TO-TERM-AND$
-                             and-list)
-                            ())))))
+                             and-list
+                             )
+                            (;;and-list
+                             RP-EVLT-LST-OF-CONS
+                             rp-trans
+                             ))))))
 
 (local
  (defthm pp-lists-to-term-p+-to-pp-lists-to-term-pp-lst
