@@ -455,8 +455,7 @@
   :hints (("Goal" :in-theory (enable parse-json-digits))))
 
 (defthm len-of-mv-nth-2-of-parse-json-digits-bound-when-digit-bound
-  (implies (and (consp chars)
-                (member (first chars) '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)))
+  (implies (member (first chars) '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
            (< (len (mv-nth 2 (parse-json-digits chars)))
               (len chars)))
   :rule-classes (:rewrite :linear)
