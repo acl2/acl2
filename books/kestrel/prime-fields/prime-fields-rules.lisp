@@ -71,6 +71,17 @@
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (enable sub add neg acl2::mod-sum-cases))))
 
+(defthm equal-of-add-combine-constants-alt
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (fep x p)
+                (fep k1 p)
+                (integerp p))
+           (equal (equal (add k2 x p) k1)
+                  (equal x (sub k1 k2 p))))
+  :rule-classes ((:rewrite :loop-stopper nil))
+  :hints (("Goal" :in-theory (enable sub add neg acl2::mod-sum-cases))))
+
 ;;less aggressive than the general rule
 (defthm add-associative-when-constant
   (implies (syntaxp (quotep x))
@@ -642,6 +653,19 @@
                 (fep z p)
                 (rtl::primep p))
            (equal (equal x (mul y z p))
+                  (and (fep x p)
+                       (if (equal 0 y)
+                           (equal x 0)
+                         (equal (div x y p) z)))))
+  :hints (("Goal" :in-theory (enable div))))
+
+(defthm equal-of-mul-constants-alt
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep y)))
+                (fep y p)
+                (fep z p)
+                (rtl::primep p))
+           (equal (equal (mul y z p) x)
                   (and (fep x p)
                        (if (equal 0 y)
                            (equal x 0)
