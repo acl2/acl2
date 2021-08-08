@@ -8,15 +8,16 @@
 # (1) Run fresh "everything" regression with ACL2_USELESS_RUNES=write
 #     to regenerate @useless-runes.lsp files.
 
-# (2) Run ordinary "everything" regression.
+# (2) Run ordinary "everything" regression.  (This can be delayed till
+#     after (5) if you know what you are doing.)
 
 # (3) Check for failures, avoiding bad @useless-runes.lsp files by
 #     editing .acl2 files and removing them (using git rm if already
 #     under git control).
 
-# (4) Run, in that same (top-level ACL2) directory:
+# (4) Run, in that same (top-level ACL2) directory (editing <your_acl2>):
 
-#     ./bin/new-useless-runes-files.sh acl2 tmp
+#     ./bin/new-useless-runes-files.sh <your_acl2> tmp
 
 # (5) After "cd books", run "git add" and "git rm" as suggested by the
 #     output.

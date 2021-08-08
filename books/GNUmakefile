@@ -602,7 +602,8 @@ SLOW_BOOKS := \
 # AND   directory projects/arm/
 # could be added as x86isa is below.
 
-SLOW_BOOKS += $(filter projects/x86isa/%, $(OK_CERTS))
+X86ISA_BOOKS := $(filter projects/x86isa/%, $(OK_CERTS))
+SLOW_BOOKS += $(X86ISA_BOOKS)
 
 SLOW_BOOK_TARGETS :=
 
@@ -1097,6 +1098,21 @@ BOOKS_SKIP_COMP += system/tests/stobj-issues.$(ACL2_COMP_EXT)
 # overrun]" and then "Unrecoverable error: Segmentation violation.."
 # It's not clear why, but it doesn't seem important to figure it out.
 BOOKS_SKIP_COMP += workshops/2011/verbeek-schmaltz/sources/invariants2.$(ACL2_COMP_EXT)
+
+# Skip some compilation for GCL that included failures when using -j 8
+# on a UT CS machine with 32GB of memory when using
+# GCL_MEM_MULTIPLE=0.25.  Perhaps these wouldn't fail with -j 4, other
+# than books/projects/arm/second/fma32/addends.lisp, which probably
+# needs a well-placed (comp t) to avoid a value stack overflow (maybe
+# others too).
+KESTREL_X86_BOOKS := $(filter kestrel/x86/%, $(OK_CERTS))
+ifeq (GCL, $(ACL2_HOST_LISP))
+BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(X86ISA_BOOKS))
+# Since projects/acl2/releases2/v8-4/books/kestrel/x86/tools/flags.o
+# failed for GCL and since the above x86isa books failed, then let's
+# skip kestrel/x86/ books too with GCL.
+BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(KESTREL_X86_BOOKS))
+endif
 
 OK_CERTS := $(filter-out $(BOOKS_SKIP_COMP), $(OK_CERTS))
 
