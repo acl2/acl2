@@ -634,13 +634,22 @@
 (defret attach-sc-from-context-returns-rp-termp
   (implies (and (rp-term-listp context)
                 (rp-termp term))
-           (and (rp-term-listp res-context)
+           (and ;;(rp-term-listp res-context)
                 (rp-termp res-term)))
   :fn attach-sc-from-context
   :hints (("Goal"
            :induct (ATTACH-SC-FROM-CONTEXT context term)
            :in-theory (e/d (ATTACH-SC-FROM-CONTEXT) ()))))
 
+
+(defthm attach-sc-from-context-lst-returns-rp-term-listp
+  (implies (and (rp-term-listp context)
+                (rp-term-listp terms))
+           (rp-term-listp (attach-sc-from-context-lst context terms)))
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (attach-sc-from-context-lst context terms)
+           :in-theory (e/d (attach-sc-from-context-lst) ()))))
 
 (defthm UNSIGNED-BYTE-P-and-natp-of-rw-step-limit
   (implies (rp-statep rp-state)

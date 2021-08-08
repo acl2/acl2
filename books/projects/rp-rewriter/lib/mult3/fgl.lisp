@@ -45,9 +45,12 @@
 
 ;;(attach-meta-fncs fgl-mult-rules)
 
-(enable-meta-rules make-sc-fgl-ready-meta-main)
+(enable-postprocessor make-sc-fgl-ready-meta-main)
+(disable-postprocessor medw-compress-any)
+
+;;(enable-meta-rules make-sc-fgl-ready-meta-main)--------------------------
 ;;(enable-rules '((:META medw-compress-meta . equal)))
-(disable-meta-rules medw-compress-meta)
+;;(disable-meta-rules medw-compress-meta)-----------------------------------
 
 (fgl::def-fgl-rewrite
  4vec-concat$-is-logapp

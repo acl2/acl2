@@ -1092,8 +1092,8 @@
 
 (bump-all-meta-rules)
 
-(bump-down-rp-rule (:META medw-compress-meta . equal))
-(bump-down-rp-rule (:META make-sc-fgl-ready-meta-main . equal))
+;;(bump-down-rp-rule (:META medw-compress-meta . equal))
+;;(bump-down-rp-rule (:META make-sc-fgl-ready-meta-main . equal))
 
 
 

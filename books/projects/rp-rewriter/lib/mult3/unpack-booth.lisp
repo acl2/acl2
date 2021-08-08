@@ -363,9 +363,8 @@
 
  (verify-guards unpack-booth-for-c-lst))
 
-
-(memoize 'unpack-booth-for-c-lst :aokp t)
-(memoize 'unpack-booth-for-s-lst :aokp t)
+;;(memoize 'unpack-booth-for-c-lst :aokp t)
+;;(memoize 'unpack-booth-for-s-lst :aokp t)
 (memoize 'unpack-booth-for-s :aokp t)
 (memoize 'unpack-booth-for-c :aokp t)
 

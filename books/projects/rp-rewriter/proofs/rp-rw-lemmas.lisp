@@ -363,6 +363,12 @@
                    `(equal ,(rp-trans (cadr x))
                            ,(rp-trans (caddr x)))))))
 
+(local
+ (defthmd rp-check-context-is-correct-iff-lemma-2
+   (implies (case-match x (('not &) t))
+            (equal (RP-TRANS x)
+                   `(not ,(rp-trans (cadr x)))))))
+
 (defthm rp-check-context-is-correct-iff
   (implies
    (and  (context-syntaxp context)
@@ -382,6 +388,7 @@
             :in-theory (e/d (rp-check-context
                              context-syntaxp
                              rp-check-context-is-correct-iff-lemma
+                             rp-check-context-is-correct-iff-lemma-2
                              rp-termp
                              eval-and-all
                              is-falist)
@@ -1664,9 +1671,10 @@
                       (mv-nth 0
                               (rp-rw term dont-rw context  iff-flg hyp-flg limit rp-state state))))
                  (and (valid-sc res a)
-                      (if iff-flg
-                          (iff (rp-evlt res a) (rp-evlt term a))
-                        (equal (rp-evlt res a) (rp-evlt term a))))))
+                      (implies iff-flg
+                               (iff (rp-evlt res a) (rp-evlt term a)))
+                      (implies (not iff-flg)
+                               (equal (rp-evlt res a) (rp-evlt term a))))))
       :flag rp-rw)
 
     (defthm rp-evl-and-side-cond-consistent-rp-rw-rule
@@ -1690,9 +1698,10 @@
                               (rp-rw-rule term dont-rw rules-for-term context
                                           iff-flg outside-in-flg  limit rp-state state))))
                  (and (valid-sc res a)
-                      (if iff-flg
-                          (iff (rp-evlt res a) (rp-evlt term a))
-                        (equal (rp-evlt res a) (rp-evlt term a))))))
+                      (implies iff-flg
+                               (iff (rp-evlt res a) (rp-evlt term a)))
+                      (implies (not iff-flg)
+                               (equal (rp-evlt res a) (rp-evlt term a))))))
       :flag rp-rw-rule)
 
     (defthm rp-evl-and-side-cond-consistent-rp-rw-if
@@ -1714,9 +1723,10 @@
                       (mv-nth 0
                               (rp-rw-if term dont-rw context iff-flg hyp-flg limit rp-state state))))
                  (and  (valid-sc res a)
-                       (if iff-flg
-                           (iff (rp-evlt res a) (rp-evlt term a))
-                         (equal (rp-evlt res a) (rp-evlt term a))))))
+                       (implies iff-flg
+                                (iff (rp-evlt res a) (rp-evlt term a)))
+                       (implies (not iff-flg)
+                                (equal (rp-evlt res a) (rp-evlt term a))))))
       :flag rp-rw-if)
 
     (defthm rp-evl-and-side-cond-consistent-rp-rw-subterms

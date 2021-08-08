@@ -3082,19 +3082,19 @@
 
 
 ;;;;;;;;;;
-;;:i-am-here
+
 
 (acl2::memoize-partial
-          ((single-c-try-merge* single-c-try-merge-fn)
-           (c-sum-merge-lst-aux* c-sum-merge-lst-aux-fn)
-           (c-sum-merge-lst* c-sum-merge-lst-fn)
-           (c-sum-merge-lst-lst* c-sum-merge-lst-lst-fn)
-           (c-sum-merge* c-sum-merge-fn)
-           (c-sum-merge-aux* c-sum-merge-aux-fn
-                             :condition t
-                             :memo-table-init-size 1000000
-                             :aokp t))
-          :condition nil)
+ ((single-c-try-merge* single-c-try-merge-fn)
+  (c-sum-merge-lst-aux* c-sum-merge-lst-aux-fn)
+  (c-sum-merge-lst* c-sum-merge-lst-fn)
+  (c-sum-merge-lst-lst* c-sum-merge-lst-lst-fn)
+  (c-sum-merge* c-sum-merge-fn)
+  (c-sum-merge-aux* c-sum-merge-aux-fn
+                    :condition t
+                    :memo-table-init-size 1000000
+                    :aokp t))
+ :condition nil)
 
 (progn
   (encapsulate
