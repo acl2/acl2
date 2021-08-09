@@ -34,7 +34,7 @@
 
 (defthm no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr
   (implies (and (no-duplicatesp-equal (cdr x))
-                (not (member-equal (car x) x)))
+                (not (member-equal (car x) (cdr x))))
            (no-duplicatesp-equal x))
   :hints (("Goal" :in-theory (enable no-duplicatesp-equal member-equal)
            :induct (no-duplicatesp-equal x))))
