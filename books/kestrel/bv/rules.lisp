@@ -6868,9 +6868,7 @@
 
 ;newly disabled remove all the disables later
 (defthmd <-of-bvplus-becomes-bvlt-arg1
-  (implies (and (unsigned-byte-p size y)
-                (natp size) ;drop
-                )
+  (implies (unsigned-byte-p size y)
            (equal (< (bvplus size x z) y)
                   (bvlt size (bvplus size x z) y)))
   :hints (("Goal" :in-theory (e/d (bvlt) (<-BECOMES-BVLT <-BECOMES-BVLT-alt
@@ -6878,9 +6876,7 @@
                                                          )))))
 
 (defthmd <-of-bvplus-becomes-bvlt-arg2
-  (implies (and (unsigned-byte-p size y)
-                (natp size) ;drop
-                )
+  (implies (unsigned-byte-p size y)
            (equal (< y (bvplus size x z))
                   (bvlt size y (bvplus size x z))))
   :hints (("Goal" :in-theory (e/d (bvlt) (<-BECOMES-BVLT <-BECOMES-BVLT-alt)))))
