@@ -833,7 +833,7 @@
 
    (xdoc::h4 "BV-Lists Library")
 
-   (xdoc::p "[bv-lists] Many new rules and books have been added.  New books
+   (xdoc::p "Many new rules and books have been added.  New books
    include ones about @('bv-arrayp'), @('bv-array-read'), @('bv-array-write'),
    @('all-all-unsigned-byte-p'), @('width-of-widest-int'), @('bvnot-list'),
    @('getbit-list'), @('map-slice'), @('bvplus-list'), @('logext-list'),
