@@ -74,7 +74,6 @@
 (include-book "world")
 (include-book "conjuncts-and-disjuncts")
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
-(include-book "std/strings/substrp" :dir :system)
 (include-book "tools/prove-dollar" :dir :system)
 
 ;; Returns (mv defun-names defthm-nams)
