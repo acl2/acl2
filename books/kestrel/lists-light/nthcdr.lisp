@@ -96,8 +96,7 @@
                 (syntaxp (quotep k))
                 (<= k n)
                 (true-listp x) ;could drop but then we need finalcdr
-                (integerp n)
-                (natp k))
+                (integerp n))
            (equal (nthcdr n x)
                   nil))
   :hints (("Goal" :in-theory (enable nthcdr))))

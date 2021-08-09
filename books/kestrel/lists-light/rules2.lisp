@@ -311,11 +311,8 @@
                 (< end (len lst)) ;BOZO new
                 (<= start end)
                 (<= 0 start)
-                (<= 0 end)
-                (<= 0 n)
                 (force (integerp end))
                 (force (integerp start))
-                (force (integerp n))
                 (force (true-listp lst)))
            (equal (append (subrange start end lst) (nthcdr n lst))
                   (nthcdr (+ n -1 (- start end)) lst)))
@@ -329,11 +326,8 @@
                 (< end (len lst)) ;BOZO new
                 (<= start end)
                 (<= 0 start)
-                (<= 0 end)
-                (<= 0 n)
                 (force (integerp end))
                 (force (integerp start))
-                (force (integerp n))
                 (force (true-listp lst)))
            (perm (append (nthcdr n lst) (subrange start end lst))
                  (nthcdr (+ n -1 (- start end)) lst)))
