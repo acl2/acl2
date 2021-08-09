@@ -43,6 +43,8 @@
 ;; - Calls of IF where the test is provably always nil or always non-nil.
 ;;
 ;; - Calls of IF where both branches are the same.
+;;
+;; - Theorems whose hyps contradict or where a hyp is implied by the others.
 
 ;; NOTE: There is another lint tool in books/tools/lint.lisp.  It checks for
 ;; different things.
