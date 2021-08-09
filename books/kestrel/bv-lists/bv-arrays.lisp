@@ -259,8 +259,7 @@
   (implies (and (natp width)
                 (integerp len)
                 (< index len)
-                (natp index)
-                (< 0 len))
+                (natp index))
            (equal (bv-array-read width len index (bvchop-list width lst))
                   (bv-array-read width len index lst)))
   :hints (("Goal" :in-theory (e/d (;LIST::NTH-WITH-LARGE-INDEX
@@ -422,8 +421,7 @@
                 (natp index1)
                 (natp index2)
                 (< index1 len)
-                (< index2 len)
-                (integerp len))
+                (< index2 len))
            (equal (bv-array-read width len index1 (bv-array-write width len index2 val lst))
                   (if (not (equal index1 index2))
                       (bv-array-read width len index1 lst)
@@ -472,8 +470,7 @@
 (defthm bv-array-read-of-append-of-cons
   (implies (and (equal (len x) index)
                 (< index len)
-                (natp len)
-                (natp index))
+                (natp len))
            (equal (bv-array-read width len index (binary-append x (cons a b)))
                   (bvchop width a)))
   :hints (("Goal" :in-theory (enable bv-array-read ceiling-of-lg))))
@@ -646,7 +643,6 @@
 (defthm bv-array-read-of-bv-array-write-when-len-is-a-power-of-2
   (implies (and (power-of-2p len)
                 (<= width2 width1) ;handle better?
-                (integerp len)
                 (natp width2)
                 (integerp width1))
            (equal (bv-array-read width1 len index1 (bv-array-write width2 len index2 val lst))
@@ -784,7 +780,7 @@
                 (syntaxp (quotep index2))
                 (< index2 index1)
                 (< index1 len)
-                (< index2 len)
+                ;; (< index2 len)
                 (natp index1)
                 (natp index2)
 ;                (natp len) ;drop?
@@ -833,7 +829,7 @@
                 (< index2 index1) ;only do it when the indices are out of order
                 (<= element-size2 element-size1) ;the outer size is bigger
                 (< index1 len)
-                (< index2 len)
+                ;; (< index2 len)
                 (natp index1)
                 (natp index2)
                 (natp len)
@@ -943,7 +939,7 @@
 ;move
 ;; breaks the abstraction
 (defthm car-of-bv-array-write
-  (implies (and (<= 1 len)
+  (implies (and ;; (<= 1 len)
                 (integerp len)
                 (< key len)
                 ;(natp len)
@@ -1330,7 +1326,8 @@
 ;could restrict to constant arrays...
 (defthm bv-array-if-same-branches-safe
   (implies (and (bv-arrayp element-size len array)
-                (natp len))
+                ;; (natp len)
+                )
            (equal (bv-array-if element-size len test array array)
                   array))
   :hints (("Goal" :in-theory (enable bv-array-if))))
@@ -1461,7 +1458,7 @@
                 (natp index)
                 (< index len)
                 (equal (len data) len)
-                (true-listp data)
+                ;; (true-listp data)
                 (all-unsigned-byte-p element-size data) ;drop?
                 )
            (equal (bv-array-read element-size len index data)
@@ -1570,8 +1567,7 @@
                 (< INDEX (LEN DATA))
                 (natp index)
                 (true-listp data)
-                (natp esize)
-                (< 0 len))
+                (natp esize))
            (equal (bv-array-write esize len index val data)
                   (bv-array-write esize len index val (bvchop-list esize data))))
   :hints

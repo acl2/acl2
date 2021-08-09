@@ -54,9 +54,7 @@
 (defthmd bv-array-write-normal-case
   (implies (and (natp index)
                 (< index len)
-                (natp len)
-                (equal len (len data))
-                )
+                (equal len (len data)))
            (equal (bv-array-write element-size len index val data)
                   (bvchop-list element-size (update-nth index val data))))
   :hints (("Goal" :in-theory (enable bv-array-write ceiling-of-lg update-nth2))))
