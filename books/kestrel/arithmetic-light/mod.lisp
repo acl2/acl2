@@ -562,7 +562,7 @@
                 (syntaxp (and (quotep free)
                               (not (quotep x))))
                 (integerp y)
-                (rationalp free)
+                ;; (rationalp free)
                 (integerp p))
            (equal (mod (* x y) p)
                   (mod (* free y) p))))
@@ -572,7 +572,7 @@
                 (syntaxp (and (quotep free)
                               (not (quotep x))))
                 (integerp y)
-                (rationalp free)
+                ;; (rationalp free)
                 (integerp p))
            (equal (mod (* y x) p)
                   (mod (* y free) p))))
@@ -628,7 +628,7 @@
 ;gen
 (defthmd mod-of-mod-when-multiple
   (implies (and (equal 0 (mod y1 y2))
-                (rationalp y2)
+                ;; (rationalp y2)
                 (< 0 y2)
                 (rationalp y1)
                 (not (equal 0 y1)))
@@ -642,7 +642,7 @@
   (implies (and (syntaxp (and (quotep y1)
                               (quotep y2)))
                 (equal 0 (mod y1 y2)) ;gets computed
-                (rationalp y2)
+                ;; (rationalp y2)
                 (< 0 y2)
                 (rationalp y1)
                 (not (equal 0 y1)))
@@ -661,7 +661,7 @@
 (defthm unsigned-byte-p-of-mod
   (implies (and (unsigned-byte-p size y)
                 (< 0 y)
-                (natp size)
+                ;; (natp size)
                 (natp x))
            (unsigned-byte-p size (mod x y)))
   :hints (("Goal"

@@ -2352,11 +2352,12 @@
            (< (car worklist) (alen1 dag-array-name dag-array)))
   :hints (("Goal" :in-theory (enable PSEUDO-DAG-ARRAYP-LIST))))
 
+;todo: rename
 (defthm <-helper
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                 (consp (aref1 dag-array-name dag-array nodenum))
                 (not (equal 'quote (car (aref1 dag-array-name dag-array nodenum))))
-                (< nodenum (alen1 dag-array-name dag-array))
+                ;; (< nodenum (alen1 dag-array-name dag-array))
                 (natp nodenum))
            (not (< (alen1 dag-array-name dag-array)
                    (+ 1 (largest-non-quotep (dargs (aref1 dag-array-name dag-array nodenum)))))))
@@ -2377,7 +2378,7 @@
 
 (defthm <-of-car-and-alen1-when-pseudo-dag-arrayp-list
   (implies (and (pseudo-dag-arrayp-list worklist dag-array-name dag-array)
-                (consp worklist)
+                ;; (consp worklist)
                 (natp (car worklist))
                 )
            (< (car worklist)

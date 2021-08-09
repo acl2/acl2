@@ -1951,7 +1951,7 @@
                          (equivp equiv)
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (bounded-axe-treep tree dag-len)
-                         (consp tree) ;; this case
+                         ;; (consp tree) ;; this case
                          (member-eq (ffn-symb tree) '(if myif)) ;; this case
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
@@ -1983,7 +1983,7 @@
                          (equivp equiv)
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (bounded-axe-treep tree dag-len)
-                         (consp tree)                              ;; this case
+                         ;; (consp tree)                              ;; this case
                          (eq (ffn-symb tree) 'boolif)              ;; this case
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
@@ -4406,7 +4406,7 @@
                          ;;                 ;;(cw "parent array:~%")
                          ;;                 ;;(print-array2 'dag-parent-array dag-parent-array dag-len)
                          ;;                 )))
-                         (- (and print (cw ")~%" nodenum)))
+                         (- (and print (cw ")~%")))
                          ;;can we somehow avoid this saving? copy to a new array? ;change ,rewrite-literals-name to not destroy existing nodes?!
                          ;;(saved-dag-array dag-array) ;(saved-dag-alist (array-to-alist 'dag-array dag-array dag-len)) ;don't convert to an alist?  just restore later by making the old value of dag-array the new  under-the-hood value?  same for parents array?
                          ;;(saved-dag-len dag-len)

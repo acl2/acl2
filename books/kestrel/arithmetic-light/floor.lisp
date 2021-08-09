@@ -534,9 +534,9 @@
   (implies (and (syntaxp (quotep k))
                 (< k y) ;the constant should be normalized already?
                 (rationalp n)
-                (rationalp y)
-                (< 0 y)
-                (not (equal 0 y))
+                ;; (rationalp y)
+                ;; (< 0 y)
+                ;; (not (equal 0 y))
                 (natp y)
                 (natp k)
                 )
@@ -608,7 +608,7 @@
 (defthm floor-when-<
   (implies (and (< i j)
                 (>= i 0)
-                (> j 0)
+                ;; (> j 0)
                 (force (rationalp j)))
            (equal (floor i j)
                   0))

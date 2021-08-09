@@ -285,9 +285,7 @@
 (defthm bound-when-usb
   (implies (and (unsigned-byte-p n x)
                 (<= (+ -1 (expt 2 n)) k)
-                (integerp k)
-                (natp n)
-                )
+                (integerp k))
            (not (< k x))))
 
 (defthmd unsigned-byte-p-of-+-arg1-a

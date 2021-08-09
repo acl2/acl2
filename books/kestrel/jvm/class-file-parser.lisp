@@ -1802,7 +1802,7 @@
               entry1
             (if (< start-pc2 start-pc1)
                 entry2
-              (prog2$ (er hard? 'smaller-local-variable-table-entry "Two local variable table entries found with the same local slot number and start PC." nil) ;or is this legal if they are identical?
+              (prog2$ (er hard? 'smaller-local-variable-table-entry "Two local variable table entries found with the same local slot number and start PC.") ;or is this legal if they are identical?
                       entry1)))))))) ;return a valid entry even in this case
 
 (defthm local-variable-table-entryp-of-smaller-local-variable-table-entry

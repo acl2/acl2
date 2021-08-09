@@ -47,7 +47,7 @@
   (implies (and (equal (mod i free) 0) ;what does this idiom mean when the values are not integers?
                 (equal (mod free j) 0)
                 (not (equal 0 free)) ;btw, do we simplify mod by 0?
-                (rationalp j)
+                ;; (rationalp j)
                 (rationalp free)
                 (rationalp i)
                 )
@@ -56,6 +56,7 @@
                       (fix i)
                       0)))
   :hints (("Goal" :use (:instance integerp-of-* (x (* (/ free) i)) (y (* free (/ j))))
+           :cases ((rationalp j))
            :in-theory (e/d (equal-of-0-and-mod) (integerp-of-*)))))
 
 ;in what cases do we prefer / to floor?

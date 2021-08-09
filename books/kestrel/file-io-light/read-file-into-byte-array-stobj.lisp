@@ -114,7 +114,7 @@
                          '(acl2-input-channel::standard-character-input-0
                            acl2-input-channel::standard-object-input-0))
               ;; Error:
-              (prog2$ (er hard? 'read-file-into-stobj "Bad channel!")
+              (prog2$ (er hard? 'read-file-into-byte-array-stobj "Bad channel!")
                       (mv `(:bad-channel ,filename) byte-array-stobj state))
             (let ( ;; make the array the right size:
                   (byte-array-stobj (resize-bytes file-length byte-array-stobj)))

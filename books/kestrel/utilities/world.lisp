@@ -127,8 +127,9 @@
                               (plist-worldp wrld))))
   (len (fn-formals name wrld)))
 
-;returns the guard of the given function (t means either no guard given or an
-;explicit guard of t).  Works even on :program mode functions.
+;; Returns the (translated) guard of the given function (a result of t means
+;; either no guard given or an explicit guard of t).  Works even on :program
+;; mode functions.
 (defun fn-guard (name world)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp world))))

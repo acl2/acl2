@@ -57,7 +57,7 @@
   (implies (and (equal (getbit n x) 0)
                 (unsigned-byte-p (+ 1 n) x)
                 (posp y)
-                (integerp x)
+                ;; (integerp x)
                 (natp n))
            (equal (getbit n (floor x y))
                   0))

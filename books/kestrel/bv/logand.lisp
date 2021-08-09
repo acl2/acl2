@@ -326,11 +326,11 @@
 ;rename
 (defthm logand-of-negative-and-negative
   (implies (and (integerp j)
-                (<= j (- (expt 2 n)))
-                (< j 0)
+                (<= j (- (expt 2 n))) ; think about this
+                ;; (< j 0)
                 (integerp i)
-                (<= i (- (expt 2 n)))
-                (< i 0)
+                (<= i (- (expt 2 n))) ; think about this
+                ;; (< i 0)
                 )
            (< (logand i j) (expt 2 n))))
 

@@ -208,7 +208,6 @@ more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
   (defthm revappend-chars-aux-correct
      (implies (and (stringp x)
                    (natp n)
-                   (natp xl)
                    (<= n xl)
                    (equal xl (length x)))
               (equal (revappend-chars-aux x n xl y)
