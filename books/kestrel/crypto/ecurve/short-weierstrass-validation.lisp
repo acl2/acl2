@@ -65,12 +65,7 @@
                 (not (equal x1 x2))
                 (< 2 p)
                 (rtl::primep p)
-                (integerp a)
-                ;; These two assumptions seem justified if the rules are
-                ;; interpreted in an ordered way, where the rules about '(0
-                ;; . 0) take precedence:
-                (not (equal (cons x1 y1) :infinity))
-                (not (equal (cons x2 y2) :infinity)))
+                (integerp a))
            (equal (curve-group-+ (cons x1 y1) (cons x2 y2) p a b)
                   (let ((lamb (div (sub y2 y1 p)
                                    (sub x2 x1 p)
