@@ -126,10 +126,12 @@
   (implies (and (equal (symbol-package-name sym) "ACL2") ;gen?
                 ;; (not (member-symbol-name str (pkg-imports (symbol-package-name sym))))
                 (stringp str)
-                (symbolp sym))
+                ;; (symbolp sym) ; not needed since non-symbols have a symbol-package-name of ""
+                )
            (iff (intern-in-package-of-symbol str sym)
                 (not (equal str "NIL"))))
   :hints (("Goal" :use (:instance equal-of-intern-in-package-of-symbol (sym2 sym) (sym nil))
+           :cases ((symbolp sym))
            :in-theory (e/d (intern-in-package-of-symbol-is-identity) (equal-of-intern-in-package-of-symbol)))))
 
 ;; Yikes!  This applies to terms like (equal x 'foo), due to ACL2's overly aggressive unification of constants.
