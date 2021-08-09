@@ -83,8 +83,7 @@
                               (true-listp defuns-acc)
                               (true-listp defthms-acc))))
   (if (endp world)
-      (mv (reverse defuns-acc)
-          (reverse defthms-acc))
+      (mv defuns-acc defthms-acc) ; oldest ones come first
     (let ((triple (first world)))
       (if (equal triple triple-to-stop-at)
           (prog2$ (cw "~%Note: Not checking anything in the linter itself, any books included before the linter, or the ACL2 system itself.  To override, use linter option :check :all.~%~%")
