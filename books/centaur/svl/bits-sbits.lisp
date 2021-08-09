@@ -660,12 +660,17 @@
   (def-rp-rule equal-of-4vec-concat$-with-size=1
     (implies (and (4vec-p x)
                   (4vec-p l))
-             (equal (equal x
-                           (4vec-concat$ 1 k l))
-                    (and (equal (bits x 0 1)
-                                (bits k 0 1))
-                         (equal (svl::4vec-rsh 1 x)
-                                l))))
+             (and (equal (equal x
+                                (4vec-concat$ 1 k l))
+                         (and (equal (bits x 0 1)
+                                     (bits k 0 1))
+                              (equal (svl::4vec-rsh 1 x)
+                                     l)))
+                  (equal (equal (4vec-concat$ 1 k l) x)
+                         (and (equal (bits x 0 1)
+                                     (bits k 0 1))
+                              (equal (svl::4vec-rsh 1 x)
+                                     l)))))
     :hints (("Goal"
              :use (:instance equal-of-4vec-concat-with-size=1)
              :in-theory (e/d* (4vec-concat$)

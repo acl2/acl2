@@ -1115,12 +1115,109 @@
                             mult-bycol-spec-is-mult-byrow-spec)
                            ()))))
 
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Sign of multiplication when sign of operands are known
+
+#|
+
+
+#|(local
+ (use-arithmetic-5 t))||#
+
+#|(local
+ (use-ihs-logops-lemmas t))||#
+
+(defthm mult-of-known-signs-lemma-0
+  (implies (and (integerp x)
+                (integerp y))
+           (and (implies (and (< x 0)
+                              (< y 0))
+                         (> (* x y) 0))
+                (implies (and (>= x 0)
+                              (>= y 0))
+                         (>= (* x y) 0))
+                (implies (and (< x 0)
+                              (> y 0))
+                         (< (* x y) 0))))) 
+
+(skip-proofs
+ (defthmd mult-of-known-signs-lemma-1
+  (implies (posp size)
+           (equal (EQUAL (LOGHEAD size IN) 0)
+                  (and (equal (loghead (1- size) in) 0)
+                       (not (logbitp (1- size) in))))) 
+  :hints (("Goal"
+           
+           :in-theory (e/d* (logbitp
+                             
+                             bitops::ihsext-recursive-redefs
+                             bitops::ihsext-inductions
+                             )
+                            (ACL2::LOGHEAD**))))))
+
+(defthm mult-of-known-signs-lemma-2
+  (implies (posp in-size)
+           (and
+            (implies (acl2::logbitp (1- in-size) in)
+                     (< (acl2::logext in-size in) 0))
+            (implies (not (acl2::logbitp (1- in-size) in))
+                     (>= (acl2::logext in-size in) 0))
+            (implies (and (not (acl2::logbitp (1- in-size) in))
+                          (not (equal (loghead in-size in) 0))) ;
+                     (> (acl2::logext in-size in) 0))))
+  :hints (("Goal"
+           :in-theory (e/d* (;;bitops::ihsext-recursive-redefs
+                             ;;bitops::ihsext-inductions
+                             mult-of-known-signs-lemma-1
+                             acl2::logext)
+                            ()))))
+
+(defthmd size-of-multiplication
+  (and (implies (and (unsigned-byte-p in1-size in1)
+                     (unsigned-byte-p in2-size in2))
+                (unsigned-byte-p (+ in1-size in2-size) (* in1 in2)))
+       (implies (and (unsigned-byte-p in1-size in1)
+                     (signed-byte-p in2-size in2))
+                (signed-byte-p (+ in1-size in2-size) (* in1 in2)))
+       (implies (and (signed-byte-p in1-size in1)
+                     (unsigned-byte-p in2-size in2))
+                (signed-byte-p (+ in1-size in2-size) (* in1 in2)))
+       (implies (and (signed-byte-p in1-size in1)
+                     (signed-byte-p in2-size in2))
+                (unsigned-byte-p (+ in1-size in2-size) (* in1 in2))))
+  :hints (("Goal"
+           :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                             bitops::ihsext-inductions)
+                           (LOGHEAD-OF-*-IS-MULT-FINAL-SPEC)))))
+
+(defthm mult-of-signed-and-signed
+  (implies (and (integerp in1)
+                (integerp in2)
+                (posp in1-size)
+                (posp in2-size)
+                (acl2::logbitp (1- in1-size) in1)
+                (acl2::logbitp (1- in2-size) in2))
+           (and (> (* (acl2::logext in1-size in1)
+                      (acl2::logext in2-size in2))
+                   0)
+                (equal (logbit (+ -1 in1-size in2-sie)
+                               (* (acl2::logext in1-size in1)
+                                  (acl2::logext in2-size in2)))
+                       0)))
+  :hints (("Goal"
+           :use ((:instance mult-of-known-signs-lemma-0
+                            (x (acl2::logext in1-size in1))
+                            (y (acl2::logext in2-size in2))))
+           :in-theory (e/d* ()
+                            (mult-of-known-signs-lemma-0)))))
+
+
+|#
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Plus to 2vec-adder
-
-
-
-
 (add-rp-rule ACL2::LOGHEAD-TYPE)
 
 (def-rp-rule integerp-of-+

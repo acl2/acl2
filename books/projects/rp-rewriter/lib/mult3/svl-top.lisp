@@ -65,6 +65,13 @@
   use-arithmetic-5
   :disabled t))
 
+(def-rp-rule bits-of---bitp-neg
+  (implies (bitp x)
+           (equal (svl::bits (-- x) 0 1)
+                  x))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
+
 (encapsulate
   nil
 
@@ -1067,8 +1074,7 @@
            (integerp (temp-ha-spec x y))))
 
 
-(rp::def-rp-rule
- sign-ext-compress
+(def-rp-rule sign-ext-compress
  (implies (bitp x)
           (and (equal (svl::4vec-concat$ 1 x (rp::-- x))
                       (rp::-- x))
@@ -1078,6 +1084,10 @@
                       (rp::-- x))))
  :hints (("Goal"
           :in-theory (e/d (bitp) ()))))
+;;;;;;;;;;;;;;;;;;;
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;
 

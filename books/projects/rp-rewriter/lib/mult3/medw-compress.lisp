@@ -683,13 +683,42 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
 
  :returns-hints (("Goal"
                   :do-not-induct t
-                  :expand ((:free (x y)
+                  :expand ((MEDW-COMPRESS-ANY-LST (CDR TERM))
+                           (MEDW-COMPRESS-ANY-LST (CDDR TERM))
+                           ;;(MEDW-COMPRESS-ANY-LST (CDDDR TERM))
+                           ;;(MEDW-COMPRESS-ANY (CADR TERM))
+                           (:free (x y)
                                   (rp-termp (cons x y))))
                   :in-theory (e/d () (rp-termp
                                       ex-from-rp)
                                   )))
  :prepwork
- ((local
+ ((defthm is-rp-lemma
+     (implies (and (equal (car term) 'rp)
+                   (rp-termp term))
+              (and (is-rp `(rp ,(cadr term) ,other))
+                   (is-rp term)))
+     :hints (("Goal"
+              :in-theory (e/d (is-rp) ()))))
+
+  (defthm is-rp-lemma-fc
+     (implies (and (equal (car term) 'rp)
+                   (rp-termp term))
+              (CASE-MATCH TERM
+                (('RP ('QUOTE TYPE) &)
+                 (AND (SYMBOLP TYPE)
+                      (NOT (BOOLEANP TYPE))
+                      (NOT (EQUAL TYPE 'QUOTE))
+                      (NOT (EQUAL TYPE 'RP))
+                      (NOT (EQUAL TYPE 'LIST))
+                      (NOT (EQUAL TYPE 'FALIST))
+                      (is-rp term)))
+                (& NIL)))
+     :rule-classes :forward-chaining
+     :hints (("Goal"
+              :in-theory (e/d (is-rp) ()))))
+
+  (local
    (defthm dummy-lemma0
      (implies (and
                (consp (ex-from-rp term)))
@@ -734,7 +763,7 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
    :returns (res rp-termp :hyp (rp-termp term))
    :measure (cons-count term)
    :verify-guards nil
-   (b* ((term (ex-from-rp term)))
+   (b* (#|(term (ex-from-rp term))||#)
      (case-match term
        (('s . &)
         (if (single-s-p term) ;; makes proofs easier somehow
@@ -763,8 +792,12 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                  ,(medw-compress-any (caddr term))
                ,(medw-compress-any (cadddr term)))
           term))
+       (('rp . &) ;; same reason as above
+        `(rp ,(cadr term) ,(medw-compress-any (caddr term))))
        ((fnc . args)
-        `(,fnc . ,(medw-compress-any-lst args)))
+        (cons-with-hint fnc
+                        (medw-compress-any-lst args)
+                        term))
 
        (& term))))
  (define medw-compress-any-lst ((lst rp-term-listp))

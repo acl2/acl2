@@ -423,10 +423,10 @@
   (add-rp-rule bitp-of-bit-of))
 
 
-(define medw-compress (term)
+#|(define medw-compress (term)
   term
   ///
-  (add-rp-rule medw-compress :disabled nil))
+  (add-rp-rule medw-compress :disabled nil))||#
 
 (define unpack-booth (term)
   (ifix term)
@@ -1084,7 +1084,7 @@
       mult-formula-checks
       (binary-append
        ifix
-       medw-compress
+       
        acl2::logcar$inline
        acl2::logcdr$inline
        acl2::logbit
