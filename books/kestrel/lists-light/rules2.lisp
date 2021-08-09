@@ -528,9 +528,7 @@
                 (< n (len lst))
                 (integerp m)
                 (integerp n)
-                (<= 0 n)
-                (<= 0 m)
-                )
+                (<= 0 m))
            (MEMBERP (nth m lst) (TAKE n lst)))
   :hints (("Goal" :in-theory (enable take nth))))
 
