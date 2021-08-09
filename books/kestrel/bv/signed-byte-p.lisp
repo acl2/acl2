@@ -30,3 +30,10 @@
            (not (signed-byte-p bits x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
+
+(defthm sbp-32-of-one-more
+  (implies (and (signed-byte-p 32 x)
+                (< x free)
+                (signed-byte-p 32 free))
+           (signed-byte-p 32 (+ 1 x)))
+  :hints (("Goal" :in-theory (enable signed-byte-p))))
