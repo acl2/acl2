@@ -837,3 +837,12 @@
 (defthm not-bvlt-of--1-arg1
   (not (bvlt size -1 x))
   :hints (("Goal" :in-theory (enable bvlt))))
+
+;gen this somehow?
+(defthm equal-of-0-when-bvlt
+  (implies (bvlt size free x)
+           (not (equal 0 x))))
+
+;drop if we'll always enable bvle?
+(defthm bvle-self
+  (bvle size x x))

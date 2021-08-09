@@ -28,7 +28,6 @@
 (include-book "kestrel/arithmetic-light/lg" :dir :system)
 (include-book "sbvlt")
 (include-book "bitand")
-(local (include-book "arith")) ;tod0o, for  expt-collect-hack
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -38,13 +37,6 @@
 ;add bitxor, etc.
 
 ;fixme eventually split up this book
-
-(defthm sbp-32-of-one-more
-  (implies (and (signed-byte-p 32 x)
-                (< x free)
-                (signed-byte-p 32 free))
-           (signed-byte-p 32 (+ 1 x)))
-  :hints (("Goal" :in-theory (enable signed-byte-p))))
 
 ;use bvminus!
 (defthm bvplus-minus-cancel
@@ -93,16 +85,16 @@
                    (getbit 0 (* (getbit 0 x) (getbit 0 y)))))
    :hints (("Goal" :in-theory (e/d (getbit) (bvchop-1-becomes-getbit slice-becomes-getbit)))))
 
-(defthm bvmult-when-size-is-1
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (bvmult 1 x y)
-                  (bvand 1 x y)))
-  :hints (("Goal"
-           :use ((:instance usb1-cases (x (getbit 0 x)))
-                 (:instance usb1-cases (x (getbit 0 y)))
-                 (:instance getbit-0-of-times))
-           :in-theory (enable bvmult bvand bitand))))
+;; (defthm bvmult-when-size-is-1
+;;   (implies (and (integerp x)
+;;                 (integerp y))
+;;            (equal (bvmult 1 x y)
+;;                   (bvand 1 x y)))
+;;   :hints (("Goal"
+;;            :use ((:instance usb1-cases (x (getbit 0 x)))
+;;                  (:instance usb1-cases (x (getbit 0 y)))
+;;                  (:instance getbit-0-of-times))
+;;            :in-theory (enable bvmult bvand bitand))))
 
 ;bozo gen
 ;strength reduction from bvmult to shift, so i guess this is a win? unless we are in an arithmetic context?
@@ -120,14 +112,10 @@
 (defthmd even-when-power-of-2-and-at-least-2
   (implies (and (<= 2 n)
                 (power-of-2p n))
-           (integerp (binary-* 1/2 n)))
-  :hints (("Goal" :in-theory (enable expt-collect-hack natp power-of-2p))))
+           (integerp (* 1/2 n)))
+  :hints (("Goal" :in-theory (enable natp power-of-2p))))
 
 ;need more bitxor cancel rules?
 
 (theory-invariant (incompatible (:rewrite bvchop-of-floor-of-expt-of-2) (:definition slice)))
 (theory-invariant (incompatible (:rewrite bvchop-of-floor-of-expt-of-2-constant-version) (:definition slice)))
-
-;drop if we'll always enable bvle?
-(defthm bvle-self
-  (bvle size x x))

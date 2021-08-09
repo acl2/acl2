@@ -15,6 +15,7 @@
 (include-book "bvxor")
 (include-book "bvor")
 (include-book "bvand")
+(include-book "bitand")
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 (defthm bvxor-of-bvcat-low-arg2
@@ -156,3 +157,22 @@
                          lowsize
                          (bvand lowsize x z))))
   :hints (("Goal" :in-theory (enable bvand))))
+
+(defthm bitand-of-bvcat-arg1
+   (implies (and (< 0 lowsize)
+                 (integerp lowsize)
+                 (natp highsize))
+            (equal (BITAND (BVCAT highsize highval lowsize lowval)
+                           x)
+                   (BITAND lowval
+                           x)))
+   :hints (("Goal" :in-theory (e/d (BITAND bvand) (BVAND-1-BECOMES-BITAND
+                                                   BVCHOP-OF-BVCAT-CASES-GEN)))))
+
+(defthm bitand-of-bvcat-arg2
+   (implies (and (< 0 lowsize)
+                 (integerp lowsize)
+                 (natp highsize))
+            (equal (bitand x (bvcat highsize highval lowsize lowval))
+                   (bitand x lowval)))
+   :hints (("Goal" :in-theory (e/d (bitand bvand) (bvand-1-becomes-bitand)))))
