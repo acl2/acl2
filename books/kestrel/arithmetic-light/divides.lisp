@@ -102,7 +102,7 @@
 
 (defthm <=-of-/-linear
   (implies (and (<= x0 x)
-                (< 0 x)
+                ;; (< 0 x)
                 (< 0 x0)
                 (rationalp x)
                 (rationalp x0))
@@ -165,7 +165,7 @@
 (defthm integerp-of-*-of-/-when-<-and-negative
   (implies (and (< y x)
                 (<= x 0)
-                (<= y 0)
+                ;; (<= y 0)
                 (rationalp y)
                 (rationalp x))
            (equal (integerp (* (/ y) x))
@@ -179,7 +179,7 @@
 (defthm integerp-of-*-of-/-when-<-and-negative-alt
   (implies (and (< y x)
                 (<= x 0)
-                (<= y 0)
+                ;; (<= y 0)
                 (rationalp y)
                 (rationalp x))
            (equal (integerp (* x (/ y)))
@@ -326,7 +326,7 @@
 (defthm integerp-of-*-of-/-when-<-and-mixed-1
   (implies (and (< x (- y))
                 (<= 0 x)
-                (<= y 0)
+                ;; (<= y 0)
                 (rationalp y)
                 (rationalp x))
            (equal (integerp (* x (/ y)))
@@ -339,7 +339,7 @@
 (defthm integerp-of-*-of-/-when-<-and-mixed-2
   (implies (and (< (- x) y)
                 (<= x 0)
-                (<= 0 y)
+                ;; (<= 0 y)
                 (rationalp y)
                 (rationalp x))
            (equal (integerp (* x (/ y)))

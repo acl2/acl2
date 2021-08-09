@@ -492,7 +492,7 @@
                   (natp i)
                   (< i m)
                   (< 2 p)
-                  (< 0 m)
+                  ;; (< 0 m)
                   (= (mod (expt tt (expt 2 i)) p) 1))
              (= (mod (expt tt (expt 2 (least-repeated-square tt m p))) p) 1))
     :hints (("Goal"

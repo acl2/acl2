@@ -614,7 +614,6 @@ continues printing spaces on the next line.  I don't think this is a
   (defthm print-escaped-str-aux-removal
     (implies (and (stringp x)
                   (natp n)
-                  (natp xl)
                   (equal xl (length x))
                   (<= n xl))
              (equal (print-escaped-str-aux x n xl slash-char acc)

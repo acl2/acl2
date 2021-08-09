@@ -269,7 +269,7 @@
        (header (acons :size-of-heap-commit size-of-heap-commit header))
        ((mv loader-flags bytes) (parse-u32 bytes))
        (- (if (not (eql 0 loader-flags))
-              (cw "ERROR: LoaderFlags should be 0, but they are ~x1." loader-flags) ;todo: store them?
+              (cw "ERROR: LoaderFlags should be 0, but they are ~x0." loader-flags) ;todo: store them?
             nil))
        ((mv number-of-rva-and-sizes bytes) (parse-u32 bytes))
        (header (acons :number-of-rva-and-sizes number-of-rva-and-sizes header)))

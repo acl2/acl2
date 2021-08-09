@@ -126,7 +126,7 @@
 (defthm update-subrange-combine-adjacent-1
   (implies (and (natp end1)
                 (natp start1)
-                (natp start2)
+                ;; (natp start2)
                 (natp end2)
                 (<= start2 end2)
                 (equal (len vals1) (+ 1 end1 (- start1)))
@@ -378,7 +378,7 @@
                 (> n start)
                 (<= n end)
                 (natp n)
-                (integerp end) ;why needed for ACL2 6.2?
+                ;; (integerp end) ;why needed for ACL2 6.2?
 ;                (<= start end)
                 (natp start)
                 )

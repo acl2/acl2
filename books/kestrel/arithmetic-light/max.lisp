@@ -40,8 +40,7 @@
            (acl2-numberp (max x y))))
 
 (defthm acl2-numberp-of-max-when-<-of-0
-  (implies (and (acl2-numberp x)
-                (< 0 x))
+  (implies (< 0 x)
            (acl2-numberp (max x y))))
 
 (defthm integerp-of-max
