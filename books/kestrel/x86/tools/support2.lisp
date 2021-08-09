@@ -148,7 +148,7 @@
                 (<= write-ad read-ad)
                 (app-view x86) ;drop
                 (canonical-address-p read-ad)
-                (canonical-address-p write-ad)
+                ;; (canonical-address-p write-ad)
                 (canonical-address-p (+ 3 write-ad))
                 (natp write-ad)
                 (< write-ad 5000000000) ;fixme
