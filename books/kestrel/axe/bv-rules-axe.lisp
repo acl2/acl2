@@ -738,7 +738,7 @@
   :hints (("Goal" :use (:instance sbvlt-becomes-bvlt-cheap)
            :in-theory (e/d (unsigned-byte-p-forced)( sbvlt-becomes-bvlt-cheap)))))
 
-(defthm equal-constant-when-unsigned-byte-p-bind-free-dag
+(defthm not-equal-constant-when-unsigned-byte-p-bind-free-dag
   (implies (and (syntaxp (quotep k))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (syntaxp (quotep xsize))

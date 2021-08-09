@@ -1746,7 +1746,7 @@
              boolor-of-equal-and-not-of-equal-constants
              boolor-of-equal-and-not-of-equal-constants-alt
              booland-of-booland-of-boolif
-             equal-constant-when-unsigned-byte-p-bind-free-dag ;was just in prover-rules ;Wed Mar 17 04:03:01 2010
+             not-equal-constant-when-unsigned-byte-p-bind-free-dag ;was just in prover-rules ;Wed Mar 17 04:03:01 2010
              sha1-context-hack ;Wed Mar 17 03:54:02 2010 (how much does this help?)
              boolor-of-booland-same-2 ;Wed Mar 17 03:06:45 2010
              bvlt-of-constant-when-unsigned-byte-p-tighter
