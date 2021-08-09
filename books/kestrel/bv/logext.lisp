@@ -455,15 +455,16 @@
 
 (defthmd logext-bound-when-unsigned-byte-p
   (implies (and (syntaxp (quotep k))
-                (< 0 k)
+                ;; (< 0 k)
                 (natp k)
                 (<= k (expt 2 (+ -1 n)))
                 (< x k)
                 (unsigned-byte-p n x)
-                (natp n)
-                (< 0 n))
+                ;; (< 0 n)
+                )
            (< (logext n x) k))
-  :hints (("Goal" :in-theory (enable ;logext
+  :hints (("Goal" :cases ((equal n 0))
+           :in-theory (enable ;logext
                               ))))
 
 ;for axe

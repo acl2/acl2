@@ -304,7 +304,7 @@
 (defthmd logtail-becomes-slice
   (implies (and (unsigned-byte-p m x) ;m is a free var
                 (< n m)
-                (integerp m);could drop
+                ;; (integerp m);could drop
                 (natp n))
            (equal (logtail n x)
                   (slice (+ -1 m) n x)))
