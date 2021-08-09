@@ -2486,7 +2486,7 @@
             (if sign
             (-- (rp-evlt term a))
             (rp-evlt term a)))||#
-            (equal (sum-list (RP-EVLt-lst (pp-flatten term sign) a))
+            (equal (sum-list (RP-EVLt-lst (pp-flatten term sign :disabled disabled) a))
                    (if sign
                        (-- (rp-evlt (PP-REMOVE-EXTRANEOUS-SC term) a))
                      (rp-evlt (PP-REMOVE-EXTRANEOUS-SC term) a)))
@@ -2526,7 +2526,7 @@
             (if sign
             (-- (rp-evlt term a))
             (rp-evlt term a)))||#
-            (equal (sum-list (RP-EVLt-lst (pp-flatten term sign) a))
+            (equal (sum-list (RP-EVLt-lst (pp-flatten term sign :disabled disabled) a))
                    (if sign
                        (-- (rp-evlt term a))
                      (rp-evlt term a)))
@@ -2565,14 +2565,14 @@
                            (SUM-OF-IFIX)))))
 
 
-(defthmd RP-EVLt-LST-OF-CONS
+#|(defthmd RP-EVLt-LST-OF-CONS
   (implies (consp lst)
            (equal (rp-evlt-lst lst a)
                   (cons (rp-evlt (car lst) a)
                         (rp-evlt-lst (cdr lst) a))))
   :hints (("Goal"
 ;:expand (rp-evlt-lst lst a)
-           :in-theory (e/d () ()))))
+           :in-theory (e/d () ()))))||#
 
 (defthm rp-evlt-of-list
   (equal (rp-evlt (cons 'list lst) a)

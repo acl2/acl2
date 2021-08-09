@@ -333,55 +333,55 @@
             :in-theory (e/d (and-list
                              AND$) ())))))
 
-(local
- (defthmd pp-order-equals-implies
-   (implies (and (rp-evl-meta-extract-global-facts :state state)
-                 (mult-formula-checks state)
-                 (mv-nth 1 (pp-order x y)))
-            (equal (rp-evlt x a)
-                   (rp-evlt y a)))
-   :hints (("Goal"
-            :do-not-induct t
-            :expand ((:free (x) (nth 1 x))
-                     (:free (x) (nth 0 x))
-                     (:free (x) (nth 2 x))
-                     (:free (x) (nth 3 x)))
-            :in-theory (e/d* (pp-order
-                              (:REWRITE
-                               REGULAR-RP-EVL-OF_AND-LIST_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
-                              rp-evlt-of-ex-from-rp-reverse
-                              and$-is-and-list)
-                             (rp-termp
-                              rp-evlt-of-ex-from-rp
-                              nth
-                              (:REWRITE
-                               RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
-                              (:REWRITE RP-EVL-OF-RP-EQUAL-LOOSE)
-                              (:REWRITE ACL2::O-P-O-INFP-CAR)
-                              (:DEFINITION RP-EQUAL-LOOSE)
-                              (:REWRITE
-                               REGULAR-RP-EVL-OF_BINARY-APPEND_WHEN_MULT-FORMULA-CHECKS)
-                              (:REWRITE RP-TERMP-OF-RP-TRANS)
-                              (:REWRITE
-                               REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS)
-                              (:TYPE-PRESCRIPTION AND-LIST)
-                              (:TYPE-PRESCRIPTION O<)
-                              (:DEFINITION RP-EQUAL)
-                              (:DEFINITION EX-FROM-RP)
-                              (:REWRITE RP-EVL-OF-RP-EQUAL2)
-                              (:DEFINITION RP-EQUAL2)
-                              (:REWRITE DEFAULT-CDR)
-                              (:REWRITE RP-EQUAL-IMPLIES-RP-EQUAL2)
-                              (:REWRITE RP-EQUAL-IS-SYMMETRIC)
-                              (:TYPE-PRESCRIPTION RP-TERMP)
-                              (:TYPE-PRESCRIPTION EX-FROM-SYNP)
-                              (:TYPE-PRESCRIPTION RP-TRANS-LST)
-                              (:REWRITE DEFAULT-CAR)
-                              (:REWRITE EX-FROM-SYNP-LEMMA1)
-                              (:DEFINITION RP-TRANS)
-                              RP-EVL-OF-VARIABLE
-                              ;;RP-EVL-OF-QUOTE
-                              len))))))
+
+(defthmd pp-order-equals-implies
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (mv-nth 1 (pp-order x y)))
+           (equal (rp-evlt x a)
+                  (rp-evlt y a)))
+  :hints (("Goal"
+           :do-not-induct t
+           :expand ((:free (x) (nth 1 x))
+                    (:free (x) (nth 0 x))
+                    (:free (x) (nth 2 x))
+                    (:free (x) (nth 3 x)))
+           :in-theory (e/d* (pp-order
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_AND-LIST_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             rp-evlt-of-ex-from-rp-reverse
+                             and$-is-and-list)
+                            (rp-termp
+                             rp-evlt-of-ex-from-rp
+                             nth
+                             (:REWRITE
+                              RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
+                             (:REWRITE RP-EVL-OF-RP-EQUAL-LOOSE)
+                             (:REWRITE ACL2::O-P-O-INFP-CAR)
+                             (:DEFINITION RP-EQUAL-LOOSE)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_BINARY-APPEND_WHEN_MULT-FORMULA-CHECKS)
+                             (:REWRITE RP-TERMP-OF-RP-TRANS)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS)
+                             (:TYPE-PRESCRIPTION AND-LIST)
+                             (:TYPE-PRESCRIPTION O<)
+                             (:DEFINITION RP-EQUAL)
+                             (:DEFINITION EX-FROM-RP)
+                             (:REWRITE RP-EVL-OF-RP-EQUAL2)
+                             (:DEFINITION RP-EQUAL2)
+                             (:REWRITE DEFAULT-CDR)
+                             (:REWRITE RP-EQUAL-IMPLIES-RP-EQUAL2)
+                             (:REWRITE RP-EQUAL-IS-SYMMETRIC)
+                             (:TYPE-PRESCRIPTION RP-TERMP)
+                             (:TYPE-PRESCRIPTION EX-FROM-SYNP)
+                             (:TYPE-PRESCRIPTION RP-TRANS-LST)
+                             (:REWRITE DEFAULT-CAR)
+                             (:REWRITE EX-FROM-SYNP-LEMMA1)
+                             (:DEFINITION RP-TRANS)
+                             RP-EVL-OF-VARIABLE
+                             ;;RP-EVL-OF-QUOTE
+                             len)))))
 
 (local
  (defthm pp-order-and-negated-termsp-implies-negated-termsp
