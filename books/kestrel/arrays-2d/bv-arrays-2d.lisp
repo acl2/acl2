@@ -337,7 +337,7 @@
 (defthm 2d-bv-arrayp-of-get-columns-special-case
   (implies (and (2d-bv-arrayp bytesize numrows numcols array)
                 (equal n (+ -1 numcols)) ;so that it will match
-                (< n numcols)
+                ;; (< n numcols)
                 (posp numcols))
            (2d-bv-arrayp bytesize numcols numrows (get-columns n array)))
   :hints (("Goal" :use (:instance 2d-bv-arrayp-of-get-columns

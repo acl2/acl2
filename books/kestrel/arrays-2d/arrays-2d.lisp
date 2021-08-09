@@ -282,7 +282,7 @@
   (implies (and (natp n)
                 (natp rownum)
                 (< rownum (len (nth n cols))) ;yuck?
-                (consp cols)
+                ;; (consp cols)
                 )
            (equal (GET-COLUMN N (COLS-TO-ARRAY-AUX rownum COLS))
                   (reverse-list (take (+ 1 rownum) (nth n cols)))))
@@ -300,7 +300,7 @@
 (defthm GET-COLUMN-of-COLS-TO-ARRAY
   (implies (and (<= M (LEN (NTH N COLS)))
                 (< n m)
-                (< n (len cols))
+                ;; (< n (len cols))
                 (natp n)
                 (natp m))
            (equal (GET-COLUMN n (COLS-TO-ARRAY m cols))
@@ -312,7 +312,7 @@
 (defthm ARRAY-ELEM-2D-of-cols-to-array
   (implies (and (< i numrows)
                 (integerp numrows)
-                (< 0 numrows)
+                ;; (< 0 numrows)
                 (natp i)
                 (< j (len cols))
                 (natp j))
@@ -348,7 +348,7 @@
 
 (defthm consp-nth-from-items-have-len
   (implies (and (items-have-len n a)
-                (natp n)
+                ;; (natp n)
                 (natp m)
                 (< 0 n)
                 (< m (len a)))
@@ -358,7 +358,7 @@
 (defthm len-nth-from-items-have-len
   (implies (and (items-have-len n a) ;n is a free variable
                 (< m (len a))
-                (natp n)
+                ;; (natp n)
                 (natp m)
 ;               (< 0 n)
                 )
@@ -467,7 +467,7 @@
   (implies (and (syntaxp (quotep val))
                 (equal 4 (len val))
                 (unsigned-byte-p 2 row)
-                (natp row)
+                ;; (natp row)
                 (natp col))
            (equal (array-elem-2d row col val)
                   (if (equal 0 row)
