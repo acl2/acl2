@@ -1951,7 +1951,7 @@
                          (equivp equiv)
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (bounded-axe-treep tree dag-len)
-                         (consp tree) ;; this case
+                         ;; (consp tree) ;; this case
                          (member-eq (ffn-symb tree) '(if myif)) ;; this case
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
@@ -1983,7 +1983,7 @@
                          (equivp equiv)
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (bounded-axe-treep tree dag-len)
-                         (consp tree)                              ;; this case
+                         ;; (consp tree)                              ;; this case
                          (eq (ffn-symb tree) 'boolif)              ;; this case
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
