@@ -436,11 +436,11 @@
 ;; in a legal variable.
 (defthm legal-variablep-of-intern-in-package-of-symbol
   (implies (and (equal (symbol-package-name sym) "ACL2") ;gen
-                (stringp str)
-                (symbolp sym))
+                (stringp str))
            (equal (legal-variablep (intern-in-package-of-symbol str sym))
                   (legal-variable-name-in-acl2-packagep str)))
-  :hints (("Goal" :in-theory (e/d (legal-variable-name-in-acl2-packagep
+  :hints (("Goal" :cases ((symbolp sym))
+           :in-theory (e/d (legal-variable-name-in-acl2-packagep
                                    legal-variablep-alt-def
                                    legal-vars-in-common-lisp-package
                                    equal-of-intern-in-package-of-symbol
