@@ -324,7 +324,8 @@
             )
       (if (< (len unhandled-constraints) (len constraints))
           ;; Progress was made, so make another pass:
-          (prog2$ (cw "~x0 constraints left after this pass.~%" (len unhandled-constraints))
+          (progn$ (cw "(~x0 constraints left after this pass.~%)" (len unhandled-constraints))
+                  (cw "(~x0 vars/groups ordered: ~x1.~%)" (len done-vars) (reverse done-vars))
                   (order-r1cs-vars-aux unhandled-constraints done-vars tagged-constraints-acc p))
         ;; This pass made no progress:
         (prog2$ (er hard? 'order-r1cs-vars-aux "Unhandled constraints remain: ~X01." unhandled-constraints nil)
