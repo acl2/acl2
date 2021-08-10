@@ -85,7 +85,7 @@
 ;todo dup?
 (defthm take-update-nth
   (implies (and (integerp n)
-                (<= 0 n)
+                ;; (<= 0 n)
                 (integerp n2)
                 (<= 0 n2))
            (equal (take n (update-nth n2 v l))
