@@ -5572,8 +5572,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; This formula is provable using intern-in-package-of-symbol-symbol-name.
 
-   (implies (and (symbolp s1)
-                 (symbolp s2)
+   (implies (and (or (symbolp s1) (symbolp s2))
                  (equal (symbol-name s1) (symbol-name s2))
                  (equal (symbol-package-name s1) (symbol-package-name s2)))
             (equal s1 s2))
