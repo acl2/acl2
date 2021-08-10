@@ -6180,6 +6180,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (summary       "4" nil nil nil)
 ;   (chronology    "5" t   nil nil)
     (proof-builder "6" nil nil nil)
+    (comment       "7" nil nil nil)
     (history       "t" t   t   t)
     (temporary     "t" t   t   t)
     (query         "q" t   t   t)))
@@ -6250,8 +6251,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (first-n-ac (1- i) (cdr l) (cons (car l) ac)))))
 
 (defthm true-listp-first-n-ac-type-prescription
-  (implies (true-listp ac)
-           (true-listp (first-n-ac i l ac)))
+  (true-listp (first-n-ac i l ac))
   :rule-classes :type-prescription)
 
 (defun take (n l)
@@ -18743,6 +18743,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #-acl2-loop-only
   (progn
     (cond
+     ((member-eq 'comment (f-get-global 'inhibit-output-lst *the-live-state*))
+      nil)
      ((null print-base-radix) ; common case
       (fmt1 str alist col (comment-window-co) *the-live-state* evisc-tuple))
      (t
@@ -18779,6 +18781,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #-acl2-loop-only
   (progn
     (cond
+     ((member-eq 'comment (f-get-global 'inhibit-output-lst *the-live-state*))
+      nil)
      ((null print-base-radix) ; common case
       (fmt1! str alist col (comment-window-co) *the-live-state* evisc-tuple))
      (t
@@ -21328,12 +21332,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (equal (nth (+ 1 n) (cons a l))
                   (nth n l)))
   :hints (("Goal" :expand (nth (+ 1 n) (cons a l)))))
-
-(defthm main-timer-type-prescription
-  (implies (state-p1 state)
-           (and (consp (main-timer state))
-                (true-listp (main-timer state))))
-  :rule-classes :type-prescription)
 
 (defthm ordered-symbol-alistp-add-pair-forward
   (implies (and (symbolp key)
