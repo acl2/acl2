@@ -120,9 +120,10 @@
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (enable add))))
 
-(defthm add-combine-constants
-  (implies (and (syntaxp (and (quotep x)
-                              (quotep y)))
+(defthm add-of-add-combine-constants
+  (implies (and (syntaxp (and (quotep y) ; most likely to fail
+                              (quotep x)
+                              (quotep p)))
                 (integerp p))
            (equal (add x (add y z p) p)
                   (add (add x y p) z p)))
