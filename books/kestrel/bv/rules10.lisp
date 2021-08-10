@@ -18,8 +18,6 @@
 (include-book "bvplus")
 (include-book "bv-syntax")
 (include-book "rules") ;(local (include-book "rules"))
-(include-book "kestrel/axe/axe-syntax" :dir :system)
-(include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
@@ -658,13 +656,6 @@
                          (bvplus 64 x y))
                   t))
   :hints (("Goal" :in-theory (enable bvplus))))
-
-(defthm logext-trim-arg-axe-all
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
-                (posp size))
-           (equal (logext size x)
-                  (logext size (trim size x))))
-  :hints (("Goal" :in-theory (e/d (trim) nil))))
 
 (defthm bvsx-lemma
   (equal (bvcat 128 ;not tight
