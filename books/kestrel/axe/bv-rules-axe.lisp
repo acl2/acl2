@@ -1964,3 +1964,10 @@
                   (bvmod (+ -1 size) x y)))
   :hints (("Goal" :use (:instance sbvrem-when-positive)
            :in-theory (disable sbvrem-when-positive))))
+
+(defthm logext-trim-arg-axe-all
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
+                (posp size))
+           (equal (logext size x)
+                  (logext size (trim size x))))
+  :hints (("Goal" :in-theory (e/d (trim) nil))))
