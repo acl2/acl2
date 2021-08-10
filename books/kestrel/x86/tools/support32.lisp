@@ -17,6 +17,9 @@
 (include-book "register-readers-and-writers")
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
+(include-book "kestrel/axe/known-booleans" :dir :system) ;todo?
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
+(include-book "kestrel/lists-light/firstn" :dir :system)
 (local (include-book "kestrel/bv-lists/packbv-theorems" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/bv/arith" :dir :system))
@@ -26,6 +29,7 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;todo
 
 ;for speed:

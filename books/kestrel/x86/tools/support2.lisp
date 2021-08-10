@@ -18,6 +18,7 @@
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/bv-lists/unpackbv" :dir :system)
 (include-book "kestrel/lists-light/finalcdr" :dir :system)
+(include-book "kestrel/lists-light/reverse-list" :dir :system)
 (local (include-book "kestrel/bv/arith" :dir :system))
 (local (include-book "kestrel/arithmetic-light/limit-expt" :dir :system)) ;prevent calls of expt on huge args
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -26,7 +27,6 @@
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;todo
