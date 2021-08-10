@@ -753,7 +753,7 @@
          ((mv erp res state)
           (prove$ `(implies ,(make-conjunction-from-list rest-terms) ,term) :step-limit step-limit))
          ((when erp)
-          (er hard? 'check-for-contradiction "Error checking for implication in ~s0 in ~x1." description ctx)
+          (er hard? 'check-for-implied-terms-aux "Error checking for implication in ~s0 in ~x1." description ctx)
           state)
          (- (and res (cw "(In ~x0, ~s1 ~x2 is provably implied by others.)~%" ctx description term))))
       (check-for-implied-terms-aux ctx description (rest terms) all-terms step-limit state))))
@@ -764,6 +764,23 @@
   (declare (xargs :stobjs state
                   :mode :program))
   (check-for-implied-terms-aux ctx description terms terms step-limit state))
+
+;; Check whether any of the TERMS is implied by the ALL-TERMS, excluding itself
+;; Returns state.
+(defun check-for-droppable-hyps (ctx hyps all-hyps conclusion step-limit state)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (if (endp hyps)
+      state
+    (b* ((hyp (first hyps))
+         (other-hyps (remove-equal hyp all-hyps))
+         ((mv erp res state)
+          (prove$ `(implies ,(make-conjunction-from-list other-hyps) ,conclusion) :step-limit step-limit))
+         ((when erp)
+          (er hard? 'check-for-droppable-hyps "Error attempting to drop hyp ~x0 in ~x1." hyp ctx)
+          state)
+         (- (and res (cw "(In ~x0, hyp ~x1 is provably unnecessary.)~%" ctx hyp))))
+      (check-for-droppable-hyps ctx (rest hyps) all-hyps conclusion step-limit state))))
 
 ;; Returns state.
 (defun check-synp-hyp (ctx hyp step-limit state)
@@ -802,13 +819,20 @@
                   state)))
       (check-hyps ctx (rest hyps) all-hyps step-limit state))))
 
+(defun drop-calls-of (fn terms)
+  (if (endp terms)
+      nil
+    (if (call-of fn (first terms))
+        (drop-calls-of fn (rest terms))
+      (cons (first terms) (drop-calls-of fn (rest terms))))))
+
 ;; Returns state.
 (defun lint-defthm (name ;assume-guards
                     suppress step-limit state)
   (declare (xargs :stobjs state
                   :mode :program))
   (b* ((body (defthm-body name (w state)))
-       ((mv hyps conc)
+       ((mv hyps conclusion)
         (get-hyps-and-conc body))
        (state (check-hyps name
                           hyps
@@ -824,26 +848,31 @@
                       name
                       suppress state))
        ;; Check the conclusion, including checking for ground terms ,etc:
-       (- (lint-term conc
+       (- (lint-term conclusion
                      nil ;empty substitution
                      nil ;type-alist
                      nil ;iff-flag todo
                      name
                      (cons :resolvable-test suppress) ; don't report clearly true conjuncts in the conclusion (what about true disjuncts?)
                      state))
+       (non-synp-hyps (drop-calls-of 'synp hyps))
+       (non-synp-hyps (drop-calls-of 'axe-syntaxp non-synp-hyps))
+       (non-synp-hyps (drop-calls-of 'axe-bind-free non-synp-hyps))
        ;; Check for contradictory hyps:
        (state (check-for-contradiction name
                                        "hyp"
-                                       (make-conjunction-from-list hyps)
+                                       (make-conjunction-from-list non-synp-hyps)
                                        step-limit
                                        state))
        ;; todo: check for duplicate hyps
        ;; Check for hyps that are implied by others:
        (state (check-for-implied-terms name
                                        "hyp"
-                                       hyps
+                                       non-synp-hyps
                                        step-limit
-                                       state)))
+                                       state))
+       ;; Check for hyps that can be dropped:
+       (state (check-for-droppable-hyps name non-synp-hyps non-synp-hyps conclusion step-limit state)))
     state))
 
 ;; Returns state.
