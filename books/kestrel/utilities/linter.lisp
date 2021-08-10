@@ -730,7 +730,7 @@
   (if (call-of 'implies term)
       (mv-let (hyps1 conc)
         (get-hyps-and-conc (farg2 term))
-        (mv (append (get-conjuncts-of-term (farg1 term))
+        (mv (append (get-conjuncts (farg1 term))
                     hyps1)
             conc))
     ;; todo: handle lambdas
@@ -755,7 +755,7 @@
          ((when erp)
           (er hard? 'check-for-contradiction "Error checking for implication in ~s0 in ~x1." description ctx)
           state)
-         (- (and res (cw "(In ~x0, hyp ~x1 is provably implied by other hyps.)~%" ctx term))))
+         (- (and res (cw "(In ~x0, ~s1 ~x2 is provably implied by others.)~%" ctx description term))))
       (check-for-implied-terms-aux ctx description (rest terms) all-terms step-limit state))))
 
 ;; Check whether any of the TERMS is implied by the others:
@@ -766,6 +766,43 @@
   (check-for-implied-terms-aux ctx description terms terms step-limit state))
 
 ;; Returns state.
+(defun check-synp-hyp (ctx hyp step-limit state)
+  (declare (xargs :guard (and ;; (symbolp ctx)
+                          (pseudo-termp hyp)
+                          (call-of 'synp hyp))
+                  :stobjs state
+                  :mode :program))
+  (if (equal *nil* (farg1 hyp))     ;; (synp 'nil <form> '(if <term> 't 'nil))
+      (if (and (quotep (farg3 hyp)) ;always true?
+               (pseudo-termp (unquote (farg3 hyp)))
+               (call-of 'if (unquote (farg3 hyp)))
+               (equal *t* (farg2 (unquote (farg3 hyp))))
+               (equal *nil* (farg3 (unquote (farg3 hyp))))
+               )
+          (let* ((core-term (farg1 (unquote (farg3 hyp))))
+                 (conjuncts (get-conjuncts core-term)))
+            (check-for-implied-terms ctx
+                                     "syntaxp conjunct"
+                                     conjuncts step-limit state))
+        (prog2$ (er hard? 'check-synp-hyp "unexpected form of synp: ~x0." hyp)
+                state))
+    state))
+
+;; Returns state.
+(defun check-hyps (ctx hyps all-hyps step-limit state)
+  (declare (xargs :stobjs state
+                  :mode :program)
+           (irrelevant all-hyps) ;todo
+           )
+  (if (endp hyps)
+      state
+    (b* ((hyp (first hyps))
+         (state (if (call-of 'synp hyp)
+                    (check-synp-hyp ctx hyp step-limit state)
+                  state)))
+      (check-hyps ctx (rest hyps) all-hyps step-limit state))))
+
+;; Returns state.
 (defun lint-defthm (name ;assume-guards
                     suppress step-limit state)
   (declare (xargs :stobjs state
@@ -773,6 +810,11 @@
   (b* ((body (defthm-body name (w state)))
        ((mv hyps conc)
         (get-hyps-and-conc body))
+       (state (check-hyps name
+                          hyps
+                          hyps
+                          step-limit
+                          state))
        ;; check the hyps and conc individually:
        ;; Check the hyps, including checking for resolvable tests, ground terms ,etc:
        (- (lint-terms hyps
@@ -798,7 +840,7 @@
        ;; todo: check for duplicate hyps
        ;; Check for hyps that are implied by others:
        (state (check-for-implied-terms name
-                                       "hyps"
+                                       "hyp"
                                        hyps
                                        step-limit
                                        state)))
