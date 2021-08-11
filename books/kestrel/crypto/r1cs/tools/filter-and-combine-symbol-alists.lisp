@@ -28,6 +28,7 @@
 (include-book "kestrel/alists-light/assoc-equal" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (local
  (defthm symbol-listp-of-take
@@ -40,13 +41,6 @@
    (implies (symbol-listp l)
             (symbol-listp (nthcdr n l)))
    :hints (("Goal" :in-theory (enable nthcdr)))))
-
-(local
- (defthm symbolp-of-nth-when-symbol-listp
-   (implies (symbol-listp l)
-            (symbolp (nth n l)))
-   :hints (("Goal" :in-theory (enable nth)))))
-
 
 ;;from axioms.lisp:
 (defthm equal-coerce

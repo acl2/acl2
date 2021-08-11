@@ -117,7 +117,7 @@
                 (not (equal 0 k)))
            (equal (add (mul k x p) y p)
                   (mul k (add x (mul (pfield::inv k p) y p) p) p)))
-  :hints (("Goal" :in-theory (e/d (pfield::mul-combine-constants-alt)
+  :hints (("Goal" :in-theory (e/d (pfield::mul-of-mul-combine-constants-alt)
                                   (;R1CS::MUL-WHEN-CONSTANTS
                                    PFIELD::MUL-OF-POWER-OF-2-WHEN-BITP
                                    PFIELD::MUL-ASSOCIATIVE
@@ -414,7 +414,7 @@
                        P)))
   :HINTS
   (("Goal"
-    :IN-THEORY (E/D (PFIELD::MUL-COMBINE-CONSTANTS-ALT)
+    :IN-THEORY (E/D (PFIELD::MUL-OF-MUL-COMBINE-CONSTANTS-ALT)
                     (PFIELD::MUL-OF-POWER-OF-2-WHEN-BITP
                      PFIELD::MUL-ASSOCIATIVE
                      PFIELD::MUL-COMMUTATIVE

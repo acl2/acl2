@@ -199,3 +199,23 @@
   :hints (("Goal" :expand (integer-length x)
            :in-theory (e/d (integer-length floor)
                            (integer-length-of-floor-by-2)))))
+
+(defthm <-of-integer-length-arg2
+  (implies (and (posp x)
+                (natp n))
+           (equal (< n (integer-length x))
+                  (<= (expt 2 n) x)))
+  :hints (("Goal" :in-theory (enable integer-length))))
+
+(defthm <-of-expt-of-one-less-of-integer-length
+  (implies (posp x)
+           (not (< x (expt 2 (+ -1 (integer-length x))))))
+  :hints (("Goal" :in-theory (enable integer-length))))
+
+(defthm <-of-integer-length-arg1
+  (implies (and (syntaxp (not (and (quotep n) (< 1000 (unquote n))))) ;prevent huge calls to EXPT
+                (posp x)
+                (natp n))
+           (equal (< (integer-length x) n)
+                  (< x (expt 2 (+ -1 n)))))
+  :hints (("Goal" :in-theory (enable integer-length posp))))
