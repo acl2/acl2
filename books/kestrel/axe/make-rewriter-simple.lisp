@@ -2458,7 +2458,7 @@
          (defthm ,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag1- suffix)
            (implies (and (axe-treep tree)
                          (bounded-axe-treep tree dag-len)
-                         ;; (consp tree)
+                         (consp tree) ; not logically necessary but speeds up the proof
                          (member-eq (ffn-symb tree) '(if myif))
                          (= 3 (len (fargs tree)))
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -3451,7 +3451,7 @@
        (defthm ,(pack$ 'node-replacement-array-bound-theorem-for-simplify-if-tree-and-add-to-dag1- suffix)
          (implies (and (axe-treep tree)
                        (bounded-axe-treep tree dag-len)
-                       ;; (consp tree)
+                       (consp tree) ; not logically necessary but speeds up the proof
                        (or (eq (ffn-symb tree) 'if)
                            (eq (ffn-symb tree) 'myif))
                        (= 3 (len (fargs tree)))
@@ -3705,7 +3705,7 @@
          (defthm ,(pack$ 'node-replacement-arrayp-of-simplify-if-tree-and-add-to-dag1- suffix)
            (implies (and (axe-treep tree)
                          (bounded-axe-treep tree dag-len)
-                         ;; (consp tree)
+                         (consp tree) ; not logically necessary but speeds up the proof
                          (or (eq (ffn-symb tree) 'if)
                              (eq (ffn-symb tree) 'myif))
                          (= 3 (len (fargs tree)))
