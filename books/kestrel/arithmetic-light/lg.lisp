@@ -160,6 +160,11 @@
   :hints (("Goal" :cases ((< 1 X))
            :in-theory (enable lg integer-length))))
 
+(defthm natp-of-lg-type
+  (implies (posp x)
+           (natp (lg x)))
+  :rule-classes :type-prescription)
+
 (defthm expt-of-lg
   (implies (power-of-2p x)
            (equal (expt 2 (lg x))
@@ -194,3 +199,16 @@
                       -1
                     (+ -1 (lg x)))))
   :hints (("Goal" :in-theory (enable lg))))
+
+(defthmd <-of-lg-when-unsigned-byte-p
+  (implies (unsigned-byte-p n x)
+           (< (lg x) n))
+  :hints (("Goal" :cases ((equal x 0))
+           :in-theory (enable lg))))
+
+(defthm <-of-lg-when-unsigned-byte-p-cheap
+  (implies (unsigned-byte-p n x)
+           (< (lg x) n))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :cases ((equal x 0))
+           :in-theory (enable lg))))
