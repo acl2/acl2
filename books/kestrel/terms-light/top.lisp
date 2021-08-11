@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(include-book "all-quotep")
 (include-book "bound-vars-in-term")
 (include-book "free-vars-in-term")
 (include-book "sublis-var-simple")
+(include-book "sublis-var-and-magic-eval")
