@@ -250,7 +250,7 @@
 
 ;; If the resulting constant (* x y) is too large, the next rule below will
 ;; reduce it.
-(defthm mul-combine-constants
+(defthm mul-of-mul-combine-constants
   (implies (and (syntaxp (and (quotep x)
                               (quotep y)))
                 (integerp x) ;(fep x p)
@@ -263,7 +263,7 @@
                    z p)))
   :hints (("Goal" :in-theory (enable mul))))
 
-(defthmd mul-combine-constants-alt
+(defthmd mul-of-mul-combine-constants-alt
   (implies (and (syntaxp (and (quotep x)
                               (quotep y)))
                 (integerp p))

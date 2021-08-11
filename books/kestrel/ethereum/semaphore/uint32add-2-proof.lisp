@@ -217,8 +217,8 @@
                  acl2::bvcat-when-lowsize-is-not-positive
                  acl2::bvchop-1-becomes-getbit
                  acl2::getbit-0-of-bitnot
-                 PFIELD::MUL-COMBINE-CONSTANTS
-                 PFIELD::MUL-COMBINE-CONSTANTS-alt
+                 PFIELD::MUL-OF-MUL-COMBINE-CONSTANTS
+                 PFIELD::MUL-OF-MUL-COMBINE-CONSTANTS-alt
                  PFIELD::MUL-OF-CONSTANT-NORMALIZE-TO-FEP
                  PFIELD::MUL-OF-1-ARG1
                  pfield::mul-of--1-becomes-neg-alt
