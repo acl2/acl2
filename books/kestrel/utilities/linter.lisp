@@ -882,7 +882,6 @@
 (deflabel end-of-linter)
 
 ;; to check theorems:
-;; (include-book "doc/top-slow" :dir :system)
 ;; (include-book "kestrel/utilities/linter" :dir :system)
-;; (in-theory (disable LIST::FIX-OF-NTHCDR NTH-WHEN-ZP)) ; prevent loops
-;; (run-linter :check :all :check-defuns nil :step-limit 100000 :suppress (:context :equality-variant :ground-term))
+;; ... include your books here...
+;; (acl2::run-linter :check :all :check-defuns nil :step-limit 100000 :suppress (:context :equality-variant :ground-term))
