@@ -184,3 +184,10 @@
   :hints (("Goal"
            :in-theory (disable integerp-of-expt-when-natp)
            :use (:instance integerp-of-expt-when-natp (r 2) (I (- i))))))
+
+(defthm expt-bound-linear-2
+  (implies (and (< size free)
+                (integerp free)
+                (integerp size))
+           (<= (expt 2 size) (expt 2 (+ -1 free))))
+  :rule-classes ((:linear)))

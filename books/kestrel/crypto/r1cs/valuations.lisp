@@ -108,3 +108,15 @@
       t
     (and (valuation-bindsp valuation (first vars))
          (valuation-binds-allp valuation (rest vars)))))
+
+(defthm valuation-bindsp-when-valuation-binds-allp
+  (implies (and (valuation-binds-allp valuation vars)
+                (member-equal var vars))
+           (valuation-bindsp valuation var))
+  :hints (("Goal" :in-theory (enable valuation-binds-allp))))
+
+(defthm valuation-binds-allp-of-append
+  (equal (valuation-binds-allp valuation (append vars1 vars2))
+         (and (valuation-binds-allp valuation vars1)
+              (valuation-binds-allp valuation vars2)))
+  :hints (("Goal" :in-theory (enable valuation-binds-allp))))
