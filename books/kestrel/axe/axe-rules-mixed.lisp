@@ -23,6 +23,7 @@
 (include-book "axe-syntax-functions-bv")
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system)) ;drop?
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system)) ; for EXPT-BOUND-LINEAR-2
 
 (defthmd bvplus-commutative-2-sizes-differ2-dag
   (implies (and (axe-syntaxp (should-commute-args-dag 'bvplus x y dag-array)) ;gen?
@@ -241,7 +242,6 @@
                   (and (unsigned-byte-p free y) ;use unsigned-byte-p-forced in a hyp???
                        (equal x (bvchop free y))))))
 
-
 (defthmd unsigned-byte-p-of-bvplus-when-both-smaller
   (implies (and (axe-bind-free (bind-bv-size-axe x 'x-size dag-array) '(x-size))
                 (axe-bind-free (bind-bv-size-axe y 'y-size dag-array) '(y-size))
@@ -381,7 +381,7 @@
                 (unsigned-byte-p-forced ysize y))
            (equal (bvmult size x y)
                   (bvmult (+ (lg x) ysize) x y)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvmult power-of-2p posp))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvmult power-of-2p posp lg))))
 
 (defthmd plus-of-minus-becomes-bv-dag
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
