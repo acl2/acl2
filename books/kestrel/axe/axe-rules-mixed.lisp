@@ -22,6 +22,7 @@
 (include-book "axe-syntax-functions")
 (include-book "axe-syntax-functions-bv")
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system)) ;drop?
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system)) ; for EXPT-BOUND-LINEAR-2
 

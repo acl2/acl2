@@ -69,9 +69,10 @@
   :hints (("Goal" :in-theory (enable lookup-equal))))
 
 (defthm lookup-equal-of-caar
-  (implies (consp pairs)
-           (equal (lookup-equal (caar pairs) pairs)
-                  (cdar pairs)))
+  ;;(implies t (consp pairs)
+  (equal (lookup-equal (caar pairs) pairs)
+         (cdar pairs))
+  ;;)
   :hints (("Goal" :in-theory (enable lookup-equal))))
 
 (defthm lookup-equal-when-not-consp-cheap

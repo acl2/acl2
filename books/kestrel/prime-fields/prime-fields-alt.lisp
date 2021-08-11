@@ -180,7 +180,7 @@
                   (mod (+ x y) (prime))))
   :hints (("Goal" :in-theory (enable add))))
 
-(defthm add-combine-constants
+(defthm add-of-add-combine-constants
   (implies (and (syntaxp (and (quotep x)
                               (quotep y)))
                 (fep x)

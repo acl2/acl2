@@ -395,28 +395,34 @@
   (implies (and (< 1 y)
                 (< 0 x)
                 (rationalp x)
-                (rationalp y))
+                ;; (rationalp y)
+                )
            (< x (* x y)))
   :rule-classes :linear
   :hints (("Goal" :use (:instance <-of-*-and-*-same-forward-1 (x1 1) (x2 y) (y x))
            :in-theory (disable <-of-*-and-*-same-forward-1))))
 
 (defthm <-of-*-and-*
-  (implies (and (< x1 x2) ; strict
+  (implies (and (< x1 x2)  ; strict
                 (<= y1 y2) ; weak
                 (<= 0 x1)
                 (< 0 y1)
-                (rationalp x1)
+                ;; todo: try to drop these hyps?:
                 (rationalp x2)
-                (rationalp y1)
-                (rationalp y2))
+                (rationalp y1))
            (< (* x1 y1) (* x2 y2)))
   :rule-classes (:rewrite :linear)
-  :hints (("Goal" :use ((:instance <=-of-*-and-*-same-linear
-                                   (x1 y1)
-                                   (x2 y2)
-                                   (y x2)))
-           :in-theory (disable <-of-*-and-*-cancel))))
+  :hints (("Goal"
+           :use ((:instance <-OF-*-AND-*-SAME-LINEAR-1
+                            (y y1))
+                 (:instance <-OF-*-AND-*-SAME-LINEAR-1
+                            (x1 y1)
+                            (x2 y2)
+                            (y x2)))
+           :in-theory (disable <-of-*-and-*-cancel
+                               <-OF-*-AND-*-SAME-HELPER
+                               <-OF-*-AND-*-SAME-FORWARD-1
+                               <-OF-*-AND-*-SAME-FORWARD-2))))
 
 ;; The proof given here avoids needing the book about /.
 (defthm equal-of-*-and-constant

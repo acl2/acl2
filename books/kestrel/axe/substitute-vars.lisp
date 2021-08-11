@@ -439,7 +439,7 @@
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len)
                 (natp prover-depth)
-                (natp num)
+                ;; (natp num)
                 (booleanp changep-acc))
            (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
              (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len changep-acc)

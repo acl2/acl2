@@ -218,7 +218,7 @@
   :hints (("Goal" :in-theory (enable sigma))))
 
 (defthm len-of-nth-of-sigma
-  (implies (and (natp n)
+  (implies (and ;; (natp n)
                 (< n 10))
            (equal (len (nth n (sigma)))
                   16))

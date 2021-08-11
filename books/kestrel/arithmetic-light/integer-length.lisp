@@ -28,7 +28,8 @@
 ;move?
 (defthm integer-length-bound
   (implies (and (natp n)
-                (< 0 n))
+                ;; (< 0 n)
+                )
            (< n (expt 2 (integer-length n))))
   :rule-classes (:rewrite :linear)
   :hints ( ;("subgoal *1/5" :use (:instance floor-bound (x n)))
