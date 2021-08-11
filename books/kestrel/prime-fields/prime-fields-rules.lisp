@@ -26,21 +26,13 @@
 (in-theory (disable mod)) ;since mod is introduced by some rules below
 
 (defthm add-of-sub-arg1
-  (implies (and (fep x p)
-                (fep y p)
-                (fep z p)
-                (integerp p))
-           (equal (add (sub x y p) z p)
-                  (add x (add z (neg y p) p) p)))
+  (equal (add (sub x y p) z p)
+         (add x (add z (neg y p) p) p))
   :hints (("Goal" :in-theory (enable add sub neg))))
 
 (defthm add-of-sub-arg2
-  (implies (and (fep x p)
-                (fep y p)
-                (fep z p)
-                (integerp p))
-           (equal (add z (sub x y p) p)
-                  (add x (add z (neg y p) p) p)))
+  (equal (add z (sub x y p) p)
+         (add x (add z (neg y p) p) p))
   :hints (("Goal" :in-theory (enable add sub neg))))
 
 (defthmd equal-of-0-and-add
@@ -522,23 +514,17 @@
   :hints (("Goal" :in-theory (enable add neg sub acl2::mod-sum-cases))))
 
 (defthm add-bound
-  (implies (and (integerp x)
-                (integerp y)
-                (posp p))
+  (implies (posp p)
            (< (add x y p) p))
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm mul-bound
-  (implies (and (integerp x)
-                (integerp y)
-                (posp p))
+  (implies (posp p)
            (< (mul x y p) p))
   :hints (("Goal" :in-theory (enable mul))))
 
 (defthm sub-bound
-  (implies (and (integerp x)
-                (integerp y)
-                (posp p))
+  (implies (posp p)
            (< (sub x y p) p))
   :hints (("Goal" :in-theory (enable sub))))
 

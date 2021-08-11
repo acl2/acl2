@@ -201,7 +201,7 @@
                  pfield::add-of-0-arg1
                  pfield::neg-of-0
 ;pfield::add-associative-when-constant ; at least move constants forward, so they can be combined
-;pfield::add-combine-constants
+;pfield::add-of-add-combine-constants
 ;pfield::equal-of-add-combine-constants
                  acl2::ifix-when-integerp
                  pfield::mod-of-ifix-when-fep ; which rules introduce this?
@@ -232,7 +232,7 @@
                 pfield::add-commutative-2-when-constant
                 pfield::add-commutative-when-constant
                 pfield::add-associative-when-constant ; at least move constants forward, so they can be combined
-                pfield::add-combine-constants
+                pfield::add-of-add-combine-constants
                 pfield::add-of-bvcat-1-of-0-and-add-of-bvcat-1-of-0-extra ; combine the bvcats
                 ;;r1cs::add-of-bvcat-and-add-of-bvcat-combine-interloper-gen
                 ;; these are for when one argument fits into the zeroes of the other:

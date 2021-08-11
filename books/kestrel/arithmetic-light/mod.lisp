@@ -216,21 +216,25 @@
 
 (defthm mod-of-2-when-even-cheap
   (implies (and (integerp (* 1/2 x))
-                (rationalp x))
+                ;; (rationalp x)
+                )
            (equal (mod x 2)
                   0))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable equal-of-0-and-mod))))
 
 (defthm mod-of-*-lemma
   (implies (and (integerp x)
-                (posp y))
+                (posp y) ;; todo: drop
+                )
            (equal (mod (* x y) y)
-                  0)))
+                  0))
+  :hints (("Goal" :cases ((posp y)))))
 
 (defthm mod-of-*-lemma-alt
   (implies (and (integerp x)
-                (posp y))
+                (posp y) ;; todo: drop
+                )
            (equal (mod (* y x) y)
                   0)))
 
@@ -360,7 +364,7 @@
                    (not (acl2-numberp x))))))
 
 (defthm mod-of-minus-arg2
-  (implies (and (rationalp x)
+  (implies (and ;; (rationalp x)
                 (rationalp y))
            (equal (mod x (- y))
                   (- (mod (- x) y))))
@@ -369,7 +373,7 @@
 
 (defthm mod-when-multiple
   (implies (and (integerp (* x (/ y)))
-                (rationalp x)
+                ;; (rationalp x)
                 (rationalp y)
                 (not (equal 0 y)))
            (equal (mod x y)
