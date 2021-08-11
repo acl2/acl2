@@ -45,7 +45,7 @@
 
 ;; 1 is in the field
 (defthm fep-of-1
-  (implies (and (integerp p)
+  (implies (and ;; (integerp p)
                 (< 1 p))
            (fep 1 p))
   :hints (("Goal" :in-theory (enable fep))))

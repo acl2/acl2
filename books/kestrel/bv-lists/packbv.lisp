@@ -174,7 +174,6 @@
 (defthmd packbv-opener-alt
   (implies (and (not (zp itemcount))
                 (posp itemsize)
-                (natp itemcount)
                 (equal itemcount (len items)))
            (equal (packbv itemcount itemsize items)
                   (bvcat (* itemsize (+ -1 itemcount))

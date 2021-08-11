@@ -302,12 +302,11 @@
                        (symbol-name s2))
                 (equal (symbol-package-name s1)
                        (symbol-package-name s2))
-                (symbolp s1)
-                (symbolp s2)
-                )
+                (or (symbolp s1)
+                    (symbolp s2)))
            (equal (equal s1 s2)
                   t))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 0 nil nil)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 0 nil)))
   :hints (("Goal" :use (:instance symbol-equality))))
 
 (defthm member-equal-of-symbol-name-strong
