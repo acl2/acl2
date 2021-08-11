@@ -167,7 +167,8 @@
                               (consp literal-nodenums)
                               (all-< literal-nodenums dag-len))
                   :guard-hints (("Goal" :in-theory (e/d (;integerp-of-maxelem-when-all-integerp
-                                                         natp-of-lookup-equal-when-dag-variable-alistp)
+                                                         natp-of-lookup-equal-when-dag-variable-alistp
+                                                         symbolp-of-car-when-symbol-listp)
                                                         (natp))))))
   (if (endp vars)
       nil
