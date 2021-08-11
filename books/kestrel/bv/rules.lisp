@@ -4382,8 +4382,6 @@
          (bvif size test y (bvuminus size x)))
   :hints (("Goal" :in-theory (e/d (bvif bvuminus bvminus) (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
-
-
 (defthm slice-of-times-of-expt
   (implies (and (<= j n) ;drop?
                 (integerp x) ;drop?
@@ -4394,6 +4392,17 @@
                   (slice (- m j) (- n j) x)))
   :hints (("Goal" :in-theory (e/d (slice logtail) (anti-slice
                                                    bvchop-of-*)))))
+
+(defthm slice-of-times-of-expt-alt
+  (implies (and (<= j n) ;drop?
+                (integerp x) ;drop?
+                (natp n)
+                (natp j)
+                (natp m))
+           (equal (slice m n (* x (expt 2 j)))
+                  (slice (- m j) (- n j) x)))
+  :hints (("Goal" :use (:instance slice-of-times-of-expt)
+           :in-theory (disable slice-of-times-of-expt))))
 
 (defthm slice-of-times-of-expt-constant-version
   (implies (and (syntaxp (quotep k))
