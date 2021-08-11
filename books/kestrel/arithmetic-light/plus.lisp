@@ -163,7 +163,8 @@
 ;; want to substitute for x, since in the RHS, x is not equated to anything.
 (defthm equal-of-+-when-negative-constant
   (implies (and (syntaxp (quotep k))
-                (< k 0))
+                (< k 0) ;; not logically necessary
+                )
            (equal (equal x (+ k y))
                   (and (equal (+ (- k) x) (fix y))
                        (acl2-numberp x)))))

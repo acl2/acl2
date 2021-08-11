@@ -194,7 +194,8 @@
 
 (defthm equal-of-len-of-nthcdr-and-len
   (implies (and (<= n (len x))
-                (natp n))
+                ;; (natp n)
+                )
            (equal (equal (len (nthcdr n x)) (len x))
                   (zp n))))
 

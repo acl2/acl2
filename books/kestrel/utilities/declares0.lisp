@@ -220,7 +220,7 @@
               (combine-xargs-for-keys (rest keys) keyword-value-list1 keyword-value-list2)))))
 
 (defthm keyword-value-listp-of-combine-xargs-for-keys
-  (implies (and (keyword-listp keys)
+  (implies (and ;; (keyword-listp keys)
                 (keyword-value-listp keyword-value-list1)
                 (keyword-value-listp keyword-value-list2))
            (keyword-value-listp (combine-xargs-for-keys keys keyword-value-list1 keyword-value-list2))))

@@ -909,7 +909,6 @@
 (defthm context-arrayp-of-make-full-context-array-with-parents
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (posp dag-len)
-                (<= dag-len 2147483646)
                 (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                 ;; not necesarly equal:
                 (<= dag-len (alen1 'dag-parent-array dag-parent-array))

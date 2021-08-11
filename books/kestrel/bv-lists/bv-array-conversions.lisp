@@ -134,8 +134,7 @@
                 (natp i)
                 (natp n)
                 (natp width)
-                (< n (- len i))
-                (<= i len))
+                (< n (- len i)))
            (equal (nth n (bv-array-to-list-aux width len i x))
                   (bv-array-read width len (+ n i) x)))
   :hints (("Goal" :in-theory (e/d (;LIST::NTH-OF-CONS
@@ -225,7 +224,6 @@
 
 (defthm BV-ARRAY-READ-of-cdr
   (implies (and (natp i)
-                (natp len)
 ;                (natp size)
                 (equal len (+ -1 (LEN ARR)))
                 (< i len))
@@ -236,8 +234,7 @@
                                   (BVCHOP-IDENTITY)))))
 
 (defthm cdr-of-BV-ARRAY-TO-LIST-AUX
-  (implies (and (natp len)
-                (equal len (len arr))
+  (implies (and (equal len (len arr))
                 (< i len)
                 (natp i))
            (equal (CDR (BV-ARRAY-TO-LIST-AUX SIZE LEN I ARR))
