@@ -510,8 +510,7 @@
                 (stringp (tree-to-string tree)))
        :flag tree-to-string)
      (defthm theorem-for-tree-list-to-string
-       (implies (tree-listp trees)
-                (stringp (tree-list-to-string trees)))
+       (stringp (tree-list-to-string trees))
        :flag tree-list-to-string)
      (defthm theorem-for-keyword-or-tree-tag-to-strings
        (implies (or (keywordp keyword/tag)
@@ -522,8 +521,7 @@
                                          keyword/tag)))))
        :flag keyword-or-tree-tag-to-strings)
      (defthm theorem-for-keyword-tree-alist-to-string
-       (implies (keyword-tree-alistp attributes)
-                (stringp (keyword-tree-alist-to-string attributes)))
+       (stringp (keyword-tree-alist-to-string attributes))
        :flag keyword-tree-alist-to-string)
      :hints (("Goal" :in-theory (enable tree-to-string
                                         tree-list-to-string
@@ -536,8 +534,7 @@
              (stringp (tree-to-string tree))))
 
   (defthm stringp-of-tree-list-to-string
-    (implies (tree-listp trees)
-             (stringp (tree-list-to-string trees))))
+    (stringp (tree-list-to-string trees)))
 
   (defthm stringp-of-mv-nth-0-keyword-or-tree-tag-to-strings
     (implies (or (keywordp keyword/tag)
@@ -554,8 +551,7 @@
     :hints (("Goal" :in-theory (disable mv-nth))))
 
   (defthm stringp-of-keyword-tree-alist-to-string
-    (implies (keyword-tree-alistp attributes)
-             (stringp (keyword-tree-alist-to-string attributes))))
+    (stringp (keyword-tree-alist-to-string attributes)))
 
   ;; guard verification:
 
