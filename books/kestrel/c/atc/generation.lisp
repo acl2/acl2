@@ -2669,7 +2669,7 @@
        (body-stmt (make-stmt-compound :items body-items))
        (stmt (make-stmt-while :test test-expr :body body-stmt))
        ((unless (symbol-listp xforming))
-        (prog2$ (raise "Internal error: ~x0 is not a list of symbols.")
+        (prog2$ (raise "Internal error: ~x0 is not a list of symbols." xforming)
                 (acl2::value (list (irr-stmt) nil nil))))
        (wrld (w state))
        ((unless (plist-worldp wrld))

@@ -860,8 +860,8 @@
 
   (progn
     (defopeners exec-stmt-while
-      :hyps ((syntaxp (quote test))
-             (syntaxp (quote body)))
+      :hyps ((syntaxp (quotep test))
+             (syntaxp (quotep body)))
       :disable t)
     (add-to-ruleset atc-openers (defopeners-names exec-stmt-while)))
 
