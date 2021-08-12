@@ -191,7 +191,7 @@
 
 (defthm integer-length-of-*-of-1/2
   (implies (and (evenp x)
-                (integerp x))
+                (rationalp x))
            (equal (integer-length (* 1/2 x))
                   (if (equal x 0)
                       0
@@ -202,7 +202,7 @@
 
 (defthm <-of-integer-length-arg2
   (implies (and (posp x)
-                (natp n))
+                (integerp n))
            (equal (< n (integer-length x))
                   (<= (expt 2 n) x)))
   :hints (("Goal" :in-theory (enable integer-length))))

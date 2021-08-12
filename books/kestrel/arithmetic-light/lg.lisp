@@ -110,7 +110,7 @@
 
 (defthm lg-of-*-of-1/2
   (implies (and (evenp x)
-                (integerp x))
+                (rationalp x))
            (equal (lg (* 1/2 x))
                   (if (equal 0 x)
                       -1
