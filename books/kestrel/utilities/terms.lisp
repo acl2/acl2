@@ -238,10 +238,10 @@
 
 (defthm pseudo-termp-of-lambda-body-cheap
   (implies (and ;; (consp term)
-                (consp (car term))
+                ;; (consp (car term))
                 (pseudo-termp term))
            (pseudo-termp (caddr term)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :expand ((pseudo-termp term)))))
 
 (defthm-flag-get-fns-in-term-aux
