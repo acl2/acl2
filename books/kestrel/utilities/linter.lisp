@@ -770,22 +770,44 @@
     (cons `(,(first fns) ,arg)
           (make-unary-calls (rest fns) arg))))
 
+;; todo: allow weakening to be read from a a table, so we can do things like pfield::fep -> natp
 (defund get-weakenings (hyp)
   (and (consp hyp)
        (let ((fn (ffn-symb hyp)))
          (case fn
+           ;; TODO: Could try atom for all atoms...
+           (bitp (make-unary-calls '(natp integerp rationalp acl2-numberp) (farg1 hyp))) ;todo: try (< 0 ...)
            (posp (make-unary-calls '(natp integerp rationalp acl2-numberp) (farg1 hyp))) ;todo: try (< 0 ...)
+           ;; (minusp (make-unary-calls '() (farg1 hyp))) ;todo: try (<= ... 0)
+           ;; (plusp (make-unary-calls '() (farg1 hyp))) ;todo: try (<= ... 0)
            (natp (make-unary-calls '(integerp rationalp acl2-numberp) (farg1 hyp))) ;todo: try (<= 0 ...)
+           (unsigned-byte-p (make-unary-calls '(natp integerp rationalp acl2-numberp) (farg1 hyp))) ;todo: try (<= 0 ...)
+           (signed-byte-p (make-unary-calls '(integerp rationalp acl2-numberp) (farg1 hyp)))
            (integerp (make-unary-calls '(rationalp acl2-numberp) (farg1 hyp)))
+           (integer-rangep (make-unary-calls '(integerp rationalp acl2-numberp) (farg1 hyp)))
            (rationalp (make-unary-calls '(acl2-numberp) (farg1 hyp)))
+           (real/rationalp (make-unary-calls '(acl2-numberp) (farg1 hyp)))
+           (complex-rationalp (make-unary-calls '(acl2-numberp) (farg1 hyp)))
            (symbolp (make-unary-calls '(atom) (farg1 hyp)))
            (null (make-unary-calls '(symbolp atom) (farg1 hyp)))
+           (alistp (make-unary-calls '(true-listp) (farg1 hyp)))
+           (symbol-listp (make-unary-calls '(true-listp) (farg1 hyp)))
+           (symbol-alistp (make-unary-calls '(alistp true-listp) (farg1 hyp)))
+           (character-listp (make-unary-calls '(true-listp) (farg1 hyp)))
+           (integer-listp (make-unary-calls '(true-listp) (farg1 hyp)))
+           (nat-listp (make-unary-calls '(true-listp) (farg1 hyp)))
+           (rational-listp (make-unary-calls '(true-listp) (farg1 hyp)))
+           (string-listp (make-unary-calls '(true-listp) (farg1 hyp)))
+           (keyword-listp (make-unary-calls '(true-listp) (farg1 hyp)))
            (consp (list `(not (symbolp ,(farg1 hyp)))
-                        `(not (null ,(farg1 hyp)))))
+                        `(not (null ,(farg1 hyp))) ;; or try the naked (farg1 hyp)?
+                        ))
            (keywordp (make-unary-calls '(symbolp atom) (farg1 hyp)))
            ;;todo: add many more, or find weakenings from implication theorems
            (< (list `(<= ,(farg1 hyp) ,(farg2 hyp))))
-           (equal (list `(<= ,(farg1 hyp) ,(farg2 hyp))))
+           ;; todo: only do these if the things involved are numbers:
+           (equal (list `(<= ,(farg1 hyp) ,(farg2 hyp))
+                        `(<= ,(farg2 hyp) ,(farg1 hyp))))
            (otherwise nil)))))
 
 ;; Returns state.
