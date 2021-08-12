@@ -121,10 +121,9 @@
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-of-add-combine-constants
-  (implies (and (syntaxp (and (quotep y) ; most likely to fail
-                              (quotep x)
-                              (quotep p)))
-                (integerp p))
+  (implies (syntaxp (and (quotep y) ; most likely to fail
+                         (quotep x)
+                         (quotep p)))
            (equal (add x (add y z p) p)
                   (add (add x y p) z p)))
   :hints (("Goal" :in-theory (enable add))))

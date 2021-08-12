@@ -124,7 +124,7 @@
 (defthm equal-of-add-move-negations-bind-free
   (implies (and (bind-free (bind-sum-of-negated-terms x y) (negs p))
                 ;; (integerp negs) ;may help prevent loops
-                (posp p)
+                (integerp p)
                 (fep x p)
                 (fep y p))
            (equal (equal x y)
