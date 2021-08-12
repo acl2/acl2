@@ -8864,9 +8864,9 @@
                              n
                              (if (let* ((hyp
                                          (nth (1- n)
-                                              (access rewrite-rule
-                                                      (get-brr-local 'lemma state)
-                                                      :hyps)))
+                                              (get-rule-field
+                                               (get-brr-local 'lemma state)
+                                               :hyps)))
                                         (evg
                                          (and (ffn-symb-p hyp 'synp)
                                               (quotep (fargn hyp 2))
