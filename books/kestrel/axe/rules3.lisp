@@ -2328,7 +2328,9 @@
                            (* (EXPT 2 HIGH) (/ (EXPT 2 LOW))))
                   0))
   :hints (("Goal" :use (:instance bvchop-of-expt-0 (size1 (+ -1 HIGH (- LOW))) (size2 (- high low)))
-           :in-theory (e/d (expt-of-+) ( bvchop-of-expt-0 BVCHOP-OF-EXPT-2-N)))))
+           :in-theory (e/d (expt-of-+) (bvchop-of-expt-0
+                                        BVCHOP-OF-EXPT-HACK
+                                        BVCHOP-OF-EXPT-2-N)))))
 
 
 
