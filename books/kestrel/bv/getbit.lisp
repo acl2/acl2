@@ -134,7 +134,7 @@
 
 (defthm getbit-of-bvchop-too-high
   (implies (and (<= size n)
-                (natp n)
+                (integerp n)
                 (natp size))
            (equal (getbit n (bvchop size x))
                   0))
@@ -268,10 +268,10 @@
 (defthm getbit-of-slice-too-high
   (implies (and (> n (- high low))
                 (<= low high) ;todo
-                (natp n)
+                (integerp n)
                 (integerp x)
                 (natp low)
-                (natp high))
+                (integerp high))
            (equal (getbit n (slice high low x))
                   0))
   :hints (("Goal" :in-theory (e/d (getbit-too-high)
@@ -323,7 +323,7 @@
 (defthm getbit-of-slice-gen
   (implies (and (natp n)
                 (natp low)
-                (natp high) ;(integerp high)
+                (integerp high)
                 (integerp x) ;todo
                 (<= low high) ;todo
                 )
@@ -378,11 +378,10 @@
 ;may be expensive? restrict to constant n?
 (defthm equal-of-getbit-and-1-forward-to-bound
   (implies (and (equal 1 (getbit n x))
-                (natp x)
-                (natp n))
+                (natp x))
            (<= (expt 2 n) x))
   :rule-classes ((:forward-chaining))
-  :hints (("Goal" :in-theory (e/d (getbit slice logtail)
+  :hints (("Goal" :in-theory (e/d (getbit slice logtail expt)
                                   (slice-becomes-getbit
                                    bvchop-1-becomes-getbit
                                    bvchop-of-logtail-becomes-slice)))))

@@ -250,11 +250,10 @@
 
 ;hope this split is okay
 (defthmd bvchop-of-minus-helper
-  (implies (natp size)
-           (equal (bvchop size (- x))
-                  (if (equal 0 (bvchop size x))
-                      0
-                    (- (expt 2 size) (bvchop size x)))))
+  (equal (bvchop size (- x))
+         (if (equal 0 (bvchop size x))
+             0
+           (- (expt 2 size) (bvchop size x))))
   :hints (("Goal" :in-theory (e/d (bvchop) (mod-cancel)))))
 
 (defthm bvchop-when-size-is-not-posp
@@ -312,10 +311,8 @@
 
 (defthm bvchop-sum-drop-bvchop
   (implies (and (<= m n)
-                (natp n)
-                (natp m)
-                (integerp z)
-                )
+                (integerp n)
+                (integerp z))
            (equal (bvchop m (+ (bvchop n y) z))
                   (bvchop m (+ (ifix y) z))))
   :hints (("Goal"
@@ -330,9 +327,8 @@
   :hints (("Goal" :use (:instance bvchop-sum-drop-bvchop) :in-theory (disable bvchop-sum-drop-bvchop))))
 
 (defthm bvchop-of-expt-hack
-  (implies (posp n)
-           (equal (bvchop (+ -1 n) (expt 2 n))
-                  0))
+  (equal (bvchop (+ -1 n) (expt 2 n))
+         0)
   :hints (("Goal" :in-theory (enable bvchop equal-of-0-and-mod))))
 
 ;gen
@@ -351,7 +347,7 @@
 (defthm bvchop-of-mask
   (implies (and (<= size1 size2)
                 (natp size1)
-                (natp size2))
+                (integerp size2))
            (equal (bvchop size2 (+ -1 (expt 2 size1)))
                   (+ -1 (expt 2 size1))))
   :hints (("Goal" :in-theory (enable zip unsigned-byte-p))))
@@ -398,7 +394,6 @@
   (implies (and (equal (bvchop n x) k)
                 (syntaxp (and (quotep k)
                               (not (quotep x))))
-                (natp n)
                 (integerp x)
                 (integerp y))
            (equal (bvchop n (+ x y))
@@ -408,7 +403,6 @@
   (implies (and (equal (bvchop n x) k)
                 (syntaxp (and (quotep k)
                               (not (quotep x))))
-                (natp n)
                 (integerp x)
                 (integerp y))
            (equal (bvchop n (+ y x))
@@ -535,7 +529,7 @@
 
 ;subsumes the -0 version
 (defthm bvchop-of-expt
-  (implies (and (natp size1)
+  (implies (and (integerp size1)
                 (natp size2))
            (equal (bvchop size1 (expt 2 size2))
                   (if (<= size1 size2)
@@ -559,7 +553,7 @@
 (defthm <-of-bvchop-and-bvchop-same
   (implies (and (<= s1 s2)
                 (natp s1)
-                (natp s2))
+                (integerp s2))
            (not (< (bvchop s2 x) (bvchop s1 x))))
   :hints (("Goal"
            :use (:instance bvchop-bound-rw (x (bvchop s2 x)) (size s1))
@@ -615,7 +609,7 @@
 
 (defthm bvchop-of-mod-of-expt-2
   (implies (and (< j size)
-                (natp size)
+                (integerp size)
                 (integerp x)
                 (natp j))
            (equal (bvchop size (mod x (expt 2 j)))
@@ -680,9 +674,7 @@
   (bitp (acl2::bvchop 1 x)))
 
 (defthm bvchop-+-cancel-cross
-  (implies (and (force (integerp size))
-                (>= size 0)
-                (force (integerp i))
+  (implies (and (force (integerp i))
                 (force (integerp j))
                 (force (integerp k)))
            (equal (equal (bvchop size (+ j i))
@@ -691,9 +683,7 @@
                          (bvchop size k)))))
 
 (defthm bvchop-+-cancel-cross2
-  (implies (and (force (integerp size))
-                (>= size 0)
-                (force (integerp i))
+  (implies (and (force (integerp i))
                 (force (integerp j))
                 (force (integerp k)))
            (equal (equal (bvchop size (+ i j))
@@ -727,7 +717,6 @@
 
 (defthmd bvchop-upper-bound-3
   (implies (and (<= (+ -1 (expt 2 n)) k)
-                (integerp k)
                 (natp n))
            (not (< k (bvchop n x))))
   :hints (("Goal" :cases ((<= low high))
@@ -738,7 +727,6 @@
 (defthmd bvchop-upper-bound-3-constant-version
   (implies (and (syntaxp (quotep k))
                 (<= (+ -1 (expt 2 n)) k)
-                (integerp k)
                 (natp n))
            (not (< k (bvchop n x))))
   :hints (("Goal" :cases ((<= low high))
