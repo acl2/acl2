@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "axe-trees")
+(include-book "kestrel/terms-light/all-quotep" :dir :system)
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 
 ;; see all-vars1 but that one has an accumulator.  also, this works on axe-trees!
@@ -69,13 +70,6 @@
          (union-equal (axe-tree-vars tree)
                       (axe-tree-vars-lst trees)))
   :hints (("Goal" :in-theory (enable axe-tree-vars-lst))))
-
-(defund all-quotep (items)
-  (declare (xargs :guard t))
-  (if (atom items)
-      t
-    (and (quotep (first items))
-         (all-quotep (rest items)))))
 
 (defthm-flag-axe-tree-vars
   (defthm axe-tree-vars-when-all-quotep

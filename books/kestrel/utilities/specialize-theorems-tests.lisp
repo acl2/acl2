@@ -1,4 +1,4 @@
-; Top file for terms-light library
+; Tests of specialize-theorems
 ;
 ; Copyright (C) 2021 Kestrel Institute
 ;
@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "all-quotep")
-(include-book "bound-vars-in-term")
-(include-book "free-vars-in-term")
-(include-book "sublis-var-simple")
-(include-book "sublis-var-and-magic-eval")
+(include-book "specialize-theorems")
+
+(specialize-theorem 'car-cons '-with-x-3 '((x . 3)))
+
+(specialize-theorems '(car-cons associativity-of-+) '-with-x-3 '((x . 3)))
