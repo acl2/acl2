@@ -374,7 +374,7 @@
 (defthm mod-when-multiple
   (implies (and (integerp (* x (/ y)))
                 ;; (rationalp x)
-                (rationalp y)
+                (acl2-numberp y)
                 (not (equal 0 y)))
            (equal (mod x y)
                   0))
@@ -658,7 +658,7 @@
   (implies (and (<= y (expt 2 size))
                 (integerp x)
                 (posp y)
-                (natp size))
+                (integerp size))
            (unsigned-byte-p size (mod x y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
@@ -666,7 +666,7 @@
   (implies (and (unsigned-byte-p size y)
                 (< 0 y)
                 ;; (natp size)
-                (natp x))
+                (integerp x))
            (unsigned-byte-p size (mod x y)))
   :hints (("Goal"
            :in-theory (enable unsigned-byte-p))))
@@ -675,10 +675,9 @@
   (implies (and (syntaxp (not (quotep x1))) ; prevent ACL2 from matching (- x1) with a constant
                 (equal (mod x1 y) k)
                 (syntaxp (quotep k))
-                (integerp x1)
-                (integerp x2)
-                (posp y)
-                )
+                (rationalp x1)
+                (rationalp x2)
+                (posp y))
            (equal (mod (+ (- x1) x2) y)
                   (mod (+ (- k) x2) y))))
 
@@ -686,10 +685,9 @@
   (implies (and (syntaxp (not (quotep x1))) ; prevent ACL2 from matching (- x1) with a constant
                 (equal (mod x1 y) k)
                 (syntaxp (quotep k))
-                (integerp x1)
-                (integerp x2)
-                (posp y)
-                )
+                (rationalp x1)
+                (rationalp x2)
+                (posp y))
            (equal (mod (+ x2 (- x1)) y)
                   (mod (+ x2 (- k)) y))))
 
@@ -712,16 +710,16 @@
 
 (defthm equal-of-mod-of-+-of-*-same-3-last
   (implies (and (posp p)
-                (integerp x)
-                (integerp y)
+                (rationalp x)
+                (rationalp y)
                 (integerp z))
            (equal (mod (+ x y (* p z)) p)
                   (mod (+ x y) p))))
 
 (defthm equal-of-mod-of-+-of-*-same-3-last-alt
   (implies (and (posp p)
-                (integerp x)
-                (integerp y)
+                (rationalp x)
+                (rationalp y)
                 (integerp z))
            (equal (mod (+ x y (* z p)) p)
                   (mod (+ x y) p))))
@@ -731,7 +729,7 @@
   (implies (and (< x 0)
                 (< (- y) x)
                 (integerp x)
-                (posp y))
+                (integerp y))
            (equal (mod x y)
                   (+ x y)))
   :hints (("Goal" :use (:instance acl2::mod-when-<

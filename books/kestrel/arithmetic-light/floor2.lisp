@@ -81,10 +81,11 @@
   :hints (("Goal" :use (:instance floor-when-divisible-cheap)
            :in-theory (disable floor-when-divisible-cheap))))
 
+;move?
 (defthm mod-is-0-when-multiple
   (implies (and (integerp (/ x y)) ;can be expensive?
-                (rationalp x)
-                (rationalp y)
+                ;; (rationalp x)
+                (acl2-numberp y)
                 (not (equal 0 y)) ;move to conclusion?
                 )
            (equal (mod x y)
@@ -113,7 +114,7 @@
 
 ;move
 (defthm floor-of-divide-hack
-  (implies (posp n)
+  (implies (rationalp n)
            (equal (floor (* 1/4 n) 16)
                   (floor n 64)))
   :hints (("Goal" :in-theory (e/d (FLOOR-NORMALIZE-DENOMINATOR)
@@ -420,7 +421,7 @@
   (implies (and (< x (* 2 N))
                 (<= N x)
                 (rationalp x)
-                (POSP N))
+                (rationalp N))
            (equal (floor x n)
                   1))
   :hints (("Goal" :use (:instance FLOOR-UNIQUE (i x) (j n) (n 1)))))

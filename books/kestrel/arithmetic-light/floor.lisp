@@ -981,9 +981,7 @@
 (defthm floor-bound-arg1
   (IMPLIES (AND (rationalp i)
                 (<= 0 i)
-                (integerp j)
-                (<= 0 j)
-                )
+                (integerp j))
            (equal (< i (FLOOR i j))
                   nil))
   :hints (("Goal"
@@ -1181,7 +1179,7 @@
 
 (defthmd my-floor-lower-bound-2
   (implies (and (integerp i)
-                (<= 0 i) ;gen
+                (<= 0 i) ; drop
                 (posp j))
            (<= (+ -1 (/ i j) (/ j)) (floor i j)))
   :rule-classes ((:linear :trigger-terms ((floor i j))))
@@ -1230,8 +1228,7 @@
                         (:instance split-low-bit)))))
 
 (defthmd floor-when-evenp
-  (implies (and (evenp x)
-                (integerp x))
+  (implies (evenp x)
            (equal (floor x 2)
                   (/ x 2)))
   :hints (("Goal" :in-theory (enable floor evenp))))

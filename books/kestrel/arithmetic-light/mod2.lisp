@@ -38,13 +38,15 @@
 
 (local (in-theory (disable equal-of-*-2-of-floor-of-2-same)))
 
+;rename
 (defthm mod-expt-mod
-  (implies (and (posp n)
-                (integerp a))
+  (implies (posp n)
            (equal (mod (mod a (expt 2 n)) 2)
                   (mod a 2)))
-  :hints (("Goal" :in-theory (disable ;DIVISIBILITY-IN-TERMS-OF-FLOOR
-                              mod-cancel))))
+  :hints (("Goal" :cases ((not (acl2-numberp a))
+                          (rationalp a))
+           :in-theory (disable ;DIVISIBILITY-IN-TERMS-OF-FLOOR
+                       mod-cancel))))
 
 ;gross proof? use a bound lemma?
 (defthm integerp-of-*-of-/-and-mod

@@ -44,9 +44,9 @@
 ;;todo: combine with other rules?
 ;; avoids name clash
 (defthm unsigned-byte-p-of-ash-alt
-  (implies (and (natp c) ;; positive count means a left shift
+  (implies (and (natp c)
                 (unsigned-byte-p (- size c) i)
-                (natp size))
+                (integerp size))
            (unsigned-byte-p size (ash i c)))
   :hints (("Goal"
            :use (:instance <-of-*-and-*-cancel

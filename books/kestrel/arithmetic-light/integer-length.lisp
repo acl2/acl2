@@ -149,7 +149,7 @@
 ;expensive, newly disabled
 (defthmd unsigned-byte-p-of-integer-length-gen
   (implies (and (<= (integer-length x) n)
-                (natp n)
+                (integerp n)
                 (natp x))
            (unsigned-byte-p n x))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-integer-length)
