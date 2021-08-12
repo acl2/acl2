@@ -758,15 +758,14 @@
          (- (and res (cw "(In ~x0, ~s1 ~x2 is provably implied by others.)~%" ctx description term))))
       (check-for-implied-terms-aux ctx description (rest terms) all-terms step-limit state))))
 
-;; Check whether any of the TERMS is implied by the others:
-;; Returns state.
+;; Checks whether any of the TERMS is implied by the others.  Returns state.
 (defun check-for-implied-terms (ctx description terms step-limit state)
   (declare (xargs :stobjs state
                   :mode :program))
   (check-for-implied-terms-aux ctx description terms terms step-limit state))
 
-;; Check whether any of the TERMS is implied by the ALL-TERMS, excluding itself
-;; Returns state.
+;; Checks whether any of the HYPS can be dropped from ALL-HYPS, while still
+;; allowing CONCLUSION to be proved.  Returns state.
 (defun check-for-droppable-hyps (ctx hyps all-hyps conclusion step-limit state)
   (declare (xargs :stobjs state
                   :mode :program))
