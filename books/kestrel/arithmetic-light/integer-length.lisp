@@ -27,7 +27,7 @@
 
 ;move?
 (defthm integer-length-bound
-  (implies (and (natp n)
+  (implies (and (integerp n)
                 ;; (< 0 n)
                 )
            (< n (expt 2 (integer-length n))))
@@ -72,7 +72,7 @@
 (defthm integer-length-monotonic
   (implies (and (<= x y)
                 (natp x)
-                (natp y))
+                (integerp y))
            (<= (integer-length x) (integer-length y)))
   :hints (("Goal"
            :induct (double-floor-by-2-induct x y)
@@ -116,7 +116,7 @@
 
 ;gen?
 (defthm <-of-1-and-floor-of-2
-  (implies (natp x)
+  (implies (rationalp x) ;(natp x)
            (equal (< 1 (floor x 2))
                   (<= 4 x))))
 
