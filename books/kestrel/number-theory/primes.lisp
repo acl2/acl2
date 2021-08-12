@@ -17,8 +17,8 @@
 
 (defthm not-equal-of-least-divisor-same-when-divides
   (implies (and (integerp (/ n factor)) ; factor is a free var
-                (natp n)
-                (natp k)
+                ;; (natp n)
+                ;; (natp k)
                 (natp factor)
                 (<= k factor)
                 (< factor n))
