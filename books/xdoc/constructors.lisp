@@ -416,7 +416,7 @@
    (defund tree-to-string (tree)
      (declare (xargs :guard (treep tree)
                      :verify-guards nil)) ; done below
-     (cond ((atom tree) tree)
+     (cond ((atom tree) (if (mbt (stringp tree)) tree ""))
            (t (let ((subtrees-string (tree-list-to-string (cdr tree))))
                 (mv-let (left-string right-string)
                   (keyword-or-tree-tag-to-strings (car tree))
@@ -506,8 +506,7 @@
   (local
    (defthm-flag-xdoc-tree-to-string
      (defthm theorem-for-tree-to-string
-       (implies (treep tree)
-                (stringp (tree-to-string tree)))
+       (stringp (tree-to-string tree))
        :flag tree-to-string)
      (defthm theorem-for-tree-list-to-string
        (stringp (tree-list-to-string trees))
@@ -528,8 +527,7 @@
                                         treep)))))
 
   (defthm stringp-of-tree-to-string
-    (implies (treep tree)
-             (stringp (tree-to-string tree))))
+    (stringp (tree-to-string tree)))
 
   (defthm stringp-of-tree-list-to-string
     (stringp (tree-list-to-string trees)))
@@ -557,7 +555,7 @@
               (character-listp (cdr x)))))
 
   (verify-guards tree-to-string
-    :hints (("Goal" :in-theory (e/d (tree-tagp keyword-tree-alistp)
+    :hints (("Goal" :in-theory (e/d (tree-tagp keyword-tree-alistp treep)
                                     (mv-nth))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
