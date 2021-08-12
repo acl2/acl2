@@ -764,6 +764,46 @@
                   :mode :program))
   (check-for-implied-terms-aux ctx description terms terms step-limit state))
 
+(defun make-unary-calls (fns arg)
+  (if (endp fns)
+      nil
+    (cons `(,(first fns) ,arg)
+          (make-unary-calls (rest fns) arg))))
+
+(defund get-weakenings (hyp)
+  (and (consp hyp)
+       (let ((fn (ffn-symb hyp)))
+         (case fn
+           (posp (make-unary-calls '(natp integerp rationalp acl2-numberp) (farg1 hyp))) ;todo: try (< 0 ...)
+           (natp (make-unary-calls '(integerp rationalp acl2-numberp) (farg1 hyp))) ;todo: try (<= 0 ...)
+           (integerp (make-unary-calls '(rationalp acl2-numberp) (farg1 hyp)))
+           (rationalp (make-unary-calls '(acl2-numberp) (farg1 hyp)))
+           (symbolp (make-unary-calls '(atom) (farg1 hyp)))
+           (null (make-unary-calls '(symbolp atom) (farg1 hyp)))
+           (consp (list `(not (symbolp ,(farg1 hyp)))
+                        `(not (null ,(farg1 hyp)))))
+           (keywordp (make-unary-calls '(symbolp atom) (farg1 hyp)))
+           ;;todo: add many more, or find weakenings from implication theorems
+           (< (list `(<= ,(farg1 hyp) ,(farg2 hyp))))
+           (equal (list `(<= ,(farg1 hyp) ,(farg2 hyp))))
+           (otherwise nil)))))
+
+;; Returns state.
+(defun try-to-prove-with-some-hyp (ctx hyps other-hyps conclusion original-hyp step-limit state)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (if (endp hyps)
+      state
+    (b* ((hyp (first hyps))
+         ((mv erp res state)
+          (prove$ `(implies ,(make-conjunction-from-list (cons hyp other-hyps)) ,conclusion) :step-limit step-limit))
+         ((when erp)
+          (er hard? 'try-to-prove-with-some-hyp "Error attempting to weaken a hyp ~x0 in ~x1 to ~x2." original-hyp ctx hyp)
+          state)
+         (- (and res (cw "(In ~x0, hyp ~x1 can be provably weakened to ~x2)~%" ctx original-hyp hyp))))
+      (try-to-prove-with-some-hyp ctx (rest hyps) other-hyps conclusion original-hyp step-limit state))))
+
+
 ;; Checks whether any of the HYPS can be dropped from ALL-HYPS, while still
 ;; allowing CONCLUSION to be proved.  Returns state.
 (defun check-for-droppable-hyps (ctx hyps all-hyps conclusion step-limit state)
@@ -778,7 +818,12 @@
          ((when erp)
           (er hard? 'check-for-droppable-hyps "Error attempting to drop hyp ~x0 in ~x1." hyp ctx)
           state)
-         (- (and res (cw "(In ~x0, hyp ~x1 is provably unnecessary.)~%" ctx hyp))))
+         (- (and res (cw "(In ~x0, hyp ~x1 is provably unnecessary.)~%" ctx hyp)))
+         (state (if res
+                    state ;; don't try to weaken, since the hyp can be dropped
+                  (let* ((weakenings (get-weakenings hyp))
+                         (state (try-to-prove-with-some-hyp ctx weakenings other-hyps conclusion hyp step-limit state)))
+                    state))))
       (check-for-droppable-hyps ctx (rest hyps) all-hyps conclusion step-limit state))))
 
 ;; Returns state.
@@ -918,8 +963,8 @@
                               (booleanp check-defthms)
                               (natp step-limit))
                   :mode :program))
-  (b* ((state (set-fmt-hard-right-margin 120 state))
-       (state (set-fmt-soft-right-margin 120 state))
+  (b* ((state (set-fmt-hard-right-margin 140 state))
+       (state (set-fmt-soft-right-margin 140 state))
        (world (w state))
        (triple-to-stop-at (if (eq check :user)
                               '(end-of-linter label . t)
