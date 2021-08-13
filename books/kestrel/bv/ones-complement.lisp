@@ -202,7 +202,7 @@
   (+ -1 (expt 2 size)))
 
 (defthm to-ones-complement-of-from-ones-complement
-  (implies (and (posp size)
+  (implies (and ;; (posp size)
                 (unsigned-byte-p size x)
                 (not (equal x (negative-zero size)))
                 )
@@ -258,7 +258,7 @@
 (defthmd bvplus1c-correct
   (implies (and (unsigned-byte-p size x)
                 (unsigned-byte-p size y)
-                (posp size)
+                ;; (posp size)
                 ;; the sum is representable:
                 (representable-as-ones-complementp
                  size

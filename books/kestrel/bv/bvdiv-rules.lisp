@@ -92,7 +92,7 @@
 (defthm <-of-bvdiv-same
   (implies (and (natp x) ;can't be 0
                 ;; (natp y)
-                (natp size)
+                ;; (natp size)
                 (bvlt size 1 y))
            (equal (< (bvdiv size x y) x)
                   (not (equal 0 x))))
