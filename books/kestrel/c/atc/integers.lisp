@@ -19,6 +19,12 @@
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
+;; to have FTY::DEFLIST generate theorems about NTH:
+(local (include-book "std/lists/nth" :dir :system))
+
+;; to have FTY::DEFLIST generate theorems about UPDATE-NTH:
+(local (include-book "std/lists/update-nth" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-integers
