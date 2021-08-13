@@ -330,10 +330,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-functions-in-block ((block blockp) (funtab funtablep))
+(define add-functions-in-statement-list ((stmts statement-listp)
+                                         (funtab funtablep))
   :returns (funtab? funtable-resultp)
   :short "Extend a function table with
-          all the function definitions in a block."
+          all the function definitions in a list of statements."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -349,18 +350,21 @@
      so extending the function table (as opposed to creating a new one)
      is appropriate here.")
    (xdoc::p
-    "As soon as a duplication function is found, we stop with an error."))
-  (b* (((when (endp block)) (funtable-fix funtab))
-       (stmt (car block))
+    "As soon as a duplication function is found, we stop with an error.")
+   (xdoc::p
+    "This ACL2 function is called on the list of statements
+     contained in a block."))
+  (b* (((when (endp stmts)) (funtable-fix funtab))
+       (stmt (car stmts))
        ((unless (statement-case stmt :fundef))
-        (add-functions-in-block (cdr block) funtab))
+        (add-functions-in-statement-list (cdr stmts) funtab))
        ((fundef fundef) (statement-fundef->get stmt))
        (funtab? (add-funtype fundef.name
                              (len fundef.inputs)
                              (len fundef.outputs)
                              funtab))
        ((when (errorp funtab?)) funtab?))
-    (add-functions-in-block (cdr block) funtab?))
+    (add-functions-in-statement-list (cdr stmts) funtab?))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -645,11 +649,22 @@
                        (var-vis identifier-setp)
                        (funtab funtablep))
     :returns (var-acc? identifier-set-resultp)
-    (b* (((when (endp block)) (identifier-set-fix var-acc))
-         (var-acc? (check-statement (car block) var-acc var-vis funtab))
-         ((when (errorp var-acc?)) var-acc?))
-      (check-block (cdr block) var-acc? var-vis funtab))
+    (check-statement-list (block->statements block)
+                          var-acc
+                          var-vis
+                          funtab)
     :measure (block-count block))
+
+  (define check-statement-list ((stmts statement-listp)
+                                (var-acc identifier-setp)
+                                (var-vis identifier-setp)
+                                (funtab funtablep))
+    :returns (var-acc? identifier-set-resultp)
+    (b* (((when (endp stmts)) (identifier-set-fix var-acc))
+         (var-acc? (check-statement (car stmts) var-acc var-vis funtab))
+         ((when (errorp var-acc?)) var-acc?))
+      (check-statement-list (cdr stmts) var-acc? var-vis funtab))
+    :measure (statement-list-count stmts))
 
   :verify-guards nil ; done below
   ///

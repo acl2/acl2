@@ -358,20 +358,26 @@
     :pred statementp
     :measure (two-nats-measure (acl2-count x) 0))
 
-  (fty::deflist block
-    :short "Fixtype of blocks."
+  (fty::deflist statement-list
+    :short "Fixtype of lists of statements."
     :elt-type statement
     :true-listp t
     :elementp-of-nil nil
-    :pred blockp
+    :pred statement-listp
     :measure (two-nats-measure (acl2-count x) 0))
+
+  (fty::defprod block
+    :short "Fixtype of blocks."
+    ((statements statement-list))
+    :pred blockp
+    :measure (two-nats-measure (acl2-count x) 1))
 
   (fty::defprod swcase
     :short "Fixtype of cases (of switch statements)."
     ((value literal)
      (body block))
     :pred swcasep
-    :measure (two-nats-measure (acl2-count x) 1))
+    :measure (two-nats-measure (acl2-count x) 2))
 
   (fty::deflist swcase-list
     :short "Fixtype of lists of cases (of switch statements)."
@@ -389,4 +395,4 @@
      (body block))
     :tag :fundef
     :pred fundefp
-    :measure (two-nats-measure (acl2-count x) 1)))
+    :measure (two-nats-measure (acl2-count x) 2)))
