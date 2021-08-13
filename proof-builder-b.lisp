@@ -2449,8 +2449,10 @@
                (list (cons #\0 instr-list)))
               (mv t nil state))
     (state-global-let*
-     ((pc-prompt (string-append (pc-prompt-depth-prefix)
-                                (pc-prompt))))
+     ((pc-info (change pc-info (f-get-global 'pc-info state)
+                       :prompt
+                       (string-append (pc-prompt-depth-prefix)
+                                      (pc-prompt)))))
      (let ((saved-old-ss (old-ss))
            (saved-ss (state-stack)))
        (mv-let (erp val state)

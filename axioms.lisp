@@ -5568,25 +5568,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Defund is not yet available here:
 (in-theory (disable member-symbol-name))
 
-(defthm symbol-equality
-
-; This formula is provable using intern-in-package-of-symbol-symbol-name.
-
-   (implies (and (or (symbolp s1) (symbolp s2))
-                 (equal (symbol-name s1) (symbol-name s2))
-                 (equal (symbol-package-name s1) (symbol-package-name s2)))
-            (equal s1 s2))
-   :rule-classes nil
-   :hints (("Goal"
-            :in-theory (disable intern-in-package-of-symbol-symbol-name)
-            :use
-            ((:instance
-              intern-in-package-of-symbol-symbol-name
-              (x s1) (y s2))
-             (:instance
-              intern-in-package-of-symbol-symbol-name
-              (x s2) (y s2))))))
-
 (defaxiom symbol-name-intern-in-package-of-symbol
   (implies (and (stringp s)
                 (symbolp any-symbol))
@@ -14718,6 +14699,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; *initial-ld-special-bindings*.
 
   `((abbrev-evisc-tuple . :default)
+    (abort-soft . t)
     (accumulated-ttree . nil) ; just what succeeded; tracking the rest is hard
     (acl2-raw-mode-p . nil)
     (acl2-sources-dir .
@@ -14870,11 +14852,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (parallel-execution-enabled . nil)
     (parallelism-hazards-action . nil) ; nil or :error, else treated as :warn
     (pc-erp . nil)
+    (pc-info . nil) ; set in LP
     (pc-output . nil)
-    (pc-print-macroexpansion-flg . nil)
-    (pc-print-prompt-and-instr-flg . t)
-    (pc-prompt . "->: ")
-    (pc-prompt-depth-prefix . "#")
     (pc-ss-alist . nil)
     (pc-val . nil)
     (port-file-enabled . t)
@@ -16540,6 +16519,51 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (verify-guards check-vars-not-free-test)
 
+; The theorem symbol-equality is useful in verifying the guards of getprops,
+; so we deal with it next.
+
+(defaxiom completion-of-symbol-name
+  (equal (symbol-name x)
+         (if (symbolp x)
+             (symbol-name x)
+           ""))
+  :rule-classes nil)
+
+(defthm default-symbol-name
+  (implies (not (symbolp x))
+           (equal (symbol-name x)
+                  ""))
+  :hints (("Goal" :use completion-of-symbol-name)))
+
+(defaxiom completion-of-symbol-package-name
+  (equal (symbol-package-name x)
+         (if (symbolp x)
+             (symbol-package-name x)
+           ""))
+  :rule-classes nil)
+
+(defthm default-symbol-package-name
+  (implies (not (symbolp x))
+           (equal (symbol-package-name x)
+                  ""))
+  :hints (("Goal" :use completion-of-symbol-package-name)))
+
+(defthm symbol-equality
+   (implies (and (or (symbolp s1) (symbolp s2))
+                 (equal (symbol-name s1) (symbol-name s2))
+                 (equal (symbol-package-name s1) (symbol-package-name s2)))
+            (equal s1 s2))
+   :rule-classes nil
+   :hints (("Goal"
+            :in-theory (disable intern-in-package-of-symbol-symbol-name)
+            :use
+            ((:instance
+              intern-in-package-of-symbol-symbol-name
+              (x s1) (y s2))
+             (:instance
+              intern-in-package-of-symbol-symbol-name
+              (x s2) (y s2))))))
+
 ; Next, we verify the guards of getprops, which we delayed for the same
 ; reasons.
 
@@ -16555,9 +16579,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    :hints (("Goal" :in-theory (disable member))))
 
  (defthm symbol<-asymmetric
-   (implies (and (symbolp sym1)
-                 (symbolp sym2)
-                 (symbol< sym1 sym2))
+   (implies (symbol< sym1 sym2)
             (not (symbol< sym2 sym1)))
    :hints (("Goal" :in-theory
             (set-difference-theories
@@ -16627,8 +16649,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
  (local
   (defthm symbol-equality-rewrite
-    (implies (and (symbolp s1)
-                  (symbolp s2)
+    (implies (and (or (symbolp s1) (symbolp s2))
                   (equal (symbol-name s1)
                          (symbol-name s2))
                   (equal (symbol-package-name s1)
@@ -16662,9 +16683,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (ordered-symbol-alistp (add-pair w5 w6 gs))))
 
  (defthm ordered-symbol-alistp-getprops
-   (implies (and (plist-worldp w)
-                 (symbolp world-name)
-                 (symbolp key))
+   (implies (plist-worldp w)
             (ordered-symbol-alistp (getprops key world-name w)))
    :hints (("Goal" :in-theory (enable symbol<))))
 
@@ -21349,10 +21368,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (assoc sym1 alist))))
 
 (defthm add-pair-preserves-all-boundp
-  (implies (and (eqlable-alistp alist1)
-                (ordered-symbol-alistp alist2)
-                (all-boundp alist1 alist2)
-                (symbolp sym))
+  (implies (all-boundp alist1 alist2)
            (all-boundp alist1 (add-pair sym val alist2))))
 
 (defthm state-p1-update-main-timer
@@ -24720,32 +24736,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (implies (not (acl2-numberp x))
            (equal (realpart x)
                   0)))
-
-(defaxiom completion-of-symbol-name
-  (equal (symbol-name x)
-         (if (symbolp x)
-             (symbol-name x)
-           ""))
-  :rule-classes nil)
-
-(defthm default-symbol-name
-  (implies (not (symbolp x))
-           (equal (symbol-name x)
-                  ""))
-  :hints (("Goal" :use completion-of-symbol-name)))
-
-(defaxiom completion-of-symbol-package-name
-  (equal (symbol-package-name x)
-         (if (symbolp x)
-             (symbol-package-name x)
-           ""))
-  :rule-classes nil)
-
-(defthm default-symbol-package-name
-  (implies (not (symbolp x))
-           (equal (symbol-package-name x)
-                  ""))
-  :hints (("Goal" :use completion-of-symbol-package-name)))
 
 ;; Historical Comment from Ruben Gamboa:
 ;; Here, I put in the basic theory that we will use for
