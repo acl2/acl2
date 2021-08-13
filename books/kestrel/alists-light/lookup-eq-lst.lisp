@@ -43,3 +43,14 @@
          (append (lookup-eq-lst keys1 alist)
                  (lookup-eq-lst keys2 alist)))
   :hints (("Goal" :in-theory (enable lookup-eq-lst))))
+
+(defthm lookup-eq-lst-when-not-consp
+  (implies (not (consp keys))
+           (equal (lookup-eq-lst keys alist)
+                  nil))
+  :hints (("Goal" :in-theory (enable lookup-eq-lst))))
+
+(defthm consp-of-lookup-eq-lst
+  (equal (consp (lookup-eq-lst keys alist))
+         (consp keys))
+  :hints (("Goal" :in-theory (enable lookup-eq-lst))))
