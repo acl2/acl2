@@ -21,9 +21,9 @@
 (local (in-theory (disable jvm::typep)))
 
 (defthm get-field-class-of-inner-array-2d
-  (implies (and (array-refp ad  dims element-type heap)
+  (implies (and (array-refp ad dims element-type heap)
                 (eql 2 (len dims))
-                (posp (first dims))
+                ;; (posp (first dims))
                 (natp n)
                 (< n (len (array-contents ad  heap))))
            (equal (get-field (nth n (get-field ad  (array-contents-pair) heap))
@@ -34,9 +34,9 @@
            :in-theory (enable array-refp))))
 
 (defthm addressp-of-nth-of-array-contents
-  (implies (and (array-refp ad  dims element-type heap)
+  (implies (and (array-refp ad dims element-type heap)
                 (eql 2 (len dims))
-                (posp (first dims))
+                ;; (posp (first dims))
                 (natp n)
                 (< n (len (array-contents ad  heap))))
            (addressp (nth n (get-field ad (array-contents-pair) heap))))
