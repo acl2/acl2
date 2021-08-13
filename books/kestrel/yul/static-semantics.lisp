@@ -202,21 +202,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-path ((path pathp))
+(define check-path ((path pathp) (vartab vartablep))
   :returns (wf? wellformed-resultp)
   :short "Check if a path is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
-    "It must consists of one or more well-formed identifiers.")
+    "As a structural condition,
+     a path must consists of one or more well-formed identifiers.
+     More importantly, it must refer to an existing variable.
+     It is not yet clear how paths with more than one identifier
+     come about in generic Yul:
+     variable declarations are for single identifiers
+     (whether one single identifier,
+     or two or more single identifiers),
+     so it seems that singleton paths would always suffice to reference them
+     in expressions and statements.
+     For now we only regard singleton paths as well-formed,
+     provided they are part of the accessible variables.")
    (xdoc::p
     "We may move the non-emptiness requirement
      into an invariant of @(tsee path),
      but for now we state it as part of the static semantics."))
   (b* ((idens (path->get path))
-       ((unless (consp idens)) (error (list :empty-path)))
+       ((unless (consp idens))
+        (error (list :empty-path (path-fix path))))
        (wf? (check-identifier-list idens))
-       ((when (errorp wf?)) wf?))
+       ((when (errorp wf?)) wf?)
+       ((unless (endp (cdr idens)))
+        (error (list :non-singleton-path (path-fix path))))
+       (var (car idens))
+       ((unless (set::in var (vartable-fix vartab)))
+        (error (list :variable-not-found var))))
     :wellformed)
   :hooks (:fix))
 
@@ -288,33 +305,19 @@
       "If successful, return the number of values that the expression yields.
        Otherwise, return an error.")
      (xdoc::p
-      "It is not yet clear how paths with more than one identifier
-       come about in generic Yul:
-       variable declarations are for single identifiers
-       (whether one single identifier,
-       or two or more single identifiers),
-       so it seems that singleton paths would always suffice to reference them
-       in expressions and statements.
-       For now we only regard singleton paths as well-formed,
-       provided they are part of the accessible variables.
-       A path always yields one result, so we return 1.")
+      "A path always yields one result.")
      (xdoc::p
       "A literal's well-formedness is independent from the accessible variables.
-       A literal always returns one result, so we return 1."))
+       A literal always returns one result."))
     (expression-case
      expr
-     :path
-     (if (and (consp expr.get)
-              (not (consp (cdr expr.get)))
-              (set::in (car expr.get) (vartable-fix vartab)))
-         1
-       (error (list :bad-path expr.get)))
-     :literal
-     (b* ((wf? (check-literal expr.get))
-          ((when (errorp wf?)) wf?))
-       1)
-     :funcall
-     (check-funcall expr.get vartab funtab))
+     :path (b* ((wf? (check-path expr.get vartab))
+                ((when (errorp wf?)) wf?))
+             1)
+     :literal (b* ((wf? (check-literal expr.get))
+                   ((when (errorp wf?)) wf?))
+                1)
+     :funcall (check-funcall expr.get vartab funtab))
     :measure (expression-count expr))
 
   (define check-expression-list ((exprs expression-listp)
@@ -517,11 +520,8 @@
    (xdoc::p
     "This only depends on the (non-extended) variable table,
      which is unchanged and so we do not return an updated one."))
-  (b* ((idents (path->get target))
-       ((unless (and (consp idents)
-                     (endp (cdr idents))
-                     (set::in (car idents) (vartable-fix vartab))))
-        (error (list :bad-path (path-fix target))))
+  (b* ((wf? (check-path target vartab))
+       ((when (errorp wf?)) wf?)
        (results? (check-expression value vartab funtab))
        ((when (errorp results?)) results?)
        ((unless (= results? 1))
@@ -550,8 +550,8 @@
    (xdoc::p
     "This only depends on the (non-extended) variable table,
      which is unchanged and so we do not return an updated one."))
-  (b* (((unless (check-assign-multi-aux targets vartab))
-        (error (list :bad-paths (path-list-fix targets))))
+  (b* ((wf? (check-assign-multi-aux targets vartab))
+       ((when (errorp wf?)) wf?)
        ((unless (>= (len targets) 2))
         (error (list :assign-zero-one-path (path-list-fix targets))))
        (results? (check-funcall value vartab funtab))
@@ -565,14 +565,12 @@
   :prepwork
   ((define check-assign-multi-aux ((targets path-listp)
                                    (vartab vartablep))
-     :returns (yes/no booleanp)
+     :returns (wf? wellformed-resultp)
      :parents nil
-     (or (endp targets)
-         (and (b* ((idents (path->get (car targets))))
-                (and (consp idents)
-                     (endp (cdr idents))
-                     (set::in (car idents) (vartable-fix vartab))))
-              (check-assign-multi-aux (cdr targets) vartab)))
+     (b* (((when (endp targets)) :wellformed)
+          (wf? (check-path (car targets) vartab))
+          ((when (errorp wf?)) wf?))
+       (check-assign-multi-aux (cdr targets) vartab))
      :hooks (:fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
