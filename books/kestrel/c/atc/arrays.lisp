@@ -144,7 +144,6 @@
        (<type>p (pack <type> 'p))
        (<type>-fix (pack <type> '-fix))
        (<type>-list (pack <type> '-list))
-       (<type>-listp (pack <type>-list 'p))
        (<type>-array (pack <type> '-array))
        (<type>-arrayp (pack <type>-array 'p))
        (<type>-array-fix (pack <type>-array '-fix))
@@ -208,16 +207,7 @@
          (,<type>-fix (nth index (,<type>-array->elements array)))
          :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp
                                                   ,<type>-array-length)))
-         :hooks (:fix)
-
-         :prepwork
-         ;; to generate theorems about NTH:
-         ((local (include-book "std/lists/nth" :dir :system))
-          (local (fty::deflist ,<type>-list
-                   :elt-type ,<type>
-                   :true-listp t
-                   :elementp-of-nil nil
-                   :pred ,<type>-listp))))
+         :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -240,15 +230,6 @@
          :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp
                                                   ,<type>-array-length)))
          :hooks (:fix)
-
-         :prepwork
-         ;; to generate theorems about UPDATE-NTH:
-         ((local (include-book "std/lists/update-nth" :dir :system))
-          (local (fty::deflist ,<type>-list
-                   :elt-type ,<type>
-                   :true-listp t
-                   :elementp-of-nil nil
-                   :pred ,<type>-listp)))
 
          ///
 
