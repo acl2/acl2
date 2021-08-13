@@ -272,6 +272,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes expressions/funcalls
+  :short "Fixtypes of expressions and function calls."
 
   (fty::deftagsum expression
     :short "Fixtype of expressions."
@@ -313,6 +314,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes statements/blocks/cases/fundefs
+  :short "Fixtypes of statements, blocks, cases, and function definitions."
 
   (fty::deftagsum statement
     :short "Fixtype of statements."

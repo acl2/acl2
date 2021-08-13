@@ -233,47 +233,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines check-expression
-  :short "Check if an expression is well-formed."
+(defines check-expressions/funcalls
+  :short "Check if expressions and function calls are well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If successful, return the number of values that the expression yields.
-     Otherwise, return an error.")
-   (xdoc::p
-    "It is not yet clear how paths with more than one identifier
-     come about in generic Yul:
-     variable declarations are for single identifiers
-     (whether one single identifier,
-     or two or more single identifiers),
-     so it seems that singleton paths would always suffice to reference them
-     in expressions and statements.
-     For now we only regard singleton paths as well-formed,
-     provided they are part of the current set of accessible variables,
-     passed as parameter.
-     These are just a set for now because
+    "These are checked in the context of
+     a set of accessible variables
+     and a table of functions.
+     The accessible variables are just a set for now because
      there is no type information associated to variables (cf. abstract syntax),
-     but we may extend that to an omap from variables to types in the future.
-     A path always yields one result, so we return 1.")
-   (xdoc::p
-    "A literal's well-formedness is independent from the accessible variables.
-     A literal always returns one result, so we return 1.")
-   (xdoc::p
-    "For a function call, we look up the function in the function table,
-     which is passed as parameter.
-     We ensure that the number of inputs matches,
-     and we return the number of outputs.
-     Each argument expression must return a single result.
-     Note that while the function @(tsee check-expression)
-     returns the number of values that the expression yields,
-     the function @(tsee check-expression-list)
-     returns the number of expressions,
-     checking that they are all single-valued."))
+     but we may extend that to an omap from variables to types in the future."))
 
   (define check-expression ((expr expressionp)
                             (var-acc identifier-setp)
                             (funtab funtablep))
     :returns (results? nat-resultp)
+    :short "Check if an expression is well-formed."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If successful, return the number of values that the expression yields.
+       Otherwise, return an error.")
+     (xdoc::p
+      "It is not yet clear how paths with more than one identifier
+       come about in generic Yul:
+       variable declarations are for single identifiers
+       (whether one single identifier,
+       or two or more single identifiers),
+       so it seems that singleton paths would always suffice to reference them
+       in expressions and statements.
+       For now we only regard singleton paths as well-formed,
+       provided they are part of the current set of accessible variables.
+       A path always yields one result, so we return 1.")
+     (xdoc::p
+      "A literal's well-formedness is independent from the accessible variables.
+       A literal always returns one result, so we return 1."))
     (expression-case
      expr
      :path
@@ -294,6 +289,18 @@
                                  (var-acc identifier-setp)
                                  (funtab funtablep))
     :returns (number? nat-resultp)
+    :short "Check if a list of expressions is well-formed."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If successful, return the number of expressions.
+       The caller can obtain this number directly from the list of expressions,
+       but in the future this ACL2 function
+       will likely return the list of types of the expressions,
+       so we prefer to have already that kind of structure here.")
+     (xdoc::p
+      "We check each expression in turn.
+       Each expression must return exactly one result."))
     (b* (((when (endp exprs)) 0)
          (n? (check-expression (car exprs) var-acc funtab))
          ((when (errorp n?)) n?)
@@ -308,6 +315,15 @@
                          (var-acc identifier-setp)
                          (funtab funtablep))
     :returns (results? nat-resultp)
+    :short "Check if a function call is well-formed."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We look up the function in the function table,
+       which is passed as parameter.
+       We ensure that the number of inputs matches,
+       and we return the number of outputs.
+       Each argument expression must return a single result."))
     (b* (((funcall call) call)
          (funty? (get-funtype call.name funtab))
          ((when (errorp funty?)) funty?)
@@ -326,7 +342,7 @@
     :hints
     (("Goal" :in-theory (enable acl2::natp-when-nat-resultp-and-not-errorp))))
 
-  (fty::deffixequiv-mutual check-expression))
+  (fty::deffixequiv-mutual check-expressions/funcalls))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -528,12 +544,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines check-statement
-  :short "Check if a statement is well-formed."
+(defines check-statements/blocks/cases/fundefs
+  :short "Check if statements, blocks, cases, and function definitions
+          are well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A statement is checked in the context of
+    "These are checked in the context of
      a set of accessible (and visible) variables (@('var-acc')),
      a set of inaccessible but visible variables (@('var-vis')),
      and a function table.
@@ -543,50 +560,48 @@
      Thus, all of the variables in @('var-acc') and @('var-vis')
      are actually visible (not only the ones in @('var-vis')),
      but only the ones in @('var-acc') are also accessible,
-     while the ones in @('var-vis') are visible but not accessible.")
-   (xdoc::p
-    "If the checking of a statement is successful,
-     we return a possibly updated set of accessible variables.
-     The set is updated only via variable declarations,
-     while the other kinds of statements leave the set unchanged.
-     The set may be changed in blocks nested in the statement,
-     but those changes do not surface outside those blocks.
-     Note also that the function table is not updated
-     while checking function definition statements:
-     as explained in @(tsee add-functions-in-block),
-     the function definitions in a block are collected,
-     and used to extend the function table,
-     before processing the statements in a block.")
-   (xdoc::p
-    "To check a block, we check its statements,
-     threading throught the set of accessible variables,
-     and discard the final set of accessible variables,
-     because those updates are local to the block.")
-   (xdoc::p
-    "We use separate ACL2 functions to check declarations and assignments,
-     as their checking does not involve the mutual recursion.")
-   (xdoc::p
-    "For a function call used as a statement,
-     we check the function call and ensure it returns no results.")
-   (xdoc::p
-    "For an @('if') statement, we check test, which must return one result,
-     and we check the body block.
-     Since the body is a block,
-     the updated set of accessible variables is discarded.")
-   (xdoc::p
-    "For a @('for') statement, we first check the initialization block.
-     We use the updated set of accessible variables
-     to check the other components,
-     because the scope of the initialization block
-     extends to the whole statement, as explained
-     in [Yul: Specification of Yul: Scoping Rules].
-     The test must return one result."))
+     while the ones in @('var-vis') are visible but not accessible."))
 
   (define check-statement ((stmt statementp)
                            (var-acc identifier-setp)
                            (var-vis identifier-setp)
                            (funtab funtablep))
     :returns (var-acc? identifier-set-resultp)
+    :short "Check if a statement is well-formed."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If successful,
+       we return a possibly updated set of accessible variables.
+       The set is updated only via variable declarations,
+       while the other kinds of statements leave the set unchanged.
+       The set may be changed in blocks nested in the statement,
+       but those changes do not surface outside those blocks.
+       Note also that the function table is not updated
+       while checking function definition statements:
+       as explained in @(tsee add-functions-in-block),
+       the function definitions in a block are collected,
+       and used to extend the function table,
+       before processing the statements in a block.")
+     (xdoc::p
+      "We use separate ACL2 functions to check declarations and assignments,
+       as their checking does not involve the mutual recursion.")
+     (xdoc::p
+      "For a function call used as a statement,
+       we check the function call and ensure it returns no results.")
+     (xdoc::p
+      "For an @('if') statement, we check test, which must return one result,
+       and we check the body block.
+       Since the body is a block,
+       the updated set of accessible variables is discarded.")
+     (xdoc::p
+      "For a @('for') statement, we first check the initialization block.
+       We use the updated set of accessible variables
+       to check the other components,
+       because the scope of the initialization block
+       extends to the whole statement, as explained
+       in [Yul: Specification of Yul: Scoping Rules].
+       The test must return one result."))
     (statement-case
      stmt
      :block
@@ -649,6 +664,12 @@
                        (var-vis identifier-setp)
                        (funtab funtablep))
     :returns (var-acc? identifier-set-resultp)
+    :short "Check if a block is well-formed."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "For now we just check the statements in the block,
+       but this will be extended soon."))
     (check-statement-list (block->statements block)
                           var-acc
                           var-vis
@@ -660,6 +681,12 @@
                                 (var-vis identifier-setp)
                                 (funtab funtablep))
     :returns (var-acc? identifier-set-resultp)
+    :short "Check if a list of statements is well-formed."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check the statements, one after the other,
+       threading through the set of accessible variables."))
     (b* (((when (endp stmts)) (identifier-set-fix var-acc))
          (var-acc? (check-statement (car stmts) var-acc var-vis funtab))
          ((when (errorp var-acc?)) var-acc?))
@@ -674,4 +701,4 @@
       :in-theory
       (enable identifier-setp-when-identifier-set-resultp-and-not-errorp))))
 
-  (fty::deffixequiv-mutual check-statement))
+  (fty::deffixequiv-mutual check-statements/blocks/cases/fundefs))
