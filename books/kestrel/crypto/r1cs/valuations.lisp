@@ -120,3 +120,9 @@
          (and (valuation-binds-allp valuation vars1)
               (valuation-binds-allp valuation vars2)))
   :hints (("Goal" :in-theory (enable valuation-binds-allp))))
+
+(defthm valuation-binds-allp-of-cons
+  (equal (valuation-binds-allp valuation (cons var vars))
+         (and (valuation-bindsp valuation var)
+              (valuation-binds-allp valuation vars)))
+  :hints (("Goal" :in-theory (enable valuation-binds-allp))))
