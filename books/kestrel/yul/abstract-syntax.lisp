@@ -52,7 +52,7 @@
   (xdoc::topstring
    (xdoc::p
     "An identifier is a sequence of characters satisfying certain conditions.
-     For now we use an ACL2 string, wrapper in a one-field product type.
+     For now we use an ACL2 string, wrapped in a one-field product type.
      ACL2 strings suffice to represent all identifiers, and more.
      In the future we may add restrictions on the string
      to be a true identifier as defined in the concrete syntax."))
