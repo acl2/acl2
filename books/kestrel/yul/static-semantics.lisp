@@ -56,111 +56,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-identifier ((iden identifierp))
-  :returns (wf? wellformed-resultp)
-  :short "Check if an identifier is well-formed."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "It must consists of only
-     letter (lowercase and uppercase),
-     (decimal) digits,
-     underscores, and
-     dollars.
-     It must be non-empty and not start with a digit.")
-   (xdoc::p
-    "We may move these requirements into an invariant of @(tsee identifier),
-     but for now we state them as part of the static semantics."))
-  (b* ((chars (str::explode (identifier->get iden))))
-    (if (and (consp chars)
-             (acl2::alpha/uscore/dollar-char-p (car chars))
-             (acl2::alpha/digit/uscore/dollar-charlist-p (cdr chars)))
-        :wellformed
-      (error (list :bad-identifier (identifier-fix iden)))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-identifier-list ((idens identifier-listp))
-  :returns (wf? wellformed-resultp)
-  :short "Check if all the identifiers in a list are well-formed."
-  (b* (((when (endp idens)) :wellformed)
-       (wf? (check-identifier (car idens)))
-       ((when (errorp wf?)) wf?)
-       (wf? (check-identifier-list (cdr idens)))
-       ((when (errorp wf?)) wf?))
-    :wellformed)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-path ((path pathp))
-  :returns (wf? wellformed-resultp)
-  :short "Check if a path is well-formed."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "It must consists of one or more well-formed identifiers.")
-   (xdoc::p
-    "We may move the non-emptiness requirement
-     into an invariant of @(tsee path),
-     but for now we state it as part of the static semantics."))
-  (b* ((idens (path->get path))
-       ((unless (consp idens)) (error (list :empty-path)))
-       (wf? (check-identifier-list idens))
-       ((when (errorp wf?)) wf?))
-    :wellformed)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-literal ((lit literalp))
-  :returns (wf? wellformed-resultp)
-  :short "Check if a literal is well-formed."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "According to [Yul: Specification of Yul: Restrictions on the Grammar],
-     literals cannot be larger than their types,
-     and the largest type is that of unsigned 256-bit integers.
-     For now we do not model types (i.e. we assume one type),
-     so we limit the size to 256 bits.
-     This is straighforward for numeric literals.
-     For (non-hex) string, it boils down to a limit of 32 on the length
-     (since every character represents 8 bits).
-     For hex strigns, it boils down to a limit of 32 on the number of hex pairs;
-     hex strings must also be non-empty, according to the grammar.
-     Boolean literals are always well-formed;
-     they are not, and they do not represent, numbers anyways.")
-   (xdoc::p
-    "We do not impose other restrictions on (non-hex) strings here,
-     such as that a string surrounded by double quotes
-     cannot contain (unescaped) double quotes.
-     Those are simply syntactic restrictions."))
-  (b* ((err (error (list :bad-literal (literal-fix lit)))))
-    (literal-case
-     lit
-     :boolean :wellformed
-     :dec-number (if (< lit.get
-                        (expt 2 256))
-                     :wellformed
-                   err)
-     :hex-number (if (< (str::hex-digit-chars-value
-                         (hex-digit-list->chars lit.get))
-                        (expt 2 256))
-                     :wellformed
-                   err)
-     :string (if (<= (len lit.content) 32)
-                 :wellformed
-               err)
-     :hex-string (if (and (< 0 (len lit.content))
-                          (<= (len lit.content) 32))
-                     :wellformed
-                   err)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod funtype
   :short "Fixtype of function types."
   :long
@@ -266,6 +161,111 @@
   (implies (identifier-listp x)
            (vartablep (set::mergesort x)))
   :enable set::mergesort)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-identifier ((iden identifierp))
+  :returns (wf? wellformed-resultp)
+  :short "Check if an identifier is well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It must consists of only
+     letter (lowercase and uppercase),
+     (decimal) digits,
+     underscores, and
+     dollars.
+     It must be non-empty and not start with a digit.")
+   (xdoc::p
+    "We may move these requirements into an invariant of @(tsee identifier),
+     but for now we state them as part of the static semantics."))
+  (b* ((chars (str::explode (identifier->get iden))))
+    (if (and (consp chars)
+             (acl2::alpha/uscore/dollar-char-p (car chars))
+             (acl2::alpha/digit/uscore/dollar-charlist-p (cdr chars)))
+        :wellformed
+      (error (list :bad-identifier (identifier-fix iden)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-identifier-list ((idens identifier-listp))
+  :returns (wf? wellformed-resultp)
+  :short "Check if all the identifiers in a list are well-formed."
+  (b* (((when (endp idens)) :wellformed)
+       (wf? (check-identifier (car idens)))
+       ((when (errorp wf?)) wf?)
+       (wf? (check-identifier-list (cdr idens)))
+       ((when (errorp wf?)) wf?))
+    :wellformed)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-path ((path pathp))
+  :returns (wf? wellformed-resultp)
+  :short "Check if a path is well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It must consists of one or more well-formed identifiers.")
+   (xdoc::p
+    "We may move the non-emptiness requirement
+     into an invariant of @(tsee path),
+     but for now we state it as part of the static semantics."))
+  (b* ((idens (path->get path))
+       ((unless (consp idens)) (error (list :empty-path)))
+       (wf? (check-identifier-list idens))
+       ((when (errorp wf?)) wf?))
+    :wellformed)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-literal ((lit literalp))
+  :returns (wf? wellformed-resultp)
+  :short "Check if a literal is well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "According to [Yul: Specification of Yul: Restrictions on the Grammar],
+     literals cannot be larger than their types,
+     and the largest type is that of unsigned 256-bit integers.
+     For now we do not model types (i.e. we assume one type),
+     so we limit the size to 256 bits.
+     This is straighforward for numeric literals.
+     For (non-hex) string, it boils down to a limit of 32 on the length
+     (since every character represents 8 bits).
+     For hex strigns, it boils down to a limit of 32 on the number of hex pairs;
+     hex strings must also be non-empty, according to the grammar.
+     Boolean literals are always well-formed;
+     they are not, and they do not represent, numbers anyways.")
+   (xdoc::p
+    "We do not impose other restrictions on (non-hex) strings here,
+     such as that a string surrounded by double quotes
+     cannot contain (unescaped) double quotes.
+     Those are simply syntactic restrictions."))
+  (b* ((err (error (list :bad-literal (literal-fix lit)))))
+    (literal-case
+     lit
+     :boolean :wellformed
+     :dec-number (if (< lit.get
+                        (expt 2 256))
+                     :wellformed
+                   err)
+     :hex-number (if (< (str::hex-digit-chars-value
+                         (hex-digit-list->chars lit.get))
+                        (expt 2 256))
+                     :wellformed
+                   err)
+     :string (if (<= (len lit.content) 32)
+                 :wellformed
+               err)
+     :hex-string (if (and (< 0 (len lit.content))
+                          (<= (len lit.content) 32))
+                     :wellformed
+                   err)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
