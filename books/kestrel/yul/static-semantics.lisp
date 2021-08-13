@@ -162,6 +162,28 @@
            (vartablep (set::mergesort x)))
   :enable set::mergesort)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult vartable "variable tables")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod varfuntable
+  :short "Fixtype of variable and function tables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This puts together a variable table and a function table into one entity.
+     This is used as the result of checking blocks,
+     which may update both variable and function tables."))
+  ((vars vartable)
+   (funs funtable))
+  :pred varfuntablep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult varfuntable "variable and function tables")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-identifier ((iden identifierp))
@@ -417,10 +439,6 @@
        ((when (errorp funtab?)) funtab?))
     (add-functions-in-statement-list (cdr stmts) funtab?))
   :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defresult vartable "variable tables")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
