@@ -77,6 +77,22 @@
 (include-book "conjuncts-and-disjuncts")
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
 (include-book "tools/prove-dollar" :dir :system)
+(include-book "book-of-event")
+
+     ;move?
+;; TODO: Maybe print paths relative to the cbd?
+(defun describe-event-location (name wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld))
+                  :mode :program))
+  (let ((loc (book-of-event name wrld)))
+    (if (not loc)
+        "Checking" ;todo: ensure this doesn't happen?
+      (if (eq :built-in loc)
+          "Checking built-in event"
+        (if (eq :top-level loc)
+            "Checking top-level event"
+          (concatenate 'string loc ": checking"))))))
 
 ;; Returns (mv defun-names defthm-nams)
 (defun defuns-and-defthms-in-world (world triple-to-stop-at whole-world defuns-acc defthms-acc)
@@ -719,7 +735,7 @@
     (let* ((fn (first fns))
            (checkp (not (member-eq fn skip-fns)))
            (state (if checkp
-                      (progn$ (cw "Checking ~x0.~%" fn)
+                      (progn$ (cw "~s0 ~x1.~%" (describe-event-location fn (w state)) fn)
                               (lint-defun fn assume-guards suppress step-limit state))
                     state)))
       (lint-defuns (rest fns) assume-guards suppress skip-fns step-limit state))))
@@ -954,11 +970,11 @@
                   :mode :program))
   (if (atom names)
       state
-    (let* ((fn (first names))
-           (checkp (not (member-eq fn names-to-skip)))
+    (let* ((name (first names))
+           (checkp (not (member-eq name names-to-skip)))
            (state (if checkp
-                      (progn$ (cw "Checking ~x0.~%" fn)
-                              (lint-defthm fn ;assume-guards
+                      (progn$ (cw "~s0 ~x1.~%" (describe-event-location name (w state)) name)
+                              (lint-defthm name ;assume-guards
                                            suppress step-limit state))
                     state)))
       (lint-defthms (rest names) ;assume-guards
