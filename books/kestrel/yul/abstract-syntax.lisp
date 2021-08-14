@@ -262,6 +262,15 @@
                 (double-quote-p bool)))
   :pred literalp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist literal-list
+  :short "Fixtype of lists of literals."
+  :elt-type literal
+  :true-listp t
+  :elementp-of-nil nil
+  :pred literal-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes expressions/funcalls
@@ -397,3 +406,12 @@
     :tag :fundef
     :pred fundefp
     :measure (two-nats-measure (acl2-count x) 2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection swcase-list->value-list ((x swcase-listp))
+  :returns (lits literal-listp)
+  :short "Lift @(tsee swcase->value) to lists."
+  (swcase->value x)
+  ///
+  (fty::deffixequiv swcase-list->value-list))
