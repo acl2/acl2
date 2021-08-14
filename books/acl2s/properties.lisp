@@ -446,7 +446,7 @@ I don't need this?
           `(with-output
             ,@(if debug?
                   '(:on :all :off (proof-builder proof-tree) :gag-mode nil)
-                '(:off :all :on (summary) :summary-off (:other-than time) :gag-mode nil ))
+                '(:off :all :on (summary comment) :summary-off (:other-than time) :gag-mode nil ))
             (encapsulate
              nil
              (with-output
@@ -470,7 +470,7 @@ I don't need this?
              (trans-eval `(with-output
                            ,@(if debug?
                                  '(:on :all :off (proof-builder proof-tree) :gag-mode nil)
-                               '(:off :all :on (error)))
+                               '(:off :all :on (error comment)))
                            (test? ,guards
                              ,@(if debug?
                                    '()
@@ -543,7 +543,7 @@ I don't need this?
              timeout
              (trans-eval `(with-output
                            ;; :on :all :off (proof-builder proof-tree) :gag-mode nil
-                           :off :all :on (error)
+                           :off :all :on (error comment)
                            (test? ,guards
                              ;;
                              :print-cgen-summary nil :num-witnesses 0
@@ -682,7 +682,7 @@ I don't need this?
     `(with-output
       ;; ,@(and (not debug?) '(:off :all))
       ;;  We take are of debug? later
-      :off :all :on (summary) :summary-off (:other-than time)
+      :off :all :on (summary comment) :summary-off (:other-than time)
       :gag-mode ,(not debug?)
       :stack :push
       (encapsulate

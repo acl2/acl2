@@ -31,7 +31,7 @@ data last modified: [2014-08-06]
   (let* ((verbosep (let ((lst (member :verbose keys)))
                      (and lst (cadr lst))))
          (ctx 'register-data-constructor))
-    `(with-output ,@(and (not verbosep) '(:off :all)) :stack :push
+    `(with-output ,@(and (not verbosep) '(:off :all :on comment)) :stack :push
        (make-event
         (register-data-constructor-fn
          ',recog-constr-pair

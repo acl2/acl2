@@ -977,12 +977,12 @@ Example use
                    (and lst (cadr lst)))))
     `(with-output
       ,@(and (not verbosep)
-             '(:off :all :on (summary error) :summary-off (:other-than acl2::form acl2::time)))
+             '(:off :all :on (summary error comment) :summary-off (:other-than acl2::form acl2::time)))
       :gag-mode t :stack :push
       (encapsulate
        nil
        (with-output
-        ,@(and (not verbosep) '(:off :all))
+        ,@(and (not verbosep) '(:off :all :on comment))
         :gag-mode t
         :stack :push
         (make-event

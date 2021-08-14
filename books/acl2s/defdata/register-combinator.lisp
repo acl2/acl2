@@ -71,7 +71,7 @@ data last modified: [2014-08-06]
        (ctx 'register-user-combinator)
        ((unless (and (member :arity keys) (member :expansion keys)))
         (er hard? ctx "~| Keyword args arity, expansion are mandatory.~%")))
-    `(with-output ,@(and (not verbosep) '(:off :all)) :stack :push
+    `(with-output ,@(and (not verbosep) '(:off :all :on comment)) :stack :push
        (make-event
         (cons 'PROGN 
               (register-user-combinator-fn ',name ',keys ',ctx (w state)))))))

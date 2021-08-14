@@ -1083,7 +1083,7 @@ constant). In the latter return a lambda expression"
   (b* ((verbose (let ((lst (member :verbose args)))
                   (and lst (cadr lst)))))
     `(with-output
-      ,@(and (not verbose) '(:off :all))
+      ,@(and (not verbose) '(:off :all :on comment))
       :gag-mode t
       :stack :push
       (make-event
