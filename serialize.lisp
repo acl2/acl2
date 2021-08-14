@@ -40,8 +40,7 @@
 
 (defun serialize-write-fn (filename obj verbosep state)
   (declare (xargs :guard (and (stringp filename)
-                              (booleanp verbosep)
-                              (state-p state))
+                              (booleanp verbosep))
                   :stobjs state)
            (ignorable filename obj verbosep))
   #-acl2-loop-only
@@ -82,8 +81,7 @@
 
   (declare (xargs :guard (and (stringp filename)
                               (member hons-mode '(:never :always :smart))
-                              (booleanp verbosep)
-                              (state-p state))
+                              (booleanp verbosep))
                   :stobjs state)
            (ignorable filename hons-mode verbosep))
 
