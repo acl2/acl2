@@ -168,24 +168,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod varfuntable
-  :short "Fixtype of variable and function tables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This puts together a variable table and a function table into one entity.
-     This is used as the result of checking blocks,
-     which may update both variable and function tables."))
-  ((vars vartable)
-   (funs funtable))
-  :pred varfuntablep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defresult varfuntable "variable and function tables")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define check-identifier ((iden identifierp))
   :returns (wf? wellformed-resultp)
   :short "Check if an identifier is well-formed."
@@ -651,8 +633,7 @@
        the updated variable and function tables are discarded.")
      (xdoc::p
       "For a @('for') statement, we first check the initialization block.
-       We use the updated variable and function tables
-       to check the other components,
+       We use the updated variable table to check the other components,
        because the scope of the initialization block
        extends to the whole statement, as explained
        in [Yul: Specification of Yul: Scoping Rules].
@@ -663,8 +644,8 @@
     (statement-case
      stmt
      :block
-     (b* ((varfuntab? (check-block stmt.get vartab varvis funtab in-function))
-          ((when (errorp varfuntab?)) varfuntab?))
+     (b* ((vartab? (check-block stmt.get vartab varvis funtab in-function))
+          ((when (errorp vartab?)) vartab?))
        (vartable-fix vartab))
      :variable-single
      (check-variable-single stmt.name stmt.init vartab varvis funtab)
@@ -689,29 +670,27 @@
           ((when (errorp results?)) results?)
           ((unless (= results? 1))
            (error (list :multi-valued-if-test stmt.test)))
-          (varfuntab? (check-block stmt.body vartab varvis funtab in-function))
-          ((when (errorp varfuntab?)) varfuntab?))
+          (vartab? (check-block stmt.body vartab varvis funtab in-function))
+          ((when (errorp vartab?)) vartab?))
        (vartable-fix vartab))
      :for
-     (b* ((varfuntab-init?
+     (b* ((vartab-init?
            (check-block stmt.init vartab varvis funtab in-function))
-          ((when (errorp varfuntab-init?)) varfuntab-init?)
-          (vartab-init (varfuntable->vars varfuntab-init?))
-          (funtab-init (varfuntable->funs varfuntab-init?))
-          (results? (check-expression stmt.test vartab-init funtab-init))
+          ((when (errorp vartab-init?)) vartab-init?)
+          (results? (check-expression stmt.test vartab-init? funtab))
           ((when (errorp results?)) results?)
           ((unless (= results? 1))
            (error (list :multi-valued-for-test stmt.test)))
           (vartab-update? (check-block stmt.update
-                                       vartab-init
+                                       vartab-init?
                                        varvis
-                                       funtab-init
+                                       funtab
                                        in-function))
           ((when (errorp vartab-update?)) vartab-update?)
           (vartab-body? (check-block stmt.body
-                                     vartab-init
+                                     vartab-init?
                                      varvis
-                                     funtab-init
+                                     funtab
                                      in-function))
           ((when (errorp vartab-body?)) vartab-body?))
        (vartable-fix vartab))
@@ -735,7 +714,7 @@
     (xdoc::topstring
      (xdoc::p
       "We check the statements, one after the other,
-       threading through the set of accessible variables."))
+       threading through the variable table."))
     (b* (((when (endp stmts)) (vartable-fix vartab))
          (vartab? (check-statement (car stmts)
                                    vartab
@@ -755,14 +734,14 @@
                        (varvis identifier-setp)
                        (funtab funtablep)
                        (in-function booleanp))
-    :returns (varfuntab? varfuntable-resultp)
+    :returns (vartab? vartable-resultp)
     :short "Check if a block is well-formed."
     :long
     (xdoc::topstring
      (xdoc::p
-      "If successful, return possibly updated variable and function tables.
-       These are normally discarded by the caller,
-       because their updates are almost always only visible in the block itself,
+      "If successful, return a possibly updated variable table.
+       This is normally discarded by the caller,
+       because the updates are almost always only visible in the block itself,
        except for the initialization block of a @('for') statement,
        which is treated specially as explained in
        [Yul: Specification of Yul: Scoping Rules].")
@@ -781,7 +760,7 @@
                                         funtab?
                                         in-function))
          ((when (errorp vartab?)) vartab?))
-      (make-varfuntable :vars vartab? :funs funtab?))
+      vartab?)
     :measure (block-count block))
 
   :verify-guards nil ; done below
