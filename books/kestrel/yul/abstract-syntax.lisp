@@ -345,7 +345,7 @@
            (body block)))
     (:switch ((target expression)
               (cases swcase-list)
-              (default block)))
+              (default block-option)))
     (:leave ())
     (:break ())
     (:continue ())
@@ -366,6 +366,12 @@
     ((statements statement-list))
     :pred blockp
     :measure (two-nats-measure (acl2-count x) 1))
+
+  (fty::defoption block-option
+    block
+    :short "Fixtye of optional blocks."
+    :pred block-optionp
+    :measure (two-nats-measure (acl2-count x) 2))
 
   (fty::defprod swcase
     :short "Fixtype of cases (of switch statements)."
