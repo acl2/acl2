@@ -150,7 +150,8 @@
      but it is not accessible in
      function definitions in the block or sub-blocks.
      Variables that are visible but inaccessible are represented
-     not in the variable tables defined here."))
+     not in the variable tables defined here;
+     see @(tsee add-var)."))
   :elt-type identifier
   :elementp-of-nil nil
   :pred vartablep)
@@ -172,6 +173,52 @@
   :returns (yes/no booleanp)
   :short "Check if a variable is in a variable table."
   (set::in (identifier-fix var) (vartable-fix vartab))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-var ((var identifierp) (vartab vartablep) (varvis identifier-setp))
+  :returns (vartab? vartable-resultp)
+  :short "Add a variable to a variable table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Besides the variable and the variable table,
+     this ACL2 function also takes as argument the set of variables
+     that are visible but not accessible.
+     The reason is that a new variable is allowed only if
+     it does not shadow any visible variable, whether accessible or not.
+     All of the variables in @('vartab') and @('varvis')
+     are actually visible (not only the ones in @('varvis')),
+     but only the ones in @('vartab') are also accessible,
+     while the ones in @('varvis') are visible but not accessible."))
+  (b* ((var (identifier-fix var))
+       (vartab (vartable-fix vartab))
+       (varvis (identifier-set-fix varvis)))
+    (if (or (set::in var vartab)
+            (set::in var varvis))
+        (error (list :duplicate-variable var))
+      (set::insert var vartab)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-vars ((vars identifier-listp)
+                  (vartab vartablep)
+                  (varvis identifier-setp))
+  :returns (vartab? vartable-resultp)
+  :short "Add (a list of) variables to a variable table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variables are added, one after the other.
+     Duplicates in the list will cause an error.")
+   (xdoc::p
+    "This lifts @(tsee add-var) to lists."))
+  (b* (((when (endp vars)) (vartable-fix vartab))
+       (vartab? (add-var (car vars) vartab varvis))
+       ((when (errorp vartab?)) vartab?))
+    (add-vars (cdr vars) vartab? varvis))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -453,15 +500,14 @@
        (init (expression-option-fix init))
        (wf? (check-identifier name))
        ((when (errorp wf?)) wf?)
-       ((when (or (set::in name (vartable-fix vartab))
-                  (set::in name (identifier-set-fix varvis))))
-        (error (list :var-redeclare name)))
-       ((when (not init)) (set::insert name (vartable-fix vartab)))
+       (vartab? (add-var name vartab varvis))
+       ((when (errorp vartab?)) vartab?)
+       ((when (not init)) vartab?)
        (results? (check-expression init vartab funtab))
        ((when (errorp results?)) results?)
        ((unless (= results? 1))
         (error (list :declare-single-var-mismatch name results?))))
-    (set::insert name (vartable-fix vartab)))
+    vartab?)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -489,24 +535,16 @@
        (init (funcall-option-fix init))
        (wf? (check-identifier-list names))
        ((when (errorp wf?)) wf?)
-       ((when (or (not (set::empty (set::intersect
-                                    (set::mergesort names)
-                                    (vartable-fix vartab))))
-                  (not (set::empty (set::intersect
-                                    (set::mergesort names)
-                                    (identifier-set-fix varvis))))))
-        (error (list :vars-redeclare names)))
-       ((unless (no-duplicatesp-equal names))
-        (error (list :duplicate-var-declare names)))
+       (vartab? (add-vars names vartab varvis))
+       ((when (errorp vartab?)) vartab?)
        ((unless (>= (len names) 2))
         (error (list :declare-zero-one-var names)))
-       ((when (not init)) (set::union (set::mergesort names)
-                                      (vartable-fix vartab)))
+       ((when (not init)) vartab?)
        (results? (check-funcall init vartab funtab))
        ((when (errorp results?)) results?)
        ((unless (= results? (len names)))
         (error (list :declare-multi-var-mismatch names results?))))
-    (set::union (set::mergesort names) (vartable-fix vartab)))
+    vartab?)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -593,13 +631,7 @@
      a variable table for visibile and accessible variable @('vartab'),
      a set of visible but inaccessible variables @('varvis'),
      and a function table @('funtab').
-     The notions of `visible' and `accessible' are described
-     in [Yul: Specification of Yul: Scoping Rules],
-     and discussed in @(tsee vartable).
-     Thus, all of the variables in @('vartab') and @('varvis')
-     are actually visible (not only the ones in @('varvis')),
-     but only the ones in @('vartab') are also accessible,
-     while the ones in @('varvis') are visible but not accessible.")
+     Also see @(tsee add-var) about @('vartab') and @('varvis').")
    (xdoc::p
     "In order to check that a @('leave') statement is only used in a function,
      according to [Yul: Specification of Yul: Restrictions on the Grammar],
