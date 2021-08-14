@@ -609,12 +609,18 @@
      Thus, all of the variables in @('vartab') and @('varvis')
      are actually visible (not only the ones in @('varvis')),
      but only the ones in @('vartab') are also accessible,
-     while the ones in @('varvis') are visible but not accessible."))
+     while the ones in @('varvis') are visible but not accessible.")
+   (xdoc::p
+    "In order to check that a @('leave') statement is only used in a function,
+     according to [Yul: Specification of Yul: Restrictions on the Grammar],
+     the context also includes a flag indicating
+     whether we are in a function or not."))
 
   (define check-statement ((stmt statementp)
                            (vartab vartablep)
                            (varvis identifier-setp)
-                           (funtab funtablep))
+                           (funtab funtablep)
+                           (in-function booleanp))
     :returns (vartab? vartable-resultp)
     :short "Check if a statement is well-formed."
     :long
@@ -650,11 +656,14 @@
        because the scope of the initialization block
        extends to the whole statement, as explained
        in [Yul: Specification of Yul: Scoping Rules].
-       The test must return one result."))
+       The test must return one result.")
+     (xdoc::p
+      "For a @('leave') statement,
+       we ensure that we are in a function, as indicated by the flag."))
     (statement-case
      stmt
      :block
-     (b* ((varfuntab? (check-block stmt.get vartab varvis funtab))
+     (b* ((varfuntab? (check-block stmt.get vartab varvis funtab in-function))
           ((when (errorp varfuntab?)) varfuntab?))
        (vartable-fix vartab))
      :variable-single
@@ -680,11 +689,12 @@
           ((when (errorp results?)) results?)
           ((unless (= results? 1))
            (error (list :multi-valued-if-test stmt.test)))
-          (varfuntab? (check-block stmt.body vartab varvis funtab))
+          (varfuntab? (check-block stmt.body vartab varvis funtab in-function))
           ((when (errorp varfuntab?)) varfuntab?))
        (vartable-fix vartab))
      :for
-     (b* ((varfuntab-init? (check-block stmt.init vartab varvis funtab))
+     (b* ((varfuntab-init?
+           (check-block stmt.init vartab varvis funtab in-function))
           ((when (errorp varfuntab-init?)) varfuntab-init?)
           (vartab-init (varfuntable->vars varfuntab-init?))
           (funtab-init (varfuntable->funs varfuntab-init?))
@@ -695,25 +705,56 @@
           (vartab-update? (check-block stmt.update
                                        vartab-init
                                        varvis
-                                       funtab-init))
+                                       funtab-init
+                                       in-function))
           ((when (errorp vartab-update?)) vartab-update?)
           (vartab-body? (check-block stmt.body
                                      vartab-init
                                      varvis
-                                     funtab-init))
+                                     funtab-init
+                                     in-function))
           ((when (errorp vartab-body?)) vartab-body?))
        (vartable-fix vartab))
      :switch (error :todo)
-     :leave (error :todo)
+     :leave (if in-function
+                (vartable-fix vartab)
+              (error (list :leave-outside-function)))
      :break (error :todo)
      :continue (error :todo)
      :fundef (error :todo))
     :measure (statement-count stmt))
 
+  (define check-statement-list ((stmts statement-listp)
+                                (vartab vartablep)
+                                (varvis identifier-setp)
+                                (funtab funtablep)
+                                (in-function booleanp))
+    :returns (vartab? vartable-resultp)
+    :short "Check if a list of statements is well-formed."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check the statements, one after the other,
+       threading through the set of accessible variables."))
+    (b* (((when (endp stmts)) (vartable-fix vartab))
+         (vartab? (check-statement (car stmts)
+                                   vartab
+                                   varvis
+                                   funtab
+                                   in-function))
+         ((when (errorp vartab?)) vartab?))
+      (check-statement-list (cdr stmts)
+                            vartab?
+                            varvis
+                            funtab
+                            in-function))
+    :measure (statement-list-count stmts))
+
   (define check-block ((block blockp)
                        (vartab vartablep)
                        (varvis identifier-setp)
-                       (funtab funtablep))
+                       (funtab funtablep)
+                       (in-function booleanp))
     :returns (varfuntab? varfuntable-resultp)
     :short "Check if a block is well-formed."
     :long
@@ -734,27 +775,14 @@
     (b* ((stmts (block->statements block))
          (funtab? (add-functions-in-statement-list stmts funtab))
          ((when (errorp funtab?)) funtab?)
-         (vartab? (check-statement-list stmts vartab varvis funtab?))
+         (vartab? (check-statement-list stmts
+                                        vartab
+                                        varvis
+                                        funtab?
+                                        in-function))
          ((when (errorp vartab?)) vartab?))
       (make-varfuntable :vars vartab? :funs funtab?))
     :measure (block-count block))
-
-  (define check-statement-list ((stmts statement-listp)
-                                (vartab vartablep)
-                                (varvis identifier-setp)
-                                (funtab funtablep))
-    :returns (vartab? vartable-resultp)
-    :short "Check if a list of statements is well-formed."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We check the statements, one after the other,
-       threading through the set of accessible variables."))
-    (b* (((when (endp stmts)) (vartable-fix vartab))
-         (vartab? (check-statement (car stmts) vartab varvis funtab))
-         ((when (errorp vartab?)) vartab?))
-      (check-statement-list (cdr stmts) vartab? varvis funtab))
-    :measure (statement-list-count stmts))
 
   :verify-guards nil ; done below
   ///
