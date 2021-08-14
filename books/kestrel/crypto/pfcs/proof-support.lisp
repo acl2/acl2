@@ -50,16 +50,17 @@
      to reason about parameterized PFCS.")
    (xdoc::p
     "However, the (deeply embedded) semantics of PFCS is somewhat complicated,
-     defined in terms of existentially quantifier proof trees and their execution.
+     defined in terms of
+     existentially quantified proof trees and their execution.
      The reason for that complication is discussed
      in @(see semantics-deeply-embedded).
      The complication extends to attempts to reason about PFCS
      (whether parameterized or not)
      directly in terms of the defined semantics.")
    (xdoc::p
-    "Fortunately, it is possible to prove theorems
+    "Fortunately, it is possible to prove rules
      that facilitate reasoning with the deeply embedded semantics.
-     The rules let us avoid dealing explcitly with proof trees.
+     These rules let us avoid dealing explcitly with proof trees.
      These rules are work in progress."))
   :order-subtopics t
   :default-parent t)
@@ -71,7 +72,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "That it, if running a list of proof tres is succesful,
+    "That is, if running a list of proof tres is successful,
      the result must be an assertion of a list of constraints."))
   (b* ((outcome (exec-proof-tree-list ptrees sys p)))
     (implies (proof-outcome-case outcome :assertion)
@@ -169,7 +170,3 @@
                    :left (constraint-equal->left constr)
                    :right (constraint-equal->right constr))))
      :enable exec-proof-tree)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; TODO: add proof rules
