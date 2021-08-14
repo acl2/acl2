@@ -810,7 +810,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         `(encapsulate
           ()
           (with-output
-           :off :all :on comment
+           :off :all
            (make-event
             '(:OR ,(wrap-test-skip
                     skip-body-contractsp
@@ -819,7 +819,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
       `(encapsulate
         ()
         (with-output
-         :off :all :on (error comment)
+         :off :all :on (error)
          (verify-guards ,name :guard-debug t :hints ,hints))))))
 
 ; Sometimes counterexample generation winds up trying to evaluate a
@@ -1151,18 +1151,18 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
            `(encapsulate
              ()
              (with-output
-              :off :all :on (error comment)
+              :off :all :on (error)
               (skip-proofs ,defun))))
           (termination-strictp
            `(encapsulate
              ()
              (with-output
-              :off :all :on (error comment)
+              :off :all :on (error)
               ,defun)))
           (t `(encapsulate
                ()
                (with-output
-                :off :all :on comment
+                :off :all
                 (encapsulate
                  ()
                  (local (me-assign acl2::ccg-inhibit-output-lst
