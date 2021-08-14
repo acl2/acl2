@@ -216,6 +216,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define make-vars-inaccessible ((vartab vartablep) (varvis identifier-setp))
+  :returns (new-varvis identifier-setp)
+  :short "Add the variables from the variable table
+          to the set of visible but inaccessible variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee add-var) for a description of
+     what @('vartab') and @('varvis') represent.
+     This is used just before checking a function definition.
+     Since a function body cannot access
+     variables declared outside the function,
+     but those variables are still visible and cannot be shadowed,
+     we add the variables in the variable table
+     to the set of visible but inaccessible variables."))
+  (set::union (vartable-fix vartab) (identifier-set-fix varvis))
+  :prepwork
+  ((defrulel lemma
+     (implies (vartablep x)
+              (identifier-setp x))
+     :enable (identifier-setp vartablep)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-identifier ((iden identifierp))
   :returns (wf? wellformed-resultp)
   :short "Check if an identifier is well-formed."
@@ -728,7 +753,14 @@
      (xdoc::p
       "For a function definition, we ensure that we are not
        in a loop initialization block, as indicated by the flag.
-       We also need to do more than that, which is planned to happen soon."))
+       Since a function body cannot access
+       variables declared outside the function,
+       we make the variables in the variable table inaccessible,
+       and then we use a separate mutually recursive ACL2 function
+       that checks function definition.
+       That ACL2 function returns nothing in case of success,
+       so here we return the outside variable table unchanged:
+       a function definition does not modify the variable table."))
     (statement-case
      stmt
      :block
@@ -818,7 +850,10 @@
      :fundef
      (if in-loop-init
          (error :fundef-in-loop-init)
-       (error :todo)))
+       (b* ((varvis (make-vars-inaccessible vartab varvis))
+            (wf? (check-fundef stmt.get varvis funtab))
+            ((when (errorp wf?)) wf?))
+         (vartable-fix vartab))))
     :measure (statement-count stmt))
 
   (define check-statement-list ((stmts statement-listp)
@@ -890,6 +925,54 @@
          ((when (errorp vartab?)) vartab?))
       vartab?)
     :measure (block-count block))
+
+  (define check-fundef ((fundef fundefp)
+                        (varvis identifier-setp)
+                        (funtab funtablep))
+    :returns (wf? wellformed-resultp)
+    :short "Check if a function definition is well-formed."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This ACL2 function takes as input less contextual information
+       than its mutually recursive companions.
+       The reason is that such contextual information is always set
+       when a funtion definition is checked.
+       In particular, as explained in @(tsee make-vars-inaccessible),
+       there is no variable table to pass.
+       The flags saying whether we are
+       in a function
+       or in a loop initialization block
+       or in a loop body block
+       are also not passed because it is always the case that
+       we are in a function and we are not in any loop block initially.")
+     (xdoc::p
+      "This ACL2 function does not need to return anything.
+       Any variable table internal to the function's body
+       does not surface outside the function's body.
+       Also recall that the function definition itself
+       is added to the function table prior to checking it;
+       see @(tsee add-functions-in-statement-list).")
+     (xdoc::p
+      "To check the function definition, we construct an initial variable table
+       from the inputs and outputs of the function.
+       Note that the construction will detect and reject any duplicates.
+       Then we check the function's body."))
+    (b* (((fundef fundef) fundef)
+         (vartab? (add-vars (append fundef.inputs fundef.outputs)
+                            nil
+                            varvis))
+         ((when (errorp vartab?)) vartab?)
+         (vartab? (check-block fundef.body
+                               vartab?
+                               varvis
+                               funtab
+                               t
+                               nil
+                               nil))
+         ((when (errorp vartab?)) vartab?))
+      :wellformed)
+    :measure (fundef-count fundef))
 
   :verify-guards nil ; done below
   ///
