@@ -168,6 +168,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-var ((var identifierp) (vartab vartablep))
+  :returns (yes/no booleanp)
+  :short "Check if a variable is in a variable table."
+  (set::in (identifier-fix var) (vartable-fix vartab))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-identifier ((iden identifierp))
   :returns (wf? wellformed-resultp)
   :short "Check if an identifier is well-formed."
@@ -236,7 +244,7 @@
        ((unless (endp (cdr idens)))
         (error (list :non-singleton-path (path-fix path))))
        (var (car idens))
-       ((unless (set::in var (vartable-fix vartab)))
+       ((unless (check-var var vartab))
         (error (list :variable-not-found var))))
     :wellformed)
   :hooks (:fix))
