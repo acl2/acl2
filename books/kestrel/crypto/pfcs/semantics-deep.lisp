@@ -529,4 +529,28 @@
           (and (proof-treep ptree)
                (equal (exec-proof-tree ptree sys p)
                       (proof-outcome-assertion
-                       (make-assertion-constraint :asg asg :constr constr))))))
+                       (make-assertion-constraint :asg asg
+                                                  :constr constr))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk constraint-list-satp ((asg assignmentp)
+                                 (constrs constraint-listp)
+                                 (sys systemp)
+                                 (p rtl::primep))
+  :guard (assignment-for-prime-p asg p)
+  :returns (yes/no booleanp)
+  :short "Semantic function saying if an assignment
+          satisfies a list of constraints,
+          given a system of constraints and a prime field."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee constraint-satp),
+     but for lists of constraints."))
+  (exists (ptree)
+          (and (proof-treep ptree)
+               (equal (exec-proof-tree ptree sys p)
+                      (proof-outcome-assertion
+                       (make-assertion-constraints :asg asg
+                                                   :constrs constrs))))))
