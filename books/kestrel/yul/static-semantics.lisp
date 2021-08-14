@@ -628,7 +628,7 @@
        but those changes do not surface outside those blocks.
        Note also that the function table is not updated
        while checking function definition statements:
-       as explained in @(tsee add-functions-in-block),
+       as explained in @(tsee add-functions-in-statement-list),
        the function definitions in a block are collected,
        and used to extend the function table,
        before processing the statements in a block.")
@@ -642,10 +642,10 @@
       "For an @('if') statement, we check test, which must return one result,
        and we check the body block.
        Since the body is a block,
-       the updated set of accessible variables is discarded.")
+       the updated variable and function tables are discarded.")
      (xdoc::p
       "For a @('for') statement, we first check the initialization block.
-       We use the updated set of accessible variables
+       We use the updated variable and function tables
        to check the other components,
        because the scope of the initialization block
        extends to the whole statement, as explained
@@ -654,8 +654,8 @@
     (statement-case
      stmt
      :block
-     (b* ((vartab? (check-block stmt.get vartab varvis funtab))
-          ((when (errorp vartab?)) vartab?))
+     (b* ((varfuntab? (check-block stmt.get vartab varvis funtab))
+          ((when (errorp varfuntab?)) varfuntab?))
        (vartable-fix vartab))
      :variable-single
      (check-variable-single stmt.name stmt.init vartab varvis funtab)
@@ -680,25 +680,27 @@
           ((when (errorp results?)) results?)
           ((unless (= results? 1))
            (error (list :multi-valued-if-test stmt.test)))
-          (vartab? (check-block stmt.body vartab varvis funtab))
-          ((when (errorp vartab?)) vartab?))
+          (varfuntab? (check-block stmt.body vartab varvis funtab))
+          ((when (errorp varfuntab?)) varfuntab?))
        (vartable-fix vartab))
      :for
-     (b* ((vartab-init? (check-block stmt.init vartab varvis funtab))
-          ((when (errorp vartab-init?)) vartab-init?)
-          (results? (check-expression stmt.test vartab-init? funtab))
+     (b* ((varfuntab-init? (check-block stmt.init vartab varvis funtab))
+          ((when (errorp varfuntab-init?)) varfuntab-init?)
+          (vartab-init (varfuntable->vars varfuntab-init?))
+          (funtab-init (varfuntable->funs varfuntab-init?))
+          (results? (check-expression stmt.test vartab-init funtab-init))
           ((when (errorp results?)) results?)
           ((unless (= results? 1))
            (error (list :multi-valued-for-test stmt.test)))
           (vartab-update? (check-block stmt.update
-                                       vartab-init?
+                                       vartab-init
                                        varvis
-                                       funtab))
+                                       funtab-init))
           ((when (errorp vartab-update?)) vartab-update?)
           (vartab-body? (check-block stmt.body
-                                     vartab-init?
+                                     vartab-init
                                      varvis
-                                     funtab))
+                                     funtab-init))
           ((when (errorp vartab-body?)) vartab-body?))
        (vartable-fix vartab))
      :switch (error :todo)
@@ -712,17 +714,29 @@
                        (vartab vartablep)
                        (varvis identifier-setp)
                        (funtab funtablep))
-    :returns (vartab? vartable-resultp)
+    :returns (varfuntab? varfuntable-resultp)
     :short "Check if a block is well-formed."
     :long
     (xdoc::topstring
      (xdoc::p
-      "For now we just check the statements in the block,
-       but this will be extended soon."))
-    (check-statement-list (block->statements block)
-                          vartab
-                          varvis
-                          funtab)
+      "If successful, return possibly updated variable and function tables.
+       These are normally discarded by the caller,
+       because their updates are almost always only visible in the block itself,
+       except for the initialization block of a @('for') statement,
+       which is treated specially as explained in
+       [Yul: Specification of Yul: Scoping Rules].")
+     (xdoc::p
+      "As explained in @(tsee add-functions-in-statement-list),
+       all the functions defined in a block are visible in the whole block,
+       so we first collect them from the statements that form the block,
+       updating the function table with them,
+       and then we check the statements that form the block."))
+    (b* ((stmts (block->statements block))
+         (funtab? (add-functions-in-statement-list stmts funtab))
+         ((when (errorp funtab?)) funtab?)
+         (vartab? (check-statement-list stmts vartab varvis funtab?))
+         ((when (errorp vartab?)) vartab?))
+      (make-varfuntable :vars vartab? :funs funtab?))
     :measure (block-count block))
 
   (define check-statement-list ((stmts statement-listp)
