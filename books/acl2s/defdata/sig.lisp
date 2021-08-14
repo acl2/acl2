@@ -1071,7 +1071,7 @@ constant). In the latter return a lambda expression"
         (and cgenp
              '((LOCAL (ACL2S::ACL2S-DEFAULTS :SET ACL2S::TESTING-ENABLED nil))))))
     `(WITH-OUTPUT
-      :on (acl2::summary acl2::error)
+      :on (acl2::summary acl2::error acl2::comment)
       :SUMMARY-OFF (:OTHER-THAN ACL2::FORM)
       (ENCAPSULATE
        NIL
