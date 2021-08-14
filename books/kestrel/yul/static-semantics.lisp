@@ -748,6 +748,24 @@
        extends to the whole statement, as explained
        in [Yul: Specification of Yul: Scoping Rules].")
      (xdoc::p
+      "For a @('switch') statement,
+       we check the expression, ensuring it returns a single result.
+       We ensure that ther is at least one (literal or default) case
+       [Yul: Specification of Yul: Restrictions on the Grammar].
+       The documentation also requires that the default case be absent
+       when the literal cases are exhaustive;
+       but that requires knowledge of the type of the target expression,
+       which for now we do not have, so we leave out that check for now.
+       We also need to check that all the literals are distinct,
+       which could be taken to mean as
+       either syntactically or semantically distinct:
+       for instance, the literals @('1') and @('0x1') are
+       syntactically different but semantically equal.
+       For now we check syntactic difference,
+       but we may need to tighten that to semantic difference.
+       Every (literal or default) block is then checked,
+       along with the literals.")
+     (xdoc::p
       "For a @('leave') statement,
        we ensure that we are in a function, as indicated by the flag.")
      (xdoc::p
@@ -835,10 +853,20 @@
                                      t))
           ((when (errorp vartab-body?)) vartab-body?))
        (vartable-fix vartab))
-     :switch (error :todo)
-     :leave (if in-function
-                (vartable-fix vartab)
-              (error (list :leave-outside-function)))
+     :switch
+     (b* ((results? (check-expression stmt.target vartab funtab))
+          ((when (errorp results?)) results?)
+          ((unless (= results? 1))
+           (error (list :multi-valued-switch-target stmt.target)))
+          ((unless (or (consp stmt.cases) stmt.default))
+           (error (list :no-cases-in-switch (statement-fix stmt))))
+          ((unless (no-duplicatesp-equal (swcase-list->value-list stmt.cases)))
+           (error (list :duplicate-switch-cases (statement-fix stmt)))))
+       (error :todo-continue))
+     :leave
+     (if in-function
+         (vartable-fix vartab)
+       (error (list :leave-outside-function)))
      :break
      (if in-loop-body
          (vartable-fix vartab)
@@ -925,6 +953,65 @@
          ((when (errorp vartab?)) vartab?))
       vartab?)
     :measure (block-count block))
+
+  (define check-swcase ((case swcasep)
+                        (vartab vartablep)
+                        (varvis identifier-setp)
+                        (funtab funtablep)
+                        (in-function booleanp)
+                        (in-loop-init booleanp)
+                        (in-loop-body booleanp))
+    :returns (wf? wellformed-resultp)
+    :short "Check if a case is well-formed."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check its literal and its block.
+       We do not need to return anything in case of success."))
+    (b* (((swcase case) case)
+         (wf? (check-literal case.value))
+         ((when (errorp wf?)) wf?)
+         (vartab? (check-block case.body
+                               vartab
+                               varvis
+                               funtab
+                               in-function
+                               in-loop-init
+                               in-loop-body))
+         ((when (errorp vartab?)) vartab?))
+      :wellformed)
+    :measure (swcase-count case))
+
+  (define check-swcase-list ((cases swcase-listp)
+                             (vartab vartablep)
+                             (varvis identifier-setp)
+                             (funtab funtablep)
+                             (in-function booleanp)
+                             (in-loop-init booleanp)
+                             (in-loop-body booleanp))
+    :returns (wf? wellformed-resultp)
+    :short "Check if a list of cases is well-formed."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We just check each case in turn."))
+    (b* (((when (endp cases)) :wellformed)
+         (wf? (check-swcase (car cases)
+                            vartab
+                            varvis
+                            funtab
+                            in-function
+                            in-loop-init
+                            in-loop-body))
+         ((when (errorp wf?)) wf?))
+      (check-swcase-list (cdr cases)
+                         vartab
+                         varvis
+                         funtab
+                         in-function
+                         in-loop-init
+                         in-loop-body))
+    :measure (swcase-list-count cases))
 
   (define check-fundef ((fundef fundefp)
                         (varvis identifier-setp)
