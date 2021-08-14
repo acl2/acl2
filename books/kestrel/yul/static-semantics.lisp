@@ -596,13 +596,40 @@
     "In order to check that a @('leave') statement is only used in a function,
      according to [Yul: Specification of Yul: Restrictions on the Grammar],
      the context also includes a flag indicating
-     whether we are in a function or not."))
+     whether we are in a function or not.
+     This flag may be initially unset
+     (e.g. in the top-level code block of a Yul object
+     [Yul: Specification of Yul Object]),
+     but then once it is set, it stays set as we go into the code.")
+   (xdoc::p
+    "We also need a flag indicating whether
+     we are in a loop's initialization block.
+     This is so we can ensure that no functions are defined in the block
+     [Yul: Specification of Yul: Restrictions on the Grammar].
+     The flag may be initially unset
+     (e.g. in the top-level code block of a Yul object
+     [Yul: Specification of Yul Object]),
+     but it is set as soon as we go into a loop initialization block.
+     From there, it always stays set as we go more inside the code;
+     even if we encounter an inner loop,
+     and eventually we go into its update or body block,
+     we are still in the initialization block of the outer loop,
+     and still no function definitions are allowed,
+     and thus we need to keep that flag set.
+     Note that, before going into a function definition's body block,
+     we ensure that the flag is unset
+     (i.e. we ensure that no functions are defined in the block),
+     so we preserve its value also in this case.
+     In summary, the flag is unconditionally set
+     when entering a loop initialization block,
+     and always preserved whenever we go into inner blocks."))
 
   (define check-statement ((stmt statementp)
                            (vartab vartablep)
                            (varvis identifier-setp)
                            (funtab funtablep)
-                           (in-function booleanp))
+                           (in-function booleanp)
+                           (in-loop-init booleanp))
     :returns (vartab? vartable-resultp)
     :short "Check if a statement is well-formed."
     :long
@@ -636,15 +663,23 @@
        We use the updated variable table to check the other components,
        because the scope of the initialization block
        extends to the whole statement, as explained
-       in [Yul: Specification of Yul: Scoping Rules].
-       The test must return one result.")
+       in [Yul: Specification of Yul: Scoping Rules].")
      (xdoc::p
       "For a @('leave') statement,
-       we ensure that we are in a function, as indicated by the flag."))
+       we ensure that we are in a function, as indicated by the flag.")
+     (xdoc::p
+      "For a function definition, we ensure that we are not
+       in a loop initialization block, as indicated by the flag.
+       We also need to do more than that, which is planned to happen soon."))
     (statement-case
      stmt
      :block
-     (b* ((vartab? (check-block stmt.get vartab varvis funtab in-function))
+     (b* ((vartab? (check-block stmt.get
+                                vartab
+                                varvis
+                                funtab
+                                in-function
+                                in-loop-init))
           ((when (errorp vartab?)) vartab?))
        (vartable-fix vartab))
      :variable-single
@@ -670,12 +705,21 @@
           ((when (errorp results?)) results?)
           ((unless (= results? 1))
            (error (list :multi-valued-if-test stmt.test)))
-          (vartab? (check-block stmt.body vartab varvis funtab in-function))
+          (vartab? (check-block stmt.body
+                                vartab
+                                varvis
+                                funtab
+                                in-function
+                                in-loop-init))
           ((when (errorp vartab?)) vartab?))
        (vartable-fix vartab))
      :for
-     (b* ((vartab-init?
-           (check-block stmt.init vartab varvis funtab in-function))
+     (b* ((vartab-init? (check-block stmt.init
+                                     vartab
+                                     varvis
+                                     funtab
+                                     in-function
+                                     t))
           ((when (errorp vartab-init?)) vartab-init?)
           (results? (check-expression stmt.test vartab-init? funtab))
           ((when (errorp results?)) results?)
@@ -685,13 +729,15 @@
                                        vartab-init?
                                        varvis
                                        funtab
-                                       in-function))
+                                       in-function
+                                       in-loop-init))
           ((when (errorp vartab-update?)) vartab-update?)
           (vartab-body? (check-block stmt.body
                                      vartab-init?
                                      varvis
                                      funtab
-                                     in-function))
+                                     in-function
+                                     in-loop-init))
           ((when (errorp vartab-body?)) vartab-body?))
        (vartable-fix vartab))
      :switch (error :todo)
@@ -700,14 +746,18 @@
               (error (list :leave-outside-function)))
      :break (error :todo)
      :continue (error :todo)
-     :fundef (error :todo))
+     :fundef
+     (if in-loop-init
+         (error :fundef-in-loop-init)
+       (error :todo)))
     :measure (statement-count stmt))
 
   (define check-statement-list ((stmts statement-listp)
                                 (vartab vartablep)
                                 (varvis identifier-setp)
                                 (funtab funtablep)
-                                (in-function booleanp))
+                                (in-function booleanp)
+                                (in-loop-init booleanp))
     :returns (vartab? vartable-resultp)
     :short "Check if a list of statements is well-formed."
     :long
@@ -720,20 +770,23 @@
                                    vartab
                                    varvis
                                    funtab
-                                   in-function))
+                                   in-function
+                                   in-loop-init))
          ((when (errorp vartab?)) vartab?))
       (check-statement-list (cdr stmts)
                             vartab?
                             varvis
                             funtab
-                            in-function))
+                            in-function
+                            in-loop-init))
     :measure (statement-list-count stmts))
 
   (define check-block ((block blockp)
                        (vartab vartablep)
                        (varvis identifier-setp)
                        (funtab funtablep)
-                       (in-function booleanp))
+                       (in-function booleanp)
+                       (in-loop-init booleanp))
     :returns (vartab? vartable-resultp)
     :short "Check if a block is well-formed."
     :long
@@ -758,7 +811,8 @@
                                         vartab
                                         varvis
                                         funtab?
-                                        in-function))
+                                        in-function
+                                        in-loop-init))
          ((when (errorp vartab?)) vartab?))
       vartab?)
     :measure (block-count block))
