@@ -524,7 +524,13 @@
           :fail (proof-list-outcome-fail)
           :assertions
           (proof-list-outcome-assertions (cons outcome.get outcome1.get))))))
-    :measure (proof-tree-list-count ptrees))
+    :measure (proof-tree-list-count ptrees)
+    ///
+
+    (defret len-of-exec-proof-tree-list
+      (implies (proof-list-outcome-case outcome :assertions)
+               (equal (len (proof-list-outcome-assertions->get outcome))
+                      (len ptrees)))))
 
   :verify-guards nil ; done below
   ///
