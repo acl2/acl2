@@ -761,8 +761,9 @@
        either syntactically or semantically distinct:
        for instance, the literals @('1') and @('0x1') are
        syntactically different but semantically equal.
-       For now we check syntactic difference,
-       but we may need to tighten that to semantic difference.
+       The Yul team has clarified that it should be semantic difference.
+       For now we check syntactic difference for simplicity,
+       but we plan to tighten that to check semantic difference.
        Every (literal or default) block is then checked,
        along with the literals.")
      (xdoc::p
