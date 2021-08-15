@@ -87,3 +87,18 @@
                             1000 ; 435 should suffice
                             state)
         '(equal (append (append x y) z) (append x y z))))
+
+(must-succeed-pi (prove$ t))
+
+(must-succeed-pi (er-let* ((val (prove$ '(equal x y))))
+                   (value (null val))))
+
+; Error: bad hints
+(must-fail (prove$ t :hints 17))
+
+; Error: bad term
+(must-fail (prove$ '(t)))
+
+(must-succeed-pi (er-let* ((val (prove$ '(t)
+                                        :with-translate-error nil)))
+                   (value (null val))))
