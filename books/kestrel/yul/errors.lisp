@@ -110,4 +110,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-b*-binder ok
+  :short "@(tsee b*) binder for checking and propagating errors."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is somewhat similar to @(tsee acl2::patind-er),
+     but it is for values of "
+    (xdoc::seetopic "defresult" "result types")
+    ". It checks whether the bound expresion is an error,
+     returning the error if the check succeeds.
+     Otherwise, it proceeds with the rest of the computation."))
+  :decls
+  ((declare (xargs :guard (acl2::destructure-guard ok args acl2::forms 1))))
+  :body
+  `(b* ((patbinder-ok-fresh-variable-for-result ,(car acl2::forms))
+        ((when (errorp patbinder-ok-fresh-variable-for-result))
+         patbinder-ok-fresh-variable-for-result)
+        (,(car args) patbinder-ok-fresh-variable-for-result))
+     ,acl2::rest-expr))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defresult nat "natural numbers")
