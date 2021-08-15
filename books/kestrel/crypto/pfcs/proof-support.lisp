@@ -12,6 +12,8 @@
 
 (include-book "semantics-deep")
 
+(local (in-theory (disable rtl::primep)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ proof-support
