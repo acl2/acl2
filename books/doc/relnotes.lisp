@@ -127,6 +127,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Tools")
+
+   (xdoc::p
+    "When the tool @(tsee prove$) is interrupted (with @('Control-C')), control
+     now returns to the top level.  Formerly, that `abort' merely caused
+     @('prove$') to return @('(mv nil nil state)').  Also if the given term and
+     (if supplied) hints have illegal syntax, an error now occurs.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h3 "Licensing Changes")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

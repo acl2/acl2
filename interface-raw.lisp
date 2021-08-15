@@ -7419,9 +7419,6 @@
           (note-fns-in-form (cadr form) ht when-pass-2-p))
          (defun-for-state
            (our-update-ht (defun-for-state-name (cadr form)) form ht when-pass-2-p))
-         (define-global
-           (our-update-ht (define-global-name (cadr form)) form ht when-pass-2-p)
-           (our-update-ht (cadr form) form ht when-pass-2-p))
          ((define-pc-atomic-macro define-pc-bind* define-pc-help
             define-pc-macro define-pc-meta define-pc-primitive)
           (let ((name (make-official-pc-command
@@ -8618,12 +8615,13 @@
 
 ; If *acl2-time-limit-boundp* is true, then we can safely use our approach of
 ; continuing from the break (if possible) and letting the prover notice that
-; *acl2-time-limit* is 0.  That allows the prover to quit sufficiently normally
-; such that state global 'redo-flat-fail is bound in support of :redo-flat.
-; The reason that *acl2-time-limit-boundp* needs to be true is that ultimately,
-; we want *acl2-time-limit* to revert to its default value of nil.
+; *acl2-time-limit* is 0.  That allows the prover to quit in a clean way that
+; supports :redo-flat.  The reason that *acl2-time-limit-boundp* needs to be
+; true is that ultimately, we want *acl2-time-limit* to revert to its default
+; value of nil.
 
-                (and (find-restart 'continue)
+                (and (f-get-global 'abort-soft state)
+                     (find-restart 'continue)
                      *acl2-time-limit-boundp*
                      (not (eql *acl2-time-limit* 0)))))
            #+ccl ; for CCL revisions before 12090
@@ -8636,7 +8634,8 @@
              (format t
                      "~&Note:  ~A~
                       ~&  Will attempt to exit the proof in progress;~
-                      ~&  otherwise, the next interrupt will abort the proof."
+                      ~&  otherwise, the next interrupt will abort the proof.~
+                      ~&  For an immediate abort see :DOC abort-soft."
                      condition))
             (t
              (format t
@@ -9157,7 +9156,15 @@
 ; Hons users are presumably advanced enough to tolerate the lack of a
 ; "[RAW LISP]" prompt.
        (install-new-raw-prompt)
-       #+hons (f-put-global 'serialize-character-system #\Z state)
+       #+hons
+       (f-put-global 'serialize-character-system #\Z state)
+       (f-put-global 'pc-info
+                     (make pc-info
+                           :print-macroexpansion-flg nil
+                           :print-prompt-and-instr-flg t
+                           :prompt "->: "
+                           :prompt-depth-prefix "#")
+                     state)
        #+(and (not acl2-loop-only) acl2-rewrite-meter)
        (setq *rewrite-depth-alist* nil)
 
