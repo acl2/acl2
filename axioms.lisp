@@ -14225,6 +14225,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     compress1 ; [seems like we can live with logic code]
     time-limit5-reached-p ; THROW
     fmt-to-comment-window ; *THE-LIVE-STATE*
+    fmt-to-comment-window! ; *THE-LIVE-STATE*
+    fmt-to-comment-window+ ; *THE-LIVE-STATE*
+    fmt-to-comment-window!+ ; *THE-LIVE-STATE*
     len ; len1
     cpu-core-count ; CORE-COUNT-RAW
     nonnegative-integer-quotient ; floor
@@ -14240,7 +14243,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     plist-worldp ; *the-live-state* (huge performance penalty?)
     wormhole-p ; *WORMHOLEP*
     may-need-slashes-fn ;*suspiciously-first-numeric-array* ...
-    fmt-to-comment-window! ; *THE-LIVE-STATE*
     has-propsp ; EQ, GET, ...
     hard-error ; *HARD-ERROR-RETURNS-NILP*, FUNCALL, ...
     abort! p! ; THROW
@@ -18735,96 +18737,86 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard t))
   *standard-co*)
 
-(defun fmt-to-comment-window (str alist col evisc-tuple print-base-radix)
+#-acl2-loop-only
+(defun fmt-to-comment-window-raw (str alist col evisc-tuple print-base-radix
+                                      bangp inhibitp
+                                      &aux (state *the-live-state*))
 
-; WARNING: Keep this in sync with fmt-to-comment-window!.
-
-; Logically, this is the constant function returning nil.  However, it has a
-; side-effect on the "comment window" which is imagined to be a separate window
-; on the user's screen that cannot possibly be confused with the normal ACL2
-; display of the files in STATE.  Using this function it is possible for an
-; ACL2 expression to cause characters to appear in the comment window.  Nothing
-; whatsoever can be proved about these characters.  If you want to prove
-; something about ACL2 output, it must be directed to the channels and files in
-; STATE.
-
-  (declare (xargs :guard t))
-  #+acl2-loop-only
-  (declare (ignore str alist col evisc-tuple print-base-radix))
-  #+acl2-loop-only
-  nil
+; This function is evaluated for side effect only.
 
 ; Note: One might wish to bind *wormholep* to nil around this fmt1 expression,
 ; to avoid provoking an error if this fn is called while *wormholep* is t.
 ; However, the fact that we're printing to *standard-co* accomplishes the same
 ; thing.  See the comment on synonym streams in princ$.
 
-  #-acl2-loop-only
-  (progn
+  (cond
+   ((and inhibitp
+         (member-eq 'comment (f-get-global 'inhibit-output-lst state)))
+    nil)
+   ((null print-base-radix) ; common case
     (cond
-     ((member-eq 'comment (f-get-global 'inhibit-output-lst *the-live-state*))
-      nil)
-     ((null print-base-radix) ; common case
-      (fmt1 str alist col (comment-window-co) *the-live-state* evisc-tuple))
+     (bangp
+      (fmt1! str alist col (comment-window-co) state evisc-tuple))
      (t
-      (mv-let (new-print-base new-print-radix state)
-        (cond ((consp print-base-radix)
-               (mv (car print-base-radix)
-                   (cdr print-base-radix)
-                   *the-live-state*))
-              (t (mv print-base-radix
-                     (if (eql print-base-radix 10)
-                         nil
-                       t)
-                     *the-live-state*)))
-        (state-global-let*
-         ((print-base (f-get-global 'print-base state))
-          (print-radix new-print-radix))
-         (pprogn
-          (set-print-base new-print-base state)
-          (mv-let (col state)
-            (fmt1 str alist col (comment-window-co) *the-live-state*
-                  evisc-tuple)
-            (value col)))))))
-    nil))
+      (fmt1  str alist col (comment-window-co) state evisc-tuple))))
+   (t
+    (mv-let (new-print-base new-print-radix state)
+      (cond ((consp print-base-radix)
+             (mv (car print-base-radix)
+                 (cdr print-base-radix)
+                 state))
+            (t (mv print-base-radix
+                   (if (eql print-base-radix 10)
+                       nil
+                     t)
+                   state)))
+      (state-global-let*
+       ((print-base (f-get-global 'print-base state))
+        (print-radix new-print-radix))
+       (pprogn
+        (set-print-base new-print-base state)
+        (mv-let (col state)
+          (cond (bangp
+                 (fmt1! str alist col (comment-window-co) state evisc-tuple))
+                (t
+                 (fmt1  str alist col (comment-window-co) state evisc-tuple)))
+          (value col))))))))
+
+(defun fmt-to-comment-window (str alist col evisc-tuple print-base-radix)
+  (declare (xargs :guard t)
+           #+acl2-loop-only
+           (ignore str alist col evisc-tuple print-base-radix))
+  #-acl2-loop-only
+  (fmt-to-comment-window-raw str alist col evisc-tuple print-base-radix
+                             nil t)
+  nil)
 
 (defun fmt-to-comment-window! (str alist col evisc-tuple print-base-radix)
-
-; WARNING: Keep this in sync with fmt-to-comment-window.
-
-  (declare (xargs :guard t))
-  #+acl2-loop-only
-  (declare (ignore str alist col evisc-tuple print-base-radix))
-  #+acl2-loop-only
-  nil
+  (declare (xargs :guard t)
+           #+acl2-loop-only
+           (ignore str alist col evisc-tuple print-base-radix))
   #-acl2-loop-only
-  (progn
-    (cond
-     ((member-eq 'comment (f-get-global 'inhibit-output-lst *the-live-state*))
-      nil)
-     ((null print-base-radix) ; common case
-      (fmt1! str alist col (comment-window-co) *the-live-state* evisc-tuple))
-     (t
-      (mv-let (new-print-base new-print-radix state)
-        (cond ((consp print-base-radix)
-               (mv (car print-base-radix)
-                   (cdr print-base-radix)
-                   *the-live-state*))
-              (t (mv print-base-radix
-                     (if (eql print-base-radix 10)
-                         nil
-                       t)
-                     *the-live-state*)))
-        (state-global-let*
-         ((print-base (f-get-global 'print-base state))
-          (print-radix new-print-radix))
-         (pprogn
-          (set-print-base new-print-base state)
-          (mv-let (col state)
-            (fmt1! str alist col (comment-window-co) *the-live-state*
-                   evisc-tuple)
-            (value col)))))))
-    nil))
+  (fmt-to-comment-window-raw str alist col evisc-tuple print-base-radix
+                             t t)
+  nil)
+
+(defun fmt-to-comment-window+ (str alist col evisc-tuple print-base-radix)
+  (declare (xargs :guard t)
+           #+acl2-loop-only
+           (ignore str alist col evisc-tuple print-base-radix))
+  #-acl2-loop-only
+  (fmt-to-comment-window-raw str alist col evisc-tuple print-base-radix
+                             nil nil)
+  nil)
+
+(defun fmt-to-comment-window!+ (str alist col evisc-tuple print-base-radix)
+  (declare (xargs :guard t)
+           #+acl2-loop-only
+           (ignore str alist col evisc-tuple print-base-radix))
+  #-acl2-loop-only
+  (fmt-to-comment-window-raw str alist col evisc-tuple print-base-radix
+                             t nil)
+  nil)
 
 (defun pairlis2 (x y)
 ; Like pairlis$ except is controlled by y rather than x.
@@ -18835,8 +18827,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (pairlis2 (cdr x) (cdr y))))))
 
 (defmacro cw (str &rest args)
-
-; WARNING: Keep this in sync with cw!.
 
 ; A typical call of this macro is:
 ; (cw "The goal is ~p0 and the alist is ~x1.~%"
@@ -18865,12 +18855,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                           0 nil nil))
 
 (defmacro cw! (str &rest args)
-
-; WARNING: Keep this in sync with cw.
-
   `(fmt-to-comment-window! ,str
                            (pairlis2 *base-10-chars* (list ,@args))
                            0 nil nil))
+
+(defmacro cw+ (str &rest args)
+  `(fmt-to-comment-window+ ,str
+                           (pairlis2 *base-10-chars* (list ,@args))
+                           0 nil nil))
+
+(defmacro cw!+ (str &rest args)
+  `(fmt-to-comment-window!+ ,str
+                            (pairlis2 *base-10-chars* (list ,@args))
+                            0 nil nil))
 
 (defmacro cw-print-base-radix (print-base-radix str &rest args)
 
