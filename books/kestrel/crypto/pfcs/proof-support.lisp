@@ -67,19 +67,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled exec-proof-tree-list-yields-constraints
-  :short "A list of proof trees proves a list of constraints."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "That is, if running a list of proof tres is successful,
-     the result must be an assertion of a list of constraints."))
-  (b* ((outcome (exec-proof-tree-list ptrees sys p)))
-    (implies (proof-outcome-case outcome :assertion)
-             (b* ((asser (proof-outcome-assertion->get outcome)))
-               (assertion-case asser :constraints))))
-  :expand (exec-proof-tree-list ptrees sys p))
-
 (defruled exec-proof-tree-when-constraint-equal
   :short "Characterization of a proof tree for an equality constraint."
   :long
@@ -95,30 +82,22 @@
   (b* ((outcome (exec-proof-tree ptree sys p)))
     (implies
      (proof-outcome-case outcome :assertion)
-     (b* ((asser (proof-outcome-assertion->get outcome)))
-       (implies
-        (assertion-case asser :constraint)
-        (b* ((constr (assertion-constraint->constr asser)))
-          (implies
-           (constraint-case constr :equal)
-           (and (proof-tree-case ptree :equal)
-                (equal (proof-tree-equal->asg ptree)
-                       (assertion-constraint->asg asser))
-                (equal (proof-tree-equal->left ptree)
-                       (constraint-equal->left constr))
-                (equal (proof-tree-equal->right ptree)
-                       (constraint-equal->right constr))
-                (equal (eval-expr (assertion-constraint->asg asser)
-                                  (constraint-equal->left constr)
-                                  p)
-                       (eval-expr (assertion-constraint->asg asser)
-                                  (constraint-equal->right constr)
-                                  p))
-                (eval-expr (assertion-constraint->asg asser)
-                           (constraint-equal->left constr)
-                           p))))))))
-  :expand ((exec-proof-tree ptree sys p))
-  :enable exec-proof-tree-list-yields-constraints)
+     (b* ((asser (proof-outcome-assertion->get outcome))
+          (asg (assertion->asg asser))
+          (constr (assertion->constr asser)))
+       (implies (constraint-case constr :equal)
+                (and (proof-tree-case ptree :equal)
+                     (equal (proof-tree-equal->asg ptree)
+                            asg)
+                     (equal (proof-tree-equal->left ptree)
+                            (constraint-equal->left constr))
+                     (equal (proof-tree-equal->right ptree)
+                            (constraint-equal->right constr))
+                     (equal (eval-expr asg (constraint-equal->left constr) p)
+                            (eval-expr asg (constraint-equal->right constr) p))
+                     (eval-expr asg (constraint-equal->left constr)
+                                p))))))
+  :expand ((exec-proof-tree ptree sys p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
