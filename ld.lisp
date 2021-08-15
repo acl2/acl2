@@ -4808,7 +4808,8 @@
                  :ld-verbose nil
                  :ld-prompt nil
                  :ld-evisc-tuple nil
-                 :ld-user-stobjs-modified-warning nil)
+                 :ld-user-stobjs-modified-warning nil
+                 :ld-error-action :error)
              (value :invisible))))
 
 (defmacro without-evisc (form)

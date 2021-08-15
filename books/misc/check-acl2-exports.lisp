@@ -203,8 +203,6 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    ABORT-SOFT
-
   ))
 
 (defconst *special-ops*
