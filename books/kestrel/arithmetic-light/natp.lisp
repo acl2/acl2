@@ -16,3 +16,8 @@
   (implies (integerp x)
            (equal (natp (+ -1 x))
                   (< 0 x))))
+
+(defthm natp-of-+-of-1
+  (implies (integerp x)
+           (equal (natp (+ 1 x))
+                  (<= -1 x))))
