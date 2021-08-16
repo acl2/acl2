@@ -135,12 +135,12 @@
 
 (defmacro check (form)
   `(with-output
-    :off :all
+    :off :all :on comment
     (make-event (fcheck ',form state) :check-expansion t)))
 
 (defmacro check= (form1 form2)
   `(with-output
-    :off :all
+    :off :all :on comment
     (make-event (fcheck= ',form1 ',form2 state) :check-expansion t)))
 
 
