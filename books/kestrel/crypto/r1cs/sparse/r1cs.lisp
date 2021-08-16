@@ -20,6 +20,7 @@
 (include-book "../valuations")
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
@@ -228,6 +229,12 @@
     (and (r1cs-constraintp (first constraints))
          (r1cs-constraint-listp (rest constraints)))))
 
+(defthm r1cs-constraint-listp-of-append
+  (equal (r1cs-constraint-listp (append x y))
+         (and (r1cs-constraint-listp (true-list-fix x))
+              (r1cs-constraint-listp y)))
+  :hints (("Goal" :in-theory (enable r1cs-constraint-listp))))
+
 ;; A good constraint is one whose a, b, and c vectors are all good.
 (defun good-r1cs-constraintp (constraint allowed-vars)
   (declare (xargs :guard (and (r1cs-constraintp constraint)
@@ -349,6 +356,18 @@
          (and (r1cs-constraints-holdp x valuation prime)
               (r1cs-constraints-holdp y valuation prime)))
   :hints (("Goal" :in-theory (enable r1cs-constraints-holdp))))
+
+(defthm r1cs-constraints-holdp-of-cons
+  (equal (r1cs-constraints-holdp (cons a x) valuation prime)
+         (and (r1cs-constraint-holdsp a valuation prime)
+              (r1cs-constraints-holdp x valuation prime)))
+  :hints (("Goal" :in-theory (enable r1cs-constraints-holdp))))
+
+(defthm r1cs-constraints-holdp-of-reverse-list
+  (equal (r1cs-constraints-holdp (acl2::reverse-list x) valuation prime)
+         (r1cs-constraints-holdp x valuation prime))
+  :hints (("Goal" :in-theory (enable acl2::reverse-list
+                                     r1cs-constraints-holdp))))
 
 (local
  (defthm symbol-listp-when-var-listp

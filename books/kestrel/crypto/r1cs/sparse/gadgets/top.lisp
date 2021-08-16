@@ -17,3 +17,4 @@
 (include-book "nonzero")
 (include-book "xor")
 (include-book "packing")
+(include-book "range-check")
