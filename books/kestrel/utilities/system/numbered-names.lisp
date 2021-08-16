@@ -372,7 +372,7 @@
        (index-or-wildcard-chars
         (if (zp index-or-wildcard)
             (explode (get-numbered-name-index-wildcard wrld))
-          (str::natchars index-or-wildcard)))
+          (str::nat-to-dec-chars index-or-wildcard)))
        (name-chars (append base-chars
                            index-start-chars
                            index-or-wildcard-chars

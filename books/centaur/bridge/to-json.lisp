@@ -324,10 +324,10 @@ character list."
                                       (if (keywordp x) (cons #\: acc) acc)))
                     ((integerp x)
                      ;; We know that the digits are all valid characters so
-                     ;; there's no need to encode the resulting natchars.
+                     ;; there's no need to encode the resulting nat-to-dec-chars.
                      (if (< x 0)
-                         (revappend (str::natchars (- x)) (cons #\- acc))
-                       (revappend (str::natchars x) acc)))
+                         (revappend (str::nat-to-dec-chars (- x)) (cons #\- acc))
+                       (revappend (str::nat-to-dec-chars x) acc)))
                     ((characterp x)
                      (json-encode-char x acc))
                     ((stringp x)

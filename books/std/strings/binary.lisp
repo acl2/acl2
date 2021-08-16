@@ -358,70 +358,70 @@ CCL:</p>
   (defcong istreqv equal (bin-digit-string-p x) 1))
 
 
-(define basic-natchars2
-  :parents (natchars2)
-  :short "Logically simple definition that is similar to @(see natchars2)."
+(define basic-nat-to-bin-chars
+  :parents (nat-to-bin-chars)
+  :short "Logically simple definition that is similar to @(see nat-to-bin-chars)."
   ((n natp))
   :returns (chars bin-digit-char-listp)
-  :long "<p>This <i>almost</i> computes @('(natchars2 n)'), but when @('n') is
+  :long "<p>This <i>almost</i> computes @('(nat-to-bin-chars n)'), but when @('n') is
 zero it returns @('nil') instead of @('(#\\0)').  You would normally never call
 this function directly, but it is convenient for reasoning about @(see
-natchars2).</p>"
+nat-to-bin-chars).</p>"
   (if (zp n)
       nil
     (cons (if (eql (the bit (logand n 1)) 1) #\1 #\0)
-          (basic-natchars2 (ash n -1))))
+          (basic-nat-to-bin-chars (ash n -1))))
   ///
-  (defthm basic-natchars2-when-zp
+  (defthm basic-nat-to-bin-chars-when-zp
     (implies (zp n)
-             (equal (basic-natchars2 n)
+             (equal (basic-nat-to-bin-chars n)
                     nil)))
-  (defthm true-listp-of-basic-natchars2
-    (true-listp (basic-natchars2 n))
+  (defthm true-listp-of-basic-nat-to-bin-chars
+    (true-listp (basic-nat-to-bin-chars n))
     :rule-classes :type-prescription)
-  (defthm character-listp-of-basic-natchars2
-    (character-listp (basic-natchars2 n)))
-  (defthm basic-natchars2-under-iff
-    (iff (basic-natchars2 n)
+  (defthm character-listp-of-basic-nat-to-bin-chars
+    (character-listp (basic-nat-to-bin-chars n)))
+  (defthm basic-nat-to-bin-chars-under-iff
+    (iff (basic-nat-to-bin-chars n)
          (not (zp n))))
-  (defthm consp-of-basic-natchars2
-    (equal (consp (basic-natchars2 n))
-           (if (basic-natchars2 n) t nil)))
+  (defthm consp-of-basic-nat-to-bin-chars
+    (equal (consp (basic-nat-to-bin-chars n))
+           (if (basic-nat-to-bin-chars n) t nil)))
   (local (defun my-induction (n m)
            (if (or (zp n)
                    (zp m))
                nil
              (my-induction (ash n -1) (ash m -1)))))
-  (defthm basic-natchars2-one-to-one
-    (equal (equal (basic-natchars2 n)
-                  (basic-natchars2 m))
+  (defthm basic-nat-to-bin-chars-one-to-one
+    (equal (equal (basic-nat-to-bin-chars n)
+                  (basic-nat-to-bin-chars m))
            (equal (nfix n)
                   (nfix m)))
     :hints(("Goal" :induct (my-induction n m)
             :in-theory (acl2::enable* acl2::ihsext-recursive-redefs)))))
 
-(define natchars2-aux ((n natp) acc)
-  :parents (natchars2)
+(define nat-to-bin-chars-aux ((n natp) acc)
+  :parents (nat-to-bin-chars)
   :verify-guards nil
   :enabled t
   (mbe :logic
-       (revappend (basic-natchars2 n) acc)
+       (revappend (basic-nat-to-bin-chars n) acc)
        :exec
        (if (zp n)
            acc
-         (natchars2-aux
+         (nat-to-bin-chars-aux
           (the unsigned-byte (ash (the unsigned-byte n) -1))
           (cons (if (eql (the bit (logand n 1)) 1) #\1 #\0)
                 acc))))
   ///
-  (verify-guards natchars2-aux
-    :hints(("Goal" :in-theory (enable basic-natchars2)))))
+  (verify-guards nat-to-bin-chars-aux
+    :hints(("Goal" :in-theory (enable basic-nat-to-bin-chars)))))
 
-(define natchars2
+(define nat-to-bin-chars
   :short "Convert a natural number into a list of bits."
   ((n natp))
   :returns (chars bin-digit-char-listp)
-  :long "<p>For instance, @('(natchars 8)') is @('(#\\1 #\\0 #\\0 #\\0)').</p>
+  :long "<p>For instance, @('(nat-to-dec-chars 8)') is @('(#\\1 #\\0 #\\0 #\\0)').</p>
 
 <p>This is like ACL2's built-in function @(see explode-nonnegative-integer),
 except that it doesn't deal with accumulators and is limited to base 2 numbers.
@@ -434,7 +434,7 @@ bin-digit-chars-value), and somewhat better performance:</p>
   ;; .204 seconds, 303 MB allocated
   (progn (gc$)
          (time (loop for i fixnum from 1 to 1000000 do
-                     (str::natchars2 i))))
+                     (str::nat-to-bin-chars i))))
 
   ;; 1.04 seconds, 303 MB allocated
   (progn (gc$)
@@ -442,14 +442,14 @@ bin-digit-chars-value), and somewhat better performance:</p>
             (explode-nonnegative-integer i 2 nil))))
 })"
   :inline t
-  (or (natchars2-aux n nil) '(#\0))
+  (or (nat-to-bin-chars-aux n nil) '(#\0))
   ///
-  (defthm true-listp-of-natchars2
-    (and (true-listp (natchars2 n))
-         (consp (natchars2 n)))
+  (defthm true-listp-of-nat-to-bin-chars
+    (and (true-listp (nat-to-bin-chars n))
+         (consp (nat-to-bin-chars n)))
     :rule-classes :type-prescription)
-  (defthm character-listp-of-natchars2
-    (character-listp (natchars2 n)))
+  (defthm character-listp-of-nat-to-bin-chars
+    (character-listp (nat-to-bin-chars n)))
   (local (defthm lemma1
            (equal (equal (rev x) (list y))
                   (and (consp x)
@@ -457,49 +457,49 @@ bin-digit-chars-value), and somewhat better performance:</p>
                        (equal (car x) y)))
            :hints(("Goal" :in-theory (enable rev)))))
   (local (defthmd lemma2
-           (not (equal (basic-natchars2 n) '(#\0)))
-           :hints(("Goal" :in-theory (acl2::enable* basic-natchars2
+           (not (equal (basic-nat-to-bin-chars n) '(#\0)))
+           :hints(("Goal" :in-theory (acl2::enable* basic-nat-to-bin-chars
                                                     acl2::ihsext-recursive-redefs)))))
-  (defthm natchars2-one-to-one
-    (equal (equal (natchars2 n) (natchars2 m))
+  (defthm nat-to-bin-chars-one-to-one
+    (equal (equal (nat-to-bin-chars n) (nat-to-bin-chars m))
            (equal (nfix n) (nfix m)))
     :hints(("Goal"
-            :in-theory (disable basic-natchars2-one-to-one)
-            :use ((:instance basic-natchars2-one-to-one)
+            :in-theory (disable basic-nat-to-bin-chars-one-to-one)
+            :use ((:instance basic-nat-to-bin-chars-one-to-one)
                   (:instance lemma2)
                   (:instance lemma2 (n m))))))
-  (local (defthm bin-digit-chars-value-of-rev-of-basic-natchars2
-           (equal (bin-digit-chars-value (rev (basic-natchars2 n)))
+  (local (defthm bin-digit-chars-value-of-rev-of-basic-nat-to-bin-chars
+           (equal (bin-digit-chars-value (rev (basic-nat-to-bin-chars n)))
                   (nfix n))
            :hints(("Goal"
-                   :induct (basic-natchars2 n)
-                   :in-theory (acl2::enable* basic-natchars2
+                   :induct (basic-nat-to-bin-chars n)
+                   :in-theory (acl2::enable* basic-nat-to-bin-chars
                                              acl2::ihsext-recursive-redefs
                                              acl2::logcons)))))
-  (defthm bin-digit-chars-value-of-natchars2
-    (equal (bin-digit-chars-value (natchars2 n))
+  (defthm bin-digit-chars-value-of-nat-to-bin-chars
+    (equal (bin-digit-chars-value (nat-to-bin-chars n))
            (nfix n))))
 
 
-(define revappend-natchars2-aux ((n natp) (acc))
-  :parents (revappend-natchars2)
+(define revappend-nat-to-bin-chars-aux ((n natp) (acc))
+  :parents (revappend-nat-to-bin-chars)
   :enabled t
   :verify-guards nil
   (mbe :logic
-       (append (basic-natchars2 n) acc)
+       (append (basic-nat-to-bin-chars n) acc)
        :exec
        (if (zp n)
            acc
          (cons (if (eql (the bit (logand n 1)) 1) #\1 #\0)
-               (revappend-natchars2-aux
+               (revappend-nat-to-bin-chars-aux
                 (the unsigned-byte (ash (the unsigned-byte n) -1))
                 acc))))
   ///
-  (verify-guards revappend-natchars2-aux
-    :hints(("Goal" :in-theory (enable basic-natchars2)))))
+  (verify-guards revappend-nat-to-bin-chars-aux
+    :hints(("Goal" :in-theory (enable basic-nat-to-bin-chars)))))
 
-(define revappend-natchars2
-  :short "More efficient version of @('(revappend (natchars2 n) acc).')"
+(define revappend-nat-to-bin-chars
+  :short "More efficient version of @('(revappend (nat-to-bin-chars n) acc).')"
   ((n natp)
    (acc))
   :returns (new-acc)
@@ -507,11 +507,11 @@ bin-digit-chars-value), and somewhat better performance:</p>
 consing together characters in reverse order.</p>"
   :inline t
   :enabled t
-  :prepwork ((local (in-theory (enable natchars2))))
-  (mbe :logic (revappend (natchars2 n) acc)
+  :prepwork ((local (in-theory (enable nat-to-bin-chars))))
+  (mbe :logic (revappend (nat-to-bin-chars n) acc)
        :exec (if (zp n)
                  (cons #\0 acc)
-               (revappend-natchars2-aux n acc))))
+               (revappend-nat-to-bin-chars-aux n acc))))
 
 (define natstr2
   :short "Convert a natural number into a string with its bits."
@@ -519,7 +519,7 @@ consing together characters in reverse order.</p>"
   :returns (str stringp :rule-classes :type-prescription)
   :long "<p>For instance, @('(natstr2 8)') is @('\"1000\"').</p>"
   :inline t
-  (implode (natchars2 n))
+  (implode (nat-to-bin-chars n))
   ///
   (defthm bin-digit-char-listp-of-natstr
     (bin-digit-char-listp (explode (natstr2 n))))
@@ -560,11 +560,11 @@ consing together characters in reverse order.</p>"
       1
     (integer-length x))
   ///
-  (defthm len-of-natchars2
-    (equal (len (natchars2 x))
+  (defthm len-of-nat-to-bin-chars
+    (equal (len (nat-to-bin-chars x))
            (natsize2 x))
-    :hints(("Goal" :in-theory (acl2::enable* natchars2
-                                             basic-natchars2
+    :hints(("Goal" :in-theory (acl2::enable* nat-to-bin-chars
+                                             basic-nat-to-bin-chars
                                              acl2::ihsext-recursive-redefs))))
   (defthm length-of-natstr2
     (equal (length (natstr2 x))

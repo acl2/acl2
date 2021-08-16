@@ -220,7 +220,7 @@
                                 (stringp idcode)
                                 (vl-printedlist-p ostream))))
     (b* ((ostream (cons "$var wire " ostream))
-         (ostream (revappend (str::natchars (len msb-wires)) ostream))
+         (ostream (revappend (str::nat-to-dec-chars (len msb-wires)) ostream))
          (ostream (cons #\Space ostream))
          (ostream (cons idcode ostream))
          (ostream (cons #\Space ostream))
@@ -237,7 +237,7 @@
                 (if msb-idx
                     ;; Only a single wire, but there's an index.
                     (b* ((ostream (cons #\[ ostream))
-                         (ostream (revappend (str::natchars msb-idx) ostream))
+                         (ostream (revappend (str::nat-to-dec-chars msb-idx) ostream))
                          (ostream (cons #\] ostream)))
                       ostream)
                   ;; Else, a single wire with no index -- don't print any
@@ -249,9 +249,9 @@
                ((unless (and msb-idx lsb-idx))
                 (er hard? 'vcd-vardecl "Multiple wires but not indices: ~x0" msb-wires))
                (ostream (cons #\[ ostream))
-               (ostream (revappend (str::natchars msb-idx) ostream))
+               (ostream (revappend (str::nat-to-dec-chars msb-idx) ostream))
                (ostream (cons #\: ostream))
-               (ostream (revappend (str::natchars lsb-idx) ostream))
+               (ostream (revappend (str::nat-to-dec-chars lsb-idx) ostream))
                (ostream (cons #\] ostream)))
             ostream))
 
