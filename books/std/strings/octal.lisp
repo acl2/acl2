@@ -420,19 +420,19 @@ but @('octal-digit-to-char') is faster:</p>
   (mbe :logic (digit-to-char n)
        :exec (code-char (the (unsigned-byte 8) (+ 48 n)))))
 
-(define basic-natchars8
-  :parents (natchars8)
-  :short "Logically simple definition that is similar to @(see natchars8)."
+(define basic-nat-to-oct-chars
+  :parents (nat-to-oct-chars)
+  :short "Logically simple definition that is similar to @(see nat-to-oct-chars)."
   ((n natp))
   :returns (chars oct-digit-char-listp)
-  :long "<p>This <i>almost</i> computes @('(natchars8 n)'), but when @('n') is
+  :long "<p>This <i>almost</i> computes @('(nat-to-oct-chars n)'), but when @('n') is
 zero it returns @('nil') instead of @('(#\\0)').  You would normally never call
 this function directly, but it is convenient for reasoning about @(see
-natchars8).</p>"
+nat-to-oct-chars).</p>"
   (if (zp n)
       nil
     (cons (octal-digit-to-char (logand n #x7))
-          (basic-natchars8 (ash n -3))))
+          (basic-nat-to-oct-chars (ash n -3))))
   :prepwork
   ((local (defthm l0
             (implies (and (< a 8)
@@ -449,21 +449,21 @@ natchars8).</p>"
             :hints(("Goal" :in-theory (enable digit-to-char)))))
    (local (in-theory (disable digit-to-char))))
   ///
-  (defthm basic-natchars8-when-zp
+  (defthm basic-nat-to-oct-chars-when-zp
     (implies (zp n)
-             (equal (basic-natchars8 n)
+             (equal (basic-nat-to-oct-chars n)
                     nil)))
-  (defthm true-listp-of-basic-natchars8
-    (true-listp (basic-natchars8 n))
+  (defthm true-listp-of-basic-nat-to-oct-chars
+    (true-listp (basic-nat-to-oct-chars n))
     :rule-classes :type-prescription)
-  (defthm character-listp-of-basic-natchars8
-    (character-listp (basic-natchars8 n)))
-  (defthm basic-natchars8-under-iff
-    (iff (basic-natchars8 n)
+  (defthm character-listp-of-basic-nat-to-oct-chars
+    (character-listp (basic-nat-to-oct-chars n)))
+  (defthm basic-nat-to-oct-chars-under-iff
+    (iff (basic-nat-to-oct-chars n)
          (not (zp n))))
-  (defthm consp-of-basic-natchars8
-    (equal (consp (basic-natchars8 n))
-           (if (basic-natchars8 n) t nil)))
+  (defthm consp-of-basic-nat-to-oct-chars
+    (equal (consp (basic-nat-to-oct-chars n))
+           (if (basic-nat-to-oct-chars n) t nil)))
   (local (defun my-induction (n m)
            (if (or (zp n)
                    (zp m))
@@ -489,36 +489,36 @@ natchars8).</p>"
                    :in-theory (disable c0)
                    :use ((:instance c0 (x n) (n k))
                          (:instance c0 (x m) (n k)))))))
-  (defthm basic-natchars8-one-to-one
-    (equal (equal (basic-natchars8 n)
-                  (basic-natchars8 m))
+  (defthm basic-nat-to-oct-chars-one-to-one
+    (equal (equal (basic-nat-to-oct-chars n)
+                  (basic-nat-to-oct-chars m))
            (equal (nfix n)
                   (nfix m)))
     :hints(("Goal" :induct (my-induction n m)))))
 
-(define natchars8-aux ((n natp) acc)
-  :parents (natchars8)
+(define nat-to-oct-chars-aux ((n natp) acc)
+  :parents (nat-to-oct-chars)
   :verify-guards nil
   :enabled t
   (mbe :logic
-       (revappend (basic-natchars8 n) acc)
+       (revappend (basic-nat-to-oct-chars n) acc)
        :exec
        (if (zp n)
            acc
-         (natchars8-aux
+         (nat-to-oct-chars-aux
           (the unsigned-byte (ash (the unsigned-byte n) -3))
           (cons (octal-digit-to-char
                  (the (unsigned-byte 3) (logand (the unsigned-byte n) #x7)))
                 acc))))
   ///
-  (verify-guards natchars8-aux
-    :hints(("Goal" :in-theory (enable basic-natchars8)))))
+  (verify-guards nat-to-oct-chars-aux
+    :hints(("Goal" :in-theory (enable basic-nat-to-oct-chars)))))
 
-(define natchars8
+(define nat-to-oct-chars
   :short "Convert a natural number into a list of octal bits."
   ((n natp))
   :returns (chars oct-digit-char-listp)
-  :long "<p>For instance, @('(natchars8 15)') is @('(#\\1 #\\7)').</p>
+  :long "<p>For instance, @('(nat-to-oct-chars 15)') is @('(#\\1 #\\7)').</p>
 
 <p>This is like ACL2's built-in function @(see explode-nonnegative-integer),
 except that it doesn't deal with accumulators and is limited to base-8 numbers.
@@ -531,7 +531,7 @@ oct-digit-chars-value), and somewhat better performance:</p>
   ;; 1.114 seconds, 1.241 GB allocated
   (progn (gc$)
          (time (loop for i fixnum from 1 to 10000000 do
-                     (str::natchars8 i))))
+                     (str::nat-to-oct-chars i))))
 
   ;; 4.727 seconds, 1.241 GB allocated
   (progn (gc$)
@@ -539,14 +539,14 @@ oct-digit-chars-value), and somewhat better performance:</p>
             (explode-nonnegative-integer i 8 nil))))
 })"
   :inline t
-  (or (natchars8-aux n nil) '(#\0))
+  (or (nat-to-oct-chars-aux n nil) '(#\0))
   ///
-  (defthm true-listp-of-natchars8
-    (and (true-listp (natchars8 n))
-         (consp (natchars8 n)))
+  (defthm true-listp-of-nat-to-oct-chars
+    (and (true-listp (nat-to-oct-chars n))
+         (consp (nat-to-oct-chars n)))
     :rule-classes :type-prescription)
-  (defthm character-listp-of-natchars8
-    (character-listp (natchars8 n)))
+  (defthm character-listp-of-nat-to-oct-chars
+    (character-listp (nat-to-oct-chars n)))
   (local (defthm lemma1
            (equal (equal (rev x) (list y))
                   (and (consp x)
@@ -576,15 +576,15 @@ oct-digit-chars-value), and somewhat better performance:</p>
                       (< 15 n)))
            :hints(("Goal" :in-theory (enable digit-to-char)))))
   (local (defthmd lemma2
-           (not (equal (basic-natchars8 n) '(#\0)))
-           :hints(("Goal" :in-theory (acl2::enable* basic-natchars8
+           (not (equal (basic-nat-to-oct-chars n) '(#\0)))
+           :hints(("Goal" :in-theory (acl2::enable* basic-nat-to-oct-chars
                                                     acl2::ihsext-recursive-redefs)))))
-  (defthm natchars8-one-to-one
-    (equal (equal (natchars8 n) (natchars8 m))
+  (defthm nat-to-oct-chars-one-to-one
+    (equal (equal (nat-to-oct-chars n) (nat-to-oct-chars m))
            (equal (nfix n) (nfix m)))
     :hints(("Goal"
-            :in-theory (disable basic-natchars8-one-to-one)
-            :use ((:instance basic-natchars8-one-to-one)
+            :in-theory (disable basic-nat-to-oct-chars-one-to-one)
+            :use ((:instance basic-nat-to-oct-chars-one-to-one)
                   (:instance lemma2)
                   (:instance lemma2 (n m))))))
   (local (defthm c0
@@ -595,38 +595,38 @@ oct-digit-chars-value), and somewhat better performance:</p>
            :hints(("Goal"
                    :in-theory (acl2::enable* acl2::ihsext-recursive-redefs
                                              acl2::ihsext-inductions)))))
-  (local (defthm oct-digit-chars-value-of-rev-of-basic-natchars8
-           (equal (oct-digit-chars-value (rev (basic-natchars8 n)))
+  (local (defthm oct-digit-chars-value-of-rev-of-basic-nat-to-oct-chars
+           (equal (oct-digit-chars-value (rev (basic-nat-to-oct-chars n)))
                   (nfix n))
            :hints(("Goal"
-                   :induct (basic-natchars8 n)
-                   :in-theory (acl2::enable* basic-natchars8
+                   :induct (basic-nat-to-oct-chars n)
+                   :in-theory (acl2::enable* basic-nat-to-oct-chars
                                              acl2::ihsext-recursive-redefs
                                              acl2::logcons)))))
-  (defthm oct-digit-chars-value-of-natchars8
-    (equal (oct-digit-chars-value (natchars8 n))
+  (defthm oct-digit-chars-value-of-nat-to-oct-chars
+    (equal (oct-digit-chars-value (nat-to-oct-chars n))
            (nfix n))))
 
-(define revappend-natchars8-aux ((n natp) (acc))
-  :parents (revappend-natchars8)
+(define revappend-nat-to-oct-chars-aux ((n natp) (acc))
+  :parents (revappend-nat-to-oct-chars)
   :enabled t
   :verify-guards nil
   (mbe :logic
-       (append (basic-natchars8 n) acc)
+       (append (basic-nat-to-oct-chars n) acc)
        :exec
        (if (zp n)
            acc
          (cons (octal-digit-to-char (the (unsigned-byte 4)
                                        (logand (the unsigned-byte n) #x7)))
-               (revappend-natchars8-aux
+               (revappend-nat-to-oct-chars-aux
                 (the unsigned-byte (ash (the unsigned-byte n) -3))
                 acc))))
   ///
-  (verify-guards revappend-natchars8-aux
-    :hints(("Goal" :in-theory (enable basic-natchars8)))))
+  (verify-guards revappend-nat-to-oct-chars-aux
+    :hints(("Goal" :in-theory (enable basic-nat-to-oct-chars)))))
 
-(define revappend-natchars8
-  :short "More efficient version of @('(revappend (natchars8 n) acc).')"
+(define revappend-nat-to-oct-chars
+  :short "More efficient version of @('(revappend (nat-to-oct-chars n) acc).')"
   ((n natp)
    (acc))
   :returns (new-acc)
@@ -634,11 +634,11 @@ oct-digit-chars-value), and somewhat better performance:</p>
          together characters in reverse order.</p>"
   :inline t
   :enabled t
-  :prepwork ((local (in-theory (enable natchars8))))
-  (mbe :logic (revappend (natchars8 n) acc)
+  :prepwork ((local (in-theory (enable nat-to-oct-chars))))
+  (mbe :logic (revappend (nat-to-oct-chars n) acc)
        :exec (if (zp n)
                  (cons #\0 acc)
-               (revappend-natchars8-aux n acc))))
+               (revappend-nat-to-oct-chars-aux n acc))))
 
 (define natstr8
   :short "Convert a natural number into a string with its octal digits."
@@ -646,7 +646,7 @@ oct-digit-chars-value), and somewhat better performance:</p>
   :returns (str stringp :rule-classes :type-prescription)
   :long "<p>For instance, @('(natstr8 15)') is @('\"17\"').</p>"
   :inline t
-  (implode (natchars8 n))
+  (implode (nat-to-oct-chars n))
   ///
   (defthm oct-digit-char-listp-of-natstr
     (oct-digit-char-listp (explode (natstr8 n))))
@@ -684,25 +684,25 @@ oct-digit-chars-value), and somewhat better performance:</p>
   (if (zp n)
       0
     (+ 1 (natsize8-aux (ash n -3))))
-  :prepwork ((local (in-theory (enable natchars8))))
+  :prepwork ((local (in-theory (enable nat-to-oct-chars))))
   ///
   ;; BOZO perhaps eventually reimplement this using integer-length.  See also
   ;; hex.lisp for some fledgling steps toward that.
   (defthm natsize8-aux-redef
     (equal (natsize8-aux n)
-           (len (basic-natchars8 n)))
-    :hints(("Goal" :in-theory (enable basic-natchars8)))))
+           (len (basic-nat-to-oct-chars n)))
+    :hints(("Goal" :in-theory (enable basic-nat-to-oct-chars)))))
 
 (define natsize8
   :short "Number of characters in the octal representation of a natural."
   ((x natp))
   :returns (size posp :rule-classes :type-prescription)
   :inline t
-  (mbe :logic (len (natchars8 x))
+  (mbe :logic (len (nat-to-oct-chars x))
        :exec  (if (zp x)
                   1
                 (natsize8-aux x)))
-  :prepwork ((local (in-theory (enable natchars8)))))
+  :prepwork ((local (in-theory (enable nat-to-oct-chars)))))
 
 (define parse-octal-from-charlist
   :short "Parse a octal number from the beginning of a character list."

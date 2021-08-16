@@ -71,7 +71,7 @@
       str::firstn-chars
       str::strval
       str::search
-      str::natchars16
+      str::nat-to-hex-chars
       str::hex-digit-char-listp
       str::charlisteqv
       str::character-list-fix

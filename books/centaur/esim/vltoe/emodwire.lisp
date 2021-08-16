@@ -122,16 +122,16 @@ on the expression-slicing code.</p>")
             :hints(("Goal" :in-theory (enable digit-to-char)))))
 
    (local (defthm c1
-            (and (not (member-equal #\! (str::basic-natchars x)))
-                 (not (member-equal #\. (str::basic-natchars x)))
-                 (not (member-equal #\/ (str::basic-natchars x))))
-            :hints(("Goal" :in-theory (enable str::basic-natchars)))))
+            (and (not (member-equal #\! (str::basic-nat-to-dec-chars x)))
+                 (not (member-equal #\. (str::basic-nat-to-dec-chars x)))
+                 (not (member-equal #\/ (str::basic-nat-to-dec-chars x))))
+            :hints(("Goal" :in-theory (enable str::basic-nat-to-dec-chars)))))
 
    (local (defthm c2
-            (and (not (member-equal #\! (str::natchars x)))
-                 (not (member-equal #\. (str::natchars x)))
-                 (not (member-equal #\/ (str::natchars x))))
-            :hints(("Goal" :in-theory (enable str::natchars)))))
+            (and (not (member-equal #\! (str::nat-to-dec-chars x)))
+                 (not (member-equal #\. (str::nat-to-dec-chars x)))
+                 (not (member-equal #\/ (str::nat-to-dec-chars x))))
+            :hints(("Goal" :in-theory (enable str::nat-to-dec-chars)))))
 
    (defthm no-specials-in-natstr
      (and (not (member-equal #\! (explode (natstr x))))
