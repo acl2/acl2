@@ -23,3 +23,8 @@
 ;;   (declare (xargs :guard (and (symbol-listp vars)
 ;;                               (consp vars))))
 ;;   `(bit-listp ,(make-append-with-key-nest vars)))
+
+(defthm bit-listp-of-append-2 ;avoids name clash
+  (equal (bit-listp (append x y))
+         (and (bit-listp (true-list-fix x))
+              (bit-listp y))))
