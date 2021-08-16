@@ -33,6 +33,7 @@
 ;(include-book "defomap")
 (include-book "fty-set")
 ;(include-book "defset")
+(include-book "defresult")
 (include-book "defsubtype")
 (include-book "defunit")
 (include-book "defunit-doc")

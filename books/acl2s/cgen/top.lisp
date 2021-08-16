@@ -156,6 +156,7 @@
     `(with-output
       :stack :push
       ,(if debug :on :off) :all
+      ,@(if debug nil (list :on 'comment))
       :gag-mode ,(not debug)
      (make-event
       (test?-fn ',form ',hints ',kwd-val-lst state)))))
