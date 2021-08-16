@@ -115,7 +115,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is somewhat similar to @(tsee acl2::patind-er),
+    "This is somewhat similar to @(tsee acl2::patbind-er),
      but it is for values of "
     (xdoc::seetopic "defresult" "result types")
     ". It checks whether the bound expresion is an error,
