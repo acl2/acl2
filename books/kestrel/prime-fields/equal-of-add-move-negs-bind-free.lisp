@@ -19,6 +19,7 @@
 (include-book "prime-fields-rules") ;needed just for some "add of neg" rules?
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system)) ;;for integerp of mod
 (local (include-book "kestrel/utilities/symbol-term-alistp" :dir :system))
+(local (include-book "system/all-fnnames" :dir :system))
 
 (local (in-theory (disable intersection-equal pseudo-term-listp)))
 
@@ -135,3 +136,84 @@
 ;; as well, so its best not to include books defining both of these rules).
 (theory-invariant (incompatible (:rewrite equal-of-add-and-add-cancel-1-gen)
                                 (:rewrite equal-of-add-move-negations-bind-free)))
+
+;; try to use rules 2a and 2b instead:
+(in-theory (disable equal-of-add-move-negations-bind-free))
+
+;;;
+;;; rule 2 (simpler)
+;;;
+
+;; Returns a negated added (with the negation stripped) in a nest off adds with
+;; prime p, or nil to indicate failure.
+(defund find-negated-addend (term p)
+  (declare (xargs :guard (pseudo-termp term)))
+  (if (and (acl2::call-of 'neg term) ; (neg x p)
+           (equal p (acl2::farg2 term)))
+      (acl2::farg1 term) ; strip the neg
+    (if (and (acl2::call-of 'add term)
+             (equal p (acl2::farg3 term)))
+        ;; todo: consider assuming the nest is assocated right...
+        (or (find-negated-addend (acl2::farg1 term) p)
+            (find-negated-addend (acl2::farg2 term) p))
+      nil ;fail
+      )))
+
+;; Returns nil or an alist binding 'negated-addend and 'p.
+(defund bind-a-negated-addend (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (if (not (acl2::call-of 'add term))
+      nil ;fail TODO: Consider allowing a single negated added (the argument to neg would give us the prime, I guess)
+    (if (member-eq 'bind-free-id (acl2::all-fnnames term))
+        nil ; something has gone wrong with a previous bind-free attempt
+      (let* ((p (acl2::farg3 term)) ; the prime in (add x y p)
+             (maybe-negated-addend (find-negated-addend term p)))
+        (if maybe-negated-addend
+            (acons 'negated-addend maybe-negated-addend
+                   (acons 'p p nil))
+          nil ;fail
+          )))))
+
+(defthm equal-of-add-move-negations-bind-free-2a
+  (implies (and (bind-free (bind-a-negated-addend x) (negated-addend p))
+                ;;(integerp negated-addend) ;may help prevent loops?
+                (integerp p)
+                (fep x p)
+                (fep y p))
+           (equal (equal x y)
+                  (equal (add (bind-free-id negated-addend) x p) ; we wrap the addend to help ensure this rule doesn't loop
+                         (add negated-addend y p))))
+  :hints (("Goal" :in-theory (enable;
+                               equal-of-add-and-add-cancel
+                              BIND-FREE-ID
+                              ))))
+
+(defthm equal-of-add-move-negations-bind-free-2b
+  (implies (and (bind-free (bind-a-negated-addend y) (negated-addend p))
+                ;;(integerp negated-addend) ;may help prevent loops?
+                (integerp p)
+                (fep x p)
+                (fep y p))
+           (equal (equal x y)
+                  (equal (add negated-addend x p)
+                         (add (bind-free-id negated-addend) y p)  ; we wrap the addend to help ensure this rule doesn't loop
+                         )))
+  :hints (("Goal" :in-theory (enable;
+                               equal-of-add-and-add-cancel
+                              BIND-FREE-ID
+                              ))))
+
+;; Rules to complete the job, by combining the addend (still wrapped in a call
+;; of bind-free-id) with its negated version;
+
+(defthm add-of-neg-same-arg2-gen-with-bind-free-id
+  (equal (add (bind-free-id x) (neg x p) p)
+         0)
+  :hints (("Goal" :in-theory (enable bind-free-id))))
+
+(defthm add-of-add-of-neg-same-with-bind-free-id
+  (implies (posp p)
+           (equal (add (bind-free-id x) (add (neg x p) y p) p)
+                  ;; Can be further simplified but may introduce ifix:
+                  (add 0 y p)))
+  :hints (("Goal" :in-theory (enable bind-free-id))))
