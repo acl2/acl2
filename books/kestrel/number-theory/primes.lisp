@@ -81,3 +81,6 @@
   (implies (rtl::primep x)
            (<= 2 x))
   :rule-classes :forward-chaining)
+
+(defthm primep-of-3
+  (rtl::primep 3))
