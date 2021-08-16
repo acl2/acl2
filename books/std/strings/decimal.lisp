@@ -335,19 +335,19 @@ with CCL:</p>
   (defcong istreqv equal (dec-digit-string-p x) 1))
 
 
-(define basic-natchars
-  :parents (natchars)
-  :short "Logically simple definition that is similar to @(see natchars)."
+(define basic-nat-to-dec-chars
+  :parents (nat-to-dec-chars)
+  :short "Logically simple definition that is similar to @(see nat-to-dec-chars)."
   ((n natp))
   :returns (chars dec-digit-char-listp)
-  :long "<p>This <i>almost</i> computes @('(natchars n)'), but when @('n') is
+  :long "<p>This <i>almost</i> computes @('(nat-to-dec-chars n)'), but when @('n') is
 zero it returns @('nil') instead of @('(#\\0)').  You would normally never call
 this function directly, but it is convenient for reasoning about @(see
-natchars).</p>"
+nat-to-dec-chars).</p>"
   (if (zp n)
       nil
     (cons (digit-to-char (mod n 10))
-          (basic-natchars (floor n 10))))
+          (basic-nat-to-dec-chars (floor n 10))))
   :prepwork
   ((local (defthm l0
             (implies (and (< a 10)
@@ -362,43 +362,43 @@ natchars).</p>"
                      (dec-digit-char-p (digit-to-char a)))))
    (local (in-theory (disable digit-to-char))))
   ///
-  (defthm basic-natchars-when-zp
+  (defthm basic-nat-to-dec-chars-when-zp
     (implies (zp n)
-             (equal (basic-natchars n)
+             (equal (basic-nat-to-dec-chars n)
                     nil)))
-  (defthm true-listp-of-basic-natchars
-    (true-listp (basic-natchars n))
+  (defthm true-listp-of-basic-nat-to-dec-chars
+    (true-listp (basic-nat-to-dec-chars n))
     :rule-classes :type-prescription)
-  (defthm character-listp-of-basic-natchars
-    (character-listp (basic-natchars n)))
-  (defthm basic-natchars-under-iff
-    (iff (basic-natchars n)
+  (defthm character-listp-of-basic-nat-to-dec-chars
+    (character-listp (basic-nat-to-dec-chars n)))
+  (defthm basic-nat-to-dec-chars-under-iff
+    (iff (basic-nat-to-dec-chars n)
          (not (zp n))))
-  (defthm consp-of-basic-natchars
-    (equal (consp (basic-natchars n))
-           (if (basic-natchars n) t nil)))
+  (defthm consp-of-basic-nat-to-dec-chars
+    (equal (consp (basic-nat-to-dec-chars n))
+           (if (basic-nat-to-dec-chars n) t nil)))
   (local (defun my-induction (n m)
            (if (or (zp n)
                    (zp m))
                nil
              (my-induction (floor n 10) (floor m 10)))))
-  (defthm basic-natchars-one-to-one
-    (equal (equal (basic-natchars n)
-                  (basic-natchars m))
+  (defthm basic-nat-to-dec-chars-one-to-one
+    (equal (equal (basic-nat-to-dec-chars n)
+                  (basic-nat-to-dec-chars m))
            (equal (nfix n)
                   (nfix m)))
     :hints(("Goal" :induct (my-induction n m)))))
 
-(define natchars-aux ((n natp) acc)
-  :parents (natchars)
+(define nat-to-dec-chars-aux ((n natp) acc)
+  :parents (nat-to-dec-chars)
   :verify-guards nil
   :enabled t
   (mbe :logic
-       (revappend (basic-natchars n) acc)
+       (revappend (basic-nat-to-dec-chars n) acc)
        :exec
        (if (zp n)
            acc
-         (natchars-aux
+         (nat-to-dec-chars-aux
           (the unsigned-byte (truncate (the unsigned-byte n) 10))
           (cons (the character (code-char
                                 (the (unsigned-byte 8)
@@ -407,14 +407,14 @@ natchars).</p>"
                                              (rem (the unsigned-byte n) 10))))))
                 acc))))
   ///
-  (verify-guards natchars-aux
-    :hints(("Goal" :in-theory (enable basic-natchars)))))
+  (verify-guards nat-to-dec-chars-aux
+    :hints(("Goal" :in-theory (enable basic-nat-to-dec-chars)))))
 
-(define natchars
+(define nat-to-dec-chars
   :short "Convert a natural number into a list of characters."
   ((n natp))
   :returns (chars dec-digit-char-listp)
-  :long "<p>For instance, @('(natchars 123)') is @('(#\\1 #\\2 #\\3)').</p>
+  :long "<p>For instance, @('(nat-to-dec-chars 123)') is @('(#\\1 #\\2 #\\3)').</p>
 
 <p>This is like ACL2's built-in function @(see explode-nonnegative-integer),
 except that it doesn't deal with accumulators and is limited to base 10
@@ -427,7 +427,7 @@ numbers.  These simplifications lead to particularly nice rules, e.g., about
   ;; 2.80 seconds, 1.1 GB allocated
   (progn (gc$)
          (time (loop for i fixnum from 1 to 10000000 do
-            (str::natchars i))))
+            (str::nat-to-dec-chars i))))
 
   ;; 4.28 seconds, 1.1 GB allocated
   (progn (gc$)
@@ -435,14 +435,14 @@ numbers.  These simplifications lead to particularly nice rules, e.g., about
             (explode-nonnegative-integer i 10 nil))))
 })"
   :inline t
-  (or (natchars-aux n nil) '(#\0))
+  (or (nat-to-dec-chars-aux n nil) '(#\0))
   ///
-  (defthm true-listp-of-natchars
-    (and (true-listp (natchars n))
-         (consp (natchars n)))
+  (defthm true-listp-of-nat-to-dec-chars
+    (and (true-listp (nat-to-dec-chars n))
+         (consp (nat-to-dec-chars n)))
     :rule-classes :type-prescription)
-  (defthm character-listp-of-natchars
-    (character-listp (natchars n)))
+  (defthm character-listp-of-nat-to-dec-chars
+    (character-listp (nat-to-dec-chars n)))
   (local (defthm lemma1
            (equal (equal (rev x) (list y))
                   (and (consp x)
@@ -450,33 +450,33 @@ numbers.  These simplifications lead to particularly nice rules, e.g., about
                        (equal (car x) y)))
            :hints(("Goal" :in-theory (enable rev)))))
   (local (defthmd lemma2
-           (not (equal (basic-natchars n) '(#\0)))
-           :hints(("Goal" :in-theory (enable basic-natchars)))))
-  (defthm natchars-one-to-one
-    (equal (equal (natchars n) (natchars m))
+           (not (equal (basic-nat-to-dec-chars n) '(#\0)))
+           :hints(("Goal" :in-theory (enable basic-nat-to-dec-chars)))))
+  (defthm nat-to-dec-chars-one-to-one
+    (equal (equal (nat-to-dec-chars n) (nat-to-dec-chars m))
            (equal (nfix n) (nfix m)))
     :hints(("Goal"
-            :in-theory (disable basic-natchars-one-to-one)
-            :use ((:instance basic-natchars-one-to-one)
+            :in-theory (disable basic-nat-to-dec-chars-one-to-one)
+            :use ((:instance basic-nat-to-dec-chars-one-to-one)
                   (:instance lemma2)
                   (:instance lemma2 (n m))))))
-  (local (defthm dec-digit-chars-value-of-rev-of-basic-natchars
-           (equal (dec-digit-chars-value (rev (basic-natchars n)))
+  (local (defthm dec-digit-chars-value-of-rev-of-basic-nat-to-dec-chars
+           (equal (dec-digit-chars-value (rev (basic-nat-to-dec-chars n)))
                   (nfix n))
            :hints(("Goal"
-                   :induct (basic-natchars n)
-                   :in-theory (e/d (basic-natchars)
+                   :induct (basic-nat-to-dec-chars n)
+                   :in-theory (e/d (basic-nat-to-dec-chars)
                                    (digit-to-char))))))
-  (defthm dec-digit-chars-value-of-natchars
-    (equal (dec-digit-chars-value (natchars n))
+  (defthm dec-digit-chars-value-of-nat-to-dec-chars
+    (equal (dec-digit-chars-value (nat-to-dec-chars n))
            (nfix n))))
 
-(define revappend-natchars-aux ((n natp) (acc))
-  :parents (revappend-natchars)
+(define revappend-nat-to-dec-chars-aux ((n natp) (acc))
+  :parents (revappend-nat-to-dec-chars)
   :enabled t
   :verify-guards nil
   (mbe :logic
-       (append (basic-natchars n) acc)
+       (append (basic-nat-to-dec-chars n) acc)
        :exec
        (if (zp n)
            acc
@@ -485,15 +485,15 @@ numbers.  These simplifications lead to particularly nice rules, e.g., about
                                     (+ (the (unsigned-byte 8) 48)
                                        (the (unsigned-byte 8)
                                             (rem (the unsigned-byte n) 10))))))
-               (revappend-natchars-aux
+               (revappend-nat-to-dec-chars-aux
                 (the unsigned-byte (truncate (the unsigned-byte n) 10))
                 acc))))
   ///
-  (verify-guards revappend-natchars-aux
-    :hints(("Goal" :in-theory (enable basic-natchars)))))
+  (verify-guards revappend-nat-to-dec-chars-aux
+    :hints(("Goal" :in-theory (enable basic-nat-to-dec-chars)))))
 
-(define revappend-natchars
-  :short "More efficient version of @('(revappend (natchars n) acc).')"
+(define revappend-nat-to-dec-chars
+  :short "More efficient version of @('(revappend (nat-to-dec-chars n) acc).')"
   ((n natp)
    (acc))
   :returns (new-acc)
@@ -501,11 +501,11 @@ numbers.  These simplifications lead to particularly nice rules, e.g., about
 consing together characters in reverse order.</p>"
   :enabled t
   :inline t
-  :prepwork ((local (in-theory (enable natchars))))
-  (mbe :logic (revappend (natchars n) acc)
+  :prepwork ((local (in-theory (enable nat-to-dec-chars))))
+  (mbe :logic (revappend (nat-to-dec-chars n) acc)
        :exec (if (zp n)
                  (cons #\0 acc)
-               (revappend-natchars-aux n acc))))
+               (revappend-nat-to-dec-chars-aux n acc))))
 
 (define natstr
   :short "Convert a natural number into a string with its digits."
@@ -513,7 +513,7 @@ consing together characters in reverse order.</p>"
   :returns (str stringp :rule-classes :type-prescription)
   :long "<p>For instance, @('(natstr 123)') is @('\"123\"').</p>"
   :inline t
-  (implode (natchars n))
+  (implode (nat-to-dec-chars n))
   ///
   (defthm dec-digit-char-listp-of-natstr
     (dec-digit-char-listp (explode (natstr n))))
@@ -535,7 +535,7 @@ consing together characters in reverse order.</p>"
 digits.  If the input number is smaller it is padded with 0s, and if larger its
 more-significant bits are truncated.</p>"
   (b* ((width (mbe :logic (if (posp width) width 1) :exec width))
-       (chars (natchars n))
+       (chars (nat-to-dec-chars n))
        (width-chars (cond ((<= width (len chars)) (nthcdr (- (len chars) width) chars))
                           (t (append (make-list (- width (len chars)) :initial-element #\0)
                                      chars)))))
@@ -558,8 +558,8 @@ more-significant bits are truncated.</p>"
   :inline t
   (let ((i (mbe :logic (ifix i) :exec i)))
     (if (< i 0)
-        (implode (cons #\- (natchars (- i))))
-      (implode (natchars i))))
+        (implode (cons #\- (nat-to-dec-chars (- i))))
+      (implode (nat-to-dec-chars i))))
   ///
   (defthm intstr-nonempty
     (not (equal (intstr i) "")))
@@ -588,12 +588,12 @@ more-significant bits are truncated.</p>"
   (b* ((i (mbe :logic (ifix i) :exec i))
        (width (mbe :logic (if (posp width) width 1) :exec width))
        (chars (if (< i 0)
-                  (b* ((chars (natchars (- i))))
+                  (b* ((chars (nat-to-dec-chars (- i))))
                     (cons #\-
                           (cond ((<= width (len chars)) (nthcdr (- (len chars) width) chars))
                                 (t (append (make-list (- width (len chars)) :initial-element #\0)
                                            chars)))))
-                (b* ((chars (natchars i)))
+                (b* ((chars (nat-to-dec-chars i)))
                   (cond ((<= width (len chars)) (nthcdr (- (len chars) width) chars))
                         (t (append (make-list (- width (len chars)) :initial-element #\0)
                                    chars)))))))

@@ -99,12 +99,12 @@ to define function SYMBOL-BTREE-TO-ALIST-AUX.
 
 (defunt f4 (x y)
 
-; *Defunt note*: Using termination theorem for STR::BASIC-NATCHARS.
+; *Defunt note*: Using termination theorem for STR::BASIC-NAT-TO-DEC-CHARS.
 
 #||
 *Defunt note*: Evaluating
 (LOCAL (INCLUDE-BOOK "std/strings/decimal" :DIR :SYSTEM))
-to define function STR::BASIC-NATCHARS.
+to define function STR::BASIC-NAT-TO-DEC-CHARS.
 ||#
 
   (cond ((zp x) y)
@@ -116,7 +116,7 @@ to define function STR::BASIC-NATCHARS.
 ; *Defunt note*: Using termination theorem for <-MERGE.
 
 #||
-*Defunt note*: Evaluating 
+*Defunt note*: Evaluating
 (LOCAL (INCLUDE-BOOK "projects/irv/irv" :DIR :SYSTEM))
 to define function <-MERGE.
 ||#

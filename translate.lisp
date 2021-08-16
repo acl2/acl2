@@ -1706,7 +1706,8 @@
                           rst))))))
 
 (defun remove-strings (l)
-  (cond ((null l) nil)
+  (declare (xargs :guard (true-listp l) :mode :logic))
+  (cond ((endp l) nil)
         ((stringp (car l))
          (remove-strings (cdr l)))
         (t (cons (car l) (remove-strings (cdr l))))))

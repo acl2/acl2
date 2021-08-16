@@ -94,8 +94,8 @@
   (local
    (defthm not-member-underscore-natstr
      (not (member #\_ (explode (natstr n))))
-     :hints (("Goal" :in-theory (enable basic-natchars
-                                        natchars
+     :hints (("Goal" :in-theory (enable basic-nat-to-dec-chars
+                                        nat-to-dec-chars
                                         natstr)))))
 
   (local

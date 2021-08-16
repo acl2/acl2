@@ -139,7 +139,7 @@
        ((when (= code 10)) "\\n")
        ((when (= code 12)) "\\f")
        ((when (= code 13)) "\\r"))
-    (implode (cons #\\ (str::natchars8 code)))))
+    (implode (cons #\\ (str::nat-to-oct-chars code)))))
 
 (define print-jchars ((chars character-listp))
   :returns (part msgp)

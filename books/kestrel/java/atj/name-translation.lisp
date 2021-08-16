@@ -301,7 +301,7 @@
   (b* ((index-chars (if (= index 0)
                         nil
                       (append (list #\$)
-                              (str::natchars index))))
+                              (str::nat-to-dec-chars index))))
        (index-string (implode index-chars)))
     (add-suffix var index-string)))
 
