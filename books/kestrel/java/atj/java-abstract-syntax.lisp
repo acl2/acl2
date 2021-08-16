@@ -121,39 +121,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection natchars-theorems
-  :short "Some theorems about @(tsee str::natchars)
+(defsection nat-to-dec-chars-theorems
+  :short "Some theorems about @(tsee str::nat-to-dec-chars)
           and the functions it calls."
 
-  (defrule car-of-last-of-basic-natchars-not-0
-    (not (equal (car (last (str::basic-natchars n)))
+  (defrule car-of-last-of-basic-nat-to-dec-chars-not-0
+    (not (equal (car (last (str::basic-nat-to-dec-chars n)))
                 #\0))
-    :enable str::basic-natchars
+    :enable str::basic-nat-to-dec-chars
     :prep-books ((include-book "arithmetic-3/top" :dir :system)))
 
-  (defrule car-of-natchars-aux-not-0
+  (defrule car-of-nat-to-dec-chars-aux-not-0
     (implies (not (equal (car acc) #\0))
-             (not (equal (car (str::natchars-aux n acc)) #\0)))
+             (not (equal (car (str::nat-to-dec-chars-aux n acc)) #\0)))
     :enable acl2::car-of-rev-rewrite-car-of-last
     :prep-books ((include-book "kestrel/utilities/lists/rev-theorems" :dir :system)))
 
-  (defrule len-of-natchars-is-1-iff-value-below-10
-    (equal (equal (len (str::natchars value)) 1)
+  (defrule len-of-nat-to-dec-chars-is-1-iff-value-below-10
+    (equal (equal (len (str::nat-to-dec-chars value)) 1)
            (< (nfix value) 10))
-    :enable (str::natchars str::basic-natchars)
-    :induct (str::basic-natchars value)
+    :enable (str::nat-to-dec-chars str::basic-nat-to-dec-chars)
+    :induct (str::basic-nat-to-dec-chars value)
     :prep-books ((include-book "arithmetic-3/top" :dir :system)))
 
-  (defrule natchars-aux-iff
-    (iff (str::natchars-aux n acc)
+  (defrule nat-to-dec-chars-aux-iff
+    (iff (str::nat-to-dec-chars-aux n acc)
          (or acc
              (not (zp n)))))
 
-  (defrule car-of-natchars-is-0-iff-arg-0
-    (equal (equal (car (str::natchars n)) #\0)
+  (defrule car-of-nat-to-dec-chars-is-0-iff-arg-0
+    (equal (equal (car (str::nat-to-dec-chars n)) #\0)
            (zp n))
-    :enable str::natchars
-    :disable str::natchars-aux))
+    :enable str::nat-to-dec-chars
+    :disable str::nat-to-dec-chars-aux))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -190,7 +190,7 @@
   :long
   (xdoc::topstring-p
    "This is an integer decimal literal without the type suffix.")
-  (b* ((codes (chars=>nats (str::natchars value))))
+  (b* ((codes (chars=>nats (str::nat-to-dec-chars value))))
     (jliteral-integer
      (integer-literal-dec
       (make-dec-integer-literal
@@ -209,7 +209,7 @@
    "This is an integer decimal literal with the type suffix @('L').
     We use the uppercase type suffix, and not the lowercase one,
     as recommended in [JLS:3.10.1].")
-  (b* ((codes (chars=>nats (str::natchars value))))
+  (b* ((codes (chars=>nats (str::nat-to-dec-chars value))))
     (jliteral-integer
      (integer-literal-dec
       (make-dec-integer-literal

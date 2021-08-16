@@ -2395,7 +2395,7 @@ datatype is multidimensional.</p>"
   (b* (((when (atom indices))
         acc)
        (acc (cons #\[ acc))
-       (acc (revappend (str::natchars (vl-resolved->val (car indices))) acc))
+       (acc (revappend (str::nat-to-dec-chars (vl-resolved->val (car indices))) acc))
        (acc (cons #\] acc)))
     (vl-flatten-hidindex-aux (cdr indices) acc)))
 

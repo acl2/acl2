@@ -1855,7 +1855,7 @@ named, and the names generated should be unique.</p>"
                     ((integerp id)
                      (b* ((rchars (cons #\[ rchars))
                           (rchars (if (< id 0) (cons #\- rchars) rchars))
-                          (rchars (str::revappend-natchars (abs id) rchars))
+                          (rchars (str::revappend-nat-to-dec-chars (abs id) rchars))
                           (rchars (cons #\] rchars)))
                        rchars))
                     (t ;; (not id)
