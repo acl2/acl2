@@ -470,7 +470,7 @@ I don't need this?
              (trans-eval `(with-output
                            ,@(if debug?
                                  '(:on :all :off (proof-builder proof-tree) :gag-mode nil)
-                               '(:off :all :on (error)))
+                               '(:off :all :on (error comment)))
                            (test? ,guards
                              ,@(if debug?
                                    '()
@@ -543,7 +543,7 @@ I don't need this?
              timeout
              (trans-eval `(with-output
                            ;; :on :all :off (proof-builder proof-tree) :gag-mode nil
-                           :off :all :on (error)
+                           :off :all :on (error comment)
                            (test? ,guards
                              ;;
                              :print-cgen-summary nil :num-witnesses 0
@@ -609,7 +609,7 @@ I don't need this?
                (list* prop flat-kwds)))
        ((when (and proofs? testing?))
         `(with-output
-          :off :all
+          :off :all :on comment
           (encapsulate
            ()
            (value-triple (cw "~|Form:  ( TESTING PROPERTY )~%"))
@@ -621,7 +621,7 @@ I don't need this?
            (value-triple (cw "~|Form:  ( ACCEPTED PROPERTY AS THEOREM )~%")))))
        ((when proofs?)
         `(with-output
-          :off :all
+          :off :all :on comment
           (encapsulate
            ()
            (value-triple (cw "~|Form:  ( PROVING PROPERTY )~%"))
@@ -630,7 +630,7 @@ I don't need this?
            (value-triple (cw "~|Form:  ( ACCEPTED PROPERTY AS THEOREM )~%")))))
        ((when (and testing? name?))
         `(with-output
-          :off :all
+          :off :all :on comment
           (encapsulate
            ()
            (value-triple (cw "~|Form:  ( TESTING PROPERTY )~%"))
@@ -641,7 +641,7 @@ I don't need this?
             (cw "~|Form:  ( ACCEPTED PROPERTY AS A THEOREM WITHOUT PROOF )~%")))))
        ((when testing?)
         `(with-output
-          :off :all
+          :off :all :on comment
           (encapsulate
            ()
            (value-triple (cw "~|Form:  ( TESTING PROPERTY )~%"))
@@ -651,7 +651,7 @@ I don't need this?
             (cw "~|Form:  ( PROPERTY PASSED TESTING )~%")))))
        ((when name?)
         `(with-output
-          :off :all
+          :off :all :on comment
           (encapsulate
            ()
            (value-triple (cw "~|Form:  ( TESTING PROPERTY )~%"))
@@ -682,7 +682,7 @@ I don't need this?
     `(with-output
       ;; ,@(and (not debug?) '(:off :all))
       ;;  We take are of debug? later
-      :off :all :on (summary) :summary-off (:other-than time)
+      :off :all :on (summary comment) :summary-off (:other-than time)
       :gag-mode ,(not debug?)
       :stack :push
       (encapsulate

@@ -106,7 +106,7 @@ data last modified: [2015-06-09 Tue]
        (keys (remove-keywords-from-args '(:verbose :override-ok) keys)))
 
   `(with-output
-    ,@(and (not verbosep) '(:off :all)) :stack :push
+    ,@(and (not verbosep) '(:off :all :on comment)) :stack :push
     (make-event
         (cons 'progn
               (defdata-attach-fn ',name ',keys ',verbosep ',override-ok-p (w state)))))))
