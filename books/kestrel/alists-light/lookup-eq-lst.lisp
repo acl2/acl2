@@ -54,3 +54,15 @@
   (equal (consp (lookup-eq-lst keys alist))
          (consp keys))
   :hints (("Goal" :in-theory (enable lookup-eq-lst))))
+
+(defthm lookup-eq-lst-of-cons
+  (equal (lookup-eq-lst (cons key keys) alist)
+         (cons (lookup-eq key alist)
+               (lookup-eq-lst keys alist)))
+  :hints (("Goal" :in-theory (enable lookup-eq-lst))))
+
+;; ;; Our strategy will be to rewrite lookup-eq to lookup-equal.
+;; (defthm lookup-eq-lst-becomes-lookup-equal-lst
+;;   (equal (lookup-eq-lst key alist)
+;;          (lookup-equal-lst key alist))
+;;   :hints (("Goal" :in-theory (enable lookup-equal-lst lookup-eq-lst))))
