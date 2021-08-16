@@ -94,7 +94,7 @@
    (mv x
        (mbe :logic (if (stringp y) y "")
             :exec y)
-       (append (str::natchars x) acc)))
+       (append (str::nat-to-dec-chars x) acc)))
 
 (assert-return-thms foo)
 

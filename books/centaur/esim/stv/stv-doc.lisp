@@ -121,7 +121,7 @@ ever actually use a list of E bits to name their input.</p>"
          (if (< entry 10)
              ;; As a special nicety, write values under 10 without any
              ;; leading prefixes.
-             (revappend (str::natchars entry) acc)
+             (revappend (str::nat-to-dec-chars entry) acc)
            ;; For any larger constants, write them in hex.  I'll use a 0x
            ;; prefix instead of a #x prefix, since it's probably more widely
            ;; understood (e.g., by logic designers)
@@ -275,6 +275,3 @@ ever actually use a list of E bits to name their input.</p>"
 
        (acc (str::revappend-chars "</stv>" acc)))
     (str::rchars-to-string acc)))
-
-
-

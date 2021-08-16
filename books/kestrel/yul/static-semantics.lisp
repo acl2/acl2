@@ -209,9 +209,8 @@
    (xdoc::p
     "This lifts @(tsee add-var) to lists."))
   (b* (((when (endp vars)) (vartable-fix vartab))
-       (vartab? (add-var (car vars) vartab varvis))
-       ((when (errorp vartab?)) vartab?))
-    (add-vars (cdr vars) vartab? varvis))
+       ((ok vartab) (add-var (car vars) vartab varvis)))
+    (add-vars (cdr vars) vartab varvis))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -270,10 +269,8 @@
   :returns (wf? wellformed-resultp)
   :short "Check if all the identifiers in a list are well-formed."
   (b* (((when (endp idens)) :wellformed)
-       (wf? (check-identifier (car idens)))
-       ((when (errorp wf?)) wf?)
-       (wf? (check-identifier-list (cdr idens)))
-       ((when (errorp wf?)) wf?))
+       ((ok &) (check-identifier (car idens)))
+       ((ok &) (check-identifier-list (cdr idens))))
     :wellformed)
   :hooks (:fix))
 
@@ -304,8 +301,7 @@
   (b* ((idens (path->get path))
        ((unless (consp idens))
         (error (list :empty-path (path-fix path))))
-       (wf? (check-identifier-list idens))
-       ((when (errorp wf?)) wf?)
+       ((ok &) (check-identifier-list idens))
        ((unless (endp (cdr idens)))
         (error (list :non-singleton-path (path-fix path))))
        (var (car idens))
@@ -388,11 +384,9 @@
        A literal always returns one result."))
     (expression-case
      expr
-     :path (b* ((wf? (check-path expr.get vartab))
-                ((when (errorp wf?)) wf?))
+     :path (b* (((ok &) (check-path expr.get vartab)))
              1)
-     :literal (b* ((wf? (check-literal expr.get))
-                   ((when (errorp wf?)) wf?))
+     :literal (b* (((ok &) (check-literal expr.get)))
                 1)
      :funcall (check-funcall expr.get vartab funtab))
     :measure (expression-count expr))
@@ -414,13 +408,11 @@
       "We check each expression in turn.
        Each expression must return exactly one result."))
     (b* (((when (endp exprs)) 0)
-         (n? (check-expression (car exprs) vartab funtab))
-         ((when (errorp n?)) n?)
-         ((unless (= n? 1))
+         ((ok n) (check-expression (car exprs) vartab funtab))
+         ((unless (= n 1))
           (error (list :multi-value-argument (expression-fix (car exprs)))))
-         (n? (check-expression-list (cdr exprs) vartab funtab))
-         ((when (errorp n?)) n?))
-      (1+ n?))
+         ((ok n) (check-expression-list (cdr exprs) vartab funtab)))
+      (1+ n))
     :measure (expression-list-count exprs))
 
   (define check-funcall ((call funcallp)
@@ -437,15 +429,13 @@
        and we return the number of outputs.
        Each argument expression must return a single result."))
     (b* (((funcall call) call)
-         (funty? (get-funtype call.name funtab))
-         ((when (errorp funty?)) funty?)
-         (n? (check-expression-list call.args vartab funtab))
-         ((when (errorp n?)) n?)
-         ((unless (= n? (funtype->in funty?)))
+         ((ok funty) (get-funtype call.name funtab))
+         ((ok n) (check-expression-list call.args vartab funtab))
+         ((unless (= n (funtype->in funty)))
           (error (list :mismatched-formals-actuals
-                       :required (funtype->in funty?)
-                       :supplied n?))))
-      (funtype->out funty?))
+                       :required (funtype->in funty)
+                       :supplied n))))
+      (funtype->out funty))
     :measure (funcall-count call))
 
   :verify-guards nil ; done below
@@ -487,12 +477,11 @@
        ((unless (statement-case stmt :fundef))
         (add-functions-in-statement-list (cdr stmts) funtab))
        ((fundef fundef) (statement-fundef->get stmt))
-       (funtab? (add-funtype fundef.name
-                             (len fundef.inputs)
-                             (len fundef.outputs)
-                             funtab))
-       ((when (errorp funtab?)) funtab?))
-    (add-functions-in-statement-list (cdr stmts) funtab?))
+       ((ok funtab) (add-funtype fundef.name
+                                 (len fundef.inputs)
+                                 (len fundef.outputs)
+                                 funtab)))
+    (add-functions-in-statement-list (cdr stmts) funtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -516,16 +505,13 @@
      and it must return exactly one result."))
   (b* ((name (identifier-fix name))
        (init (expression-option-fix init))
-       (wf? (check-identifier name))
-       ((when (errorp wf?)) wf?)
-       (vartab? (add-var name vartab varvis))
-       ((when (errorp vartab?)) vartab?)
-       ((when (not init)) vartab?)
-       (results? (check-expression init vartab funtab))
-       ((when (errorp results?)) results?)
-       ((unless (= results? 1))
-        (error (list :declare-single-var-mismatch name results?))))
-    vartab?)
+       ((ok &) (check-identifier name))
+       ((ok vartab) (add-var name vartab varvis))
+       ((when (not init)) vartab)
+       ((ok results) (check-expression init vartab funtab))
+       ((unless (= results 1))
+        (error (list :declare-single-var-mismatch name results))))
+    vartab)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -551,18 +537,15 @@
      as the number of variables."))
   (b* ((names (identifier-list-fix names))
        (init (funcall-option-fix init))
-       (wf? (check-identifier-list names))
-       ((when (errorp wf?)) wf?)
-       (vartab? (add-vars names vartab varvis))
-       ((when (errorp vartab?)) vartab?)
+       ((ok &) (check-identifier-list names))
+       ((ok vartab-new) (add-vars names vartab varvis))
        ((unless (>= (len names) 2))
         (error (list :declare-zero-one-var names)))
-       ((when (not init)) vartab?)
-       (results? (check-funcall init vartab funtab))
-       ((when (errorp results?)) results?)
-       ((unless (= results? (len names)))
-        (error (list :declare-multi-var-mismatch names results?))))
-    vartab?)
+       ((when (not init)) vartab-new)
+       ((ok results) (check-funcall init vartab funtab))
+       ((unless (= results (len names)))
+        (error (list :declare-multi-var-mismatch names results))))
+    vartab-new)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -584,12 +567,10 @@
    (xdoc::p
     "This only depends on the (non-extended) variable table,
      which is unchanged and so we do not return an updated one."))
-  (b* ((wf? (check-path target vartab))
-       ((when (errorp wf?)) wf?)
-       (results? (check-expression value vartab funtab))
-       ((when (errorp results?)) results?)
-       ((unless (= results? 1))
-        (error (list :assign-single-var-mismatch (path-fix target) results?))))
+  (b* (((ok &) (check-path target vartab))
+       ((ok results) (check-expression value vartab funtab))
+       ((unless (= results 1))
+        (error (list :assign-single-var-mismatch (path-fix target) results))))
     :wellformed)
   :hooks (:fix))
 
@@ -614,15 +595,13 @@
    (xdoc::p
     "This only depends on the (non-extended) variable table,
      which is unchanged and so we do not return an updated one."))
-  (b* ((wf? (check-assign-multi-aux targets vartab))
-       ((when (errorp wf?)) wf?)
+  (b* (((ok &) (check-assign-multi-aux targets vartab))
        ((unless (>= (len targets) 2))
         (error (list :assign-zero-one-path (path-list-fix targets))))
-       (results? (check-funcall value vartab funtab))
-       ((when (errorp results?)) results?)
-       ((unless (= results? (len targets)))
+       ((ok results) (check-funcall value vartab funtab))
+       ((unless (= results (len targets)))
         (error (list :assign-single-var-mismatch
-                 (path-list-fix targets) results?))))
+                 (path-list-fix targets) results))))
     :wellformed)
   :hooks (:fix)
 
@@ -632,8 +611,7 @@
      :returns (wf? wellformed-resultp)
      :parents nil
      (b* (((when (endp targets)) :wellformed)
-          (wf? (check-path (car targets) vartab))
-          ((when (errorp wf?)) wf?))
+          ((ok &) (check-path (car targets) vartab)))
        (check-assign-multi-aux (cdr targets) vartab))
      :hooks (:fix))))
 
@@ -783,102 +761,89 @@
     (statement-case
      stmt
      :block
-     (b* ((vartab? (check-block stmt.get
-                                vartab
-                                varvis
-                                funtab
-                                in-function
-                                in-loop-init
-                                in-loop-body))
-          ((when (errorp vartab?)) vartab?))
+     (b* (((ok &) (check-block stmt.get
+                               vartab
+                               varvis
+                               funtab
+                               in-function
+                               in-loop-init
+                               in-loop-body)))
        (vartable-fix vartab))
      :variable-single
      (check-variable-single stmt.name stmt.init vartab varvis funtab)
      :variable-multi
      (check-variable-multi stmt.names stmt.init vartab varvis funtab)
      :assign-single
-     (b* ((wf? (check-assign-single stmt.target stmt.value vartab funtab))
-          ((when (errorp wf?)) wf?))
+     (b* (((ok &) (check-assign-single stmt.target stmt.value vartab funtab)))
        (vartable-fix vartab))
      :assign-multi
-     (b* ((wf? (check-assign-multi stmt.targets stmt.value vartab funtab))
-          ((when (errorp wf?)) wf?))
+     (b* (((ok &) (check-assign-multi stmt.targets stmt.value vartab funtab)))
        (vartable-fix vartab))
      :funcall
-     (b* ((results? (check-funcall stmt.get vartab funtab))
-          ((when (errorp results?)) results?)
-          ((unless (= results? 0))
+     (b* (((ok results) (check-funcall stmt.get vartab funtab))
+          ((unless (= results 0))
            (error (list :discarded-values stmt.get))))
        (vartable-fix vartab))
      :if
-     (b* ((results? (check-expression stmt.test vartab funtab))
-          ((when (errorp results?)) results?)
-          ((unless (= results? 1))
+     (b* (((ok results) (check-expression stmt.test vartab funtab))
+          ((unless (= results 1))
            (error (list :multi-valued-if-test stmt.test)))
-          (vartab? (check-block stmt.body
-                                vartab
-                                varvis
-                                funtab
-                                in-function
-                                in-loop-init
-                                in-loop-body))
-          ((when (errorp vartab?)) vartab?))
+          ((ok &) (check-block stmt.body
+                               vartab
+                               varvis
+                               funtab
+                               in-function
+                               in-loop-init
+                               in-loop-body)))
        (vartable-fix vartab))
      :for
-     (b* ((vartab-init? (check-block stmt.init
-                                     vartab
-                                     varvis
-                                     funtab
-                                     in-function
-                                     t
-                                     nil))
-          ((when (errorp vartab-init?)) vartab-init?)
-          (results? (check-expression stmt.test vartab-init? funtab))
-          ((when (errorp results?)) results?)
-          ((unless (= results? 1))
+     (b* (((ok vartab-init) (check-block stmt.init
+                                         vartab
+                                         varvis
+                                         funtab
+                                         in-function
+                                         t
+                                         nil))
+          ((ok results) (check-expression stmt.test vartab-init funtab))
+          ((unless (= results 1))
            (error (list :multi-valued-for-test stmt.test)))
-          (vartab-update? (check-block stmt.update
-                                       vartab-init?
-                                       varvis
-                                       funtab
-                                       in-function
-                                       in-loop-init
-                                       nil))
-          ((when (errorp vartab-update?)) vartab-update?)
-          (vartab-body? (check-block stmt.body
-                                     vartab-init?
-                                     varvis
-                                     funtab
-                                     in-function
-                                     in-loop-init
-                                     t))
-          ((when (errorp vartab-body?)) vartab-body?))
+          ((ok &) (check-block stmt.update
+                               vartab-init
+                               varvis
+                               funtab
+                               in-function
+                               in-loop-init
+                               nil))
+          ((ok &) (check-block stmt.body
+                               vartab-init
+                               varvis
+                               funtab
+                               in-function
+                               in-loop-init
+                               t)))
        (vartable-fix vartab))
      :switch
-     (b* ((results? (check-expression stmt.target vartab funtab))
-          ((when (errorp results?)) results?)
-          ((unless (= results? 1))
+     (b* (((ok results) (check-expression stmt.target vartab funtab))
+          ((unless (= results 1))
            (error (list :multi-valued-switch-target stmt.target)))
           ((unless (or (consp stmt.cases) stmt.default))
            (error (list :no-cases-in-switch (statement-fix stmt))))
           ((unless (no-duplicatesp-equal (swcase-list->value-list stmt.cases)))
            (error (list :duplicate-switch-cases (statement-fix stmt))))
-          (wf? (check-swcase-list stmt.cases
-                                  vartab
-                                  varvis
-                                  funtab
-                                  in-function
-                                  in-loop-init
-                                  in-loop-body))
-          ((when (errorp wf?)) wf?)
-          (vartab? (check-block-option stmt.default
-                                       vartab
-                                       varvis
-                                       funtab
-                                       in-function
-                                       in-loop-init
-                                       in-loop-body))
-          ((when (errorp vartab?)) vartab?))
+          ((ok &) (check-swcase-list stmt.cases
+                                     vartab
+                                     varvis
+                                     funtab
+                                     in-function
+                                     in-loop-init
+                                     in-loop-body))
+          ((ok &) (check-block-option stmt.default
+                                      vartab
+                                      varvis
+                                      funtab
+                                      in-function
+                                      in-loop-init
+                                      in-loop-body)))
        (vartable-fix vartab))
      :leave
      (if in-function
@@ -896,8 +861,7 @@
      (if in-loop-init
          (error :fundef-in-loop-init)
        (b* ((varvis (make-vars-inaccessible vartab varvis))
-            (wf? (check-fundef stmt.get varvis funtab))
-            ((when (errorp wf?)) wf?))
+            ((ok &) (check-fundef stmt.get varvis funtab)))
          (vartable-fix vartab))))
     :measure (statement-count stmt)
     :normalize nil) ; without this, MAKE-FLAG (generated by DEFINES) fails
@@ -917,16 +881,15 @@
       "We check the statements, one after the other,
        threading through the variable table."))
     (b* (((when (endp stmts)) (vartable-fix vartab))
-         (vartab? (check-statement (car stmts)
-                                   vartab
-                                   varvis
-                                   funtab
-                                   in-function
-                                   in-loop-init
-                                   in-loop-body))
-         ((when (errorp vartab?)) vartab?))
+         ((ok vartab) (check-statement (car stmts)
+                                       vartab
+                                       varvis
+                                       funtab
+                                       in-function
+                                       in-loop-init
+                                       in-loop-body)))
       (check-statement-list (cdr stmts)
-                            vartab?
+                            vartab
                             varvis
                             funtab
                             in-function
@@ -959,17 +922,15 @@
        updating the function table with them,
        and then we check the statements that form the block."))
     (b* ((stmts (block->statements block))
-         (funtab? (add-functions-in-statement-list stmts funtab))
-         ((when (errorp funtab?)) funtab?)
-         (vartab? (check-statement-list stmts
-                                        vartab
-                                        varvis
-                                        funtab?
-                                        in-function
-                                        in-loop-init
-                                        in-loop-body))
-         ((when (errorp vartab?)) vartab?))
-      vartab?)
+         ((ok funtab) (add-functions-in-statement-list stmts funtab))
+         ((ok vartab) (check-statement-list stmts
+                                            vartab
+                                            varvis
+                                            funtab
+                                            in-function
+                                            in-loop-init
+                                            in-loop-body)))
+      vartab)
     :measure (block-count block))
 
   (define check-block-option ((block? block-optionp)
@@ -1014,16 +975,14 @@
       "We check its literal and its block.
        We do not need to return anything in case of success."))
     (b* (((swcase case) case)
-         (wf? (check-literal case.value))
-         ((when (errorp wf?)) wf?)
-         (vartab? (check-block case.body
-                               vartab
-                               varvis
-                               funtab
-                               in-function
-                               in-loop-init
-                               in-loop-body))
-         ((when (errorp vartab?)) vartab?))
+         ((ok &) (check-literal case.value))
+         ((ok &) (check-block case.body
+                              vartab
+                              varvis
+                              funtab
+                              in-function
+                              in-loop-init
+                              in-loop-body)))
       :wellformed)
     :measure (swcase-count case))
 
@@ -1041,14 +1000,13 @@
      (xdoc::p
       "We just check each case in turn."))
     (b* (((when (endp cases)) :wellformed)
-         (wf? (check-swcase (car cases)
-                            vartab
-                            varvis
-                            funtab
-                            in-function
-                            in-loop-init
-                            in-loop-body))
-         ((when (errorp wf?)) wf?))
+         ((ok &) (check-swcase (car cases)
+                               vartab
+                               varvis
+                               funtab
+                               in-function
+                               in-loop-init
+                               in-loop-body)))
       (check-swcase-list (cdr cases)
                          vartab
                          varvis
@@ -1091,18 +1049,16 @@
        Note that the construction will detect and reject any duplicates.
        Then we check the function's body."))
     (b* (((fundef fundef) fundef)
-         (vartab? (add-vars (append fundef.inputs fundef.outputs)
-                            nil
-                            varvis))
-         ((when (errorp vartab?)) vartab?)
-         (vartab? (check-block fundef.body
-                               vartab?
-                               varvis
-                               funtab
-                               t
-                               nil
-                               nil))
-         ((when (errorp vartab?)) vartab?))
+         ((ok vartab) (add-vars (append fundef.inputs fundef.outputs)
+                                nil
+                                varvis))
+         ((ok &) (check-block fundef.body
+                              vartab
+                              varvis
+                              funtab
+                              t
+                              nil
+                              nil)))
       :wellformed)
     :measure (fundef-count fundef))
 

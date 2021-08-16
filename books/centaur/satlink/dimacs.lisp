@@ -126,7 +126,7 @@ about this basic approach.</p>"
          ;; Increment all IDs to account for 0 not being a valid DIMACS variable.
          (id+1     (+ 1 (lit->var lit)))
          (acc      (if negatedp (cons #\- acc) acc)))
-      (str::revappend-natchars id+1 acc)))
+      (str::revappend-nat-to-dec-chars id+1 acc)))
 
   (define dimacs-write-clause ((clause lit-listp) (acc character-listp))
     :returns (acc character-listp :hyp :guard)
@@ -160,9 +160,9 @@ about this basic approach.</p>"
 
          ;; P CNF NUM-VARS NUM-CLAUSES
          (acc (str::revappend-chars "p cnf " acc))
-         (acc (str::revappend-natchars dimacs-num-vars acc))
+         (acc (str::revappend-nat-to-dec-chars dimacs-num-vars acc))
          (acc (cons #\Space acc))
-         (acc (str::revappend-natchars (len formula) acc))
+         (acc (str::revappend-nat-to-dec-chars (len formula) acc))
          (acc (cons #\Newline acc))
          (acc (dimacs-write-clauses formula acc)))
       (mv (str::rchars-to-string acc) max-index)))
