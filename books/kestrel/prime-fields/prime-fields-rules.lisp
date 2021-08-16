@@ -1155,3 +1155,17 @@
            (equal (div (neg x p) y p)
                   (div x (neg y p) p)))
   :hints (("Goal" :in-theory (enable div))))
+
+(defthm add-of-mul-of-constant-same-arg1
+  (implies (and (syntaxp (quotep k))
+                (integerp k))
+           (equal (add (mul k x p) x p)
+                  (mul (+ 1 k) x p)))
+  :hints (("Goal" :in-theory (enable mul add acl2::pos-fix))))
+
+(defthm add-of-mul-of-constant-same-arg2
+  (implies (and (syntaxp (quotep k))
+                (integerp k))
+           (equal (add x (mul k x p) p)
+                  (mul (+ 1 k) x p)))
+  :hints (("Goal" :in-theory (enable mul add acl2::pos-fix))))
