@@ -417,5 +417,5 @@
          (defruled ,ok-pred-when-type-pred-and-not-resulterr
            (implies (and (,type-pred x)
                          (not (resulterrp x)))
-                    (,type-pred x))
+                    (,ok-pred x))
            :enable ,type-pred)))))
