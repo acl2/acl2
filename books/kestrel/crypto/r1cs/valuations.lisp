@@ -81,6 +81,13 @@
   :hints (("Goal" :in-theory (enable r1cs-valuationp
                                      valuation-bindsp))))
 
+(defthmd <=-of-0-and-lookup-equal
+  (implies (and (r1cs-valuationp valuation prime)
+                (valuation-bindsp valuation var))
+           (<= 0 (lookup-equal var valuation)))
+  :hints (("Goal" :in-theory (enable r1cs-valuationp
+                                     valuation-bindsp))))
+
 (defthmd acl2-numberp-of-lookup-equal
   (implies (and (r1cs-valuationp valuation prime)
                 (valuation-bindsp valuation var))
