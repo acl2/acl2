@@ -23,7 +23,7 @@
 	(least-divisor (1+ k) n))
     ()))
 
-(defn primep (n)
+(defnd primep (n)
   (and (integerp n)
        (>= n 2)
        (equal (least-divisor 2 n) n)))
