@@ -87,11 +87,11 @@
   :hints (("Goal" :in-theory (enable get-vars-from-term))))
 
 (defthm true-listp-of-get-vars-from-terms
-  (implies (pseudo-term-listp terms)
-           (true-listp (get-vars-from-terms terms)))
+  (true-listp (get-vars-from-terms terms))
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable get-vars-from-terms))))
 
 (defthm true-listp-of-get-vars-from-term
-  (implies (pseudo-termp term)
-           (true-listp (get-vars-from-term term)))
+  (true-listp (get-vars-from-term term))
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable get-vars-from-term))))

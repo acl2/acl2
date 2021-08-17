@@ -30,7 +30,7 @@
 ;asking whether a bvsx is negative is the same as asking whether the top bit of
 ;the value being sign extended is 1.
 (defthm sbvlt-of-bvsx
-  (implies (and (natp size)
+  (implies (and (integerp size)
                 (posp n)
                 (< n size))
            (equal (sbvlt size (bvsx size n x) 0)

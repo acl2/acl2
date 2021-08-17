@@ -148,7 +148,7 @@
 
 ;todo: handle the other cases
 (defthm <-of-*-of-/-and-1-when-neg
-  (implies (and (< x 0)
+  (implies (and ;; (< x 0)
                 (< y 0)
                 (rationalp y)
                 (rationalp x)
