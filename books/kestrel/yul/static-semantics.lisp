@@ -361,9 +361,9 @@
                         (expt 2 256))
                      :wellformed
                    err)
-     :string (if (<= (len lit.content) 32)
-                 :wellformed
-               err)
+     :ascii-string (if (<= (len lit.content) 32)
+                       :wellformed
+                     err)
      :hex-string (if (and (< 0 (len lit.content))
                           (<= (len lit.content) 32))
                      :wellformed
