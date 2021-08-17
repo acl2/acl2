@@ -113,14 +113,14 @@
 (defthm unsigned-byte-p-of-bvcount-gen
   (implies (and (<= (integer-length size) size2)
                 (natp size)
-                (natp size2))
+                (integerp size2))
            (unsigned-byte-p size2 (bvcount size x)))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvcount)
            :in-theory (disable unsigned-byte-p-of-bvcount))))
 
 (defthm bvcount-of-bvchop
   (implies (and (<= size size2)
-                (natp size2)
+                (integerp size2)
                 (natp size))
            (equal (bvcount size (bvchop size2 x))
                   (bvcount size x)))
@@ -199,7 +199,7 @@
 
 (defthm bvcount-of-bvcat-irrel
   (implies (and (<= size lowsize)
-                (natp lowsize)
+                (integerp lowsize)
                 (natp size))
            (equal (bvcount size (bvcat highsize highval lowsize lowval))
                   (bvcount size lowval)))
@@ -207,8 +207,7 @@
 
 (defthm bvcount-of-bvcat-of-1-arg1
   (implies (and (equal (+ 1 lowsize) size) ;gen
-                (natp lowsize)
-                (natp size))
+                (natp lowsize))
            (equal (bvcount size (bvcat 1 bit lowsize lowval))
                   (+ (getbit 0 bit)
                      (bvcount lowsize lowval))))
@@ -216,8 +215,7 @@
 
 (defthm bvcount-of-bvchop-when-unsigned-byte-p
   (implies (and (unsigned-byte-p xsize x)
-                (natp size)
-                (natp xsize))
+                (natp size))
            (equal (bvcount size (bvchop xsize x))
                   (bvcount size x)))
   :hints (("Goal" :use (:instance split-bv
@@ -231,8 +229,7 @@
 (defthm bvcount-tighten-size
   (implies (and (unsigned-byte-p xsize x)
                 (< xsize size) ;not <= to avoid loops
-                (natp size)
-                (natp xsize))
+                (natp size))
            (equal (bvcount size x)
                   (bvcount xsize x)))
   :hints (("subgoal *1/5" :use (:instance GETBIT-TOO-HIGH (n (+ -1 SIZE)))
