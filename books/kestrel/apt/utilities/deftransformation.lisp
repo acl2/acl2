@@ -232,7 +232,7 @@
                      whole-form
                      ctx-symbol
                      state))
-               (with-output! :off (proof-tree warning! warning observation prove event summary proof-builder history) ;everything but error
+               (with-output! :off (proof-tree warning! warning observation prove event summary proof-builder history) ;everything but error and comment
                              :gag-mode nil
                              ,(maybe-wrap-with-revert-world
                                revert-world
