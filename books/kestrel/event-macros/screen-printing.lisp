@@ -84,7 +84,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "See @(tsee event-macro-screen-printing).")))
+    "See @(see event-macro-screen-printing).")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
