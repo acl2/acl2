@@ -24,6 +24,7 @@
 (include-book "kestrel/alists-light/lookup-eq-lst" :dir :system)
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
+(include-book "kestrel/utilities/polarity" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -2085,9 +2086,224 @@
 ;;maybe move these up:
 
 (include-book "kestrel/bv-lists/packbv" :dir :system)
+(local (include-book "kestrel/bv/rules4" :dir :system))
 
-;; (defthm make-range-check-a-constraints-correct-forward
-;;   (implies (and (r1cs-constraints-holdp (make-range-check-a-constraints i avars pivars c pivar-renaming) valuation p)
+(local (in-theory (disable TAKE-OPENER-ALT REMOVE-EQUAL)))
+
+(defthm getbit-when-<-of-index-of-lowest-0
+  (implies (and (< i (index-of-lowest-0 x))
+                (natp i))
+           (equal (getbit i x)
+                  1)))
+
+(defthm getbit-of-INDEX-OF-LOWEST-0-aux
+  (implies (and (natp c)
+                (natp i))
+           (EQUAL (GETBIT (INDEX-OF-LOWEST-0-aux i C) C)
+                  0))
+  :hints (("Goal" :in-theory (enable INDEX-OF-LOWEST-0 INDEX-OF-LOWEST-0-AUX))))
+
+(defthm getbit-of-INDEX-OF-LOWEST-0
+  (implies (natp c)
+           (EQUAL (GETBIT (INDEX-OF-LOWEST-0 C) C)
+                  0))
+  :hints (("Goal" :in-theory (enable INDEX-OF-LOWEST-0 INDEX-OF-LOWEST-0-AUX))))
+
+(defthm bvchop-when-<=-of-index-of-lowest-0
+  (implies (and (<= i (index-of-lowest-0 c))
+                (natp c)
+                (natp i))
+           (equal (bvchop i c)
+                  (+ -1 (expt 2 i))))
+  :hints (("subGoal *1/5" :use (:instance acl2::split-bv
+                                          (y (BVCHOP I C))
+                                          (n i)
+                                          (m (+ -1 i)))
+           :in-theory (enable bvcat acl2::logapp)
+           )))
+
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+
+
+;; (thm
+;;  (implies (posp i)
+;;           (<= (BVCAT 1 highval (+ -1 I) lowval)
+;;               (+ -1 (expt 2 i)))))
+
+(defthmd valuation-bindsp-of-cdr-of-assoc-equal
+  (implies (and (valuation-binds-allp valuation (strip-cdrs alist))
+                (assoc-equal key alist))
+           (valuation-bindsp valuation (cdr (assoc-equal key alist)))))
+
+(defthm valuation-binds-allp-when-equal-of-cons
+  (implies (equal x (cons free1 free2))
+           (equal (valuation-binds-allp valuation x)
+                  (and (valuation-bindsp valuation free1)
+                       (valuation-binds-allp valuation free2)))))
+
+   ;drop?
+(defthm valuation-bindsp-of-nth
+  (implies (and (valuation-binds-allp valuation x)
+                (natp n)
+                (< n (len x)))
+           (valuation-bindsp valuation (nth n x))))
+
+(defthm valuation-binds-allp-when-subsetp-equal-alt
+  (implies (and (subsetp-equal vars vars+)
+                (valuation-binds-allp valuation vars+))
+           (valuation-binds-allp valuation vars))
+  :hints (("Goal" :in-theory (enable valuation-binds-allp subsetp-equal))))
+
+;; If the constraints hold, then A <= C.
+(defthm make-range-check-a-constraints-correct-forward
+  (implies (and (r1cs-constraints-holdp (make-range-check-a-constraints i avars pivars c pivar-renaming) valuation p)
+                (r1cs-valuationp valuation p)
+                (rtl::primep p)
+                ;; All of the pivars are correct:
+                (pivars-correctp (indices-for-1s (+ -2 n) (index-of-lowest-0 c) c) valuation avars pivars c n p)
+                ;; ;; this is implied by the pi constraints holding:
+                ;; (acl2::bit-listp (acl2::lookup-eq-lst (pivars-for-1s pivars (+ -2 n) (index-of-lowest-0 c) c) valuation))
+                ;; (acl2::bitp (acl2::lookup-eq (nth (+ -1 n) avars) valuation)) ; since some pis may get renamed to this
+                ;; the values in the renaming only include certain pivars and a_n-1:
+                (alistp pivar-renaming)
+                (subsetp-equal (strip-cdrs pivar-renaming)
+                               (cons (nth (+ -1 n) avars)
+                                     (pivars-for-1s pivars (+ -2 n) (index-of-lowest-0 c) c)))
+                (equal (strip-cars pivar-renaming)
+                       (append (acl2::reverse-list (indices-for-0s (+ -2 n) (index-of-lowest-0 c) c))
+                               (list (+ -1 n)) ;since we start by setting pi_n-1 to be a_n-1
+                               ))
+                (renaming-correctp pivar-renaming c n avars valuation p) ; we asume the renaming from the pivar computation is correct
+                (integerp i)
+                (<= -1 i)
+                (<= i (+ -1 n))
+                (equal n (len avars))
+                (equal n (len pivars))
+                (symbol-listp avars)
+                (symbol-listp pivars)
+                (not (intersection-equal avars pivars))
+                (no-duplicatesp-equal avars)
+                (no-duplicatesp-equal pivars)
+                (posp n)
+                (natp c)
+                (unsigned-byte-p n c)
+                (valuation-binds-allp valuation avars)
+                (valuation-binds-allp valuation (pivars-for-1s pivars (+ -2 n) (index-of-lowest-0 c) c))
+                (equal 1 (getbit (+ -1 n) c)) ;; leading 1
+                (if (< i (+ -1 n))
+                    ;; only assume this if i is not n-1 (it's meaningless in that case):
+                    (equal 1 (lookup-eq
+                              ;; get the true pivar:
+                              (if (assoc-eq (+ 1 i) pivar-renaming)
+                                  (cdr (assoc-eq (+ 1 i) pivar-renaming))
+                                (nth (+ 1 i) pivars))
+                              valuation))
+                  t))
+           ;; if pi_i+1 is 1, then all the a's above i are >= their c's, so
+           ;; we make the check of a_i vs c_i (either all the a's are equal
+           ;; to their c's, so we need the check, or some a is > its c, so
+           ;; the whole comparison is false and this check is irrelevant):
+           (<= (acl2::packbv (+ 1 i) 1 (acl2::lookup-eq-lst (acl2::reverse-list (take (+ 1 i) avars)) valuation))
+               (acl2::bvchop (+ 1 i) c))
+           )
+  :hints (("subgoal *1/2" :cases ((equal i (+ -1 (len avars)))
+                                  (and (not (equal i (+ -1 (len avars))))
+                                       (< I (INDEX-OF-LOWEST-0 C)))))
+          ("[1]subgoal 10" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+          ("[1]subgoal 5" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+          ("[1]subgoal 4" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+          ("[1]subgoal 3" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+          ("[1]subgoal 2" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+          ("[1]subgoal 1" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+          ("Goal" :induct (make-range-check-a-constraints i avars pivars c pivar-renaming)
+           :expand ((AVARS-FOR-1S AVARS I C)
+                    (PI I C (LEN AVARS) AVARS VALUATION P)
+                    (PI (LEN AVARS) C (LEN AVARS) AVARS VALUATION P)
+                    (PI (+ -1 (LEN AVARS)) C (LEN AVARS) AVARS VALUATION P))
+           :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (make-range-check-a-constraints
+                            ACL2::PACKBV-OPENER
+                            zip
+                            )
+                           (index-of-lowest-0
+                            ALISTP)))))
+
+(local (in-theory (disable ACL2::BITP-BECOMES-UNSIGNED-BYTE-P alistp)))
+
+;todo: use polarities
+(defthm equal-of-1-when-bitp-weaken
+  (implies (and (syntaxp (acl2::want-to-weaken (equal x 1)))
+                (bitp x))
+           (equal (EQUAL x 1)
+                  (not (equal x 0)))))
+
+(defthm r1cs-constraints-holdp-of-make-range-check-a-constraints-when-<-of-index-of-lowest-0
+  (implies (and (< i (index-of-lowest-0 c))
+                (integerp i)
+                ;(natp c)
+                (valuation-binds-allp valuation avars)
+                (r1cs-valuationp valuation p)
+                (rtl::primep p)
+                (<= (+ 1 i) (len avars))
+                )
+           (iff (r1cs-constraints-holdp (make-range-check-a-constraints i avars pivars c pivar-renaming) valuation p)
+                (acl2::bit-listp (acl2::lookup-eq-lst (take (+ 1 i) avars) valuation))))
+  :hints (("Goal" :expand (nth 0 avars)
+           :in-theory (enable make-range-check-a-constraints
+                              TAKE-OPENER-ALT))))
+
+(defthm BIT-LISTP-of-LOOKUP-EQ-LST-when-subsetp-equal
+  (implies (and (ACL2::BIT-LISTP (ACL2::LOOKUP-EQ-LST vars+ VALUATION))
+                (subsetp-equal vars vars+))
+           (ACL2::BIT-LISTP (ACL2::LOOKUP-EQ-LST vars VALUATION)))
+  :hints (("Goal" :in-theory (enable subsetp-equal))))
+
+(defthm <-of-if-arg1
+  (equal (< (IF test x y) z)
+         (if test
+             (< x z)
+           (< y z))))
+
+(defthm make-range-check-constraints-correct-forward
+  (implies (and (r1cs-constraints-holdp (make-range-check-constraints avars pivars c n) valuation p)
+                (r1cs-valuationp valuation p)
+                (rtl::primep p)
+                (equal n (len avars))
+                (equal n (len pivars))
+                (symbol-listp avars)
+                (symbol-listp pivars)
+                (not (intersection-equal avars pivars))
+                (no-duplicatesp-equal avars)
+                (no-duplicatesp-equal pivars)
+                (posp n)
+                (unsigned-byte-p n c)
+                (valuation-binds-allp valuation avars)
+                (valuation-binds-allp valuation (pivars-for-1s pivars (+ -2 n) (index-of-lowest-0 c) c))
+                (equal 1 (getbit (+ -1 n) c)) ;leading 1
+                )
+           (<= (acl2::packbv n 1 (acl2::lookup-eq-lst (acl2::reverse-list avars) valuation))
+               c))
+  :hints (("Goal" :in-theory (e/d (make-range-check-constraints)
+                                  (make-range-check-pi-constraints-correct-1
+                                   MAKE-RANGE-CHECK-PI-CONSTRAINTS-CORRECT-1-FW
+                                   make-range-check-a-constraints-correct-forward))
+           :use ((:instance make-range-check-pi-constraints-correct-1)
+                 (:instance make-range-check-a-constraints-correct-forward
+                            (i (+ -1 n))
+                            (PIVAR-RENAMING (mv-nth 1 (MAKE-RANGE-CHECK-PI-CONSTRAINTS AVARS PIVARS C N))))))))
+
+;zz
+;once a pi is zero, subsequence a-constraints are just bitp constraints
+;; (defthm all-constraints-hold-once-pi-is-0
+;;   (implies (and (if (equal i (+ -1 n))
+;;                     t ; don't assume anything in this case since there is no pi_n
+;;                   (equal 0 (lookup-eq
+;;                             ;; the true pi:
+;;                             (if (assoc-eq (+ 1 i) pivar-renaming)
+;;                                 (cdr (assoc-eq (+ 1 i) pivar-renaming))
+;;                               (nth (+ 1 i) pivars))
+;;                             valuation)))
+
 ;;                 (r1cs-valuationp valuation p)
 ;;                 (rtl::primep p)
 ;;                 ;; All of the pivars are correct:
@@ -2096,6 +2312,7 @@
 ;;                 ;; (acl2::bit-listp (acl2::lookup-eq-lst (pivars-for-1s pivars (+ -2 n) (index-of-lowest-0 c) c) valuation))
 ;;                 ;; (acl2::bitp (acl2::lookup-eq (nth (+ -1 n) avars) valuation)) ; since some pis may get renamed to this
 ;;                 ;; the values in the renaming only include certain pivars and a_n-1:
+;;                 (alistp pivar-renaming)
 ;;                 (subsetp-equal (strip-cdrs pivar-renaming)
 ;;                                (cons (nth (+ -1 n) avars)
 ;;                                      (pivars-for-1s pivars (+ -2 n) (index-of-lowest-0 c) c)))
@@ -2103,9 +2320,10 @@
 ;;                        (append (acl2::reverse-list (indices-for-0s (+ -2 n) (index-of-lowest-0 c) c))
 ;;                                (list (+ -1 n)) ;since we start by setting pi_n-1 to be a_n-1
 ;;                                ))
+;;                 (renaming-correctp pivar-renaming c n avars valuation p) ; we asume the renaming from the pivar computation is correct
 ;;                 (integerp i)
-;;                 (<= -i i)
-;;                 (< i n)
+;;                 (<= -1 i)
+;;                 (<= i (+ -1 n))
 ;;                 (equal n (len avars))
 ;;                 (equal n (len pivars))
 ;;                 (symbol-listp avars)
@@ -2115,35 +2333,120 @@
 ;;                 (no-duplicatesp-equal pivars)
 ;;                 (posp n)
 ;;                 (natp c)
-;;                 (alistp pivar-renaming)
-;;                 (renaming-correctp pivar-renaming c n avars valuation p)
+;;                 (unsigned-byte-p n c)
 ;;                 (valuation-binds-allp valuation avars)
 ;;                 (valuation-binds-allp valuation (pivars-for-1s pivars (+ -2 n) (index-of-lowest-0 c) c))
 ;;                 (equal 1 (getbit (+ -1 n) c)) ;; leading 1
 ;;                 )
-;;            (<= (acl2::packbv (+ 1 i) 1 (acl2::lookup-eq-lst (take (+ 1 i) avars) valuation))
-;;                c))
-;;   :hints (("subgoal *1/2" :cases ( ;(< i (INDEX-OF-LOWEST-0 C))
-;;                                   (equal i (+ -1 n))
-;;                                   ;; (and (>= i (INDEX-OF-LOWEST-0-AUX 0 C))
-;;                                   ;;      (EQUAL (NTH (BINARY-+ '-1 (LEN AVARS)) AVARS)
-;;                                   ;;                (CDR (ASSOC-EQUAL (NTH (BINARY-+ '1 I) PIVARS)
-;;                                   ;;                                  PIVAR-RENAMING))))
+;;            (iff (r1cs-constraints-holdp (make-range-check-a-constraints i avars pivars c pivar-renaming) valuation p)
+;;                 (acl2::bit-listp (acl2::lookup-eq-lst (take (+ 1 i) avars) valuation))))
+;;   :hints (("subgoal *1/2" :cases ((equal (index-of-lowest-0 c) (len avars))
+;;                                   (equal (index-of-lowest-0 c) (+ -2 (len avars)))
+;;                                   (and (< i (index-of-lowest-0 c))
+;;                                        (< (index-of-lowest-0 c) (+ -2 (len avars))))
+;;                                   (and (< (index-of-lowest-0 c) (+ -2 (len avars)))
+;;                                        (not (< i (index-of-lowest-0 c)))
+;;                                        (equal i (+ -1 (len avars))))
+;;                                   (and (< (index-of-lowest-0 c) (+ -2 (len avars)))
+;;                                        (not (< i (index-of-lowest-0 c)))
+;;                                        (equal i (+ -2 (len avars))))
+
 ;;                                   )
-;;            :in-theory (e/d (make-range-check-a-constraints
-;;                             take-opener-alt)
-;;                            (helper2
-;;                             index-of-lowest-0))
-;;            :use (:instance helper2
-;;                            (key (+ 1 I))
-;;                            (val (NTH (+ -1 (LEN AVARS)) AVARS))
-;;                            (alist PIVAR-RENAMING)
-;;                            (vals (PIVARS-FOR-1S PIVARS (+ -2 (LEN AVARS))
-;;                                                 (INDEX-OF-LOWEST-0 C)
-;;                                                 C)))
+;;            ;; :use ((:instance LOOKUP-EQUAL-OF-NTH-WHEN-PIVARS-CORRECTP
+;;            ;;                  (i (+ -2 (LEN AVARS)))
+;;            ;;                  (indices (INDICES-FOR-1S (+ -2 (LEN AVARS)) (+ 1 (INDEX-OF-LOWEST-0 C)) C))
+;;            ;;                  (n (len avars))
+;;            ;;                  (prime p))
+;;            ;;       (:instance LOOKUP-EQUAL-OF-NTH-WHEN-PIVARS-CORRECTP
+;;            ;;                  (i (+ 1 i))
+;;            ;;                  (indices (INDICES-FOR-1S (+ -2 (LEN AVARS)) (+ 1 (INDEX-OF-LOWEST-0 C)) C))
+;;            ;;                  (n (len avars))
+;;            ;;                  (prime p))
+;;            ;;       (:instance LOOKUP-EQUAL-OF-NTH-WHEN-PIVARS-CORRECTP
+;;            ;;                  (i i)
+;;            ;;                  (indices (INDICES-FOR-1S (+ -2 (LEN AVARS)) (+ 1 (INDEX-OF-LOWEST-0 C)) C))
+;;            ;;                  (n (len avars))
+;;            ;;                  (prime p)))
+;;            ;; :in-theory (e/d (MAKE-RANGE-CHECK-A-CONSTRAINTS
+;;            ;;                  TAKE-OPENER-ALT
+;;            ;;                  natp) (LOOKUP-EQUAL-OF-NTH-WHEN-PIVARS-CORRECTP)))
 ;;            )
+;;           ("Goal" :do-not '(generalize eliminate-destructors)
+;;            :induct (make-range-check-a-constraints i avars pivars c pivar-renaming)
+;;            :expand ((PI I C (LEN AVARS) AVARS VALUATION P)
+;;                     ;;(PI (+ -1 (LEN AVARS)) C (LEN AVARS) AVARS VALUATION P)
+;;                     )
+;;            :in-theory (enable MAKE-RANGE-CHECK-A-CONSTRAINTS
+;;                               TAKE-OPENER-ALT
+;;                               natp))))
+
+;; ;; if A <= C, then the constraints hold
+;; (defthm make-range-check-a-constraints-correct-backward
+;;   (implies (and (<= (acl2::packbv (+ 1 i) 1 (acl2::lookup-eq-lst (acl2::reverse-list (take (+ 1 i) avars)) valuation))
+;;                     (acl2::bvchop (+ 1 i) c))
+;;                 (r1cs-valuationp valuation p)
+;;                 (rtl::primep p)
+;;                 ;; All of the pivars are correct:
+;;                 (pivars-correctp (indices-for-1s (+ -2 n) (index-of-lowest-0 c) c) valuation avars pivars c n p)
+;;                 ;; ;; this is implied by the pi constraints holding:
+;;                 ;; (acl2::bit-listp (acl2::lookup-eq-lst (pivars-for-1s pivars (+ -2 n) (index-of-lowest-0 c) c) valuation))
+;;                 ;; (acl2::bitp (acl2::lookup-eq (nth (+ -1 n) avars) valuation)) ; since some pis may get renamed to this
+;;                 ;; the values in the renaming only include certain pivars and a_n-1:
+;;                 (alistp pivar-renaming)
+;;                 (subsetp-equal (strip-cdrs pivar-renaming)
+;;                                (cons (nth (+ -1 n) avars)
+;;                                      (pivars-for-1s pivars (+ -2 n) (index-of-lowest-0 c) c)))
+;;                 (equal (strip-cars pivar-renaming)
+;;                        (append (acl2::reverse-list (indices-for-0s (+ -2 n) (index-of-lowest-0 c) c))
+;;                                (list (+ -1 n)) ;since we start by setting pi_n-1 to be a_n-1
+;;                                ))
+;;                 (renaming-correctp pivar-renaming c n avars valuation p) ; we asume the renaming from the pivar computation is correct
+;;                 (integerp i)
+;;                 (<= -1 i)
+;;                 (<= i (+ -1 n))
+;;                 (equal n (len avars))
+;;                 (equal n (len pivars))
+;;                 (symbol-listp avars)
+;;                 (symbol-listp pivars)
+;;                 (not (intersection-equal avars pivars))
+;;                 (no-duplicatesp-equal avars)
+;;                 (no-duplicatesp-equal pivars)
+;;                 (posp n)
+;;                 (natp c)
+;;                 (unsigned-byte-p n c)
+;;                 (valuation-binds-allp valuation avars)
+;;                 (valuation-binds-allp valuation (pivars-for-1s pivars (+ -2 n) (index-of-lowest-0 c) c))
+;;                 (equal 1 (getbit (+ -1 n) c)) ;; leading 1
+;;                 ;; (if (< i (+ -1 n))
+;;                 ;;     ;; only assume this if i is not n-1 (it's meaningless in that case):
+;;                 ;;     (equal 1 (lookup-eq
+;;                 ;;               ;; get the true pivar:
+;;                 ;;               (if (assoc-eq (+ 1 i) pivar-renaming)
+;;                 ;;                   (cdr (assoc-eq (+ 1 i) pivar-renaming))
+;;                 ;;                 (nth (+ 1 i) pivars))
+;;                 ;;               valuation))
+;;                 ;;   t)
+;;                 (acl2::bit-listp (acl2::lookup-eq-lst avars valuation)) ;proved elsewhere??
+;;                 )
+;;            (r1cs-constraints-holdp (make-range-check-a-constraints i avars pivars c pivar-renaming) valuation p)
+;;            )
+;;   :hints (("subgoal *1/2" :cases ((bitp (LOOKUP-EQUAL (NTH I AVARS) VALUATION))))
+;;            ;; ("[1]subgoal 10" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+;;           ;; ("[1]subgoal 5" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+;;           ;; ("[1]subgoal 4" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+;;           ;; ("[1]subgoal 3" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+;;           ;; ("[1]subgoal 2" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+;;           ;; ("[1]subgoal 1" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
 ;;           ("Goal" :induct (make-range-check-a-constraints i avars pivars c pivar-renaming)
-;;            :expand ((AVARS-FOR-1S AVARS I C))
+;;            :expand ((AVARS-FOR-1S AVARS I C)
+;;                     (PI I C (LEN AVARS) AVARS VALUATION P)
+;;                     (PI (LEN AVARS) C (LEN AVARS) AVARS VALUATION P)
+;;                     (PI (+ -1 (LEN AVARS)) C (LEN AVARS) AVARS VALUATION P)
+;;                     (PI (+ 1 I) C (LEN AVARS) AVARS VALUATION P))
+;;            :do-not '(generalize eliminate-destructors)
 ;;            :in-theory (e/d (make-range-check-a-constraints
-;;                             take-opener-alt)
-;;                            (index-of-lowest-0)))))
+;;                             ACL2::PACKBV-OPENER
+;;                             zip
+;;                             )
+;;                            (index-of-lowest-0
+;;                             ALISTP)))))
