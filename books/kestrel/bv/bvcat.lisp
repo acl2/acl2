@@ -307,6 +307,16 @@
   :hints (("Goal" :use (:instance bvcat-numeric-bound2
                                   (k (expt 2 (+ highsize lowsize)))))))
 
+(defthm bvcat-upper-bound-linear-strong
+  (implies (and (natp lowsize)
+                (natp highsize))
+           (<= (bvcat highsize highval
+                      lowsize lowval)
+               (+ -1 (expt 2 (+ highsize lowsize)))))
+  :rule-classes :linear
+  :hints (("Goal" :use (:instance bvcat-upper-bound-linear)
+           :in-theory (disable bvcat-upper-bound-linear))))
+
 ;was disabled (why?)
 (defthm bvcat-of-0
   (equal (bvcat highsize 0 lowsize lowval)
