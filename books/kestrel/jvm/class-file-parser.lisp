@@ -1205,9 +1205,8 @@
   :hints (("Goal" :in-theory (enable get-class-names-for-indices))))
 
 (defthm len-bound-for-get-class-names-for-indices
-  (implies t ;(not (mv-nth 0 (get-class-names-for-indices count bytes constant-pool)))
-           (<= (len (mv-nth 2 (get-class-names-for-indices count bytes constant-pool)))
-               (len bytes)))
+  (<= (len (mv-nth 2 (get-class-names-for-indices count bytes constant-pool)))
+      (len bytes))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable get-class-names-for-indices))))
 
@@ -3527,5 +3526,5 @@
                              (mv-nth 1 (parse-class-file-bytes bytes constant-pool)))))
 
 (defthm true-listp-mv-nth-3-of-parse-class-file-bytes
-  (implies (not (mv-nth 0 (parse-class-file-bytes bytes constant-pool)))
-           (true-listp (mv-nth 3 (parse-class-file-bytes bytes constant-pool)))))
+  (true-listp (mv-nth 3 (parse-class-file-bytes bytes constant-pool)))
+  :rule-classes :type-prescription)
