@@ -914,6 +914,12 @@
   (declare (xargs :stobjs state
                   :mode :program))
   (b* ((body (defthm-body name (w state)))
+       ;;optimize this?
+       (untouchable-fns-in-body (intersection-eq (all-fnnames body)
+                                                 (global-val 'untouchable-fns (w state))))
+       ((when untouchable-fns-in-body)
+        (prog2$ (cw "(Skipping checking of ~x0 because it mentions untouchable fns ~x1.)~%" name untouchable-fns-in-body)
+                state))
        ((mv hyps conclusion)
         (get-hyps-and-conc body))
        (state (check-hyps name
