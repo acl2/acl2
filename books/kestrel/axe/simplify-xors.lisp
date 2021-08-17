@@ -43,6 +43,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 
 ;(local (in-theory (disable car-becomes-nth-of-0)))
 
@@ -66,6 +67,7 @@
                           myquotep-of-nth-when-all-dargp
                           <=-of-nth-when-all-<= ;todo
                           <-of-+-of-1-when-integers
+                          natp-of-+-of-1
                           )))
 
 ;move
@@ -1336,12 +1338,6 @@
           (if test
               (integerp tp)
             (integerp ep)))))
-
-;disable?
-(defthm natp-of-+-of-1-alt
-  (implies (integerp x)
-           (equal (natp (+ 1 x))
-                  (<= -1 x))))
 
 ;TODO: Consider making a version that returns an array, to avoid the caller having to convert so much between lists and arrays.
 ;dag-lst should not be a quotep or empty

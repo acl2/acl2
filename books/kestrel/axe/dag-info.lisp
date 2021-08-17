@@ -18,6 +18,7 @@
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 
 (defun pair-with-rational-cdrp (x)
   (declare (xargs :guard t))

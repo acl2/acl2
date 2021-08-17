@@ -24,6 +24,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
+(local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 
 ;(local (in-theory (disable list::nth-with-large-index-2))) ;for speed
 
