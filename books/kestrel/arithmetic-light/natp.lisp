@@ -17,7 +17,13 @@
            (equal (natp (+ -1 x))
                   (< 0 x))))
 
-(defthm natp-of-+-of-1
+;; This is nice because it preserves natp as he abstraction
+(defthmd natp-of-+-of-1
+  (implies (natp x)
+           (natp (+ 1 x)))
+  :hints (("Goal" :in-theory (enable natp))))
+
+(defthmd natp-of-+-of-1-alt
   (implies (integerp x)
            (equal (natp (+ 1 x))
                   (<= -1 x))))
