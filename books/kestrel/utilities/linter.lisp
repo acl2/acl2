@@ -878,11 +878,14 @@
                (equal *t* (farg2 (unquote (farg3 hyp))))
                (equal *nil* (farg3 (unquote (farg3 hyp))))
                )
-          (let* ((core-term (farg1 (unquote (farg3 hyp))))
-                 (conjuncts (get-conjuncts core-term)))
-            (check-for-implied-terms ctx
-                                     "syntaxp conjunct"
-                                     conjuncts step-limit state))
+          (let* ((core-term (farg1 (unquote (farg3 hyp)))))
+            (if (not (logic-fnsp core-term (w state)))
+                (prog2$ (cw "(Skipping checking syntaxp hyp ~x0 in ~x1 because it contains :program mode functions.)~%" hyp ctx)
+                        state)
+              (let ((conjuncts (get-conjuncts core-term)))
+                (check-for-implied-terms ctx
+                                         "syntaxp conjunct"
+                                         conjuncts step-limit state))))
         (prog2$ (er hard? 'check-synp-hyp "unexpected form of synp: ~x0." hyp)
                 state))
     state))
