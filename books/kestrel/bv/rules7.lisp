@@ -24,12 +24,13 @@
          (bvnot 2 (bvcat 1 x 1 y))))
 
 (defthmd bvcat-of-bvnot-and-bitnot
-  (implies (posp size) ;why not 0?
+  (implies (natp size)
            (equal (bvcat size (bvnot size x) 1 (bitnot y))
-                  (bvnot (+ 1 size) (bvcat size x 1 y)))))
+                  (bvnot (+ 1 size) (bvcat size x 1 y))))
+  :hints (("Goal" :cases ((equal 0 size)))))
 
 (defthmd bvcat-of-bitnot-and-bvnot
-  (implies (posp size) ;why not 0?
+  (implies (natp size)
            (equal (bvcat 1 (bitnot x) size (bvnot size y))
                   (bvnot (+ 1 size) (bvcat 1 x size y)))))
 
