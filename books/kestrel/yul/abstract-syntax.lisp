@@ -244,10 +244,12 @@
      which therefore captures full information:
      leading zeros and capitalization of the letters.")
    (xdoc::p
-    "We represent a string literals is a list of elements,
+    "We represent a (non-hex) string as a list of elements,
      plus a flag saying whether the surrounding quotes are double
      or not (i.e. single).
-     This captures the full concrete syntax information.")
+     This captures the full concrete syntax information.
+     To more clearly distinguish this kind of string literal from hex strings,
+     we call these strings `ASCII strings'.")
    (xdoc::p
     "We represent a hex string as a list of hex pairs,
      plus a flag saying whether the surrounding quotes are double
@@ -256,8 +258,8 @@
   (:boolean ((get bool)))
   (:dec-number ((get nat)))
   (:hex-number ((get hex-digit-list)))
-  (:string ((content string-element-list)
-            (double-quote-p bool)))
+  (:ascii-string ((content string-element-list)
+                  (double-quote-p bool)))
   (:hex-string ((content hex-pair-list)
                 (double-quote-p bool)))
   :pred literalp)

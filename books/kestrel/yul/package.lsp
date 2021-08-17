@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
+(include-book "centaur/fty/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,4 +27,10 @@
                         nat-resultp
                         patbind-nat-result-err
                         patbind-nat-result-ok
+                        fty::err
+                        fty::info
+                        fty::ok
+                        fty::resulterr
+                        fty::resulterrp
+                        fty::stack
                         str::hex-digit-char)))

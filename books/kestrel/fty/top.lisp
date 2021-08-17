@@ -38,6 +38,7 @@
 (include-book "defunit")
 (include-book "defunit-doc")
 (include-book "map")
+(include-book "nat-result")
 (include-book "nat-set")
 (include-book "nati")
 (include-book "nibble")

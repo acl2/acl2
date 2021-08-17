@@ -2142,6 +2142,9 @@
           (acl2::value (list (list (block-item-stmt loop-stmt))
                              nil
                              limit))))
+       ((when (and (irecursivep+ fn (w state))
+                   (equal term `(,fn ,@(formals+ fn (w state))))))
+        (acl2::value (list nil nil ''0)))
        ((unless (null xforming))
         (er-soft+ ctx t (list nil nil nil)
                   "A statement term transforming ~x0 in the function ~x1 ~

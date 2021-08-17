@@ -11,9 +11,10 @@
 (in-package "YUL")
 
 (include-book "abstract-syntax")
-(include-book "errors")
 
+(include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/defunit" :dir :system)
+(include-book "kestrel/fty/nat-result" :dir :system)
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -52,7 +53,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult wellformed "the @(tsee wellformed) indicator")
+(fty::defresult wellformed-result
+  :short "Fixtype of the @(tsee wellformed) indicator and error results."
+  :ok wellformed
+  :pred wellformed-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -71,7 +75,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult funtype "function types")
+(fty::defresult funtype-result
+  :short "Fixtype of function type and error results."
+  :ok funtype
+  :pred funtype-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -89,7 +96,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult funtable "function tables")
+(fty::defresult funtable-result
+  :short "Fixtype of function table and error results."
+  :ok funtable
+  :pred funtable-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -105,7 +115,7 @@
   (b* ((pair (omap::in (identifier-fix name) (funtable-fix funtab))))
     (if (consp pair)
         (cdr pair)
-      (error (list :function-not-found (identifier-fix name)))))
+      (err (list :function-not-found (identifier-fix name)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -119,7 +129,7 @@
     "Return an error if a function with that name is already in the table."))
   (b* ((pair (omap::in (identifier-fix name) (funtable-fix funtab))))
     (if (consp pair)
-        (error (list :duplicate-function (identifier-fix name)))
+        (err (list :duplicate-function (identifier-fix name)))
       (omap::update (identifier-fix name)
                     (make-funtype :in in :out out)
                     (funtable-fix funtab))))
@@ -158,7 +168,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult vartable "variable tables")
+(fty::defresult vartable-result
+  :short "Fixtype of varible table and error results."
+  :ok vartable
+  :pred vartable-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -190,7 +203,7 @@
        (varvis (identifier-set-fix varvis)))
     (if (or (set::in var vartab)
             (set::in var varvis))
-        (error (list :duplicate-variable var))
+        (err (list :duplicate-variable var))
       (set::insert var vartab)))
   :hooks (:fix))
 
@@ -260,7 +273,7 @@
              (acl2::alpha/uscore/dollar-char-p (car chars))
              (acl2::alpha/digit/uscore/dollar-charlist-p (cdr chars)))
         :wellformed
-      (error (list :bad-identifier (identifier-fix iden)))))
+      (err (list :bad-identifier (identifier-fix iden)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -300,13 +313,13 @@
      but for now we state it as part of the static semantics."))
   (b* ((idens (path->get path))
        ((unless (consp idens))
-        (error (list :empty-path (path-fix path))))
+        (err (list :empty-path (path-fix path))))
        ((ok &) (check-identifier-list idens))
        ((unless (endp (cdr idens)))
-        (error (list :non-singleton-path (path-fix path))))
+        (err (list :non-singleton-path (path-fix path))))
        (var (car idens))
        ((unless (check-var var vartab))
-        (error (list :variable-not-found var))))
+        (err (list :variable-not-found var))))
     :wellformed)
   :hooks (:fix))
 
@@ -335,7 +348,7 @@
      such as that a string surrounded by double quotes
      cannot contain (unescaped) double quotes.
      Those are simply syntactic restrictions."))
-  (b* ((err (error (list :bad-literal (literal-fix lit)))))
+  (b* ((err (err (list :bad-literal (literal-fix lit)))))
     (literal-case
      lit
      :boolean :wellformed
@@ -348,9 +361,9 @@
                         (expt 2 256))
                      :wellformed
                    err)
-     :string (if (<= (len lit.content) 32)
-                 :wellformed
-               err)
+     :ascii-string (if (<= (len lit.content) 32)
+                       :wellformed
+                     err)
      :hex-string (if (and (< 0 (len lit.content))
                           (<= (len lit.content) 32))
                      :wellformed
@@ -410,7 +423,7 @@
     (b* (((when (endp exprs)) 0)
          ((ok n) (check-expression (car exprs) vartab funtab))
          ((unless (= n 1))
-          (error (list :multi-value-argument (expression-fix (car exprs)))))
+          (err (list :multi-value-argument (expression-fix (car exprs)))))
          ((ok n) (check-expression-list (cdr exprs) vartab funtab)))
       (1+ n))
     :measure (expression-list-count exprs))
@@ -432,9 +445,9 @@
          ((ok funty) (get-funtype call.name funtab))
          ((ok n) (check-expression-list call.args vartab funtab))
          ((unless (= n (funtype->in funty)))
-          (error (list :mismatched-formals-actuals
-                       :required (funtype->in funty)
-                       :supplied n))))
+          (err (list :mismatched-formals-actuals
+                     :required (funtype->in funty)
+                     :supplied n))))
       (funtype->out funty))
     :measure (funcall-count call))
 
@@ -442,7 +455,7 @@
   ///
   (verify-guards check-expression
     :hints
-    (("Goal" :in-theory (enable acl2::natp-when-nat-resultp-and-not-errorp))))
+    (("Goal" :in-theory (enable acl2::natp-when-nat-resultp-and-not-resulterrp))))
 
   (fty::deffixequiv-mutual check-expressions/funcalls))
 
@@ -510,7 +523,7 @@
        ((when (not init)) vartab)
        ((ok results) (check-expression init vartab funtab))
        ((unless (= results 1))
-        (error (list :declare-single-var-mismatch name results))))
+        (err (list :declare-single-var-mismatch name results))))
     vartab)
   :hooks (:fix))
 
@@ -540,11 +553,11 @@
        ((ok &) (check-identifier-list names))
        ((ok vartab-new) (add-vars names vartab varvis))
        ((unless (>= (len names) 2))
-        (error (list :declare-zero-one-var names)))
+        (err (list :declare-zero-one-var names)))
        ((when (not init)) vartab-new)
        ((ok results) (check-funcall init vartab funtab))
        ((unless (= results (len names)))
-        (error (list :declare-multi-var-mismatch names results))))
+        (err (list :declare-multi-var-mismatch names results))))
     vartab-new)
   :hooks (:fix))
 
@@ -570,7 +583,7 @@
   (b* (((ok &) (check-path target vartab))
        ((ok results) (check-expression value vartab funtab))
        ((unless (= results 1))
-        (error (list :assign-single-var-mismatch (path-fix target) results))))
+        (err (list :assign-single-var-mismatch (path-fix target) results))))
     :wellformed)
   :hooks (:fix))
 
@@ -597,11 +610,11 @@
      which is unchanged and so we do not return an updated one."))
   (b* (((ok &) (check-assign-multi-aux targets vartab))
        ((unless (>= (len targets) 2))
-        (error (list :assign-zero-one-path (path-list-fix targets))))
+        (err (list :assign-zero-one-path (path-list-fix targets))))
        ((ok results) (check-funcall value vartab funtab))
        ((unless (= results (len targets)))
-        (error (list :assign-single-var-mismatch
-                 (path-list-fix targets) results))))
+        (err (list :assign-single-var-mismatch
+               (path-list-fix targets) results))))
     :wellformed)
   :hooks (:fix)
 
@@ -782,12 +795,12 @@
      :funcall
      (b* (((ok results) (check-funcall stmt.get vartab funtab))
           ((unless (= results 0))
-           (error (list :discarded-values stmt.get))))
+           (err (list :discarded-values stmt.get))))
        (vartable-fix vartab))
      :if
      (b* (((ok results) (check-expression stmt.test vartab funtab))
           ((unless (= results 1))
-           (error (list :multi-valued-if-test stmt.test)))
+           (err (list :multi-valued-if-test stmt.test)))
           ((ok &) (check-block stmt.body
                                vartab
                                varvis
@@ -806,7 +819,7 @@
                                          nil))
           ((ok results) (check-expression stmt.test vartab-init funtab))
           ((unless (= results 1))
-           (error (list :multi-valued-for-test stmt.test)))
+           (err (list :multi-valued-for-test stmt.test)))
           ((ok &) (check-block stmt.update
                                vartab-init
                                varvis
@@ -825,11 +838,11 @@
      :switch
      (b* (((ok results) (check-expression stmt.target vartab funtab))
           ((unless (= results 1))
-           (error (list :multi-valued-switch-target stmt.target)))
+           (err (list :multi-valued-switch-target stmt.target)))
           ((unless (or (consp stmt.cases) stmt.default))
-           (error (list :no-cases-in-switch (statement-fix stmt))))
+           (err (list :no-cases-in-switch (statement-fix stmt))))
           ((unless (no-duplicatesp-equal (swcase-list->value-list stmt.cases)))
-           (error (list :duplicate-switch-cases (statement-fix stmt))))
+           (err (list :duplicate-switch-cases (statement-fix stmt))))
           ((ok &) (check-swcase-list stmt.cases
                                      vartab
                                      varvis
@@ -848,18 +861,18 @@
      :leave
      (if in-function
          (vartable-fix vartab)
-       (error (list :leave-outside-function)))
+       (err (list :leave-outside-function)))
      :break
      (if in-loop-body
          (vartable-fix vartab)
-       (error :break-not-in-loop-body))
+       (err :break-not-in-loop-body))
      :continue
      (if in-loop-body
          (vartable-fix vartab)
-       (error :continue-not-in-loop-body))
+       (err :continue-not-in-loop-body))
      :fundef
      (if in-loop-init
-         (error :fundef-in-loop-init)
+         (err :fundef-in-loop-init)
        (b* ((varvis (make-vars-inaccessible vartab varvis))
             ((ok &) (check-fundef stmt.get varvis funtab)))
          (vartable-fix vartab))))
@@ -1068,6 +1081,6 @@
     :hints
     (("Goal"
       :in-theory
-      (enable vartablep-when-vartable-resultp-and-not-errorp))))
+      (enable vartablep-when-vartable-resultp-and-not-resulterrp))))
 
   (fty::deffixequiv-mutual check-statements/blocks/cases/fundefs))
