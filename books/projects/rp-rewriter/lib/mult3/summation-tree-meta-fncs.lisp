@@ -4174,7 +4174,7 @@
                (c-spec-meta-aux s pp-lst c-lst to-be-coughed-c-lst quarternaryp))))
           (& term)))
 
-       (- (and (or #|(search-for-c-with-hash result ''(6847164902991054420 . 6847164902991054420)
+       (& (and (or #|(search-for-c-with-hash result ''(6847164902991054420 . 6847164902991054420)
                 10)||#
 
                 #|(search-for-c-with-hash result ''(169123349075 . 169123349075)

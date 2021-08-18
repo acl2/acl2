@@ -23,7 +23,7 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author: Mertcan Temel <mert@utexas.edu>
+; Original author: Mertcan Temel <mert@centtech.com>
 
 (in-package "SVL")
 
@@ -675,6 +675,31 @@
              :use (:instance equal-of-4vec-concat-with-size=1)
              :in-theory (e/d* (4vec-concat$)
                               (equal-of-4vec-concat-with-size=1
+                               4VEC-PART-SELECT-OF-CONCAT-1
+                               4VEC-RSH-OF-4VEC-CONCAT-2
+                               4VEC-RSH-OF-WIDTH=0
+                               SV::4VEC-FIX-OF-4VEC
+                               SV::4VEC-P-OF-4VEC-CONCAT)))))
+
+  (def-rp-rule equal-of-4vec-concat$-with-posp-size
+    (implies (and (4vec-p x)
+                  (4vec-p l)
+                  (posp size))
+             (and (equal (equal x
+                                (4vec-concat$ size k l))
+                         (and (equal (bits x 0 1)
+                                     (bits k 0 1))
+                              (equal (svl::4vec-rsh 1 x)
+                                     (sv::4vec-rsh 1 (4vec-concat$ size k l)))))
+                  (equal (equal (4vec-concat$ size k l) x)
+                         (and (equal (bits x 0 1)
+                                     (bits k 0 1))
+                              (equal (svl::4vec-rsh 1 x)
+                                     (sv::4vec-rsh 1 (4vec-concat$ size k l)))))))
+    :hints (("Goal"
+             :use (:instance equal-of-4vec-concat-with-posp-size)
+             :in-theory (e/d* (4vec-concat$)
+                              (equal-of-4vec-concat-with-posp-size
                                4VEC-PART-SELECT-OF-CONCAT-1
                                4VEC-RSH-OF-4VEC-CONCAT-2
                                4VEC-RSH-OF-WIDTH=0

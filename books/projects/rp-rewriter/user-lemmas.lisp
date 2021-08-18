@@ -67,9 +67,11 @@
 
 
 (def-rp-rule make-fast-alist-def
-  (equal (make-fast-alist (cons (cons x y) rest))
-         (hons-acons x y
-                     (make-fast-alist rest))))
+    (and (equal (make-fast-alist (cons (cons x y) rest))
+                (hons-acons x y
+                            (make-fast-alist rest)))
+         (equal (make-fast-alist nil)
+                nil)))
 
 (def-rp-rule len-cons
   (equal (len (cons a b))

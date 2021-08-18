@@ -43,17 +43,89 @@
       ''nil
     (if (zp n)
         (car argsvar)
-      (nth-term (1- n) (cdr argsvar)))))
+        (nth-term (1- n) (cdr argsvar)))))
+
+(define nth-4vec (n argsvar)
+  :guard (natp n)
+  (if (atom argsvar)
+      (SV::4VEC-X)
+      (if (zp n)
+          (car argsvar)
+          (nth-4vec (1- n) (cdr argsvar)))))
+
+
+(define quoted-4vec-listp (lst)
+  (if (atom lst)
+      (equal lst nil)
+      (and (consp (car lst))
+           (consp (cdar lst))
+           (acl2::fquotep (car lst))
+           (sv::4vec-p (unquote (car lst)))
+           (quoted-4vec-listp (cdr lst)))))
+
+(local
+ (defthm nth-term-opener
+   (implies (natp n)
+            (equal (nth-term n argsvar)
+                   (if (atom argsvar)
+                       ''nil
+                       (if (zp n)
+                           (car argsvar)
+                           (nth-term (1- n) (cdr argsvar))))))
+   :hints (("Goal"
+            :in-theory (e/d (nth-term) ())))))
+
+(local
+ (defthm nth-opener
+   (implies (natp n)
+            (equal (nth n argsvar)
+                   (if (atom argsvar)
+                       nil
+                       (if (zp n)
+                           (car argsvar)
+                           (nth (1- n) (cdr argsvar))))))
+   :hints (("Goal"
+            :in-theory (e/d (nth) ())))))
+
+(local
+ (defthm nth-4vec-opener
+     (implies (natp n)
+              (equal (nth-4vec n argsvar)
+                     (if (atom argsvar)
+                         (SV::4VEC-X)
+                         (if (zp n)
+                             (car argsvar)
+                             (nth-4vec (1- n) (cdr argsvar))))))
+   :hints (("Goal"
+            :in-theory (e/d (nth-4vec) ())))))
+
+(local
+ (defthm QUOTED-4VEC-LISTP-lemma
+     (implies (and (quoted-4vec-listp lst)
+                   (consp lst))
+              (and (consp (car lst))
+                   (consp (cdar lst))
+                   (acl2::fquotep (car lst))
+                   (sv::4vec-p (unquote (car lst)))
+                   (quoted-4vec-listp (cdr lst))
+                   (4VEC-P (CAR (RP::UNQUOTE-ALL lst)))))
+   :rule-classes :forward-chaining
+   :hints (("Goal"
+            :in-theory (e/d (quoted-4vec-listp
+                             RP::UNQUOTE-ALL)
+                            ())))))
+
 
 (defund svex-apply-collect-args-wog-meta (n max argsvar args-dontrw)
   (declare (xargs :measure (nfix (- (nfix max) (nfix n)))))
   (let* ((n (nfix n)) (max (nfix max)))
     (if (zp (- max n))
-        (mv nil nil)
-      (b* (((mv rest rest-dontrw)
+        (mv nil nil nil)
+      (b* (((mv rest1 rest2 rest-dontrw)
             (svex-apply-collect-args-wog-meta
              (+ 1 n) max argsvar args-dontrw)))
-        (mv (cons `(nth-term ,n ,argsvar) rest)
+        (mv (cons `(nth-4vec ,n ,argsvar) rest1)
+            (cons `(nth-term ,n ,argsvar) rest2)
             (cons `(nth-term ,n ,args-dontrw) rest-dontrw))))))
 
 (defund svex-apply-cases-wog-fn-meta (argsvar args-dontrw optable)
@@ -64,31 +136,54 @@
                     "attempting to apply unknown function ~x0~%"
                     (list (cons #\0 fn)))
                    (list 'quote (sv::4vec-x)))
-               nil))))
+            nil))))
        ((list sym fn args) (car optable))
-       ((mv entry entry-dontrw)
+       ((mv entry-for-quoted entry entry-dontrw)
         (svex-apply-collect-args-wog-meta 0 (len args) argsvar args-dontrw))
-       (call `(mv (list ',fn . ,entry)
-                  (list 'nil . ,entry-dontrw))))
+       (call
+        `(if quoted
+             (mv (list 'quote (,fn . ,entry-for-quoted)) t)
+             (mv (list ',fn . ,entry)
+                 (list 'nil . ,entry-dontrw)))))
     (cons (cons sym (cons call 'nil))
           (svex-apply-cases-wog-fn-meta argsvar args-dontrw (cdr optable)))))
 
 (defmacro svex-apply-cases-wog-meta (fn args args-dontrw)
-  (cons
-   'case
-   (cons fn
-         (svex-apply-cases-wog-fn-meta args args-dontrw
-                                       (cons '(ID sv::4VEC-FIX$INLINE (ACL2::X)
-                                                  "identity function") ;; had to
-                                             ;; change this because 4vec-fix is
-                                             ;; the only function that is inlined
-                                             (cdr sv::*svex-op-table*))))))
+  `(b* ((quoted (quoted-4vec-listp args))
+        (args (if quoted (rp::unquote-all args) args)))
+   (case ,fn
+     ,@(svex-apply-cases-wog-fn-meta args args-dontrw
+                                     (cons '(ID sv::4VEC-FIX$INLINE (ACL2::X)
+                                             "identity function") ;; had to
+                                           ;; change this because 4vec-fix is
+                                           ;; the only function that is inlined
+                                           (cdr sv::*svex-op-table*))))))
 
 (defund svex-apply-wog-meta (fn args args-dontrw)
-  (declare (xargs :guard (and (true-listp args)
-                              (true-listp args-dontrw))))
-  (let* ((fn (fnsym-fix fn)))
-    (svex-apply-cases-wog-meta fn args args-dontrw)))
+    (declare (xargs :guard (and (true-listp args)
+                                (true-listp args-dontrw))
+                    :verify-guards nil))
+    (let* ((fn (fnsym-fix fn)))
+      (svex-apply-cases-wog-meta fn args args-dontrw)))
+
+
+(local
+ (defthm true-listp-of-unquote-all
+     (implies (true-listp x)
+              (true-listp (rp::unquote-all x)))))
+
+
+(local
+ (defthm QUOTED-4VEC-LISTP-implies-4vec-listp-when-unquoted
+     (implies (and (QUOTED-4VEC-LISTP ARGS))
+              (sv::4veclist-p (rp::unquote-all args)))
+   :hints (("Goal"
+            :in-theory (e/d (QUOTED-4VEC-LISTP) ())))))
+
+(verify-guards svex-apply-wog-meta
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d () ()))))
 
 (acl2::defines
  svex-eval-wog-meta
@@ -162,6 +257,8 @@
        (case-match env
          (('falist ('quote env-falist) &)
           (svex-eval-wog-meta svex env-falist t))
+         (''nil
+          (svex-eval-wog-meta svex nil t))
          (&
           (svex-eval-wog-meta svex env-orig nil)))))
     (& (mv term nil))))
@@ -252,10 +349,20 @@
           (case-match node-env
             (('falist ('quote node-env-falist) &)
              (svexl-node-eval-wog-meta svex node-env-falist env-falist t))
+            (''nil
+             (svexl-node-eval-wog-meta svex nil env-falist t))
+            (& (svexl-node-eval-wog-meta svex node-env-orig env-orig nil))))
+         (''nil
+          (case-match node-env
+            (('falist ('quote node-env-falist) &)
+             (svexl-node-eval-wog-meta svex node-env-falist nil t))
+            (''nil
+             (svexl-node-eval-wog-meta svex nil nil t))
             (& (svexl-node-eval-wog-meta svex node-env-orig env-orig nil))))
          (&
           (svexl-node-eval-wog-meta svex node-env-orig env-orig nil)))))
     (& (mv term nil))))
+
 
 ;; (svex-eval-wog-meta '(partsel '0 '1 (bitand x y))
 ;;                  (make-fast-alist
@@ -491,6 +598,16 @@
                :in-theory (e/d (4vec-part-select
                                 4vec-part-install) ())))))
 
+
+   (local
+    (defthm QUOTED-4VEC-LISTP-and-unquote-all-correct
+        (implies (QUOTED-4VEC-LISTP ARGS)
+                 (equal (RP::UNQUOTE-ALL ARGS)
+                        (RP-EVLT-LST ARGS A)))
+      :hints (("Goal"
+               :induct (QUOTED-4VEC-LISTP ARGS)
+               :in-theory (e/d (QUOTED-4VEC-LISTP) ())))))
+   
    (defthm rp-evl-of-svex-apply-wog-meta
      (implies (and (rp-evl-meta-extract-global-facts)
                    (svex-eval-wog-formula-checks state))
@@ -632,6 +749,27 @@
       :hints (("goal"
                :in-theory (e/d (rp::is-rp) ())))))
 
+
+   (local
+    (DEFTHMd
+        RP::RP-EVLT-OF-EX-FROM-RP-reverse
+        (implies (syntaxp (not (rp::include-fnc rp::term 'rp::ex-from-rp)))
+                 (EQUAL 
+                  (RP-EVL (RP-TRANS RP::TERM) RP::A)
+                  (RP-EVL (RP-TRANS (RP::EX-FROM-RP RP::TERM))
+                          RP::A)))
+      :HINTS
+      (("Goal" :IN-THEORY (E/D (RP::EX-FROM-RP RP::IS-RP) NIL)))))
+
+   (local
+    (defthm dummy-lemma-for-nil
+        (implies (and (EQUAL (RP::EX-FROM-RP (CADDR TERM))
+                             ''NIL))
+                 (equal (RP-EVLT (CADDR TERM) A) nil))
+      :hints (("Goal"
+               :in-theory (e/d (rp::rp-evlt-of-ex-from-rp-reverse)
+                               (rp::rp-evlt-of-ex-from-rp))))))
+   
    (defthm rp-evl-of-svex-eval-wog-meta-main
      (implies (and (rp-evl-meta-extract-global-facts)
                    (rp::rp-termp term)
@@ -647,6 +785,12 @@
                                (x (cadr (cadr term)))
                                (term (caddr (rp::ex-from-rp (caddr
                                                              term)))))
+                    (:instance rp-evl-of-svex-eval-wog-meta
+                               (env-falist nil)
+                               (a a)
+                               (good-env-flg t)
+                               (x (cadr (cadr term)))
+                               (term ''nil))
                     (:instance rp-evl-of-svex-eval-wog-meta
                                (good-env-flg nil)
                                (a a)
@@ -726,6 +870,30 @@
       :hints (("goal"
                :in-theory (e/d (rp::is-rp) ())))))
 
+
+   (local
+    (DEFTHMd
+        RP::RP-EVLT-OF-EX-FROM-RP-reverse
+        (implies (syntaxp (not (rp::include-fnc rp::term 'rp::ex-from-rp)))
+                 (EQUAL 
+                  (RP-EVL (RP-TRANS RP::TERM) RP::A)
+                  (RP-EVL (RP-TRANS (RP::EX-FROM-RP RP::TERM))
+                          RP::A)))
+      :HINTS
+      (("Goal" :IN-THEORY (E/D (RP::EX-FROM-RP RP::IS-RP) NIL)))))
+   
+   (local
+    (defthm dummy-lemma-for-nil
+        (and (implies (and (EQUAL (RP::EX-FROM-RP (CADDR TERM))
+                                  ''NIL))
+                      (equal (RP-EVLT (CADDR TERM) A) nil))
+             (implies (and (EQUAL (RP::EX-FROM-RP (CADDdR TERM))
+                                  ''NIL))
+                      (equal (RP-EVLT (CADdDR TERM) A) nil)))
+      :hints (("Goal"
+               :in-theory (e/d (rp::rp-evlt-of-ex-from-rp-reverse)
+                               (rp::rp-evlt-of-ex-from-rp))))))
+
    (defthm rp-evl-of-svexl-node-eval-wog-meta-main
      (implies (and (rp-evl-meta-extract-global-facts)
                    (rp::rp-termp term)
@@ -745,6 +913,34 @@
                                                                       term))))
                                (env-term (caddr (rp::ex-from-rp (cadddr
                                                                  term)))))
+                    (:instance rp-evl-of-svexl-node-eval-wog-meta
+                               (env-falist (cadr (cadr (rp::ex-from-rp (cadddr
+                                                                        term)))))
+                               (node-env-falist nil)
+                               (a a)
+                               (good-env-flg t)
+                               (x (cadr (cadr term)))
+                               (node-env-term ''nil)
+                               (env-term (caddr (rp::ex-from-rp (cadddr
+                                                                 term)))))
+                    (:instance rp-evl-of-svexl-node-eval-wog-meta
+                               (env-falist nil)
+                               (node-env-falist (cadr (cadr (rp::ex-from-rp (caddr
+                                                                             term)))))
+                               (a a)
+                               (good-env-flg t)
+                               (x (cadr (cadr term)))
+                               (node-env-term (caddr (rp::ex-from-rp (caddr
+                                                                      term))))
+                               (env-term ''nil))
+                    (:instance rp-evl-of-svexl-node-eval-wog-meta
+                               (env-falist nil)
+                               (node-env-falist nil)
+                               (a a)
+                               (good-env-flg t)
+                               (x (cadr (cadr term)))
+                               (node-env-term ''nil)
+                               (env-term ''nil))
                     (:instance rp-evl-of-svexl-node-eval-wog-meta
                                (good-env-flg nil)
                                (a a)
@@ -933,6 +1129,12 @@
                      (term (caddr (rp::ex-from-rp (caddr term)))))
                     (:instance
                      rp-termp-svex-eval-wog-meta
+                     (env-falist nil)
+                     (good-env-flg t)
+                     (x (cadr (cadr term)))
+                     (term ''nil))
+                    (:instance
+                     rp-termp-svex-eval-wog-meta
                      (env-falist (CADDR TERM))
                      (term (CADDR TERM))
                      (good-env-flg nil)
@@ -963,6 +1165,32 @@
                      (x (cadr (cadr term)))
                      (env-term (caddr (rp::ex-from-rp (cadddr term))))
                      (node-env-term (caddr (rp::ex-from-rp (caddr term)))))
+                    (:instance
+                     rp-termp-svexl-node-eval-wog-meta
+                     (env-falist nil)
+                     (node-env-falist (cadr (cadr (rp::ex-from-rp (caddr
+                                                              term)))))
+                     (good-env-flg t)
+                     (x (cadr (cadr term)))
+                     (env-term ''nil)
+                     (node-env-term (caddr (rp::ex-from-rp (caddr term)))))
+                    (:instance
+                     rp-termp-svexl-node-eval-wog-meta
+                     (env-falist (cadr (cadr (rp::ex-from-rp (cadddr
+                                                              term)))))
+                     (node-env-falist nil)
+                     (good-env-flg t)
+                     (x (cadr (cadr term)))
+                     (env-term (caddr (rp::ex-from-rp (cadddr term))))
+                     (node-env-term ''nil))
+                    (:instance
+                     rp-termp-svexl-node-eval-wog-meta
+                     (env-falist nil)
+                     (node-env-falist nil)
+                     (good-env-flg t)
+                     (x (cadr (cadr term)))
+                     (env-term ''nil)
+                     (node-env-term ''nil))
                     (:instance
                      rp-termp-svexl-node-eval-wog-meta
                      (env-falist (CADdDR TERM))
@@ -1121,6 +1349,12 @@
                      (x (cadr (cadr term)))
                      (good-env-flg t)
                      (term (caddr (rp::ex-from-rp (caddr term)))))
+                    (:instance
+                     valid-sc-svex-eval-wog-meta
+                     (env-falist nil)
+                     (x (cadr (cadr term)))
+                     (good-env-flg t)
+                     (term ''nil))
 
                     (:instance
                      valid-sc-svex-eval-wog-meta
@@ -1148,6 +1382,32 @@
                      (good-env-flg t)
                      (env-term (caddr (rp::ex-from-rp (cadddr term))))
                      (node-env-term (caddr (rp::ex-from-rp (caddr term)))))
+                    (:instance
+                     valid-sc-svexl-node-eval-wog-meta
+                     (env-falist nil)
+                     (node-env-falist (cadr (cadr (rp::ex-from-rp (caddr
+                                                              term)))))
+                     (x (cadr (cadr term)))
+                     (good-env-flg t)
+                     (env-term ''nil)
+                     (node-env-term (caddr (rp::ex-from-rp (caddr term)))))
+                    (:instance
+                     valid-sc-svexl-node-eval-wog-meta
+                     (env-falist (cadr (cadr (rp::ex-from-rp (cadddr
+                                                              term)))))
+                     (node-env-falist nil)
+                     (x (cadr (cadr term)))
+                     (good-env-flg t)
+                     (env-term (caddr (rp::ex-from-rp (cadddr term))))
+                     (node-env-term ''nil))
+                    (:instance
+                     valid-sc-svexl-node-eval-wog-meta
+                     (env-falist nil)
+                     (node-env-falist nil)
+                     (x (cadr (cadr term)))
+                     (good-env-flg t)
+                     (env-term ''nil)
+                     (node-env-term ''nil))
                     (:instance
                      valid-sc-svexl-node-eval-wog-meta
                      (env-falist (cadddr term))

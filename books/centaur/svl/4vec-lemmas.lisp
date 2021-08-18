@@ -525,6 +525,8 @@
                                (:REWRITE ACL2::|(equal (if a b c) x)|)
                                acl2::associativity-of-logapp))))))
 
+
+
 (encapsulate
   nil
 
@@ -542,6 +544,32 @@
                                 l))))
     :hints (("Goal"
              :in-theory (e/d* (4VEC-RSH
+                               bitops::ihsext-recursive-redefs
+                               bitops::ihsext-inductions
+                               4VEC-PART-SELECT
+                               4VEC-CONCAT
+                               4VEC-SHIFT-CORE
+                               4VEC-ZERO-EXT)
+                              (4vec)))))
+
+  (defthmd equal-of-4vec-concat-with-posp-size
+   (implies (and (4vec-p x)
+                 (4vec-p l)
+                 (posp size))
+          (and (equal (equal x
+                             (4vec-concat size k l))
+                      (and (equal (sv::4vec-part-select 0 1 x)
+                                  (sv::4vec-part-select 0 1 k))
+                           (equal (svl::4vec-rsh 1 x)
+                                  (sv::4vec-rsh 1 (4vec-concat size k l)))))
+               (equal (equal (4vec-concat size k l)
+                             x)
+                      (and (equal (sv::4vec-part-select 0 1 x)
+                                  (sv::4vec-part-select 0 1 k))
+                           (equal (svl::4vec-rsh 1 x)
+                                  (sv::4vec-rsh 1 (4vec-concat size k l)))))))
+   :hints (("Goal"
+            :in-theory (e/d* (4VEC-RSH
                                bitops::ihsext-recursive-redefs
                                bitops::ihsext-inductions
                                4VEC-PART-SELECT
