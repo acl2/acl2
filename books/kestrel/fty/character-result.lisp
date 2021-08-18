@@ -14,7 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult nat-result
-  :short "Fixtype of natural numbers and errors."
-  :ok nat
-  :pred nat-resultp)
+(fty::defresult character-result
+  :short "Fixtype of characters and errors."
+  :ok character
+  :pred character-resultp)
