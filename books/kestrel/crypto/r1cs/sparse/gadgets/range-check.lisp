@@ -673,15 +673,15 @@
            (member-equal (cdr (assoc-equal key alist)) vals))
   :hints (("Goal" :in-theory (enable assoc-equal strip-cdrs))))
 
-(defthm SUBSETP-EQUAL-of-strip-cdrs-of-cdr
-  (Implies (SUBSETP-EQUAL (STRIP-CDRS x) y)
-           (SUBSETP-EQUAL (STRIP-CDRS (cdr x)) y)))
+(defthm subsetp-equal-of-strip-cdrs-of-cdr
+  (implies (subsetp-equal (strip-cdrs x) y)
+           (subsetp-equal (strip-cdrs (cdr x)) y)))
 
-(defthm SYMBOL-LISTP-of-strip-cdrs-of-cdr
-  (implies (SYMBOL-LISTP (STRIP-CDRS x))
-           (SYMBOL-LISTP (STRIP-CDRS (CDR x)))))
+(defthm symbol-listp-of-strip-cdrs-of-cdr
+  (implies (symbol-listp (strip-cdrs x))
+           (symbol-listp (strip-cdrs (cdr x)))))
 
-(in-theory (disable ASSOC-EQUAL))
+(in-theory (disable assoc-equal))
 
 (defthm bitp-of-lookup-equal-when-constraints-imply-vars-are-bitps
   (implies (and (constraints-imply-vars-are-bitps constraints vars valuation p)
@@ -1169,15 +1169,14 @@
                            (helper2
                             index-of-lowest-0))
            :use (:instance helper2
-                           (key (+ 1 I))
-                           (val (NTH (+ -1 (LEN AVARS)) AVARS))
-                           (alist PIVAR-RENAMING)
-                           (vals (PIVARS-FOR-1S PIVARS (+ -2 (LEN AVARS))
-                                       (INDEX-OF-LOWEST-0 C)
-                                       C)))
-           )
+                           (key (+ 1 i))
+                           (val (nth (+ -1 (len avars)) avars))
+                           (alist pivar-renaming)
+                           (vals (pivars-for-1s pivars (+ -2 (len avars))
+                                       (index-of-lowest-0 c)
+                                       c))))
           ("Goal" :induct (make-range-check-a-constraints i avars pivars c pivar-renaming)
-           :expand ((AVARS-FOR-1S AVARS I C))
+           :expand ((avars-for-1s avars i c))
            :in-theory (e/d (make-range-check-a-constraints
                             take-opener-alt)
                            (index-of-lowest-0)))))
@@ -1380,6 +1379,7 @@
            (pivars-correctp indices valuation avars pivars c n p))
   :hints (("Goal" :in-theory (enable pivars-correctp subsetp-equal))))
 
+;; maybe keep enabled?
 (defund constraints-imply-pivars-correctp (constraints
                                            indices valuation avars
                                            pivars
@@ -1425,12 +1425,13 @@
            (constraints-imply-pivars-correctp constraints indices valuation avars pivars c n p))
   :hints (("Goal" :in-theory (enable constraints-imply-pivars-correctp))))
 
+;drop? or keep disabled like constraints-imply-pivars-correctp?
 (defund constraints-implied-by-pivars-correctp (constraints
-                                             indices valuation avars
-                                             pivars
-                                             c
-                                             n
-                                             p)
+                                                indices valuation avars
+                                                pivars
+                                                c
+                                                n
+                                                p)
   (implies (pivars-correctp indices valuation avars pivars c n p)
            (r1cs-constraints-holdp constraints valuation p)))
 
@@ -1502,7 +1503,6 @@
                     ;; odd case:
                     (lookup-equal nil valuation))))
   :hints (("Goal" :in-theory (enable renaming-correctp assoc-equal))))
-
 
 (local
  (defthm equal-of-bitand-and-1-forced
@@ -1865,7 +1865,7 @@
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (local (include-book "kestrel/bv/rules4" :dir :system))
 
-(local (in-theory (disable TAKE-OPENER-ALT REMOVE-EQUAL)))
+(local (in-theory (disable take-opener-alt remove-equal)))
 
 (defthm getbit-when-<-of-index-of-lowest-0
   (implies (and (< i (index-of-lowest-0 x))
@@ -1873,12 +1873,12 @@
            (equal (getbit i x)
                   1)))
 
-(defthm getbit-of-INDEX-OF-LOWEST-0-aux
+(defthm getbit-of-index-of-lowest-0-aux
   (implies (and (natp c)
                 (natp i))
-           (EQUAL (GETBIT (INDEX-OF-LOWEST-0-aux i C) C)
+           (equal (getbit (index-of-lowest-0-aux i c) c)
                   0))
-  :hints (("Goal" :in-theory (enable INDEX-OF-LOWEST-0 INDEX-OF-LOWEST-0-AUX))))
+  :hints (("Goal" :in-theory (enable index-of-lowest-0 index-of-lowest-0-aux))))
 
 (defthm getbit-of-index-of-lowest-0
   (implies (natp c)
@@ -1896,11 +1896,9 @@
                                           (y (BVCHOP I C))
                                           (n i)
                                           (m (+ -1 i)))
-           :in-theory (enable bvcat acl2::logapp)
-           )))
+           :in-theory (enable bvcat acl2::logapp))))
 
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
-
 
 ;; (thm
 ;;  (implies (posp i)
@@ -1918,7 +1916,7 @@
                   (and (valuation-bindsp valuation free1)
                        (valuation-binds-allp valuation free2)))))
 
-   ;drop?
+;drop?
 (defthm valuation-bindsp-of-nth
   (implies (and (valuation-binds-allp valuation x)
                 (natp n)
@@ -2011,7 +2009,7 @@
 (defthm equal-of-1-when-bitp-weaken
   (implies (and (syntaxp (acl2::want-to-weaken (equal x 1)))
                 (bitp x))
-           (equal (EQUAL x 1)
+           (equal (equal x 1)
                   (not (equal x 0)))))
 
 (defthm r1cs-constraints-holdp-of-make-range-check-a-constraints-when-<-of-index-of-lowest-0
@@ -2026,13 +2024,12 @@
            (iff (r1cs-constraints-holdp (make-range-check-a-constraints i avars pivars c pivar-renaming) valuation p)
                 (acl2::bit-listp (acl2::lookup-eq-lst (take (+ 1 i) avars) valuation))))
   :hints (("Goal" :expand (nth 0 avars)
-           :in-theory (enable make-range-check-a-constraints
-                              TAKE-OPENER-ALT))))
+           :in-theory (enable make-range-check-a-constraints take-opener-alt))))
 
-(defthm BIT-LISTP-of-LOOKUP-EQ-LST-when-subsetp-equal
-  (implies (and (ACL2::BIT-LISTP (ACL2::LOOKUP-EQ-LST vars+ VALUATION))
+(defthm bit-listp-of-lookup-eq-lst-when-subsetp-equal
+  (implies (and (acl2::bit-listp (acl2::lookup-eq-lst vars+ valuation))
                 (subsetp-equal vars vars+))
-           (ACL2::BIT-LISTP (ACL2::LOOKUP-EQ-LST vars VALUATION)))
+           (acl2::bit-listp (acl2::lookup-eq-lst vars valuation)))
   :hints (("Goal" :in-theory (enable subsetp-equal))))
 
 (defthm <-of-if-arg1
@@ -2069,12 +2066,12 @@
            :use ((:instance make-range-check-pi-constraints-correct-1)
                  (:instance make-range-check-a-constraints-correct-forward
                             (i (+ -1 n))
-                            (PIVAR-RENAMING (mv-nth 1 (MAKE-RANGE-CHECK-PI-CONSTRAINTS AVARS PIVARS C N))))))))
+                            (pivar-renaming (mv-nth 1 (make-range-check-pi-constraints avars pivars c n))))))))
 
-(defthm INDEX-OF-LOWEST-0-helper
-  (implies (and (EQUAL 1 (GETBIT (+ -1 (LEN AVARS)) C))
+(defthm index-of-lowest-0-helper
+  (implies (and (equal 1 (getbit (+ -1 n) c))
                 (natp c))
-           (not (EQUAL (LEN AVARS) (+ 1 (INDEX-OF-LOWEST-0 C))))))
+           (not (equal n (+ 1 (index-of-lowest-0 c))))))
 
 ;; Once a pi is zero, subsequence a-constraints are just bitp constraints
 (defthmd constraints-are-just-bitp-once-pi-is-0
@@ -2085,7 +2082,6 @@
                           (cdr (assoc-eq (+ 1 i) pivar-renaming))
                         (nth (+ 1 i) pivars))
                       valuation))
-
             (r1cs-valuationp valuation p)
             (rtl::primep p)
             ;; All of the pivars are correct:
