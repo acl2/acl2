@@ -17,6 +17,7 @@
 (include-book "axe-trees")
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 (local (include-book "numeric-lists"))
 
 ;x must be a nodenum or quotep:

@@ -28,3 +28,8 @@
   (equal (bit-listp (append x y))
          (and (bit-listp (true-list-fix x))
               (bit-listp y))))
+
+(defthm bit-listp-of-cons-2 ;avoids name clash?
+  (equal (bit-listp (cons a x))
+         (and (bitp a)
+              (bit-listp x))))

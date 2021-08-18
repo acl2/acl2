@@ -23,7 +23,7 @@
 (local (in-theory (disable natp member-equal len)))
 
 (local (in-theory (enable <-of-+-of-minus1-arith-hack
-                          NATP-OF-+-OF-1)))
+                          natp-of-+-of-1)))
 
 (defthm dargp-of-if
   (equal (dargp (if test tp ep))
