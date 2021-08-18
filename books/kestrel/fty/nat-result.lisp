@@ -15,6 +15,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult nat-result
-  :short "Fixtype of natural number and error results."
+  :short "Fixtype of natural numbers and errors."
   :ok nat
   :pred nat-resultp)
