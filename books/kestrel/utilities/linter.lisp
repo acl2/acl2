@@ -92,7 +92,7 @@
           "Checking built-in event"
         (if (eq :top-level loc)
             "Checking top-level event"
-          (concatenate 'string loc ": checking"))))))
+          (concatenate 'string loc " checking"))))))
 
 ;; Returns (mv defun-names defthm-nams)
 (defun defuns-and-defthms-in-world (world triple-to-stop-at whole-world defuns-acc defthms-acc)
@@ -1047,4 +1047,5 @@
 ;; to check theorems:
 ;; (include-book "kestrel/utilities/linter" :dir :system)
 ;; ... include your books here...
+;; (set-ignore-ok t)
 ;; (acl2::run-linter :event-range :all :check-defuns nil :step-limit 100000 :suppress (:context :equality-variant :ground-term))
