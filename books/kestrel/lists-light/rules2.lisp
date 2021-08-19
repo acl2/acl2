@@ -1600,6 +1600,7 @@
   :hints (("Goal" ;:cases ((<= start end))
            :in-theory (enable equal-cons-cases2 len-update-nth))))
 
+;move
 (defthm subrange-of-subrange
   (implies (and (< end1 (+ 1 end2 (- start2)))
                 (natp start1)
@@ -1769,7 +1770,7 @@
     (< END2 (LEN LST))
     (NATP START)
     (NATP START2)
-    (NATP END)
+    (integerp END)
     (NATP END2)
     (TRUE-LISTP LST)
     (TRUE-LISTP VALS))
