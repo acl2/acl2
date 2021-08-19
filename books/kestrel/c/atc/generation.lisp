@@ -19,6 +19,7 @@
 (include-book "proof-support")
 (include-book "table")
 
+(include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/event-generation" :dir :system)
