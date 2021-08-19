@@ -592,6 +592,29 @@ of @(see svex-env-lookup), and they bind the same variables.")
 
   (local (in-theory (enable svex-env-fix))))
 
+(define svex-alist-removekeys ((keys svarlist-p) (alist svex-alist-p))
+  :returns (new-alist svex-alist-p)
+  (b* (((when (atom alist)) nil)
+       ((unless (mbt (and (consp (car alist))
+                          (svar-p (caar alist)))))
+        (svex-alist-removekeys keys (cdr alist)))
+       ((when (member-equal (caar alist) (svarlist-fix keys)))
+        (svex-alist-removekeys keys (cdr alist))))
+    (cons (mbe :logic (cons (caar alist) (svex-fix (cdar alist)))
+               :exec (car alist))
+          (svex-alist-removekeys keys (cdr alist))))
+  ///
+
+  (defret svex-lookup-of-<fn>
+    (equal (svex-lookup key new-alist)
+           (and (not (member-equal (svar-fix key) (svarlist-fix keys)))
+                (svex-lookup key alist)))
+    :hints(("Goal" :in-theory (enable svex-lookup))))
+
+  (local (in-theory (enable svex-alist-fix))))
+
+
+
 
 
 (define svarlist-x-env ((x svarlist-p))

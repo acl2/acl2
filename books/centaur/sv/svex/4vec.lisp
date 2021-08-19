@@ -1969,6 +1969,7 @@ an unknown.</p>"
                           (in 4vec-p))
   :short "Part select operation: select @('width') bits of @('in') starting at @('lsb')."
   :returns (res 4vec-p)
+  :hooks nil
   (if (and (2vec-p lsb)
            (2vec-p width)
            (<= 0 (2vec->val width)))
@@ -1976,7 +1977,11 @@ an unknown.</p>"
            ((when (<= 0 lsbval))
             (4vec-zero-ext width (4vec-rsh lsb in))))
         (4vec-zero-ext width (4vec-concat (2vec (- lsbval)) (4vec-x) in)))
-    (4vec-x)))
+    (4vec-x))
+  ///
+  (deffixequiv 4vec-part-select
+    :args ((lsb 2vecx) (width 2vecx) (in 4vec))
+    :hints(("Goal" :in-theory (enable 2vecx-fix)))))
 
 (define 4vec-part-install ((lsb 4vec-p)
                            (width 4vec-p)
@@ -2036,7 +2041,11 @@ an unknown.</p>"
                                       4vec-concat
                                       4vec-rsh
                                       4vec-shift-core))
-           (logbitp-reasoning :prune-examples nil))))
+           (logbitp-reasoning :prune-examples nil)))
+
+  (deffixequiv 4vec-part-install
+    :args ((lsb 2vecx) (width 2vecx) (in 4vec) (val 4vec))
+    :hints(("Goal" :in-theory (enable 2vecx-fix)))))
 
 
 
