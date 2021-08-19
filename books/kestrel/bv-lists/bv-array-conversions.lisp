@@ -20,12 +20,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-
-;move
-(defthm unsigned-byte-p-of-0
-  (equal (unsigned-byte-p width 0)
-         (natp width))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
 (defun list-to-bv-array-aux (element-size elements-left total-length lst)
   (declare (xargs :guard (and (natp element-size)
