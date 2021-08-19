@@ -254,3 +254,27 @@
 (defund list-to-byte-array (lst)
   (declare (xargs :guard (true-listp lst)))
   (list-to-bv-array 8 lst))
+
+(defthm bv-array-read-of-list-to-bv-array-aux
+  (implies (and (< n elements-left) ;main hyp
+                (natp n)
+                (natp total-len)
+                (natp elements-left)
+                (<= elements-left total-len)
+                (< n total-len)
+                (natp width))
+           (equal (bv-array-read width total-len n (list-to-bv-array-aux width elements-left total-len x))
+                  (bv-array-read width total-len n x)))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :induct (list-to-bv-array-aux width elements-left total-len x)
+           :in-theory (e/d (bv-array-read bv-array-read-of-bv-array-write-both-better list-to-bv-array-aux)
+                           ()))))
+
+(defthm bv-array-read-of-list-to-bv-array
+  (implies (and (natp n)
+                (natp width)
+                (< n (len x)))
+           (equal (bv-array-read width (len x) n (list-to-bv-array width x))
+                  (bv-array-read width (len x) n x)))
+  :hints (("Goal"
+           :in-theory (e/d (list-to-bv-array) (list-to-bv-array-aux-unroll)))))
