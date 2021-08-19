@@ -76,8 +76,11 @@
 (include-book "world")
 (include-book "conjuncts-and-disjuncts")
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
+(include-book "kestrel/terms-light/bound-vars-in-term" :dir :system)
 (include-book "tools/prove-dollar" :dir :system)
 (include-book "book-of-event")
+(include-book "fresh-names")
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
      ;move?
 ;; TODO: Maybe print paths relative to the cbd?
@@ -864,6 +867,98 @@
                     state))))
       (check-for-droppable-hyps ctx (rest hyps) all-hyps conclusion step-limit state))))
 
+(mutual-recursion
+ (defun non-variable-subterms (term)
+   (declare (xargs :guard (pseudo-termp term)
+                   :verify-guards nil))
+   (if (variablep term)
+       nil
+     (if (fquotep term)
+         (list term)
+       (if (and (call-of 'if term)
+                (equal (farg3 term) *nil*))
+           ;; suppress the 'nil since this is basically just (and x y)
+           (union-equal (non-variable-subterms (farg1 term))
+                        (non-variable-subterms (farg2 term)))
+         ;; todo: think about lambdas
+         (add-to-set-equal term (non-variable-subterms-list (fargs term)))))))
+ (defun non-variable-subterms-list (terms)
+   (declare (xargs :guard (pseudo-term-listp terms)))
+   (if (endp terms)
+       nil
+     (union-equal (non-variable-subterms (first terms))
+                  (non-variable-subterms-list (rest terms))))))
+
+(make-flag non-variable-subterms)
+
+(defthm-flag-non-variable-subterms
+  (defthm pseudo-term-listp-of-non-variable-subterms
+    (implies (pseudo-termp term)
+             (pseudo-term-listp (non-variable-subterms term)))
+    :flag non-variable-subterms)
+  (defthm pseudo-term-listp-of-non-variable-subterms-list
+    (implies (pseudo-term-listp terms)
+             (pseudo-term-listp (non-variable-subterms-list terms)))
+    :flag non-variable-subterms-list))
+
+(verify-guards non-variable-subterms :hints (("Goal" :in-theory (enable true-listp-when-pseudo-term-listp-2))))
+
+
+(mutual-recursion
+ (defun replace-subterm (old new term)
+   (declare (xargs :guard (and (pseudo-termp old)
+                               (pseudo-termp new)
+                               (pseudo-termp term))))
+   (if (equal term old)
+       new
+     (if (or (variablep term)
+             (fquotep term))
+         term
+       (cons (ffn-symb term) (replace-subterm-list old new (fargs term))))))
+
+ (defun replace-subterm-list (old new terms)
+   (declare (xargs :guard (and (pseudo-termp old)
+                               (pseudo-termp new)
+                               (pseudo-term-listp terms))))
+   (if (endp terms)
+       nil
+     (cons (replace-subterm old new (first terms))
+           (replace-subterm-list old new (rest terms))))))
+
+;; Returns state
+;; TODO: Improve this to add an assumption from the type of the term being replaced?
+(defun try-replacing-each-subterm (ctx subterms body new-var step-limit state)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (if (endp subterms)
+      state
+    (b* ((subterm (first subterms))
+         (new-body (replace-subterm subterm new-var body))
+         ((mv erp res state)
+          (prove$ new-body :step-limit step-limit))
+         ((when erp)
+          (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
+          state)
+         (- (and res (cw "(In ~x0,~% body can be generalized by replacing ~x1 with a fresh variable.)~%" ctx subterm))))
+      (try-replacing-each-subterm ctx (rest subterms) body new-var step-limit state))))
+
+;; Checks whether any of the HYPS can be dropped from ALL-HYPS, while still
+;; allowing CONCLUSION to be proved.  Returns state.
+;; TODO: Also try generalizing by trying to replace some but not all occurrences of each term with a fresh var?
+(defun check-for-theorem-generalizations (ctx body step-limit state)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (b* (((mv &  conclusion)
+        (get-hyps-and-conc body))
+       ;; we don't to generalize things like the 'nil in the conclusion (if x y 'nil) == (and x y)
+       ;; todo: try each conjunct of the concluson separately?
+       (conclusions (get-conjuncts conclusion))
+       (subterms (non-variable-subterms-list conclusions))
+       (vars-to-avoid (append (free-vars-in-term body)
+                              (bound-vars-in-term body)))
+       (new-var (make-fresh-name 'new-var vars-to-avoid)))
+    (try-replacing-each-subterm ctx subterms body new-var step-limit state)))
+
 ;; Returns state.
 ;; For example, a hyp of (syntaxp (quote x)) is almost certainly an error (should be quotep, not quote).
 (defun check-synp-hyp (ctx hyp step-limit state)
@@ -964,7 +1059,10 @@
                                        step-limit
                                        state))
        ;; Check for hyps that can be dropped:
-       (state (check-for-droppable-hyps name non-synp-hyps non-synp-hyps conclusion step-limit state)))
+       (state (check-for-droppable-hyps name non-synp-hyps non-synp-hyps conclusion step-limit state))
+       ;; Check for possible generalizations:
+       (state (check-for-theorem-generalizations name body step-limit state))
+       )
     state))
 
 ;; Returns state.
