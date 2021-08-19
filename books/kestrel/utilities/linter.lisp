@@ -49,7 +49,7 @@
 ;; NOTE: There is another lint tool in books/tools/lint.lisp.  It checks for
 ;; different things.
 
-;; TODO: Check for a hyp of (syntaxp (quote x)), which is almost certainly an error.
+;; TODO: Check for a hyp of , which is almost certainly an error.
 
 ;; TODO: Look for theorem names of the form theorem-for-XXX from make-flag
 
@@ -865,6 +865,7 @@
       (check-for-droppable-hyps ctx (rest hyps) all-hyps conclusion step-limit state))))
 
 ;; Returns state.
+;; For example, a hyp of (syntaxp (quote x)) is almost certainly an error (should be quotep, not quote).
 (defun check-synp-hyp (ctx hyp step-limit state)
   (declare (xargs :guard (and ;; (symbolp ctx)
                           (pseudo-termp hyp)
