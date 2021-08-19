@@ -160,9 +160,8 @@
            :in-theory (enable bvplus))))
 
 (defthm bvplus-cancel-third-third
-  (implies (integerp a)
-           (equal (equal (bvplus size k1 (bvplus size x a)) (bvplus size k2 (bvplus size y a)))
-                  (equal (bvplus size k1 x) (bvplus size k2 y))))
+  (equal (equal (bvplus size k1 (bvplus size x a)) (bvplus size k2 (bvplus size y a)))
+         (equal (bvplus size k1 x) (bvplus size k2 y)))
   :hints (("Goal" :use (:instance bvplus-cancel (x a)
                                   (y (bvplus size k1 x))
                                   (z (bvplus size k2 y))))))
