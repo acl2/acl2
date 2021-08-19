@@ -114,14 +114,15 @@
   :hints (("Goal" :in-theory (enable all-dargp-less-than keep-atoms))))
 
 (defthm all-<=-of-keep-atoms-of-dargs
-  (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (consp (AREF1 'DAG-ARRAY DAG-ARRAY NODENUM))
-                (NOT (EQUAL 'QUOTE (CAR (AREF1 'DAG-ARRAY DAG-ARRAY NODENUM))))
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (consp (AREF1 DAG-ARRAY-NAME DAG-ARRAY NODENUM))
+                (NOT (EQUAL 'QUOTE (CAR (AREF1 DAG-ARRAY-NAME DAG-ARRAY NODENUM))))
                 (natp nodenum)
                 (< nodenum dag-len))
-           (all-<= (keep-atoms (dargs (aref1 'dag-array dag-array nodenum)))
+           (all-<= (keep-atoms (dargs (aref1 dag-array-name dag-array nodenum)))
                    nodenum))
-  :hints (("Goal" :use (:instance all-<=-of-keep-atoms (args (dargs (aref1 'dag-array dag-array nodenum))))
+  :hints (("Goal" :use (:instance all-<=-of-keep-atoms
+                                  (args (dargs (aref1 dag-array-name dag-array nodenum))))
            :in-theory (disable all-<=-of-keep-atoms))))
 
 (defthm ALL-<=-ALL-when-ALL-<=-ALL-of-cdr-arg2
@@ -133,14 +134,14 @@
   :hints (("Goal" :in-theory (enable ALL-<=-ALL))))
 
 (defthm all-<=-all-of-keep-atoms-of-dargs
-  (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (consp (AREF1 'DAG-ARRAY DAG-ARRAY NODENUM))
-                (NOT (EQUAL 'QUOTE (CAR (AREF1 'DAG-ARRAY DAG-ARRAY NODENUM))))
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (consp (AREF1 DAG-ARRAY-NAME DAG-ARRAY NODENUM))
+                (NOT (EQUAL 'QUOTE (CAR (AREF1 DAG-ARRAY-NAME DAG-ARRAY NODENUM))))
                 (natp nodenum)
                 (< nodenum dag-len)
                 (<=-all nodenum nodenums)
                 )
-           (all-<=-all (keep-atoms (dargs (aref1 'dag-array dag-array nodenum)))
+           (all-<=-all (keep-atoms (dargs (aref1 dag-array-name dag-array nodenum)))
                        nodenums))
   :hints (("goal" :in-theory (enable <=-all)
            :induct (<=-all nodenum nodenums))
