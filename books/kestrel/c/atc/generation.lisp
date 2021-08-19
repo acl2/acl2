@@ -44,6 +44,7 @@
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
+(local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1078,11 +1079,9 @@
   :guard-hints (("Goal"
                  :in-theory
                  (enable acl2::len-of-check-lambda-calls.args-is-formals)))
+
   :prepwork
-
-  ((local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
-
-   (defrulel pseudo-termp-of-atc-check-let.val-lemma
+  ((defrulel pseudo-termp-of-atc-check-let.val-lemma
      (implies (and (pseudo-term-listp x)
                    (equal (len x) 1)
                    (not (equal (caar x) 'quote)))
@@ -2203,7 +2202,6 @@
     (implies (symbolp x)
              (pseudo-termp x)))
 
-  (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
   (local (include-book "std/alists/strip-cdrs" :dir :system))
 
   (verify-guards atc-gen-stmt :hints (("Goal" :do-not-induct t))))
