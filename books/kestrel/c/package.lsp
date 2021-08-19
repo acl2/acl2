@@ -91,6 +91,37 @@
                pos-listp
                pseudo-event-form-listp
                pseudo-event-formp
+               pseudo-fn-args-p
+               pseudo-fn-p
+               pseudo-lambda
+               pseudo-lambda->body
+               pseudo-lambda->formals
+               pseudo-lambda-p
+               pseudo-lambdap
+               pseudo-term-call
+               pseudo-term-call->args
+               pseudo-term-call->fn
+               pseudo-term-case
+               pseudo-term-count
+               pseudo-term-equiv
+               pseudo-term-fix
+               pseudo-term-fncall
+               pseudo-term-fncall->args
+               pseudo-term-fncall->fn
+               pseudo-term-kind
+               pseudo-term-lambda
+               pseudo-term-lambda->args
+               pseudo-term-lambda->body
+               pseudo-term-lambda->formals
+               pseudo-term-list-count
+               pseudo-term-null
+               pseudo-term-quote
+               pseudo-term-quote->val
+               pseudo-term-var
+               pseudo-term-var->name
+               pseudo-termfn-listp
+               pseudo-termfnp
+               pseudo-var-p
                remove-equal-formals-actuals
                restore-output?
                run-when
