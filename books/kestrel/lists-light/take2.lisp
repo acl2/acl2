@@ -136,13 +136,6 @@
            :in-theory (enable take))))
 
 ;move
-;gen the cons?
-(defthm take-cons-1
-  (implies (zp n)
-           (equal (take n (cons a b))
-                  nil)))
-
-;move
 (defthm take-cons-2
   (implies (not (zp n))
            (equal (take n (cons a b))

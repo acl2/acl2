@@ -1597,3 +1597,23 @@
                        bv-array-read
                        nth-when-<=-len
                        natp))))
+
+;; the lhs should not arise when abstractions are being respected
+(defthm BV-ARRAY-READ-of-cdr
+  (implies (and (natp i)
+;                (natp size)
+                (equal len (+ -1 (LEN ARR)))
+                (< i len))
+           (EQUAL (BV-ARRAY-READ SIZE len I (CDR ARR))
+                  (BV-ARRAY-READ SIZE (+ 1 len) (+ 1 I) ARR)))
+  :hints (("Goal" :in-theory (e/d (bv-array-read ;ceiling-of-lg BVCHOP-OF-SUM-CASES
+                                   )
+                                  (BVCHOP-IDENTITY)))))
+
+;; the lhs should not arise when abstractions are being respected
+(defthm bv-array-read-of-nthcdr
+  (implies (and (natp i)
+                (< i (len src)))
+           (equal (BV-ARRAY-READ 8 (LEN (NTHCDR I SRC)) 0 (NTHCDR I SRC))
+                  (BV-ARRAY-READ 8 (LEN src) i src)))
+  :hints (("Goal" :in-theory (e/d (BV-ARRAY-READ) ()))))

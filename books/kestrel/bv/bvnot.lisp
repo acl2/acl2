@@ -97,12 +97,6 @@
          (bvchop size x))
   :hints (("Goal" :in-theory (enable bvnot))))
 
-(defthm bvchop-lognot-bvchop-1
-  (equal (bvchop 1 (lognot (bvchop 1 x)))
-         (bvchop 1 (lognot x)))
-  :hints (("Goal" :in-theory (e/d (lognot) (bvchop-1-becomes-getbit
-                                            bvchop-chop-leading-constant)))))
-
 (defthm logtail-of-lognot
   (equal (logtail n (lognot x))
          (lognot (logtail n x)))
@@ -127,10 +121,9 @@
            (equal (getbit n (bvnot m x))
                   (bvnot 1 (getbit n x))))
   :hints (("Goal"
-           :use (:instance BVCHOP-LOGNOT-BVCHOP-1 (X (LOGTAIL N X)))
+           :use (:instance BVCHOP-LOGNOT-BVCHOP (n 1) (X (LOGTAIL N X)))
            :in-theory (e/d (bvnot getbit slice)
-                           (BVCHOP-LOGNOT-BVCHOP-1
-                            BVCHOP-LOGNOT-BVCHOP
+                           (BVCHOP-LOGNOT-BVCHOP
                             slice-becomes-getbit ;LOGTAIL-BVCHOP
                             bvchop-1-becomes-getbit BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 

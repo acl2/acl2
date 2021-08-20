@@ -446,7 +446,8 @@
                  (:instance BVCHOP-LOGNOT-BVCHOP
                             (n low)
                             (x Y)))
-           :in-theory (e/d (bvnot) (BVCHOP-LOGNOT-BVCHOP)))))
+           :in-theory (e/d (bvnot) (BVCHOP-LOGNOT-BVCHOP ; are these 2 the same?
+                                    BVCHOP-OF-LOGNOT-OF-BVCHOP)))))
 
 ;helpful for address calculations (yikes, this almost seems to violate our normal form)
 (defthmd logext-of-bvplus-64
