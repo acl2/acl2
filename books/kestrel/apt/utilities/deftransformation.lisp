@@ -65,6 +65,7 @@
       (er hard 'deftransformation "A transformation must have at least one required argument.") ;seems sensible, for printing the context
     (if (not (booleanp revert-world))
         (er hard 'deftransformation "The :revert-world argument must be a boolean, but it is ~x0." revert-world)
+      (let ((event-generator-name (add-suffix name "-EVENT")))
     `(progn
        ;; This is the boilerplate wrapper function:
        (defun ,(add-suffix name "-FN") (,@required-args
@@ -122,14 +123,14 @@
                (if print-proof-outputp ;;(member-eq :expand print)
                    ;; Re-enable printing (of proofs, etc.) during expansion:
                    (with-output! :stack :pop
-                                 (,(add-suffix name "-EVENT")
+                                 (,event-generator-name
                                   ,@required-args
                                   ,@(strip-cars optional-args-and-values)
                                   ,@(and pass-print '((if (member-eq print '(:info :all)) t nil)))
                                   ,@(and pass-context '(ctx))
                                   state))
                  ;; Printing (of proofs, etc.) remains suppressed during expansion:
-                 (,(add-suffix name "-EVENT")
+                 (,event-generator-name
                   ,@required-args
                   ,@(strip-cars optional-args-and-values)
                   ,@(and pass-print '((if (member-eq print '(:info :all)) t nil)))
@@ -280,8 +281,14 @@
                                                 '(&key)
                                                 optional-args-and-values
                                                 '((show-only 'nil) (print ':result)))
-                                        (symbol-package-name name)))))))
+                                        (symbol-package-name name))))))))
 
+;; Expects there to be a function called <name>-event.  It's params should be:
+;; ...required-args...
+;; ...optional-args...
+;; verbose (maybe)
+;; ctx (maybe)
+;; state
 (defmacro deftransformation (name required-args optional-args-and-values
                                   &key
                                   (pass-print 'nil) ;whether to pass the print arg to the -event function (will come after the optional args)
