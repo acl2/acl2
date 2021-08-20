@@ -30,12 +30,16 @@
              '(alist-to-doublets
                any
                bool
+               check-and-call
+               check-fn-call
                check-if-call
                check-lambda-call
                check-list-call
                check-mbt-call
                check-mbt$-call
                check-mv-let-call
+               check-not-call
+               check-or-call
                conjoin
                ctxp
                cw-event
@@ -114,6 +118,7 @@
                pseudo-term-lambda->body
                pseudo-term-lambda->formals
                pseudo-term-list-count
+               pseudo-term-list-fix
                pseudo-term-null
                pseudo-term-quote
                pseudo-term-quote->val
