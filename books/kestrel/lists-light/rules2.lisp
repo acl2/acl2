@@ -1269,7 +1269,8 @@
 (theory-invariant (incompatible (:rewrite CAR-BECOMES-NTH-OF-0) (:rewrite NTH-WHEN-N-IS-ZP)))
 
 ;maybe only do this in the conclusion?
-(defthm equal-rewrite-when-takes-equal
+;disabled since i've seen this be involved in loops
+(defthmd equal-rewrite-when-takes-equal
   (implies (and (equal (take n x) (take n y)) ;binds the free variable n
                 (true-listp x)
                 (true-listp y)
