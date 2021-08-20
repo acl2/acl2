@@ -1759,14 +1759,14 @@
          (bvnot 1 x))
   :hints (("Goal"
            :cases ((equal 0 (getbit 0 x)))
-           :use ((:instance BVCHOP-LOGNOT-BVCHOP-1))
+           :use ((:instance BVCHOP-LOGNOT-BVCHOP (n 1)))
            :in-theory (e/d (bvxor bvnot bitxor ;LOGXOR*
     ;                                          bvchop
     ;lognot getbit
                                   )
                            (SLICE-BECOMES-GETBIT
                             GETBIT-WHEN-NOT-0
-                            BVCHOP-LOGNOT-BVCHOP-1
+                            BVCHOP-LOGNOT-BVCHOP
     ;BVCHOP-1-BECOMES-GETBIT
                             BVXOR-1-BECOMES-BITXOR)))))
 
@@ -1816,8 +1816,10 @@
   (equal (getbit 0 (lognot (getbit 0 x)))
          (getbit 0 (lognot x)))
   :hints (("Goal"
-           :use ((:instance bvchop-lognot-bvchop-1))
-           :in-theory (e/d ( getbit) ( slice-becomes-getbit bvchop-1-becomes-getbit)))))
+           :use ((:instance bvchop-lognot-bvchop (n 1)))
+           :in-theory (e/d (getbit) (slice-becomes-getbit
+                                     bvchop-1-becomes-getbit
+                                     bvchop-lognot-bvchop)))))
 
 (defthm bvnot-equal-0-rewrite
   (equal (equal 0 (bvnot 1 x))

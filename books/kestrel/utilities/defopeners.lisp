@@ -352,11 +352,6 @@
 ;;   :hints (("Goal" :in-theory (enable make-opener-claim))))
 
 ;move
-(defthm pseudo-term-listp-of-true-list-fix
-  (implies (pseudo-term-listp terms)
-           (pseudo-term-listp (true-list-fix terms))))
-
-;move
 ;todo name clash if the "2" is removed
 (defund remove-trivial-bindings2 (alist)
   (declare (xargs :guard (alistp alist)))

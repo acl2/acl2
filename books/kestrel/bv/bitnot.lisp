@@ -97,12 +97,11 @@
    (equal (bvnot 1 (getbit 0 x))
           (bvnot 1 x))
    :hints (("Goal" :use ((:instance usb1-cases (x (getbit 0 x)))
-                         (:instance bvchop-lognot-bvchop-1))
+                         (:instance bvchop-lognot-bvchop (n 1)))
 ;            :expand ((BVCHOP 1 X))
             :in-theory (e/d (getbit
                              bvnot ;bozo
                              ) (getbit-when-equal-of-constant-and-bvchop-constant-version
-                                bvchop-lognot-bvchop-1
                                 bvchop-lognot-bvchop
                                 bvchop-1-becomes-getbit
                                 slice-becomes-getbit
