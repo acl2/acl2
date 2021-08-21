@@ -38,6 +38,7 @@
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
+(local (include-book "kestrel/utilities/terms" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
