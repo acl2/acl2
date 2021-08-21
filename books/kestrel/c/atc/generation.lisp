@@ -1716,6 +1716,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-update-var-term-alist ((vars symbol-listp)
+                                   (terms pseudo-term-listp)
+                                   (alist symbol-pseudoterm-alistp))
+  :returns (new-alist symbol-pseudoterm-alistp :hyp :guard)
+  :short "Update an alist from symbols to terms."
+  (append (pairlis$ vars terms) alist))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-stmt ((term pseudo-termp)
                       (var-term-alist symbol-pseudoterm-alistp)
                       (inscope atc-symbol-type-alist-listp)
@@ -2015,7 +2024,8 @@
                             experimental ctx state))
              (val-instance (fsublis-var var-term-alist val))
              (vals (atc-make-mv-nth-terms indices val-instance))
-             (var-term-alist-body (append (pairlis$ vars vals) var-term-alist))
+             (var-term-alist-body
+              (atc-update-var-term-alist vars vals var-term-alist))
              ((er (list body-items body-type body-limit))
               (atc-gen-stmt body var-term-alist-body inscope xforming
                             fn prec-fns
@@ -2027,7 +2037,10 @@
        ((mv okp var val body wrapper?) (atc-check-let term))
        ((when okp)
         (b* ((val-instance (fsublis-var var-term-alist val))
-             (var-term-alist-body (acons var val-instance var-term-alist))
+             (var-term-alist-body
+              (atc-update-var-term-alist (list var)
+                                         (list val-instance)
+                                         var-term-alist))
              ((mv okp sub elem) (atc-check-array-write var val))
              ((when (and okp
                          (member-eq :array-writes experimental)))
@@ -2246,10 +2259,12 @@
                  symbol-alistp-when-symbol-pseudoterm-alistp)
                 ;; for speed:
                 (
-                 ;; acl2::pseudo-termp-of-cons-1
+                 assoc-equal
+                 nth
+                 acl2::pseudo-termp-of-cons-1
                  acl2::pseudo-termp-of-cons-when-pseudo-termfnp
                  acl2::subsetp-member
-                 pseudo-termp
+                 ;; pseudo-termp
                  natp
                  member-equal
                  default-car
