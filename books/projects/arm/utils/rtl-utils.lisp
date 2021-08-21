@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; July 2021
+;; August 2021
 
 (in-package "RTL")
 
@@ -237,6 +237,18 @@
                            (m 0))
            :in-theory (enable cat
                               bvecp))))
+
+;; EXACTP
+
+(defthmd exactp-shift-alt
+  (implies (and (rationalp x)
+                (integerp k)
+                (integerp n))
+           (and (equal (exactp (* (expt 2 k) x) n)
+                       (exactp x n))
+                (equal (exactp (* x (expt 2 k)) n)
+                       (exactp x n))))
+  :hints (("Goal" :use exactp-shift)))
 
 ;; EXPO
 
@@ -854,6 +866,96 @@
   (not (equal (dp) (hp)))
   :hints (("Goal" :in-theory (enable dp hp))))
 
+(encapsulate
+  ()
+
+  (local
+   (in-theory (disable acl2::|(* (if a b c) x)|
+                       acl2::|(* x (if a b c))|
+                       acl2::|(+ x (if a b c))|
+                       acl2::|(- (if a b c))|
+                       acl2::|(/ (if a b c))|
+                       acl2::|(< (if a b c) x)|
+                       acl2::|(< x (if a b c))|
+                       acl2::default-plus-1
+                       acl2::default-times-1
+                       acl2::default-times-2
+                       acl2::not-integerp-1b-expt
+                       acl2::not-integerp-3b-expt
+                       acl2::|(< x (/ y)) with (< y 0)|
+                       acl2::|(<= x (/ y)) with (< y 0)|
+                       (:type-prescription acl2::expt-type-prescription-nonpositive-base-even-exponent)
+                       (:type-prescription acl2::expt-type-prescription-negative-base-odd-exponent)
+                       (:type-prescription acl2::expt-type-prescription-negative-base-even-exponent)
+                       (:type-prescription acl2::expt-type-prescription-integerp-base-b)
+                       acl2::not-integerp-1l
+                       acl2::not-integerp-2l
+                       acl2::not-integerp-3l
+                       acl2::not-integerp-1e
+                       acl2::not-integerp-2e
+                       acl2::not-integerp-3e)))
+
+  (local
+   (defthmd-nl++ quotient-hp-lemma-aux-1
+     (implies (and (bvecp a 16)
+                   (bvecp b 16)
+                   (equal (bits a 14 10) 0))
+              (or (<= (abs (/ (decode a (hp)) (decode b (hp))))
+                      (- (spn (hp))
+                         (expt 2 (+ 1 (- (bias (hp))) (- (prec (hp)))))))
+                  (<= (spn (hp))
+                      (abs (/ (decode a (hp)) (decode b (hp)))))))
+     :hints (("Goal"
+              :cases ((< (bits b 14 10) (bias (hp))))
+              :use (:instance int+1<=
+                              (x (* (expt 2 (- (bias (hp)) (bits b 14 10)))
+                                    (bits a 9 0)))
+                              (y (+ *2^10* (bits b 9 0))))
+              :in-theory (enable decode ddecode ndecode
+                                 sgnf expf manf
+                                 spn-hp)))))
+
+  (local
+   (defthmd-nl++ quotient-hp-lemma-aux-2
+     (implies (and (bvecp a 16)
+                   (bvecp b 16)
+                   (not (equal (bits a 14 10) 0)))
+              (or (<= (abs (/ (decode a (hp)) (decode b (hp))))
+                      (- (spn (hp))
+                         (expt 2 (+ 1 (- (bias (hp))) (- (prec (hp)))))))
+                  (<= (spn (hp))
+                      (abs (/ (decode a (hp)) (decode b (hp)))))))
+     :hints (("Goal"
+              :use (:instance int+1<=
+                              (x (if (< (- (bits a 14 10) (bits b 14 10))
+                                        -14)
+                                     (+ *2^10* (bits a 9 0))
+                                   (* (expt 2 (+ 14
+                                                 (- (bits a 14 10)
+                                                    (bits b 14 10))))
+                                      (+ *2^10* (bits a 9 0)))))
+                              (y (if (< (- (bits a 14 10) (bits b 14 10))
+                                        -14)
+                                     (* (expt 2 (+ -14
+                                                   (- (bits b 14 10)
+                                                      (bits a 14 10))))
+                                        (+ *2^10* (bits b 9 0)))
+                                   (+ *2^10* (bits b 9 0)))))
+              :in-theory (enable decode ddecode ndecode
+                                 sgnf expf manf
+                                 spn-hp)))))
+
+  (defthmd quotient-hp-lemma
+    (implies (and (bvecp a 16)
+                  (bvecp b 16))
+             (or (<= (abs (/ (decode a (hp)) (decode b (hp))))
+                     (- (spn (hp))
+                        (expt 2 (+ 1 (- (bias (hp))) (- (prec (hp)))))))
+                 (<= (spn (hp))
+                     (abs (/ (decode a (hp)) (decode b (hp)))))))
+    :hints (("Goal" :use (quotient-hp-lemma-aux-1 quotient-hp-lemma-aux-2))))
+  )
+
 ;; SP
 
 (defthm expw-sp
@@ -930,6 +1032,96 @@
             (expt 2 104)))
   :hints (("Goal" :in-theory (enable sp))))
 
+(encapsulate
+  ()
+
+  (local
+   (in-theory (disable acl2::|(* (if a b c) x)|
+                       acl2::|(* x (if a b c))|
+                       acl2::|(+ x (if a b c))|
+                       acl2::|(- (if a b c))|
+                       acl2::|(/ (if a b c))|
+                       acl2::|(< (if a b c) x)|
+                       acl2::|(< x (if a b c))|
+                       acl2::default-plus-1
+                       acl2::default-times-1
+                       acl2::default-times-2
+                       acl2::not-integerp-1b-expt
+                       acl2::not-integerp-3b-expt
+                       acl2::|(< x (/ y)) with (< y 0)|
+                       acl2::|(<= x (/ y)) with (< y 0)|
+                       (:type-prescription acl2::expt-type-prescription-nonpositive-base-even-exponent)
+                       (:type-prescription acl2::expt-type-prescription-negative-base-odd-exponent)
+                       (:type-prescription acl2::expt-type-prescription-negative-base-even-exponent)
+                       (:type-prescription acl2::expt-type-prescription-integerp-base-b)
+                       acl2::not-integerp-1l
+                       acl2::not-integerp-2l
+                       acl2::not-integerp-3l
+                       acl2::not-integerp-1e
+                       acl2::not-integerp-2e
+                       acl2::not-integerp-3e)))
+
+  (local
+   (defthmd-nl++ quotient-sp-lemma-aux-1
+     (implies (and (bvecp a 32)
+                   (bvecp b 32)
+                   (equal (bits a 30 23) 0))
+              (or (<= (abs (/ (decode a (sp)) (decode b (sp))))
+                      (- (spn (sp))
+                         (expt 2 (+ 1 (- (bias (sp))) (- (prec (sp)))))))
+                  (<= (spn (sp))
+                      (abs (/ (decode a (sp)) (decode b (sp)))))))
+     :hints (("Goal"
+              :cases ((< (bits b 30 23) (bias (sp))))
+              :use (:instance int+1<=
+                              (x (* (expt 2 (- (bias (sp)) (bits b 30 23)))
+                                    (bits a 22 0)))
+                              (y (+ *2^23* (bits b 22 0))))
+              :in-theory (enable decode ddecode ndecode
+                                 sgnf expf manf
+                                 spn-sp)))))
+
+  (local
+   (defthmd-nl++ quotient-sp-lemma-aux-2
+     (implies (and (bvecp a 32)
+                   (bvecp b 32)
+                   (not (equal (bits a 30 23) 0)))
+              (or (<= (abs (/ (decode a (sp)) (decode b (sp))))
+                      (- (spn (sp))
+                         (expt 2 (+ 1 (- (bias (sp))) (- (prec (sp)))))))
+                  (<= (spn (sp))
+                      (abs (/ (decode a (sp)) (decode b (sp)))))))
+     :hints (("Goal"
+              :use (:instance int+1<=
+                              (x (if (< (- (bits a 30 23) (bits b 30 23))
+                                        -126)
+                                     (+ *2^23* (bits a 22 0))
+                                   (* (expt 2 (+ 126
+                                                 (- (bits a 30 23)
+                                                    (bits b 30 23))))
+                                      (+ *2^23* (bits a 22 0)))))
+                              (y (if (< (- (bits a 30 23) (bits b 30 23))
+                                        -126)
+                                     (* (expt 2 (+ -126
+                                                   (- (bits b 30 23)
+                                                      (bits a 30 23))))
+                                        (+ *2^23* (bits b 22 0)))
+                                   (+ *2^23* (bits b 22 0)))))
+              :in-theory (enable decode ddecode ndecode
+                                 sgnf expf manf
+                                 spn-sp)))))
+
+  (defthmd quotient-sp-lemma
+    (implies (and (bvecp a 32)
+                  (bvecp b 32))
+             (or (<= (abs (/ (decode a (sp)) (decode b (sp))))
+                     (- (spn (sp))
+                        (expt 2 (+ 1 (- (bias (sp))) (- (prec (sp)))))))
+                 (<= (spn (sp))
+                     (abs (/ (decode a (sp)) (decode b (sp)))))))
+    :hints (("Goal" :use (quotient-sp-lemma-aux-1 quotient-sp-lemma-aux-2))))
+  )
+
 ;; DP
 
 (defthm expw-dp
@@ -1005,6 +1197,96 @@
          (* (1- (expt 2 53))
             (expt 2 971)))
   :hints (("Goal" :in-theory (enable dp))))
+
+(encapsulate
+  ()
+
+  (local
+   (in-theory (disable acl2::|(* (if a b c) x)|
+                       acl2::|(* x (if a b c))|
+                       acl2::|(+ x (if a b c))|
+                       acl2::|(- (if a b c))|
+                       acl2::|(/ (if a b c))|
+                       acl2::|(< (if a b c) x)|
+                       acl2::|(< x (if a b c))|
+                       acl2::default-plus-1
+                       acl2::default-times-1
+                       acl2::default-times-2
+                       acl2::not-integerp-1b-expt
+                       acl2::not-integerp-3b-expt
+                       acl2::|(< x (/ y)) with (< y 0)|
+                       acl2::|(<= x (/ y)) with (< y 0)|
+                       (:type-prescription acl2::expt-type-prescription-nonpositive-base-even-exponent)
+                       (:type-prescription acl2::expt-type-prescription-negative-base-odd-exponent)
+                       (:type-prescription acl2::expt-type-prescription-negative-base-even-exponent)
+                       (:type-prescription acl2::expt-type-prescription-integerp-base-b)
+                       acl2::not-integerp-1l
+                       acl2::not-integerp-2l
+                       acl2::not-integerp-3l
+                       acl2::not-integerp-1e
+                       acl2::not-integerp-2e
+                       acl2::not-integerp-3e)))
+
+  (local
+   (defthmd-nl++ quotient-dp-lemma-aux-1
+     (implies (and (bvecp a 64)
+                   (bvecp b 64)
+                   (equal (bits a 62 52) 0))
+              (or (<= (abs (/ (decode a (dp)) (decode b (dp))))
+                      (- (spn (dp))
+                         (expt 2 (+ 1 (- (bias (dp))) (- (prec (dp)))))))
+                  (<= (spn (dp))
+                      (abs (/ (decode a (dp)) (decode b (dp)))))))
+     :hints (("Goal"
+              :cases ((< (bits b 62 52) (bias (dp))))
+              :use (:instance int+1<=
+                              (x (* (expt 2 (- (bias (dp)) (bits b 62 52)))
+                                    (bits a 51 0)))
+                              (y (+ *2^52* (bits b 51 0))))
+              :in-theory (enable decode ddecode ndecode
+                                 sgnf expf manf
+                                 spn-dp)))))
+
+  (local
+   (defthmd-nl++ quotient-dp-lemma-aux-2
+     (implies (and (bvecp a 64)
+                   (bvecp b 64)
+                   (not (equal (bits a 62 52) 0)))
+              (or (<= (abs (/ (decode a (dp)) (decode b (dp))))
+                      (- (spn (dp))
+                         (expt 2 (+ 1 (- (bias (dp))) (- (prec (dp)))))))
+                  (<= (spn (dp))
+                      (abs (/ (decode a (dp)) (decode b (dp)))))))
+     :hints (("Goal"
+              :use (:instance int+1<=
+                              (x (if (< (- (bits a 62 52) (bits b 62 52))
+                                        -1022)
+                                     (+ *2^52* (bits a 51 0))
+                                   (* (expt 2 (+ 1022
+                                                 (- (bits a 62 52)
+                                                    (bits b 62 52))))
+                                      (+ *2^52* (bits a 51 0)))))
+                              (y (if (< (- (bits a 62 52) (bits b 62 52))
+                                        -1022)
+                                     (* (expt 2 (+ -1022
+                                                   (- (bits b 62 52)
+                                                      (bits a 62 52))))
+                                        (+ *2^52* (bits b 51 0)))
+                                   (+ *2^52* (bits b 51 0)))))
+              :in-theory (enable decode ddecode ndecode
+                                 sgnf expf manf
+                                 spn-dp)))))
+
+  (defthmd quotient-dp-lemma
+    (implies (and (bvecp a 64)
+                  (bvecp b 64))
+             (or (<= (abs (/ (decode a (dp)) (decode b (dp))))
+                     (- (spn (dp))
+                        (expt 2 (+ 1 (- (bias (dp))) (- (prec (dp)))))))
+                 (<= (spn (dp))
+                     (abs (/ (decode a (dp)) (decode b (dp)))))))
+    :hints (("Goal" :use (quotient-dp-lemma-aux-1 quotient-dp-lemma-aux-2))))
+  )
 
 ;; ======================================================================
 
