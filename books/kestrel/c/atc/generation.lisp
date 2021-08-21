@@ -38,7 +38,6 @@
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
-(local (include-book "kestrel/utilities/terms" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -79,6 +78,12 @@
   (equal (symbol-alistp (append a b))
          (and (symbol-alistp (true-list-fix a))
               (symbol-alistp b))))
+
+(defrule pseudo-term-list-count-of-pseudo-term-call->args
+  (implies (pseudo-term-case term :call)
+           (< (pseudo-term-list-count (pseudo-term-call->args term))
+              (pseudo-term-count term)))
+  :rule-classes :linear)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2262,10 +2267,8 @@
                 (
                  assoc-equal
                  nth
-                 acl2::pseudo-termp-of-cons-1
                  acl2::pseudo-termp-of-cons-when-pseudo-termfnp
                  acl2::subsetp-member
-                 ;; pseudo-termp
                  natp
                  member-equal
                  default-car
@@ -3352,47 +3355,39 @@
 
   (define atc-gen-term-with-read-var-compustate ((term pseudo-termp)
                                                  (compst-var symbolp))
-    :returns new-term
-    (cond ((variablep term) (if (eq term compst-var)
-                                term
-                              `(read-var (ident ',(symbol-name term))
-                                         ,compst-var)))
-          ((fquotep term) term)
-          (t (fcons-term
-              (ffn-symb term)
-              (atc-gen-terms-with-read-var-compustate (fargs term)
-                                                      compst-var)))))
+    :returns (new-term pseudo-termp)
+    (cond ((pseudo-term-case term :null)
+           (raise "Internal error: null term."))
+          ((pseudo-term-case term :var)
+           (if (eq (pseudo-term-var->name term) compst-var)
+               (pseudo-term-fix term)
+             `(read-var (ident ',(symbol-name (pseudo-term-var->name term)))
+                        ,(symbol-fix compst-var))))
+          ((pseudo-term-case term :quote) (pseudo-term-fix term))
+          (t (pseudo-term-call
+              (pseudo-term-call->fn term)
+              (atc-gen-terms-with-read-var-compustate
+               (pseudo-term-call->args term)
+               compst-var))))
+    :measure (pseudo-term-count term))
 
   (define atc-gen-terms-with-read-var-compustate ((terms pseudo-term-listp)
                                                   (compst-var symbolp))
-    :returns new-terms
+    :returns (new-terms pseudo-term-listp)
     (cond ((endp terms) nil)
           (t (cons (atc-gen-term-with-read-var-compustate (car terms)
                                                           compst-var)
                    (atc-gen-terms-with-read-var-compustate (cdr terms)
-                                                           compst-var)))))
-
-  ///
-
-  (defret-mutual len-of-atc-gen-terms-with-read-var-compustate
-    (defret len-of-atc-gen-term-with-read-var-compustate
-      t
-      :rule-classes nil
-      :fn atc-gen-term-with-read-var-compustate)
+                                                           compst-var))))
+    :measure (pseudo-term-list-count terms)
+    ///
     (defret len-of-atc-gen-terms-with-read-var-compustate
       (equal (len new-terms)
-             (len terms))
-      :fn atc-gen-terms-with-read-var-compustate))
+             (len terms))))
 
-  (defret-mutual pseudo-termp-of-atc-gen-terms-with-read-var-compustate
-    (defret pseudo-termp-of-atc-gen-term-with-read-var-compustate
-      (pseudo-termp new-term)
-      :hyp :guard
-      :fn atc-gen-term-with-read-var-compustate)
-    (defret pseudo-term-listp-of-atc-gen-terms-with-read-var-compustate
-      (pseudo-term-listp new-terms)
-      :hyp :guard
-      :fn atc-gen-terms-with-read-var-compustate)))
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atc-gen-term-with-read-var-compustate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
