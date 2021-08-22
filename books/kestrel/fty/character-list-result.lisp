@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult character-list-result
+  :parents (fty::fty-extensions fty::specific-types)
   :short "Fixtype of errors and lists of characters."
   :ok character-list
   :pred character-list-resultp)
