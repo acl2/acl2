@@ -46,6 +46,7 @@
 (include-book "maybe-string-result")
 (include-book "nat-list-result")
 (include-book "nat-natlist")
+(include-book "nat-natlist-result")
 (include-book "nat-result")
 (include-book "nat-set")
 (include-book "nati")
