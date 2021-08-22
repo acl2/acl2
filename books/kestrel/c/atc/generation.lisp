@@ -43,10 +43,6 @@
 
 ; these belong to a more general library
 
-(defruled pseudo-term-listp-of-strip-cdrs-when-symbol-pseudoterm-alistp
-  (implies (symbol-pseudoterm-alistp alist)
-           (pseudo-term-listp (strip-cdrs alist))))
-
 (defruled symbol-alistp-when-symbol-pseudoterm-alistp
   (implies (symbol-pseudoterm-alistp x)
            (symbol-alistp x)))
@@ -2227,8 +2223,7 @@
   :prepwork ((local
               (in-theory
                (e/d
-                (pseudo-term-listp-of-strip-cdrs-when-symbol-pseudoterm-alistp
-                 symbol-alistp-when-symbol-pseudoterm-alistp)
+                (symbol-alistp-when-symbol-pseudoterm-alistp)
                 ;; for speed:
                 (assoc-equal
                  nth
