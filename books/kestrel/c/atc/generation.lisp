@@ -43,11 +43,6 @@
 
 ; these belong to a more general library
 
-(defrule symbol-pseudoterm-alistp-of-pairlis$
-  (implies (and (symbol-listp keys)
-                (pseudo-term-listp vals))
-           (symbol-pseudoterm-alistp (pairlis$ keys vals))))
-
 (defruled pseudo-term-listp-of-strip-cdrs-when-symbol-pseudoterm-alistp
   (implies (symbol-pseudoterm-alistp alist)
            (pseudo-term-listp (strip-cdrs alist))))
