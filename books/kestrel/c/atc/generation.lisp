@@ -983,7 +983,7 @@
        (type (atc-fn-info->type? info))
        ((when (null type)) (no))
        (limit (atc-fn-info->limit info))
-       (limit (fsublis-var var-term-alist limit)))
+       (limit (fty-fsublis-var var-term-alist limit)))
     (mv t term.fn term.args type limit))
   ///
 
@@ -1047,7 +1047,7 @@
        ((unless (stmtp loop)) (no))
        (xforming (atc-fn-info->xforming info))
        (limit (atc-fn-info->limit info))
-       (limit (fsublis-var var-term-alist limit)))
+       (limit (fty-fsublis-var var-term-alist limit)))
     (mv t term.fn term.args xforming loop limit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3547,7 +3547,7 @@
                           "Failed to match istantiated measure ~x0 ~
                            to general measure ~x1 of function ~x2."
                           meas-inst meas-gen fn))
-               (measure-args (fsublis-var-lst subst measure-formals)))
+               (measure-args (fty-fsublis-var-lst subst measure-formals)))
             (acl2::value
              `(< (,measure-of-fn ,@measure-args)
                  (,measure-of-fn ,@measure-formals)))))
