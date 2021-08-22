@@ -11,9 +11,8 @@
 
 (in-package "C")
 
-(include-book "symbol-pseudoterm-alist")
-
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
+(include-book "kestrel/fty/symbol-pseudoterm-alist" :dir :system)
 (include-book "kestrel/std/system/check-and-call" :dir :system)
 (include-book "kestrel/std/system/check-fn-call" :dir :system)
 (include-book "kestrel/std/system/fsublis-var" :dir :system)
@@ -507,7 +506,7 @@
 (define fty-fsublis-var ((subst symbol-pseudoterm-alistp) (term pseudo-termp))
   :returns (new-term pseudo-termp)
   :short "FTY version of @(tsee fsublis-var)."
-  (fsublis-var (symbol-pseudoterm-alist-fix subst)
+  (fsublis-var (acl2::symbol-pseudoterm-alist-fix subst)
                (pseudo-term-fix term))
   :prepwork
   ((defrulel lemma
@@ -522,7 +521,7 @@
                              (terms pseudo-term-listp))
   :returns (new-terms pseudo-term-listp)
   :short "FTY version of @(tsee fsublis-var-lst)."
-  (fsublis-var-lst (symbol-pseudoterm-alist-fix subst)
+  (fsublis-var-lst (acl2::symbol-pseudoterm-alist-fix subst)
                    (pseudo-term-list-fix terms))
 
   :prepwork

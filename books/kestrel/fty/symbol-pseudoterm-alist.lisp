@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "C")
+(in-package "ACL2")
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
@@ -24,5 +24,4 @@
   :true-listp t
   :keyp-of-nil t
   :valp-of-nil t
-  :pred symbol-pseudoterm-alistp
-  :prepwork ((local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))))
+  :pred symbol-pseudoterm-alistp)
