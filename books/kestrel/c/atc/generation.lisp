@@ -26,7 +26,6 @@
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
-(include-book "kestrel/std/system/fsublis-var" :dir :system)
 (include-book "kestrel/std/system/measure-plus" :dir :system)
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
 (include-book "kestrel/std/system/uguard-plus" :dir :system)
@@ -1745,7 +1744,7 @@
                            (type type-optionp)
                            (limit pseudo-termp)
                            val)
-                    :hyp (and (pseudo-termp term)
+                    :hyp (and ;(pseudo-termp term)
                               (atc-symbol-fninfo-alistp prec-fns)
                               (symbol-pseudoterm-alistp var-term-alist)))
                state)
@@ -2028,7 +2027,7 @@
              ((er (list xform-items & xform-limit))
               (atc-gen-stmt val var-term-alist inscope vars fn prec-fns
                             experimental ctx state))
-             (val-instance (fsublis-var var-term-alist val))
+             (val-instance (fty-fsublis-var var-term-alist val))
              (vals (atc-make-mv-nth-terms indices val-instance))
              (var-term-alist-body
               (atc-update-var-term-alist vars vals var-term-alist))
@@ -2042,7 +2041,7 @@
           (acl2::value (list items type limit))))
        ((mv okp var val body wrapper?) (atc-check-let term))
        ((when okp)
-        (b* ((val-instance (fsublis-var var-term-alist val))
+        (b* ((val-instance (fty-fsublis-var var-term-alist val))
              (var-term-alist-body
               (atc-update-var-term-alist (list var)
                                          (list val-instance)
@@ -2306,7 +2305,7 @@
              (pseudo-termp x))
     :enable pseudo-termp)
 
-  (local (include-book "std/alists/strip-cdrs" :dir :system))
+  ;; (local (include-book "std/alists/strip-cdrs" :dir :system))
 
   (verify-guards atc-gen-stmt :hints (("Goal" :do-not-induct t))))
 
