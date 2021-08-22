@@ -21,4 +21,10 @@
   :val (pseudo-termp x)
   :true-listp t
   :keyp-of-nil t
-  :valp-of-nil t)
+  :valp-of-nil t
+  ///
+
+  (defthmd symbol-pseudoterm-alistp-alt-def
+    (equal (symbol-pseudoterm-alistp alist)
+           (and (symbol-alistp alist)
+                (pseudo-term-listp (strip-cdrs alist))))))
