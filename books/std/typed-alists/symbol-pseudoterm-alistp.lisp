@@ -29,7 +29,7 @@
            (and (symbol-alistp alist)
                 (pseudo-term-listp (strip-cdrs alist)))))
 
-  (defthmd symbol-pseudoterm-alistp-of-pairlis$
+  (defthm symbol-pseudoterm-alistp-of-pairlis$
     (implies (and (symbol-listp keys)
                   (pseudo-term-listp vals))
              (symbol-pseudoterm-alistp (pairlis$ keys vals))))
