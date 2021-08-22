@@ -50,6 +50,7 @@
 (include-book "nibble")
 (include-book "nibble-list")
 (include-book "set")
+(include-book "string-result")
 (include-book "dec-digit-char")
 (include-book "hex-digit-char")
 (include-book "oct-digit-char")
