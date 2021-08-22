@@ -11,7 +11,6 @@
 
 (in-package "C")
 
-(include-book "fty-pseudo-terms")
 (include-book "abstract-syntax")
 (include-book "pretty-printer" :ttags ((:open-output-channel!)))
 (include-book "static-semantics")
@@ -19,6 +18,8 @@
 (include-book "shallow-embedding")
 (include-book "proof-support")
 (include-book "table")
+
+(include-book "fty-pseudo-terms")
 
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
