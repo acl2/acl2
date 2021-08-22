@@ -1,6 +1,6 @@
 ; Standard Typed Alists Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,4 +27,9 @@
   (defthmd symbol-pseudoterm-alistp-alt-def
     (equal (symbol-pseudoterm-alistp alist)
            (and (symbol-alistp alist)
-                (pseudo-term-listp (strip-cdrs alist))))))
+                (pseudo-term-listp (strip-cdrs alist)))))
+
+  (defthmd symbol-pseudoterm-alistp-of-pairlis$
+    (implies (and (symbol-listp keys)
+                  (pseudo-term-listp vals))
+             (symbol-pseudoterm-alistp (pairlis$ keys vals)))))
