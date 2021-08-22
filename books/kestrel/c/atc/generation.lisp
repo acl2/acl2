@@ -43,22 +43,17 @@
 
 ; these belong to a more general library
 
-(defruledl symbol-pseudoterm-alistp-rewrite-for-fsublis-var
-  (equal (symbol-pseudoterm-alistp alist)
-         (and (symbol-alistp alist)
-              (pseudo-term-listp (strip-cdrs alist)))))
-
 (defruled pseudo-termp-of-fsublist-var-when-symbol-pseudoterm-alistp
   (implies (and (symbol-pseudoterm-alistp alist)
                 (pseudo-termp term))
            (pseudo-termp (fsublis-var alist term)))
-  :enable symbol-pseudoterm-alistp-rewrite-for-fsublis-var)
+  :enable acl2::symbol-pseudoterm-alistp-alt-def)
 
 (defruled pseudo-term-listp-of-fsublist-var-lst-when-symbol-pseudoterm-alistp
   (implies (and (symbol-pseudoterm-alistp alist)
                 (pseudo-term-listp terms))
            (pseudo-term-listp (fsublis-var-lst alist terms)))
-  :enable symbol-pseudoterm-alistp-rewrite-for-fsublis-var)
+  :enable acl2::symbol-pseudoterm-alistp-alt-def)
 
 (defrule symbol-pseudoterm-alistp-of-pairlis$
   (implies (and (symbol-listp keys)
