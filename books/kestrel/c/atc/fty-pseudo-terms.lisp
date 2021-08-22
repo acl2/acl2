@@ -504,21 +504,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruledl symbol-pseudoterm-alistp-alt-def
+  (equal (symbol-pseudoterm-alistp alist)
+         (and (symbol-alistp alist)
+              (pseudo-term-listp (strip-cdrs alist)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define fty-fsublis-var ((subst symbol-pseudoterm-alistp) (term pseudo-termp))
   :returns (new-term pseudo-termp)
   :short "FTY version of @(tsee fsublis-var)."
   (fsublis-var (symbol-pseudoterm-alist-fix subst)
                (pseudo-term-fix term))
-
   :prepwork
-
-  ((defruled symbol-pseudoterm-alistp-rewrite-for-fsublis-var
-     (equal (symbol-pseudoterm-alistp alist)
-            (and (symbol-alistp alist)
-                 (pseudo-term-listp (strip-cdrs alist)))))
-
-   (defrule pseudo-termp-of-fsublist-var-when-symbol-pseudoterm-alistp
+  ((defrulel lemma
      (implies (and (symbol-pseudoterm-alistp alist)
                    (pseudo-termp term))
               (pseudo-termp (fsublis-var alist term)))
-     :enable symbol-pseudoterm-alistp-rewrite-for-fsublis-var)))
+     :enable symbol-pseudoterm-alistp-alt-def)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fty-fsublis-var-lst ((subst symbol-pseudoterm-alistp)
+                             (terms pseudo-term-listp))
+  :returns (new-terms pseudo-term-listp)
+  :short "FTY version of @(tsee fsublis-var-lst)."
+  (fsublis-var-lst (symbol-pseudoterm-alist-fix subst)
+                   (pseudo-term-list-fix terms))
+
+  :prepwork
+  ((defrulel lemma
+     (implies (and (symbol-pseudoterm-alistp subst)
+                   (pseudo-term-listp terms))
+              (pseudo-term-listp (fsublis-var-lst subst terms)))
+     :enable symbol-pseudoterm-alistp-alt-def)))
