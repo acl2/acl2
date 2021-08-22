@@ -18,6 +18,7 @@
 (include-book "byte-list32")
 (include-book "byte-list64")
 (include-book "character-list")
+(include-book "character-list-result")
 (include-book "character-result")
 (include-book "defbyte")
 (include-book "defbyte-ihs-theorems")
