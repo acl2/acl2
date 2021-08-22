@@ -40,6 +40,7 @@
 (include-book "defsubtype")
 (include-book "defunit")
 (include-book "defunit-doc")
+(include-book "integer-result")
 (include-book "map")
 (include-book "maybe-string")
 (include-book "maybe-string-result")
