@@ -43,10 +43,6 @@
 
 ; these belong to a more general library
 
-(defruled symbol-alistp-when-symbol-pseudoterm-alistp
-  (implies (symbol-pseudoterm-alistp x)
-           (symbol-alistp x)))
-
 (defrule symbol-alistp-of-append
   (equal (symbol-alistp (append a b))
          (and (symbol-alistp (true-list-fix a))
@@ -2222,27 +2218,26 @@
 
   :prepwork ((local
               (in-theory
-               (e/d
-                (symbol-alistp-when-symbol-pseudoterm-alistp)
-                ;; for speed:
-                (assoc-equal
-                 nth
-                 acl2::pseudo-termp-of-cons-when-pseudo-termfnp
-                 acl2::subsetp-member
-                 natp
-                 member-equal
-                 default-car
-                 default-cdr
-                 default-symbol-name
-                 true-list-listp
-                 acl2::true-listp-of-car-when-true-list-listp
-                 acl2::true-list-listp-of-cdr-when-true-list-listp
-                 acl2::true-listp-of-cdar-when-keyword-truelist-alistp
-                 acl2::symbol-listp-when-not-consp
-                 acl2::true-list-listp-when-not-consp
-                 symbolp-of-caar-when-atc-symbol-fninfo-alistp
-                 symbolp-of-car-when-member-equal-of-atc-symbol-fninfo-alistp
-                 set::sets-are-true-lists-cheap)))))
+               ;; for speed:
+               (disable
+                assoc-equal
+                nth
+                acl2::pseudo-termp-of-cons-when-pseudo-termfnp
+                acl2::subsetp-member
+                natp
+                member-equal
+                default-car
+                default-cdr
+                default-symbol-name
+                true-list-listp
+                acl2::true-listp-of-car-when-true-list-listp
+                acl2::true-list-listp-of-cdr-when-true-list-listp
+                acl2::true-listp-of-cdar-when-keyword-truelist-alistp
+                acl2::symbol-listp-when-not-consp
+                acl2::true-list-listp-when-not-consp
+                symbolp-of-caar-when-atc-symbol-fninfo-alistp
+                symbolp-of-car-when-member-equal-of-atc-symbol-fninfo-alistp
+                set::sets-are-true-lists-cheap))))
 
   :verify-guards nil ; done below
 
