@@ -33,7 +33,6 @@
 (include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "std/typed-alists/keyword-symbol-alistp" :dir :system)
-(include-book "std/typed-alists/symbol-pseudoterm-alistp" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
