@@ -39,6 +39,7 @@
 (include-book "defunit")
 (include-book "defunit-doc")
 (include-book "map")
+(include-book "maybe-string")
 (include-book "nat-list-result")
 (include-book "nat-result")
 (include-book "nat-set")
