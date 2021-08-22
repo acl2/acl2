@@ -43,18 +43,6 @@
 
 ; these belong to a more general library
 
-(defruled pseudo-termp-of-fsublist-var-when-symbol-pseudoterm-alistp
-  (implies (and (symbol-pseudoterm-alistp alist)
-                (pseudo-termp term))
-           (pseudo-termp (fsublis-var alist term)))
-  :enable acl2::symbol-pseudoterm-alistp-alt-def)
-
-(defruled pseudo-term-listp-of-fsublist-var-lst-when-symbol-pseudoterm-alistp
-  (implies (and (symbol-pseudoterm-alistp alist)
-                (pseudo-term-listp terms))
-           (pseudo-term-listp (fsublis-var-lst alist terms)))
-  :enable acl2::symbol-pseudoterm-alistp-alt-def)
-
 (defrule symbol-pseudoterm-alistp-of-pairlis$
   (implies (and (symbol-listp keys)
                 (pseudo-term-listp vals))
@@ -942,12 +930,7 @@
             (limit
              pseudo-termp
              :hyp (and (atc-symbol-fninfo-alistp prec-fns)
-                       (symbol-pseudoterm-alistp var-term-alist))
-             :hints
-             (("Goal"
-               :in-theory
-               (enable
-                pseudo-termp-of-fsublist-var-when-symbol-pseudoterm-alistp)))))
+                       (symbol-pseudoterm-alistp var-term-alist))))
   :short "Check if a term may represent a call to a callable target function."
   :long
   (xdoc::topstring
@@ -1002,12 +985,7 @@
             (limit
              pseudo-termp
              :hyp (and (atc-symbol-fninfo-alistp prec-fns)
-                       (symbol-pseudoterm-alistp var-term-alist))
-             :hints
-             (("Goal"
-               :in-theory
-               (enable
-                pseudo-termp-of-fsublist-var-when-symbol-pseudoterm-alistp)))))
+                       (symbol-pseudoterm-alistp var-term-alist))))
   :short "Check if a term may represent a call of a loop function."
   :long
   (xdoc::topstring
@@ -2254,12 +2232,10 @@
   :prepwork ((local
               (in-theory
                (e/d
-                (pseudo-termp-of-fsublist-var-when-symbol-pseudoterm-alistp
-                 pseudo-term-listp-of-strip-cdrs-when-symbol-pseudoterm-alistp
+                (pseudo-term-listp-of-strip-cdrs-when-symbol-pseudoterm-alistp
                  symbol-alistp-when-symbol-pseudoterm-alistp)
                 ;; for speed:
-                (
-                 assoc-equal
+                (assoc-equal
                  nth
                  acl2::pseudo-termp-of-cons-when-pseudo-termfnp
                  acl2::subsetp-member
@@ -2299,8 +2275,6 @@
     (implies (symbolp x)
              (pseudo-termp x))
     :enable pseudo-termp)
-
-  ;; (local (include-book "std/alists/strip-cdrs" :dir :system))
 
   (verify-guards atc-gen-stmt :hints (("Goal" :do-not-induct t))))
 
