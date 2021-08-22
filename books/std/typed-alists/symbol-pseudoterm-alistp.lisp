@@ -36,4 +36,8 @@
 
   (defthmd pseudo-term-listp-of-strip-cdrs-when-symbol-pseudoterm-alistp
     (implies (symbol-pseudoterm-alistp alist)
-             (pseudo-term-listp (strip-cdrs alist)))))
+             (pseudo-term-listp (strip-cdrs alist))))
+
+  (defthmd symbol-alistp-when-symbol-pseudoterm-alistp
+    (implies (symbol-pseudoterm-alistp x)
+             (symbol-alistp x))))
