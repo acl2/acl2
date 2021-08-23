@@ -37,8 +37,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Many system utilities, e.g. built-in and in @(csee Std/system),
-     are written using the built-in ACL2 term API.
+    "Many system utilities, e.g. built-in and in "
+    (xdoc::seetopic "acl2::std/system" "Std/system")
+    ", are written using the built-in ACL2 term API.
      When using these system utilities
      in code that uses the "
     (xdoc::seetopic "acl2::pseudo-term-fty" "FTY term API")
