@@ -10,12 +10,12 @@
 
 (in-package "ACL2")
 
-(include-book "defresult")
+(include-book "centaur/fty/top" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult nat-result
+(fty::deftagsum nat/natlist
   :parents (fty::fty-extensions fty::specific-types)
-  :short "Fixtype of errors and natural numbers."
-  :ok nat
-  :pred nat-resultp)
+  :short "Fixtype of natural numbers and lists of natural numbers."
+  (:one ((get nat)))
+  (:list ((get nat-list))))

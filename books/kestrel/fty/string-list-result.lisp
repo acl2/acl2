@@ -12,10 +12,12 @@
 
 (include-book "defresult")
 
+(include-book "std/strings/eqv" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult nat-result
+(fty::defresult string-list-result
   :parents (fty::fty-extensions fty::specific-types)
-  :short "Fixtype of errors and natural numbers."
-  :ok nat
-  :pred nat-resultp)
+  :short "Fixtype of errors and lists of strings."
+  :ok str::string-list
+  :pred string-list-resultp)

@@ -1,4 +1,4 @@
-; FTY Library
+; Standard Typed Alists Library
 ;
 ; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,12 +10,15 @@
 
 (in-package "ACL2")
 
-(include-book "defresult")
+(include-book "xdoc/top" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult nat-result
-  :parents (fty::fty-extensions fty::specific-types)
-  :short "Fixtype of errors and natural numbers."
-  :ok nat
-  :pred nat-resultp)
+(defsection std/typed-alists/symbol-alistp
+  :parents (std/typed-alists)
+  :short "Theorems about the built-in @(tsee symbol-alistp)."
+
+  (defthm symbol-alistp-of-append
+    (equal (symbol-alistp (append x y))
+           (and (symbol-alistp (true-list-fix x))
+                (symbol-alistp y)))))

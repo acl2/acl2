@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -23,6 +23,7 @@
 (include-book "flatten-ands-in-lit")
 (include-book "fsublis-fn")
 (include-book "fsublis-var")
+(include-book "fsublis-var-more-theorems")
 (include-book "make-mv-let-call")
 (include-book "make-mv-nth-calls")
 (include-book "mvify")
