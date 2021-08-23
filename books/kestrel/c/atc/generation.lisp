@@ -41,12 +41,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; these belong to a more general library
-
-(defrule symbol-alistp-of-append
-  (equal (symbol-alistp (append a b))
-         (and (symbol-alistp (true-list-fix a))
-              (symbol-alistp b))))
+; this belongs to a more general library
 
 (defrule pseudo-term-list-count-of-pseudo-term-call->args
   (implies (pseudo-term-case term :call)
