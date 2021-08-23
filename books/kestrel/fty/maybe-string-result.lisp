@@ -11,11 +11,12 @@
 (in-package "ACL2")
 
 (include-book "defresult")
+(include-book "maybe-string")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult nat-result
+(fty::defresult maybe-string-result
   :parents (fty::fty-extensions fty::specific-types)
-  :short "Fixtype of errors and natural numbers."
-  :ok nat
-  :pred nat-resultp)
+  :short "Fixtype of errors and optional strings."
+  :ok maybe-string
+  :pred maybe-string-resultp)

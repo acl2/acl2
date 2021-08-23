@@ -12,6 +12,7 @@
 
 (include-book "good-pseudo-termp")
 (include-book "good-valuep")
+(include-book "maybe-string-fix")
 (include-book "mbt-dollar")
 (include-book "organize-symbols-by-name")
 (include-book "organize-symbols-by-pkg")

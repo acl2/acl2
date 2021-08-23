@@ -15,6 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult character-result
-  :short "Fixtype of characters and errors."
+  :parents (fty::fty-extensions fty::specific-types)
+  :short "Fixtype of errors and characters."
   :ok character
   :pred character-resultp)
