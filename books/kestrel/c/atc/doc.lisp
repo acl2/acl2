@@ -892,11 +892,7 @@
        the C function is functionally equivalent to the ACL2 function.")
      (xdoc::p
       "If the @(':proofs') input is @('nil'),
-       this theorem is not generated.")
-     (xdoc::p
-      "If any of the target functions is recursive,
-       this theorem is not generated.
-       Proof generation for loops is not fully supported yet.")))
+       this theorem is not generated.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
