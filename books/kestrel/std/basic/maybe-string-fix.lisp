@@ -1,4 +1,4 @@
-; FTY Library
+; Standard Basic Library
 ;
 ; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,12 +10,13 @@
 
 (in-package "ACL2")
 
-(include-book "defresult")
+(include-book "kestrel/std/util/deffixer" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult nat-result
-  :parents (fty::fty-extensions fty::specific-types)
-  :short "Fixtype of errors and natural numbers."
-  :ok nat
-  :pred nat-resultp)
+(std::deffixer maybe-string-fix
+  :parents (std/basic std/basic-extensions maybe-stringp)
+  :short "Fixer for @(tsee maybe-stringp)."
+  :pred maybe-stringp
+  :body-fix nil)

@@ -14,8 +14,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult nat-result
+(fty::defresult integer-result
   :parents (fty::fty-extensions fty::specific-types)
-  :short "Fixtype of errors and natural numbers."
-  :ok nat
-  :pred nat-resultp)
+  :short "Fixtype of errors and integers."
+  :ok int
+  :pred integer-resultp)

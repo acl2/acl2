@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; July 2021
+;; August 2021
 
 ;; Extend Arm floating-point specs to AArch64 that includes two new control
 ;; bits FIZ and AH
@@ -151,11 +151,17 @@
                                                   (x (lpn f)))
                                        (:instance drnd-exactp-a
                                                   (x u)
+                                                  (mode (fpscr-rc fpcr)))
+                                       (:instance rnd-drnd-up
+                                                  (x u)
                                                   (mode (fpscr-rc fpcr))))
                                  :in-theory (e/d (sgn set-flag rnd-minus)
-                                                 (nrepp-minus))))))
+                                                 (rationalp-abs
+                                                  acl2::|(< x (if a b c))|
+                                                  nrepp-minus))))))
   (let* ((rmode (fpscr-rc fpcr))
          (r (rnd u rmode (prec f)))
+         (d (drnd u rmode f))
          (sgn (if (< u 0) 1 0)))
     (if (> (abs r) (lpn f))
         (let ((fpsr (set-flag *ofc* (set-flag *ixc* fpsr))))
@@ -166,15 +172,20 @@
                   fpsr)
             (mv (iencode sgn f) fpsr)))
       (if (< (abs u) (spn f))
-          (if (or (and (equal f (hp))
-                       (= (bitn fpcr *fz16*) 1))
-                  (and (not (equal f (hp)))
-                       (= (bitn fpcr *fz*) 1)))
-              (mv (zencode sgn f)
-                  (if (= (bitn fpcr *ah*) 1)
-                      (set-flag *ixc* (set-flag *ufc* fpsr))
-                    (set-flag *ufc* fpsr)))
-            (let ((d (drnd u rmode f)))
+          ;; When AH = 1, detection of underflow occurs AFTER rounding with an
+          ;; UNBOUNDED exponent.
+          (if (and (= (bitn fpcr *ah*) 1)
+                   (= (abs r) (spn f)))
+              (mv (nencode d f) ;; should be the same as (nencode r f)
+                  (set-flag *ixc* fpsr))
+            (if (or (and (equal f (hp))
+                         (= (bitn fpcr *fz16*) 1))
+                    (and (not (equal f (hp)))
+                         (= (bitn fpcr *fz*) 1)))
+                (mv (zencode sgn f)
+                    (if (= (bitn fpcr *ah*) 1)
+                        (set-flag *ixc* (set-flag *ufc* fpsr))
+                      (set-flag *ufc* fpsr)))
               (if (= d u)
                   (mv (dencode d f) fpsr)
                 (let ((fpsr (set-flag *ixc* (set-flag *ufc* fpsr))))

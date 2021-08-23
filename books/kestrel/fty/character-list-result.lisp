@@ -11,11 +11,12 @@
 (in-package "ACL2")
 
 (include-book "defresult")
+(include-book "character-list")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult nat-result
+(fty::defresult character-list-result
   :parents (fty::fty-extensions fty::specific-types)
-  :short "Fixtype of errors and natural numbers."
-  :ok nat
-  :pred nat-resultp)
+  :short "Fixtype of errors and lists of characters."
+  :ok character-list
+  :pred character-list-resultp)
