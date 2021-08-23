@@ -423,7 +423,7 @@
                     (mv-nth \'n-1 mv)))
            term)');
        this is the pattern that ATC looks for.")
-     (xdoc::p
+     (xdoc::li
       "A call of a recursive target function @('fnj') with @('j < i'),
        on variables identical to its formal parameters,
        when @('vars') is not @('nil')
