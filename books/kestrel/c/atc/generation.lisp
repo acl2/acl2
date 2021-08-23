@@ -904,15 +904,11 @@
 (define atc-check-callable-fn ((term pseudo-termp)
                                (var-term-alist symbol-pseudoterm-alistp)
                                (prec-fns atc-symbol-fninfo-alistp))
-  :returns (mv
-            (yes/no booleanp)
-            (fn symbolp :hyp (atc-symbol-fninfo-alistp prec-fns))
-            (args pseudo-term-listp)
-            (type typep :hyp (atc-symbol-fninfo-alistp prec-fns))
-            (limit
-             pseudo-termp
-             :hyp (and (atc-symbol-fninfo-alistp prec-fns)
-                       (symbol-pseudoterm-alistp var-term-alist))))
+  :returns (mv (yes/no booleanp)
+               (fn symbolp :hyp (atc-symbol-fninfo-alistp prec-fns))
+               (args pseudo-term-listp)
+               (type typep :hyp (atc-symbol-fninfo-alistp prec-fns))
+               (limit pseudo-termp :hyp (atc-symbol-fninfo-alistp prec-fns)))
   :short "Check if a term may represent a call to a callable target function."
   :long
   (xdoc::topstring
@@ -958,16 +954,12 @@
 (define atc-check-loop-fn ((term pseudo-termp)
                            (var-term-alist symbol-pseudoterm-alistp)
                            (prec-fns atc-symbol-fninfo-alistp))
-  :returns (mv
-            (yes/no booleanp)
-            (fn symbolp)
-            (args pseudo-term-listp)
-            (xforming symbol-listp :hyp (atc-symbol-fninfo-alistp prec-fns))
-            (loop stmtp)
-            (limit
-             pseudo-termp
-             :hyp (and (atc-symbol-fninfo-alistp prec-fns)
-                       (symbol-pseudoterm-alistp var-term-alist))))
+  :returns (mv (yes/no booleanp)
+               (fn symbolp)
+               (args pseudo-term-listp)
+               (xforming symbol-listp :hyp (atc-symbol-fninfo-alistp prec-fns))
+               (loop stmtp)
+               (limit pseudo-termp :hyp (atc-symbol-fninfo-alistp prec-fns)))
   :short "Check if a term may represent a call of a loop function."
   :long
   (xdoc::topstring
@@ -1475,8 +1467,7 @@
                            (type typep)
                            (limit pseudo-termp)
                            val)
-                    :hyp (and (symbol-pseudoterm-alistp var-term-alist)
-                              (atc-symbol-fninfo-alistp prec-fns)))
+                    :hyp (atc-symbol-fninfo-alistp prec-fns))
                state)
   :short "Generate a C expression from an ACL2 term
           that must be a C-valued term."
@@ -1679,9 +1670,11 @@
 (define atc-update-var-term-alist ((vars symbol-listp)
                                    (terms pseudo-term-listp)
                                    (alist symbol-pseudoterm-alistp))
-  :returns (new-alist symbol-pseudoterm-alistp :hyp :guard)
+  :returns (new-alist symbol-pseudoterm-alistp)
   :short "Update an alist from symbols to terms."
-  (append (pairlis$ vars terms) alist))
+  (append (pairlis$ (acl2::symbol-list-fix vars)
+                    (pseudo-term-list-fix terms))
+          (acl2::symbol-pseudoterm-alist-fix alist)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1699,9 +1692,7 @@
                            (type type-optionp)
                            (limit pseudo-termp)
                            val)
-                    :hyp (and ;(pseudo-termp term)
-                              (atc-symbol-fninfo-alistp prec-fns)
-                              (symbol-pseudoterm-alistp var-term-alist)))
+                    :hyp (atc-symbol-fninfo-alistp prec-fns))
                state)
   :short "Generate a C statement from an ACL2 term."
   :long
@@ -2274,8 +2265,7 @@
                            (xforming symbol-listp)
                            (limit pseudo-termp)
                            val)
-                    :hyp (and (pseudo-termp term)
-                              (atc-symbol-fninfo-alistp prec-fns))
+                    :hyp (atc-symbol-fninfo-alistp prec-fns)
                     :hints (("Goal" :in-theory (disable member-equal))))
                state)
   :short "Generate a C loop statement from an ACL2 term."
