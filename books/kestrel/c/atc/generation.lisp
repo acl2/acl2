@@ -53,15 +53,14 @@
 
 ; this belongs to a more general library
 
-(define list-lenp-fn ((n natp) (l pseudo-termp))
-  :returns (test pseudo-termp :hyp (pseudo-termp l))
-  :parents nil
+(defun list-lenp-fn (n l)
   (if (zp n)
       `(endp ,l)
     `(and (consp ,l)
           ,(list-lenp-fn (1- n) `(cdr ,l)))))
 
 (defmacro list-lenp (n l)
+  (declare (xargs :guard (natp n)))
   `(let ((l ,l)) ,(list-lenp-fn n 'l)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
