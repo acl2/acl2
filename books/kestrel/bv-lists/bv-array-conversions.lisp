@@ -1,7 +1,7 @@
 ; Conversions between lists and bv-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,22 +12,15 @@
 (in-package "ACL2")
 
 (include-book "bv-arrays")
-;(local (include-book "kestrel/bv/getbit" :dir :system)) ;drop?
-;(local (include-book "../bv/logext")) ;drop?
 (local (include-book "all-unsigned-byte-p2"))
 ;(local (include-book "all-unsigned-byte-p"))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
-;move
-(defthm unsigned-byte-p-of-0
-  (equal (unsigned-byte-p width 0)
-         (natp width))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
-
-(defun list-to-bv-array-aux (element-size elements-left total-length lst)
+(defund list-to-bv-array-aux (element-size elements-left total-length lst)
   (declare (xargs :guard (and (natp element-size)
                               (natp elements-left)
                               (natp total-length)
@@ -49,12 +42,24 @@
                                    total-length
                                    current-element-number
                                    (nth current-element-number lst)
-                                   (list-to-bv-array-aux element-size (+ -1 elements-left) total-length lst))))))
+                                   (list-to-bv-array-aux element-size (+ -1 elements-left) total-length lst)))))
+  :hints (("Goal" :in-theory (enable list-to-bv-array-aux))))
 
 (defthm list-to-bv-array-aux-base
   (implies (zp elements-left)
            (equal (list-to-bv-array-aux element-size elements-left total-length lst)
-                  (repeat total-length 0))))
+                  (repeat total-length 0)))
+  :hints (("Goal" :in-theory (enable list-to-bv-array-aux))))
+
+(defthm len-of-list-to-bv-array-aux
+  (equal (len (list-to-bv-array-aux esize eleft len lst))
+         (nfix len))
+  :hints (("Goal" :in-theory (enable list-to-bv-array-aux))))
+
+(defthm all-unsigned-byte-p-of-list-to-bv-array-aux
+  (implies (natp width)
+           (all-unsigned-byte-p width (list-to-bv-array-aux width elements-left total-len x)))
+  :hints (("Goal" :in-theory (enable list-to-bv-array-aux))))
 
 ;converts a list (e.g., a nest of conses) to an array (a nest of bv-array-write calls)
 ;often this will just be a no-op, but it helps us compare a spec expressed as a list with an implementation expressed as an array
@@ -65,10 +70,6 @@
   (let ((len (len lst)))
     (list-to-bv-array-aux element-size len len lst)))
 
-(defthm len-of-list-to-bv-array-aux
-  (equal (len (list-to-bv-array-aux esize eleft len lst))
-         (nfix len)))
-
 (defthm len-of-list-to-bv-array
   (equal (len (list-to-bv-array esize lst))
          (len lst))
@@ -78,21 +79,13 @@
 ;;  (equal (BV-ARRAY-READ '32 '44 n (LIST-TO-BV-ARRAY '32 lst))
 ;;         (bvchop 32 (nth n lst))))
 
-(defthm all-unsigned-byte-p-of-list-to-bv-array-aux
-  (implies (natp width)
-           (all-unsigned-byte-p width (list-to-bv-array-aux width elements-left total-len x)))
-  :hints (("Goal" :in-theory (enable list-to-bv-array-aux))))
-
 (defthm all-unsigned-byte-p-of-list-to-bv-array
   (implies (natp width)
            (all-unsigned-byte-p width (list-to-bv-array width x)))
   :hints (("Goal" :in-theory (enable list-to-bv-array))))
 
 ;;; Convert an array of bit-vectors to a list:
-
-;(local (in-theory (enable natp)))
-
-(defun bv-array-to-list-aux (size len i arr)
+(defund bv-array-to-list-aux (size len i arr)
   (declare (xargs :measure (+ 1 (nfix (- (nfix len) i)))
                   :guard (and (natp i)
                               (natp len)
@@ -105,19 +98,14 @@
     (cons (bv-array-read size len i arr)
           (bv-array-to-list-aux size len (+ 1 i) arr))))
 
-;should we pass in the length too (can't really ask an array for its length)?
-(defun bv-array-to-list (size arr)
-  (declare (xargs :guard (and (natp size)
-                              (bv-arrayp size (len arr) arr))))
-  (bv-array-to-list-aux size (len arr) 0 arr))
-
 (defthm len-of-bv-array-to-list-aux
   (implies (and (natp len)
                 (natp i)
                 (natp width)
                 (<= i len))
            (equal (len (bv-array-to-list-aux width len i x))
-                  (- len i))))
+                  (- len i)))
+  :hints (("Goal" :in-theory (enable bv-array-to-list-aux))))
 
 (local
  (defun ind (size len i arr n)
@@ -138,15 +126,70 @@
            (equal (nth n (bv-array-to-list-aux width len i x))
                   (bv-array-read width len (+ n i) x)))
   :hints (("Goal" :in-theory (e/d (;LIST::NTH-OF-CONS
+                                   bv-array-to-list-aux
                                    nth) (;NTH-OF-CDR
-                                                           ))
+                                         ))
            :induct (ind size len i arr n)
            :do-not '(generalize eliminate-destructors))))
 
-(defthm INTEGER-LISTP-of-BV-ARRAY-TO-LIST-AUX
-  (INTEGER-LISTP (BV-ARRAY-TO-LIST-AUX size len i arr)))
+(defthm integer-listp-of-bv-array-to-list-aux
+  (integer-listp (bv-array-to-list-aux size len i arr))
+  :hints (("Goal" :in-theory (enable bv-array-to-list-aux))))
 
-(in-theory (disable BV-ARRAY-TO-LIST-AUX BV-ARRAY-TO-LIST))
+(defthm all-unsigned-byte-p-of-bv-array-to-list-aux
+  (implies (natp width)
+           (all-unsigned-byte-p width (bv-array-to-list-aux width len i y)))
+  :hints (("Goal" :in-theory (enable bv-array-to-list-aux))))
+
+(defthm car-of-bv-array-to-list-aux
+  (implies (and (natp i)
+                (< i len)
+                (equal len (len arr)))
+           (equal (car (bv-array-to-list-aux size len i arr))
+                  (bv-array-read size len i arr)))
+  :hints (("Goal" :in-theory (enable bv-array-to-list-aux))))
+
+(defthm consp-of-bv-array-to-list-aux
+  (implies (and (natp i)
+                (natp len))
+           (equal (consp (bv-array-to-list-aux size len i arr))
+                  (< i len)))
+  :hints (("Goal" :in-theory (enable bv-array-to-list-aux))))
+
+(defthm bv-array-to-list-aux-iff
+  (implies (and (natp i)
+                (natp len))
+           (iff (bv-array-to-list-aux size len i arr)
+                (< i len)))
+  :hints (("Goal" :in-theory (enable bv-array-to-list-aux))))
+
+(defthm cdr-of-bv-array-to-list-aux
+  (implies (and (equal len (len arr))
+                (< i len)
+                (natp i))
+           (equal (cdr (bv-array-to-list-aux size len i arr))
+                  (bv-array-to-list-aux size (+ -1 len) i (cdr arr))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+;           :induct (bv-array-to-list-aux size len i arr)
+           :in-theory (enable bv-array-to-list-aux))))
+
+(DEFTHMd BV-ARRAY-TO-LIST-AUX-BECOMES-NTHCDR-2
+  (IMPLIES (AND ;(TRUE-LISTP ARRAY)
+                (NATP WIDTH)
+                (NATP I)
+                (<= I LEN)
+                (EQUAL LEN (LEN ARRAY))
+;                                     (ALL-UNSIGNED-BYTE-P WIDTH ARRAY)
+                )
+           (EQUAL (BV-ARRAY-TO-LIST-AUX WIDTH LEN I ARRAY)
+                  (NTHCDR I (bvchop-list width ARRAY))))
+  :HINTS (("Goal" :IN-THEORY (ENABLE BV-ARRAY-TO-LIST-AUX bv-array-read cdr-of-nthcdr))))
+
+;should we pass in the length too (can't really ask an array for its length)?
+(defund bv-array-to-list (size arr)
+  (declare (xargs :guard (and (natp size)
+                              (bv-arrayp size (len arr) arr))))
+  (bv-array-to-list-aux size (len arr) 0 arr))
 
 (defthm len-of-BV-ARRAY-TO-LIST
   (implies (natp width)
@@ -154,34 +197,21 @@
                   (len l)))
   :hints (("Goal" :in-theory (enable BV-ARRAY-TO-LIST))))
 
-(defthm consp-of-BV-ARRAY-TO-LIST-aux
-  (implies (and (natp i)
-                (natp len))
-           (equal (CONSP (BV-ARRAY-TO-LIST-aux SIZE LEN I ARR))
-                  (< i len)))
-  :hints (("Goal" :in-theory (enable BV-ARRAY-TO-LIST-aux))))
-
-(defthm BV-ARRAY-TO-LIST-aux-iff
-  (implies (and (natp i)
-                (natp len))
-           (iff (BV-ARRAY-TO-LIST-aux SIZE LEN I ARR)
-                (< i len)))
-  :hints (("Goal" :in-theory (enable BV-ARRAY-TO-LIST-aux))))
-
-(defthm consp-of-BV-ARRAY-TO-LIST
-  (equal (CONSP (BV-ARRAY-TO-LIST width L))
+(defthm consp-of-bv-array-to-list
+  (equal (consp (bv-array-to-list width l))
          (consp l))
-  :hints (("Goal" :in-theory (enable BV-ARRAY-TO-LIST))))
+  :hints (("Goal" :in-theory (enable bv-array-to-list))))
 
-(defthm endp-of-BV-ARRAY-TO-LIST
-  (equal (endp (BV-ARRAY-TO-LIST width L))
+;drop?
+(defthm endp-of-bv-array-to-list
+  (equal (endp (bv-array-to-list width l))
          (endp l))
-  :hints (("Goal" :in-theory (enable BV-ARRAY-TO-LIST))))
+  :hints (("Goal" :in-theory (enable bv-array-to-list))))
 
-(defthm INTEGER-LISTP-of-BV-ARRAY-TO-LIST
+(defthm integer-listp-of-bv-array-to-list
   (implies (natp width)
-           (INTEGER-LISTP (BV-ARRAY-TO-LIST width ARR)))
-  :hints (("Goal" :in-theory (enable BV-ARRAY-TO-LIST))))
+           (integer-listp (bv-array-to-list width arr)))
+  :hints (("Goal" :in-theory (enable bv-array-to-list))))
 
 (defthm car-of-BV-ARRAY-TO-LIST
   (implies (and (consp arr) ;drop?
@@ -200,73 +230,15 @@
                   (BV-ARRAY-READ width (LEN ARR) n ARR)))
   :hints (("Goal" :in-theory (enable BV-ARRAY-TO-LIST))))
 
-
-(defthm car-of-BV-ARRAY-TO-LIST-AUX
-  (implies (and (natp i)
-                (< i len)
-                (equal len (len arr)))
-           (equal (CAR (BV-ARRAY-TO-LIST-AUX SIZE len i arr))
-                  (bv-array-read size len i arr)))
-  :hints (("Goal" :in-theory (enable BV-ARRAY-TO-LIST-AUX))))
-
-;; (defun all-bytep (lst)
-;;   (all-unsigned-byte-p 8 lst))
-
-(defthm ALL-UNSIGNED-BYTE-P-of-BV-ARRAY-TO-LIST-AUX
+(defthm all-unsigned-byte-p-of-bv-array-to-list
   (implies (natp width)
-           (ALL-UNSIGNED-BYTE-P width (BV-ARRAY-TO-LIST-AUX width len i Y)))
-  :hints (("Goal" :in-theory (enable BV-ARRAY-TO-LIST-AUX))))
+           (all-unsigned-byte-p width (bv-array-to-list width y)))
+  :hints (("Goal" :in-theory (enable bv-array-to-list))))
 
-(defthm ALL-UNSIGNED-BYTE-P-of-BV-ARRAY-TO-LIST
-  (implies (natp width)
-           (ALL-UNSIGNED-BYTE-P width (BV-ARRAY-TO-LIST width Y)))
-  :hints (("Goal" :in-theory (enable BV-ARRAY-TO-LIST))))
-
-(defthm BV-ARRAY-READ-of-cdr
-  (implies (and (natp i)
-;                (natp size)
-                (equal len (+ -1 (LEN ARR)))
-                (< i len))
-           (EQUAL (BV-ARRAY-READ SIZE len I (CDR ARR))
-                  (BV-ARRAY-READ SIZE (+ 1 len) (+ 1 I) ARR)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read ;ceiling-of-lg BVCHOP-OF-SUM-CASES
-                                   )
-                                  (BVCHOP-IDENTITY)))))
-
-(defthm cdr-of-BV-ARRAY-TO-LIST-AUX
-  (implies (and (equal len (len arr))
-                (< i len)
-                (natp i))
-           (equal (CDR (BV-ARRAY-TO-LIST-AUX SIZE LEN I ARR))
-                  (BV-ARRAY-TO-LIST-AUX SIZE (+ -1 LEN) i (cdr ARR))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :induct (BV-ARRAY-TO-LIST-AUX SIZE LEN I ARR)
-           :in-theory (enable BV-ARRAY-TO-LIST-AUX))))
-
-(defthmd cdr-of-BV-ARRAY-TO-LIST
-  (equal (CDR (BV-ARRAY-TO-LIST 8 BYTES))
-         (BV-ARRAY-TO-LIST 8 (cdr BYTES)))
-  :hints (("Goal" :in-theory (enable BV-ARRAY-TO-LIST))))
-
-(defthm bv-array-read-of-nthcdr
-  (implies (and (natp i)
-                (< i (len src)))
-           (equal (BV-ARRAY-READ 8 (LEN (NTHCDR I SRC)) 0 (NTHCDR I SRC))
-                  (BV-ARRAY-READ 8 (LEN src) i src)))
-  :hints (("Goal" :in-theory (e/d (BV-ARRAY-READ) ()))))
-
-;move
-(DEFTHMd BV-ARRAY-TO-LIST-AUX-BECOMES-NTHCDR-2
-  (IMPLIES (AND ;(TRUE-LISTP ARRAY)
-                (NATP WIDTH)
-                (NATP I)
-                (<= I LEN)
-                (EQUAL LEN (LEN ARRAY))
-;                                     (ALL-UNSIGNED-BYTE-P WIDTH ARRAY)
-                )
-           (EQUAL (BV-ARRAY-TO-LIST-AUX WIDTH LEN I ARRAY)
-                  (NTHCDR I (bvchop-list width ARRAY))))
-  :HINTS (("Goal" :IN-THEORY (ENABLE BV-ARRAY-TO-LIST-AUX bv-array-read cdr-of-nthcdr))))
+(defthmd cdr-of-bv-array-to-list
+  (equal (cdr (bv-array-to-list width bytes))
+         (bv-array-to-list width (cdr bytes)))
+  :hints (("Goal" :in-theory (enable bv-array-to-list))))
 
 ;move
 (DEFTHMd BV-ARRAY-TO-LIST-DOES-NOTHING-2
@@ -279,6 +251,30 @@
   :HINTS (("Goal" :IN-THEORY (ENABLE BV-ARRAY-TO-LIST
                                      BV-ARRAY-TO-LIST-AUX-BECOMES-NTHCDR-2))))
 
-(defun list-to-byte-array (lst)
+(defund list-to-byte-array (lst)
   (declare (xargs :guard (true-listp lst)))
   (list-to-bv-array 8 lst))
+
+(defthm bv-array-read-of-list-to-bv-array-aux
+  (implies (and (< n elements-left) ;main hyp
+                (natp n)
+                (natp total-len)
+                (natp elements-left)
+                (<= elements-left total-len)
+                (< n total-len)
+                (natp width))
+           (equal (bv-array-read width total-len n (list-to-bv-array-aux width elements-left total-len x))
+                  (bv-array-read width total-len n x)))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :induct (list-to-bv-array-aux width elements-left total-len x)
+           :in-theory (e/d (bv-array-read bv-array-read-of-bv-array-write-both-better list-to-bv-array-aux)
+                           ()))))
+
+(defthm bv-array-read-of-list-to-bv-array
+  (implies (and (natp n)
+                (natp width)
+                (< n (len x)))
+           (equal (bv-array-read width (len x) n (list-to-bv-array width x))
+                  (bv-array-read width (len x) n x)))
+  :hints (("Goal"
+           :in-theory (e/d (list-to-bv-array) (list-to-bv-array-aux-unroll)))))

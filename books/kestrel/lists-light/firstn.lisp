@@ -142,7 +142,7 @@
 (defthm firstn-of-take
   (implies (and (<= len1 len2)
                 ;; (natp len1)
-                (natp len2))
+                (integerp len2))
            (equal (firstn len1 (take len2 lst))
                   (take len1 lst)))
   :hints (("Goal" :in-theory (enable take firstn))))

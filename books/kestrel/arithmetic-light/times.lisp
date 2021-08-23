@@ -326,7 +326,7 @@
 ;; in hints.  Gives rise to two linear rules, each with a free var.
 (defthm <=-of-*-and-*-same-linear
   (implies (and (<= x1 x2)
-                (< 0 y)
+                (<= 0 y)
                 (rationalp y))
            (<= (* x1 y) (* x2 y)))
   :rule-classes :linear)
@@ -334,7 +334,7 @@
 ;; Commuted version of <=-of-*-and-*-same-linear.
 (defthm <=-of-*-and-*-same-alt-linear
   (implies (and (<= x1 x2)
-                (< 0 y)
+                (<= 0 y)
                 (rationalp y))
            (<= (* y x1) (* y x2)))
   :hints (("Goal" :use (:instance <=-of-*-and-*-same-linear)

@@ -46,7 +46,8 @@
 (defthm unsigned-byte-p-of-ash-alt
   (implies (and (natp c)
                 (unsigned-byte-p (- size c) i)
-                (integerp size))
+                (integerp size) ;gen?
+                )
            (unsigned-byte-p size (ash i c)))
   :hints (("Goal"
            :use (:instance <-of-*-and-*-cancel

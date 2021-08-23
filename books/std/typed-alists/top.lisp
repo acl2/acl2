@@ -1,6 +1,6 @@
 ; Standard Typed Alists Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,6 +16,7 @@
 (include-book "keyword-truelist-alistp")
 (include-book "string-string-alistp")
 (include-book "string-symbollist-alistp")
+(include-book "symbol-alistp")
 (include-book "symbol-nat-alistp")
 (include-book "symbol-pos-alistp")
 (include-book "symbol-pseudoterm-alistp")

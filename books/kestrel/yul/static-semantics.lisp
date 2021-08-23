@@ -169,7 +169,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult vartable-result
-  :short "Fixtype of varible table and error results."
+  :short "Fixtype of variable table and error results."
   :ok vartable
   :pred vartable-resultp)
 

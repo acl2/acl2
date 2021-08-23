@@ -70,3 +70,15 @@
          (and (pseudo-term-listp (true-list-fix x))
               (pseudo-term-listp y)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
+(defthm pseudo-term-listp-of-true-list-fix
+  (implies (pseudo-term-listp lst)
+           (pseudo-term-listp (true-list-fix lst)))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
+;; Kept disabled
+;; Avoids name clash with STD, where the rule is a :compound-recognizer
+(defthmd true-listp-when-pseudo-term-listp-2
+  (implies (pseudo-term-listp lst)
+           (true-listp lst))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp))))

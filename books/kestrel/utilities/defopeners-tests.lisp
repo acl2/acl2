@@ -120,6 +120,7 @@
 
 ;test of the mutual recursion version
 (deftest
+  (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
   (defopeners-mut-rec sublis-var-simple)
   (must-be-redundant
    (defthm

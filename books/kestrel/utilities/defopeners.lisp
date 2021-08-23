@@ -39,7 +39,10 @@
 ;; TODO: Verify guards
 
 (include-book "world") ; for fn-body
-(include-book "terms") ; for SOME-EXPR-CALLS-FN, etc
+(include-book "kestrel/terms-light/expr-calls-fn" :dir :system)
+(include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
+(include-book "symbol-term-alistp")
+;(include-book "terms")
 (include-book "pack")
 (include-book "conjunctions")
 (include-book "misc/install-not-normalized" :dir :system)
@@ -350,11 +353,6 @@
 ;;                 (renamingsp renamings))
 ;;            (pseudo-termp (make-opener-claim fn-call term rev-hyps renamings)))
 ;;   :hints (("Goal" :in-theory (enable make-opener-claim))))
-
-;move
-(defthm pseudo-term-listp-of-true-list-fix
-  (implies (pseudo-term-listp terms)
-           (pseudo-term-listp (true-list-fix terms))))
 
 ;move
 ;todo name clash if the "2" is removed

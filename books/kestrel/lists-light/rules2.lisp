@@ -1269,7 +1269,8 @@
 (theory-invariant (incompatible (:rewrite CAR-BECOMES-NTH-OF-0) (:rewrite NTH-WHEN-N-IS-ZP)))
 
 ;maybe only do this in the conclusion?
-(defthm equal-rewrite-when-takes-equal
+;disabled since i've seen this be involved in loops
+(defthmd equal-rewrite-when-takes-equal
   (implies (and (equal (take n x) (take n y)) ;binds the free variable n
                 (true-listp x)
                 (true-listp y)
@@ -1600,6 +1601,7 @@
   :hints (("Goal" ;:cases ((<= start end))
            :in-theory (enable equal-cons-cases2 len-update-nth))))
 
+;move
 (defthm subrange-of-subrange
   (implies (and (< end1 (+ 1 end2 (- start2)))
                 (natp start1)
@@ -1769,7 +1771,7 @@
     (< END2 (LEN LST))
     (NATP START)
     (NATP START2)
-    (NATP END)
+    (integerp END)
     (NATP END2)
     (TRUE-LISTP LST)
     (TRUE-LISTP VALS))

@@ -15,3 +15,4 @@
 (include-book "free-vars-in-term")
 (include-book "sublis-var-simple")
 (include-book "sublis-var-and-magic-eval")
+(include-book "expr-calls-fn")
