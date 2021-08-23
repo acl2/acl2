@@ -334,8 +334,10 @@
      under the hypothesis of the theorem:
      this is needed for the base case,
      to relieve the hypothesis of the bound rules of @(tsee pedersen-enc).
+     (These two lemmas are at the beginning of this file.)
      We also need a few arithmetic lemmas
      to nudge the proof in the right direction.
+     (These arithmetic lemmas are below.)
      With linear bound rules for the recursive function in hand,
      the bound proofs for @(tsee pedersen-segment-scalar) are automatic."))
   (pedersen-segment-scalar-loop-bound 1 segment)
@@ -422,7 +424,7 @@
    (xdoc::p
     "This is proved by first proving that
      the loop function is outside the interval
-     between @($-2^{4\\cdot(j-1)}$) to @($2^{4\\cdot(j-1)}$)
+     between @($-2^{4\\cdot(j-1)}$) to @($2^{4\\cdot(j-1)}$),
      both exclusive.
      Setting @($j=1$), we have that @(tsee pedersen-segment-scalar)
      is outside the interval from -1 to 1 exclusive, i.e. it is not 0.
