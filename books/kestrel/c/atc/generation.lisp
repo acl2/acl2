@@ -2240,10 +2240,21 @@
    (val (and (consp val)
              (true-listp val))
         :name cons-true-listp-of-atc-gen-stmt-val
-        :rule-classes :type-prescription))
+        :rule-classes :type-prescription
+        :hints (("Goal"
+                 :in-theory (e/d (std::tuplep)
+                                 (atc-gen-stmt
+                                  return-type-of-atc-gen-stmt.val))
+                 :use return-type-of-atc-gen-stmt.val))))
+
   (defret true-listp-of-atc-gen-stmt.items
     (true-listp (car val))
-    :rule-classes :type-prescription)
+    :rule-classes :type-prescription
+    :hints (("Goal"
+             :in-theory (e/d (std::tuplep)
+                             (atc-gen-stmt
+                              return-type-of-atc-gen-stmt.val))
+             :use return-type-of-atc-gen-stmt.val)))
 
   (defrulel true-listp-when-keyword-listp
     (implies (keyword-listp x)
