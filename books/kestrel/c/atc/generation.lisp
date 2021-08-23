@@ -354,11 +354,11 @@
      This is an invariant."))
   ((type? type-option)
    (loop? stmt-option)
-   (xforming acl2::symbol-list)
+   (xforming symbol-list)
    (returns-value-thm symbol)
    (correct-thm symbol)
    (measure-nat-thm symbol)
-   (limit acl2::pseudo-term))
+   (limit pseudo-term))
   :pred atc-fn-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
