@@ -1054,6 +1054,13 @@
     (implies yes/no
              (< (pseudo-term-count body)
                 (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-let
+    (implies yes/no
+             (< (+ (pseudo-term-count val)
+                   (pseudo-term-count body))
+                (pseudo-term-count term)))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
