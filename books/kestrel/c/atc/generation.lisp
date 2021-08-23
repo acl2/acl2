@@ -126,17 +126,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defalist atc-symbol-type-alistp (x)
-  :short "Recognize alists from symbols to types."
+(fty::defalist atc-symbol-type-alist
+  :short "Fixtype of  alists from symbols to types."
   :long
   (xdoc::topstring
    (xdoc::p
     "These represent scopes in the symbol tables for variables."))
-  :key (symbolp x)
-  :val (typep x)
+  :key-type symbol
+  :val-type type
   :true-listp t
   :keyp-of-nil t
   :valp-of-nil nil
+  :pred atc-symbol-type-alistp
   ///
 
   (defrule typep-of-cdr-of-assoc-equal
@@ -146,21 +147,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist atc-symbol-type-alist-listp (x)
-  :short "Recognize lists of alists from symbols to types."
+(fty::deflist atc-symbol-type-alist-list
+  :short "Fixtype of lists of alists from symbols to types."
   :long
   (xdoc::topstring
    (xdoc::p
     "These represent symbol tables for variables.
      The @(tsee car) is the innermost scope."))
-  (atc-symbol-type-alistp x)
+  :elt-type atc-symbol-type-alist
   :true-listp t
-  :elementp-of-nil t)
+  :elementp-of-nil t
+  :pred atc-symbol-type-alist-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-get-var ((var symbolp) (inscope atc-symbol-type-alist-listp))
-  :returns (type? type-optionp :hyp (atc-symbol-type-alist-listp inscope))
+  :returns (type? type-optionp)
   :short "Obtain the type of a variable from the symbol table."
   :long
   (xdoc::topstring
@@ -172,14 +174,14 @@
     "Return @('nil') if the variable is not in scope."))
   (if (endp inscope)
       nil
-    (or (cdr (assoc-eq var (car inscope)))
+    (or (cdr (assoc-eq var (atc-symbol-type-alist-fix (car inscope))))
         (atc-get-var var (cdr inscope)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-get-var-check-innermost ((var symbolp)
                                      (inscope atc-symbol-type-alist-listp))
-  :returns (mv (type? type-optionp :hyp (atc-symbol-type-alist-listp inscope))
+  :returns (mv (type? type-optionp)
                (innermostp booleanp))
   :short "Obtain the type of a variable from the symbol table,
           and indicate whether the variable is in the innermost scope."
@@ -195,21 +197,19 @@
      ((var symbolp)
       (inscope atc-symbol-type-alist-listp)
       (innermostp booleanp))
-     :returns (mv (type? type-optionp
-                         :hyp (atc-symbol-type-alist-listp inscope))
+     :returns (mv (type? type-optionp)
                   (innermostp booleanp :hyp (booleanp innermostp)))
      (b* (((when (endp inscope)) (mv nil nil))
-          (scope (car inscope))
+          (scope (atc-symbol-type-alist-fix (car inscope)))
           (type? (cdr (assoc-eq var scope)))
-          ((when (typep type?)) (mv type? innermostp)))
+          ((when type?) (mv type? innermostp)))
        (atc-get-var-check-innermost-aux var (cdr inscope) nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-get-vars-check-innermost ((vars symbol-listp)
                                       (inscope atc-symbol-type-alist-listp))
-  :returns (mv (type?-list type-option-listp
-                           :hyp (atc-symbol-type-alist-listp inscope))
+  :returns (mv (type?-list type-option-listp)
                (innermostp-list boolean-listp))
   :short "Lift @(tsee atc-get-var-check-innermost) to lists."
   :long
@@ -241,7 +241,7 @@
 (define atc-add-var ((var symbolp)
                      (type typep)
                      (inscope atc-symbol-type-alist-listp))
-  :returns (new-inscope atc-symbol-type-alist-listp :hyp :guard)
+  :returns (new-inscope atc-symbol-type-alist-listp)
   :short "Add a variable with a type to the symbol table."
   :long
   (xdoc::topstring
@@ -252,13 +252,15 @@
     "This is always called after checking that
      the variable is not already in scope.
      So it unconditionally adds the variable without checking first."))
-  (cons (acons var type (car inscope))
-        (cdr inscope)))
+  (cons (acons (symbol-fix var)
+               (type-fix type)
+               (atc-symbol-type-alist-fix (car inscope)))
+        (atc-symbol-type-alist-list-fix (cdr inscope))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-var ((var symbolp) (inscope atc-symbol-type-alist-listp))
-  :returns (mv (type? type-optionp :hyp (atc-symbol-type-alist-listp inscope))
+  :returns (mv (type? type-optionp)
                (innermostp booleanp)
                (errorp booleanp))
   :short "Check a variable against a symbol table."
@@ -290,15 +292,14 @@
   ((define atc-check-var-aux ((var symbolp)
                               (inscope atc-symbol-type-alist-listp)
                               (innermostp booleanp))
-     :returns (mv (type? type-optionp
-                         :hyp (atc-symbol-type-alist-listp inscope))
+     :returns (mv (type? type-optionp)
                   (innermostp booleanp :hyp (booleanp innermostp))
                   (errorp booleanp))
      :parents nil
      (b* (((when (endp inscope)) (mv nil nil nil))
           (scope (car inscope))
-          (type? (cdr (assoc-eq var scope)))
-          ((when (typep type?)) (mv type? innermostp nil))
+          (type? (cdr (assoc-eq var (atc-symbol-type-alist-fix scope))))
+          ((when type?) (mv type? innermostp nil))
           ((when (member-equal (symbol-name var)
                                (symbol-name-lst (strip-cars scope))))
            (mv nil nil t)))
