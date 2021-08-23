@@ -180,3 +180,7 @@
                                   (i 0)
                                   (j (+ (- I) J)))
            :in-theory (enable expt-monotone-strong))))
+
+(defthm expt-of-/
+  (equal (expt (/ x y) i)
+         (/ (expt x i) (expt y i))))
