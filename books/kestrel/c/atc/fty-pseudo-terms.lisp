@@ -176,6 +176,28 @@
     (implies yes/no
              (< (pseudo-term-count else)
                 (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defrule pseudo-term-count-of-check-if-call
+    (implies (pseudo-termp term)
+             (b* (((mv yes/no test then else) (check-if-call term)))
+               (implies yes/no
+                        (< (+ (pseudo-term-count test)
+                              (pseudo-term-count then)
+                              (pseudo-term-count else))
+                           (pseudo-term-count term)))))
+    :rule-classes :linear
+    :enable (check-if-call
+             pseudo-term-kind
+             pseudo-term-call->args)
+    :expand (pseudo-term-count term))
+
+  (defret pseudo-term-count-of-fty-check-if-call
+    (implies yes/no
+             (< (+ (pseudo-term-count test)
+                   (pseudo-term-count then)
+                   (pseudo-term-count else))
+                (pseudo-term-count term)))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -245,6 +267,28 @@
   (defret pseudo-term-list-count-of-fty-check-lambda-call.args
     (implies yes/no
              (< (pseudo-term-list-count args)
+                (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defrule pseudo-term-count-of-check-lambda-call
+    (implies (pseudo-termp term)
+             (b* (((mv yes/no & body args) (check-lambda-call term)))
+               (implies yes/no
+                        (< (+ (pseudo-term-count body)
+                              (pseudo-term-list-count args))
+                           (pseudo-term-count term)))))
+    :rule-classes :linear
+    :enable (check-lambda-call
+             pseudo-term-count
+             pseudo-term-list-count
+             pseudo-term-kind
+             pseudo-term-lambda->body
+             pseudo-term-call->args))
+
+  (defret pseudo-term-count-of-fty-check-lambda-call
+    (implies yes/no
+             (< (+ (pseudo-term-count body)
+                   (pseudo-term-list-count args))
                 (pseudo-term-count term)))
     :rule-classes :linear))
 
@@ -492,6 +536,32 @@
     (implies yes/no
              (< (pseudo-term-count body-term)
                 (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defrule pseudo-term-count-of-check-mv-let-call
+    (implies (pseudo-termp term)
+             (b* (((mv yes/no & & & & mv-term body-term)
+                   (check-mv-let-call term)))
+               (implies yes/no
+                        (< (+ (pseudo-term-count mv-term)
+                              (pseudo-term-count body-term))
+                           (pseudo-term-count term)))))
+    :rule-classes :linear
+    :enable (check-mv-let-call
+             pseudo-term-kind
+             pseudo-term-lambda->body
+             pseudo-term-call->args
+             pseudo-term-count
+             pseudo-term-list-count))
+
+  (defret pseudo-term-count-if-fty-check-mv-let-call
+    (implies yes/no
+             (b* (((mv yes/no & & & & mv-term body-term)
+                   (fty-check-mv-let-call term)))
+               (implies yes/no
+                        (< (+ (pseudo-term-count mv-term)
+                              (pseudo-term-count body-term))
+                           (pseudo-term-count term)))))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
