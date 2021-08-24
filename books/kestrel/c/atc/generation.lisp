@@ -1938,7 +1938,13 @@
                          to make the branches of the same type."
                         fn then else then-type else-type))
              (type then-type)
-             (limit `(binary-+ '5 (binary-+ ,then-limit ,else-limit))))
+             (limit (pseudo-term-fncall
+                     'binary-+
+                     (list
+                      (pseudo-term-quote 5)
+                      (pseudo-term-fncall
+                       'binary-+
+                       (list then-limit else-limit))))))
           (acl2::value
            (list
             (list
@@ -1990,7 +1996,8 @@
                             experimental ctx state))
              (items (append xform-items body-items))
              (type body-type)
-             (limit `(binary-+ ,xform-limit ,body-limit)))
+             (limit (pseudo-term-fncall 'binary-+
+                                        (list xform-limit body-limit))))
           (acl2::value (list items type limit))))
        ((mv okp var val body wrapper?) (atc-check-let term))
        ((when okp)
@@ -2022,7 +2029,9 @@
                     (atc-gen-stmt body var-term-alist-body inscope xforming
                                   fn prec-fns
                                   experimental ctx state))
-                   (limit `(binary-+ '4 ,body-limit)))
+                   (limit (pseudo-term-fncall 'binary-+
+                                              (list (pseudo-term-quote 4)
+                                                    body-limit))))
                 (acl2::value (list (cons item body-items)
                                    body-type
                                    limit))))
@@ -2071,7 +2080,12 @@
                                   fn prec-fns
                                   experimental ctx state))
                    (type body-type)
-                   (limit `(binary-+ '3 (binary-+ ,init-limit ,body-limit))))
+                   (limit (pseudo-term-fncall
+                           'binary-+
+                           (list
+                            (pseudo-term-fncall
+                             'binary-+
+                             (list init-limit body-limit))))))
                 (acl2::value (list (cons item body-items)
                                    type
                                    limit))))
@@ -2106,7 +2120,12 @@
                                   fn prec-fns
                                   experimental ctx state))
                    (type body-type)
-                   (limit `(binary-+ '4 (binary-+ ,rhs-limit ,body-limit))))
+                   (limit (pseudo-term-fncall
+                           'binary-+
+                           (list (pseudo-term-quote 4)
+                                 (pseudo-term-fncall
+                                  'binary-+
+                                  (list rhs-limit body-limit))))))
                 (acl2::value (list (cons item body-items)
                                    type
                                    limit))))
@@ -2131,23 +2150,25 @@
                             experimental ctx state))
              (items (append xform-items body-items))
              (type body-type)
-             (limit `(binary-+ ,xform-limit ,body-limit)))
+             (limit (pseudo-term-fncall
+                     'binary-+
+                     (list xform-limit body-limit))))
           (acl2::value (list items type limit))))
        ((when (and (pseudo-term-case term :var)
                    (equal xforming (list (pseudo-term-var->name term)))))
-        (acl2::value (list nil nil ''0)))
+        (acl2::value (list nil nil (pseudo-term-quote 0))))
        ((when (and (pseudo-term-case term :var)
                    (member-eq :array-writes experimental)
                    (b* ((var (pseudo-term-var->name term))
                         (type? (atc-get-var var inscope)))
                      (and type?
                           (type-case type? :pointer)))))
-        (acl2::value (list nil (type-void) ''0)))
+        (acl2::value (list nil (type-void) (pseudo-term-quote 0))))
        ((mv okp terms) (fty-check-list-call term))
        ((when (and okp
                    (>= (len terms) 2)
                    (equal terms xforming)))
-        (acl2::value (list nil nil ''0)))
+        (acl2::value (list nil nil (pseudo-term-quote 0))))
        ((when (and okp
                    (member-eq :array-writes experimental)
                    (consp terms)))
@@ -2163,7 +2184,7 @@
               (acl2::value
                (list (list (block-item-stmt (make-stmt-return :value expr)))
                      type
-                     ''0))))))
+                     (pseudo-term-quote 0)))))))
        ((mv okp loop-fn loop-args loop-xforming loop-stmt loop-limit)
         (atc-check-loop-fn term var-term-alist prec-fns))
        ((when okp)
@@ -2186,13 +2207,16 @@
                          which differs from the variables ~x3 ~
                          being transformed here."
                         fn loop-fn loop-xforming xforming))
-             (limit `(binary-+ '3 ,loop-limit)))
+             (limit (pseudo-term-fncall
+                     'binary-+
+                     (list (pseudo-term-quote 3)
+                           loop-limit))))
           (acl2::value (list (list (block-item-stmt loop-stmt))
                              nil
                              limit))))
        ((when (and (irecursivep+ fn (w state))
                    (equal term `(,fn ,@(formals+ fn (w state))))))
-        (acl2::value (list nil nil ''0)))
+        (acl2::value (list nil nil (pseudo-term-quote 0))))
        ((unless (null xforming))
         (er-soft+ ctx t (list nil nil nil)
                   "A statement term transforming ~x0 in the function ~x1 ~
@@ -2202,7 +2226,10 @@
        ((mv erp (list expr type limit) state)
         (atc-gen-expr-cval term var-term-alist inscope fn prec-fns ctx state))
        ((when erp) (mv erp (list nil nil nil) state))
-       (limit `(binary-+ '3 ,limit)))
+       (limit (pseudo-term-fncall
+               'binary-+
+               (list (pseudo-term-quote 3)
+                     limit))))
     (acl2::value (list (list (block-item-stmt (make-stmt-return :value expr)))
                        type
                        limit)))
@@ -2213,24 +2240,39 @@
               (in-theory
                ;; for speed:
                (disable
-                assoc-equal
-                nth
+                pseudo-termp
+                pseudo-term-listp
+                acl2::pseudo-term-listp-of-cdr-when-pseudo-term-listp
+                acl2::pseudo-term-listp-when-symbol-listp
                 acl2::pseudo-termp-of-cons-when-pseudo-termfnp
                 acl2::subsetp-member
-                natp
-                member-equal
+                acl2::symbol-listp-when-not-consp
+                acl2::symbol-pseudoterm-alistp-of-cdr-when-symbol-pseudoterm-alistp
+                acl2::symbol-pseudoterm-alistp-when-not-consp
+                acl2::symbol-symbol-alistp-of-cdr-when-symbol-symbol-alistp
+                acl2::symbol-symbol-alistp-when-not-consp
+                acl2::symbolp-of-caar-when-symbol-pseudoterm-alistp
+                acl2::symbolp-of-caar-when-symbol-symbol-alistp
+                acl2::symbolp-of-car-of-car-when-symbol-term-alistp-type
+                acl2::true-list-listp-of-cdr-when-true-list-listp
+                acl2::true-list-listp-when-not-consp
+                acl2::true-listp-of-car-when-true-list-listp
+                acl2::true-listp-of-cdar-when-keyword-truelist-alistp
+                assoc-equal
+                atc-symbol-type-alistp-of-cdr-when-atc-symbol-type-alistp
+                atc-symbol-type-alistp-when-not-consp
                 default-car
                 default-cdr
                 default-symbol-name
-                true-list-listp
-                acl2::true-listp-of-car-when-true-list-listp
-                acl2::true-list-listp-of-cdr-when-true-list-listp
-                acl2::true-listp-of-cdar-when-keyword-truelist-alistp
-                acl2::symbol-listp-when-not-consp
-                acl2::true-list-listp-when-not-consp
+                member-equal
+                natp
+                nth
+                set::sets-are-true-lists-cheap
                 symbolp-of-caar-when-atc-symbol-fninfo-alistp
+                symbolp-of-caar-when-atc-symbol-type-alistp
                 symbolp-of-car-when-member-equal-of-atc-symbol-fninfo-alistp
-                set::sets-are-true-lists-cheap))))
+                true-list-listp
+                ))))
 
   :verify-guards nil ; done below
 
