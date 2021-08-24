@@ -19,7 +19,8 @@
                        *std-pkg-symbols*
                        '(block
                          error
-                         funcall))
+                         funcall
+                         value))
                       '(any
                         bool
                         defxdoc+
@@ -33,4 +34,5 @@
                         fty::resulterr
                         fty::resulterrp
                         fty::stack
-                        str::hex-digit-char)))
+                        str::hex-digit-char
+                        ubyte256)))
