@@ -742,13 +742,13 @@
            (equal (update-nth 0 val lst)
                   (cons val (cdr lst)))))
 
-;why did this cause a value stack overflow? - perhaps this causes a loop?
+;enable?
 (defthmd 3-conses
-  (and (syntaxp (and (quotep a)
-                     (quotep b)
-                     (quotep c)))
-       (equal (cons a (cons b (cons c lst)))
-              (append (list a b c) lst)))
+  (implies (syntaxp (and (quotep a)
+                         (quotep b)
+                         (quotep c)))
+           (equal (cons a (cons b (cons c lst)))
+                  (append (list a b c) lst)))
   :hints (("Goal" :in-theory (enable take))))
 
 (DEFTHM APPEND-OF-CONS-better
@@ -760,8 +760,6 @@
                               ))))
 
 ;(in-theory (disable list::append-of-cons))
-
-;(in-theory (enable 3-conses))
 
 (defthm subrange-when-too-far
   (implies (and (<= (len l) start)
