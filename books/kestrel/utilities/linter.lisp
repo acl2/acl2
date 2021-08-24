@@ -927,6 +927,45 @@
      (cons (replace-subterm old new (first terms))
            (replace-subterm-list old new (rest terms))))))
 
+;; Constructs a term asserting that TERM has the type represented by the typeset TS.
+(defun type-set-to-term (term ts state)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (mv-let (term2 ttree)
+    (convert-type-set-to-term term ts (ens state) (w state) nil)
+    (declare (ignore ttree))
+    term2))
+
+;; Return state
+(defun try-replacing-subterm (ctx subterm body new-var step-limit state)
+  (declare (xargs :stobjs state :mode :program))
+  (b* ((body-with-replacement (replace-subterm subterm new-var body))
+       ((mv erp res state)
+        (prove$ body-with-replacement :step-limit step-limit))
+       ((when erp)
+        (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
+        state)
+       ((when res)
+        (cw "(In ~x0,~% body can be generalized by replacing ~x1 with a fresh variable.)~%" ctx subterm)
+        state)
+       ;; todo: skip this if the above succeeds:
+
+       ((mv subterm-ts &)
+        ;; todo: pull this pattern out into a function:
+        (type-set subterm nil nil nil ;type-alist
+                  (ens state) (w state) nil nil nil))
+       (subterm-type-assumption (type-set-to-term subterm subterm-ts state))
+       ;; (- (cw "(subterm type assumption for ~x0: ~x1)~%" subterm subterm-type-assumption))
+       ((mv erp res state)
+        (prove$ `(implies ,subterm-type-assumption ,body-with-replacement) :step-limit step-limit))
+       ((when erp)
+        (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
+        state)
+       (- (and res (cw "(In ~x0,~% body can be generalized by replacing ~x1 with a fresh variable, ~x2, satisfying ~x3)~%"
+                       ctx subterm new-var
+                       (type-set-to-term new-var subterm-ts state)))))
+    state))
+
 ;; Returns state
 ;; TODO: Improve this to add an assumption from the type of the term being replaced?
 (defun try-replacing-each-subterm (ctx subterms body new-var step-limit state)
@@ -934,14 +973,7 @@
                   :mode :program))
   (if (endp subterms)
       state
-    (b* ((subterm (first subterms))
-         (new-body (replace-subterm subterm new-var body))
-         ((mv erp res state)
-          (prove$ new-body :step-limit step-limit))
-         ((when erp)
-          (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
-          state)
-         (- (and res (cw "(In ~x0,~% body can be generalized by replacing ~x1 with a fresh variable.)~%" ctx subterm))))
+    (let ((state (try-replacing-subterm ctx (first subterms) body new-var step-limit state)))
       (try-replacing-each-subterm ctx (rest subterms) body new-var step-limit state))))
 
 ;; Checks whether any of the HYPS can be dropped from ALL-HYPS, while still
@@ -978,7 +1010,7 @@
                )
           (let* ((core-term (farg1 (unquote (farg3 hyp)))))
             (if (not (logic-fnsp core-term (w state)))
-                (prog2$ (cw "(Skipping checking syntaxp hyp ~x0 in ~x1 because it contains :program mode functions.)~%" hyp ctx)
+                (prog2$ nil ;(cw "(Skipping checking syntaxp hyp ~x0 in ~x1 because it contains :program mode functions.)~%" hyp ctx)
                         state)
               (let ((conjuncts (get-conjuncts core-term)))
                 (check-for-implied-terms ctx
@@ -1147,6 +1179,6 @@
 
 ;; to check theorems:
 ;; (include-book "kestrel/utilities/linter" :dir :system)
-;; ... include your books here...
 ;; (set-ignore-ok t)
+;; ... include your books here...
 ;; (acl2::run-linter :event-range :all :check-defuns nil :step-limit 100000 :suppress (:context :equality-variant :ground-term))
