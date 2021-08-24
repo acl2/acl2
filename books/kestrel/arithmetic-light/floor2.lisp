@@ -46,15 +46,12 @@
 (defthm divisible-when-divisible-by-multiple
   (implies (and (equal (mod i free) 0) ;what does this idiom mean when the values are not integers?
                 (equal (mod free j) 0)
-                (not (equal 0 free)) ;btw, do we simplify mod by 0?
+                (not (equal 0 free))
                 ;; (rationalp j)
                 (rationalp free)
-                (rationalp i)
-                )
+                (rationalp i))
            (equal (mod i j)
-                  (if (equal 0 j)
-                      (fix i)
-                      0)))
+                  0))
   :hints (("Goal" :use (:instance integerp-of-* (x (* (/ free) i)) (y (* free (/ j))))
            :cases ((rationalp j))
            :in-theory (e/d (equal-of-0-and-mod) (integerp-of-*)))))
