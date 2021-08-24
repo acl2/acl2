@@ -102,6 +102,7 @@
                pseudo-lambda->formals
                pseudo-lambda-p
                pseudo-lambdap
+               pseudo-term
                pseudo-term-call
                pseudo-term-call->args
                pseudo-term-call->fn
@@ -132,6 +133,7 @@
                run-when
                str-fix
                symbol-fix
+               symbol-list
                symbol-pseudoterm-alistp
                symbol-symbol-alistp
                tuple

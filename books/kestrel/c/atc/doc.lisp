@@ -423,7 +423,7 @@
                     (mv-nth \'n-1 mv)))
            term)');
        this is the pattern that ATC looks for.")
-     (xdoc::p
+     (xdoc::li
       "A call of a recursive target function @('fnj') with @('j < i'),
        on variables identical to its formal parameters,
        when @('vars') is not @('nil')
@@ -892,11 +892,7 @@
        the C function is functionally equivalent to the ACL2 function.")
      (xdoc::p
       "If the @(':proofs') input is @('nil'),
-       this theorem is not generated.")
-     (xdoc::p
-      "If any of the target functions is recursive,
-       this theorem is not generated.
-       Proof generation for loops is not fully supported yet.")))
+       this theorem is not generated.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
