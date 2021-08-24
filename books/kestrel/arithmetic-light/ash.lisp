@@ -19,6 +19,7 @@
 (local (include-book "divides"))
 (local (include-book "times-and-divides"))
 (local (include-book "times"))
+(local (include-book "plus"))
 
 (in-theory (disable ash))
 
@@ -46,8 +47,7 @@
 (defthm unsigned-byte-p-of-ash-alt
   (implies (and (natp c)
                 (unsigned-byte-p (- size c) i)
-                (integerp size) ;gen?
-                )
+                (acl2-numberp size))
            (unsigned-byte-p size (ash i c)))
   :hints (("Goal"
            :use (:instance <-of-*-and-*-cancel
