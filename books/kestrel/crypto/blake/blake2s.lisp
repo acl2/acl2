@@ -32,6 +32,7 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 ;(local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 
@@ -50,12 +51,6 @@
    :HINTS (("Goal" :IN-THEORY (ENABLE acl2::INTEGERP-SQUEEZE)
             :CASES ((< (* (/ N) X) 0)
                     (<= 1 (* (/ N) X)))))))
-
-;move
-(defthm all-unsigned-byte-p-of-repeat
-  (implies (unsigned-byte-p size x)
-           (all-unsigned-byte-p size (repeat n x)))
-  :hints (("Goal" :in-theory (enable repeat))))
 
 (defconst *blake2s-max-data-byte-length* (expt 2 64))
 
