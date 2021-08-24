@@ -13,6 +13,7 @@
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
 (include-book "static-semantics")
+(include-book "dynamic-semantics")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
