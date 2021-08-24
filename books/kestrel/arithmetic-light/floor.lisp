@@ -982,8 +982,7 @@
   (IMPLIES (AND (rationalp i)
                 (<= 0 i)
                 (integerp j))
-           (equal (< i (FLOOR i j))
-                  nil))
+           (not (< i (FLOOR i j))))
   :hints (("Goal"
 ;           :cases ((equal j 0))
            :use (floor-bound-hack-eric (:instance my-floor-upper-bound))
@@ -1154,19 +1153,6 @@
                   (floor x 1)))
   :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))
 
-;move
-(defthmd nonnegative-integer-quotient-of---of-numerator-and-denominator
-  (implies (and (rationalp x)
-                (< x 0))
-           (equal (- (nonnegative-integer-quotient (- (numerator x))
-                                                   (denominator x)))
-                  (truncate x 1)))
-  :hints (("Goal" :use (:instance nonnegative-integer-quotient-of-numerator-and-denominator (x (- x)))
-           :in-theory (disable nonnegative-integer-quotient-of-numerator-and-denominator))))
-
-;move
-(in-theory (disable truncate))
-
 (defthm floor-of-*-of-/-and-1
   (implies (and (integerp i)
                 (<= 0 pos)
@@ -1177,9 +1163,10 @@
 
 (theory-invariant (incompatible (:rewrite floor-of-*-of-/-and-1) (:rewrite floor-normalize-denominator)))
 
+;why disabled?
 (defthmd my-floor-lower-bound-2
   (implies (and (integerp i)
-                (<= 0 i) ; drop
+                (<= 0 i) ; todo: drop
                 (posp j))
            (<= (+ -1 (/ i j) (/ j)) (floor i j)))
   :rule-classes ((:linear :trigger-terms ((floor i j))))

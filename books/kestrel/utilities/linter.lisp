@@ -69,6 +69,9 @@
 
 ;; TODO: Suppress reasoning-based checks (like those involving types) on :program mode functions.
 
+;; TODO When trying to strengthen a theorem (e.g., by weakening its hyps), try
+;; to use the original hints (but they may be illegal out of context).
+
 (include-book "format-strings")
 (include-book "quote")
 (include-book "my-get-event")
@@ -798,7 +801,12 @@
          (case fn
            ;; TODO: Could try atom for all atoms...
            (bitp (make-unary-calls '(natp integerp rationalp acl2-numberp) (farg1 hyp))) ;todo: try (< 0 ...)
-           (posp (make-unary-calls '(natp integerp rationalp acl2-numberp) (farg1 hyp))) ;todo: try (< 0 ...)
+           (posp (append (make-unary-calls '(natp integerp rationalp acl2-numberp) (farg1 hyp)) ;todo: try (< 0 ...)
+                         (list `(and (< 0 ,(farg1 hyp))
+                                     (rationalp ,(farg1 hyp)))
+                               `(and (<= 0 ,(farg1 hyp))
+                                     (rationalp ,(farg1 hyp)))
+                               `(<= 0 ,(farg1 hyp)))))
            ;; (minusp (make-unary-calls '() (farg1 hyp))) ;todo: try (<= ... 0)
            ;; (plusp (make-unary-calls '() (farg1 hyp))) ;todo: try (<= ... 0)
            (natp (make-unary-calls '(integerp rationalp acl2-numberp) (farg1 hyp))) ;todo: try (<= 0 ...)
@@ -1181,4 +1189,4 @@
 ;; (include-book "kestrel/utilities/linter" :dir :system)
 ;; (set-ignore-ok t)
 ;; ... include your books here...
-;; (acl2::run-linter :event-range :all :check-defuns nil :step-limit 100000 :suppress (:context :equality-variant :ground-term))
+;; (acl2::run-linter :check-defuns nil :step-limit 100000 :suppress (:context :equality-variant :ground-term))

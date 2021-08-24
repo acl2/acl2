@@ -248,8 +248,8 @@
   (implies (and (syntaxp (quotep k))
                 (equal k (expt 2 (+ -1 (integer-length k))))
                 (<= (integer-length k) size)
-                (natp size)
-                (natp k))
+                (integerp size)
+                (integerp k))
            (equal (bvand size k x)
                   (bvcat 1
                                (getbit (+ -1 (integer-length k))
@@ -279,7 +279,8 @@
 (defthm slice-of-all-ones-too-high
   (implies (and (natp low)
                 (natp high)
-                (<= low high))
+                ;(<= low high)
+                )
            (equal (slice high low (+ -1 (expt 2 low)))
                   0))
   :hints (("Goal" :in-theory (e/d (slice)
@@ -298,7 +299,7 @@
 (defthm bvand-with-mask-basic-gen
   (implies (and (<= size n)
                 (natp size)
-                (natp n))
+                (integerp n))
            (equal (bvand size (+ -1 (expt 2 n)) x)
                   (bvchop size x)))
   :hints (("Goal" :in-theory (e/d (;bitops::part-install-width-low
@@ -318,7 +319,7 @@
 (defthm bvand-with-mask-basic-gen-alt
   (implies (and (<= size n)
                 (natp size)
-                (natp n))
+                (integerp n))
            (equal (bvand size x (+ -1 (expt 2 n)))
                   (bvchop size x)))
   :hints (("Goal" :use (:instance bvand-with-mask-basic-gen)
@@ -327,7 +328,7 @@
 ;drop in favor of a general trim rule?
 (defthm bvand-of-bvnot-trim
   (implies (and (< low size)
-                (natp size)
+                (integerp size)
                 (natp low))
            (equal (bvand low x (bvnot size y))
                   (bvand low x (bvnot low y))))
@@ -336,8 +337,8 @@
 ;move
 (defthm slice-of-ash
   (implies (and (<= n low)
-                (natp low)
-                (natp high)
+                (integerp low)
+                (integerp high)
                 (<= low high)
                 (natp n))
            (equal (slice high low (ash x n))
