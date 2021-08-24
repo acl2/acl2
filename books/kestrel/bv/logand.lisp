@@ -315,13 +315,9 @@
 
 ;rename
 (defthm logand-of-negative-and-positive
-  (implies (and (integerp i)
-                (<= 0 i)
-                (< i (expt 2 n))
-                (integerp j)
-                (<= j (- (expt 2 n)))
-                (< j 0))
-           (< (logand i j) (expt 2 n))))
+  (implies (and (<= 0 i)
+                (< i k))
+           (< (logand i j) k)))
 
 ;rename
 (defthm logand-of-negative-and-negative
@@ -340,7 +336,8 @@
                     (< j k))
                 (natp i)
                 (natp j)
-                (natp k))
+                ;(natp k)
+                )
            (< (logand i j) k))
   :hints (("Goal" :in-theory (enable logand))))
 
@@ -406,8 +403,8 @@
 (defthm logand-lower-bound-negative
   (implies (and (<= (- (expt 2 n)) i)
                 (<= (- (expt 2 n)) j)
-                (<= i 0)
-                (<= j 0)
+                ;(<= i 0)
+                ;(<= j 0)
                 (integerp i)
                 (integerp j)
                 (natp n))
