@@ -316,13 +316,14 @@
 ;;            (BYTE-P-LIST-LIST (update-nth m val lst)))
 ;;   :hints (("Goal" :in-theory (enable update-nth BYTE-P-LIST-LIST))))
 
-(defthm BV-ARRAYP-of-GET-COLUMN
-  (implies (and (BV-ARRAYP-LIST BYTESIZE NUMROWS COLS)
+(defthm bv-arrayp-of-get-column
+  (implies (and (bv-arrayp-list bytesize numrows cols)
                 (< n numrows)
                 (natp n))
-           (BV-ARRAYP BYTESIZE (len cols) (GET-COLUMN N COLS)))
+           (equal (bv-arrayp bytesize len (get-column n cols))
+                  (equal len (len cols))))
   :hints (("Goal" :induct t
-           :in-theory (enable GET-COLUMN))))
+           :in-theory (enable get-column bv-arrayp))))
 
 (defthm 2d-bv-arrayp-of-get-columns
   (implies (and (2d-bv-arrayp bytesize numrows numcols array)
@@ -363,7 +364,8 @@
   :hints (("Goal"
            :use (:instance len-of-nth-when-bv-arrayp-list  (n 1) (item val))
            :in-theory (e/d (2d-array-width
-                            2d-bv-arrayp)
+                            2d-bv-arrayp
+                            bv-arrayp)
                            (len-of-nth-when-bv-arrayp-list)))))
 
 (defthm all-unsigned-byte-p-of-get-column
@@ -371,6 +373,15 @@
                 (natp colno)
                 (< colno numcols))
            (all-unsigned-byte-p bytesize (get-column colno val)))
+  :hints (("Goal" :in-theory (enable get-column
+                                     2d-bv-arrayp))))
+
+(defthm bv-arrayp-of-get-column-2
+  (implies (and (2d-bv-arrayp bytesize numrows numcols val)
+                (natp colno)
+                (< colno numcols))
+           (equal (bv-arrayp bytesize len (get-column colno val))
+                  (equal len (len val))))
   :hints (("Goal" :in-theory (enable get-column
                                      2d-bv-arrayp))))
 
