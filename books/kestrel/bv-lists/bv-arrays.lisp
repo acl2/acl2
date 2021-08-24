@@ -494,6 +494,15 @@
            (all-unsigned-byte-p size (append-arrays size a b c d)))
   :hints (("Goal" :in-theory (enable append-arrays))))
 
+(defthm bv-arrayp-of-append-arrays
+  (implies (and (natp element-size)
+                (natp len1)
+                (natp len2)
+                )
+           (equal (bv-arrayp element-size len (append-arrays element-size len1 array1 len2 array2))
+                  (equal len (+ len1 len2))))
+  :hints (("Goal" :in-theory (enable bv-arrayp))))
+
 ;gross because it mixes theories?
 ;fixme could make an append operator with length params for two arrays..
 (defthm bv-array-read-of-append-arrays
@@ -1055,6 +1064,17 @@
          (nfix len))
   :hints (("Goal" :in-theory (enable array-of-zeros))))
 
+(defthm BV-ARRAYP-of-array-of-zeros
+  (implies (and (natp element-size)
+                (natp len))
+           (BV-ARRAYP ELEMENT-SIZE len (ARRAY-OF-ZEROS ELEMENT-SIZE len)))
+  :hints (("Goal" :in-theory (enable BV-ARRAYP ARRAY-OF-ZEROS))))
+
+(defthm array-of-zeros-iff
+  (iff (array-of-zeros width len)
+       (not (zp len)))
+  :hints (("Goal" :in-theory (enable array-of-zeros))))
+
 (defthm all-unsigned-byte-p-of-array-of-zeros
   (implies (natp width)
            (all-unsigned-byte-p width (array-of-zeros width len)))
@@ -1111,7 +1131,7 @@
   (implies (and (natp element-size)
                 (natp len))
            (bv-arrayp element-size len (bv-array-if element-size len test array1 array2)))
-  :hints (("Goal" :in-theory (enable bv-array-if))))
+  :hints (("Goal" :in-theory (enable bv-array-if bv-arrayp))))
 
 (defthm bv-array-if-of-t
   (equal (bv-array-if element-size len t array1 array2)
@@ -1195,7 +1215,7 @@
   (implies (and (natp element-size)
                 (natp len))
            (bv-arrayp element-size len (bv-array-write ELEMENT-SIZE LEN INDEX VAL DATA)))
-  :hints (("Goal" :in-theory (enable bv-array-write))))
+  :hints (("Goal" :in-theory (enable bv-array-write bv-arrayp))))
 
 ;; (defthm bv-array-write-of-logext-list-better
 ;;   (implies (and (<= element-size size)
