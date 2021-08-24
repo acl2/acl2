@@ -37,6 +37,7 @@
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
+(local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -53,15 +54,14 @@
 
 ; this belongs to a more general library
 
-(define list-lenp-fn ((n natp) (l pseudo-termp))
-  :returns (test pseudo-termp :hyp (pseudo-termp l))
-  :parents nil
+(defun list-lenp-fn (n l)
   (if (zp n)
       `(endp ,l)
     `(and (consp ,l)
           ,(list-lenp-fn (1- n) `(cdr ,l)))))
 
 (defmacro list-lenp (n l)
+  (declare (xargs :guard (natp n)))
   `(let ((l ,l)) ,(list-lenp-fn n 'l)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -127,17 +127,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defalist atc-symbol-type-alistp (x)
-  :short "Recognize alists from symbols to types."
+(fty::defalist atc-symbol-type-alist
+  :short "Fixtype of  alists from symbols to types."
   :long
   (xdoc::topstring
    (xdoc::p
     "These represent scopes in the symbol tables for variables."))
-  :key (symbolp x)
-  :val (typep x)
+  :key-type symbol
+  :val-type type
   :true-listp t
   :keyp-of-nil t
   :valp-of-nil nil
+  :pred atc-symbol-type-alistp
   ///
 
   (defrule typep-of-cdr-of-assoc-equal
@@ -147,21 +148,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist atc-symbol-type-alist-listp (x)
-  :short "Recognize lists of alists from symbols to types."
+(fty::deflist atc-symbol-type-alist-list
+  :short "Fixtype of lists of alists from symbols to types."
   :long
   (xdoc::topstring
    (xdoc::p
     "These represent symbol tables for variables.
      The @(tsee car) is the innermost scope."))
-  (atc-symbol-type-alistp x)
+  :elt-type atc-symbol-type-alist
   :true-listp t
-  :elementp-of-nil t)
+  :elementp-of-nil t
+  :pred atc-symbol-type-alist-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-get-var ((var symbolp) (inscope atc-symbol-type-alist-listp))
-  :returns (type? type-optionp :hyp (atc-symbol-type-alist-listp inscope))
+  :returns (type? type-optionp)
   :short "Obtain the type of a variable from the symbol table."
   :long
   (xdoc::topstring
@@ -173,14 +175,14 @@
     "Return @('nil') if the variable is not in scope."))
   (if (endp inscope)
       nil
-    (or (cdr (assoc-eq var (car inscope)))
+    (or (cdr (assoc-eq var (atc-symbol-type-alist-fix (car inscope))))
         (atc-get-var var (cdr inscope)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-get-var-check-innermost ((var symbolp)
                                      (inscope atc-symbol-type-alist-listp))
-  :returns (mv (type? type-optionp :hyp (atc-symbol-type-alist-listp inscope))
+  :returns (mv (type? type-optionp)
                (innermostp booleanp))
   :short "Obtain the type of a variable from the symbol table,
           and indicate whether the variable is in the innermost scope."
@@ -196,21 +198,19 @@
      ((var symbolp)
       (inscope atc-symbol-type-alist-listp)
       (innermostp booleanp))
-     :returns (mv (type? type-optionp
-                         :hyp (atc-symbol-type-alist-listp inscope))
+     :returns (mv (type? type-optionp)
                   (innermostp booleanp :hyp (booleanp innermostp)))
      (b* (((when (endp inscope)) (mv nil nil))
-          (scope (car inscope))
+          (scope (atc-symbol-type-alist-fix (car inscope)))
           (type? (cdr (assoc-eq var scope)))
-          ((when (typep type?)) (mv type? innermostp)))
+          ((when type?) (mv type? innermostp)))
        (atc-get-var-check-innermost-aux var (cdr inscope) nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-get-vars-check-innermost ((vars symbol-listp)
                                       (inscope atc-symbol-type-alist-listp))
-  :returns (mv (type?-list type-option-listp
-                           :hyp (atc-symbol-type-alist-listp inscope))
+  :returns (mv (type?-list type-option-listp)
                (innermostp-list boolean-listp))
   :short "Lift @(tsee atc-get-var-check-innermost) to lists."
   :long
@@ -242,7 +242,7 @@
 (define atc-add-var ((var symbolp)
                      (type typep)
                      (inscope atc-symbol-type-alist-listp))
-  :returns (new-inscope atc-symbol-type-alist-listp :hyp :guard)
+  :returns (new-inscope atc-symbol-type-alist-listp)
   :short "Add a variable with a type to the symbol table."
   :long
   (xdoc::topstring
@@ -253,13 +253,15 @@
     "This is always called after checking that
      the variable is not already in scope.
      So it unconditionally adds the variable without checking first."))
-  (cons (acons var type (car inscope))
-        (cdr inscope)))
+  (cons (acons (symbol-fix var)
+               (type-fix type)
+               (atc-symbol-type-alist-fix (car inscope)))
+        (atc-symbol-type-alist-list-fix (cdr inscope))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-var ((var symbolp) (inscope atc-symbol-type-alist-listp))
-  :returns (mv (type? type-optionp :hyp (atc-symbol-type-alist-listp inscope))
+  :returns (mv (type? type-optionp)
                (innermostp booleanp)
                (errorp booleanp))
   :short "Check a variable against a symbol table."
@@ -291,15 +293,14 @@
   ((define atc-check-var-aux ((var symbolp)
                               (inscope atc-symbol-type-alist-listp)
                               (innermostp booleanp))
-     :returns (mv (type? type-optionp
-                         :hyp (atc-symbol-type-alist-listp inscope))
+     :returns (mv (type? type-optionp)
                   (innermostp booleanp :hyp (booleanp innermostp))
                   (errorp booleanp))
      :parents nil
      (b* (((when (endp inscope)) (mv nil nil nil))
           (scope (car inscope))
-          (type? (cdr (assoc-eq var scope)))
-          ((when (typep type?)) (mv type? innermostp nil))
+          (type? (cdr (assoc-eq var (atc-symbol-type-alist-fix scope))))
+          ((when type?) (mv type? innermostp nil))
           ((when (member-equal (symbol-name var)
                                (symbol-name-lst (strip-cars scope))))
            (mv nil nil t)))
@@ -307,8 +308,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defaggregate atc-fn-info
-  :short "Information associated to an ACL2 function translated to C."
+(fty::defprod atc-fn-info
+  :short "Fixtype of
+          information associated to an ACL2 function translated to C."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -351,28 +353,29 @@
    (xdoc::p
     "Note that exactly one of the first two fields is @('nil').
      This is an invariant."))
-  ((type? type-optionp)
-   (loop? stmt-optionp)
-   (xforming symbol-listp)
-   (returns-value-thm symbolp)
-   (correct-thm symbolp)
-   (measure-nat-thm symbolp)
-   (limit pseudo-termp))
+  ((type? type-option)
+   (loop? stmt-option)
+   (xforming symbol-list)
+   (returns-value-thm symbol)
+   (correct-thm symbol)
+   (measure-nat-thm symbol)
+   (limit pseudo-term))
   :pred atc-fn-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defalist atc-symbol-fninfo-alistp (x)
-  :short "Recognize alists from symbols to function information."
+(fty::defalist atc-symbol-fninfo-alist
+  :short "Fixtype of alists from symbols to function information."
   :long
   (xdoc::topstring
    (xdoc::p
     "These represent symbol tables for functions."))
-  :key (symbolp x)
-  :val (atc-fn-infop x)
+  :key-type symbolp
+  :val-type atc-fn-info
   :true-listp t
   :keyp-of-nil t
   :valp-of-nil nil
+  :pred atc-symbol-fninfo-alistp
   ///
 
   (defrule atc-fn-infop-of-cdr-of-assoc-equal
@@ -388,7 +391,7 @@
 
 (define atc-symbol-fninfo-alist-to-returns-value-thms
   ((prec-fns atc-symbol-fninfo-alistp))
-  :returns (thms symbol-listp :hyp :guard)
+  :returns (thms symbol-listp)
   :short "Project all the returns-value theorems
           out of a function information alist."
   :long
@@ -410,7 +413,7 @@
 
 (define atc-symbol-fninfo-alist-to-correct-thms
   ((prec-fns atc-symbol-fninfo-alistp))
-  :returns (thms symbol-listp :hyp :guard)
+  :returns (thms symbol-listp)
   :short "Project all the execution correctness theorems
           out of a function information alist."
   :long
@@ -432,7 +435,7 @@
 
 (define atc-symbol-fninfo-alist-to-measure-nat-thms
   ((prec-fns atc-symbol-fninfo-alistp))
-  :returns (thms symbol-listp :hyp :guard)
+  :returns (thms symbol-listp)
   :short "Project all the measure theorems
           out of a function information alist."
   :long
@@ -905,10 +908,10 @@
                                (var-term-alist symbol-pseudoterm-alistp)
                                (prec-fns atc-symbol-fninfo-alistp))
   :returns (mv (yes/no booleanp)
-               (fn symbolp :hyp (atc-symbol-fninfo-alistp prec-fns))
+               (fn symbolp)
                (args pseudo-term-listp)
-               (type typep :hyp (atc-symbol-fninfo-alistp prec-fns))
-               (limit pseudo-termp :hyp (atc-symbol-fninfo-alistp prec-fns)))
+               (type typep)
+               (limit pseudo-termp))
   :short "Check if a term may represent a call to a callable target function."
   :long
   (xdoc::topstring
@@ -933,7 +936,7 @@
   (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) nil))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
-       (fn+info (assoc-eq term.fn prec-fns))
+       (fn+info (assoc-eq term.fn (atc-symbol-fninfo-alist-fix prec-fns)))
        ((unless (consp fn+info)) (no))
        (info (cdr fn+info))
        (type (atc-fn-info->type? info))
@@ -957,9 +960,9 @@
   :returns (mv (yes/no booleanp)
                (fn symbolp)
                (args pseudo-term-listp)
-               (xforming symbol-listp :hyp (atc-symbol-fninfo-alistp prec-fns))
+               (xforming symbol-listp)
                (loop stmtp)
-               (limit pseudo-termp :hyp (atc-symbol-fninfo-alistp prec-fns)))
+               (limit pseudo-termp))
   :short "Check if a term may represent a call of a loop function."
   :long
   (xdoc::topstring
@@ -987,7 +990,7 @@
   (b* (((acl2::fun (no)) (mv nil nil nil nil (irr-stmt) nil))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
-       (fn+info (assoc-eq term.fn prec-fns))
+       (fn+info (assoc-eq term.fn (atc-symbol-fninfo-alist-fix prec-fns)))
        ((unless (consp fn+info)) (no))
        (info (cdr fn+info))
        (loop (atc-fn-info->loop? info))
@@ -1473,8 +1476,7 @@
                (val (tuple (expr exprp)
                            (type typep)
                            (limit pseudo-termp)
-                           val)
-                    :hyp (atc-symbol-fninfo-alistp prec-fns))
+                           val))
                state)
   :short "Generate a C expression from an ACL2 term
           that must be a C-valued term."
@@ -1661,11 +1663,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-make-mv-nth-terms ((indices nat-listp) (term pseudo-termp))
-  :returns (terms pseudo-term-listp :hyp (pseudo-termp term))
+  :returns (terms pseudo-term-listp)
   :short "Create a list of @(tsee mv-nth)s applied to a term
           for a list of indices."
   (cond ((endp indices) nil)
-        (t (cons `(mv-nth ',(car indices) ,term)
+        (t (cons `(mv-nth ',(car indices) ,(pseudo-term-fix term))
                  (atc-make-mv-nth-terms (cdr indices) term))))
   ///
   (defret len-of-atc-make-mv-nth-terms
@@ -1698,8 +1700,7 @@
                (val (tuple (items block-item-listp)
                            (type type-optionp)
                            (limit pseudo-termp)
-                           val)
-                    :hyp (atc-symbol-fninfo-alistp prec-fns))
+                           val))
                state)
   :short "Generate a C statement from an ACL2 term."
   :long
@@ -1938,7 +1939,13 @@
                          to make the branches of the same type."
                         fn then else then-type else-type))
              (type then-type)
-             (limit `(binary-+ '5 (binary-+ ,then-limit ,else-limit))))
+             (limit (pseudo-term-fncall
+                     'binary-+
+                     (list
+                      (pseudo-term-quote 5)
+                      (pseudo-term-fncall
+                       'binary-+
+                       (list then-limit else-limit))))))
           (acl2::value
            (list
             (list
@@ -1990,7 +1997,8 @@
                             experimental ctx state))
              (items (append xform-items body-items))
              (type body-type)
-             (limit `(binary-+ ,xform-limit ,body-limit)))
+             (limit (pseudo-term-fncall 'binary-+
+                                        (list xform-limit body-limit))))
           (acl2::value (list items type limit))))
        ((mv okp var val body wrapper?) (atc-check-let term))
        ((when okp)
@@ -2022,7 +2030,9 @@
                     (atc-gen-stmt body var-term-alist-body inscope xforming
                                   fn prec-fns
                                   experimental ctx state))
-                   (limit `(binary-+ '4 ,body-limit)))
+                   (limit (pseudo-term-fncall 'binary-+
+                                              (list (pseudo-term-quote 4)
+                                                    body-limit))))
                 (acl2::value (list (cons item body-items)
                                    body-type
                                    limit))))
@@ -2071,7 +2081,12 @@
                                   fn prec-fns
                                   experimental ctx state))
                    (type body-type)
-                   (limit `(binary-+ '3 (binary-+ ,init-limit ,body-limit))))
+                   (limit (pseudo-term-fncall
+                           'binary-+
+                           (list
+                            (pseudo-term-fncall
+                             'binary-+
+                             (list init-limit body-limit))))))
                 (acl2::value (list (cons item body-items)
                                    type
                                    limit))))
@@ -2106,7 +2121,12 @@
                                   fn prec-fns
                                   experimental ctx state))
                    (type body-type)
-                   (limit `(binary-+ '4 (binary-+ ,rhs-limit ,body-limit))))
+                   (limit (pseudo-term-fncall
+                           'binary-+
+                           (list (pseudo-term-quote 4)
+                                 (pseudo-term-fncall
+                                  'binary-+
+                                  (list rhs-limit body-limit))))))
                 (acl2::value (list (cons item body-items)
                                    type
                                    limit))))
@@ -2131,23 +2151,25 @@
                             experimental ctx state))
              (items (append xform-items body-items))
              (type body-type)
-             (limit `(binary-+ ,xform-limit ,body-limit)))
+             (limit (pseudo-term-fncall
+                     'binary-+
+                     (list xform-limit body-limit))))
           (acl2::value (list items type limit))))
        ((when (and (pseudo-term-case term :var)
                    (equal xforming (list (pseudo-term-var->name term)))))
-        (acl2::value (list nil nil ''0)))
+        (acl2::value (list nil nil (pseudo-term-quote 0))))
        ((when (and (pseudo-term-case term :var)
                    (member-eq :array-writes experimental)
                    (b* ((var (pseudo-term-var->name term))
                         (type? (atc-get-var var inscope)))
                      (and type?
                           (type-case type? :pointer)))))
-        (acl2::value (list nil (type-void) ''0)))
+        (acl2::value (list nil (type-void) (pseudo-term-quote 0))))
        ((mv okp terms) (fty-check-list-call term))
        ((when (and okp
                    (>= (len terms) 2)
                    (equal terms xforming)))
-        (acl2::value (list nil nil ''0)))
+        (acl2::value (list nil nil (pseudo-term-quote 0))))
        ((when (and okp
                    (member-eq :array-writes experimental)
                    (consp terms)))
@@ -2163,7 +2185,7 @@
               (acl2::value
                (list (list (block-item-stmt (make-stmt-return :value expr)))
                      type
-                     ''0))))))
+                     (pseudo-term-quote 0)))))))
        ((mv okp loop-fn loop-args loop-xforming loop-stmt loop-limit)
         (atc-check-loop-fn term var-term-alist prec-fns))
        ((when okp)
@@ -2186,13 +2208,16 @@
                          which differs from the variables ~x3 ~
                          being transformed here."
                         fn loop-fn loop-xforming xforming))
-             (limit `(binary-+ '3 ,loop-limit)))
+             (limit (pseudo-term-fncall
+                     'binary-+
+                     (list (pseudo-term-quote 3)
+                           loop-limit))))
           (acl2::value (list (list (block-item-stmt loop-stmt))
                              nil
                              limit))))
        ((when (and (irecursivep+ fn (w state))
                    (equal term `(,fn ,@(formals+ fn (w state))))))
-        (acl2::value (list nil nil ''0)))
+        (acl2::value (list nil nil (pseudo-term-quote 0))))
        ((unless (null xforming))
         (er-soft+ ctx t (list nil nil nil)
                   "A statement term transforming ~x0 in the function ~x1 ~
@@ -2202,7 +2227,10 @@
        ((mv erp (list expr type limit) state)
         (atc-gen-expr-cval term var-term-alist inscope fn prec-fns ctx state))
        ((when erp) (mv erp (list nil nil nil) state))
-       (limit `(binary-+ '3 ,limit)))
+       (limit (pseudo-term-fncall
+               'binary-+
+               (list (pseudo-term-quote 3)
+                     limit))))
     (acl2::value (list (list (block-item-stmt (make-stmt-return :value expr)))
                        type
                        limit)))
@@ -2213,24 +2241,59 @@
               (in-theory
                ;; for speed:
                (disable
+                pseudo-termp ; treat terms abstractly
+                w ; treat worlds abstractly
+                ;; useless according to accumulated persistence:
+                acl2::pseudo-term-listp-when-symbol-listp
+                acl2::pseudo-term-listp-of-cdr-when-pseudo-term-listp
                 assoc-equal
-                nth
-                acl2::pseudo-termp-of-cons-when-pseudo-termfnp
-                acl2::subsetp-member
-                natp
-                member-equal
                 default-car
                 default-cdr
-                default-symbol-name
-                true-list-listp
-                acl2::true-listp-of-car-when-true-list-listp
-                acl2::true-list-listp-of-cdr-when-true-list-listp
-                acl2::true-listp-of-cdar-when-keyword-truelist-alistp
                 acl2::symbol-listp-when-not-consp
-                acl2::true-list-listp-when-not-consp
-                symbolp-of-caar-when-atc-symbol-fninfo-alistp
+                nth
+                acl2::consp-when-member-equal-of-symbol-pseudoterm-alistp
+                consp-when-member-equal-of-atc-symbol-fninfo-alistp
+                acl2::consp-when-member-equal-of-symbol-symbol-alistp
+                acl2::consp-when-member-equal-of-keyword-truelist-alistp
+                acl2::consp-when-member-equal-of-keyword-symbol-alistp
+                consp-when-member-equal-of-atc-symbol-type-alistp
+                consp-when-member-equal-of-atc-symbol-fninfo-alistp
+                acl2::consp-when-member-equal-of-symbol-symbol-alistp
+                acl2::consp-when-member-equal-of-keyword-truelist-alistp
+                acl2::consp-when-member-equal-of-keyword-symbol-alistp
+                consp-when-member-equal-of-atc-symbol-type-alistp
+                consp-when-member-equal-of-atc-symbol-fninfo-alistp
+                member-equal
+                acl2::member-when-atom
+                acl2::pseudo-term-listp-when-not-consp
+                acl2::symbolp-of-car-of-car-when-symbol-term-alistp-type
+                acl2::symbolp-of-car-when-member-equal-of-symbol-pseudoterm-alistp
                 symbolp-of-car-when-member-equal-of-atc-symbol-fninfo-alistp
-                set::sets-are-true-lists-cheap))))
+                type-optionp-of-car-when-type-option-listp
+                typep-of-car-when-type-listp
+                acl2::symbolp-of-car-when-member-equal-of-symbol-symbol-alistp
+                symbolp-of-car-when-member-equal-of-atc-symbol-type-alistp
+                acl2::symbol-term-alistp ; :type-prescription
+                type-listp-when-not-consp
+                acl2::consp-of-car-when-symbol-term-alistp-cheap
+                type-option-listp-of-cdr-when-type-option-listp
+                acl2::pseudo-term-listp-cdr-when-pseudo-term-listp
+                type-listp-of-cdr-when-type-listp
+                block-item-listp-when-not-consp
+                acl2::pseudo-term-listp-when-subsetp-equal
+                acl2::pseudo-termp-car-when-pseudo-term-listp
+                acl2::append-when-not-consp
+                default-<-1
+                acl2::pseudo-termp-when-member-equal-of-pseudo-term-listp
+                acl2::pseudo-term-list-fix-under-pseudo-term-list-equiv
+                acl2::pseudo-fnsym-fix-under-pseudo-fnsym-equiv
+                type-optionp-when-in-type-option-setp-binds-free-x
+                default-<-2
+                default-+-1
+                typep-when-in-type-setp-binds-free-x
+                default-symbol-name
+                acl2::subsetp-when-atom-right
+                acl2::subsetp-when-atom-left))))
 
   :verify-guards nil ; done below
 
@@ -2240,10 +2303,21 @@
    (val (and (consp val)
              (true-listp val))
         :name cons-true-listp-of-atc-gen-stmt-val
-        :rule-classes :type-prescription))
+        :rule-classes :type-prescription
+        :hints (("Goal"
+                 :in-theory (e/d (std::tuplep)
+                                 (atc-gen-stmt
+                                  return-type-of-atc-gen-stmt.val))
+                 :use return-type-of-atc-gen-stmt.val))))
+
   (defret true-listp-of-atc-gen-stmt.items
     (true-listp (car val))
-    :rule-classes :type-prescription)
+    :rule-classes :type-prescription
+    :hints (("Goal"
+             :in-theory (e/d (std::tuplep)
+                             (atc-gen-stmt
+                              return-type-of-atc-gen-stmt.val))
+             :use return-type-of-atc-gen-stmt.val)))
 
   (defrulel true-listp-when-keyword-listp
     (implies (keyword-listp x)
@@ -2254,7 +2328,7 @@
              (pseudo-termp x))
     :enable pseudo-termp)
 
-  (verify-guards atc-gen-stmt :hints (("Goal" :do-not-induct t))))
+  (verify-guards atc-gen-stmt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2272,7 +2346,6 @@
                            (xforming symbol-listp)
                            (limit pseudo-termp)
                            val)
-                    :hyp (atc-symbol-fninfo-alistp prec-fns)
                     :hints (("Goal" :in-theory (disable member-equal))))
                state)
   :short "Generate a C loop statement from an ACL2 term."
@@ -2793,11 +2866,12 @@
 
   ((define atc-gen-fn-returns-value-thm-aux1 ((xforming symbol-listp)
                                               (scope atc-symbol-type-alistp))
-     :returns (types type-listp :hyp (atc-symbol-type-alistp scope))
+     :returns (types type-listp)
      :parents nil
      (cond ((endp xforming) nil)
-           (t (b* ((type (cdr (assoc-eq (car xforming) scope))))
-                (if (typep type)
+           (t (b* ((type (cdr (assoc-eq (car xforming)
+                                        (atc-symbol-type-alist-fix scope)))))
+                (if type
                     (cons type
                           (atc-gen-fn-returns-value-thm-aux1 (cdr xforming)
                                                              scope))
@@ -2869,7 +2943,7 @@
 (define atc-gen-fn-args-deref-compustate ((args symbol-listp)
                                           (pointers symbol-listp)
                                           (compst-var symbolp))
-  :returns (new-args pseudo-term-listp :hyp :guard)
+  :returns (new-args pseudo-term-listp)
   :short "Transform a target function's arguments
           to replace pointer arguments with dereferenced arrays
           in the heap of a computation state."
@@ -2881,8 +2955,9 @@
      replacing them with the dereferenced arrays."))
   (cond ((endp args) nil)
         (t (cons (if (member-eq (car args) pointers)
-                     `(deref ,(car args) (compustate->heap ,compst-var))
-                   (car args))
+                     `(deref ,(symbol-fix (car args))
+                             (compustate->heap ,(symbol-fix compst-var)))
+                   (symbol-fix (car args)))
                  (atc-gen-fn-args-deref-compustate (cdr args)
                                                    pointers
                                                    compst-var)))))
@@ -3132,16 +3207,8 @@
 
 (define atc-check-new-function-name ((fn-name stringp)
                                      (prec-fns atc-symbol-fninfo-alistp))
-  :returns (mv
-            (okp booleanp)
-            (conflicting-fn
-             symbolp
-             :hyp (atc-symbol-fninfo-alistp prec-fns)
-             :hints
-              (("Goal"
-                :in-theory
-                (enable
-                 symbol-listp-of-strip-cars-when-atc-symbol-fninfo-alistp)))))
+  :returns (mv (okp booleanp)
+               (conflicting-fn symbolp))
   :short "Check that a C function name is new."
   :long
   (xdoc::topstring
@@ -3154,16 +3221,20 @@
      We return a boolean saying whether the check succeeds or not.
      If it does not, we return the function that causes the conflict,
      i.e. that has the same symbol name as @('fn')."))
-  (atc-check-new-function-name-aux fn-name (strip-cars prec-fns))
+  (atc-check-new-function-name-aux
+   fn-name
+   (strip-cars (atc-symbol-fninfo-alist-fix prec-fns)))
 
   :prepwork
   ((define atc-check-new-function-name-aux ((fn-name stringp)
                                             (fns symbol-listp))
      :returns (mv (okp booleanp)
-                  (conflicting-fn symbolp :hyp (symbol-listp fns)))
+                  (conflicting-fn symbolp))
      :parents nil
      (cond ((endp fns) (mv t nil))
-           ((equal fn-name (symbol-name (car fns))) (mv nil (car fns)))
+           ((equal (symbol-fix fn-name)
+                   (symbol-name (symbol-fix (car fns))))
+            (mv nil (car fns)))
            (t (atc-check-new-function-name-aux fn-name (cdr fns)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
