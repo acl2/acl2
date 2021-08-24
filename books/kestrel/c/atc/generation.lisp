@@ -37,6 +37,7 @@
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
+(local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2240,39 +2241,59 @@
               (in-theory
                ;; for speed:
                (disable
-                pseudo-termp
-                pseudo-term-listp
-                acl2::pseudo-term-listp-of-cdr-when-pseudo-term-listp
+                pseudo-termp ; treat terms abstractly
+                w ; treat worlds abstractly
+                ;; useless according to accumulated persistence:
                 acl2::pseudo-term-listp-when-symbol-listp
-                acl2::pseudo-termp-of-cons-when-pseudo-termfnp
-                acl2::subsetp-member
-                acl2::symbol-listp-when-not-consp
-                acl2::symbol-pseudoterm-alistp-of-cdr-when-symbol-pseudoterm-alistp
-                acl2::symbol-pseudoterm-alistp-when-not-consp
-                acl2::symbol-symbol-alistp-of-cdr-when-symbol-symbol-alistp
-                acl2::symbol-symbol-alistp-when-not-consp
-                acl2::symbolp-of-caar-when-symbol-pseudoterm-alistp
-                acl2::symbolp-of-caar-when-symbol-symbol-alistp
-                acl2::symbolp-of-car-of-car-when-symbol-term-alistp-type
-                acl2::true-list-listp-of-cdr-when-true-list-listp
-                acl2::true-list-listp-when-not-consp
-                acl2::true-listp-of-car-when-true-list-listp
-                acl2::true-listp-of-cdar-when-keyword-truelist-alistp
+                acl2::pseudo-term-listp-of-cdr-when-pseudo-term-listp
                 assoc-equal
-                atc-symbol-type-alistp-of-cdr-when-atc-symbol-type-alistp
-                atc-symbol-type-alistp-when-not-consp
                 default-car
                 default-cdr
-                default-symbol-name
-                member-equal
-                natp
+                acl2::symbol-listp-when-not-consp
                 nth
-                set::sets-are-true-lists-cheap
-                symbolp-of-caar-when-atc-symbol-fninfo-alistp
-                symbolp-of-caar-when-atc-symbol-type-alistp
+                acl2::consp-when-member-equal-of-symbol-pseudoterm-alistp
+                consp-when-member-equal-of-atc-symbol-fninfo-alistp
+                acl2::consp-when-member-equal-of-symbol-symbol-alistp
+                acl2::consp-when-member-equal-of-keyword-truelist-alistp
+                acl2::consp-when-member-equal-of-keyword-symbol-alistp
+                consp-when-member-equal-of-atc-symbol-type-alistp
+                consp-when-member-equal-of-atc-symbol-fninfo-alistp
+                acl2::consp-when-member-equal-of-symbol-symbol-alistp
+                acl2::consp-when-member-equal-of-keyword-truelist-alistp
+                acl2::consp-when-member-equal-of-keyword-symbol-alistp
+                consp-when-member-equal-of-atc-symbol-type-alistp
+                consp-when-member-equal-of-atc-symbol-fninfo-alistp
+                member-equal
+                acl2::member-when-atom
+                acl2::pseudo-term-listp-when-not-consp
+                acl2::symbolp-of-car-of-car-when-symbol-term-alistp-type
+                acl2::symbolp-of-car-when-member-equal-of-symbol-pseudoterm-alistp
                 symbolp-of-car-when-member-equal-of-atc-symbol-fninfo-alistp
-                true-list-listp
-                ))))
+                type-optionp-of-car-when-type-option-listp
+                typep-of-car-when-type-listp
+                acl2::symbolp-of-car-when-member-equal-of-symbol-symbol-alistp
+                symbolp-of-car-when-member-equal-of-atc-symbol-type-alistp
+                acl2::symbol-term-alistp ; :type-prescription
+                type-listp-when-not-consp
+                acl2::consp-of-car-when-symbol-term-alistp-cheap
+                type-option-listp-of-cdr-when-type-option-listp
+                acl2::pseudo-term-listp-cdr-when-pseudo-term-listp
+                type-listp-of-cdr-when-type-listp
+                block-item-listp-when-not-consp
+                acl2::pseudo-term-listp-when-subsetp-equal
+                acl2::pseudo-termp-car-when-pseudo-term-listp
+                acl2::append-when-not-consp
+                default-<-1
+                acl2::pseudo-termp-when-member-equal-of-pseudo-term-listp
+                acl2::pseudo-term-list-fix-under-pseudo-term-list-equiv
+                acl2::pseudo-fnsym-fix-under-pseudo-fnsym-equiv
+                type-optionp-when-in-type-option-setp-binds-free-x
+                default-<-2
+                default-+-1
+                typep-when-in-type-setp-binds-free-x
+                default-symbol-name
+                acl2::subsetp-when-atom-right
+                acl2::subsetp-when-atom-left))))
 
   :verify-guards nil ; done below
 
