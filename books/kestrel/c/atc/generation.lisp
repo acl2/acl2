@@ -2307,7 +2307,7 @@
              (pseudo-termp x))
     :enable pseudo-termp)
 
-  (verify-guards atc-gen-stmt :hints (("Goal" :do-not-induct t))))
+  (verify-guards atc-gen-stmt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
