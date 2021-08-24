@@ -251,19 +251,11 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable logtail))))
 
-(defthm equal-of-logtail-and-i
-  (implies (and (natp i)
-                (posp pos))
-           (equal (equal (logtail pos i) i)
-                  (equal i 0)))
-  :hints (("Goal" :in-theory (enable logtail))))
-
 (defthm equal-of-logtail-self
-  (implies (and (natp x) ;gen?
-                )
-           (equal (equal (logtail n x) x)
-                  (or (equal 0 x)
-                      (zp n))))
+  (implies (natp i) ;gen?
+           (equal (equal (logtail pos i) i)
+                  (or (equal 0 i)
+                      (zp pos))))
   :hints (("Goal" :in-theory (enable logtail zip zp))))
 
 (defthm logtail-of-1
@@ -294,3 +286,24 @@
 
 (theory-invariant (incompatible (:rewrite ash-becomes-logtail)
                                 (:rewrite logtail-becomes-ash)))
+
+
+(defthmd equal-of-logtail
+  (implies (and (natp pos)
+                (integerp i))
+           (equal (equal k (logtail pos i))
+                  (and (integerp k)
+                       (<= (* k (expt 2 pos)) i)
+                       (< i (+ (expt 2 pos) (* k (expt 2 pos)))))))
+  :hints (("Goal" :in-theory (enable logtail equal-of-floor))))
+
+(defthm equal-of-logtail-constant-version
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep pos)))
+                (natp pos)
+                (integerp i))
+           (equal (equal k (logtail pos i))
+                  (and (integerp k)
+                       (<= (* k (expt 2 pos)) i)
+                       (< i (+ (expt 2 pos) (* k (expt 2 pos)))))))
+  :hints (("Goal" :in-theory (enable logtail equal-of-floor))))
