@@ -17,7 +17,9 @@
 
 (defpkg "C" (append
              (set-difference-eq *std-pkg-symbols*
-                                '(assign
+                                '(array
+                                  arrayp
+                                  assign
                                   boolean
                                   byte
                                   error
