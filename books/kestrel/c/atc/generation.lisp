@@ -2843,6 +2843,8 @@
                     ulongp-of-ulong-array-read
                     sllongp-of-sllong-array-read
                     ullongp-of-ullong-array-read
+                    declar
+                    assign
                     mv-nth-of-cons
                     (:e zp)
                     (:e ucharp)
