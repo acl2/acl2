@@ -172,6 +172,7 @@
                                              elements
                                            (list (,<type> 0)))))
          :require (consp elements)
+         :tag ,(intern$ (symbol-name <type>-array) "KEYWORD")
          :pred ,<type>-arrayp)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
