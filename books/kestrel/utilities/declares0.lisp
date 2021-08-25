@@ -175,7 +175,7 @@
                 (er hard? 'merge-xargs "Bad xarg, ~x0, for ~x1." val2 key)
               (union-equal val1 val2)))
         (if (eq key :stobjs)
-            ;; We essentually take the union of stobj lists, but we have to
+            ;; We essentially take the union of stobj lists, but we have to
             ;; handle the case of a single symbol given to represent a
             ;; singleton list:
             (let* ((stobjs1 (if (symbolp val1)

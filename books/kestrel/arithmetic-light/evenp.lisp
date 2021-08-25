@@ -39,3 +39,18 @@
            (equal (evenp (mod x (expt 2 n)))
                   (evenp x)))
   :hints (("Goal" :in-theory (enable evenp-becomes-equal-of-0-and-mod))))
+
+(defthm mod-of-2-when-evenp-cheap
+  (implies (evenp x)
+           (equal (mod x 2)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable evenp))))
+
+(defthm mod-of-2-when-not-evenp-cheap
+  (implies (and (not (evenp x))
+                (integerp x))
+           (equal (mod x 2)
+                  1))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
+  :hints (("Goal" :in-theory (enable evenp))))
