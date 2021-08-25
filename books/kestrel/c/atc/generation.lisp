@@ -2142,7 +2142,7 @@
                          This is disallowed."
                         fn val))
              ((er (list xform-items & xform-limit))
-              (atc-gen-stmt val var-term-alist-body inscope (list var)
+              (atc-gen-stmt val var-term-alist inscope (list var)
                             fn prec-fns
                             experimental ctx state))
              ((er (list body-items body-type body-limit))
