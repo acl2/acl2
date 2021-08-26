@@ -2704,4 +2704,5 @@
           *atc-type-prescription-rules*
           *atc-compound-recognizer-rules*
           *atc-conversion-composition-rules*
-          *value-disjoint-rules*))
+          *value-disjoint-rules*
+          *array-disjoint-rules*))
