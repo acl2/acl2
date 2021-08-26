@@ -30,18 +30,23 @@
            ,(make-conjunction-from-list (rest lst))
          'nil))))
 
-;; conjunct and item are untranslated terms.  The conjunct is conjoined in (at the end) of item.
+;; Conjoin CONJUNCT to ITEM, adding it as the last conjunct (in case its guard
+;; requires ITEM to be true), unless it is already clearly present as a
+;; conjunct.  CONJUNCT and ITEM are untranslated terms.
 (defund add-conjunct-to-item (conjunct item)
   (declare (xargs :guard t))
   (if (or (equal conjunct *t*)
           (eq conjunct 't))
+      ;; Special case (conjoining t has no effect):
       item
     (if (or (equal item *t*)
             (eq item 't))
+        ;; Special case (item as just "true"):
         conjunct
       (if (and (call-of 'and item)
                (true-listp item) ;for the guard proof
                )
+          ;; Special case (avoid creating a nested AND):
           `(and ,@(fargs item) ,conjunct)
         `(and ,item ,conjunct)))))
 
