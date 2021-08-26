@@ -2812,6 +2812,7 @@
                   *atc-integer-ops-1-return-rewrite-rules*
                   *atc-integer-ops-2-return-rewrite-rules*
                   *atc-integer-convs-return-rewrite-rules*
+                  *atc-shift-definition-rules*
                   *atc-array-definition-rules*
                   '(,fn
                     ,@(atc-symbol-fninfo-alist-to-returns-value-thms prec-fns)
