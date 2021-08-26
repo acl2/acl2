@@ -800,7 +800,7 @@
             ;;x86isa::xr-xw-intra-array-field
             X86ISA::XR-OF-XW-INTRA-FIELD
             X86ISA::XR-OF-XW-INTER-FIELD
-            acl2::<-of-+-arg2-same-arg2
+            acl2::<-of-+-cancel-1-2
             x86isa::program-at-xw-in-app-view
             x86isa::xr-app-view-mv-nth-1-wb ;has a hyp of t
             x86isa::program-at-wb-disjoint

@@ -74,39 +74,38 @@
               (acl2-numberp y)))
   :hints (("Goal" :cases ((equal (+ x z) 0)))))
 
-;rename
-(defthm <-+-cancel-1
+;;;
+;;; cancellation rules for < (TODO: Make this more systematic)
+;;;
+
+(defthm <-of-+-cancel-1+-1
   (equal (< (+ x y) x)
          (< y 0))
   :hints (("Goal" :cases ((< y 0)))))
 
-;rename
-(defthm <-+-cancel-1-alt
-  (equal (< (+ y x) x)
-         (< y 0))
-  :hints (("Goal" :cases ((< y 0)))))
-
-;rename
-(defthm <-+-cancel-2
+(defthm <-of-+-cancel-1-1+
   (equal (< x (+ x y))
          (< 0 y))
   :hints (("Goal" :cases ((< 0 y)))))
 
-;rename
-(defthm <-+-cancel-2-alt
-  (equal (< x (+ y x))
-         (< 0 y))
-  :hints (("Goal" :cases ((< 0 y)))))
-
-;rename
-(defthm <-of-+-and-+-cancel-1
+(defthm <-of-+-cancel-1+-1+
   (equal (< (+ x y) (+ x z))
          (< y z))
   :hints (("Goal" :cases ((< y z)))))
 
-(defthm <-of-+-arg2-same-arg2
-  (equal (< y (+ x y))
-         (< 0 x)))
+(defthm <-of-+-cancel-1-2
+  (equal (< x (+ y x))
+         (< 0 y))
+  :hints (("Goal" :cases ((< 0 y)))))
+
+(defthm <-of-+-cancel-1+-2
+  (equal (< (+ x y) (+ z x))
+         (< y z)))
+
+(defthm <-of-+-cancel-2-1
+  (equal (< (+ y x) x)
+         (< y 0))
+  :hints (("Goal" :cases ((< y 0)))))
 
 (defthm <-of-+-combine-constants-1
   (implies (syntaxp (and (quotep k2)

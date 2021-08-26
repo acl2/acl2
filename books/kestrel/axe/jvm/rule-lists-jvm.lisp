@@ -1412,7 +1412,7 @@
            (more-rules-bv-misc)
            ;;(amazing-rules) ;this seemed slow - BBOZO why?? lots of bvchop 7 of larger values?
            '(;fixme what other of the amazing rules do we need?
-             <-of-+-arg2-same-arg2 ;just added -where else is this needed?  what else do we need here?
+             <-of-+-cancel-1-2 ;just added -where else is this needed?  what else do we need here?
              getbit-list-of-bv-array-write-too-high
              update-nth-of-cons
              myif-of-cons-and-cons ;drop?
