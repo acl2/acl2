@@ -65,6 +65,6 @@
 On macOS or Linux, you can compile and run this code as follows:
 
   gcc -o int int.c int-test.c
-  ./f
+  ./int
 
 |#
