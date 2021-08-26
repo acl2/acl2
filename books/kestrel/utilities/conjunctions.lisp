@@ -30,26 +30,6 @@
            ,(make-conjunction-from-list (rest lst))
          'nil))))
 
-;; Conjoin CONJUNCT to ITEM, adding it as the last conjunct (in case its guard
-;; requires ITEM to be true), unless it is already clearly present as a
-;; conjunct.  CONJUNCT and ITEM are untranslated terms.
-(defund add-conjunct-to-uterm (conjunct item)
-  (declare (xargs :guard t))
-  (if (or (equal conjunct *t*)
-          (eq conjunct 't))
-      ;; Special case (conjoining t has no effect):
-      item
-    (if (or (equal item *t*)
-            (eq item 't))
-        ;; Special case (item as just "true"):
-        conjunct
-      (if (and (call-of 'and item)
-               (true-listp item) ;for the guard proof
-               )
-          ;; Special case (avoid creating a nested AND):
-          `(and ,@(fargs item) ,conjunct)
-        `(and ,item ,conjunct)))))
-
 ;; Returns a list, the conjunction of whose elements is equivalent to TERM.
 ;; Preserves the order of the conjuncts, which can matter because an AND is
 ;; typically equal to its last value, if all values are non-nil.  Does not

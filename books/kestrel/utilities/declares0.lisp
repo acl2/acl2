@@ -22,6 +22,7 @@
 (include-book "conjunctions")
 (include-book "std/lists/list-defuns" :dir :system) ;for flatten
 (include-book "std/util/bstar" :dir :system)
+(include-book "kestrel/untranslated-terms/add-conjunct-to-uterm" :dir :system)
 
 ;; Recognize the "arguments" of an xargs declare (a list of alternating keys
 ;; and values). TODO: Add checks for the values supplied for the various kinds
