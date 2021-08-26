@@ -110,6 +110,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defflatsum array
+  :short "Fixtype of arrays."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only support arrays of the supported integer types."))
+  (:uchar uchar-array)
+  (:schar schar-array)
+  (:ushort ushort-array)
+  (:sshort sshort-array)
+  (:uint uint-array)
+  (:sint sint-array)
+  (:ulong ulong-array)
+  (:slong slong-array)
+  (:ullong ullong-array)
+  (:sllong sllong-array)
+  :pred arrayp
+  :prepwork ((defthm-disjoint *array-disjoint-rules*
+               uchar-arrayp
+               schar-arrayp
+               ushort-arrayp
+               sshort-arrayp
+               uint-arrayp
+               sint-arrayp
+               ulong-arrayp
+               slong-arrayp
+               ullong-arrayp
+               sllong-arrayp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defomap heap
   :short "Fixtype of heaps."
   :long
@@ -121,21 +152,32 @@
      However, `heap' is sufficiently commonly used
      that it seems adequate to use it here.")
    (xdoc::p
-    "For now we model the heap just as a finite map
-     from addresses to @('unsigned char') arrays.
-     That is, we only really consider this kind of arrays initially."))
+    "For now we model the heap just as a finite map from addresses to arrays.
+     That is, we only really consider arrays initially."))
   :key-type address
-  :val-type uchar-array
+  :val-type array
   :pred heapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult uchar-array "@('unsigned char') arrays")
+(defresult array "arrays"
+  :enable (errorp
+           arrayp
+           uchar-arrayp
+           schar-arrayp
+           ushort-arrayp
+           sshort-arrayp
+           uint-arrayp
+           sint-arrayp
+           ulong-arrayp
+           slong-arrayp
+           ullong-arrayp
+           sllong-arrayp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define deref ((ptr pointerp) (heap heapp))
-  :returns (array uchar-array-resultp)
+  :returns (array array-resultp)
   :short "Dereference a pointer."
   :long
   (xdoc::topstring
@@ -144,12 +186,13 @@
      a null pointer cannot be dereferenced.
      Otherwise, we check whether the heap has an array at the pointer's address,
      which we return if it does (otherwise we return an error).
-     We also ensure that the pointer's type is @('unsigned char'),
-     because for now the heap only contains @('unsigned char') arrays."))
-  (b* (((unless (equal (pointer->reftype ptr) (type-uchar)))
+     We also ensure that the pointer's type matches the array."))
+  (b* ((reftype (pointer->reftype ptr))
+       ((unless (or (type-signed-integerp reftype)
+                    (type-unsigned-integerp reftype)))
         (error (list :mistype-pointer-dereference
-                     :required (type-uchar)
-                     :supplied (pointer->reftype ptr))))
+                     :required :array
+                     :supplied reftype)))
        (address (pointer->address? ptr)))
     (if address
         (b* ((pair (omap::in address (heap-fix heap))))
