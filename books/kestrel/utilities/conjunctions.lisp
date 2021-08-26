@@ -33,7 +33,7 @@
 ;; Conjoin CONJUNCT to ITEM, adding it as the last conjunct (in case its guard
 ;; requires ITEM to be true), unless it is already clearly present as a
 ;; conjunct.  CONJUNCT and ITEM are untranslated terms.
-(defund add-conjunct-to-item (conjunct item)
+(defund add-conjunct-to-uterm (conjunct item)
   (declare (xargs :guard t))
   (if (or (equal conjunct *t*)
           (eq conjunct 't))

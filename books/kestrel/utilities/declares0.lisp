@@ -452,7 +452,7 @@
          (other-declare-args (get-non-xargs-from-declares declares))
          (guard (if (assoc-keyword :guard xargs-key-vals)
                     ;;add the new item at the end:
-                    (add-conjunct-to-item conjunct
+                    (add-conjunct-to-uterm conjunct
                                           (cadr (assoc-keyword :guard xargs-key-vals)))
                   conjunct)) ;no existing guard
          (xargs-key-vals (clear-key-in-keyword-value-list :guard xargs-key-vals))
