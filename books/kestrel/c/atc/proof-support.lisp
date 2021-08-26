@@ -1079,6 +1079,7 @@
      :guard (and (type-integerp ltype)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp rtypes) nil)
            (t (b* ((lfixtype (atc-integer-type-fixtype ltype))
                    (rfixtype (atc-integer-type-fixtype (car rtypes)))
@@ -1095,6 +1096,7 @@
      :guard (and (type-integer-listp ltypes)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp ltypes) nil)
            (t (append
                (atc-shl/shr-names-loop-right-types (car ltypes) rtypes)
@@ -1133,6 +1135,7 @@
      :guard (and (member-eq op '(plus minus bitnot shl shr))
                  (type-integer-listp types))
      :returns (name symbol-listp)
+     :parents nil
      (cond ((endp types) nil)
            (t (b* ((type (car types))
                    (fixtype (atc-integer-type-fixtype type))
@@ -1150,6 +1153,7 @@
      :guard (and (subsetp-eq ops '(plus minus bitnot shl shr))
                  (type-integer-listp types))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp ops) nil)
            (t (append
                (atc-integer-ops-1-conv-names-loop-types (car ops) types)
@@ -1200,6 +1204,7 @@
                  (type-integerp ltype)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond
       ((endp rtypes) nil)
       (t (b* ((rtype (car rtypes))
@@ -1236,6 +1241,7 @@
                  (type-integer-listp ltypes)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp ltypes) nil)
            (t (append
                (atc-integer-ops-2-conv-names-loop-right-types op
@@ -1254,6 +1260,7 @@
                  (type-integer-listp ltypes)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp ops) nil)
            (t (append
                (atc-integer-ops-2-conv-names-loop-left-types (car ops)
@@ -1297,6 +1304,7 @@
      :guard (and (type-integerp etype)
                  (type-integer-listp itypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp itypes) nil)
            (t (b* ((efixtype (atc-integer-type-fixtype etype))
                    (ifixtype (atc-integer-type-fixtype (car itypes)))
@@ -1312,6 +1320,7 @@
      :guard (and (type-integer-listp etypes)
                  (type-integer-listp itypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp etypes) nil)
            (t
             (append
@@ -1931,6 +1940,7 @@
      :guard (and (member-eq op '(plus minus bitnot lognot shl shr))
                  (type-integer-listp types))
      :returns (names symbol-listp)
+     :parents nil
      (cond
       ((endp types) nil)
       (t (b* ((type (car types))
@@ -1946,6 +1956,7 @@
      :guard (and (subsetp-eq ops '(plus minus bitnot lognot shl shr))
                  (type-integer-listp types))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp ops) nil)
            (t (append
                (atc-integer-ops-1-return-names-loop-types (car ops) types)
@@ -1982,6 +1993,7 @@
                  (type-integerp ltype)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond
       ((endp rtypes) nil)
       (t (b* ((rtype (car rtypes))
@@ -2008,6 +2020,7 @@
                  (type-integer-listp ltypes)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp ltypes) nil)
            (t (append
                (atc-integer-ops-2-return-names-loop-right-types op
@@ -2026,6 +2039,7 @@
                  (type-integer-listp ltypes)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp ops) nil)
            (t (append
                (atc-integer-ops-2-return-names-loop-left-types (car ops)
@@ -2059,6 +2073,7 @@
      :guard (and (type-integerp stype)
                  (type-integer-listp dtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond
       ((endp dtypes) nil)
       ((equal stype (car dtypes))
@@ -2077,6 +2092,7 @@
      :guard (and (type-integer-listp stypes)
                  (type-integer-listp dtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp stypes) nil)
            (t (append
                (atc-integer-convs-return-names-loop-dst-types (car stypes)
@@ -2189,6 +2205,7 @@
      :guard (and (member-eq op '(plus minus bitnot lognot shl shr))
                  (type-integer-listp types))
      :returns (rules true-list-listp)
+     :parents nil
      (cond
       ((endp types) nil)
       (t (b* ((type (car types))
@@ -2202,6 +2219,7 @@
      :guard (and (subsetp-eq ops '(plus minus bitnot lognot shl shr))
                  (type-integer-listp types))
      :returns (rule true-list-listp)
+     :parents nil
      (cond
       ((endp ops) nil)
       (t (append
@@ -2240,6 +2258,7 @@
                  (type-integerp ltype)
                  (type-integer-listp rtypes))
      :returns (rules true-list-listp)
+     :parents nil
      (cond
       ((endp rtypes) nil)
       (t (b* ((rtype (car rtypes))
@@ -2263,6 +2282,7 @@
                  (type-integer-listp ltypes)
                  (type-integer-listp rtypes))
      :returns (rules true-list-listp)
+     :parents nil
      (cond ((endp ltypes) nil)
            (t (append
                (atc-integer-ops-2-type-presc-rules-loop-right-types op
@@ -2281,6 +2301,7 @@
                  (type-integer-listp ltypes)
                  (type-integer-listp rtypes))
      :returns (rules true-list-listp)
+     :parents nil
      (cond ((endp ops) nil)
            (t (append
                (atc-integer-ops-2-type-presc-rules-loop-left-types (car ops)
