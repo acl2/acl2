@@ -369,6 +369,12 @@
             (equal (RP-TRANS x)
                    `(not ,(rp-trans (cadr x)))))))
 
+(local
+ (defthmd rp-check-context-is-correct-iff-lemma-3
+   (implies (case-match x (('if & ''nil ''t) t))
+            (equal (RP-TRANS x)
+                   `(if ,(rp-trans (cadr x)) 'nil 't)))))
+
 (defthm rp-check-context-is-correct-iff
   (implies
    (and  (context-syntaxp context)
@@ -389,6 +395,7 @@
                              context-syntaxp
                              rp-check-context-is-correct-iff-lemma
                              rp-check-context-is-correct-iff-lemma-2
+                             rp-check-context-is-correct-iff-lemma-3
                              rp-termp
                              eval-and-all
                              is-falist)

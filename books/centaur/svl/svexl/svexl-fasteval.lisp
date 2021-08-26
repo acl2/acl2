@@ -237,7 +237,10 @@
                     (mv 0 node-env))
                    ((mv other node-env)
                     (svexl-fasteval-aux (second x.args) nodes-alist
-                                        node-env env limit)))
+                                        node-env env limit))
+                   #|((when (eql other 0))
+                    (progn$ ;;(cw "Second branch of bitor calculated to -1~%")
+                            (mv 0 node-env)))||#)
                 (mv (sv::4vec-bitand test other) node-env)))
              ((and (equal x.fn 'sv::bitor)
                    (equal-len x.args 2))
@@ -248,7 +251,10 @@
                     (mv -1 node-env))
                    ((mv other node-env)
                     (svexl-fasteval-aux (second x.args) nodes-alist
-                                        node-env env limit)))
+                                        node-env env limit))
+                   #|((when (eql other -1))
+                    (progn$ (cw "Second branch of bitor calculated to -1~%")
+                            (mv -1 node-env)))||#)
                 (mv (sv::4vec-bitor test other) node-env)))
              (t
               (b* (((mv args node-env)

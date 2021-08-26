@@ -334,6 +334,20 @@
          (col-sums (sum-pps-by-col pps out-size carry-in)))
       col-sums)))
 
+
+(def-rp-rule nfix-of-binary-*
+    (implies (and (natp x)
+                  (natp y))
+             (and (natp (* x y))
+                  (equal (nfix (* x y))
+                         (* x y)))))
+
+(def-rp-rule bfix-opener
+    (implies (bitp x)
+             (equal (ACL2::BFIX x)
+                    x)))
+
+
 (local
  (defthm loghead-of-0
    (equal (loghead 0 x)

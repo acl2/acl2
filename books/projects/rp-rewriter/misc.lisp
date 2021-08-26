@@ -69,7 +69,9 @@
           (fnc `((local
                   (defun-nx ,fnc-name ,keys
                     ,real-body))
-                 (disable-exc-counterpart ,fnc-name))))
+                 (disable-exc-counterpart ,fnc-name)
+                 (local
+                  (add-rp-rule ,fnc-name)))))
        (mv (append other-signatures (list signature))
            (append other-fncs fnc)
            (append other-openers opener)

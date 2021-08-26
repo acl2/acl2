@@ -1697,6 +1697,43 @@
 
 
 
+
+(def-rp-rule equal-of-bits-to-a-constant
+    (implies (and (natp x)
+                  (natp size)
+                  (> size 1)
+                  (integerp y)
+                  (natp start)
+                  (syntaxp (or (and (consp x)
+                                    (quotep x))
+                               (sv::4vec-p x))))
+             (and (equal (equal (svl::bits y start size) x)
+                         (and (equal (svl::bits y start 1)
+                                     (svl::bits x 0 1))
+                              (equal (sv::4vec-rsh 1 (svl::bits y start size))
+                                     (sv::4vec-rsh 1 x))))
+                  (equal (equal x (svl::bits y start size))
+                         (and (equal (svl::bits y start 1)
+                                     (svl::bits x 0 1))
+                              (equal (sv::4vec-rsh 1 (svl::bits y start size))
+                                     (sv::4vec-rsh 1 x))))))
+  :hints (("Goal"
+           :cases ((< 1 size))
+           :use ((:instance 4vec-concat-of-part-select-and-rsh
+                            (y (svl::bits y start size))
+                            (size 1))
+                 (:instance 4vec-concat-of-part-select-and-rsh
+                            (y x)
+                            (size 1))
+                 (:instance EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1
+                            (k (bits y start 1))
+                            (l (sv::4vec-rsh 1 (svl::bits y start size)))))
+           :in-theory (e/d ()
+                           (4vec
+                            EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1
+                            4vec-concat-of-part-select-and-rsh
+                            4VEC-CONCAT$-OF-SIZE=1-TERM2=0)))))
+
 (encapsulate
   nil
 
@@ -2014,3 +2051,65 @@
   :hints (("Goal"
            :do-not-induct t
            :use ((:instance 4vec-parity-of-4vec-part-select-to-4vec-bitxor)))))
+
+
+(def-rp-rule 4vec-res-of-4vec-concat$-when-dont-care
+    (implies
+     (and (natp size)
+          (equal (bits y 0 size) (bits (sv::4vec-x) 0 size)))
+     (and (equal (sv::4vec-res (svl::4vec-concat$ size x rest) y)
+                 (svl::4vec-concat size
+                                   (sv::4vec-x)
+                                   (sv::4vec-res rest (sv::4vec-rsh size y))))
+          (equal (sv::4vec-res y (svl::4vec-concat$ size x rest))
+                 (svl::4vec-concat size
+                                   (sv::4vec-x)
+                                   (sv::4vec-res rest (sv::4vec-rsh size
+                                                                    y))))))
+  :hints (("Goal"
+           :use ((:instance 4vec-res-of-4vec-concat-when-dont-care))
+           :in-theory (e/d (4VEC-CONCAT$)
+                           (4vec-res-of-4vec-concat-when-dont-care)))))
+
+(def-rp-rule 4vec-res-of-4vec-concat$-when-z
+    (implies
+     (and (natp size)
+          (equal (bits y 0 size) (bits (sv::4vec-z) 0 size)))
+     (and (equal (sv::4vec-res (svl::4vec-concat$ size x rest) y)
+                 (svl::4vec-concat size
+                                   x
+                                   (sv::4vec-res rest (sv::4vec-rsh size y))))
+          (equal (sv::4vec-res y (svl::4vec-concat$ size x rest))
+                 (svl::4vec-concat size
+                                   x
+                                   (sv::4vec-res rest (sv::4vec-rsh size
+                                                                    y))))))
+  :hints (("Goal"
+           :use ((:instance 4vec-res-of-4vec-concat-when-z))
+           :in-theory (e/d* (4VEC-CONCAT$)
+                            (4vec-res-of-4vec-concat-when-z)))))
+
+
+(def-rp-rule bits-of-4vec-res
+    (implies (natp start)
+             (equal (bits (sv::4vec-res x y) start size)
+                    (sv::4vec-res (bits x start size)
+                                  (bits y start size))))
+  :hints (("Goal"
+           :use ((:instance 4vec-part-select-of-4vec-res))
+           :in-theory (e/d (bits)
+                           (4vec-part-select-of-4vec-res)))))
+
+
+(def-rp-rule bits-of-4vec-bit?!
+    (implies (and (natp start)
+                  (natp size))
+             (equal (bits (sv::4vec-bit?! test then else) start size)
+                    (sv::4vec-bit?! (bits test start size)
+                                    (bits then start size)
+                                    (bits else start size))))
+  :hints (("Goal"
+           :use ((:instance 4vec-part-select-of-4vec-bit?!))
+           :in-theory (e/d (bits)
+                           (4vec-part-select-of-4vec-bit?!)))))
+

@@ -283,7 +283,7 @@
     (let ((c (car context)))
       (cond ((case-match c (('equal m &) (rp-equal m term)) (& nil))
              (caddr c))
-            ((and iff-flg (case-match c (('not m) (rp-equal m term))))
+            ((and iff-flg (case-match c (('if m ''nil ''t) (rp-equal m term))))
              ''nil)
             ((and iff-flg (rp-equal-cnt c term 1))
              ''t)
@@ -418,7 +418,10 @@
     ;; for (negate a) and b. Will implement later...
     (('if & & &)
      (progn$
-      (cw "WARNING! (if a b c) unsupported case-split may be required. ~%")
+      ;; do not print this warning in case of "not" 
+      (case-match term
+          (('if & ''nil ''t) nil)
+          (& (cw "WARNING! (if a b c) unsupported case-split may be required. ~%")))
       (cons term nil)))
     (&
      (cons term nil))))
@@ -1025,7 +1028,7 @@ returns (mv rule rules-rest bindings rp-context)"
           ;; rewrite the condition first.
           ((mv cond-rw rp-state)
            (rp-rw (cadr term) (cadr dont-rw)
-                  context t hyp-flg
+                  context t nil
                   (1- limit)
                   rp-state state))
           ;; if the cond is ''nil, then the 3rd subterm
@@ -1046,8 +1049,11 @@ returns (mv rule rules-rest bindings rp-context)"
                       ;; If this comes from a rule that resembles anything
                       ;; other than "and", then keep on rewriting.
                       (not (equal (cadr dont-rw)
-                                  (caddr dont-rw)))))
-           (mv term rp-state))
+                                  (caddr dont-rw)))
+                      ;; if the context has an instance of "if", then stopping
+                      ;; rewriting with the if-flg might prevent a rewrite.
+                      (not (include-fnc-subterms context 'if))))
+           (mv `(if ,cond-rw ,(caddr term) ,(cadddr term)) rp-state))
 
           ;; add to the
           ;; context to each subterm and simply them.
@@ -1144,7 +1150,11 @@ returns (mv rule rules-rest bindings rp-context)"
            (mv term rp-state))
           ;; if the term is an "if" statement don't try to rewrite but branch.
           ((when (is-if term))
-           (rp-rw-if term dont-rw context iff-flg hyp-flg (1- limit) rp-state state))
+           (b* (((mv if-res rp-state)
+                 (rp-rw-if term dont-rw context iff-flg hyp-flg
+                                  (1-  limit) rp-state state)))
+             (mv (rp-check-context if-res context iff-flg) rp-state)))
+             
 
           ;; rewrite the subterm
           ((mv subterms rp-state)

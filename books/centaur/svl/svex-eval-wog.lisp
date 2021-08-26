@@ -332,6 +332,8 @@
            :in-theory (e/d (svexlist-eval-wog-is-svexlist-eval) ()))))
 
 
+
+
 (progn
   (define 4vec-list-listp (x)
     :enabled t

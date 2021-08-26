@@ -46,6 +46,8 @@
 
 (include-book "centaur/svl/top" :dir :system)
 
+(value-triple (acl2::set-max-mem (* 10 (expt 2 30))))
+
 ;; for correctness proof
 (include-book "projects/rp-rewriter/lib/mult3/svl-top" :dir :system)
 

@@ -1593,10 +1593,11 @@
           (getpropc fn 'acl2::runic-mapping-pairs
                     nil (w state)))
          ((when (atom mappings))
-          (progn$ (hard-error 'get-rune-name
-                              " ~p0 does not seem to exist. ~%"
-                              (list (cons #\0 fn)))
-                  fn))
+          (progn$ (and (equal (meta-extract-formula fn state) ''t)
+                       (hard-error 'get-rune-name
+                                   " ~p0 does not seem to have a rune nor an associated formula. ~%"
+                                   (list (cons #\0 fn))))
+                  `(:unknown ,fn)))
          (mapping (car mappings)))
       (if (consp mapping)
           (cdr mapping)

@@ -72,6 +72,8 @@
 (include-book "centaur/vl/loader/top" :dir :system) ;; takes around 10 seconds
 (include-book "oslib/ls" :dir :system)
 
+(value-triple (acl2::set-max-mem (* 10 (expt 2 30))))
+
 (set-waterfall-parallelism nil)
 
 ;; for correctness proof of multiplier

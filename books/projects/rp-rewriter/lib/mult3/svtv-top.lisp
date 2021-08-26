@@ -40,10 +40,11 @@
 
 (include-book "svl-top")
 
-(include-book "centaur/sv/top" :dir :system)  ;; a big book; takes around 30
-;; seconds
+(include-book "centaur/sv/svtv/process" :dir :system)  ;
 
-(include-book "centaur/svl/svexl/svtv-run-with-svexl" :dir :system)
+;;(include-book "centaur/vl/parsetree" :dir :system)
+
+;;(include-book "centaur/svl/svexl/svtv-run-with-svexl" :dir :system)
 
 (set-ignore-ok t)
 (add-rp-rule acl2::svtv-run-fn
@@ -51,13 +52,13 @@
              :hints (("Goal"
                       :in-theory (e/d (acl2::svtv-run-fn) ()))))
 
-(enable-rules '(svl::svexl-alist-correct
-                svl::svexllist-correct
-                svl::svexl-correct))
+;; (enable-rules '(svl::svexl-alist-correct
+;;                 svl::svexllist-correct
+;;                 svl::svexl-correct))
 
-(rp::bump-rp-rule svl::svexl-alist-correct)
-(rp::bump-rp-rule svl::svexllist-correct)
-(rp::bump-rp-rule svl::svexl-correct)
+;; (rp::bump-rp-rule svl::svexl-alist-correct)
+;; (rp::bump-rp-rule svl::svexllist-correct)
+;; (rp::bump-rp-rule svl::svexl-correct)
 
 ;; (enable-rules '(svl::svexl-alist-fasteval-correct
 ;;                 svl::svexllist-fasteval-correct
@@ -70,18 +71,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defwarrant sym-app-fnc)
-
-(defun get-vl-module (module-name vl-mods)
-  (declare (xargs :guard (and (Vl::vl-modulelist-p vl-mods)
-                              (stringp module-name))))
-  (if (atom vl-mods)
-      (hard-error 'get-vl-module
-                  "Module ~p0 cannot be found in the given VL-design-modlist~%"
-                  (list (cons #\0 module-name)))
-    (if (equal module-name (vl::vl-module->name (car vl-mods)))
-        (car vl-mods)
-      (get-vl-module module-name (cdr vl-mods)))))
-    
 
 (defun replace-adders-fn (original-sv
                           original-vl
@@ -96,7 +85,23 @@
                       local))
 
   `(encapsulate
-     nil
+       nil
+
+       (local
+        (include-book "centaur/sv/top" :dir :system))
+       
+       (local
+        (defun get-vl-module (module-name vl-mods)
+          (declare (xargs :guard (and (Vl::vl-modulelist-p vl-mods)
+                                      (stringp module-name))))
+          (if (atom vl-mods)
+              (hard-error 'get-vl-module
+                          "Module ~p0 cannot be found in the given VL-design-modlist~%"
+                          (list (cons #\0 module-name)))
+              (if (equal module-name (vl::vl-module->name (car vl-mods)))
+                  (car vl-mods)
+                  (get-vl-module module-name (cdr vl-mods))))))
+       
      (,(if local 'local 'progn)
       (acl2::defconsts
        (*redefined-adders-vl-design* state)
@@ -405,4 +410,7 @@ replaced includes a state holding element. This happened with module ~p0 ~%"
 
 (def-rp-rule unsigned-byte-p-1-to-bitp
   (equal (unsigned-byte-p 1 x)
-         (bitp x)))
+         (bitp x))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
+
