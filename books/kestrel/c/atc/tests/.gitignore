@@ -37,6 +37,9 @@ mbt
 nonstrict.c
 nonstrict
 
+not.c
+not
+
 operators.c
 operators
 
