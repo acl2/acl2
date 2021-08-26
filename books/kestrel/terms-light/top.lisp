@@ -16,3 +16,5 @@
 (include-book "sublis-var-simple")
 (include-book "sublis-var-and-magic-eval")
 (include-book "expr-calls-fn")
+(include-book "unary-lambdap")
+(include-book "wrap-pattern-around-term")
