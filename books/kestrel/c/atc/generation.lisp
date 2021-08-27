@@ -1701,7 +1701,8 @@
                (val (tuple (items block-item-listp)
                            (type type-optionp)
                            (limit pseudo-termp)
-                           val))
+                           val)
+                    :hints nil)
                state)
   :short "Generate a C statement from an ACL2 term."
   :long

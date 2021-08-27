@@ -46,6 +46,6 @@
 On macOS or Linux, you can compile and run this code as follows:
 
   gcc -o not not.c not-test.c
-  ./f
+  ./not
 
 |#
