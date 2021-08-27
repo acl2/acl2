@@ -1805,78 +1805,6 @@
      but they are rewrite rules."))
 
   (make-event
-   `(defruled uchar-max-vs-ushort-max-rewrite
-      ,(if (= (char-bits) (short-bits))
-           '(equal (uchar-max) (ushort-max))
-         '(< (uchar-max) (ushort-max)))))
-
-  (make-event
-   `(defruled ushort-max-vs-uint-max-rewrite
-      ,(if (= (short-bits) (int-bits))
-           '(= (ushort-max) (uint-max))
-         '(< (ushort-max) (uint-max)))))
-
-  (make-event
-   `(defruled uint-max-vs-ulong-max-rewrite
-      ,(if (= (int-bits) (long-bits))
-           '(= (uint-max) (ulong-max))
-         '(< (uint-max) (ulong-max)))))
-
-  (make-event
-   `(defruled ulong-max-vs-ullong-max-rewrite
-      ,(if (= (long-bits) (llong-bits))
-           '(= (ulong-max) (ullong-max))
-         '(< (ulong-max) (ullong-max)))))
-
-  (make-event
-   `(defruled schar-min-vs-sshort-min-rewrite
-      ,(if (= (char-bits) (short-bits))
-           '(= (schar-min) (sshort-min))
-         '(>= (schar-min) (sshort-min)))))
-
-  (make-event
-   `(defruled sshort-min-vs-sint-min-rewrite
-      ,(if (= (short-bits) (int-bits))
-           '(= (sshort-min) (sint-min))
-         '(> (sshort-min) (sint-min)))))
-
-  (make-event
-   `(defruled sint-min-vs-slong-min-rewrite
-      ,(if (= (int-bits) (long-bits))
-           '(= (sint-min) (slong-min))
-         '(> (sint-min) (slong-min)))))
-
-  (make-event
-   `(defruled slong-min-vs-sllong-min-rewrite
-      ,(if (= (long-bits) (llong-bits))
-           '(= (slong-min) (sllong-min))
-         '(> (slong-min) (sllong-min)))))
-
-  (make-event
-   `(defruled schar-max-vs-sshort-max-rewrite
-      ,(if (= (char-bits) (short-bits))
-           '(= (schar-max) (sshort-max))
-         '(< (schar-max) (sshort-max)))))
-
-  (make-event
-   `(defruled sshort-max-vs-sint-max-rewrite
-      ,(if (= (short-bits) (int-bits))
-           '(= (sshort-max) (sint-max))
-         '(< (sshort-max) (sint-max)))))
-
-  (make-event
-   `(defruled sint-max-vs-slong-max-rewrite
-      ,(if (= (int-bits) (long-bits))
-           '(= (sint-max) (slong-max))
-         '(< (sint-max) (slong-max)))))
-
-  (make-event
-   `(defruled slong-max-vs-sllong-max-rewrite
-      ,(if (= (long-bits) (llong-bits))
-           '(= (slong-max) (sllong-max))
-         '(< (slong-max) (sllong-max)))))
-
-  (make-event
    `(defruled uchar-max-vs-sint-max-rewrite
       ,(if (<= (uchar-max) (sint-max))
            '(<= (uchar-max) (sint-max))
@@ -1934,18 +1862,7 @@
 
 (defval *atc-integer-size-rules*
   :short "List of rules related to integer sizes."
-  '(uchar-max-vs-ushort-max-rewrite
-    ushort-max-vs-uint-max-rewrite
-    uint-max-vs-ulong-max-rewrite
-    ulong-max-vs-ullong-max-rewrite
-    schar-min-vs-sshort-min-rewrite
-    sshort-min-vs-sint-min-rewrite
-    sint-min-vs-slong-min-rewrite
-    slong-min-vs-sllong-min-rewrite
-    schar-max-vs-sshort-max-rewrite
-    sshort-max-vs-sint-max-rewrite
-    sint-max-vs-slong-max-rewrite
-    slong-max-vs-sllong-max-rewrite
+  '(
     uchar-max-vs-sint-max-rewrite
     ushort-max-vs-sint-max-rewrite
     uchar-max-vs-slong-max-rewrite
