@@ -152,6 +152,8 @@
       "Denotes the restricting predicate for the domain of @('old'),
        i.e. the predicate that will be added to the guard
        and as the test that wraps the body.")
+     (xdoc::p
+      "The special value @(':guard') can be used to denote the guard predicate itself.")
      (xdoc::evmac-desc-term
       :free-vars "@('x1'), ..., @('xn')"
       :1res t
