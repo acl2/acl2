@@ -230,8 +230,15 @@ Splitter rules (see :DOC splitter):
              (:DEFINITION INTEGER-ABS)
              (:DEFINITION O<))
  FIB
-ACL2 !>>(COMP 'FIB)
- NIL
+ACL2 !>>(WITH-OUTPUT :OFF SUMMARY
+                     (PROGN (COMP 'FIB) (VALUE-TRIPLE T)))
+
+
+ACL2 !>>>(COMP 'FIB)
+
+
+ACL2 !>>>(VALUE-TRIPLE T)
+ T
 ACL2 !>>(DEFUN FIB2 (N)
                (DECLARE (XARGS :GUARD (NATP N)))
                (IF (= N 40) 102334155 (FIB N)))
