@@ -22,6 +22,7 @@
 (include-book "conjunctions")
 (include-book "std/lists/list-defuns" :dir :system) ;for flatten
 (include-book "std/util/bstar" :dir :system)
+(include-book "kestrel/untranslated-terms/add-conjunct-to-uterm" :dir :system)
 
 ;; Recognize the "arguments" of an xargs declare (a list of alternating keys
 ;; and values). TODO: Add checks for the values supplied for the various kinds
@@ -452,7 +453,7 @@
          (other-declare-args (get-non-xargs-from-declares declares))
          (guard (if (assoc-keyword :guard xargs-key-vals)
                     ;;add the new item at the end:
-                    (add-conjunct-to-item conjunct
+                    (add-conjunct-to-uterm conjunct
                                           (cadr (assoc-keyword :guard xargs-key-vals)))
                   conjunct)) ;no existing guard
          (xargs-key-vals (clear-key-in-keyword-value-list :guard xargs-key-vals))
