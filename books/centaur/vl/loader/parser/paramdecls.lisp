@@ -665,7 +665,7 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :fails gracefully
   :count strong
   (seq tokstream
-       (when (vl-is-some-token? '(:vl-kwd-parameter :vl-kwd-localparameter))
+       (when (vl-is-some-token? '(:vl-kwd-parameter :vl-kwd-localparam))
          (decls := (vl-parse-param-or-localparam-declaration-2012
                     nil ;; no attributes
                     '(:vl-kwd-parameter :vl-kwd-localparam) ;; allowed to be local or non-local

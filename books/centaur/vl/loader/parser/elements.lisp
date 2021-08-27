@@ -608,6 +608,12 @@ rules:</p>
                              double-containment
                              acl2::consp-of-car-when-alistp)))
 
+  (local (defthm vl-tokentype-p-implies-symbolp
+           (implies (vl-tokentype-p x)
+                    (symbolp x))
+           :hints(("Goal" :in-theory (enable vl-tokentype-p)))
+           :rule-classes :compound-recognizer))
+
   (with-output :off (prove)
     (defparsers vl-genelements
       :parents (parser)
@@ -719,7 +725,7 @@ returns a @(see vl-genblock).</li>
                                        :elems (vl-modelementlist->genelements items)))))
 
       (defparser vl-parse-genelements-until (endkwd)
-        :guard (symbolp endkwd)
+        :guard (vl-tokentype-p endkwd)
         ;;:result (vl-genelementlist-p val)
         ;; :resultp-of-nil t
         ;; :true-listp t
