@@ -33,7 +33,7 @@
 ;; The empty disjunction is equivalent to false
 (defconst *false-disjunction* nil)
 
-;; A single conjunct of "true"
+;; A single disjunct of "true"
 (defconst *true-disjunction* (list *t*))
 
 ;; We expect each of x and y to be either 1) the false-conjunction, or 2) a list of non-constant terms.
@@ -222,14 +222,17 @@
                                 (get-disjuncts-of-term (farg2 term)))
            (if (eq 'not fn) ;de morgan: (not (and ...)) = (or (not ..) .. (not ..))
                (negate-conjuncts (get-conjuncts-of-term (farg1 term)))
-             (if (member-eq fn '(myif boolif if))
-                 (if (equal *t* (farg2 term)) ;; (myif <x> t <y>) is the same as (or <x> <y>) ;;todo: handle (if x x y) as well
+             (if (member-eq fn '(if myif boolif))
+                 (if (equal *t* (farg2 term)) ; (if <x> t <y>) is the same as (or <x> <y>)
                      (combine-disjuncts (get-disjuncts-of-term (farg1 term))
                                         (get-disjuncts-of-term (farg3 term)))
-                   (if (equal *t* (farg3 term)) ; (myif x y t) <=> (or (not x) y)
+                   (if (equal *t* (farg3 term)) ; (if x y t) <=> (or (not x) y)
                        (combine-disjuncts (negate-conjuncts (get-conjuncts-of-term (farg1 term)))
                                           (get-disjuncts-of-term (farg2 term)))
-                     (list term)))
+                     (if (equal (farg1 term) (farg2 term)) ; (if x x y) <=> (or x y)
+                         (combine-disjuncts (get-disjuncts-of-term (farg1 term))
+                                            (get-disjuncts-of-term (farg3 term)))
+                       (list term))))
                (list term)))))))))
 
 (make-flag get-conjuncts-of-term)
