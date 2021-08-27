@@ -1139,6 +1139,58 @@
           (declare (ignore erp state))
           val))
 
+(defun oneified-stobj-let-actuals (actuals fixps fns w program-p)
+  (cond
+   ((endp actuals) nil)
+   ((car fixps) ; (st$fix (tbl-get 'st parent))
+    (let ((actual (car actuals)))
+      (assert$
+       (and (true-listp actual)
+            (equal (length actual) 2))
+       (cons (list (car actual) ; st$fix
+                   (oneify (cadr actual)  fns w program-p))
+             (oneified-stobj-let-actuals (cdr actuals) (cdr fixps)
+                                         fns w program-p)))))
+   (t (cons (oneify (car actuals) fns w program-p)
+            (oneified-stobj-let-actuals (cdr actuals) (cdr fixps)
+                                        fns w program-p)))))
+
+(defun stobj-let-fn-oneify (x fns w program-p)
+
+; Warning: Keep this in sync with stobj-let-fn (and see comments there) and
+; stobj-let-fn-raw.
+
+  (mv-let
+    (msg bound-vars actuals fixps stobj producer-vars producer updaters
+         bindings consumer)
+    (parse-stobj-let x)
+    (declare (ignore bindings))
+    (cond
+     (msg (mv (er hard 'stobj-let "~@0" msg) nil nil nil nil))
+     (t
+      (let* ((oneified-producer
+              (oneify producer fns w program-p))
+             (oneified-consumer
+              (oneify consumer fns w program-p))
+             (oneified-updaters
+              (oneify-lst updaters fns w program-p))
+             (updated-oneified-consumer
+              `(let* ,(pairlis-x1 stobj (pairlis$ oneified-updaters nil))
+                 ,oneified-consumer))
+             (oneified-actuals
+              (oneified-stobj-let-actuals actuals fixps fns w program-p))
+             (form
+              `(let (,@(pairlis$ bound-vars (pairlis$ oneified-actuals nil)))
+                 (declare (ignorable ,@bound-vars))
+                 ,(cond
+                   ((cdr producer-vars)
+                    `(mv-let ,producer-vars
+                       ,oneified-producer
+                       ,updated-oneified-consumer))
+                   (t `(let ((,(car producer-vars) ,oneified-producer))
+                         ,updated-oneified-consumer))))))
+        (mv form bound-vars actuals fixps producer-vars stobj w))))))
+
 (mutual-recursion
 
 (defun-one-output oneify-flet-bindings (alist fns w program-p)
@@ -1256,8 +1308,8 @@
           (t x)))
    ((eq (car x) 'quote)
     (cond ((and ; (consp (cdr x)) ; always true
-                  (consp (cadr x))
-                  (eq (car (cadr x)) 'lambda))
+            (consp (cadr x))
+            (eq (car (cadr x)) 'lambda))
 
 ; Just as we apply hons-copy when translating lambda objects in
 ; translate11-lambda-object, we hons-copy here as well, to support fast lookup
@@ -1285,7 +1337,7 @@
                          successfully earlier.  Please contact the ACL2 ~
                          implementors."
                         x)
-          tx)))
+        tx)))
    ((eq (car x) 'loop$)
     (mv-let (flg tx bindings)
       (translate11-loop$
@@ -1478,9 +1530,9 @@
                             (t (car (last x)))))
             (body-form (oneify new-body fns w program-p)))
        `(mv-let ,(cadr x)
-                ,value-form
-                ,@dcls
-                ,body-form))))
+          ,value-form
+          ,@dcls
+          ,body-form))))
 
 ;     Feb 8, 1995.  Once upon a time we had the following code here:
 ;    ((eq (car x) 'the)
@@ -1503,20 +1555,19 @@
     (oneify (caddr x) fns w program-p))
    ((eq (car x) 'with-local-stobj)
     (mv-let (erp st mv-let-form creator)
-            (parse-with-local-stobj (cdr x))
-            (declare (ignore erp)) ; should be nil
-            (mv-let-for-with-local-stobj mv-let-form st creator fns w
-                                         program-p)))
+      (parse-with-local-stobj (cdr x))
+      (declare (ignore erp)) ; should be nil
+      (mv-let-for-with-local-stobj mv-let-form st creator fns w
+                                   program-p)))
    ((eq (car x) 'stobj-let)
 
 ; Stobj-let is rather complicated, so we prefer to take advantage of the logic
 ; code for that macro.
 
-    (mv-let (temp1 bound-vars actuals producer-vars stobj)
-      (stobj-let-fn x)
-      (let* ((temp2 (oneify temp1 fns w program-p))
-             (dups-check (no-duplicate-indices-checks-for-stobj-let-actuals
-                          bound-vars actuals producer-vars stobj w)))
+    (mv-let (temp bound-vars actuals fixps producer-vars stobj)
+      (stobj-let-fn-oneify x fns w program-p)
+      (let ((dups-check (no-duplicate-indices-checks-for-stobj-let-actuals
+                         bound-vars actuals fixps producer-vars stobj w)))
         (cond (dups-check
                `(prog2$ (flet ((chk-no-stobj-array-index-aliasing
                                 (x1 x2)
@@ -1524,8 +1575,8 @@
                                    'chk-no-stobj-array-index-aliasing)
                                  x1 x2)))
                           ,dups-check)
-                        temp2))
-              (t temp2)))))
+                        temp))
+              (t temp)))))
    ((member-eq (car x) '(let #+acl2-par plet))
     (let* (#+acl2-par
            (granularity-decl (and (eq (car x) 'plet)
@@ -1731,17 +1782,36 @@
 ; See the template above for detailed comments, which however are not
 ; necessarily kept fully up-to-date.
 
-  (when (and stobj-flag (null (cadr def)))
+  (when stobj-flag
+    (cond
+     ((null (cadr def))
 
-; We want to know if (car def) is a stobj creator, but it is premature to call
-; stobj-creatorp using wrld because the necessary properties have not yet been
-; laid down.  So we use the test above.  Keep this null test in sync with the
-; one in stobj-creatorp.
+; If a stobj creator is executed during a theorem (impossible by default
+; because its executable-counterpart rune is disabled; but suppose the user has
+; enabled that rune), then since its guard is t, we need to avoid having its
+; *1* function call its raw Lisp function, producing a live stobj!  We take
+; care of that here.  We want to know if (car def) is a stobj creator, but it
+; is premature to call stobj-creatorp using wrld because the necessary
+; properties have not yet been laid down.  So we use the test above.  Keep this
+; null test in sync with the one in stobj-creatorp.
 
-    (return-from oneify-cltl-code
-                 `(,(*1*-symbol (car def)) nil
-                   (throw-raw-ev-fncall ; as in oneify-fail-form
-                    (list 'ev-fncall-creator-er ',(car def))))))
+      (return-from oneify-cltl-code
+                   `(,(*1*-symbol (car def)) nil
+                     (throw-raw-ev-fncall ; as in oneify-fail-form
+                      (list 'ev-fncall-creator-er ',(car def))))))
+     ((and (null (cdr (cadr def))) ; optimization
+           (stobj-fixerp (car def) wrld))
+
+; We don't want the raw-Lisp stobj fixer ever to execute during a proof, thus
+; potentially creating a live stobj.  So we arrange that its *1* function is
+; defined to be the oneification of the body, without passing to the raw Lisp
+; version after a guard check as is generally done when oneifying a definition
+; body.  If the *1* function for creator is therefore called during a proof,
+; its usual throw will be handled just fine.
+
+      (return-from oneify-cltl-code
+                   `(,(*1*-symbol (car def)) ,(cadr def)
+                     ,(oneify (car (last def)) nil wrld nil))))))
 
   (when (null defun-mode)
 
@@ -3244,8 +3314,8 @@
 
 ; See add-trip below for context.  Fn is one of the raw Lisp function names
 ; secretly spawned by CLTL-COMMAND forms, e.g., DEFUN, DEFMACRO, DEFCONST,
-; DEFPKG, DEFATTACH, or (for the HONS version) MEMOIZE or UNMEMOIZE.  Name is
-; generally the symbol or string that is being defined.
+; DEFPKG, DEFATTACH, DEFSTOBJ or (for the HONS version) MEMOIZE or UNMEMOIZE.
+; Name is generally the symbol or string that is being defined.
 
 ; Whenever we smash a CLTL cell we first save its current contents to permit
 ; redefinition and undoing.  Toward this end we maintain a stack for each
@@ -3353,7 +3423,15 @@
            (t (push `(progn (makunbound ',name)
                             (remprop ',name 'redundant-raw-lisp-discriminator))
                     (get name '*undo-stack*)))))
+        ((defstobj defabsstobj)
 
+; The only effect of defstobj or defabsstobj handled here is to arrange that
+; when we undo a stobj definition, we invalidate the stobj name for purposes of
+; stobj-tables.  See current-stobj-gensym.
+
+         (push `(remhash ',name
+                         (the hash-table *current-stobj-gensym-ht*))
+               (get name '*undo-stack*)))
         (defpkg
           (let ((temp (find-non-hidden-package-entry
                        name
@@ -6206,6 +6284,8 @@
 
                  nil))
            (without-interrupts
+            (maybe-push-undo-stack (car cltl-cmd) ; defstobj or defabsstobj
+                                   name)
             (maybe-push-undo-stack 'defconst '*user-stobj-alist*)
             (setf (cdr status) 'maybe-push-undo-stack-completed))
 

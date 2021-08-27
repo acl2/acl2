@@ -1,0 +1,9 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "stobj-table-tests"
+            :inhibit-output-lst '(event summary prove proof-tree))
+
+; Help dependency scanner.
+#||
+(depends-on "stobj-table-tests-input.lsp")
+(depends-on "stobj-table-tests-log.txt")
+||#

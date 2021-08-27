@@ -2174,9 +2174,9 @@
 
 (defmacro memoize-flush (st)
 
-; St is a stobj name and (st-lst st), below, returns returns a symbol whose
-; value is a list in which are saved the names of the memoize tables that will
-; be set to nil whenever the stobj st is changed.
+; St is a stobj name and (st-lst st), below, returns a symbol whose value is a
+; list in which are saved the names of the memoize tables that will be set to
+; nil whenever the stobj st is changed.
 
 ; See memoize-flush1 for a relevant discussion.
 

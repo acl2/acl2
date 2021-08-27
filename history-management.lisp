@@ -3631,6 +3631,43 @@
 #+(and (not acl2-loop-only) hons)
 (defvar *defattach-fns*) ; see the Essay on Memoization with Attachments
 
+#+acl2-loop-only
+(partial-encapsulate
+; See discussion in the #-acl2-loop-only definition of retract-stobj-tables.
+ (((retract-stobj-tables * state) => state))
+ () ; supporters
+ (local (defun retract-stobj-tables (wrld state)
+          (declare (xargs :stobjs state)
+                   (ignore wrld))
+          state)))
+
+#-acl2-loop-only
+(defun retract-stobj-tables (wrld state)
+
+; This function logically covers the issue of stale stobjs in stobj-tables,
+; i.e., those keys (stobj names) that no longer name the stobj that was present
+; when the entry was inserted into the stobj-table, because of undoing the
+; stobj.  (Note that although the stobj might or might not exist again later,
+; there is no guarantee that the new stobj is congruent to the old one.)  We
+; make an undone stobj name an inaccessible key by removing it from
+; *current-stobj-gensym-ht* in undo-trip, as a consequence of having pushed a
+; remhash form for *current-stobj-gensym-ht* onto the '*undo-stack* of the
+; stobj name.  Retract-stobj-tables provides the logical explanation for this
+; removal.  The call (retract-stobj-tables wrld state) is intended to remove
+; all entries from stobj-tables that will become stale when we retract the
+; current ACL2 world back to wrld (assuming wrld is indeed a retraction of (w
+; state)).  The function is left undefined in the logic by the
+; partial-encapsulate that introduces it (in #+acl2-loop-only code).
+
+; Aside.  If some day we really want a legitimate version of
+; retract-stobj-tables, we could surely walk through (user-stobj-alist state)
+; looking recursively (through stobj fields) for stobj-tables.  That code
+; wouldn't respect single-threadedness restrictions but it would only be for
+; logical modeling anyhow; it could thus be introduced with defun-nx.
+
+  (declare (ignore wrld))
+  state)
+
 (defun set-w (flg wrld state)
 
 ; Ctx is ignored unless we are extending the current ACL2 world, in which case
@@ -3677,12 +3714,10 @@
 
   #+acl2-loop-only
   (pprogn
-   (f-put-global 'current-acl2-world
-
-; Here comes a slimy trick to avoid compiler warnings.
-
-                 (prog2$ flg wrld)
-                 state)
+   (cond ((eq flg 'retraction)
+          (retract-stobj-tables wrld state))
+         (t state))
+   (f-put-global 'current-acl2-world wrld state)
    (install-global-enabled-structure wrld state)
    (cond ((find-non-hidden-package-entry (current-package state)
                                          (known-package-alist state))
@@ -7412,9 +7447,14 @@
 ; we renew all the supporters!
 
          (value
-          (renew-names (cons name
-                             (getpropc (defstobj-supporterp name wrld)
-                                       'stobj nil wrld))
+          (renew-names (let ((prop (getpropc (defstobj-supporterp name wrld)
+                                             'stobj nil wrld)))
+                         (list* name
+                                (access stobj-property prop :live-var)
+                                (access stobj-property prop :recognizer)
+                                (access stobj-property prop :creator)
+                                (access stobj-property prop :fixer)
+                                (access stobj-property prop :names)))
                        renewal-mode wrld)))
         (t (value (renew-name name renewal-mode wrld)))))))))
 
@@ -18411,8 +18451,8 @@
                        ctx wrld state)
 
 ; Note that since known-stobjs above is '(state), no stobj can be returned.
-; Note that translate11 doesn't allow stobj creators for execution even when
-; there is an active trust tag.
+; Note that translate11 doesn't allow calls of stobj creators or fixers for
+; execution even when there is an active trust tag.
 
            (cond
             (erp (silent-error state)) ; already printed any message
@@ -18431,7 +18471,8 @@
                      (if (cdr stobjs-out)
                          (msg "has output signature"
                               (cons 'mv stobjs-out))
-                       (assert$ ; See comment above about stobj creators.
+                       (assert$
+; See comment above about stobj creators and fixers.
                         (eq (car stobjs-out) 'state)
                         (msg "returns STATE"
                              (car stobjs-out))))))

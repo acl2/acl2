@@ -14379,6 +14379,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     file-length$
     delete-file$
     set-bad-lisp-consp-memoize
+    retract-stobj-tables
     #-acl2-devel apply$-lambda
     #-acl2-devel apply$-prim
   ))
