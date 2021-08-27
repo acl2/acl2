@@ -529,7 +529,8 @@ form is usually an adequate work-around.</p>")
             :hooks
             :t-proof
             :no-function
-            :local-def)
+            :local-def
+            :ret-patbinder)
           acl2::*xargs-keywords*))
 
 
@@ -1439,6 +1440,7 @@ examples.</p>")
                 `((in-theory (disable (:executable-counterpart ,guts.name-fn)))))
 
          ,@(and guts.returnspecs
+                (getarg :ret-patbinder nil guts.kwd-alist)
                 `((make-event
                    (make-define-ret-patbinder ',guts (w state)))))
 
@@ -1960,9 +1962,22 @@ the names.</li>
 
   :long "<box><p>BETA.  Interface may change.</p></box>
 
-<p>@('ret') is a very fancy @(see b*) that can be used to treat the return
+<p>@('ret') is a very fancy @(see b*) binder that can be used to treat the return
 values from a function as a single bundle which you can then access by their
 names.</p>
+
+<p>This feature is <b>turned off by default</b>.  That is, by default
+@('define') does not add the necessary mechanism to allow the function it's
+defining to be used by the @('ret') patbinder; however, if it is enabled for a
+given function, then the @('ret') patbinder can be used for calls of that
+function from anywhere.  It can be enabled in two ways: by running
+the (implicitly local) event</p>
+ @({
+ (make-define-config :ret-patbinder t)
+ })
+<p>which enables this feature for subsequent functions defined in the book, or
+by adding the keyword argument @(':ret-patbinder t') to a function's @('define')
+form.</p>
 
 
 <h3>Introductory Example</h3>
@@ -1974,6 +1989,7 @@ names.</p>
                        (b natp))
       :returns (mv (sum natp)
                    (prod natp))
+      :ret-patbinder t
       (b* ((a (nfix a))
            (b (nfix b)))
         (mv (+ a b)
@@ -2300,7 +2316,8 @@ may not work with macros that generate names like @('args.extensions').</p>"
     :well-founded-relation
     :hooks ;; precedence: local to define > config > hooks table
     :ruler-extenders
-    :verify-guards))
+    :verify-guards
+    :ret-patbinder))
 
 (local
  (defthm define-config-keywords-okp
