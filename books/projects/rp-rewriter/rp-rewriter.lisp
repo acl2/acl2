@@ -1181,6 +1181,9 @@ returns (mv rule rules-rest bindings rp-context)"
                        (rules-alist-inside-out-get (car term) rp-state)
                        context iff-flg nil
                        (1- limit) rp-state state))
+          ((when (and iff-flg
+                      (check-if-relieved-with-rp term)))
+           (mv ''t rp-state))
           ((when (not rule-rewritten-flg))
            (mv term rp-state)))
        (rp-rw term dont-rw context iff-flg hyp-flg (1- limit) rp-state state)))))

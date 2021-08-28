@@ -970,15 +970,17 @@
          (equal (4vec-concat 0 term1 term2)
                 (4vec-fix term2)))
     :hints (("Goal"
-             :in-theory (e/d (4vec-concat$) ()))))
+             :in-theory (e/d (4vec-concat$) ())))) 
 
-  ;; TODO size can be made more generic...
-  (def-rp-rule 4vec-concat$-of-size=1-term2=0
-    (and (equal (4vec-concat$ 1 val1 0)
-                (bits val1 0 1 ))
-         (equal (4vec-concat 1 val1 0)
-                (bits val1 0 1 )))
+  
+  (def-rp-rule$ t nil 4vec-concat$-of-term2=0
+    (and (equal (4vec-concat$ size val1 0)
+                (bits val1 0 size))
+         (equal (4vec-concat size val1 0)
+                (bits val1 0 size)))
     :hints (("Goal"
+             :expand (4VEC-CONCAT SIZE VAL1 0)
+             :use ((:instance 4vec-concat-of-term2=0))
              :in-theory (e/d (4vec-concat-of-width=1-term2=0
                               4vec-part-select
                               4VEC-ZERO-EXT
@@ -987,6 +989,7 @@
                               4vec-concat$
                               sv::4vec->lower)
                              (CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$
+                              4vec-concat-of-term2=0
                               4VEC-CONCAT-OF-WIDTH=1-TERM2=0))))))
 
 (encapsulate
@@ -1054,10 +1057,11 @@
                                                  (bits y 0 (+ start size) )
                                                  0
                                                  (+ start size)))))
-    :hints (("Goal"
+   :hints (("Goal"
              :use ((:instance 4vec-part-select-of-4vec-plus-is-4vec-plus))
              :in-theory (e/d (4vec-part-select
-                              4VEC-CONCAT) ()))))
+                              4VEC-CONCAT)
+                             (4vec-concat$-of-term2=0)))))
 
   (def-rp-rule bits-of-4vec-plus-is-4vec-plus-start=0
     (implies (and (integerp x)
@@ -1076,6 +1080,27 @@
                               SV::4VEC->LOWER
                               4VEC-CONCAT) ()))))
 
+  (def-rp-rule bits-of-4vec-plus-is-4vec-plus-with-carry
+    (implies (and (integerp x)
+                  (bitp carry-in)
+                  (natp size)
+                  (natp start))
+             (and (equal (bits (4vec-plus x carry-in) start size )
+                         (4vec-rsh start (4vec-plus++ (bits x 0 (+ start size) )
+                                                      0
+                                                      carry-in
+                                                      (+ start size))))
+                  (equal (bits (4vec-plus carry-in x) start size)
+                         (4vec-rsh start (4vec-plus++ (bits x 0 (+ start size) )
+                                                      0
+                                                      carry-in
+                                                      (+ start size))))))
+    :hints (("Goal"
+             :use ((:instance 4vec-part-select-of-4vec-plus-is-4vec-plus-with-carry-in))
+             :in-theory (e/d (4vec-part-select
+                              4VEC-CONCAT)
+                             (4vec-part-select-of-4vec-plus-is-4vec-plus-with-carry-in)))))
+
   (defthm bits-of-4vec-plus-is-4vec-plus-side-cond
     (implies (and (integerp x)
                   (integerp y))
@@ -1091,6 +1116,9 @@
 
   (rp::rp-attach-sc bits-of-4vec-plus-is-4vec-plus-start=0
                     bits-of-4vec-plus-is-4vec-plus-side-cond)
+
+
+  
 
   (def-rp-rule bits-of-4vec-?*
     (implies (and (natp start)
@@ -1732,7 +1760,8 @@
                            (4vec
                             EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1
                             4vec-concat-of-part-select-and-rsh
-                            4VEC-CONCAT$-OF-SIZE=1-TERM2=0)))))
+                            ;;4VEC-CONCAT$-OF-SIZE=1-TERM2=0
+                            )))))
 
 (encapsulate
   nil
@@ -1806,7 +1835,8 @@
                               4VEC-RSH
                               4VEC-SHIFT-CORE)
                              (convert-4vec-concat-to-4vec-concat$
-                              4vec-concat$-of-size=1-term2=0)))))
+                              ;;4vec-concat$-of-size=1-term2=0
+                              )))))
 
   (def-rp-rule bitp-of-4vec-bitnot$
     (implies (and (integerp x)
@@ -1833,7 +1863,8 @@
                               4VEC-SHIFT-CORE)
                              (convert-4vec-concat-to-4vec-concat$
                               bitp
-                              4vec-concat$-of-size=1-term2=0)))))
+                              ;;4vec-concat$-of-size=1-term2=0
+                              )))))
 
   (defthmd 4vec-bitnot-of-4vec-concat$-side-cond
     (implies (and (integerp x)
@@ -2020,7 +2051,7 @@
                               4VEC-RSH
                               4VEC-ZERO-EXT
                               4VEC-SHIFT-CORE)
-                             (4VEC-CONCAT$-OF-SIZE=1-TERM2=0
+                             (;;4VEC-CONCAT$-OF-SIZE=1-TERM2=0
                               4VEC-ZERO-EXT-IS-4VEC-CONCAT)))))
 
   (defthm logbit-to-bits-side-cond

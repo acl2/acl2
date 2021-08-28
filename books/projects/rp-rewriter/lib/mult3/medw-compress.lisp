@@ -782,6 +782,10 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
           term))
        (('rp . &) ;; same reason as above
         `(rp ,(cadr term) ,(medw-compress-any (caddr term))))
+       (('equal a b)
+        (b* ((a (medw-compress-any a))
+             (b (medw-compress-any b)))
+        (if (rp-equal a b) ''t  `(equal ,a ,b))))
        ((fnc . args)
         (cons-with-hint fnc
                         (medw-compress-any-lst args)

@@ -44,6 +44,8 @@
 
 ;;(include-book "centaur/svl/bits-sbits" :dir :system)
 
+(include-book "centaur/svl/portcullis" :dir :system)
+
 (progn
   (define binary-sum (x y)
     (+ (ifix x)
@@ -637,122 +639,6 @@
                           "Read above.."
                           nil)))))
 
-(acl2::defines
- make-readable1
- :mode :program
- (define make-readable1 (term)
-   (case-match term
-     (('rp & term)
-      (make-readable1 term))
-     (('equal x y)
-      `(equal ,(make-readable1 x) ,(make-readable1 y)))
-     (('s & pp c)
-      `(ss . ,(append (make-readable1 pp) (make-readable1 c))))
-     (('s pp c)
-      `(ss . ,(append (make-readable1 pp) (list (make-readable1 c)))))
-     (('c & s pp c)
-      `(cc . ,(append (make-readable1 s) (make-readable1 pp) (make-readable1 c))))
-     (('c s pp c)
-      `(cc . ,(append (make-readable1 s) (make-readable1 pp) (list (make-readable1 c)))))
-     (('-- term)
-      `(-- ,(make-readable1 term)))
-     (('list . lst)
-      (make-readable1-lst lst))
-     (('quote a)
-      a)
-     (('d ('rp ''evenpi ('d-sum s pp c)))
-      `(dd . ,(append (make-readable1 s) (make-readable1 pp) (list (make-readable1 c)))))
-     (('cons a b)
-      (cons (make-readable1 a)
-            (make-readable1 b)))
-     #|(('binary-and & &)
-     term)||#
-     (('binary-and ('bit-of a ('quote i)) ('bit-of b ('quote j)))
-      (progn$
-;(cw "term~p0 ~%" term)
-       (b* ((a (ex-from-rp-loose a))
-            (a (if (equal a 'in1) 'a a))
-            (b (ex-from-rp-loose b))
-            (b (if (equal b 'in2) 'b b)))
-;`(rp 'bitp
-         `   ,(sa (symbol-name a) i (symbol-name b) j)
-;    )
-         )))
-
-     (&
-      (hard-error 'make-readable1
-                  "unexpected function symbol: ~p0 ~%"
-                  (list (cons #\0 (car term)))))))
- (define make-readable1-lst (lst)
-   (if (atom lst)
-       nil
-     (cons (make-readable1 (car lst))
-           (make-readable1-lst (cdr lst))))))
-
-(define str-cat-lst ((lst string-listp))
-  (if (atom lst)
-      ""
-    (str::cat (car lst)
-              (if (atom (cdr lst)) "" "-")
-              (str-cat-lst (cdr lst)))))
-
-(acl2::defines
- make-readable
- :verify-guards nil
- (define make-readable (term)
-   (declare (xargs :mode :program))
-   (b* ((term (ex-from-rp-loose term)))
-     (case-match term
-       (('equal a b)
-        `(equal ,(make-readable a)
-                ,(make-readable b)))
-       (('s hash pp c)
-        (b* ((pp-lst (make-readable-lst (list-to-lst pp)))
-             (c-lst (make-readable-lst (list-to-lst c))))
-          `(s (,hash). ,(append pp-lst c-lst))))
-       (('c hash s pp c)
-        (b* ((s-lst (make-readable-lst (list-to-lst s)))
-             (pp-lst (make-readable-lst (list-to-lst pp)))
-             (c-lst (make-readable-lst (list-to-lst c))))
-          `(c (,hash) . ,(append s-lst pp-lst c-lst))))
-       (('-- n)
-        `(-- ,(make-readable n)))
-       (''1
-        1)
-       (('and-list & bits)
-        (b* ((lst (make-readable-lst (list-to-lst bits)))
-             (str (str-cat-lst lst))
-             (sym (intern$ str "RP")))
-          sym))
-       (('bit-of name ('quote index))
-        (b* ((sym (sa  (ex-from-rp-loose name) index)))
-          (symbol-name sym)))
-       (('bit-of name index)
-        (b* ((sym (sa  (ex-from-rp-loose name) index)))
-          (symbol-name sym)))
-       (('binary-and x y)
-        `(and$ ,(make-readable x) ,(make-readable y)))
-       (('binary-or x y)
-        `(or$ ,(make-readable x) ,(make-readable y)))
-       (('binary-xor x y)
-        `(xor$ ,(make-readable x) ,(make-readable y)))
-       (('binary-? x y z)
-        `(binary-? ,(make-readable x) ,(make-readable y) ,(make-readable z)))
-       (('binary-not x)
-        `(not$ ,(make-readable x)))
-       (& (if (atom term)
-              (symbol-name term)
-            (progn$
-             (hard-error 'make-readable
-                         "Unexpected term instance~p0~%"
-                         (list (cons #\0 term)))
-             nil))))))
- (define make-readable-lst (lst)
-   (if (atom lst)
-       nil
-     (cons (make-readable (car lst))
-           (make-readable-lst (cdr lst))))))
-
 
 (mutual-recursion
  (defun count-fnc (term fnc)
@@ -1004,6 +890,151 @@
       (implies (pp-p term)
                (case-match term (('pp &) t)))
       :rule-classes :forward-chaining)))
+
+
+(define make-readable-4vec-concat-aux (term)
+  :mode :program
+  (case-match term
+      (('svl::4vec-concat$ ''1 this rest)
+       (cons this
+             (make-readable-4vec-concat-aux rest)))
+    (('svl::4vec-concat ''1 this rest)
+       (cons this
+             (make-readable-4vec-concat-aux rest)))
+    (('svl::4vec-concat$ 1 this rest)
+       (cons this
+             (make-readable-4vec-concat-aux rest)))
+    (('svl::4vec-concat 1 this rest)
+       (cons this
+             (make-readable-4vec-concat-aux rest)))
+    (& term)))
+
+(acl2::defines
+ make-readable1
+ :mode :program
+ (define make-readable1 (term)
+   (case-match term
+       (('rp & term)
+        (make-readable1 term))
+     (('equal x y)
+      `(equal ,(make-readable1 x) ,(make-readable1 y)))
+     (('s & pp c)
+      `(ss . ,(append (make-readable1 pp) (make-readable1 c))))
+     (('s pp c)
+      `(ss . ,(append (make-readable1 pp) (list (make-readable1 c)))))
+     (('c & s pp c)
+      `(cc . ,(append (make-readable1 s) (make-readable1 pp) (make-readable1 c))))
+     (('c s pp c)
+      `(cc . ,(append (make-readable1 s) (make-readable1 pp) (list (make-readable1 c)))))
+     (('-- term)
+      `(-- ,(make-readable1 term)))
+     (('list . lst)
+      (make-readable1-lst lst))
+     (('quote a)
+      a)
+     (('d ('rp ''evenpi ('d-sum s pp c)))
+      `(dd . ,(append (make-readable1 s) (make-readable1 pp) (list (make-readable1 c)))))
+     (('cons a b)
+      (cons (make-readable1 a)
+            (make-readable1 b)))
+     #|(('binary-and & &)
+     term)||#
+     (('binary-and ('bit-of a ('quote i)) ('bit-of b ('quote j)))
+      (progn$
+;(cw "term~p0 ~%" term)
+       (b* ((a (ex-from-rp-loose a))
+            (a (if (equal a 'in1) 'a a))
+            (b (ex-from-rp-loose b))
+            (b (if (equal b 'in2) 'b b)))
+;`(rp 'bitp
+         `   ,(sa (symbol-name a) i (symbol-name b) j)
+;    )
+         )))
+
+     (('svl::4vec-concat$ 1 & &)
+      `(4list . ,(make-readable1-lst (make-readable-4vec-concat-aux term))))
+     (('svl::4vec-concat$ ''1 & &)
+      `(4list . ,(make-readable1-lst (make-readable-4vec-concat-aux term))))
+
+     (&
+      (cond ((binary-fnc-p term)
+             `(,(car term) "..."))
+            ((atom term)
+             term)
+            (t
+             `(,(car term) . ,(make-readable1-lst (cdr term))))))))
+ (define make-readable1-lst (lst)
+   (if (atom lst)
+       nil
+     (cons (make-readable1 (car lst))
+           (make-readable1-lst (cdr lst))))))
+
+(define str-cat-lst ((lst string-listp))
+  (if (atom lst)
+      ""
+    (str::cat (car lst)
+              (if (atom (cdr lst)) "" "-")
+              (str-cat-lst (cdr lst)))))
+
+(acl2::defines
+ make-readable
+ :verify-guards nil
+ (define make-readable (term)
+   (declare (xargs :mode :program))
+   (b* ((term (ex-from-rp-loose term)))
+     (case-match term
+       (('equal a b)
+        `(equal ,(make-readable a)
+                ,(make-readable b)))
+       (('s hash pp c)
+        (b* ((pp-lst (make-readable-lst (list-to-lst pp)))
+             (c-lst (make-readable-lst (list-to-lst c))))
+          `(s (,hash). ,(append pp-lst c-lst))))
+       (('c hash s pp c)
+        (b* ((s-lst (make-readable-lst (list-to-lst s)))
+             (pp-lst (make-readable-lst (list-to-lst pp)))
+             (c-lst (make-readable-lst (list-to-lst c))))
+          `(c (,hash) . ,(append s-lst pp-lst c-lst))))
+       (('-- n)
+        `(-- ,(make-readable n)))
+       (''1
+        1)
+       (('and-list & bits)
+        (b* ((lst (make-readable-lst (list-to-lst bits)))
+             (str (str-cat-lst lst))
+             (sym (intern$ str "RP")))
+          sym))
+       (('bit-of name ('quote index))
+        (b* ((sym (sa  (ex-from-rp-loose name) index)))
+          (symbol-name sym)))
+       (('bit-of name index)
+        (b* ((sym (sa  (ex-from-rp-loose name) index)))
+          (symbol-name sym)))
+       (('binary-and x y)
+        `(and$ ,(make-readable x) ,(make-readable y)))
+       (('binary-or x y)
+        `(or$ ,(make-readable x) ,(make-readable y)))
+       (('binary-xor x y)
+        `(xor$ ,(make-readable x) ,(make-readable y)))
+       (('binary-? x y z)
+        `(binary-? ,(make-readable x) ,(make-readable y) ,(make-readable z)))
+       (('binary-not x)
+        `(not$ ,(make-readable x)))
+       (& (if (atom term)
+              (symbol-name term)
+            (progn$
+             (hard-error 'make-readable
+                         "Unexpected term instance~p0~%"
+                         (list (cons #\0 term)))
+             nil))))))
+ (define make-readable-lst (lst)
+   (if (atom lst)
+       nil
+     (cons (make-readable (car lst))
+           (make-readable-lst (cdr lst))))))
+
+
+
 
 
 (defmacro ss (&rest args)

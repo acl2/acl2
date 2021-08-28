@@ -1322,6 +1322,7 @@
   :verify-guards :after-returns
   (b* (((unless (and (not s-lst)
                      (not c-lst)
+                     (not (unpack-booth-later-enabled))
                      (pattern2-reduce-enabled)))
         (mv nil nil))
 
@@ -2155,7 +2156,8 @@
                                          (rp-termp c)))
                (reducedp booleanp))
   (b* (((unless (and (equal c ''nil)
-                     (pattern2-reduce-enabled)))
+                     (pattern2-reduce-enabled)
+                     (not (unpack-booth-later-enabled))))
         (mv nil nil))
 
        ;;(aggressive (pattern2-aggressive-reduce-enabled))

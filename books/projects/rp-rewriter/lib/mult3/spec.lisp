@@ -1389,8 +1389,7 @@
                                 (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE))
                                (+-IS-SUM))))))
 
-  (local
-   (defthmd loghead-of-+-is-2vec-adder-lemma
+  (defthmd loghead-of-+-is-2vec-adder-lemma
      (implies (and (integerp x)
                    (integerp y)
                    (bitp carry))
@@ -1412,7 +1411,7 @@
                                 c-spec
                                 bit-concat)
                                (D2-OF-MINUS
-                                SUM-OF-F2S))))))
+                                SUM-OF-F2S)))))
 
   (defthm loghead-of-+-is-2vec-adder
     (implies (and (integerp x)
