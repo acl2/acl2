@@ -113,22 +113,22 @@
 ;;                               (pseudo-termp term))))
 ;;   (count-and-recursive-cases-bases-aux fn term 0 0))
 
-(defund add-hyp-to-claim (hyp claim)
-  (declare (xargs :guard t))
-  (if (and (consp claim)
-           (eq 'implies (ffn-symb claim))
-           (consp (cdr claim))
-           (consp (cdr (cdr claim))))
-        `(implies ,(make-conjunction-from-list (list hyp (farg1 claim)))
-                  ,(farg2 claim))
-    `(implies ,hyp
-              ,claim)))
+;; (defund add-hyp-to-claim (hyp claim)
+;;   (declare (xargs :guard t))
+;;   (if (and (consp claim)
+;;            (eq 'implies (ffn-symb claim))
+;;            (consp (cdr claim))
+;;            (consp (cdr (cdr claim))))
+;;         `(implies ,(make-conjunction-from-list (list hyp (farg1 claim)))
+;;                   ,(farg2 claim))
+;;     `(implies ,hyp
+;;               ,claim)))
 
-(defthm pseudo-termp-of-add-hyp-to-claim
-  (implies (and (pseudo-termp hyp)
-                (pseudo-termp claim))
-           (pseudo-termp (add-hyp-to-claim hyp claim)))
-  :hints (("Goal" :in-theory (enable add-hyp-to-claim))))
+;; (defthm pseudo-termp-of-add-hyp-to-claim
+;;   (implies (and (pseudo-termp hyp)
+;;                 (pseudo-termp claim))
+;;            (pseudo-termp (add-hyp-to-claim hyp claim)))
+;;   :hints (("Goal" :in-theory (enable add-hyp-to-claim))))
 
 ;todo: collect the HYPS into an AND?:
 ;; (defun add-hyps-to-claim (hyps claim)
@@ -138,16 +138,34 @@
 ;;     (let ((claim (add-hyp-to-claim (first hyps) claim)))
 ;;       (add-hyps-to-claim (rest hyps) claim))))
 
+;move
+;; Conjoin the CONJUNCTS with UTERM.
+;; TODO: What if UTERM is an IF that represents an AND?
+(defun add-conjuncts-to-uterm-at-front (conjuncts uterm)
+  (declare (xargs :guard (true-listp conjuncts)))
+  (if (endp conjuncts)
+      uterm
+    (if (call-of 'and uterm)
+        `(and ,@conjuncts ,@(fargs uterm))
+      `(and ,@conjuncts ,uterm))))
+
+;; Returns an untranslated term
 (defun add-hyps-to-claim (hyps claim)
   (declare (xargs :guard (true-listp hyps)))
-  (if (endp hyps)
-      claim
-    (add-hyp-to-claim (first hyps) (add-hyps-to-claim (rest hyps) claim))))
+  (if (and (consp claim)
+           (eq 'implies (ffn-symb claim))
+           (consp (cdr claim))
+           (consp (cdr (cdr claim))))
+      (let ((hyp (farg1 claim))
+            (conc (farg2 claim)))
+        `(implies ,(add-conjuncts-to-uterm-at-front hyps hyp) ,conc))
+    ;; not an implies:
+    `(implies (and ,@hyps) ,claim)))
 
-(defthm pseudo-termp-of-add-hyps-to-claim
-  (implies (and (pseudo-term-listp hyps)
-                (pseudo-termp claim))
-           (pseudo-termp (add-hyps-to-claim hyps claim))))
+;; (defthm pseudo-termp-of-add-hyps-to-claim
+;;   (implies (and (pseudo-term-listp hyps)
+;;                 (pseudo-termp claim))
+;;            (pseudo-termp (add-hyps-to-claim hyps claim))))
 
 (defund add-hyps-to-claims (hyps claims)
   (declare (xargs :guard (and (true-listp hyps)
@@ -162,11 +180,11 @@
          (len claims))
   :hints (("Goal" :in-theory (enable add-hyps-to-claims))))
 
-(defthm pseudo-termp-of-add-hyps-to-claims
-  (implies (and (pseudo-term-listp hyps)
-                (pseudo-term-listp claims))
-           (pseudo-term-listp (add-hyps-to-claims hyps claims)))
-  :hints (("Goal" :in-theory (enable add-hyps-to-claims))))
+;; (defthm pseudo-termp-of-add-hyps-to-claims
+;;   (implies (and (pseudo-term-listp hyps)
+;;                 (pseudo-term-listp claims))
+;;            (pseudo-term-listp (add-hyps-to-claims hyps claims)))
+;;   :hints (("Goal" :in-theory (enable add-hyps-to-claims))))
 
 ;; ;finds free vars in a term
 ;; (mutual-recursion

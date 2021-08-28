@@ -268,12 +268,12 @@
   (defopeners binary-append :hyps ((syntaxp (quotep x))))
   (must-be-redundant
    (DEFTHM BINARY-APPEND-BASE
-     (IMPLIES (IF (SYNTAXP (QUOTEP X)) (ENDP X) 'NIL)
+     (IMPLIES (AND (SYNTAXP (QUOTEP X))
+                   (ENDP X))
               (EQUAL (BINARY-APPEND X Y) Y)))
    (DEFTHM BINARY-APPEND-UNROLL
-     (IMPLIES (IF (SYNTAXP (QUOTEP X))
-                  (NOT (ENDP X))
-                  'NIL)
+     (IMPLIES (and (SYNTAXP (QUOTEP X))
+                   (NOT (ENDP X)))
               (EQUAL (BINARY-APPEND X Y)
                      (CONS (CAR X)
                            (BINARY-APPEND (CDR X) Y))))
@@ -288,7 +288,8 @@
   (defopeners natp :hyps ((syntaxp (quotep x)) (< x 0)))
   (must-be-redundant
    (DEFTHM NATP-BASE
-       (IMPLIES (IF (SYNTAXP (QUOTEP X)) (< X 0) 'NIL)
+     (IMPLIES (and (SYNTAXP (QUOTEP X))
+                   (< X 0))
                 (EQUAL (NATP X)
                        (IF (INTEGERP X) (NOT (< X '0)) 'NIL))))))
 
@@ -297,14 +298,14 @@
   (defopeners binary-append :hyps ((syntaxp (quotep x)) (< x y)))
   (must-be-redundant
    (DEFTHM BINARY-APPEND-BASE
-     (IMPLIES (IF (SYNTAXP (QUOTEP X))
-                  (IF (< X Y) (ENDP X) 'NIL)
-                  'NIL)
+     (IMPLIES (and (SYNTAXP (QUOTEP X))
+                   (< X Y)
+                   (ENDP X))
               (EQUAL (BINARY-APPEND X Y) Y)))
    (DEFTHM BINARY-APPEND-UNROLL
-     (IMPLIES (IF (SYNTAXP (QUOTEP X))
-                  (IF (< X Y) (NOT (ENDP X)) 'NIL)
-                  'NIL)
+     (IMPLIES (and (SYNTAXP (QUOTEP X))
+                   (< X Y)
+                   (NOT (ENDP X)))
               (EQUAL (BINARY-APPEND X Y)
                      (CONS (CAR X)
                            (BINARY-APPEND (CDR X) Y)))))))
