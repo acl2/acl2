@@ -130,18 +130,6 @@
            (pseudo-termp (add-hyp-to-claim hyp claim)))
   :hints (("Goal" :in-theory (enable add-hyp-to-claim))))
 
-(defun add-hyp-to-claims (hyp claims)
-  (declare (xargs :guard (true-listp claims)))
-  (if (endp claims)
-      nil
-    (cons (add-hyp-to-claim hyp (first claims))
-          (add-hyp-to-claims hyp (rest claims)))))
-
-(defthm pseudo-term-listp-of-add-hyp-to-claims
-  (implies (and (pseudo-termp hyp)
-                (pseudo-term-listp claims))
-           (pseudo-term-listp (add-hyp-to-claims hyp claims))))
-
 ;todo: collect the HYPS into an AND?:
 ;; (defun add-hyps-to-claim (hyps claim)
 ;;   (declare (xargs :guard (true-listp hyps)))
