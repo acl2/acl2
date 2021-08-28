@@ -2125,14 +2125,14 @@
 ; If the set of Lisps that compile all functions changes from {sbcl, ccl}, then
 ; change the #+/#- below accordingly.
 
-  #+(or sbcl ccl)
-  (fms "Installing the requested world.~|~%"
-       nil (f-get-global 'standard-co state) state nil)
-  #-(or sbcl ccl)
-  (fms "Installing the requested world.  Note that functions being re-defined ~
-        during this procedure will not have compiled definitions, even if ~
-        they had compiled definitions before the last :ubt or :u.~|~%"
-       nil (f-get-global 'standard-co state) state nil))
+  (observation 'oops-warning
+               #+(or sbcl ccl)
+               "Installing the requested world."
+               #-(or sbcl ccl)
+               "Installing the requested world.  Note that functions being ~
+                re-defined during this procedure will not have compiled ~
+                definitions, even if they had compiled definitions before the ~
+                last :ubt or :u."))
 
 (defun oops-fn (state)
   (mv-let (new-wrld new-kill-ring)

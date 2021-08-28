@@ -154,6 +154,9 @@
   :mode :program
   :short "Process the @('restriction') input."
   (b* ((wrld (w state))
+       (restriction (if (equal restriction ':guard)
+                        (guard old nil wrld)
+                      restriction))
        ((er (list term stobjs-out))
         (ensure-value-is-untranslated-term$ restriction
                                             "The second input" t nil))
@@ -487,7 +490,9 @@
                                    :in-theory nil
                                    :use (:termination-theorem ,old)))))
        (old-guard (guard old nil wrld))
-       (new-guard (conjoin2 old-guard restriction))
+       (new-guard (if (equal old-guard restriction)
+                      old-guard
+                    (conjoin2 old-guard restriction))) ; Could produce a simpler version
        (new-guard (untranslate new-guard t wrld))
        (local-event
         `(local

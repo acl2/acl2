@@ -1758,7 +1758,7 @@
           (not (all-nils (getpropc fn 'stobjs-out nil wrld))))
 
 ; You might think that checking that if no stobjs are coming in then no stobjs
-; are coming out, but you'd be wrong: stobj creators.
+; are coming out, but you'd be wrong: stobj creators and fixers.
 
       (mv (msg "~x0 cannot be badged because its signature, ~%~y1 ==> ~y2, ~
                 includes a single-threaded object!"

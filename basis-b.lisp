@@ -2511,14 +2511,13 @@
 
 (defun get-stobj-recognizer (stobj wrld)
 
-; If stobj is a stobj name, return the name of its recognizer; else nil.  The
-; value of the 'stobj property is always (*the-live-var* recognizer creator
-; ...), for all user defined stobj names.  The value is '(*the-live-state*) for
-; STATE and is nil for all other names.
+; If stobj is a stobj name, return the name of its recognizer; else nil.
 
   (cond ((eq stobj 'state)
          'state-p)
-        (t (cadr (getpropc stobj 'stobj nil wrld)))))
+        (t (let ((prop (getpropc stobj 'stobj nil wrld)))
+             (and prop
+                  (access stobj-property prop :recognizer))))))
 
 (defun stobj-recognizer-terms (known-stobjs wrld)
 

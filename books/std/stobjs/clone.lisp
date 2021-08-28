@@ -284,7 +284,9 @@ the other keyword arguments are unused.  For example:</p>
           (,?!creator-name ,create-logic ,create-exec)
           . ,export-absstobj-tuples)
         abs-info)
-       (`(,& ,?pred ,?create . ,?exports) stobj-info)
+       (?pred (access acl2::stobj-property stobj-info :recognizer))
+       (?create (access acl2::stobj-property stobj-info :creator))
+       (?exports (access acl2::stobj-property stobj-info :names))
        (exports (and user-exports
                      (pairlis$ (strip-cars export-absstobj-tuples) user-exports)))
        (creator (acl2::defstobj-fnname name :creator :top nil))
