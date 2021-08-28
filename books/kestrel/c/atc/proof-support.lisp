@@ -2515,6 +2515,7 @@
      :guard (and (type-integerp stype)
                  (type-integer-listp dtypes))
      :returns (rules true-list-listp)
+     :parents nil
      (cond
       ((endp dtypes) nil)
       ((equal stype (car dtypes))
@@ -2534,6 +2535,7 @@
      :guard (and (type-integer-listp stypes)
                  (type-integer-listp dtypes))
      :returns (rules true-list-listp)
+     :parents nil
      (cond ((endp stypes) nil)
            (t (append
                (atc-integer-convs-type-presc-rules-loop-dst-types (car stypes)
