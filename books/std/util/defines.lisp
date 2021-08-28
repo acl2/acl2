@@ -454,7 +454,10 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                                                   ',guts.returnspecs
                                                   world)))
                     `(with-output :stack :pop (progn . ,events))))))
-        (local (set-define-current-function ,guts.name))
+; Matt K. mod, 8/27/2021, for GitHub Issue #1302: allow current-function to be
+; seen even when including an uncertified book, by making the following
+; non-local.
+        (set-define-current-function ,guts.name)
         (with-output :stack :pop (progn . ,guts.rest-events)))
       ;; Make sure the section gets processed first.  Once it's done,
       ;; we can add the signature block.

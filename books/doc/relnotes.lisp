@@ -127,6 +127,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
+
+   (xdoc::p
+    "The @(tsee defret) utility could malfunction when including an uncertified
+     book.  This has been fixed by tweaking a @(tsee defsection) utility to set
+     the ``most recent function'' non-locally.  This fixes GitHub Issue
+     #1302.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Tools")
 
    (xdoc::p
