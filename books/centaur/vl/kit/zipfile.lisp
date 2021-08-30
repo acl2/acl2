@@ -164,6 +164,7 @@ version.</p>")
                (date    maybe-stringp :rule-classes :type-prescription)
                (ltime   maybe-natp :rule-classes :type-prescription)
                (state   state-p1 :hyp (state-p1 state)))
+  :ret-patbinder t
   :long "<p>This should be relatively fast; it doesn't have to read the whole
 file.</p>"
   (b* ((filename (string-fix filename))

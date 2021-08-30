@@ -48,7 +48,7 @@
                            )))
 (local (std::add-default-post-define-hook :fix))
 
-
+(std::make-returnspec-config :hints-sub-returnnames t)
 (defstobj-clone litclasses litarr :strsubst (("LIT" . "LITCLASS")))
 (defstobj-clone constmarks bitarr :strsubst (("BIT" . "AIGNET-CONSTMARKS")))
 

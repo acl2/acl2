@@ -218,7 +218,6 @@ RUN_ACL2_FEATURES := $(shell cd $(BUILD_DIR); ACL2=$(ACL2) STARTJOB=$(STARTJOB) 
 # if ACL2 isn't built.
 -include $(BUILD_DIR)/Makefile-features
 
-$(info ACL2_HAS_HONS      := $(ACL2_HAS_HONS))
 $(info ACL2_HAS_ANSI      := $(ACL2_HAS_ANSI))
 $(info ACL2_HAS_PARALLEL  := $(ACL2_HAS_PARALLEL))
 $(info ACL2_HAS_REALS     := $(ACL2_HAS_REALS))
@@ -314,18 +313,6 @@ include $(BUILD_DIR)/Makefile-deps
 
 # Cause error for illegal certification attempts:
 
-ifeq ($(ACL2_HAS_HONS), )
-
-$(CERT_PL_HONS_ONLY):
-	$(MAKE) no_hons_error NO_RESCAN=1 CERT_PL_HONS_ONLY_BOOK=$@
-
-.PHONY: no_hons_error
-no_hons_error:
-	@echo "Error! Target $(CERT_PL_HONS_ONLY_BOOK) requires hons."
-	@exit 1
-
-endif # ifeq ($(ACL2_HAS_HONS), )
-
 ifeq ($(ACL2_HAS_ANSI), )
 
 # We are presumably running GCL/CLtL1.  There is no need to cause an
@@ -344,15 +331,6 @@ endif # ifeq ($(ACL2_HAS_ANSI), )
 # End of "Cause error for illegal certification attempts".
 
 OK_CERTS := $(CERT_PL_CERTS)
-
-ifeq ($(ACL2_HAS_HONS), )
-
-# We use "{...}" delimiters to avoid errors in version 3.80 of make.
-${info Excluding books that need ACL2(h) [...]}
-OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
-
-endif # ifeq ($(ACL2_HAS_HONS), )
-
 
 ifneq (CCL, $(ACL2_HOST_LISP))
 ${info Excluding books that are CCL-only: [$(CERT_PL_CCL_ONLY)]}
@@ -552,7 +530,6 @@ BROKEN_BOOKS :=
 # exclude them in the "egrep -v" command above, instead allowing
 # cert.pl to do its thing.
 
-ifneq ($(ACL2_HAS_HONS), )
 ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 
 # When the Lisp is not one of those mentioned on the line above, we
@@ -568,7 +545,6 @@ ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 
 BROKEN_BOOKS += $(filter models/y86/%, $(OK_CERTS))
 endif # ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
-endif # ifneq ($(ACL2_HAS_HONS), )
 
 OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
 
@@ -607,9 +583,7 @@ SLOW_BOOKS += $(X86ISA_BOOKS)
 
 SLOW_BOOK_TARGETS :=
 
-ifneq ($(ACL2_HAS_HONS), )
 SLOW_BOOK_TARGETS += milawa-test-basic
-endif
 
 # Now SLOW_BOOKS is defined as the list above.
 SLOW_BOOKS += $(SLOW_BOOK_TARGETS)

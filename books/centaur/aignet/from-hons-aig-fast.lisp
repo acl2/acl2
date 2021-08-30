@@ -30,7 +30,6 @@
 
 
 (in-package "AIGNET")
-; cert_param: (hons-only)
 (include-book "centaur/misc/fast-cons-memo" :dir :system)
 (include-book "from-hons-aig")
 

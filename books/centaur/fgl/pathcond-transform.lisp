@@ -33,6 +33,7 @@
 (include-book "pathcond")
 (include-book "logicman-transform")
 
+(std::make-returnspec-config :hints-sub-returnnames t)
 
 (local (defun nbalist-ind (nbalist)
          (declare (xargs :measure (len (nbalist-fix nbalist))))

@@ -1472,19 +1472,6 @@
                     (embedded-event-lst nil)
                     (cltl-command nil)
                     (top-level-cltl-command-stack nil)
-                    (hons-enabled
-
-; Why are we comfortable making hons-enabled a world global?  Note that even if
-; if hons-enabled were a state global, the world would be sensitive to whether
-; or not we are in the hons version: for example, we get different evaluation
-; results for the following.
-
-;   (getpropc 'memoize-table 'table-guard *t*)
-
-; By making hons-enabled a world global, we can access its value without state
-; in history query functions such as :pe.
-
-                     #+hons t #-hons nil)
                     (include-book-alist nil)
                     (include-book-alist-all nil)
                     (pcert-books nil)
@@ -4572,135 +4559,27 @@
       '(set-raw-mode-off state)
     '(set-raw-mode-on state)))
 
-#-(or acl2-loop-only acl2-mv-as-values)
-(defun mv-ref! (i)
-
-; This silly function is just mv-ref, but without the restriction that the
-; argument be an explicit number.
-
-  (case i
-    (1 (mv-ref 1))
-    (2 (mv-ref 2))
-    (3 (mv-ref 3))
-    (4 (mv-ref 4))
-    (5 (mv-ref 5))
-    (6 (mv-ref 6))
-    (7 (mv-ref 7))
-    (8 (mv-ref 8))
-    (9 (mv-ref 9))
-    (10 (mv-ref 10))
-    (11 (mv-ref 11))
-    (12 (mv-ref 12))
-    (13 (mv-ref 13))
-    (14 (mv-ref 14))
-    (15 (mv-ref 15))
-    (16 (mv-ref 16))
-    (17 (mv-ref 17))
-    (18 (mv-ref 18))
-    (19 (mv-ref 19))
-    (20 (mv-ref 20))
-    (21 (mv-ref 21))
-    (22 (mv-ref 22))
-    (23 (mv-ref 23))
-    (24 (mv-ref 24))
-    (25 (mv-ref 25))
-    (26 (mv-ref 26))
-    (27 (mv-ref 27))
-    (28 (mv-ref 28))
-    (29 (mv-ref 29))
-    (30 (mv-ref 30))
-    (31 (mv-ref 31))
-    (otherwise (error "Illegal value for mv-ref!"))))
-
 (defmacro add-raw-arity (name val)
+
+; This macro did something interesting back when mv had special handling rather
+; than values.  We may want to do something interesting with it even now, so we
+; leave this macro in place.
+
   (declare (xargs :guard (and (symbolp name)
                               (or (and (integerp val) (<= 0 val))
                                   (eq val :last)))))
-  #+acl2-mv-as-values (declare (ignore name val))
-  #+acl2-mv-as-values '(value nil)
-  #-acl2-mv-as-values
-  `(pprogn (f-put-global 'raw-arity-alist
-                         (put-assoc-eq ',name
-                                       ,val
-                                       (f-get-global 'raw-arity-alist state))
-                         state)
-           (value 'raw-arity-alist)))
+  (declare (ignore name val))
+  '(value nil))
 
 (defmacro remove-raw-arity (name)
+
+; This macro did something interesting back when mv had special handling rather
+; than values.  We may want to do something interesting with it even now, so we
+; leave this macro in place.
+
   (declare (xargs :guard (symbolp name)))
-  #+acl2-mv-as-values (declare (ignore name))
-  #+acl2-mv-as-values '(value nil)
-  #-acl2-mv-as-values
-  `(pprogn (f-put-global 'raw-arity-alist
-                         (remove1-assoc-eq ',name
-                                           (f-get-global 'raw-arity-alist
-                                                         state))
-                         state)
-           (value 'raw-arity-alist)))
-
-#-(or acl2-loop-only acl2-mv-as-values)
-(defun raw-arity (form wrld state)
-  (cond
-   ((atom form) 1)
-   ((member-eq (car form) '(mv swap-stobjs))
-    (length (cdr form)))
-   ((eq (car form) 'if)
-    (let ((arity1 (raw-arity (caddr form) wrld state)))
-      (if (cdddr form)
-          (let ((arity2 (raw-arity (cadddr form) wrld state)))
-            (if (eql arity1 arity2)
-                arity1
-              (let ((min-arity (min arity1 arity2)))
-                (prog2$
-                 (warning$ 'top-level "Raw"
-                           "Unable to compute arity of the following ~
-                            IF-expression in raw mode because the true branch ~
-                            has arity ~x0 but the false branch has arity ~x1, ~
-                            so we assume an arity of ~x2 ~
-                            (see :DOC add-raw-arity):~%  ~x3."
-                           arity1 arity2 min-arity form)
-                 min-arity))))
-        arity1)))
-   ((eq (car form) 'return-last)
-    (raw-arity (car (last form)) wrld state))
-   (t (let ((arity (cdr (assoc-eq (car form)
-                                  (f-get-global 'raw-arity-alist state)))))
-        (cond
-         ((eq arity :last)
-          (raw-arity (car (last form)) wrld state))
-         ((and (integerp arity)
-               (<= 0 arity))
-          arity)
-         (arity
-          (error "Ill-formed value of ~s."
-                 '(@ raw-arity-alist)))
-         (t
-          (let ((stobjs-out
-                 (getpropc (car form) 'stobjs-out t wrld)))
-            (cond
-             ((eq stobjs-out t)
-              (multiple-value-bind
-               (new-form flg)
-               (macroexpand-1 form)
-               (cond ((null flg)
-
-; Remember that our notion of multiple value here is ACL2's notion, not Lisp's
-; notion.  So the arity is 1 for calls of Common Lisp functions.
-
-                      (when (not (member-eq
-                                  (car form)
-                                  *common-lisp-symbols-from-main-lisp-package*))
-                        (fms "Note: Unable to compute number of values ~
-                              returned by this evaluation because function ~x0 ~
-                              is not known in the ACL2 logical world.  ~
-                              Presumably it was defined in raw Lisp or in raw ~
-                              mode.  Returning the first (perhaps only) value ~
-                              for calls of ~x0.  See :DOC add-raw-arity.~|"
-                             (list (cons #\0 (car form)))
-                             *standard-co* state nil))
-                      1)
-                     (t (raw-arity new-form wrld state)))))
-             (t (length stobjs-out))))))))))
+  (declare (ignore name))
+  '(value nil))
 
 (defun alist-to-bindings (alist)
   (cond
@@ -12472,8 +12351,6 @@
              (if ,chan0
                  *print-circle-stream*
                (and ,chan (get-output-stream-from-channel ,chan)))))
-; Commented out upon addition of serialize:
-;       #+hons (when (null ,chan0) (setq *compact-print-file-n* 0))
         ,body))))
 
 (defun elide-locals-and-split-expansion-alist (alist acl2x-alist x y)
@@ -13402,11 +13279,6 @@
          (old-skip-proofs-seen (global-val 'skip-proofs-seen wrld1))
          (active-book-name (active-book-name wrld1 state))
          (old-ttags-seen (global-val 'ttags-seen wrld1))
-         #-(or acl2-loop-only hons) ; skip for ACL2(h), hence always skip
-         (*fchecksum-symbol-memo*
-          (if *inside-include-book-fn*
-              *fchecksum-symbol-memo*
-            (make-hash-table :test 'eq)))
          #-acl2-loop-only
          (*defeat-slow-alist-action* (or *defeat-slow-alist-action*
                                          'stolen))
@@ -14504,8 +14376,9 @@
 ; GCL that had been created with CCL.  (We don't officially support using more
 ; than one host Lisp on the same files, but it's convenient sometimes to do
 ; that anyhow.)  The community book in question was
-; books/projects/legacy-defrstobj/typed-record-tests.lisp, and ACL2 was used,
-; not ACL2(h).  The event that caused the trouble was this one:
+; books/projects/legacy-defrstobj/typed-record-tests.lisp, and "classic" ACL2
+; was used, not the hons version, ACL2(h).  The event that caused the trouble
+; was this one:
 
 ;   (make-event
 ;    `(def-typed-record char
@@ -14633,9 +14506,7 @@
              (t (princ$ ";;; Note: There are no declaim forms to print." ch state)))
 
 ; We print a single progn for all top-level events in order to get maximum
-; sharing with compact printing.  This trick isn't necessary of course for the
-; non-hons version, but it seems simplest to do this the same way for both the
-; hons and non-hons versions.
+; sharing with compact printing.
 
        (mv-let
         (erp val state)
@@ -14778,51 +14649,6 @@
          (hons (car y)
                (hons-union-ordered-string-lists x (cdr y))))))
 
-(defun pkg-names-memoize (x)
-
-; This function caused a stack overflow when certifying an example sent
-; 2/10/2020 by Shilpi Goel, and had already caused a stack overflow when
-; certifying a version of books/projects/apply/loop-tests.lisp, modified by
-; removing LOCAL from the last event marked LOCAL in that book.  Even with the
-; change to avoid pkg-names-memoize, the modified loop-tests.lisp still fails
-; to certify because of a stack overflow from ser-encode-conses (see also
-; below), though that can be solved by certifying after evaluating
-; (set-serialize-character-system nil state) or by increasing the stack size,
-; e.g., in saved_acl2 using "-Z 1024M" for CCL and "--control-stack-size 1024"
-; for SBCL.
-
-  (declare (ignore x))
-  (er hard! 'pkg-names-memoize
-      "The function ~x0 is obsolete, and should not be called!"
-      'pkg-names-memoize)
-
-; Old code:
-
-; ; See pkg-names.
-;
-; ; For the following book we get a stack overflow in pkg-names-memoize in Step 3
-; ; of certification.
-;
-; ; (in-package "ACL2")
-; ; (include-book "projects/apply/top" :dir :system)
-; ; (make-event `(defconst *m* ',(make-list 10000000)))
-;
-; ; Before trying to fix pkg-names-memoize, however, note that if we comment out
-; ; the include-book form above, then instead we get a stack overflow in
-; ; ser-encode-conses in Step 4.  So it might not be worth trying to improve
-; ; pkg-names-memoize unless we also try to improve ser-encode-conses.  Both
-; ; might be difficult fixes that aren't necessary; see the workaround using
-; ; LOCAL near the end of community book books/projects/apply/loop-tests.lisp.
-;
-;   (cond ((consp x)
-;          (hons-union-ordered-string-lists
-;           (pkg-names-memoize (car x))
-;           (pkg-names-memoize (cdr x))))
-;         ((and x (symbolp x))
-;          (hons (symbol-package-name x) nil))
-;         (t nil)))
-  )
-
 (defun pkg-names (x base-kpa)
 
 ; For an explanation of the point of this function, see the comment at the call
@@ -14841,26 +14667,7 @@
   (cond
    ((null x) ; optimization
     nil)
-   (t
-
-; The following is obsolete; see commented-out code for pkg-names-memoize.
-
-;     #+(and hons (not acl2-loop-only))
-;
-; ; Here we use a more efficient but equivalent version of this function that
-; ; memoizes, contributed initially by Sol Swords.  This version is only more
-; ; efficient when fast alists are available; otherwise the memo table will be a
-; ; linear list ultimately containing every cons visited, resulting in quadratic
-; ; behavior because of the membership tests against it.
-;
-;     (return-from
-;      pkg-names
-;      (loop for name in (pkg-names-memoize x)
-;            when (not (find-package-entry name base-kpa))
-;            collect name))
-
-    (merge-sort-lexorder ; sort the small list, to agree with hons result above
-     (pkg-names0 x base-kpa nil)))))
+   (t (merge-sort-lexorder (pkg-names0 x base-kpa nil)))))
 
 (defun delete-names-from-kpa-rec (names kpa)
   (cond ((endp kpa)
@@ -15168,8 +14975,8 @@
 ; User-modifiable; see comment in the defstub just above.
 
 ; At one time we used hons-copy-with-state here, but we are concerned that this
-; will interfere with fast-alists in the #+hons version.  See the
-; Remark on Fast-alists in install-for-add-trip-include-book.
+; will interfere with fast-alists.  See the Remark on Fast-alists in
+; install-for-add-trip-include-book.
 
             identity-with-state)
   :skip-checks t)
@@ -23893,8 +23700,7 @@
   (let* ((old-fn (get fn 'acl2-trace-saved-fn))
          (*1*fn (*1*-symbol? fn))
          (old-*1*fn (get *1*fn 'acl2-trace-saved-fn))
-         #+hons (memo-entry (memoizedp-raw fn)))
-    #+hons
+         (memo-entry (memoizedp-raw fn)))
     (when (and memo-entry
                (not (eq (symbol-function fn)
                         (access memoize-info-ht-entry memo-entry
@@ -23914,7 +23720,6 @@
 ; "silent no-op" below and in trace$-fn-general.
       (setf (symbol-function fn)
             old-fn)
-      #+hons
       (when memo-entry
         (setf (gethash fn *memoize-info-ht*)
               (change memoize-info-ht-entry memo-entry
@@ -24018,7 +23823,6 @@
 
 #-acl2-loop-only
 (defun trace$-def (arglist def trace-options predefined multiplicity ctx)
-  #-hons (declare (ignore ctx))
   (let* ((state-bound-p (member-eq 'state arglist))
          (fn (car def))
          (cond-tail (assoc-keyword :cond trace-options))
@@ -24037,22 +23841,20 @@
          (notinline-tail (assoc-keyword :notinline trace-options))
          (notinline-nil (and notinline-tail
                              (null (cadr notinline-tail))))
-         #+hons (memo-entry (memoizedp-raw fn))
+         (memo-entry (memoizedp-raw fn))
          (notinline-fncall
           (cond (notinline-tail
-                 #+hons (or (eq (cadr notinline-tail) :fncall)
-                            (and memo-entry
-                                 (er hard ctx
-                                     "It is illegal to specify a value for ~
+                 (or (eq (cadr notinline-tail) :fncall)
+                     (and memo-entry
+                          (er hard ctx
+                              "It is illegal to specify a value for ~
                                       trace$ option :NOTINLINE other than ~
                                       :FNCALL for a memoized function.  The ~
                                       suggested trace spec for ~x0, which ~
                                       specifies :NOTINLINE ~x0, is thus ~
                                       illegal."
-                                     fn
-                                     (cadr notinline-tail))))
-                 #-hons (eq (cadr notinline-tail) :fncall))
-                #+hons
+                              fn
+                              (cadr notinline-tail)))))
                 (memo-entry
 
 ; Memoization installs its own symbol-function for fn, so we do not want to
@@ -24086,7 +23888,6 @@
                        `(funcall (get ',fn 'acl2-trace-saved-fn)
                                  ,@arglist)
                      `(block ,fn (progn ,@body)))))
-    #+hons
     (when (and memo-entry
                (not (eq (symbol-function fn)
                         (access memoize-info-ht-entry memo-entry
@@ -24161,12 +23962,7 @@
 ; reference to the entire arglist instead of what it should be: a reference to
 ; the formal parameter, ARGLIST.
 
-                   #+acl2-mv-as-values
-                   (multiple-value-list ,new-body)
-                   #-acl2-mv-as-values
-                   (cons ,new-body
-                         ,(cond ((eql multiplicity 1) nil)
-                                (t `(mv-refs ,(1- multiplicity))))))
+                   (multiple-value-list ,new-body))
 
 ; Warning: It may be tempting to eliminate value, since it is not used below.
 ; But we deliberately generate a binding of value here so that users can refer
@@ -24187,10 +23983,7 @@
                                      exit)
                                   ,(or gevisc-tuple evisc-tuple)
                                   ,exit-msgp))
-             #+acl2-mv-as-values
-             (values-list values)
-             #-acl2-mv-as-values
-             (mv ,@(mv-nth-list 'values 0 multiplicity))))))))
+             (values-list values)))))))
 
 #-acl2-loop-only
 (defun trace$-install (fn formals def trace-options predefined multiplicity
@@ -24215,7 +24008,6 @@
     (setf (get fn 'acl2-trace-saved-fn)
           (symbol-function fn))
     (eval (trace$-def formals def trace-options predefined multiplicity ctx))
-    #+hons
     (let ((memo-entry (memoizedp-raw fn)))
       (when memo-entry
         (setf (gethash fn *memoize-info-ht*)
@@ -24388,40 +24180,18 @@
                                         (remove-keyword :native
                                                         trace-options)))
                        (new-trace-options
-
-; ACL2 has redefined the underlying Lisp trace for GCL, Allegro CL, and CCL so
-; that they recognize the :exit keyword, and we take advantage of that here if
-; (unlikely though that may be) #-acl2-mv-as-values is also true.  When
-; #+acl2-mv-as-values holds, there is no need to specify :exit here.
-
-                        #+(and (not acl2-mv-as-values)
-                               (or gcl allegro ccl))
-                        (let ((multiplicity
-                               (or (cadr (assoc-keyword :multiplicity
-                                                        trace-options))
-                                   (trace-multiplicity fn state))))
-                          (cond
-                           ((and multiplicity
-                                 (not (assoc-keyword :exit trace-options)))
-                            (append `(:exit
-                                      (cons (car values)
-                                            (mv-refs ,(1- multiplicity))))
-                                    trace-options-1))
-                           (t trace-options-1)))
-                        #-(and (not acl2-mv-as-values)
-                               (or gcl allegro ccl))
                         (pprogn (when (assoc-keyword :multiplicity
                                                      trace-options)
                                   (let ((state *the-live-state*))
                                     (with-output
-                                     :on (warning)
-                                     (warning$ ctx "Trace"
-                                               "The :multiplicity option of ~
-                                               trace$ has no effect in this ~
-                                               Lisp.  Only one value will be ~
-                                               passed to trace printing by ~
-                                               function ~x0."
-                                               fn))))
+                                      :on (warning)
+                                      (warning$ ctx "Trace"
+                                                "The :multiplicity option of ~
+                                                 trace$ has no effect in this ~
+                                                 Lisp.  Only one value will ~
+                                                 be passed to trace printing ~
+                                                 by function ~x0."
+                                                fn))))
                                 trace-options-1)))
                   (if new-trace-options
                       (eval `(trace (,fn ,@new-trace-options)))
@@ -30444,7 +30214,7 @@
                                    state)
                 chan nil nil t))))
 
-; Essay on Memoization with Attachments (relevant for #+hons version only)
+; Essay on Memoization with Attachments
 
 ; We maintain the invariant that every stored value in a memo table is valid.
 
@@ -30669,9 +30439,6 @@
 (defun ext-ancestors-attachments (f wrld)
 
 ; See the Essay on Memoization with Attachments.
-
-; The implementation of this function uses hons-acons, so might only be
-; efficient when #+hons (which was its intended use when written).
 
   (let ((g (canonical-sibling f wrld)))
     (ext-ancestors-attachments1 (cons g
@@ -31273,8 +31040,7 @@
 ; ev-fncall-w-guard in magic-ev-fncall has been successfully executed, that
 ; programp = (programp fn w), and that stobjs-out = (stobjs-out fn w).
 
-  (the #+acl2-mv-as-values (values t t)
-       #-acl2-mv-as-values t
+  (the (values t t)
        (let* ((*aokp*
 
 ; We expect the parameter aok, here and in all functions in the "ev family"
@@ -31307,9 +31073,6 @@
                      (prog1
                          (let ((*hard-error-returns-nilp*
                                 hard-error-returns-nilp))
-                           #-acl2-mv-as-values
-                           (apply applied-fn args)
-                           #+acl2-mv-as-values
                            (cond ((null (cdr stobjs-out))
                                   (apply applied-fn args))
                                  (t (multiple-value-list
@@ -31324,14 +31087,7 @@
          (cond
           (throw-raw-ev-fncall-flg
            (mv t (ev-fncall-msg val w nil)))
-          (t #-acl2-mv-as-values ; adjust val for the multiple value case
-             (let ((val
-                    (cond
-                     ((null (cdr stobjs-out)) val)
-                     (t (cons val
-                              (mv-refs (1- (length stobjs-out))))))))
-               (mv nil val))
-             #+acl2-mv-as-values ; val already adjusted for multiple value case
+          (t ; val already adjusted for multiple value case
              (mv nil val))))))
 
 (defun-overrides magic-ev-fncall (fn args state hard-error-returns-nilp aok)
@@ -33558,10 +33314,6 @@
 
 (defun memoize-table-chk (key val wrld state)
 
-; Although this function is generally only called with #+hons, nevertheless we
-; define it independently of #+hons so that it has the same definition in the
-; hons and non-hons versions of ACL2.
-
 ; The usual table guard mechanism provides crude error messages when there is a
 ; violation.  We avoid that problem by causing a hard error.  We rely on the
 ; fact that illegal and hard-error return nil.
@@ -33807,13 +33559,6 @@
                      str condition key))
                (t nil)))))))
     (progn$
-     (or (global-val 'hons-enabled wrld)
-         (warning$-cw (if val 'memoize 'unmemoize)
-                      "The ~#0~[un~/~]memoization request for ~x1 is being ~
-                       ignored because this ACL2 executable is not ~
-                       hons-enabled."
-                      (if val 1 0)
-                      key))
      (and val
           (let ((stobjs-in (stobjs-in key wrld)))
             (cond

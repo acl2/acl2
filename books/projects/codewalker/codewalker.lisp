@@ -8377,7 +8377,7 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
 ; basic-demo.lsp
 
 ; To certify all these books (except the last, which is not a book) execute the
-; following in ACL2 or ACL2(h):
+; following in ACL2:
 
 ; (certify-book "if-tracker")          ; used by Terminatricks and Codewalker via
 ; (u)                                  ;  this one:

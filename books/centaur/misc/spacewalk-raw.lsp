@@ -85,7 +85,6 @@
             (write-string elide)
             (format t "~%"))))
 
-  #+hons
   (progn
     (format t "~%--- Hons memory usage ---~%")
     (hons-summary)

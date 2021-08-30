@@ -1805,7 +1805,6 @@
     (EMBEDDED-EVENT-LST (pseudo-embedded-event-lstp val))
     (CLTL-COMMAND (pseudo-cltl-commandp val))
     (TOP-LEVEL-CLTL-COMMAND-STACK (pseudo-cltl-command-listp val))
-    (HONS-ENABLED (booleanp val))
     (INCLUDE-BOOK-ALIST (pseudo-include-book-alistp val))
     (INCLUDE-BOOK-ALIST-ALL (pseudo-include-book-alist-allp val))
     (PCERT-BOOKS (pseudo-pcert-booksp val))

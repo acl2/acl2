@@ -56,7 +56,6 @@
 (include-book "support")
 (include-book "oslib/ls" :dir :system)
 
-; cert_param: (hons-only)
 ; cert_param: (uses-glucose)
 ; cert_param: (non-cmucl)
 
@@ -66,8 +65,7 @@
 
 ; Disabling waterfall parallelism.
 
- (if (and (acl2::hons-enabledp state)
-          (f-get-global 'acl2::parallel-execution-enabled state))
+ (if (f-get-global 'acl2::parallel-execution-enabled state)
      (er-progn (set-waterfall-parallelism nil)
                (value '(value-triple nil)))
    (value '(value-triple nil))))

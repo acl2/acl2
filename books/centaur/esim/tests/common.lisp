@@ -21,7 +21,6 @@
 ;   DEALINGS IN THE SOFTWARE.
 
 (in-package "ACL2")
-; cert_param: (hons-only)
 ; cert_param: (uses-glucose)
 (include-book "../defmodules")
 (include-book "centaur/gl/gl" :dir :system)

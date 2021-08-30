@@ -33,8 +33,6 @@
 (include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/osets/top" :dir :system)
 
-; cert_param: (hons-only)
-
 ; This file does nothing useful and should never be included in another
 ; book.  We just do some very basic computations to make sure the hons
 ; system seems to be working right.

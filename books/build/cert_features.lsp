@@ -43,12 +43,6 @@
        state)
     (let* ((state (princ$ "export ACL2_FEATURES_DETECTED := 1" channel state))
            (state (newline channel state))
-           (state (princ$ #+hons "export ACL2_HAS_HONS := 1"
-                          #-hons "export ACL2_HAS_HONS := "
-                          channel state))
-           (state (newline channel state))
-           (state (princ$ "EXPORTED_VARS += ACL2_HAS_HONS" channel state))
-           (state (newline channel state))
            (state (princ$ #-(and gcl (not ansi-cl)) "export ACL2_HAS_ANSI := 1"
                           #+(and gcl (not ansi-cl)) "export ACL2_HAS_ANSI := "
                           channel state))

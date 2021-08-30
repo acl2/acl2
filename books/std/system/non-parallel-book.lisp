@@ -47,20 +47,11 @@
  waterfall-parallelism) is turned off.  When you put that form into a book, it
  will be ignored when including the book unless keyword @(':check-expansion')
  is true.  (Suggestion: avoid that keyword unless you are sure you know what
- you are doing!)  Another keyword arguments is also available: if
- @(':hons-only') is non-@('nil') then @(see waterfall-parallelism) is turned
- off only in ACL2(hp), not in ACL2(p).  This keyword used to be more useful,
- but ACL2's memoization code is now believed to be thread safe, so this
- feature is likely deprecated.  Of course, if @(':hons-only') is omitted or
- @('nil'), then waterfall parallelism will always be turned off, not only in
- ACL2(hp).</p>"
+ you are doing!)</p>"
 
-  (defmacro non-parallel-book (&key hons-only check-expansion)
+  (defmacro non-parallel-book (&key check-expansion)
     `(make-event
-      (if (and ,(if hons-only
-                    '(ACL2::hons-enabledp state)
-                  t)
-               (f-get-global 'ACL2::parallel-execution-enabled state))
+      (if (f-get-global 'ACL2::parallel-execution-enabled state)
           (er-progn (set-waterfall-parallelism nil)
                     (value '(value-triple nil)))
         (value '(value-triple nil)))

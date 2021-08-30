@@ -13,7 +13,6 @@
 
 (in-package "ACL2")
 (include-book "tools/include-raw" :dir :system)
-; cert_param: (hons-only)
 
 ; [Jared]: I pulled PROFILE-ACL2, PROFILE-ALL, and PROFILE-FILE, and related
 ; functionality out of ACL2(h) and into this ttag-based book.  They are not

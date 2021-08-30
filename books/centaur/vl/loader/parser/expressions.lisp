@@ -136,7 +136,7 @@ attributes.</p>"
   (if (atom x)
       (not x)
     (and (consp (car x))
-         (symbolp (caar x)) ;; token type to match
+         (vl-tokentype-p (caar x)) ;; token type to match
          (or (and (eql arity 2) (vl-binaryop-p (cdar x)))
              (and (eql arity 1) (vl-unaryop-p (cdar x))))
          (vl-parse-op-alist-p arity (cdr x))))
@@ -145,13 +145,22 @@ attributes.</p>"
     (implies (atom x)
              (equal (vl-parse-op-alist-p arity x)
                     (not x))))
-  (defthm vl-parse-op-alist-p-of-cons
-    (equal (vl-parse-op-alist-p arity (cons a x))
-           (and (consp a)
-                (symbolp (car a))
-                (or (and (eql arity 2) (vl-binaryop-p (cdr a)))
-                    (and (eql arity 1) (vl-unaryop-p (cdr a))))
-                (vl-parse-op-alist-p arity x)))))
+  (defthm vl-parse-op-alist-p-when-consp
+    (implies (consp x)
+             (equal (vl-parse-op-alist-p arity x)
+                    (let ((a (car x)) (x (cdr x)))
+                      (and (consp a)
+                           (vl-tokentype-p (car a))
+                           (or (and (eql arity 2) (vl-binaryop-p (cdr a)))
+                               (and (eql arity 1) (vl-unaryop-p (cdr a))))
+                           (vl-parse-op-alist-p arity x)))))))
+
+(local (defthm vl-tokentype-p-implies-symbolp
+         (implies (vl-tokentype-p x)
+                  (symbolp x))
+         :hints(("Goal" :in-theory (enable vl-tokentype-p)))
+         :rule-classes ((:compound-recognizer)
+                        (:forward-chaining))))
 
 
 (defparser vl-parse-op (arity alist)
@@ -191,7 +200,7 @@ parsing functions.</p>"
 
 
 (in-theory (disable vl-parse-op-alist-p-when-atom
-                    vl-parse-op-alist-p-of-cons))
+                    vl-parse-op-alist-p-when-consp))
 
 
 (define vl-mixed-binop-list-p (x)

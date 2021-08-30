@@ -40,7 +40,7 @@
 (include-book "centaur/aig/aig-vars" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/alists/alist-keys" :dir :system))
-
+(std::make-returnspec-config :hints-sub-returnnames t)
 
 
 (fty::deflist aig-varlist :elt-type aig-var)
