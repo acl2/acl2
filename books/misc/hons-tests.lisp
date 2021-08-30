@@ -18,10 +18,8 @@
 
 (comp t) ; for other than CCL and SBCL
 
-#+hons
 (memoize 'fib)
 
-#+hons
 (defthm fib-test0
 
 ; SBCL 1.03 has given the following error for fib-test, below, when not
@@ -35,7 +33,6 @@
 
   (equal (integer-length (fib 5000)) 3471))
 
-#+hons
 (defthm fib-test
   (equal (integer-length (fib 10000)) 6942))
 
@@ -55,13 +52,10 @@
       (hons (build-tree (1- n)) (build-tree (1- n)))
     nil))
 
-#+hons
 (memoize 'build-tree)
 
-#+hons
 (memoize 'tree-depth)
 
-#+hons
 (defthm build-tree-test
   (let ((n 1000))
     (equal (tree-depth (build-tree n)) n)))
@@ -1645,16 +1639,12 @@
 
 ;; ---------------- end of previous qi.lisp
 
-#+hons
 (memoize 'q-ite :condition '(and (consp x) (or (consp y) (consp z))))
-#+hons
 (memoize 'qnorm1)
-#+hons
 (memoize 'qvar-n)
 
 (defn lfoo (x) (if (atom x) 0 (+ 1 (lfoo (cdr x)))))
 
-#+hons
 (memoize 'lfoo)
 
 (defthm l-thm (equal (lfoo (hons-copy '(a b c))) 3))

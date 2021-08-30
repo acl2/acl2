@@ -64,7 +64,6 @@
 
 ;; (local (include-book "centaur/esim/stv/stv-decomp-proofs-even-better" :dir :system))
 ; (depends-on "boothpipe.v")
-; cert_param: (hons-only)
 ; cert_param: (uses-glucose)
 (value-triple (acl2::set-max-mem (* 3 (expt 2 30))))
 (value-triple (acl2::tshell-ensure))
@@ -74,8 +73,7 @@
 ; Disabling waterfall parallelism for unknown reasons other than that
 ; certification stalls out with it enabled.
 
- (if (and (acl2::hons-enabledp state)
-          (f-get-global 'acl2::parallel-execution-enabled state))
+ (if (f-get-global 'acl2::parallel-execution-enabled state)
      (er-progn (set-waterfall-parallelism nil)
                (value '(value-triple nil)))
    (value '(value-triple nil))))

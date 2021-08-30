@@ -67,7 +67,6 @@
              :hints (("goal" :in-theory (disable (defined-const-memoize-fn))))
              :rule-classes nil)
 
-           #+hons
            (memoize 'defined-const-memoize-fn)))
 
 

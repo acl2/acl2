@@ -3314,8 +3314,8 @@
 
 ; See add-trip below for context.  Fn is one of the raw Lisp function names
 ; secretly spawned by CLTL-COMMAND forms, e.g., DEFUN, DEFMACRO, DEFCONST,
-; DEFPKG, DEFATTACH, DEFSTOBJ or (for the HONS version) MEMOIZE or UNMEMOIZE.
-; Name is generally the symbol or string that is being defined.
+; DEFPKG, DEFATTACH, DEFSTOBJ, MEMOIZE or UNMEMOIZE.  Name is generally the
+; symbol or string that is being defined.
 
 ; Whenever we smash a CLTL cell we first save its current contents to permit
 ; redefinition and undoing.  Toward this end we maintain a stack for each
@@ -3374,7 +3374,7 @@
              (push `(progn
                       ,@(and (not macro-p)
                              `((maybe-untrace! ',name) ; untrace new function
-                               #+hons (maybe-unmemoize ',name)))
+                               (maybe-unmemoize ',name)))
                       ,@(if (eq extra 'reclassifying)
                             (assert$
                              (not macro-p)
@@ -3403,7 +3403,7 @@
                               (t `(fmakunbound! ',oneified-name))))))
                    (get name '*undo-stack*))))
           (t (push `(progn (maybe-untrace! ',name) ; untrace new function
-                           #+hons (maybe-unmemoize ',name)
+                           (maybe-unmemoize ',name)
                            (fmakunbound! ',name)
                            (fmakunbound! ',(*1*-symbol name)))
                    (get name '*undo-stack*)))))
@@ -3442,7 +3442,6 @@
                     (get (packn (cons name '("-PACKAGE"))) '*undo-stack*))))))
         (attachment
          (cond
-          #+hons ; else this branch will be impossible
           ((eq name *special-cltl-cmd-attachment-mark-name*)
 
 ; This case arises from a call of table-cltl-cmd for (table badge-table ...);
@@ -3455,7 +3454,7 @@
                     (push ',name *defattach-fns*))
                  (get name '*undo-stack*)))
           (t (push `(progn
-                      #+hons (push ',name *defattach-fns*)
+                      (push ',name *defattach-fns*)
                       ,(set-attachment-symbol-form
                         name
 
@@ -3464,7 +3463,6 @@
 
                         (symbol-value (attachment-symbol name))))
                    (get name '*undo-stack*)))))
-        #+hons
         (memoize
 
 ; We check that the function is actually memoized.  See the comment about this
@@ -3473,7 +3471,6 @@
          (push `(when (memoizedp-raw ',name)
                   (unmemoize-fn ',name))
                (get name '*undo-stack*)))
-        #+hons
         (unmemoize
          (let* ((entry (gethash name *memoize-info-ht*))
                 (condition (access memoize-info-ht-entry entry :condition))
@@ -4650,26 +4647,25 @@
 ; is unqualified and hence is to be associated with nil in *hcomp-xxx-alist*
 ; (see function hcomp-alists-from-hts for the check against the current
 ; relevant value).  This last case is likely to be rather unusual, but can
-; happen in the #+hons case if memoization occurs after a definition without
-; being followed by unmemoization (more on this in the next paragraph).  It can
-; also happen if a function is redefined in raw-mode, though of course a trust
-; tag is needed in that case; but we do not guarantee perfect handling of
-; raw-mode, as there might be no raw-mode redefinition during the include-book
-; phase of book certification and yet there might be raw-mode redefinition
-; later during inclusion of the certified book -- anyhow, uses of raw-mode are
-; the user's responsibility.  If not for raw-mode, we might simply avoid any
-; check and consider every add-trip symbol to be qualified or semi-qualified;
-; memoization isn't a problem, since memoize is a no-op in raw Lisp and hash
-; tables are populated during early include-books performed in raw Lisp.
+; happen if memoization occurs after a definition without being followed by
+; unmemoization (more on this in the next paragraph).  It can also happen if a
+; function is redefined in raw-mode, though of course a trust tag is needed in
+; that case; but we do not guarantee perfect handling of raw-mode, as there
+; might be no raw-mode redefinition during the include-book phase of book
+; certification and yet there might be raw-mode redefinition later during
+; inclusion of the certified book -- anyhow, uses of raw-mode are the user's
+; responsibility.  If not for raw-mode, we might simply avoid any check and
+; consider every add-trip symbol to be qualified or semi-qualified; memoization
+; isn't a problem, since memoize is a no-op in raw Lisp and hash tables are
+; populated during early include-books performed in raw Lisp.
 
 ; Note that we take a conservative approach, where memoization can make a
-; symbol unqualified.  The consequence seems small, since as of this writing,
-; memoization is only done in the #+hons version, which is only for ACL2 built
-; on CCL, and CCL compiles on-the-fly; so the marking of an add-trip symbol as
-; unqualified will not result in interpreted code.  A future optimization might
-; be to to avoid disqualification due to memoization in suitable cases, perhaps
-; by tracking raw-mode or trust tags, or perhaps by somehow taking advantage of
-; the 'old-fn field of the *memoize-info-ht* entry.
+; symbol unqualified.  The consequence is likely small for those who build ACL2
+; on CCL or SBCL, since they compile on-the-fly, so the marking of an add-trip
+; symbol as unqualified will not result in interpreted code.  A future
+; optimization might be to to avoid disqualification due to memoization in
+; suitable cases, perhaps by tracking raw-mode or trust tags, or perhaps by
+; somehow taking advantage of the 'old-fn field of the *memoize-info-ht* entry.
 
 ; It is instructive to consider the case that a :program mode definition is
 ; redundant with an earlier :logic mode definition made in the book (or its
@@ -5944,7 +5940,6 @@
 
   (assert (and (symbolp fn) (symbolp sym))) ; else we should use defabbrev
   `(or (eq ,fn (symbol-function ,sym))
-       #+hons
        (let ((entry (gethash ,sym *memoize-info-ht*)))
          (and entry
               (eq ,fn
@@ -6293,9 +6288,9 @@
 ; of that directly here.  We see no need to involve install-for-add-trip or the
 ; like.
 
-           #+hons (let ((var (st-lst name)))
-                    (or (boundp var)
-                        (eval `(defg ,var nil))))
+           (let ((var (st-lst name)))
+             (or (boundp var)
+                 (eval `(defg ,var nil))))
 
 ; As with defconst we want to make it look like we eval'd this defstobj or
 ; defabsstobj in raw lisp, so we set up the redundancy stuff:
@@ -6554,7 +6549,7 @@
 
 ; See maybe-push-undo-stack for relevant discussion of the condition above.
 
-               #+hons (push name *defattach-fns*)
+               (push name *defattach-fns*)
                (install-for-add-trip
 
 ; It may be important here that set-attachment-symbol-form generates a
@@ -6569,7 +6564,6 @@
                       (t (set-attachment-symbol-form name (cdr x))))
                 nil
                 t)))))
-        #+hons
         (memoize
 
 ; Should we push onto the undo-stack first or should we memoize first?  The
@@ -6600,7 +6594,6 @@
                                  :memo-table-init-size (nth 11 tuple)
                                  :aokp       (nth 12 tuple)
                                  :invoke     (nth 14 tuple))))))
-        #+hons
         (unmemoize
          (without-interrupts
           (maybe-push-undo-stack 'unmemoize (cadr cltl-cmd))
@@ -6649,7 +6642,7 @@
               (maybe-pop-undo-stack name)
               (maybe-pop-undo-stack '*user-stobj-alist*)))
           (defpkg nil)
-          ((defconst defmacro #+hons memoize #+hons unmemoize)
+          ((defconst defmacro memoize unmemoize)
             (maybe-pop-undo-stack (cadr (cddr trip))))
           (attachment ; (cddr trip) is produced by attachment-cltl-cmd
            (let ((lst (cdr (cddr trip))))
@@ -6732,7 +6725,6 @@
 ; (especially) by xtrans-eval.
 
     (make-fast-alist (global-val 'translate-cert-data wrld)))
-  #+hons
   (update-memo-entries-for-attachments *defattach-fns* wrld state)
   nil)
 
@@ -7386,7 +7378,6 @@
   (stop-proof-tree-fn *the-live-state*)
   (f-put-global 'ld-skip-proofsp nil *the-live-state*)
   (move-current-acl2-world-key-to-front (w *the-live-state*))
-  #+hons
   (progn (initialize-never-memoize-ht)
          (acl2h-init-memoizations))
   #+ccl
@@ -7428,7 +7419,7 @@
          (global-set 'boot-strap-pass-2 t (w *the-live-state*))
          *the-live-state*)
   (acl2-unwind *ld-level* nil)
-  #+hons (memoize-init) ; for memoize calls in boot-strap-pass-2-b.lisp
+  (memoize-init) ; for memoize calls in boot-strap-pass-2-b.lisp
 
 ; We use an explicit call of LD-fn to change the defun-mode to :logic just to
 ; lay down an event in the pre-history, in case we someday want to poke around
@@ -7443,11 +7434,6 @@
 ; files to be processed in :logic default-defun-mode.
 
 (defconst *acl2-pass-2-files*
-
-; Note that some books depend on "memoize", "hons", and "serialize", even in
-; #-hons.  For example, community book books/misc/hons-help.lisp uses hons
-; primitives.
-
   '("axioms"
     "memoize"
     "hons"
@@ -8135,9 +8121,9 @@
 
 ; The following is a start on checking that we don't have superfluous symbols
 ; in the list values of certain constants.  But in fact there can be such
-; symbols: we want the value for each constant must be independent of
-; features :hons or :acl2-par, yet some macros and functions are only defined
-; when such features are present.  We may think more about this later.
+; symbols: we want the value for each constant to be independent of features,
+; in particular :acl2-par, yet some macros and functions are only defined when
+; such a feature is present.  We may think more about this later.
 
 ;   (let ((undefined-macros
 ;          (loop for x in *initial-macros-with-raw-code*
@@ -9232,11 +9218,6 @@
              *the-live-state*)
             *the-live-state*)))
        (set-gag-mode-fn :goals *the-live-state*)
-       #-hons
-; Hons users are presumably advanced enough to tolerate the lack of a
-; "[RAW LISP]" prompt.
-       (install-new-raw-prompt)
-       #+hons
        (f-put-global 'serialize-character-system #\Z state)
        (f-put-global 'pc-info
                      (make pc-info
@@ -9399,9 +9380,10 @@
 
      (let ((*readtable* *reckless-acl2-readtable*)
 
-; We reduce the compiled file size produced by CCL, even in the #+hons case
-; where we may have set ccl::*save-source-locations* to t.  We have seen an
-; example where this binding reduced the .dx64fsl size from 13696271 to 24493.
+; We reduce the compiled file size produced by CCL, even if we have previously
+; set ccl::*save-source-locations* to t (though we stopped doing so in
+; Version_7.0).  We have seen an example where this binding reduced the
+; .dx64fsl size from 13696271 to 24493.
 
            #+ccl (ccl::*save-source-locations* nil))
        (cond
@@ -10523,9 +10505,7 @@
     :post-gc)))
 
 #+ccl
-(defvar *gc-strategy*
-  #-hons ; else initialized with set-gc-strategy in acl2h-init
-  (progn (ccl::egc nil) t))
+(defvar *gc-strategy*) ; initialized with set-gc-strategy in acl2h-init
 
 #+ccl
 (defun start-sol-gc ()

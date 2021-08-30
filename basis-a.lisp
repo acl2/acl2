@@ -6837,10 +6837,7 @@
 ; (:SIZE 16 :REHASH-SIZE 1.5 :REHASH-THRESHOLD 1.0)
 
   (apply 'make-hash-table
-         `(:test
-           ,(if (eq test 'hons-equal)
-                #+hons 'eql #-hons 'equal
-                test)
+         `(:test ,(if (eq test 'hons-equal) 'eql test)
            ,@(and size `(:size
 
 ; The GCL implementation installed at UT CS on 9/16/2020 does not allow
@@ -7005,7 +7002,6 @@
 
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
 
-  #-hons (declare (ignorable flush-var)) ; irrelevant var without hons
   (cond
    ((endp field-templates) nil)
    (t
@@ -7097,7 +7093,7 @@
               (k v ,var)
               ,@(and inline (list *stobj-inline-declare*))
               (progn
-                #+hons (memoize-flush ,var)
+                (memoize-flush ,var)
                 (setf (gethash ,key (the hash-table ,fld))
                       v)
                 ,var))
@@ -7120,7 +7116,7 @@
               (k ,var)
               ,@(and inline (list *stobj-inline-declare*))
               (progn
-                #+(and hons (not acl2-loop-only))
+                #-acl2-loop-only
                 (memoize-flush ,var)
                 (remhash ,key (the hash-table ,fld))
                 ,var))
@@ -7134,7 +7130,7 @@
              (,clear-name
               (,var)
               (progn
-                #+(and hons (not acl2-loop-only))
+                #-acl2-loop-only
                 (memoize-flush ,var)
                 (clrhash (the hash-table ,fld))
                 ,@(and (not single-fieldp)
@@ -7142,7 +7138,7 @@
              (,init-name
               (ht-size rehash-size rehash-threshold ,var)
               (progn
-                #+(and hons (not acl2-loop-only))
+                #-acl2-loop-only
                 (memoize-flush ,var)
                 (setf ,fld
                       (make-hash-table-with-defaults ',hash-test
@@ -7206,7 +7202,7 @@
                                              ',init
                                              :element-type
                                              ',array-etype)))
-                      #+hons (memoize-flush ,flush-var)
+                      (memoize-flush ,flush-var)
                       (prog1 (setf ,(if single-fieldp
                                         'var
                                       `(svref var ,n))
@@ -7233,7 +7229,7 @@
                             `((type ,array-etype v))))
             ,@(and inline (list *stobj-inline-declare*))
             (progn
-              #+hons (memoize-flush ,flush-var)
+              (memoize-flush ,flush-var)
 
 ; See the long comment below for the updater in the scalar case, about
 ; supporting *1* functions.
@@ -7251,7 +7247,7 @@
            (,updater-name (v ,var)
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
-                            #+hons (memoize-flush ,flush-var)
+                            (memoize-flush ,flush-var)
 
 ; For the case of a stobj field, we considered causing an error here since the
 ; raw Lisp code for stobj-let avoids calling updaters because there is no need:
@@ -7281,7 +7277,7 @@
                                   `((declare (type ,scalar-type v))))
                            ,@(and inline (list *stobj-inline-declare*))
                            (progn
-                             #+hons (memoize-flush ,flush-var)
+                             (memoize-flush ,flush-var)
                              (setf (get-stobj-scalar-field ,scalar-type ,fld)
                                    (the$ ,scalar-type v))
                              ,var)))))))
@@ -7632,7 +7628,6 @@
 ; WARNING: If you change the formals of these generated raw defs be
 ; sure to change the formals of the corresponding axiomatic defs.
 
-  #-hons (declare (ignore congruent-stobj-rep))
   (let* ((recog (access defstobj-template template :recognizer))
          (creator (access defstobj-template template :creator))
          (fixer (access defstobj-template template :fixer))
@@ -7655,16 +7650,15 @@
        ,(defstobj-fixer-def name fixer recog creator t)
        ,@(defstobj-field-fns-raw-defs
            name
-           #-hons nil
-           #+hons (cond
-                   ((access defstobj-template template :non-memoizable)
-                    nil)
-                   (wrld (let ((congruent-to (access defstobj-template template
-                                                     :congruent-to)))
-                           (if congruent-to
-                               (congruent-stobj-rep congruent-to wrld)
-                             name)))
-                   (t congruent-stobj-rep))
+           (cond
+            ((access defstobj-template template :non-memoizable)
+             nil)
+            (wrld (let ((congruent-to (access defstobj-template template
+                                              :congruent-to)))
+                    (if congruent-to
+                        (congruent-stobj-rep congruent-to wrld)
+                      name)))
+            (t congruent-stobj-rep))
            inline 0 field-templates)))))
 
 (defun defconst-name (name)
@@ -7756,7 +7750,7 @@
          (init-form (defstobj-raw-init template))
          (the-live-name (the-live-var name)))
     `(progn
-       #+hons ,@(and (null congruent-to)
+       ,@(and (null congruent-to)
 
 ; It has occurred to us that this defg form might be avoidable when
 ; non-memoizable is true, since the purpose of st-lst is probably only to
@@ -7764,7 +7758,7 @@
 ; form even when non-memoizable is true, so we go ahead and do so rather than
 ; think carefully about avoiding it.
 
-                     `((defg ,(st-lst name) nil)))
+              `((defg ,(st-lst name) nil)))
 
 ; Now we lay down the defuns of the recognizers, accessors and updaters as
 ; generated by defstobj-raw-defs.  The boilerplate below just adds the DEFUN to
@@ -8532,8 +8526,7 @@
            (princ$ header channel state-state)
            (unless (eql (char header (1- (length header))) #\Newline)
              (terpri stream))))
-       (or #+hons
-           (let ((serialize-character
+       (or (let ((serialize-character
                   (and (not controlp)
                        control)))
              (cond (serialize-character
@@ -8555,9 +8548,9 @@
 
 (defun print-object$ (x channel state)
 
-; WARNING: In the HONS version, be sure to use with-output-object-channel-sharing
-; rather than calling open-output-channel directly, so that
-; *print-circle-stream* is initialized.
+; WARNING: Be sure to use with-output-object-channel-sharing rather than
+; calling open-output-channel directly, so that *print-circle-stream* is
+; initialized.
 
 ; We believe that if in a single Common Lisp session, one prints an object and
 ; then reads it back in with print-object$ and read-object, one will get back

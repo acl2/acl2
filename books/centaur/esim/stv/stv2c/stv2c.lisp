@@ -26,14 +26,6 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
-; Added 10/17/2013 by Matt K.: Making this hons-only, because the proof of
-; RETURN-TYPE-OF-STV2C-OUTPUT-STUFF-AUX seems to bog down in ACL2 as opposed to
-; ACL2(h), perhaps because worse-than needs to be memoized.
-; NOTE: perhaps this no longer needs to be hons-only, given the new clocked
-; scheme for the "worse-than" algorithm (see source function
-; worse-than-builtin-clocked).
-; cert_param: (hons-only)
-
 ; stv2c.lisp -- translates STVs into C++ functions
 ;
 ; Original author: Jared Davis

@@ -32,8 +32,6 @@
 (include-book "tools/include-raw" :dir :system)
 ; (depends-on "hons-check-raw.lsp")
 
-; cert_param: (hons-only)
-
 (defun unsound-normedp (x)
   (declare (xargs :guard t)
            (ignorable x))

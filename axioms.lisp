@@ -5311,7 +5311,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   '*aokp*)
 
-#+hons
 (defmacro update-attached-fn-called (fn)
   `(when (eq *aokp* t)
      (setq *aokp* ,fn)))
@@ -5340,7 +5339,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                         '(or (aokp)
                              *warrant-reqs*)
                       '(aokp)))
-              #+hons
               (update-attached-fn-called ',fn)
               (funcall ,(if *1*-p
                             `(*1*-symbol ,at-fn-var)
@@ -6550,153 +6548,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (cons (list (car args) (list 'mv-nth i call))
                  (make-mv-nths (cdr args) call (+ i 1))))))
 
-#-(or acl2-loop-only acl2-mv-as-values)
-(defun mv-bindings (lst)
-
-; Gensym a var for every element of lst except the last and pair
-; that var with its element in a doublet.  Return the list of doublets.
-
-  (cond ((null (cdr lst)) nil)
-        (t (cons (list (gensym) (car lst))
-                 (mv-bindings (cdr lst))))))
-
-#-(or acl2-loop-only acl2-mv-as-values)
-(defun mv-set-mvs (bindings i)
-  (cond ((null bindings) nil)
-        (t (cons `(set-mv ,i ,(caar bindings))
-                 (mv-set-mvs (cdr bindings) (1+ i))))))
-
 (defmacro mv (&rest l)
   (declare (xargs :guard (>= (length l) 2)))
   #+acl2-loop-only
   (cons 'list l)
-  #+(and (not acl2-loop-only) acl2-mv-as-values)
-  (return-from mv (cons 'values l))
-  #+(and (not acl2-loop-only) (not acl2-mv-as-values))
-
-; In an earlier version of the mv macro, we had a terrible bug.
-; (mv a b ... z) expanded to
-
-; (LET ((#:G1 a))
-;   (SET-MV 1 b)
-;   ...
-;   (SET-MV k z)
-;   (SETQ *MOST-RECENT-MULTIPLICITY* 3)
-;   #:G1)
-
-; Note that if the evaluation of z uses a multiple value then it overwrites the
-; earlier SET-MV.  Now this expansion is safe if there are only two values
-; because the only SET-MV is done after the second value is computed.  If there
-; are three or more value forms, then this expansion is also safe if all but
-; the first two are atomic.  For example, (mv & & (killer)) is unsafe because
-; (killer) may overwrite the SET-MV, but (mv & & STATE) is safe because the
-; evaluation of an atomic form is guaranteed not to overwrite SET-MV settings.
-; In general, all forms after the second must be atomic for the above expansion
-; to be used.
-
-; Suppose we are using GCL.  In some cases we can avoid boxing fixnums that are
-; the first value returned, by making the following two optimizations.  First,
-; we insert a declaration when we see (mv (the type expr) ...) where type is
-; contained in the set of fixnums.  Our second optimization is for the case
-; of (mv v ...) where v is an atom, when we avoid let-binding v.  To see why
-; this second optimization is helpful, consider the following definition.
-
-; (defun foo (x y)
-;   (declare (type (signed-byte 30) x))
-;   (the-mv 2
-;           (signed-byte 30)
-;           (mv x (cons y y))))
-
-; If we submit this definition to ACL2, the proclaim-form mechanism arranges
-; for the following declaim form to be evaluated.
-
-; (DECLAIM (FTYPE (FUNCTION ((SIGNED-BYTE 30) T)
-;                           (VALUES (SIGNED-BYTE 30)))
-;                 FOO))
-
-; Now let us exit the ACL2 loop and then, in raw Lisp, call disassemble on the
-; above defun.  Without our second optimization there is boxing: a call of
-; CMPmake_fixnum in the output of disassemble.  That happens because (mv x
-; (cons y y)) macroexpands to something like this:
-
-; (LET ((#:G5579 X)) (SET-MV 1 (CONS Y Y)) #:G5579)
-
-; With the second optimization, however, we get this macroexpansion instead:
-
-; (LET () (SET-MV 1 (CONS Y Y)) X)
-
-; GCL can see that the fixnum declaration for x applies at the occurrence
-; above, but fails (as of this writing, using GCL 2.6.8) to recognize that the
-; above gensym is a fixnum.
-
-  (cond ((atom-listp (cddr l))
-
-; We use the old expansion because it is safe and more efficient.
-
-         (let* ((v (if (atom (car l))
-                       (car l)
-                     (gensym)))
-                (bindings (if (atom (car l))
-                              nil
-                            `((,v ,(car l))))))
-           `(let ,bindings
-
-; See comment above regarding boxing fixnums.
-
-              ,@(and (consp (car l))
-                     (let ((output (macroexpand-till (car l) 'the)))
-                       (cond ((and (consp output)
-                                   (eq 'the (car output)))
-                              `((declare (type ,(cadr output) ,v))))
-                             (t nil))))
-              ,@(let (ans)
-                  (do ((tl (cdr l) (cdr tl))
-                       (i 1 (1+ i)))
-                      ((null tl))
-                      (push `(set-mv ,i ,(car tl))
-                            ans))
-                  (nreverse ans))
-              ,v)))
-        (t
-
-; We expand (mv a b ... y z) to
-; (LET ((#:G1 a)
-;       (#:G2 b)
-;       ...
-;       (#:Gk y))
-;  (SET-MV k z)
-;  (SET-MV 1 #:G2)
-;  ...
-;  (SET-MV k-1 #:Gk)
-;  #:G1)
-
-         (let* ((cdr-bindings (mv-bindings (cdr l)))
-                (v (if (atom (car l))
-                       (car l)
-                     (gensym)))
-                (bindings (if (atom (car l))
-                              cdr-bindings
-                            (cons (list v (car l))
-                                  cdr-bindings))))
-           `(let ,bindings
-
-; See comment above regarding boxing fixnums.
-
-              ,@(and (consp (car l))
-                     (let ((output (macroexpand-till (car l) 'the)))
-                       (cond ((and (consp output)
-                                   (eq 'the (car output)))
-                              `((declare (type ,(cadr output) ,v))))
-                             (t nil))))
-              (set-mv ,(1- (length l)) ,(car (last l)))
-              ,@(mv-set-mvs cdr-bindings 1)
-              ,v)))))
+  #-acl2-loop-only
+  (return-from mv (cons 'values l)))
 
 (defmacro mv? (&rest l)
 
 ; Why not simply extend mv and mv-let to handle single values?  The reason is
 ; that there seem to be problems with defining (mv x) to be (list x) and other
 ; problems with defining (mv x) to be x.
+
+;;;;;;;;;;
+; NOTE: Some of the discussion below may well be obsolete now after removing
+; feature :acl2-mv-as-values in late August 2021 because it was always true.
+;;;;;;;;;;
 
 ; To see potential problems with defining (mv x) = (list x), consider this
 ; form:
@@ -6753,24 +6621,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        (list 'mv-list (length (car rst)) (cadr rst))
                        0)
          (cddr rst))
-  #+(and (not acl2-loop-only) acl2-mv-as-values)
-  (return-from mv-let (cons 'multiple-value-bind rst))
-  #+(and (not acl2-loop-only) (not acl2-mv-as-values))
-  (cond ((> (length (car rst)) (+ 1 *number-of-return-values*))
-         (interface-er
-          "Need more *return-values*.  Increase ~
-           *number-of-return-values* and recompile ACL2."))
-        (t
-         `(let ((,(car (car rst)) ,(cadr rst))
-                (,(cadr (car rst)) (mv-ref 1))
-                ,@(let (ans)
-                    (do ((tl (cddr (car rst)) (cdr tl))
-                         (i 2 (1+ i)))
-                        ((null tl))
-                        (push (list (car tl) `(mv-ref ,i))
-                              ans))
-                    (nreverse ans)))
-            ,@ (cddr rst)))))
+  #-acl2-loop-only
+  (return-from mv-let (cons 'multiple-value-bind rst)))
 
 (defmacro mv?-let (vars form &rest rst)
 
@@ -10728,7 +10580,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; length 359,153 (in a post-4.3 development version), and it took about 1/50
 ; second to do this check without the above shortcut; so performance didn't
 ; seem too critical an issue here.  However, the regression slowed down
-; significantly without the shortcut.  Here are statistics from HONS
+; significantly without the shortcut.  Here are statistics from (HONS)
 ; regressions using identical books, on the same unloaded machine.
 
 ; With shortcut:
@@ -13638,95 +13490,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; recompiled.  Currently, the first 10 locations are handled specially
 ; in releases of AKCL past 206.
 
-#-(or acl2-loop-only acl2-mv-as-values)
-(progn
-
-(defparameter *return-values*
-  (let (ans)
-    (do ((i *number-of-return-values* (1- i))) ((= i 0))
-        (push (intern (format nil "*return-value-~a*" i))
-              ans))
-    ans))
-
-(defmacro declare-return-values ()
-  (cons 'progn (declare-return-values1)))
-
-(defun declare-return-values1 ()
-  (mapcar #'(lambda (v) `(defvar ,v))
-          *return-values*))
-
-(eval-when
- #-cltl2
- (load eval compile)
- #+cltl2
- (:load-toplevel :execute :compile-toplevel)
- (declare-return-values))
-
-(defun in-akcl-with-mv-set-and-ref ()
-  (member :akcl-set-mv *features*))
-
-(defconstant *akcl-mv-ref-and-set-inclusive-upper-bound* 9)
-
-(defmacro special-location (i)
-  (cond ((or (not (integerp i))
-             (< i 1))
-         (acl2::interface-er
-          "Macro calls of special-location must have an explicit ~
-           positive integer argument, which is not the case with ~x0." i))
-        ((> i *number-of-return-values*)
-         (acl2::interface-er "Not enough built-in return values."))
-        (t (nth (1- i) *return-values*))))
-
-(defmacro set-mv (i v)
-  (cond ((or (not (integerp i))
-             (< i 1))
-         (interface-er
-          "The first argument to a macro call of set-mv must be ~
-           an explicit positive integer, but that is not the case ~
-           with ~A." i))
-        #+akcl
-        ((and (in-akcl-with-mv-set-and-ref)
-              (<= i *akcl-mv-ref-and-set-inclusive-upper-bound*))
-         `(system::set-mv ,i ,v))
-        (t `(setf (special-location ,i) ,v))))
-
-(defmacro mv-ref (i)
-  (cond ((or (not (integerp i))
-             (< i 1))
-         (interface-er
-          "The argument to macro calls of mv-ref must be an ~
-           explicit positive integer, but that is not the case with ~x0." i))
-        #+akcl
-        ((and (in-akcl-with-mv-set-and-ref)
-              (<= i *akcl-mv-ref-and-set-inclusive-upper-bound*))
-         `(system::mv-ref ,i))
-        (t `(special-location ,i))))
-
-(defun mv-refs-fn (i)
-  (let (ans)
-    (do ((k i (1- k)))
-        ((= k 0))
-        (push `(mv-ref ,k)
-              ans))
-    ans))
-
-(defmacro mv-refs (i)
-  (cond
-   ((and (natp i) (< i *number-of-return-values*)) ; optimization
-    (cons 'list (mv-refs-fn i)))
-   (t
-    `(case ,i
-       ,@(let (ans)
-           (do ((j *number-of-return-values* (1- j)))
-               ((= j 0))
-               (push
-                `(,j (list ,@(mv-refs-fn j)))
-                ans))
-           ans)
-       (otherwise (interface-er "Not enough return values."))))))
-
-)
-
 (defun cdrn (x i)
   (declare (xargs :guard (and (integerp i)
                               (<= 0 i))))
@@ -13740,14 +13503,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (ignore input-arity))
   x)
 
-#+(and (not acl2-loop-only) acl2-mv-as-values)
+#-acl2-loop-only
 (defmacro mv-list (input-arity x)
   (declare (ignore input-arity))
   `(multiple-value-list ,x))
-
-#+(and (not acl2-loop-only) (not acl2-mv-as-values))
-(defmacro mv-list (input-arity x)
-  `(cons ,x (mv-refs (1- ,input-arity))))
 
 (defmacro swap-stobjs (x y)
 
@@ -14026,33 +13785,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (true-listp st)))
   (update-nth 14 x st))
 
-#-acl2-mv-as-values
-(defconst *initial-raw-arity-alist*
-
-; The list below is used for printing raw mode results.  It should include any
-; functions that we know have arity 1 (in the sense of mv) but are not in
-; *common-lisp-symbols-from-main-lisp-package*.
-
-; The symbol :last means that the number of values returned by the call is the
-; number of values returned by the last argument.
-
-  '((er-progn . :last)
-    (eval-when . :last) ; needed?
-    (let . :last)
-    (let* . :last)
-    (make-event . 3)
-    (mv-let . :last)
-    (prog2$ . :last)
-    (progn . :last)
-    (the . :last) ; needed?
-    (time . :last)
-    (trace . 1)
-    (untrace . 1)
-    (set-raw-mode-on . 3)
-    (set-raw-mode-off . 3)
-    (mv-list . 1)
-    (return-last . :last)))
-
 (defconst *initial-checkpoint-processors*
 
 ; This constant is used in the implementation of proof-trees.
@@ -14148,7 +13880,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     chk-package-reincarnation-import-restrictions ; [-restrictions2 version]
     untrace$-fn1 ; eval
     bdd-top ; (GCL only) si::sgc-on
-    defstobj-field-fns-raw-defs ; call to memoize-flush when #+hons
+    defstobj-field-fns-raw-defs ; call to memoize-flush
     times-mod-m31 ; gcl has raw code
     iprint-ar-aref1
     prove ; #+write-arithmetic-goals
@@ -14435,7 +14167,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     DEFUN THE > <= >= + - / 1+ 1- PROGN DEFMACRO COND CASE LIST*
     APPEND DEFCONST IN-PACKAGE INTERN FIRST SECOND THIRD FOURTH FIFTH
     SIXTH SEVENTH EIGHTH NINTH TENTH DIGIT-CHAR-P
-    UNMEMOIZE MEMOIZE ; for #+hons
+    UNMEMOIZE MEMOIZE
     DEFUNS-STD DEFTHM-STD DEFUN-STD ; for #+:non-standard-analysis
     POR PAND PLET PARGS ; for #+acl2-par
     SPEC-MV-LET ; for #+acl2-par
@@ -14902,7 +14634,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (saved-output-token-lst . nil)
     (script-mode . nil)
     (serialize-character . nil)
-    (serialize-character-system . nil) ; set for #+hons in LP
+    (serialize-character-system . nil) ; set in LP
     (show-custom-keyword-hint-expansion . nil)
     (skip-notify-on-defttag . nil)
     (skip-proofs-by-system . nil)
@@ -16191,80 +15923,29 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (progn
 
+; At one time, the mv implementation returned only the first value and saving
+; the other values in globals.  These forms were included to deal with that
+; implementation of mv.
+
 (defmacro our-multiple-value-prog1 (form &rest other-forms)
 
-; WARNING: If other-forms causes any calls to mv, then use protect-mv so that
-; when #-acl2-mv-as-values, the multiple values returned by evaluation of form
-; are those returned by the call of our-multiple-value-prog1.
+; This is just multiple-value-prog1 now; see comment above about the mv
+; implementation.
 
-  `(#+acl2-mv-as-values
-    multiple-value-prog1
-    #-acl2-mv-as-values
-    prog1
-    ,form
-    ,@other-forms))
+  `(multiple-value-prog1 ,form ,@other-forms))
 
 (eval `(mv ,@(make-list *number-of-return-values* :initial-element 0)))
-
-#-acl2-mv-as-values
-(defconst *mv-vars*
-  (let ((ans nil))
-    (dotimes (i (1- *number-of-return-values*))
-      (push (gensym) ans))
-    ans))
-
-#-acl2-mv-as-values
-(defconst *mv-var-values*
-  (mv-refs-fn (1- *number-of-return-values*)))
-
-#-acl2-mv-as-values
-(defconst *mv-extra-var* (gensym))
 
 (defun protect-mv (form &optional multiplicity)
 
 ; We assume here that form is evaluated only for side effect and that we don't
 ; care what is returned by protect-mv.  All we care about is that form is
 ; evaluated and that all values stored by mv will be restored after the
-; evaluation of form.
+; evaluation of form -- which is no longer an issue (see comment above about
+; the mv implementation).
 
-  #+acl2-mv-as-values
   (declare (ignore multiplicity))
-  #-acl2-mv-as-values
-  (when (and multiplicity
-             (not (and (integerp multiplicity)
-                       (< 0 multiplicity))))
-    (error "PROTECT-MV must be called with an explicit multiplicity, when ~
-            supplied, unlike ~s"
-           multiplicity))
-  `(progn
-     #+acl2-mv-as-values
-     ,form
-     #-acl2-mv-as-values
-     ,(cond
-       ((eql multiplicity 1)
-        form)
-       ((eql multiplicity 2)
-        `(let ((,(car *mv-vars*)
-                ,(car *mv-var-values*)))
-           ,form
-           (mv 0 ,(car *mv-vars*))))
-       (t (mv-let (mv-vars mv-var-values)
-                  (cond (multiplicity
-                         (mv (nreverse
-                              (let ((ans nil)
-                                    (tail *mv-vars*))
-                                (dotimes (i (1- multiplicity))
-                                  (push (car tail) ans)
-                                  (setq tail (cdr tail)))
-                                ans))
-                             (mv-refs-fn (1- multiplicity))))
-                        (t (mv *mv-vars* *mv-var-values*)))
-                  `(mv-let ,(cons *mv-extra-var* mv-vars)
-                           (mv 0 ,@mv-var-values)
-                           (declare (ignore ,*mv-extra-var*))
-                           (progn ,form
-                                  (mv 0 ,@mv-vars))))))
-     nil))
+  `(progn ,form nil))
 )
 
 #-acl2-loop-only
@@ -17519,7 +17200,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq key :ruler-extenders)
          (or (eq val :all)
              (chk-ruler-extenders val hard 'acl2-defaults-table world)))
-        #+hons
         ((eq key :memoize-ideal-okp)
          (or (eq val :warn)
              (booleanp val)))
@@ -17975,11 +17655,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun w (state)
   (declare (xargs :guard (state-p state)
 
-; We have moved the definition of w up to here, so that we can call it from
-; hons-enabledp, which is called from set-serialize-character, which we prefer
-; to define before print-object$.  We have verified its guards successfully
-; later in this file, where w was previously defined.  So rather fight that
-; battle here, we verify guards at the location of its original definition.
+; The following comment explains how this definition was located here back when
+; hons-enabledp was defined (before its elimination in August 2021, since after
+; that it would always return t).
+
+;   We have moved the definition of w up to here, so that we can call it from
+;   hons-enabledp, which is called from set-serialize-character, which we
+;   prefer to define before print-object$.  We have verified its guards
+;   successfully later in this file, where w was previously defined.  So rather
+;   fight that battle here, we verify guards at the location of its original
+;   definition.
 
                   :verify-guards nil))
   (f-get-global 'current-acl2-world state))
@@ -17989,59 +17674,33 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (boundp-global 'serialize-character state))))
   (f-get-global 'serialize-character state))
 
-(defun hons-enabledp (state)
-
-; ACL2 is now (starting with Version_7.2) always hons-enabled.  But we keep
-; this function around, as well as other code that supported builds that are
-; not hons-enabled, just in case we want to restore the ability to create such
-; builds.  Anyone who wants to do so should visit every occurrence of
-; "hons-enabled" in these sources.  Indeed, there may be very little necessary,
-; since we intend (at least for awhile) to leave the code in place that allows
-; for hons-enabled builds.  However, some error messages (for example) may
-; change, as in the "illegal to build ... non-ANSI" message in acl2-init.lisp.
-
-  (declare (xargs :verify-guards nil ; wait for w
-                  :guard (state-p state)))
-  (global-val 'hons-enabled (w state)))
-
 (defun set-serialize-character-fn (c system-p state)
-  (declare (xargs :verify-guards nil ; wait for hons-enabledp
+  (declare (xargs :verify-guards nil ; originally waited for hons-enabledp
                   :guard (and (state-p state)
                               (or (null c)
-                                  (and (hons-enabledp state)
-                                       (member c '(#\Y #\Z)))))))
+                                  (member c '(#\Y #\Z))))))
   (let ((caller (if system-p
                     'serialize-character-system
                   'serialize-character)))
     (cond
      ((or (null c)
-          (and (hons-enabledp state)
-               (member c '(#\Y #\Z))))
+          (member c '(#\Y #\Z)))
       (if system-p
           (f-put-global 'serialize-character-system c state)
         (f-put-global 'serialize-character c state)))
      (t ; presumably guard-checking is off
       (prog2$
-       (cond ((not (hons-enabledp state)) ; and note that c is not nil
-              (er hard caller
-                  "It is currently only legal to call ~x0 with a non-nil ~
-                   first argument in a hons-enabled version of ACL2.  If this ~
-                   presents a problem, feel free to contact the ACL2 ~
-                   implementors."
-                  caller))
-             (t
-              (er hard caller
-                  "The first argument of a call of ~x0 must be ~v1.  The ~
-                   argument ~x2 is thus illegal."
-                  caller '(nil #\Y #\Z) c)))
+       (er hard caller
+           "The first argument of a call of ~x0 must be ~v1.  The argument ~
+            ~x2 is thus illegal."
+           caller '(nil #\Y #\Z) c)
        state)))))
 
 (defun set-serialize-character (c state)
-  (declare (xargs :verify-guards nil ; wait for hons-enabledp
+  (declare (xargs :verify-guards nil ; originally waited for hons-enabledp
                   :guard (and (state-p state)
                               (or (null c)
-                                  (and (hons-enabledp state)
-                                       (member c '(#\Y #\Z)))))))
+                                  (member c '(#\Y #\Z))))))
   (set-serialize-character-fn c nil state))
 
 (defun set-serialize-character-system (c state)
@@ -18054,11 +17713,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; make basic \
 ; ACL2_CUSTOMIZATION=`pwd`/../acl2-customization-files/no-serialize.lisp
 
-  (declare (xargs :verify-guards nil ; wait for hons-enabledp
+  (declare (xargs :verify-guards nil ; originally waited for hons-enabledp
                   :guard (and (state-p state)
                               (or (null c)
-                                  (and (hons-enabledp state)
-                                       (member c '(#\Y #\Z)))))))
+                                  (member c '(#\Y #\Z))))))
   (set-serialize-character-fn c t state))
 
 ; The following may have been created in support of print-object$.
@@ -19335,7 +18993,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; state.
 
 ; Note that read-object establishes a new context for #n= reader macros, as it
-; calls read (or hons-read) with a recursive-p argument of nil.
+; calls read with a recursive-p argument of nil.
 
 ; Wart: We use state-state instead of state because of a bootstrap problem.
 
@@ -19389,11 +19047,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    ((eq channel *standard-oi*)
                     (ccl::toplevel-read))
 
-; (Comment for #+hons.)  In the case of #+hons, we formerly called a function
-; hons-read here when (f-get-global 'hons-read-p *the-live-state*) was true.
-; That had the unfortunate behavior of hons-copying every object, which can be
-; too expensive for large, unhonsed structures.  This problem has been fixed
-; with the addition of source files serialize[-raw].lisp, contributed by Jared
+; We formerly called a function hons-read here when (f-get-global 'hons-read-p
+; *the-live-state*) was true (in ACL2 versions that supported hons).  That had
+; the unfortunate behavior of hons-copying every object, which can be too
+; expensive for large, unhonsed structures.  This problem has been fixed with
+; the addition of source files serialize[-raw].lisp, contributed by Jared
 ; Davis.
 
                    (t
@@ -20092,7 +19750,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (local (in-theory (enable boundp-global1)))
 
 (verify-guards w)
-(verify-guards hons-enabledp)
 (verify-guards set-serialize-character-fn)
 (verify-guards set-serialize-character)
 (verify-guards set-serialize-character-system)
@@ -22320,10 +21977,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(f-get-global ',x state))
 
 ; We have found it useful, especially for proclaiming of FMT functions, to have
-; a version `the2s' of the macro `the', for the multiple value case.  Note that
-; the value returned in raw lisp by (mv x y ...) is x (unless feature
-; acl2-mv-as-values is set), so for example, we can avoid boxing the fixnum x
-; by suitable declarations and proclamations.
+; a version `the2s' of the macro `the', for the multiple value case.  At one
+; time, the value returned in raw lisp by (mv x y ...) was x.  That changed
+; when mv became values in raw Lisp, rather than using a special return
+; mechanism in GCL.  But perhaps we can avoid boxing the fixnum x in GCL by
+; suitable declarations and proclamations; we'll just keep the2s around for
+; now.
 
 (defun subst-for-nth-arg (new n args)
   (declare (xargs :mode :program))
@@ -22390,15 +22049,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #-acl2-loop-only
 (defmacro the-mv (vars type body &optional state-pos)
-  (declare (ignore #-acl2-mv-as-values vars
-                   state-pos))
-  #+acl2-mv-as-values (list 'the
-                            `(values ,type ,@(make-list (if (integerp vars)
-                                                            (1- vars)
-                                                          (length (cdr vars)))
-                                                        :initial-element t))
-                            body)
-  #-acl2-mv-as-values (list 'the type body))
+  (declare (ignore state-pos))
+  (list 'the
+        `(values ,type ,@(make-list (if (integerp vars)
+                                        (1- vars)
+                                      (length (cdr vars)))
+                                    :initial-element t))
+        body))
 
 (defmacro the2s (x y)
   (list 'the-mv 2 x y 1))
@@ -27069,9 +26726,7 @@ Lisp definition."
          #+(or allegro clisp)
 
 ; For Allegro and CLISP, the time utilities are such that it can be useful to
-; print a newline before printing a top-level result.  Note that we can use
-; prog1 for these Lisps today (Sept. 2009), but we consider the possibility of
-; #+acl2-mv-as-values for these lisps in the future.
+; print a newline before printing a top-level result.
 
          (our-multiple-value-prog1
           (time ,x)
@@ -29269,3 +28924,10 @@ Lisp definition."
     (if (consp (car al))
         (+ 1 (count-keys (hons-remove-assoc (caar al) (cdr al))))
       (count-keys (cdr al)))))
+
+(defun hons-enabledp (state)
+  (declare (xargs :guard (state-p state))
+           (ignorable state))
+  (prog2$ (cw "WARNING: ~x0 is deprecated!~%"
+              'hons-enabledp)
+          t))

@@ -177,7 +177,6 @@
                (aig-vars-fast1 x nodetable memtable nil))))
       (setf (gethash x memtable) ans))))
 
-#+HONS
 (unless (memoizedp-raw 'aig-vars-fast)
   (mf-note-arity 'aig-vars-fast 1 1)
   (profile 'aig-vars-fast))
