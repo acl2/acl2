@@ -33,7 +33,6 @@
 (defthmd split-chars-aux-correct-1
   (implies (and (member char chars) ;this case
                 (character-listp chars)
-                (characterp char)
                 (character-listp acc))
            (and (mv-nth 0 (split-chars-aux chars char acc)) ; foundp
                 (equal (append (mv-nth 1 (split-chars-aux chars char acc))
@@ -125,8 +124,7 @@
 
 (defthmd split-chars-correct-1
   (implies (and (member char chars) ;this case
-                (character-listp chars)
-                (characterp char))
+                (character-listp chars))
            (and (mv-nth 0 (split-chars chars char)) ; foundp
                 (equal (append (mv-nth 1 (split-chars chars char))
                                (list char)

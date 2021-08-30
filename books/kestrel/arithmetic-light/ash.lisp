@@ -19,6 +19,7 @@
 (local (include-book "divides"))
 (local (include-book "times-and-divides"))
 (local (include-book "times"))
+(local (include-book "plus"))
 
 (in-theory (disable ash))
 
@@ -44,9 +45,9 @@
 ;;todo: combine with other rules?
 ;; avoids name clash
 (defthm unsigned-byte-p-of-ash-alt
-  (implies (and (natp c) ;; positive count means a left shift
+  (implies (and (natp c)
                 (unsigned-byte-p (- size c) i)
-                (natp size))
+                (acl2-numberp size))
            (unsigned-byte-p size (ash i c)))
   :hints (("Goal"
            :use (:instance <-of-*-and-*-cancel

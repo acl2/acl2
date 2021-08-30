@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/forms" :dir :system)
+(include-book "forms")
 
 ;; Basically the same as lambda-formals, but this one is a function, so we can
 ;; disable it.

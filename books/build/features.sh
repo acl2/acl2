@@ -45,9 +45,9 @@
 # We first run ACL2 on the cert_features.lsp script, which begins by
 # setting up several variables (in Makefile syntax) in
 # Makefile-features.  These primarily are features of ACL2 itself --
-# ACL2_HAS_HONS, ACL2_HAS_PARALLEL, etc.  But we also set
-# USE_QUICKLISP if it is not already set, because by default we set it
-# to 1 except if the host Lisp is GCL.
+# ACL2_HAS_PARALLEL etc.  But we also set USE_QUICKLISP if it is not
+# already set, because by default we set it to 1 except if the host
+# Lisp is GCL.
 
 # cert_features.lsp also sets up a few .certdep files that determine
 # whether certain books need to be updated due to a change in

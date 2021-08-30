@@ -38,13 +38,15 @@
 
 (local (in-theory (disable equal-of-*-2-of-floor-of-2-same)))
 
+;rename
 (defthm mod-expt-mod
-  (implies (and (posp n)
-                (integerp a))
+  (implies (posp n)
            (equal (mod (mod a (expt 2 n)) 2)
                   (mod a 2)))
-  :hints (("Goal" :in-theory (disable ;DIVISIBILITY-IN-TERMS-OF-FLOOR
-                              mod-cancel))))
+  :hints (("Goal" :cases ((not (acl2-numberp a))
+                          (rationalp a))
+           :in-theory (disable ;DIVISIBILITY-IN-TERMS-OF-FLOOR
+                       mod-cancel))))
 
 ;gross proof? use a bound lemma?
 (defthm integerp-of-*-of-/-and-mod
@@ -88,8 +90,9 @@
 (local (in-theory (disable mod-minus)))
 
 (defthm mod-of-mod-of-expt-of-2-and-2
-  (implies (and (natp size)
-                (integerp x))
+  (implies (and ;(natp size)
+                (integerp x)
+                )
            (equal (mod (mod x (expt 2 size)) 2)
                   (if (zp size)
                       0
@@ -97,14 +100,14 @@
 
 ;just a special case..
 (defthm mod-of-mod-2-expt-2
-  (implies (and (integerp x)
+  (implies (and (rationalp x)
                 (posp n))
            (equal (mod (mod x 2) (expt 2 n))
                   (mod x 2))))
 
 (defthmd <-of-mod
   (implies (and (<= y k)
-                (rationalp k)
+                ;(rationalp k)
                 (rationalp x) ;why?
  ;               (<= 0 x)
 ;                (posp y)
@@ -114,9 +117,7 @@
            (< (mod x y) k)))
 
 (defthm mod-of-*-of-same-2
-  (implies (and (rationalp y)
-                (integerp (* y z))
-                (rationalp x))
+  (implies (integerp (* y z))
            (equal (mod (* y x z) x)
                   0))
   :hints (("Goal" :cases ((equal x 0)))))
@@ -194,7 +195,7 @@
                              (not (quotep x))))
                (integerp y)
                (integerp x)
-               (rationalp free)
+               ;; (rationalp free)
                (integerp p)
                (< 0 p))
           (equal (mod (+ x y) p)
@@ -206,7 +207,7 @@
                               (not (quotep x))))
                 (integerp y)
                 (integerp x)
-                (rationalp free)
+                ;; (rationalp free)
                 (integerp p)
                 (< 0 p))
            (equal (mod (+ y x) p)
@@ -214,9 +215,10 @@
 
 ;if two close numbers have the same remainder, they are equal
 (defthm same-remainder-when-close-helper
-  (implies (and (natp i)
-                (posp k)
-                (natp diff)
+  (implies (and (rationalp i)
+                (rationalp k)
+                (<= 0 diff)
+                (integerp diff) ;gen?
                 (equal (mod i k) (mod (+ i diff) k))
                 (< diff k))
            (equal diff 0))
@@ -242,9 +244,9 @@
 ;; if i and j are within k of each other, then (i ~ j mod k) iff i=j
 
 (defthmd same-remainder-when-close-helper2
-  (IMPLIES (AND (NATP I)
-                (NATP J)
-                (NATP K)
+  (IMPLIES (AND (integerp I)
+                (integerp J)
+                (rationalp K)
                 (< I J)
                 (< (+ (- I) J) K))
            (NOT (EQUAL (MOD I K) (MOD J K))))
@@ -254,19 +256,18 @@
 (defthm same-remainder-when-close-helper3
   (implies (and (<= i j)
                 (< (- j i) k)
-                (natp i)
-                (natp j)
-                (natp k)
-                )
+                (integerp i)
+                (integerp j)
+                (rationalp k))
            (equal (equal (mod i k) (mod j k))
                   (equal i j)))
   :hints (("Goal" :use (:instance same-remainder-when-close-helper2))))
 
 (defthm same-remainder-when-close
   (implies (and (< (abs (- i j)) k)
-                (natp i)
-                (natp j)
-                (natp k))
+                (integerp i)
+                (integerp j)
+                (rationalp k))
            (equal (equal (mod i k) (mod j k))
                   (equal i j)))
   :hints (("Goal" :use ((:instance same-remainder-when-close-helper3)
@@ -281,8 +282,8 @@
                 (< (- j i) k)
                 (equal 0 (mod i k))
                 (natp i)
-                (natp j)
-                (natp k))
+                (integerp j)
+                (integerp k))
            (equal (* k (floor j k)) i))
   :hints (("Goal" :use (:instance same-remainder-when-close (j (* k (floor j k))))
            :do-not '(generalize eliminate-destructors)

@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -472,7 +472,7 @@
 ;;; Memoization
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#+(and hons acl2-loop-only)
+#+acl2-loop-only
 (progn
 
 ; We skip raw Lisp functions here; see *thread-unsafe-builtin-memoizations*.

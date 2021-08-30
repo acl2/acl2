@@ -375,8 +375,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 (verify-termination corollary)
 (verify-termination formula)
-;(verify-termination type-of-pred)
-;(verify-termination get-undef-name (declare (xargs :verify-guards nil)))
 
 (defun make-generic-typed-defunc-events
     (name formals ic oc decls body kwd-alist make-staticp d? pkg wrld)
@@ -389,7 +387,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                               (plist-worldp wrld))))
   (declare (ignorable wrld d? decls))
   `(with-output
-    :off :all
+    :off :all :on comment
     (make-event
      (b* ((name ',name)
           (formals ',formals)
@@ -732,7 +730,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
       `(encapsulate
         ()
         (with-output
-         :off :all :on (error)
+         :off :all :on (error comment)
          ;; ,@induct-rewrite-fc-h)))
          (test-then-skip-proofs ,@induct-rewrite-fc-h))
         (with-output
@@ -1222,7 +1220,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (test-subgoals-p nil))
 ;         (test-subgoals-p (eq t (get1 :testing-enabled kwd-alist))))
       `(with-output
-        ,@(and (not debug?) '(:off :all))
+        ,@(and (not debug?) '(:off :all :on comment))
         ,@(and debug? '(:on :all))
         (with-time-limit
          ,timeout-secs
@@ -1294,7 +1292,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (debug? (or (get1 :debug kwd-alist) (get1 :verbose kwd-alist)))
        (timeout-secs (get1 :timeout kwd-alist)))
     `(with-output
-      ,@(and (not debug?) '(:off :all))
+      ,@(and (not debug?) '(:off :all :on comment))
       ,@(and debug? '(:on :all))
       (with-time-limit
        ,timeout-secs
@@ -1405,11 +1403,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (- (cw "~%~|Form:  ( TEST-DEFINITION ~x0 ... )~%" name))
        ((er trval)
         (with-output!
-         :off :all ;:on (summary) :summary-off (:other-than time)
+         :off :all :on comment ;:on (summary) :summary-off (:other-than time)
          (acl2::trans-eval
           `(make-event
             (with-output
-             ,@(and (not debug?) '(:off :all)) ;:on (error)
+             ,@(and (not debug?) '(:off :all :on comment)) ;:on (error)
              ;; Pete: Below, we have to check for redefinitions. If
              ;; the current defunc is a redefinition that just has
              ;; different keywords, say :skip-tests t in one version,
@@ -1435,7 +1433,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                   ((er &) (with-time-limit
                            ,testing-timeout
                            (with-output!
-                            ,@(and (not debug?) '(:off :all :on (error)))
+                            ,@(and (not debug?) '(:off :all :on (error comment)))
                             ,@(and debug? '(:on :all))
                             (test-body-contracts
                              guard-ob
@@ -1448,7 +1446,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                   ((er &) (with-time-limit
                            ,testing-timeout
                            (with-output!
-                            ,@(and (not debug?) '(:off :all :on (error)))
+                            ,@(and (not debug?) '(:off :all :on (error comment)))
                             ,@(and debug? '(:on :all))
                             (test? (implies ,ic ,oc)
                               :debug ,debug?
@@ -1494,7 +1492,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
               (value-triple (er hard? 'defunc "~%~s0~%" ,blame-msg))))
          (value
           `(with-output
-            :off :all :on (error)
+            :off :all :on (error comment)
             (value-triple
              (progn$
               (fmt-to-comment-window
@@ -1899,7 +1897,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (timeout-arg (let ((lst (member :timeout args)))
                       (and lst (cadr lst)))))
     `(with-output
-      ,@(and (not debug?) '(:off :all))
+      ,@(and (not debug?) '(:off :all :on comment))
       :gag-mode ,(not debug?)
       :stack :push
       (make-event
@@ -1922,7 +1920,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          `(encapsulate
            nil
            (with-output
-            ,@(and (not debug?) '(:off :all)) :on (error)
+            ,@(and (not debug?) '(:off :all)) :on (error comment)
             (make-event
              (make-undefined ',parsed ',d? (current-package state) (w state))))
            (make-event

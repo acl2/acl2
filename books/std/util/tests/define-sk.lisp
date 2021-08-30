@@ -196,20 +196,20 @@
   ;; replaced the commented-out event just below by the defun-sk below it.
   #||
   (must-fail (defun-sk all-greater-p (max x)
+               (declare (xargs :guard (and (natp max)
+                                           (nat-listp x))
+                               :verify-guards t))
                (forall elem
                        (impliez (member elem x)
-                                (<= elem max)))
-               :witness-dcls ((declare (xargs :guard (and (natp max)
-                                                          (nat-listp x))
-                                              :verify-guards t)))))
+                                (<= elem max)))))
   ||#
   (defun-sk all-greater-p-for-defun-sk (max x)
+    (declare (xargs :guard (and (natp max)
+                                (nat-listp x))
+                    :verify-guards t))
     (forall elem
             (impliez (member elem x)
-                     (<= elem max)))
-    :witness-dcls ((declare (xargs :guard (and (natp max)
-                                               (nat-listp x))
-                                   :verify-guards t))))
+                     (<= elem max))))
 
   ;; but define-sk is smart enough to make it work
   (define-sk all-greater-p ((max natp)

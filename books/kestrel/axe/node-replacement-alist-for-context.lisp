@@ -17,6 +17,7 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 
 ;dup in kestrel-acl2/utilities/string-utilities.lisp
 (local
@@ -168,11 +169,6 @@
            :in-theory (e/d (car-becomes-nth-of-0)
                            (<-of-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp
                             <-of-nth-of-dargs)))))
-
-(defthmd natp-of-+-of-1-alt
-  (implies (integerp x)
-           (equal (natp (+ 1 x))
-                  (<= -1 x))))
 
 (local (in-theory (enable natp-of-+-of-1-alt)))
 

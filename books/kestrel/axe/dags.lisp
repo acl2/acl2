@@ -982,10 +982,6 @@
            (natp (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable strip-cdrs))))
 
-(defthmd natp-of-+-of-1
-  (implies (natp x)
-           (natp (+ 1 x))))
-
 ;(local (in-theory (disable 3-CDRS)))
 
 ;does not include inlined constants

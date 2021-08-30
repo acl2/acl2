@@ -311,11 +311,8 @@
                 (< end (len lst)) ;BOZO new
                 (<= start end)
                 (<= 0 start)
-                (<= 0 end)
-                (<= 0 n)
                 (force (integerp end))
                 (force (integerp start))
-                (force (integerp n))
                 (force (true-listp lst)))
            (equal (append (subrange start end lst) (nthcdr n lst))
                   (nthcdr (+ n -1 (- start end)) lst)))
@@ -329,11 +326,8 @@
                 (< end (len lst)) ;BOZO new
                 (<= start end)
                 (<= 0 start)
-                (<= 0 end)
-                (<= 0 n)
                 (force (integerp end))
                 (force (integerp start))
-                (force (integerp n))
                 (force (true-listp lst)))
            (perm (append (nthcdr n lst) (subrange start end lst))
                  (nthcdr (+ n -1 (- start end)) lst)))
@@ -534,9 +528,7 @@
                 (< n (len lst))
                 (integerp m)
                 (integerp n)
-                (<= 0 n)
-                (<= 0 m)
-                )
+                (<= 0 m))
            (MEMBERP (nth m lst) (TAKE n lst)))
   :hints (("Goal" :in-theory (enable take nth))))
 
@@ -750,13 +742,13 @@
            (equal (update-nth 0 val lst)
                   (cons val (cdr lst)))))
 
-;why did this cause a value stack overflow? - perhaps this causes a loop?
+;enable?
 (defthmd 3-conses
-  (and (syntaxp (and (quotep a)
-                     (quotep b)
-                     (quotep c)))
-       (equal (cons a (cons b (cons c lst)))
-              (append (list a b c) lst)))
+  (implies (syntaxp (and (quotep a)
+                         (quotep b)
+                         (quotep c)))
+           (equal (cons a (cons b (cons c lst)))
+                  (append (list a b c) lst)))
   :hints (("Goal" :in-theory (enable take))))
 
 (DEFTHM APPEND-OF-CONS-better
@@ -768,8 +760,6 @@
                               ))))
 
 ;(in-theory (disable list::append-of-cons))
-
-;(in-theory (enable 3-conses))
 
 (defthm subrange-when-too-far
   (implies (and (<= (len l) start)
@@ -1277,7 +1267,8 @@
 (theory-invariant (incompatible (:rewrite CAR-BECOMES-NTH-OF-0) (:rewrite NTH-WHEN-N-IS-ZP)))
 
 ;maybe only do this in the conclusion?
-(defthm equal-rewrite-when-takes-equal
+;disabled since i've seen this be involved in loops
+(defthmd equal-rewrite-when-takes-equal
   (implies (and (equal (take n x) (take n y)) ;binds the free variable n
                 (true-listp x)
                 (true-listp y)
@@ -1608,6 +1599,7 @@
   :hints (("Goal" ;:cases ((<= start end))
            :in-theory (enable equal-cons-cases2 len-update-nth))))
 
+;move
 (defthm subrange-of-subrange
   (implies (and (< end1 (+ 1 end2 (- start2)))
                 (natp start1)
@@ -1777,7 +1769,7 @@
     (< END2 (LEN LST))
     (NATP START)
     (NATP START2)
-    (NATP END)
+    (integerp END)
     (NATP END2)
     (TRUE-LISTP LST)
     (TRUE-LISTP VALS))

@@ -1,4 +1,5 @@
-#export ACL2?=${ACL2_DIR}/saved_acl2
+export ACL2_DIR?=/Users/davrus01/acl2/
+export ACL2?=${ACL2_DIR}/saved_acl2
 export RAC?=${ACL2_DIR}/books/projects/rac
 
 all:

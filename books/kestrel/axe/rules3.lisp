@@ -2328,7 +2328,9 @@
                            (* (EXPT 2 HIGH) (/ (EXPT 2 LOW))))
                   0))
   :hints (("Goal" :use (:instance bvchop-of-expt-0 (size1 (+ -1 HIGH (- LOW))) (size2 (- high low)))
-           :in-theory (e/d (expt-of-+) ( bvchop-of-expt-0 BVCHOP-OF-EXPT-2-N)))))
+           :in-theory (e/d (expt-of-+) (bvchop-of-expt-0
+                                        BVCHOP-OF-EXPT-HACK
+                                        BVCHOP-OF-EXPT-2-N)))))
 
 
 
@@ -5128,13 +5130,6 @@
                                    SLICE-OF-+
                                    GETBIT-OF-+ ;looped
                                    )))))
-
-(defthm expt-bound-linear-2
-  (implies (and (< size free)
-                (integerp free)
-                (integerp size))
-           (<= (expt 2 size) (expt 2 (+ -1 free))))
-  :rule-classes ((:linear)))
 
 ;;(in-theory (disable DECREMENT-POSITIVE-UNSIGNED-BYTE)) ;this is a bad rule
 
@@ -17126,27 +17121,6 @@
            :in-theory (e/d (bvplus bvuminus bvminus bvcat logapp bvchop-of-sum-cases)
                            (<-OF-+-OF-MINUS-AND-CONSTANT ;looped
                             )))))
-
-(defthm <-of-expt-of-one-less-of-integer-length
-  (implies (posp x)
-           (not (< x (expt 2 (+ -1 (integer-length x))))))
-  :hints (("Goal" :in-theory (enable integer-length))))
-
-;move
-(defthm <-of-integer-length-arg2
-  (implies (and (posp x)
-                (natp n))
-           (equal (< n (integer-length x))
-                  (<= (expt 2 n) x)))
-  :hints (("Goal" :in-theory (enable integer-length))))
-
-(defthm <-of-integer-length-arg1
-  (implies (and (syntaxp (not (and (quotep n) (< 1000 (unquote n))))) ;prevent huge calls to EXPT
-                (posp x)
-                (natp n))
-           (equal (< (integer-length x) n)
-                  (< x (expt 2 (+ -1 n)))))
-  :hints (("Goal" :in-theory (enable integer-length posp))))
 
 (defthm unsigned-byte-p-of-ceiling-of-lg
   (implies (and (natp x) ;(posp x) ;gen?

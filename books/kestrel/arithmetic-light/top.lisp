@@ -44,6 +44,7 @@
 (include-book "less-than-or-equal")
 (include-book "realpart")
 (include-book "imagpart")
+(include-book "evenp")
 (include-book "even-and-odd")
 (include-book "lg")
 (include-book "power-of-2p")

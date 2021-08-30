@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -2449,8 +2449,10 @@
                (list (cons #\0 instr-list)))
               (mv t nil state))
     (state-global-let*
-     ((pc-prompt (string-append (pc-prompt-depth-prefix)
-                                (pc-prompt))))
+     ((pc-info (change pc-info (f-get-global 'pc-info state)
+                       :prompt
+                       (string-append (pc-prompt-depth-prefix)
+                                      (pc-prompt)))))
      (let ((saved-old-ss (old-ss))
            (saved-ss (state-stack)))
        (mv-let (erp val state)
@@ -2739,7 +2741,8 @@
          (rest-args-1 (if (and rest-args
                                (car rest-args)
                                (not (keywordp (car rest-args))))
-                          '(:hints :none)
+                          (append '(:hints :none)
+                                  (cdr rest-args))
                         rest-args)))
      (if (not (keyword-value-listp rest-args-1))
          (pprogn (print-no-change

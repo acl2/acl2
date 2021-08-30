@@ -1196,8 +1196,8 @@ lists.</p>"
   ///
   (defthm acc-of-vl-print-natchars-aux
     (equal (mv-nth 0 (vl-print-natchars-aux n acc col))
-           (str::revappend-natchars-aux n acc))
-    :hints(("Goal" :in-theory (enable str::basic-natchars))))
+           (str::revappend-nat-to-dec-chars-aux n acc))
+    :hints(("Goal" :in-theory (enable str::basic-nat-to-dec-chars))))
   (verify-guards vl-print-natchars-aux))
 
 (define vl-print-int-main ((n integerp) &key (ps 'ps))
@@ -1235,11 +1235,11 @@ strings, so they can be printed at runtime without any coercion.</li>
 <li>Numbers don't have to be encoded, so there's no need to consider whether
 we're in HTML mode.</li>
 
-<li>We essentially use str::revappend-natchars instead of calling natstr or
+<li>We essentially use str::revappend-nat-to-dec-chars instead of calling natstr or
 similar.  This does the minimum amount of consing and doesn't build a
 string.</li>
 
-<li>We manually inline the executable definition of str::revappend-natchars to
+<li>We manually inline the executable definition of str::revappend-nat-to-dec-chars to
 avoid doing the loop.</li>
 
 </ul>"

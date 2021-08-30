@@ -59,7 +59,6 @@
 (local (include-book "booth-support"))
 (local (include-book "centaur/esim/stv/stv-decomp-proofs-even-better" :dir :system))
 ; (depends-on "boothmul.v")
-; cert_param: (hons-only)
 ; cert_param: (uses-glucose)
 (value-triple (set-max-mem (* 3 (expt 2 30))))
 (value-triple (tshell-ensure))

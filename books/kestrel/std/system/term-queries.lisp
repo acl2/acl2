@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,6 +21,7 @@
 (include-book "all-vars-in-untranslated-term")
 (include-book "all-vars-open")
 (include-book "check-and-call")
+(include-book "check-fn-call")
 (include-book "check-if-call")
 (include-book "check-lambda-call")
 (include-book "check-list-call")
@@ -28,6 +29,7 @@
 (include-book "check-mbt-dollar-call")
 (include-book "check-mv-let-call")
 (include-book "check-nary-lambda-call")
+(include-book "check-not-call")
 (include-book "check-or-call")
 (include-book "check-unary-lambda-call")
 (include-book "check-user-lambda")

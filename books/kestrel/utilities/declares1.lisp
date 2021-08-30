@@ -14,11 +14,11 @@
 ;; defuns).  These utilities depend on more books than the utilities in
 ;; declares0.lisp.
 
-(include-book "kestrel/utilities/declares0" :dir :system)
-(include-book "kestrel/utilities/translate" :dir :system)
-(include-book "kestrel/utilities/untranslated-terms" :dir :system)
-(include-book "kestrel/utilities/terms" :dir :system) ;for replace-in-term
-(include-book "kestrel/utilities/make-and-nice" :dir :system)
+(include-book "declares0")
+(include-book "translate")
+(include-book "untranslated-terms")
+(include-book "terms") ;for replace-in-term
+(include-book "make-and-nice")
 
 ;;; Applying a substitution to a measure:
 

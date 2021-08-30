@@ -315,22 +315,18 @@
 
 ;rename
 (defthm logand-of-negative-and-positive
-  (implies (and (integerp i)
-                (<= 0 i)
-                (< i (expt 2 n))
-                (integerp j)
-                (<= j (- (expt 2 n)))
-                (< j 0))
-           (< (logand i j) (expt 2 n))))
+  (implies (and (<= 0 i)
+                (< i k))
+           (< (logand i j) k)))
 
 ;rename
 (defthm logand-of-negative-and-negative
   (implies (and (integerp j)
-                (<= j (- (expt 2 n)))
-                (< j 0)
+                (<= j (- (expt 2 n))) ; think about this
+                ;; (< j 0)
                 (integerp i)
-                (<= i (- (expt 2 n)))
-                (< i 0)
+                (<= i (- (expt 2 n))) ; think about this
+                ;; (< i 0)
                 )
            (< (logand i j) (expt 2 n))))
 
@@ -340,7 +336,8 @@
                     (< j k))
                 (natp i)
                 (natp j)
-                (natp k))
+                ;(natp k)
+                )
            (< (logand i j) k))
   :hints (("Goal" :in-theory (enable logand))))
 
@@ -406,8 +403,8 @@
 (defthm logand-lower-bound-negative
   (implies (and (<= (- (expt 2 n)) i)
                 (<= (- (expt 2 n)) j)
-                (<= i 0)
-                (<= j 0)
+                ;(<= i 0)
+                ;(<= j 0)
                 (integerp i)
                 (integerp j)
                 (natp n))
@@ -533,3 +530,11 @@
                         (:instance logand-of-mod-and-mod
                                    (j j)))
            :in-theory (disable mod-sum-cases))))
+
+(defthm signed-byte-p-of-logand
+  (implies (and (signed-byte-p size i)
+                (signed-byte-p size j))
+           (signed-byte-p size (logand i j)))
+  :hints (("Goal" :cases ((and (<= 0 i) (<= 0 j))
+                          (and (not (<= 0 i)) (<= 0 j))
+                          (and (<= 0 i) (not (<= 0 j)))))))

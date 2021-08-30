@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; April 2021
+;; August 2021
 
 ;; Direct reasoning about complex functions is often unachievable in most
 ;; existing verification tools.  Decomposition is a common technique for
@@ -83,7 +83,7 @@
          (max-nats (cdr x)))))
 
 (defund remove-all (x y)
-  ;; Remove all elements in "x" from "y"
+  ;; Remove all elements in 'x' from 'y'
   (declare (xargs :guard (true-listp y)))
   (if (atom x)
       y
@@ -91,7 +91,7 @@
                 (remove-equal (car x) y))))
 
 (defund remove-assocs-equal (keys alist)
-  ;; Remove all pairs with the given "keys" from "alist"
+  ;; Remove all pairs with the given 'keys' from 'alist'
   (declare (xargs :guard (and (true-listp keys)
                               (alistp alist))))
   (cond ((endp alist) nil)
@@ -101,7 +101,7 @@
                  (remove-assocs-equal keys (cdr alist))))))
 
 (defnd replace-all (x y tree)
-  ;; Replace all occurrences of "x" in "tree" with "y".
+  ;; Replace all occurrences of 'x' in 'tree' with 'y'.
   (if (atom tree)
       tree
     (if (equal x (car tree))
@@ -110,7 +110,7 @@
             (replace-all x y (cdr tree))))))
 
 (defund replace-all-except-bound-vars (x y tree)
-  ;; Replace all occurrences of "x" in "tree" with "y" except for the variables
+  ;; Replace all occurrences of 'x' in 'tree' with 'y' except for the variables
   ;; bound by the LET/LET*/B* forms.
   (cond
    ((atom tree) tree)
@@ -128,9 +128,9 @@
             (replace-all-except-bound-vars x y (cdr tree))))))
 
 (defund replace-list-all (xs ys tree)
-  ;; For each symbol X in "xs", replace all of its occurrences in "tree" with
+  ;; For each symbol X in 'xs', replace all of its occurrences in 'tree' with
   ;; either:
-  ;; 1. (Y) if the pair (X Y) appears in "ys", or
+  ;; 1. (Y) if the pair (X Y) appears in 'ys', or
   ;; 2. (X) otherwise
   (if (atom xs)
       tree
@@ -145,10 +145,21 @@
                           (replace-all-except-bound-vars
                            (car xs) (list (car xs)) tree))))))
 
+(defund strip-cars-hack (x)
+  ;; This function behaves like STRIP-CARS, except that it also collects atom
+  ;; elements when walking through the list 'x'. For example,
+  ;; (strip-cars-hack '((A) B (C))) would return '(A B C).
+  (declare (xargs :guard (true-listp x)))
+  (cond ((endp x) nil)
+        (t (cons (if (atom (car x))
+                     (car x)
+                     (car (car x)))
+                 (strip-cars-hack (cdr x))))))
+
 (mutual-recursion
  (defund rename-in-term-of-mv-let (key old-key alist i n pkg-name)
-   ;; Replace all occurrences of "key" in the <term> of an MV-LET form with
-   ;; "old-key"
+   ;; Replace all occurrences of 'key' in the <term> of an MV-LET form with
+   ;; 'old-key'
    (declare (xargs :guard (alistp alist)))
    (if (endp alist)
        nil
@@ -163,11 +174,11 @@
                 key old-key (cdr alist) i n pkg-name))))))
 
  (defund rename-key-in-alist (key alist i n pkg-name)
-   ;; Rename "key" in the binding list "alist" if necessary
+   ;; Rename 'key' in the binding list 'alist' if necessary
 
-   ;; "i" is the current index.
+   ;; 'i' is the current index.
 
-   ;; "n" is the number of bindings of the given "key".
+   ;; 'n' is the number of bindings of the given 'key'.
    (declare (xargs :mode :program))
    (cond ((endp alist) nil)
          ((or (<= n 1) (<= n i)) alist)
@@ -187,7 +198,7 @@
                                  (str::natstr i))))
               (if (equal key (car pair))
                   (if (= i (1- n))
-                      ;; Reach the last binding of "key" in "alist"
+                      ;; Reach the last binding of 'key' in 'alist'
                       (cons
                        (cons key
                              (replace-all-except-bound-vars
@@ -220,8 +231,8 @@
                                             (1+ i) n
                                             pkg-name))))
                 (if (zp i)
-                    ;; Haven't reached the first binding of "key" yet.
-                    ;; "pair" remains unchanged.
+                    ;; Haven't reached the first binding of 'key' yet.
+                    ;; 'pair' remains unchanged.
                     (cons pair
                           (rename-key-in-alist key (cdr alist) i n pkg-name))
                   (cons
@@ -232,7 +243,7 @@
  )
 
 (defund rename-keys-in-alist (distinct-keys keys alist pkg-name)
-  ;; Rename "distinct-keys" in the binding list "alist" if necessary
+  ;; Rename 'distinct-keys' in the binding list 'alist' if necessary
   (declare (xargs :mode :program))
   (if (atom distinct-keys)
       alist
@@ -247,7 +258,7 @@
      pkg-name)))
 
 (defund inter-names-extract (alist)
-  ;; Extract all intermediate keys from "alist"
+  ;; Extract all intermediate keys from 'alist'
   (declare (xargs :guard (symbol-alistp alist)))
   (if (endp alist)
       nil
@@ -258,7 +269,7 @@
       (inter-names-extract (cdr alist)))))
 
 (defund collect-bound-vars (x)
-  ;; Collect all bound variables appearing in term "x".  Note, the result can
+  ;; Collect all bound variables appearing in term 'x'.  Note, the result can
   ;; contain duplicate variables.
   (cond ((atom x) nil)
         ((member-equal (car x) '(let let* b*))
@@ -272,11 +283,11 @@
                    (collect-bound-vars (cdr x))))))
 
 (defund rename-key-in-bindings (key alist i n pkg-name)
-  ;; Rename "key" in the binding list "alist" under an IF/IF1 statement
+  ;; Rename 'key' in the binding list 'alist' under an IF/IF1 statement
 
-  ;; "i" is the current index.
+  ;; 'i' is the current index.
 
-  ;; "n" is the number of bindings of the given "key".
+  ;; 'n' is the number of bindings of the given 'key'.
   (cond ((endp alist) nil)
         ((<= n i)
          (let ((old-key (strings-to-symbol
@@ -306,8 +317,8 @@
                   (rename-key-in-bindings
                    key (cdr alist) (1+ i) n pkg-name))
                (if (zp i)
-                   ;; Haven't reached the first binding of "key" yet.
-                   ;; "pair" remains unchanged.
+                   ;; Haven't reached the first binding of 'key' yet.
+                   ;; 'pair' remains unchanged.
                    (cons pair
                          (rename-key-in-bindings
                           key (cdr alist) i n pkg-name))
@@ -319,7 +330,7 @@
                    key (cdr alist) i n pkg-name))))))))
 
 (defund rename-keys-in-bindings (distinct-keys keys alist pkg-name)
-  ;; Rename "distinct-keys" in the binding list "alist" under an IF/IF1
+  ;; Rename 'distinct-keys' in the binding list 'alist' under an IF/IF1
   ;; statement
   (if (atom distinct-keys)
       alist
@@ -334,7 +345,7 @@
      pkg-name)))
 
 (defund rename-keys-in-body (distinct-keys keys body pkg-name)
-  ;; Rename "distinct-keys" in "body" under an IF/IF1 statement
+  ;; Rename 'distinct-keys' in 'body' under an IF/IF1 statement
   (if (atom distinct-keys)
       body
     (let* ((key (car distinct-keys))
@@ -381,7 +392,7 @@
                   (cdr x) replaced-vars mv-let-vars pkg-name)))))
 
 (defund rename-mv-let-vars (x mv-let-vars pkg-name)
-  ;; Rename variables in the MV-LET forms appearing in term "x"
+  ;; Rename variables in the MV-LET forms appearing in term 'x'
   (declare (xargs :mode :program))
   (cond
    ((atom x) x)
@@ -412,8 +423,8 @@
             (rename-mv-let-vars (cdr x) mv-let-vars pkg-name)))))
 
 (defund shrink-alist (preserved-keys alist)
-  ;; Remove all elements from the association list "alist" except for the
-  ;; keys in "preserved-keys"
+  ;; Remove all elements from the association list 'alist' except for the
+  ;; keys in 'preserved-keys'
   (if (atom alist)
       nil
     (let* ((x (car alist)))
@@ -422,8 +433,8 @@
         (shrink-alist preserved-keys (cdr alist))))))
 
 (defund shrink-bindings (preserved-vars x)
-  ;; Remove all variable bindings from term "x" except for the variables in
-  ;; "preserved-vars"
+  ;; Remove all variable bindings from term 'x' except for the variables in
+  ;; 'preserved-vars'
   (cond ((atom x) x)
         ((member-equal (car x) '(let let* b*))
          (let* ((shrunk-bindingds (shrink-alist preserved-vars (cadr x)))
@@ -452,7 +463,7 @@
                     (1+ i))))
 
 (defund bindings-extract (x preserved-vars alist)
-  ;; Extract variable bindings occurring in term "x".  Argument "alist" acts as
+  ;; Extract variable bindings occurring in term 'x'.  Argument 'alist' acts as
   ;; an association list of cumulative bindings.
   (cond ((atom x) alist)
         ((member-equal (car x) '(let let* b*))
@@ -591,7 +602,7 @@
             (simplify-mv-nth-forms (cdr lst))))))
 
 (defund symbols-extract (term)
-  ;; Extract all symbols from "term"
+  ;; Extract all symbols from 'term'
   (cond ((null term) nil)
         ((atom term)
          (if (symbolp term) (list term) nil))
@@ -599,7 +610,7 @@
                    (symbols-extract (cdr term))))))
 
 (defund used-syms-extract (term alist acc)
-  ;; Extract all keys in "alist" that are used in "term" recursively
+  ;; Extract all keys in 'alist' that are used in 'term' recursively
   (declare (xargs :mode :program))
   (if (atom term)
       acc
@@ -667,7 +678,7 @@
        acc))))
 
 (defund const-fns-gen-from-alist (alist)
-  ;; Generate a set of constant functions from the binding list "alist"
+  ;; Generate a set of constant functions from the binding list 'alist'
   (if (atom alist)
       nil
     (let* ((x (car alist))
@@ -685,27 +696,27 @@
                           (rules 'nil)
                           (inter-fns-enabledp 'nil))
   ;; Generate a set of constant functions from the bindings declared in the
-  ;; non-recursive definition of function "fn".  It is required that "fn" is
+  ;; non-recursive definition of function 'fn'.  It is required that 'fn' is
   ;; already defined.  CONST-FNS-GEN also generates the top-level function
-  ;; "new-fn" that corresponds to "fn".
+  ;; 'new-fn' that corresponds to 'fn'.
 
-  ;; If "optimized" is non-nil, all variables bound to either a constant or a
+  ;; If 'optimized' is non-nil, all variables bound to either a constant or a
   ;; single variable will be excluded from generating their corresponding
   ;; constant functions.
 
-  ;; "sub-pairs" contains pairs of terms (mostly variables) that are used in
+  ;; 'sub-pairs' contains pairs of terms (mostly variables) that are used in
   ;; substitutions performed by function REPLACE-LIST-ALL.
 
-  ;; "preserved-vars": a list of variables that are preserved in the bindings
-  ;; occurring in the definition of "fn".
+  ;; 'preserved-vars': a list of variables that are preserved in the bindings
+  ;; occurring in the definition of 'fn'.
 
-  ;; "excluded-vars": a list of bounded variables that are excluded from
+  ;; 'excluded-vars': a list of bounded variables that are excluded from
   ;; generating their corresponding constant functions.
 
-  ;; "rules": a list of rules that will be enabled when proving the final
+  ;; 'rules': a list of rules that will be enabled when proving the final
   ;; equivalence lemma.
 
-  ;; If "inter-fns-enabledp" is non-nil, the generated intermediate functions
+  ;; If 'inter-fns-enabledp' is non-nil, the generated intermediate functions
   ;; will be enabled.
   :mode :program
   (b* ((pkg-name (symbol-package-name fn))
@@ -717,10 +728,10 @@
                                           sub-pairs
                                           formal-args))
        (body (car (last fn-def)))
-       ;; Rename variables in the MV-LET forms appearing in "body"
+       ;; Rename variables in the MV-LET forms appearing in 'body'
        (renamed-body (rename-mv-let-vars body formal-args pkg-name))
-       ;; "alist" contains all variable bindings extracted from "renamed-body"
-       ;; except for the variables in "preserved-vars".
+       ;; 'alist' contains all variable bindings extracted from 'renamed-body'
+       ;; except for the variables in 'preserved-vars'.
        (alist (bindings-extract renamed-body preserved-vars nil))
        (vars (remove-equal '*** (strip-cars alist)))
        (shrunk-body (shrink-bindings preserved-vars renamed-body))
@@ -732,14 +743,14 @@
                                              alist
                                              pkg-name)))
        (renamed-vars (strip-cars renamed-alist))
-       ;; Simplify the MV-NTH forms in "renamed-alist"
+       ;; Simplify the MV-NTH forms in 'renamed-alist'
        (simplified-alist (pairlis$ renamed-vars
                                    (pairlis$
                                     (simplify-mv-nth-forms
                                      (strip-cars
                                       (strip-cdrs renamed-alist)))
                                     nil)))
-       ;; Extract variables that are not used in "new-fn"
+       ;; Extract variables that are not used in 'new-fn'
        (redundant-vars
         (remove-all (used-syms-extract (list shrunk-body)
                                        simplified-alist
@@ -753,7 +764,8 @@
                                               renamed-alist)))
        (used-vars (strip-cars no-redundant-alist))
        (sub-pairs-with-dots (pairlis$ (strip-cars sub-pairs)
-                                      (strip-cars (strip-cdrs sub-pairs))))
+                                      (strip-cars-hack
+                                       (strip-cdrs sub-pairs))))
        (updated-vars (replace-list-all (strip-cars sub-pairs)
                                        sub-pairs-with-dots
                                        used-vars))
@@ -770,7 +782,7 @@
                                       (strip-cdrs no-redundant-alist)))
                    nil)))
        ;; Extract constant and unary bindings that will be eliminated from
-       ;; "updated-alist"
+       ;; 'updated-alist'
        (elim-bindings (if optimized
                           (elim-bindings-extract
                            updated-alist
@@ -789,8 +801,8 @@
                                        updated-alist
                                        nil
                                        nil)))
-       ;; Eliminate "elim-bindings" and bindings with "excluded-vars" from
-       ;; "updated-alist"
+       ;; Eliminate 'elim-bindings' and bindings with 'excluded-vars' from
+       ;; 'updated-alist'
        (final-alist
         (replace-list-all (append elim-fns excluded-fns)
                           (append (pairlis$ elim-fns
@@ -804,7 +816,7 @@
                                   (strip-cars (strip-cdrs final-alist))
                                   nil))
        (- (cw "Single used functions: ~x0~%" single-used-vars))
-       ;; The body of the top-level function "new-fn"
+       ;; The body of the top-level function 'new-fn'
        (new-body (replace-list-all
                   (remove-duplicates (append elim-vars excluded-vars
                                              formal-args vars))
@@ -862,10 +874,8 @@
                         (cdr alist)))))
 
 (defund construct-depend-lst (x nodes syms mv-clique depend-acc)
-  ;; Construct a list of nodes from "nodes" that "x" depends on.  These nodes
-  ;; have to be present in "syms", but not in "mv-clique".
-
-  ;; "l" is a list of appearance-ordered bounded variables.
+  ;; Construct a list of nodes from 'nodes' that 'x' depends on.  These nodes
+  ;; have to be present in 'syms', but not in 'mv-clique'.
   (declare (xargs :guard (and (true-listp syms)
                               (true-listp mv-clique))))
   (cond ((atom nodes) depend-acc)
@@ -890,7 +900,7 @@
                                  depend-acc))))
 
 (defund construct-depend-graph (alist names mv-letp mv-clique depend-graph)
-  ;; Construct a dependency graph from the nodes "names".  Note that the
+  ;; Construct a dependency graph from the nodes 'names'.  Note that the
   ;; resulting graph is a DAG.
   (if (atom alist)
       depend-graph
@@ -953,15 +963,15 @@
        (append acc (list (list key val)))))))
 
 (defund replace-const-with-loop (loop-var x l term mv-clique flg)
-  ;; Replace the constant functions "l" called in "term" with their loop
+  ;; Replace the constant functions 'l' called in 'term' with their loop
   ;; versions.
 
-  ;; "x" is bound to "term".
+  ;; 'x' is bound to 'term'.
 
-  ;; "l" is a list of appearance-ordered bounded variables.
+  ;; 'l' is a list of appearance-ordered bounded variables.
 
-  ;; "flg" indicates whether the entire MV-LET clique that "x" belongs to is in
-  ;; "l".  T means no, NIL means yes.
+  ;; 'flg' indicates whether the entire MV-LET clique that 'x' belongs to is in
+  ;; 'l'.  T means no, NIL means yes.
   (declare (xargs :guard (true-listp mv-clique)))
   (if (atom l)
       term
@@ -991,13 +1001,13 @@
   (loop-var alist names weight-alist base-cond init-alist
             mv-letp mv-clique pkg-name)
   ;; Generate a clique of mutually recursive functions from the binding list
-  ;; "alist"
+  ;; 'alist'
 
-  ;; "weight-alist" provides a weight for each generated function.  We use this
+  ;; 'weight-alist' provides a weight for each generated function.  We use this
   ;; weight to construct the measure for the corresponding function in a
   ;; lexicographic order.
 
-  ;; "mv-letp" indicates whether we are currently inside of an MV-LET clique.
+  ;; 'mv-letp' indicates whether we are currently inside of an MV-LET clique.
   (if (atom alist)
       nil
     (let ((x (car alist)))
@@ -1077,29 +1087,29 @@
                          (excluded-vars 'nil)
                          (inter-fns-enabledp 't))
   ;; Generate a set of mutually recursive functions from the bindings declared
-  ;; in the recursive definition of function "fn".  It is required that "fn" is
+  ;; in the recursive definition of function 'fn'.  It is required that 'fn' is
   ;; already defined.
 
-  ;; If "optimized" is non-nil, all variables bound to either a constant or a
+  ;; If 'optimized' is non-nil, all variables bound to either a constant or a
   ;; single variable will be excluded from generating their corresponding
   ;; constant functions.
 
-  ;; "base-cond" is the base condition appeared in the definitions of the
+  ;; 'base-cond' is the base condition appeared in the definitions of the
   ;; generated mutually recursive functions.
 
-  ;; "init-alist": the initial values of the generated mutually recursive
+  ;; 'init-alist': the initial values of the generated mutually recursive
   ;; functions.
 
-  ;; "sub-pairs" contains pairs of terms (mostly variables) that are used in
+  ;; 'sub-pairs' contains pairs of terms (mostly variables) that are used in
   ;; substitutions performed by function REPLACE-LIST-ALL.
 
-  ;; "preserved-vars": a list of variables that are preserved in the bindings
-  ;; occurring in the definition of "fn".
+  ;; 'preserved-vars': a list of variables that are preserved in the bindings
+  ;; occurring in the definition of 'fn'.
 
-  ;; "excluded-vars": a list of bounded variables that are excluded from
+  ;; 'excluded-vars': a list of bounded variables that are excluded from
   ;; generating their corresponding mutually recursive functions.
 
-  ;; If "inter-fns-enabledp" is non-nil, the generated intermediate functions
+  ;; If 'inter-fns-enabledp' is non-nil, the generated intermediate functions
   ;; will be enabled.
   :mode :program
   (b* ((pkg-name (symbol-package-name fn))
@@ -1108,10 +1118,10 @@
        (fn-def (cltl-def-from-name fn (w state)))
        (formal-args (caddr fn-def))
        (body (car (last fn-def)))
-       ;; Rename variables in the MV-LET forms appearing in "body"
+       ;; Rename variables in the MV-LET forms appearing in 'body'
        (renamed-body (rename-mv-let-vars body nil pkg-name))
-       ;; "alist" contains all variable bindings extracted from "renamed-body"
-       ;; except for the variables in "preserved-vars".
+       ;; 'alist' contains all variable bindings extracted from 'renamed-body'
+       ;; except for the variables in 'preserved-vars'.
        (alist (bindings-extract renamed-body preserved-vars nil))
        (vars (remove-equal '*** (strip-cars alist)))
        (shrunk-body (shrink-bindings preserved-vars renamed-body))
@@ -1121,14 +1131,14 @@
                                             alist
                                             pkg-name))
        (renamed-vars (strip-cars renamed-alist))
-       ;; Simplify the MV-NTH forms in "renamed-alist"
+       ;; Simplify the MV-NTH forms in 'renamed-alist'
        (simplified-alist (pairlis$ renamed-vars
                                    (pairlis$
                                     (simplify-mv-nth-forms
                                      (strip-cars
                                       (strip-cdrs renamed-alist)))
                                     nil)))
-       ;; Extract variables that are not used in "fn"
+       ;; Extract variables that are not used in 'fn'
        (redundant-vars
         (remove-all (used-syms-extract (list shrunk-body)
                                        simplified-alist
@@ -1142,7 +1152,8 @@
                                               renamed-alist)))
        (used-vars (strip-cars no-redundant-alist))
        (sub-pairs-with-dots (pairlis$ (strip-cars sub-pairs)
-                                      (strip-cars (strip-cdrs sub-pairs))))
+                                      (strip-cars-hack
+                                       (strip-cdrs sub-pairs))))
        (updated-vars (replace-list-all (strip-cars sub-pairs)
                                        sub-pairs-with-dots
                                        used-vars))
@@ -1159,7 +1170,7 @@
                                       (strip-cdrs no-redundant-alist)))
                    nil)))
        ;; Extract constant and unary bindings that will be eliminated from
-       ;; "updated-alist"
+       ;; 'updated-alist'
        (elim-bindings (if optimized
                           (elim-bindings-extract
                            updated-alist
@@ -1178,8 +1189,8 @@
                                        updated-alist
                                        nil
                                        nil)))
-       ;; Eliminate "elim-bindings" and bindings with "excluded-vars" from
-       ;; "updated-alist"
+       ;; Eliminate 'elim-bindings' and bindings with 'excluded-vars' from
+       ;; 'updated-alist'
        (final-alist
         (replace-list-all (append elim-fns excluded-fns)
                           (append (pairlis$ elim-fns

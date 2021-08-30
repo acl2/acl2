@@ -116,9 +116,10 @@
 
 
 (defun congruent-stobj-pred (x wrld)
-  (b* ((stobj (or (fgetprop x 'acl2::congruent-stobj-rep nil wrld) x)))
-    (nth 1 (fgetprop stobj 'acl2::stobj nil wrld))))
-
+  (b* ((stobj (or (fgetprop x 'acl2::congruent-stobj-rep nil wrld) x))
+       (prop (fgetprop stobj 'acl2::stobj nil wrld)))
+    (and prop
+         (access acl2::stobj-property prop :recognizer))))
 
 (defun remove-redundant-pairs (x)
   (if (atom x)

@@ -149,10 +149,10 @@
                                          str::join-aux
                                          str::join
                                          str::join$inline
-                                         str::basic-natchars
-                                         str::natchars-aux
-                                         str::natchars
-                                         str::natchars$inline
+                                         str::basic-nat-to-dec-chars
+                                         str::nat-to-dec-chars-aux
+                                         str::nat-to-dec-chars
+                                         str::nat-to-dec-chars$inline
                                          str::natstr
                                          str::natstr$inline
                                          )

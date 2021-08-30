@@ -380,10 +380,10 @@ continues printing spaces on the next line.  I don't think this is a
   :split-types t
   :returns (new-acc character-listp :hyp (character-listp acc))
   (case base
-    (10        (revappend-natchars x acc))
-    (16        (revappend-natchars16 x acc))
-    (8         (revappend-natchars8 x acc))
-    (otherwise (revappend-natchars2 x acc))))
+    (10        (revappend-nat-to-dec-chars x acc))
+    (16        (revappend-nat-to-hex-chars x acc))
+    (8         (revappend-nat-to-oct-chars x acc))
+    (otherwise (revappend-nat-to-bin-chars x acc))))
 
 (define basic-print-int
   :short "Print an integer in a particular print base, no radix."
@@ -438,23 +438,23 @@ continues printing spaces on the next line.  I don't think this is a
   (case base
     (10
      (cons #\. (if (< x 0)
-                   (revappend-natchars (- x) (cons #\- acc))
-                 (revappend-natchars x acc))))
+                   (revappend-nat-to-dec-chars (- x) (cons #\- acc))
+                 (revappend-nat-to-dec-chars x acc))))
     (16
      (let ((acc (list* #\x #\# acc)))
        (if (< x 0)
-           (revappend-natchars16 (- x) (cons #\- acc))
-         (revappend-natchars16 x acc))))
+           (revappend-nat-to-hex-chars (- x) (cons #\- acc))
+         (revappend-nat-to-hex-chars x acc))))
     (8
      (let ((acc (list* #\o #\# acc)))
        (if (< x 0)
-           (revappend-natchars8 (- x) (cons #\- acc))
-         (revappend-natchars8 x acc))))
+           (revappend-nat-to-oct-chars (- x) (cons #\- acc))
+         (revappend-nat-to-oct-chars x acc))))
     (otherwise
      (let ((acc (list* #\b #\# acc)))
        (if (< x 0)
-           (revappend-natchars2 (- x) (cons #\- acc))
-         (revappend-natchars2 x acc))))))
+           (revappend-nat-to-bin-chars (- x) (cons #\- acc))
+         (revappend-nat-to-bin-chars x acc))))))
 
 (define radix-print-rat
   :short "Print a (non-integer) rational in a particular print base, with radix."
@@ -614,7 +614,6 @@ continues printing spaces on the next line.  I don't think this is a
   (defthm print-escaped-str-aux-removal
     (implies (and (stringp x)
                   (natp n)
-                  (natp xl)
                   (equal xl (length x))
                   (<= n xl))
              (equal (print-escaped-str-aux x n xl slash-char acc)

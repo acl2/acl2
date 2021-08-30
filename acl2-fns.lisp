@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -353,7 +353,6 @@
    ((or (eq type1 '*)
         (eq type2 '*))
     '*)
-   #+acl2-mv-as-values
    ((not (equal (and (consp type1)
                      (eq (car type1) 'values))
                 (and (consp type2)
@@ -393,7 +392,6 @@
              (list 'integer
                    (min-integer-*  (cadr type1)  (cadr type2))
                    (max-integer-* (caddr type1) (caddr type2))))
-            #+acl2-mv-as-values
             (values
              (cons 'values (max-output-type-for-declare-form-lst (cdr type1)
                                                                  (cdr type2))))
@@ -401,7 +399,6 @@
              (error
               "Unexpected type for max-output-type-for-declare-form: ~s"
               type1))))
-         #+acl2-mv-as-values
          ((or (eq sym1 'values) (eq sym2 'values)) ; but not both
           '*)
          (t (let* ((pair1 (convert-type-to-integer-pair type1))
@@ -420,7 +417,6 @@
                (t
                 (list 'integer lower-min upper-max))))))))))
 
-#+acl2-mv-as-values
 (defun max-output-type-for-declare-form-lst (type-list1 type-list2)
 
 ; Type-list1 and type-list2 are known to be true lists (nil-terminated
@@ -532,9 +528,9 @@
    ((assoc (car form) flet-alist :test 'eq)
     (cdr (assoc (car form) flet-alist :test 'eq)))
    ((member (car form) '(values
-                         #+acl2-mv-as-values mv
+                         mv
 ; Note: for swap-stobjs, cadr and caddr have the same type.
-                         #+acl2-mv-as-values swap-stobjs)
+                         swap-stobjs)
             :test 'eq)
     (cond ((null (cdr form))
            (setq *acl2-output-type-abort* '*))
@@ -560,14 +556,6 @@
                                      (not *acl2-output-type-abort*))
                                 tmp)
                                (t t))))))))
-   #-acl2-mv-as-values
-   ((member (car form) '(mv swap-stobjs)
-            :test 'eq)
-; Note: for swap-stobjs, cadr and caddr have the same type.
-    (output-type-for-declare-form-rec (cadr form) flet-alist))
-   #-acl2-mv-as-values
-   ((eq (car form) 'values)
-    (setq *acl2-output-type-abort* '*))
    ((member (car form) '(flet labels)
             :test 'eq) ; (flet bindings val)
     (let ((temp flet-alist))
@@ -588,9 +576,7 @@
              typ)
             ((and (consp typ)
                   (member (car typ)
-                          '(integer signed-byte unsigned-byte
-                                    #+acl2-mv-as-values
-                                    values)
+                          '(integer signed-byte unsigned-byte values)
                           :test 'eq))
              typ)
             (t t))))
@@ -610,7 +596,6 @@
     (cond ((cddr form)
            (output-type-for-declare-form-rec (car (last form)) flet-alist))
           (t t)))
-   #+acl2-mv-as-values
    ((eq (car form) 'multiple-value-bind)
     (cond ((cdddr form)
            (output-type-for-declare-form-rec (car (last form)) flet-alist))
@@ -664,8 +649,7 @@
                                  (fboundp 'get-stobjs-out-for-declare-form)
                                  (qfuncall get-stobjs-out-for-declare-form
                                            (car form)))))
-                         (cond #+acl2-mv-as-values
-                               ((consp (cdr x))
+                         (cond ((consp (cdr x))
                                 (cons 'values
                                       (make-list (length x)
                                                  :initial-element
@@ -687,20 +671,8 @@
 
 (defun output-type-for-declare-form (fn form)
 
-; We return a list of output types, one per value.  So if #-acl2-mv-as-values,
-; then we always return a list of length one.
+; We return a list of output types, one per value.
 
-  #-acl2-mv-as-values
-  (declare (ignore fn))
-  #-acl2-mv-as-values
-  (let* ((*acl2-output-type-abort* nil) ; protect for call on next line
-         (result (output-type-for-declare-form-rec form nil)))
-    (cond
-     (*acl2-output-type-abort*
-      '*)
-     (t
-      (list 'values result))))
-  #+acl2-mv-as-values
   (let* ((*acl2-output-type-abort* nil) ; protect for call on next line
          (result (output-type-for-declare-form-rec form nil))
          (stobjs-out (and
@@ -1926,11 +1898,12 @@ notation causes an error and (b) the use of ,. is not permitted."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The following definition was originally in interface-raw.lisp.  But it was
-; also needed in hons-raw.lisp, which is compiled earlier, and CCL (at
-; least) needs to know that we indeed have a macro here -- so the definition
-; can't be put off until loading interface-raw.lisp.  As of Version_3.2,
-; hons-raw.lisp is only included in special builds, so we don't want to put
-; this definition there; thus, we are putting it here.
+; also needed in hons-raw.lisp, which is compiled earlier, and CCL (at least)
+; needs to know that we indeed have a macro here -- so the definition can't be
+; put off until loading interface-raw.lisp.  In Version_3.2, hons-raw.lisp was
+; only included in special builds, so we did't want to put this definition
+; there; thus, we put it here.  (Even in August 2021, we saw no reason to move
+; it.)
 
 (defmacro special-form-or-op-p (name)
 
@@ -1949,20 +1922,17 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; Consider a definition (save-def (defun name formals ... body)), where defun
 ; could be replaced by other macros that take the same arguments (like
 ; defun-one-output or defn1), and where body evaluates to a single value.  Then
-; this macro executes the definition and for the hons version, also saves (name
-; formals ... body) as the 'acl2-saved-def property of name.  We use this
-; property to obtain the raw Lisp definition of name for memoize-fn.
+; this macro executes the definition and saves (name formals ... body) as the
+; 'acl2-saved-def property of name.  We use this property to obtain the raw
+; Lisp definition of name for memoize-fn.
 
 ; This macro is intended only for raw Lisp definitions.  For definitions in the
 ; loop, we expect that cltl-def-from-name will give us the definition.
 
-  #+hons
   (let ((name (cadr def-form))) ; (defunxxx name ...)
     `(progn ,def-form
             (setf (get ',name 'acl2-saved-def)
-                  ',def-form)))
-  #-hons
-  def-form)
+                  ',def-form))))
 
 (defmacro defg (&rest r)
 

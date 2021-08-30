@@ -1568,8 +1568,14 @@
      :hints (("goal"
               :do-not-induct t
               :induct (pp-lists-to-term-and$ cur)
-              :in-theory (e/d (pp-lists-to-term-and$)
+              :expand ((:free (x y)
+                              (bit-listp (cons x y)))
+                       #|(:free (x y)
+                              (pp-lists-to-term-and$ (cons x y)))||#)
+              :in-theory (e/d ((:induction pp-lists-to-term-and$)
+                               pp-lists-to-term-and$)
                               (bitp
+                               ;;rp-trans
                                rp-evl-lst-of-cons
                                (:rewrite acl2::consp-of-append)
                                bit-listp))))))

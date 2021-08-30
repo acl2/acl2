@@ -143,7 +143,6 @@
 (defthm slice-of-packbv-1
   (implies (and (< high count)
                 (<= low high)
-                (natp count)
                 (natp low)
                 (natp high)
                 (all-unsigned-byte-p 1 bvs)
@@ -172,7 +171,6 @@
 (defthm slice-of-packbv
   (implies (and (< high count)
                 (<= low high)
-                (natp count)
                 (natp low)
                 (natp high)
                 (posp size)
@@ -195,7 +193,6 @@
 (defthm slice-of-packbv-alt
   (implies (and (< high count)
                 (<= low high)
-                (natp count)
                 (natp low)
                 (natp high)
                 (posp size)
@@ -213,7 +210,6 @@
 (defthm slice-of-packbv-special
   (implies (and (< high count)
                 (<= 1 high)
-                (natp count)
                 (natp high)
                 (posp size)
                 (equal (len bvs) count))
@@ -234,7 +230,7 @@
            (packbv num 1 y))))
 
 (defthm slice-of-packbv-8-special-case
-  (implies (and (natp n)
+  (implies (and ;; (natp n)
                 (< 0 n)
                 (equal (len bvs) n) ;gen?
                 )

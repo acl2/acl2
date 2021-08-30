@@ -126,13 +126,16 @@
   (implies (and (equal (symbol-package-name sym) "ACL2") ;gen?
                 ;; (not (member-symbol-name str (pkg-imports (symbol-package-name sym))))
                 (stringp str)
-                (symbolp sym))
+                ;; (symbolp sym) ; not needed since non-symbols have a symbol-package-name of ""
+                )
            (iff (intern-in-package-of-symbol str sym)
                 (not (equal str "NIL"))))
   :hints (("Goal" :use (:instance equal-of-intern-in-package-of-symbol (sym2 sym) (sym nil))
+           :cases ((symbolp sym))
            :in-theory (e/d (intern-in-package-of-symbol-is-identity) (equal-of-intern-in-package-of-symbol)))))
 
-(defthm not-equal-of-intern-in-package-of-symbol-when-not-equal-of-symbol-name
+;; Yikes!  This applies to terms like (equal x 'foo), due to ACL2's overly aggressive unification of constants.
+(defthmd not-equal-of-intern-in-package-of-symbol-when-not-equal-of-symbol-name
   (implies (and (not (equal str (symbol-name sym2)))
                 (stringp str)
                 (symbolp sym))
@@ -294,17 +297,16 @@
            (member-equal (symbol-name sym) (map-symbol-name syms)))
   :hints (("Goal" :in-theory (enable member-equal))))
 
-(defthm symbol-equality-cheap
+(defthmd symbol-equality-cheap
   (implies (and (equal (symbol-name s1)
                        (symbol-name s2))
                 (equal (symbol-package-name s1)
                        (symbol-package-name s2))
-                (symbolp s1)
-                (symbolp s2)
-                )
+                (or (symbolp s1)
+                    (symbolp s2)))
            (equal (equal s1 s2)
                   t))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 0 nil nil)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 0 nil)))
   :hints (("Goal" :use (:instance symbol-equality))))
 
 (defthm member-equal-of-symbol-name-strong
@@ -313,7 +315,7 @@
                 (symbol-listp syms))
            (iff (member-equal (symbol-name sym) (map-symbol-name syms))
                 (member-equal sym syms)))
-  :hints (("Goal" :in-theory (e/d (member-equal)
+  :hints (("Goal" :in-theory (e/d (member-equal symbol-equality-cheap)
                                   (SYMBOL-PACKAGE-NAME-WHEN-MEMBER-EQUAL-OF-COMMON-LISP-SYMBOLS-FROM-MAIN-LISP-PACKAGE ;looped
                                    )))))
 
@@ -435,11 +437,11 @@
 ;; in a legal variable.
 (defthm legal-variablep-of-intern-in-package-of-symbol
   (implies (and (equal (symbol-package-name sym) "ACL2") ;gen
-                (stringp str)
-                (symbolp sym))
+                (stringp str))
            (equal (legal-variablep (intern-in-package-of-symbol str sym))
                   (legal-variable-name-in-acl2-packagep str)))
-  :hints (("Goal" :in-theory (e/d (legal-variable-name-in-acl2-packagep
+  :hints (("Goal" :cases ((symbolp sym))
+           :in-theory (e/d (legal-variable-name-in-acl2-packagep
                                    legal-variablep-alt-def
                                    legal-vars-in-common-lisp-package
                                    equal-of-intern-in-package-of-symbol

@@ -88,7 +88,8 @@
 
 (defthm firstn-becomes-take
   (implies (and (<= m (len lst))
-                (natp m))
+                ;; (natp m)
+                )
            (equal (firstn m lst)
                   (take m lst)))
   :hints (("Goal" :in-theory (enable firstn take))))
@@ -140,8 +141,8 @@
 
 (defthm firstn-of-take
   (implies (and (<= len1 len2)
-                (natp len1)
-                (natp len2))
+                ;; (natp len1)
+                (integerp len2))
            (equal (firstn len1 (take len2 lst))
                   (take len1 lst)))
   :hints (("Goal" :in-theory (enable take firstn))))

@@ -91,3 +91,11 @@
            (all-unsigned-byte-p size x))
   :hints (("Goal" :in-theory (enable all-unsigned-byte-p
                                      unsigned-byte-listp))))
+
+(defthm all-unsigned-byte-p-when-unsigned-byte-listp-cheap
+  (implies (and (unsigned-byte-listp size2 x) ;free variable makes this cheap
+                (equal size2 size)               ;gen?
+                )
+           (all-unsigned-byte-p size x))
+  :hints (("Goal" :in-theory (enable all-unsigned-byte-p
+                                     unsigned-byte-listp))))

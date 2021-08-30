@@ -23,7 +23,7 @@
 ;;
 
 ;; Shows how to express bit extraction as masking followed by shifting.
-(defthmd getbit-as-mask-and-shift
+(defthmd getbit-becomes-shift-of-mask
   (implies (and (unsigned-byte-p 8 x)
                 (< n 8)
                 (natp n))
@@ -57,7 +57,7 @@
 
 ;; Shows how to express bit slicing as masking followed by shifting.
 ;todo: use a better mask?
-(defthmd slice-as-mask-and-shift
+(defthmd slice-becomes-shift-of-mask
   (implies (and (unsigned-byte-p 8 x)
                 (< high 8)
                 (<= low high)

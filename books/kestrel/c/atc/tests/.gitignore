@@ -37,5 +37,10 @@ mbt
 nonstrict.c
 nonstrict
 
+not.c
+not
+
 operators.c
 operators
+
+ops-diff-types.c

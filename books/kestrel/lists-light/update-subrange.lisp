@@ -126,7 +126,7 @@
 (defthm update-subrange-combine-adjacent-1
   (implies (and (natp end1)
                 (natp start1)
-                (natp start2)
+                ;; (natp start2)
                 (natp end2)
                 (<= start2 end2)
                 (equal (len vals1) (+ 1 end1 (- start1)))
@@ -161,8 +161,8 @@
                   (update-subrange n1 n2 (list val1 val2) lst)))
   :hints (("Goal" :in-theory (enable update-subrange))))
 
-;disable?
-(defthm update-subrange-split-off-last-elem
+;;i've seen this loop
+(defthmd update-subrange-split-off-last-elem
   (implies (and (natp end)
                 (natp start)
                 (equal (len vals) (+ 1 end (- start)))
@@ -174,17 +174,18 @@
                                             (+ 1 END)
                                             NIL LST))
            :in-theory (e/d (update-subrange)
-                           (;LIST::LEN-WHEN-AT-MOST-1        ;for speed
-                            len                             ;for speed
+                           (    ;LIST::LEN-WHEN-AT-MOST-1        ;for speed
+                            len ;for speed
                             UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
 
 (defthm update-nth-of-update-subrange
- (implies (and (natp end)
-               (natp start)
-               (equal (len vals) (+ 1 end (- start)))
-               (equal n (+ 1 end)))
-          (equal (update-nth n val (update-subrange start end vals lst))
-                 (update-subrange start (+ 1 end) (append vals (list val)) lst))))
+  (implies (and (natp end)
+                (natp start)
+                (equal (len vals) (+ 1 end (- start)))
+                (equal n (+ 1 end)))
+           (equal (update-nth n val (update-subrange start end vals lst))
+                  (update-subrange start (+ 1 end) (append vals (list val)) lst)))
+  :hints (("Goal" :in-theory (enable update-subrange-split-off-last-elem))))
 
 (defthm update-subrange-of-update-subrange-same
   (implies (and (natp start)
@@ -378,7 +379,7 @@
                 (> n start)
                 (<= n end)
                 (natp n)
-                (integerp end) ;why needed for ACL2 6.2?
+                ;; (integerp end) ;why needed for ACL2 6.2?
 ;                (<= start end)
                 (natp start)
                 )

@@ -103,21 +103,22 @@
 ; function symbols.
 
                  (function-theory :here))
-   '(SYNP                                      ; bad
-     HIDE                                      ; stupid
-     MV-LIST                                   ; restricts arguments
-     WORMHOLE1                                 ; restricts arguments
-     WORMHOLE-EVAL                             ; restricts arguments
+   '(SYNP                                   ; bad
+     HIDE                                   ; stupid
+     MV-LIST                                ; restricts arguments
+     WORMHOLE1                              ; restricts arguments
+     WORMHOLE-EVAL                          ; restricts arguments
 ;    MAKE-WORMHOLE-STATUS
 ;    SET-WORMHOLE-DATA
 ;    SET-WORMHOLE-ENTRY-CODE
 ;    WORMHOLE-DATA
 ;    WORMHOLE-ENTRY-CODE
 ;    WORMHOLE-STATUSP
-     SYS-CALL                                  ; bad -- requires trust tag
-     HONS-CLEAR!                               ; bad -- requires trust tag
-     HONS-WASH!                                ; bad -- requires trust tag
-     UNTOUCHABLE-MARKER                        ; bad -- untouchable
+     SYS-CALL                               ; bad -- requires trust tag
+     HONS-CLEAR!                            ; bad -- requires trust tag
+     HONS-WASH!                             ; bad -- requires trust tag
+     UNTOUCHABLE-MARKER                     ; bad -- untouchable
+     ASET1-TRUSTED                          ; bad -- untouchable (added 7/2021)
 ;    BREAK$
 ;    PRINT-CALL-HISTORY
 ;    NEVER-MEMOIZE-FN

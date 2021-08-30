@@ -392,7 +392,7 @@
                    name formula hyps
                    events facts bindings disable ctx state)))
       (:qed (b* (((run-unless (endp (cdr commands)))
-                  (cw "Commands found after :QED." (cdr commands))))
+                  (cw "Commands ~x0 found after :QED." (cdr commands))))
               (value
                (defisar-qed name formula events facts disable))))
       (t (er-soft+ ctx t nil

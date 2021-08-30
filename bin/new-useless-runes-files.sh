@@ -8,15 +8,16 @@
 # (1) Run fresh "everything" regression with ACL2_USELESS_RUNES=write
 #     to regenerate @useless-runes.lsp files.
 
-# (2) Run ordinary "everything" regression.
+# (2) Run ordinary "everything" regression.  (This can be delayed till
+#     after (5) if you know what you are doing.)
 
 # (3) Check for failures, avoiding bad @useless-runes.lsp files by
 #     editing .acl2 files and removing them (using git rm if already
 #     under git control).
 
-# (4) Run, in that same directory:
+# (4) Run, in that same (top-level ACL2) directory (editing <your_acl2>):
 
-#     ./bin/new-useless-runes-files.sh acl2 tmp
+#     ./bin/new-useless-runes-files.sh <your_acl2> tmp
 
 # (5) After "cd books", run "git add" and "git rm" as suggested by the
 #     output.
@@ -59,6 +60,20 @@ echo '(defmacro my-print (s) (list (quote pprogn) (list (quote princ$) s (quote 
 
 echo '(defmacro quiet-assign (var form) `(pprogn (f-put-global (quote ,var) ,form state) (value :invisible)))' >> $outfile
 
+echo '(defabbrev ur-fname (x)
+  (let ((p (search *directory-separator-string* x :from-end t)))
+    (if p
+        (concatenate (quote string)
+                     (subseq x 0 p)
+                     "/.sys"
+                     (subseq x p (length x))
+                     "@useless-runes.lsp")
+      (er hard? (quote ur-fname)
+          "Unexpected error for ~x0 !"
+          x))))' >> $outfile
+
+echo "" >> $outfile
+
 echo "(quiet-assign excluded-ur-books '(" >> $outfile
 
 grep --include='*.acl2' -ri 'cert-flags.*useless-runes nil' . | sed 's+^[.]/\(.*\)[.]acl2:;.*$+"\1"+g' >> $outfile
@@ -69,7 +84,7 @@ echo "" >> $outfile
 
 echo "(quiet-assign untracked-ur-books '(" >> $outfile
 
-git ls-files . --exclude-standard --others | grep 'useless-runes.lsp$' | sed 's/\(.*\)@useless-runes[.]lsp/"\1"/g' >> $outfile
+git ls-files . --exclude-standard --others | grep 'useless-runes.lsp$'  | sed 's+[.]sys/++g' | sed 's/\(.*\)@useless-runes[.]lsp/"\1"/g' >> $outfile
 
 echo "))" >> $outfile
 
@@ -77,7 +92,11 @@ echo "" >> $outfile
 
 echo '(my-print "@@@ Untracked @useless-runes.lsp files to be added:")' >> $outfile
 
-echo '(loop$ for x in (set-difference-equal (@ untracked-ur-books) (@ excluded-ur-books)) collect (concatenate (quote string) x "@useless-runes.lsp"))' >> $outfile
+echo "" >> $outfile
+
+echo '(loop$ for x in (set-difference-equal (@ untracked-ur-books) (@ excluded-ur-books)) collect (ur-fname x))' >> $outfile
+
+echo "" >> $outfile
 
 echo "(quiet-assign all-books '(" >> $outfile
 
@@ -89,7 +108,7 @@ echo "" >> $outfile
 
 echo "(quiet-assign all-ur '(" >> $outfile
 
-find . -name '*@useless-runes.lsp' -print | sed 's+^[.]/++g' | sed 's/^\(.*\)@useless-runes[.]lsp$/"\1"/g' | sort >> $outfile
+find . -name '*@useless-runes.lsp' -print | sed 's+[.]sys/++g' | sed 's+^[.]/++g' | sed 's/^\(.*\)@useless-runes[.]lsp$/"\1"/g' | sort >> $outfile
 
 echo "))" >> $outfile
 
@@ -97,10 +116,14 @@ echo "" >> $outfile
 
 echo '(my-print "@@@ Obsolete @useless-runes.lsp files (no corresponding books):")' >> $outfile
 
-echo '(loop$ for x in (set-difference-equal (@ all-ur) (@ all-books)) collect (concatenate (quote string) x "@useless-runes.lsp"))' >> $outfile
+echo "" >> $outfile
+
+echo '(loop$ for x in (set-difference-equal (@ all-ur) (@ all-books)) collect (ur-fname x))' >> $outfile
+
+echo "" >> $outfile
 
 echo "(quit)" >> $outfile
 
 $ACL2 < $outfile
 
-rm $outfile
+# rm $outfile

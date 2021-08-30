@@ -18,19 +18,28 @@
   ;; :long todo
   )
 
+;; (depends-on "read-object-from-file.lisp")
+(acl2::gen-xdoc-for-file
+ "read-object-from-file.lisp"
+ ((read-object-from-file "Read an object from a file."))
+ (io file-io-light))
+
 ;; (depends-on "read-file-into-character-list.lisp")
 (acl2::gen-xdoc-for-file
  "read-file-into-character-list.lisp"
- (;; (read-file-into-character-list-fn "Read a file into a character-list.") ;; todo: I would like this to be on the same xdoc page as read-file-into-character-list but not be a separate topic
-  (read-file-into-character-list "Read a file into a character-list.")
-  )
+ ((read-file-into-character-list "Read a file into a character-list."))
  (io file-io-light))
 
 ;; (depends-on "read-file-into-byte-list.lisp")
 (acl2::gen-xdoc-for-file
  "read-file-into-byte-list.lisp"
- ((read-file-into-byte-list "Read a file into a list of bytes.")
-  )
+ ((read-file-into-byte-list "Read a file into a list of bytes."))
+ (io file-io-light))
+
+;; (depends-on "read-file-into-byte-array-stobj.lisp")
+(acl2::gen-xdoc-for-file
+ "read-file-into-byte-array-stobj.lisp"
+ ((read-file-into-byte-array-stobj "Read the bytes from a file into a stobj array."))
  (io file-io-light))
 
 

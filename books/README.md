@@ -62,11 +62,11 @@ some suitable path where the directory `/path/to/somewhere/acl2/` does
 not already exist.
 
 ```
-git clone -b 8.3 git://github.com/acl2-devel/acl2-devel.git /path/to/somewhere/acl2/
+git clone -b 8.4 git://github.com/acl2-devel/acl2-devel.git /path/to/somewhere/acl2/
 ```
 
 The new directory `/path/to/somewhere/acl2/` will now contain a copy of
-ACL2 Version 8.3.  Please see the [ACL2 home page][ACL2], specifically
+ACL2 Version 8.4.  Please see the [ACL2 home page][ACL2], specifically
 its [installation instructions][installation], for how to build an
 executable and certify books in your new directory.
 

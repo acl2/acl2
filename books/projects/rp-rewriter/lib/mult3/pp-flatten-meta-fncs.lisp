@@ -62,13 +62,18 @@
   (if (atom lst)
       (mv 0 0)
     (b* (((mv rest rest-size) (and-list-hash-aux (cdr lst)))
-         (cur (car lst))
-         (cur (case-match cur
-                (('bit-of & ('quote x))
-                 (+ 5 (ifix x)))
-                (& 0))))
-      (mv (logapp rest-size rest cur)
-          (+ 14 rest-size)))))
+         (cur (ex-from-rp (car lst))))
+      (case-match cur
+        (('bit-of & ('quote x))
+         (mv (logapp rest-size rest (+ 5 (ifix x)))
+             (+ 14 rest-size)))
+        (('s ('quote x) & &)
+         (mv (+ rest (ifix x))
+             (+ 14 rest-size)))
+        (('c ('quote x) & & &)
+         (mv (+ rest (ifix x))
+             (+ 14 rest-size)))
+        (& (mv rest rest-size))))))
 
       ;; (if (equal rest 0)
       ;;     cur
@@ -265,10 +270,7 @@
                (equal term ''1)
                (equal term ''0))
            t)
-          (t (and (has-bitp-rp orig)
-                  (not (include-fnc term 's-c-res))
-                  (not (include-fnc term 'c))
-                  (not (include-fnc term 's)))))))
+          (t (and (has-bitp-rp orig))))))
 
       ;; (('binary-and x y)
       ;;  (and (pp-term-p x)
@@ -896,7 +898,7 @@
                      (pp-lists-to-term-pp-lst (cdr lst)))
              (cons cur
                    (pp-lists-to-term-pp-lst (cdr lst))))))))
- 
+
 (define pp-remove-extraneous-sc (term)
   :returns (res-term pp-term-p :hyp (pp-term-p term)
                      :hints (("Goal"
@@ -932,7 +934,7 @@
                                             (cddr term-))
                             (cdr term-))
             term-))
-           
+
           ((or (BINARY-NOT-p term-)
                (pp-p term-))
            (cons-with-hint (car term-)
@@ -945,20 +947,27 @@
           ((BINARY-?-p term-)
            (cons-with-hint
             (car term-)
-            (cons-with-hint (pp-remove-extraneous-sc (cadr term-))
-                            (cons-with-hint (pp-remove-extraneous-sc (caddr term-))
-                                            (cons-with-hint (pp-remove-extraneous-sc (cadddr term-))
-                                                            nil
-                                                            (cdddr term-))
-                                            (cddr term-))
-                            (cdr term-))
+            (cons-with-hint
+             (pp-remove-extraneous-sc (cadr term-))
+             (cons-with-hint
+              (pp-remove-extraneous-sc (caddr term-))
+              (cons-with-hint
+               (pp-remove-extraneous-sc (cadddr term-))
+               nil
+               (cdddr term-))
+              (cddr term-))
+             (cdr term-))
             term-))
           (t term))))
 
 (define pp-flatten ((term pp-term-p)
-                    (sign booleanp))
+                    (sign booleanp)
+                    &key
+                    (disabled 'nil))
   (b* ((term (pp-remove-extraneous-sc term)))
-    (cond ((and (case-match term
+    (cond (disabled
+           (list (if sign `(-- ,term) term)))
+          ((and (case-match term
                   (('binary-and ('bit-of & &) ('bit-of & &)) t))
                 (not (rp-equal (cadr term) (caddr term))))
            (b* ((cur-single
@@ -975,6 +984,16 @@
                   #|(result (If pp-lists (cons 'list result) ''nil))||#
                   )
                pp-lst)))))
+
+(define pp-flatten-memoized ((term pp-term-p)
+                             (sign booleanp))
+  :enabled t
+  (pp-flatten term sign :disabled nil))
+
+(memoize 'pp-flatten-memoized
+         ;;:aokp t
+         ;;:condition '(not disabled)
+         )
 
 (progn
 
@@ -1095,7 +1114,6 @@
                   (implies valid
                            (pp-lists-p pp-lists))))
 
-
   (define sort-sum-meta (term)
     :returns (mv result
                  (dont-rw dont-rw-syntaxp))
@@ -1122,7 +1140,6 @@
                    term)
                (hard-error 'sort-sum-meta "" nil)
                (mv term t))))))
-
 
 
 (value-triple (hons-clear t))
@@ -1257,7 +1274,6 @@
    :hints (("Goal"
             :in-theory (e/d (pp-lists-to-term-pp-lst) ())))))
 
-
 (defret rp-termp-of-<fn>
   (implies (rp-termp term)
            (rp-termp res-term))
@@ -1267,7 +1283,7 @@
 
 (defthm rp-term-listp-of-pp-flatten
   (implies (rp-termp term)
-           (rp-term-listp (pp-flatten term sign)))
+           (rp-term-listp (pp-flatten term sign :disabled disabled)))
   :hints (("Goal"
            :in-theory (e/d (pp-flatten) ()))))
 
@@ -1449,7 +1465,6 @@
                              is-if
                              is-rp) ())))))
 
-
 (defret valid-sc-of-pp-remove-extraneous-sc
   (implies (force (valid-sc term a))
            (valid-sc res-term a))
@@ -1470,7 +1485,7 @@
 
 (defthm pp-flatten-returns-valid-sc
   (implies (force (valid-sc term a))
-           (VALID-SC-SUBTERMS (pp-flatten term sign) a))
+           (VALID-SC-SUBTERMS (pp-flatten term sign :disabled disabled) a))
   :hints (("Goal"
            :in-theory (e/d (pp-flatten
                             CREATE-AND-LIST-INSTANCE

@@ -51,7 +51,7 @@
 ;; just a rephrasing
 (defthmd type-of-aref1-when-result-arrayp-2
   (implies (and (result-arrayp array-name array bound)
-                (< index (alen1 array-name array))
+                ;; (< index (alen1 array-name array))
                 (natp index)
                 (aref1 array-name array index))
            (dargp-less-than (aref1 array-name array index) bound))

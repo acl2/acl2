@@ -1,6 +1,6 @@
 ; User Interface
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ; Copyright (C) 2017 Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
@@ -16,12 +16,6 @@
 
 (include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
 (include-book "maybe-unquote")
-
-(include-book "kestrel/event-macros/cw-event" :dir :system)
-(include-book "kestrel/event-macros/fail-event" :dir :system)
-(include-book "kestrel/event-macros/make-event-terse" :dir :system)
-(include-book "kestrel/event-macros/restore-output" :dir :system)
-(include-book "kestrel/event-macros/try-event" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

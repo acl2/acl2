@@ -38,7 +38,7 @@
 (defthm items-have-len-of-update-nth
   (implies (and (equal n (len val))
                 (natp m)
-                (natp n)
+                ;; (natp n)
                 (< m (len lst))
                 (items-have-len n lst))
            (items-have-len n (update-nth m val lst)))

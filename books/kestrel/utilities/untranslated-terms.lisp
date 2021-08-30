@@ -35,18 +35,17 @@
 (include-book "quote")
 (include-book "lets")
 (include-book "lambdas")
-(include-book "kestrel/utilities/doublets2" :dir :system)
-(include-book "kestrel/utilities/pack" :dir :system)
+(include-book "doublets2")
+(include-book "pack")
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 ;(include-book "../sequences/defforall") ;drop (after replacing the defforall-simple below)?
 ;(include-book "../sequences/generics-utilities") ;for make-pairs (TODO: move that and rename to mention doublets)
-;(include-book "kestrel/library-wrappers/my-make-flag" :dir :system)
 (include-book "legal-variablep") ;for legal-variable-name-in-acl2-packagep
-(local (include-book "std/lists/last" :dir :system))
-(local (include-book "std/lists/union" :dir :system))
+(include-book "std/alists/remove-assocs" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
-(include-book "std/alists/remove-assocs" :dir :system)
+(local (include-book "kestrel/lists-light/last" :dir :system))
+(local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
 ;;=== stuff to move to libraries:
 
@@ -343,12 +342,12 @@
        (and (consp x)
             (let ((fn (ffn-symb x))) ;todo: what are the legal FNs?
               (case fn
-                ((let let*) ;;(let <bindings> <body>) ;todo: what about declares?!
+                ((let let*) ;; (let <bindings> ...declares... <body>)
                  (and (true-listp (fargs x))
-                      ;;(eql 2 (len (fargs x)))
-                      (var-untranslated-term-pairsp (farg1 x))
+                      (<= 2 (len (fargs x))) ; must have bindings and body
+                      (var-untranslated-term-pairsp (let-bindings x))
                       ;;declares can intervene - todo: check their form
-                      (untranslated-termp (car (last (fargs x))))))
+                      (untranslated-termp (let-body x))))
                 (b* ;;(b* <bindings> <form>+)
                     (and (true-listp (fargs x))
                          ;;(untranslated-term-pairsp (farg1 x)) ;TTODO: check the binder-forms more carefully
@@ -459,7 +458,7 @@
                   (equal 1 (len y)))
            (if (member-eq x '(let let*))
                (and (true-listp y)
-                    ;;(eql 2 (len y))
+                    (<= 2 (len y))
                     (var-untranslated-term-pairsp (first y))
                     ;;declares can intervene - todo: check their form
                     (untranslated-termp (car (last y))))
@@ -513,10 +512,17 @@
   :hints (("Goal"
            :in-theory (enable make-ulambda ulambda-formals))))
 
+;drop?
 (defthm untranslated-termp-of-car-of-last-of-fargs
   (implies (and (untranslated-termp term)
                 (member-equal (car term) '(let let*)))
            (untranslated-termp (car (last (fargs term)))))
+  :hints (("Goal" :expand ((untranslated-termp term)))))
+
+(defthm untranslated-termp-of-car-of-last-when-let-or-let*
+  (implies (and (untranslated-termp term)
+                (member-equal (car term) '(let let*)))
+           (untranslated-termp (car (last term))))
   :hints (("Goal" :expand ((untranslated-termp term)))))
 
 (defthm var-untranslated-term-pairsp-of-cadr
@@ -618,14 +624,14 @@
          term
        ;;function call or lambda
        (let* ((fn (ffn-symb term)))
-         (if (member-eq fn '(let let*)) ;;(let <bindings> ...declares... <body>)
-             (let ((bindings (farg1 term))
+         (if (member-eq fn '(let let*)) ;; (let <bindings> ...declares... <body>)
+             (let ((bindings (let-bindings term))
                    (declares (let-declares term))
-                   (body (car (last (fargs term)))))
+                   (body (let-body term)))
                `(,fn ,(rename-fns-in-var-untranslated-term-pairs bindings alist)
                      ,@declares ;; I think these can only be IGNORE declares, so nothing to do here.
                      ,(rename-fns-in-untranslated-term body alist)))
-           (if (eq fn 'b*) ;; (b* (...bindings...) ...result-forms...)
+           (if (eq fn 'b*) ;; (b* <bindings> ...result-forms...)
                (let* ((bindings (farg1 term))
                       (result-forms (rest (fargs term)))
                       (binders (strip-cars bindings))
@@ -635,15 +641,16 @@
                    (make-doublets binders ;do nothing to these (TODO: might some have function calls?)
                                   (rename-fns-in-untranslated-term-list expressions alist))
                    ,@(rename-fns-in-untranslated-term-list result-forms alist)))
-             (if (eq 'cond fn) ;;(cond <pairs>)
+             (if (eq 'cond fn) ;; (cond <clauses>)
                  `(,fn ,@(rename-fns-in-untranslated-term-pairs (fargs term) alist))
-               (if (member-eq fn '(case case-match))
+               (if (member-eq fn '(case case-match)) ;; (case <expr> ...cases...)
+                   ;; FIXME: Add support for declares in case-match items.
                    `(,fn ,(rename-fns-in-untranslated-term (farg1 term) alist)
                          ,@(rename-fns-in-pat-untranslated-term-pairs (cdr (fargs term)) alist))
                  (let* ((args (fargs term))
                         (args (rename-fns-in-untranslated-term-list args alist))
                         (fn (if (consp fn)
-                                ;; ((lambda (...vars...) ...declares... body) ...args...)
+                                ;; ((lambda <formals> ...declares... <body>) ...args...)
                                 ;;if it's a lambda application, replace calls in the body:
                                 (let* ((lambda-formals (ulambda-formals fn))
                                        (declares (ulambda-declares fn))

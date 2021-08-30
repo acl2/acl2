@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -181,6 +181,10 @@
            (mv t t)))
   (local (defun mfc-ap-fn (term mfc state forcep)
            t)))
+
+(verify-termination-boot-strap print-object$-fn) ; and guards
+(verify-termination-boot-strap print-object$) ; and guards
+(verify-termination-boot-strap print-object$-preserving-case) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
@@ -1137,6 +1141,9 @@
 
 ; Avoid ugly output from, e.g., (thm (equal (print-call-history) 3)).
 (in-theory (disable (:e print-call-history)))
+
+; Alessandro Coglio observed significant speed-up from the following disable.
+(in-theory (disable ctxp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; meta-extract support

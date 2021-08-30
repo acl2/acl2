@@ -125,7 +125,7 @@
 
 ;seems helpful (e.g., in proving that 2^(i-1) + x < 2^i when x < 2^(i-1)).
 (defthm expt-half-linear
-  (implies (natp i)
+  (implies (integerp i)
            (equal (expt 2 i)
                   (+ (expt 2 (+ -1 i))
                      (expt 2 (+ -1 i)))))
@@ -180,3 +180,7 @@
                                   (i 0)
                                   (j (+ (- I) J)))
            :in-theory (enable expt-monotone-strong))))
+
+(defthm expt-of-/
+  (equal (expt (/ x y) i)
+         (/ (expt x i) (expt y i))))

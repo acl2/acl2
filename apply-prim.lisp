@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -339,6 +339,7 @@
      HONS-CLEAR!                               ; bad -- requires trust tag
      HONS-WASH!                                ; bad -- requires trust tag
      UNTOUCHABLE-MARKER                        ; bad -- untouchable
+     ASET1-TRUSTED                             ; bad -- untouchable
 
 ; At one time we considered disallowing these functions but we now allow them.
 ; We list them here just to document that we considered them and concluded that
@@ -455,6 +456,8 @@
     (COLLECT-BY-POSITION ACL2-COUNT FULL-DOMAIN)
     (COLLECT-LAMBDA-KEYWORDPS ACL2-COUNT LST)
     (COLLECT-NON-X ACL2-COUNT LST)
+    (COMMENT-STRING-P)
+    (COMMENT-STRING-P1 NFIX (BINARY-+ END (UNARY-- I)))
     (CONS-TERM1-MV2)
     (DEF-BODY)
     (DEFUN-MODE)
@@ -546,6 +549,7 @@
     (OBSERVATION1-CW)
     (OVERRIDE-HINTS)
     (PLIST-WORLDP-WITH-FORMALS ACL2-COUNT ALIST)
+    (PRINT-CONTROL-P)
     (PUSH-IO-RECORD)
     (RELATIVIZE-BOOK-PATH)
     (REMOVE-GUARD-HOLDERS-WEAK)
@@ -672,9 +676,9 @@
 
                (all-nils (getpropc fn 'stobjs-out nil wrld)))
 
-; Note that stobj creators take no stobjs in but return stobjs.  We don't want
-; any such functions in our answer!  Also, we don't want to think about
-; functions like BOUNDP-GLOBAL1 and 32-BIT-INTEGER-STACK-LENGTH1 that use
+; Note that stobj creators and fixers take no stobjs in but return stobjs.  We
+; don't want any such functions in our answer!  Also, we don't want to think
+; about functions like BOUNDP-GLOBAL1 and 32-BIT-INTEGER-STACK-LENGTH1 that use
 ; STATE-STATE as a formal preventing their execution.
 
           (first-order-like-terms-and-out-arities1

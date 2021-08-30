@@ -18,6 +18,11 @@
          (consp x))
   :hints (("Goal" :in-theory (enable strip-cdrs))))
 
+(defthm strip-cdrs-iff
+  (iff (strip-cdrs x)
+       (consp x))
+  :hints (("Goal" :in-theory (enable strip-cdrs))))
+
 (defthm len-of-strip-cdrs
   (equal (len (strip-cdrs x))
          (len x))

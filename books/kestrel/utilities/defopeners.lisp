@@ -39,12 +39,15 @@
 ;; TODO: Verify guards
 
 (include-book "world") ; for fn-body
-(include-book "terms") ; for SOME-EXPR-CALLS-FN, etc
+(include-book "kestrel/terms-light/expr-calls-fn" :dir :system)
+(include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
+(include-book "symbol-term-alistp")
+;(include-book "terms")
 (include-book "pack")
 (include-book "conjunctions")
 (include-book "misc/install-not-normalized" :dir :system)
-(include-book "kestrel/utilities/user-interface" :dir :system) ;for control-screen-output
-(include-book "defthm-events")
+(include-book "user-interface") ;for control-screen-output
+(include-book "defthm-forms")
 (include-book "kestrel/alists-light/keep-pairs" :dir :system)
 (include-book "remove-guard-holders")
 (local (include-book "state"))
@@ -352,11 +355,6 @@
 ;;   :hints (("Goal" :in-theory (enable make-opener-claim))))
 
 ;move
-(defthm pseudo-term-listp-of-true-list-fix
-  (implies (pseudo-term-listp terms)
-           (pseudo-term-listp (true-list-fix terms))))
-
-;move
 ;todo name clash if the "2" is removed
 (defund remove-trivial-bindings2 (alist)
   (declare (xargs :guard (alistp alist)))
@@ -581,7 +579,8 @@
 
 ;; Print theorems with CW (with hints elided)
 (defun cw-theorems (thms)
-  (declare (xargs :guard (defthm-form-listp thms)))
+  (declare (xargs :guard (defthm-form-listp thms)
+                  :guard-hints (("Goal" :in-theory (enable defthm-form-listp)))))
   (if (endp thms)
       nil
     (let* ((thm (first thms))

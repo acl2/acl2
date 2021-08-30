@@ -47,5 +47,4 @@
   (coerce (chars-downcase-gen (coerce str 'list) nil) 'string))
 
 (defthm stringp-of-string-downcase-gen
-  (implies (stringp str)
-           (stringp (string-downcase-gen str))))
+  (stringp (string-downcase-gen str)))

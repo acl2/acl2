@@ -96,8 +96,7 @@
                 (syntaxp (quotep k))
                 (<= k n)
                 (true-listp x) ;could drop but then we need finalcdr
-                (integerp n)
-                (natp k))
+                (integerp n))
            (equal (nthcdr n x)
                   nil))
   :hints (("Goal" :in-theory (enable nthcdr))))
@@ -195,7 +194,8 @@
 
 (defthm equal-of-len-of-nthcdr-and-len
   (implies (and (<= n (len x))
-                (natp n))
+                ;; (natp n)
+                )
            (equal (equal (len (nthcdr n x)) (len x))
                   (zp n))))
 
@@ -259,3 +259,11 @@
          (if (<= (nfix n) (len x))
              (true-listp x)
            t)))
+
+(defthmd nthcdr-last-one
+  (implies (and (equal (len x) (+ 1 n))
+                (natp n)
+                (true-listp x))
+           (equal (nthcdr n x)
+                  (list (nth n x))))
+  :hints (("Goal" :in-theory (enable NTHCDR))))

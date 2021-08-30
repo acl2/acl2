@@ -22,7 +22,7 @@
                                             )))))
 
 ;gross proof?
-(defthm all-equal$-lemma
+(defthmd all-equal$-of-car-same-becomes-equal-of-repeat
   (implies (true-listp lst)
            (equal (all-equal$ (car lst) lst)
                   (equal lst (repeat (len lst) (car lst)))))

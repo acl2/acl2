@@ -33,6 +33,19 @@
               (rational-listp x)))
   :hints (("Goal" :in-theory (enable rational-listp))))
 
+;avoid name clash
+(defthm rational-listp-of-append-2
+  (equal (rational-listp (append x y))
+         (and (rational-listp (true-list-fix x))
+              (rational-listp y)))
+  :hints (("Goal" :in-theory (enable rational-listp))))
+
+(defthm rational-listp-of-take-2
+  (implies (rational-listp l)
+           (equal (rational-listp (take n l))
+                  (<= (nfix n) (len l))))
+  :hints (("Goal" :in-theory (enable take rational-listp))))
+
 ;; Kept disabledp by default
 (defthmd rational-listp-when-nat-listp
   (implies (nat-listp items)

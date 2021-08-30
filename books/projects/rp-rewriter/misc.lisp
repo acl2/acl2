@@ -302,11 +302,40 @@
                      (hard-error 'bump-rp-rule
                                  "This rule is not added with add-rp-rule There is
 nothing to bump!" nil)))
-             (cur-table (table-alist 'rp-rules (w state)))
-             (cur-table (remove-assoc-equal rune cur-table)))
+             ;;(cur-table (table-alist 'rp-rules (w state)))
+             ;;(cur-table (remove-assoc-equal rune cur-table))
+             )
           `(progn
-             (table rp-rules nil ',cur-table :clear)
-             (table rp-rules ',rune ',(cdr entry)))))))
+             (table rp-rules nil (remove-assoc-equal ',rune (table-alist 'rp-rules acl2::world)) :clear)
+             ;;(table rp-rules nil ',cur-table :clear)
+             (table rp-rules ',rune ',(cdr entry))
+             )))))
+
+  (defmacro bump-down-rp-rule (rule-name/rune)
+    `(with-output
+       :off :all
+       :gag-mode nil
+       (make-event
+        (b* ((rule-name/rune ',rule-name/rune)
+             (rune (case-match rule-name/rune
+                     ((& . &) rule-name/rune)
+                     (& (get-rune-name rule-name/rune state))))
+             (entry (hons-assoc-equal rune (table-alist
+                                            'rp-rules (w state))))
+             (- (and (not (consp entry))
+                     (hard-error 'bump-rp-rule
+                                 "This rule is not added with add-rp-rule There is
+nothing to bump!" nil)))
+             ;; (cur-table (table-alist 'rp-rules (w state)))
+             ;; (cur-table (remove-assoc-equal rune cur-table))
+             ;; (cur-table (append cur-table (list entry)))
+             )
+          `(progn
+             (table rp-rules nil (append (remove-assoc-equal ',rune (table-alist 'rp-rules acl2::world))
+                                         (list ',entry))
+                    :clear)
+             ;;(table rp-rules ',rune ',(cdr entry))
+             )))))
 
   (defun bump-rp-rules-body (args)
     (if (atom args)

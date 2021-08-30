@@ -357,6 +357,7 @@
        (local (include-book "kestrel/lists-light/cdr" :dir :system))
        (local (include-book "kestrel/lists-light/len" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+       (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
        (local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
        (local (include-book "kestrel/arithmetic-light/less-than-or-equal" :dir :system))
        (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -441,8 +442,7 @@
                                       (triesp tries)
                                       (rule-limitsp limits))
                           :measure (nfix count)
-                          :guard-debug t ;todo
-                          :verify-guards nil ;see below
+                          :verify-guards nil ; done below
                           ))
           (if (or (not (mbt (natp count)))
                   (= 0 count))
@@ -2459,7 +2459,7 @@
          (defthm ,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag1- suffix)
            (implies (and (axe-treep tree)
                          (bounded-axe-treep tree dag-len)
-                         (consp tree)
+                         (consp tree) ; not logically necessary but speeds up the proof
                          (member-eq (ffn-symb tree) '(if myif))
                          (= 3 (len (fargs tree)))
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -3452,7 +3452,7 @@
        (defthm ,(pack$ 'node-replacement-array-bound-theorem-for-simplify-if-tree-and-add-to-dag1- suffix)
          (implies (and (axe-treep tree)
                        (bounded-axe-treep tree dag-len)
-                       (consp tree)
+                       (consp tree) ; not logically necessary but speeds up the proof
                        (or (eq (ffn-symb tree) 'if)
                            (eq (ffn-symb tree) 'myif))
                        (= 3 (len (fargs tree)))
@@ -3706,7 +3706,7 @@
          (defthm ,(pack$ 'node-replacement-arrayp-of-simplify-if-tree-and-add-to-dag1- suffix)
            (implies (and (axe-treep tree)
                          (bounded-axe-treep tree dag-len)
-                         (consp tree)
+                         (consp tree) ; not logically necessary but speeds up the proof
                          (or (eq (ffn-symb tree) 'if)
                              (eq (ffn-symb tree) 'myif))
                          (= 3 (len (fargs tree)))

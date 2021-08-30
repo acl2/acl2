@@ -46,7 +46,7 @@
        (f-boundp-global 'inhibit-output-lst state)           ; always true
        (true-listp (f-get-global 'inhibit-output-lst state)) ; always true
        (not (member-eq 'error (f-get-global 'inhibit-output-lst state)))
-       (fmt-to-comment-window
+       (fmt-to-comment-window+
         "~%~%ACL2 Error in ~@0:  ~@1~%~%"
         (list (cons #\0
 

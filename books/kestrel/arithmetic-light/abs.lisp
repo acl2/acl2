@@ -13,8 +13,7 @@
 ;; TODO: Consider disabling abs
 
 (defthm abs-when-non-neg
-  (implies (and (<= 0 x)
-                (rationalp x))
+  (implies (<= 0 x)
            (equal (abs x)
                   x)))
 

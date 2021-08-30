@@ -85,7 +85,7 @@
                        (subrange n free y))
                 (<= n free)
                 (natp n)
-                (natp free))
+                (integerp free))
            (equal (equal (take n x) (take n y))
                   (equal (take (+ 1 free) x) (take (+ 1 free) y))))
   :hints (("Goal"
@@ -170,8 +170,9 @@
 
 (defthm equal-of-group-and-group2-helper
   (implies (and (posp n)
-                (true-listp x)
-                (true-listp y))
+                (true-listp x) ; drop?
+                (true-listp y) ; drop?
+                )
            (equal (equal (group n x) (group2 n y))
                   (and (equal (len x) (* n (floor (len y) n)))
                        (equal (take (len x) x)
@@ -251,7 +252,7 @@
                 (posp n)
                 (natp m)
                 (<= m m2)
-                (natp m2))
+                (integerp m2))
            (equal (subrange m m2 (group n x))
                   (group n (subrange (* n m) (+ (* n m) (+ -1 (* n (+ 1 (- m2 m))))) x))))
   :hints (("Goal" :in-theory (e/d (subrange) (TAKE-OF-NTHCDR-BECOMES-SUBRANGE
@@ -301,7 +302,7 @@
 ;                (syntaxp (and (quotep k) (not (quotep x))))
                 (< n m)
                 (natp n)
-                (natp m))
+                (integerp m))
            (equal (nth n x) (nth n k))))
 
 ;this can probably loop!
@@ -310,7 +311,7 @@
 ;(syntaxp (and (quotep k) (not (quotep x))))
                 (< n m)
                 (natp n)
-                (natp m))
+                (integerp m))
            (equal (nth n x) (nth n free))))
 
 ;hope this is okay. i need it for sha1

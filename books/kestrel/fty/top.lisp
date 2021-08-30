@@ -1,6 +1,6 @@
 ; FTY Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,6 +17,9 @@
 (include-book "byte-list20")
 (include-book "byte-list32")
 (include-book "byte-list64")
+(include-book "character-list")
+(include-book "character-list-result")
+(include-book "character-result")
 (include-book "defbyte")
 (include-book "defbyte-ihs-theorems")
 (include-book "defbyte-standard-instances")
@@ -33,15 +36,30 @@
 ;(include-book "defomap")
 (include-book "fty-set")
 ;(include-book "defset")
+(include-book "defresult")
 (include-book "defsubtype")
 (include-book "defunit")
 (include-book "defunit-doc")
+(include-book "integer-result")
 (include-book "map")
+(include-book "maybe-string")
+(include-book "maybe-string-result")
+(include-book "nat-list-result")
+(include-book "nat-natlist")
+(include-book "nat-natlist-result")
+(include-book "nat-result")
 (include-book "nat-set")
 (include-book "nati")
 (include-book "nibble")
 (include-book "nibble-list")
 (include-book "set")
+(include-book "string-list-result")
+(include-book "string-result")
+(include-book "dec-digit-char")
+(include-book "hex-digit-char")
+(include-book "oct-digit-char")
+(include-book "bin-digit-char")
+(include-book "symbol-pseudoterm-alist")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

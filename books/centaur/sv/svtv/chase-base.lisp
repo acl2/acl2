@@ -32,6 +32,8 @@
 
 ;; (include-book "debug")
 (include-book "eval-phases")
+(include-book "probe")
+(include-book "fsm-obj")
 (include-book "../svex/rewrite")
 (include-book "../mods/moddb")
 (include-book "../mods/path-string")
@@ -286,7 +288,9 @@
          (updates :type (satisfies svex-alist-p))
          (delays :type (satisfies svar-map-p))
          (assigns :type (satisfies svex-alist-p))
-         (modidx :type (integer 0 *) :initially 0)))
+         (modidx :type (integer 0 *) :initially 0)
+         (probes :type (satisfies svtv-probealist-p))
+         (namemap :type (satisfies svtv-name-lhs-map-p))))
       (field-names (strip-cars fields))
       (renaming (svtv-chase-data-renaming field-names))
       ;; (fns (append '(debugdatap create-debugdata)
@@ -770,17 +774,15 @@
 ;; (local (include-book "centaur/bitops/ihsext-basics" :dir :system
 (local (in-theory (disable logmask)))
 
-(define svtv-chase-goto ((str stringp)
-                         (phase natp)
-                         &key
-                         ((moddb moddb-ok) 'moddb)
-                         (aliases 'aliases)
-                         (svtv-chase-data 'svtv-chase-data))
+(define svtv-chase-goto-lhs ((lhs lhs-p)
+                             (phase natp)
+                             (debug-source-obj)
+                             &key
+                             ((moddb moddb-ok) 'moddb)
+                             (svtv-chase-data 'svtv-chase-data))
   :guard (and ;; (svarlist-addr-p (svex-alist-vars (debugdata->override-assigns debugdata)))
               ;; (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata)))
               (< (svtv-chase-data->modidx svtv-chase-data) (moddb->nmods moddb))
-              (<= (moddb-mod-totalwires (svtv-chase-data->modidx svtv-chase-data) moddb)
-                  (aliass-length aliases))
               ;; (svarlist-addr-p (aliases-vars aliases))
               )
   :guard-hints (("goal" :in-theory (e/d (svtv-mod-alias-guard
@@ -801,30 +803,91 @@
   ;;            (local (in-theory (disable lhs-vars-when-consp))))
   :guard-debug t
   :returns (new-svtv-chase-data)
-  (b* (((mv err lhs) (svtv-wire->lhs str (svtv-chase-data->modidx svtv-chase-data) moddb aliases))
-       ((when err)
-        (cw! "Error interpreting name: ~s0~%" str)
-        svtv-chase-data)
-       ((when (atom lhs))
-        (cw! "Error interpreting name: ~s0~%" str)
+  (b* (((when (atom lhs))
+        (cw! "Error interpreting name: ~x0~%" debug-source-obj)
         svtv-chase-data)
        ((when (consp (cdr lhs)))
-        (cw! "Error interpreting name: ~s0 was a concatenation~%" str)
+        (cw! "Error interpreting name: ~x0 was a concatenation~%" debug-source-obj)
         svtv-chase-data)
        ((lhrange lhrange) (car lhs))
        ((unless (lhatom-case lhrange.atom :var))
-        (cw! "Error interpreting name: ~s0 had no variable component~%" str)
+        (cw! "Error interpreting name: ~x0 had no variable component~%" debug-source-obj)
         svtv-chase-data)
        ((lhatom-var lhrange.atom))
        ((svar lhrange.atom.name))
        ((unless (address-p lhrange.atom.name.name))
-        (cw! "Error interpreting name: ~s0 produced a variable that was not an address~%" str)
+        (cw! "Error interpreting name: ~x0 produced a variable that was not an address~%" debug-source-obj)
         svtv-chase-data)
        (pos (make-chase-position :path (address->path lhrange.atom.name.name)
                                  :phase phase
                                  :rsh lhrange.atom.rsh
                                  :mask (int-to-sparseint (logmask lhrange.w)))))
     (svtv-chase-signal-data pos))
+  ///
+  (defret nth-of-<fn>
+    (implies (not (member-equal (nfix n) (list *svtv-chase-data->stack*
+                                               *svtv-chase-data->sigtype*
+                                               *svtv-chase-data->vars*
+                                               *svtv-chase-data->expr*)))
+             (equal (nth n new-svtv-chase-data)
+                    (nth n svtv-chase-data)))))
+       
+
+(define svtv-chase-goto ((str stringp)
+                         (phase natp)
+                         &key
+                         ((moddb moddb-ok) 'moddb)
+                         (aliases 'aliases)
+                         (svtv-chase-data 'svtv-chase-data))
+  :guard (and (< (svtv-chase-data->modidx svtv-chase-data) (moddb->nmods moddb))
+              (<= (moddb-mod-totalwires (svtv-chase-data->modidx svtv-chase-data) moddb)
+                  (aliass-length aliases)))
+  :guard-hints (("goal" :in-theory (e/d (svtv-mod-alias-guard
+                                           ;; chase-position-addr-p
+                                           svtv-chase-datap)
+                                        (logmask))
+                 :do-not-induct t))
+  :guard-debug t
+  :returns (new-svtv-chase-data)
+  (b* (((mv err lhs) (svtv-wire->lhs str (svtv-chase-data->modidx svtv-chase-data) moddb aliases))
+       ((when err)
+        (cw! "Error interpreting name: ~s0~%" str)
+        svtv-chase-data))
+    (svtv-chase-goto-lhs lhs phase str))
+  ///
+  (defret nth-of-<fn>
+    (implies (not (member-equal (nfix n) (list *svtv-chase-data->stack*
+                                               *svtv-chase-data->sigtype*
+                                               *svtv-chase-data->vars*
+                                               *svtv-chase-data->expr*)))
+             (equal (nth n new-svtv-chase-data)
+                    (nth n svtv-chase-data)))))
+
+(define svtv-chase-goto-output ((name)
+                                &key
+                                ((moddb moddb-ok) 'moddb)
+                                (svtv-chase-data 'svtv-chase-data))
+  :guard (and (< (svtv-chase-data->modidx svtv-chase-data) (moddb->nmods moddb)))
+  :guard-hints (("goal" :in-theory (e/d (svtv-mod-alias-guard
+                                           ;; chase-position-addr-p
+                                           svtv-chase-datap)
+                                        (logmask))
+                 :do-not-induct t))
+  :guard-debug t
+  :returns (new-svtv-chase-data)
+  (b* (((svtv-chase-data svtv-chase-data))
+       (probe? (hons-assoc-equal name svtv-chase-data.probes))
+       ((unless probe?)
+        (cw! "Error: no output named ~x0~%" name)
+        svtv-chase-data)
+       ((svtv-probe probe) (cdr probe?))
+       (lhs? (hons-assoc-equal probe.signal svtv-chase-data.namemap))
+       ((unless lhs?)
+        (cw! "Error: found output named ~x0 pointing to signal ~x1 but no such entry in namemap~%"
+             name probe.signal)
+        svtv-chase-data)
+       (lhs (cdr lhs?)))
+    (svtv-chase-goto-lhs lhs probe.time name))
   ///
   (defret nth-of-<fn>
     (implies (not (member-equal (nfix n) (list *svtv-chase-data->stack*
@@ -878,6 +941,9 @@ What you can enter at the SVTV-CHASE prompt:
  P                  prints the current state, including the next signal choices
 
  (G \"path\" phase) Go to the signal named by the given path at the given phase
+
+ (O name)           Go to the signal/phase corresponding to the named pipeline output.
+
  (R MSB LSB)        Select the given MSB:LSB range of the current signal
 
  Natural number     Select the given choice of next signal
@@ -1078,6 +1144,13 @@ What you can enter at the SVTV-CHASE prompt:
                           is a natural number.~%")
                     (mv nil svtv-chase-data state))
                    (svtv-chase-data (svtv-chase-goto (car args) (cadr args))))
+                (mv nil svtv-chase-data state)))
+             ((when (equal objname "O"))
+              (b* (((unless (and (consp args)
+                                 (not (cdr args))))
+                    (cw! "O directive must be of the form (O name).~%")
+                    (mv nil svtv-chase-data state))
+                   (svtv-chase-data (svtv-chase-goto-output (car args))))
                 (mv nil svtv-chase-data state)))
              ((when (equal objname "EXPR"))
               (b* (((unless (and (consp args)

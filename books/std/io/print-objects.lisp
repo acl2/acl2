@@ -62,7 +62,6 @@
                            acl2::get-serialize-character
                            state-p
                            STATE-P-IMPLIES-AND-FORWARD-TO-STATE-P1
-                           acl2::hons-enabledp
                            open-output-channel-p
                            boundp-global
                            open-output-channel-p1
@@ -91,23 +90,16 @@ serialize) compression."
   :returns state
   :long "<p>ACL2's @(see print-object$) is hard to use directly in logic mode
 because the serialize-character interface is pretty baroque.  We can only set
-the serialize character to particular good values if our ACL2 is hons-enabled.
-But nothing tells us it's a good value to begin with, and the
-@('with-serialize-character') macro tries to restore it to whatever it was,
-which might be a bad value.</p>
+the serialize character to particular good values.  But nothing tells us it's a
+good value to begin with, and the @('with-serialize-character') macro tries to
+restore it to whatever it was, which might be a bad value.</p>
 
 <p>At any rate, this is a wrapper that works around these issues by setting the
 serialize character to something sensible if it's invalid to begin with, and by
 not trying to serialize in a non-hons enabled image.</p>"
 
   :prepwork ((local (in-theory (enable acl2::serialize-characterp))))
-  (b* ((hons-enabledp (hons-enabledp state))
-       ((unless hons-enabledp)
-        ;; Install the only legal serialize character and then print it.
-        (let ((state (set-serialize-character nil state)))
-          (print-object$ obj channel state)))
-
-       (state
+  (b* ((state
         ;; Force the serialize character to be valid to begin with.
         (if (and (boundp-global 'serialize-character state)
                  (serialize-characterp (get-serialize-character state)))
@@ -197,14 +189,10 @@ compression is enabled (if supported)."
 structure sharing, but which is hard for humans to read.</p>
 
 <p>Using @('print-compressed') ensures that, on @(see hons-enabled) versions of
-ACL2, your object will be printed with this compression enabled.  The resulting
-object typically looks like @('#Z...') in the file, where @('...') is a binary
-blob that makes no sense to humans.  These objects can later be read back in by
-ACL2's @(see read-object).</p>
-
-<p>Note that the @(see serialize) routines are only available on @(see
-hons-enabled) versions of ACL2.  On other versions, there is no difference
-between @(see print-compressed) and @(see print-legibly).</p>"
+ACL2 (which is all versions), your object will be printed with this compression
+enabled.  The resulting object typically looks like @('#Z...') in the file,
+where @('...') is a binary blob that makes no sense to humans.  These objects
+can later be read back in by ACL2's @(see read-object).</p>"
   (print-legibly-aux obj t channel state)
   ///
   (defthm state-p1-of-print-compressed

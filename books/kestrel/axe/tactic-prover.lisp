@@ -21,7 +21,7 @@
 (include-book "prune")
 (include-book "dag-size")
 (include-book "dagify") ;todo
-(include-book "kestrel/utilities/prove-interface" :dir :system)
+(include-book "tools/prove-dollar" :dir :system)
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system) ; for extend-progn
@@ -608,7 +608,7 @@
         (er hard 'prove-with-tactics-fn "Illegal tactics: ~x0. See TACTICP." tactics)
         (mv *error* nil nil nil state))
        ((when (not (member-eq type '(:bit :boolean))))
-        (er hard 'prove-with-tactics-fn "Illegal value of :type argument: ~x0. Must be :boolean or :bit.")
+        (er hard 'prove-with-tactics-fn "Illegal value of :type argument: ~x0. Must be :boolean or :bit." type)
         (mv *error* nil nil nil state))
        ((mv erp rule-alist) (make-rule-alist rules (w state)))
        ((when erp) (mv *error* nil nil nil state))

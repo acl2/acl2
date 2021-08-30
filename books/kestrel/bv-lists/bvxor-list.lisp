@@ -1,3 +1,4 @@
+
 ; BV List Library: bvxor-list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
@@ -15,7 +16,7 @@
 (include-book "all-unsigned-byte-p")
 (include-book "../bv/bvxor")
 
-(defun bvxor-list (size x y)
+(defund bvxor-list (size x y)
   (declare (xargs :guard (and (all-integerp x)
                               (all-integerp y)
                               (<= (len x) (len y))))
@@ -32,7 +33,13 @@
 
 (defthm len-of-bvxor-list
   (equal (len (bvxor-list size x y))
-         (len x)))
+         (len x))
+  :hints (("Goal" :in-theory (enable bvxor-list))))
+
+(defthm consp-of-bvxor-list
+  (equal (consp (bvxor-list size x y))
+         (consp x))
+  :hints (("Goal" :in-theory (enable bvxor-list))))
 
 (defthm nth-of-bvxor-list
   (implies (and (equal (len vals1) (len vals2))
@@ -47,7 +54,28 @@
 
 (defthm all-unsigned-byte-p-of-bvxor-list
   (implies (natp size)
-           (all-unsigned-byte-p size (bvxor-list size x y))))
+           (all-unsigned-byte-p size (bvxor-list size x y)))
+  :hints (("Goal" :in-theory (enable bvxor-list))))
 
 (defthm all-integerp-of-bvxor-list
-  (all-integerp (bvxor-list size x y)))
+  (all-integerp (bvxor-list size x y))
+  :hints (("Goal" :in-theory (enable bvxor-list))))
+
+(defthm bvxor-list-iff
+  (iff (bvxor-list size x y)
+       (consp x))
+  :hints (("Goal" :in-theory (enable bvxor-list))))
+
+(defthm take-of-bvxor-list
+  (implies (and (natp n)
+                (<= n (len x)))
+           (equal (take n (bvxor-list size x y))
+                  (bvxor-list size (take n x) (take n y))))
+  :hints (("Goal" :in-theory (enable take bvxor-list))))
+
+(defthm nthcdr-of-bvxor-list
+  (implies (and (natp n)
+                (<= n (len x)))
+           (equal (nthcdr n (bvxor-list size x y))
+                  (bvxor-list size (nthcdr n x) (nthcdr n y))))
+  :hints (("Goal" :in-theory (enable nthcdr bvxor-list))))

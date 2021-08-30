@@ -19,9 +19,10 @@
 ;; XARGS (or several), etc.
 
 (include-book "keyword-value-lists2")
-(include-book "kestrel/utilities/conjunctions" :dir :system)
+(include-book "conjunctions")
 (include-book "std/lists/list-defuns" :dir :system) ;for flatten
 (include-book "std/util/bstar" :dir :system)
+(include-book "kestrel/untranslated-terms/add-conjunct-to-uterm" :dir :system)
 
 ;; Recognize the "arguments" of an xargs declare (a list of alternating keys
 ;; and values). TODO: Add checks for the values supplied for the various kinds
@@ -175,7 +176,7 @@
                 (er hard? 'merge-xargs "Bad xarg, ~x0, for ~x1." val2 key)
               (union-equal val1 val2)))
         (if (eq key :stobjs)
-            ;; We essentually take the union of stobj lists, but we have to
+            ;; We essentially take the union of stobj lists, but we have to
             ;; handle the case of a single symbol given to represent a
             ;; singleton list:
             (let* ((stobjs1 (if (symbolp val1)
@@ -220,7 +221,7 @@
               (combine-xargs-for-keys (rest keys) keyword-value-list1 keyword-value-list2)))))
 
 (defthm keyword-value-listp-of-combine-xargs-for-keys
-  (implies (and (keyword-listp keys)
+  (implies (and ;; (keyword-listp keys)
                 (keyword-value-listp keyword-value-list1)
                 (keyword-value-listp keyword-value-list2))
            (keyword-value-listp (combine-xargs-for-keys keys keyword-value-list1 keyword-value-list2))))
@@ -452,7 +453,7 @@
          (other-declare-args (get-non-xargs-from-declares declares))
          (guard (if (assoc-keyword :guard xargs-key-vals)
                     ;;add the new item at the end:
-                    (add-conjunct-to-item conjunct
+                    (add-conjunct-to-uterm conjunct
                                           (cadr (assoc-keyword :guard xargs-key-vals)))
                   conjunct)) ;no existing guard
          (xargs-key-vals (clear-key-in-keyword-value-list :guard xargs-key-vals))

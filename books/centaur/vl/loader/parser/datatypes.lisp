@@ -563,6 +563,11 @@ kinds of @('list_of_arguments').</p>")
 
 
 
+(defprojection vl-expressions->paramvalues ((x vl-exprlist-p))
+  :returns (paramvals vl-paramvaluelist-p)
+  (vl-paramvalue-expr x))
+
+
 (defparsers parse-datatype
   :parents (parser)
   :short "Parser for SystemVerilog-2012 data types."
@@ -570,138 +575,157 @@ kinds of @('list_of_arguments').</p>")
   :hints(("Goal"
           :do-not-induct t
           :do-not '(generalize fertilize)))
-
+  :measure-debug t
   (defparser vl-parse-datatype-or-void ()
     ;; data_type_or_void ::= data_type | 'void'
     ;; We represent 'void' as just another kind of vl-datatype-p
     :measure (two-nats-measure (vl-tokstream-measure) 1)
     (seq tokstream
-          (when (vl-is-token? :vl-kwd-void)
-            (:= (vl-match-any))
-            (return (make-vl-coretype :name :vl-void)))
-          (type :s= (vl-parse-datatype))
-          (return type)))
+         (when (vl-is-token? :vl-kwd-void)
+           (:= (vl-match-any))
+           (return (make-vl-coretype :name :vl-void)))
+         (type :s= (vl-parse-datatype))
+         (return type)))
 
   (defparser vl-parse-datatype ()
     :measure (two-nats-measure (vl-tokstream-measure) 0)
     :verify-guards nil
     (seq tokstream
 
-          (when (vl-is-token? :vl-kwd-type)
-            ;; data_type ::= ... | type_reference
-            ;;
-            ;; type_reference ::= 'type' '(' expression ')'
-            ;;                  | 'type' data_type
-            (return-raw (vl-parse-error "type references are not yet implemented.")))
+         (when (vl-is-token? :vl-kwd-type)
+           ;; data_type ::= ... | type_reference
+           ;;
+           ;; type_reference ::= 'type' '(' expression ')'
+           ;;                  | 'type' data_type
+           (return-raw (vl-parse-error "type references are not yet implemented.")))
 
-          (when (vl-is-token? :vl-kwd-virtual)
-            ;; data_type ::= ... | 'virtual' [ 'interface' ] ...
-            (return-raw (vl-parse-error "virtual interfaces are not yet implemented.")))
+         (when (vl-is-token? :vl-kwd-virtual)
+           ;; data_type ::= ... | virtual [ interface ] interface_identifier [ parameter_value_assignment ] [ . modport_identifier ]
+           ;; (return-raw (vl-parse-error "virtual interfaces are not yet implemented."))
+           (when t
+             (return-raw (vl-parse-error "Virtual interface datatypes are not supported")))
+           (:= (vl-match))
+           (id  := (vl-match-token :vl-idtoken))
+           (when (vl-is-token? :vl-pound)
+             (params := (vl-parse-parameter-value-assignment))
+             ;; (return (make-vl-usertype
+             ;;          :name (make-vl-scopeexpr-end
+             ;;                 :name (make-vl-hidexpr-end :name (vl-idtoken->name id)))
+             ;;          :virtual-intfc t
+             ;;          :intfc-params params))
+             )
+           (return (make-vl-usertype
+                      :name (make-vl-scopeexpr-end
+                             :hid (make-vl-hidexpr-end :name (vl-idtoken->name id)))
+                      :virtual-intfc t
+                      :intfc-params params))
 
-          (when (vl-is-some-token? *vl-core-data-type-keywords*)
-            (ret := (vl-parse-core-data-type))
-            (return ret))
+           )
 
-          (when (vl-is-some-token? '(:vl-kwd-struct :vl-kwd-union))
-            ;; data_type ::= ... | struct_union [ 'packed' [signing] ] '{'
-            ;;                       struct_union_member { struct_union_member }
-            ;;                     '}' { packed_dimension }
-            ;;
-            ;; struct_union ::= 'struct' | 'union' [ 'tagged' ]
-            (kind := (vl-match))
-            (when (and (vl-is-token? :vl-kwd-tagged)
-                       (eq (vl-token->type kind) :vl-kwd-union))
-              (tagged := (vl-match)))
-            (when (vl-is-token? :vl-kwd-packed)
-              (packed := (vl-match))
-              ;; signed is only allowed when packed is given
-              (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned))
-                (signed := (vl-match))))
-            (:= (vl-match-token :vl-lcurly))
-            (members := (vl-parse-structmembers))
-            (:= (vl-match-token :vl-rcurly))
-            (dims := (vl-parse-0+-packed-dimensions))
-            (return
-             (b* (;; structures are unpacked by default (SystemVerilog-2012 Section 7.2)
-                  ;; unions are unpacked by default     (SystemVerilog-2012 Section 7.3)
-                  (packedp (acl2::bool-fix packed))
-                  ;; structures are unsigned by default (SystemVerilog-2012 Section 7.2.1)
-                  ;;   "by default, structures are unpacked"
-                  ;; packed unions are unsigned by default (SystemVerilog-2012 Section 7.3.1)
-                  ;;   "signed or unsigned, the latter being the default"
-                  (signedp (and signed (eq (vl-token->type signed) :vl-kwd-signed)))
-                  ((when (eq (vl-token->type kind) :vl-kwd-struct))
-                   (make-vl-struct :packedp packedp
-                                   :signedp signedp
-                                   :members members
-                                   :pdims dims)))
-               ;; Else it's a union.
-               (make-vl-union :packedp packedp
-                              :signedp signedp
-                              :taggedp (acl2::bool-fix tagged)
-                              :members members
-                              :pdims dims))))
+         (when (vl-is-some-token? *vl-core-data-type-keywords*)
+           (ret := (vl-parse-core-data-type))
+           (return ret))
 
-          (when (vl-is-token? :vl-kwd-enum)
-            ;; data_type ::= ... | 'enum' [ enum_base_type ] '{'
-            ;;                        enum_name_declaration { ',' enum_name_declaration }
-            ;;                     '}' { packed_dimension }
-            (:= (vl-match))
-            (unless (vl-is-token? :vl-lcurly)
-              (basetype := (vl-parse-enum-base-type)))
-            (:= (vl-match-token :vl-lcurly))
-            (items := (vl-parse-1+-enum-name-declarations-separated-by-commas))
-            (:= (vl-match-token :vl-rcurly))
-            (dims := (vl-parse-0+-packed-dimensions))
-            (return (make-vl-enum
-                     :basetype (or basetype
-                                   ;; Per SystemVerilog-2012 Section 6.19, in the absence of a
-                                   ;; data type declaration, the default type is "int".  Moreover
-                                   (make-vl-coretype :name :vl-int :signedp t))
-                     :items items
-                     :pdims dims)))
+         (when (vl-is-some-token? '(:vl-kwd-struct :vl-kwd-union))
+           ;; data_type ::= ... | struct_union [ 'packed' [signing] ] '{'
+           ;;                       struct_union_member { struct_union_member }
+           ;;                     '}' { packed_dimension }
+           ;;
+           ;; struct_union ::= 'struct' | 'union' [ 'tagged' ]
+           (kind := (vl-match))
+           (when (and (vl-is-token? :vl-kwd-tagged)
+                      (eq (vl-token->type kind) :vl-kwd-union))
+             (tagged := (vl-match)))
+           (when (vl-is-token? :vl-kwd-packed)
+             (packed := (vl-match))
+             ;; signed is only allowed when packed is given
+             (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned))
+               (signed := (vl-match))))
+           (:= (vl-match-token :vl-lcurly))
+           (members := (vl-parse-structmembers))
+           (:= (vl-match-token :vl-rcurly))
+           (dims := (vl-parse-0+-packed-dimensions))
+           (return
+            (b* (;; structures are unpacked by default (SystemVerilog-2012 Section 7.2)
+                 ;; unions are unpacked by default     (SystemVerilog-2012 Section 7.3)
+                 (packedp (acl2::bool-fix packed))
+                 ;; structures are unsigned by default (SystemVerilog-2012 Section 7.2.1)
+                 ;;   "by default, structures are unpacked"
+                 ;; packed unions are unsigned by default (SystemVerilog-2012 Section 7.3.1)
+                 ;;   "signed or unsigned, the latter being the default"
+                 (signedp (and signed (eq (vl-token->type signed) :vl-kwd-signed)))
+                 ((when (eq (vl-token->type kind) :vl-kwd-struct))
+                  (make-vl-struct :packedp packedp
+                                  :signedp signedp
+                                  :members members
+                                  :pdims dims)))
+              ;; Else it's a union.
+              (make-vl-union :packedp packedp
+                             :signedp signedp
+                             :taggedp (acl2::bool-fix tagged)
+                             :members members
+                             :pdims dims))))
 
-          ;; At this point we've ruled out: basic types, structs, unions, enums, type references,
-          ;; virtual interfaces.  What remains are:
+         (when (vl-is-token? :vl-kwd-enum)
+           ;; data_type ::= ... | 'enum' [ enum_base_type ] '{'
+           ;;                        enum_name_declaration { ',' enum_name_declaration }
+           ;;                     '}' { packed_dimension }
+           (:= (vl-match))
+           (unless (vl-is-token? :vl-lcurly)
+             (basetype := (vl-parse-enum-base-type)))
+           (:= (vl-match-token :vl-lcurly))
+           (items := (vl-parse-1+-enum-name-declarations-separated-by-commas))
+           (:= (vl-match-token :vl-rcurly))
+           (dims := (vl-parse-0+-packed-dimensions))
+           (return (make-vl-enum
+                    :basetype (or basetype
+                                  ;; Per SystemVerilog-2012 Section 6.19, in the absence of a
+                                  ;; data type declaration, the default type is "int".  Moreover
+                                  (make-vl-coretype :name :vl-int :signedp t))
+                    :items items
+                    :pdims dims)))
 
-          ;; data_type ::= ...
-          ;;   | [ class_scope | package_scope ] type_identifier { packed_dimension }
-          ;;   | class_type
-          ;;   | ps_covergroup_identifier
-          ;;
-          ;; Where:
-          ;;
-          ;; class_scope ::= class_type '::'
-          ;;
-          ;; package_scope ::= identifier '::'
-          ;;                 | '$unit' '::'
-          ;;
-          ;; class_type ::= ps_class_identifier [ parameter_value_assignment ]
-          ;;                   { :: class_identifier [ parameter_value_assignment ] }
-          ;;
-          ;; ps_covergroup_identifier ::= [package_scope] 'identifier'
-          ;;
-          ;; ps_class_identifier ::= [package_scope] class_identifier
-          ;;
-          ;; parameter_value_assignment ::= '#' ...
-          ;;
-          ;; This is fairly restrictive but is *almost* a subset of, e.g.,
-          ;; vl-parse-simple-type.  BOZO, for now, I'm going to just permit any
-          ;; simple_type to occur here, followed by a packed dimension.
-          (type := (vl-parse-simple-type))
-          (dims := (vl-parse-0+-packed-dimensions))
-          (return (vl-datatype-update-pdims dims type))))
+         ;; At this point we've ruled out: basic types, structs, unions, enums, type references,
+         ;; virtual interfaces.  What remains are:
+
+         ;; data_type ::= ...
+         ;;   | [ class_scope | package_scope ] type_identifier { packed_dimension }
+         ;;   | class_type
+         ;;   | ps_covergroup_identifier
+         ;;
+         ;; Where:
+         ;;
+         ;; class_scope ::= class_type '::'
+         ;;
+         ;; package_scope ::= identifier '::'
+         ;;                 | '$unit' '::'
+         ;;
+         ;; class_type ::= ps_class_identifier [ parameter_value_assignment ]
+         ;;                   { :: class_identifier [ parameter_value_assignment ] }
+         ;;
+         ;; ps_covergroup_identifier ::= [package_scope] 'identifier'
+         ;;
+         ;; ps_class_identifier ::= [package_scope] class_identifier
+         ;;
+         ;; parameter_value_assignment ::= '#' ...
+         ;;
+         ;; This is fairly restrictive but is *almost* a subset of, e.g.,
+         ;; vl-parse-simple-type.  BOZO, for now, I'm going to just permit any
+         ;; simple_type to occur here, followed by a packed dimension.
+         (type := (vl-parse-simple-type))
+         (dims := (vl-parse-0+-packed-dimensions))
+         (return (vl-datatype-update-pdims dims type))))
 
 
   (defparser vl-parse-structmembers ()
     ;; matches struct_union_member { struct_union_member }
     :measure (two-nats-measure (vl-tokstream-measure) 3)
     (seq tokstream
-          (first :s= (vl-parse-structmember))
-          (when (vl-is-token? :vl-rcurly)
-            (return first))
-          (rest := (vl-parse-structmembers))
-          (return (append first rest))))
+         (first :s= (vl-parse-structmember))
+         (when (vl-is-token? :vl-rcurly)
+           (return first))
+         (rest := (vl-parse-structmembers))
+         (return (append first rest))))
 
   (defparser vl-parse-structmember ()
     :measure (two-nats-measure (vl-tokstream-measure) 2)
@@ -709,20 +733,20 @@ kinds of @('list_of_arguments').</p>")
     ;;                          data_type_or_void
     ;;                          list_of_variable_decl_assignments ';'
     (seq tokstream
-          (atts := (vl-parse-0+-attribute-instances))
-          (when (vl-is-some-token? '(:vl-kwd-rand :vl-kwd-randc))
-            (rand := (vl-match)))
-          (type :s= (vl-parse-datatype-or-void))
-          (decls := (vl-parse-1+-variable-decl-assignments-separated-by-commas))
-          (:= (vl-match-token :vl-semi))
-          (unless (vl-vardeclassignlist-newfree-p decls)
-            (return-raw
-             (vl-parse-error "Illegal use of 'new' in a struct or union member initial value")))
-          (return
-           (let ((rand (and rand (case (vl-token->type rand)
-                                   (:vl-kwd-rand  :vl-rand)
-                                   (:vl-kwd-randc :vl-randc)))))
-             (vl-make-structmembers atts rand type decls)))))
+         (atts := (vl-parse-0+-attribute-instances))
+         (when (vl-is-some-token? '(:vl-kwd-rand :vl-kwd-randc))
+           (rand := (vl-match)))
+         (type :s= (vl-parse-datatype-or-void))
+         (decls := (vl-parse-1+-variable-decl-assignments-separated-by-commas))
+         (:= (vl-match-token :vl-semi))
+         (unless (vl-vardeclassignlist-newfree-p decls)
+           (return-raw
+            (vl-parse-error "Illegal use of 'new' in a struct or union member initial value")))
+         (return
+          (let ((rand (and rand (case (vl-token->type rand)
+                                  (:vl-kwd-rand  :vl-rand)
+                                  (:vl-kwd-randc :vl-randc)))))
+            (vl-make-structmembers atts rand type decls)))))
 
 
   (defparser vl-parse-variable-dimension ()
@@ -809,6 +833,132 @@ kinds of @('list_of_arguments').</p>")
            (:= (vl-match))
            (rest := (vl-parse-1+-variable-decl-assignments-separated-by-commas)))
          (return (cons first rest))))
+
+  (defparser vl-parse-param-expression ()
+    ;; Verilog-2005:       Matches mintypmax_expression
+    ;; SystemVerilog-2012: Matches mintypmax_expression | data_type | $
+    ;;
+    ;; Except that our SystemVerilog expression parser already accepts $ as an
+    ;; expression, so we really just match:
+    ;;
+    ;; param_expression ::= mintypmax_expression | data_type
+    ;; :result (vl-paramvalue-p val)
+    ;; :resultp-of-nil nil
+    ;; :fails gracefully
+    ;; :count strong
+    ;; We use backtracking to try to match expression first, then datatype only
+    ;; if that fails.  This order is important, to handle the ambiguous case of a
+    ;; plain identifier in the way that the type-disambiguation transform
+    ;; expects.
+    :measure (two-nats-measure (vl-tokstream-measure) 13)
+    (b* ((backup (vl-tokstream-save))
+         ((mv err expr tokstream)
+          (vl-parse-mintypmax-expression))
+         ((unless err)
+          (mv err (make-vl-paramvalue-expr :expr expr) tokstream))
+         (tokstream (vl-tokstream-restore backup)))
+      (seq tokstream
+           (type := (vl-parse-datatype))
+           (return (make-vl-paramvalue-type :type type)))))
+
+  (defparser vl-parse-named-parameter-assignment ()
+    ;; :result (vl-namedparamvalue-p val)
+    ;; :resultp-of-nil nil
+    ;; :fails gracefully
+    ;; :count strong
+    :measure (two-nats-measure (vl-tokstream-measure) 13)
+    (seq tokstream
+         (:= (vl-match-token :vl-dot))
+         (id := (vl-match-token :vl-idtoken))
+         (:= (vl-match-token :vl-lparen))
+         (unless (vl-is-token? :vl-rparen)
+           (value := (vl-parse-param-expression)))
+         (:= (vl-match-token :vl-rparen))
+         (return (make-vl-namedparamvalue :name (vl-idtoken->name id)
+                                          :value value))))
+
+  (defparser vl-parse-list-of-named-parameter-assignments ()
+    ;; :result (vl-namedparamvaluelist-p val)
+    ;; :resultp-of-nil t
+    ;; :true-listp t
+    ;; :fails gracefully
+    ;; :count strong
+    :measure (two-nats-measure (vl-tokstream-measure) 14)
+    (seq tokstream
+         (first :s= (vl-parse-named-parameter-assignment))
+         (when (vl-is-token? :vl-comma)
+           (:= (vl-match-token :vl-comma))
+           (rest := (vl-parse-list-of-named-parameter-assignments)))
+         (return (cons first rest))))
+
+  (defparser vl-parse-list-of-ordered-parameter-assignments ()
+    ;; :result (vl-paramvaluelist-p val)
+    ;; :resultp-of-nil t
+    ;; :true-listp t
+    ;; :fails gracefully
+    ;; :count strong
+    :measure (two-nats-measure (vl-tokstream-measure) 14)
+    (seq tokstream
+         (first :s= (vl-parse-param-expression))
+         (when (vl-is-token? :vl-comma)
+           (:= (vl-match-token :vl-comma))
+           (rest := (vl-parse-list-of-ordered-parameter-assignments)))
+         (return (cons first rest))))
+
+
+  (defparser vl-parse-list-of-parameter-assignments ()
+    ;; :result (vl-paramargs-p val)
+    ;; :resultp-of-nil nil
+    ;; :fails gracefully
+    ;; :count strong
+    :measure (two-nats-measure (vl-tokstream-measure) 16)
+    (seq tokstream
+         (when (vl-is-token? :vl-dot)
+           (args := (vl-parse-list-of-named-parameter-assignments))
+           (return (make-vl-paramargs-named :args args)))
+         (exprs := (if (eq (vl-loadconfig->edition config) :verilog-2005)
+                       ;; Verilog-2005 doesn't allow mintypmax exprs here.
+                       (b* (((mv err val tokstream)
+                             (vl-parse-1+-expressions-separated-by-commas))
+                            ((when err) (mv err nil tokstream)))
+                         (mv err (vl-expressions->paramvalues val) tokstream))
+                     ;; SystemVerilog-2012 does.
+                     (vl-parse-list-of-ordered-parameter-assignments)))
+         (return (make-vl-paramargs-plain :args exprs))))
+
+  (defparser vl-parse-parameter-value-assignment ()
+    ;; :result (vl-paramargs-p val)
+    ;; :resultp-of-nil nil
+    ;; :fails gracefully
+    ;; :count strong
+    :measure (two-nats-measure (vl-tokstream-measure) 13)
+    (seq tokstream
+         (:= (vl-match-token :vl-pound))
+
+         (unless (vl-is-token? :vl-lparen)
+           ;; Surprisingly, even though the grammar seems to clearly require
+           ;; parentheses, other tools accept things like myadder #3 (o, a,
+           ;; b).  So, we'll also try to tolerate a single expression that comes
+           ;; immediately after a pound here.  In this case there shouldn't be
+           ;; any closing paren.
+           (expr := (vl-parse-expression))
+           (return (make-vl-paramargs-plain :args
+                                            (list (make-vl-paramvalue-expr :expr expr)))))
+
+         ;; Otherwise we found #(, so match the arguments and so on.
+         (:= (vl-match))
+
+         (when (and (vl-is-token? :vl-rparen)
+                    (not (eq (vl-loadconfig->edition config) :verilog-2005)))
+           ;; In SystemVerilog, #() is allowed.  However, in Verilog-2005 it's a
+           ;; parse error.
+           (:= (vl-match))
+           (return (make-vl-paramargs-plain :args nil)))
+
+         (args := (vl-parse-list-of-parameter-assignments))
+         (:= (vl-match-token :vl-rparen))
+         (return args)))
+
   )
 
 
@@ -829,6 +979,12 @@ kinds of @('list_of_arguments').</p>")
         ,(vl-val-when-error-claim vl-parse-0+-variable-dimensions)
         ,(vl-val-when-error-claim vl-parse-variable-decl-assignment)
         ,(vl-val-when-error-claim vl-parse-1+-variable-decl-assignments-separated-by-commas)
+        ,(vl-val-when-error-claim vl-parse-param-expression)
+        ,(vl-val-when-error-claim vl-parse-named-parameter-assignment)
+        ,(vl-val-when-error-claim vl-parse-list-of-named-parameter-assignments)
+        ,(vl-val-when-error-claim vl-parse-list-of-ordered-parameter-assignments)
+        ,(vl-val-when-error-claim vl-parse-list-of-parameter-assignments)
+        ,(vl-val-when-error-claim vl-parse-parameter-value-assignment)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause
@@ -849,6 +1005,12 @@ kinds of @('list_of_arguments').</p>")
         ,(vl-warning-claim vl-parse-0+-variable-dimensions)
         ,(vl-warning-claim vl-parse-variable-decl-assignment)
         ,(vl-warning-claim vl-parse-1+-variable-decl-assignments-separated-by-commas)
+        ,(vl-warning-claim vl-parse-param-expression)
+        ,(vl-warning-claim vl-parse-named-parameter-assignment)
+        ,(vl-warning-claim vl-parse-list-of-named-parameter-assignments)
+        ,(vl-warning-claim vl-parse-list-of-ordered-parameter-assignments)
+        ,(vl-warning-claim vl-parse-list-of-parameter-assignments)
+        ,(vl-warning-claim vl-parse-parameter-value-assignment)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause
@@ -869,6 +1031,12 @@ kinds of @('list_of_arguments').</p>")
         ,(vl-progress-claim vl-parse-0+-variable-dimensions :strongp nil)
         ,(vl-progress-claim vl-parse-variable-decl-assignment)
         ,(vl-progress-claim vl-parse-1+-variable-decl-assignments-separated-by-commas)
+        ,(vl-progress-claim vl-parse-param-expression)
+        ,(vl-progress-claim vl-parse-named-parameter-assignment)
+        ,(vl-progress-claim vl-parse-list-of-named-parameter-assignments)
+        ,(vl-progress-claim vl-parse-list-of-ordered-parameter-assignments)
+        ,(vl-progress-claim vl-parse-list-of-parameter-assignments)
+        ,(vl-progress-claim vl-parse-parameter-value-assignment)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause
@@ -916,6 +1084,12 @@ kinds of @('list_of_arguments').</p>")
         ,(vl-eof-claim vl-parse-0+-variable-dimensions nil)
         ,(vl-eof-claim vl-parse-variable-decl-assignment :error)
         ,(vl-eof-claim vl-parse-1+-variable-decl-assignments-separated-by-commas :error)
+        ,(vl-eof-claim vl-parse-param-expression :error)
+        ,(vl-eof-claim vl-parse-named-parameter-assignment :error)
+        ,(vl-eof-claim vl-parse-list-of-named-parameter-assignments :error)
+        ,(vl-eof-claim vl-parse-list-of-ordered-parameter-assignments :error)
+        ,(vl-eof-claim vl-parse-list-of-parameter-assignments :error)
+        ,(vl-eof-claim vl-parse-parameter-value-assignment :error)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause
@@ -929,48 +1103,34 @@ kinds of @('list_of_arguments').</p>")
                     (not (mv-nth 0 (vl-match-any))))
            :hints(("Goal" :in-theory (enable vl-match-any)))))
 
+  (local (defun vl-resulttype-claim-fn (name type)
+           `(,name
+             (implies (force (not (mv-nth 0 (,name))))
+                      (,type (mv-nth 1 (,name)))))))
+  (local (defmacro vl-resulttype-claim (name type)
+           `(vl-resulttype-claim-fn ',name ',type)))
+
   (with-output
     :off prove
     :gag-mode :goals
     (make-event
      `(defthm-parse-datatype-flag vl-parse-datatype-result
-        (vl-parse-datatype-or-void
-         (implies (force (not (mv-nth 0 (vl-parse-datatype-or-void))))
-                  (vl-datatype-p (mv-nth 1 (vl-parse-datatype-or-void)))))
-
-        (vl-parse-datatype
-         (implies (force (not (mv-nth 0 (vl-parse-datatype))))
-                  (vl-datatype-p (mv-nth 1 (vl-parse-datatype)))))
-
-        (vl-parse-structmembers
-         (implies (force (not (mv-nth 0 (vl-parse-structmembers))))
-                  (vl-structmemberlist-p (mv-nth 1 (vl-parse-structmembers)))))
-
-        (vl-parse-structmember
-         (implies (force (not (mv-nth 0 (vl-parse-structmember))))
-                  (vl-structmemberlist-p (mv-nth 1 (vl-parse-structmember)))))
-
-        (vl-parse-variable-dimension
-         (implies (force (not (mv-nth 0 (vl-parse-variable-dimension))))
-                  (vl-dimension-p (mv-nth 1 (vl-parse-variable-dimension)))))
-
-        (vl-parse-associative-dimension
-         (implies (force (not (mv-nth 0 (vl-parse-associative-dimension))))
-                  (vl-dimension-p (mv-nth 1 (vl-parse-associative-dimension)))))
-
-        (vl-parse-0+-variable-dimensions
-         (implies (force (not (mv-nth 0 (vl-parse-0+-variable-dimensions))))
-                  (vl-dimensionlist-p (mv-nth 1 (vl-parse-0+-variable-dimensions)))))
-
-        (vl-parse-variable-decl-assignment
-         (implies (force (not (mv-nth 0 (vl-parse-variable-decl-assignment))))
-                  (vl-vardeclassign-p (mv-nth 1 (vl-parse-variable-decl-assignment)))))
-
-        (vl-parse-1+-variable-decl-assignments-separated-by-commas
-         (implies (force (not (mv-nth 0 (vl-parse-1+-variable-decl-assignments-separated-by-commas))))
-                  (vl-vardeclassignlist-p
-                   (mv-nth 1 (vl-parse-1+-variable-decl-assignments-separated-by-commas)))))
-
+        ,(vl-resulttype-claim vl-parse-datatype-or-void vl-datatype-p)
+        ,(vl-resulttype-claim vl-parse-datatype vl-datatype-p)
+        ,(vl-resulttype-claim vl-parse-structmembers vl-structmemberlist-p)
+        ,(vl-resulttype-claim vl-parse-structmember vl-structmemberlist-p)
+        ,(vl-resulttype-claim vl-parse-variable-dimension vl-dimension-p)
+        ,(vl-resulttype-claim vl-parse-associative-dimension vl-dimension-p)
+        ,(vl-resulttype-claim vl-parse-0+-variable-dimensions vl-dimensionlist-p)
+        ,(vl-resulttype-claim vl-parse-variable-decl-assignment vl-vardeclassign-p)
+        ,(vl-resulttype-claim vl-parse-1+-variable-decl-assignments-separated-by-commas
+                              vl-vardeclassignlist-p)
+        ,(vl-resulttype-claim vl-parse-param-expression vl-paramvalue-p)
+        ,(vl-resulttype-claim vl-parse-named-parameter-assignment vl-namedparamvalue-p)
+        ,(vl-resulttype-claim vl-parse-list-of-named-parameter-assignments vl-namedparamvaluelist-p)
+        ,(vl-resulttype-claim vl-parse-list-of-ordered-parameter-assignments vl-paramvaluelist-p)
+        ,(vl-resulttype-claim vl-parse-list-of-parameter-assignments vl-paramargs-p)
+        ,(vl-resulttype-claim vl-parse-parameter-value-assignment vl-paramargs-p)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause
@@ -998,6 +1158,12 @@ kinds of @('list_of_arguments').</p>")
         (vl-parse-1+-variable-decl-assignments-separated-by-commas
          (true-listp (mv-nth 1 (vl-parse-1+-variable-decl-assignments-separated-by-commas)))
          :rule-classes :type-prescription)
+        (vl-parse-param-expression t :rule-classes nil)
+        (vl-parse-named-parameter-assignment t :rule-classes nil)
+        (vl-parse-list-of-named-parameter-assignments t :rule-classes nil)
+        (vl-parse-list-of-ordered-parameter-assignments t :rule-classes nil)
+        (vl-parse-list-of-parameter-assignments t :rule-classes nil)
+        (vl-parse-parameter-value-assignment t :rule-classes nil)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause

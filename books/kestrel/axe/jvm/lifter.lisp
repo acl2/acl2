@@ -42,28 +42,29 @@
 
 (include-book "kestrel/jvm/control-flow" :dir :system)
 (include-book "kestrel/jvm/load-class" :dir :system)
-(include-book "kestrel/axe/jvm/rule-lists-jvm" :dir :system)
-(include-book "kestrel/axe/jvm/rules-in-rule-lists-jvm" :dir :system) ;include less?  but some of these rules are now used during decompilation?
-(include-book "kestrel/axe/jvm/lifter-utilities" :dir :system)
+(include-book "rule-lists-jvm")
+(include-book "rules-in-rule-lists-jvm") ;include less?  but some of these rules are now used during decompilation?
+(include-book "lifter-utilities")
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
-(include-book "kestrel/axe/jvm/lifter-utilities3" :dir :system)
-(include-book "kestrel/axe/rewriter" :dir :system :ttags :all)
-(include-book "kestrel/axe/make-axe-rules2" :dir :system)
-(include-book "kestrel/axe/dag-to-term-with-lets" :dir :system)
+(include-book "lifter-utilities3")
+(include-book "../rewriter" :ttags :all)
+(include-book "../make-axe-rules2")
+(include-book "../dag-to-term-with-lets")
 ;(include-book "kestrel/bv/arith" :dir :system) ;todo?
-(include-book "kestrel/axe/jvm/jvm-rules-axe2" :dir :system) ;for smart if handling
-(include-book "kestrel/axe/math-rules" :dir :system)
+(include-book "jvm-rules-axe2") ;for smart if handling
+(include-book "../math-rules")
 (include-book "kestrel/utilities/untranslated-terms" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 (include-book "kestrel/utilities/auto-termination" :dir :system)
-(include-book "kestrel/axe/prune" :dir :system) ;for maybe-prune-dag
+(include-book "../prune") ;for maybe-prune-dag
 (include-book "kestrel/jvm/symbolic-execution2" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
+(include-book "kestrel/event-macros/cw-event" :dir :system)
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 
@@ -501,7 +502,7 @@
              ;; jvm::call-stack-size-OF-POP-frame
              jvm::call-stack-size-of-pop-frame-strong
              comparison
-             <-of-+-arg2-same-arg2
+             <-of-+-cancel-1-2
              equal-of-same-cancel-1
              equal-of-same-cancel-2
              equal-of-same-cancel-3
@@ -627,7 +628,7 @@
 
     ;get-pc-designator-from-state
     ;; MEMBER-BECOMES-MEMBER-EQUAL
-    <-of-+-arg2-same-arg2 ;add
+    <-of-+-cancel-1-2 ;add
     equal-of-same-cancel-1
     equal-of-same-cancel-2
     equal-of-same-cancel-3

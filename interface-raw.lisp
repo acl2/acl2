@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1139,6 +1139,58 @@
           (declare (ignore erp state))
           val))
 
+(defun oneified-stobj-let-actuals (actuals fixps fns w program-p)
+  (cond
+   ((endp actuals) nil)
+   ((car fixps) ; (st$fix (tbl-get 'st parent))
+    (let ((actual (car actuals)))
+      (assert$
+       (and (true-listp actual)
+            (equal (length actual) 2))
+       (cons (list (car actual) ; st$fix
+                   (oneify (cadr actual)  fns w program-p))
+             (oneified-stobj-let-actuals (cdr actuals) (cdr fixps)
+                                         fns w program-p)))))
+   (t (cons (oneify (car actuals) fns w program-p)
+            (oneified-stobj-let-actuals (cdr actuals) (cdr fixps)
+                                        fns w program-p)))))
+
+(defun stobj-let-fn-oneify (x fns w program-p)
+
+; Warning: Keep this in sync with stobj-let-fn (and see comments there) and
+; stobj-let-fn-raw.
+
+  (mv-let
+    (msg bound-vars actuals fixps stobj producer-vars producer updaters
+         bindings consumer)
+    (parse-stobj-let x)
+    (declare (ignore bindings))
+    (cond
+     (msg (mv (er hard 'stobj-let "~@0" msg) nil nil nil nil))
+     (t
+      (let* ((oneified-producer
+              (oneify producer fns w program-p))
+             (oneified-consumer
+              (oneify consumer fns w program-p))
+             (oneified-updaters
+              (oneify-lst updaters fns w program-p))
+             (updated-oneified-consumer
+              `(let* ,(pairlis-x1 stobj (pairlis$ oneified-updaters nil))
+                 ,oneified-consumer))
+             (oneified-actuals
+              (oneified-stobj-let-actuals actuals fixps fns w program-p))
+             (form
+              `(let (,@(pairlis$ bound-vars (pairlis$ oneified-actuals nil)))
+                 (declare (ignorable ,@bound-vars))
+                 ,(cond
+                   ((cdr producer-vars)
+                    `(mv-let ,producer-vars
+                       ,oneified-producer
+                       ,updated-oneified-consumer))
+                   (t `(let ((,(car producer-vars) ,oneified-producer))
+                         ,updated-oneified-consumer))))))
+        (mv form bound-vars actuals fixps producer-vars stobj w))))))
+
 (mutual-recursion
 
 (defun-one-output oneify-flet-bindings (alist fns w program-p)
@@ -1256,8 +1308,8 @@
           (t x)))
    ((eq (car x) 'quote)
     (cond ((and ; (consp (cdr x)) ; always true
-                  (consp (cadr x))
-                  (eq (car (cadr x)) 'lambda))
+            (consp (cadr x))
+            (eq (car (cadr x)) 'lambda))
 
 ; Just as we apply hons-copy when translating lambda objects in
 ; translate11-lambda-object, we hons-copy here as well, to support fast lookup
@@ -1285,7 +1337,7 @@
                          successfully earlier.  Please contact the ACL2 ~
                          implementors."
                         x)
-          tx)))
+        tx)))
    ((eq (car x) 'loop$)
     (mv-let (flg tx bindings)
       (translate11-loop$
@@ -1478,9 +1530,9 @@
                             (t (car (last x)))))
             (body-form (oneify new-body fns w program-p)))
        `(mv-let ,(cadr x)
-                ,value-form
-                ,@dcls
-                ,body-form))))
+          ,value-form
+          ,@dcls
+          ,body-form))))
 
 ;     Feb 8, 1995.  Once upon a time we had the following code here:
 ;    ((eq (car x) 'the)
@@ -1503,20 +1555,19 @@
     (oneify (caddr x) fns w program-p))
    ((eq (car x) 'with-local-stobj)
     (mv-let (erp st mv-let-form creator)
-            (parse-with-local-stobj (cdr x))
-            (declare (ignore erp)) ; should be nil
-            (mv-let-for-with-local-stobj mv-let-form st creator fns w
-                                         program-p)))
+      (parse-with-local-stobj (cdr x))
+      (declare (ignore erp)) ; should be nil
+      (mv-let-for-with-local-stobj mv-let-form st creator fns w
+                                   program-p)))
    ((eq (car x) 'stobj-let)
 
 ; Stobj-let is rather complicated, so we prefer to take advantage of the logic
 ; code for that macro.
 
-    (mv-let (temp1 bound-vars actuals producer-vars stobj)
-      (stobj-let-fn x)
-      (let* ((temp2 (oneify temp1 fns w program-p))
-             (dups-check (no-duplicate-indices-checks-for-stobj-let-actuals
-                          bound-vars actuals producer-vars stobj w)))
+    (mv-let (temp bound-vars actuals fixps producer-vars stobj)
+      (stobj-let-fn-oneify x fns w program-p)
+      (let ((dups-check (no-duplicate-indices-checks-for-stobj-let-actuals
+                         bound-vars actuals fixps producer-vars stobj w)))
         (cond (dups-check
                `(prog2$ (flet ((chk-no-stobj-array-index-aliasing
                                 (x1 x2)
@@ -1524,8 +1575,8 @@
                                    'chk-no-stobj-array-index-aliasing)
                                  x1 x2)))
                           ,dups-check)
-                        temp2))
-              (t temp2)))))
+                        temp))
+              (t temp)))))
    ((member-eq (car x) '(let #+acl2-par plet))
     (let* (#+acl2-par
            (granularity-decl (and (eq (car x) 'plet)
@@ -1731,17 +1782,36 @@
 ; See the template above for detailed comments, which however are not
 ; necessarily kept fully up-to-date.
 
-  (when (and stobj-flag (null (cadr def)))
+  (when stobj-flag
+    (cond
+     ((null (cadr def))
 
-; We want to know if (car def) is a stobj creator, but it is premature to call
-; stobj-creatorp using wrld because the necessary properties have not yet been
-; laid down.  So we use the test above.  Keep this null test in sync with the
-; one in stobj-creatorp.
+; If a stobj creator is executed during a theorem (impossible by default
+; because its executable-counterpart rune is disabled; but suppose the user has
+; enabled that rune), then since its guard is t, we need to avoid having its
+; *1* function call its raw Lisp function, producing a live stobj!  We take
+; care of that here.  We want to know if (car def) is a stobj creator, but it
+; is premature to call stobj-creatorp using wrld because the necessary
+; properties have not yet been laid down.  So we use the test above.  Keep this
+; null test in sync with the one in stobj-creatorp.
 
-    (return-from oneify-cltl-code
-                 `(,(*1*-symbol (car def)) nil
-                   (throw-raw-ev-fncall ; as in oneify-fail-form
-                    (list 'ev-fncall-creator-er ',(car def))))))
+      (return-from oneify-cltl-code
+                   `(,(*1*-symbol (car def)) nil
+                     (throw-raw-ev-fncall ; as in oneify-fail-form
+                      (list 'ev-fncall-creator-er ',(car def))))))
+     ((and (null (cdr (cadr def))) ; optimization
+           (stobj-fixerp (car def) wrld))
+
+; We don't want the raw-Lisp stobj fixer ever to execute during a proof, thus
+; potentially creating a live stobj.  So we arrange that its *1* function is
+; defined to be the oneification of the body, without passing to the raw Lisp
+; version after a guard check as is generally done when oneifying a definition
+; body.  If the *1* function for creator is therefore called during a proof,
+; its usual throw will be handled just fine.
+
+      (return-from oneify-cltl-code
+                   `(,(*1*-symbol (car def)) ,(cadr def)
+                     ,(oneify (car (last def)) nil wrld nil))))))
 
   (when (null defun-mode)
 
@@ -3244,8 +3314,8 @@
 
 ; See add-trip below for context.  Fn is one of the raw Lisp function names
 ; secretly spawned by CLTL-COMMAND forms, e.g., DEFUN, DEFMACRO, DEFCONST,
-; DEFPKG, DEFATTACH, or (for the HONS version) MEMOIZE or UNMEMOIZE.  Name is
-; generally the symbol or string that is being defined.
+; DEFPKG, DEFATTACH, DEFSTOBJ, MEMOIZE or UNMEMOIZE.  Name is generally the
+; symbol or string that is being defined.
 
 ; Whenever we smash a CLTL cell we first save its current contents to permit
 ; redefinition and undoing.  Toward this end we maintain a stack for each
@@ -3304,7 +3374,7 @@
              (push `(progn
                       ,@(and (not macro-p)
                              `((maybe-untrace! ',name) ; untrace new function
-                               #+hons (maybe-unmemoize ',name)))
+                               (maybe-unmemoize ',name)))
                       ,@(if (eq extra 'reclassifying)
                             (assert$
                              (not macro-p)
@@ -3333,7 +3403,7 @@
                               (t `(fmakunbound! ',oneified-name))))))
                    (get name '*undo-stack*))))
           (t (push `(progn (maybe-untrace! ',name) ; untrace new function
-                           #+hons (maybe-unmemoize ',name)
+                           (maybe-unmemoize ',name)
                            (fmakunbound! ',name)
                            (fmakunbound! ',(*1*-symbol name)))
                    (get name '*undo-stack*)))))
@@ -3353,7 +3423,15 @@
            (t (push `(progn (makunbound ',name)
                             (remprop ',name 'redundant-raw-lisp-discriminator))
                     (get name '*undo-stack*)))))
+        ((defstobj defabsstobj)
 
+; The only effect of defstobj or defabsstobj handled here is to arrange that
+; when we undo a stobj definition, we invalidate the stobj name for purposes of
+; stobj-tables.  See current-stobj-gensym.
+
+         (push `(remhash ',name
+                         (the hash-table *current-stobj-gensym-ht*))
+               (get name '*undo-stack*)))
         (defpkg
           (let ((temp (find-non-hidden-package-entry
                        name
@@ -3364,7 +3442,6 @@
                     (get (packn (cons name '("-PACKAGE"))) '*undo-stack*))))))
         (attachment
          (cond
-          #+hons ; else this branch will be impossible
           ((eq name *special-cltl-cmd-attachment-mark-name*)
 
 ; This case arises from a call of table-cltl-cmd for (table badge-table ...);
@@ -3377,7 +3454,7 @@
                     (push ',name *defattach-fns*))
                  (get name '*undo-stack*)))
           (t (push `(progn
-                      #+hons (push ',name *defattach-fns*)
+                      (push ',name *defattach-fns*)
                       ,(set-attachment-symbol-form
                         name
 
@@ -3386,7 +3463,6 @@
 
                         (symbol-value (attachment-symbol name))))
                    (get name '*undo-stack*)))))
-        #+hons
         (memoize
 
 ; We check that the function is actually memoized.  See the comment about this
@@ -3395,7 +3471,6 @@
          (push `(when (memoizedp-raw ',name)
                   (unmemoize-fn ',name))
                (get name '*undo-stack*)))
-        #+hons
         (unmemoize
          (let* ((entry (gethash name *memoize-info-ht*))
                 (condition (access memoize-info-ht-entry entry :condition))
@@ -4572,26 +4647,25 @@
 ; is unqualified and hence is to be associated with nil in *hcomp-xxx-alist*
 ; (see function hcomp-alists-from-hts for the check against the current
 ; relevant value).  This last case is likely to be rather unusual, but can
-; happen in the #+hons case if memoization occurs after a definition without
-; being followed by unmemoization (more on this in the next paragraph).  It can
-; also happen if a function is redefined in raw-mode, though of course a trust
-; tag is needed in that case; but we do not guarantee perfect handling of
-; raw-mode, as there might be no raw-mode redefinition during the include-book
-; phase of book certification and yet there might be raw-mode redefinition
-; later during inclusion of the certified book -- anyhow, uses of raw-mode are
-; the user's responsibility.  If not for raw-mode, we might simply avoid any
-; check and consider every add-trip symbol to be qualified or semi-qualified;
-; memoization isn't a problem, since memoize is a no-op in raw Lisp and hash
-; tables are populated during early include-books performed in raw Lisp.
+; happen if memoization occurs after a definition without being followed by
+; unmemoization (more on this in the next paragraph).  It can also happen if a
+; function is redefined in raw-mode, though of course a trust tag is needed in
+; that case; but we do not guarantee perfect handling of raw-mode, as there
+; might be no raw-mode redefinition during the include-book phase of book
+; certification and yet there might be raw-mode redefinition later during
+; inclusion of the certified book -- anyhow, uses of raw-mode are the user's
+; responsibility.  If not for raw-mode, we might simply avoid any check and
+; consider every add-trip symbol to be qualified or semi-qualified; memoization
+; isn't a problem, since memoize is a no-op in raw Lisp and hash tables are
+; populated during early include-books performed in raw Lisp.
 
 ; Note that we take a conservative approach, where memoization can make a
-; symbol unqualified.  The consequence seems small, since as of this writing,
-; memoization is only done in the #+hons version, which is only for ACL2 built
-; on CCL, and CCL compiles on-the-fly; so the marking of an add-trip symbol as
-; unqualified will not result in interpreted code.  A future optimization might
-; be to to avoid disqualification due to memoization in suitable cases, perhaps
-; by tracking raw-mode or trust tags, or perhaps by somehow taking advantage of
-; the 'old-fn field of the *memoize-info-ht* entry.
+; symbol unqualified.  The consequence is likely small for those who build ACL2
+; on CCL or SBCL, since they compile on-the-fly, so the marking of an add-trip
+; symbol as unqualified will not result in interpreted code.  A future
+; optimization might be to to avoid disqualification due to memoization in
+; suitable cases, perhaps by tracking raw-mode or trust tags, or perhaps by
+; somehow taking advantage of the 'old-fn field of the *memoize-info-ht* entry.
 
 ; It is instructive to consider the case that a :program mode definition is
 ; redundant with an earlier :logic mode definition made in the book (or its
@@ -5866,7 +5940,6 @@
 
   (assert (and (symbolp fn) (symbolp sym))) ; else we should use defabbrev
   `(or (eq ,fn (symbol-function ,sym))
-       #+hons
        (let ((entry (gethash ,sym *memoize-info-ht*)))
          (and entry
               (eq ,fn
@@ -6206,6 +6279,8 @@
 
                  nil))
            (without-interrupts
+            (maybe-push-undo-stack (car cltl-cmd) ; defstobj or defabsstobj
+                                   name)
             (maybe-push-undo-stack 'defconst '*user-stobj-alist*)
             (setf (cdr status) 'maybe-push-undo-stack-completed))
 
@@ -6213,9 +6288,9 @@
 ; of that directly here.  We see no need to involve install-for-add-trip or the
 ; like.
 
-           #+hons (let ((var (st-lst name)))
-                    (or (boundp var)
-                        (eval `(defg ,var nil))))
+           (let ((var (st-lst name)))
+             (or (boundp var)
+                 (eval `(defg ,var nil))))
 
 ; As with defconst we want to make it look like we eval'd this defstobj or
 ; defabsstobj in raw lisp, so we set up the redundancy stuff:
@@ -6474,7 +6549,7 @@
 
 ; See maybe-push-undo-stack for relevant discussion of the condition above.
 
-               #+hons (push name *defattach-fns*)
+               (push name *defattach-fns*)
                (install-for-add-trip
 
 ; It may be important here that set-attachment-symbol-form generates a
@@ -6489,7 +6564,6 @@
                       (t (set-attachment-symbol-form name (cdr x))))
                 nil
                 t)))))
-        #+hons
         (memoize
 
 ; Should we push onto the undo-stack first or should we memoize first?  The
@@ -6520,7 +6594,6 @@
                                  :memo-table-init-size (nth 11 tuple)
                                  :aokp       (nth 12 tuple)
                                  :invoke     (nth 14 tuple))))))
-        #+hons
         (unmemoize
          (without-interrupts
           (maybe-push-undo-stack 'unmemoize (cadr cltl-cmd))
@@ -6569,7 +6642,7 @@
               (maybe-pop-undo-stack name)
               (maybe-pop-undo-stack '*user-stobj-alist*)))
           (defpkg nil)
-          ((defconst defmacro #+hons memoize #+hons unmemoize)
+          ((defconst defmacro memoize unmemoize)
             (maybe-pop-undo-stack (cadr (cddr trip))))
           (attachment ; (cddr trip) is produced by attachment-cltl-cmd
            (let ((lst (cdr (cddr trip))))
@@ -6652,7 +6725,6 @@
 ; (especially) by xtrans-eval.
 
     (make-fast-alist (global-val 'translate-cert-data wrld)))
-  #+hons
   (update-memo-entries-for-attachments *defattach-fns* wrld state)
   nil)
 
@@ -7306,7 +7378,6 @@
   (stop-proof-tree-fn *the-live-state*)
   (f-put-global 'ld-skip-proofsp nil *the-live-state*)
   (move-current-acl2-world-key-to-front (w *the-live-state*))
-  #+hons
   (progn (initialize-never-memoize-ht)
          (acl2h-init-memoizations))
   #+ccl
@@ -7348,7 +7419,7 @@
          (global-set 'boot-strap-pass-2 t (w *the-live-state*))
          *the-live-state*)
   (acl2-unwind *ld-level* nil)
-  #+hons (memoize-init) ; for memoize calls in boot-strap-pass-2-b.lisp
+  (memoize-init) ; for memoize calls in boot-strap-pass-2-b.lisp
 
 ; We use an explicit call of LD-fn to change the defun-mode to :logic just to
 ; lay down an event in the pre-history, in case we someday want to poke around
@@ -7363,11 +7434,6 @@
 ; files to be processed in :logic default-defun-mode.
 
 (defconst *acl2-pass-2-files*
-
-; Note that some books depend on "memoize", "hons", and "serialize", even in
-; #-hons.  For example, community book books/misc/hons-help.lisp uses hons
-; primitives.
-
   '("axioms"
     "memoize"
     "hons"
@@ -7419,9 +7485,6 @@
           (note-fns-in-form (cadr form) ht when-pass-2-p))
          (defun-for-state
            (our-update-ht (defun-for-state-name (cadr form)) form ht when-pass-2-p))
-         (define-global
-           (our-update-ht (define-global-name (cadr form)) form ht when-pass-2-p)
-           (our-update-ht (cadr form) form ht when-pass-2-p))
          ((define-pc-atomic-macro define-pc-bind* define-pc-help
             define-pc-macro define-pc-meta define-pc-primitive)
           (let ((name (make-official-pc-command
@@ -7698,9 +7761,37 @@
                (collect-monadic-booleans (cdr fns) ens wrld)))
         (t (collect-monadic-booleans (cdr fns) ens wrld))))
 
-(defun check-invariant-risk-state-p ()
+(defun check-invariant-risk ()
 
-; See the comment about this function in initialize-invariant-risk.
+; First we check that the only invariant-risk functions are the ones we expect.
+
+  (let ((bad (remove-duplicates-eq
+              (loop for trip in (w *the-live-state*)
+                    when
+                    (and (eq (cadr trip) 'invariant-risk)
+                         (not (or (cdr (assoc-eq
+                                        (car trip)
+                                        *boot-strap-invariant-risk-alist*))
+                                  (member-eq (car trip)
+
+; Put any acceptable exceptions -- i.e., function symbols with invariant risk
+; that are not mapped to t in *boot-strap-invariant-risk-alist* -- into the
+; following list.
+
+                                             '()))))
+                    collect (car trip)))))
+    (or (null bad)
+        (error "Each function symbol in the following non-empty list ~%~
+                has unexpected invariant-risk:~%~s.~%~
+                You can eliminate this error by doing the following for ~%~
+                each such symbol: either map it to nil in ~%~
+                *BOOT-STRAP-INVARIANT-RISK-ALIST*, or else add it to the ~%~
+                list of ``acceptable exceptions'' in the definition of ~%~
+                check-invariant-risk."
+               bad)))
+
+; See the comment about the following check in
+; *boot-strap-invariant-risk-alist*.
 
   (let ((bad
          (loop for tuple in *super-defun-wart-table*
@@ -7720,17 +7811,16 @@
 ; evaluation in the ACL2 loop cannot cause state-p to become false of the live
 ; state -- unless of course one makes changes using ttags, such as removing
 ; symbols from the list of untouchable.  If that claim is false of any of these
-; function symbols, then it should be added to the value of
-; *boot-strap-invariant-risk-symbols* so that it can be given an
-; 'invariant-risk property by initialize-invariant-risk.  Also see
-; put-invariant-risk.
+; function symbols, then it should be mapped to t in
+; *boot-strap-invariant-risk-alist* so that it can be given an 'invariant-risk
+; property by put-invariant-risk.
 
                                     '(READ-CHAR$
                                       READ-BYTE$
                                       READ-OBJECT
                                       PRINC$
                                       WRITE-BYTE$
-                                      PRINT-OBJECT$-SER
+                                      PRINT-OBJECT$-FN
                                       MAKUNBOUND-GLOBAL
                                       PUT-GLOBAL
                                       EXTEND-T-STACK
@@ -7743,13 +7833,16 @@
                                       CLOSE-INPUT-CHANNEL
                                       CLOSE-OUTPUT-CHANNEL))))
                collect (car tuple))))
-    (or (subsetp-eq bad
-                    *boot-strap-invariant-risk-symbols*)
-        (error "It is necessary to modify ~s to include the following ~
-                list:~%~s"
-               '*boot-strap-invariant-risk-symbols*
-               (set-difference-eq bad
-                                  *boot-strap-invariant-risk-symbols*)))))
+    (or (loop for x in bad
+              always
+              (cdr (assoc-eq x *boot-strap-invariant-risk-alist*)))
+        (error "It is probably necessary to modify ~s to map each symbol in ~%~
+                the following list to t:~%~s"
+               '*boot-strap-invariant-risk-alist*
+               (loop for x in bad
+                     when
+                     (not (cdr (assoc-eq x *boot-strap-invariant-risk-alist*)))
+                     collect x)))))
 
 (defun check-built-in-constants (&aux (state *the-live-state*))
 
@@ -7778,10 +7871,9 @@
 ; will be assigned, is not as outlandish as it might at first seem.  We check
 ; that the actual assignment is correct (using this function) after booting.
 
-; First we do a check on *boot-strap-invariant-risk-symbols* and
-; *boot-strap-invariant-risk-symbols*.
+; First we do a check that built-in symbols have invariant-risk as expected.
 
-  (check-invariant-risk-state-p)
+  (check-invariant-risk)
 
   (let ((str "The defconst of ~x0 is ~x1 but should be ~x2.  To fix ~
               the error, change the offending defconst to the value ~
@@ -8022,15 +8114,16 @@
       (when bad
         (interface-er
          "The value of *blacklisted-apply$-fns* fails to include ~&0.  This ~
-          is an error because all functions from *ttag-fns* and ~
-          *initial-untouchable-fns* must be in *blacklisted-apply$-fns*."
+          is an error because all defined functions from *ttag-fns* and ~
+          *initial-untouchable-fns* with all-nils stobjs-in and stobjs-out ~
+          must be in *blacklisted-apply$-fns*."
          bad)))
 
 ; The following is a start on checking that we don't have superfluous symbols
 ; in the list values of certain constants.  But in fact there can be such
-; symbols: we want the value for each constant must be independent of
-; features :hons or :acl2-par, yet some macros and functions are only defined
-; when such features are present.  We may think more about this later.
+; symbols: we want the value for each constant to be independent of features,
+; in particular :acl2-par, yet some macros and functions are only defined when
+; such a feature is present.  We may think more about this later.
 
 ;   (let ((undefined-macros
 ;          (loop for x in *initial-macros-with-raw-code*
@@ -8239,18 +8332,19 @@
                   state)))
 
 (defun initialize-acl2 (&optional (pass-2-ld-skip-proofsp 'include-book)
+                                  &aux
                                   (acl2-pass-2-files *acl2-pass-2-files*)
                                   system-books-dir
                                   skip-comp-exec
-                                  &aux
 
 ; We avoid proclaiming types dynamically, instead doing so only via the
 ; acl2-proclaims.lisp mechanism.  See the Essay on Proclaiming.
 
                                   (*do-proclaims* nil))
 
-; Note: if system-books-dir is supplied, it should be a Unix-style
-; pathname (either absolute or not [doesn't matter which]).
+; The first three &aux arguments were optional arguments before July, 2021.  If
+; system-books-dir is made an optional argument and then supplied, it should be
+; a Unix-style pathname (either absolute or not [doesn't matter which]).
 
 ; This function first lds all of the *acl2-files*, except
 ; boot-strap-pass-2-*.lisp and *-raw.lisp, in default-defun-mode :program
@@ -8587,12 +8681,13 @@
 
 ; If *acl2-time-limit-boundp* is true, then we can safely use our approach of
 ; continuing from the break (if possible) and letting the prover notice that
-; *acl2-time-limit* is 0.  That allows the prover to quit sufficiently normally
-; such that state global 'redo-flat-fail is bound in support of :redo-flat.
-; The reason that *acl2-time-limit-boundp* needs to be true is that ultimately,
-; we want *acl2-time-limit* to revert to its default value of nil.
+; *acl2-time-limit* is 0.  That allows the prover to quit in a clean way that
+; supports :redo-flat.  The reason that *acl2-time-limit-boundp* needs to be
+; true is that ultimately, we want *acl2-time-limit* to revert to its default
+; value of nil.
 
-                (and (find-restart 'continue)
+                (and (f-get-global 'abort-soft state)
+                     (find-restart 'continue)
                      *acl2-time-limit-boundp*
                      (not (eql *acl2-time-limit* 0)))))
            #+ccl ; for CCL revisions before 12090
@@ -8605,7 +8700,8 @@
              (format t
                      "~&Note:  ~A~
                       ~&  Will attempt to exit the proof in progress;~
-                      ~&  otherwise, the next interrupt will abort the proof."
+                      ~&  otherwise, the next interrupt will abort the proof.~
+                      ~&  For an immediate abort see :DOC abort-soft."
                      condition))
             (t
              (format t
@@ -9122,11 +9218,14 @@
              *the-live-state*)
             *the-live-state*)))
        (set-gag-mode-fn :goals *the-live-state*)
-       #-hons
-; Hons users are presumably advanced enough to tolerate the lack of a
-; "[RAW LISP]" prompt.
-       (install-new-raw-prompt)
-       #+hons (f-put-global 'serialize-character-system #\Z state)
+       (f-put-global 'serialize-character-system #\Z state)
+       (f-put-global 'pc-info
+                     (make pc-info
+                           :print-macroexpansion-flg nil
+                           :print-prompt-and-instr-flg t
+                           :prompt "->: "
+                           :prompt-depth-prefix "#")
+                     state)
        #+(and (not acl2-loop-only) acl2-rewrite-meter)
        (setq *rewrite-depth-alist* nil)
 
@@ -9281,9 +9380,10 @@
 
      (let ((*readtable* *reckless-acl2-readtable*)
 
-; We reduce the compiled file size produced by CCL, even in the #+hons case
-; where we may have set ccl::*save-source-locations* to t.  We have seen an
-; example where this binding reduced the .dx64fsl size from 13696271 to 24493.
+; We reduce the compiled file size produced by CCL, even if we have previously
+; set ccl::*save-source-locations* to t (though we stopped doing so in
+; Version_7.0).  We have seen an example where this binding reduced the
+; .dx64fsl size from 13696271 to 24493.
 
            #+ccl (ccl::*save-source-locations* nil))
        (cond
@@ -10405,9 +10505,7 @@
     :post-gc)))
 
 #+ccl
-(defvar *gc-strategy*
-  #-hons ; else initialized with set-gc-strategy in acl2h-init
-  (progn (ccl::egc nil) t))
+(defvar *gc-strategy*) ; initialized with set-gc-strategy in acl2h-init
 
 #+ccl
 (defun start-sol-gc ()

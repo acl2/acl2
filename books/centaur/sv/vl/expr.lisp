@@ -263,6 +263,7 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
   (fty::deffixequiv-mutual svex-variable-free-p))
 
 
+
 #!sv
 (defines svex-reduce-consts
   :verify-guards nil
@@ -271,6 +272,8 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
     :measure (svex-count x)
     (svex-case x
       :call (b* ((args (svexlist-reduce-consts x.args))
+                 ((when (svexlist-variable-free-p args))
+                  (svex-quote (svex-apply x.fn (svexlist-eval args nil))))
                  (val (svex-fn/args-xeval x.fn args)))
               (if (4vec-xfree-p val)
                   (svex-quote val)
@@ -307,6 +310,10 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
     (defthm svex-reduce-consts-correct
       (equal (svex-eval (svex-reduce-consts x) env)
              (svex-eval x env))
+      :hints ((and stable-under-simplificationp
+                   '(:use ((:instance eval-when-svexlist-variable-free-p
+                            (x (svexlist-reduce-consts (svex-call->args x)))))
+                     :in-theory (disable eval-when-svexlist-variable-free-p))))
       :flag svex-reduce-consts)
     (defthm svexlist-reduce-consts-correct
       (equal (svexlist-eval (svexlist-reduce-consts x) env)

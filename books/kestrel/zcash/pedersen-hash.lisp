@@ -82,7 +82,7 @@
    (xdoc::p
     "[ZPS] allows the argument @($M$) to have any length,
      but there is a (large) limit (see guard of @(tsee blake2s-256)).
-     The limit here must be dimished by 64,
+     The limit here must be diminished by 64,
      which is the length of @($\\mathsf{URS}$)."))
   (b* ((hash (blake2s-256 d (append *urs* m)))
        (point (jubjub-abst (leos2bsp hash)))
@@ -334,8 +334,10 @@
      under the hypothesis of the theorem:
      this is needed for the base case,
      to relieve the hypothesis of the bound rules of @(tsee pedersen-enc).
+     (These two lemmas are at the beginning of this file.)
      We also need a few arithmetic lemmas
      to nudge the proof in the right direction.
+     (These arithmetic lemmas are below.)
      With linear bound rules for the recursive function in hand,
      the bound proofs for @(tsee pedersen-segment-scalar) are automatic."))
   (pedersen-segment-scalar-loop-bound 1 segment)
@@ -422,7 +424,7 @@
    (xdoc::p
     "This is proved by first proving that
      the loop function is outside the interval
-     between @($-2^{4\\cdot(j-1)}$) to @($2^{4\\cdot(j-1)}$)
+     between @($-2^{4\\cdot(j-1)}$) to @($2^{4\\cdot(j-1)}$),
      both exclusive.
      Setting @($j=1$), we have that @(tsee pedersen-segment-scalar)
      is outside the interval from -1 to 1 exclusive, i.e. it is not 0.
@@ -531,7 +533,7 @@
               (integerp (/ (len segment) 3)))
   :returns (point? maybe-jubjub-pointp)
   :short "The addend point in the definition of
-          @($\\mathsf{PedersenHashPoint}$) [ZPS:5.4.1.7]."
+          @($\\mathsf{PedersenHashToPoint}$) [ZPS:5.4.1.7]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -577,7 +579,7 @@
   (xdoc::topstring
    (xdoc::p
     "We return @('nil') if, instead of a point, an error is returned.
-     This is distinguishes from a valid hash, which is not empty."))
+     This is distinguished from a valid hash, which is not empty."))
   (b* ((point (pedersen-point d m))
        ((unless (jubjub-pointp point)) nil))
     (coordinate-extract point)))

@@ -32,65 +32,57 @@ L3_TO_ACL2_DIR ?= $(shell cd ../../translator/ ; pwd)
 endif
 endif
 
-$(warning L3_TO_ACL2_DIR is $(L3_TO_ACL2_DIR))
-
-
+# $(warning L3_TO_ACL2_DIR is $(L3_TO_ACL2_DIR))
 
 BOOKS = tiny run tiny-logic tiny-manual
 
 tiny.lisp: ../../translator/l3-to-acl2.cert tiny-acl2.txt
-	@echo '####################'
-	@echo 'Creating file $@'
+	@echo "Creating file `pwd`/$@"
 	@echo '(include-book "$(L3_TO_ACL2_DIR)/l3-to-acl2")' > workxxx.$@
 	@echo '(l3-to-acl2 "tiny-acl2.txt" "tiny.lisp"' >> workxxx.$@
 	@echo '            :str-to-sym' >> workxxx.$@
 	@echo '            (quote (("PC" . pctr) ("alu" . alu_var) ("function" . function0))))' >> workxxx.$@
 	@$(ACL2) < workxxx.$@ > $@.out
-	@echo "diff tiny.lisp gold/tiny.lisp"
 	@diff tiny.lisp gold/tiny.lisp
-	@echo "Successfully built $@"
+	@echo "Successfully built `pwd`/$@"
 
 tiny-logic.lisp: ../../translator/l3-to-acl2.cert tiny-acl2.txt
-	@echo '####################'
-	@echo 'Creating file $@'
+	@echo "Creating file `pwd`/$@"
 	@echo '(include-book "$(L3_TO_ACL2_DIR)/l3-to-acl2")' > workxxx.$@
 	@echo '(l3-to-acl2 "tiny-acl2.txt" "tiny-logic.lisp"' >> workxxx.$@
 	@echo '            :logic :logic-only' >> workxxx.$@
 	@echo '            :str-to-sym' >> workxxx.$@
 	@echo '            (quote (("PC" . pctr) ("alu" . alu_var) ("function" . function0))))' >> workxxx.$@
 	@$(ACL2) < workxxx.$@ > $@.out
-	@echo "diff tiny-logic.lisp gold/tiny-logic.lisp"
 	@diff tiny-logic.lisp gold/tiny-logic.lisp
-	@echo "Successfully built $@"
+	@echo "Successfully built `pwd`/$@"
 
+# Check that the model runs as expected.
 run-check.txt: run.cert
-	@echo '####################'
-	@echo 'Checking that the model runs as expected.'
+	@echo "Starting target $@ (in directory `pwd`)"
 	@echo '(include-book "run")' > workxxx.$@
 	@echo '(run-output st$$ state)' >> workxxx.$@
 	@$(ACL2) < workxxx.$@ > run-check.out
-	@echo "diff run-check.txt gold/run-check.txt"
 	@diff run-check.txt gold/run-check.txt
-	@echo "Successfully completed $@"
+	@echo "Successfully completed target $@"
 
+# Run :program mode test (from auto-generated tiny.lisp).
 run-test.out: run.cert
-	@echo '####################'
-	@echo "Running :program mode test (from auto-generated tiny.lisp):"
+	@echo "Starting target $@ (in directory `pwd`)"
 	@-rm -f workxxx.$@
-	@./run-test.sh $@
+	@./run-test.sh $@ > run-test.log
 
+# Run :logic mode test (from auto-generated tiny-logic.lisp).
 run-test-logic.out: run.cert tiny-logic.cert
-	@echo '####################'
-	@echo "Running :logic mode test (from auto-generated tiny-logic.lisp):"
+	@echo "Starting target $@ (in directory `pwd`)"
 	@echo '(include-book "tiny-logic")' > workxxx.$@
-	@./run-test.sh $@
+	@./run-test.sh $@ > run-test.log
 
+# Run test for guard-verified functions (from manually produced tiny-manual.lisp).
 run-test-guard-verified.out: run.cert tiny-manual.cert
-	@echo '####################'
-	@echo "Running test for guard-verified functions (from"
-	@echo "manually produced tiny-manual.lisp):"
+	@echo "Starting target $@ (in directory `pwd`)"
 	@echo '(include-book "tiny-manual")' > workxxx.$@
-	@./run-test.sh $@
+	@./run-test.sh $@ > run-test.log
 
 # We use recursive calls of make below so that even if -j is used,
 # they are run sequentially -- so that their output isn't interleaved.
@@ -102,7 +94,7 @@ run-test:
 clean: clean-more
 
 clean-more:
-	rm -f tiny.lisp tiny-logic.lisp run-check.txt
+	rm -f tiny.lisp tiny-logic.lisp run-check.txt run-test.log
 
 # Dependencies for generated files:
 

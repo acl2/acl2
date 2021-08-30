@@ -998,7 +998,7 @@ when it becomes available.
        ;; Now var is the variable and ctx-term is the context for that
        ;; variable.
        ;; Unify the term we're rewriting with the RHS to find the subterm
-       ;; corresponding to the varible.
+       ;; corresponding to the variable.
        ((mv ok term-subst) (simple-one-way-unify rhs term nil))
        ;; '((x . (baz z)) (y . w))
        ((unless ok) (mv nil term))

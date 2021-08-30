@@ -580,7 +580,7 @@
             state))
        (- (and print (cw "(DAG to prove: ~x0)~%" dag)))
        ;; (dag-len (len dag))
-       (dag-size (dag-size dag))
+       (dag-size (dag-size-unguarded dag))
        (- (cw "(DAG to prove for ~s0 has size ~x1.)~%" method-designator-string dag-size))
        (- (and (< dag-size 1000)
                (progn$ (cw "(DAG is:~%")

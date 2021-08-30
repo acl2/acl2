@@ -25,3 +25,4 @@ echo "-----"
 echo "Executing git merge remotes/origin/master"
 echo "-----"
 git merge remotes/origin/master
+

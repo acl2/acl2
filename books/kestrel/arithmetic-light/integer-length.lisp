@@ -27,8 +27,9 @@
 
 ;move?
 (defthm integer-length-bound
-  (implies (and (natp n)
-                (< 0 n))
+  (implies (and (integerp n)
+                ;; (< 0 n)
+                )
            (< n (expt 2 (integer-length n))))
   :rule-classes (:rewrite :linear)
   :hints ( ;("subgoal *1/5" :use (:instance floor-bound (x n)))
@@ -71,7 +72,7 @@
 (defthm integer-length-monotonic
   (implies (and (<= x y)
                 (natp x)
-                (natp y))
+                (integerp y))
            (<= (integer-length x) (integer-length y)))
   :hints (("Goal"
            :induct (double-floor-by-2-induct x y)
@@ -115,7 +116,7 @@
 
 ;gen?
 (defthm <-of-1-and-floor-of-2
-  (implies (natp x)
+  (implies (rationalp x) ;(natp x)
            (equal (< 1 (floor x 2))
                   (<= 4 x))))
 
@@ -148,7 +149,7 @@
 ;expensive, newly disabled
 (defthmd unsigned-byte-p-of-integer-length-gen
   (implies (and (<= (integer-length x) n)
-                (natp n)
+                (integerp n)
                 (natp x))
            (unsigned-byte-p n x))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-integer-length)
@@ -190,7 +191,7 @@
 
 (defthm integer-length-of-*-of-1/2
   (implies (and (evenp x)
-                (integerp x))
+                (rationalp x))
            (equal (integer-length (* 1/2 x))
                   (if (equal x 0)
                       0
@@ -198,3 +199,23 @@
   :hints (("Goal" :expand (integer-length x)
            :in-theory (e/d (integer-length floor)
                            (integer-length-of-floor-by-2)))))
+
+(defthm <-of-integer-length-arg2
+  (implies (and (posp x)
+                (integerp n))
+           (equal (< n (integer-length x))
+                  (<= (expt 2 n) x)))
+  :hints (("Goal" :in-theory (enable integer-length))))
+
+(defthm <-of-expt-of-one-less-of-integer-length
+  (implies (posp x)
+           (not (< x (expt 2 (+ -1 (integer-length x))))))
+  :hints (("Goal" :in-theory (enable integer-length))))
+
+(defthm <-of-integer-length-arg1
+  (implies (and (syntaxp (not (and (quotep n) (< 1000 (unquote n))))) ;prevent huge calls to EXPT
+                (posp x)
+                (natp n))
+           (equal (< (integer-length x) n)
+                  (< x (expt 2 (+ -1 n)))))
+  :hints (("Goal" :in-theory (enable integer-length posp))))

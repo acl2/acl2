@@ -1552,8 +1552,8 @@
                 (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                (term (pseudo-term-call fn args))
                (types (list (atj-type-jprimarr ptype))))
-            (mv (atj-type-wrap-term term types types)
-                types
+            (mv (atj-type-wrap-term term types required-types?)
+                (or required-types? types)
                 mv-typess)))
          ((mv args types mv-typess) (atj-type-annotate-args args
                                                             var-types
@@ -2331,7 +2331,7 @@
      this situation means that the same array is aliased (in Java)
      and possibly subjected to different modifications through the aliases.
      We pass a flag to @('atj-analyze-arrays-in-term') indicating whether
-     the funtion called is a lambda expression or a named function:
+     the function called is a lambda expression or a named function:
      in the latter case, we also ensure that arguments of array types
      are variables, and not other function calls
      (note that they cannot be quoted constants).

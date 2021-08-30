@@ -71,19 +71,19 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable realpart-redef))))
 
-(defthm realpart-of-*-when-rationalp-and-complex-rationalp
-  (implies (and (rationalp x)
-                (complex-rationalp y))
+(defthm realpart-of-*-when-rationalp-arg1
+  (implies (rationalp x)
            (equal (realpart (* x y))
                   (* x (realpart y))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :use ((:instance complex-split (x y))))))
 
-;commuted version
-(defthm realpart-of-*-when-rationalp-and-complex-rationalp-alt
-  (implies (and (rationalp x)
-                (complex-rationalp y))
-           (equal (realpart (* y x))
-                  (* x (realpart y))))
+(defthm realpart-of-*-when-rationalp-arg2
+  (implies (rationalp y)
+           (equal (realpart (* x y))
+                  (* y (realpart x))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :use ((:instance complex-split (x y))))))
+           :in-theory (disable realpart-of-*-when-rationalp-arg1)
+           :use ((:instance realpart-of-*-when-rationalp-arg1
+                            (x y)
+                            (y x))))))

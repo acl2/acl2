@@ -49,3 +49,10 @@
            t)))
 
 (theory-invariant (incompatible (:rewrite true-listp-of-cdr-strong) (:definition true-listp)))
+
+(defthmd equal-when-equal-of-cdrs
+  (implies (and (equal (cdr x) (cdr y))
+                (consp x)
+                (consp y))
+           (equal (equal x y)
+                  (equal (car x) (car y)))))

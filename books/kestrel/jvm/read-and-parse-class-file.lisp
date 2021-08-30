@@ -24,9 +24,12 @@
 
 ;; Returns (mv erp class-name class-info field-defconsts state constant-pool).
 (defund read-and-parse-class-file (class-file error-if-doesnt-existp state constant-pool)
-  (declare (xargs :guard (stringp class-file)
+  (declare (xargs ;; :guard (stringp class-file) ; including this may impose invariant-risk on callers
                   :stobjs (state constant-pool)))
-  (b* (((mv existsp state) ; consider skipping this step?
+  (b* (((when (not (stringp class-file)))
+        (er hard? 'read-and-parse-class-file "File name is not a string: ~x0." class-file)
+        (mv :bad-filename nil nil nil state constant-pool))
+       ((mv existsp state) ; consider skipping this step?
         (file-existsp class-file state))
        ((when (not existsp))
         (and error-if-doesnt-existp (er hard? 'read-and-parse-class-file "File does not exist: ~x0." class-file))

@@ -22,6 +22,7 @@
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 
 ;not tail recursive
@@ -57,15 +58,6 @@
   (equal (all-< (remove-duplicates-from-grouped-list x) bound)
          (all-< x bound))
   :hints (("Goal" :in-theory (enable remove-duplicates-from-grouped-list))))
-
-
-
-;dup
-(defthmd natp-of-+-of-1-alt
-  (implies (integerp x)
-           (equal (natp (+ 1 x))
-                  (<= -1 x)))
-  :hints (("Goal" :in-theory (enable natp))))
 
 (defthm not-<-of-car-when-nat-listp
   (implies (and (syntaxp k)

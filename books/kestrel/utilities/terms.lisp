@@ -16,6 +16,7 @@
 (include-book "forms") ;for farg1, etc.
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
+(include-book "kestrel/terms-light/expr-calls-fn" :dir :system) ;todo: drop?
 (include-book "symbol-term-alistp")
 (include-book "expand-lambdas-in-term")
 (include-book "tools/flag" :dir :system)
@@ -237,11 +238,11 @@
     :flag get-fns-in-terms-aux))
 
 (defthm pseudo-termp-of-lambda-body-cheap
-  (implies (and (consp term)
-                (consp (car term))
+  (implies (and ;; (consp term)
+                ;; (consp (car term))
                 (pseudo-termp term))
            (pseudo-termp (caddr term)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 0 0)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :expand ((pseudo-termp term)))))
 
 (defthm-flag-get-fns-in-term-aux
@@ -281,28 +282,7 @@
            (symbol-listp (get-fns-in-terms terms)))
   :hints (("Goal" :in-theory (enable get-fns-in-terms))))
 
-(mutual-recursion
- (defun expr-calls-fn (fn expr)
-   (declare (xargs :measure (acl2-count expr)
-                   :guard (and (symbolp fn)
-                               (pseudo-termp expr))))
-   (cond ((variablep expr) nil)
-         ((fquotep expr) nil)
-         ;;lambda:
-         ((consp (ffn-symb expr))
-          (or (expr-calls-fn fn (third (ffn-symb expr))) ;lambda body
-              (some-expr-calls-fn fn (fargs expr))))
-         (t (or (eq fn (ffn-symb expr))
-                (some-expr-calls-fn fn (fargs expr))))))
 
- (defun some-expr-calls-fn (fn exprs)
-   (declare (xargs :measure (acl2-count exprs)
-                   :guard (and (symbolp fn)
-                               (pseudo-term-listp exprs))))
-   (if (atom exprs)
-       nil
-     (or (expr-calls-fn fn (car exprs))
-         (some-expr-calls-fn fn (cdr exprs))))))
 
 ;; (RENAME-FN 'foo 'bar '(foo '1 (baz (foo x y))))
 (mutual-recursion
@@ -382,7 +362,7 @@
 
 (defthm pseudo-termp-of-beta-reduce
   (implies (and (pseudo-termp term)
-                (consp term)
+                ;; (consp term)
                 (consp (car term)))
            (pseudo-termp (beta-reduce term)))
   :hints (("Goal" :expand ((pseudo-termp term)
@@ -400,6 +380,12 @@
            )
       (farg1 term) ;negation of (not x) is just x
     `(not ,term)))
+
+;; Kept disabled for speed
+;; Matches the one in std.
+(defthmd pseudo-term-listp-when-symbol-listp
+  (implies (symbol-listp syms)
+           (pseudo-term-listp syms)))
 
 (defthm pseudo-term-listp-when-symbol-listp-cheap
   (implies (symbol-listp x)

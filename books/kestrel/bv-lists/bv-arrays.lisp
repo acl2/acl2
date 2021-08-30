@@ -259,8 +259,7 @@
   (implies (and (natp width)
                 (integerp len)
                 (< index len)
-                (natp index)
-                (< 0 len))
+                (natp index))
            (equal (bv-array-read width len index (bvchop-list width lst))
                   (bv-array-read width len index lst)))
   :hints (("Goal" :in-theory (e/d (;LIST::NTH-WITH-LARGE-INDEX
@@ -422,8 +421,7 @@
                 (natp index1)
                 (natp index2)
                 (< index1 len)
-                (< index2 len)
-                (integerp len))
+                (< index2 len))
            (equal (bv-array-read width len index1 (bv-array-write width len index2 val lst))
                   (if (not (equal index1 index2))
                       (bv-array-read width len index1 lst)
@@ -472,8 +470,7 @@
 (defthm bv-array-read-of-append-of-cons
   (implies (and (equal (len x) index)
                 (< index len)
-                (natp len)
-                (natp index))
+                (natp len))
            (equal (bv-array-read width len index (binary-append x (cons a b)))
                   (bvchop width a)))
   :hints (("Goal" :in-theory (enable bv-array-read ceiling-of-lg))))
@@ -496,6 +493,15 @@
   (implies (natp size) ;move to cons?
            (all-unsigned-byte-p size (append-arrays size a b c d)))
   :hints (("Goal" :in-theory (enable append-arrays))))
+
+(defthm bv-arrayp-of-append-arrays
+  (implies (and (natp element-size)
+                (natp len1)
+                (natp len2)
+                )
+           (equal (bv-arrayp element-size len (append-arrays element-size len1 array1 len2 array2))
+                  (equal len (+ len1 len2))))
+  :hints (("Goal" :in-theory (enable bv-arrayp))))
 
 ;gross because it mixes theories?
 ;fixme could make an append operator with length params for two arrays..
@@ -646,7 +652,6 @@
 (defthm bv-array-read-of-bv-array-write-when-len-is-a-power-of-2
   (implies (and (power-of-2p len)
                 (<= width2 width1) ;handle better?
-                (integerp len)
                 (natp width2)
                 (integerp width1))
            (equal (bv-array-read width1 len index1 (bv-array-write width2 len index2 val lst))
@@ -784,7 +789,7 @@
                 (syntaxp (quotep index2))
                 (< index2 index1)
                 (< index1 len)
-                (< index2 len)
+                ;; (< index2 len)
                 (natp index1)
                 (natp index2)
 ;                (natp len) ;drop?
@@ -833,7 +838,7 @@
                 (< index2 index1) ;only do it when the indices are out of order
                 (<= element-size2 element-size1) ;the outer size is bigger
                 (< index1 len)
-                (< index2 len)
+                ;; (< index2 len)
                 (natp index1)
                 (natp index2)
                 (natp len)
@@ -943,7 +948,7 @@
 ;move
 ;; breaks the abstraction
 (defthm car-of-bv-array-write
-  (implies (and (<= 1 len)
+  (implies (and ;; (<= 1 len)
                 (integerp len)
                 (< key len)
                 ;(natp len)
@@ -1016,16 +1021,6 @@
 ;; ;move
 ;; (theory-invariant (incompatible (:rewrite nthcdr-of-true-list-fix) (:rewrite true-list-fix-of-nthcdr)))
 
-;matches std except has one less nfix
-(defthm nthcdr-of-update-nth-simpler
-  (equal (nthcdr n1 (update-nth n2 val x))
-         (if (< (nfix n2) (nfix n1))
-             (nthcdr n1 x)
-           (update-nth (- n2 (nfix n1)) val (nthcdr n1 x))))
-  :hints (("Goal" ;:induct (sub1-sub1-cdr-induct n key l)
-           :expand (UPDATE-NTH n2 VAL (NTHCDR (+ -1 N1) (CDR x)))
-           :in-theory (enable update-nth nthcdr))))
-
 (defthm nthcdr-of-bv-array-write
   (implies (and (<= n (len lst))
                 (equal (len lst) len) ;bozo
@@ -1039,8 +1034,6 @@
   :hints (("Goal" :in-theory (e/d (UPDATE-NTH2 bv-array-write ceiling-of-lg NTHCDR-of-true-list-fix)
                                   (;LIST::FIX-OF-NTHCDR
                                    )))))
-
-
 
 (defthm nthcdr-of-bv-array-write-better
   (implies (and (<= n len)
@@ -1069,6 +1062,17 @@
 (defthm len-of-array-of-zeros
   (equal (len (array-of-zeros width len))
          (nfix len))
+  :hints (("Goal" :in-theory (enable array-of-zeros))))
+
+(defthm BV-ARRAYP-of-array-of-zeros
+  (implies (and (natp element-size)
+                (natp len))
+           (BV-ARRAYP ELEMENT-SIZE len (ARRAY-OF-ZEROS ELEMENT-SIZE len)))
+  :hints (("Goal" :in-theory (enable BV-ARRAYP ARRAY-OF-ZEROS))))
+
+(defthm array-of-zeros-iff
+  (iff (array-of-zeros width len)
+       (not (zp len)))
   :hints (("Goal" :in-theory (enable array-of-zeros))))
 
 (defthm all-unsigned-byte-p-of-array-of-zeros
@@ -1127,7 +1131,7 @@
   (implies (and (natp element-size)
                 (natp len))
            (bv-arrayp element-size len (bv-array-if element-size len test array1 array2)))
-  :hints (("Goal" :in-theory (enable bv-array-if))))
+  :hints (("Goal" :in-theory (enable bv-array-if bv-arrayp))))
 
 (defthm bv-array-if-of-t
   (equal (bv-array-if element-size len t array1 array2)
@@ -1211,7 +1215,7 @@
   (implies (and (natp element-size)
                 (natp len))
            (bv-arrayp element-size len (bv-array-write ELEMENT-SIZE LEN INDEX VAL DATA)))
-  :hints (("Goal" :in-theory (enable bv-array-write))))
+  :hints (("Goal" :in-theory (enable bv-array-write bv-arrayp))))
 
 ;; (defthm bv-array-write-of-logext-list-better
 ;;   (implies (and (<= element-size size)
@@ -1342,7 +1346,8 @@
 ;could restrict to constant arrays...
 (defthm bv-array-if-same-branches-safe
   (implies (and (bv-arrayp element-size len array)
-                (natp len))
+                ;; (natp len)
+                )
            (equal (bv-array-if element-size len test array array)
                   array))
   :hints (("Goal" :in-theory (enable bv-array-if))))
@@ -1473,7 +1478,7 @@
                 (natp index)
                 (< index len)
                 (equal (len data) len)
-                (true-listp data)
+                ;; (true-listp data)
                 (all-unsigned-byte-p element-size data) ;drop?
                 )
            (equal (bv-array-read element-size len index data)
@@ -1582,8 +1587,7 @@
                 (< INDEX (LEN DATA))
                 (natp index)
                 (true-listp data)
-                (natp esize)
-                (< 0 len))
+                (natp esize))
            (equal (bv-array-write esize len index val data)
                   (bv-array-write esize len index val (bvchop-list esize data))))
   :hints
@@ -1613,3 +1617,23 @@
                        bv-array-read
                        nth-when-<=-len
                        natp))))
+
+;; the lhs should not arise when abstractions are being respected
+(defthm BV-ARRAY-READ-of-cdr
+  (implies (and (natp i)
+;                (natp size)
+                (equal len (+ -1 (LEN ARR)))
+                (< i len))
+           (EQUAL (BV-ARRAY-READ SIZE len I (CDR ARR))
+                  (BV-ARRAY-READ SIZE (+ 1 len) (+ 1 I) ARR)))
+  :hints (("Goal" :in-theory (e/d (bv-array-read ;ceiling-of-lg BVCHOP-OF-SUM-CASES
+                                   )
+                                  (BVCHOP-IDENTITY)))))
+
+;; the lhs should not arise when abstractions are being respected
+(defthm bv-array-read-of-nthcdr
+  (implies (and (natp i)
+                (< i (len src)))
+           (equal (BV-ARRAY-READ 8 (LEN (NTHCDR I SRC)) 0 (NTHCDR I SRC))
+                  (BV-ARRAY-READ 8 (LEN src) i src)))
+  :hints (("Goal" :in-theory (e/d (BV-ARRAY-READ) ()))))

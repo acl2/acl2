@@ -1376,7 +1376,7 @@ instance, in this case the @('tail') would be
        (ref-scopes (vl-elabscopes-traverse (rev ref.elabpath) scopes :allow-empty t))
        (info (vl-elabscopes-item-info name1 ref-scopes :allow-empty t))
        (item (or info ref.item))
-       
+
        ((when (eq (tag item) :vl-typedef))
         (b* (((vl-typedef item) item)
              ((when info)
@@ -2330,7 +2330,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
        (acc (cons #\[ acc))
        (idx (vl-resolved->val (car indices)))
        (acc (if (< idx 0) (cons #\- acc) acc))
-       (acc (revappend (str::natchars (abs idx)) acc))
+       (acc (revappend (str::nat-to-dec-chars (abs idx)) acc))
        (acc (cons #\] acc)))
     (vl-flatten-hidindex-aux (cdr indices) acc)))
 

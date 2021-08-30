@@ -128,11 +128,11 @@
     take-leading-dec-digit-chars
     dec-digit-string-p-aux
     dec-digit-string-p
-    basic-natchars
-    natchars-aux
-    natchars
-    revappend-natchars-aux
-    revappend-natchars
+    basic-nat-to-dec-chars
+    nat-to-dec-chars-aux
+    nat-to-dec-chars
+    revappend-nat-to-dec-chars-aux
+    revappend-nat-to-dec-chars
     natstr
     natstr-list
     intstr
@@ -154,11 +154,11 @@
     take-leading-bin-digit-chars
     bin-digit-string-p-aux
     bin-digit-string-p
-    basic-natchars2
-    natchars2-aux
-    natchars2
-    revappend-natchars2-aux
-    revappend-natchars2
+    basic-nat-to-bin-chars
+    nat-to-bin-chars-aux
+    nat-to-bin-chars
+    revappend-nat-to-bin-chars-aux
+    revappend-nat-to-bin-chars
     natstr2
     natstr2-list
     natsize2
@@ -177,11 +177,11 @@
     hex-digit-string-p-aux
     hex-digit-string-p
     hex-digit-to-char
-    basic-natchars16
-    natchars16-aux
-    natchars16
-    revappend-natchars16-aux
-    revappend-natchars16
+    basic-nat-to-hex-chars
+    nat-to-hex-chars-aux
+    nat-to-hex-chars
+    revappend-nat-to-hex-chars-aux
+    revappend-nat-to-hex-chars
     natstr16
     natstr16-list
     natsize16-aux
@@ -202,11 +202,11 @@
     oct-digit-string-p-aux
     oct-digit-string-p
     octal-digit-to-char
-    basic-natchars8
-    natchars8-aux
-    natchars8
-    revappend-natchars8-aux
-    revappend-natchars8
+    basic-nat-to-oct-chars
+    nat-to-oct-chars-aux
+    nat-to-oct-chars
+    revappend-nat-to-oct-chars-aux
+    revappend-nat-to-oct-chars
     natstr8
     natstr8-list
     natsize8-aux

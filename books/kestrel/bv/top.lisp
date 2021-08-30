@@ -26,6 +26,8 @@
 
 (include-book "signed-byte-p")
 
+(include-book "bytep")
+
 ;; Underlying functions:
 (include-book "lognot")
 (include-book "logand")
@@ -152,6 +154,7 @@
 (include-book "single-bit")
 
 ;; Mixed rules:
+(include-book "bvcat-rules")
 (include-book "rules0")
 (include-book "rules")
 (include-book "rules2")

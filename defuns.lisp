@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -6477,7 +6477,7 @@
     (LIST-ALL-PACKAGE-NAMES      (STATE)         (NIL STATE))
     (PRINC$                      (NIL NIL STATE) (STATE))
     (WRITE-BYTE$                 (NIL NIL STATE) (STATE))
-    (PRINT-OBJECT$-SER           (NIL NIL NIL STATE) (STATE))
+    (PRINT-OBJECT$-FN            (NIL NIL NIL STATE) (STATE))
     (GET-GLOBAL                  (NIL STATE)     (NIL))
     (BOUNDP-GLOBAL               (NIL STATE)     (NIL))
     (MAKUNBOUND-GLOBAL           (NIL STATE)     (STATE))
@@ -6594,6 +6594,47 @@
                                acc
                              (cons (car names) acc))))))
 
+(defconst *boot-strap-invariant-risk-alist*
+
+; We put a non-nil 'invariant-risk property on every function that might
+; violate some ACL2 invariant, if called on arguments that fail to satisfy that
+; function's guard.  Also see put-invariant-risk.
+
+; This constant should map to t all function symbols that might violate an ACL2
+; invariant.  See check-invariant-risk.  We don't include compress1 or
+; compress2 because we believe they don't write out of bounds.  We explicitly
+; map some function symbols to nil to indicate that our trust that they don't
+; have invariant-risk (in spite of calling a function that does).
+
+; In the case of mutual-recursion, only the first name in the nest should be a
+; key of this alist; see put-invariant-risk.
+
+; At one point we thought we should mark with invariant-risk all functions that
+; have raw code and have state as a formal.  But we see almost no way to
+; violate an invariant by misguided updates of the (fictional) live state.  For
+; example, state-p1 specifies that the global-table is an
+; ordered-symbol-alistp, but there is no way to get one's hands directly on the
+; global-table; and state-p1 also specifies that plist-worldp holds of the
+; logical world, and we ensure that by making set-w and related functions
+; untouchable.  The only exceptions are those mapped to t below, as is checked
+; by the function check-invariant-risk.  If new exceptions arise, then we
+; should map them to t below.
+
+  '((aset1 . t) ; could write past the end of the real array
+    (aset2 . t) ; could write past the end of the real array
+    (aset-32-bit-integer-stack . t)
+    (extend-32-bit-integer-stack . t)
+    (aset1-lst . t)
+    (old-check-sum-obj . nil)
+    (check-sum-inc . nil)
+    (update-iprint-ar-fal . nil)
+
+; Aset1-trusetd is an untouchable version of aset1 that we use in our source
+; code when we believe that there is no invariant-risk.  We could create
+; similar trusted analogues of other built-ins mapped to t above.
+
+    (aset1-trusted . nil)))
+
 (defun put-invariant-risk (names bodies non-executablep symbol-class guards
                                  wrld)
 
@@ -6632,9 +6673,33 @@
              (cond
               ((null new-fns) ; optimization
                wrld)
-              (t (put-invariant-risk1 new-fns
-                                      (all-fnnames1-exec t bodies nil)
-                                      wrld)))))))
+              (t (let ((pair
+
+; The following assoc-eq will be false except during the boot-strap unless the
+; function is being redefined.  It was tempting to rule out redefinition, but
+; the user who redefines a system function is essentially taking on the role of
+; implementor.  That responsibility, together with a likely desire to preserve
+; the special status of the function symbol with respect to invariant-risk,
+; seems to make it appropriate not to exempt redefinition here.
+
+; There's potentially a hole created by testing only (car new-fns), since if
+; new-fns has more than one element (presumably because of mutual-recursion)
+; then maybe it's one of those other members of new-fns besides the first that
+; is a key of *boot-strap-invariant-risk-alist*.  We'll just have to be aware
+; of that when forming *boot-strap-invariant-risk-alist*.
+
+                        (assoc-eq (car new-fns)
+                                  *boot-strap-invariant-risk-alist*)))
+                   (cond
+                    (pair (if (cdr pair)
+                              (putprop-x-lst1 new-fns
+                                              'invariant-risk
+                                              (car new-fns)
+                                              wrld)
+                            wrld))
+                    (t (put-invariant-risk1 new-fns
+                                            (all-fnnames1-exec t bodies nil)
+                                            wrld))))))))))
 
 (defun defuns-fn-short-cut (loop$-recursion-checkedp
                             loop$-recursion
@@ -8990,13 +9055,13 @@
 ; definition will be loaded from that compiled file, presumably without any
 ; #-acl2-loop-only.
 
-; The following book certified in ACL2 Version_3.3 built on SBCL, where we have
-; #+acl2-mv-as-values and also we load compiled files.  In this case the
-; problem was that while ACL2 defined prog2$ as a macro in #-acl2-loop-only,
-; for proper multiple-value handling, nevertheless that definition was
-; overridden by the compiled definition loaded by the compiled file associated
-; with the book "prog2" (not shown here, but containing the redundant
-; #+acl2-loop-only definition of prog2$).
+; The following book certified in ACL2 Version_3.3 built on SBCL, where mv was
+; values and also we load compiled files.  In this case the problem was that
+; while ACL2 defined prog2$ as a macro in #-acl2-loop-only, for proper
+; multiple-value handling, nevertheless that definition was overridden by the
+; compiled definition loaded by the compiled file associated with the book
+; "prog2" (not shown here, but containing the redundant #+acl2-loop-only
+; definition of prog2$).
 
 ; (in-package "ACL2")
 ;
@@ -10609,56 +10674,100 @@
                    (car names)))
          (t
           (let* ((name (car names))
-                 (old-tp (car (getpropc name 'type-prescriptions nil wrld))))
-            (cond
-             ((null old-tp)
-              (er soft ctx
-                  "It is illegal to specify a non-nil :type-prescription in ~
-                   an xargs declaration for ~x0, because ACL2 computed no ~
-                   built-in type prescription for ~x0."
-                  name))
-             (t
-              (let* ((old-basic-ts (access type-prescription old-tp :basic-ts))
-                     (old-vars (access type-prescription old-tp :vars))
-                     (subsetp-vars (subsetp-eq old-vars vars)))
-                (assert$
-                 (null (access type-prescription old-tp :hyps))
-                 (cond
-                  ((and (ts= old-basic-ts basic-ts)
-                        (or (equal vars old-vars) ; optimization
-                            (and subsetp-vars
-                                 (subsetp-eq vars old-vars))))
-                   (chk-type-prescription-lst (cdr names)
-                                              (cdr arglists)
-                                              (cdr type-prescription-lst)
-                                              ens wrld ctx state))
-                  ((and (ts-subsetp old-basic-ts basic-ts)
-                        (subsetp-eq old-vars vars))
-                   (pprogn
-                    (warning$ ctx "Type-prescription"
-                              "The type-prescription specified by the xargs ~
-                               :type-prescription for ~x0 is strictly weaker ~
-                               than the computed type of ~x0~@1."
-                              name
-                              (if (member-eq 'event
-                                             (f-get-global 'inhibit-output-lst
-                                                           state))
-                                  ""
-                                " that is noted above"))
-                    (chk-type-prescription-lst (cdr names)
-                                               (cdr arglists)
-                                               (cdr type-prescription-lst)
-                                               ens wrld ctx state)))
-                  (t (er soft ctx
-                         "The type-prescription specified by the xargs ~
-                          :type-prescription for ~x0 is not implied by the ~
-                          computed type of ~x0~@1."
-                         name
-                         (if (member-eq 'event
+                 (old-tp (car (getpropc name 'type-prescriptions nil wrld)))
+                 (uncertified-str
+                  "This warning may occur when including an uncertified book, ~
+                   when a :type-prescription declaration depends on ~
+                   a type-prescription from a locally included book."))
+            (er-progn
+             (cond
+              ((null old-tp)
+               (let ((str "It is illegal to specify a non-nil ~
+                           :type-prescription in an xargs declaration for ~
+                           ~x0, because ACL2 computed no built-in type ~
+                           prescription for ~x0."))
+                 (cond ((f-get-global 'including-uncertified-p state)
+
+; See commennt below about including uncertified books.
+
+                        (pprogn (warning$ ctx "Uncertified"
+                                          "~@0  ~@1"
+                                          (msg str name)
+                                          uncertified-str)
+                                (value nil)))
+                       (t
+                        (er soft ctx str name)))))
+              (t
+               (let* ((old-basic-ts (access type-prescription old-tp :basic-ts))
+                      (old-vars (access type-prescription old-tp :vars))
+                      (subsetp-vars (subsetp-eq old-vars vars)))
+                 (assert$
+                  (null (access type-prescription old-tp :hyps))
+                  (cond
+                   ((and (ts= old-basic-ts basic-ts)
+                         (or (equal vars old-vars) ; optimization
+                             (and subsetp-vars
+                                  (subsetp-eq vars old-vars))))
+                    (value nil))
+                   ((and (ts-subsetp old-basic-ts basic-ts)
+                         (subsetp-eq old-vars vars))
+                    (pprogn
+                     (warning$ ctx "Type-prescription"
+                               "The type-prescription specified by the xargs ~
+                                :type-prescription for ~x0 is strictly weaker ~
+                                than the computed type of ~x0~@1."
+                               name
+                               (if (or (member-eq
+                                        'event
                                         (f-get-global 'inhibit-output-lst
                                                       state))
-                             ""
-                           " that is noted above"))))))))))))))))
+                                       (ld-skip-proofsp state))
+                                   ""
+                                 " that is noted above"))
+                     (value nil)))
+                   (t
+                    (let ((msg
+                           (msg "The type-prescription specified by the xargs ~
+                                 :type-prescription for ~x0 is not implied by ~
+                                 the computed type of ~x0~@1.~|OLD:~|  ~
+                                 ~x2~|NEW:~|  ~x3~|"
+                                name
+                                (if (or (member-eq
+                                         'event
+                                         (f-get-global 'inhibit-output-lst
+                                                       state))
+                                        (ld-skip-proofsp state))
+                                    ""
+                                  " that is noted above")
+                                (access type-prescription old-tp :corollary)
+                                term)))
+                      (cond
+                       ((f-get-global 'including-uncertified-p state)
+
+; We skip soome checks for :type-prescription xargs when including an
+; uncertified book, because they are presumably intended to pass but actually
+; might not pass.  In a certified book we expect type-prescription information
+; to be preserved in the certificate's cert-data, from local include-book
+; forms, but there is no such expectation when including an uncertified book
+; (where cert-data is unavailable).  It was a bit tempting to exclude the check
+; whenever (ld-skip-proofsp state) holds, but the check seems necessary during
+; the second pass of a non-trivial encapsulate.  We could presumably check for
+; such an environment, but the check seems inexpensive so for robustness, we
+; make it except for the problematic case of including an uncertified book.  An
+; example in August 2021, pointed out by Eric Smith, was including the
+; community book "kestrel/bv/defs-bitwise" as an uncertified book.
+
+                        (pprogn (warning$ ctx "Uncertified"
+                                          "~@0~@1"
+                                          msg
+                                          uncertified-str)
+                                (value nil)))
+                       (t
+                        (er soft ctx "~@0" msg))))))))))
+             (chk-type-prescription-lst (cdr names)
+                                        (cdr arglists)
+                                        (cdr type-prescription-lst)
+                                        ens wrld ctx state))))))))))
 
 (defun chk-acceptable-defuns1 (names fives stobjs-in-lst defun-mode
                                      symbol-class rc non-executablep ctx wrld
@@ -11288,7 +11397,6 @@
 ; arranging for a call of verify-guards here.
 
          (chk-acceptable-defuns-verify-guards-er names ctx wrld state))
-        #+hons
         ((and (eq rc 'reclassifying)
               (conditionally-memoized-fns names
                                           (table-alist 'memoize-table wrld)))

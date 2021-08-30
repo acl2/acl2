@@ -13,23 +13,7 @@
 
 (include-book "byte-to-bits-little")
 (include-book "all-unsigned-byte-p")
-
-;; todo: move to a book about code-char
-(defthm unsigned-byte-of-char-code
-  (unsigned-byte-p 8 (char-code char))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
-
-;; Apply char-code to each element of CHARS.
-(defun map-char-code (chars)
-  (declare (xargs :guard (character-listp chars)
-                  :guard-hints (("Goal" :in-theory (enable character-listp)))))
-  (if (endp chars)
-      nil
-    (cons (char-code (first chars))
-          (map-char-code (rest chars)))))
-
-(defthm all-unsigned-byte-p-8-of-map-char-code
-  (all-unsigned-byte-p 8 (map-char-code chars)))
+(include-book "kestrel/typed-lists-light/map-char-code" :dir :system)
 
 (defun char-codes-to-bit-list-aux (char-codes acc)
   (declare (xargs :guard (and (all-unsigned-byte-p 8 char-codes)

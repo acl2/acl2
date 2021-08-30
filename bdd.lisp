@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1008,14 +1008,15 @@
                                    nil)))
                      (mvf new-mx-id
                           new-cst
-                          (aset1 'op-ht op-ht hash-index
-                                 (cons
+                          (aset1-trusted 'op-ht op-ht hash-index
+                                         (cons
 
 ; The following is the same as (list new-cst 'quote (cadr term)), but saves a
 ; cons.
 
-                                  (cons new-cst term)
-                                  (aref1 'op-ht op-ht hash-index)))))))))))))
+                                          (cons new-cst term)
+                                          (aref1 'op-ht op-ht
+                                                 hash-index)))))))))))))
 
 (defmacro bdd-quotep+ (term op-ht if-ht mx-id ttree)
   `(mv-let (mx-id cst op-ht)
@@ -1577,10 +1578,10 @@
                   (let ((x (cons-term (ffn-symb (trm cst))
                                       args)))
                     (mv x
-                        (aset1 'cst-array
-                               cst-array
-                               (unique-id cst)
-                               x)))))))
+                        (aset1-trusted 'cst-array
+                                       cst-array
+                                       (unique-id cst)
+                                       x)))))))
      (t (mv-let
          (tst cst-array)
          (decode-cst (tst cst) cst-array)
@@ -1592,10 +1593,10 @@
            (decode-cst (fbr cst) cst-array)
            (let ((x (mcons-term* 'if tst tbr fbr)))
              (mv x
-                 (aset1 'cst-array
-                        cst-array
-                        (unique-id cst)
-                        x))))))))))
+                 (aset1-trusted 'cst-array
+                                cst-array
+                                (unique-id cst)
+                                x))))))))))
 
 (defun decode-cst-lst (cst-lst cst-array)
   (cond
@@ -1719,9 +1720,9 @@
 ; this work -- have been updated to show the performance of this
 ; version of the code.
 
-                          (aset1 'op-ht op-ht n
-                                 (cons (list* y op args)
-                                       (aref1 'op-ht op-ht n)))
+                          (aset1-trusted 'op-ht op-ht n
+                                         (cons (list* y op args)
+                                               (aref1 'op-ht op-ht n)))
                           if-ht))
          (t (let ((m (if-hash-index x y z)))
               (declare (type (signed-byte 30) m))
@@ -1729,18 +1730,19 @@
                      (old-if (if-search-bucket x y z bucket)))
                 (cond (old-if (mvf mx-id
                                    old-if
-                                   (aset1 'op-ht op-ht n
-                                          (cons (list* old-if op args)
-                                                (aref1 'op-ht op-ht n)))
+                                   (aset1-trusted 'op-ht op-ht n
+                                                  (cons (list* old-if op args)
+                                                        (aref1 'op-ht op-ht
+                                                               n)))
                                    if-ht))
                       ((and (cst-tp y)
                             (cst-nilp z)
                             (cst-boolp x))
                        (mvf mx-id
                             x
-                            (aset1 'op-ht op-ht n
-                                   (cons (list* x op args)
-                                         (aref1 'op-ht op-ht n)))
+                            (aset1-trusted 'op-ht op-ht n
+                                           (cons (list* x op args)
+                                                 (aref1 'op-ht op-ht n)))
                             if-ht))
                       (t (let ((mx-id (1+mx-id mx-id)))
                            (declare (type (signed-byte 30) mx-id))
@@ -1756,11 +1758,13 @@
                              (t
                               (mvf mx-id
                                    new-if
-                                   (aset1 'op-ht op-ht n
-                                          (cons (list* new-if op args)
-                                                (aref1 'op-ht op-ht n)))
-                                   (aset1 'if-ht if-ht m
-                                          (cons new-if bucket)))))))))))))))
+                                   (aset1-trusted 'op-ht op-ht n
+                                                  (cons (list* new-if op args)
+                                                        (aref1 'op-ht op-ht
+                                                               n)))
+                                   (aset1-trusted 'if-ht if-ht m
+                                                  (cons new-if
+                                                        bucket)))))))))))))))
 
 (defun make-if-no-memo (mx-id x y z op-ht if-ht bdd-constructors)
 
@@ -1793,8 +1797,8 @@
                               ))
                     (t
                      (mvf mx-id new-if op-ht
-                          (aset1 'if-ht if-ht m
-                                 (cons new-if bucket)))))))))))))
+                          (aset1-trusted 'if-ht if-ht m
+                                         (cons new-if bucket)))))))))))))
 
 (defmacro split-var (cst)
 
@@ -1937,9 +1941,9 @@
         (t
          (mvf new-mx-id
               new-cst
-              (aset1 'op-ht op-ht hash-index
-                     (cons (list* new-cst op args)
-                           (aref1 'op-ht op-ht hash-index)))
+              (aset1-trusted 'op-ht op-ht hash-index
+                             (cons (list* new-cst op args)
+                                   (aref1 'op-ht op-ht hash-index)))
               if-ht
               (if rune (push-lemma rune ttree) ttree))))))))
 
@@ -2201,9 +2205,9 @@
 ; Keep this case in sync with make-if.
 
      (mvf mx-id true-cst
-          (aset1 'op-ht op-ht hash-index
-                 (cons (list* true-cst op args)
-                       (aref1 'op-ht op-ht hash-index)))
+          (aset1-trusted 'op-ht op-ht hash-index
+                         (cons (list* true-cst op args)
+                               (aref1 'op-ht op-ht hash-index)))
           if-ht))
     ((let ((true-split-var (split-var true-cst))
            (false-split-var (split-var false-cst))
@@ -2223,9 +2227,9 @@
        test-cst true-cst false-cst op-ht if-ht mx-id bdd-constructors)
       (mvf mx-id
            cst
-           (aset1 'op-ht op-ht hash-index
-                  (cons (list* cst op args)
-                        (aref1 'op-ht op-ht hash-index)))
+           (aset1-trusted 'op-ht op-ht hash-index
+                          (cons (list* cst op args)
+                                (aref1 'op-ht op-ht hash-index)))
            if-ht))))))
 
 (mutual-recursion
@@ -2371,9 +2375,9 @@
 ; lemmas.  The "be" benchmarks suggest mixed results.
 
        (mvf mx-id cst
-            (aset1 'op-ht op-ht hash-index
-                   (cons (list* cst op args)
-                         (aref1 'op-ht op-ht hash-index)))
+            (aset1-trusted 'op-ht op-ht hash-index
+                           (cons (list* cst op args)
+                                 (aref1 'op-ht op-ht hash-index)))
             if-ht
             ttree)))
      (t (let ((bdd-constructors (access bddspv bddspv :bdd-constructors)))
@@ -2400,9 +2404,9 @@
 ; definitions.  The "be" benchmarks suggest mixed results.
 
                   (mvf mx-id cst
-                       (aset1 'op-ht op-ht hash-index
-                              (cons (list* cst op args)
-                                    (aref1 'op-ht op-ht hash-index)))
+                       (aset1-trusted 'op-ht op-ht hash-index
+                                      (cons (list* cst op args)
+                                            (aref1 'op-ht op-ht hash-index)))
                        if-ht ttree)))
                 (t
                  (let ((min-var (min-var nil args)))

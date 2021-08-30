@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-integer-operations
-  :parents (atc-dynamic-semantics)
+  :parents (atc-shallow-embedding)
   :short "A model of C integer operations for ATC."
   :long
   (xdoc::topstring

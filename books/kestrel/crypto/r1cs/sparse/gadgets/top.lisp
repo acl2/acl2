@@ -17,3 +17,7 @@
 (include-book "nonzero")
 (include-book "xor")
 (include-book "packing")
+(include-book "product")
+(include-book "bitand")
+(include-book "equality")
+(include-book "range-check")

@@ -46,16 +46,14 @@
 (defthm divisible-when-divisible-by-multiple
   (implies (and (equal (mod i free) 0) ;what does this idiom mean when the values are not integers?
                 (equal (mod free j) 0)
-                (not (equal 0 free)) ;btw, do we simplify mod by 0?
-                (rationalp j)
+                (not (equal 0 free))
+                ;; (rationalp j)
                 (rationalp free)
-                (rationalp i)
-                )
+                (rationalp i))
            (equal (mod i j)
-                  (if (equal 0 j)
-                      (fix i)
-                      0)))
+                  0))
   :hints (("Goal" :use (:instance integerp-of-* (x (* (/ free) i)) (y (* free (/ j))))
+           :cases ((rationalp j))
            :in-theory (e/d (equal-of-0-and-mod) (integerp-of-*)))))
 
 ;in what cases do we prefer / to floor?
@@ -80,10 +78,11 @@
   :hints (("Goal" :use (:instance floor-when-divisible-cheap)
            :in-theory (disable floor-when-divisible-cheap))))
 
+;move?
 (defthm mod-is-0-when-multiple
   (implies (and (integerp (/ x y)) ;can be expensive?
-                (rationalp x)
-                (rationalp y)
+                ;; (rationalp x)
+                (acl2-numberp y)
                 (not (equal 0 y)) ;move to conclusion?
                 )
            (equal (mod x y)
@@ -112,7 +111,7 @@
 
 ;move
 (defthm floor-of-divide-hack
-  (implies (posp n)
+  (implies (rationalp n)
            (equal (floor (* 1/4 n) 16)
                   (floor n 64)))
   :hints (("Goal" :in-theory (e/d (FLOOR-NORMALIZE-DENOMINATOR)
@@ -419,7 +418,7 @@
   (implies (and (< x (* 2 N))
                 (<= N x)
                 (rationalp x)
-                (POSP N))
+                (rationalp N))
            (equal (floor x n)
                   1))
   :hints (("Goal" :use (:instance FLOOR-UNIQUE (i x) (j n) (n 1)))))

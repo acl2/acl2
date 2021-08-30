@@ -579,7 +579,8 @@
            :use (:instance APPEND-OF-TAKE-AND-NTHCDR-2 (l (N-NEW-ADS2 HIGH DOM))
                            (n (+ -1 low))))))
 
-(defthm insert-of-new-ad-of-insert-of-nth-new-ad
+;loops with set::insert-insert
+(defthmd insert-of-new-ad-of-insert-of-nth-new-ad
   (equal (set::insert (new-ad x) (set::insert (nth-new-ad n x) s))
          (set::insert (nth-new-ad n x) (set::insert (new-ad x) s))))
 

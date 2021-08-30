@@ -19,7 +19,7 @@ axioms.lisp
 basis-a.lisp
 basis-b.lisp
 bdd.lisp
-# bin -- under source control but not distributed
+bin
 # books -- no longer distributed at UT
 boot-strap-pass-2-a.lisp
 boot-strap-pass-2-b.lisp
@@ -90,10 +90,18 @@ pseudo-parallel.lisp
 README
 serial.lisp
 set-compile-fns.lisp
+set-gag-mode-nil.lisp
 
-# bin -- under source control but not distributed
+bin:
+acl2
+# make-fancy-manual.sh -- developer file, not distributed
+# make-tags-acl2-doc.sh -- github only (no point in including this in release)
+# new-useless-runes-files.sh -- github only (no point in including this in release)
+# pull.sh -- developer file, not distributed
+# purity.sh -- developer file, not distributed
 
 doc:
+acl2.1
 # The following distributed file is generated and also under source control:
 acl2-code-size.txt
 create-acl2-code-size
@@ -127,7 +135,9 @@ using.html
 windows7.html
 windows-gcl-jared.html
 
-# The following is distributed but is not under source control
+# The following is distributed but is not under source control.
+# Note that since we don't distribute books, we also don't distribute
+# image files that support the books.
 doc/manual:
 download
 LICENSE

@@ -183,6 +183,8 @@ ACL2 := acl2
 endif # ifeq ($(ACL2),)
 export ACL2
 
+export ACL2_DOC_GENERATE_SUPPORTING_FILES
+
 .SUFFIXES:
 .SUFFIXES: .cert .lisp
 
@@ -216,7 +218,6 @@ RUN_ACL2_FEATURES := $(shell cd $(BUILD_DIR); ACL2=$(ACL2) STARTJOB=$(STARTJOB) 
 # if ACL2 isn't built.
 -include $(BUILD_DIR)/Makefile-features
 
-$(info ACL2_HAS_HONS      := $(ACL2_HAS_HONS))
 $(info ACL2_HAS_ANSI      := $(ACL2_HAS_ANSI))
 $(info ACL2_HAS_PARALLEL  := $(ACL2_HAS_PARALLEL))
 $(info ACL2_HAS_REALS     := $(ACL2_HAS_REALS))
@@ -312,18 +313,6 @@ include $(BUILD_DIR)/Makefile-deps
 
 # Cause error for illegal certification attempts:
 
-ifeq ($(ACL2_HAS_HONS), )
-
-$(CERT_PL_HONS_ONLY):
-	$(MAKE) no_hons_error NO_RESCAN=1 CERT_PL_HONS_ONLY_BOOK=$@
-
-.PHONY: no_hons_error
-no_hons_error:
-	@echo "Error! Target $(CERT_PL_HONS_ONLY_BOOK) requires hons."
-	@exit 1
-
-endif # ifeq ($(ACL2_HAS_HONS), )
-
 ifeq ($(ACL2_HAS_ANSI), )
 
 # We are presumably running GCL/CLtL1.  There is no need to cause an
@@ -342,15 +331,6 @@ endif # ifeq ($(ACL2_HAS_ANSI), )
 # End of "Cause error for illegal certification attempts".
 
 OK_CERTS := $(CERT_PL_CERTS)
-
-ifeq ($(ACL2_HAS_HONS), )
-
-# We use "{...}" delimiters to avoid errors in version 3.80 of make.
-${info Excluding books that need ACL2(h) [...]}
-OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
-
-endif # ifeq ($(ACL2_HAS_HONS), )
-
 
 ifneq (CCL, $(ACL2_HOST_LISP))
 ${info Excluding books that are CCL-only: [$(CERT_PL_CCL_ONLY)]}
@@ -550,7 +530,6 @@ BROKEN_BOOKS :=
 # exclude them in the "egrep -v" command above, instead allowing
 # cert.pl to do its thing.
 
-ifneq ($(ACL2_HAS_HONS), )
 ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 
 # When the Lisp is not one of those mentioned on the line above, we
@@ -566,7 +545,6 @@ ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 
 BROKEN_BOOKS += $(filter models/y86/%, $(OK_CERTS))
 endif # ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
-endif # ifneq ($(ACL2_HAS_HONS), )
 
 OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
 
@@ -600,13 +578,12 @@ SLOW_BOOKS := \
 # AND   directory projects/arm/
 # could be added as x86isa is below.
 
-SLOW_BOOKS += $(filter projects/x86isa/%, $(OK_CERTS))
+X86ISA_BOOKS := $(filter projects/x86isa/%, $(OK_CERTS))
+SLOW_BOOKS += $(X86ISA_BOOKS)
 
 SLOW_BOOK_TARGETS :=
 
-ifneq ($(ACL2_HAS_HONS), )
 SLOW_BOOK_TARGETS += milawa-test-basic
-endif
 
 # Now SLOW_BOOKS is defined as the list above.
 SLOW_BOOKS += $(SLOW_BOOK_TARGETS)
@@ -796,7 +773,7 @@ system/toothbrush/success.txt:
 	@echo "Note: Skipping $@ for host Lisp $(ACL2_HOST_LISP)."
 else
 system/toothbrush/success.txt: system/toothbrush-deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 endif # ifeq ($(TB_LISP), )
 
 # We only make the books under SULFA if a documented test for an
@@ -812,38 +789,38 @@ clause-processors/SULFA/target.cert: \
 
 projects/translators/l3-to-acl2/target.cert: \
   projects/translators/l3-to-acl2-deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1 clean"
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1 clean"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1"
 
 workshops/1999/multiplier/proof.cert: \
   workshops/1999/deps-multiplier.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert: \
   workshops/2003/greve-wilding-vanfleet/deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 workshops/2003/kaufmann/support/input/defs-in.cert: \
   workshops/2003/kaufmann/deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 workshops/2003/kaufmann/support/rtl/package-defs.cert: \
   workshops/2003/kaufmann/deps.cert \
   workshops/2003/kaufmann/support/tool/simplify-defuns.cert \
   workshops/2003/kaufmann/support/tool/wrapper.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 # The following has no dependencies, so doesn't need a "deps" file.
 workshops/2004/sumners-ray/support/success.txt:
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 .PHONY: projects/apply-model/phony
 projects/apply-model/phony: projects/apply-model-deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 .PHONY: projects/apply-model-2/phony
 projects/apply-model-2/phony: projects/apply-model-2-deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 endif # ifeq ($(ACL2_HAS_REALS), )
 
@@ -1096,6 +1073,21 @@ BOOKS_SKIP_COMP += system/tests/stobj-issues.$(ACL2_COMP_EXT)
 # It's not clear why, but it doesn't seem important to figure it out.
 BOOKS_SKIP_COMP += workshops/2011/verbeek-schmaltz/sources/invariants2.$(ACL2_COMP_EXT)
 
+# Skip some compilation for GCL that included failures when using -j 8
+# on a UT CS machine with 32GB of memory when using
+# GCL_MEM_MULTIPLE=0.25.  Perhaps these wouldn't fail with -j 4, other
+# than books/projects/arm/second/fma32/addends.lisp, which probably
+# needs a well-placed (comp t) to avoid a value stack overflow (maybe
+# others too).
+KESTREL_X86_BOOKS := $(filter kestrel/x86/%, $(OK_CERTS))
+ifeq (GCL, $(ACL2_HOST_LISP))
+BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(X86ISA_BOOKS))
+# Since projects/acl2/releases2/v8-4/books/kestrel/x86/tools/flags.o
+# failed for GCL and since the above x86isa books failed, then let's
+# skip kestrel/x86/ books too with GCL.
+BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(KESTREL_X86_BOOKS))
+endif
+
 OK_CERTS := $(filter-out $(BOOKS_SKIP_COMP), $(OK_CERTS))
 
 # Avoid trying to make compiled files; target %.$(ACL2_COMP_EXT) still
@@ -1187,6 +1179,12 @@ regression: $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
 # default, so we should probably remove this comment and the couple sentences
 # before it.
 .PHONY: regression-everything
+
+# Build acl2-doc supporting files when running regression-everything
+# unless it is specified not to do so.
+ifndef ACL2_DOC_GENERATE_SUPPORTING_FILES
+regression-everything: ACL2_DOC_GENERATE_SUPPORTING_FILES=t
+endif
 
 regression-everything: $(OK_CERTS)
 

@@ -35,7 +35,6 @@
 (include-book "bfr-mcheck-abc")
 (include-book "centaur/gl/bfr-satlink" :dir :system)
 
-; cert_param: (hons-only)
 ; cert_param: (uses-glucose)
 ; cert_param: (uses-abc)
 

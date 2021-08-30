@@ -40,6 +40,7 @@
 (include-book "intern-table")
 (include-book "strings")
 (include-book "kestrel/utilities/myif" :dir :system)
+(include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/alists-light/acons" :dir :system)
 (include-book "locals")
 (include-book "float-to-bits")

@@ -1303,10 +1303,6 @@ certification using @('make')."
 
  <li>@('ccl-only'): only certify when the host Lisp is CCL</li>
 
- <li>@('hons-only'): only certify when special @(tsee hons) support is
- available (now always the case; required ACL2(h) until the @(see
- acl2::hons-and-memoization) features were incorporated into ACL2)</li>
-
  <li>@('non-acl2r'): only certify when the @(see real) numbers are NOT
  supported, i.e., when NOT using ACL2(r)</li>
 
@@ -1341,9 +1337,9 @@ certification using @('make')."
  available</li>
 
  <li>@('uses-stp'): only certify when STP (an SMT solver available <a href=
- 'https://github.com/stp/stp'>here</a>) is available</li> (to suppress the use
+ 'https://github.com/stp/stp'>here</a>) is available (to suppress the use
  of STP, even when an executable for it seems to be available, set environment
- variable ACL2_DONT_USE_STP to any non-empty value)
+ variable @('ACL2_DONT_USE_STP') to any non-empty value)</li>
 
  <li>@('uses-quicklisp'): only certify when quicklisp is available</li>
 
@@ -1354,7 +1350,6 @@ certification using @('make')."
 (acl2::defpointer acl2xskip cert_param)
 (acl2::defpointer ansi-only cert_param)
 (acl2::defpointer ccl-only cert_param)
-(acl2::defpointer hons-only cert_param)
 (acl2::defpointer non-acl2r cert_param)
 (acl2::defpointer non-allegro cert_param)
 (acl2::defpointer non-cmucl cert_param)

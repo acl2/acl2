@@ -572,6 +572,184 @@
     (equal (w new-state) (w state))))
 
 
+(define aignet-output-lits ((n natp) aignet)
+  :guard (<= n (num-outs aignet))
+  :measure (nfix (- (num-outs aignet) (nfix n)))
+  :returns (lits lit-listp)
+  (if (mbe :logic (zp (- (num-outs aignet) (nfix n)))
+           :exec (eql (num-outs aignet) n))
+      nil
+    (cons (outnum->fanin n aignet)
+          (aignet-output-lits (1+ (lnfix n)) aignet)))
+  ///
+  (defret aignet-lit-listp-of-<fn>
+    (aignet-lit-listp lits aignet))
+
+  (local (defun-nx ind (n k aignet)
+           (declare (xargs :measure (nfix (- (num-outs aignet) (nfix n)))))
+           (if (zp (nfix (- (num-outs aignet) (nfix n))))
+               (list k)
+             (ind (1+ (lnfix n)) (1- k) aignet))))
+
+  (defret nth-of-<fn>
+    (implies (< (+ (nfix k) (nfix n)) (num-outs aignet))
+             (equal (nth k lits)
+                    (outnum->fanin (+ (nfix k) (nfix n)) aignet)))
+    :hints(("Goal" :in-theory (enable nth)
+            :induct (ind n k aignet))))
+
+  (defret len-of-<fn>
+    (equal (len lits)
+           (nfix (- (num-outs aignet) (nfix n))))))
+
+(local (defthm lit-listp-of-take
+         (implies (and (lit-listp x)
+                       (<= (nfix n) (len x)))
+                  (lit-listp (take n x)))))
+
+(local (defthm lit-listp-of-nthcdr
+         (implies (lit-listp x)
+                  (lit-listp (nthcdr n x)))))
+
+(local (defthm len-of-nthcdr
+         (equal (len (nthcdr n x))
+                (nfix (- (len x) (nfix n))))))
+
+
+
+(local (defthm aignet-lit-listp-of-take
+         (implies (and (aignet-lit-listp x aignet)
+                       (<= (nfix n) (len x)))
+                  (aignet-lit-listp (take n x) aignet))))
+
+(local (defthm aignet-lit-listp-of-nthcdr
+         (implies (aignet-lit-listp x aignet)
+                  (aignet-lit-listp (nthcdr n x) aignet))))
+
+(define aignet-simplify-with-tracking
+  ((aignet "AIG to be transformed")
+   (assum-lits lit-listp "Literals that are assumed")
+   (pres-lits lit-listp  "Literals to be preserved")
+   (track-lits lit-listp
+         "Specifies literals to be tracked (again not necessarily preserved), ordered.
+          They will be added as outputs ot the transformed AIG after the
+          assumption and preserved lits.  This is provided so that users may
+          provide output numbers for these literals as hints to
+          transformations.")
+   ;; (litarr "Overwritten with the map from assumption nodes in the old AIG to literals of the new AIG")
+   ;; (copy "Overwritten with the map from non-assumption nodes in the old AIG to literals of the new AIG")
+   (config "Combinational transformation config")
+   state)
+  :parents (aignet)
+  :guard (and (aignet-lit-listp assum-lits aignet)
+              (aignet-lit-listp pres-lits aignet)
+              (aignet-lit-listp track-lits aignet))
+  :guard-debug t
+  :returns (mv new-aignet
+               (new-assum-lits lit-listp)
+               (new-pres-lits lit-listp)
+               (new-track-lits lit-listp)
+               new-state)
+  :guard-hints (("goal" :do-not-induct t))
+  (b* (((acl2::local-stobjs aignet2)
+        (mv aignet2 aignet new-assum-lits new-pres-lits new-track-lits state))
+       (aignet2 (aignet-raw-copy-fanins-top aignet aignet2))
+       (aignet2 (aignet-add-outs assum-lits aignet2))
+       (assum-outs (num-outs aignet2))
+       (aignet2 (aignet-add-outs pres-lits aignet2))
+       (preserved-outs (num-outs aignet2))
+       (aignet2 (aignet-add-outs track-lits aignet2))
+       (tracked-outs (num-outs aignet2))
+       ((mv aignet2 state) (apply-m-assumption-n-output-transforms! assum-outs (- preserved-outs assum-outs) aignet2 config state))
+       (lits (aignet-output-lits 0 aignet2))
+       (new-assum-lits (take assum-outs lits))
+       (new-pres-lits (take (- preserved-outs assum-outs) (nthcdr assum-outs lits)))
+       (new-track-lits (take (- tracked-outs preserved-outs) (nthcdr preserved-outs lits)))
+       (aignet (aignet-raw-copy-fanins-top aignet2 aignet)))
+    (mv aignet2 aignet new-assum-lits new-pres-lits new-track-lits state))
+  ///
+  (defret stype-count-of-<fn>
+    (and (equal (stype-count :pi new-aignet)
+                (stype-count :pi aignet))
+         (equal (stype-count :reg new-aignet)
+                (stype-count :reg aignet))
+         (equal (stype-count :po new-aignet) 0)
+         (equal (stype-count :nxst new-aignet) 0)))
+
+  (local (defthm nth-implies-less-than-len
+           (implies (nth n x)
+                    (< (nfix n) (len x)))
+           :rule-classes :forward-chaining))
+
+  (local (in-theory (enable aignet-idp)))
+
+  (local (defthm aignet-litp-of-nth-when-aignet-lit-listp
+           (implies (and (aignet-lit-listp x aignet)
+                         (< (nfix n) (len x)))
+                    (aignet-litp (nth n x) aignet))))
+
+  (defret eval-of-<fn>-when-preserved
+    (implies (and (aignet-lit-listp pres-lits aignet)
+                  (equal (aignet-eval-conjunction assum-lits invals regvals aignet) 1))
+             (equal (lit-eval (nth n new-pres-lits) invals regvals new-aignet)
+                    (lit-eval (nth n pres-lits) invals regvals aignet)))
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (e/d (output-eval lit-eval)
+                                   (lit-eval-of-fanin-equals-output-eval))
+                   :do-not-induct t
+                   :cases ((< (nfix n) (len pres-lits))))))
+    :otf-flg t)
+
+  (local (defthm lit->var-nth-index-of-lit-list-vars
+           (implies (member-equal n (lit-list-vars x))
+                    (equal (lit->var (nth (acl2::index-of n (lit-list-vars x)) x))
+                           (nfix n)))
+           :hints(("Goal" :in-theory (enable lit-list-vars acl2::index-of)))))
+
+  (local (defthm lit-eval-of-nil
+           (equal (lit-eval nil ins regs aignet) 0)
+           :hints(("Goal" :in-theory (enable lit-eval id-eval)))))
+
+  (defret eval-of-<fn>-when-assumption
+    (implies (aignet-lit-listp assum-lits aignet)
+             (equal (lit-eval (nth n new-assum-lits) invals regvals new-aignet)
+                    (lit-eval (nth n assum-lits) invals regvals aignet)))
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (e/d (output-eval)
+                                   (lit-eval-of-fanin-equals-output-eval))
+                   :do-not-induct t
+                   :cases ((< (nfix n) (len assum-lits))))))
+    :otf-flg t)
+
+  (defret aignet-lit-listp-of-<fn>-pres-lits
+    (implies (aignet-lit-listp pres-lits aignet)
+             (aignet-lit-listp new-pres-lits new-aignet)))
+
+  (defret aignet-lit-listp-of-<fn>-assum-lits
+    (implies (aignet-lit-listp assum-lits aignet)
+             (aignet-lit-listp new-assum-lits new-aignet)))
+
+  (defret aignet-lit-listp-of-<fn>-track-lits
+    (implies (aignet-lit-listp track-lits aignet)
+             (aignet-lit-listp new-track-lits new-aignet)))
+
+  (local (defthm len-of-take
+           (equal (len (take n x))
+                  (nfix n))))
+
+  (defret len-of-<fn>-pres-lits
+    (equal (len new-pres-lits) (len pres-lits)))
+
+  (defret len-of-<fn>-assum-lits
+    (equal (len new-assum-lits) (len assum-lits)))
+
+  (defret len-of-<fn>-track-lits
+    (equal (len new-track-lits) (len track-lits)))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
+
+
 
 
 

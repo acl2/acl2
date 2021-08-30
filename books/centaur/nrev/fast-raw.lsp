@@ -100,7 +100,7 @@
     (if (atom acc)
         (update-nrev$c-acc (cons new-cons new-cons) nrev$c)
       (let* ((tail (cdr acc)))
-        #+hons (acl2::memoize-flush nrev$c)
+        (acl2::memoize-flush nrev$c)
         (rplacd tail new-cons)
         (rplacd acc new-cons)
         nrev$c))))

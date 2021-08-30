@@ -34,7 +34,7 @@ instantiation provides only a partial answer, in that if we had proven a
 *property* of the abstract model then we could functionally instantiate this
 abstract property to derive the corresponding property for the concrete one.
 But there are situations in which we do not have a specific property that we
-want to funtionally instantiate, but rather just want to say in some formal way
+want to functionally instantiate, but rather just want to say in some formal way
 that "all the abstract constraints are satisfied by the concrete functions".
 An example for that might be a security policy implemented by a system.  One
 wants to model the security policy in as abstract a manner as possible so that

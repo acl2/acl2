@@ -35,7 +35,8 @@
                      (BVXOR 32 1795745383
                             (BVXOR 32 NN
                                    (ACL2::BVCAT 24 (LEN KEY-BYTES) 8 0)))))
-     :hints (("Goal" :in-theory (enable ACL2::GETBIT-TOO-HIGH))))))
+     :hints (("Goal" :in-theory (enable ACL2::GETBIT-TOO-HIGH
+                                        acl2::bvxor-with-smaller-arg-1))))))
 
 ;; Shows that blake2s-extended, when called with no salt or personalization, is
 ;; identical to blake2s.

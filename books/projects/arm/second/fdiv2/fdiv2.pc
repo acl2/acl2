@@ -1,0 +1,609 @@
+//*********************************************
+// fdiv2: Multi-Precision Radix-2 SRT Division
+//*********************************************
+
+// Formats:
+
+enum Format {HP=1, SP, DP};
+
+// Data classes:
+
+enum Class {ZERO, INF, SNAN, QNAN, NORM, DENORM};
+
+// Rounding modes:
+
+enum Rmode {RNE, RUP, RDN, RTZ};
+
+// Flags:
+
+enum Flags {IOC, DZC, OFC, UFC, IXC, IDC=7};
+
+// Extract operand components, apply FZ, identify data class, and record denormal:
+
+<bool, ui11, ui52, Class, ui8> analyze(ui64 op, Format fmt, bool fz, ui8 flags) {
+
+  // Extract fields:
+  bool sign;
+  si13 exp;
+  ui52 man, manMSB;
+  bool expIsMax;
+  switch (fmt) {
+  case DP:
+    sign = op[63];
+    exp = op[62:52];
+    expIsMax = exp == 0x7FF;
+    man = op[51:0];
+    manMSB = 0x8000000000000;
+    break;
+  case SP:
+    sign = op[31];
+    exp = op[30:23];
+    expIsMax = exp == 0xFF;
+    man = op[22:0];
+    manMSB = 0x400000;
+    break;
+  case HP:
+    sign = op[15];
+    exp = op[14:10];
+    expIsMax = exp == 0x1F;
+    man = op[9:0];
+    manMSB = 0x200;
+  }
+
+  // Classify:
+  Class c;
+  if (expIsMax) { // NaN or infinity
+    if (man == 0) {
+      c = INF;
+    }
+    else if (man & manMSB) {
+      c = QNAN;
+    }
+    else  {
+      c = SNAN;
+    }
+  }
+  else if (exp == 0) { // zero or denormal
+    if (man == 0) {
+      c = ZERO;
+    }
+    else if (fz) {
+      c = ZERO;
+      if (fmt != HP) {
+        flags[IDC] = 1; // denormal exception
+      }
+    }
+    else  {
+      c = DENORM;
+    }
+  }
+  else  { // normal
+    c = NORM;
+  }
+  return <sign, exp, man, c, flags>;
+}
+
+// Count leading zeroes of a nonzero 53-bit vector.
+// After k iterations of the loop, where 0 <= k <= 6, the value of n
+// is 2^(6-k) and the low n entries of z and c are as follows:
+// Consider the partition of x into n bit slices of width 2^k.
+// For 0 <= i < n, the i^th slice is x[2^k*(i+1)-1:2^k*i].
+// Let L(i) be the number of leading zeroes of this slice.  Then
+//   z[i] = 1 <=> L(i) = 2^k;
+//   L(i) < 2^k => c[i] = L(i).
+
+ui7 CLZ53(ui53 s) {
+  ui64 x = 0;
+  x[63:11] = s;
+  bool z[64];
+  ui6 c[64];
+  for (uint i = 0; i < 64; i++) {
+    z[i] = !x[i];
+    c[i] = 0;
+  }
+  uint n = 64;
+  for (uint k = 0; k < 6; k++) {
+    n = n / 2; // n = 2^(5-k)
+    for (uint i = 0; i < n; i++) {
+      c[i] = z[2 * i + 1] ? c[2 * i] : c[2 * i + 1];
+      c[i][k] = z[2 * i + 1];
+      z[i] = z[2 * i + 1] && z[2 * i];
+    }
+  }
+  return c[0];
+}
+
+// NaN, infinity, or zero operand:
+
+<ui64, ui8> specialCase(bool sign, ui64 opa, ui64 opb, Class classa, Class classb, ui2 fmt, bool dn, ui8 flags) {
+  bool isSpecial = false;
+  ui64 D = 0;
+  ui64 aNan, bNan, manMSB, infinity, defNaN, zero = 0;
+  switch (fmt) {
+  case DP:
+    aNan = opa[63:0];
+    bNan = opb[63:0];
+    zero[63] = sign;
+    infinity = 0x7FF0000000000000;
+    manMSB = 0x8000000000000;
+    break;
+  case SP:
+    aNan = opa[31:0];
+    bNan = opb[31:0];
+    zero[31] = sign;
+    infinity = 0x7F800000;
+    manMSB = 0x400000;
+    break;
+  case HP:
+    aNan = opa[15:0];
+    bNan = opb[15:0];
+    zero[15] = sign;
+    infinity = 0x7C00;
+    manMSB = 0x200;
+    break;
+  }
+  defNaN = infinity | manMSB;
+  if (classa == SNAN) {
+    D = dn ? defNaN : aNan | manMSB;
+    flags[IOC] = 1;
+  }
+  else if (classb == SNAN) {
+    D = dn ? defNaN : bNan | manMSB;
+    flags[IOC] = 1;
+  }
+  else if (classa == QNAN) {
+    D = dn ? defNaN : aNan;
+  }
+  else if (classb == QNAN) {
+    D = dn ? defNaN : bNan;
+  }
+  else if (classa == INF) {
+    if (classb == INF) {
+      D = defNaN;
+      flags[IOC] = 1;
+    }
+    else  {
+      D = infinity | zero;
+    }
+  }
+  else if (classb == INF) {
+    D = zero;
+  }
+  else if (classa == ZERO) {
+    if (classb == ZERO) {
+      D = defNaN;
+      flags[IOC] = 1;
+    }
+    else  {
+      D = zero;
+    }
+  }
+  else if (classb == ZERO) {
+    D = infinity | zero;
+    flags[DZC] = 1;
+  }
+  return <D, flags>;
+}
+
+// Normalize denormal operands and compute exponent difference:
+
+<ui53, ui53, si13> normalize(ui11 expa, ui11 expb, ui52 mana, ui52 manb, ui2 fmt) {
+  ui53 siga = 0, sigb = 0;
+  uint bias;
+  switch (fmt) {
+  case DP:
+    siga = mana;
+    sigb = manb;
+    bias = 0x3FF;
+    break;
+  case SP:
+    siga[51:29] = mana;
+    sigb[51:29] = manb;
+    bias = 0x7F;
+    break;
+  case HP:
+    siga[51:42] = mana;
+    sigb[51:42] = manb;
+    bias = 0xF;
+  }
+  si13 expaShft, expbShft;
+  if (expa == 0) {
+    ui6 clz = CLZ53(siga);
+    siga <<= clz;
+    expaShft = 1 - clz;
+  }
+  else  {
+    siga[52] = 1;
+    expaShft = expa;
+  }
+  if (expb == 0) {
+    ui6 clz = CLZ53(sigb);
+    sigb <<= clz;
+    expbShft = 1 - clz;
+  }
+  else  {
+    sigb[52] = 1;
+    expbShft = expb;
+  }
+  si13 expQ = expaShft - expbShft + bias;
+  return <siga, sigb, expQ>;
+}
+
+// Derive quotient digit from remainder approximation:
+
+int nextDigit(si3 RS3, si3 RC3) {
+  si4 R4 = RS3 + RC3;
+  if (R4 < -1) {
+    return -1;
+  }
+  else if (R4 == -1) {
+    return 0;
+  }
+  else  {
+    return 1;
+  }
+}
+
+// Update remainder.
+// The remainder is restricted to the upper w bits; lower 57-w bits are 0.
+//  scalar => w = 57
+//  SP vector => w = 27
+//  HP vector => w = 14
+
+<ui57, ui57> nextRem(ui57 sum0, ui57 car0, ui57 d57, int q, ui2 fmt) {
+  ui57 sumIn = sum0 << 1, carIn = car0 << 1, dIn = 0, sumOut = 0, carOut = 0;
+  if (q == 0) {
+    sumOut = sumIn ^ carIn;
+    carOut[56:1] = sumIn[55:0] & carIn[55:0];
+  }
+  else  {
+    if (q == 1) {
+      dIn = ~d57;
+      switch (fmt) {
+      case SP:
+        dIn[29:0] = 0;
+        break;
+      case HP:
+        dIn[42:0] = 0;
+      }
+    }
+    else  {
+      dIn = d57;
+    }
+    sumOut = sumIn ^ carIn ^ dIn;
+    carOut[56:1] = sumIn[55:0] & carIn[55:0] | sumIn[55:0] & dIn[55:0] | carIn[55:0] & dIn[55:0];
+    if (q == 1) {
+      switch (fmt) {
+      case DP:
+        carOut[0] = 1;
+        break;
+      case SP:
+        carOut[30] = 1;
+        break;
+      case HP:
+        carOut[43] = 1;
+      }
+    }
+  }
+  if (sumOut[56] != carOut[56]) {
+    sumOut[56] = 0;
+    carOut[56] = 1;
+  }
+  else if (q == 1) {
+    sumOut[56] = 0;
+    carOut[56] = 0;
+  }
+  else if (q == -1) {
+    sumOut[56] = 1;
+    carOut[56] = 1;
+  }
+  return <sumOut, carOut>;
+}
+
+// Update quotient and decremented quotient with next digit:
+
+<ui55, ui55> nextQuot(ui55 quot, ui55 quotM1, int q, uint i) {
+  ui55 nextQuot = q == -1 ? quotM1 : quot;
+  nextQuot[55 - i] = q != 0;
+  ui55 nextQuotM1 = q == 1 ? quot : quotM1;
+  nextQuotM1[55 - i] = q == 0;
+  return <nextQuot, nextQuotM1>;
+}
+
+// Final result:
+
+<ui64, ui8> final(ui53 Qrnd, bool inx, bool sign, si13 expQ, ui2 rmode,
+                  bool fz, ui2 fmt, ui8 flags) {
+
+  // Selection of infinity or max normal for overflow case:
+  bool selMaxNorm = rmode == RDN && !sign || rmode == RUP && sign || rmode == RTZ;
+
+ui64 D = 0;  // data result
+
+  switch (fmt) {
+  
+  case DP:
+    D[63] = sign;
+    if (expQ >= 0x7FF) { // overflow
+      if (selMaxNorm) {
+        D[62:52] = 0x7FE;
+        D[51:0] = 0xFFFFFFFFFFFFF;
+      }
+      else  {
+        D[62:52] = 0x7FF;
+        D[51:0] = 0;
+      }
+      flags[OFC] = 1;
+      flags[IXC] = 1;
+    }
+    else if (expQ <= 0) { // subnormal
+      if (fz) {
+        flags[UFC] = 1; // underflow but not inexact
+      }
+      else  {
+        ui11 exp = Qrnd[52];
+        D[62:52] = exp;
+        D[51:0] = Qrnd[51:0];
+        flags[IXC] = flags[IXC] || inx;
+        flags[UFC] = flags[UFC] || inx;
+      }
+    }
+    else  {
+      D[62:52] = expQ;
+      D[51:0] = Qrnd[51:0];
+      flags[IXC] = flags[IXC] || inx;
+    }
+    break;
+    
+  case SP:
+    D[31] = sign;
+    if (expQ >= 0xFF) { // overflow
+      if (selMaxNorm) {
+        D[30:23] = 0xFE;
+        D[22:0] = 0x7FFFFF;
+      }
+      else  {
+        D[30:23] = 0xFF;
+        D[22:0] = 0;
+      }
+      flags[OFC] = 1;
+      flags[IXC] = 1;
+    }
+    else if (expQ <= 0) { // subnormal
+      if (fz) {
+        flags[UFC] = 1; // underflow but not inexact
+      }
+      else  {
+        ui8 exp = Qrnd[23];
+        D[30:23] = exp;
+        D[22:0] = Qrnd[22:0];
+        flags[IXC] = flags[IXC] || inx;
+        flags[UFC] = flags[UFC] || inx;
+      }
+    }
+    else  {
+      D[30:23] = expQ;
+      D[22:0] = Qrnd[22:0];
+      flags[IXC] = flags[IXC] || inx;
+    }
+    break;
+    
+  case HP:
+    D[15] = sign;
+    if (expQ >= 0x1F) { // overflow
+      if (selMaxNorm) {
+        D[14:10] = 0x1E;
+        D[9:0] = 0x3FF;
+      }
+      else  {
+        D[14:10] = 0x1F;
+        D[9:0] = 0;
+      }
+      flags[OFC] = 1; // overflow
+      flags[IXC] = 1; // inexact
+    }
+    else if (expQ <= 0) { // subnormal
+      if (fz) {
+        flags[UFC] = 1; // underflow but not inexact
+      }
+      else  {
+        ui5 exp = Qrnd[10];
+        D[14:10] = exp;
+        D[9:0] = Qrnd[9:0];
+        flags[IXC] = flags[IXC] || inx;
+        flags[UFC] = flags[UFC] || inx;
+      }
+    }
+    else  {
+      D[14:10] = expQ;
+      D[9:0] = Qrnd[9:0];
+      flags[IXC] = flags[IXC] || inx;
+    }
+    break;
+  }
+  
+  return <D, flags>;
+}
+
+// The RTL uses a 55-bit vector for the partial quotient and a pair of 72-bit 
+// vectors for the partial remainder, which is represented in carry save form.  
+// For a scalar operation, the full quotient vector and the top 57 bits of each 
+// remainder vector are used, although these width are required only in the DP 
+// case.  For a vector SP op, a 27-bit segment of each of the three vectors is 
+// allocated for each lane.  For a vector HP op, each lane uses a 13-bit segment
+// of the quotient vector and a 14-bit segment of each remainder vector.
+
+// This model executes the lanes of a vector op sequentially.  The function fdivLane 
+// executes a single lane, using a 55-bit vector for the quotient and 2 57-bit 
+// vectors for the remainder.  For a vector op, only the appropriate number of top 
+// bits of each vector are used.  This allows the eqyivalence checker to establish 
+// intermediate maps to reduce complexity.  Note also that the data parameters are 
+// of width 64, but only the bottom 32 or 16 bits are used for a SP or HP op.
+
+<ui64, ui8>
+fdivLane(ui64 opa, ui64 opb, ui2 fmt, bool vec, bool fz, bool dn, ui2 rmode) {
+
+  // Analyze operands and process special cases:
+  bool signa, signb;
+  ui11 expa, expb;
+  ui52 mana, manb;
+  Class classa, classb;
+  ui8 flags = 0;
+  <signa, expa, mana, classa> = analyze(opa, fmt, fz, flags);
+  <signb, expb, manb, classb> = analyze(opb, fmt, fz, flags);
+
+  // sign of quotient:
+  bool sign = signa ^ signb;
+
+  // Detect early exit:
+  if (classa == ZERO || classa == INF || classa == SNAN || classa == QNAN ||
+      classb == ZERO || classb == INF || classb == SNAN || classb == QNAN) {
+    return specialCase(sign, opa, opb, classa, classb, fmt, dn, flags);
+  }
+  
+  else  {
+  
+     // Normalize denormals and compute exponent difference:
+    ui53 x, d; // significands of dividend and divisor (1 implicit integer bit)
+    si13 expQ;   // exponent difference
+    <x, d, expQ> = normalize(expa, expb, mana, manb, fmt);
+    ui57 x57 = 0, d57 = 0; // x and d represented as 57-bit vectors (2 implicit integer bits)
+    x57[55:3] = x;
+    d57[55:3] = d;
+  
+    ui55 Qtrunc; // truncated quotient (1 implicit integer bit)
+    bool stk;    // sticky bit
+
+    // Detect division by a power of 2:
+    if (manb == 0) {
+      Qtrunc = x << 2;
+      stk = 0;
+    }
+    
+    else  {
+    
+      // Partial remainder is represented in carry-save form, with 2 implicit integer bits
+      ui57 RS = 0, RC = 0;
+      ui2 fmtRem = vec ? fmt : DP; // fmt used in computation of remainder
+
+      // 1st SRT iteration is executed in the initial cycle.
+      // 1st digit is q = 1; 1st remainder is x - q * d = x - d.  Thus,
+      // RS = x, RC = ~d, with 2's complement completed by setting lsb - 1 of each vector:
+      RS = x57;
+      RC = d57;
+      RC = ~RC;
+      switch (fmtRem) {
+      case DP: RC[1:0] = 0; RS[2] = 1; break;
+      case SP: RC[30:0] = 0; RS[31] = 1; break;
+      case HP: RC[43:0] = 0; RS[44] = 1;
+      }
+      
+      // Partial quotient and decremented quotient, with 1 implicit integer bit:
+      ui55 quot = 0, quotM1 = 0;      
+      quot[54] = 1; // Initial partial quotient is 1:
+      
+      int q; // Quotient digit:
+
+      // Each of the subsequent iterative cycles executes 3 iterations. The total number
+      // of iterations (each of which extends the partial quotient by 1 bit) must exceed
+      // the precision of the op by at least 2, in order (1) to include a guard bit and
+      // (2) to allow for a possible leading zero, i.e., a quotient less than 1.  This
+      // determines the number C of iterative  cycles:
+      uint C;
+      switch (fmt) {
+      case DP: C = 18; break;
+      case SP: C = 9; break;
+      case HP: C = 4; break;
+      }
+      uint N = 3 * C + 1;
+
+      // Remaining N - 1 iterations:
+      for (uint i = 2; i <= N && i <= 55; i++) {
+        q = nextDigit(RS[56:54], RC[56:54]);           // compute digit
+        <RS, RC> = nextRem(RS, RC, d57, q, fmtRem);    // update remainder
+        <quot, quotM1> = nextQuot(quot, quotM1, q, i); // update quotient
+      }
+
+      // Select truncated quotient according to sign of remainder:
+      si57 RFinal = RS + RC;
+      bool RSign = RFinal < 0, RNonzero = RFinal != 0;
+      Qtrunc = RSign ? quotM1 : quot;
+
+      // Check for RFinal = -d:
+      ui57 RplusDS = RS ^ RC ^ d57;
+      ui57 RplusDC = (RS & RC | RS & d57 | RC & d57) << 1;
+      ui57 RplusDxor = RplusDS ^ RplusDC;
+      ui57 RplusDor = (RplusDS | RplusDC) << 1;
+      bool RplusDis0 = RplusDxor == RplusDor;
+      assert(RplusDis0 == (RFinal + d57 == 0));
+
+      // Sticky bit:
+      stk = RNonzero && !RplusDis0;
+    }
+    
+    // Division by power of 2 merges with iterative case here.
+
+    // Right shift:
+    if (expQ <= 0) {
+      ui13 shft = 1 - expQ;
+      stk |= shft >= 55 || (Qtrunc & ((1 << shft) - 1)) != 0;
+      Qtrunc >>= shft;
+    }
+
+    // Normalize:
+    else if (!Qtrunc[54]) {
+      expQ--;
+      if (expQ > 0) {
+        Qtrunc <<= 1;
+      }
+    }
+
+    // Move to low-order bits:
+    switch (fmt) {
+    case SP:
+      stk |= Qtrunc[28:0] != 0;
+      Qtrunc >>= 29;
+      break;
+    case HP:
+      stk |= Qtrunc[41:0] != 0;
+      Qtrunc >>= 42;
+    }
+
+    // Round:
+    bool lsb = Qtrunc[2], grd = Qtrunc[1];
+    stk |= Qtrunc[0];
+    bool inx = grd || stk;
+    ui53 Qrnd;
+    if ((rmode == RNE) && grd && (lsb || stk) ||
+        (rmode == RUP) && !sign && (grd || stk) ||
+        (rmode == RDN) && sign && (grd || stk)) {
+      // Subnormal quotient can round up to a power of 2, but a normal quotient cannot;
+      // thus, the msb is always retained here:
+      Qrnd = Qtrunc[54:2] + 1;
+    }
+    else  {
+      Qrnd = Qtrunc[54:2];
+    }
+
+    // Compute exceptions and assemble final result:
+    return final(Qrnd, inx, sign, expQ, rmode, fz, fmt, flags);
+  }
+}
+
+// The top-level function simply calls fdivLane (once for a scalar operation, twice for
+// SP vector, 4 times for HP vector) and combines the results:
+
+<ui64, ui8> fdiv2(ui64 opa, ui64 opb, ui2 fmt, bool vec, bool fz, bool dn, ui2 rmode) {
+  ui64 D = 0, DLane;
+  ui8 flags = 0, flagsLane;
+  uint numLanes = fmt == DP || !vec ? 1 : fmt == SP ? 2 : 4;
+  uint width = fmt == SP ? 32 : 16;
+  for (uint k = 0; k < numLanes && k < 4; k++) {
+    <DLane, flagsLane> = fdivLane(opa, opb, fmt, vec, fz, dn, rmode);
+    D |= DLane << (k * width);
+    flags |= flagsLane;
+    opa >>= width;
+    opb >>= width;
+  }
+  return <D, flags>;
+}

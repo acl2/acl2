@@ -88,7 +88,7 @@
 
 
 (defun switch-port (portlist nst from)
-  ;; This  funtion loops over the portlist until the output port that the from port is routed to is found.
+  ;; This function loops over the portlist until the output port that the from port is routed to is found.
   ;; Depending on the state of the output port and the virtual channel the port is switched.
   ;; There are five possible cases.
   ;; 1) Its a tail flit and the circuit can be switched and cleared.
@@ -155,5 +155,3 @@
 (definstance GenericFlowControl check-compliance-Flowcontrol
   :functional-substitution
   ((flowcontrol circuit-FlowControl)))
-
-

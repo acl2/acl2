@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1669,6 +1669,21 @@
                       nil))))
         (t (recognize-badge-userfn-structure-op1 new-lst old-lst))))
 
+(defun get-defun-body (fn ctx wrld)
+  (declare (xargs :mode :program))
+  (let ((body (car (last (get-defun-event fn wrld)))))
+    (and body
+         (mv-let (erp tbody)
+           (translate-cmp body t nil t ctx wrld
+                          (default-state-vars nil
+                            :temp-touchable-vars t
+                            :temp-touchable-fns t))
+           (cond ((null erp) tbody)
+                 (t (er hard ctx
+                        "An attempt to translate the body of function symbol ~
+                         ~x0 failed unexpectedly."
+                        fn)))))))
+
 (defun ok-defbadge (fn wrld)
 
 ; We determine whether it is ok to call defbadge on fn.  We return (mv msg flg
@@ -1693,7 +1708,8 @@
   (let ((bdg (and (symbolp fn)
                   (get-badge fn wrld)))
         (body (and (symbolp fn)
-                   (body fn nil wrld))))
+                   (or (body fn nil wrld)
+                       (get-defun-body fn 'defbadge wrld)))))
     (cond
      (bdg (mv nil t bdg))
      ((not (and (symbolp fn)
@@ -1742,7 +1758,7 @@
           (not (all-nils (getpropc fn 'stobjs-out nil wrld))))
 
 ; You might think that checking that if no stobjs are coming in then no stobjs
-; are coming out, but you'd be wrong: stobj creators.
+; are coming out, but you'd be wrong: stobj creators and fixers.
 
       (mv (msg "~x0 cannot be badged because its signature, ~%~y1 ==> ~y2, ~
                 includes a single-threaded object!"

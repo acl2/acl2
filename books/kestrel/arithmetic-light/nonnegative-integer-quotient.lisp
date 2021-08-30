@@ -89,7 +89,7 @@
 
 (defthmd nonnegative-integer-quotient-of-+-of---same
   (implies (and (<= j i)
-                (natp i)
+                (integerp i)
                 (posp j))
            (equal (nonnegative-integer-quotient (+ i (- j)) j)
                   (+ -1 (nonnegative-integer-quotient i j))))
@@ -130,7 +130,7 @@
                 (<= j2 j1)
                 (integerp i1)
                 (integerp i2)
-                (natp j1)
+                (integerp j1)
                 (posp j2))
            (<= (nonnegative-integer-quotient i1 j1) (nonnegative-integer-quotient i2 j2)))
   :hints (("Goal" :induct (nonnegative-integer-quotient-double-double-induct i1 i2 j1 j2)
@@ -141,7 +141,7 @@
   (implies (and (<= j1 j2)
                 (integerp i)
                 (posp j1)
-                (posp j2))
+                (integerp j2))
            (<= (nonnegative-integer-quotient i j2)
                (nonnegative-integer-quotient i j1)))
   :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))
@@ -203,7 +203,7 @@
 (defthm nonnegative-integer-quotient-when-<
   (implies (and (< i j)
                 (natp i)
-                (natp j))
+                (integerp j))
            (equal (nonnegative-integer-quotient i j)
                   0))
   :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))

@@ -44,10 +44,10 @@
 
 (encapsulate
   nil
-  (local (defthm natchars-of-non-natp
+  (local (defthm nat-to-dec-chars-of-non-natp
            (implies (not (natp x))
-                    (equal (natchars x) '(#\0)))
-           :hints(("Goal" :in-theory (enable natchars)))))
+                    (equal (nat-to-dec-chars x) '(#\0)))
+           :hints(("Goal" :in-theory (enable nat-to-dec-chars)))))
 
   (defthmd natstr-of-non-natp
     (implies (not (natp x))

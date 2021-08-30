@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1422,19 +1422,6 @@
                                 (add-to-set-eq (caar wrld) ans)))
         (t (collect-world-globals (cdr wrld) ans))))
 
-(defconst *boot-strap-invariant-risk-symbols*
-
-; The following should contain all function symbols that might violate an ACL2
-; invariant.  See check-invariant-risk-state-p.
-
-; We don't include compress1 or compress2 because we believe they don't write
-; out of bounds.
-
-  '(aset1 ; could write past the end of the real array
-    aset2 ; could write past the end of the real array
-    extend-32-bit-integer-stack
-    aset-32-bit-integer-stack))
-
 (defun primordial-world-globals (operating-system)
 
 ; This function is the standard place to initialize a world global.
@@ -1485,19 +1472,6 @@
                     (embedded-event-lst nil)
                     (cltl-command nil)
                     (top-level-cltl-command-stack nil)
-                    (hons-enabled
-
-; Why are we comfortable making hons-enabled a world global?  Note that even if
-; if hons-enabled were a state global, the world would be sensitive to whether
-; or not we are in the hons version: for example, we get different evaluation
-; results for the following.
-
-;   (getpropc 'memoize-table 'table-guard *t*)
-
-; By making hons-enabled a world global, we can access its value without state
-; in history query functions such as :pe.
-
-                     #+hons t #-hons nil)
                     (include-book-alist nil)
                     (include-book-alist-all nil)
                     (pcert-books nil)
@@ -1563,7 +1537,6 @@
                          enter-boot-strap-mode exit-boot-strap-mode
                          lp acl2-defaults-table let let*
                          complex complex-rationalp
-                         ,@*boot-strap-invariant-risk-symbols*
 
 ; The following became necessary after Version_8.2, when we starting storing a
 ; new 'recognizer-alist property on symbols (in the primordial-world) in place
@@ -1622,60 +1595,6 @@
 
           ))
 
-(defun initialize-invariant-risk (wrld)
-
-; We put a non-nil 'invariant-risk property on every function that might
-; violate some ACL2 invariant, if called on arguments that fail to satisfy that
-; function's guard.  Also see put-invariant-risk.
-
-; At one point we thought we should do this for all functions that have raw
-; code and have state as a formal:
-
-;;; (initialize-invariant-risk-1
-;;;  *initial-program-fns-with-raw-code*
-;;;  (initialize-invariant-risk-1
-;;;   *initial-logic-fns-with-raw-code*
-;;;   wrld
-;;;   wrld)
-;;;  wrld)
-
-; where:
-
-;;; (defun initialize-invariant-risk-1 (fns wrld wrld0)
-;;;
-;;; ; We could eliminate wrld0 and do our lookups in wrld, but the extra
-;;; ; properties in wrld not in wrld0 are all 'invariant-risk, so looking up
-;;; ; 'formals properties in wrld0 may be more efficient.
-;;;
-;;;   (cond ((endp fns) wrld)
-;;;         (t (initialize-invariant-risk-1
-;;;             (cdr fns)
-;;;             (if (member-eq 'state
-;;;
-;;; ; For robustness we do not call formals here, because it causes an error in
-;;; ; the case that it is not given a known function symbol, as can happen (for
-;;; ; example) with a member of the list *initial-program-fns-with-raw-code*.
-;;; ; In that case, the following getprop will return nil, in which case the
-;;; ; above member-eq test is false, which works out as expected.
-;;;
-;;;                            (getprop (car fns) 'formals nil wrld0))
-;;;                 (putprop (car fns) 'invariant-risk (car fns) wrld)
-;;;               wrld)
-;;;             wrld0))))
-
-; But we see almost no way to violate an invariant by misguided updates of the
-; (fictional) live state.  For example, state-p1 specifies that the
-; global-table is an ordered-symbol-alistp, but there is no way to get one's
-; hands directly on the global-table; and state-p1 also specifies that
-; plist-worldp holds of the logical world, and we ensure that by making set-w
-; and related functions untouchable.  The only exceptions are those in
-; *boot-strap-invariant-risk-symbols*, as is checked by the function
-; check-invariant-risk-state-p.  If new exceptions arise, then we should add
-; them to the value of *boot-strap-invariant-risk-symbols*.
-
-  (putprop-x-lst2 *boot-strap-invariant-risk-symbols* 'invariant-risk
-                  *boot-strap-invariant-risk-symbols* wrld))
-
 ;; Historical Comment from Ruben Gamboa:
 ;; I added the treatment of *non-standard-primitives*
 
@@ -1693,10 +1612,14 @@
 (defun primordial-world (operating-system)
 
 ; Warning: Names converted during the boot-strap from :program mode to :logic
-; mode will, we believe, have many properties erased by renew-name.  That is
-; why, for example, we call initialize-invariant-risk at the end of the
-; boot-strap, in end-prehistoric-world.  Consider whether a property should be
-; set there rather than here.
+; mode will, we believe, have many properties erased by renew-name.  Consider
+; whether a property should be set in end-prehistoric-world rather than here.
+; But be careful; through Version_8.3 we had that issue in mind when we called
+; a function to initialize invariant-risk for certain function symbols (see
+; *boot-strap-invariant-risk-alist*)a at the end of the boot-strap, in
+; end-prehistoric-world, instead of here.  But then the 'invariant-risk
+; property was never set for aset1-lst, even though it calls aset1, which has
+; invariant-risk.
 
   (let ((names (strip-cars *primitive-formals-and-guards*))
         (arglists (strip-cadrs *primitive-formals-and-guards*))
@@ -3205,7 +3128,7 @@
                    'return-last-table
                    'table-alist
                    *initial-return-last-table*
-                   (initialize-invariant-risk wrld)))))
+                   wrld))))
          (thy (current-theory1 wrld nil nil))
          (wrld2 (update-current-theory thy (length thy) wrld1)))
     (add-command-landmark
@@ -4636,135 +4559,27 @@
       '(set-raw-mode-off state)
     '(set-raw-mode-on state)))
 
-#-(or acl2-loop-only acl2-mv-as-values)
-(defun mv-ref! (i)
-
-; This silly function is just mv-ref, but without the restriction that the
-; argument be an explicit number.
-
-  (case i
-    (1 (mv-ref 1))
-    (2 (mv-ref 2))
-    (3 (mv-ref 3))
-    (4 (mv-ref 4))
-    (5 (mv-ref 5))
-    (6 (mv-ref 6))
-    (7 (mv-ref 7))
-    (8 (mv-ref 8))
-    (9 (mv-ref 9))
-    (10 (mv-ref 10))
-    (11 (mv-ref 11))
-    (12 (mv-ref 12))
-    (13 (mv-ref 13))
-    (14 (mv-ref 14))
-    (15 (mv-ref 15))
-    (16 (mv-ref 16))
-    (17 (mv-ref 17))
-    (18 (mv-ref 18))
-    (19 (mv-ref 19))
-    (20 (mv-ref 20))
-    (21 (mv-ref 21))
-    (22 (mv-ref 22))
-    (23 (mv-ref 23))
-    (24 (mv-ref 24))
-    (25 (mv-ref 25))
-    (26 (mv-ref 26))
-    (27 (mv-ref 27))
-    (28 (mv-ref 28))
-    (29 (mv-ref 29))
-    (30 (mv-ref 30))
-    (31 (mv-ref 31))
-    (otherwise (error "Illegal value for mv-ref!"))))
-
 (defmacro add-raw-arity (name val)
+
+; This macro did something interesting back when mv had special handling rather
+; than values.  We may want to do something interesting with it even now, so we
+; leave this macro in place.
+
   (declare (xargs :guard (and (symbolp name)
                               (or (and (integerp val) (<= 0 val))
                                   (eq val :last)))))
-  #+acl2-mv-as-values (declare (ignore name val))
-  #+acl2-mv-as-values '(value nil)
-  #-acl2-mv-as-values
-  `(pprogn (f-put-global 'raw-arity-alist
-                         (put-assoc-eq ',name
-                                       ,val
-                                       (f-get-global 'raw-arity-alist state))
-                         state)
-           (value 'raw-arity-alist)))
+  (declare (ignore name val))
+  '(value nil))
 
 (defmacro remove-raw-arity (name)
+
+; This macro did something interesting back when mv had special handling rather
+; than values.  We may want to do something interesting with it even now, so we
+; leave this macro in place.
+
   (declare (xargs :guard (symbolp name)))
-  #+acl2-mv-as-values (declare (ignore name))
-  #+acl2-mv-as-values '(value nil)
-  #-acl2-mv-as-values
-  `(pprogn (f-put-global 'raw-arity-alist
-                         (remove1-assoc-eq ',name
-                                           (f-get-global 'raw-arity-alist
-                                                         state))
-                         state)
-           (value 'raw-arity-alist)))
-
-#-(or acl2-loop-only acl2-mv-as-values)
-(defun raw-arity (form wrld state)
-  (cond
-   ((atom form) 1)
-   ((member-eq (car form) '(mv swap-stobjs))
-    (length (cdr form)))
-   ((eq (car form) 'if)
-    (let ((arity1 (raw-arity (caddr form) wrld state)))
-      (if (cdddr form)
-          (let ((arity2 (raw-arity (cadddr form) wrld state)))
-            (if (eql arity1 arity2)
-                arity1
-              (let ((min-arity (min arity1 arity2)))
-                (prog2$
-                 (warning$ 'top-level "Raw"
-                           "Unable to compute arity of the following ~
-                            IF-expression in raw mode because the true branch ~
-                            has arity ~x0 but the false branch has arity ~x1, ~
-                            so we assume an arity of ~x2 ~
-                            (see :DOC add-raw-arity):~%  ~x3."
-                           arity1 arity2 min-arity form)
-                 min-arity))))
-        arity1)))
-   ((eq (car form) 'return-last)
-    (raw-arity (car (last form)) wrld state))
-   (t (let ((arity (cdr (assoc-eq (car form)
-                                  (f-get-global 'raw-arity-alist state)))))
-        (cond
-         ((eq arity :last)
-          (raw-arity (car (last form)) wrld state))
-         ((and (integerp arity)
-               (<= 0 arity))
-          arity)
-         (arity
-          (error "Ill-formed value of ~s."
-                 '(@ raw-arity-alist)))
-         (t
-          (let ((stobjs-out
-                 (getpropc (car form) 'stobjs-out t wrld)))
-            (cond
-             ((eq stobjs-out t)
-              (multiple-value-bind
-               (new-form flg)
-               (macroexpand-1 form)
-               (cond ((null flg)
-
-; Remember that our notion of multiple value here is ACL2's notion, not Lisp's
-; notion.  So the arity is 1 for calls of Common Lisp functions.
-
-                      (when (not (member-eq
-                                  (car form)
-                                  *common-lisp-symbols-from-main-lisp-package*))
-                        (fms "Note: Unable to compute number of values ~
-                              returned by this evaluation because function ~x0 ~
-                              is not known in the ACL2 logical world.  ~
-                              Presumably it was defined in raw Lisp or in raw ~
-                              mode.  Returning the first (perhaps only) value ~
-                              for calls of ~x0.  See :DOC add-raw-arity.~|"
-                             (list (cons #\0 (car form)))
-                             *standard-co* state nil))
-                      1)
-                     (t (raw-arity new-form wrld state)))))
-             (t (length stobjs-out))))))))))
+  (declare (ignore name))
+  '(value nil))
 
 (defun alist-to-bindings (alist)
   (cond
@@ -11651,7 +11466,32 @@
                   (sysfile-to-filename-include-book-alist
                    post-alist3-sysfile
                    t ; local-markers-allowedp
-                   state)))
+                   state))
+                 (unexpected-from-sysfile
+
+; We will consider the book to be uncertified if the full-book-name doesn't
+; match the sysfile expansion stored for the book in its certificate.  Before
+; this change, we could include a community book in its own directory using its
+; relative pathname (free of "/"), and it would be considered certified -- and
+; would return a pathname based on the system-books-dir for the current ACL2
+; executable!  Maybe that's not so serious, or we could just fix that specific
+; problem; but more serious is that sub-books would also have bad resolutions
+; of sysfile references.  We could restrict this check to the case that there
+; is at least one sysfile reference in the certificate file for a subbook.  But
+; it seems best (and simpler) to point out to the user the sysfile mismatch for
+; the top-level book.
+
+; Note that (caar post-alist3-sysfile) represents the book being included.
+; When the book was certified, the post-alist was created after pass 1 from
+; (global-val 'include-book-alist-all (w state)), so the topmost entry is the
+; most recent, hence for the book being included.
+
+                  (and (consp post-alist3-abs0)
+                       (consp (car post-alist3-abs0))
+                       (sysfile-p (caar post-alist3-sysfile))
+                       (not (equal (caar post-alist3-abs0)
+                                   file1))
+                       (caar post-alist3-abs0))))
             (er-let* ((pre-alist-abs
                        (cond ((eq pre-alist-abs0 :error)
                               (ill-formed-certificate-er
@@ -11697,9 +11537,10 @@
 
                        )))
                ((and (not light-chkp)
-                     (not (include-book-alist-subsetp
-                           pre-alist-abs
-                           actual-alist)))
+                     (or unexpected-from-sysfile
+                         (not (include-book-alist-subsetp
+                               pre-alist-abs
+                               actual-alist))))
 
 ; Note: Sometimes I have wondered how the expression above deals with
 ; LOCAL entries in the alists in question, because
@@ -11720,6 +11561,22 @@
                    ((and (equal warning-summary "Uncertified")
                          (warning-disabled-p "Uncertified"))
                     (value nil))
+                   (unexpected-from-sysfile
+                    (include-book-er1 file1 file2
+
+; The uses of ~| below are to ensure that both book names start in column 0, to
+; make it easy to see their difference.  We avoid concluding with a newline
+; because two spaces may be printed before printing another sentence, for
+; example, during certification: " This is illegal because we are currently
+; attempting certify-book; see :DOC certify-book."
+
+                                      (msg "The book being ~
+                                            included,~|~s0,~%is not in the ~
+                                            location expected for the ACL2 ~
+                                            executable being used:~|~s1."
+                                           file1
+                                           unexpected-from-sysfile)
+                                      warning-summary ctx state))
                    (t (mv-let (msgs state)
                         (tilde-*-book-hash-phrase pre-alist-abs
                                                   actual-alist
@@ -12494,8 +12351,6 @@
              (if ,chan0
                  *print-circle-stream*
                (and ,chan (get-output-stream-from-channel ,chan)))))
-; Commented out upon addition of serialize:
-;       #+hons (when (null ,chan0) (setq *compact-print-file-n* 0))
         ,body))))
 
 (defun elide-locals-and-split-expansion-alist (alist acl2x-alist x y)
@@ -13424,11 +13279,6 @@
          (old-skip-proofs-seen (global-val 'skip-proofs-seen wrld1))
          (active-book-name (active-book-name wrld1 state))
          (old-ttags-seen (global-val 'ttags-seen wrld1))
-         #-(or acl2-loop-only hons) ; skip for ACL2(h), hence always skip
-         (*fchecksum-symbol-memo*
-          (if *inside-include-book-fn*
-              *fchecksum-symbol-memo*
-            (make-hash-table :test 'eq)))
          #-acl2-loop-only
          (*defeat-slow-alist-action* (or *defeat-slow-alist-action*
                                          'stolen))
@@ -14526,8 +14376,9 @@
 ; GCL that had been created with CCL.  (We don't officially support using more
 ; than one host Lisp on the same files, but it's convenient sometimes to do
 ; that anyhow.)  The community book in question was
-; books/projects/legacy-defrstobj/typed-record-tests.lisp, and ACL2 was used,
-; not ACL2(h).  The event that caused the trouble was this one:
+; books/projects/legacy-defrstobj/typed-record-tests.lisp, and "classic" ACL2
+; was used, not the hons version, ACL2(h).  The event that caused the trouble
+; was this one:
 
 ;   (make-event
 ;    `(def-typed-record char
@@ -14655,9 +14506,7 @@
              (t (princ$ ";;; Note: There are no declaim forms to print." ch state)))
 
 ; We print a single progn for all top-level events in order to get maximum
-; sharing with compact printing.  This trick isn't necessary of course for the
-; non-hons version, but it seems simplest to do this the same way for both the
-; hons and non-hons versions.
+; sharing with compact printing.
 
        (mv-let
         (erp val state)
@@ -14800,51 +14649,6 @@
          (hons (car y)
                (hons-union-ordered-string-lists x (cdr y))))))
 
-(defun pkg-names-memoize (x)
-
-; This function caused a stack overflow when certifying an example sent
-; 2/10/2020 by Shilpi Goel, and had already caused a stack overflow when
-; certifying a version of books/projects/apply/loop-tests.lisp, modified by
-; removing LOCAL from the last event marked LOCAL in that book.  Even with the
-; change to avoid pkg-names-memoize, the modified loop-tests.lisp still fails
-; to certify because of a stack overflow from ser-encode-conses (see also
-; below), though that can be solved by certifying after evaluating
-; (set-serialize-character-system nil state) or by increasing the stack size,
-; e.g., in saved_acl2 using "-Z 1024M" for CCL and "--control-stack-size 1024"
-; for SBCL.
-
-  (declare (ignore x))
-  (er hard! 'pkg-names-memoize
-      "The function ~x0 is obsolete, and should not be called!"
-      'pkg-names-memoize)
-
-; Old code:
-
-; ; See pkg-names.
-;
-; ; For the following book we get a stack overflow in pkg-names-memoize in Step 3
-; ; of certification.
-;
-; ; (in-package "ACL2")
-; ; (include-book "projects/apply/top" :dir :system)
-; ; (make-event `(defconst *m* ',(make-list 10000000)))
-;
-; ; Before trying to fix pkg-names-memoize, however, note that if we comment out
-; ; the include-book form above, then instead we get a stack overflow in
-; ; ser-encode-conses in Step 4.  So it might not be worth trying to improve
-; ; pkg-names-memoize unless we also try to improve ser-encode-conses.  Both
-; ; might be difficult fixes that aren't necessary; see the workaround using
-; ; LOCAL near the end of community book books/projects/apply/loop-tests.lisp.
-;
-;   (cond ((consp x)
-;          (hons-union-ordered-string-lists
-;           (pkg-names-memoize (car x))
-;           (pkg-names-memoize (cdr x))))
-;         ((and x (symbolp x))
-;          (hons (symbol-package-name x) nil))
-;         (t nil)))
-  )
-
 (defun pkg-names (x base-kpa)
 
 ; For an explanation of the point of this function, see the comment at the call
@@ -14863,26 +14667,7 @@
   (cond
    ((null x) ; optimization
     nil)
-   (t
-
-; The following is obsolete; see commented-out code for pkg-names-memoize.
-
-;     #+(and hons (not acl2-loop-only))
-;
-; ; Here we use a more efficient but equivalent version of this function that
-; ; memoizes, contributed initially by Sol Swords.  This version is only more
-; ; efficient when fast alists are available; otherwise the memo table will be a
-; ; linear list ultimately containing every cons visited, resulting in quadratic
-; ; behavior because of the membership tests against it.
-;
-;     (return-from
-;      pkg-names
-;      (loop for name in (pkg-names-memoize x)
-;            when (not (find-package-entry name base-kpa))
-;            collect name))
-
-    (merge-sort-lexorder ; sort the small list, to agree with hons result above
-     (pkg-names0 x base-kpa nil)))))
+   (t (merge-sort-lexorder (pkg-names0 x base-kpa nil)))))
 
 (defun delete-names-from-kpa-rec (names kpa)
   (cond ((endp kpa)
@@ -15190,8 +14975,8 @@
 ; User-modifiable; see comment in the defstub just above.
 
 ; At one time we used hons-copy-with-state here, but we are concerned that this
-; will interfere with fast-alists in the #+hons version.  See the
-; Remark on Fast-alists in install-for-add-trip-include-book.
+; will interfere with fast-alists.  See the Remark on Fast-alists in
+; install-for-add-trip-include-book.
 
             identity-with-state)
   :skip-checks t)
@@ -16059,12 +15844,12 @@
                             outfile)
                         state))
                (t (pprogn
-                   (print-object$-ser (cons full-book-name
-                                            (bookdata-alist full-book-name
-                                                            wrld))
-                                      nil ; serialize-character
-                                      channel
-                                      state)
+                   (print-object$-fn (cons full-book-name
+                                           (bookdata-alist full-book-name
+                                                           wrld))
+                                     nil ; serialize-character
+                                     channel
+                                     state)
                    (close-output-channel channel state)))))))))
 
 (defun fromto (i j)
@@ -17877,6 +17662,12 @@
 ; Since this is just a macro, we only do a little bit of vanilla checking,
 ; leaving it to the real events to implement the most rigorous checks.
 
+  (prog2$
+   (or (null witness-dcls)
+       (cw "~%**NOTE**: The keyword :WITNESS-DCLS of ~x0 is deprecated and ~
+            will likely no longer be supported after ACL2 Version 8.4.  Use ~
+            DECLARE forms instead.  See :DOC defun-sk.~|"
+           'defun-sk))
   (let ((bound-vars (and (true-listp body) ;this is to guard cadr
                          (cadr body)
                          (if (atom (cadr body))
@@ -17964,7 +17755,7 @@
                'forall
              'exists)
            body))
-     (t nil))))
+     (t nil)))))
 
 (defun definition-rule-name (name)
   (declare (xargs :guard (symbolp name)))
@@ -18650,6 +18441,23 @@
                      is thus illegal.~%"
                     type))
                (t (value nil))))
+        ((and (consp type)
+              (eq (car type) 'stobj-table))
+         (cond ((not (and (true-listp type)
+                          (member (length type) '(1 2))))
+                (er soft ctx
+                    "A stobj-table type must be a true-list of length 1 or 2, ~
+                     interpreted as (STOBJ-TABLE) or (STOBJ-TABLE SIZE).  The ~
+                     type ~x0 is thus illegal.~%"
+                    type))
+               ((and (cdr type)
+                     (not (natp (cadr type))))
+                (er soft ctx
+                    "A stobj-table type of the form (STOBJ-TABLE SIZE) ~
+                     must specify SIZE as a natural number.  The type ~x0 ~
+                     is thus illegal.~%"
+                    type))
+               (t (value nil))))
         (t (let* ((stobjp (stobjp type t wrld))
                   (type-term ; used only when (not stobjp)
                    (and (not stobjp) ; optimization
@@ -18727,6 +18535,7 @@
    ((endp field-descriptors)
     (let ((default-names (list* (defstobj-fnname name :recognizer :top nil)
                                 (defstobj-fnname name :creator :top nil)
+                                (defstobj-fnname name :fixer :top nil)
                                 (reverse default-names)))
           (domain (strip-cars renaming)))
       (cond
@@ -18790,7 +18599,8 @@
                        (list* (defstobj-fnname field :length key2 nil)
                               (defstobj-fnname field :resize key2 nil)
                               default-names))
-                      ((eq key2 :hash-table)
+                      ((or (eq key2 :hash-table)
+                           (eq key2 :stobj-table))
                        (list* (defstobj-fnname field :boundp key2 nil)
                               (defstobj-fnname field :accessor? key2 nil)
                               (defstobj-fnname field :remove key2 nil)
@@ -18800,55 +18610,52 @@
                               default-names))
                       (t default-names))))))))
 
-; The functions introduced by defstobj are all defined with
-; :VERIFY-GUARDS T.  This means we must ensure that their guards and
-; bodies are compliant.  Most of this stuff is mechanically generated
-; by us and is guaranteed to be compliant.  But there is a way that a
-; user defined function can sneak in.  The user might use a type-spec
-; such as (satisfies foo), where foo is a user defined function.
+; The functions introduced by defstobj are all defined with :VERIFY-GUARDS T.
+; This means we must ensure that their guards and bodies are compliant.  Most
+; of this stuff is mechanically generated by us and is guaranteed to be
+; compliant.  But there is a way that a user defined function can sneak in.
+; The user might use a type-spec such as (satisfies foo), where foo is a user
+; defined function.
 
-; To discuss the guard issue, we name the functions introduced by
-; defstobj, following the convention used in the comment in
-; defstobj-template.  The recognizer for the stobj itself will be
-; called namep, and the creator will be called create-name.  For each
-; field, the following names are introduced: recog-name - recognizer
-; for the field value; accessor-name - accessor for the field;
-; updater-name - updater for the field; length-name - length of array
-; field; resize-name - resizing function for array field.
+; To discuss the guard issue, we name the functions introduced by defstobj,
+; following the convention used in the comment in defstobj-template.  The
+; recognizer for the stobj itself will be called namep, the creator will be
+; called create-name, and the fixer will be called name$fix.  For each field,
+; the following names are introduced: recog-name - recognizer for the field
+; value; accessor-name - accessor for the field; updater-name - updater for the
+; field; length-name - length of array field; resize-name - resizing function
+; for array field.
 
-; We are interested in determining the conditions we must check to
-; ensure that each of these functions is Common Lisp compliant.  Both
-; the guard and the body of each function must be compliant.
-; Inspection of defstobj-axiomatic-defs reveals the following.
+; We are interested in determining the conditions we must check to ensure that
+; each of these functions is Common Lisp compliant.  Both the guard and the
+; body of each function must be compliant.  Inspection of
+; defstobj-axiomatic-defs reveals the following.
 
-; Namep is defined in terms of primitives and the recog-names.  The
-; guard for namep is T.  The body of namep is always compliant, if the
-; recog-names are compliant and have guards of T.
+; Namep is defined in terms of primitives and the recog-names.  The guard for
+; namep is T.  The body of namep is always compliant, if the recog-names are
+; compliant and have guards of T.
 
-; Create-name is a constant with a guard of T.  Its body is always
-; compliant.
+; Create-name is a constant with a guard of T.  Its body is always compliant.
 
-; Recog-name has a guard of T.  The body of recog-name is interesting
-; from the guard verification perspective, because it may contain
-; translated type-spec such as (satisfies foo) and so we must check
-; that foo is compliant.  We must also check that the guard of foo is
-; T, because the guard of recog-name is T and we might call foo on
-; anything.
+; Recog-name has a guard of T.  The body of recog-name is interesting from the
+; guard verification perspective, because it may contain translated type-spec
+; such as (satisfies foo) and so we must check that foo is compliant.  We must
+; also check that the guard of foo is T, because the guard of recog-name is T
+; and we might call foo on anything.
 
-; Accessor-name is not interesting:  its guard is namep and its body is
+; Accessor-name is not interesting: its guard is namep and its body is
 ; primitive.  We will have checked that namep is compliant.
 
-; Updater-name is not interesting:  its guard may involve translated
-; type-specs and will involve namep, but we will have checked their
-; compliance already.
+; Updater-name is not interesting: its guard may involve translated type-specs
+; and will involve namep, but we will have checked their compliance already.
 
-; Length-name and resize-name have guards that are calls of namep, and
-; their bodies are known to satisfy their guards.
+; Length-name and resize-name have guards that are calls of namep, and their
+; bodies are known to satisfy their guards.
 
-; So it all boils down to checking the compliance of the body of
-; recog-name, for each component.  Note that we must check both that
-; the type-spec only involves compliant functions and that every
-; non-system function used has a guard of T.
+; So it all boils down to checking the compliance of the body of recog-name,
+; for each component.  Note that we must check both that the type-spec only
+; involves compliant functions and that every non-system function used has a
+; guard of T.
 
 (defun chk-acceptable-defstobj1 (name field-descriptors ftemps renaming
                                       non-memoizable ctx wrld state names
@@ -18872,10 +18679,12 @@
    ((endp ftemps)
     (let* ((recog-name (defstobj-fnname name :recognizer :top renaming))
            (creator-name (defstobj-fnname name :creator :top renaming))
-           (names (list* recog-name creator-name names)))
+           (fixer-name (defstobj-fnname name :fixer :top renaming))
+           (names (list* recog-name creator-name fixer-name names)))
       (er-progn
        (chk-all-but-new-name recog-name ctx 'function wrld state)
        (chk-all-but-new-name creator-name ctx 'function wrld state)
+       (chk-all-but-new-name fixer-name ctx 'function wrld state)
        (chk-acceptable-defstobj-renaming name field-descriptors renaming
                                          ctx state nil)
        (cond ((and renaming
@@ -18951,11 +18760,14 @@
          ((eq key2 :array)
           (er-progn (chk-all-but-new-name length-name ctx 'function wrld state)
                     (chk-all-but-new-name resize-name ctx 'function wrld state)))
-         ((eq key2 :hash-table)
+         ((or (eq key2 :hash-table)
+              (eq key2 :stobj-table))
           (er-progn (chk-all-but-new-name boundp-name ctx
                                           'function wrld state)
-                    (chk-all-but-new-name accessor?-name ctx
-                                          'function wrld state)
+                    (if (eq key2 :hash-table)
+                        (chk-all-but-new-name accessor?-name ctx
+                                              'function wrld state)
+                      (value nil))
                     (chk-all-but-new-name remove-name ctx
                                           'function wrld state)
                     (chk-all-but-new-name count-name ctx
@@ -18970,19 +18782,27 @@
                                   (list* fieldp-name
                                          accessor-name
                                          updater-name
-                                         (if (eq key2 :array)
-                                             (list* length-name
-                                                    resize-name
-                                                    names)
-                                           (if (eq key2 :hash-table)
-                                               (list* boundp-name
-                                                      accessor?-name
-                                                      remove-name
-                                                      count-name
-                                                      clear-name
-                                                      init-name
-                                                      names)
-                                             names)))
+                                         (cond
+                                          ((eq key2 :array)
+                                           (list* length-name
+                                                  resize-name
+                                                  names))
+                                          ((eq key2 :hash-table)
+                                           (list* boundp-name
+                                                  accessor?-name
+                                                  remove-name
+                                                  count-name
+                                                  clear-name
+                                                  init-name
+                                                  names))
+                                          ((eq key2 :stobj-table)
+                                           (list* boundp-name
+                                                  remove-name
+                                                  count-name
+                                                  clear-name
+                                                  init-name
+                                                  names))
+                                          (t names)))
                                   (cons accessor-const-name
                                         const-names))))))))
 
@@ -19244,10 +19064,11 @@
 
 ; Warning: Each updater definition should immediately follow the corresponding
 ; accessor definition, so that this is the case for the list of definitions
-; returned by defstobj-axiomatic-defs.  That list of definitions becomes the
-; 'stobj property laid down by defstobj-fn, and function chk-stobj-updaters1
-; assumes that it will find each updater definition in that property
-; immediately after the corresponding accessor definition.
+; returned by defstobj-axiomatic-defs.  That list of definitions gives rise to
+; the :names field of the 'stobj property laid down by defstobj-fn, and
+; function chk-stobj-updaters1 assumes that it will find each updater
+; definition in that list immediately after the corresponding accessor
+; definition.
 
   (cond
    ((endp field-templates)
@@ -19267,6 +19088,7 @@
                      (kwote init0)))
              (hashp (and (consp type) (eq (car type) 'hash-table)))
              (hash-test (and hashp (cadr type)))
+             (stobj-tablep (and (consp type) (eq (car type) 'stobj-table)))
              (array-etype (and arrayp (cadr type)))
              (stobj-formal
               (cond (arrayp (and (not (eq array-etype 'state))
@@ -19281,6 +19103,7 @@
              (type-term            ; used in guard
               (and (not arrayp)    ; else type-term is not used
                    (not hashp)
+                   (not stobj-tablep)
                    (if (null wrld) ; called from raw Lisp, so guard is ignored
                        t
                      (translate-declaration-to-guard type v-formal wrld))))
@@ -19378,7 +19201,7 @@
                                `(update-nth-array ,n i ,v-formal ,var))))
            (defstobj-field-fns-axiomatic-defs
              top-recog var (+ n 1) (cdr field-templates) wrld)))
-         (hashp
+         ((or hashp stobj-tablep)
           (flet ((common-guard (hash-test var top-recog)
                                (cond ((eq hash-test 'eq)
                                       `(and (,top-recog ,var)
@@ -19386,7 +19209,15 @@
                                      ((eq hash-test 'eql)
                                       `(and (,top-recog ,var)
                                             (eqlablep k)))
-                                     (t `(,top-recog ,var)))))
+                                     (t
+
+; This case includes the case of stobj-tablep.  Note that a stobj-table's
+; underlying hash-table doesn't use stobj names as keys (see
+; current-stobj-gensym) and the keys are all symbols anyhow.  So even though k
+; should be a symbol, there is no need to complicate the guard with that
+; requirement.
+
+                                      `(,top-recog ,var)))))
           (append
            `((,accessor-name
               (k ,var)
@@ -19403,13 +19234,14 @@
               (declare (xargs :guard ,(common-guard hash-test var top-recog)
                               :verify-guards t))
               (consp (hons-assoc-equal k (nth ,n ,var))))
-             (,accessor?-name
-
-              (k ,var)
-              (declare (xargs :guard ,(common-guard hash-test var top-recog)
-                              :verify-guards t))
-              (mv (,accessor-name k ,var)
-                  (,boundp-name k ,var)))
+             ,@(and hashp ; skip this for a stobj-table
+                    `((,accessor?-name
+                       (k ,var)
+                       (declare (xargs :guard
+                                       ,(common-guard hash-test var top-recog)
+                                       :verify-guards t))
+                       (mv (,accessor-name k ,var)
+                           (,boundp-name k ,var)))))
              (,remove-name
               (k ,var)
               (declare (xargs :guard ,(common-guard hash-test var top-recog)
@@ -19479,6 +19311,7 @@
                            :type))
              (arrayp (and (consp type) (eq (car type) 'array)))
              (hashp (and (consp type) (eq (car type) 'hash-table)))
+             (stobj-tablep (and (consp type) (eq (car type) 'stobj-table)))
              (array-size (and arrayp (car (caddr type))))
              (init0 (access defstobj-field-template
                             field-template
@@ -19492,7 +19325,7 @@
          (arrayp
           (cons `(make-list ,array-size :initial-element ,init)
                 (defstobj-axiomatic-init-fields (cdr field-templates) wrld)))
-         (hashp
+         ((or hashp stobj-tablep)
           (cons nil
                 (defstobj-axiomatic-init-fields (cdr field-templates) wrld)))
          (t ; whether the type is given or not is irrelevant
@@ -19500,7 +19333,7 @@
                 (defstobj-axiomatic-init-fields
                   (cdr field-templates) wrld))))))))
 
-(defun defstobj-creator-fn (creator-name field-templates wrld)
+(defun defstobj-creator-def (creator-name field-templates wrld)
 
 ; This function generates the logic initialization code for the given stobj
 ; name.
@@ -19535,8 +19368,8 @@
 ; defstobj-field-fns-axiomatic-defs, below.  This is important because
 ; defstobj-axiomatic-defs provides the 'stobj property laid down by
 ; defstobj-fn, and the function chk-stobj-updaters1 assumes that it will find
-; each updater definition in that property immediately after the corresponding
-; accessor definition.
+; each updater definition in the :names field of that property immediately
+; after the corresponding accessor definition.
 
 ; See the Essay on Defstobj Definitions.
 
@@ -19544,10 +19377,16 @@
     (append
      (defstobj-component-recognizer-axiomatic-defs name template
        field-templates wrld)
-     (cons
-      (defstobj-creator-fn
+     (list*
+      (defstobj-creator-def
         (access defstobj-template template :creator)
         field-templates wrld)
+      (defstobj-fixer-def
+        name
+        (access defstobj-template template :fixer)
+        (access defstobj-template template :recognizer)
+        (access defstobj-template template :creator)
+        nil)
       (defstobj-field-fns-axiomatic-defs
         (access defstobj-template template :recognizer)
         name 0 field-templates wrld)))))
@@ -19602,7 +19441,7 @@
                    (putprop
                     upd-fn 'stobjs-out (list name) wrld)))))))))
           ((and (consp type)
-                (eq (car type) 'hash-table))
+                (member-eq (car type) '(hash-table stobj-table)))
            (putprop
             init-fn 'stobjs-in (list nil nil nil name)
             (putprop
@@ -19618,15 +19457,39 @@
                  (putprop
                   remove-fn 'stobjs-out (list name)
                   (putprop
-                   accessor?-fn 'stobjs-in (list nil name)
+                   boundp-fn 'stobjs-in (list nil name)
                    (putprop
-                    boundp-fn 'stobjs-in (list nil name)
+; Note that 'stobjs-out for acc-fn in the stobj-table case is placed further
+; below.
+                    acc-fn 'stobjs-in (list nil name)
                     (putprop
-                     acc-fn 'stobjs-in (list nil name)
+                     upd-fn 'stobjs-in
+                     (if (eq (car type) 'stobj-table)
+
+; We use the special value *stobj-table-stobj* to represent the fact that the
+; second argument of a stobj-table updater is an arbitrary stobj.  Since those
+; updater are not allowed directly in code, but only by way of stobj-let
+; (rather implicitly), we do not expect to see erroneous uses of this special
+; stobjs-in value.
+
+                         (list nil *stobj-table-stobj* name)
+                       (list nil nil name))
                      (putprop
-                      upd-fn 'stobjs-in (list nil nil name)
-                      (putprop
-                       upd-fn 'stobjs-out (list name) wrld)))))))))))))
+                      upd-fn 'stobjs-out (list name)
+                      (if (eq (car type) 'hash-table)
+                          (putprop
+                           accessor?-fn 'stobjs-in (list nil name)
+                           wrld)
+
+; We use the special value stobjs-out = (list *stobj-table-stobj*) for
+; stobj-table accessors.  Since those accessors are not allowed directly in
+; code, but only by way of stobj-let (where we deal with the accessor call in a
+; special way, expecting a fixer around it), we do not expect to see erroneous
+; uses of this special stobjs-out value.
+
+                        (putprop acc-fn 'stobjs-out
+                                 (list *stobj-table-stobj*)
+                                 wrld))))))))))))))
           (t
            (let ((stobj-flg (and (stobjp type t wrld)
                                  type)))
@@ -19649,11 +19512,13 @@
 ; put the STOBJS-IN and STOBJS-OUT properties for the appropriate
 ; names.
 
-; Relevant functions and their settings:
+; Relevant functions and their settings, where stobj-table is treated the same
+; as hash-table except that there is no accessor? function for stobj-tables.
 
 ;      fn                  stobjs-in          stobjs-out
 ; topmost recognizer       (name)             (nil)
 ; creator                  ()                 (name)
+; fixer                    (nil)              (name)
 ; field recogs             (nil ...)          (nil)
 ; simple accessor          (name)             (nil)
 ; hash-table accessor      (nil name)         (nil)
@@ -19679,16 +19544,20 @@
 
   (let ((recog-name (access defstobj-template template :recognizer))
         (creator-name (access defstobj-template template :creator))
+        (fixer-name (access defstobj-template template :fixer))
         (field-templates (access defstobj-template template :field-templates)))
     (put-stobjs-in-and-outs1 name
                              field-templates
-                             (putprop creator-name
+                             (putprop fixer-name
                                       'STOBJS-OUT
                                       (list name)
-                                      (putprop recog-name
-                                               'STOBJS-IN
+                                      (putprop creator-name
+                                               'STOBJS-OUT
                                                (list name)
-                                               wrld)))))
+                                               (putprop recog-name
+                                                        'STOBJS-IN
+                                                        (list name)
+                                                        wrld))))))
 
 (defun defconst-name-alist (lst n)
   (if (endp lst)
@@ -19806,12 +19675,14 @@
                  (raw-def-lst (defstobj-raw-defs name template nil wrld1))
                  (recog-name (access defstobj-template template :recognizer))
                  (creator-name (access defstobj-template template :creator))
+                 (fixer-name (access defstobj-template template :fixer))
                  (names
 
 ; Warning: Each updater should immediately follow the corresponding accessor --
 ; and, this is guaranteed by the call of defstobj-axiomatic-defs, above) -- so
-; that the 'stobj property laid down below puts each updater immediately after
-; the corresponding accessor, as assumed by function chk-stobj-let/updaters.
+; that the 'stobj property laid down below has a :names field that puts each
+; updater immediately after the corresponding accessor, as assumed by function
+; chk-stobj-let/updaters.
 
                   (strip-cars ax-def-lst))
                  (the-live-var (the-live-var name))
@@ -19856,8 +19727,9 @@
                                           (pairlis-x1 'defun ax-def-lst)
                                           defconsts
 
-; We disable the executable-counterpart of the creator function since its *1*
-; function always does a throw, which is not useful during proofs.
+; We disable the executable-counterpart of the creator and fixer functions.
+; The creator's *1* function always does a throw, which is not useful during
+; proofs, and the fixer function can call the creator function.
 
                                           `((encapsulate
                                              ()
@@ -19865,7 +19737,9 @@
                                              (in-theory
                                               (disable
                                                (:executable-counterpart
-                                                ,creator-name))))))
+                                                ,creator-name)
+                                               (:executable-counterpart
+                                                ,fixer-name))))))
                                          0
                                          t ; might as well do make-event check
                                          (f-get-global 'cert-data state)
@@ -19928,18 +19802,19 @@
 
                               (putprop
                                name 'stobj
-                               (cons the-live-var
-                                     (list*
-                                      recog-name
-                                      creator-name
-                                      (append (remove1-eq
-                                               creator-name
-                                               (remove1-eq recog-name
-
+                               (make stobj-property
+                                     :live-var the-live-var
+                                     :recognizer recog-name
+                                     :creator creator-name
+                                     :fixer fixer-name
+                                     :names
 ; See the comment in the binding of names above.
-
-                                                           names))
-                                              field-const-names)))
+                                     (append (set-difference-eq
+                                              names
+                                              (list recog-name
+                                                    creator-name
+                                                    fixer-name))
+                                             field-const-names))
                                (putprop-x-lst1
                                 names 'stobj-function name
                                 (putprop-x-lst1
@@ -19966,12 +19841,7 @@
                                :non-executable non-executable))))
 
 ; The property 'stobj marks a single-threaded object name.  Its value is a
-; non-nil list containing all the names associated with this object.  The car
-; of the list is always the live variable name for the object.  The cadr and
-; caddr of the list (for all user-defined stobjs, i.e., all but our STATE) are
-; the stobj recognizer and creator for the stobj, respectively.  The remaining
-; elements are the names of the other events introduced, including definitions
-; of the accessors and the updaters.
+; stobj-property record containing all the names associated with this object.
 
 ; Every supporting function is marked with the property
 ; 'stobj-function, whose value is the object name.  The live var name
@@ -20072,7 +19942,7 @@
 ; f_E and f_L for the function symbols associated with f (perhaps by default)
 ; by the :EXEC and :LOGIC keywords, respectively; these may be called the :EXEC
 ; (s-)primitive and :LOGIC (s-)primitive.  A stobj primitive other than the
-; recognizer or creator may be called a "stobj export".
+; recognizer, creator, or fixer may be called a "stobj export".
 
 ; This Essay models evaluation using live stobjs, as performed in the top-level
 ; loop.  (We do not consider here evaluation without live stobjs, as is carried
@@ -20108,9 +19978,11 @@
 ; This Essay lays out how and why these two evaluations correspond.  We
 ; implicitly rely below on the single-threadedness checks done by ACL2.  We
 ; ignore stobj hash-table and array primitives (such as array resizing) that we
-; see as not causing complications.  We also ignore errors other than guard
-; violations; see the Essay on Illegal-states, in *inside-absstobj-update* for
-; how incomplete abstract stobj updates are handled by the implementation.
+; see as not causing complications.  (Throughout this Essay, by "hash-table
+; fields" we mean to include stobj-table fields.)  We also ignore errors other
+; than guard violations; see the Essay on Illegal-states, in
+; *inside-absstobj-update* for how incomplete abstract stobj updates are
+; handled by the implementation.
 
 ; Remark.  The careful reader might have noticed that a variable v is bound to
 ; a stobj if v is the name of a stobj, even in a context where v was not
@@ -20861,7 +20733,7 @@
                               &key
                               foundation
                               concrete ; deprecated alias for foundation
-                              recognizer creator exports
+                              recognizer creator fixer exports
                               protect-default
                               congruent-to
                               &allow-other-keys)
@@ -20881,6 +20753,7 @@
          (creator-name (if (consp creator)
                            (car creator)
                          creator))
+         (fixer (or fixer (absstobj-name name :FIXER)))
          (congruent-stobj-rep (if congruent-to
                                   (congruent-stobj-rep-raw congruent-to)
                                 name))
@@ -20931,7 +20804,9 @@
 ; See the comment above in the binding of fields, about a guarantee that the
 ; first two methods must be for the recognizer and creator, respectively.
 
-                       (defabsstobj-raw-defs name methods))
+                       (defabsstobj-raw-defs name methods
+                         (defstobj-fixer-def name fixer recognizer creator-name
+                           t)))
              (let* ((old-pair (assoc-eq ',name *user-stobj-alist*))
                     (d (and old-pair
                             (get ',the-live-name
@@ -21003,7 +20878,7 @@
                               &key
                               foundation
                               concrete ; deprecated alias for foundation
-                              recognizer creator corr-fn exports
+                              recognizer creator fixer corr-fn exports
                               protect-default
                               congruent-to missing-only)
   (declare (xargs :guard (and (symbolp name)
@@ -21015,6 +20890,7 @@
               (list 'quote (or foundation concrete))
               (list 'quote recognizer)
               (list 'quote creator)
+              (list 'quote fixer)
               (list 'quote corr-fn)
               (list 'quote exports)
               (list 'quote protect-default)
@@ -21038,7 +20914,7 @@
                                              &key
                                              foundation
                                              concrete ; deprecated alias for foundation
-                                             recognizer creator
+                                             recognizer creator fixer
                                              corr-fn exports protect-default
                                              congruent-to)
   (declare (xargs :guard (symbolp name)))
@@ -21050,6 +20926,7 @@
                 (list 'quote (or foundation concrete))
                 (list 'quote recognizer)
                 (list 'quote creator)
+                (list 'quote fixer)
                 (list 'quote corr-fn)
                 (list 'quote exports)
                 (list 'quote protect-default)
@@ -22243,17 +22120,18 @@
     (msg accessors updaters accessors-exec updaters-exec)
     (collect-defabsstobj-updaters methods st$c methods wrld nil nil nil nil)
     (cond (msg (mv msg nil nil))
-          (t (let ((msg (chk-defabsstobj-updaters-1
-                         accessors accessors-exec
-                         updaters updaters-exec
-                         (cdddr ; pop live-var, recognizer, and creator
-                          (getpropc st$c 'stobj nil wrld)))))
+          (t (let* ((prop (getpropc st$c 'stobj nil wrld))
+                    (msg (chk-defabsstobj-updaters-1
+                          accessors accessors-exec
+                          updaters updaters-exec
+                          (access stobj-property prop :names))))
                (cond (msg (mv msg nil nil))
                      (t (mv nil accessors updaters))))))))
 
-(defun chk-acceptable-defabsstobj (name st$c recognizer st$ap creator corr-fn
-                                        exports protect-default congruent-to
-                                        see-doc ctx wrld state event-form)
+(defun chk-acceptable-defabsstobj (name st$c recognizer st$ap creator fixer
+                                        corr-fn exports protect-default
+                                        congruent-to see-doc ctx wrld state
+                                        event-form)
 
 ; We return an error triple such that when there is no error, the value
 ; component is either 'redundant or is a tuple of the form (missing methods
@@ -22277,6 +22155,15 @@
         "The symbol ~x0 is not the name of a stobj in the current ACL2 world. ~
          ~ ~@1"
         st$c see-doc))
+   ((or (not (symbolp fixer))
+        (null fixer)
+        (keywordp fixer)
+        (booleanp fixer))
+    (er soft ctx
+        "The value of a ~x0 :FIXER argument must be a non-nil symbol that is ~
+         neither a kwyword nor a Boolean.  The :FIXER argument ~x1 is thus ~
+         illegal.  ~@2"
+        'defabsstobj fixer see-doc))
    ((not (true-listp exports))
     (er soft ctx
         "DEFABSSTOBJ requires the value of its :EXPORTS keyword argument to ~
@@ -22325,9 +22212,9 @@
                                     protect-default congruent-to see-doc ctx
                                     wrld2 state nil nil))))))
 
-(defun defabsstobj-axiomatic-defs (methods)
+(defun defabsstobj-axiomatic-defs (methods fixer-def)
   (cond
-   ((endp methods) nil)
+   ((endp methods) (list fixer-def))
    (t (cons (let ((method (car methods)))
               (mv-let (name formals guard-post logic stobjs-in-logic)
                 (mv (access absstobj-method method :NAME)
@@ -22376,7 +22263,7 @@
 ; primitives in the logic.)
 
                         (,logic ,@formals))))
-            (defabsstobj-axiomatic-defs (cdr methods))))))
+            (defabsstobj-axiomatic-defs (cdr methods) fixer-def)))))
 
 (defun with-inside-absstobj-update (temp saved name form)
 
@@ -22436,15 +22323,15 @@
                           ',name ,form0)))))
     (list name '(&rest args) body)))
 
-(defun defabsstobj-raw-defs-rec (methods)
+(defun defabsstobj-raw-defs-rec (methods fixer-def)
 
 ; See defabsstobj-raw-defs.
 
-  (cond ((endp methods) nil)
+  (cond ((endp methods) (list fixer-def))
         (t (cons (defabsstobj-raw-def (car methods))
-                 (defabsstobj-raw-defs-rec (cdr methods))))))
+                 (defabsstobj-raw-defs-rec (cdr methods) fixer-def)))))
 
-(defun defabsstobj-raw-defs (st-name methods)
+(defun defabsstobj-raw-defs (st-name methods fixer-def)
 
 ; Warning: Each method, which is an absstobj-method record, might only have
 ; valid :NAME, :LOGIC, :EXEC, and :PROTECT fields filled in.  Do not use other
@@ -22478,7 +22365,7 @@
           (exec (access absstobj-method method :EXEC)))
      (assert$ (not (eq exec 'args)) ; ACL2 built-in
               `(,name (&rest args) (cons ',exec args))))
-   (defabsstobj-raw-defs-rec (cddr methods))))
+   (defabsstobj-raw-defs-rec (cddr methods) fixer-def)))
 
 (defun expand-recognizer (st-name recognizer see-doc ctx state)
   (cond ((null recognizer)
@@ -22720,7 +22607,7 @@
 
   (congruent-absstobj-tuples-rec tuples1 tuples2 tuples1 tuples2))
 
-(defun defabsstobj-fn1 (st-name st$c recognizer creator corr-fn exports
+(defun defabsstobj-fn1 (st-name st$c recognizer creator fixer corr-fn exports
                                 protect-default congruent-to missing-only
                                 ctx state event-form)
   (let* ((wrld0 (w state))
@@ -22732,6 +22619,8 @@
          (creator-name (if (consp creator)
                            (car creator)
                          creator))
+         (fixer (or fixer
+                    (absstobj-name st-name :FIXER)))
          (corr-fn (or corr-fn
                       (absstobj-name st-name :CORR-FN))))
     (er-let* ((recognizer (expand-recognizer st-name recognizer see-doc ctx
@@ -22739,7 +22628,7 @@
               (st$ap (value (cadr (assoc-keyword :logic (cdr recognizer)))))
               (missing/methods/wrld1
                (chk-acceptable-defabsstobj
-                st-name st$c recognizer st$ap creator corr-fn exports
+                st-name st$c recognizer st$ap creator fixer corr-fn exports
                 protect-default congruent-to see-doc ctx wrld0 state
                 event-form)))
       (cond
@@ -22829,14 +22718,23 @@
                                    (defabsstobj-logic-subst methods0)
                                    methods0))
                          (wrld1 (cddr missing/methods/wrld1))
-                         (ax-def-lst (defabsstobj-axiomatic-defs methods))
+                         (ax-def-lst (defabsstobj-axiomatic-defs
+                                       methods
+                                       (defstobj-fixer-def
+                                         st-name fixer
+                                         (car recognizer)
+                                         creator-name nil)))
                          (raw-def-lst
 
 ; The first method in methods is for the recognizer, as is guaranteed by
 ; chk-acceptable-defabsstobj (as explained in a comment there that refers to
 ; the present function, defabsstobj-fn1).
 
-                          (defabsstobj-raw-defs st-name methods))
+                          (defabsstobj-raw-defs st-name methods
+                            (defstobj-fixer-def
+                              st-name fixer
+                              (car recognizer)
+                              creator-name t)))
                          (names (strip-cars ax-def-lst))
                          (the-live-var (the-live-var st-name)))
                     (er-progn
@@ -22875,7 +22773,9 @@
                               (in-theory
                                (disable
                                 (:executable-counterpart
-                                 ,creator-name))))))
+                                 ,creator-name)
+                                (:executable-counterpart
+                                 ,fixer))))))
                          0
                          t ; might as well do make-event check
                          (f-get-global 'cert-data state)
@@ -22912,29 +22812,34 @@
                                       st-name methods
                                       (putprop
                                        st-name 'stobj
-                                       (list* the-live-var
+                                       (make stobj-property
+                                             :live-var the-live-var
 
 ; We know that the first two members of names are the recognizer and creator,
 ; respectively.  The remaining names need to be put into proper order for the
 ; use of the 'stobj property in functions chk-stobj-updaters (in support of
 ; stobj-let) and stobj-field-fn-of-stobj-type-p (for the call there of
 ; absstobj-field-fn-of-stobj-type-p): each updater must immediately follow the
-; corresponding accessor.
+; corresponding accessor in the :names field.
 
-                                              (car names) ; recognizer
-                                              (cadr names) ; creator
-                                              (sort-absstobj-names
-                                               (cddr names)
-                                               accessors
-                                               updaters))
+                                             :recognizer (car names)
+                                             :creator (cadr names)
+                                             :fixer (car (last names))
+                                             :names
+                                             (sort-absstobj-names
+                                              (butlast (cddr names) 1)
+                                              accessors
+                                              updaters))
                                        (putprop-x-lst1
                                         names 'stobj-function st-name
                                         (putprop
                                          the-live-var 'stobj-live-var st-name
-                                         (putprop
-                                          the-live-var 'symbol-class
-                                          :common-lisp-compliant
-                                          wrld2)))))))))))
+                                          (putprop
+                                           fixer 'stobjs-out (list st-name)
+                                           (putprop
+                                            the-live-var 'symbol-class
+                                            :common-lisp-compliant
+                                            wrld2))))))))))))
                                (discriminator
                                 (cons 'defabsstobj
                                       (make
@@ -22973,7 +22878,7 @@
                                            wrld3
                                            state))))))))))))))))))))))
 
-(defun defabsstobj-fn (st-name st$c recognizer creator corr-fn exports
+(defun defabsstobj-fn (st-name st$c recognizer creator fixer corr-fn exports
                                protect-default congruent-to missing-only
                                state event-form)
 
@@ -22989,7 +22894,7 @@
   (with-ctx-summarized
    (make-ctx-for-event event-form
                        (msg "( DEFABSSTOBJ ~x0 ...)" st-name))
-   (defabsstobj-fn1 st-name st$c recognizer creator corr-fn exports
+   (defabsstobj-fn1 st-name st$c recognizer creator fixer corr-fn exports
      protect-default congruent-to missing-only ctx state event-form)))
 
 (defun create-state ()
@@ -23205,10 +23110,7 @@
 
   (declare (ignore args))
   #+acl2-loop-only
-  (mv-let (form bound-vars actuals producer-vars stobj)
-    (stobj-let-fn x)
-    (declare (ignore bound-vars actuals producer-vars stobj))
-    form)
+  (stobj-let-fn x)
   #-acl2-loop-only
   (stobj-let-fn-raw x))
 
@@ -23798,8 +23700,7 @@
   (let* ((old-fn (get fn 'acl2-trace-saved-fn))
          (*1*fn (*1*-symbol? fn))
          (old-*1*fn (get *1*fn 'acl2-trace-saved-fn))
-         #+hons (memo-entry (memoizedp-raw fn)))
-    #+hons
+         (memo-entry (memoizedp-raw fn)))
     (when (and memo-entry
                (not (eq (symbol-function fn)
                         (access memoize-info-ht-entry memo-entry
@@ -23819,7 +23720,6 @@
 ; "silent no-op" below and in trace$-fn-general.
       (setf (symbol-function fn)
             old-fn)
-      #+hons
       (when memo-entry
         (setf (gethash fn *memoize-info-ht*)
               (change memoize-info-ht-entry memo-entry
@@ -23923,7 +23823,6 @@
 
 #-acl2-loop-only
 (defun trace$-def (arglist def trace-options predefined multiplicity ctx)
-  #-hons (declare (ignore ctx))
   (let* ((state-bound-p (member-eq 'state arglist))
          (fn (car def))
          (cond-tail (assoc-keyword :cond trace-options))
@@ -23942,22 +23841,20 @@
          (notinline-tail (assoc-keyword :notinline trace-options))
          (notinline-nil (and notinline-tail
                              (null (cadr notinline-tail))))
-         #+hons (memo-entry (memoizedp-raw fn))
+         (memo-entry (memoizedp-raw fn))
          (notinline-fncall
           (cond (notinline-tail
-                 #+hons (or (eq (cadr notinline-tail) :fncall)
-                            (and memo-entry
-                                 (er hard ctx
-                                     "It is illegal to specify a value for ~
+                 (or (eq (cadr notinline-tail) :fncall)
+                     (and memo-entry
+                          (er hard ctx
+                              "It is illegal to specify a value for ~
                                       trace$ option :NOTINLINE other than ~
                                       :FNCALL for a memoized function.  The ~
                                       suggested trace spec for ~x0, which ~
                                       specifies :NOTINLINE ~x0, is thus ~
                                       illegal."
-                                     fn
-                                     (cadr notinline-tail))))
-                 #-hons (eq (cadr notinline-tail) :fncall))
-                #+hons
+                              fn
+                              (cadr notinline-tail)))))
                 (memo-entry
 
 ; Memoization installs its own symbol-function for fn, so we do not want to
@@ -23991,7 +23888,6 @@
                        `(funcall (get ',fn 'acl2-trace-saved-fn)
                                  ,@arglist)
                      `(block ,fn (progn ,@body)))))
-    #+hons
     (when (and memo-entry
                (not (eq (symbol-function fn)
                         (access memoize-info-ht-entry memo-entry
@@ -24066,12 +23962,7 @@
 ; reference to the entire arglist instead of what it should be: a reference to
 ; the formal parameter, ARGLIST.
 
-                   #+acl2-mv-as-values
-                   (multiple-value-list ,new-body)
-                   #-acl2-mv-as-values
-                   (cons ,new-body
-                         ,(cond ((eql multiplicity 1) nil)
-                                (t `(mv-refs ,(1- multiplicity))))))
+                   (multiple-value-list ,new-body))
 
 ; Warning: It may be tempting to eliminate value, since it is not used below.
 ; But we deliberately generate a binding of value here so that users can refer
@@ -24092,10 +23983,7 @@
                                      exit)
                                   ,(or gevisc-tuple evisc-tuple)
                                   ,exit-msgp))
-             #+acl2-mv-as-values
-             (values-list values)
-             #-acl2-mv-as-values
-             (mv ,@(mv-nth-list 'values 0 multiplicity))))))))
+             (values-list values)))))))
 
 #-acl2-loop-only
 (defun trace$-install (fn formals def trace-options predefined multiplicity
@@ -24120,7 +24008,6 @@
     (setf (get fn 'acl2-trace-saved-fn)
           (symbol-function fn))
     (eval (trace$-def formals def trace-options predefined multiplicity ctx))
-    #+hons
     (let ((memo-entry (memoizedp-raw fn)))
       (when memo-entry
         (setf (gethash fn *memoize-info-ht*)
@@ -24293,40 +24180,18 @@
                                         (remove-keyword :native
                                                         trace-options)))
                        (new-trace-options
-
-; ACL2 has redefined the underlying Lisp trace for GCL, Allegro CL, and CCL so
-; that they recognize the :exit keyword, and we take advantage of that here if
-; (unlikely though that may be) #-acl2-mv-as-values is also true.  When
-; #+acl2-mv-as-values holds, there is no need to specify :exit here.
-
-                        #+(and (not acl2-mv-as-values)
-                               (or gcl allegro ccl))
-                        (let ((multiplicity
-                               (or (cadr (assoc-keyword :multiplicity
-                                                        trace-options))
-                                   (trace-multiplicity fn state))))
-                          (cond
-                           ((and multiplicity
-                                 (not (assoc-keyword :exit trace-options)))
-                            (append `(:exit
-                                      (cons (car values)
-                                            (mv-refs ,(1- multiplicity))))
-                                    trace-options-1))
-                           (t trace-options-1)))
-                        #-(and (not acl2-mv-as-values)
-                               (or gcl allegro ccl))
                         (pprogn (when (assoc-keyword :multiplicity
                                                      trace-options)
                                   (let ((state *the-live-state*))
                                     (with-output
-                                     :on (warning)
-                                     (warning$ ctx "Trace"
-                                               "The :multiplicity option of ~
-                                               trace$ has no effect in this ~
-                                               Lisp.  Only one value will be ~
-                                               passed to trace printing by ~
-                                               function ~x0."
-                                               fn))))
+                                      :on (warning)
+                                      (warning$ ctx "Trace"
+                                                "The :multiplicity option of ~
+                                                 trace$ has no effect in this ~
+                                                 Lisp.  Only one value will ~
+                                                 be passed to trace printing ~
+                                                 by function ~x0."
+                                                fn))))
                                 trace-options-1)))
                   (if new-trace-options
                       (eval `(trace (,fn ,@new-trace-options)))
@@ -30349,7 +30214,7 @@
                                    state)
                 chan nil nil t))))
 
-; Essay on Memoization with Attachments (relevant for #+hons version only)
+; Essay on Memoization with Attachments
 
 ; We maintain the invariant that every stored value in a memo table is valid.
 
@@ -30574,9 +30439,6 @@
 (defun ext-ancestors-attachments (f wrld)
 
 ; See the Essay on Memoization with Attachments.
-
-; The implementation of this function uses hons-acons, so might only be
-; efficient when #+hons (which was its intended use when written).
 
   (let ((g (canonical-sibling f wrld)))
     (ext-ancestors-attachments1 (cons g
@@ -31178,8 +31040,7 @@
 ; ev-fncall-w-guard in magic-ev-fncall has been successfully executed, that
 ; programp = (programp fn w), and that stobjs-out = (stobjs-out fn w).
 
-  (the #+acl2-mv-as-values (values t t)
-       #-acl2-mv-as-values t
+  (the (values t t)
        (let* ((*aokp*
 
 ; We expect the parameter aok, here and in all functions in the "ev family"
@@ -31212,9 +31073,6 @@
                      (prog1
                          (let ((*hard-error-returns-nilp*
                                 hard-error-returns-nilp))
-                           #-acl2-mv-as-values
-                           (apply applied-fn args)
-                           #+acl2-mv-as-values
                            (cond ((null (cdr stobjs-out))
                                   (apply applied-fn args))
                                  (t (multiple-value-list
@@ -31229,14 +31087,7 @@
          (cond
           (throw-raw-ev-fncall-flg
            (mv t (ev-fncall-msg val w nil)))
-          (t #-acl2-mv-as-values ; adjust val for the multiple value case
-             (let ((val
-                    (cond
-                     ((null (cdr stobjs-out)) val)
-                     (t (cons val
-                              (mv-refs (1- (length stobjs-out))))))))
-               (mv nil val))
-             #+acl2-mv-as-values ; val already adjusted for multiple value case
+          (t ; val already adjusted for multiple value case
              (mv nil val))))))
 
 (defun-overrides magic-ev-fncall (fn args state hard-error-returns-nilp aok)
@@ -33463,10 +33314,6 @@
 
 (defun memoize-table-chk (key val wrld state)
 
-; Although this function is generally only called with #+hons, nevertheless we
-; define it independently of #+hons so that it has the same definition in the
-; hons and non-hons versions of ACL2.
-
 ; The usual table guard mechanism provides crude error messages when there is a
 ; violation.  We avoid that problem by causing a hard error.  We rely on the
 ; fact that illegal and hard-error return nil.
@@ -33712,13 +33559,6 @@
                      str condition key))
                (t nil)))))))
     (progn$
-     (or (global-val 'hons-enabled wrld)
-         (warning$-cw (if val 'memoize 'unmemoize)
-                      "The ~#0~[un~/~]memoization request for ~x1 is being ~
-                       ignored because this ACL2 executable is not ~
-                       hons-enabled."
-                      (if val 1 0)
-                      key))
      (and val
           (let ((stobjs-in (stobjs-in key wrld)))
             (cond

@@ -14,6 +14,11 @@
 (include-book "unsigned-byte-listp-def")
 (include-book "unsigned-byte-listp")
 
+(include-book "byte-listp")
+
+(include-book "bit-listp")
+(include-book "bit-listp-rules")
+
 (include-book "all-unsigned-byte-p")
 (include-book "all-unsigned-byte-p2")
 (include-book "all-all-unsigned-byte-p")
@@ -70,3 +75,7 @@
 (include-book "list-patterns")
 
 (include-book "bvplus-list")
+
+(include-book "logext-list")
+
+(include-book "byte-fix-list")
