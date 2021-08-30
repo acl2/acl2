@@ -25,6 +25,7 @@
                            stobjs::range-equal-by-badguy-literal)))
 
 (local (in-theory (enable stobjs::nth-when-range-nat-equiv)))
+(std::make-returnspec-config :hints-sub-returnnames t)
 
 (defmacro defalias (x y)
   `(progn (defmacro ,x (&rest args) (cons ',y args))

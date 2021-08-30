@@ -48,6 +48,8 @@
          (equal (acl2::explode (acl2::str-fix x))
                 (acl2::explode x))))
 
+(std::make-returnspec-config :hints-sub-returnnames t)
+
 
 (define rev-keys ((x alistp) (acc true-listp))
   :returns (keys true-listp)

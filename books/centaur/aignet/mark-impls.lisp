@@ -48,6 +48,8 @@
                            acl2::resize-list-when-atom
                            resize-list)))
 
+(std::make-returnspec-config :hints-sub-returnnames t)
+
 ;; Functions like aignet-copy-dfs-rec use a bit array called mark.  Using a
 ;; simple bit array is sometimes expensive because if we want to do several
 ;; separate traversals we need to clear or reallocate the array before each

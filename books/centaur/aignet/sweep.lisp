@@ -32,7 +32,7 @@
 (in-package "AIGNET")
 
 (include-book "copying")
-
+(std::make-returnspec-config :hints-sub-returnnames t)
 (local (std::add-default-post-define-hook :fix))
 
 

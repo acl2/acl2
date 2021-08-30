@@ -61,7 +61,7 @@
 
 (local (acl2::use-trivial-ancestors-check))
 
-
+(std::make-returnspec-config :hints-sub-returnnames t)
 
 
 

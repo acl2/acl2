@@ -52,6 +52,7 @@
                            BITOPS::BXOR-TO-BNOT
                            BITOPS::BXOR-TO-ID
                            BITOPS::B-AND-EQUAL-1-IN-HYP)))
+(std::make-returnspec-config :hints-sub-returnnames t)
 
 (local (acl2::use-trivial-ancestors-check))
 (local (std::add-default-post-define-hook :fix))
