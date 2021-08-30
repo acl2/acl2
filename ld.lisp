@@ -1268,15 +1268,18 @@
 ; For the case that standard-oi0 is a string (representing a file), we formerly
 ; used extend-pathname to compute the new cbd from the old cbd and
 ; standard-oi0.  However, this caused us to follow soft links when that was
-; undesirable.  Here is a suitable experiment, after building the nonstd books
-; by connecting to books/nonstd/ and running "make clean-nonstd" followed by
-; "make all-nonstd".  In this experiment, we had already certified the regular
-; books using ACL2(h), and an error occurred because of an attempt to read
-; books/arithmetic/equalities.cert, which used a special hons-only format.
+; undesirable.  Here is a legacy comment describing a suitable experiment that
+; could be done back when the nonstd books had their own makefile.
 
-; cd /projects/acl2/devel/books/nonstd/arithmetic/
-; /projects/acl2/devel/allegro-saved_acl2r
-; (ld "top.lisp")
+;   ... after building the nonstd books by connecting to books/nonstd/ and
+;   running "make clean-nonstd" followed by "make all-nonstd".  In this
+;   experiment, we had already certified the regular books using ACL2(h), and
+;   an error occurred because of an attempt to read
+;   books/arithmetic/equalities.cert, which used a special hons-only format.
+
+;   cd /projects/acl2/devel/books/nonstd/arithmetic/
+;   /projects/acl2/devel/allegro-saved_acl2r
+;   (ld "top.lisp")
 
   (let ((old-cbd (f-get-global 'connected-book-directory state)))
     (cond ((and old-cbd
@@ -2665,11 +2668,11 @@
              ((and (not raw-only-p)
                    (fboundp *1*fn)
                    (not (compiled-function-p! *1*fn)))
-              #-acl2-mv-as-values ; may delete this restriction in the future
-              (eval
-               (make-defun-declare-form
-                fn
-                (cons 'defun (oneified-def fn wrld))))
+;             #-acl2-mv-as-values ; may delete this restriction in the future
+;             (eval
+;              (make-defun-declare-form
+;               fn
+;               (cons 'defun (oneified-def fn wrld))))
               (compile *1*fn)))
             (when trace-spec
               (trace$-fn trace-spec ctx state))))

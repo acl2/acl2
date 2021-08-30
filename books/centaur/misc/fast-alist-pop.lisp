@@ -73,7 +73,6 @@ by linearly traversing the alist.</p>
   (mbe :logic (cdr x)
        :exec
        (progn$
-        #+hons
         (er hard? 'fast-alist-pop
             "Under the hood definition not installed?")
         (and (consp x)
@@ -112,7 +111,6 @@ associate that key to the cdr of the @('prev-binding').</p>")
   (mbe :logic (cdr x)
        :exec
        (progn$
-        #+hons
         (er hard? 'fast-alist-pop*
             "Under the hood definition not installed?")
         (and (consp x)
@@ -120,7 +118,6 @@ associate that key to the cdr of the @('prev-binding').</p>")
 
 
 ; (depends-on "fast-alist-pop-raw.lsp")
-#+hons
 (include-raw "fast-alist-pop-raw.lsp")
 
 #||

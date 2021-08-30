@@ -9,7 +9,6 @@
 (include-book "centaur/bitops/install-bit" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
-; cert_param: (hons-only)
 ; cert_param: (uses-glucose)
 (gl::gl-satlink-mode)
 (value-triple (tshell-start))

@@ -993,14 +993,6 @@ with @('channel').</p>"
              (open-output-channel-p1 channel
                                      :object (print-object$ x channel state))))
 
-  "<p>Knowing about @('hons-enabledp') is necessary for using @(see
-   set-serialize-character).</p>"
-
-  (defthm hons-enabledp-of-print-object$
-    (equal (acl2::hons-enabledp (print-object$ obj channel state))
-           (acl2::hons-enabledp state))
-    :hints(("Goal" :in-theory (enable get-global))))
-
   (defthm get-serialize-character-of-print-object$
     (equal (get-serialize-character (print-object$ obj channel state))
            (get-serialize-character state))
@@ -1037,8 +1029,7 @@ with @('channel').</p>"
     (equal (get-serialize-character (set-serialize-character c state))
            (cond ((not c)
                   nil)
-                 ((and (hons-enabledp state)
-                       (serialize-characterp c))
+                 ((serialize-characterp c)
                   c)
                  (t
                   (get-serialize-character state))))
@@ -1046,21 +1037,12 @@ with @('channel').</p>"
                                       set-serialize-character
                                       serialize-characterp))))
 
-  (defthm hons-enabledp-of-set-serialize-character
-    (equal (hons-enabledp (set-serialize-character c state))
-           (hons-enabledp state))
-    :hints(("Goal" :in-theory (enable set-serialize-character
-                                      get-global
-                                      put-global
-                                      hons-enabledp))))
-
   (defthm boundp-global1-of-set-serialize-character
     (iff (boundp-global1 'serialize-character
                          (set-serialize-character c state))
          (cond ((not c)
                 t)
-               ((and (hons-enabledp state)
-                     (serialize-characterp c))
+               ((serialize-characterp c)
                 t)
                (t
                 (boundp-global1 'serialize-character state))))

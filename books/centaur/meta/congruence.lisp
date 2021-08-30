@@ -42,6 +42,8 @@
 
 (local (include-book "std/lists/nthcdr" :dir :system))
 
+(std::make-returnspec-config :hints-sub-returnnames t)
+
 (local (in-theory (disable pseudo-termp)))
 
 ;; This is just a list of pseudo-fnsyms, but we'll name it equiv-contexts to

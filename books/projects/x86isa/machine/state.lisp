@@ -51,7 +51,6 @@
 (include-book "std/strings/pretty" :dir :system)
 
 ; cert_param: (non-lispworks)
-; cert_param: (hons-only)
 
 ;; Matt Kaufmann discovered that LispWorks complained about making an
 ;; array whose length is more than twice the legal limit.  Here's the

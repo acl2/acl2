@@ -93,6 +93,7 @@
                    (acl2::interp-defs-alistp (is-obligs interp-st))
                    (non-exec (equal interp-st (create-interp-st)))))
      :returns (mv st-hyp-bfr in-hyp-bfr er new-interp-st new-bvar-db new-state)
+     :ret-patbinder t
      (b* (((glmc-config+ config) (glmc-config-update-param t config))
           ((acl2::local-stobjs pathcond)
            (mv st-hyp-bfr in-hyp-bfr er pathcond interp-st bvar-db state))
@@ -160,8 +161,8 @@
      :guard (b* (((glmc-config+ config)))
               (and (acl2::interp-defs-alistp config.overrides)
                    (acl2::interp-defs-alistp (is-obligs interp-st))))
-
      :returns (mv initst-bfr constr-bfr prop-bfr st-hyp-next-bfr nextst er new-interp-st new-bvar-db new-state)
+     :ret-patbinder t
      (b* (((glmc-config+ config) (glmc-config-update-param hyp-bfr config))
           ((acl2::local-stobjs pathcond)
            (mv initst-bfr constr-bfr prop-bfr st-hyp-next-bfr nextst-obj er pathcond interp-st bvar-db state))

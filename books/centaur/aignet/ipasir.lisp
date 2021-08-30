@@ -43,6 +43,7 @@
                            ;; acl2::resize-list-when-empty
                            )))
 (local (std::add-default-post-define-hook :fix))
+(std::make-returnspec-config :hints-sub-returnnames t)
 
 ;; ;; BOZO skipping node-list-fix congruence proofs here
 ;; (local (table fty::fixtypes 'fty::fixtype-alist

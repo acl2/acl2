@@ -51,6 +51,7 @@
 (local (std::add-default-post-define-hook :fix))
 
 (local (xdoc::set-default-parents constprop))
+(std::make-returnspec-config :hints-sub-returnnames t)
 
 (define aignet-constprop-sweep-invar ((n natp)
                                       invals regvals

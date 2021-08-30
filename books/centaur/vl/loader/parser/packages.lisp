@@ -139,8 +139,15 @@
        (items := (vl-parse-modelement-aux atts))
        (return (vl-modelementlist->genelements items))))
 
+
+(local (defthm vl-tokentype-p-implies-symbolp
+         (implies (vl-tokentype-p x)
+                  (symbolp x))
+         :hints(("Goal" :in-theory (enable vl-tokentype-p)))
+         :rule-classes :compound-recognizer))
+
 (defparser vl-parse-genelements-or-classes-until (endkwd)
-  :guard (symbolp endkwd)
+  :guard (vl-tokentype-p endkwd)
   :result (vl-genelementlist-p val)
   :resultp-of-nil t
   :true-listp t

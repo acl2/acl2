@@ -2126,8 +2126,7 @@
 ; is not the stobj specified by the signature of fn, but rather is congruent to
 ; it.
 
-  (the #+acl2-mv-as-values (values t t t)
-       #-acl2-mv-as-values t
+  (the (values t t t)
        (let* ((*aokp*
 
 ; We expect the parameter aok, here and in all functions in the "ev family"
@@ -2189,9 +2188,6 @@
                      (prog1
                          (let ((*hard-error-returns-nilp*
                                 hard-error-returns-nilp))
-                           #-acl2-mv-as-values
-                           (apply applied-fn arg-values)
-                           #+acl2-mv-as-values
                            (cond ((null (cdr stobjs-out))
                                   (apply applied-fn arg-values))
                                  (t (multiple-value-list
@@ -2222,18 +2218,7 @@
                  t)
                (ev-fncall-msg val w user-stobj-alist)
                latches))
-          (t #-acl2-mv-as-values ; adjust val for the multiple value case
-             (let ((val
-                    (cond
-                     ((null (cdr stobjs-out)) val)
-                     (t (cons val
-                              (mv-refs (1- (length stobjs-out))))))))
-               (mv nil
-                   val
-                   (latch-stobjs stobjs-out ; adjusted to actual-stobjs-out
-                                 val
-                                 latches)))
-             #+acl2-mv-as-values ; val already adjusted for multiple value case
+          (t ; val already adjusted for multiple value case
              (mv nil
                  val
 ; The next form was originally conditionalized with #+acl2-extra-checks, with
@@ -12145,10 +12130,10 @@
            (let* ((updated-consumer
                    `(let* ,(pairlis-x1 stobj (pairlis$ updaters nil))
                       ,consumer))
-                  #+hons
                   (flush-form
 
-; Here is a proof of nil in ACL2(h)  6.4 that exploits an unfortunate
+; Here is a proof of nil in ACL2(h)  6.4 (back when we supported both that
+; "hons version" of ACL2 and "classic" ACL2) that exploits an unfortunate
 ; "interaction of stobj-let and memoize", discussed in :doc note-6-5.  This
 ; example led us to add the call of memoize-flush in flush-form, below.  A
 ; comment in chk-stobj-field-descriptor explains how this flushing is important
@@ -12220,12 +12205,10 @@
                          `(mv-let ,producer-vars
                             ,producer
                             ,(cond
-                              #+hons
                               (flush-form
                                `(progn ,flush-form ,updated-consumer))
                               (t updated-consumer))))
                         (t `(let ((,(car producer-vars) ,producer))
-                              #+hons
                               ,@(and flush-form (list flush-form))
                               ,updated-consumer))))))
              (if (and (eq (car (get (the-live-var stobj)

@@ -75,7 +75,7 @@ Subgoal 2
 Subgoal 2.2
 Subgoal 2.2'
 Using default SMT-trusted-cp...
-; SMT solver: `/usr/bin/env python /tmp/py_file/smtlink.w59zR`: 0.52 sec, 7,904 bytes
+; SMT solver: `python /tmp/py_file/smtlink.w59zR`: 0.52 sec, 7,904 bytes
 Proved!
 Subgoal 2.2''
 Subgoal 2.1
@@ -139,7 +139,7 @@ read back into ACL2.  Below are the outputs from this clause processor called
 
 @({
 Using default SMT-trusted-cp...
-; SMT solver: `/usr/bin/env python /tmp/py_file/smtlink.w59zR`: 0.52 sec, 7,904 bytes
+; SMT solver: `python /tmp/py_file/smtlink.w59zR`: 0.52 sec, 7,904 bytes
 Proved!
 })
 

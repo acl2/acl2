@@ -127,6 +127,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
+
+   (xdoc::p
+    "The @(tsee defret) utility could malfunction when including an uncertified
+     book.  This has been fixed by tweaking a @(tsee defsection) utility to set
+     the ``most recent function'' non-locally.  This fixes GitHub Issue
+     #1302.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Tools")
 
    (xdoc::p
@@ -142,6 +152,13 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Build System Updates")
+
+   (xdoc::p
+    "As discussed in topic @(see note-8-5), essentially all support for
+     building ACL2 without the @(see hons-enabled) features has been removed.
+     The build system has been similarly updated, in particular by eliminating
+     the @('hons-only') value for @('cert_param') and the exported variable
+     @('ACL2_HAS_HONS').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -529,7 +529,8 @@ form is usually an adequate work-around.</p>")
             :hooks
             :t-proof
             :no-function
-            :local-def)
+            :local-def
+            :ret-patbinder)
           acl2::*xargs-keywords*))
 
 
@@ -1439,6 +1440,7 @@ examples.</p>")
                 `((in-theory (disable (:executable-counterpart ,guts.name-fn)))))
 
          ,@(and guts.returnspecs
+                (getarg :ret-patbinder nil guts.kwd-alist)
                 `((make-event
                    (make-define-ret-patbinder ',guts (w state)))))
 
@@ -1707,8 +1709,9 @@ specifiers is ignored.  You should usually put such documentation into the
        ((mv body-subst hint-subst)
         (returnspec-return-value-subst guts.name guts.name-fn
                                        (look-up-formals guts.name-fn world)
-                                       (list (returnspec->name origspec)))))
-    (returnspec-single-thm guts.name guts.name-fn newspec body-subst hint-subst badname-okp world)))
+                                       (list (returnspec->name origspec))))
+       (returnspec-config (cdr (assoc 'returnspec-config (table-alist 'define world)))))
+    (returnspec-single-thm guts.name guts.name-fn newspec body-subst hint-subst badname-okp returnspec-config world)))
 
 (defun returnspec-additional-single-thms (guts newspecs world)
   (if (atom newspecs)
@@ -1730,8 +1733,9 @@ specifiers is ignored.  You should usually put such documentation into the
                guts.name))
        (badname-okp nil)
        ((mv body-subst hint-subst)
-        (returnspec-return-value-subst guts.name guts.name-fn fn-formals fn-return-names)))
-    (returnspec-multi-thms guts.name guts.name-fn binds newspecs body-subst hint-subst badname-okp world)))
+        (returnspec-return-value-subst guts.name guts.name-fn fn-formals fn-return-names))
+       (returnspec-config (cdr (assoc 'returnspec-config (table-alist 'define world)))))
+    (returnspec-multi-thms guts.name guts.name-fn binds newspecs body-subst hint-subst badname-okp returnspec-config world)))
 
 (defun returnspec-additional-thms (guts newspecs world)
   ;; This deals with either the single- or multi-valued return case.
@@ -1860,9 +1864,10 @@ e.g. return an additional value, @('defret') forms don't necessarily need to
 change as long as the @(':returns') specifiers are kept up to date.</li>
 
 <li>The return value names are substituted for appropriate expressions in the
-hints and rule-classes.  E.g., in the above example, an occurrence of @('d') in
-the hints or rule-classes would be replaced by @('(mv-nth 0 (my-function a b
-c))').</li>
+rule-classes.  E.g., in the above example, an occurrence of @('d') in the hints
+or rule-classes would be replaced by @('(mv-nth 0 (my-function a b c))').  This
+substitution may optionally also be applied to the hints by setting the
+@(':hints-sub-returnnames') option; see @(see returns-specifiers).</li>
 
 <li>Any symbol named @('<CALL>') (in any package) is replaced by the call of
 the function in the body, hints, and rule-classes.  Similarly any symbol named
@@ -1889,12 +1894,18 @@ the names.</li>
        (names (returnspeclist->names guts.returnspecs))
        (ign-names (make-symbols-ignorable names))
        (formals (look-up-formals guts.name-fn world))
-       ((mv body-subst hint-subst) (returnspec-return-value-subst fn guts.name-fn formals names))
+       (returnspec-config (cdr (assoc 'returnspec-config (table-alist 'define world))))
+       ((mv body-subst ruleclass-subst) (returnspec-return-value-subst fn guts.name-fn formals names))
        (strsubst (returnspec-strsubst fn guts.name-fn))
-       (binding `((,(if (consp (cdr ign-names))
-                        `(mv . ,ign-names)
-                      (car ign-names))
-                   (,guts.name-fn . ,formals))))
+       (hints-sub-returnnames (getarg :hints-sub-returnnames
+                                      (getarg :hints-sub-returnnames nil returnspec-config)
+                                      kwd-alist))
+       (no-bind (getarg :no-bind nil kwd-alist))
+       (binding (and (not no-bind)
+                     `((,(if (consp (cdr ign-names))
+                             `(mv . ,ign-names)
+                           (car ign-names))
+                        (,guts.name-fn . ,formals)))))
        (hyp? (assoc :hyp kwd-alist))
        (hyp (cond ((eq (cdr hyp?) :guard) (fancy-hyp (look-up-guard guts.name-fn world)))
                   ((eq (cdr hyp?) :fguard) (fancy-force-hyp (look-up-guard guts.name-fn world)))
@@ -1911,7 +1922,9 @@ the names.</li>
        (binding (and (not err)
                      (intersectp-eq names (acl2::all-vars concl-trans))
                      binding))
-       (concl `(b* (,@pre-bind ,@binding) ,concl-subst))
+       (concl (if (and no-bind (not pre-bind))
+                  concl-subst
+                `(b* (,@pre-bind ,@binding) ,concl-subst)))
        (thm (if hyp?
                 `(implies ,(returnspec-sublis body-subst nil hyp)
                           ,concl)
@@ -1921,16 +1934,20 @@ the names.</li>
                  name)))
     `(,(if disablep 'defthmd 'defthm) ,thmname
       ,thm
-      ,@(and hints?        `(:hints ,(returnspec-sublis hint-subst strsubst (cdr hints?))))
+      ,@(and hints?        `(:hints ,(returnspec-sublis
+                                      (if hints-sub-returnnames
+                                          ruleclass-subst
+                                        body-subst)
+                                      strsubst (cdr hints?))))
       ,@(and otf-flg?      `(:otf-flg ,(cdr otf-flg?)))
-      ,@(and rule-classes? `(:rule-classes ,(returnspec-sublis hint-subst nil (cdr rule-classes?)))))))
+      ,@(and rule-classes? `(:rule-classes ,(returnspec-sublis ruleclass-subst nil (cdr rule-classes?)))))))
 
 
 (defun defret-fn (name args disablep world)
   (b* ((__function__ 'defret)
        ((mv kwd-alist args)
-        (extract-keywords `(defret ,name) '(:hyp :fn :hints :rule-classes :pre-bind
-                                            :otf-flg)
+        (extract-keywords `(defret ,name) '(:hyp :fn :hints :rule-classes :pre-bind :no-bind
+                                            :otf-flg :hints-sub-returnnames)
                           args nil))
        ((unless (consp args))
         (raise "No body"))
@@ -1960,9 +1977,22 @@ the names.</li>
 
   :long "<box><p>BETA.  Interface may change.</p></box>
 
-<p>@('ret') is a very fancy @(see b*) that can be used to treat the return
+<p>@('ret') is a very fancy @(see b*) binder that can be used to treat the return
 values from a function as a single bundle which you can then access by their
 names.</p>
+
+<p>This feature is <b>turned off by default</b>.  That is, by default
+@('define') does not add the necessary mechanism to allow the function it's
+defining to be used by the @('ret') patbinder; however, if it is enabled for a
+given function, then the @('ret') patbinder can be used for calls of that
+function from anywhere.  It can be enabled in two ways: by running
+the (implicitly local) event</p>
+ @({
+ (make-define-config :ret-patbinder t)
+ })
+<p>which enables this feature for subsequent functions defined in the book, or
+by adding the keyword argument @(':ret-patbinder t') to a function's @('define')
+form.</p>
 
 
 <h3>Introductory Example</h3>
@@ -1974,6 +2004,7 @@ names.</p>
                        (b natp))
       :returns (mv (sum natp)
                    (prod natp))
+      :ret-patbinder t
       (b* ((a (nfix a))
            (b (nfix b)))
         (mv (+ a b)
@@ -2300,7 +2331,8 @@ may not work with macros that generate names like @('args.extensions').</p>"
     :well-founded-relation
     :hooks ;; precedence: local to define > config > hooks table
     :ruler-extenders
-    :verify-guards))
+    :verify-guards
+    :ret-patbinder))
 
 (local
  (defthm define-config-keywords-okp
@@ -2315,16 +2347,10 @@ may not work with macros that generate names like @('args.extensions').</p>"
                 (consp (cdr l))
                 (define-config-keyword-value-listp (cddr l))))))
 
-(defun make-define-config-fn (args)
-  (if (atom args)
-      nil
-    (cons (cons (first args) (second args))
-          (make-define-config-fn (cddr args)))))
-
 (defmacro make-define-config (&rest args)
   (declare (xargs :guard (define-config-keyword-value-listp args)))
   `(local
     (table define 'define-config
-           (make-define-config-fn (quote ,args)))))
+           (keyval-list-to-kwd-alist (quote ,args)))))
 
 ;; ----------------------------------------------------------------------

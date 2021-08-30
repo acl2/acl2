@@ -63,6 +63,8 @@
                            acl2::resize-list-when-atom)))
 (local (std::add-default-post-define-hook :fix))
 
+(std::make-returnspec-config :hints-sub-returnnames t)
+
 ;; (defsection aignet-copies-ok
 
 ;;   ;; Copies:

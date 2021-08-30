@@ -9055,13 +9055,13 @@
 ; definition will be loaded from that compiled file, presumably without any
 ; #-acl2-loop-only.
 
-; The following book certified in ACL2 Version_3.3 built on SBCL, where we have
-; #+acl2-mv-as-values and also we load compiled files.  In this case the
-; problem was that while ACL2 defined prog2$ as a macro in #-acl2-loop-only,
-; for proper multiple-value handling, nevertheless that definition was
-; overridden by the compiled definition loaded by the compiled file associated
-; with the book "prog2" (not shown here, but containing the redundant
-; #+acl2-loop-only definition of prog2$).
+; The following book certified in ACL2 Version_3.3 built on SBCL, where mv was
+; values and also we load compiled files.  In this case the problem was that
+; while ACL2 defined prog2$ as a macro in #-acl2-loop-only, for proper
+; multiple-value handling, nevertheless that definition was overridden by the
+; compiled definition loaded by the compiled file associated with the book
+; "prog2" (not shown here, but containing the redundant #+acl2-loop-only
+; definition of prog2$).
 
 ; (in-package "ACL2")
 ;
@@ -11397,7 +11397,6 @@
 ; arranging for a call of verify-guards here.
 
          (chk-acceptable-defuns-verify-guards-er names ctx wrld state))
-        #+hons
         ((and (eq rc 'reclassifying)
               (conditionally-memoized-fns names
                                           (table-alist 'memoize-table wrld)))

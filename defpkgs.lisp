@@ -75,7 +75,7 @@
 
   (sort-symbol-listp
    (append
-    *hons-primitives* ; even for non-hons version, for compatibility of the two
+    *hons-primitives*
     '(TRACE* ; not defined by ACL2, but may well be defined in a book
       GRANULARITY ; for parallelism primitives
       )

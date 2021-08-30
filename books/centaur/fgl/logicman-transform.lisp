@@ -33,7 +33,7 @@
 (include-book "logicman")
 (include-book "centaur/aignet/simplify-marked" :dir :system)
 (include-book "mark-bfrs-base")
-
+(std::make-returnspec-config :hints-sub-returnnames t)
 (local (in-theory (disable w)))
 
 (define bfr-map (bfr litarr)

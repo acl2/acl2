@@ -824,9 +824,7 @@ Summary
 Form:  ( DEFUN H ...)
 Rules: NIL
  H
-ACL2 !>>(MUST-SUCCEED+ (IF (HONS-ENABLEDP STATE)
-                           (MEMOIZE 'H)
-                           (VALUE NIL)))
+ACL2 !>>(MUST-SUCCEED+ (MEMOIZE 'H))
 
 Summary
 Form:  ( MAKE-EVENT (QUOTE ...) ...)

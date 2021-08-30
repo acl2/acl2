@@ -57,7 +57,7 @@
 
 ; Without-interrupts and unwind-protect-disable-interrupts-during-cleanup were
 ; originally defined here, but have been moved to acl2-fns.lisp in order to
-; support not only ACL2(p) but also ACL2(h).
+; support not only ACL2(p) but also ACL2.
 
 ;---------------------------------------------------------------------
 ; Section:  Threading Interface

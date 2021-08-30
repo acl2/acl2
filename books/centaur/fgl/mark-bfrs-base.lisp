@@ -36,7 +36,7 @@
 (include-book "std/stobjs/updater-independence" :dir :system)
 ;; (include-book "stack-logic")
 ;; (include-book "bvar-db-equivs")
-
+(std::make-returnspec-config :hints-sub-returnnames t)
 (local (std::add-default-post-define-hook :fix))
 (defstobj-clone bitarr aignet::bitarr :pkg fgl-fgl)
 (defstobj-clone litarr aignet::litarr :pkg fgl-fgl)

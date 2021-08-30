@@ -130,11 +130,6 @@
   (declare (ignore name))
   'values)
 
-#-acl2-mv-as-values
-(error "Trace-exit probably needs to be modified for CCL if we are to ~%~
-        avoid feature acl2-mv-as-values.  See corresponding mods made for ~%~
-        Version  3.4 in akcl-acl2-trace.lisp and allegro-acl2-trace.lisp.")
-
 (defun trace-exit-rec (name original-name l exit evisc-tuple)
 
 ; We construct the (ccl:advise <fn-name> ... :when :after) form that performs

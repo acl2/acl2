@@ -26,10 +26,6 @@
 ; This file was developed and contributed by Jared Davis on behalf of
 ; Centaur Technology.
 
-; Note: The serialization routines are restricted to work only in
-; ACL2(h).  However, they are independent of the remainder of the HONS
-; extension and might some day become part of ordinary ACL2.
-
 ; Please direct correspondence about this file to Jared Davis
 ; <jared@centtech.com>.
 
@@ -46,11 +42,6 @@
   #-acl2-loop-only
   (cond
    ((live-state-p state)
-    #-hons
-    (er hard? 'serialize-write-fn
-        "Serialization routines are currently only available in the HONS ~
-         version of ACL2.")
-    #+hons
     (with-open-file
      (stream filename
              :direction :output
@@ -90,12 +81,6 @@
    ((live-state-p state)
     (return-from
      serialize-read-fn
-     #-hons
-     (progn (er hard? 'serialize-read-fn
-                "Serialization routines are currently only available in the ~
-                 HONS version of ACL2.")
-            (mv nil state))
-     #+hons
      (with-open-file
       (stream filename :direction :input)
       (let* ((*ser-verbose* verbosep)

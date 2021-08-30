@@ -3628,7 +3628,7 @@
                                             new-ens
                                             state)))))))))
 
-#+(and (not acl2-loop-only) hons)
+#-acl2-loop-only
 (defvar *defattach-fns*) ; see the Essay on Memoization with Attachments
 
 #+acl2-loop-only
@@ -3735,7 +3735,7 @@
               (invalidate-some-cl-cache-lines
                flg
                wrld))
-         (let (#+hons (*defattach-fns* nil))
+         (let ((*defattach-fns* nil))
            (cond ((eq flg 'extension)
                   (extend-world1 'current-acl2-world wrld)
                   state)
@@ -5495,12 +5495,12 @@
 
 ; Class is 'COMMAND or 'EVENT, markp is t or nil indicating whether we are to
 ; print the ">" beside the line, status is a record containing characters that
-; indicate the defun-mode and disabled status (also memoized status for the
-; HONS version), and fullp is t or nil indicating whether we are to print the
-; form in full or just sketch it.  Once upon a time this fn didn't do any
-; consing because there were only a small number of combinations and they were
-; all built in.  But with the introduction of colors (which became defun-modes)
-; that strategy lost its allure.
+; indicate the defun-mode and disabled and memoize status, and fullp is t or
+; nil indicating whether we are to print the form in full or just sketch it.
+; Once upon a time this fn didn't do any consing because there were only a
+; small number of combinations and they were all built in.  But with the
+; introduction of colors (which became defun-modes) that strategy lost its
+; allure.
 
  (cons (cons class markp) (cons status fullp)))
 
@@ -5508,8 +5508,8 @@
 
 ; Class is 'command or 'event.
 ; Markp is t or nil, indicating whether we are to print a ">".
-; Status is a an ldd-status record indicating defun-mode, disabled, and
-;   (for the HONS version) memoized status.
+; Status is a an ldd-status record indicating defun-mode, disabled status, and
+;   memoized status.
 ; n is a natural number whose interpretation depends on class:
 ;   if class is 'command, n is the command number; otherwise,
 ;   n is how far we are to indent, where 1 means indent one
@@ -5980,10 +5980,8 @@
                     (declare (ignore erp val))
                     state))))
 
-(defun print-ldd-formula-column (state)
-  (cond ((hons-enabledp state) ; extra column for the memoization status
-         14)
-        (t 13)))
+(defun print-ldd-formula-column ()
+  14)
 
 (defun print-ldd (ldd channel state)
 
@@ -5992,8 +5990,8 @@
   (with-base-10
    (let ((formula-col
           (if (eq (access-ldd-class ldd) 'command)
-              (print-ldd-formula-column state)
-            (+ (print-ldd-formula-column state)
+              (print-ldd-formula-column)
+            (+ (print-ldd-formula-column)
                (access-ldd-n ldd))))
          (status (access-ldd-status ldd)))
      (declare (type (signed-byte 30) formula-col))
@@ -6009,12 +6007,10 @@
       (let ((disabled (access ldd-status status :disabled)))
         (princ$ (if (eql disabled #\E) #\Space disabled)
                 channel state))
-      (if (hons-enabledp state)
-          (let ((memoized (access ldd-status status :memoized)))
-            (princ$ (if (eql memoized #\E) #\Space memoized)
-                    channel state))
-        state)
-      (let ((cur-col (if (hons-enabledp state) 5 4)))
+      (let ((memoized (access ldd-status status :memoized)))
+        (princ$ (if (eql memoized #\E) #\Space memoized)
+                channel state))
+      (let ((cur-col 5))
         (if (eq (access-ldd-class ldd) 'command)
             (mv-let
              (col state)
@@ -6088,9 +6084,7 @@
                   (big-d-little-d-command-block (cdr cmd-wrld) ens wrld
                                                 #\Space)
                   :memoized
-                  (and (global-val 'hons-enabled wrld) ; else don't care
-                       (big-m-little-m-command-block (cdr cmd-wrld) wrld
-                                                     #\Space)))
+                  (big-m-little-m-command-block (cdr cmd-wrld) wrld #\Space))
             (absolute-to-relative-command-number
              (access-command-tuple-number (cddar cmd-wrld))
              wrld)
@@ -6138,8 +6132,7 @@
                   :disabled
                   (big-d-little-d-event ev-tuple ens wrld)
                   :memoized
-                  (and (global-val 'hons-enabled wrld) ; else don't care
-                       (big-m-little-m-event ev-tuple wrld)))
+                  (big-m-little-m-event ev-tuple wrld))
             indent
             fullp
             (pe-event-form ev-tuple wrld)))
@@ -6351,7 +6344,7 @@
                           (col state)
                           (fmt1 "~t0: ...~%"
                                 (list (cons #\0
-                                            (- (print-ldd-formula-column state)
+                                            (- (print-ldd-formula-column)
                                                2)))
                                 0 (standard-co state) state nil)
                           (declare (ignore col))
@@ -6513,7 +6506,7 @@
      (make-command-ldd nil t cmd-wrld (ens-maybe-brr state) wrld)
      channel state))
    (t
-    (let ((indent (print-ldd-formula-column state))
+    (let ((indent (print-ldd-formula-column))
           (ens (ens-maybe-brr state)))
       (pprogn
        (print-ldd
@@ -7178,8 +7171,7 @@
                             3 (standard-co state) state)
                            (newline (standard-co state) state)))))))
          (silent-error state)))))
-     ((and (hons-enabledp state) ; presumably an optimization
-           (cdr (assoc-eq name (table-alist 'memoize-table wrld))))
+     ((cdr (assoc-eq name (table-alist 'memoize-table wrld)))
       (er soft ctx
           "The name ~x0 is in use as a ~@1, and it is currently memoized.  ~
            You must execute ~x2 before attempting to redefine it."
@@ -18211,11 +18203,6 @@
 ; WARNING: For the case that name is 'memoize-table, keep this in sync with
 ; memoize-fn.
 
-; Currently this function returns nil if name is 'memoize-table except in a
-; hons-enabled (#+hons) version, because memoize-table has a table guard of nil
-; (actually a hard-error call) in the #-hons version.  Note that starting with
-; Version_7.2, every ACL2 executable is hons-enabled.
-
   (let ((unsupported-str
          "Unsupported operation, ~x0, for updating table ~x1."))
     (case name
@@ -18294,7 +18281,6 @@
                           ,(cdr (assoc-eq :stats val))
                           ,(cdr (assoc-eq :invoke val)))))
              (t `(unmemoize ,key))))
-      #+hons
       (badge-table *special-cltl-cmd-attachment-mark*)
       (t nil))))
 

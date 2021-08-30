@@ -156,27 +156,9 @@
 
 ; These next two functions were blindly copied from akcl-acl2-trace.lisp
 
-#-acl2-mv-as-values
-(defun trace-values (name)
-  (list* 'list
-         '(car values)
-         (let ((mul (trace-multiplicity name *the-live-state*)))
-           (cond ((or (null mul)
-                      (eql mul 1))
-                  nil)
-                 (t (mv-refs-fn (1- mul)))))))
-
-#+acl2-mv-as-values
 (defun trace-values (name)
   (declare (ignore name))
   'values)
-
-#-acl2-mv-as-values
-(defun make-nths (i n var)
-  (if (zerop n)
-      nil
-    (cons `(nth ,i ,var)
-          (make-nths (1+ i) (1- n) var))))
 
 (defun trace-exit-rec (name original-name l state exit evisc-tuple)
 

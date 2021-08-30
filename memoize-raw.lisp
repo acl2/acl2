@@ -18,9 +18,7 @@
 ; University of Texas at Austin
 ; Austin, TX 78712 U.S.A.
 
-; memoize-raw.lisp -- Raw lisp definitions for memoization functions, only to
-; be included in the hons-enabled ACL2 executables (which is all ACL2
-; executables starting with Version_7.2).
+; memoize-raw.lisp -- Raw lisp definitions for memoization functions
 
 ; The original version of this file was contributed by Bob Boyer and Warren
 ; A. Hunt, Jr.  The design of this system of Hash CONS, function memoization,
@@ -276,7 +274,7 @@
 (defg *enable-multithreaded-memoization*
   ;; By default set up multithreaded memoization only if we are running on
   ;; ACL2(p).  However, nothing here is really ACL2(p) specific, and users of
-  ;; plain ACL2(h) can change this in raw Lisp if they know what they're doing.
+  ;; plain ACL2 can change this in raw Lisp if they know what they're doing.
   ;;
   ;; Note for raw Lisp hackers.  We ordinarily consult this variable
   ;; dynamically.  However, to make memoized functions execute more
@@ -284,7 +282,7 @@
   ;; memoized definitions.  Consequences of this:
   ;;
   ;;   - If you ever want to change this, e.g., because you are using ordinary
-  ;;     ACL2(h) instead of ACL2(hp), but you want to do something with raw
+  ;;     ACL2 instead of ACL2(p), but you want to do something with raw
   ;;     Lisp threads, then you really need to do something like this:
   ;;
   ;;        (setq *enable-multithreaded-memoization* t)
@@ -330,8 +328,8 @@
   #+(or ccl sb-thread lispworks)
 
 ; We tried the following alternative to the code below, in order to avoid
-; duplicating code during macroexpansion.  But for ACL2(h) (in its normal mode
-; -- that is without *enable-multithreaded-memoization*, hence not ACL2(hp))
+; duplicating code during macroexpansion.  But for ACL2 (in its normal mode
+; -- that is without *enable-multithreaded-memoization*, hence not ACL2(p))
 ; this seemed to slow down the regression slightly.  This macro is only used in
 ; this file so we're not too concerned about the compiled code duplication.
 
@@ -1393,7 +1391,7 @@
 ; books/centaur/memoize/pons.lsp, authored by Jared Davis and, as stated there,
 ; "a descendant of the memoization scheme developed by Bob Boyer and Warren
 ; A. Hunt, Jr. which was incorporated into the HONS version of ACL2, sometimes
-; called ACL2(h)."
+; called ACL2(h)."  (Now ACL2 includes hons; there is not a separate ACL2(h).)
 
 ; Pons is the critical function for generating memoization keys.  To a rough
 ; approximation, here is how we memoize (F arg1 arg2 ... argN):
@@ -3379,15 +3377,6 @@
   If the FORGET parameter is not NIL, the pons and memo tables of FN are
   discarded at the end of every outermost call of FN."
 
-  #-hons
-  (return-from memoize-fn
-               (progn (when (not (zerop *ld-level*))
-                        (warning$ 'memoize nil
-                                  "No change for function ~x0: Memoization ~
-                                   requests are ignored in this ACL2 ~
-                                   executable because it is not hons-enabled."
-                                  fn))
-                      fn))
   (when (equal condition *nil*)
     (setq condition nil))
   (with-global-memoize-lock
@@ -3627,15 +3616,6 @@
 ; function.  If fn was memoized using the memoize macro in the ACL2 loop, then
 ; a non-trivial condition is a first-class ACL2 function.
 
-  #-hons
-  (return-from unmemoize-fn
-               (progn (when (not (zerop *ld-level*))
-                        (warning$ 'unmemoize nil
-                                  "No change for function ~x0: Unmemoization ~
-                                   requests are ignored in this ACL2 ~
-                                   executable because it is not hons-enabled."
-                                  fn))
-                      fn))
   (with-global-memoize-lock
    (maybe-untrace! fn) ; See the comment about Memoization in trace$-def.
    (let ((rec (memoizedp-raw fn)))
@@ -5074,9 +5054,9 @@
 (defun-one-output acl2h-init ()
 
 ; ACL2-DEFAULT-RESTART is called whenever a saved image for any version of ACL2
-; is started up.  For ACL2(h), ACL2-DEFAULT-RESTART calls ACL2H-INIT only the
-; first time we save an image, not after save-exec, so that *print-array* and
-; the gc-strategy persist after save-exec.
+; is started up.  ACL2-DEFAULT-RESTART calls ACL2H-INIT only the first time we
+; save an image, not after save-exec, so that *print-array* and the gc-strategy
+; persist after save-exec.
 
 ; (memoize-init) ; skipped, since this call is in exit-boot-strap-mode
 

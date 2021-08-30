@@ -42,7 +42,6 @@
 
 (local (in-theory (disable (tau-system))))
 ; (depends-on "counter.sv")
-; cert_param: (hons-only)
 ; cert_param: (uses-glucose)
 ; cert_param: (uses-abc)
 
@@ -55,8 +54,7 @@
 ; Disabling waterfall parallelism for unknown reasons other than that
 ; certification stalls out with it enabled.
 
- (if (and (acl2::hons-enabledp state)
-          (f-get-global 'acl2::parallel-execution-enabled state))
+ (if (f-get-global 'acl2::parallel-execution-enabled state)
      (er-progn (set-waterfall-parallelism nil)
                (value '(value-triple nil)))
    (value '(value-triple nil))))
