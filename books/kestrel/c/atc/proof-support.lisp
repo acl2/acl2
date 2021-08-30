@@ -1139,8 +1139,9 @@
      (cond ((endp types) nil)
            (t (b* ((type (car types))
                    (fixtype (atc-integer-type-fixtype type))
-                   (names (if (and (eq op 'minus)
-                                   (type-signed-integerp type))
+                   (names (if (or (and (eq op 'minus)
+                                       (type-signed-integerp type))
+                                  (member-eq op '(shl shr)))
                               (list (pack op '- fixtype)
                                     (pack op '- fixtype '-okp))
                             (list (pack op '- fixtype))))
@@ -1976,6 +1977,11 @@
      different partial ``arcs'' of the circles in different situations.
      Anyways, this is being flagged here as something to watch for.")
    (xdoc::p
+    "The rule @('ifix-when-integerp') serves to simplify away
+     occurrences of @(tsee ifix) used in the definition of the shift operations,
+     in combination with the return type theorems of
+     the @('<type>-integer-value') functions, which return @(tsee integerp).")
+   (xdoc::p
     "The rule @('c::len-of-cons') below
      is a duplicate of @('acl2::len-of-cons')
      from at least two list libraries,
@@ -2022,6 +2028,10 @@
      This is the pattern in the second rule @('not-zp-of-limit-...'),
      whose hypothesis about the limit variable
      is easily discharged via linear arithmetic."))
+
+  (defruled ifix-when-integerp
+    (implies (integerp x)
+             (equal (ifix x) x)))
 
   (defruled not-zp-of-limit-variable
     (implies (and (syntaxp (symbolp limit))
@@ -2147,7 +2157,8 @@
 
 (defval *atc-other-rewrite-rules*
   :short "List of rewrite rules proved in @(see atc-other-rewrite-rules)."
-  '(not-zp-of-limit-variable
+  '(ifix-when-integerp
+    not-zp-of-limit-variable
     not-zp-of-limit-minus-const
     value-result-fix-when-valuep
     not-errorp-when-valuep
@@ -2375,6 +2386,16 @@
     booleanp-of-boolean-from-slong
     booleanp-of-boolean-from-ullong
     booleanp-of-boolean-from-sllong
+    integerp-of-schar-integer-value
+    integerp-of-uchar-integer-value
+    integerp-of-sshort-integer-value
+    integerp-of-ushort-integer-value
+    integerp-of-sint-integer-value
+    integerp-of-uint-integer-value
+    integerp-of-slong-integer-value
+    integerp-of-ulong-integer-value
+    integerp-of-sllong-integer-value
+    integerp-of-ullong-integer-value
     car-cons
     cdr-cons
     compustate-fix-when-compustatep
