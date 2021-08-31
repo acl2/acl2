@@ -51,6 +51,16 @@
               (pseudo-term-count term)))
   :rule-classes :linear)
 
+(defrule pseudo-term-count-of-pseudo-lambda->body
+  (implies (and (not (member-eq (pseudo-term-kind term)
+                                '(:null :var :quote)))
+                (pseudo-lambda-p (pseudo-term-call->fn term)))
+           (< (pseudo-term-count
+               (pseudo-lambda->body (pseudo-term-call->fn term)))
+              (pseudo-term-count term)))
+  :expand ((pseudo-term-count term))
+  :rule-classes :linear)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; this belongs to a more general library
@@ -3840,6 +3850,111 @@
      (list termination-of-fn-thm-event
            termination-of-fn-thm
            names-to-avoid))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines atc-loop-body-term-subst
+  :short "In a term that represents the body of a loop,
+          replace each recursive call with
+          a term that returns the transformed variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is needed to express the correctness theorem for the loop body.
+     The theorem needs to relate the execution of the loop body statement
+     to the ACL2 term that represents it.
+     However, the latter has recursive calls in it,
+     which we therefore replace with terms
+     that just return the transformed variables.
+     This ACL2 function does that.
+     This gives us the appropriate ACL2 term
+     to relate to the execution of the loop body statement,
+     because the execution of the loop body statement
+     just ends with the transformed values,
+     i.e. it does not go back to the loop,
+     which would be the equivalent of making the recursive call.")
+   (xdoc::p
+    "Note that we apply the substitution without regard to lambda variables,
+     because we only use this ACL2 function on terms
+     that satisfy the restrictions for loop body terms
+     described in the user documentation.
+     In particular, this means that the recursive calls
+     are always on the formals of the loop function,
+     and the transformed variables also always have the same meaning."))
+
+  (define atc-loop-body-term-subst ((term pseudo-termp)
+                                    (fn symbolp)
+                                    (xforming symbol-listp))
+    :returns (new-term pseudo-termp)
+    :parents nil
+    (b* (((when (member-eq (pseudo-term-kind term) '(:null :quote :var)))
+          (pseudo-term-fix term))
+         (fn/lam (pseudo-term-call->fn term))
+         ((when (eq fn/lam fn))
+          (if (consp (cdr xforming))
+              `(mv ,@(acl2::symbol-list-fix xforming))
+            (symbol-fix (car xforming))))
+         (args (pseudo-term-call->args term))
+         (new-args (atc-loop-body-term-subst-lst args fn xforming))
+         (new-fn/lam (if (pseudo-lambda-p fn/lam)
+                         (pseudo-lambda (pseudo-lambda->formals fn/lam)
+                                        (atc-loop-body-term-subst
+                                         (pseudo-lambda->body fn/lam)
+                                         fn xforming))
+                       fn/lam)))
+      (pseudo-term-call new-fn/lam new-args))
+    :measure (pseudo-term-count term))
+
+  (define atc-loop-body-term-subst-lst ((terms pseudo-term-listp)
+                                        (fn symbolp)
+                                        (xforming symbol-listp))
+    :returns (new-terms pseudo-term-listp)
+    :parents nil
+    (cond ((endp terms) nil)
+          (t (cons (atc-loop-body-term-subst (car terms) fn xforming)
+                   (atc-loop-body-term-subst-lst (cdr terms) fn xforming))))
+    :measure (pseudo-term-list-count terms)
+    ///
+    (defret len-of-atc-loop-body-term-subst-lst
+      (equal (len new-terms)
+             (len terms))))
+
+  :ruler-extenders :all
+
+  :returns-hints nil ; for speed
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atc-loop-body-term-subst
+    :hints (("Goal" :in-theory (enable pseudo-fn-args-p)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-bindings-for-loop-formals ((formals symbol-listp)
+                                           (pointers symbol-listp)
+                                           (compst-var symbolp))
+  :returns (doublets doublet-listp)
+  :short "Generate bindings for the formals of a loop function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These bindings are used in generated theorems about the loop.
+     The formals of a loop function correspond to
+     variables in the computation state
+     or arrays referenced by variables in the computation state.
+     The two cases are distinguished by whether
+     the formal is a pointer or not."))
+  (b* (((when (endp formals)) nil)
+       (formal (car formals))
+       (term `(read-var ,(symbol-name formal) ,compst-var))
+       (term (if (member-eq formal pointers)
+                 `(deref ,term (compustate->heap ,compst-var))
+               term))
+       (binding (list formal term))
+       (bindings (atc-gen-bindings-for-loop-formals (cdr formals)
+                                                    pointers
+                                                    compst-var)))
+    (cons binding bindings)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
