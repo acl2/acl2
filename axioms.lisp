@@ -5265,7 +5265,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (list* 'ev-fncall-null-body-er
            ,ignored-attachment
            ',fn
-           (print-list-without-stobj-arrays (list ,@formals)))))
+           (replace-live-stobjs-in-list (list ,@formals)))))
 
 (defvar *aokp*
 
@@ -6509,7 +6509,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             fn
             (if (eq fn :non-exec)
                 actuals
-              (print-list-without-stobj-arrays
+              (replace-live-stobjs-in-list
                (if (true-listp actuals)
                    actuals
                  (error "Unexpected case: Ill-formed actuals for ~
@@ -14617,7 +14617,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (proof-tree-start-printed . nil)
     (proofs-co . acl2-output-channel::standard-character-output-0)
     (protect-memoize-statistics . nil)
-    (raw-arity-alist . nil)
     (raw-guard-warningp . nil)
     (raw-include-book-dir!-alist . :ignore)
     (raw-include-book-dir-alist . :ignore)

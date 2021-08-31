@@ -4559,28 +4559,6 @@
       '(set-raw-mode-off state)
     '(set-raw-mode-on state)))
 
-(defmacro add-raw-arity (name val)
-
-; This macro did something interesting back when mv had special handling rather
-; than values.  We may want to do something interesting with it even now, so we
-; leave this macro in place.
-
-  (declare (xargs :guard (and (symbolp name)
-                              (or (and (integerp val) (<= 0 val))
-                                  (eq val :last)))))
-  (declare (ignore name val))
-  '(value nil))
-
-(defmacro remove-raw-arity (name)
-
-; This macro did something interesting back when mv had special handling rather
-; than values.  We may want to do something interesting with it even now, so we
-; leave this macro in place.
-
-  (declare (xargs :guard (symbolp name)))
-  (declare (ignore name))
-  '(value nil))
-
 (defun alist-to-bindings (alist)
   (cond
    ((endp alist) nil)
@@ -4747,7 +4725,7 @@
 
 #-acl2-loop-only
 (defun acl2-raw-eval (form state)
-  (or (eq state *the-live-state*)
+  (or (live-state-p state)
       (error "Unexpected state in acl2-raw-eval!"))
   (if (or (eq form :q) (equal form '(EXIT-LD STATE)))
       (mv nil '((NIL NIL STATE) NIL :Q REPLACED-STATE) state)
@@ -4755,18 +4733,18 @@
            (vals (multiple-value-list
                   (eval (acl2-raw-eval-form-to-eval form))))
            (eq-len (equal (length stobjs-out) (length vals)))
-           (stobjs-out (if eq-len
-                           stobjs-out
-
-; We can be in this case if, for example, form is (defun ...), because defun
-; returns a single value in raw Lisp but an error triple in ACL2.  It seems
-; unlikely that such a discrepancy could result in a stobj being returned in
-; raw Lisp, so we just return the values as an ordinary list in this case.  It
-; is a bit tempting to print a warning in this situation, but it's probably a
-; rare situation and, perhaps more important, such a warning could easily be
-; confusing.
-
-                         '(nil)))
+           (stobjs-out
+            (if eq-len
+                stobjs-out
+              (let ((user-stobj-alist *user-stobj-alist*)
+                    pair)
+                (loop for x in vals
+                      collect
+                      (cond
+                       ((live-state-p x) 'state)
+                       ((setq pair (rassoc x user-stobj-alist))
+                        (car pair))
+                       (t nil))))))
            (latches (and eq-len
                          (loop for x in stobjs-out
                                as val in vals
@@ -4776,6 +4754,7 @@
         (update-user-stobj-alist (put-assoc-eq-alist (user-stobj-alist state)
                                                      latches)
                                  state))
+      (assert (equal (length stobjs-out) (length vals)))
       (mv nil
           (cons stobjs-out
                 (if (cdr stobjs-out) vals (car vals)))
