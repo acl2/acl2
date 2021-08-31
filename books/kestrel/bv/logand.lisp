@@ -400,23 +400,24 @@
 ;;   :hints (("Goal" :in-theory (enable ; logand
 ;;                               ))))
 
-(defthm logand-lower-bound-negative
-  (implies (and (<= (- (expt 2 n)) i)
-                (<= (- (expt 2 n)) j)
-                ;(<= i 0)
-                ;(<= j 0)
-                (integerp i)
-                (integerp j)
-                (natp n))
-           (<= (- (expt 2 n))
-               (logand i j)))
-  :hints (("Goal" :in-theory (e/d (logand expt
-                                          <-of-floor-arg1)
-                                  (expt-hack))
-           :induct (floor-floor-sub1-induct i j n)
-           :expand ((logand i j)))))
+;; (defthm logand-lower-bound-negative
+;;   (implies (and (<= (- (expt 2 n)) i)
+;;                 (<= (- (expt 2 n)) j)
+;;                 ;(<= i 0)
+;;                 ;(<= j 0)
+;;                 (integerp i)
+;;                 (integerp j)
+;;                 (natp n))
+;;            (<= (- (expt 2 n))
+;;                (logand i j)))
+;;   :hints (("Goal" :in-theory (e/d (logand expt
+;;                                           <-of-floor-arg1)
+;;                                   (expt-hack))
+;;            :induct (floor-floor-sub1-induct i j n)
+;;            :expand ((logand i j)))))
 
-(defthm logand-lower-bound-negative-2
+;; logand-lower-bound-negative-2-alt is better
+(defthmd logand-lower-bound-negative-2
   (implies (and (integerp i)
                 (integerp j)
                 (natp n))
