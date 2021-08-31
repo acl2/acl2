@@ -1587,21 +1587,6 @@ notation causes an error and (b) the use of ,. is not permitted."
              (setf (svref *sharp-reader-array* arg)
                    val)))))
 
-(defmacro with-reckless-read (&rest forms)
-
-; To experiment with disabling the reckless reader, replace the body below
-; simply with `(progn ,@forms).
-
-  `(let ((*readtable* *reckless-acl2-readtable*))
-     (unwind-protect
-         ,@forms
-       (let ((bound (the (unsigned-byte 29) (1+ *sharp-reader-max-index*))))
-         (declare (type (unsigned-byte 29) bound))
-         (do ((i 0 (the (unsigned-byte 29) (1+ i)))) ((eql i bound))
-           (declare (type (unsigned-byte 29) i))
-           (setf (svref *sharp-reader-array* i) nil))
-         (setq *sharp-reader-max-index* 0)))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            ENVIRONMENT SUPPORT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -5131,7 +5131,7 @@
                                     (values t (format nil "~a" c)))))))
                   (values nil
                           (cond (ofile-p (load-compiled ofile t))
-                                (t (with-reckless-read (load efile)))))))
+                                (t (with-reckless-readtable (load efile)))))))
                (value (setq status
                             (cond (er (setq status val))
                                   (to-be-compiled-p 'to-be-compiled)
@@ -5369,7 +5369,7 @@
                                                lfile)
                                           reason)
                                 (cond (efile-p
-                                       (with-reckless-read
+                                       (with-reckless-readtable
                                         (handle-hcomp-loop$-alist
                                          (load efile)
                                          full-book-name)))
@@ -10056,25 +10056,27 @@
     (car alist))
    (t (assoc-eq-trace-alist val (cdr alist)))))
 
-(defun-one-output print-list-without-stobj-arrays (lst)
+(defun-one-output replace-live-stobjs-in-list (lst &optional rawp)
   (loop for x in lst
         collect
-        (if (eq x *the-live-state*)
+        (if (live-state-p x)
             '|<state>|
-          (or (and (arrayp x)
-                   (stobj-print-symbol x *user-stobj-alist*))
+          (or (stobj-print-symbol x *user-stobj-alist* rawp)
               x))))
 
-(defun-one-output stobj-print-symbol (x user-stobj-alist-tail)
+(defun-one-output stobj-print-symbol (x user-stobj-alist-tail &optional rawp)
   (and (live-stobjp x)
        (loop for pair in user-stobj-alist-tail
              when (eq x (cdr pair))
              do (return (intern-in-package-of-symbol
                          (stobj-print-name (car pair))
                          (car pair)))
-             finally (return (intern "<some-stobj>"
-                                     (find-package-fast
-                                      (current-package *the-live-state*)))))))
+             finally
+             (return
+              (and (not rawp) ; might not be any sort of stobj if in raw mode
+                   (intern "<some-stobj>"
+                           (find-package-fast
+                            (current-package *the-live-state*))))))))
 
 (defun-one-output trace-hide-world-and-state (l)
 
