@@ -7016,8 +7016,8 @@
         ((not (stobjp (car lst) t wrld))
          (er soft ctx
              "Every name used as a stobj (whether declared explicitly via the ~
-              :STOBJ keyword argument or implicitly via *-notation) must have ~
-              been previously defined as a single-threaded object with ~
+              :STOBJS keyword argument or implicitly via *-notation) must ~
+              have been previously defined as a single-threaded object with ~
               defstobj or defabsstobj.  ~x0 is used as stobj name ~#1~[~/in ~
               ~@1 ~]but has not been defined as a stobj."
              (car lst)
@@ -7049,9 +7049,8 @@
              (cond
               ((not (symbol-listp lst))
                (er soft ctx
-                   "The value specified for the :STOBJS xarg ~
-                          must be a true list of symbols and ~x0 is ~
-                          not."
+                   "The value specified for the :STOBJS xarg must be a true ~
+                    list of symbols and ~x0 is not."
                    lst))
               (t (er-progn
                   (chk-all-stobj-names lst
@@ -7407,7 +7406,7 @@
 ; that treats 3 as a stobj.
 
       (msg "the proposed and existing definitions for ~x0 differ on their ~
-            :stobj declarations."
+            :stobjs declarations."
            (car def1)))
      ((not (equal (fetch-dcl-field 'type all-but-body1)
                   (fetch-dcl-field 'type all-but-body2)))
