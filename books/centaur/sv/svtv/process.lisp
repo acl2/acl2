@@ -1032,6 +1032,7 @@ defined with @(see sv::defsvtv).</p>"
 
                (define ,name ()
                  :returns (svtv svtv-p)
+                 :parents nil
                  ,stvconst
                  ///
 
