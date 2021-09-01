@@ -6230,7 +6230,6 @@ e2-e1+1.
 ; Synced with latest version of chk-acceptable-defuns svn version 1020
 ; Added below cond clause for hons.
 ; june 16 2013 - harshrc
-           #+hons
            ((and (eq rc 'reclassifying)
               (conditionally-memoized-fns names
                                           (table-alist 'memoize-table wrld)))

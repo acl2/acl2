@@ -36,6 +36,8 @@
 (include-book "../svex/unroll")
 (local (std::add-default-post-define-hook :fix))
 
+(std::make-returnspec-config :hints-sub-returnnames t)
+
 (encapsulate nil
   (local (defthm member-of-cons
            (iff (member k (cons a b))

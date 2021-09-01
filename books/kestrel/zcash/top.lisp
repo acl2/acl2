@@ -18,6 +18,8 @@
 (include-book "pedersen-hash")
 (include-book "randomness-beacon")
 
+(include-book "gadgets/top")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ zcash

@@ -110,8 +110,8 @@
 (defun json-encode-uid (x acc)
   (declare (type integer x))
   (if (< x 0)
-      (str::revappend-natchars (- x) (cons #\- acc))
-    (str::revappend-natchars x acc)))
+      (str::revappend-nat-to-dec-chars (- x) (cons #\- acc))
+    (str::revappend-nat-to-dec-chars x acc)))
 
 (defun json-encode-uids-aux (x acc)
   (declare (xargs :guard (integer-listp x)))

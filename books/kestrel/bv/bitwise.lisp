@@ -29,32 +29,7 @@
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integerp" :dir :system))
-
-;; todo: move all this library stuff:
-
-;dup in bv.lisp
-(local
- (defthm evenp-of-expt2
-  (implies (natp m)
-           (equal (evenp (expt 2 m))
-                  (not (equal m 0))))
-  :hints (("Goal" :in-theory (enable evenp)))))
-
-(local
- (defthmd evenp-becomes-equal-of-0-and-mod
-  (implies (integerp x)
-           (equal (evenp x)
-                  (equal 0 (mod x 2))))
-  :hints (("Goal" :in-theory (enable evenp
-                                     INTEGERP-OF-*-OF-/-BECOMES-EQUAL-OF-0-AND-MOD)))))
-
-(local
- (defthm evenp-of-mod-of-expt-of-2
-  (implies (and (posp n) ;gen?
-                (integerp x))
-           (equal (evenp (mod x (expt 2 n)))
-                  (evenp x)))
-  :hints (("Goal" :in-theory (enable evenp-becomes-equal-of-0-and-mod)))))
+(local (include-book "kestrel/arithmetic-light/evenp" :dir :system))
 
 ;; (thm
 ;;  (implies (integerp x)
@@ -126,31 +101,14 @@
                   0))
   :hints (("Goal" :in-theory (enable mod-expt-split)))))
 
-;move?
-(local
- (defthm logand-of-bvchop
-   (implies (and (unsigned-byte-p m x)
-                 (integerp y))
-            (equal (logand x (bvchop m y))
-                   (logand x y)))
-   :hints (("subgoal *1/2" :cases ((< m 1))) ;todo
-           ("Goal" :do-not '(generalize eliminate-destructors)
-            :in-theory (e/d (bvchop
-                             zp zip
-                             integerp-of-*-of-1/2-becomes-evenp
-                             )
-                            ())
-            :expand ((logand x (mod y (expt 2 m)))
-                     (logand x y))
-            :induct (floor2-floor2-sub1-induct x y m)))))
-
 (local
  (defthmd bvxor-of-bvand-same-arg2-helper
    (implies (and (unsigned-byte-p n x)
                  (natp n))
             (equal (bvxor n y (bvand n x y))
                    (bvand n y (bvnot n x))))
-   :hints (("Goal" :in-theory (enable bvxor bvand bvnot logxor lognot-of-logand)))))
+   :hints (("Goal" :in-theory (enable bvxor bvand bvnot logxor lognot-of-logand
+                                      logand-of-bvchop)))))
 
 ;; Removes a mention of y
 (defthm bvxor-of-bvand-same-arg2

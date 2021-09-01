@@ -81,7 +81,8 @@
        (info? (cdr (assoc-equal call table))))
     (if (atc-maybe-call-infop info?)
         info?
-      (raise "Internal error: value ~x0 of key ~x1 in the ATC table.")))
+      (raise "Internal error: value ~x0 of key ~x1 in the ATC table."
+             info? call)))
   :prepwork ((local (include-book "std/alists/top" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

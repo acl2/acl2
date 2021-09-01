@@ -150,3 +150,9 @@
                 (unsigned-byte-p n j))
            (unsigned-byte-p n (logxor i j)))
   :hints (("Goal" :in-theory (enable logxor logeqv logorc1))))
+
+(defthm signed-byte-p-of-logxor
+  (implies (and (signed-byte-p size i)
+                (signed-byte-p size j))
+           (signed-byte-p size (logxor i j)))
+  :hints (("Goal" :in-theory (e/d (logxor) (signed-byte-p)))))

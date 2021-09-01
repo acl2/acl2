@@ -13,6 +13,7 @@
 
 (local (include-book "../arithmetic-light/minus"))
 (local (include-book "logior"))
+(local (include-book "lognot"))
 
 (in-theory (disable logorc1))
 
@@ -72,3 +73,9 @@
   (equal (logorc1 i (lognot i))
          (lognot i))
   :hints (("Goal" :in-theory (enable logorc1))))
+
+(defthm signed-byte-p-logorc1
+  (implies (and (signed-byte-p size i)
+                (signed-byte-p size j))
+           (signed-byte-p size (logorc1 i j)))
+  :hints (("Goal" :in-theory (e/d (logorc1) (signed-byte-p)))))

@@ -860,8 +860,8 @@
 
   (progn
     (defopeners exec-stmt-while
-      :hyps ((syntaxp (quote test))
-             (syntaxp (quote body)))
+      :hyps ((syntaxp (quotep test))
+             (syntaxp (quotep body)))
       :disable t)
     (add-to-ruleset atc-openers (defopeners-names exec-stmt-while)))
 
@@ -1079,6 +1079,7 @@
      :guard (and (type-integerp ltype)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp rtypes) nil)
            (t (b* ((lfixtype (atc-integer-type-fixtype ltype))
                    (rfixtype (atc-integer-type-fixtype (car rtypes)))
@@ -1095,6 +1096,7 @@
      :guard (and (type-integer-listp ltypes)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp ltypes) nil)
            (t (append
                (atc-shl/shr-names-loop-right-types (car ltypes) rtypes)
@@ -1133,11 +1135,13 @@
      :guard (and (member-eq op '(plus minus bitnot shl shr))
                  (type-integer-listp types))
      :returns (name symbol-listp)
+     :parents nil
      (cond ((endp types) nil)
            (t (b* ((type (car types))
                    (fixtype (atc-integer-type-fixtype type))
-                   (names (if (and (eq op 'minus)
-                                   (type-signed-integerp type))
+                   (names (if (or (and (eq op 'minus)
+                                       (type-signed-integerp type))
+                                  (member-eq op '(shl shr)))
                               (list (pack op '- fixtype)
                                     (pack op '- fixtype '-okp))
                             (list (pack op '- fixtype))))
@@ -1150,6 +1154,7 @@
      :guard (and (subsetp-eq ops '(plus minus bitnot shl shr))
                  (type-integer-listp types))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp ops) nil)
            (t (append
                (atc-integer-ops-1-conv-names-loop-types (car ops) types)
@@ -1200,6 +1205,7 @@
                  (type-integerp ltype)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond
       ((endp rtypes) nil)
       (t (b* ((rtype (car rtypes))
@@ -1236,6 +1242,7 @@
                  (type-integer-listp ltypes)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp ltypes) nil)
            (t (append
                (atc-integer-ops-2-conv-names-loop-right-types op
@@ -1254,6 +1261,7 @@
                  (type-integer-listp ltypes)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp ops) nil)
            (t (append
                (atc-integer-ops-2-conv-names-loop-left-types (car ops)
@@ -1297,6 +1305,7 @@
      :guard (and (type-integerp etype)
                  (type-integer-listp itypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp itypes) nil)
            (t (b* ((efixtype (atc-integer-type-fixtype etype))
                    (ifixtype (atc-integer-type-fixtype (car itypes)))
@@ -1312,6 +1321,7 @@
      :guard (and (type-integer-listp etypes)
                  (type-integer-listp itypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp etypes) nil)
            (t
             (append
@@ -1687,6 +1697,261 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-not-rules
+  :short "Rules related to @(tsee not)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "ATC currently allows the logical negation operator @('!')
+     to be represented via not only the @('lognot-<type>') functions,
+     but also @(tsee not), with appropriate conversions with booleans as needed.
+     That is, an ACL2 target function, from which C code is generate,
+     may represent logical negation in two different ways.
+     The dynamic semantics of C, during symbolic execution,
+     turns expressions with the logical negation operator into one form.
+     Thus, we need rules to normalize one of the two forms into the other.")
+   (xdoc::p
+    "We choose to normalize things to use @(tsee not).
+     Thus, we add rules saying that @('(boolean-from-<type> (lognot-<type> x))')
+     becomes @('(not (boolean-from-<type> x))').")
+   (xdoc::p
+    "Because these rules may be applied to terms
+     that result from execution and that must be checked not to be errors,
+     we also add a rule saying that a call of @(tsee not) is not an error.
+     Otherwise, terms of the form @('(errorp (not ...))')
+     arise during symbolic execution and cause proofs to fail.")
+   (xdoc::p
+    "It may be better to change ATC to require
+     a unique representation of the logical negation operator,
+     and avoid these rules altogether.
+     This approach will be considered in the future."))
+
+  (defruled boolean-from-uchar-of-lognot-uchar
+    (equal (boolean-from-uchar (lognot-uchar x))
+           (not (boolean-from-uchar x)))
+    :enable (boolean-from-uchar lognot-uchar))
+
+  (defruled boolean-from-schar-of-lognot-schar
+    (equal (boolean-from-schar (lognot-schar x))
+           (not (boolean-from-schar x)))
+    :enable (boolean-from-schar lognot-schar))
+
+  (defruled boolean-from-ushort-of-lognot-ushort
+    (equal (boolean-from-ushort (lognot-ushort x))
+           (not (boolean-from-ushort x)))
+    :enable (boolean-from-ushort lognot-ushort))
+
+  (defruled boolean-from-sshort-of-lognot-sshort
+    (equal (boolean-from-sshort (lognot-sshort x))
+           (not (boolean-from-sshort x)))
+    :enable (boolean-from-sshort lognot-sshort))
+
+  (defruled boolean-from-uint-of-lognot-uint
+    (equal (boolean-from-uint (lognot-uint x))
+           (not (boolean-from-uint x)))
+    :enable (boolean-from-uint lognot-uint))
+
+  (defruled boolean-from-sint-of-lognot-sint
+    (equal (boolean-from-sint (lognot-sint x))
+           (not (boolean-from-sint x)))
+    :enable (boolean-from-sint lognot-sint))
+
+  (defruled boolean-from-ulong-of-lognot-ulong
+    (equal (boolean-from-ulong (lognot-ulong x))
+           (not (boolean-from-ulong x)))
+    :enable (boolean-from-ulong lognot-ulong))
+
+  (defruled boolean-from-slong-of-lognot-slong
+    (equal (boolean-from-slong (lognot-slong x))
+           (not (boolean-from-slong x)))
+    :enable (boolean-from-slong lognot-slong))
+
+  (defruled boolean-from-ullong-of-lognot-ullong
+    (equal (boolean-from-ullong (lognot-ullong x))
+           (not (boolean-from-ullong x)))
+    :enable (boolean-from-ullong lognot-ullong))
+
+  (defruled boolean-from-sllong-of-lognot-sllong
+    (equal (boolean-from-sllong (lognot-sllong x))
+           (not (boolean-from-sllong x)))
+    :enable (boolean-from-sllong lognot-sllong))
+
+  (defruled not-errorp-of-not
+    (not (c::errorp (not x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-not-rules*
+  :short "List of rules related to @(tsee not)."
+  '(boolean-from-uchar-of-lognot-uchar
+    boolean-from-schar-of-lognot-schar
+    boolean-from-ushort-of-lognot-ushort
+    boolean-from-sshort-of-lognot-sshort
+    boolean-from-uint-of-lognot-uint
+    boolean-from-sint-of-lognot-sint
+    boolean-from-ulong-of-lognot-ulong
+    boolean-from-slong-of-lognot-slong
+    boolean-from-ullong-of-lognot-ullong
+    boolean-from-sllong-of-lognot-sllong
+    not-errorp-of-not))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-integer-size-rules
+  :short "Rules related to integer sizes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the same as the linear rules,
+     but they are rewrite rules."))
+
+  (make-event
+   `(defruled uchar-max-vs-sint-max-rewrite
+      ,(if (<= (uchar-max) (sint-max))
+           '(<= (uchar-max) (sint-max))
+         '(> (uchar-max) (sint-max)))))
+
+  (make-event
+   `(defruled ushort-max-vs-sint-max-rewrite
+      ,(if (<= (ushort-max) (sint-max))
+           '(<= (ushort-max) (sint-max))
+         '(> (ushort-max) (sint-max)))))
+
+  (make-event
+   `(defruled uchar-max-vs-slong-max-rewrite
+      ,(if (<= (uchar-max) (slong-max))
+           '(<= (uchar-max) (slong-max))
+         '(> (uchar-max) (slong-max)))))
+
+  (make-event
+   `(defruled ushort-max-vs-slong-max-rewrite
+      ,(if (<= (ushort-max) (slong-max))
+           '(<= (ushort-max) (slong-max))
+         '(> (ushort-max) (slong-max)))))
+
+  (make-event
+   `(defruled uint-max-vs-slong-max-rewrite
+      ,(if (<= (uint-max) (slong-max))
+           '(<= (uint-max) (slong-max))
+         '(> (uint-max) (slong-max)))))
+
+  (make-event
+   `(defruled uchar-max-vs-sllong-max-rewrite
+      ,(if (<= (uchar-max) (sllong-max))
+           '(<= (uchar-max) (sllong-max))
+         '(> (uchar-max) (sllong-max)))))
+
+  (make-event
+   `(defruled ushort-max-vs-sllong-max-rewrite
+      ,(if (<= (ushort-max) (sllong-max))
+           '(<= (ushort-max) (sllong-max))
+         '(> (ushort-max) (sllong-max)))))
+
+  (make-event
+   `(defruled uint-max-vs-sllong-max-rewrite
+      ,(if (<= (uint-max) (sllong-max))
+           '(<= (uint-max) (sllong-max))
+         '(> (uint-max) (sllong-max)))))
+
+  (make-event
+   `(defruled ulong-max-vs-sllong-max-rewrute
+      ,(if (<= (ulong-max) (sllong-max))
+           '(<= (ulong-max) (sllong-max))
+         '(> (ulong-max) (sllong-max))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-integer-size-rules*
+  :short "List of rules related to integer sizes."
+  '(
+    uchar-max-vs-sint-max-rewrite
+    ushort-max-vs-sint-max-rewrite
+    uchar-max-vs-slong-max-rewrite
+    ushort-max-vs-slong-max-rewrite
+    uint-max-vs-slong-max-rewrite
+    uchar-max-vs-sllong-max-rewrite
+    ushort-max-vs-sllong-max-rewrite
+    uint-max-vs-sllong-max-rewrite
+    ulong-max-vs-sllong-max-rewrute))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-shift-promotion-rules
+  :short "Rules related to the promotions of shift distance operands."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee *atc-shift-definition-rules*),
+     we expand the definitions of the shift operations
+     that take C integers as second arguments
+     into the shift operations that take ACL2 integers as second arguments;
+     this also includes the accompanying @('okp') predicates.
+     Thus, for example, @('(shl-sint-schar x y)')
+     is turned into @('(shl-sint x (schar-integer-value y))')
+     in the symbolic execution.
+     The C code generated from @('(shl-sint-schar x y)') is @('X << Y'),
+     where @('X') and @('Y') are the translations of @('x') and @('y').
+     When that C code is symbolically executed,
+     it is turned into
+     @('(shl-sint x (sint-integer-value (sint-from-schar Y)))'),
+     because @('Y') is promoted and then turned into an ACL2 integer.
+     Thus, we need the fact that @(tsee schar-integer-value)
+     is the same as @(tsee sint-integer-value) after @(tsee sint-from-schar).")
+   (xdoc::p
+    "In general, we need rules that turn
+     @('(sint-integer-value (sint-from-<type> x))')
+     into @('(<type>-integer-value x)')
+     for the types of rank smaller than @('int'),
+     which are promoted to @('int').
+     These rules are given here."))
+
+  (defruled sint-integer-value-of-sint-from-schar
+    (implies (scharp x)
+             (equal (sint-integer-value (sint-from-schar x))
+                    (schar-integer-value x)))
+    :enable (sint-integer-value
+             schar-integer-value
+             sint-from-schar
+             sint-integerp-alt-def))
+
+  (defruled sint-integer-value-of-sint-from-uchar
+    (implies (ucharp x)
+             (equal (sint-integer-value (sint-from-uchar x))
+                    (uchar-integer-value x)))
+    :enable (sint-integer-value
+             uchar-integer-value
+             sint-from-uchar
+             sint-integerp-alt-def))
+
+  (defruled sint-integer-value-of-sint-from-sshort
+    (implies (sshortp x)
+             (equal (sint-integer-value (sint-from-sshort x))
+                    (sshort-integer-value x)))
+    :enable (sint-integer-value
+             sshort-integer-value
+             sint-from-sshort
+             sint-integerp-alt-def))
+
+  (defruled sint-integer-value-of-sint-from-ushort
+    (implies (ushortp x)
+             (equal (sint-integer-value (sint-from-ushort x))
+                    (ushort-integer-value x)))
+    :enable (sint-integer-value
+             ushort-integer-value
+             sint-from-ushort
+             sint-integerp-alt-def)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-shift-promotion-rules*
+  :short "List of rules related to the promotions of shift distance operands."
+  '(sint-integer-value-of-sint-from-schar
+    sint-integer-value-of-sint-from-uchar
+    sint-integer-value-of-sint-from-sshort
+    sint-integer-value-of-sint-from-ushort))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-other-rewrite-rules
   :short "Other rewrite rules for the proofs generated by ATC."
   :long
@@ -1711,6 +1976,11 @@
      in effect limiting the application of
      different partial ``arcs'' of the circles in different situations.
      Anyways, this is being flagged here as something to watch for.")
+   (xdoc::p
+    "The rule @('ifix-when-integerp') serves to simplify away
+     occurrences of @(tsee ifix) used in the definition of the shift operations,
+     in combination with the return type theorems of
+     the @('<type>-integer-value') functions, which return @(tsee integerp).")
    (xdoc::p
     "The rule @('c::len-of-cons') below
      is a duplicate of @('acl2::len-of-cons')
@@ -1758,6 +2028,10 @@
      This is the pattern in the second rule @('not-zp-of-limit-...'),
      whose hypothesis about the limit variable
      is easily discharged via linear arithmetic."))
+
+  (defruled ifix-when-integerp
+    (implies (integerp x)
+             (equal (ifix x) x)))
 
   (defruled not-zp-of-limit-variable
     (implies (and (syntaxp (symbolp limit))
@@ -1883,7 +2157,8 @@
 
 (defval *atc-other-rewrite-rules*
   :short "List of rewrite rules proved in @(see atc-other-rewrite-rules)."
-  '(not-zp-of-limit-variable
+  '(ifix-when-integerp
+    not-zp-of-limit-variable
     not-zp-of-limit-minus-const
     value-result-fix-when-valuep
     not-errorp-when-valuep
@@ -1931,6 +2206,7 @@
      :guard (and (member-eq op '(plus minus bitnot lognot shl shr))
                  (type-integer-listp types))
      :returns (names symbol-listp)
+     :parents nil
      (cond
       ((endp types) nil)
       (t (b* ((type (car types))
@@ -1946,6 +2222,7 @@
      :guard (and (subsetp-eq ops '(plus minus bitnot lognot shl shr))
                  (type-integer-listp types))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp ops) nil)
            (t (append
                (atc-integer-ops-1-return-names-loop-types (car ops) types)
@@ -1982,6 +2259,7 @@
                  (type-integerp ltype)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond
       ((endp rtypes) nil)
       (t (b* ((rtype (car rtypes))
@@ -2008,6 +2286,7 @@
                  (type-integer-listp ltypes)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp ltypes) nil)
            (t (append
                (atc-integer-ops-2-return-names-loop-right-types op
@@ -2026,6 +2305,7 @@
                  (type-integer-listp ltypes)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp ops) nil)
            (t (append
                (atc-integer-ops-2-return-names-loop-left-types (car ops)
@@ -2059,6 +2339,7 @@
      :guard (and (type-integerp stype)
                  (type-integer-listp dtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond
       ((endp dtypes) nil)
       ((equal stype (car dtypes))
@@ -2077,6 +2358,7 @@
      :guard (and (type-integer-listp stypes)
                  (type-integer-listp dtypes))
      :returns (names symbol-listp)
+     :parents nil
      (cond ((endp stypes) nil)
            (t (append
                (atc-integer-convs-return-names-loop-dst-types (car stypes)
@@ -2104,6 +2386,16 @@
     booleanp-of-boolean-from-slong
     booleanp-of-boolean-from-ullong
     booleanp-of-boolean-from-sllong
+    integerp-of-schar-integer-value
+    integerp-of-uchar-integer-value
+    integerp-of-sshort-integer-value
+    integerp-of-ushort-integer-value
+    integerp-of-sint-integer-value
+    integerp-of-uint-integer-value
+    integerp-of-slong-integer-value
+    integerp-of-ulong-integer-value
+    integerp-of-sllong-integer-value
+    integerp-of-ullong-integer-value
     car-cons
     cdr-cons
     compustate-fix-when-compustatep
@@ -2189,6 +2481,7 @@
      :guard (and (member-eq op '(plus minus bitnot lognot shl shr))
                  (type-integer-listp types))
      :returns (rules true-list-listp)
+     :parents nil
      (cond
       ((endp types) nil)
       (t (b* ((type (car types))
@@ -2202,6 +2495,7 @@
      :guard (and (subsetp-eq ops '(plus minus bitnot lognot shl shr))
                  (type-integer-listp types))
      :returns (rule true-list-listp)
+     :parents nil
      (cond
       ((endp ops) nil)
       (t (append
@@ -2240,6 +2534,7 @@
                  (type-integerp ltype)
                  (type-integer-listp rtypes))
      :returns (rules true-list-listp)
+     :parents nil
      (cond
       ((endp rtypes) nil)
       (t (b* ((rtype (car rtypes))
@@ -2263,6 +2558,7 @@
                  (type-integer-listp ltypes)
                  (type-integer-listp rtypes))
      :returns (rules true-list-listp)
+     :parents nil
      (cond ((endp ltypes) nil)
            (t (append
                (atc-integer-ops-2-type-presc-rules-loop-right-types op
@@ -2281,6 +2577,7 @@
                  (type-integer-listp ltypes)
                  (type-integer-listp rtypes))
      :returns (rules true-list-listp)
+     :parents nil
      (cond ((endp ops) nil)
            (t (append
                (atc-integer-ops-2-type-presc-rules-loop-left-types (car ops)
@@ -2315,6 +2612,7 @@
      :guard (and (type-integerp stype)
                  (type-integer-listp dtypes))
      :returns (rules true-list-listp)
+     :parents nil
      (cond
       ((endp dtypes) nil)
       ((equal stype (car dtypes))
@@ -2334,6 +2632,7 @@
      :guard (and (type-integer-listp stypes)
                  (type-integer-listp dtypes))
      :returns (rules true-list-listp)
+     :parents nil
      (cond ((endp stypes) nil)
            (t (append
                (atc-integer-convs-type-presc-rules-loop-dst-types (car stypes)
@@ -2696,6 +2995,9 @@
           *atc-distributivity-over-if-rewrite-rules*
           *atc-identifier-rules*
           *atc-function-environment-rules*
+          *atc-not-rules*
+          *atc-integer-size-rules*
+          *atc-shift-promotion-rules*
           *atc-other-rewrite-rules*
           *atc-integer-ops-1-return-rewrite-rules*
           *atc-integer-ops-2-return-rewrite-rules*
@@ -2704,4 +3006,5 @@
           *atc-type-prescription-rules*
           *atc-compound-recognizer-rules*
           *atc-conversion-composition-rules*
-          *value-disjoint-rules*))
+          *value-disjoint-rules*
+          *array-disjoint-rules*))

@@ -12,6 +12,7 @@
 
 (include-book "std/portcullis" :dir :system)
 (include-book "kestrel/crypto/ecurve/portcullis" :dir :system)
+(include-book "kestrel/crypto/r1cs/portcullis" :dir :system)
 (include-book "kestrel/prime-fields/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -29,4 +30,5 @@
                           pfield::sub
                           pfield::mul
                           pfield::inv
-                          pfield::div)))
+                          pfield::div
+                          r1cs::fe-listp)))

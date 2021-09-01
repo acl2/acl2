@@ -174,7 +174,6 @@
 (defthmd packbv-opener-alt
   (implies (and (not (zp itemcount))
                 (posp itemsize)
-                (natp itemcount)
                 (equal itemcount (len items)))
            (equal (packbv itemcount itemsize items)
                   (bvcat (* itemsize (+ -1 itemcount))
@@ -182,3 +181,15 @@
                          itemsize
                          (nth (+ -1 itemcount) items))))
   :hints (("Goal" :in-theory (e/d (slice) (len BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+
+(defthm packbv-of-1-linear
+  (implies (natp i)
+           (<= (packbv i 1 items)
+               (+ -1 (expt 2 i))))
+  :rule-classes :linear
+  :hints (("Goal" :expand (packbv i 1 items)
+           :in-theory (disable bvchop-of-packbv
+                               bvchop-of-packbv-1
+                               bvchop-of-packbv-1-helper
+                               expt
+                               bvcat-of-0))))

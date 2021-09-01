@@ -744,7 +744,7 @@ frequently.</p>")
 
 (define vl-is-token?
   :short "Check whether the current token has a particular type."
-  ((type "Type of token to match.")
+  ((type vl-tokentype-p "Type of token to match.")
    &key (tokstream 'tokstream))
   :guard (symbolp type)
   :returns bool
@@ -768,7 +768,7 @@ frequently.</p>")
 
 (define vl-is-some-token?
   :short "Check whether the current token is one of some particular types."
-  ((types true-listp)
+  ((types vl-tokentypelist-p)
    &key (tokstream 'tokstream))
   :returns bool
   :inline t
@@ -795,7 +795,7 @@ frequently.</p>")
 
 (define vl-lookahead-is-token?
   :short "Check whether the current token has a particular type."
-  ((type   "Type of token to match.")
+  ((type   "Type of token to match." vl-tokentype-p)
    (tokens vl-tokenlist-p))
   :returns bool
   :inline t
@@ -813,7 +813,7 @@ frequently.</p>")
 
 (define vl-lookahead-is-some-token?
   :short "Check whether the current token is one of some particular types."
-  ((types  true-listp)
+  ((types  vl-tokentypelist-p)
    (tokens vl-tokenlist-p))
   :returns bool
   :inline t
@@ -897,7 +897,7 @@ error, doesn't stop execution) that includes the current location."
   :short "Compatible with @(see seq).  Consume and return a token of exactly
 some particular type, or cause an error if the desired kind of token is not at
 the start of the input stream."
-  ((type "Kind of token to match.") ;; BOZO why not a stronger guard?
+  ((type vl-tokentype-p "Kind of token to match.") ;; BOZO why not a stronger guard?
    &key
    ((function symbolp) '__function__)
    (tokstream 'tokstream))
@@ -970,7 +970,7 @@ the start of the input stream."
   :short "Compatible with @(see seq).  Consume and return a token if it has
 one of several types.  Cause an error if the first token isn't one of the
 acceptable types."
-  ((types true-listp) ;; BOZO why not a stronger guard?
+  ((types vl-tokentypelist-p) ;; BOZO why not a stronger guard?
    &key
    ((function symbolp) '__function__)
    (tokstream 'tokstream))
@@ -1028,7 +1028,7 @@ acceptable types."
 (define vl-maybe-match-token
   :short "Compatible with @(see seq).  Consume and return a token if it is of
 the given type, but if not, don't consume anything and return nil."
-  ((type "Kind of token to match.") ;; BOZO why not a stronger guard?
+  ((type vl-tokentype-p "Kind of token to match.") ;; BOZO why not a stronger guard?
    &key
    (tokstream 'tokstream))
 
@@ -1081,7 +1081,7 @@ the given type, but if not, don't consume anything and return nil."
 (define vl-type-of-matched-token
   :short "Reasoning trick.  Alias for the type of the token returned by @(see
 vl-match-some-token)."
-  ((types true-listp)
+  ((types vl-tokentypelist-p)
    (tokens vl-tokenlist-p))
 
   :long "<p>We added this when we disabled the functions @(see
@@ -1357,7 +1357,7 @@ kind of token it is.  Causes an error on EOF."
 (define vl-match-any-except
   :short "Compatible with @(see seq).  Match any token that is not of the
 listed types.  Causes an error on EOF."
-  ((types true-listp) ;; BOZO stronger guard?
+  ((types vl-tokentypelist-p) ;; BOZO stronger guard?
    &key
    ((function symbolp)       '__function__)
    (tokstream 'tokstream))

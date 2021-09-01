@@ -455,8 +455,6 @@
 (defthm k-lane-p-of-k-lane
   (implies (and (natp x)
                 (natp y)
-                (<= 0 x)
-                (<= 0 y)
                 (k-state-array-p w state-array))
            (k-lane-p w (k-lane w state-array x y)))
   :hints (("Goal" :in-theory (enable k-state-array-p))))

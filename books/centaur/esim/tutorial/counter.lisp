@@ -55,8 +55,6 @@
  ;; important to set a larger ceiling:
  (set-max-mem (* 4 (expt 2 30))))
 
-; cert_param: (hons-only)
-
 
 ; NOTE ---- ESIM is still available but it is no longer being actively
 ; maintained.  The successor of ESIM is SVEX.  If you don't already have

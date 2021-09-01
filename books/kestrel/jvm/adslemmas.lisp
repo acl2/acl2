@@ -105,7 +105,7 @@
 
 ;bozo gen?
 ;i've seen this loop with something
-(defthm insert-nth-new-ad-2-union-new-ads-slice-3
+(defthmd insert-nth-new-ad-2-union-new-ads-slice-3
   (implies (and (natp n)
                 (< 1 n))
            (equal (SET::INSERT (NTH-NEW-AD 2 DOM) (SET::UNION DOM (LIST::|2SET| (NEW-ADS-SLICE 3 N DOM))))

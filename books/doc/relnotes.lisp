@@ -80,6 +80,96 @@
  <p>The current version of ACL2 is the value of the constant @('(@
  acl2-version)').</p>")
 
+(defxdoc note-8-5-books
+
+; Please add information about your library in the appropriate
+; category below --- the category title is enclosed in (xdoc::h3 ...)
+; (of course, feel free to add a new category if needed).  To
+; ensure consistency with the style of previous book release doc
+; topics, please follow the following convention:
+
+;  (xdoc::h4 "Your Library Title")
+;  (xdoc::p "Details go here.")
+
+; Please put the h4's in alphabetical order, each preceded by 40 semicolons.
+; You can also use (xdoc::h5 ...) under each h4, e.g. for sub-libraries:
+; There is no need to order the h5's alphabetically,
+; but please precede each h5 by 20 semicolons.
+; If you are stuck, see the entries about other libraries.
+
+  :parents (note-8-5 release-notes-books)
+
+  :short "Release notes for the ACL2 Community Books for ACL2 8.5"
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "The following is a brief summary of
+     changes made to the @(see community-books)
+     between the releases of ACL2 8.4 and 8.5.")
+
+   (xdoc::p
+    "See also @(see note-8-5) for the changes made to ACL2 itself.
+     For additional details,
+     you may also see the raw "
+    (xdoc::ahref "https://github.com/acl2/acl2/commits/master" "commit log")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "New Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Changes to Existing Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
+
+   (xdoc::p
+    "The @(tsee defret) utility could malfunction when including an uncertified
+     book.  This has been fixed by tweaking a @(tsee defsection) utility to set
+     the ``most recent function'' non-locally.  This fixes GitHub Issue
+     #1302.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Tools")
+
+   (xdoc::p
+    "When the tool @(tsee prove$) is interrupted (with @('Control-C')), control
+     now returns to the top level.  Formerly, that `abort' merely caused
+     @('prove$') to return @('(mv nil nil state)').  Also if the given term and
+     (if supplied) hints have illegal syntax, an error now occurs.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Licensing Changes")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Build System Updates")
+
+   (xdoc::p
+    "As discussed in topic @(see note-8-5), essentially all support for
+     building ACL2 without the @(see hons-enabled) features has been removed.
+     The build system has been similarly updated, in particular by eliminating
+     the @('hons-only') value for @('cert_param') and the exported variable
+     @('ACL2_HAS_HONS').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Testing")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Miscellaneous")
+
+   ))
+
 (defxdoc note-8-4-books
 
 ; Please add information about your library in the appropriate
@@ -770,7 +860,7 @@
 
    (xdoc::h4 "BV-Lists Library")
 
-   (xdoc::p "[bv-lists] Many new rules and books have been added.  New books
+   (xdoc::p "Many new rules and books have been added.  New books
    include ones about @('bv-arrayp'), @('bv-array-read'), @('bv-array-write'),
    @('all-all-unsigned-byte-p'), @('width-of-widest-int'), @('bvnot-list'),
    @('getbit-list'), @('map-slice'), @('bvplus-list'), @('logext-list'),

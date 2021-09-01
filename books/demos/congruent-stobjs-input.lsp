@@ -297,9 +297,7 @@
   (declare (xargs :stobjs st))
   (fld st))
 
-(must-succeed+ (if (hons-enabledp state)
-                   (memoize 'h)
-                 (value nil)))
+(must-succeed+ (memoize 'h))
 
 (must-succeed+ (update-fld 0 st0))
 (must-succeed+ (update-fld 1 st))

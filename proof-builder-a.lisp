@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -63,21 +63,20 @@
 (defmacro ss-alist ()
   '(pc-value ss-alist))
 
-(defun define-global-name (var)
-  (add-suffix var "-FN"))
+(defrec pc-info
+  ((print-macroexpansion-flg . print-prompt-and-instr-flg)
+   .
+   (prompt . prompt-depth-prefix))
+  nil)
 
-(defmacro define-global (var)
-  (let ((var-fn (define-global-name var)))
-    `(progn (defun ,var-fn (state)
-              (f-get-global ',var state))
-            (defmacro ,var ()
-              '(,var-fn state)))))
-
-(define-global pc-prompt)
-(define-global pc-prompt-depth-prefix)
-(define-global pc-print-macroexpansion-flg)
-; Turn the following on for debugging macro commands.
-(define-global pc-print-prompt-and-instr-flg)
+(defmacro pc-print-prompt-and-instr-flg ()
+  '(access pc-info (f-get-global 'pc-info state) :print-prompt-and-instr-flg))
+(defmacro pc-print-macroexpansion-flg ()
+  '(access pc-info (f-get-global 'pc-info state) :print-macroexpansion-flg))
+(defmacro pc-prompt ()
+  '(access pc-info (f-get-global 'pc-info state) :prompt))
+(defmacro pc-prompt-depth-prefix ()
+  '(access pc-info (f-get-global 'pc-info state) :prompt-depth-prefix))
 
 ; We will maintain an invariant that there are no unproved goals hanging around
 ; in the pc-state.  Moreover, for simplicity, we leave it up to each command to

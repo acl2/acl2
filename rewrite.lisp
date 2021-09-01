@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -8864,9 +8864,9 @@
                              n
                              (if (let* ((hyp
                                          (nth (1- n)
-                                              (access rewrite-rule
-                                                      (get-brr-local 'lemma state)
-                                                      :hyps)))
+                                              (get-rule-field
+                                               (get-brr-local 'lemma state)
+                                               :hyps)))
                                         (evg
                                          (and (ffn-symb-p hyp 'synp)
                                               (quotep (fargn hyp 2))

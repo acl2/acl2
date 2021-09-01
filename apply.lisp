@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1758,7 +1758,7 @@
           (not (all-nils (getpropc fn 'stobjs-out nil wrld))))
 
 ; You might think that checking that if no stobjs are coming in then no stobjs
-; are coming out, but you'd be wrong: stobj creators.
+; are coming out, but you'd be wrong: stobj creators and fixers.
 
       (mv (msg "~x0 cannot be badged because its signature, ~%~y1 ==> ~y2, ~
                 includes a single-threaded object!"

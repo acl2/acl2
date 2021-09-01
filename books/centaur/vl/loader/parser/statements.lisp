@@ -963,7 +963,7 @@
   :fails gracefully
   :count strong-on-value
   (seq tokstream
-       (when (vl-is-token? :vl-final)
+       (when (vl-is-token? :vl-kwd-final)
          (:= (vl-match))
          (return :vl-defer-final))
        (when (vl-is-token? :vl-pound)

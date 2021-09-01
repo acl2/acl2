@@ -52,6 +52,7 @@
 ;; needed for nonlocal defwitness forms
 (include-book "clause-processors/witness-cp" :dir :system)
 
+(std::make-returnspec-config :hints-sub-returnnames t)
 
 
 (encapsulate

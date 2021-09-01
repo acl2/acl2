@@ -54,7 +54,6 @@
   REMOVE-ADJACENT-DUPLICATES-EQ ; called by defpkg-raw1
   )
 
-#+hons ; memoize only here
 (def-errors
 
 ; !! We should revisit the following when we are ready to implement memoization
@@ -99,14 +98,14 @@
  (let ((*default-pathname-defaults* COMMON-LISP-USER::*acl2-dir*))
    #+acl2-par (load "multi-threading-raw.lisp")
    (load "axioms.lisp")
-   #+hons (load "hons.lisp")
-   #+hons (load "hons-raw.lisp")
+   (load "hons.lisp")
+   (load "hons-raw.lisp")
    (load "basis-a.lisp")
-   #+hons (load "memoize.lisp")
+   (load "memoize.lisp")
    #+acl2-par (load "parallel.lisp")
    #+acl2-par (load "futures-raw.lisp")
    #+acl2-par (load "parallel-raw.lisp")
-   #+hons (load "memoize-raw.lisp")))
+   (load "memoize-raw.lisp")))
 
 (def-nils
   ACL2H-INIT ; calls ccl-initialize-gc-strategy, which we define to cause error

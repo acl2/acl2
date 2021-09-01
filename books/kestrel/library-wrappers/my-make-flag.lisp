@@ -11,8 +11,18 @@
 (in-package "ACL2")
 
 (include-book "tools/flag" :dir :system)
+(include-book "misc/install-not-normalized" :dir :system)
 
 ;; TODO: Have my-make-flag (or make-flag) put in the :ruler-extenders of the old function by default.
+
+;dup
+(defun make-doublets (xs ys)
+  (declare (xargs :guard (and (true-listp xs)
+                              (true-listp ys))))
+  (if (endp xs)
+      nil
+    (cons (list (first xs) (first ys))
+          (make-doublets (rest xs) (rest ys)))))
 
 (verify-termination flag::get-formals)
 ;(verify-guards flag::get-formals) ;todo: have make-flag just call FORMALS
@@ -43,6 +53,13 @@
        `(,fn (lambda ,fn-formals (,flag-function-name ',fn ,@(replace-non-members-with-nil merged-formals fn-formals))))
        (termination-theorem-subst-for-my-make-flag (rest clique-fns) merged-formals flag-function-name wrld)))))
 
+(defund map-install-not-normalized-name (names)
+  (declare (xargs :guard (symbol-listp names)))
+  (if (endp names)
+      nil
+    (cons (install-not-normalized-name (first names))
+          (map-install-not-normalized-name (rest names)))))
+
 (defun my-make-flag-fn (flag-function-name fn body ruler-extenders wrld)
   (declare (xargs :guard (and (symbolp flag-function-name) ; may be :auto
                               (symbolp fn)
@@ -57,9 +74,16 @@
          (alist (pairlis$ clique-fns clique-fns))
          (merged-formals (flag::merge-formals alist wrld))
          (termination-theorem-subst (termination-theorem-subst-for-my-make-flag clique-fns merged-formals flag-function-name wrld)))
-    `(make-flag ,flag-function-name ;; this is optional for make-flag
+    `(encapsulate ()
+       ;; Install not-normalized bodies, so we can always prove functions are equal to their bodies:
+       (local (install-not-normalized ,fn))
+
+       (make-flag ,flag-function-name ;; this is optional for make-flag
                 ,fn
-                :body ,body
+                :body ,(if (eq body :auto)
+                           (make-doublets clique-fns
+                                          (map-install-not-normalized-name clique-fns))
+                         body)
                 ,@(if (eq :auto ruler-extenders)
                       nil
                     `(:ruler-extenders ,ruler-extenders))
@@ -69,7 +93,7 @@
                 :hints (("Goal" :use (:instance (:termination-theorem ,fn ,termination-theorem-subst))
                          ;; :in-theory nil ;;too restrictive
                          :in-theory (theory 'minimal-theory) ;;still too restrictive?
-                         )))))
+                         ))))))
 
 ;; This is a wrapper around make-flag that attempts to be more robust.  It uses
 ;; the :termination-theorem of the given function in the :hints supplied to
@@ -82,7 +106,7 @@
 ;; not currently accept :instructions.  Once we figure out how to make
 ;; the proof both fast and robust, consider improving make-flag itself.
 (defmacro my-make-flag (fn &key
-                           (body 'nil) ;; the :body arg to pass to make-flag
+                           (body ':auto) ;; the :body arg to pass to make-flag
                            (flag-function-name ':auto) ;; to override the default name of the flag-function
                            (ruler-extenders ':auto)
                            )

@@ -77,4 +77,5 @@
   (implies (rtl::primep p)
            (equal (inv -1 p)
                   (+ -1 p)))
-  :hints (("Goal" :in-theory (enable inv minus1))))
+  :hints (("Goal" :in-theory (enable inv minus1
+                                     rtl::primep))))

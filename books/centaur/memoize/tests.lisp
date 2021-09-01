@@ -32,12 +32,6 @@
 ; and Warren A. Hunt, Jr. which was incorporated into the HONS version of ACL2,
 ; sometimes called ACL2(h).
 
-; File tests-raw.lsp loads timer.lsp (via top.lisp), which references
-; most-positive-mfixnum, which is only defined in #+hons.  I (Matt K.) added
-; this directive when an attempt failed to compile this certified book, using
-; ACL2 (not ACL2(h)).
-; cert_param: (hons-only)
-
 (in-package "MEMOIZE")
 (include-book "top")
 

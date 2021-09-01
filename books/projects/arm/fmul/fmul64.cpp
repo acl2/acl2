@@ -211,7 +211,7 @@ tuple<ui117, ui8, bool, bool, bool> specialCase
 }
 
 // Count leading zeroes of a nonzero 53-bit vector.
-// After k iterations of the loop, where 0 <= k <= 6, the value of n 
+// After k iterations of the loop, where 0 <= k <= 6, the value of n
 // is 2^(6-k) and the low n entries of z and c are as follows:
 // Consider the partition of x into n bit slices of width 2^k.
 // For 0 <= i < n, the i^th slice is x[2^k*(i+1)-1:2^k*i].
@@ -257,7 +257,7 @@ ui6 CLZ53(ui53 m) {
 tuple<ui106, ui106> compress(array<ui57, 27> pp, ui52 ia, ui53 ib) {
 
   // Time 0:
-  
+
   ui59 t0fa0ina, t0fa0inb, t0fa0inc, t2pp0s, t1pp0c;
   t0fa0ina = pp[0];
   t0fa0inb = pp[1];
@@ -538,7 +538,7 @@ ui106 computeProduct(ui52 mana, ui52 manb, bool expaZero, bool expbZero) {
 // Perform right shift if biased sum of exponents is 0 or negative:
 
 tuple<ui12, bool, ui105, bool, bool, bool, bool> rightShft(ui11 expa, ui11 expb, ui106 prod) {
-    
+
   // Difference between 1 and biased sum of exponents:
 
   ui10 expDeficit = ~expa + ~expb + 1 + (expa != 0 && expb != 0);
@@ -556,7 +556,7 @@ tuple<ui12, bool, ui105, bool, bool, bool, bool> rightShft(ui11 expa, ui11 expb,
   prod0.set_slc(1, prod);
   ui106 prodShft = prod0 >> shift;
   ui105 frac105 = prodShft.slc<105>(0);
-  
+
   ui12 expShftInt = 0xC00;
   bool expInc = prod[105] && (shift == 1);
 
@@ -584,7 +584,7 @@ tuple<ui12, bool, ui105, bool, bool, bool, bool> rightShft(ui11 expa, ui11 expb,
 // Perform left shift if leading zero count is positive and exceeded by biased sum of exponents:
 
 tuple<ui12, bool, ui105, bool, bool, bool, bool> leftShft(ui11 expa, ui11 expb, ui106 prod, ui6 clz) {
-    
+
   // Internal representations of operand exponents:
 
   ui12 expaInt = expInt(expa), expbInt = expInt(expb);
@@ -604,7 +604,7 @@ tuple<ui12, bool, ui105, bool, bool, bool, bool> leftShft(ui11 expa, ui11 expb, 
   bool expDiffBiasedPos = !expDiffBiasedZero && !expDiffBiasedNeg; // expDiffInt > -1024
 
   // Shift amount:
-  
+
   ui6 shift = expDiffBiasedZero ? ui6(clz - 1) : expDiffBiasedPos ? clz : ui6(expProdM1Int);
 
   // Shifted product and adjusted exponent:
@@ -628,7 +628,7 @@ tuple<ui12, bool, ui105, bool, bool, bool, bool> leftShft(ui11 expa, ui11 expb, 
   bool expInc = mulOvf || expDiffBiasedZero && sub2Norm;
 
   // Rounding bits:
-  
+
   ui52 stkMask = 0xFFFFFFFFFFFFF >> shift;
   bool stk = mulOvf ? (stkMask & prod) != 0 : ((stkMask >> 1) & prod) != 0;
 
@@ -673,7 +673,7 @@ tuple<ui117, ui8, bool, bool, bool> fmul64(ui64 opa, ui64 opb, bool fz, bool dn,
       classb == ZERO || classb == INF || classb == SNAN || classb == QNAN) {
     return specialCase(opa, opb, classa, classb, dn, fused, flags);
   }
-  
+
   else {
 
     // Leading zero count:
@@ -707,7 +707,7 @@ tuple<ui117, ui8, bool, bool, bool> fmul64(ui64 opa, ui64 opb, bool fz, bool dn,
     bool expInc;
     ui105 frac105;       // fraction to be returned for FMA
     bool stkFMA;         // sticky bit for FMA
-    bool lsb, grd, stk;  // lsb, guard, and sticky bits for FMUL 
+    bool lsb, grd, stk;  // lsb, guard, and sticky bits for FMUL
 
     if (expBiasedZero || expBiasedNeg) {
       tie(expShftInt, expInc, frac105, stkFMA, lsb, grd, stk) = rightShft(expa, expb, prod);
@@ -757,7 +757,7 @@ tuple<ui117, ui8, bool, bool, bool> fmul64(ui64 opa, ui64 opb, bool fz, bool dn,
       bool rndUp = rmode == rmodeNear && grd && (lsb || stk) ||
                    rmode == rmodeUP && !sign && (grd || stk) ||
                    rmode == rmodeDN && sign && (grd || stk);
-      
+
       ui52 fracUnrnd = frac105.slc<52>(53);
       ui53 fracP1 = fracUnrnd + 1;
       ui52 fracRnd = rndUp ? fracP1.slc<52>(0) : fracUnrnd;
@@ -831,7 +831,7 @@ SC_MODULE(fmul64) {
     if (reset.read()) {
       return;
     }
-  
+
     fused.read();
     fz.read();
     dn.read();
@@ -867,7 +867,7 @@ SC_MODULE(fmul64) {
   }
 
   SC_CTOR(fmul64) {
-    SC_METHOD(doit);  
+    SC_METHOD(doit);
     sensitive_pos << clk;
   }
 
@@ -893,7 +893,7 @@ printf("D = %s\n", D.to_string(AC_HEX, false).c_str());
 printf("flags = %s\n", flags.to_string(AC_HEX, false).c_str());
 
  return 0;
-}	 
+}
 
 #endif
 

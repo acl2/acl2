@@ -1552,8 +1552,8 @@
                 (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                (term (pseudo-term-call fn args))
                (types (list (atj-type-jprimarr ptype))))
-            (mv (atj-type-wrap-term term types types)
-                types
+            (mv (atj-type-wrap-term term types required-types?)
+                (or required-types? types)
                 mv-typess)))
          ((mv args types mv-typess) (atj-type-annotate-args args
                                                             var-types

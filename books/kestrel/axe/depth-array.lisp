@@ -18,6 +18,7 @@
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 
 (def-typed-acl2-array depth-arrayp (or (natp val) (not val)))
 

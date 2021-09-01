@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1414,17 +1414,17 @@
 ; separate algorithms, culminating respectively in functions old-check-sum-obj
 ; and fchecksum-obj.  The first development was used up through ACL2
 ; Version_3.4, which uses an algorithm similar to that of our file-based
-; function, check-sum.  However, the #+hons version of ACL2 was being used on
-; large cons trees with significant subtree sharing.  These "galactic" trees
-; could have relatively few distinct cons cells but a huge naive node count.
-; It was thus desirable to memoize the computation of checksums, which was
-; impossible using the existing algorithm because it modified state.
+; function, check-sum.  However, ACL2 (with hons) was being used on large cons
+; trees with significant subtree sharing.  These "galactic" trees could have
+; relatively few distinct cons cells but a huge naive node count.  It was thus
+; desirable to memoize the computation of checksums, which was impossible using
+; the existing algorithm because it modified state.
 
 ; The second development was contributed by Jared Davis (and is now maintained
 ; by the ACL2 developers, who are responsible for any errors).  It is amenable
-; to memoization and, indeed, fchecksum-obj is memoized in the #+hons version
-; of ACL2.  We say more after developing the code for the first algorithm,
-; culminating in function check-sum-obj1.
+; to memoization and, indeed, fchecksum-obj is memoized.  We say more after
+; developing the code for the first algorithm, culminating in function
+; check-sum-obj1.
 
 ; We turn now to the first development (which is no longer used in ACL2).
 
@@ -1968,10 +1968,6 @@
                                                         718273893))
                                         #x7FFFFFFF)))))))
 
-#-(or acl2-loop-only hons)
-(defvar *fchecksum-symbol-memo*
-  nil)
-
 (defun fchecksum-atom (x)
 
 ; X is any atom.  We compute a "functional checksum" of X.
@@ -1995,26 +1991,17 @@
              (declare (type (signed-byte 32) abs-code))
              (times-mod-m31 abs-code 283748912)))
           ((symbolp x)
-           (cond
-            #-(or hons acl2-loop-only)
-            ((and *fchecksum-symbol-memo*
-                  (gethash x *fchecksum-symbol-memo*)))
-            (t
-             (let* ((pkg-code (fchecksum-string (symbol-package-name x)))
-                    (sym-code (fchecksum-string (symbol-name x)))
-                    (pkg-code-scramble
+           (let* ((pkg-code (fchecksum-string (symbol-package-name x)))
+                  (sym-code (fchecksum-string (symbol-name x)))
+                  (pkg-code-scramble
 
 ; We scramble the bits of pkg-code so that it matters that they are in order.
 ; To do this, we multiply by another primitive root and mod out by M31.
 
-                     (times-mod-m31 pkg-code 938187814)))
-               (declare (type (signed-byte 32)
-                              pkg-code sym-code pkg-code-scramble))
-               (cond #-(or hons acl2-loop-only)
-                     (*fchecksum-symbol-memo*
-                      (setf (gethash x *fchecksum-symbol-memo*)
-                            (logxor pkg-code-scramble sym-code)))
-                     (t (logxor pkg-code-scramble sym-code)))))))
+                   (times-mod-m31 pkg-code 938187814)))
+             (declare (type (signed-byte 32)
+                            pkg-code sym-code pkg-code-scramble))
+             (logxor pkg-code-scramble sym-code)))
           ((stringp x)
            (fchecksum-string x))
           ((characterp x) ; just scramble using another primitive root
@@ -2511,14 +2498,13 @@
 
 (defun get-stobj-recognizer (stobj wrld)
 
-; If stobj is a stobj name, return the name of its recognizer; else nil.  The
-; value of the 'stobj property is always (*the-live-var* recognizer creator
-; ...), for all user defined stobj names.  The value is '(*the-live-state*) for
-; STATE and is nil for all other names.
+; If stobj is a stobj name, return the name of its recognizer; else nil.
 
   (cond ((eq stobj 'state)
          'state-p)
-        (t (cadr (getpropc stobj 'stobj nil wrld)))))
+        (t (let ((prop (getpropc stobj 'stobj nil wrld)))
+             (and prop
+                  (access stobj-property prop :recognizer))))))
 
 (defun stobj-recognizer-terms (known-stobjs wrld)
 

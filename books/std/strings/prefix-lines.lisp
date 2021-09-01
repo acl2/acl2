@@ -88,7 +88,6 @@ into a character list and then coerce it back into a string at the end.</p>"
   (defthm character-listp-of-prefix-lines-aux
     (implies (and (natp n)
                   (stringp x)
-                  (natp xl)
                   (<= n xl)
                   (= xl (length x))
                   (stringp rprefix)
@@ -101,6 +100,3 @@ into a character list and then coerce it back into a string at the end.</p>"
   (defthm stringp-of-prefix-lines
     (stringp (prefix-lines x prefix))
     :rule-classes :type-prescription))
-
-
-

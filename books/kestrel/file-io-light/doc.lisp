@@ -36,10 +36,10 @@
  ((read-file-into-byte-list "Read a file into a list of bytes."))
  (io file-io-light))
 
-;; (depends-on "read-file-into-stobj.lisp")
+;; (depends-on "read-file-into-byte-array-stobj.lisp")
 (acl2::gen-xdoc-for-file
- "read-file-into-stobj.lisp"
- ((read-file-into-stobj "Read the bytes from a file into a stobj array."))
+ "read-file-into-byte-array-stobj.lisp"
+ ((read-file-into-byte-array-stobj "Read the bytes from a file into a stobj array."))
  (io file-io-light))
 
 

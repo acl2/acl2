@@ -27,14 +27,9 @@
 ; serialization code to ACL2.  He suggests using the new ACL2 commands
 ; serialize-read and serialize-write instead of these routines.
 
-#-hons
-(eval-when
- (:execute :compile-toplevel :load-toplevel)
- (format t "Warning: compact-print-raw.lsp is doing nothing because #+hons ~
-            is not set."))
+; Matt K. removed #-hons code August 2021 and left the #+hons code in place
+; without the #+hons directive (since hons is always enabled).
 
-
-#+hons
 (progn
 
 
@@ -697,6 +692,5 @@
 
 ; [Jared] formerly this was called as part of hons-init-hook...
 ; maybe this is sufficient?
-#+hons
 (eval-when (:load-toplevel)
  (hons-readtable-init))

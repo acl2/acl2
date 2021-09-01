@@ -52,7 +52,7 @@
   (xdoc::topstring
    (xdoc::p
     "An identifier is a sequence of characters satisfying certain conditions.
-     For now we use an ACL2 string, wrapper in a one-field product type.
+     For now we use an ACL2 string, wrapped in a one-field product type.
      ACL2 strings suffice to represent all identifiers, and more.
      In the future we may add restrictions on the string
      to be a true identifier as defined in the concrete syntax."))
@@ -76,13 +76,6 @@
   :elt-type identifier
   :elementp-of-nil nil
   :pred identifier-setp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule identifier-setp-of-mergesort
-  (implies (identifier-listp x)
-           (identifier-setp (set::mergesort x)))
-  :enable set::mergesort)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -251,10 +244,12 @@
      which therefore captures full information:
      leading zeros and capitalization of the letters.")
    (xdoc::p
-    "We represent a string literals is a list of elements,
+    "We represent a (non-hex) string as a list of elements,
      plus a flag saying whether the surrounding quotes are double
      or not (i.e. single).
-     This captures the full concrete syntax information.")
+     This captures the full concrete syntax information.
+     To more clearly distinguish this kind of string literal from hex strings,
+     we call these strings `plain strings'.")
    (xdoc::p
     "We represent a hex string as a list of hex pairs,
      plus a flag saying whether the surrounding quotes are double
@@ -263,15 +258,25 @@
   (:boolean ((get bool)))
   (:dec-number ((get nat)))
   (:hex-number ((get hex-digit-list)))
-  (:string ((content string-element-list)
-            (double-quote-p bool)))
+  (:plain-string ((content string-element-list)
+                  (double-quote-p bool)))
   (:hex-string ((content hex-pair-list)
                 (double-quote-p bool)))
   :pred literalp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist literal-list
+  :short "Fixtype of lists of literals."
+  :elt-type literal
+  :true-listp t
+  :elementp-of-nil nil
+  :pred literal-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes expressions/funcalls
+  :short "Fixtypes of expressions and function calls."
 
   (fty::deftagsum expression
     :short "Fixtype of expressions."
@@ -313,6 +318,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes statements/blocks/cases/fundefs
+  :short "Fixtypes of statements, blocks, cases, and function definitions."
 
   (fty::deftagsum statement
     :short "Fixtype of statements."
@@ -350,7 +356,7 @@
            (body block)))
     (:switch ((target expression)
               (cases swcase-list)
-              (default block)))
+              (default block-option)))
     (:leave ())
     (:break ())
     (:continue ())
@@ -358,20 +364,32 @@
     :pred statementp
     :measure (two-nats-measure (acl2-count x) 0))
 
-  (fty::deflist block
-    :short "Fixtype of blocks."
+  (fty::deflist statement-list
+    :short "Fixtype of lists of statements."
     :elt-type statement
     :true-listp t
     :elementp-of-nil nil
-    :pred blockp
+    :pred statement-listp
     :measure (two-nats-measure (acl2-count x) 0))
+
+  (fty::defprod block
+    :short "Fixtype of blocks."
+    ((statements statement-list))
+    :pred blockp
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  (fty::defoption block-option
+    block
+    :short "Fixtye of optional blocks."
+    :pred block-optionp
+    :measure (two-nats-measure (acl2-count x) 2))
 
   (fty::defprod swcase
     :short "Fixtype of cases (of switch statements)."
     ((value literal)
      (body block))
     :pred swcasep
-    :measure (two-nats-measure (acl2-count x) 1))
+    :measure (two-nats-measure (acl2-count x) 2))
 
   (fty::deflist swcase-list
     :short "Fixtype of lists of cases (of switch statements)."
@@ -389,4 +407,13 @@
      (body block))
     :tag :fundef
     :pred fundefp
-    :measure (two-nats-measure (acl2-count x) 1)))
+    :measure (two-nats-measure (acl2-count x) 2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection swcase-list->value-list ((x swcase-listp))
+  :returns (lits literal-listp)
+  :short "Lift @(tsee swcase->value) to lists."
+  (swcase->value x)
+  ///
+  (fty::deffixequiv swcase-list->value-list))

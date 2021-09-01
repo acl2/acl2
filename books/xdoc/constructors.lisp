@@ -1,6 +1,6 @@
 ; XDOC Documentation System for ACL2
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -416,7 +416,7 @@
    (defund tree-to-string (tree)
      (declare (xargs :guard (treep tree)
                      :verify-guards nil)) ; done below
-     (cond ((atom tree) tree)
+     (cond ((atom tree) (if (mbt (stringp tree)) tree ""))
            (t (let ((subtrees-string (tree-list-to-string (cdr tree))))
                 (mv-let (left-string right-string)
                   (keyword-or-tree-tag-to-strings (car tree))
@@ -506,24 +506,19 @@
   (local
    (defthm-flag-xdoc-tree-to-string
      (defthm theorem-for-tree-to-string
-       (implies (treep tree)
-                (stringp (tree-to-string tree)))
+       (stringp (tree-to-string tree))
        :flag tree-to-string)
      (defthm theorem-for-tree-list-to-string
-       (implies (tree-listp trees)
-                (stringp (tree-list-to-string trees)))
+       (stringp (tree-list-to-string trees))
        :flag tree-list-to-string)
      (defthm theorem-for-keyword-or-tree-tag-to-strings
-       (implies (or (keywordp keyword/tag)
-                    (tree-tagp keyword/tag))
-                (and (stringp (mv-nth 0 (keyword-or-tree-tag-to-strings
-                                         keyword/tag)))
-                     (stringp (mv-nth 1 (keyword-or-tree-tag-to-strings
-                                         keyword/tag)))))
+       (and (stringp (mv-nth 0 (keyword-or-tree-tag-to-strings
+                                keyword/tag)))
+            (stringp (mv-nth 1 (keyword-or-tree-tag-to-strings
+                                keyword/tag))))
        :flag keyword-or-tree-tag-to-strings)
      (defthm theorem-for-keyword-tree-alist-to-string
-       (implies (keyword-tree-alistp attributes)
-                (stringp (keyword-tree-alist-to-string attributes)))
+       (stringp (keyword-tree-alist-to-string attributes))
        :flag keyword-tree-alist-to-string)
      :hints (("Goal" :in-theory (enable tree-to-string
                                         tree-list-to-string
@@ -532,12 +527,10 @@
                                         treep)))))
 
   (defthm stringp-of-tree-to-string
-    (implies (treep tree)
-             (stringp (tree-to-string tree))))
+    (stringp (tree-to-string tree)))
 
   (defthm stringp-of-tree-list-to-string
-    (implies (tree-listp trees)
-             (stringp (tree-list-to-string trees))))
+    (stringp (tree-list-to-string trees)))
 
   (defthm stringp-of-mv-nth-0-keyword-or-tree-tag-to-strings
     (implies (or (keywordp keyword/tag)
@@ -547,15 +540,12 @@
     :hints (("Goal" :in-theory (disable mv-nth))))
 
   (defthm stringp-of-mv-nth-1-keyword-or-tree-tag-to-strings
-    (implies (or (keywordp keyword/tag)
-                 (tree-tagp keyword/tag))
-             (stringp (mv-nth 1 (keyword-or-tree-tag-to-strings
-                                 keyword/tag))))
+    (stringp (mv-nth 1 (keyword-or-tree-tag-to-strings
+                        keyword/tag)))
     :hints (("Goal" :in-theory (disable mv-nth))))
 
   (defthm stringp-of-keyword-tree-alist-to-string
-    (implies (keyword-tree-alistp attributes)
-             (stringp (keyword-tree-alist-to-string attributes))))
+    (stringp (keyword-tree-alist-to-string attributes)))
 
   ;; guard verification:
 
@@ -565,7 +555,7 @@
               (character-listp (cdr x)))))
 
   (verify-guards tree-to-string
-    :hints (("Goal" :in-theory (e/d (tree-tagp keyword-tree-alistp)
+    :hints (("Goal" :in-theory (e/d (tree-tagp keyword-tree-alistp treep)
                                     (mv-nth))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

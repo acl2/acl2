@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -129,11 +129,6 @@
 (defun trace-values (name)
   (declare (ignore name))
   'values)
-
-#-acl2-mv-as-values
-(error "Trace-exit probably needs to be modified for CCL if we are to ~%~
-        avoid feature acl2-mv-as-values.  See corresponding mods made for ~%~
-        Version  3.4 in akcl-acl2-trace.lisp and allegro-acl2-trace.lisp.")
 
 (defun trace-exit-rec (name original-name l exit evisc-tuple)
 

@@ -26,21 +26,13 @@
 (in-theory (disable mod)) ;since mod is introduced by some rules below
 
 (defthm add-of-sub-arg1
-  (implies (and (fep x p)
-                (fep y p)
-                (fep z p)
-                (integerp p))
-           (equal (add (sub x y p) z p)
-                  (add x (add z (neg y p) p) p)))
+  (equal (add (sub x y p) z p)
+         (add x (add z (neg y p) p) p))
   :hints (("Goal" :in-theory (enable add sub neg))))
 
 (defthm add-of-sub-arg2
-  (implies (and (fep x p)
-                (fep y p)
-                (fep z p)
-                (integerp p))
-           (equal (add z (sub x y p) p)
-                  (add x (add z (neg y p) p) p)))
+  (equal (add z (sub x y p) p)
+         (add x (add z (neg y p) p) p))
   :hints (("Goal" :in-theory (enable add sub neg))))
 
 (defthmd equal-of-0-and-add
@@ -71,6 +63,17 @@
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (enable sub add neg acl2::mod-sum-cases))))
 
+(defthm equal-of-add-combine-constants-alt
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (fep x p)
+                (fep k1 p)
+                (integerp p))
+           (equal (equal (add k2 x p) k1)
+                  (equal x (sub k1 k2 p))))
+  :rule-classes ((:rewrite :loop-stopper nil))
+  :hints (("Goal" :in-theory (enable sub add neg acl2::mod-sum-cases))))
+
 ;;less aggressive than the general rule
 (defthm add-associative-when-constant
   (implies (syntaxp (quotep x))
@@ -88,7 +91,7 @@
 ;move or drop?
 (defthm divides-of-prime-means-0
   (implies (and (fep x p)
-                (posp p))
+                (integerp p))
            (equal (rtl::divides p x)
                   (equal 0 x)))
   :hints (("Goal" :in-theory (enable ;rtl::divides
@@ -239,7 +242,7 @@
 
 ;; If the resulting constant (* x y) is too large, the next rule below will
 ;; reduce it.
-(defthm mul-combine-constants
+(defthm mul-of-mul-combine-constants
   (implies (and (syntaxp (and (quotep x)
                               (quotep y)))
                 (integerp x) ;(fep x p)
@@ -252,10 +255,9 @@
                    z p)))
   :hints (("Goal" :in-theory (enable mul))))
 
-(defthmd mul-combine-constants-alt
-  (implies (and (syntaxp (and (quotep x)
-                              (quotep y)))
-                (integerp p))
+(defthmd mul-of-mul-combine-constants-alt
+  (implies (syntaxp (and (quotep x)
+                         (quotep y)))
            (equal (mul x (mul y z p) p)
                   (mul (mul x y p) z p)))
   :hints (("Goal" :in-theory (enable mul))))
@@ -264,9 +266,10 @@
   (implies (and (syntaxp (and (quotep x)
                               (quotep p)))
                 (<= p x) ;x is too big
-                (integerp x)
-                (integerp y)
-                (natp p))
+                ;; (integerp x)
+                ;; (integerp y)
+                ;; (natp p)
+                )
            (equal (mul x y p)
                   (mul (mod x p) y p)))
   :hints (("Goal" :in-theory (enable mul))))
@@ -471,7 +474,7 @@
   (implies (and (integerp x)
                 (natp y)
                 (< y p)
-                (posp p))
+                (integerp p))
            (equal (equal (neg x p) y)
                   (equal 0 (add x y p))))
   :hints (("Goal" :in-theory (enable neg sub add acl2::mod-sum-cases))))
@@ -479,7 +482,7 @@
 (defthm equal-of-0-and-add-of-neg-arg1
   (implies (and (fep x p)
                 (fep y p)
-                (posp p))
+                (integerp p))
            (equal (equal 0 (add (neg x p) y p))
                   (equal x y)))
   :hints (("Goal" :in-theory (enable neg sub add acl2::mod-sum-cases))))
@@ -496,7 +499,7 @@
 (defthm equal-of-0-and-add-of-neg-arg2
   (implies (and (fep x p)
                 (fep y p)
-                (posp p))
+                (integerp p))
            (equal (equal 0 (add x (neg y p) p))
                   (equal x y)))
   :hints (("Goal" :in-theory (enable add neg sub acl2::mod-sum-cases))))
@@ -511,23 +514,17 @@
   :hints (("Goal" :in-theory (enable add neg sub acl2::mod-sum-cases))))
 
 (defthm add-bound
-  (implies (and (integerp x)
-                (integerp y)
-                (posp p))
+  (implies (posp p)
            (< (add x y p) p))
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm mul-bound
-  (implies (and (integerp x)
-                (integerp y)
-                (posp p))
+  (implies (posp p)
            (< (mul x y p) p))
   :hints (("Goal" :in-theory (enable mul))))
 
 (defthm sub-bound
-  (implies (and (integerp x)
-                (integerp y)
-                (posp p))
+  (implies (posp p)
            (< (sub x y p) p))
   :hints (("Goal" :in-theory (enable sub))))
 
@@ -542,11 +539,8 @@
                                      acl2::mod-sum-cases))))
 
 (defthm add-of-neg-same-arg2-gen
-  (implies (and (integerp x)
-                (posp p))
-           (equal (add x (neg x p)
-                       p)
-                  0))
+  (equal (add x (neg x p) p)
+         0)
   :hints (("Goal" :in-theory (enable add sub neg))))
 
 (defthmd equal-of-<-and-fep
@@ -560,7 +554,6 @@
                 (<= 0 x1)
                 (< x1 p)
                 (not (equal x1 0))
-                (integerp p)
                 (< 2 p)
                 (rtl::primep p))
            (not (equal (add x1 x1 p) 0)))
@@ -625,11 +618,8 @@
 
 ;; Similar to turining (- (* 3 x)) into (* -3 x).
 (defthm neg-of-mul-when-constant
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep p)))
-                (integerp y)
-                (integerp k)
-                (posp p))
+  (implies (syntaxp (and (quotep k)
+                         (quotep p)))
            (equal (neg (mul k y p) p)
                   (mul (neg k p) y p)))
   :hints (("Goal" :in-theory (enable mul neg sub))))
@@ -642,6 +632,19 @@
                 (fep z p)
                 (rtl::primep p))
            (equal (equal x (mul y z p))
+                  (and (fep x p)
+                       (if (equal 0 y)
+                           (equal x 0)
+                         (equal (div x y p) z)))))
+  :hints (("Goal" :in-theory (enable div))))
+
+(defthm equal-of-mul-constants-alt
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep y)))
+                (fep y p)
+                (fep z p)
+                (rtl::primep p))
+           (equal (equal (mul y z p) x)
                   (and (fep x p)
                        (if (equal 0 y)
                            (equal x 0)
@@ -843,15 +846,14 @@
 (defthm equal-of-0-and-add-of-neg
   (implies (and (fep x p)
                 (fep y p)
-                (posp p))
+                (integerp p))
            (equal (equal 0 (add (neg x p) y p))
                   (equal x y))))
 
 ;; Not sure which form is better
 (defthmd add-of-neg-and-neg
-  (implies (posp p)
-           (equal (add (neg x p) (neg y p) p)
-                  (neg (add x y p) p))))
+  (equal (add (neg x p) (neg y p) p)
+         (neg (add x y p) p)))
 
 ;; In case we only want to move constants to the front
 (defthm add-commutative-when-constant
@@ -920,27 +922,19 @@
 
 (defthm equal-of-0-and-add-of-add-of-add-of-neg-lemma
   (implies (and (fep w p)
-                (integerp x)
-                (integerp y)
-                (integerp z)
-                (posp p))
+                (integerp p))
            (equal (equal 0 (add x (add y (add z (neg w p) p) p) p))
                   (equal w (add x (add y z p) p)))))
 
 (defthm equal-of-0-and-add-of-add-of-add-of-neg-lemma-alt
   (implies (and (fep w p)
-                (integerp x)
-                (integerp y)
-                (integerp z)
-                (posp p))
+                (integerp p))
            (equal (equal 0 (add x (add y (add (neg w p) z p) p) p))
                   (equal w (add x (add y z p) p)))))
 
 (defthm equal-of-0-and-add-of-add-of-neg-lemma
   (implies (and (fep w p)
-                (integerp x)
-                (integerp y)
-                (posp p))
+                (integerp p))
            (equal (equal 0 (add x (add (neg w p) y p) p))
                   (equal w (add x y p)))))
 
@@ -974,8 +968,8 @@
 
 ;;  This version has no mod or ifix in the RHS
 (defthm equal-of-add-of-neg-simple
-  (implies (and (posp p)
-                (fep y p))
+  (implies (and (fep y p)
+                (integerp p))
            (equal (equal x (add y (neg z p) p))
                   (and (fep x p)
                        (equal (add x z p) y))))
@@ -985,8 +979,7 @@
 (defthmd mul-when-constant-becomes-neg-of-mul
   (implies (and (syntaxp (quotep k))
                 (< k 0)
-                (integerp k)
-                (posp p))
+                (natp p))
            (equal (mul k x p)
                   (neg (mul (neg k p) x p) p)
                   ))
@@ -999,7 +992,6 @@
                 (integerp x2)
                 (integerp x3)
                 (integerp y)
-                (integerp lhs)
                 (posp p))
            (equal (equal lhs (add x1 (add x2 (add (neg y p) x3 p) p) p))
                   (equal (add lhs y p) (add x1 (add x2 x3 p) p))))
@@ -1043,9 +1035,8 @@
 
 ;gen the -1
 (defthm add-of-+-of--1
-  (implies (integerp x)
-           (equal (add x (+ -1 p) p)
-                  (add x -1 p)))
+  (equal (add x (+ -1 p) p)
+         (add x -1 p))
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-of-+-of-p-arg2
@@ -1065,11 +1056,8 @@
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm mul-of-+-same-arg2
-  (implies (and (integerp x)
-                ;(integerp y)
-                (integerp p))
-           (equal (mul (+ x p) y p)
-                  (mul x y p)))
+  (equal (mul (+ x p) y p)
+         (mul x y p))
   :hints (("Goal" :in-theory (enable mul))))
 
 ;distributivity
@@ -1167,3 +1155,17 @@
            (equal (div (neg x p) y p)
                   (div x (neg y p) p)))
   :hints (("Goal" :in-theory (enable div))))
+
+(defthm add-of-mul-of-constant-same-arg1
+  (implies (and (syntaxp (quotep k))
+                (integerp k))
+           (equal (add (mul k x p) x p)
+                  (mul (+ 1 k) x p)))
+  :hints (("Goal" :in-theory (enable mul add acl2::pos-fix))))
+
+(defthm add-of-mul-of-constant-same-arg2
+  (implies (and (syntaxp (quotep k))
+                (integerp k))
+           (equal (add x (mul k x p) p)
+                  (mul (+ 1 k) x p)))
+  :hints (("Goal" :in-theory (enable mul add acl2::pos-fix))))

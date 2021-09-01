@@ -23,7 +23,7 @@
 (local (in-theory (disable natp member-equal len)))
 
 (local (in-theory (enable <-of-+-of-minus1-arith-hack
-                          NATP-OF-+-OF-1)))
+                          natp-of-+-of-1)))
 
 (defthm dargp-of-if
   (equal (dargp (if test tp ep))
@@ -184,7 +184,7 @@
 
 (def-dag-builder-theorems (prune-with-contexts-aux old-nodenum old-dag-array old-dag-len context-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array)
   (mv erp renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-  :hyps ((natp old-nodenum)
+  :hyps (;; (natp old-nodenum)
          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
          (pseudo-dag-arrayp 'old-dag-array old-dag-array old-dag-len)
          (renaming-arrayp 'renaming-array renaming-array old-nodenum)

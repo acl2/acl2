@@ -448,19 +448,19 @@ but @('hex-digit-to-char') is faster:</p>
          ;; But we merge (code-char A) == 65 and -10 together to get 55.
          (code-char (the (unsigned-byte 8) (+ 55 n))))))
 
-(define basic-natchars16
-  :parents (natchars16)
-  :short "Logically simple definition that is similar to @(see natchars16)."
+(define basic-nat-to-hex-chars
+  :parents (nat-to-hex-chars)
+  :short "Logically simple definition that is similar to @(see nat-to-hex-chars)."
   ((n natp))
   :returns (chars hex-digit-char-listp)
-  :long "<p>This <i>almost</i> computes @('(natchars16 n)'), but when @('n') is
+  :long "<p>This <i>almost</i> computes @('(nat-to-hex-chars n)'), but when @('n') is
 zero it returns @('nil') instead of @('(#\\0)').  You would normally never call
 this function directly, but it is convenient for reasoning about @(see
-natchars16).</p>"
+nat-to-hex-chars).</p>"
   (if (zp n)
       nil
     (cons (hex-digit-to-char (logand n #xF))
-          (basic-natchars16 (ash n -4))))
+          (basic-nat-to-hex-chars (ash n -4))))
   :prepwork
   ((local (defthm l0
             (implies (and (< a 16)
@@ -477,21 +477,21 @@ natchars16).</p>"
             :hints(("Goal" :in-theory (enable digit-to-char)))))
    (local (in-theory (disable digit-to-char))))
   ///
-  (defthm basic-natchars16-when-zp
+  (defthm basic-nat-to-hex-chars-when-zp
     (implies (zp n)
-             (equal (basic-natchars16 n)
+             (equal (basic-nat-to-hex-chars n)
                     nil)))
-  (defthm true-listp-of-basic-natchars16
-    (true-listp (basic-natchars16 n))
+  (defthm true-listp-of-basic-nat-to-hex-chars
+    (true-listp (basic-nat-to-hex-chars n))
     :rule-classes :type-prescription)
-  (defthm character-listp-of-basic-natchars16
-    (character-listp (basic-natchars16 n)))
-  (defthm basic-natchars16-under-iff
-    (iff (basic-natchars16 n)
+  (defthm character-listp-of-basic-nat-to-hex-chars
+    (character-listp (basic-nat-to-hex-chars n)))
+  (defthm basic-nat-to-hex-chars-under-iff
+    (iff (basic-nat-to-hex-chars n)
          (not (zp n))))
-  (defthm consp-of-basic-natchars16
-    (equal (consp (basic-natchars16 n))
-           (if (basic-natchars16 n) t nil)))
+  (defthm consp-of-basic-nat-to-hex-chars
+    (equal (consp (basic-nat-to-hex-chars n))
+           (if (basic-nat-to-hex-chars n) t nil)))
   (local (defun my-induction (n m)
            (if (or (zp n)
                    (zp m))
@@ -517,36 +517,36 @@ natchars16).</p>"
                    :in-theory (disable c0)
                    :use ((:instance c0 (x n) (n k))
                          (:instance c0 (x m) (n k)))))))
-  (defthm basic-natchars16-one-to-one
-    (equal (equal (basic-natchars16 n)
-                  (basic-natchars16 m))
+  (defthm basic-nat-to-hex-chars-one-to-one
+    (equal (equal (basic-nat-to-hex-chars n)
+                  (basic-nat-to-hex-chars m))
            (equal (nfix n)
                   (nfix m)))
     :hints(("Goal" :induct (my-induction n m)))))
 
-(define natchars16-aux ((n natp) acc)
-  :parents (natchars16)
+(define nat-to-hex-chars-aux ((n natp) acc)
+  :parents (nat-to-hex-chars)
   :verify-guards nil
   :enabled t
   (mbe :logic
-       (revappend (basic-natchars16 n) acc)
+       (revappend (basic-nat-to-hex-chars n) acc)
        :exec
        (if (zp n)
            acc
-         (natchars16-aux
+         (nat-to-hex-chars-aux
           (the unsigned-byte (ash (the unsigned-byte n) -4))
           (cons (hex-digit-to-char
                  (the (unsigned-byte 4) (logand (the unsigned-byte n) #xF)))
                 acc))))
   ///
-  (verify-guards natchars16-aux
-    :hints(("Goal" :in-theory (enable basic-natchars16)))))
+  (verify-guards nat-to-hex-chars-aux
+    :hints(("Goal" :in-theory (enable basic-nat-to-hex-chars)))))
 
-(define natchars16
+(define nat-to-hex-chars
   :short "Convert a natural number into a list of hexadecimal bits."
   ((n natp))
   :returns (chars hex-digit-char-listp)
-  :long "<p>For instance, @('(natchars16 31)') is @('(#\\1 #\\F)').</p>
+  :long "<p>For instance, @('(nat-to-hex-chars 31)') is @('(#\\1 #\\F)').</p>
 
 <p>This is like ACL2's built-in function @(see explode-nonnegative-integer),
 except that it doesn't deal with accumulators and is limited to base-16 numbers.
@@ -559,7 +559,7 @@ hex-digit-chars-value), and somewhat better performance:</p>
   ;; .732 seconds, 942 MB allocated
   (progn (gc$)
          (time (loop for i fixnum from 1 to 10000000 do
-                     (str::natchars16 i))))
+                     (str::nat-to-hex-chars i))))
 
   ;; 3.71 seconds, 942 MB allocated
   (progn (gc$)
@@ -567,15 +567,15 @@ hex-digit-chars-value), and somewhat better performance:</p>
             (explode-nonnegative-integer i 16 nil))))
 })"
   :inline t
-  (or (natchars16-aux n nil) '(#\0))
+  (or (nat-to-hex-chars-aux n nil) '(#\0))
   ///
 
-  (defthm true-listp-of-natchars16
-    (and (true-listp (natchars16 n))
-         (consp (natchars16 n)))
+  (defthm true-listp-of-nat-to-hex-chars
+    (and (true-listp (nat-to-hex-chars n))
+         (consp (nat-to-hex-chars n)))
     :rule-classes :type-prescription)
-  (defthm character-listp-of-natchars16
-    (character-listp (natchars16 n)))
+  (defthm character-listp-of-nat-to-hex-chars
+    (character-listp (nat-to-hex-chars n)))
   (local (defthm lemma1
            (equal (equal (rev x) (list y))
                   (and (consp x)
@@ -605,15 +605,15 @@ hex-digit-chars-value), and somewhat better performance:</p>
                       (< 15 n)))
            :hints(("Goal" :in-theory (enable digit-to-char)))))
   (local (defthmd lemma2
-           (not (equal (basic-natchars16 n) '(#\0)))
-           :hints(("Goal" :in-theory (acl2::enable* basic-natchars16
+           (not (equal (basic-nat-to-hex-chars n) '(#\0)))
+           :hints(("Goal" :in-theory (acl2::enable* basic-nat-to-hex-chars
                                                     acl2::ihsext-recursive-redefs)))))
-  (defthm natchars16-one-to-one
-    (equal (equal (natchars16 n) (natchars16 m))
+  (defthm nat-to-hex-chars-one-to-one
+    (equal (equal (nat-to-hex-chars n) (nat-to-hex-chars m))
            (equal (nfix n) (nfix m)))
     :hints(("Goal"
-            :in-theory (disable basic-natchars16-one-to-one)
-            :use ((:instance basic-natchars16-one-to-one)
+            :in-theory (disable basic-nat-to-hex-chars-one-to-one)
+            :use ((:instance basic-nat-to-hex-chars-one-to-one)
                   (:instance lemma2)
                   (:instance lemma2 (n m))))))
   (local (defthm c0
@@ -624,38 +624,38 @@ hex-digit-chars-value), and somewhat better performance:</p>
            :hints(("Goal"
                    :in-theory (acl2::enable* acl2::ihsext-recursive-redefs
                                              acl2::ihsext-inductions)))))
-  (local (defthm hex-digit-chars-value-of-rev-of-basic-natchars16
-           (equal (hex-digit-chars-value (rev (basic-natchars16 n)))
+  (local (defthm hex-digit-chars-value-of-rev-of-basic-nat-to-hex-chars
+           (equal (hex-digit-chars-value (rev (basic-nat-to-hex-chars n)))
                   (nfix n))
            :hints(("Goal"
-                   :induct (basic-natchars16 n)
-                   :in-theory (acl2::enable* basic-natchars16
+                   :induct (basic-nat-to-hex-chars n)
+                   :in-theory (acl2::enable* basic-nat-to-hex-chars
                                              acl2::ihsext-recursive-redefs
                                              acl2::logcons)))))
-  (defthm hex-digit-chars-value-of-natchars16
-    (equal (hex-digit-chars-value (natchars16 n))
+  (defthm hex-digit-chars-value-of-nat-to-hex-chars
+    (equal (hex-digit-chars-value (nat-to-hex-chars n))
            (nfix n))))
 
-(define revappend-natchars16-aux ((n natp) (acc))
-  :parents (revappend-natchars16)
+(define revappend-nat-to-hex-chars-aux ((n natp) (acc))
+  :parents (revappend-nat-to-hex-chars)
   :enabled t
   :verify-guards nil
   (mbe :logic
-       (append (basic-natchars16 n) acc)
+       (append (basic-nat-to-hex-chars n) acc)
        :exec
        (if (zp n)
            acc
          (cons (hex-digit-to-char (the (unsigned-byte 4)
                                        (logand (the unsigned-byte n) #xF)))
-               (revappend-natchars16-aux
+               (revappend-nat-to-hex-chars-aux
                 (the unsigned-byte (ash (the unsigned-byte n) -4))
                 acc))))
   ///
-  (verify-guards revappend-natchars16-aux
-    :hints(("Goal" :in-theory (enable basic-natchars16)))))
+  (verify-guards revappend-nat-to-hex-chars-aux
+    :hints(("Goal" :in-theory (enable basic-nat-to-hex-chars)))))
 
-(define revappend-natchars16
-  :short "More efficient version of @('(revappend (natchars16 n) acc).')"
+(define revappend-nat-to-hex-chars
+  :short "More efficient version of @('(revappend (nat-to-hex-chars n) acc).')"
   ((n natp)
    (acc))
   :returns (new-acc)
@@ -663,11 +663,11 @@ hex-digit-chars-value), and somewhat better performance:</p>
          together characters in reverse order.</p>"
   :inline t
   :enabled t
-  :prepwork ((local (in-theory (enable natchars16))))
-  (mbe :logic (revappend (natchars16 n) acc)
+  :prepwork ((local (in-theory (enable nat-to-hex-chars))))
+  (mbe :logic (revappend (nat-to-hex-chars n) acc)
        :exec (if (zp n)
                  (cons #\0 acc)
-               (revappend-natchars16-aux n acc))))
+               (revappend-nat-to-hex-chars-aux n acc))))
 
 (define natstr16
   :short "Convert a natural number into a string with its hex digits."
@@ -675,7 +675,7 @@ hex-digit-chars-value), and somewhat better performance:</p>
   :returns (str stringp :rule-classes :type-prescription)
   :long "<p>For instance, @('(natstr16 31)') is @('\"1F\"').</p>"
   :inline t
-  (implode (natchars16 n))
+  (implode (nat-to-hex-chars n))
   ///
   (defthm hex-digit-char-listp-of-natstr
     (hex-digit-char-listp (explode (natstr16 n))))
@@ -714,7 +714,7 @@ hex-digit-chars-value), and somewhat better performance:</p>
   (if (zp n)
       0
     (+ 1 (natsize16-aux (ash n -4))))
-  :prepwork ((local (in-theory (enable natchars16))))
+  :prepwork ((local (in-theory (enable nat-to-hex-chars))))
   ///
   ;; BOZO perhaps eventually reimplement this using integer-length.  Here are
   ;; some fledgling steps toward that... natsize16 is probably something like:
@@ -759,20 +759,20 @@ hex-digit-chars-value), and somewhat better performance:</p>
 
   (defthm natsize16-aux-redef
     (equal (natsize16-aux n)
-           (len (basic-natchars16 n)))
-    :hints(("Goal" :in-theory (enable basic-natchars16)))))
+           (len (basic-nat-to-hex-chars n)))
+    :hints(("Goal" :in-theory (enable basic-nat-to-hex-chars)))))
 
 (define natsize16
   :short "Number of characters in the hexadecimal representation of a natural."
   ((x natp))
   :returns (size posp :rule-classes :type-prescription)
   :inline t
-  (mbe :logic (len (natchars16 x))
+  (mbe :logic (len (nat-to-hex-chars x))
        :exec
        (if (zp x)
            1
          (natsize16-aux x)))
-  :prepwork ((local (in-theory (enable natchars16)))))
+  :prepwork ((local (in-theory (enable nat-to-hex-chars)))))
 
 (define parse-hex-from-charlist
   :short "Parse a hexadecimal number from the beginning of a character list."

@@ -258,6 +258,7 @@
                    (b natp))
   :returns (mv (sum natp :rule-classes :type-prescription)
                (prod natp :rule-classes :type-prescription))
+  :ret-patbinder t
   (b* ((a (nfix a))
        (b (nfix b)))
     (mv (+ a b)
@@ -284,6 +285,37 @@
           :prod stuff.prod))
   ///
   (assert! (equal (do-math-stuff 1 2) (list :sum 3 :prod 2))))
+
+(make-define-config :ret-patbinder t)
+
+(define mathstuff2 ((a natp)
+                    (b natp))
+  :returns (mv (sum natp :rule-classes :type-prescription)
+               (prod natp :rule-classes :type-prescription))
+  (b* ((a (nfix a))
+       (b (nfix b)))
+    (mv (+ a b)
+        (* a b))))
+
+;; (def-b*-binder mathstuff-ret
+;;   :decls
+;;   ((declare (xargs :guard (and (eql (len forms) 1)
+;;                                (consp (car forms))
+;;                                (symbolp (caar forms))))))
+;;   :body
+;;   (patbind-ret-fn '((sum . nil) (prod . nil))
+;;                   '(a b)
+;;                   args forms rest-expr))
+
+(define do-math-stuff2 ((a natp)
+                       (b natp))
+  (b* ((a (nfix a))
+       (b (nfix b))
+       ((ret stuff) (mathstuff2 a b)))
+    (list :sum stuff.sum
+          :prod stuff.prod))
+  ///
+  (assert! (equal (do-math-stuff2 1 2) (list :sum 3 :prod 2))))
 
 
 

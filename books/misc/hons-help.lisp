@@ -394,10 +394,7 @@ an existing fast alist like @('make-fal').</p>"
                (equal (hons-sublis-aux fal x)
                       (sublis fal x)))))
 
-  (make-event
-   (if (hons-enabledp state)
-       '(memoize 'hons-sublis-aux :condition '(consp x))
-     '(value-triple :skipping-memoization))))
+  (memoize 'hons-sublis-aux :condition '(consp x)))
 
 (defsection hons-sublis
   :parents (hons sublis)

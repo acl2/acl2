@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -155,27 +155,9 @@
                 (cddr l)))
         (t (list* (car l) (cadr l) (trace-fix-entry name (cddr l))))))
 
-#-acl2-mv-as-values
-(defun trace-values (name)
-  (list* 'list
-         '(car values)
-         (let ((mul (trace-multiplicity name *the-live-state*)))
-           (cond ((or (null mul)
-                      (eql mul 1))
-                  nil)
-                 (t (mv-refs-fn (1- mul)))))))
-
-#+acl2-mv-as-values
 (defun trace-values (name)
   (declare (ignore name))
   'values)
-
-#-acl2-mv-as-values
-(defun make-nths (i n var)
-  (if (zerop n)
-      nil
-    (cons `(nth ,i ,var)
-          (make-nths (1+ i) (1- n) var))))
 
 (defun trace-fix-exit-raw (name l)
   (cond ((endp l)

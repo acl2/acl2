@@ -229,8 +229,8 @@ tags get rendered into HTML is controlled by, e.g.,
       (b* ((val (2vec->val x))
            (val (loghead (integer-length val) val)))
         (if (< val 10)
-            (str::natchars val)
-          (list* #\0 #\x (str::natchars16 val))))
+            (str::nat-to-dec-chars val)
+          (list* #\0 #\x (str::nat-to-hex-chars val))))
     ;; We have non-Boolean digits.  Print bitwise if small enough, otherwise hex.
     (b* (((4vec x) x)
          (len (max (integer-length x.upper) (integer-length x.lower)))
@@ -250,7 +250,7 @@ tags get rendered into HTML is controlled by, e.g.,
   :short "Encode a single value from an STV line."
   (cond ((4vec-p expansion)
          (revappend (4vec-to-xml-chars expansion) acc))
-        
+
         ((svtv-dontcare-p entry)
          ;; Just skipping these seems nicest.
          acc)

@@ -60,7 +60,7 @@
                               (plist-worldp wrld))))
   (b* ((defprime-alist (table-alist 'defprime-table wrld))
        ((when (not (alistp defprime-alist)))
-        (er hard? 'defprime "Ill-formed defprime-alist:." defprime-alist))
+        (er hard? 'defprime "Ill-formed defprime-alist: ~x0." defprime-alist))
        ((when (and existing-prime-name
                    (not (assoc-eq existing-prime-name defprime-alist))))
         (er hard? 'defprime "No existing prime found for name ~x0." existing-prime-name))
@@ -72,7 +72,7 @@
        ((when (and (not doc) (or (not (eq :auto parents))
                                  (not (eq :auto short))
                                  (not (eq :auto long)))))
-        (er hard? 'defprime "Since the :doc argument is nil, :parents, :short, and :long should not be supplied." existing-prime-name))
+        (er hard? 'defprime "Since the :doc argument is nil, :parents, :short, and :long should not be supplied."))
        (defconst-name (acl2::pack-in-package-of-symbol name '* name '*))
        (pratt-cert-defconst-name (acl2::pack-in-package-of-symbol name '* name '-pratt-cert*))
        (parents (if (eq nil parents)

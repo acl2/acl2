@@ -14,6 +14,7 @@
 (include-book "bvcat")
 (include-book "bitnot")
 (include-book "bitxor")
+(include-book "bitand")
 (include-book "bvxor")
 (include-book "rotate")
 (local (include-book "rules"))
@@ -23,12 +24,13 @@
          (bvnot 2 (bvcat 1 x 1 y))))
 
 (defthmd bvcat-of-bvnot-and-bitnot
-  (implies (posp size) ;why not 0?
+  (implies (natp size)
            (equal (bvcat size (bvnot size x) 1 (bitnot y))
-                  (bvnot (+ 1 size) (bvcat size x 1 y)))))
+                  (bvnot (+ 1 size) (bvcat size x 1 y))))
+  :hints (("Goal" :cases ((equal 0 size)))))
 
 (defthmd bvcat-of-bitnot-and-bvnot
-  (implies (posp size) ;why not 0?
+  (implies (natp size)
            (equal (bvcat 1 (bitnot x) size (bvnot size y))
                   (bvnot (+ 1 size) (bvcat 1 x size y)))))
 
@@ -103,6 +105,14 @@
 
 (defthmd bitp-when-equal-of-bitxor-2
   (implies (equal (bitxor free-y free-z) x)
+           (bitp x)))
+
+(defthmd bitp-when-equal-of-bitand-1
+  (implies (equal x (bitand free-y free-z))
+           (bitp x)))
+
+(defthmd bitp-when-equal-of-bitand-2
+  (implies (equal (bitand free-y free-z) x)
            (bitp x)))
 
 ;; This can let you prove X satisfies bitp without waiting for substitution to

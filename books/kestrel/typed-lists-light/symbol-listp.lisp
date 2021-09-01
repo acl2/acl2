@@ -109,3 +109,17 @@
   (implies (symbol-listp x)
            (symbolp (car (last x))))
   :hints (("Goal" :in-theory (enable symbol-listp))))
+
+;; Compatible with std
+(defthm symbolp-of-nth-when-symbol-listp
+   (implies (symbol-listp x)
+            (symbolp (nth n x)))
+   :hints (("Goal" :in-theory (enable nth))))
+
+;; avoids name clash with std
+(defthm symbol-listp-when-subsetp-equal-1
+  (implies (and (subsetp-equal l1 l2)
+                (symbol-listp l2))
+           (equal (symbol-listp l1)
+                  (true-listp l1)))
+  :hints (("Goal" :in-theory (enable nth))))

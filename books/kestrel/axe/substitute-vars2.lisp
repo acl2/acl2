@@ -28,6 +28,7 @@
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/arithmetic-light/max" :dir :system))
 

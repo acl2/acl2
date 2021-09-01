@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
+(include-book "centaur/fty/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -18,7 +19,8 @@
                        *std-pkg-symbols*
                        '(block
                          error
-                         funcall))
+                         funcall
+                         value))
                       '(any
                         bool
                         defxdoc+
@@ -26,4 +28,11 @@
                         nat-resultp
                         patbind-nat-result-err
                         patbind-nat-result-ok
-                        str::hex-digit-char)))
+                        fty::err
+                        fty::info
+                        fty::ok
+                        fty::resulterr
+                        fty::resulterrp
+                        fty::stack
+                        str::hex-digit-char
+                        ubyte256)))

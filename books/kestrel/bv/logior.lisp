@@ -316,14 +316,12 @@
                 (natp j)
                 (natp n))
            (< (logior i j) (expt 2 n)))
-  :hints (("Goal" :use (:instance logand-lower-bound-negative
+  :hints (("Goal" :use (:instance logand-lower-bound-negative-2-alt
                                   (i (+ -1 (- I)))
                                   (j (+ -1 (- j)))
                                   (n n))
            :in-theory (e/d (logior lognot)
-                           (logand-lower-bound-negative
-                            LOGAND-LOWER-BOUND-NEGATIVE-2
-                            LOGAND-LOWER-BOUND-NEGATIVE-2-ALT)))))
+                           (LOGAND-LOWER-BOUND-NEGATIVE-2-ALT)))))
 
 ;; special case
 (defthm <-of-logior-and-256
@@ -334,3 +332,9 @@
            (< (logior i j) 256))
   :hints (("Goal" :use (:instance  <-of-logior-and-expt-of-2 (n 8))
            :in-theory (disable  <-of-logior-and-expt-of-2))))
+
+(defthm signed-byte-p-of-logior
+  (implies (and (signed-byte-p size i)
+                (signed-byte-p size j))
+           (signed-byte-p size (logior i j)))
+  :hints (("Goal" :in-theory (e/d (logior) (signed-byte-p)))))

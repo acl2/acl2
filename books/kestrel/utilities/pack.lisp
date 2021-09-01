@@ -37,11 +37,7 @@
   :hints (("Goal" :in-theory (enable character-listp))))
 
 (defthm character-listp-of-explode-atom
-  (implies (or (equal 2 print-base)
-               (equal 8 print-base)
-               (equal 10 print-base)
-               (equal 16 print-base))
-           (character-listp (explode-atom x print-base)))
+  (character-listp (explode-atom x print-base))
   :hints (("Goal" :in-theory (enable explode-atom character-listp))))
 
 ;dup?

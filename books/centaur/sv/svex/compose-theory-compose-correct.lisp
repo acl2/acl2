@@ -38,6 +38,7 @@
 
 (local (std::add-default-post-define-hook :fix))
 
+(std::make-returnspec-config :hints-sub-returnnames t)
 
 
 

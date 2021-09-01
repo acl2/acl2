@@ -43,3 +43,6 @@
                 (pseudo-termp p))
            (pseudo-termp (make-add-nest addends p)))
   :hints (("Goal" :in-theory (enable make-add-nest))))
+
+;; If this shows up, it means that something has gone wrong with the bind-free rules
+(defund bind-free-id (x) x)

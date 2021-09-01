@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -19,18 +19,6 @@
 ; Austin, TX 78712 U.S.A.
 
 ; This file cannot be compiled because it changes packages in the middle.
-
-; Allow taking advantage of threads in SBCL, CCL, and Lispworks (where we may
-; want to build a parallel version, which needs this to take place).  At the
-; time that we add (perhaps once again) support for HONS in other lisps besides
-; CCL (August, 2012), there has been code developed that depends on mv-let
-; being the same as multiple-value-bind; see for example community book
-; books/centaur/aig/bddify.lisp, in particular the raw Lisp definition of
-; count-branches-to, specifically the use of b* in the labels definition of
-; lookup.  So we also use multiple-value-bind for mv-let when building the HONS
-; version.
-#+(or (and sbcl sb-thread) ccl lispworks hons)
-(push :acl2-mv-as-values *features*)
 
 ; We use the static honsing scheme on 64-bit CCL.
 #+(and ccl x86_64)
@@ -853,10 +841,6 @@ implementations.")
                                                (cons (format nil fmt-str x)
                                                      result))))
                                      (reverse result)))))
-
-; We want to be sure to include the *-raw.lisp files even if we are not
-; building the hons version, in order to assist in maintaining both versions.
-
                  (append lst (list "hons-raw.lisp"
                                    "memoize-raw.lisp"
                                    "multi-threading-raw.lisp"
@@ -877,6 +861,19 @@ implementations.")
          (quiet nil)
          (t (error "Unable to determine git commit hash.")))))
 
+(defvar *acl2-release-p*
+
+; Notes to developers (users should ignore this!):
+
+;   (1) Replace the value below by t when making a release, then to nil after a
+;       release.
+
+;   (2) More generally, see UT CS file
+;       /projects/acl2/devel-misc/release.cmds
+;       for release instructions.
+
+  nil)
+
 (defun acl2-snapshot-info ()
   (let* ((var "ACL2_SNAPSHOT_INFO")
          (s (getenv$-raw var))
@@ -892,25 +889,13 @@ implementations.")
                    "~% +   (Note from the environment when this executable was ~
                     saved:~72t+~% +    ~a)~72t+"
                    s))
+          (*acl2-release-p* "")
           (t (let ((h (git-commit-hash t)))
                (cond (h
                       (format nil
                               "~% +   (Git commit hash: ~a)~72t+"
                               h))
                      (t (error err-string var))))))))
-
-(defvar *acl2-release-p*
-
-; Notes to developers (users should ignore this!):
-
-;   (1) Replace the value below by t when making a release, then to nil after a
-;       release.
-
-;   (2) More generally, see UT CS file
-;       /projects/acl2/devel-misc/release.cmds
-;       for release instructions.
-
-  nil)
 
 (defvar *saved-string*
   (concatenate
@@ -930,9 +915,6 @@ implementations.")
 ; that this is no longer appropriate to print (after all, we don't say that
 ; ACL2 includes support for rewriting).
 
-   #-hons
-   "~%~% WARNING: ACL2(c) is deprecated and will likely be unsupported or~
-    ~% even eliminated in future releases.~%"
    #+acl2-par
    "~%~% Experimental modification for parallel evaluation.  Please expect at~
     ~% most limited maintenance for this version~%"))
@@ -1452,7 +1434,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
   #+cmu
   (when *print-startup-banner*
     (extensions::print-herald t))
-  (let (#+hons (produced-by-save-exec-p *lp-ever-entered-p*))
+  (let ((produced-by-save-exec-p *lp-ever-entered-p*))
     (proclaim-optimize) ; see comment in proclaim-optimize
     (setq *lp-ever-entered-p* nil)
     (#+cltl2
@@ -1474,8 +1456,8 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
                 (lisp-implementation-version)))
       (setq ccl::*inhibit-greeting* t))
 
-    #+hons (when (not produced-by-save-exec-p)
-             (qfuncall acl2h-init))
+    (when (not produced-by-save-exec-p)
+      (qfuncall acl2h-init))
 
     #+gcl
     (progn
@@ -1495,8 +1477,8 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
                   si::*tmp-dir*)))
 ; Growing the sbits array just before si::save-system doesn't seem to avoid
 ; triggering a call of hl-hspace-grow-sbits when the first static hons is
-; created.  So we do the grow here, i.e., after starting ACL2(h).
-      #+(and hons static-hons)
+; created.  So we do the grow here, i.e., after starting ACL2.
+      #+static-hons
       (hl-hspace-grow-sbits (hl-staticp (cons nil nil)) *default-hs*))
 
     (when *print-startup-banner*
@@ -1779,9 +1761,8 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; executed at the start of acl2-compile-file and with (gc$ :full t) executed
 ; there as well, and also at the start of write-expansion-file and immediately
 ; before and after include-book-fn in certify-book-fn.  We believe that it has
-; been necessary to use such a --dynamic-space-size setting even to build ACL2
-; (not only ACL2(h)) with SBCL on some platforms, so we decided to use this
-; option for ACL2, not just ACL2(h).
+; often been necessary to use such a --dynamic-space-size setting to build ACL2
+; with SBCL on some platforms, so we decided to use this option for ACL2.
 
 ; But in December 2012 we found that 2000 is not sufficient using SBCL 1.0.49
 ; on our 64-bit linux system.  Our first such failure was in certifying
@@ -2277,11 +2258,10 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; See the section on "reading characters from files" in file acl2.lisp for an
 ; explanation of the -K argument below.
 
-; It is probably important to use -e just below instead of :toplevel-function,
-; at least for #+hons.  Jared Davis and Sol Swords have told us that it seems
-; that with :toplevel-function one gets a new "toplevel" thread at start-up,
-; which "plays badly with the thread-local hash tables that make up the hons
-; space".
+; It is probably important to use -e just below instead of :toplevel-function.
+; Jared Davis and Sol Swords have told us that it seems that with
+; :toplevel-function one gets a new "toplevel" thread at start-up, which "plays
+; badly with the thread-local hash tables that make up the hons space".
 
                       "~s -I ~s~a -K ISO-8859-1 -e ~
                        \"(acl2::acl2-default-restart)\"~a ~a~%"
@@ -2305,14 +2285,14 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; insufficient (defining a constant function with body '(...), a quoted list of
 ; length 65536; our own x86 model requiring 4M for an ACL2 proof using
 ; def-gl-thm; and more generally, Centaur's routine use of large stacks,
-; equivalent to -Z 256M.  Not surprisingly, we that performance was not hurt
-; using a larger stack size, for two pairs of ACL2(h) regressions as follows.
-; We ran one pair of runs on a Linux system with 32GB of RAM, and one pair of
-; runs on a MacBook Pro with 8GB of RAM, all in August 2013.  For each pair we
-; ran with -Z 64M and also omitting -Z (equivalent to using -Z 2M).  Our main
-; concern was potentially larger backtraces when using (set-debugger-enable
-; :bt), as during a regression.  We solved that by restricting backtrace counts
-; using *ccl-print-call-history-count*.
+; equivalent to -Z 256M.  Not surprisingly, that performance was not hurt using
+; a larger stack size, for two pairs of ACL2(h) regressions as follows.  We ran
+; one pair of runs on a Linux system with 32GB of RAM, and one pair of runs on
+; a MacBook Pro with 8GB of RAM, all in August 2013.  For each pair we ran with
+; -Z 64M and also omitting -Z (equivalent to using -Z 2M).  Our main concern
+; was potentially larger backtraces when using (set-debugger-enable :bt), as
+; during a regression.  We solved that by restricting backtrace counts using
+; *ccl-print-call-history-count*.
 
                           ""
                         " -Z 64M")

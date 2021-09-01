@@ -43,7 +43,7 @@
                            (expt-hack)))))
 (defthm mod-of-expt-twice
   (implies (and (natp i1)
-                (natp i2))
+                (integerp i2))
            (equal (mod (mod x (expt 2 i1)) (expt 2 i2))
                   (mod x (expt 2 (min i1 i2)))))
   :hints (("Goal" :in-theory (e/d (mod-of-mod-when-mult)
@@ -58,13 +58,12 @@
            :cases ((rationalp x)))))
 
 (defthm mod-of-expt-and-expt
-  (implies (and (natp i1)
-                (natp i2))
+  (implies (and (integerp i1)
+                (integerp i2))
            (equal (mod (expt 2 i1) (expt 2 i2))
                   (if (< i1 i2)
                       (expt 2 i1)
-                    0)))
-  :hints (("Goal" :in-theory (enable))))
+                    0))))
 
 ;; Special case of mod-of-expt-twice
 (defthm mod-of-mod-of-expt-and-2

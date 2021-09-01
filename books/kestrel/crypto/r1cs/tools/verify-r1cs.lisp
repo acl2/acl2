@@ -22,20 +22,19 @@
 (acl2::add-known-boolean pfield::fep)
 (acl2::add-known-boolean pfield::fe-listp)
 
-;; Note that this only does the "forward" direction of the proof
-(acl2::defmacrodoc verify-r1cs (lifted-r1cs
-                                spec-term
-                                prime
-                                &key
-                                (bit-inputs 'nil)
-                                ;; same as for acl2::prove-implication-with-r1cs-prover:
-                                (tactic ''(:rep :rewrite :subst))
-                                (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules? ;todo: what if we give these but no :rewrite tactic
-                                (global-rules 'nil) ;; rules to be added to every rule-list
-                                (interpreted-function-alist 'nil)
-                                (no-splitp 't) ; whether to prevent splitting into cases (note that we change the default here)
-                                (monitor 'nil)
-                                (print ':brief))
+;; Returns an event
+(defun verify-r1cs-fn (lifted-r1cs
+                       spec-term
+                       prime
+                       bit-inputs
+                       tactic
+                       rule-lists ;todo: improve by building some in and allowing :extra-rules and :remove-rules? ;todo: what if we give these but no :rewrite tactic
+                       global-rules ;; rules to be added to every rule-list
+                       interpreted-function-alist
+                       no-splitp ; whether to prevent splitting into cases (note that we change the default here)
+                       monitor
+                       print)
+  (declare (xargs :guard t))
   `(encapsulate ()
      ;; Print the prime more clearly:
      (table acl2::evisc-table ,prime "<p>") ;a bit scary since it makes p look like a var
@@ -58,7 +57,33 @@
       :interpreted-function-alist ,interpreted-function-alist ;todo
       :no-splitp ,no-splitp
       :monitor ,monitor
-      :print ,print))
+      :print ,print)))
+
+;; Note that this only does the "forward" direction of the proof
+(acl2::defmacrodoc verify-r1cs (lifted-r1cs
+                                spec-term
+                                prime
+                                &key
+                                (bit-inputs 'nil)
+                                ;; same as for acl2::prove-implication-with-r1cs-prover:
+                                (tactic ''(:rep :rewrite :subst))
+                                (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules? ;todo: what if we give these but no :rewrite tactic
+                                (global-rules 'nil) ;; rules to be added to every rule-list
+                                (interpreted-function-alist 'nil)
+                                (no-splitp 't) ; whether to prevent splitting into cases (note that we change the default here)
+                                (monitor 'nil)
+                                (print ':brief))
+  (verify-r1cs-fn lifted-r1cs
+                  spec-term
+                  prime
+                  bit-inputs
+                  tactic
+                  rule-lists
+                  global-rules
+                  interpreted-function-alist
+                  no-splitp
+                  monitor
+                  print)
   :parents (r1cs-verification-with-axe)
   :short "A tool to verify an R1CS"
   :long "See @(tsee r1cs-verification-with-axe)."

@@ -97,7 +97,7 @@
 (defthm mod-of-logapp-1
   (implies (and (<= size2 size) ;this case
                 (integerp i)
-                (natp size)
+                (integerp size)
                 (natp size2))
            (equal (mod (logapp size i j) (expt 2 size2))
                   (mod i (expt 2 size2))))
@@ -107,7 +107,7 @@
   (implies (and (< size size2) ;this case
                 (integerp i)
                 (natp size)
-                (natp size2))
+                (integerp size2))
            (equal (mod (logapp size i j) (expt 2 size2))
                   (logapp size i (mod j (expt 2 (+ (- size) size2))))))
   :hints (("Goal"
@@ -135,7 +135,6 @@
 
 (defthm logapp-of-bvchop
   (implies (and (<= size size2)
-                (integerp size)
                 (integerp size2))
            (equal (logapp size (bvchop size2 i) j)
                   (logapp size i j)))
@@ -157,8 +156,7 @@
                                logapp-of-bvchop))))
 
 (defthm logapp-equal-0-rewrite-gen
-  (implies (and (integerp x)
-                (natp n))
+  (implies (integerp x)
            (equal (equal (logapp n 0 x) 0)
                   (equal x 0)))
   :hints (("Goal" :in-theory (enable logapp))))
@@ -217,7 +215,6 @@
   :hints (("Goal" :in-theory (enable bvchop))))
 
 (defthm logapp-minus-1-negative
-  (implies (integerp x)
-           (< (logapp n x -1) 0))
+  (< (logapp n x -1) 0)
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable logapp))))

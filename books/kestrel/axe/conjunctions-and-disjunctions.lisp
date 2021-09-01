@@ -24,6 +24,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
+(local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 
 ;(local (in-theory (disable list::nth-with-large-index-2))) ;for speed
 
@@ -942,31 +943,6 @@
                                                   ;;LIST::LEN-OF-CDR-BETTER
                                                   )
                            (len)))))
-
-(defthm axe-conjunctionp-of-nth-of-dargs-of-aref1
-  (implies  (and (consp (nth n (dargs (aref1 dag-array-name dag-array nodenum)))) ;means it's a constant
-                 (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)
-                 (< n (len (dargs (aref1 dag-array-name dag-array nodenum))))
-                 (natp n)
-                 (not (equal 'quote (nth 0 (aref1 dag-array-name dag-array nodenum))))
-                 (natp nodenum)
-                 (not (consp (nth n (dargs (aref1 dag-array-name dag-array nodenum))))) ;todo?
-                 )
-            (axe-conjunctionp (nth n (dargs (aref1 dag-array-name dag-array nodenum)))))
-  :hints (("Goal" :in-theory (e/d (axe-conjunctionp car-of-nth-of-dargs-of-aref1 nth) (nth-of-cdr)))))
-
-(defthm axe-disjunctionp-of-nth-of-dargs-of-aref1
-  (implies  (and (consp (nth n (dargs (aref1 dag-array-name dag-array nodenum)))) ;means it's a constant
-                 (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)
-                 (< n (len (dargs (aref1 dag-array-name dag-array nodenum))))
-                 (natp n)
-                 (not (equal 'quote (nth 0 (aref1 dag-array-name dag-array nodenum))))
-                 (natp nodenum)
-                 (not (consp (nth n (dargs (aref1 dag-array-name dag-array nodenum))))) ;todo?
-                 )
-            (axe-disjunctionp (nth n (dargs (aref1 dag-array-name dag-array nodenum)))))
-  :hints (("Goal" :in-theory (e/d (axe-disjunctionp car-of-nth-of-dargs-of-aref1 nth) (nth-of-cdr
-                                                                              )))))
 
 (verify-guards get-axe-disjunction-from-dag-item
   :hints (("Goal" :in-theory (e/d (CAR-BECOMES-NTH-OF-0 ;CONSP-FROM-LEN

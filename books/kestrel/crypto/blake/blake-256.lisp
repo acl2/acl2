@@ -253,7 +253,7 @@
 
 (defthm statep-of-apply-rounds
   (implies (and (statep v)
-                (natp r)
+                ;; (natp r)
                 (blockp m))
            (statep (apply-rounds r v m)))
   :hints (("Goal" :in-theory (enable apply-round))))

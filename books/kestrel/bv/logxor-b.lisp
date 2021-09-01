@@ -35,10 +35,8 @@
 
 ;move
 (defthm bvchop-of-lognot-of-bvchop
-  (implies (and (natp n)
-                (integerp i))
-           (equal (bvchop n (lognot (bvchop n i)))
-                  (bvchop n (lognot i))))
+  (equal (bvchop n (lognot (bvchop n i)))
+         (bvchop n (lognot i)))
   :hints (("Goal" :in-theory (enable lognot))))
 
 ;bozo FLOOR-MINUS-ERIC-BETTER looped on      (FLOOR '0 (EXPT '2 N))

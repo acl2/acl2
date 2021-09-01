@@ -64,10 +64,10 @@
 
        zp-open
 
-       str::basic-natchars
+       str::basic-nat-to-dec-chars
        str::iprefixp
        str::istrprefixp
-       str::natchars
+       str::nat-to-dec-chars
        str::natstr)
 
    (union-eq *acl2-exports*

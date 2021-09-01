@@ -161,14 +161,16 @@
       (the package names are ignored).
       There is no restriction on
       the symbol names of the recursive target functions:
-      these represent C loops, not C functions.")
+      these represent C loops, not C functions;
+      the names of the recursive target functions
+      are not represented at all in the C code.")
 
     (xdoc::p
      "The symbol name of each formal parameter of each @('fni'),
       both non-recursive and recursive,
       must be a portable ASCII C identifier
       as defined in Section `Portable ASCII C Identifiers' below.
-      When @('fni') is non-recusive,
+      When @('fni') is non-recursive,
       the symbol names of its parameters are used as
       the names of the formal parameters of the corresponding C function,
       in the same order.
@@ -274,7 +276,6 @@
       statement term for @('fni') transforming variables @('vars') and
       loop term for @('fni') transforming variables @('vars')
       are defined below, along with the notions of
-      loop body term for @('fni'),
       C-valued term for @('fni'),
       pure C-valued term for @('fni'),
       boolean term for @('fni'),
@@ -288,12 +289,20 @@
       is inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "A C-valued term for @('fni'), when @('vars') is @('nil').
+      "A C-valued term for @('fni'),
+       when @('vars') is @('nil')
+       and when @('fni') is not recursive.
        That is, a C-valued term is also
        a statement term transforming variables @('nil').
        This represents a C @('return') statement
        whose expression is represented by the same term,
        viewed as a C-valued term.")
+     (xdoc::li
+      "A call of @('fni') on variables identical to its formal parameters,
+       when @('fni') is recursive.
+       This represents no actual C code,
+       because it just serves to conclude
+       the computation in the body of the loop.")
      (xdoc::li
       "A term @('var'), when @('vars') is the singleton list @('(var)').
        This represents no actual C code,
@@ -414,7 +423,7 @@
                     (mv-nth \'n-1 mv)))
            term)');
        this is the pattern that ATC looks for.")
-     (xdoc::p
+     (xdoc::li
       "A call of a recursive target function @('fnj') with @('j < i'),
        on variables identical to its formal parameters,
        when @('vars') is not @('nil')
@@ -449,7 +458,7 @@
       "A call of @(tsee if) on
        (i) a test that is a boolean term for @('fni'),
        (ii) a `then' branch that is
-       a loop body term for @('fni') transforming variables @('vars'), and
+       a statement term for @('fni') transforming variables @('vars'), and
        (iii) an `else' branch that is
        either the variable @('var') when @('vars') is the singleton @('(var)'),
        or the term @('(mv var1 ... varn)')
@@ -461,103 +470,6 @@
        as explained below;
        the `else' branch represents no actual C code,
        because it just serves to complete the @(tsee if)."))
-
-    (xdoc::p
-     "A <i>loop body term for</i> @('fni')
-      <i>transforming variables</i> @('vars'),
-      where @('fni') is a target function
-      and  @('vars') is a non-empty list of distinct symbols,
-      is inductively defined as one of the following:")
-    (xdoc::ul
-     (xdoc::li
-      "A call of @('fni') on variables identical to its formal parameters.
-       This represents no actual C code,
-       because it just serves to conclude the body of the loop.")
-     (xdoc::li
-      "A call of @(tsee if) on
-       (i) a test that is a boolean term for @('fni') and
-       (ii) branches that are loop body terms for @('fni')
-       transforming variables @('vars').
-       This represents a C @('if') conditional statement
-       whose test expression is represented by the test term
-       and whose branch blocks are represented by the branch terms.")
-     (xdoc::li
-      "A term @('(let ((var (declar term))) body)'),
-       where the symbol name of @('var') is a portable ASCII C identifier
-       as defined in Section `Portable ASCII C Identifiers' below,
-       the symbol name of @('var') is distinct from
-       the symbol names of all the other ACL2 variables in scope
-       (function parameters and variables bound in enclosing @(tsee let)s),
-       @('term') is a C-valued term for @('fni')
-       whose C type is not a pointer type, and
-       @('body') is a loop body term for @('fni')
-       transforming variables @('vars').
-       This represents, as indicated by the wrapper @(tsee declar),
-       a declaration of a C local variable represented by @('var'),
-       initialized with the C expression represented by @('term'),
-       followed by the C code represented by @('body').
-       The C type of the variable is determined from the initializer.
-       In translated terms,
-       @('(let ((var (declar term))) body)') is
-       @('((lambda (var) body) (declar term))');
-       this is the pattern that ATC looks for.")
-     (xdoc::li
-      "A term @('(let ((var (assign term))) body)'),
-       where @('var') is assignable,
-       @('term') is a C-valued term for @('fni')
-       whose C type is the same as the C local variable represented by
-       the aforementioned ACL2 variable in scope, and
-       @('body') is a loop body term for @('fni')
-       transforming variables @('vars').
-       This represents, as indicated by the wrapper @(tsee assign),
-       an assignment to
-       the C local variable or function parameter represented by @('var'),
-       with the C expression represented by @('term') as right-hand side,
-       followed by the C code represented by @('body').
-       In translated terms,
-       @('(let ((var (assign term))) body)') is
-       @('((lambda (var) body) (assign term))');
-       this is the pattern that ATC looks for.")
-     (xdoc::li
-      "A term @('(let ((var term)) body)'),
-       where @('var') is assignable,
-       @('term') is a statement term for @('fni') transforming @('var')
-       that is
-       either a call of a recursive target function @('fnj') with @('j < i')
-       or an @(tsee if) whose test is a boolean term
-       (not a @('(mbt ...)') or @('(mbt$ ...)')), and
-       @('body') is a loop body term for @('fni')
-       transforming variables @('vars').
-       This represents the C code represented by @('term'),
-       which may modify the variable represented by @('var'),
-       followed by the C code represented by @('body').
-       In translated terms,
-       @('(let ((var term)) body)') is @('((lambda (var) body) term)');
-       this is the pattern that ATC looks for.")
-     (xdoc::li
-      "A term @('(mv-let (var1 ... varn) term body)'),
-       where @('n') &gt; 1,
-       each @('vari') is assignable,
-       @('term') is a statement term for @('fni')
-       transforming @('(var1 ... varn)')
-       that is
-       either a call of a recursive target function @('fnj') with @('j < i')
-       or an @(tsee if) whose test is a boolean term
-       (not a @('(mbt ...)') or @('(mbt$ ...)')), and
-       @('body') is a loop body term for @('fni')
-       transforming variables @('vars').
-       This represents the C code represented by @('term'),
-       which may modify the variables represented by @('var1'), ..., @('varn'),
-       followed by the C code represented by @('body').
-       In translated terms,
-       @('(mv-let (var1 ... varn) term body)') is
-       @('((lambda (mv)
-                   ((lambda (var1 ... varn) body)
-                    (mv-nth \'0 mv)
-                    ...
-                    (mv-nth \'n-1 mv)))
-           term)');
-       this is the pattern that ATC looks for."))
 
     (xdoc::p
      "A <i>C-valued term for</i> @('fni') is
@@ -980,11 +892,7 @@
        the C function is functionally equivalent to the ACL2 function.")
      (xdoc::p
       "If the @(':proofs') input is @('nil'),
-       this theorem is not generated.")
-     (xdoc::p
-      "If any of the target functions is recursive,
-       this theorem is not generated.
-       Proof generation for loops is not fully supported yet.")))
+       this theorem is not generated.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

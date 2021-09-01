@@ -149,7 +149,7 @@
      we first prove lemmas saying that,
      under the assumption @(tsee pseudo-termp),
      the results of @(tsee check-mv-let-call) are smaller.
-     Note that, under that assumpion,
+     Note that, under that assumption,
      the wrapper and the original utility return the same result
      (they only possibly differ on non-terms).
      In proving those lemmas, we need to break the FTY abstraction

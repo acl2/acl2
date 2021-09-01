@@ -237,12 +237,14 @@
 
   (declare (xargs :guard (and (symbolp s)
                               (plist-worldp wrld))))
-  (let ((lst (getpropc s 'stobj nil wrld)))
-    (cond ((null lst)
+  (let ((prop (getpropc s 'stobj nil wrld)))
+    (cond ((not (weak-stobj-property-p prop)) ; i.e., (null prop)
            (er hard? 'stobj-accessors-and-updaters
                "The symbol ~x0 is expected to be a stobj, but it is not."
                s))
-          (t (stobj-accessors-and-updaters-rec lst wrld)))))
+          (t (stobj-accessors-and-updaters-rec
+              (access stobj-property prop :names)
+              wrld)))))
 
 (defmacro make-nth-update-nth-meta-stobj (stobj-name)
 

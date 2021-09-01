@@ -183,7 +183,7 @@
 ; variable(s) of the loop$, provided the target is a cdr-nest around an element
 ; of mvars.  We also extend alist by pairing the iterative variable with the
 ; CAR of the target, except we first ``resolve'' the target by applying the
-; alist to it.  Thus, the alist always maps iterative varibles in mvars to the
+; alist to it.  Thus, the alist always maps iterative variables in mvars to the
 ; car/cdr-nests denoting the first value the iterative variable takes on,
 ; expressed entirely in terms of the original formals.  Thus, if at the
 ; top-level of a fn's body, where the (original) mvars is just the list (x),
@@ -635,4 +635,3 @@
       :on-behalf-of :quiet!
 ; See note below.
       :check-expansion t)))
-

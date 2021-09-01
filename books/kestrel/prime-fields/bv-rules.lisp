@@ -31,23 +31,20 @@
 (local (include-book "kestrel/prime-fields/bind-free-rules" :dir :system))
 
 (defthm fep-of-bvchop
-  (implies (and (< (expt 2 size) p)
-                (integerp p))
+  (implies (< (expt 2 size) p)
            (fep (acl2::bvchop size x)
                 p))
   :hints (("Goal" :in-theory (enable fep))))
 
 (defthm fep-of-bvxor
-  (implies (and (< (expt 2 size) p)
-                (integerp p))
+  (implies (< (expt 2 size) p)
            (fep (acl2::bvxor size x y) p))
   :hints (("Goal" :in-theory (enable fep))))
 
 (defthm fep-of-bvcat
   (implies (and (< (expt 2 (+ highsize lowsize)) p)
                 (natp highsize)
-                (natp lowsize)
-                (integerp p))
+                (natp lowsize))
            (fep (acl2::bvcat highsize highval lowsize lowval)
                 p))
   :hints (("Goal" :cases ((natp highsize))
@@ -73,7 +70,6 @@
 
 (defthm add-of-bvnot-becomes-add-of-neg
   (implies (and (integerp y)
-                (integerp x)
                 (posp n)
                 (posp p))
            (equal (add x (acl2::bvnot n y) p)
@@ -82,7 +78,6 @@
 
 (defthm add-of-bvnot-becomes-add-of-neg-arg2
   (implies (and (integerp y)
-                (integerp x)
                 (posp n)
                 (posp p))
            (equal (add (acl2::bvnot n y) x
@@ -135,7 +130,7 @@
                 (unsigned-byte-p 8 z)
                 ;;(natp w)
                 ;;(natp z)
-                (posp p)
+                (integerp p)
                 (< 512 p) ;tight?
                 )
            (equal (equal (acl2::bvcat 1 x 8 y) (add w z p))
@@ -151,7 +146,7 @@
                 (unsigned-byte-p 8 z)
                 ;;(natp w)
                 ;;(natp z)
-                (posp p)
+                (integerp p)
                 (< 512 p) ;tight?
                 )
            (equal (equal (add w z p) (acl2::bvcat 1 x 8 y))
@@ -542,7 +537,6 @@
 
 (defthmd add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra
   (implies (and (unsigned-byte-p lowsize lowval)
-                (natp lowsize)
                 (natp highsize))
            (equal (add lowval (add (acl2::bvcat highsize highval lowsize 0) extra p) p)
                   (add (acl2::bvcat highsize highval lowsize lowval) extra p)))
@@ -571,7 +565,6 @@
 ;rename
 (defthmd add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-alt
   (implies (and (unsigned-byte-p lowsize lowval)
-                (natp lowsize)
                 (natp highsize))
            (equal (add (acl2::bvcat highsize highval lowsize 0) (add lowval extra p) p)
                   (add (acl2::bvcat highsize highval lowsize lowval) extra p)))
@@ -603,7 +596,6 @@
 ;swaps lowval and the bvcat
 (defthmd add-of-bvcat-of-0-when-unsigned-byte-p-arg1
   (implies (and (unsigned-byte-p lowsize lowval)
-                (natp lowsize)
                 (natp highsize)
                 (posp p))
            (equal (add (acl2::bvcat highsize highval lowsize 0) lowval p)
@@ -617,7 +609,6 @@
 
 (defthmd add-of-bvcat-of-0-when-unsigned-byte-p-arg2
   (implies (and (unsigned-byte-p lowsize lowval)
-                (natp lowsize)
                 (natp highsize)
                 (posp p))
            (equal (add lowval (acl2::bvcat highsize highval lowsize 0) p)
@@ -1098,8 +1089,7 @@
 
 ;; This one commutes the addends in the LHS
 (defthmd add-of-mul-of-2-and-bvcat-and-bit-alt
-  (implies (and (posp p)
-                (< (expt 2 (+ 1 ls hs)) p)
+  (implies (and (< (expt 2 (+ 1 ls hs)) p)
                 (primep p)
                 (bitp bit)
                 (natp ls)
@@ -1121,8 +1111,7 @@
 
 ;;This one has an extra addend, EXTRA.
 (defthmd add-of-mul-of-2-and-bvcat-and-bit-extra
-  (implies (and (posp p)
-                (< (expt 2 (+ 1 ls hs)) p)
+  (implies (and (< (expt 2 (+ 1 ls hs)) p)
                 (primep p)
                 (bitp bit)
                 (natp ls)
@@ -1145,8 +1134,7 @@
 ;; This one commutes the addends in the LHS
 ;;This one has an extra addend, EXTRA.
 (defthmd add-of-mul-of-2-and-bvcat-and-bit-extra-alt
-  (implies (and (posp p)
-                (< (expt 2 (+ 1 ls hs)) p)
+  (implies (and (< (expt 2 (+ 1 ls hs)) p)
                 (primep p)
                 (bitp bit)
                 (natp ls)
