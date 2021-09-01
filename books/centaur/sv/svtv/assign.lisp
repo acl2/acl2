@@ -1036,7 +1036,6 @@
   )
 
 
-
 (define svtv-env-to-tests ((tests svex-env-p)
                             (map svtv-name-lhs-map-p)
                             (updates svex-alist-p))
@@ -1069,7 +1068,12 @@
            (svtv-env-to-tests (svex-alist-eval subst env) map updates))
     :hints(("Goal" :in-theory (enable svtv-subst-to-tests))))
 
-  (defcong svex-alist-eval-equiv equal (svtv-env-to-tests tests map updates) 3))
+  (defcong svex-alist-eval-equiv equal (svtv-env-to-tests tests map updates) 3)
+
+  (defthm svtv-env-to-tests-of-nil
+    (equal (svtv-env-to-tests nil map updates) nil)
+    :hints(("Goal" :in-theory (enable svtv-env-to-4vec-assigns
+                                      4vec-assigns-to-overridetest-assigns)))))
 
 
 
@@ -1116,6 +1120,9 @@
                 (svex-env-boundp key x)))
     :hints(("Goal" :in-theory (e/d (svex-env-boundp)
                                    (<fn>)))))
+
+  (defthm svex-env-override-tests-filter-of-nil
+    (equal (svex-env-override-tests-filter nil val) nil))
 
   (local (in-theory (enable svex-env-fix))))
 
@@ -2598,3 +2605,6 @@
         (mv (msg-list errs) nil)))
     (mv nil
         (change-svtv-fsm x :namemap (append lhsmap x.namemap)))))
+
+
+

@@ -17317,42 +17317,6 @@
                               symbol."
                              (cons #\0 (car form)))
                      ""))))))
-   ((eq (car x) 'check-vars-not-free) ; optimization; see check-vars-not-free
-
-; Warning: Keep this in sync with the code for check-vars-not-free.
-
-    (cond ((not (equal (length x) 3))
-           (trans-er+ x ctx
-                      "CHECK-VARS-NOT-FREE requires exactly two arguments."))
-          ((null (cadr x)) ; optimization for perhaps a common case
-
-; We pass ilk = nil below because a non-erroneous lambda$ always yields a
-; quoted object, so there's no reason to support check-vars-not-free dealing
-; with lambda$s.
-
-           (translate11 (caddr x)
-                        nil ; ilk (see comment above)
-                        stobjs-out bindings
-                        known-stobjs flet-alist x ctx wrld
-                        state-vars))
-          ((not (symbol-listp (cadr x)))
-           (trans-er+ x ctx
-                      "CHECK-VARS-NOT-FREE requires its first argument to be ~
-                       a true-list of symbols."))
-          (t
-           (trans-er-let*
-            ((ans (translate11 (caddr x)
-                               nil ; ilk
-                               stobjs-out bindings
-                               known-stobjs flet-alist x ctx wrld
-                               state-vars)))
-            (let ((msg (check-vars-not-free-test (cadr x) ans)))
-              (cond
-               ((not (eq msg t))
-                (trans-er+ x ctx
-                           "CHECK-VARS-NOT-FREE failed:~|~@0"
-                           msg))
-               (t (trans-value ans))))))))
    ((eq (car x) 'translate-and-test)
     (cond ((not (equal (length x) 3))
            (trans-er+ x ctx
@@ -17406,7 +17370,7 @@
                                       (cadr x) ans msg))
                           ((or (consp msg)
                                (stringp msg))
-                           (trans-er ctx "~@0" msg))
+                           (trans-er+? cform x ctx "~@0" msg))
                           (t (trans-value ans)))))))))))
    ((eq (car x) 'with-local-stobj)
 

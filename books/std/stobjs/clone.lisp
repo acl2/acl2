@@ -257,7 +257,7 @@ the other keyword arguments are unused.  For example:</p>
            '(local (def-ruleset! clone-stobj-tmp-rules nil))
            (clone-stobj-rewrites new-defs old-defs))))
 
-(defun clone-absstobj-exports (absstobj-tuples exports renaming concrete world)
+(defun clone-absstobj-exports (absstobj-tuples exports renaming foundation world)
   (b* (((when (atom absstobj-tuples)) nil)
        ((list* name logic exec updater) (car absstobj-tuples))
        (name-export-lookup (assoc-eq name exports))
@@ -269,17 +269,17 @@ the other keyword arguments are unused.  For example:</p>
                        (if updater-export-lookup
                            (cdr updater-export-lookup)
                          (clone-stobj-change-symbol updater renaming)))))
-       (protect (acl2::unprotected-export-p concrete exec world)))
+       (protect (acl2::unprotected-export-p foundation exec world)))
     (cons `(,new-sym :logic ,logic :exec ,exec
                      ,@(and updater `(:updater ,updater))
                      :protect ,protect)
           (clone-absstobj-exports
-           (cdr absstobj-tuples) exports renaming concrete world))))
+           (cdr absstobj-tuples) exports renaming foundation world))))
 
 (defun clone-absstobj-fn (stobjname name renaming user-exports world)
   (b* ((abs-info (fgetprop stobjname 'acl2::absstobj-info nil world))
        (stobj-info (fgetprop stobjname 'acl2::stobj nil world))
-       (`(,concrete
+       (`(,foundation
           (,?!recog-name ,recog-logic ,recog-exec)
           (,?!creator-name ,create-logic ,create-exec)
           . ,export-absstobj-tuples)
@@ -292,13 +292,13 @@ the other keyword arguments are unused.  For example:</p>
        (creator (acl2::defstobj-fnname name :creator :top nil))
        (recognizer (acl2::defstobj-fnname name :recognizer :top nil)))
     `(defabsstobj ,name
-       :concrete ,concrete
+       :foundation ,foundation
        :recognizer (,recognizer :logic ,recog-logic :exec ,recog-exec)
        :creator (,creator :logic ,create-logic :exec ,create-exec)
        :exports ,(clone-absstobj-exports export-absstobj-tuples exports
                                          renaming
                                          ;; needed for computing :protect args
-                                         concrete world)
+                                         foundation world)
        :congruent-to ,stobjname)))
 
 

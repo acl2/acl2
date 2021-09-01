@@ -405,45 +405,9 @@
 
 
 
-(define svex-env-remove-keys ((keys svarlist-p) (env svex-env-p))
-  :Returns (new-env svex-env-p)
-  (if (atom env)
-      nil
-    (if (mbt (and (consp (car env))
-                  (svar-p (caar env))))
-        (if (member-equal (caar env) (svarlist-fix keys))
-            (svex-env-remove-keys keys (cdr env))
-          (cons (mbe :logic (cons (caar env) (4vec-fix (cdar env)))
-                     :exec (car env))
-                (svex-env-remove-keys keys (cdr env))))
-      (svex-env-remove-keys keys (cdr env))))
-  ///
-  (defret svex-env-lookup-of-<fn>
-    (equal (svex-env-lookup var new-env)
-           (if (member-equal (svar-fix var) (svarlist-fix keys))
-               (4vec-x)
-             (svex-env-lookup var env)))
-    :hints(("Goal" :in-theory (enable svex-env-lookup svex-env-fix))))
 
-  (defret svex-env-boundp-of-<fn>
-    (equal (svex-env-boundp var new-env)
-           (and (not (member-equal (svar-fix var) (svarlist-fix keys)))
-                (svex-env-boundp var env)))
-    :hints(("Goal" :in-theory (enable svex-env-boundp svex-env-fix))))
-
-  (defthm svex-env-remove-keys-of-append
-    (equal (svex-env-remove-keys keys (append x y))
-           (append (svex-env-remove-keys keys x) (svex-env-remove-keys keys y))))
-
-  (defthm svex-env-remove-keys-id
-    (equal (svex-env-remove-keys keys (svex-env-remove-keys keys x))
-           (svex-env-remove-keys keys x)))
-
-  (local (in-theory (enable svex-env-fix))))
-
-
-(defthm base-fsm-step-env-of-svex-env-remove-keys
-  (svex-envs-equivalent (base-fsm-step-env (svex-env-remove-keys
+(defthm base-fsm-step-env-of-svex-env-removekeys
+  (svex-envs-equivalent (base-fsm-step-env (svex-env-removekeys
                                             (svex-alist-keys (base-fsm->nextstate x))
                                             in)
                                            prev-st x)
@@ -456,7 +420,7 @@
   :returns (new-envs svex-envlist-p)
   (if (atom envs)
       nil
-    (cons (svex-env-remove-keys keys (car envs))
+    (cons (svex-env-removekeys keys (car envs))
           (svex-envlist-remove-keys keys (cdr envs))))
   ///
   (defthm base-fsm-eval-of-svex-envlist-remove-statevars
@@ -477,7 +441,7 @@
 
   (defthm svex-envlist-remove-keys-of-svtv-cycle-fsm-inputs
     (equal (svex-envlist-remove-keys keys (svtv-cycle-fsm-inputs
-                                           (svex-env-remove-keys keys in)
+                                           (svex-env-removekeys keys in)
                                            phases))
            (svex-envlist-remove-keys keys (svtv-cycle-fsm-inputs in phases)))
     :hints(("Goal" :in-theory (enable svtv-cycle-fsm-inputs
@@ -544,11 +508,11 @@
                     :in-theory (disable base-fsm-final-state-of-extract-states-from-prev-st)))))
                                   
 
-  (local (defthm svex-env-remove-keys-of-extract
+  (local (defthm svex-env-removekeys-of-extract
            (implies (subsetp (svarlist-fix keys2) (svarlist-fix keys1))
-                    (equal (svex-env-remove-keys keys1 (svex-env-extract keys2 x))
+                    (equal (svex-env-removekeys keys1 (svex-env-extract keys2 x))
                            nil))
-           :hints(("Goal" :in-theory (enable svex-env-extract svex-env-remove-keys svarlist-fix)))))
+           :hints(("Goal" :in-theory (enable svex-env-extract svex-env-removekeys svarlist-fix)))))
 
   (local (include-book "tools/trivial-ancestors-check" :dir :system))
   (local (acl2::use-trivial-ancestors-check))
@@ -580,12 +544,12 @@
                            (base-fsm-eval ins1 prev-st x)))))
 
   (local (defthmd svex-envlist-remove-keys-of-cycle-fsm-inputs-rewrite
-           (implies (and (syntaxp (not (and (consp ins) (eq (car ins) 'svex-env-remove-keys))))
-                         (equal ins1 (svex-env-remove-keys (svex-alist-keys (base-fsm->nextstate x)) ins))
+           (implies (and (syntaxp (not (and (consp ins) (eq (car ins) 'svex-env-removekeys))))
+                         (equal ins1 (svex-env-removekeys (svex-alist-keys (base-fsm->nextstate x)) ins))
                          (syntaxp
                           (prog2$ (cw "ins: ~x0 ins1: ~x1~%" ins ins1)
                                   (case-match ins1
-                                    (('svex-env-remove-keys & ins2)
+                                    (('svex-env-removekeys & ins2)
                                      (not (equal ins2 ins)))
                                     (& t)))))
                     (equal (svex-envlist-remove-keys
