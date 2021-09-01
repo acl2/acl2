@@ -1,0 +1,5 @@
+This circuit is parameterized over the point that is multiplied by the scalar.
+The scalar is an input to the circuit, but the point is not: there is an
+instance of the circuit for each choice of point. The Rust code to generate
+these instances is the function fixed_base_multiplication in ecc.rs, which takes
+the point as argument (the base argument of type Fixed Generator).
