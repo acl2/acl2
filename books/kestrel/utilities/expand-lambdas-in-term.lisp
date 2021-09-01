@@ -25,14 +25,14 @@
 ;; there are none in the alist being used for substitution.
 (defthm-flag-sublis-var-simple
   (defthm lambda-free-termp-of-sublis-var-simple
-    (implies (and (lambda-free-termp form)
+    (implies (and (lambda-free-termp term)
                   (lambda-free-termsp (strip-cdrs alist)))
-             (lambda-free-termp (sublis-var-simple alist form)))
+             (lambda-free-termp (sublis-var-simple alist term)))
     :flag sublis-var-simple)
   (defthm lambda-free-termsp-of-sublis-var-simple-lst
-    (implies (and (lambda-free-termsp l)
+    (implies (and (lambda-free-termsp terms)
                   (lambda-free-termsp (strip-cdrs alist)))
-             (lambda-free-termsp (sublis-var-simple-lst alist l)))
+             (lambda-free-termsp (sublis-var-simple-lst alist terms)))
     :flag sublis-var-simple-lst)
   :hints (("Goal" :in-theory (enable sublis-var-simple
                                      sublis-var-simple-lst))))

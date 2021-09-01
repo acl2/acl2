@@ -123,26 +123,23 @@
   (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
   (defopeners-mut-rec sublis-var-simple)
   (must-be-redundant
-   (defthm
-     sublis-var-simple-base-1
-     (implies (atom form)
-              (equal (sublis-var-simple alist form)
-                     ((lambda (a form) (if a (cdr a) form))
-                      (assoc-equal form alist)
-                      form))))
-   (defthm
-     sublis-var-simple-base-2
-     (implies (and (not (atom form))
-                   (eq 'quote (car form)))
-              (equal (sublis-var-simple alist form) form)))
-   (defthm
-     sublis-var-simple-unroll
-     (implies (if (not (atom form))
-                  (not (eq 'quote (car form)))
+   (defthm sublis-var-simple-base-1
+     (implies (atom term)
+              (equal (sublis-var-simple alist term)
+                     ((lambda (res term) (if res (cdr res) term))
+                      (assoc-equal term alist)
+                      term))))
+   (defthm sublis-var-simple-base-2
+     (implies (and (not (atom term))
+                   (eq 'quote (car term)))
+              (equal (sublis-var-simple alist term) term)))
+   (defthm sublis-var-simple-unroll
+     (implies (if (not (atom term))
+                  (not (eq 'quote (car term)))
                 'nil)
-              (equal (sublis-var-simple alist form)
-                     (cons (car form)
-                           (sublis-var-simple-lst alist (cdr form))))))))
+              (equal (sublis-var-simple alist term)
+                     (cons (car term)
+                           (sublis-var-simple-lst alist (cdr term))))))))
 
 
 ;;test of the special handling for 0-ary functions (which get expanded during normalization)
