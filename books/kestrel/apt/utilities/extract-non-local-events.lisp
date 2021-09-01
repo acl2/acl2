@@ -1,6 +1,6 @@
 ; A utility to filter a list of events
 ;
-; Copyright (C) 2017-2020 Kestrel Institute
+; Copyright (C) 2017-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -73,3 +73,13 @@
        nil
      (append (extract-non-local-events target-types (first events))
              (extract-non-local-events-list target-types (rest events))))))
+
+(defun extract-non-local-defuns (event)
+  ;; todo: consider adding other defune variants, such as defun-nx and defund-nx
+  (extract-non-local-events '(defun defund) event))
+
+(defun extract-single-non-local-defun (events)
+  (let ((defuns (extract-non-local-defuns events)))
+    (if (not (eql 1 (len defuns)))
+        (er hard? 'extract-single-non-local-defun "Expected a single exported defun, but we got ~x0.~%" defuns)
+      (first defuns))))

@@ -26,6 +26,7 @@
 ;; REC is either nil (function is non-recursive), :single, or :mutual.
 ;; TODO: Improve this to use the $not-normalized rules if indicated for fn and/or new-fn (add options for this)
 ;; The BASE-THEORY is often (theory 'minimal-theory).
+;; TODO: Add support for passing in the becomes theorem name?
 (defun make-becomes-theorem (fn ; name of the old function
                              new-fn ; name of the new function (must have the same params)
                              rec ; nil (for non-recursive), :single, or :mutual
@@ -40,11 +41,12 @@
                               (booleanp thm-enable)
                               (true-listp enables))))
   (let ((formals (fn-formals fn (w state)))
+        ;; Choose which kind of defthm to use (todo: add support for defun-nx and defund-nx):
         (defthm-variant (if thm-enable 'defthm 'defthmd)))
     `(,defthm-variant ,(becomes-theorem-name fn new-fn)
        (equal (,fn ,@formals)
               (,new-fn ,@formals))
-       :hints ,(if (eq rec :mutual) ;weird format for make-flag hints:
+       :hints ,(if (eq rec :mutual) ;weird format for make-flag hints (todo: switch to putting all the hints at the top-level of the make-flag):
                    `('(:in-theory (append '(,fn ,new-fn ,@enables) ,base-theory)
                                   :do-not '(generalize eliminate-destructors)
                                   :expand ((,fn ,@formals)
@@ -61,6 +63,7 @@
        ,@(and (eq rec :mutual) (list :flag fn)))))
 
 ;; Make the "becomes theorems" for the given FNS, using the FUNCTION-RENAMING to get their new names.
+;; This is for the mutual-recursion case only.
 ;; TODO: This could wrap the theorems in a call to defthm-flag-xxx.
 (defun make-becomes-theorems (fns
                               enables-for-each

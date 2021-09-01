@@ -23,6 +23,7 @@
 (include-book "transformation-prologue")
 (include-book "transformation-table")
 (include-book "untranslate-specifiers")
+(include-book "verify-guards-for-defun")
 (include-book "xdoc-constructors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -253,3 +253,59 @@
        :EXPAND ((WEIRD-LEN X))
        :IN-THEORY (UNION-THEORIES '(WEIRD-LEN$NOT-NORMALIZED)
                                   (THEORY 'MINIMAL-THEORY)))))))
+
+;; Test that uses :hyps (non-recursive function)
+(deftest
+  (defopeners natp :hyps ((syntaxp (quotep x))))
+  (must-be-redundant
+   (defthm natp-base
+     (implies (syntaxp (quotep x))
+              (equal (natp x)
+                     (if (integerp x) (not (< x '0)) 'nil))))))
+
+;; Test that uses :hyps (recursive function)
+(deftest
+  (defopeners binary-append :hyps ((syntaxp (quotep x))))
+  (must-be-redundant
+   (DEFTHM BINARY-APPEND-BASE
+     (IMPLIES (AND (SYNTAXP (QUOTEP X))
+                   (ENDP X))
+              (EQUAL (BINARY-APPEND X Y) Y)))
+   (DEFTHM BINARY-APPEND-UNROLL
+     (IMPLIES (and (SYNTAXP (QUOTEP X))
+                   (NOT (ENDP X)))
+              (EQUAL (BINARY-APPEND X Y)
+                     (CONS (CAR X)
+                           (BINARY-APPEND (CDR X) Y))))
+     :HINTS
+     (("Goal"
+       :EXPAND ((BINARY-APPEND X Y))
+       :IN-THEORY (UNION-THEORIES '(BINARY-APPEND$NOT-NORMALIZED)
+                                  (THEORY 'MINIMAL-THEORY)))))))
+
+;; Test with uses :hyps with more than 1 hyp (non-recursive function)
+(deftest
+  (defopeners natp :hyps ((syntaxp (quotep x)) (< x 0)))
+  (must-be-redundant
+   (DEFTHM NATP-BASE
+     (IMPLIES (and (SYNTAXP (QUOTEP X))
+                   (< X 0))
+                (EQUAL (NATP X)
+                       (IF (INTEGERP X) (NOT (< X '0)) 'NIL))))))
+
+;; Test that uses :hyps with more than 1 hyp (recursive function)
+(deftest
+  (defopeners binary-append :hyps ((syntaxp (quotep x)) (< x y)))
+  (must-be-redundant
+   (DEFTHM BINARY-APPEND-BASE
+     (IMPLIES (and (SYNTAXP (QUOTEP X))
+                   (< X Y)
+                   (ENDP X))
+              (EQUAL (BINARY-APPEND X Y) Y)))
+   (DEFTHM BINARY-APPEND-UNROLL
+     (IMPLIES (and (SYNTAXP (QUOTEP X))
+                   (< X Y)
+                   (NOT (ENDP X)))
+              (EQUAL (BINARY-APPEND X Y)
+                     (CONS (CAR X)
+                           (BINARY-APPEND (CDR X) Y)))))))

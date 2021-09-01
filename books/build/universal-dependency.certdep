@@ -3,3 +3,6 @@
 ; required.
 
 Version 8.4 release
+
+2021-08-30: Recertification seems needed after renaming of source
+function print-list-without-stobj-arrays.
