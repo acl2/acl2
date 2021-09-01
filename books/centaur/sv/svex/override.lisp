@@ -590,7 +590,20 @@
                                       svex-override-triplelist-vars))))
 
   (defcong svex-envs-similar equal (svex-override-triplelist-env-ok x override-env prev-env) 2)
-  (defcong svex-envs-similar equal (svex-override-triplelist-env-ok x override-env prev-env) 3))
+  (defcong svex-envs-similar equal (svex-override-triplelist-env-ok x override-env prev-env) 3)
+
+  (defthm svex-override-triplelist-env-ok-of-cons
+    (equal (svex-override-triplelist-env-ok (cons trip rest) override-env prev-env)
+           (and (b* (((svex-override-triple trip))
+                     (testval (svex-env-lookup trip.testvar override-env))
+                     (valval (svex-env-lookup trip.valvar override-env))
+                     (exprval (svex-eval trip.valexpr prev-env)))
+                  (equal (4vec-bit?! testval valval 0)
+                         (4vec-bit?! testval exprval 0)))
+                (svex-override-triplelist-env-ok rest override-env prev-env))))
+
+  (defthm svex-override-triplelist-env-ok-of-nil
+    (equal (svex-override-triplelist-env-ok nil env prev-env) t)))
                               
 (define svex-override-triple-check ((test svex-p)
                                     (then svex-p)
@@ -761,6 +774,8 @@
           (svexlist-check-overridetriples (cdr x) triples))))
   ///
 
+  (memoize 'svex-check-overridetriples-call)
+
   (local (defthm member-of-cons
            (iff (member k (cons a b))
                 (or (equal k a)
@@ -851,6 +866,23 @@
                         (svexlist-eval x env))))
       :hints ('(:expand <call>))
       :fn svexlist-check-overridetriples));; )
+
+  (encapsulate nil
+    (local (defthm svex-alist-eval-is-pairlis$
+             (equal (svex-alist-eval x env)
+                    (pairlis$ (svex-alist-keys x)
+                              (svexlist-eval (svex-alist-vals x) env)))
+             :hints(("Goal" :in-theory (enable svex-alist-vals svex-alist-keys svex-alist-eval
+                                               svexlist-eval)))))
+
+    (defthm remove-override-vars-from-svex-alist-eval-when-svexlist-check-overridetriples
+      (b* ((vars  (svex-override-triplelist-vars triples))
+           (prev-env (svex-env-removekeys vars env)))
+        (implies (and (not (svexlist-check-overridetriples (svex-alist-vals x) triples))
+                      (no-duplicatesp-equal vars)
+                      (svex-override-triplelist-env-ok triples env prev-env))
+                 (equal (svex-alist-eval x prev-env)
+                        (svex-alist-eval x env))))))
 
 
 

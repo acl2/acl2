@@ -819,3 +819,42 @@ is being given the right number of arguments.</p>
                     (svexlist-unquote x)))
     :hints(("Goal" :in-theory (e/d (svexlist-eval svex-eval)
                                    (svexlist-unquote-is-4veclist-fix))))))
+
+
+
+
+
+(defines svex-variable-free-p
+  (define svex-variable-free-p ((x svex-p))
+    :measure (svex-count x)
+    (svex-case x
+      :call (svexlist-variable-free-p x.args)
+      :quote t
+      :var nil))
+  (define svexlist-variable-free-p ((x svexlist-p))
+    :measure (svexlist-count x)
+    (if (atom x)
+        t
+      (and (svex-variable-free-p (car x))
+           (svexlist-variable-free-p (cdr x)))))
+  ///
+  (defthm-svex-variable-free-p-flag
+    (defthm eval-when-svex-variable-free-p
+      (implies (and (syntaxp (not (equal env ''nil)))
+                    (svex-variable-free-p x))
+               (equal (svex-eval x env)
+                      (svex-eval x nil)))
+      :flag svex-variable-free-p)
+    (defthm eval-when-svexlist-variable-free-p
+      (implies (and (syntaxp (not (equal env ''nil)))
+                    (svexlist-variable-free-p x))
+               (equal (svexlist-eval x env)
+                      (svexlist-eval x nil)))
+      :hints ('(:expand ((:free (env) (svexlist-eval x env)))))
+      :flag svexlist-variable-free-p))
+  (in-theory (Disable eval-when-svex-variable-free-p
+                      eval-when-svexlist-variable-free-p))
+
+  (memoize 'svex-variable-free-p :condition '(svex-case x :call))
+
+  (fty::deffixequiv-mutual svex-variable-free-p))
