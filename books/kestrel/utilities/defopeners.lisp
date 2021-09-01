@@ -508,7 +508,7 @@
               ,claim
               :hints (("Goal" ;:in-theory (enable ,fn)
                        :expand ((,fn ,@formals))
-                       :in-theory (union-theories '(,(add-suffix fn "$NOT-NORMALIZED"))
+                       :in-theory (union-theories '(,(install-not-normalized-name fn))
                                                   (theory 'minimal-theory)))))
             (make-base-theorems (rest claims) (+ 1 num) totalnum defthmnameprefix fn formals disable)))))
 
@@ -535,7 +535,7 @@
               ,claim
               :hints (("Goal" ;:in-theory (enable ,fn)
                        :expand ((,fn ,@formals))
-                       :in-theory (union-theories '(,(add-suffix fn "$NOT-NORMALIZED"))
+                       :in-theory (union-theories '(,(install-not-normalized-name fn))
                                                   (theory 'minimal-theory)))))
             (make-unroll-theorems (rest claims) (+ 1 num) totalnum defthmnameprefix fn formals disable)))))
 

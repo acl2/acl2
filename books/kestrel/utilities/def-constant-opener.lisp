@@ -60,7 +60,7 @@
        ;; (body (remove-guard-holders body (w state))) ;why?
        (formals (fn-formals fn (w state)))
        (defthm-variant (if disable 'defthmd 'defthm))
-       (not-normalized-theorem-name (pack-in-package-of-symbol fn fn '$not-normalized))
+       (not-normalized-theorem-name (install-not-normalized-name fn))
        (constant-opener-name (pack-in-package-of-symbol fn fn '-constant-opener)))
     `(progn
        (encapsulate ()
