@@ -17631,22 +17631,16 @@
                                            state))))))))))))))))))))))
 
 (defconst *defun-sk-keywords*
-  '(:quant-ok :skolem-name :thm-name :rewrite :strengthen :witness-dcls
+  '(:quant-ok :skolem-name :thm-name :rewrite :strengthen
               :constrain :verbose
               #+:non-standard-analysis :classicalp))
 
 (defun non-acceptable-defun-sk-p (name args body quant-ok rewrite exists-p
-                                       dcls witness-dcls)
+                                       dcls)
 
 ; Since this is just a macro, we only do a little bit of vanilla checking,
 ; leaving it to the real events to implement the most rigorous checks.
 
-  (prog2$
-   (or (null witness-dcls)
-       (cw "~%**NOTE**: The keyword :WITNESS-DCLS of ~x0 is deprecated and ~
-            will likely no longer be supported after ACL2 Version 8.4.  Use ~
-            DECLARE forms instead.  See :DOC defun-sk.~|"
-           'defun-sk))
   (let ((bound-vars (and (true-listp body) ;this is to guard cadr
                          (cadr body)
                          (if (atom (cadr body))
@@ -17662,37 +17656,28 @@
             defun-sk are :direct and :default.  ~x0 is thus illegal."
            rewrite))
      ((not (and (plausible-dclsp dcls)
-                (not (get-string dcls))
-                (plausible-dclsp witness-dcls)
-                (not (get-string witness-dcls))))
+                (not (get-string dcls))))
       (let ((str "The ~@0 of a DEFUN-SK event must be of the form (dcl ... ~
                   dcl), where each dcl is a DECLARE form.  The DECLARE forms ~
                   may contain TYPE, IGNORE, and XARGS entries, where the ~
                   legal XARGS keys are ~&1.  The following value for the ~@0 ~
                   is thus illegal: ~x2. See :DOC DEFUN-SK."))
-        (cond ((and (plausible-dclsp dcls)
-                    (not (get-string dcls)))
-               (msg str
-                    ":WITNESS-DCLS argument"
-                    *xargs-keywords*
-                    witness-dcls))
-              (t
-               (msg str
-                    "DECLARE forms"
-                    *xargs-keywords*
-                    dcls)))))
+        (msg str
+             "DECLARE forms"
+             *xargs-keywords*
+             dcls)))
      ((not (true-listp args))
       (msg "The second argument of DEFUN-SK must be a true list of legal ~
             variable names, but ~x0 is not a true-listp."
            args))
      ((not (arglistp args))
       (mv-let
-       (culprit explan)
-       (find-first-bad-arg args)
-       (msg "The formal parameters (second argument) of a DEFUN-SK form must ~
+        (culprit explan)
+        (find-first-bad-arg args)
+        (msg "The formal parameters (second argument) of a DEFUN-SK form must ~
              be a true list of distinct, legal variable names.  ~x0 is not ~
              such a list.  The element ~x1 violates the rules because it ~@2."
-            args culprit explan)))
+             args culprit explan)))
      ((not (and (true-listp body)
                 (equal (length body) 3)
                 (member-eq (car body) '(forall exists))
@@ -17734,7 +17719,7 @@
                'forall
              'exists)
            body))
-     (t nil)))))
+     (t nil))))
 
 (defun definition-rule-name (name)
   (declare (xargs :guard (symbolp name)))
@@ -17891,19 +17876,16 @@
                              (if pair
                                  (cdr pair)
                                t)))
-               (witness-dcls-pair (assoc-eq :witness-dcls keyword-alist))
                (dcls0 (butlast dcls-and-body 1))
-               (witness-dcls (cdr witness-dcls-pair))
-               (dcls1 (append? dcls0 witness-dcls))
                (body (car (last dcls-and-body)))
                (exists-p (and (true-listp body)
                               (eq (car body) 'exists)))
                (msg (non-acceptable-defun-sk-p name args body quant-ok rewrite
-                                               exists-p dcls0 witness-dcls)))
+                                               exists-p dcls0)))
           (if msg
               `(er soft ',ctx "~@0" ',msg)
             (mv-let (erp guard-p verify-guards-p non-exec-p guard-hints dcls)
-              (parse-defun-sk-dcls dcls1)
+              (parse-defun-sk-dcls dcls0)
               (if erp ; a msgp
                   `(er soft ',ctx "~@0" ',erp)
                 (let* ((bound-vars (and (true-listp body)
@@ -20711,7 +20693,6 @@
                               name
                               &key
                               foundation
-                              concrete ; deprecated alias for foundation
                               recognizer creator fixer exports
                               protect-default
                               congruent-to
@@ -20724,7 +20705,6 @@
 
   (let* ((the-live-name (the-live-var name))
          (recognizer (or recognizer (absstobj-name name :RECOGNIZER)))
-         (foundation (or foundation concrete))
          (st$c (cond ((null foundation) (absstobj-name name :C))
                      ((consp foundation) (car foundation))
                      (t foundation)))
@@ -20828,55 +20808,29 @@
                                     *user-stobj-alist*))))
                  ',name))))))))))
 
-(defun defabsstobj-concrete-deprecation-chk (foundation concrete ctx state)
-  (cond ((and concrete foundation)
-         (er soft ctx
-             "It is illegal to supply non-nil values for both defabsstobj ~
-              keywords :CONCRETE and :FOUNDATION."))
-        (concrete
-         (pprogn (warning$ ctx
-                           "Deprecated"
-                           "The keyword :CONCRETE is deprecated and will ~
-                            likely no longer be supported after ACL2 Version ~
-                            8.4.  Use :FOUNDATION instead.")
-                 (value nil)))
-        (t (value nil))))
-
-(defmacro with-defabsstobj-concrete-deprecation-chk (foundation concrete ctx
-                                                                form)
-
-; Note that foundation and concrete are quoted below, but ctx and form are not.
-
-  `(er-progn
-    (defabsstobj-concrete-deprecation-chk ',foundation ',concrete ,ctx state)
-    ,form))
-
 #+acl2-loop-only
 (defmacro defabsstobj (&whole event-form
                               name
                               &key
                               foundation
-                              concrete ; deprecated alias for foundation
                               recognizer creator fixer corr-fn exports
                               protect-default
                               congruent-to missing-only)
   (declare (xargs :guard (and (symbolp name)
                               (booleanp protect-default))))
-  (list 'with-defabsstobj-concrete-deprecation-chk
-        foundation concrete ''defabsstobj
-        (list 'defabsstobj-fn
-              (list 'quote name)
-              (list 'quote (or foundation concrete))
-              (list 'quote recognizer)
-              (list 'quote creator)
-              (list 'quote fixer)
-              (list 'quote corr-fn)
-              (list 'quote exports)
-              (list 'quote protect-default)
-              (list 'quote congruent-to)
-              (list 'quote missing-only)
-              'state
-              (list 'quote event-form))))
+  (list 'defabsstobj-fn
+        (list 'quote name)
+        (list 'quote foundation)
+        (list 'quote recognizer)
+        (list 'quote creator)
+        (list 'quote fixer)
+        (list 'quote corr-fn)
+        (list 'quote exports)
+        (list 'quote protect-default)
+        (list 'quote congruent-to)
+        (list 'quote missing-only)
+        'state
+        (list 'quote event-form)))
 
 (defun concrete-stobj (st wrld)
   (let ((absstobj-info
@@ -20892,28 +20846,25 @@
                                              name
                                              &key
                                              foundation
-                                             concrete ; deprecated alias for foundation
                                              recognizer creator fixer
                                              corr-fn exports protect-default
                                              congruent-to)
   (declare (xargs :guard (symbolp name)))
   (let ((ctx (list 'quote (msg "( DEFABSSTOBJ-MISSING-EVENTS ~x0 ...)" name))))
-    (list 'with-defabsstobj-concrete-deprecation-chk
-          foundation concrete ctx
-          (list 'defabsstobj-fn1
-                (list 'quote name)
-                (list 'quote (or foundation concrete))
-                (list 'quote recognizer)
-                (list 'quote creator)
-                (list 'quote fixer)
-                (list 'quote corr-fn)
-                (list 'quote exports)
-                (list 'quote protect-default)
-                (list 'quote congruent-to)
-                (list 'quote t) ; missing-only
-                ctx
-                'state
-                (list 'quote event-form)))))
+    (list 'defabsstobj-fn1
+          (list 'quote name)
+          (list 'quote foundation)
+          (list 'quote recognizer)
+          (list 'quote creator)
+          (list 'quote fixer)
+          (list 'quote corr-fn)
+          (list 'quote exports)
+          (list 'quote protect-default)
+          (list 'quote congruent-to)
+          (list 'quote t) ; missing-only
+          ctx
+          'state
+          (list 'quote event-form))))
 
 (defun redundant-defabsstobjp (name event-form wrld)
   (and (getpropc name 'stobj nil wrld)
@@ -20978,10 +20929,10 @@
 (defun absstobj-correspondence-formula (f$a f$c corr-fn formals guard-pre st
                                             st$c wrld)
 
-; F$A and f$c are the abstract and foundational ("concrete") versions of some
-; exported function whose formals are the given formals.  If f$c returns a
-; single non-stobj value, then the formula looks as follows, where guard-pre is
-; the result of restating the guard on f$a in terms of formals (but still using
+; F$A and f$c are the abstract and foundational versions of some exported
+; function whose formals are the given formals.  If f$c returns a single
+; non-stobj value, then the formula looks as follows, where guard-pre is the
+; result of restating the guard on f$a in terms of formals (but still using
 ; st$ap rather than stp).
 
 ; (IMPLIES (AND (corr-fn st$c st)
@@ -21029,8 +20980,8 @@
 
 (defun absstobj-preserved-formula (f$a f$c formals guard-pre st st$c st$ap wrld)
 
-; F$A and f$c are the :logic and :exec ("abstract" and "concrete") versions of
-; some exported function.  If these return a single stobj value, then the
+; F$A and f$c are the :logic and :exec ("abstract" and "foundational") versions
+; of some exported function.  If these return a single stobj value, then the
 ; formula looks as follows, where guard-pre is the result of restating the
 ; guard on f$a in terms of formals (but still using st$ap rather than stp).
 ; Although guard-pre may often include the conjunct (st$ap st), we do not
@@ -21207,12 +21158,12 @@
 
 (defun unprotected-export-p (st$c name wrld)
 
-; Note that even if st$c is an abstract stobj (while serving as the "concrete
-; stobj", i.e., foundational stobj, for a proposed abstract stobj), we do not
-; concern ourselves here with whether st$c primitives are themselves
-; unprotected.  That's because actually, they are guaranteed to be protected,
-; either because they update atomically or because the :PROTECT keyword was
-; supplied at the time the abstract stobj st$c was admitted.
+; Note that even if st$c is an abstract stobj (while serving as the
+; foundational stobj for a proposed abstract stobj), we do not concern
+; ourselves here with whether st$c primitives are themselves unprotected.
+; That's because actually, they are guaranteed to be protected, either because
+; they update atomically or because the :PROTECT keyword was supplied at the
+; time the abstract stobj st$c was admitted.
 
   (and (member-eq st$c (stobjs-out name wrld))
        (eq t (fn-stobj-updates-p st$c name wrld))))

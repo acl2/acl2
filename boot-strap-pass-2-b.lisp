@@ -662,15 +662,6 @@
      (add-macro-alias ,old ,new)
      (value-triple ',old)))
 
-(defdeprecate symbol-< symbol< "8.4")
-(defdeprecate strict-symbol-<-sortedp strict-symbol<-sortedp "8.4")
-(defdeprecate strict-merge-symbol-< strict-merge-symbol< "8.4")
-(defdeprecate strict-merge-sort-symbol-< strict-merge-sort-symbol< "8.4")
-(defdeprecate strict-merge-sort-symbol-<-cdrs strict-merge-sort-symbol<-cdrs "8.4")
-(defdeprecate merge-symbol-< merge-symbol< "8.4")
-(defdeprecate merge-sort-symbol-< merge-sort-symbol< "8.4")
-(defdeprecate logical-defun get-defun-event "8.4")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

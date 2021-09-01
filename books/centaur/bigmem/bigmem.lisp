@@ -211,7 +211,7 @@
 
 (acl2::defabsstobj-events mem
 
-  :concrete mem$c
+  :foundation mem$c
 
   :recognizer (memp :logic mem$ap :exec mem$cp)
 
