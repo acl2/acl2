@@ -2178,7 +2178,13 @@
           (acl2::value (list items type limit))))
        ((when (and (pseudo-term-case term :var)
                    (equal xforming (list (pseudo-term-var->name term)))))
-        (acl2::value (list nil nil (pseudo-term-quote 0))))
+        (if (not (irecursivep+ fn (w state)))
+            (acl2::value (list nil nil (pseudo-term-quote 0)))
+          (er-soft+ ctx t (list nil nil nil)
+                    "A loop body must end with ~
+                     a recursive call on every path, ~
+                     but it ends with ~x0 instead."
+                    term)))
        ((when (and (pseudo-term-case term :var)
                    (member-eq :array-writes experimental)
                    (b* ((var (pseudo-term-var->name term))
@@ -2190,7 +2196,13 @@
        ((when (and okp
                    (>= (len terms) 2)
                    (equal terms xforming)))
-        (acl2::value (list nil nil (pseudo-term-quote 0))))
+        (if (not (irecursivep+ fn (w state)))
+            (acl2::value (list nil nil (pseudo-term-quote 0)))
+          (er-soft+ ctx t (list nil nil nil)
+                    "A loop body must end with ~
+                     a recursive call on every path, ~
+                     but it ends with ~x0 instead."
+                    term)))
        ((when (and okp
                    (member-eq :array-writes experimental)
                    (consp terms)))

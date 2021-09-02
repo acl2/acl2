@@ -304,7 +304,9 @@
        because it just serves to conclude
        the computation in the body of the loop.")
      (xdoc::li
-      "A term @('var'), when @('vars') is the singleton list @('(var)').
+      "A term @('var'),
+       when @('vars') is the singleton list @('(var)')
+       and when @('fni') is not recursive.
        This represents no actual C code,
        because it just serves to conclude
        preceding statements that may modify @('var'),
@@ -312,7 +314,8 @@
        the possibly modified variable must be returned by the term.")
      (xdoc::li
       "A term @('(mv var1 ... varn)'),
-       when @('vars') is the list @('(var1 ... varn)') with @('n') &gt; 1.
+       when @('vars') is the list @('(var1 ... varn)') with @('n') &gt; 1
+       and when @('fni') is not recursive.
        This represents no actual C code,
        because it just serves to conclude
        preceding statements that may modify @('var1'), ..., @('varn'),
