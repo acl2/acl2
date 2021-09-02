@@ -30,6 +30,7 @@
 (include-book "prune-with-contexts-tests")
 
 (include-book "rewriter-tests")
+(include-book "rewriter-alt-tests")
 (include-book "prune-tests")
 (include-book "unroll-spec-tests")
 
