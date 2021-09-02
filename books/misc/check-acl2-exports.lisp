@@ -203,10 +203,6 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-; The following symbols should be removed from *acl2-exports*.
-
-;   ADD-RAW-ARITY REMOVE-RAW-ARITY
-
   ))
 
 (defconst *special-ops*
