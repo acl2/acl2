@@ -4093,6 +4093,7 @@
                                   (exec-stmt-while-for-fn-thm symbolp)
                                   (termination-of-fn-thm symbolp)
                                   (natp-of-measure-of-fn-thm symbolp)
+                                  (correct-body-thm symbolp)
                                   (limit pseudo-termp)
                                   (names-to-avoid symbol-listp)
                                   state)
@@ -4153,6 +4154,10 @@
      (ii) the definition of the specialized @(tsee exec-stmt-while);
      (iii) the rule saying that the measure yields a natural number; and
      (iv) the termination theorem of the loop function, suitably instantiated.
+     We also pass the theorem asserting the correctness of the loop body:
+     this is expected to be used as a rewrite rule for the body,
+     making its symbolic execution unnecessary here;
+     this is a step towards more modular and controlled proofs.
      Given the correctness lemma, the correctness theorem is easily proved,
      via the lemma and the generate theorem that equates
      the specialized @(tsee exec-stmt-while) to the general one."))
@@ -4191,11 +4196,11 @@
        (concl-lemma `(equal (,exec-stmt-while-for-fn ,compst-var ,limit-var)
                             (b* ((,binding (,fn ,@args)))
                               (mv nil ,final-compst))))
-       (concl-thm `(equal (exec-stmt-while  ',loop-test
-                                            ',loop-body
-                                            ,compst-var
-                                            ,fenv-var
-                                            ,limit-var)
+       (concl-thm `(equal (exec-stmt-while ',loop-test
+                                           ',loop-body
+                                           ,compst-var
+                                           ,fenv-var
+                                           ,limit-var)
                           (b* ((,binding (,fn ,@args)))
                             (mv nil ,final-compst))))
        (returns-value-thms
@@ -4221,7 +4226,8 @@
                                           ',returns-value-thms
                                           ',correct-thms
                                           ',measure-thms
-                                          '(,natp-of-measure-of-fn-thm))
+                                          '(,natp-of-measure-of-fn-thm)
+                                          '(,correct-body-thm))
                        :use ((:instance (:guard-theorem ,fn)
                               :extra-bindings-ok ,@gthm-instantiation)
                              (:instance ,termination-of-fn-thm
@@ -4360,7 +4366,7 @@
        ((when erp) (mv erp (list nil nil nil nil nil) state))
        ((mv erp
             (list body-local-events
-                  &
+                  correct-body-thm
                   names-to-avoid)
             state)
         (atc-gen-loop-body-correct-thm fn
@@ -4396,6 +4402,7 @@
                                   exec-stmt-while-for-fn-thm
                                   termination-of-fn-thm
                                   natp-of-measure-of-fn-thm
+                                  correct-body-thm
                                   loop-limit
                                   names-to-avoid state))
        ((when erp) (mv erp (list nil nil nil nil) state))
