@@ -1702,6 +1702,9 @@
                     x))
     :hints (("Goal"
              :do-not '(preprocess)
+             :expand ((4VEC-PART-SELECT START 1 0)
+                      (SV::4VEC->UPPER START)
+                      (SV::4VEC->LOWER START))
              :use ((:instance 4vec-part-select-of-negated-bit))
              :in-theory (e/d ()
                              (

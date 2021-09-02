@@ -1227,10 +1227,10 @@
                       (cw "ATTENTION! (rp-termp (rp-rhs rule)) failed! RHS of the ~
     rule does not satisfy rp::rp-termp. ~%")))
 
-             (or (not (include-fnc (rp-lhs rule) 'if))
+             #|(or (not (include-fnc (rp-lhs rule) 'if))
                  (and warning
                       (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'if))
-    failed! LHS cannot contain an instance of 'if'. ~%")))
+    failed! LHS cannot contain an instance of 'if'. ~%")))|#
              (or (consp (rp-lhs rule))
                  (and warning
                       (cw "ATTENTION! (consp (rp-lhs rule)) failed! LHS cannot
@@ -1298,20 +1298,54 @@
  :parents (rp-utilities)
  :short "Removes all instances of 'rp' from a term"
  (define ex-from-rp-all (term)
+   :returns (res )
    (b* ((term (ex-from-rp term)))
      (cond ((atom term)
             term)
            ((quotep term)
             term)
            (t
-            (cons (car term)
-                  (ex-from-rp-all-lst (cdr term)))))))
+            (cons-with-hint (car term)
+                            (ex-from-rp-all-lst (cdr term))
+                            term)))))
 
  (define ex-from-rp-all-lst (lst)
+   :returns (res-lst)
    (if (atom lst)
        lst
-     (cons (ex-from-rp-all (car lst))
-           (ex-from-rp-all-lst (cdr lst))))))
+     (cons-with-hint (ex-from-rp-all (car lst))
+                     (ex-from-rp-all-lst (cdr lst))
+                     lst))))
+
+(acl2::defines
+    ex-from-rp-all2
+    :parents (rp-utilities)
+    :short "Removes all instances of 'rp' from a term, including the stuff under falist"
+    :prepwork ((local
+                (in-theory (enable is-rp
+                                   is-rp-loose))))
+    (define ex-from-rp-all2 (term)
+      :returns (res)
+      (cond ((atom term)
+             term)
+            ((quotep term)
+             term)
+            ((is-falist term)
+             (ex-from-rp-all2 (caddr term)))
+            ((is-rp-loose term)
+             (ex-from-rp-all2 (caddr term)))
+            (t
+             (cons-with-hint (car term)
+                             (ex-from-rp-all2-lst (cdr term))
+                             term))))
+
+    (define ex-from-rp-all2-lst (lst)
+      :returns (res-lst)
+      (if (atom lst)
+          lst
+          (cons-with-hint (ex-from-rp-all2 (car lst))
+                          (ex-from-rp-all2-lst (cdr lst))
+                          lst))))
 
 #|(encapsulate
   nil

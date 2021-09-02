@@ -50,6 +50,8 @@
 
 (make-flag get-lambda-free-vars :defthm-macro-name defthm-get-lambda-free-vars)
 
+(make-flag ex-from-rp-all2 :defthm-macro-name defthm-ex-from-rp-all2)
+
 (local
  (make-flag get-lambda-free-vars :defthm-macro-name
             defthm-get-lambda-free-vars))
@@ -770,7 +772,7 @@
             ;;(rp-syntaxp (rp-rhs rule))
             (not (include-fnc (rp-rhs rule) 'falist))
             (not (include-fnc (rp-hyp rule) 'falist))
-            (not (include-fnc (rp-lhs rule) 'if))
+            ;;(not (include-fnc (rp-lhs rule) 'if))
             (not (include-fnc (rp-lhs rule) 'synp))
             (no-free-variablep rule)
             (not (include-fnc (rp-lhs rule) 'list))
@@ -1106,3 +1108,44 @@
                            (RP-STATE-PRESERVEDP-SK
                             VALID-RP-STATE-SYNTAXP-AUX
                             RP-STATEP)))))
+
+
+
+#|(local
+ (defthmd rp-termp-ex-from-rp-all2-lemma
+     (implies (syntaxp (not (include-fnc term 'ex-from-rp)))
+              (equal (rp-termp term)
+                     (and (hide (rp-termp term))
+                          (rp-termp (ex-from-rp term))))) 
+  :hints
+  (("goal"
+    :expand (hide (rp-termp term))
+    :in-theory
+    (e/d (ex-from-rp-loose ex-from-rp is-rp-loose is-rp)
+         nil)))))|#
+ 
+
+(defthm-ex-from-rp-all2
+    (defthm rp-termp-ex-from-rp-all2
+        (implies (rp-termp term)
+                 (rp-termp (ex-from-rp-all2 term)))
+      :flag ex-from-rp-all2)
+    (defthm rp-term-listp-ex-from-rp-all2-lst
+        (implies (rp-term-listp lst)
+                 (rp-term-listp (ex-from-rp-all2-lst lst)))
+      :flag ex-from-rp-all2-lst)
+  :hints (("Goal"
+           :do-not-induct t
+           :expand (RP-TERMP (EX-FROM-RP TERM))
+           :in-theory (e/d (
+                            EX-FROM-RP-ALL2
+                            IS-RP-LOOSE
+                            is-rp
+                            ;;rp-termp-ex-from-rp-all2-lemma
+                            ex-from-rp-all2-lst
+                            )
+                           (ex-from-rp
+                            ;;FALIST-CONSISTENT
+                            RP-TERMP-EX-FROM-RP
+                            RP-TERMP-CONS-CAR-TERM-SUBTERMS
+                            )))))

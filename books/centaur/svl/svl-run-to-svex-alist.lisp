@@ -37,6 +37,9 @@
 
 (include-book "centaur/svl/svexl/svexl-correct" :dir :system)
 
+(local
+ (include-book "projects/rp-rewriter/proofs/rp-rw-lemmas" :dir :system))
+
 (rp::def-rp-rule$
  t nil
  assoc-equal-opener-when-not-equal
@@ -122,7 +125,11 @@
      svl-run-def-opener
      ;;rp::svl-run-def-opener_lambda-opener
      sv::4veclist-p-of-cons
-     svex-env-p-of-falist
+     SV::SVEX-ENV-P-when-cons
+     SV::SVEX-ENV-FIX-opener
+     SV::SVEX-ENV-P-nil
+
+     RP::CONSP-CONS
 
      svexlist-list-eval-wog-opener-error
      svexlist-list-eval-wog-opener-cons
@@ -162,6 +169,7 @@
      svexl-eval-wog-for-rp
      ;;rp::svexl-eval-wog-opener_lambda-opener
      svex-env-fastlookup-wog-def
+     RP::APPEND-OF-NIL
      SVEXL-EVAL-AUX-WOG-nil
      svexl-eval-aux-wog-cons
      ;;rp::svexl-eval-aux-wog-cons_lambda-opener
@@ -191,9 +199,6 @@
           "Unexpected alist-term ~p0 ~%"
           (list (cons #\0 term)))
          nil))))
-
-
-
 
 (local
  (Include-Book "projects/rp-rewriter/proofs/extract-formula-lemmas" :dir :system))
@@ -231,11 +236,11 @@
              
              (local
               (in-theory (e/d ()
-                              ( unsigned-byte-p
-                                  natp
-                                  RP::UPDATE-NOT-SIMPLIFIED-ACTION
-                                  RP::NOT-SIMPLIFIED-ACTION
-                                  rp::rw-step-limit)))))
+                              (unsigned-byte-p
+                               natp
+                               RP::UPDATE-NOT-SIMPLIFIED-ACTION
+                               RP::NOT-SIMPLIFIED-ACTION
+                               rp::rw-step-limit)))))
   
   (b* ((world (w state))
        ;; do not let rp-rewriter complain when simplified term is not ''t
@@ -244,7 +249,12 @@
        (rp::rp-state (rp::update-not-simplified-action :none rp::rp-state))
        (rp::rp-state (rp::rp-state-new-run rp::rp-state))
        (rp::rp-state (rp::rp-state-init-rules nil nil nil rp::rp-state state))
-       
+
+
+       ((mv context rp::rp-state)
+        (rp::rp-rw-subterms
+         context nil nil nil (rp::rw-step-limit rp::rp-state) rp::rp-state state))
+
        ((mv rw rp::rp-state)
         (rp::rp-rw
          term nil context nil nil (rp::rw-step-limit rp::rp-state) rp::rp-state state))
@@ -259,8 +269,8 @@
        (- (and err
                (hard-error ; ;
                 'rw-svl-run-to-svex-alist ; ;
-                "There was a problem while converting the term below to its ~ ; ;
-         svex equivalent. Read above for the printed messages. ~p0 ~%" ; ;
+                "There was a problem while converting the term below to its ~
+svex equivalent. Read above for the printed messages. ~p0 ~%" 
                 (list (cons #\0 rw)))))
        
        (svex-alist (pairlis$ (rp::unquote-all keys) svexlist))
@@ -280,13 +290,21 @@
               (true-listp (mv-nth 0 (alist-term-to-entry-list x))))
      :hints (("Goal"
               :in-theory (e/d (alist-term-to-entry-list) ())))))
+
+  (local
+   (defthm unsigned-byte-p-58-of-rw-step-limit
+       (implies (force (rp::rp-statep rp::rp-state))
+                (UNSIGNED-BYTE-P
+                 58
+                 (RP::RW-STEP-LIMIT rp::rp-state)))))
+   
   
   (verify-guards rw-svl-run-to-svex-alist-fn
     :hints (("Goal"
              :do-not-induct t
              :in-theory (e/d (rp::rp-statep
-                              RP::NOT-SIMPLIFIED-ACTION
-                              RP::NOT-SIMPLIFIED-ACTIONP)
+                              rp::not-simplified-action
+                              rp::not-simplified-actionp)
                              (rp::rw-step-limit))))))
 
 (progn
@@ -302,9 +320,12 @@
     (b* ((lst (strip-cdrs port-binds))
          (lst (acl2::flatten lst)))
       (loop$ for x in lst when (and (symbolp x)
-                                    (not (equal x '_))
-                                    (not (equal x 'X))
-                                    (not (equal x '-)))
+                                    (let* ((x (symbol-name x)))
+                                      (and (not (equal x "_"))
+                                           (not (equal x "~"))
+                                           (not (equal x "X"))
+                                           (not (equal x "-"))
+                                           (not (equal x "x")))))
              collect x)))
 
   (define svl-run-to-svex-alist-fn-create-env (binds-ins-alist)
@@ -341,9 +362,9 @@
                     nil)))
 
     `(encapsulate
-       nil
-       (local
-        (rp::disable-all-rules))
+         nil
+         (local
+          (rp::disable-all-rules))
 
        (local
         (rp::enable-rules *svl-compose-rules*))
@@ -372,13 +393,15 @@
          rp::MV-NTH-META))
        
        (with-output
-         :off :all
+           :off :all
          :gag-mode nil
          (make-event
           (b* ((env (svl-run-to-svex-alist-fn-create-env ,binds-ins-alist))
-               (hyp (svl-run-to-svex-alist-create-hyp ,binds-ins-alist))
+               (?hyp (svl-run-to-svex-alist-create-hyp ,binds-ins-alist))
+               (?hyp (append hyp (list `(equal env ,env))))
+               (?hyp (list '(sv::svex-env-p svex-env)))
                (term `(svl::svl-run ',,modname
-                                    ,env
+                                    svex-env
                                     ',,binds-ins-alist
                                     ',,binds-out-alist
                                     ',,svl-design))
@@ -390,16 +413,16 @@
                    (defconst ,',svex-alist-name
                      ',svex-alist)
 
-                    (defthmd
-                     ,',rw-rule-name
-                     (implies (and . ,hyp)
-                              (equal (svl::svl-run ,',modname
-                                                    ,env
-                                                    ,',binds-ins-alist
-                                                    ,',binds-out-alist
-                                                    ,',svl-design)
-                                     (sv::svex-alist-eval ,',svex-alist-name
-                                                           ,env)))
+                   (defthmd
+                       ,',rw-rule-name
+                       (implies (and  ,@hyp)
+                                (equal (svl::svl-run ,',modname
+                                                     svex-env
+                                                     ,',binds-ins-alist
+                                                     ,',binds-out-alist
+                                                     ,',svl-design)
+                                       (sv::svex-alist-eval ,',svex-alist-name
+                                                            svex-env)))
 
                      :hints (("Goal"
                               :do-not-induct t

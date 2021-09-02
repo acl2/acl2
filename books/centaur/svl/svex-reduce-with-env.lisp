@@ -264,6 +264,67 @@
                              4vec-p)
                             ())))))
 
+(define bit?-resolve ((test 4vec-p)
+                       then
+                       else
+                      (limit natp))
+  
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (4vec-rsh
+                            4VEC-P
+                            sv::3vec-p
+                            SV::4VEC->LOWER
+                            SV::4VEC->upper
+                            4vec-shift-core)
+                           (4vec))))
+  :measure (nfix limit)
+  :returns (res svex-p :hyp (and (4vec-p test)
+                                 (svex-p then)
+                                 (svex-p else)))
+  (cond
+    ((zp limit) (hons-list 'sv::bit? test then else)) ;; for measure
+    ((equal test -1) then)
+    ((or (equal test 0))
+     else)
+    ((or (equal test (sv::4vec-x))
+         (equal test (sv::4vec-z)))
+     (if (and (4vec-p test) (4vec-p then) (4vec-p else))
+         (sv::4vec-bit? test then else)
+         (hons-list 'sv::bit? test then else)))
+    (t
+     (b* ((first-size (calc-bit-repetition test test (expt 2 30)))
+          ((unless (posp first-size)) ;; should never happen
+           `(sv::bit? ,test ,then ,else))
+          (test-cut (4vec-part-select 0 first-size test)) 
+          (rest (bit?-resolve (4vec-rsh first-size test)
+                              (if (4vec-p then)
+                                  (4vec-rsh first-size then)
+                                  (hons-list 'sv::rsh first-size then))
+                              (if (4vec-p else)
+                                  (4vec-rsh first-size else)
+                                  (hons-list 'sv::rsh first-size else))
+                              (1- limit))))
+       (cond ((equal test-cut 0)
+              (if (and (4vec-p else)
+                       (4vec-p rest))
+                  (4vec-concat first-size else rest)
+                  (hons-list 'sv::concat first-size else rest)))
+             ((equal test-cut (4vec-part-select 0 first-size -1))
+              (if (and (4vec-p then)
+                       (4vec-p rest))
+                  (4vec-concat first-size then rest)
+                  (hons-list 'sv::concat first-size then rest)))
+             (t
+              (if (and (4vec-p else)
+                       (4vec-p then)
+                       (4vec-p rest))
+                  (4vec-concat first-size (sv::4vec-bit? test-cut then else) rest)
+                  (hons-list 'sv::concat
+                             first-size
+                             (hons-list 'sv::bit? test-cut then else)
+                             rest))))))))
+
 (define bit?!-resolve ((test sv::4vec-p)
                        then
                        else
@@ -361,8 +422,7 @@
            (third args))
           ((when (eql test -1))
            (second args)))
-
-       (hons fn args)))
+       (bit?-resolve (sv::3vec-fix test) (second args) (third args) (expt 2 30))))
 
     ((and (equal fn 'sv::bit?!)
           (equal-len args 3))
@@ -577,6 +637,41 @@
                         (svex-reduce-w/-env-masked term1 start size env)))
                     (svex-reduce-w/-env-apply fn ;; should never come here. 
                                               (hons-list c-size
+                                                         (svex-reduce-w/-env
+                                                          term1 env)))))
+                 ((and (equal fn 'sv::signx)
+                       (equal-len args 2))
+                  (b* ((s-size (svex-reduce-w/-env (first args) env))
+                       (term1 (second args))
+                       ((unless (natp s-size))
+                        (b* ((term1 (svex-reduce-w/-env term1 env)))
+                          (svex-reduce-w/-env-masked-return
+                           (svex-reduce-w/-env-apply fn (hons-list s-size
+                                                                   term1)))))
+                       ((when (equal s-size 0))
+                        (sv::4vec-part-select 0 size (sv::4vec-x)))
+                       ((when (<= s-size start)) ;; only signextend bit repeated
+                        (b* ((term1 (svex-reduce-w/-env-masked term1
+                                                               (1- s-size)
+                                                               1
+                                                               env))
+                             (start 0))
+                          (svex-reduce-w/-env-masked-return
+                           (svex-reduce-w/-env-apply fn (hons-list 1 term1))))) 
+                       ((when (and (< start s-size)
+                                   (< s-size (+ start size))))
+                        (b* ((term1 (svex-reduce-w/-env-masked term1
+                                                               start
+                                                               (- s-size start)
+                                                               env))
+                             (new-s-size (- s-size start))
+                             (start 0))
+                          (svex-reduce-w/-env-masked-return
+                           (svex-reduce-w/-env-apply fn (hons-list new-s-size term1)))))
+                       ((when (<= (+ start size) s-size))
+                        (svex-reduce-w/-env-masked term1 start size env)))
+                    (svex-reduce-w/-env-apply fn ;; should never come here. 
+                                              (hons-list s-size
                                                          (svex-reduce-w/-env term1 env)))))
                  ((and (equal fn 'sv::concat)
                        (equal-len args 3))
@@ -977,7 +1072,7 @@ but did not resolve the branch ~%" first))))
                   (svex-reduce-w/-env (cdar svex-alist) env))
             (svex-alist-reduce-w/-env (cdr svex-alist) env))))
 
-;; :i-am-here
+;; 
 
 ;; (svex-reduce-w/-env  '(partsel 0 1 (sv::bitand x y))
 ;;                      (make-fast-alist
@@ -1072,6 +1167,77 @@ but did not resolve the branch ~%" first))))
            :induct (bit?!-resolve test then else limit)
            :do-not-induct t
            :in-theory (e/d (bit?!-resolve) ()))))
+
+
+(progn
+  (local
+   (use-arithmetic-5 t))
+  (local
+   (defthm 3vec-p-of-4vec-rsh
+       (implies (and (natp size)
+                     (sv::3vec-p val)
+                     (sv::4vec-p val))
+                (sv::3vec-p (4vec-rsh size val)))
+     :hints (("Goal"
+              :expand ((4vec-rsh size val)
+                       (SV::4VEC->UPPER SIZE)
+                       (SV::4VEC->UPPER SIZE))
+              :in-theory (e/d (4VEC-SHIFT-CORE
+                               sv::3vec-p)
+                              ())))))
+  (local
+   (use-arithmetic-5 nil)))
+
+
+(defthm bit?-resolve-correct
+     (implies (and (sv::4vec-p test)
+                   (sv::3vec-p test))
+              (equal
+               (svex-eval (bit?-resolve test then else limit) env)
+               (svex-eval `(sv::bit? ,test ,then ,else) env)))
+  :hints (("subgoal *1/11"
+           :use ((:instance 4vec-concat-of-part-select-and-rsh
+                            (size (calc-bit-repetition test test 1073741824))
+                            (y (sv::4vec-bit? test (svex-eval then env)
+                                              (svex-eval else env))))))
+           ("subgoal *1/6"
+           :use ((:instance 4vec-concat-of-part-select-and-rsh
+                            (size (calc-bit-repetition test test 1073741824))
+                            (y (sv::4vec-bit? test (svex-eval then env) (svex-eval else env))))))
+           ("subgoal *1/7"
+           :use ((:instance 4vec-concat-of-part-select-and-rsh
+                            (size (calc-bit-repetition test test 1073741824))
+                            (y (sv::4vec-bit? test (svex-eval then env) (svex-eval else env))))))
+          ("subgoal *1/8"
+           :use ((:instance 4vec-concat-of-part-select-and-rsh
+                            (size (calc-bit-repetition test test 1073741824))
+                            (y (sv::4vec-bit? test (svex-eval then env) (svex-eval else env))))))
+          ("subgoal *1/9"
+           :use ((:instance 4vec-concat-of-part-select-and-rsh
+                            (size (calc-bit-repetition test test 1073741824))
+                            (y (sv::4vec-bit? test (svex-eval then env) (svex-eval else env))))))
+          ("subgoal *1/10"
+           :use ((:instance 4vec-concat-of-part-select-and-rsh
+                            (size (calc-bit-repetition test test 1073741824))
+                            (y (sv::4vec-bit? test (svex-eval then env) (svex-eval else env))))))
+          ("goal"
+            :expand (
+                     (bit?-resolve test then else limit)
+                     (bit?-resolve 0 then else limit)
+                     (bit?-resolve -1 then else limit)
+                     (bit?-resolve '(0 . -1)
+                                   then else limit)
+                     (bit?-resolve '(-1 . 0)
+                                   then else limit)
+                     (:free (x y)
+                            (sv::svex-apply x y)))
+            :induct (bit?-resolve test then else limit)
+            :do-not-induct t
+            :in-theory (e/d (bit?-resolve
+                             bits
+                             convert-4vec-concat-to-4vec-concat$)
+                            (4vec-concat-of-part-select-and-rsh
+                             equal-of-4vec-concat$-with-posp-size)))))
 
 
 (local
@@ -1917,6 +2083,23 @@ but did not resolve the branch ~%" first))))
                              )
                             ())))))
 
+
+(local
+ (defthm 4vec-concat-of-sign-extended-compress-when-bitp
+    (implies (and (posp size)
+                  (bitp x))
+             (equal (4vec-concat 1 x (- x))
+                    (- x)))))
+
+(local
+ (defthm unary-cancel
+     (and (equal (+ x (- x)) 0)
+          (implies (acl2-numberp other)
+                   (equal (+ x (- x) other) other)))))
+ 
+
+ 
+
 (progn
   (local
    (in-theory (disable (:DEFINITION ACL2::APPLY$-BADGEP)
@@ -2057,6 +2240,7 @@ but did not resolve the branch ~%" first))))
                         (:free (x) (SV::SVEX-APPLY 'PARTSEL x))
                         (:free (x) (SV::SVEX-APPLY 'concat x))
                         (:free (args) (SV::SVEX-APPLY 'SV::UNFLOAT args))
+                        (:free (args) (SV::SVEX-APPLY 'SV::SIGNX args))
                         (:free (args) (SV::SVEX-APPLY 'SV::ZEROX args))
                         (:free (args) (SV::SVEX-APPLY 'SV::rsh args))
                         (:free (args) (SV::SVEX-APPLY 'SV::lsh args))
@@ -2090,7 +2274,9 @@ but did not resolve the branch ~%" first))))
                                 svex-kind
                                 bits
                                 ;;SVEX-ENV-LOOKUP-when-svex-p
-                                svex-reduce-w/-env-lst)
+                                svex-reduce-w/-env-lst
+
+                                4vec-sign-ext-to-4vec-concat)
                                ()))))))
 
 

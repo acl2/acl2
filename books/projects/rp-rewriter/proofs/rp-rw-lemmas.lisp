@@ -828,7 +828,7 @@
                 (NOT (INCLUDE-FNC (RP-HYP RULE) 'RP))
                 (NOT (INCLUDE-FNC (RP-RHS RULE) 'FALIST))
                 (NOT (INCLUDE-FNC (RP-HYP RULE) 'FALIST))
-                (NOT (INCLUDE-FNC (RP-LHS RULE) 'IF))
+                ;;(NOT (INCLUDE-FNC (RP-LHS RULE) 'IF))
                 (NOT (INCLUDE-FNC (RP-LHS RULE) 'SYNP))
                 (NO-FREE-VARIABLEP RULE)
                 (NOT (INCLUDE-FNC (RP-LHS RULE) 'LIST))

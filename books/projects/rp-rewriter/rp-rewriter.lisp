@@ -132,15 +132,18 @@
   (local
    (in-theory (enable is-rp-implies)))
 
+  (memoize 'ex-from-rp-all2)
+
   (defconst *match-lhs-rp-equal-cnt*
     2)
 
   (mutual-recursion
-   (defun rp-match-lhs (term rule-lhs context acc-bindings)
+   (defun rp-match-lhs (term rule-lhs context under-if acc-bindings)
      (declare (xargs :measure (acl2::acl2-count rule-lhs)
                      :guard (and (alistp acc-bindings)
                                  (rp-termp term)
-                                 (rp-termp rule-lhs))
+                                 (rp-termp rule-lhs)
+                                 (booleanp under-if))
                      #|(and (rp-termp term)
                      (bindings-alistp acc-bindings) ;
                      (rp-termp rule-lhs) ;
@@ -154,11 +157,12 @@
      (if (atom rule-lhs) ;; it is a variable bind it.
          (b* ((other-binding (assoc-eq rule-lhs acc-bindings))
               (other-entry (if (consp other-binding) (cdr other-binding)
-                             nil))
+                               nil))
               (equiv (and other-entry
-                          (or ;(equal term other-entry)
-                           (rp-equal-cnt term other-entry
-                                         *match-lhs-rp-equal-cnt*)))))
+                          (if under-if
+                              (equal term other-entry)
+                              (rp-equal-cnt term other-entry
+                                            *match-lhs-rp-equal-cnt*)))))
            (cond
             (equiv ;; duplicate but equiv
              (mv context acc-bindings t))
@@ -184,23 +188,51 @@
            ;; (cons 'first 'rest) so that we can match the rule to the term
            (let ((term-in-cons (put-term-in-cons term-w/o-rp)))
              (rp-match-lhs-subterms (cdr term-in-cons) (cdr rule-lhs) context
-                                    acc-bindings)))
+                                    under-if acc-bindings)))
           ((consp term-w/o-rp) ;; both term and rule is consp,
            (cond
-            ((eq (car rule-lhs) (car term-w/o-rp))
-             ;; if their function name be the same, keep on matching.
-             (rp-match-lhs-subterms (cdr term-w/o-rp) (cdr rule-lhs) context
-                                    acc-bindings))
-            (t (mv context acc-bindings nil))))
+             ((eq (car rule-lhs) (car term-w/o-rp))
+              ;; if their function name be the same, keep on matching.
+              (b* ((term-w/o-rp (if (equal (car rule-lhs) 'if)
+                                    (ex-from-rp-all2 term-w/o-rp)
+                                    term-w/o-rp)))
+                (rp-match-lhs-subterms (cdr term-w/o-rp) (cdr rule-lhs) context
+                                       under-if
+                                       acc-bindings)))
+              #|(cond
+                ((equal (car rule-lhs) 'if)
+                 (b* (((unless (and (is-if rule-lhs)
+                                    (is-if term-w/o-rp)))
+                       (mv context acc-bindings t))
+                      (term-w/o-rp (ex-from-rp-all term-w/o-rp))
+                      ((mv context acc-bindings valid)
+                       (rp-match-lhs (second term-w/o-rp) (second rule-lhs)
+                                     context under-if acc-bindings))
+                      ((unless valid) (mv context acc-bindings nil))
+                      ((mv context acc-bindings valid)
+                       (rp-match-lhs (third term-w/o-rp) (third rule-lhs)
+                                     context t acc-bindings))
+                      ((unless valid) (mv context acc-bindings nil))
+                      ((mv context acc-bindings valid)
+                       (rp-match-lhs (fourth term-w/o-rp) (fourth rule-lhs)
+                                     context t acc-bindings))
+                      ((unless valid) (mv context acc-bindings nil)))
+                   (mv context acc-bindings t)))
+                (t
+                 (rp-match-lhs-subterms (cdr term-w/o-rp) (cdr rule-lhs) context
+                                        (or under-if (equal (car rule-lhs) 'if))
+                                        acc-bindings)))|#
+             (t (mv context acc-bindings nil))))
           (t ;; rule is consp but term isn't. then we cannot match this rule to
            ;; the tem.
            (mv context acc-bindings nil))))))
 
-   (defun rp-match-lhs-subterms (subterms sublhs context acc-bindings)
+   (defun rp-match-lhs-subterms (subterms sublhs context under-if acc-bindings)
      (declare (xargs :measure (acl2::acl2-count sublhs)
                      :guard (and (alistp acc-bindings)
                                  (rp-term-listp subterms)
-                                 (rp-term-listp sublhs))
+                                 (rp-term-listp sublhs)
+                                 (booleanp under-if))
                      #|(and (rp-term-listp subterms)
                      (bindings-alistp acc-bindings) ;
                      (rp-term-listp sublhs))||#
@@ -213,11 +245,11 @@
                                      (atom subterms))))
       (t
        (b* (((mv context1 acc-bindings1 valid)
-             (rp-match-lhs (car subterms) (car sublhs) context acc-bindings))
+             (rp-match-lhs (car subterms) (car sublhs) context under-if acc-bindings))
             ((when (not valid)) ;; stop trying if not valid.
              (mv context acc-bindings1 nil)))
          (rp-match-lhs-subterms (cdr subterms) (cdr sublhs) context1
-                                acc-bindings1))))))
+                                under-if acc-bindings1))))))
 
   (mutual-recursion
    (defun rp-does-lhs-match (term rule-lhs)
@@ -734,7 +766,7 @@ returns (mv rule rules-rest bindings rp-context)"
          (lhs (rp-lhs rule))
          ((mv rp-context bindings bindings-valid)
           (if (rp-match-lhs-precheck term lhs) ;(rp-does-lhs-match term lhs)
-              (rp-match-lhs term lhs context nil)
+              (rp-match-lhs term lhs context nil nil)
             (mv context nil nil))))
       (if bindings-valid
           (mv rule (cdr rules-for-term)  bindings rp-context)

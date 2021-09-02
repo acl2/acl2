@@ -110,6 +110,40 @@
                    (consp (ex-from-rp term)))
               (not (cddr (ex-from-rp term))))))
 
+  #|(local
+   (defthm rp-termp-consp-implies
+       (implies (and (not (consp term))
+                     (rp-termp term))
+                (not term))
+  :rule-classes :forward-chaining))|#
+
+  (local
+   (defthm guard-lemma6
+       (implies (and (equal (car term) 'if)
+                     (consp term))
+                (consp (EX-FROM-RP-ALL2 term)))
+     :rule-classes :forward-chaining
+     :hints (("Goal"
+              :expand ((EX-FROM-RP-ALL2 TERM))
+              :in-theory (e/d (IS-RP-LOOSE
+                               is-falist)
+                              ())))))
+
+  (local
+   (defthm guard-lemma7
+       (implies (and (consp term)
+                     (not (equal (car term) 'rp))
+                     (not (equal (car term) 'quote))
+                     (not (equal (car term) 'falist))
+                     (rp-termp term))
+                (rp-term-listp (CDR (EX-FROM-RP-ALL2 term))))
+     :hints (("Goal"
+              :expand ((EX-FROM-RP-ALL2 term))
+              :use ((:instance valid-sc-ex-from-rp-all2))
+              :in-theory (e/d (IS-RP-LOOSE)
+                              (valid-sc-ex-from-rp-all2
+                               ))))))
+
   (verify-guards rp-match-lhs))
 
 

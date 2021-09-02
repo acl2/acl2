@@ -132,19 +132,28 @@
              (mv ''t rule ''t t))))
          ((mv hyp-sigs hyp-fncs hyp-openers hyp-body index)
           (search-lambda-to-fnc rule-name 0 hyp))
-         ((mv rhs-sigs rhs-fncs rhs-openers rhs-body &)
+         ((mv rhs-sigs rhs-fncs rhs-openers rhs-body index)
           (search-lambda-to-fnc rule-name index rhs))
-         (sigs (append hyp-sigs rhs-sigs))
-         (fncs (append hyp-fncs rhs-fncs))
-         (openers (append hyp-openers rhs-openers)))
+         ((mv lhs-sigs lhs-fncs lhs-openers lhs-body ?index)
+          (search-lambda-to-fnc rule-name index lhs))
+         (sigs (append hyp-sigs rhs-sigs lhs-sigs))
+         (fncs (append hyp-fncs rhs-fncs lhs-fncs))
+         (openers (append hyp-openers rhs-openers lhs-openers)))
       (if (or (and sigs fncs openers)
               (and (or sigs fncs openers)
-                   (hard-error 'lambdas-to-other-rules
-                               "something unexpected happened.... contact Mertcan Temel"
-                               nil)))
+                   (hard-error
+                    'lambdas-to-other-rules
+                    "something unexpected happened.... contact Mertcan Temel<temelmertcan@gmail.com>~%"
+                    nil)))
           `(encapsulate
-             ,sigs
-             ,@fncs
+               ,sigs
+               ,@fncs
+             (local
+              (defthmd opener-lemmas
+                  (and ,@(loop$ for x in openers collect
+                               `(equal ,x t)))))
+             (local
+              (rp::add-rp-rule opener-lemmas :outside-in t))
              (with-output
                :stack :pop
                :on (acl2::summary acl2::event)
@@ -152,7 +161,7 @@
                (defthm ,rule-name
                  (and (implies ,hyp-body
                                (,(if iff `iff `equal)
-                                ,lhs
+                                ,lhs-body
                                 ,rhs-body))
                       ,@openers)
                  ,@hints))

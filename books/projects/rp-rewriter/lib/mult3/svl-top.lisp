@@ -1359,6 +1359,15 @@
                                   0)
                                  carry-in)
                   (svl::4vec-plus++ x y carry-in size))
+           (equal (sv::4vec-plus (sv::4vec-concat
+                                  size
+                                  (sv::4vec-plus x y)
+                                  0)
+                                 carry-in)
+                  (svl::4vec-plus++ x y carry-in size))
+           (equal (sv::4vec-plus (sv::4vec-part-select 0 size (sv::4vec-plus x y))
+                                 carry-in)
+                  (svl::4vec-plus++ x y carry-in size))
            ))
    :otf-flg t
    :hints (("Goal"
