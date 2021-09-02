@@ -330,7 +330,16 @@
      to have the form described in @(see atc-identifier-rules).
      Finally, the sixth theorem serves to simplify the case in which
      a variable is written with its current value;
-     this case may occur when proving the base case of a loop.")
+     this case may occur when proving the base case of a loop.
+     This theorem is phrased perhaps more generally than expected,
+     with two different computation state variables,
+     instead of the simpler form in @('write-var-of-read-var-same-lemma'):
+     the reason is that sometimes during symbolic execution
+     a pattern arises of the form
+     @('(write-var var (read-var var compst) <other-compst>)'),
+     where @('<other-compst>') is a term
+     that is not just the @('compst') variable:
+     the rule binds @('compst1') to that.")
    (xdoc::p
     "The theorems below about @(tsee compustate-frames-number)
      serve to discharge the hypotheses about it being not 0
@@ -625,18 +634,14 @@
                    (not (equal a b))))))))
 
   (defruled write-var-of-read-var-same
-    (implies (not (errorp (read-var var compst)))
-             (equal (write-var var (read-var var compst) compst)
-                    (compustate-fix compst)))
-    :enable (read-var
-             write-var
-             write-var-aux-of-read-var-aux-same
-             top-frame
-             push-frame
-             pop-frame
-             compustate-frames-number)
+    (implies (and (not (errorp (read-var var compst)))
+                  (equal (read-var var compst)
+                         (read-var var compst1)))
+             (equal (write-var var (read-var var compst) compst1)
+                    (compustate-fix compst1)))
+    :use (:instance write-var-of-read-var-same-lemma (compst compst1))
     :prep-lemmas
-    ((defrule lemma
+    ((defrule not-errorp-when-scope-listp
        (implies (scope-listp x)
                 (not (errorp x)))
        :enable errorp)
@@ -653,7 +658,18 @@
                    (equal (omap::update k (cdr (omap::in k m)) m)
                           m))
           :induct (omap::in k m)
-          :enable omap::in)))))
+          :enable omap::in)))
+     (defrule write-var-of-read-var-same-lemma
+       (implies (not (errorp (read-var var compst)))
+                (equal (write-var var (read-var var compst) compst)
+                       (compustate-fix compst)))
+       :enable (read-var
+                write-var
+                write-var-aux-of-read-var-aux-same
+                top-frame
+                push-frame
+                pop-frame
+                compustate-frames-number))))
 
   ;; rules about COMPUSTATE-FRAMES-NUMBER:
 
