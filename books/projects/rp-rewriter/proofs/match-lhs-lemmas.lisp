@@ -88,14 +88,14 @@
                       (rp-termp rule-lhs)
                       (rp-termp term))
                  (context-syntaxp (mv-nth 0 (rp-match-lhs term rule-lhs context
-                                                          under-if  acc-bindings))))
+                                                            acc-bindings))))
       :flag rp-match-lhs)
     (defthm return-val-of-rp-match-lhs-context-subterms
         (implies (and (context-syntaxp context)
                       (rp-term-listp sublhs)
                       (rp-term-listp subterms))
                  (context-syntaxp (mv-nth 0 (rp-match-lhs-subterms subterms sublhs context
-                                                                   under-if acc-bindings))))
+                                                                    acc-bindings))))
       :flag rp-match-lhs-subterms)
   :hints (("Goal"
            :expand ((EX-FROM-RP-ALL2 (EX-FROM-RP (EX-FROM-FALIST TERM))))
@@ -108,7 +108,7 @@
                   (rp-termp rule-lhs)
                   (rp-termp term))
              (bindings-alistp (mv-nth 1 (rp-match-lhs term rule-lhs context
-                                                      under-if acc-bindings))))
+                                                       acc-bindings))))
     :flag rp-match-lhs)
   (defthm bindings-alistp-rp-match-lhs-subterms
     (implies (and (bindings-alistp acc-bindings)
@@ -117,7 +117,7 @@
              (bindings-alistp
               (mv-nth 1 (rp-match-lhs-subterms subterms
                                                sublhs context
-                                               under-if acc-bindings))))
+                                                acc-bindings))))
     :flag rp-match-lhs-subterms)
   :hints (("Goal"
            :expand ((EX-FROM-RP-ALL2 (EX-FROM-RP (EX-FROM-FALIST TERM))))
@@ -127,14 +127,14 @@
   (defthm alistp-rp-match-lhs
     (implies (and (alistp acc-bindings))
              (alistp (mv-nth 1 (rp-match-lhs term rule-lhs context
-                                             under-if acc-bindings))))
+                                              acc-bindings))))
     :flag rp-match-lhs)
   (defthm alistp-rp-match-lhs-subterms
     (implies (and (alistp acc-bindings))
              (alistp
               (mv-nth 1 (rp-match-lhs-subterms subterms
                                                sublhs context
-                                               under-if acc-bindings))))
+                                                acc-bindings))))
     :flag rp-match-lhs-subterms))
 
 ; Matt K. mod 7/2021: The following lemma is no longer accepted due to a
@@ -262,7 +262,7 @@
                 (rp-match-lhs-subterms (cdr (put-term-in-cons (ex-from-rp term)))
                                        (cdr rule-lhs)
                                        (context-from-rp term context)
-                                       under-if
+                                       
                                        acc-bindings))))
       (subsetp-equal
        context
@@ -270,7 +270,7 @@
                (rp-match-lhs-subterms (cdr (put-term-in-cons (ex-from-rp term)))
                                       (cdr rule-lhs)
                                       (context-from-rp term context)
-                                      under-if
+                                      
                                       acc-bindings))))
      :instructions (:promote (:rewrite lemma1-2) :s :s)))
 
@@ -284,7 +284,7 @@
                 (rp-match-lhs-subterms (cdr (ex-from-rp term))
                                        (cdr rule-lhs)
                                        (context-from-rp term context)
-                                       under-if
+                                       
                                        acc-bindings))))
       (subsetp-equal
        context
@@ -292,7 +292,7 @@
                (rp-match-lhs-subterms (cdr (ex-from-rp term))
                                       (cdr rule-lhs)
                                       (context-from-rp term context)
-                                      under-if
+                                      
                                       acc-bindings))))
      :instructions (:promote (:rewrite lemma1-2) :s :s)))
 
@@ -300,13 +300,13 @@
     (defthm rp-match-lhs-subsetp-context
       (subsetp context
                (rp-context-from
-                (rp-match-lhs term rule-lhs context under-if acc-bindings)))
+                (rp-match-lhs term rule-lhs context  acc-bindings)))
       :flag rp-match-lhs)
 
     (defthm rp-match-lhs-subterms-subsetp-context
       (subsetp context
                (rp-context-from
-                (rp-match-lhs-subterms subterms sublhs context under-if acc-bindings)))
+                (rp-match-lhs-subterms subterms sublhs context  acc-bindings)))
       :flag rp-match-lhs-subterms)
     :hints (("Goal"
              :in-theory (e/d ()
@@ -578,13 +578,13 @@
                     (mv-nth 2 (rp-match-lhs term
                                             rule-lhs
                                             context
-                                            under-if
+                                            
                                             acc-bindings)))
                (valid-sc-bindings
                 (mv-nth 1 (rp-match-lhs term
                                         rule-lhs
                                         context
-                                        under-if
+                                        
                                         acc-bindings))
                 a))
       :flag rp-match-lhs)
@@ -598,14 +598,14 @@
                                subterms
                                sublhs
                                context
-                               under-if
+                               
                                acc-bindings)))
                (valid-sc-bindings
                 (mv-nth 1 (rp-match-lhs-subterms
                            subterms
                            sublhs
                            context
-                           under-if
+                           
                            acc-bindings))
                 a))
       :flag rp-match-lhs-subterms)
@@ -1000,7 +1000,7 @@
             (valid-sc-subterms context a))
        (valid-sc-subterms
         (mv-nth 0 (rp-match-lhs term rule-lhs
-                                context under-if acc-bindings))
+                                context  acc-bindings))
         a))
       :flag rp-match-lhs)
     (defthm valid-sc-rp-context-from-rp-match-lhs-subterms
@@ -1011,7 +1011,7 @@
             (valid-sc-subterms context a))
        (valid-sc-subterms
         (mv-nth 0 (rp-match-lhs-subterms subterms sublhs
-                                         context under-if acc-bindings))
+                                         context  acc-bindings))
         a))
       :flag rp-match-lhs-subterms)
     :hints (("Goal"
@@ -1134,7 +1134,7 @@
             (valid-sc term a)
             #|(not (include-fnc rule-lhs 'if))|#)
        (eval-and-all
-        (rp-context-from (rp-match-lhs term rule-lhs context under-if acc-bindings))
+        (rp-context-from (rp-match-lhs term rule-lhs context acc-bindings))
         a))
       :flag rp-match-lhs)
 
@@ -1147,7 +1147,7 @@
             (valid-sc-subterms subterms a)
             #|(not (include-fnc-subterms sublhs 'if))|#)
        (eval-and-all (rp-context-from
-                      (rp-match-lhs-subterms subterms sublhs context under-if acc-bindings))
+                      (rp-match-lhs-subterms subterms sublhs context  acc-bindings))
                      a))
       :flag rp-match-lhs-subterms)
     :hints (("Goal"
@@ -1239,13 +1239,13 @@
             (MV-NTH 2
                     (rp-match-lhs term
                                   rule-lhs
-                                  CONTEXT under-if ACC-BINDINGS)))
+                                  CONTEXT  ACC-BINDINGS)))
        (ALL-VARS-BOUND RULE-LHS1
                        (MV-NTH 1
                                (rp-match-lhs term
                                              rule-lhs
                                              CONTEXT
-                                             under-if
+                                             
                                              ACC-BINDINGS))))
       :flag rp-match-lhs)
 
@@ -1256,39 +1256,39 @@
                     (rp-match-lhs-subterms
                      subterms
                      sublhs 
-                     CONTEXT under-if ACC-BINDINGS)))
+                     CONTEXT  ACC-BINDINGS)))
        (ALL-VARS-BOUND
         RULE-LHS1
         (MV-NTH 1
                 (rp-match-lhs-subterms subterms
                                        sublhs
                                        CONTEXT
-                                       under-if
+                                       
                                        ACC-BINDINGS))))
       :flag rp-match-lhs-subterms))
 
   (defthm-rp-match-lhs
     (defthm rp-match-lhs-binds-all
       (implies (and (mv-nth 2 (rp-match-lhs term rule-lhs
-                                            context under-if acc-bindings))
+                                            context  acc-bindings))
                     (rp-termp rule-lhs))
                (all-vars-bound
                 rule-lhs
                 (mv-nth 1 (rp-match-lhs term rule-lhs
-                                        context under-if acc-bindings))))
+                                        context  acc-bindings))))
       :flag rp-match-lhs)
     (defthm rp-match-lhs-binds-all-subterms
       (implies (and (mv-nth 2 (rp-match-lhs-subterms subterms
                                                      sublhs
                                                      context
-                                                     under-if
+                                                     
                                                      acc-bindings))
                     (rp-term-listp sublhs))
                (all-vars-bound-subterms
                 sublhs
                 (mv-nth 1 (rp-match-lhs-subterms subterms sublhs
                                                  context
-                                                 under-if acc-bindings))))
+                                                  acc-bindings))))
       :flag rp-match-lhs-subterms)))
 
 (encapsulate
@@ -1610,7 +1610,7 @@
              (mv-nth 2 (rp-match-lhs term
                                      rule-lhs
                                      context
-                                     under-if
+                                     
                                      acc-bindings)))
         (equal (equal (rp-evl
                        rule-lhs1
@@ -1619,7 +1619,7 @@
                          (mv-nth 1 (rp-match-lhs term
                                                  rule-lhs
                                                  context
-                                                 under-if
+                                                 
                                                  acc-bindings)))
                         a))
                       (rp-evlt term1 a))
@@ -1638,7 +1638,7 @@
              (mv-nth 2 (rp-match-lhs-subterms subterms
                                               sublhs
                                               context
-                                              under-if
+                                              
                                               acc-bindings)))
         (equal (equal (rp-evl
                        rule-lhs1
@@ -1647,7 +1647,7 @@
                          (mv-nth 1 (rp-match-lhs-subterms subterms
                                                           sublhs
                                                           context
-                                                          under-if
+                                                          
                                                           acc-bindings)))
                         a))
                       (rp-evlt term1 a))
@@ -1854,7 +1854,7 @@
   (defthm-rp-match-lhs
     (defthm rp-match-lhs-returns-valid-bindings-lemma
       (mv-let (rp-context bindings valid-bindings)
-        (rp-match-lhs term rule-lhs context under-if acc-bindings)
+        (rp-match-lhs term rule-lhs context  acc-bindings)
         (declare (ignorable rp-context))
         (implies (and valid-bindings
                       (bindings-alistp acc-bindings)
@@ -1870,7 +1870,7 @@
 
     (defthm rp-match-lhs-subterms-returns-valid-bindings-lemma
       (mv-let (rp-context bindings valid-bindings)
-        (rp-match-lhs-subterms subterms sublhs context under-if acc-bindings)
+        (rp-match-lhs-subterms subterms sublhs context  acc-bindings)
         (declare (ignorable rp-context))
         (implies (and valid-bindings
                       (alistp a)
@@ -1899,7 +1899,7 @@
 (local
  (defthm rp-match-lhs-returns-valid-bindings-lemma-2
    (mv-let (rp-context bindings valid-bindings)
-     (rp-match-lhs term rule-lhs context under-if acc-bindings)
+     (rp-match-lhs term rule-lhs context  acc-bindings)
      (declare (ignorable rp-context))
      (implies (and valid-bindings
                    (bindings-alistp acc-bindings)
