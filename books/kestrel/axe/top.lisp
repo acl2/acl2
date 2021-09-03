@@ -194,6 +194,7 @@
 (include-book "worklist-array")
 (include-book "worklists")
 (include-book "call-axe-script")
+(include-book "unroller")
 
 ;; Newest top-level Axe tools ("basic" means that these are for general-purpose
 ;; use, rather than specialized for the JVM, or for x86, etc.):
