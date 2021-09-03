@@ -3990,6 +3990,65 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-loop-test-correct-thm ((fn symbolp)
+                                       (pointers symbol-listp)
+                                       (loop-test exprp)
+                                       (test-term pseudo-termp)
+                                       (fn-thms symbol-symbol-alistp)
+                                       (names-to-avoid symbol-listp)
+                                       state)
+  :returns (mv erp
+               (val "A @('(tuple (local-events pseudo-event-form-listp)
+                                 (correct-test-thm symbolp)
+                                 (updated-names-to-avoid symbol-listp)
+                                 val)').")
+               state)
+  :mode :program
+  :short "Generate the correctness theorem for the test of a loop."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a step towards generating more modular and controlled loop proofs.
+     The hints are more than needed for now,
+     as they include rules about statement execution,
+     which does not apply here.
+     We will make the hints more nuanced later."))
+  (b* ((wrld (w state))
+       (correct-thm (cdr (assoc-eq fn fn-thms)))
+       (correct-test-thm (add-suffix correct-thm "-TEST"))
+       ((mv correct-test-thm names-to-avoid)
+        (fresh-logical-name-with-$s-suffix correct-test-thm
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (formals (formals+ fn wrld))
+       (compst-var (genvar 'atc "COMPST" nil formals))
+       ((mv formals-binding pointer-hyps)
+        (atc-gen-bindings-for-loop-formals formals pointers compst-var))
+       (hyps `(and (compustatep ,compst-var)
+                   (not (equal (compustate-frames-number ,compst-var) 0))
+                   (and ,@pointer-hyps)
+                   ,(untranslate (uguard+ fn wrld) nil wrld)))
+       (concl `(equal (exec-test (exec-expr-pure ',loop-test ,compst-var))
+                      ,test-term))
+       (formula `(b* (,@formals-binding) (implies ,hyps ,concl)))
+       (hints `(("Goal"
+                 :do-not-induct t
+                 :in-theory (append *atc-all-rules*)
+                 :use ((:instance (:guard-theorem ,fn)
+                        :extra-bindings-ok ,@formals-binding))
+                 :expand :lambdas)))
+       ((mv correct-test-thm-event &)
+        (evmac-generate-defthm correct-test-thm
+                               :formula formula
+                               :hints hints
+                               :enable nil)))
+    (acl2::value (list (list correct-test-thm-event)
+                       correct-test-thm
+                       names-to-avoid))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-loop-body-correct-thm ((fn symbolp)
                                        (pointers symbol-listp)
                                        (xforming symbol-listp)
@@ -4365,6 +4424,19 @@
                                             state))
        ((when erp) (mv erp (list nil nil nil nil nil) state))
        ((mv erp
+            (list test-local-events
+                  & ; correct-test-thm
+                  names-to-avoid)
+            state)
+        (atc-gen-loop-test-correct-thm fn
+                                       pointers
+                                       loop-test
+                                       test-term
+                                       fn-thms
+                                       names-to-avoid
+                                       state))
+       ((when erp) (mv erp (list nil nil nil nil nil) state))
+       ((mv erp
             (list body-local-events
                   correct-body-thm
                   names-to-avoid)
@@ -4413,6 +4485,7 @@
                                   exec-stmt-while-events
                                   (list natp-of-measure-of-fn-thm-event)
                                   (list termination-of-fn-thm-event)
+                                  test-local-events
                                   body-local-events
                                   more-local-events)))
        (exported-events (and proofs
