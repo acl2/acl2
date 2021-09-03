@@ -4152,6 +4152,7 @@
                                   (exec-stmt-while-for-fn-thm symbolp)
                                   (termination-of-fn-thm symbolp)
                                   (natp-of-measure-of-fn-thm symbolp)
+                                  (correct-test-thm symbolp)
                                   (correct-body-thm symbolp)
                                   (limit pseudo-termp)
                                   (names-to-avoid symbol-listp)
@@ -4286,7 +4287,8 @@
                                           ',correct-thms
                                           ',measure-thms
                                           '(,natp-of-measure-of-fn-thm)
-                                          '(,correct-body-thm))
+                                          '(,correct-test-thm
+                                            ,correct-body-thm))
                        :use ((:instance (:guard-theorem ,fn)
                               :extra-bindings-ok ,@gthm-instantiation)
                              (:instance ,termination-of-fn-thm
@@ -4425,7 +4427,7 @@
        ((when erp) (mv erp (list nil nil nil nil nil) state))
        ((mv erp
             (list test-local-events
-                  & ; correct-test-thm
+                  correct-test-thm
                   names-to-avoid)
             state)
         (atc-gen-loop-test-correct-thm fn
@@ -4474,6 +4476,7 @@
                                   exec-stmt-while-for-fn-thm
                                   termination-of-fn-thm
                                   natp-of-measure-of-fn-thm
+                                  correct-test-thm
                                   correct-body-thm
                                   loop-limit
                                   names-to-avoid state))
