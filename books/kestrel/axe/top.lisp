@@ -222,6 +222,7 @@
 
 ;; Legacy Axe tools (many of these depend on skip-proofs):
 (include-book "prover")
+(include-book "prover2")
 (include-book "rewriter")
 (include-book "rewriter-alt")
 (include-book "unroll-spec")
