@@ -34,7 +34,7 @@
 (include-book "centaur/meta/variable-free" :dir :system)
 (include-book "../svex/override")
 (include-book "process")
-
+(local (std::add-default-post-define-hook :fix))
 
 (cmr::def-force-execute svtv-fsm-run-input-substs-execute-term-when-variable-free
   svtv-fsm-run-input-substs)
@@ -77,7 +77,9 @@
   (defthm svex-env-override-test-vars-of-append
     (equal (svex-env-override-test-vars (append a b))
            (append (svex-env-override-test-vars a)
-                   (svex-env-override-test-vars b)))))
+                   (svex-env-override-test-vars b))))
+
+  (local (in-theory (enable svex-env-fix))))
 
 (define collect-known-members-from-list-term ((x pseudo-termp))
   :measure (acl2::pseudo-term-count x)
@@ -106,7 +108,9 @@
       nil
     (let ((look (svex-lookup (change-svar (car x) :override-test nil) al))
           (rest (override-tests-to-svex-override-triplelist (cdr x) al)))
-      (if look
+      (if (and look
+               (svar->override-test (car x))
+               (not (svar->override-val (car x))))
           (cons (make-svex-override-triple
                  :testvar (car x)
                  :valvar (change-svar (car x) :override-test nil :override-val t)
@@ -118,7 +122,9 @@
     (equal (override-tests-to-svex-override-triplelist (cons a b) al)
            (let ((look (svex-lookup (change-svar a :override-test nil) al))
                  (rest (override-tests-to-svex-override-triplelist b al)))
-             (if look
+             (if (and look
+                      (svar->override-test a)
+                      (not (svar->override-val a)))
                  (cons (make-svex-override-triple
                         :testvar a
                         :valvar (change-svar a :override-test nil :override-val t)
@@ -127,13 +133,52 @@
                rest))))
 
   (defthm override-tests-to-svex-override-triplelist-of-nil
-    (equal (override-tests-to-svex-override-triplelist nil al) nil)))
+    (equal (override-tests-to-svex-override-triplelist nil al) nil))
+
+  (defret member-of-<fn>
+    (iff (member-equal var (svex-override-triplelist-vars trips))
+         (and (svar-p var)
+              (cond ((svar->override-test var)
+                     (and (member-equal var (svarlist-fix x))
+                          (not (svar->override-val var))
+                          (svex-lookup (change-svar var :override-test nil) al)))
+                    ((svar->override-val var)
+                     (and (member-equal (change-svar var :override-test t :override-val nil) (svarlist-fix x))
+                          (svex-lookup (change-svar var :override-val nil) al)))
+                    (t nil))))
+    :hints(("Goal" :in-theory (enable svex-override-triplelist-vars))))
+                     
+  (local (defthm svar-when-equal-x
+           (implies (and (equal test (svar->override-test x))
+                         (equal val (svar->override-val x)))
+                    (equal (change-svar x :override-test test :override-val val)
+                           (svar-fix x)))))
+
+  (defret no-duplicate-vars-of-<FN>
+    (implies (no-duplicatesp-equal (svarlist-fix x))
+             (no-duplicatesp-equal
+              (svex-override-triplelist-vars trips)))
+    :hints(("Goal" :in-theory (enable svex-override-triplelist-vars
+                                      svarlist-fix)))))
  
 
-(define remove-override-vars-value-binding (mfc state)
+(define svarlist-update-override-tests ((val booleanp)
+                                        (x svarlist-p))
+  (if (atom x)
+      nil
+    (cons (change-svar (car x) :override-test val)
+          (svarlist-update-override-tests val (cdr x)))))
+
+(define svtv-override-parameter-bindings (mfc state)
   (declare (ignore mfc))
+  :mode :program
   (and (boundp-global 'remove-override-vars-value-lookup-term state)
-       (list (cons 'values (f-get-global 'remove-override-vars-value-lookup-term state)))))
+       (list (cons 'values (f-get-global 'remove-override-vars-value-lookup-term state))
+             (if (boundp-global 'svtv-non-composable-override-vars state)
+                 (cons 'non-composable-vars
+                       (list 'quote (svarlist-update-override-tests
+                                     t (f-get-global 'svtv-non-composable-override-vars state))))
+               '(non-composable-vars . 'nil)))))
 
 (defmacro set-svtv-decomp-main-fsm (fsm-name)
   `(make-event
@@ -142,6 +187,19 @@
                           state)
             (value '(value-triple ',fsm-name)))))
 
+(defmacro set-svtv-non-composable-override-vars (varlist)
+  `(make-event
+    (pprogn (f-put-global 'svtv-non-composable-override-vars
+                          ',varlist
+                          state)
+            (value '(value-triple 'svtv-non-composable-override-vars)))))
+
+(defun diagnose-overridetriple-check-result (check trips)
+  (progn$ (cw "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!~%")
+          (cw "SVTV-DECOMP override syntactic check failed.~%")
+          (cw "Diagnostic info sneaky-pushed onto :svtv-decomp-overridetriple-errors.~%")
+          (acl2::sneaky-push :svtv-decomp-overridetriple-errors (list check trips))))
+
 (defthmd svtv-decomp-remove-override-vars-from-svex-alist-eval-when-svexlist-check-overridetriples
   (implies (and (syntaxp (cmr::term-variable-free-p al))
                 (equal testvars (svex-env-override-test-vars env))
@@ -149,18 +207,19 @@
                  `((known-tests . ,(acl2::pseudo-term-quote (collect-known-members-from-list-term testvars))))
                  (known-tests))
                 (syntaxp (not (equal known-tests ''nil)))
-                (equal valvar-lookup (svex-env-lookup
-                                      (change-svar (car known-tests)
-                                                   :override-test nil
-                                                   :override-val t)
-                                      env))
-                (bind-free (remove-override-vars-value-binding mfc state) (values))
-                (equal trips (override-tests-to-svex-override-triplelist known-tests values))
-                (not (svexlist-check-overridetriples (svex-alist-vals al) trips))
+                (bind-free (svtv-override-parameter-bindings mfc state)
+                           (values non-composable-vars))
+                (equal known-tests2 (set-difference-equal known-tests non-composable-vars))
+                (syntaxp (not (equal known-tests2 ''nil)))
+                (no-duplicatesp-equal (svarlist-fix known-tests2))
+                (equal trips (override-tests-to-svex-override-triplelist known-tests2 values))
+                (equal check (svexlist-check-overridetriples (svex-alist-vals al) trips))
+                (syntaxp (or (equal check ''nil)
+                             (diagnose-overridetriple-check-result check trips)))
+                (not check)
                 (equal trips-vars (svex-override-triplelist-vars trips))
-                (no-duplicatesp-equal trips-vars)
                 (equal new-env (svex-env-removekeys trips-vars env))
-                (svex-override-triplelist-env-ok trips env new-env))
+                (force (svex-override-triplelist-env-ok trips env new-env)))
            (equal (svex-alist-eval al env)
                   (svex-alist-eval al new-env))))
 
@@ -171,13 +230,19 @@
                 (bind-free `((known-tests . ,(acl2::pseudo-term-quote (collect-known-members-from-list-term testvars))))
                            (known-tests))
                 (syntaxp (not (equal known-tests ''nil)))
-                (bind-free (remove-override-vars-value-binding mfc state) (values))
-                (equal trips (override-tests-to-svex-override-triplelist known-tests values))
-                (not (svex-check-overridetriples svex trips))
+                (bind-free (svtv-override-parameter-bindings mfc state)
+                           (values non-composable-vars))
+                (equal known-tests2 (set-difference-equal known-tests non-composable-vars))
+                (syntaxp (not (equal known-tests2 ''nil)))
+                (no-duplicatesp-equal (svarlist-fix known-tests2))
+                (equal trips (override-tests-to-svex-override-triplelist known-tests2 values))
+                (equal check (svex-check-overridetriples svex trips))
+                (syntaxp (or (equal check ''nil)
+                             (diagnose-overridetriple-check-result check trips)))
+                (not check)
                 (equal trips-vars (svex-override-triplelist-vars trips))
-                (no-duplicatesp-equal trips-vars)
                 (equal new-env (svex-env-removekeys trips-vars env))
-                (svex-override-triplelist-env-ok trips env new-env))
+                (force (svex-override-triplelist-env-ok trips env new-env)))
            (equal (svex-eval svex env)
                   (svex-eval svex new-env))))
 
@@ -187,13 +252,20 @@
                 (bind-free `((known-tests . ,(acl2::pseudo-term-quote (collect-known-members-from-list-term testvars))))
                            (known-tests))
                 (syntaxp (not (equal known-tests ''nil)))
-                (bind-free (remove-override-vars-value-binding mfc state) (values))
-                (equal trips (override-tests-to-svex-override-triplelist known-tests values))
-                (not (svexlist-check-overridetriples list trips))
+                (no-duplicatesp-equal (svarlist-fix known-tests))
+                (bind-free (svtv-override-parameter-bindings mfc state)
+                           (values non-composable-vars))
+                (equal known-tests2 (set-difference-equal known-tests non-composable-vars))
+                (syntaxp (not (equal known-tests2 ''nil)))
+                (no-duplicatesp-equal (svarlist-fix known-tests2))
+                (equal trips (override-tests-to-svex-override-triplelist known-tests2 values))
+                (equal check (svexlist-check-overridetriples list trips))
+                (syntaxp (or (equal check ''nil)
+                             (diagnose-overridetriple-check-result check trips)))
+                (not check)
                 (equal trips-vars (svex-override-triplelist-vars trips))
-                (no-duplicatesp-equal trips-vars)
                 (equal new-env (svex-env-removekeys trips-vars env))
-                (svex-override-triplelist-env-ok trips env new-env))
+                (force (svex-override-triplelist-env-ok trips env new-env)))
            (equal (svexlist-eval list env)
                   (svexlist-eval list new-env))))
 
@@ -461,6 +533,7 @@
     (:EXECUTABLE-COUNTERPART SVTV-PROBE->TIME$INLINE)
     (:EXECUTABLE-COUNTERPART SVTV-PROBEALIST-FIX$INLINE)
     (:EXECUTABLE-COUNTERPART ZP)
+    (:EXECUTABLE-COUNTERPART set-difference-equal)
     (:META SVEX-ALIST-KEYS-EXECUTE-TERM-WHEN-VARIABLE-FREE)
     (:META SVEX-LOOKUP-UNDER-IFF-EXECUTE-TERM-WHEN-VARIABLE-FREE)
     (:META SVEX-OVERRIDE-TRIPLELIST-VARS-EXECUTE-TERM-WHEN-VARIABLE-FREE)
@@ -549,15 +622,16 @@
 
 
 
-(defun svtv-decomp-hints-fn (enables disables)
+(defun svtv-decomp-hints-fn (enables disables forcep)
   `'(:computed-hint-replacement
      ((and stable-under-simplificationp
            '(:in-theory (e/d** (svtv-decomp-phase1-rules))))
       (and stable-under-simplificationp
-           '(:in-theory (e/d** (svtv-decomp-phase2-rules)))))
+           '(:in-theory (e/d** (svtv-decomp-phase2-rules
+                                . ,(and forcep '((force))))))))
      :in-theory (e/d** (svtv-decomp-phase0-rules
                         . ,enables)
                        ,disables)))
 
-(defmacro svtv-decomp-hints (&key enables disables)
-  (svtv-decomp-hints-fn enables disables))
+(defmacro svtv-decomp-hints (&key enables disables forcep)
+  (svtv-decomp-hints-fn enables disables forcep))
