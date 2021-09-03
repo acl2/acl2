@@ -516,19 +516,19 @@
 
 (defthm-flag-sublis-var-simple
   (defthm not-member-equal-of-fns-in-term-of-sublis-var-simple
-    (implies (and (not (member-equal fn (fns-in-term form)))
+    (implies (and (not (member-equal fn (fns-in-term term)))
                   (not (member-equal fn (fns-in-terms (strip-cdrs alist))))
-                  (pseudo-termp form))
-             (not (member-equal fn (fns-in-term (sublis-var-simple alist form)))))
+                  (pseudo-termp term))
+             (not (member-equal fn (fns-in-term (sublis-var-simple alist term)))))
     :flag sublis-var-simple)
   (defthm not-member-equal-of-fns-in-term-of-sublis-var-simple-lst
-    (implies (and (not (member-equal fn (fns-in-terms l)))
+    (implies (and (not (member-equal fn (fns-in-terms terms)))
                   (not (member-equal fn (fns-in-terms (strip-cdrs alist))))
-                  (pseudo-term-listp l))
-             (not (member-equal fn (fns-in-terms (sublis-var-simple-lst alist l)))))
+                  (pseudo-term-listp terms))
+             (not (member-equal fn (fns-in-terms (sublis-var-simple-lst alist terms)))))
     :flag sublis-var-simple-lst)
-  :hints (("Goal" :expand ((FNS-IN-TERM (CONS (CAR FORM)
-                                              (SUBLIS-VAR-SIMPLE-LST ALIST (CDR FORM)))))
+  :hints (("Goal" :expand ((FNS-IN-TERM (CONS (CAR TERM)
+                                              (SUBLIS-VAR-SIMPLE-LST ALIST (CDR TERM)))))
            :in-theory (enable fns-in-term
                               sublis-var-simple
                               sublis-var-simple-lst))))
