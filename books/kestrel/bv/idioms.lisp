@@ -11,10 +11,10 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/bv/bvshl" :dir :system)
-(include-book "kestrel/bv/bvshr" :dir :system)
-(include-book "kestrel/bv/bvand" :dir :system)
-(include-book "kestrel/bv/rules" :dir :system) ;for BVAND-OF-EXPT, todo reduce
+(include-book "bvshl")
+(include-book "bvshr")
+(include-book "bvand")
+(include-book "rules") ;for BVAND-OF-EXPT, todo reduce
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 

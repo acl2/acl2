@@ -11,8 +11,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/bv/rightrotate" :dir :system)
-;(include-book "kestrel/bv/bvcat" :dir :system)
+(include-book "rightrotate")
+;(include-book "bvcat")
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "slice"))
 
