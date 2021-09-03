@@ -17,7 +17,7 @@
 (include-book "rewriter-alt")
 (include-book "kestrel/utilities/deftest" :dir :system)
 (include-book "kestrel/utilities/assert-with-stobjs" :dir :system)
-(include-book "kestrel/axe/basic-rules" :dir :system) ;for equal-same
+(include-book "basic-rules") ;for equal-same
 
 (defstub foo (x) t)
 

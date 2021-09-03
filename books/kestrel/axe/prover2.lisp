@@ -15,7 +15,7 @@
 ;; TODO compare this stuff to prover.lisp
 ;; This book is only used by equivalence-checker.lisp.
 
-(include-book "kestrel/axe/prover" :dir :system)
+(include-book "prover")
 
 (defun default-case-designator () "UNKNOWN") ;make a macro?
 

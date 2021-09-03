@@ -16,7 +16,7 @@
 
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system)
-(include-book "kestrel/axe/dags" :dir :system) ;for all-dargp
+(include-book "dags") ;for all-dargp
 
 ;a result-array maps nodenums to alists from rewrite-objectives to nodenums-or-quoteps (the alist is nil if the node is not yet rewritten)
 

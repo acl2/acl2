@@ -14,8 +14,8 @@
 
 ;; See also defthm-axe-basic, which does not depend on skip-proofs.
 
-(include-book "kestrel/axe/elaborate-rule-items" :dir :system)
-(include-book "kestrel/axe/prover" :dir :system)
+(include-book "elaborate-rule-items")
+(include-book "prover")
 
 ;; Returns an event.
 (defun defthm-axe-fn (name term rules rule-lists remove-rules rule-classes print state)
