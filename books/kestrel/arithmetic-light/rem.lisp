@@ -11,16 +11,16 @@
 
 (in-package "ACL2")
 
-(local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
-(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
-(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
-(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
-(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
-(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
-(local (include-book "kestrel/arithmetic-light/divides" :dir :system))
+(local (include-book "truncate"))
+(local (include-book "mod"))
+(local (include-book "floor"))
+(local (include-book "times"))
+(local (include-book "times-and-divides"))
+(local (include-book "plus-and-minus"))
+(local (include-book "plus"))
+(local (include-book "minus"))
+(local (include-book "floor"))
+(local (include-book "divides"))
 
 (in-theory (disable rem))
 
