@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-(include-book "kestrel/lists-light/all-equal-dollar" :dir :system)
+(include-book "all-equal-dollar")
 
 ;todo: disable
 (defun all-same (lst)
