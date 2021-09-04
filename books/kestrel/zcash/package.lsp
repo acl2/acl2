@@ -13,6 +13,7 @@
 (include-book "std/portcullis" :dir :system)
 (include-book "kestrel/crypto/ecurve/portcullis" :dir :system)
 (include-book "kestrel/crypto/r1cs/portcullis" :dir :system)
+(include-book "kestrel/isar/portcullis" :dir :system)
 (include-book "kestrel/prime-fields/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -23,7 +24,10 @@
                           bytep
                           bit-listp
                           byte-listp
+                          define-sk
                           defxdoc+
+                          nat-setp
+                          isar::defisar
                           pfield::fep
                           pfield::add
                           pfield::neg
