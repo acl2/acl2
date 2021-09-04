@@ -227,6 +227,9 @@
                            :hyp (rp-termp s-term)))
    :measure (cons-count s-term)
    (b* ((?orig s-term)
+        ((mv s-term negated) (case-match s-term
+                               (('-- s-term) (mv s-term t))
+                             (& (mv s-term nil))))
         (term (ex-from-rp s-term)))
      (case-match term
        (('s & pp-arg c-arg)
@@ -242,16 +245,22 @@
              ((mv pp-arg-lst c-arg-lst)
               (s-of-s-fix-lst s-arg-lst2 pp-arg-lst c-arg-lst))
              (pp-arg-lst (s-fix-pp-args-aux pp-arg-lst))
-             (c-arg-lst (s-fix-pp-args-aux c-arg-lst)))
-          (create-s-instance (create-list-instance pp-arg-lst)
-                             (create-list-instance c-arg-lst))))
+             (c-arg-lst (s-fix-pp-args-aux c-arg-lst))
+             ((mv s-res-lst pp-res-lst c-res-lst)
+              (create-s-instance (create-list-instance pp-arg-lst)
+                                 (create-list-instance c-arg-lst))))
+          (if negated
+              (mv (negate-lst s-res-lst)
+                  (negate-lst pp-res-lst)
+                  (negate-lst c-res-lst))
+              (mv s-res-lst pp-res-lst c-res-lst))))
        (''0
         (mv nil nil nil))
        (& (progn$
            (hard-error 'unpack-booth-for-s
                        "Unrecognized s instance: ~p0 ~%"
                        (list (cons #\0 orig)))
-           (mv (list term) nil nil))))))
+           (mv (list orig) nil nil))))))
  
  (define unpack-booth-for-s-lst ((s-lst rp-term-listp))
    :returns (mv (s-res-lst rp-term-listp
@@ -370,42 +379,51 @@
 
 
 (define unpack-booth-meta ((term rp-termp))
-  :returns (mv (res rp-termp :hyp (rp-termp term))
+  :returns (mv (res rp-termp
+                    :hyp (rp-termp term)
+                    :hints (("Goal"
+                             :expand ((:free (x)
+                                             (rp-termp (cons '-- x))))
+                             :in-theory (e/d () ()))))
                (dont-rw))
+   
   (case-match term
-    (('unpack-booth subterm)
-     (b* ((orig subterm)
-          ((unless (unpack-booth-later-enabled))
-           (mv term nil))
-          (subterm (ex-from-rp subterm))
-          ((mv s-res-lst pp-res-lst c-res-lst)
-           (case-match subterm
-             (('s & & &)
-              (unpack-booth-for-s orig))
-             (('c & & & &)
-              (unpack-booth-for-c orig))
-             (('s-c-res s-arg pp-arg c-arg)
-              (b* (((mv s-res-lst1 pp-res-lst1 c-res-lst1)
-                    (unpack-booth-for-s-lst (list-to-lst s-arg)))
-                   ((mv s-res-lst2 pp-res-lst2 c-res-lst2)
-                    (unpack-booth-for-c-lst (list-to-lst c-arg)))
-                   ;; merge  the results
-                   (pp-res-lst (unpack-booth-for-pp-lst (list-to-lst pp-arg)))
-                   (pp-res-lst (pp-sum-merge-aux pp-res-lst
-                                                 (pp-sum-merge-aux pp-res-lst1
-                                                                   pp-res-lst2)))
-                   (s-res-lst (s-sum-merge-aux s-res-lst1 s-res-lst2))
-                   (c-res-lst (s-sum-merge-aux c-res-lst1 c-res-lst2)))
-                (mv s-res-lst pp-res-lst c-res-lst)))
-             (& (progn$ (hard-error 'unpack-booth-meta
-                                    "Unrecognized term ~p0 ~%"
-                                    (list (cons #\0 orig)))
-                        (mv (list orig) nil nil)))))
-          (res (create-s-c-res-instance s-res-lst pp-res-lst c-res-lst nil))
-          (& (and (not (equal res ''0))
-                  (hard-error 'unpack "term:~p0 ~% res:~p1~%" (list (cons #\0 term)
-                                                               (cons #\1 res))))))
-       (mv res t)))
+      (('unpack-booth subterm)
+       (b* (((unless (unpack-booth-later-enabled))
+             (mv term nil))
+            
+            ((mv subterm signed)
+             (case-match subterm
+                 (('-- subterm) (mv subterm t))
+               (& (mv subterm nil))))
+            (subterm-orig subterm)
+            (subterm (ex-from-rp subterm))
+            ((mv s-res-lst pp-res-lst c-res-lst)
+             (case-match subterm
+                 (('s & & &)
+                  (unpack-booth-for-s subterm-orig))
+               (('c & & & &)
+                (unpack-booth-for-c subterm-orig))
+               (('s-c-res s-arg pp-arg c-arg)
+                (b* (((mv s-res-lst1 pp-res-lst1 c-res-lst1)
+                      (unpack-booth-for-s-lst (list-to-lst s-arg)))
+                     ((mv s-res-lst2 pp-res-lst2 c-res-lst2)
+                      (unpack-booth-for-c-lst (list-to-lst c-arg)))
+                     ;; merge  the results
+                     (pp-res-lst (unpack-booth-for-pp-lst (list-to-lst pp-arg)))
+                     (pp-res-lst (pp-sum-merge-aux pp-res-lst
+                                                   (pp-sum-merge-aux pp-res-lst1
+                                                                     pp-res-lst2)))
+                     (s-res-lst (s-sum-merge-aux s-res-lst1 s-res-lst2))
+                     (c-res-lst (s-sum-merge-aux c-res-lst1 c-res-lst2)))
+                  (mv s-res-lst pp-res-lst c-res-lst)))
+               (& (progn$ (hard-error 'unpack-booth-meta
+                                      "Unrecognized term ~p0 ~%"
+                                      (list (cons #\0 subterm-orig)))
+                          (mv (list subterm-orig) nil nil)))))
+            (res (create-s-c-res-instance s-res-lst pp-res-lst c-res-lst nil))
+            (res (if signed `(-- ,res) res))) 
+         (mv res t)))
     (&
      (mv term nil))))
      

@@ -445,7 +445,7 @@
                      :mode :logic))
     (b* ((params (rp-apply-bindings-subterms params var-bindings))
          ((mv err val)
-          (magic-ev-fncall fn-name (unquote-all params) state *rp-hard-error-returns-nilp* nil)))
+          (magic-ev-fncall fn-name (unquote-all params) state nil t)))
       (if err
           (progn$ (hard-error 'rp-ev-fncall
                               "Magic-ev-fncall error for syntaxp check. val: ~p0 for term: ~p1 ~%"

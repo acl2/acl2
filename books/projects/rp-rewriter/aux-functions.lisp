@@ -1239,14 +1239,16 @@
                  (and warning
                       (cw "ATTENTION! (not (acl2::fquotep (rp-lhs rule))) failed!
     LHS cannot be a quoted value ~%")))
+
+             #|(or (no-free-variablep rule)
+                 (and warning
+                      (cw "Warning! This rule (~%) has the following free variables: ~
+In the hyps: ~p0, in the rhs :~p1. ~%")))|#
+             
              (or (not (include-fnc (rp-lhs rule) 'synp))
                  (and warning
                       (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'synp))
     failed! LHS cannot contain an instance of synp ~%")))
-             (or (no-free-variablep rule)
-                 (and warning
-                      (cw "ATTENTION! (no-free-variablep rule) failed! We do not
-    support rules with free variables ~%")))
              (not (include-fnc (rp-lhs rule) 'list))
              (not (include-fnc (rp-hyp rule) 'list))
              (not (include-fnc (rp-rhs rule) 'list)))

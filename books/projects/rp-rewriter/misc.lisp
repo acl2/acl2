@@ -62,7 +62,7 @@
      (declare (xargs :mode :program))
      (b* ((fnc-name (sa base-name 'lambda-fnc index))
           (signature `((,fnc-name ,@(repeat (len keys) '*)) => *))
-          ((mv other-signatures other-fncs other-openers real-body new-index)
+          ((mv other-signatures other-fncs other-fnc-names other-openers real-body new-index)
            (search-lambda-to-fnc base-name (1+ index) body))
           (opener `((equal (,fnc-name ,@keys)
                            ,real-body)))
@@ -74,38 +74,41 @@
                   (add-rp-rule ,fnc-name)))))
        (mv (append other-signatures (list signature))
            (append other-fncs fnc)
+           (cons `(,fnc-name ,@keys) other-fnc-names)
            (append other-openers opener)
            new-index)))
 
    (defun search-lambda-to-fnc (base-name index term)
      (cond ((or (atom term)
                 (eq (car term) 'quote))
-            (mv nil nil nil term index))
+            (mv nil nil nil nil term index))
            ((is-lambda term)
-            (b* (((mv sigs fncs openers new-index)
+            (b* (((mv sigs fncs fnc-names openers new-index)
                   (lambda-to-fnc base-name index (cadr (car term)) (caddr (car
                                                                            term))))
                  (fnc-name (sa base-name 'lambda-fnc index)))
               (mv sigs fncs
+                  fnc-names
                   openers
                   `(,fnc-name ,@(cdr term))
                   new-index)))
            (t
-            (b* (((mv sigs fncs openers rest new-index)
+            (b* (((mv sigs fncs fnc-names openers rest new-index)
                   (search-lambda-to-fnc-lst base-name index  (cdr term))))
-              (mv sigs fncs openers
+              (mv sigs fncs fnc-names openers
                   (cons (car term) rest)
                   new-index)))))
 
    (defun search-lambda-to-fnc-lst (base-name index lst)
      (if (atom lst)
-         (mv nil nil nil lst index)
-       (b* (((mv sigs fncs openers first new-index)
+         (mv nil nil nil nil lst index)
+       (b* (((mv sigs fncs fnc-names openers first new-index)
              (search-lambda-to-fnc base-name index (car lst)))
-            ((mv o-sigs o-fncs o-openers rest new-index)
+            ((mv o-sigs o-fncs o-fnc-names o-openers rest new-index)
              (search-lambda-to-fnc-lst base-name new-index (cdr lst))))
          (mv (append sigs o-sigs)
              (append fncs o-fncs)
+             (append fnc-names o-fnc-names)
              (append openers o-openers)
              (cons first rest)
              new-index)))))
@@ -130,14 +133,15 @@
              (mv ''t lhs rhs t))
             (&
              (mv ''t rule ''t t))))
-         ((mv hyp-sigs hyp-fncs hyp-openers hyp-body index)
+         ((mv hyp-sigs hyp-fncs hyp-fnc-names hyp-openers hyp-body index)
           (search-lambda-to-fnc rule-name 0 hyp))
-         ((mv rhs-sigs rhs-fncs rhs-openers rhs-body index)
+         ((mv rhs-sigs rhs-fncs rhs-fnc-names rhs-openers rhs-body index)
           (search-lambda-to-fnc rule-name index rhs))
-         ((mv lhs-sigs lhs-fncs lhs-openers lhs-body ?index)
+         ((mv lhs-sigs lhs-fncs lhs-fnc-names lhs-openers lhs-body ?index)
           (search-lambda-to-fnc rule-name index lhs))
          (sigs (append hyp-sigs rhs-sigs lhs-sigs))
          (fncs (append hyp-fncs rhs-fncs lhs-fncs))
+         (fnc-names (append hyp-fnc-names rhs-fnc-names lhs-fnc-names))
          (openers (append hyp-openers rhs-openers lhs-openers)))
       (if (or (and sigs fncs openers)
               (and (or sigs fncs openers)
@@ -151,9 +155,22 @@
              (local
               (defthmd opener-lemmas
                   (and ,@(loop$ for x in openers collect
-                               `(equal ,x t)))))
+                               `(equal ,x t)))
+                :hints (("Goal"
+                         :expand ,fnc-names
+                         :in-theory  (union-theories (theory 'acl2::minimal-theory)
+                                                     '(hard-error
+                                                       hons-acons
+                                                       hons-copy
+                                                       make-fast-alist
+                                                       fmt-to-comment-window
+                                                       return-last)
+                                                     ))
+                        (AND STABLE-UNDER-SIMPLIFICATIONP
+                             '(:IN-THEORY (e/d () ()))))))
              (local
               (rp::add-rp-rule opener-lemmas :outside-in t))
+             
              (with-output
                :stack :pop
                :on (acl2::summary acl2::event)

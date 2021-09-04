@@ -904,6 +904,267 @@
 ;; probably a part  of a full-adder, so  I convert that to fa  spec.  For other
 ;; adder types, other rewrite rules might be necessary.
 
+
+
+;;;;;;;
+
+;; First catch that strange case of 4vec-plus-chains
+
+(local
+ (defthm integerp-4vec-adder
+     (implies (and (natp size)
+                   (integerp x)
+                   (integerp y)
+                   (integerp carry-in))
+              (integerp (4vec-adder x y carry-in size)))
+   :rule-classes (:rewrite :type-prescription)
+   :hints (("Goal"
+            :in-theory (e/d (4VEC-ADDER) ())))))
+
+(local
+ (defthm integerp-bits
+     (implies (and (natp start)
+                   (natp size)
+                   (integerp x))
+              (integerp (svl::bits x start size)))
+   :rule-classes (:type-prescription :rewrite)))
+
+(local
+ (defthm 4vec-part-select-start=0-for-integers-is-loghead
+     (implies (and (natp size)
+                   (integerp x))
+              (equal (sv::4vec-part-select 0 size x)
+                     (loghead size x)))
+   :hints (("Goal"
+            :in-theory (e/d (sv::4vec-part-select
+                             SV::4VEC-CONCAT
+                             ACL2::|arith (* 0 x)|
+                             SV::4VEC->UPPER
+                             SV::4VEC->lower)
+                            ())))))
+
+
+(encapsulate
+    nil
+    (local
+     (use-arithmetic-5 t))
+
+  (def-rp-rule$ t nil unsigned-byte-p-to-ash-form
+      (implies (natp size)
+               (equal (unsigned-byte-p size x)
+                      (and (hide (unsigned-byte-p size x))
+                           (integerp x)
+                           (equal (ash x (- size)) 0))))
+      :hints (("Goal"
+               :expand ((hide (unsigned-byte-p size x)))
+             :in-theory (e/d ((:REWRITE ACL2::ASH-TO-FLOOR)
+                              (:REWRITE ACL2::FLOOR-ZERO . 1)
+                              (:REWRITE MINUS-OF-MINUS)
+                              (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
+                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
+                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
+                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
+                              (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
+                             ()))))
+  
+  (def-rp-rule ash-implies-unsigned-byte-p
+      (implies (and (integerp x)
+                    (natp size)
+                    (equal (ash x (- size)) 0))
+               (unsigned-byte-p size x))
+    :hints (("Goal"
+             :in-theory (e/d ((:REWRITE ACL2::ASH-TO-FLOOR)
+                              (:REWRITE ACL2::FLOOR-ZERO . 1)
+                              (:REWRITE MINUS-OF-MINUS)
+                              (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
+                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
+                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
+                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
+                              (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
+                             ())))))
+
+(local
+ (encapsulate
+     nil
+
+     (local
+      (defthmd insert-loghead-to-plusp-lemma-1
+          (implies (and (integerp x)
+                        (<= x max1)
+                        (integerp y)
+                        (<= y max2)
+                        (integerp z)
+                        (<= z max3)
+                        )
+                   (<= (+ x y z) (+ max1 max2 max3)))
+        :otf-flg t
+        :hints (("Goal"
+                 :in-theory (e/d* ()
+                                  (+-is-sum))))))
+
+   (local
+    (defthmd <=-to-<-for-integers
+        (implies (and (integerp x)
+                      (integerp y))
+                 (equal (<= x y)
+                        (< x (1+ y))))
+      :rule-classes (:rewrite)
+      :hints (("Goal"
+               :in-theory (e/d ()
+                               (+-is-sum))))))
+
+   (local
+    (defthmd insert-loghead-to-plusp-lemma-2
+        (implies (natp size)
+                 (equal (+ (EXPT 2 SIZE) (EXPT 2 SIZE))
+                        (EXPT 2 (1+ SIZE))))
+      :hints (("Goal"
+               :in-theory (e/d () (+-is-sum))))))
+
+   (local
+    (defthmd insert-loghead-to-plusp-lemma-3
+        (implies (natp size)
+                 (equal (* 2 (EXPT 2 SIZE))
+                        (EXPT 2 (1+ SIZE))))
+      :hints (("Goal"
+               :in-theory (e/d () (+-is-sum))))))
+
+   (local
+    (use-arithmetic-5 t))
+
+
+   (defthmd insert-loghead-to-plusp-lemma
+       (implies (and (unsigned-byte-p size x)
+                     (unsigned-byte-p size y)
+                     (unsigned-byte-p 1 z))
+                (unsigned-byte-p (1+ size)
+                                 (+ x y z)))
+     :otf-flg t
+     :hints (("Goal"
+              :do-not-induct t
+              :use ((:instance insert-loghead-to-plusp-lemma-1
+                               (max1 (1- (EXPT 2 SIZE)))
+                               (max2 (1- (EXPT 2 SIZE)))
+                               (max3 1))
+                    (:instance <=-to-<-for-integers
+                               (x (+ x y z))
+                               (y (+ -1 (EXPT 2 SIZE) (EXPT 2 SIZE)))))
+              :in-theory (e/d (insert-loghead-to-plusp-lemma-2
+                               PLUS-WITH-0
+                               insert-loghead-to-plusp-lemma-3
+                               zip
+                               ACL2::|(integerp (expt x n))|)
+                              (+-is-sum
+                               insert-loghead-to-plusp-lemma-1)))))
+
+   (defthmd remove-loghead
+       (implies (unsigned-byte-p size x)
+                (equal (loghead size x)
+                       x)))
+
+   (defthmd remove-loghead-from-plus
+       (implies (and (unsigned-byte-p size x)
+                     (unsigned-byte-p size y)
+                     (unsigned-byte-p 1 z))
+                (equal (loghead (1+ size) (+ x y z))
+                       (+ x y z)))
+     :hints (("Goal"
+              :do-not-induct t
+              :use ((:instance remove-loghead
+                               (x (+ x y z))
+                               (size (1+ size)))
+                    (:instance insert-loghead-to-plusp-lemma))
+              :in-theory (e/d ()
+                              (+-is-sum)))))))
+                                
+
+(local
+ (defthmd
+     4vec-adder-is-2vec-adder
+     (implies (and (integerp x)
+                   (integerp y)
+                   (integerp carry-in)
+                   (natp size))
+              (equal (4vec-adder x y carry-in size)
+                     (2vec-adder x y carry-in size)))
+   :hints
+   (("goal" :in-theory (e/d (2vec-adder-is-4vec-adder) nil)))))
+
+
+(def-rp-rule 4vec-plus-chain-1
+     (implies
+      (and (bitp carry-in)
+           (unsigned-byte-p (1- size) x)
+           (unsigned-byte-p (1- size) y)
+           (posp size))
+      (and (equal (sv::4vec-plus (sv::4vec-concat
+                                  size
+                                  (sv::4vec-part-select 0 size (sv::4vec-plus x y))
+                                  0)
+                                 carry-in)
+                  (svl::4vec-plus++ x y carry-in size))
+           (equal (sv::4vec-plus (sv::4vec-concat
+                                  size
+                                  (sv::4vec-plus x y)
+                                  0)
+                                 carry-in)
+                  (svl::4vec-plus++ x y carry-in size))
+           (equal (sv::4vec-plus (sv::4vec-part-select 0 size (sv::4vec-plus x y))
+                                 carry-in)
+                  (svl::4vec-plus++ x y carry-in size))
+           ))
+   :otf-flg t
+   :hints (("Goal"
+            :use ((:instance remove-loghead-from-plus
+                             (size (1- size))
+                             (z 0))
+                  (:instance remove-loghead-from-plus
+                             (size (1- size))
+                             (z carry-in))
+                  (:instance loghead-of-+-is-2vec-adder-lemma
+                             (carry carry-in)))
+            :do-not-induct t
+            ;;:induct (2VEC-ADDER X Y carry-in SIZE)
+            :in-theory (e/d (SVL::4VEC-CONCAT$-OF-TERM2=0
+                             unsigned-byte-p-to-ash-form
+                             4VEC-ADDER-IS-2VEC-ADDER
+                             
+                             SV::4VEC-PLUS
+                             BITOPS::LOGHEAD-OF-LOGHEAD-2
+                             SV::2VEC
+                             ;;loghead
+                             ;;(:induction 2VEC-ADDER)
+                             SVL::BITS
+                             ;;bitp
+                             SV::4VEC
+                             ;;SV::4VEC-PART-SELECT
+                             2VEC-ADDER
+                             SV::4VEC->UPPER
+                             SV::4VEC->LOWER)
+                            (4vec-adder-opener-size>0
+                             ACL2::POSP-REDEFINITION
+                             UNSIGNED-BYTE-P-TO-ASH-FORM
+                             2vec-adder-is-4vec-adder
+                             unsigned-byte-p
+                             ash
+                             loghead
+                             f2
+                             m2
+                             bit-of
+                             ;;ACL2::LIFIX$INLINE
+                             +-is-sum
+                             LOGHEAD-OF-+-IS-2VEC-ADDER-WITHOUT-CARRY
+                             loghead-of-+-is-2vec-adder-lemma
+                             loghead-of-+-is-2vec-adder
+                             2vec-adder-is-4vec-adder
+                             )))))
+
+(rp::add-rp-rule rp::4vec-plus-chain-1 :outside-in :both)
+
+;;;;;;;
+
+
+
 (defun temp-ha-spec (x y)
   (svl::4vec-list (ss x y)
                   (cc x y)
@@ -1159,263 +1420,6 @@
           :in-theory (e/d (bitp) ()))))
 ;;;;;;;;;;;;;;;;;;;
 
-
-(local
- (defthm integerp-4vec-adder
-     (implies (and (natp size)
-                   (integerp x)
-                   (integerp y)
-                   (integerp carry-in))
-              (integerp (4vec-adder x y carry-in size)))
-   :rule-classes (:rewrite :type-prescription)
-   :hints (("Goal"
-            :in-theory (e/d (4VEC-ADDER) ())))))
-
-(local
- (defthm integerp-bits
-     (implies (and (natp start)
-                   (natp size)
-                   (integerp x))
-              (integerp (svl::bits x start size)))
-   :rule-classes (:type-prescription :rewrite)))
-
-(local
- (defthm 4vec-part-select-start=0-for-integers-is-loghead
-     (implies (and (natp size)
-                   (integerp x))
-              (equal (sv::4vec-part-select 0 size x)
-                     (loghead size x)))
-   :hints (("Goal"
-            :in-theory (e/d (sv::4vec-part-select
-                             SV::4VEC-CONCAT
-                             ACL2::|arith (* 0 x)|
-                             SV::4VEC->UPPER
-                             SV::4VEC->lower)
-                            ())))))
-
-
-(encapsulate
-    nil
-    (local
-     (use-arithmetic-5 t))
-
-  (def-rp-rule$ t nil unsigned-byte-p-to-ash-form
-      (implies (natp size)
-               (equal (unsigned-byte-p size x)
-                      (and (hide (unsigned-byte-p size x))
-                           (integerp x)
-                           (equal (ash x (- size)) 0))))
-      :hints (("Goal"
-               :expand ((hide (unsigned-byte-p size x)))
-             :in-theory (e/d ((:REWRITE ACL2::ASH-TO-FLOOR)
-                              (:REWRITE ACL2::FLOOR-ZERO . 1)
-                              (:REWRITE MINUS-OF-MINUS)
-                              (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
-                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
-                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
-                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
-                              (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
-                             ()))))
-  
-  (def-rp-rule ash-implies-unsigned-byte-p
-      (implies (and (integerp x)
-                    (natp size)
-                    (equal (ash x (- size)) 0))
-               (unsigned-byte-p size x))
-    :hints (("Goal"
-             :in-theory (e/d ((:REWRITE ACL2::ASH-TO-FLOOR)
-                              (:REWRITE ACL2::FLOOR-ZERO . 1)
-                              (:REWRITE MINUS-OF-MINUS)
-                              (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
-                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
-                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
-                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
-                              (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
-                             ()))))
-
-  
-  
-  )
-
-
-
-(local
- (encapsulate
-     nil
-
-     (local
-      (defthmd insert-loghead-to-plusp-lemma-1
-          (implies (and (integerp x)
-                        (<= x max1)
-                        (integerp y)
-                        (<= y max2)
-                        (integerp z)
-                        (<= z max3)
-                        )
-                   (<= (+ x y z) (+ max1 max2 max3)))
-        :otf-flg t
-        :hints (("Goal"
-                 :in-theory (e/d* ()
-                                  (+-is-sum))))))
-
-   (local
-    (defthmd <=-to-<-for-integers
-        (implies (and (integerp x)
-                      (integerp y))
-                 (equal (<= x y)
-                        (< x (1+ y))))
-      :rule-classes (:rewrite)
-      :hints (("Goal"
-               :in-theory (e/d ()
-                               (+-is-sum))))))
-
-   (local
-    (defthmd insert-loghead-to-plusp-lemma-2
-        (implies (natp size)
-                 (equal (+ (EXPT 2 SIZE) (EXPT 2 SIZE))
-                        (EXPT 2 (1+ SIZE))))
-      :hints (("Goal"
-               :in-theory (e/d () (+-is-sum))))))
-
-   (local
-    (defthmd insert-loghead-to-plusp-lemma-3
-        (implies (natp size)
-                 (equal (* 2 (EXPT 2 SIZE))
-                        (EXPT 2 (1+ SIZE))))
-      :hints (("Goal"
-               :in-theory (e/d () (+-is-sum))))))
-
-   (local
-    (use-arithmetic-5 t))
-
-
-   (defthmd insert-loghead-to-plusp-lemma
-       (implies (and (unsigned-byte-p size x)
-                     (unsigned-byte-p size y)
-                     (unsigned-byte-p 1 z))
-                (unsigned-byte-p (1+ size)
-                                 (+ x y z)))
-     :otf-flg t
-     :hints (("Goal"
-              :do-not-induct t
-              :use ((:instance insert-loghead-to-plusp-lemma-1
-                               (max1 (1- (EXPT 2 SIZE)))
-                               (max2 (1- (EXPT 2 SIZE)))
-                               (max3 1))
-                    (:instance <=-to-<-for-integers
-                               (x (+ x y z))
-                               (y (+ -1 (EXPT 2 SIZE) (EXPT 2 SIZE)))))
-              :in-theory (e/d (insert-loghead-to-plusp-lemma-2
-                               PLUS-WITH-0
-                               insert-loghead-to-plusp-lemma-3
-                               zip
-                               ACL2::|(integerp (expt x n))|)
-                              (+-is-sum
-                               insert-loghead-to-plusp-lemma-1)))))
-
-   (defthmd remove-loghead
-       (implies (unsigned-byte-p size x)
-                (equal (loghead size x)
-                       x)))
-
-   (defthmd remove-loghead-from-plus
-       (implies (and (unsigned-byte-p size x)
-                     (unsigned-byte-p size y)
-                     (unsigned-byte-p 1 z))
-                (equal (loghead (1+ size) (+ x y z))
-                       (+ x y z)))
-     :hints (("Goal"
-              :do-not-induct t
-              :use ((:instance remove-loghead
-                               (x (+ x y z))
-                               (size (1+ size)))
-                    (:instance insert-loghead-to-plusp-lemma))
-              :in-theory (e/d ()
-                              (+-is-sum)))))))
-                                
-
-(local
- (defthmd
-     4vec-adder-is-2vec-adder
-     (implies (and (integerp x)
-                   (integerp y)
-                   (integerp carry-in)
-                   (natp size))
-              (equal (4vec-adder x y carry-in size)
-                     (2vec-adder x y carry-in size)))
-   :hints
-   (("goal" :in-theory (e/d (2vec-adder-is-4vec-adder) nil)))))
-
-
-(def-rp-rule 4vec-plus-chain-1
-     (implies
-      (and (bitp carry-in)
-           (unsigned-byte-p (1- size) x)
-           (unsigned-byte-p (1- size) y)
-           (posp size))
-      (and (equal (sv::4vec-plus (sv::4vec-concat
-                                  size
-                                  (sv::4vec-part-select 0 size (sv::4vec-plus x y))
-                                  0)
-                                 carry-in)
-                  (svl::4vec-plus++ x y carry-in size))
-           (equal (sv::4vec-plus (sv::4vec-concat
-                                  size
-                                  (sv::4vec-plus x y)
-                                  0)
-                                 carry-in)
-                  (svl::4vec-plus++ x y carry-in size))
-           (equal (sv::4vec-plus (sv::4vec-part-select 0 size (sv::4vec-plus x y))
-                                 carry-in)
-                  (svl::4vec-plus++ x y carry-in size))
-           ))
-   :otf-flg t
-   :hints (("Goal"
-            :use ((:instance remove-loghead-from-plus
-                             (size (1- size))
-                             (z 0))
-                  (:instance remove-loghead-from-plus
-                             (size (1- size))
-                             (z carry-in))
-                  (:instance loghead-of-+-is-2vec-adder-lemma
-                             (carry carry-in)))
-            :do-not-induct t
-            ;;:induct (2VEC-ADDER X Y carry-in SIZE)
-            :in-theory (e/d (SVL::4VEC-CONCAT$-OF-TERM2=0
-                             unsigned-byte-p-to-ash-form
-                             4VEC-ADDER-IS-2VEC-ADDER
-                             
-                             SV::4VEC-PLUS
-                             BITOPS::LOGHEAD-OF-LOGHEAD-2
-                             SV::2VEC
-                             ;;loghead
-                             ;;(:induction 2VEC-ADDER)
-                             SVL::BITS
-                             ;;bitp
-                             SV::4VEC
-                             ;;SV::4VEC-PART-SELECT
-                             2VEC-ADDER
-                             SV::4VEC->UPPER
-                             SV::4VEC->LOWER)
-                            (4vec-adder-opener-size>0
-                             ACL2::POSP-REDEFINITION
-                             UNSIGNED-BYTE-P-TO-ASH-FORM
-                             2vec-adder-is-4vec-adder
-                             unsigned-byte-p
-                             ash
-                             loghead
-                             f2
-                             m2
-                             bit-of
-                             ;;ACL2::LIFIX$INLINE
-                             +-is-sum
-                             LOGHEAD-OF-+-IS-2VEC-ADDER-WITHOUT-CARRY
-                             loghead-of-+-is-2vec-adder-lemma
-                             loghead-of-+-is-2vec-adder
-                             2vec-adder-is-4vec-adder
-                             )))))
-
-(rp::add-rp-rule rp::4vec-plus-chain-1 :outside-in :both)
 
 
 

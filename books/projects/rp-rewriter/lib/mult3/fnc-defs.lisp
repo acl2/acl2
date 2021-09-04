@@ -535,6 +535,27 @@
           (t
            `(list . ,lst)))))
 
+
+
+(progn
+  (encapsulate
+    (((unpack-booth-later-enabled) => *))
+    (local
+     (defun unpack-booth-later-enabled ()
+       nil)))
+
+  (define return-t ()
+    t)
+  (define return-nil ()
+    nil)
+  
+  (defmacro enable-unpack-booth-later (enable)
+    (if enable
+        `(defattach unpack-booth-later-enabled return-t)
+      `(defattach unpack-booth-later-enabled return-nil)))
+
+  (enable-unpack-booth-later nil))
+
 (acl2::defines
  m-eval
  (define m-eval (term a)

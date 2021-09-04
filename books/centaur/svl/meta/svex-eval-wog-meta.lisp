@@ -294,7 +294,7 @@
             (progn$
              (and (consp env)
                   (equal (car env) 'cons)
-                  (cw "Warning: the environment of svex-eval is not a ~
+                  (cw "The environment of svex-eval is not a ~
 fast-alist. Consider making it one for a better performance.~%"))
              (svex-eval-wog-meta svex env-orig nil))))))
     (('svex-eval ('quote svex) env)
@@ -322,31 +322,30 @@ fast-alist. Consider making it one for a better performance.~%"))
             (env (rp::ex-from-rp env)))
          (case-match env
              (('falist ('quote env-falist) &)
-              (b* (((Unless (sv::svex-alist-p alist)) ;; for guards
+              (b* ((- (cw "Calling sv::svex-alist-p ~%"))
+                   ((Unless (sv::svex-alist-p alist)) ;; for guards
                     (mv term nil))
-                   (- (cw "Starting: svex-alist-reduce-w/-env ~%"))
-                   (- (time-tracker :svex-reduce-w/env :end))
-                   (- (time-tracker :svex-reduce-w/env :init
+                   (- (cw "Starting: svl::svex-alist-reduce-w/-env ~%"))
+                   (- (time-tracker :svex-alist-eval-meta :end))
+                   (- (time-tracker :svex-alist-eval-meta :init
                                     :times '(1 2 3 4 5)
                                     :interval 5
                                     ))
-                   (- (time-tracker :svex-reduce-w/env :start!))
+                   (- (time-tracker :svex-alist-eval-meta :start!))
                    (alist (svex-alist-reduce-w/-env alist env-falist))
                    
-                   (- (cw "Finished: svex-alist-reduce-w/-env. "))
-                   (- (time-tracker :svex-reduce-w/env :stop))
-                   (- (time-tracker :svex-reduce-w/env :print?
+                   (- (cw "Finished: svl::svex-alist-reduce-w/-env. "))
+                   (- (time-tracker :svex-alist-eval-meta :stop))
+                   (- (time-tracker :svex-alist-eval-meta :print?
                                     :min-time 0
-                                    :msg "The total runtime ~
-spent was ~st seconds."))
-                   (- (cw "~%"))
-
-                   (- (cw "Starting: svex-alist-to-svexl-alist ~%"))
+                                    :msg "The total runtime of svl::svex-alist-reduce-w/-env ~
+was ~st seconds."))
+                   (- (cw "Starting: svl::svex-alist-to-svexl-alist ~%"))
                    (svexl-alist (svex-alist-to-svexl-alist alist))
                    (- (let ((x (svexl-alist->node-array svexl-alist))) ;; for guards
                         (and (consp x)
                              (consp (car x))
-                             (cw "Finished: svex-alist-to-svexl-alist. Resulting svexl-alist has ~p0 nodes. ~%" (caar x))))))
+                             (cw "Finished: svl::svex-alist-to-svexl-alist. Resulting svexl-alist has ~p0 nodes.~%~%" (caar x))))))
                 (mv `(svexl-alist-eval ',svexl-alist ,env-orig)
                     `(nil t t))))
            (''nil
@@ -354,7 +353,7 @@ spent was ~st seconds."))
            (&
             (if (and (consp env) (equal (car env) 'cons))
                 (progn$
-                 (cw "Warning: the environment of svex-eval is not a fast-alist. Making it one now.~%")
+                 (cw "Note: the environment of svex-eval-alist is not a fast-alist. Making it a fast alist now.~%")
                  (mv `(sv::svex-alist-eval ',alist (make-fast-alist ,env-orig))
                      `(nil t (nil t))))
                 (mv term nil))))))

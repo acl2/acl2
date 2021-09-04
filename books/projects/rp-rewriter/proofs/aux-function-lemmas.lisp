@@ -774,7 +774,7 @@
             (not (include-fnc (rp-hyp rule) 'falist))
             ;;(not (include-fnc (rp-lhs rule) 'if))
             (not (include-fnc (rp-lhs rule) 'synp))
-            (no-free-variablep rule)
+            #|(no-free-variablep rule)|#
             (not (include-fnc (rp-lhs rule) 'list))
             (not (include-fnc (rp-hyp rule) 'list))
             (not (include-fnc (rp-rhs rule) 'list))))

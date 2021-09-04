@@ -247,4 +247,5 @@
 (add-postprocessor
  :processor-fnc medw-compress-any
  :valid-syntaxp t
+ :disabledp t
  :formula-checks mult-formula-checks)
