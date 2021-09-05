@@ -20,8 +20,10 @@
 
 (defpkg "ZCASH" (append (set-difference-eq *std-pkg-symbols*
                                            '())
-                        '(bitp
+                        '(bfix
+                          bitp
                           bytep
+                          bit-list-fix
                           bit-listp
                           byte-listp
                           define-sk
