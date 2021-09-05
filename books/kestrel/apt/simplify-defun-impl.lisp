@@ -768,6 +768,65 @@
                         wrld))))
     g?equiv))
 
+(defmacro prefix-event-verbosely (form event)
+
+; This macro is designed to be called in an environment where output has been
+; inhibited using (with-output :stack :push ...), as arranged by
+; deftransformation.  We want to allow output provided the top-level call of
+; the transformation is not made with :print nil.  We arrange this by checking
+; that error output is enabled, since deftransformation allows for error output
+; except for :print nil.
+
+; Event is an event, but form is any form that evaluates to state.  Here is an
+; example call of this macro.
+
+;   (prefix-event-verbosely (prog2$ (cw "Hello ~x0.~%" 'world)
+;                                   (value t))
+;                           (defun h (x) (cons x x)))
+
+  `(with-output ; turn off summary output for make-event, below
+     :off summary
+     (make-event
+      (if (member-eq 'error (f-get-global 'acl2::inhibit-output-lst state))
+
+; As noted in the comment at the top of this function, the test above is
+; intended to correlate reasonably well with the transformation having been
+; issued without :print nil.  When the goal is to fail silently we cause a
+; simple error here.
+
+          (value '(value-triple (mv t nil state) :stobjs-out :auto))
+        (pprogn ,form
+                (value '(with-output
+
+; Undo removal of summary output above, and also pop stack to expose original
+; output settings before the transformation was called.
+
+                          :stack :pop
+                          ,event)))))))
+
+(defun orelse-verbosely (form form-alt verbose)
+
+; This macro is designed to be called in an environment where output has been
+; inhibited using (with-output :stack :push ...), as arranged by
+; deftransformation.  We try form, and if that fails we try form-alt verbosely,
+; in the sense of prefix-event-verbosely; see comments about that macro.
+
+  `(acl2::orelse
+    ,(if verbose
+         form
+       `(with-output :off :all ,form))
+    (prefix-event-verbosely
+     (let ((chan (standard-co state)))
+       (pprogn (fms "==============================" nil chan state nil)
+               (fms "The proof failed for:~|~x0.~|"
+                    (list (cons #\0 ',form))
+                    chan state nil)
+               (fms "We now verbosely attempt to admit:~|~x0."
+                    (list (cons #\0 ',form-alt))
+                    chan state nil)
+               (fms "==============================~|" nil chan state nil)))
+     ,form-alt)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Handling hypotheses
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -890,9 +949,7 @@
                             (value '(value-triple :invisible))))))
           (local
            (on-failure
-            ,(if verbose
-                 defthm-form
-               `(with-output :off :all ,defthm-form))
+            ,defthm-form
             :ctx ,ctx
             :erp :condition-failed
             :val nil
@@ -1601,6 +1658,14 @@
 ; state), where if erp is nil then val is (cons rewritten-term runes).
 
   (with-output!
+
+; We turn off prover output because it doesn't seem useful, even when option
+; :print :all is supplied, to show the user output from rewrite$ such as the
+; following.
+
+;   <<Rewrite$ NOTE:>>
+;   Starting second call of the rewriter.
+
     :off prove
     (b* (((mv changedp bterm)
           (block-return-last term))
@@ -2204,8 +2269,11 @@
                 ,fn-simp
                 ,@(and verify-guards-hints
                        `(:hints ,verify-guards-hints)))))
+       (verify-guards-form-alt
+        (and verify-guards-p ; else don't care
+             `(verify-guards ,fn-simp)))
        (on-failure-msg
-        (msg "Guard verification has failed for the new function, ~x0. ~ See ~
+        (msg "Guard verification has failed for the new function, ~x0.  See ~
               :DOC apt::simplify-failure for some ways to address this ~
               failure."
              fn-simp)))
@@ -2233,10 +2301,22 @@
                                      0 wrld))
        ,(and verify-guards-p
              `(on-failure
-               ,(if verbose
-                    verify-guards-form
-                  `(with-output :off :all
-                     ,verify-guards-form))
+
+; We want to show a verify-guards proof failure if the attempt to verify guards
+; fails, so that the user can look at checkpoints and come up with helpful
+; rules without having to run simplify again.  (This behavior was requested by
+; Eric Smith.)  Below we call prefix-event-verbosely in that case to force an
+; extra verify-guards attempt, without hints.  Still, when verbose is true it
+; is tempting to avoid that replay because if :print :all is supplied to
+; SIMPLIFY then we can expect to have enough output already.  Unfortunately, we
+; cannot distinguish here between :print :all and :print :info, where the
+; latter does not show a verify-guards proof attempt's output.  Perhaps though
+; it's fine to do a replay in all cases, for the sake of uniformity -- all
+; cases except when :print nil holds, of course (see prefix-event-verbosely).
+
+               ,(orelse-verbosely verify-guards-form
+                                  verify-guards-form-alt
+                                  verbose)
                :ctx ,ctx
                :erp :condition-failed
                :val nil
@@ -2705,6 +2785,11 @@
 
   `(local
     (with-output
+
+; Presumably nobody wants to see the output from the events below.  They should
+; never cause an error, so we ensure that error output is on so that such an
+; unexpected error will be apparent.
+
       :off :all
       :on error
       (progn
@@ -2809,7 +2894,11 @@
                                    ctx state)
   (b* ((clique-runic-designators (clique-runic-designators clique))
        ((er -)
-        (trans-eval '(with-output :off (event summary)
+        (trans-eval '(with-output
+
+; Presumably nobody wants to see the output from the event below.
+
+                       :off (event summary)
                        (set-ignore-ok t))
                     ctx state nil))
        (wrld0 (w state))
