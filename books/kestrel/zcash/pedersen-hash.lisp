@@ -127,17 +127,18 @@
 
 (define pedersen-pad ((m bit-listp))
   :guard (consp m)
-  :returns (m1 bit-listp :hyp (bit-listp m))
+  :returns (m1 bit-listp)
   :short "Pedersen hash padding [ZPS:5.4.1.7]."
   :long
   (xdoc::topstring
    (xdoc::p
     "The message is padded with zero bits on the right
      to make its length a multiple of 3."))
-  (case (mod (len m) 3)
-    (0 m)
-    (1 (append m (list 0 0)))
-    (2 (append m (list 0))))
+  (append (bit-list-fix m)
+          (case (mod (len m) 3)
+            (0 nil)
+            (1 (list 0 0))
+            (2 (list 0))))
   ///
 
   (local (include-book "arithmetic-3/top" :dir :system))
