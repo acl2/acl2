@@ -176,31 +176,29 @@
 
 (define pedersen-enc ((3bits bit-listp))
   :guard (= (len 3bits) 3)
-  :returns (enc integerp
-                :rule-classes (:type-prescription :rewrite)
-                :hyp (bit-listp 3bits))
+  :returns (enc integerp :rule-classes (:type-prescription :rewrite))
   :short "The function @($\\mathsf{enc}$) in [ZPS:5.4.1.7]."
-  (b* ((s0 (first 3bits))
-       (s1 (second 3bits))
-       (s2 (third 3bits)))
+  (b* ((s0 (mbe :logic (bfix (first 3bits)) :exec (first 3bits)))
+       (s1 (mbe :logic (bfix (second 3bits)) :exec (second 3bits)))
+       (s2 (mbe :logic (bfix (third 3bits)) :exec (third 3bits))))
     (* (- 1 (* 2 s2))
        (+ 1 s0 (* 2 s1))))
+  :prepwork ((local (in-theory (disable bfix))))
   ///
 
   (defret pedersen-enc-lower-bound
     (>= enc -4)
-    :hyp (bit-listp 3bits)
-    :rule-classes :linear)
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable bfix))))
 
   (defret pedersen-enc-upper-bound
     (<= enc 4)
-    :hyp (bit-listp 3bits)
     :rule-classes :linear)
 
   (defret pedersen-enc-not-zero
     (not (equal enc 0))
-    :hyp (bit-listp 3bits)
-    :rule-classes :type-prescription)
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable bfix))))
 
   (defrule pedersen-enc-injectivity
     (implies (and (bit-listp x)
@@ -254,7 +252,7 @@
 
 (define pedersen-segment-scalar ((segment bit-listp))
   :guard (integerp (/ (len segment) 3))
-  :returns (i integerp :hyp (bit-listp segment))
+  :returns (i integerp)
   :short "The function @($\\langle\\cdot\\rangle$) in [ZPS:5.4.1.7]."
   :long
   (xdoc::topstring
@@ -269,7 +267,7 @@
 
    (define pedersen-segment-scalar-loop ((j posp) (segment bit-listp))
      :guard (integerp (/ (len segment) 3))
-     :returns (i integerp :hyp (and (posp j) (bit-listp segment)))
+     :returns (i integerp :hyp (posp j))
      :parents nil
      (if (consp segment)
          (+ (* (pedersen-enc (take 3 segment))
