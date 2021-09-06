@@ -1321,6 +1321,19 @@
 ;;; Simplifying a term
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun blocked-mbt-p (term)
+
+; Term is the result of applying block-return-last to a translated term.
+; Return a non-nil value if term could have come from an mbt call, else nil.
+; For good measure, if the original untranslated term was (mbt u), we return
+; the translation of u (with block-return-last applied).
+
+  (declare (xargs :guard t :mode :logic))
+  (case-match term
+    (('acl2::mbe-fn ''t y)
+     y)
+    (t nil)))
+
 (defun augment-term (term)
 
 ; The set of augmented terms u is defined recursively as follows.  (Note that u
@@ -1330,8 +1343,10 @@
 ; - If u is a term, then u is an augmented term.  We call u an "ordinary term".
 
 ; - If u is (:IF tst tbr fbr), then u is an augmented term iff tst is a term
-;   and both tbr and fbr are augmented terms, and at least one of tbr and fbr
-;   is either a lambda application or is not an ordinary term.
+;   and both tbr and fbr are augmented terms, and at least one of the following
+;   two conditions hold: either tst is the translation of an mbt call; or at
+;   least one of tbr and fbr is either a lambda application or is not an
+;   ordinary term.
 
 ; - If u is ((lambda (v1 ... vk) body) a1 ... ak), then each ai is an ordinary
 ;   term, the vi are distrinct variables, all free variables of body are among
@@ -1364,7 +1379,8 @@
                         (cond ((or (lambda-applicationp tbr)
                                    (lambda-applicationp fbr)
                                    augmentedp1
-                                   augmentedp2)
+                                   augmentedp2
+                                   (blocked-mbt-p (fargn term 1)))
                                (mv (list :if (fargn term 1) tbr fbr)
                                    t))
                               (t (mv term nil))))))
@@ -1377,15 +1393,33 @@
                                  t))
                             (t (mv term t)))))
                    ((rassoc-eq fn *return-last-blocker-alist*)
+
+; This is the case that inserts "calls" of :BLOCKER.  These calls are important
+; for noticing lambda applications at the top level of the IF structure.
+; Consider the following simpler variant (i.e., without b*) of an example from
+; simplify-defun-tests.lisp.
+
+;   (defun f1 (x) (prog2$ (cw "hi") (let ((y x)) (car (cons y y)))))
+;   (simplify f1 :disable prog2$-fn)
+
+; Without this case, the body of the resulting definition is (PROG2$ (CW "hi")
+; X), where otherwise it is (PROG2$ (CW "hi") (LET ((Y X)) Y)).  Similarly,
+; without the :disable keyword the resulting body is X when we omit this case,
+; and otherwise is (LET ((Y X)) Y).  Note that with or without this case, the
+; body is (LET ((Y X)) Y) if we instead define f1 with body (let ((y x)) (car
+; (cons y y))).
+
                     (mv-let (arg1 augmentedp1)
                       (augment-term (fargn term 1))
                       (mv-let (arg2 augmentedp2)
                         (augment-term (fargn term 2))
                         (cond ((or augmentedp1 augmentedp2)
                                (mv (list :blocker
-; We probably don't need to quote fn, but we do so just in case some function
-; crawls over the resulting pseudo-term, so that fn isn't considered to be a
-; variable.
+
+; We probably don't need to quote fn below, but we do so just in case some
+; function crawls over the resulting pseudo-term, so that fn isn't considered
+; to be a variable.
+
                                          (kwote fn)
                                          arg1
                                          arg2)
@@ -1516,7 +1550,8 @@
 
     (make-proper-lambda formals1 actuals body1)))
 
-(defun rewrite-augmented-term-rec (aterm alist geneqv rrec runes ctx wrld state)
+(defun rewrite-augmented-term-rec (aterm alist geneqv rrec runes ctx wrld
+                                         state)
 
 ; The key idea here is that when rewriting (let ((x expr)) body), we rewrite
 ; expr to expr', then we rewrite body with x bound to expr' to produce body',
@@ -1565,7 +1600,11 @@
                                                           false-type-alist)
                                                   runes ctx wrld state))
                      ((mv term ttree)
-                      (rewrite-if1 tst2 tbr2 fbr2
+                      (rewrite-if1 (if (and (blocked-mbt-p tst)
+                                            (not (blocked-mbt-p tst2)))
+                                       (fcons-term* 'acl2::mbe-fn *t* tst2)
+                                     tst2)
+                                   tbr2 fbr2
                                    nil ; swapped-p
                                    type-alist
                                    geneqv ens ok-to-force wrld nil)))
