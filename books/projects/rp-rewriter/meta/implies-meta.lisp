@@ -66,22 +66,21 @@
           ;; definition rule take  care of it so we don't  try working with big
           ;; terms.
           (context (rp-extract-context p))
-          ((mv ? q)
-           (attach-sc-from-context context q)))
+          (q (attach-sc-from-context context q)))
        (mv `(if ,p (if ,q 't 'nil) 't)
            `(nil ,(dont-rw-car (dont-rw-cdr dont-rw))
                  (nil ,(dont-rw-car (dont-rw-cdr (dont-rw-cdr dont-rw))) t t)
                  t)))) 
     (& (mv term dont-rw))))
 
-(local
+#|(local
  (defthm true-listp-of-ATTACH-SC-FROM-CONTEXT
    (implies (TRUE-LISTP TERM)
             (TRUE-LISTP (MV-NTH 0
                                 (ATTACH-SC-FROM-CONTEXT term
                                                         TERM2))))
    :hints (("Goal"
-            :in-theory (e/d (ATTACH-SC-FROM-CONTEXT) ())))))
+            :in-theory (e/d (ATTACH-SC-FROM-CONTEXT) ())))))||#
 
 
 (verify-guards implies-meta)

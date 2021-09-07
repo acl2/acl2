@@ -52,36 +52,41 @@
 
 
 
-(encapsulate
-  nil
+(progn
 
-  (defthm attach-sc-from-context-returns-context-syntaxp
+  #|(defthm attach-sc-from-context-returns-context-syntaxp
     (implies (context-syntaxp context)
-             (context-syntaxp (mv-nth 0 (attach-sc-from-context context term))))
+             (context-syntaxp (attach-sc-from-context context term)))
     :hints (("Goal"
              :do-not-induct t
              :induct (attach-sc-from-context context term)
-             :in-theory (e/d (attach-sc-from-context) ()))))
+             :in-theory (e/d (attach-sc-from-context) ()))))||#
 
-  (defthm eval-of-context-from-attach-sc-from-context-returns
+  
+
+  #|(defthm eval-of-context-from-attach-sc-from-context-returns
     (implies (eval-and-all context a)
              (eval-and-all (mv-nth 0 (attach-sc-from-context context term)) a))
     :hints (("Goal"
              :do-not-induct t
              :induct (attach-sc-from-context context term)
-             :in-theory (e/d (attach-sc-from-context) ()))))
+             :in-theory (e/d (attach-sc-from-context) ()))))||#
 
-  (defthm VALID-SC-SUBTERMS-from-attach-sc-from-context-returns
+  
+
+  #|(defthm VALID-SC-SUBTERMS-from-attach-sc-from-context-returns
     (implies (VALID-SC-SUBTERMS context a)
              (VALID-SC-SUBTERMS (mv-nth 0 (attach-sc-from-context context term)) a))
     :hints (("Goal"
              :do-not-induct t
              :induct (attach-sc-from-context context term)
-             :in-theory (e/d (attach-sc-from-context) ()))))
+             :in-theory (e/d (attach-sc-from-context) ()))))||#
+
+  
 
   (defthm eval-of-term-from-attach-sc-from-context-returns
     (implies (and (eval-and-all context a))
-             (equal (rp-evlt (mv-nth 1 (attach-sc-from-context context term)) a)
+             (equal (rp-evlt (attach-sc-from-context context term) a)
                     (rp-evlt term a)))
     :hints (("Goal"
              :do-not-induct t
@@ -89,29 +94,171 @@
              :induct (attach-sc-from-context context term)
              :in-theory (e/d (attach-sc-from-context) ()))))
 
+
+  (local
+   (defthm not-is-rp-ex-from-rp
+     (not (is-rp (ex-from-rp term)))
+     :hints (("Goal"
+              :in-theory (e/d (is-rp
+                               ex-from-rp)
+                              ())))))
+
+  (defthmd RP-EVLt-OF-FNCALL-ARGS
+     (implies (and (Not (equal fn 'quote))
+                   (Not (equal fn 'list))
+                   (Not (equal fn 'falist)))
+              (equal (rp-evlt (cons fn args) a)
+                     (RP-EVL (CONS FN (KWOTE-LST (RP-EVLT-LST ARGS A)))
+                             NIL)))
+     :hints (("Goal"
+              :expand ((:free (args)
+                              (rp-trans (cons fn args))))
+              :in-theory (e/d (RP-EVL-OF-FNCALL-ARGS
+                               rp-trans)
+                              ()))))
+  
   (defthm valid-sc-term-from-attach-sc-from-context-returns
     (implies (and (eval-and-all context a)
                   (rp-termp term)
 ;(not (include-fnc-subterms context 'list))
 
                   (valid-sc term a))
-             (valid-sc (mv-nth 1 (attach-sc-from-context context term)) a))
+             (valid-sc (attach-sc-from-context context term) a))
     :hints (("Goal"
              :do-not-induct t
              :induct (attach-sc-from-context context term)
              :in-theory (e/d (attach-sc-from-context is-if
+                                                     RP-EVLt-OF-FNCALL-ARGS
+                                                     RP-EVL-OF-FNCALL-ARGS
                                                      is-rp) ()))))
 
   (defthm rp-termp-attach-sc-from-context
     (implies (and (rp-termp term)
                   (context-syntaxp context))
-             (rp-termp (mv-nth 1 (attach-sc-from-context context term))))
+             (rp-termp (attach-sc-from-context context term)))
     :hints (("Goal"
              :do-not-induct t
              :induct (attach-sc-from-context context term)
-             :in-theory (e/d (attach-sc-from-context) ()))))
+             :in-theory (e/d (attach-sc-from-context) ())))))
 
-  )
+
+(progn
+  (defthm attach-sc-from-context-lst-returns-context-syntaxp
+    (implies (and (context-syntaxp context)
+                  (context-syntaxp terms))
+             (context-syntaxp (attach-sc-from-context-lst context terms)))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context-lst context terms)
+             :in-theory (e/d (attach-sc-from-context-lst) ()))))
+
+  (defthm eval-of-context-from-attach-sc-from-context-lst
+    (implies (and (eval-and-all context a)
+                  (eval-and-all terms a))
+             (eval-and-all (attach-sc-from-context-lst context terms) a))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context-lst context terms)
+             :in-theory (e/d (attach-sc-from-context-lst) ()))))
+
+  (defthm VAlid-sc-subterms-from-attach-sc-from-context-lst
+    (implies (and (valid-sc-subterms context a)
+                  (eval-and-all context a)
+                  (valid-sc-subterms terms a)
+                  (rp-term-listp terms))
+             (valid-sc-subterms (attach-sc-from-context-lst context terms) a))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context-lst context terms)
+             :in-theory (e/d (attach-sc-from-context-lst) ()))))
+
+  (defthm eval-of-term-from-attach-sc-from-context-lst
+    (implies (and (eval-and-all context a))
+             (equal (rp-evlt-lst (attach-sc-from-context-lst context terms) a)
+                    (rp-evlt-lst terms a)))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context-lst context terms)
+             :in-theory (e/d (attach-sc-from-context-lst) ())))))
+
+
+
+(defthm attach-sc-from-context-lst-returns-rp-term-listp
+  (implies (and (rp-term-listp context)
+                (rp-term-listp terms))
+           (rp-term-listp (attach-sc-from-context-lst context terms)))
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (attach-sc-from-context-lst context terms)
+           :in-theory (e/d (attach-sc-from-context-lst) ()))))
+
+
+(local
+ (defthm rp-state-preservedp-chain-lemma
+   (IMPLIES
+    (AND  (RP-STATE-PRESERVEDP RP-STATE1 x)
+          (syntaxp (and (not (equal rp-state1 x))
+                        (not (equal rp-state x))
+                        (not (equal rp-state1 rp-state))))
+          (RP-STATE-PRESERVEDP RP-STATE RP-STATE1))
+    (RP-STATE-PRESERVEDP RP-STATE x))
+   :hints (("Goal"
+            :expand ((RP-STATE-PRESERVEDP-SK RP-STATE X))
+            :use ((:instance RP-STATE-PRESERVEDP-SK-necc
+                             (old-rp-state rp-state1)
+                             (new-rp-state x)
+                             (key (RP-STATE-PRESERVEDP-SK-WITNESS RP-STATE X)))
+                  (:instance RP-STATE-PRESERVEDP-SK-necc
+                             (old-rp-state rp-state)
+                             (new-rp-state rp-state1)
+                             (key (RP-STATE-PRESERVEDP-SK-WITNESS RP-STATE X))))
+            :in-theory (e/d (RP-STATE-PRESERVEDP
+                             )
+                            (RP-STATE-PRESERVEDP-SK))))))
+
+#|(local
+ (defthm RP-STATE-PRESERVEDP-chain-lemma1
+   (implies (and (RP-STATE-PRESERVEDP rp-state rp-state1))
+            (rp-state-preservedp
+             rp-state
+             (MV-NTH 1 (RP-RW-PREPROCESSOR term context rp-state1 STATE))))
+   :hints (("Goal"
+            :use ((:instance rp-rw-preprocessor-rp-state-preservedp
+                             (rp-state rp-state1)))
+            :in-theory (e/d () (rp-rw-preprocessor-rp-state-preservedp))))))||#
+
+
+#|(local
+ (defthm dummy-nonnil-p-lemma
+   (implies (and (nonnil-p res-term)
+                 (iff (rp-evlt res-term a)
+                      (rp-evlt term a)))
+            (rp-evlt term a))
+   :hints (("Goal"
+            :in-theory (e/d () ())))))||#
+
+(local
+ (defthmd dummy-nonnil-p-lemma2
+   (implies (and (nonnil-p res-term)
+                 (rp-evlt (cadr term) a) 
+                 (syntaxp (and (consp res-term)
+                               (equal (car res-term)
+                                      'rp-rw-postprocessor)
+                               ))
+                 (force (iff (rp-evlt res-term a)
+                             (rp-evlt (caddr term) a)))
+                 (not (include-fnc (caddr term)  'list)))
+            (rp-evl (caddr term) a))
+   :hints (("Goal"
+            :in-theory (e/d () ())))))
+
+
+
+(local
+ (defthmd nonnil-p-lemma
+   (implies (nonnil-p term)
+            (and (rp-evlt term a)
+                 (rp-evl term a)))))
 
 
 (local
@@ -173,78 +320,18 @@
                (and (NOT (INCLUDE-FNC (CADR TERM) 'LIST))
                     (NOT (INCLUDE-FNC (CAdDR TERM) 'LIST))))))
 
-   (defthm preprocess-then-rp-rw-is-correct-lemma
-     (implies (and (rp-termp term)
-                   (valid-sc term a)
-                   (not (include-fnc term 'rp))
-                   (alistp a)
-                   (rp-evl-meta-extract-global-facts :state state)
-                   (rp-formula-checks state)
-                   (valid-rp-statep rp-state)
-                   (rp-statep rp-state)
-                   )
-              (iff (rp-evl
-                    (mv-nth 0 (preprocess-then-rp-rw term rp-state state)) a)
-                   (rp-evl term a)))
-     :hints (("Goal"
-              :do-not-induct t
-              :do-not '(preprocess fertilize)
-              :use ((:instance rp-evl-and-side-cond-consistent-of-rp-rw
-                               (term term #|(remove-return-last term)||#)
-                               (dont-rw nil)
-                               (context nil)
-                               (hyp-flg nil)
-                               (limit (rw-step-limit rp-state))
-                               (iff-flg t))
-                    (:instance rp-evl-and-side-cond-consistent-of-rp-rw
-                               (term (cadr term #|(remove-return-last term)||#))
-                               (dont-rw nil)
-                               (context nil)
-                               (hyp-flg nil)
-                               (limit (rw-step-limit rp-state))
-                               (iff-flg t))
-                    (:instance rp-evl-and-side-cond-consistent-of-rp-rw
-                               (term (mv-nth
-                                      1
-                                      (attach-sc-from-context
-                                       (rp-extract-context
-                                        (mv-nth 0
-                                                (rp-rw (cadr term)
-                                                       nil nil
-                                                       t nil (rw-step-limit
-                                                          rp-state)
-                                                       rp-state state)))
-                                       (caddr term))))
-                               (dont-rw nil)
-                               (context (mv-nth
-                                         0
-                                         (attach-sc-from-context
-                                          (rp-extract-context
-                                           (mv-nth 0
-                                                   (rp-rw (cadr term)
-                                                          nil nil
-                                                          t nil (rw-step-limit rp-state) rp-state state)))
-                                          (caddr term))))
-                               (limit (rw-step-limit rp-state))
-                               (iff-flg t)
-                               (hyp-flg nil)
-                               (rp-state (mv-nth 1
-                                                 (rp-rw (cadr term)
-                                                        nil nil
-                                                        t nil (rw-step-limit
-                                                            rp-state)
-                                                        rp-state
-                                                        state)))))
-              :expand ((:free (x y) (iff x y))
-                       (:free (x) (rp-trans (cons 'implies x)))
-                       (:free (x y) (RP-TRANS-LST (cons x y))))
-              :in-theory (e/d (valid-rp-statep-implies-valid-rp-state-syntaxp)
+
+   (local
+    (in-theory (e/d (valid-rp-statep-implies-valid-rp-state-syntaxp
+                               rp-evl-and-side-cond-consistent-of-rp-rw)
                               (rp-rw
                                rp-statep
-
+                               nonnil-p-lemma
+                               nonnil-p
+                               (:type-prescription nonnil-p) 
                                valid-rp-statep
                                RW-STEP-LIMIT
-                               SYNP
+                               dummy-nonnil-p-lemma2
                                is-falist
                                rp-termp
                                include-fnc
@@ -256,7 +343,7 @@
                                RP-EVL-of-variable
                                ;;valid-rp-meta-rule-listp
                                EVAL-AND-ALL
-                               rp-evl-and-side-cond-consistent-of-rp-rw
+                               ;;rp-evl-and-side-cond-consistent-of-rp-rw
 
                                (:DEFINITION VALID-SC-SUBTERMS)
                                (:REWRITE VALID-SC-CONS)
@@ -294,7 +381,160 @@
                                INCLUDE-FNC
                                RP-TERMP
                                TRUE-LISTP
-                               beta-search-reduce)))))))
+                               beta-search-reduce))))
+    
+
+   (defthm preprocess-then-rp-rw-is-correct-lemma
+     (implies (and (rp-termp term)
+                   (valid-sc term a)
+                   (not (include-fnc term 'rp))
+                   (alistp a)
+                   (rp-evl-meta-extract-global-facts :state state)
+                   (rp-formula-checks state)
+                   (valid-rp-statep rp-state)
+                   (rp-statep rp-state)
+                   )
+              (iff (rp-evl
+                    (mv-nth 0 (preprocess-then-rp-rw term rp-state state)) a)
+                   (rp-evl term a)))
+     :hints (("Goal"
+              :do-not-induct t
+              :do-not '(preprocess fertilize)
+              :in-theory (e/d (dummy-nonnil-p-lemma2
+                               nonnil-p-lemma)
+                              ())
+              :use ()
+
+                    #|(:instance rp-evl-and-side-cond-consistent-of-rp-rw
+                               (term term #|(remove-return-last term)||#)
+                               (dont-rw nil)
+                               (context nil)
+                               (hyp-flg nil)
+                               (limit (rw-step-limit rp-state))
+                               (iff-flg t))
+                    (:instance rp-evl-and-side-cond-consistent-of-rp-rw
+                               (term (cadr term #|(remove-return-last term)||#))
+                               (dont-rw nil)
+                               (context nil)
+                               (hyp-flg nil)
+                               (limit (rw-step-limit rp-state))
+                               (iff-flg t))
+
+                    (:instance rp-evl-and-side-cond-consistent-of-rp-rw
+                               (term (MV-NTH 0
+                                             (RP-RW-PREPROCESSOR TERM NIL RP-STATE STATE)))
+                               (dont-rw nil)
+                               (context nil)
+                               (hyp-flg nil)
+                               (limit (rw-step-limit rp-state))
+                               (rp-state (MV-NTH 1
+                                                 (RP-RW-PREPROCESSOR TERM NIL RP-STATE STATE)))
+                               (iff-flg t))
+                    
+                    (:instance rp-evl-and-side-cond-consistent-of-rp-rw
+                               (term (mv-nth
+                                      0
+                                      (rp-rw-preprocessor
+                                       (attach-sc-from-context
+                                        (rp-extract-context
+                                         (mv-nth 0
+                                                 (rp-rw (cadr term)
+                                                        nil nil t nil (rw-step-limit rp-state)
+                                                        rp-state state)))
+                                        (caddr term))
+                                       (attach-sc-from-context-lst
+                                        (rp-extract-context
+                                         (mv-nth 0
+                                                 (rp-rw (cadr term)
+                                                        nil nil t nil (rw-step-limit rp-state)
+                                                        rp-state state)))
+                                        (rp-extract-context
+                                         (mv-nth 0
+                                                 (rp-rw (cadr term)
+                                                        nil nil t nil (rw-step-limit rp-state)
+                                                        rp-state state))))
+                                       (mv-nth 1
+                                               (rp-rw (cadr term)
+                                                      nil nil t nil (rw-step-limit rp-state)
+                                                      rp-state state))
+                                       state)))
+                               (dont-rw nil)
+                               (context (attach-sc-from-context-lst
+                                         (rp-extract-context
+                                          (mv-nth 0
+                                                  (rp-rw (cadr term)
+                                                         nil nil t nil (rw-step-limit rp-state)
+                                                         rp-state state)))
+                                         (rp-extract-context
+                                          (mv-nth 0
+                                                  (rp-rw (cadr term)
+                                                         nil nil t nil (rw-step-limit rp-state)
+                                                         rp-state state)))))
+                               (limit (rw-step-limit rp-state))
+                               (iff-flg t)
+                               (hyp-flg nil)
+                               (rp-state  (mv-nth
+                                           1
+                                           (rp-rw-preprocessor
+                                            (attach-sc-from-context
+                                             (rp-extract-context
+                                              (mv-nth 0
+                                                      (rp-rw (cadr term)
+                                                             nil nil t nil (rw-step-limit rp-state)
+                                                             rp-state state)))
+                                             (caddr term))
+                                            (attach-sc-from-context-lst
+                                             (rp-extract-context
+                                              (mv-nth 0
+                                                      (rp-rw (cadr term)
+                                                             nil nil t nil (rw-step-limit rp-state)
+                                                             rp-state state)))
+                                             (rp-extract-context
+                                              (mv-nth 0
+                                                      (rp-rw (cadr term)
+                                                             nil nil t nil (rw-step-limit rp-state)
+                                                             rp-state state))))
+                                            (mv-nth 1
+                                                    (rp-rw (cadr term)
+                                                           nil nil t nil (rw-step-limit rp-state)
+                                                           rp-state state))
+                                            state))))||#
+                    #|(:instance rp-evl-and-side-cond-consistent-of-rp-rw
+                               (term (mv-nth
+                                      1
+                                      (attach-sc-from-context
+                                       (rp-extract-context
+                                        (mv-nth 0
+                                                (rp-rw (cadr term)
+                                                       nil nil
+                                                       t nil (rw-step-limit
+                                                          rp-state)
+                                                       rp-state state)))
+                                       (caddr term))))
+                               (dont-rw nil)
+                               (context (mv-nth
+                                         0
+                                         (attach-sc-from-context
+                                          (rp-extract-context
+                                           (mv-nth 0
+                                                   (rp-rw (cadr term)
+                                                          nil nil
+                                                          t nil (rw-step-limit rp-state) rp-state state)))
+                                          (caddr term))))
+                               (limit (rw-step-limit rp-state))
+                               (iff-flg t)
+                               (hyp-flg nil)
+                               (rp-state (mv-nth 1
+                                                 (rp-rw (cadr term)
+                                                        nil nil
+                                                        t nil (rw-step-limit
+                                                            rp-state)
+                                                        rp-state
+                                                        state))))||#
+              :expand ((:free (x y) (iff x y))
+                       (:free (x) (rp-trans (cons 'implies x)))
+                       (:free (x y) (RP-TRANS-LST (cons x y))))
+              )))))
 
 
 

@@ -1,39 +1,27 @@
 
-; Note: The license below is based on the template at:
-; http://opensource.org/licenses/BSD-3-Clause
-
-; Copyright (C) 2020 Regents of the University of Texas
-; All rights reserved.
-
-; Redistribution and use in source and binary forms, with or without
-; modification, are permitted provided that the following conditions are
-; met:
-
-; o Redistributions of source code must retain the above copyright
-;   notice, this list of conditions and the following disclaimer.
-
-; o Redistributions in binary form must reproduce the above copyright
-;   notice, this list of conditions and the following disclaimer in the
-;   documentation and/or other materials provided with the distribution.
-
-; o Neither the name of the copyright holders nor the names of its
-;   contributors may be used to endorse or promote products derived
-;   from this software without specific prior written permission.
-
-; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+; Copyright (C) 2019 Centaur Technology
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ; Original Author(s):
-; Mertcan Temel         <mert@utexas.edu>
+; Mertcan Temel         <mert@centtech.com>
 
 (in-package "RP")
 
@@ -683,13 +671,42 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
 
  :returns-hints (("Goal"
                   :do-not-induct t
-                  :expand ((:free (x y)
+                  :expand ((MEDW-COMPRESS-ANY-LST (CDR TERM))
+                           (MEDW-COMPRESS-ANY-LST (CDDR TERM))
+                           ;;(MEDW-COMPRESS-ANY-LST (CDDDR TERM))
+                           ;;(MEDW-COMPRESS-ANY (CADR TERM))
+                           (:free (x y)
                                   (rp-termp (cons x y))))
                   :in-theory (e/d () (rp-termp
                                       ex-from-rp)
                                   )))
  :prepwork
- ((local
+ ((defthm is-rp-lemma
+     (implies (and (equal (car term) 'rp)
+                   (rp-termp term))
+              (and (is-rp `(rp ,(cadr term) ,other))
+                   (is-rp term)))
+     :hints (("Goal"
+              :in-theory (e/d (is-rp) ()))))
+
+  (defthm is-rp-lemma-fc
+     (implies (and (equal (car term) 'rp)
+                   (rp-termp term))
+              (CASE-MATCH TERM
+                (('RP ('QUOTE TYPE) &)
+                 (AND (SYMBOLP TYPE)
+                      (NOT (BOOLEANP TYPE))
+                      (NOT (EQUAL TYPE 'QUOTE))
+                      (NOT (EQUAL TYPE 'RP))
+                      (NOT (EQUAL TYPE 'LIST))
+                      (NOT (EQUAL TYPE 'FALIST))
+                      (is-rp term)))
+                (& NIL)))
+     :rule-classes :forward-chaining
+     :hints (("Goal"
+              :in-theory (e/d (is-rp) ()))))
+
+  (local
    (defthm dummy-lemma0
      (implies (and
                (consp (ex-from-rp term)))
@@ -734,7 +751,7 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
    :returns (res rp-termp :hyp (rp-termp term))
    :measure (cons-count term)
    :verify-guards nil
-   (b* ((term (ex-from-rp term)))
+   (b* (#|(term (ex-from-rp term))||#)
      (case-match term
        (('s . &)
         (if (single-s-p term) ;; makes proofs easier somehow
@@ -763,8 +780,16 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                  ,(medw-compress-any (caddr term))
                ,(medw-compress-any (cadddr term)))
           term))
+       (('rp . &) ;; same reason as above
+        `(rp ,(cadr term) ,(medw-compress-any (caddr term))))
+       (('equal a b)
+        (b* ((a (medw-compress-any a))
+             (b (medw-compress-any b)))
+        (if (rp-equal a b) ''t  `(equal ,a ,b))))
        ((fnc . args)
-        `(,fnc . ,(medw-compress-any-lst args)))
+        (cons-with-hint fnc
+                        (medw-compress-any-lst args)
+                        term))
 
        (& term))))
  (define medw-compress-any-lst ((lst rp-term-listp))

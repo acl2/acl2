@@ -486,7 +486,7 @@
                  (merge-sorted-and$-lists (cdr first)
                                           second))
                 ((or (equal s ''1)
-                     (equal f s))
+                     (rp-equal-cnt f s 1))
                  (merge-sorted-and$-lists first
                                           (cdr second)))
                 ((lexorder2- f s)
@@ -523,7 +523,7 @@
             (cond
              ((equal a ''1) (cdr lst))
              ((or (equal b ''1)
-                  (equal b a))
+                  (rp-equal-cnt b a 1))
               (list a))
              ((lexorder2- a b) lst)
              (t (list b a)))))

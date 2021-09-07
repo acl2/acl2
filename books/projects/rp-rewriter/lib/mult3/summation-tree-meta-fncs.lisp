@@ -91,24 +91,7 @@
 
 
 
-(progn
-  (encapsulate
-    (((unpack-booth-later-enabled) => *))
-    (local
-     (defun unpack-booth-later-enabled ()
-       nil)))
 
-  (define return-t ()
-    t)
-  (define return-nil ()
-    nil)
-  
-  (defmacro enable-unpack-booth-later (enable)
-    (if enable
-        `(defattach unpack-booth-later-enabled return-t)
-      `(defattach unpack-booth-later-enabled return-nil)))
-
-  (enable-unpack-booth-later nil))
 
 (progn
   (encapsulate
@@ -1311,6 +1294,12 @@
 
   (enable-pattern2-aggressive-reduce nil))||#
 
+(define has-unflatenned-pp ((pp-lst rp-term-listp))
+  (if (atom pp-lst)
+      nil
+      (or (binary-fnc-p (ex-from-rp$ (car pp-lst)))
+          (has-unflatenned-pp (cdr pp-lst)))))
+
 (define c-pattern2-reduce ((s-lst rp-term-listp)
                            (pp-lst rp-term-listp)
                            (c-lst rp-term-listp))
@@ -1322,6 +1311,7 @@
   :verify-guards :after-returns
   (b* (((unless (and (not s-lst)
                      (not c-lst)
+                     (not (has-unflatenned-pp pp-lst))
                      (pattern2-reduce-enabled)))
         (mv nil nil))
 
@@ -1329,13 +1319,10 @@
        )
     (case-match pp-lst
       ((''1 pp1 pp2 pp3)
-       (b* (((unless (and (not (binary-fnc-p pp1))
-                          (not (binary-fnc-p pp2))
-                          (not (binary-fnc-p pp3))
-                          (or 
-                              (equal pp1 ''1)
-                              (and (and-subsetp pp2 pp1)
-                                   (and-subsetp pp3 pp1)))))
+       (b* (((unless (or 
+                      (equal pp1 ''1)
+                      (and (and-subsetp pp2 pp1)
+                           (and-subsetp pp3 pp1))))
              (mv nil nil))
             ((mv new-pp-lst1 success1) (single-c-to-pp-lst pp1 pp2 pp3))
             ((mv new-pp-lst2 success2) (single-s-to-pp-lst pp1 pp2 pp3))
@@ -1343,23 +1330,17 @@
              (mv nil nil)))
          (mv (pp-sum-merge-aux new-pp-lst1 new-pp-lst2)  t)))
       ((pp1 pp2 pp3)
-       (b* (((unless (and (not (binary-fnc-p pp1))
-                          (not (binary-fnc-p pp2))
-                          (not (binary-fnc-p pp3))
-                          (or 
-                              (equal pp1 ''1)
-                              (and (and-subsetp pp2 pp1)
-                                   (and-subsetp pp3 pp1)))))
+       (b* (((unless (or 
+                      (equal pp1 ''1)
+                      (and (and-subsetp pp2 pp1)
+                           (and-subsetp pp3 pp1))))
              (mv nil nil))
             ((mv new-pp-lst success) (single-c-to-pp-lst pp1 pp2 pp3))
             ((unless success)
              (mv nil nil)))
          (mv new-pp-lst t)))
       ((pp1 pp2)
-       (b* (((when (or (binary-fnc-p pp1)
-                       (binary-fnc-p pp2)))
-             (mv nil nil))
-            ((unless (or (equal pp1 ''1)
+       (b* (((unless (or (equal pp1 ''1)
                          (and (and-subsetp pp2 pp1))))
              (mv nil nil))
             ((mv new-pp-lst success) (single-c-to-pp-lst pp1 pp2 ''0))
@@ -2155,20 +2136,18 @@
                                          (rp-termp c)))
                (reducedp booleanp))
   (b* (((unless (and (equal c ''nil)
-                     (pattern2-reduce-enabled)))
+                     (pattern2-reduce-enabled)
+                     (not (has-unflatenned-pp (list-to-lst pp)))))
         (mv nil nil))
 
        ;;(aggressive (pattern2-aggressive-reduce-enabled))
        )
     (case-match pp
       (('list ''1 pp1 pp2 pp3)
-       (b* (((unless (and (not (binary-fnc-p pp1))
-                          (not (binary-fnc-p pp2))
-                          (not (binary-fnc-p pp3))
-                          (or 
-                              (equal pp1 ''1)
-                              (and (and-subsetp pp2 pp1)
-                                   (and-subsetp pp3 pp1)))))
+       (b* (((unless (or 
+                      (equal pp1 ''1)
+                      (and (and-subsetp pp2 pp1)
+                           (and-subsetp pp3 pp1))))
              (mv nil nil))
             ((mv new-pp-lst success)
              (single-s-to-pp-lst pp1 pp2 pp3))
@@ -2176,13 +2155,10 @@
              (mv nil nil)))
          (mv (pp-sum-merge-aux (list ''1) (negate-lst new-pp-lst)) t)))
       (('list pp1 pp2 pp3)
-       (b* (((unless (and (not (binary-fnc-p pp1))
-                          (not (binary-fnc-p pp2))
-                          (not (binary-fnc-p pp3))
-                          (or 
-                              (equal pp1 ''1)
-                              (and (and-subsetp pp2 pp1)
-                                   (and-subsetp pp3 pp1)))))
+       (b* (((unless (or 
+                      (equal pp1 ''1)
+                      (and (and-subsetp pp2 pp1)
+                           (and-subsetp pp3 pp1))))
              (mv nil nil))
             ((mv new-pp-lst success)
              (single-s-to-pp-lst pp1 pp2 pp3))
@@ -2193,9 +2169,6 @@
       (('list pp1 pp2)
        (b* (((unless (or (equal pp1 ''1)
                          (and (and-subsetp pp2 pp1))))
-             (mv nil nil))
-            ((when (or (binary-fnc-p pp1)
-                       (binary-fnc-p pp2)))
              (mv nil nil))
             ((mv new-pp-lst success)
              (single-s-to-pp-lst pp1 pp2 ''0))
@@ -3082,19 +3055,19 @@
 
 
 ;;;;;;;;;;
-;;:i-am-here
+
 
 (acl2::memoize-partial
-          ((single-c-try-merge* single-c-try-merge-fn)
-           (c-sum-merge-lst-aux* c-sum-merge-lst-aux-fn)
-           (c-sum-merge-lst* c-sum-merge-lst-fn)
-           (c-sum-merge-lst-lst* c-sum-merge-lst-lst-fn)
-           (c-sum-merge* c-sum-merge-fn)
-           (c-sum-merge-aux* c-sum-merge-aux-fn
-                             :condition t
-                             :memo-table-init-size 1000000
-                             :aokp t))
-          :condition nil)
+ ((single-c-try-merge* single-c-try-merge-fn)
+  (c-sum-merge-lst-aux* c-sum-merge-lst-aux-fn)
+  (c-sum-merge-lst* c-sum-merge-lst-fn)
+  (c-sum-merge-lst-lst* c-sum-merge-lst-lst-fn)
+  (c-sum-merge* c-sum-merge-fn)
+  (c-sum-merge-aux* c-sum-merge-aux-fn
+                    :condition t
+                    :memo-table-init-size 1000000
+                    :aokp t))
+ :condition nil)
 
 (progn
   (encapsulate
@@ -4174,7 +4147,7 @@
                (c-spec-meta-aux s pp-lst c-lst to-be-coughed-c-lst quarternaryp))))
           (& term)))
 
-       (- (and (or #|(search-for-c-with-hash result ''(6847164902991054420 . 6847164902991054420)
+       (& (and (or #|(search-for-c-with-hash result ''(6847164902991054420 . 6847164902991054420)
                 10)||#
 
                 #|(search-for-c-with-hash result ''(169123349075 . 169123349075)

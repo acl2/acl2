@@ -41,6 +41,8 @@
 
 (include-book "svexl/svexl-correct")
 
+(include-book "svexl/svexl-fasteval-correct")
+
 (include-book "svex-eval-wog-openers")
 
 (include-book "bits-sbits")

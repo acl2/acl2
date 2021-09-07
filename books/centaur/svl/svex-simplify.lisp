@@ -237,7 +237,8 @@
     (('sv::4vec-bit? & & &)       (mv nil (hons 'sv::bit?     (cdr term))))
     (('4vec-part-select & & &)    (mv nil (hons 'partsel      (cdr term))))
     (('4vec-part-install & & & &) (mv nil (hons 'sv::partinst (cdr term))))
-
+    (('sv::4vec-bit?! & & &)      (mv nil (hons 'sv::bit?! (cdr term))))
+    (('svex-env-fastlookup-wog & &)  (mv nil (cadr term)))
     (& (progn$
         (cw "ATTENTION! Cannot match ~p0 with ~p1 arguments to any ~
   svex function. If you think this is a bug, consider changing ~
