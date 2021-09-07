@@ -54,7 +54,7 @@
 (define coordinate-extract ((point jubjub-pointp))
   :returns (bits bit-listp)
   :short "The function @($\\mathsf{Extract}_{\\mathbb{J}^{(r)}}$)
-          [ZPS:5.4.8.4]."
+          [ZPS:5.4.9.4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -76,7 +76,7 @@
   :returns (point? maybe-jubjub-pointp)
   :short "The function
           @($\\mathsf{GroupHash_\\mathsf{URS}^{\\mathbb{J}^{(r)*}}}$)
-          [ZPS:5.4.8.5]."
+          [ZPS:5.4.9.5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -99,7 +99,7 @@
               (< (len m) (- blake::*blake2s-max-data-byte-length* 129)))
   :returns (point? maybe-jubjub-pointp)
   :short "The function @($\\mathsf{FindGroupHash^{\\mathbb{J}^{(r)*}}}$)
-          [ZPS:5.4.8.5]."
+          [ZPS:5.4.9.5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -516,8 +516,8 @@
    (xdoc::p
     "We need to turn the index @($i$), diminished by one,
      into a byte sequence consisting of 32 bits, i.e. 4 bytes.
-     The first paragraph of [ZPS:5.2] says that, unless otherwise specified,
-     integers are encoded in little endian bytes of fixed length;
+     The first paragraph of [ZPS:5.1] says that, unless otherwise specified,
+     integers are unsigned, fixed-length, and encoded in little endian bytes;
      thus, we take the little endian byte representation of @($i-1$)."))
   (b* ((i1 (1- i))
        (i1-32bit (mod i1 (expt 2 32)))
