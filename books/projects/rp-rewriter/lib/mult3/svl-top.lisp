@@ -1488,6 +1488,10 @@
   (equal (sv::svex-alist-eval-for-symbolic x y z)
          (sv::svex-alist-eval x y)))
 
+
+(rp::add-rp-rule acl2::fast-logext-fn)
+(rp::add-rp-rule acl2::nth-slice)
+
 (bump-all-meta-rules)
 
 ;;(bump-down-rp-rule (:META medw-compress-meta . equal))

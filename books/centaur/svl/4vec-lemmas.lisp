@@ -5255,6 +5255,37 @@
            :expand (sv::4vec-sign-ext 0 x)
            :in-theory (e/d () ()))))
 
+(def-rp-rule$ t nil
+  logext-to-4vec-signext
+  (implies (and (posp size)
+                (integerp y))
+           (equal (acl2::logext size y)
+                  (sv::4vec-sign-ext size y)))
+  :hints (("Goal"
+           :expand ((sv::4vec-sign-ext size y)
+                    (SV::4VEC-PART-SELECT (+ -1 SIZE)
+                                             1 Y))
+           :in-theory (e/d (SV::4VEC->UPPER
+                            SV::4VEC->LOWER)
+                           (logapp
+                            SVL::4VEC-SIGN-EXT-TO-4VEC-CONCAT-WHEN-INTEGERP
+                            LOGBITP
+                            floor
+                            evenp
+                            )))))
+
+(def-rp-rule integerp-of-4vec-sign-ext
+    (implies (and (posp size)
+                  (integerp y))
+             (integerp (sv::4vec-sign-ext size y)))
+  :hints (("Goal"
+           :expand ((SV::4VEC-SIGN-EXT SIZE Y))
+           :in-theory (e/d (SV::4VEC->UPPER
+                            SV::4VEC->LOWER)
+                           (SVL::4VEC-SIGN-EXT-TO-4VEC-CONCAT-WHEN-INTEGERP)))))
+
+(rp::rp-attach-sc logext-to-4vec-signext
+                  integerp-of-4vec-sign-ext)
 
 ;; (defthm 4vec-part-select-of-4vec-sign-ext
 ;;     (implies (and (natp start)
