@@ -1490,7 +1490,7 @@
 
 
 (rp::add-rp-rule acl2::fast-logext-fn)
-(rp::add-rp-rule acl2::nth-slice)
+
 
 (bump-all-meta-rules)
 

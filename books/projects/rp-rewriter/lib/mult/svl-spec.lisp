@@ -128,7 +128,7 @@
                               SVL::CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$
                               SVL::4VEC-ZERO-EXT-IS-BITS
                               SVL::4VEC-ZERO-EXT-IS-4VEC-CONCAT
-                              SVL::4VEC-CONCAT$-OF-SIZE=1-TERM2=0
+                              SVL::4VEC-CONCAT$-OF-TERM2=0
                             
                               SVL::4VEC-PART-SELECT-IS-BITS)))))
 
@@ -278,7 +278,7 @@
                                     logbit)
                               (SVL::4VEC-PART-SELECT-IS-BITS
                                SVL::4VEC-ZERO-EXT-IS-BITS
-                               SVL::4VEC-CONCAT$-OF-SIZE=1-TERM2=0
+                               SVL::4VEC-CONCAT$-OF-TERM2=0
                                SVL::CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$)))))
 
    (defthm ash-minus1-is-4vec-rsh
@@ -398,7 +398,7 @@
               :in-theory (e/d (sum-pps-bycol-bybit-simple
                                svl-sum-pps-bycol-bybit)
                               (logbitp ash
-                                       SVL::4VEC-CONCAT$-OF-SIZE=1-TERM2=0
+                                       SVL::4VEC-CONCAT$-OF-TERM2=0
                                        ifix))))))
 
   (def-rp-rule$ t nil
@@ -637,7 +637,7 @@
                                  SVL::4VEC-ZERO-EXT-IS-4VEC-CONCAT
                                  LOGAPP-IS-4VEC-CONCAT$
                                  SVL::4VEC-ZERO-EXT-IS-BITS
-                                 SVL::4VEC-CONCAT$-OF-SIZE=1-TERM2=0
+                                 SVL::4VEC-CONCAT$-OF-TERM2=0
                                  SVL::CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$)))))))
 
   (def-rp-rule 4vec-plus++-is-4vec-adder
@@ -649,7 +649,10 @@
                     (4vec-adder x y carry-in size)))
     :hints (("Goal"
              :induct (4VEC-ADDER X Y CARRY-IN SIZE)
+             :do-not-induct t
+             :expand ((svl::4vec-plus++ x y carry-in size))
              :in-theory (e/d (svl::4vec-plus++
+                              
                               4vec-adder
                               ifix)
                              ()))))
