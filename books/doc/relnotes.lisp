@@ -127,6 +127,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "apt::apt" "APT Library"))
+
+   (xdoc::p
+    "The @(tsee apt::simplify) transformation now does a better job of
+     preserving @(tsee mbt) calls.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p

@@ -34,14 +34,21 @@
 (include-book "centaur/meta/variable-free" :dir :system)
 (include-book "../svex/override")
 (include-book "process")
+(include-book "misc/hons-help" :dir :system)
+(local (std::add-default-post-define-hook :fix))
 
+(defthm svex-lookup-when-variable-free
+  (implies (syntaxp (and (cmr::term-variable-free-p key)
+                         (cmr::term-variable-free-p alist)))
+           (iff (svex-lookup key alist)
+                (svex-fastlookup key (hide (make-fast-alist alist)))))
+  :hints (("goal" :expand ((hide (make-fast-alist alist))))))
 
 (cmr::def-force-execute svtv-fsm-run-input-substs-execute-term-when-variable-free
   svtv-fsm-run-input-substs)
 
-(cmr::def-force-execute svex-lookup-under-iff-execute-term-when-variable-free
-  svex-lookup
-  :equiv iff)
+(cmr::def-force-execute svex-fastlookup-execute-term-when-variable-free
+  svex-fastlookup)
 
 (cmr::def-force-execute svex-alist-keys-execute-term-when-variable-free
   svex-alist-keys)
@@ -77,7 +84,9 @@
   (defthm svex-env-override-test-vars-of-append
     (equal (svex-env-override-test-vars (append a b))
            (append (svex-env-override-test-vars a)
-                   (svex-env-override-test-vars b)))))
+                   (svex-env-override-test-vars b))))
+
+  (local (in-theory (enable svex-env-fix))))
 
 (define collect-known-members-from-list-term ((x pseudo-termp))
   :measure (acl2::pseudo-term-count x)
@@ -104,9 +113,11 @@
   :returns (trips svex-override-triplelist-p)
   (if (atom x)
       nil
-    (let ((look (svex-lookup (change-svar (car x) :override-test nil) al))
+    (let ((look (svex-fastlookup (change-svar (car x) :override-test nil) al))
           (rest (override-tests-to-svex-override-triplelist (cdr x) al)))
-      (if look
+      (if (and look
+               (svar->override-test (car x))
+               (not (svar->override-val (car x))))
           (cons (make-svex-override-triple
                  :testvar (car x)
                  :valvar (change-svar (car x) :override-test nil :override-val t)
@@ -118,7 +129,9 @@
     (equal (override-tests-to-svex-override-triplelist (cons a b) al)
            (let ((look (svex-lookup (change-svar a :override-test nil) al))
                  (rest (override-tests-to-svex-override-triplelist b al)))
-             (if look
+             (if (and look
+                      (svar->override-test a)
+                      (not (svar->override-val a)))
                  (cons (make-svex-override-triple
                         :testvar a
                         :valvar (change-svar a :override-test nil :override-val t)
@@ -127,13 +140,56 @@
                rest))))
 
   (defthm override-tests-to-svex-override-triplelist-of-nil
-    (equal (override-tests-to-svex-override-triplelist nil al) nil)))
+    (equal (override-tests-to-svex-override-triplelist nil al) nil))
+
+  (defret member-of-<fn>
+    (iff (member-equal var (svex-override-triplelist-vars trips))
+         (and (svar-p var)
+              (cond ((svar->override-test var)
+                     (and (member-equal var (svarlist-fix x))
+                          (not (svar->override-val var))
+                          (svex-lookup (change-svar var :override-test nil) al)))
+                    ((svar->override-val var)
+                     (and (member-equal (change-svar var :override-test t :override-val nil) (svarlist-fix x))
+                          (svex-lookup (change-svar var :override-val nil) al)))
+                    (t nil))))
+    :hints(("Goal" :in-theory (enable svex-override-triplelist-vars))))
+                     
+  (local (defthm svar-when-equal-x
+           (implies (and (equal test (svar->override-test x))
+                         (equal val (svar->override-val x)))
+                    (equal (change-svar x :override-test test :override-val val)
+                           (svar-fix x)))))
+
+  (defret no-duplicate-vars-of-<FN>
+    (implies (no-duplicatesp-equal (svarlist-fix x))
+             (no-duplicatesp-equal
+              (svex-override-triplelist-vars trips)))
+    :hints(("Goal" :in-theory (enable svex-override-triplelist-vars
+                                      svarlist-fix)))))
+
+(define override-tests-to-svex-override-triplelist-exec ((x svarlist-p) (al svex-alist-p))
+  :enabled t
+  (hons-copy (override-tests-to-svex-override-triplelist x (make-fast-alist al))))
  
 
-(define remove-override-vars-value-binding (mfc state)
+(define svarlist-update-override-tests ((val booleanp)
+                                        (x svarlist-p))
+  (if (atom x)
+      nil
+    (cons (change-svar (car x) :override-test val)
+          (svarlist-update-override-tests val (cdr x)))))
+
+(define svtv-override-parameter-bindings (mfc state)
   (declare (ignore mfc))
+  :mode :program
   (and (boundp-global 'remove-override-vars-value-lookup-term state)
-       (list (cons 'values (f-get-global 'remove-override-vars-value-lookup-term state)))))
+       (list (cons 'values (f-get-global 'remove-override-vars-value-lookup-term state))
+             (if (boundp-global 'svtv-non-composable-override-vars state)
+                 (cons 'non-composable-vars
+                       (list 'quote (svarlist-update-override-tests
+                                     t (f-get-global 'svtv-non-composable-override-vars state))))
+               '(non-composable-vars . 'nil)))))
 
 (defmacro set-svtv-decomp-main-fsm (fsm-name)
   `(make-event
@@ -142,6 +198,19 @@
                           state)
             (value '(value-triple ',fsm-name)))))
 
+(defmacro set-svtv-non-composable-override-vars (varlist)
+  `(make-event
+    (pprogn (f-put-global 'svtv-non-composable-override-vars
+                          ',varlist
+                          state)
+            (value '(value-triple 'svtv-non-composable-override-vars)))))
+
+(defun diagnose-overridetriple-check-result (check trips)
+  (progn$ (cw "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!~%")
+          (cw "SVTV-DECOMP override syntactic check failed.~%")
+          (cw "Diagnostic info sneaky-pushed onto :svtv-decomp-overridetriple-errors.~%")
+          (acl2::sneaky-push :svtv-decomp-overridetriple-errors (list check trips))))
+
 (defthmd svtv-decomp-remove-override-vars-from-svex-alist-eval-when-svexlist-check-overridetriples
   (implies (and (syntaxp (cmr::term-variable-free-p al))
                 (equal testvars (svex-env-override-test-vars env))
@@ -149,18 +218,20 @@
                  `((known-tests . ,(acl2::pseudo-term-quote (collect-known-members-from-list-term testvars))))
                  (known-tests))
                 (syntaxp (not (equal known-tests ''nil)))
-                (equal valvar-lookup (svex-env-lookup
-                                      (change-svar (car known-tests)
-                                                   :override-test nil
-                                                   :override-val t)
-                                      env))
-                (bind-free (remove-override-vars-value-binding mfc state) (values))
-                (equal trips (override-tests-to-svex-override-triplelist known-tests values))
-                (not (svexlist-check-overridetriples (svex-alist-vals al) trips))
+                (bind-free (svtv-override-parameter-bindings mfc state)
+                           (values non-composable-vars))
+                (equal known-tests2 (set-difference-equal known-tests non-composable-vars))
+                (syntaxp (not (equal known-tests2 ''nil)))
+                (no-duplicatesp-equal (svarlist-fix known-tests2))
+                (equal trips-exec (override-tests-to-svex-override-triplelist-exec known-tests2 values))
+                (equal check (svexlist-check-overridetriples (svex-alist-vals al) trips-exec))
+                (equal trips (override-tests-to-svex-override-triplelist known-tests2 values))
+                (syntaxp (or (equal check ''nil)
+                             (diagnose-overridetriple-check-result check trips)))
+                (not check)
                 (equal trips-vars (svex-override-triplelist-vars trips))
-                (no-duplicatesp-equal trips-vars)
                 (equal new-env (svex-env-removekeys trips-vars env))
-                (svex-override-triplelist-env-ok trips env new-env))
+                (force (svex-override-triplelist-env-ok trips env new-env)))
            (equal (svex-alist-eval al env)
                   (svex-alist-eval al new-env))))
 
@@ -171,13 +242,20 @@
                 (bind-free `((known-tests . ,(acl2::pseudo-term-quote (collect-known-members-from-list-term testvars))))
                            (known-tests))
                 (syntaxp (not (equal known-tests ''nil)))
-                (bind-free (remove-override-vars-value-binding mfc state) (values))
-                (equal trips (override-tests-to-svex-override-triplelist known-tests values))
-                (not (svex-check-overridetriples svex trips))
+                (bind-free (svtv-override-parameter-bindings mfc state)
+                           (values non-composable-vars))
+                (equal known-tests2 (set-difference-equal known-tests non-composable-vars))
+                (syntaxp (not (equal known-tests2 ''nil)))
+                (no-duplicatesp-equal (svarlist-fix known-tests2))
+                (equal trips-exec (override-tests-to-svex-override-triplelist-exec known-tests2 values))
+                (equal check (svex-check-overridetriples svex trips-exec))
+                (equal trips (override-tests-to-svex-override-triplelist known-tests2 values))
+                (syntaxp (or (equal check ''nil)
+                             (diagnose-overridetriple-check-result check trips)))
+                (not check)
                 (equal trips-vars (svex-override-triplelist-vars trips))
-                (no-duplicatesp-equal trips-vars)
                 (equal new-env (svex-env-removekeys trips-vars env))
-                (svex-override-triplelist-env-ok trips env new-env))
+                (force (svex-override-triplelist-env-ok trips env new-env)))
            (equal (svex-eval svex env)
                   (svex-eval svex new-env))))
 
@@ -187,13 +265,21 @@
                 (bind-free `((known-tests . ,(acl2::pseudo-term-quote (collect-known-members-from-list-term testvars))))
                            (known-tests))
                 (syntaxp (not (equal known-tests ''nil)))
-                (bind-free (remove-override-vars-value-binding mfc state) (values))
-                (equal trips (override-tests-to-svex-override-triplelist known-tests values))
-                (not (svexlist-check-overridetriples list trips))
+                (no-duplicatesp-equal (svarlist-fix known-tests))
+                (bind-free (svtv-override-parameter-bindings mfc state)
+                           (values non-composable-vars))
+                (equal known-tests2 (set-difference-equal known-tests non-composable-vars))
+                (syntaxp (not (equal known-tests2 ''nil)))
+                (no-duplicatesp-equal (svarlist-fix known-tests2))
+                (equal trips-exec (override-tests-to-svex-override-triplelist-exec known-tests2 values))
+                (equal check (svexlist-check-overridetriples list trips-exec))
+                (equal trips (override-tests-to-svex-override-triplelist known-tests2 values))
+                (syntaxp (or (equal check ''nil)
+                             (diagnose-overridetriple-check-result check trips)))
+                (not check)
                 (equal trips-vars (svex-override-triplelist-vars trips))
-                (no-duplicatesp-equal trips-vars)
                 (equal new-env (svex-env-removekeys trips-vars env))
-                (svex-override-triplelist-env-ok trips env new-env))
+                (force (svex-override-triplelist-env-ok trips env new-env)))
            (equal (svexlist-eval list env)
                   (svexlist-eval list new-env))))
 
@@ -219,6 +305,25 @@
                   (syntaxp (quotep x)))
              (equal (svex-env-lookup k x)
                     (svex-env-lookup-exec k x)))))
+
+(encapsulate nil
+  (local (defthm hons-assoc-equal-of-svex-alist-eval
+           (equal (hons-assoc-equal v (svex-alist-eval al env))
+                  (and (svar-p v)
+                       (hons-assoc-equal v al)
+                       (cons v (svex-eval (cdr (hons-assoc-equal v al)) env))))
+           :hints(("Goal" :in-theory (enable svex-alist-eval)))))
+
+  (local (defthm car-of-hons-assoc-equal
+           (equal (car (hons-assoc-equal k x))
+                  (and (hons-assoc-equal k x) k))))
+
+  ;; ugh, need this for svtv-run's non-typesafe use of fal-extract etc
+  (defthm svex-alist-eval-of-fal-extract
+    (implies (svarlist-p vars)
+             (equal (svex-alist-eval (fal-extract vars al) env)
+                    (svex-env-reduce vars (svex-alist-eval al env))))
+    :hints(("Goal" :in-theory (enable fal-extract svex-env-reduce svex-alist-eval svarlist-p)))))
 
 (encapsulate nil
   (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -304,6 +409,13 @@
 (defcong svex-envs-similar equal (svex-env-extract keys x) 2
   :hints(("Goal" :in-theory (enable svex-env-extract))))
 
+(defcong svex-envs-equivalent equal (svex-env-reduce keys x) 2
+  :hints(("Goal" :in-theory (enable svex-env-reduce-redef)
+          :induct (len keys))))
+
+
+
+                                    
 
 
 
@@ -339,27 +451,44 @@
                   (svex-env-lookup (svex-var->name x) env)))
   :hints(("Goal" :in-theory (enable svex-eval))))
 
+(local (in-theory (disable acl2::hons-dups-p)))
 
-(def-ruleset! svtv-env-autoins-in-terms-of-svex-env-extract nil)
-(def-ruleset! svtv-pipeline-thms nil)
-(def-ruleset! svtv-pipeline-thm-constants nil)
+(defthmd no-duplicatesp-equal-run-hons-dups-p
+  (implies (syntaxp (quotep x))
+           (equal (no-duplicatesp-equal x)
+                  (not (acl2::hons-dups-p x)))))
 
-(add-to-ruleset! svtv-decomp-phase0-rules
+(defthmd base-fsm->nextstate-of-svtv-fsm->renamed-fsm
+  (equal (base-fsm->nextstate (svtv-fsm->renamed-fsm svtv-fsm))
+         (base-fsm->nextstate (svtv-fsm->base-fsm svtv-fsm)))
+  :hints(("Goal" :in-theory (enable svtv-fsm->renamed-fsm))))
+
+
+(add-to-ruleset! svtv-env-autoins-in-terms-of-svex-env-extract nil)
+(add-to-ruleset! svtv-pipeline-thms nil)
+(add-to-ruleset! svtv-pipeline-thm-constants nil)
+
+(acl2::set-ruleset! svtv-decomp-phase0-rules
   '((:DEFINITION HONS-COPY)
     (:DEFINITION MAKE-FAST-ALIST)
     (:DEFINITION ACL2::SVTV-RUN-FN)
     (:EXECUTABLE-COUNTERPART SVARLIST-FIX$INLINE)
+    (:EXECUTABLE-COUNTERPART svarlist-p)
+    (:executable-counterpart binary-append)
     (:REWRITE ALIST-KEYS-OF-SVEX-ENV-EXTRACT)
     (:REWRITE RETURN-TYPE-OF-SVEX-ALIST-EVAL-FOR-SYMBOLIC)
     (:REWRITE SVEX-ALIST-EVAL-OF-SVEX-ENV-FIX-ENV)
     (:REWRITE SVEX-ENV-FIX-WHEN-SVEX-ENV-P)
     (:REWRITE SVEX-ENV-P-OF-SVEX-ENV-EXTRACT)
+    (:REWRITE svex-alist-eval-of-fal-extract)
+    (:rewrite svex-env-p-of-svex-env-reduce)
     (:ruleset svtv-env-autoins-in-terms-of-svex-env-extract)))
 
-(add-to-ruleset! svtv-decomp-phase1-rules
+(acl2::set-ruleset! svtv-decomp-phase1-rules
   '((:CONGRUENCE SVEX-ENVS-EQUIVALENT-IMPLIES-SVEX-ENVS-EQUIVALENT-APPEND-1)
     (:CONGRUENCE SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-LOOKUP-2)
     (:CONGRUENCE svex-envs-similar-implies-equal-svex-env-extract-2)
+    (:congruence SVEX-ENVS-EQUIVALENT-IMPLIES-EQUAL-SVEX-ENV-REDUCE-2)
     (:DEFINITION SYNP)
     (:EXECUTABLE-COUNTERPART LEN)
     (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->INITST$INLINE)
@@ -376,7 +505,7 @@
     (:ruleset svtv-pipeline-thms)
     (:ruleset svtv-pipeline-thm-constants)))
 
-(add-to-ruleset! svtv-decomp-phase2-rules
+(acl2::set-ruleset! svtv-decomp-phase2-rules
   '((:CONGRUENCE 4VEC-CONCAT-4VEC-EQUIV-CONGRUENCE-ON-HIGH)
     (:CONGRUENCE 4VEC-CONCAT-4VEC-EQUIV-CONGRUENCE-ON-LOW)
     (:CONGRUENCE 4VEC-RES-4VEC-EQUIV-CONGRUENCE-ON-A)
@@ -397,7 +526,7 @@
     (:DEFINITION SVEX-ENV-FASTLOOKUP)
     ;; (:DEFINITION SVEX-OVERRIDE-TRIPLELIST-ENV-OK)
     (:DEFINITION SVTV-FSM->NEXTSTATE)
-    (:DEFINITION SVTV-FSM->RENAMED-FSM)
+    (:definition SVTV-FSM->RENAMED-FSM)
     (:DEFINITION SVTV-FSM->VALUES)
     (:DEFINITION SYNP)
     (:EQUIVALENCE IFF-IS-AN-EQUIVALENCE)
@@ -430,7 +559,7 @@
     (:EXECUTABLE-COUNTERPART LHRANGE->W$INLINE)
     (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
     (:EXECUTABLE-COUNTERPART NFIX)
-    (:EXECUTABLE-COUNTERPART NO-DUPLICATESP-EQUAL)
+    (:EXECUTABLE-COUNTERPART acl2::hons-dups-p)
     (:EXECUTABLE-COUNTERPART NOT)
     (:EXECUTABLE-COUNTERPART NTH)
     (:EXECUTABLE-COUNTERPART SUBSETP-EQUAL)
@@ -461,10 +590,13 @@
     (:EXECUTABLE-COUNTERPART SVTV-PROBE->TIME$INLINE)
     (:EXECUTABLE-COUNTERPART SVTV-PROBEALIST-FIX$INLINE)
     (:EXECUTABLE-COUNTERPART ZP)
+    (:EXECUTABLE-COUNTERPART set-difference-equal)
+    (:EXECUTABLE-COUNTERPART binary-append)
     (:META SVEX-ALIST-KEYS-EXECUTE-TERM-WHEN-VARIABLE-FREE)
-    (:META SVEX-LOOKUP-UNDER-IFF-EXECUTE-TERM-WHEN-VARIABLE-FREE)
+    (:META SVEX-FASTLOOKUP-EXECUTE-TERM-WHEN-VARIABLE-FREE)
     (:META SVEX-OVERRIDE-TRIPLELIST-VARS-EXECUTE-TERM-WHEN-VARIABLE-FREE)
     (:META SVEXLIST-CHECK-OVERRIDETRIPLES-EXECUTE-TERM-WHEN-VARIABLE-FREE)
+    (:rewrite svex-lookup-when-variable-free)
     (:rewrite lhs-eval-zero-of-cons)
     (:rewrite lhs-eval-zero-of-nil)
     (:rewrite svex-override-triplelist-env-ok-of-cons)
@@ -477,6 +609,7 @@
     (:REWRITE 4VEC-P-OF-4VEC-CONCAT)
     (:REWRITE 4VEC-P-OF-SVEX-ENV-LOOKUP)
     (:REWRITE 4VEC-RES-OF-CONCAT-ZS-1)
+    (:REWRITE 4VEC-RES-OF-CONCAT-ZS-2)
     (:REWRITE 4VEC-RSH-0)
     (:REWRITE 4VECLIST-FIX-OF-CONS)
     (:REWRITE 4VECLIST-NTH-SAFE-OF-CONS)
@@ -536,6 +669,8 @@
     (:REWRITE SVEX-EVAL-OF-VAR)
     (:REWRITE SVEX-EVAL-WHEN-QUOTE)
     (:REWRITE SVEX-FIX-WHEN-SVEX-P)
+    (:rewrite svex-env-boundp-of-svex-env-reduce)
+    (:rewrite svex-env-lookup-of-svex-env-reduce)
     (:REWRITE SVEX-OVERRIDE-TRIPLE->TESTVAR-OF-SVEX-OVERRIDE-TRIPLE)
     (:REWRITE SVEX-OVERRIDE-TRIPLE->VALEXPR-OF-SVEX-OVERRIDE-TRIPLE)
     (:REWRITE SVEX-OVERRIDE-TRIPLE->VALVAR-OF-SVEX-OVERRIDE-TRIPLE)
@@ -544,20 +679,24 @@
     (:REWRITE SVTV-FSM->BASE-FSM-OF-SVTV-FSM)
     (:REWRITE SVTV-FSM->NAMEMAP-OF-SVTV-FSM)
     (:REWRITE ACL2::TAKE-OF-LEN-FREE)
+    ;; (:rewrite base-fsm->nextstate-of-svtv-fsm->renamed-fsm)
+    (:rewrite no-duplicatesp-equal-run-hons-dups-p)
     (:TYPE-PRESCRIPTION 4VEC-CONCAT)))
 
 
 
 
-(defun svtv-decomp-hints-fn (enables disables)
+(defun svtv-decomp-hints-fn (enables disables forcep)
   `'(:computed-hint-replacement
      ((and stable-under-simplificationp
            '(:in-theory (e/d** (svtv-decomp-phase1-rules))))
       (and stable-under-simplificationp
-           '(:in-theory (e/d** (svtv-decomp-phase2-rules)))))
+           '(:in-theory (e/d** (svtv-decomp-phase2-rules
+                                . ,(and forcep '((force))))))))
      :in-theory (e/d** (svtv-decomp-phase0-rules
                         . ,enables)
                        ,disables)))
 
-(defmacro svtv-decomp-hints (&key enables disables)
-  (svtv-decomp-hints-fn enables disables))
+
+(defmacro svtv-decomp-hints (&key enables disables forcep)
+  (svtv-decomp-hints-fn enables disables forcep))

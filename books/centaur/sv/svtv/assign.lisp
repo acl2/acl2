@@ -1497,7 +1497,7 @@
   (lhatom-case x
     :z (svex-z)
     :var (svex-rsh x.rsh
-                   (or (svex-lookup x.name compose)
+                   (or (svex-fastlookup x.name compose)
                        (svex-var x.name))))
   ///
   (local (defthm svex-eval-of-svex-var
