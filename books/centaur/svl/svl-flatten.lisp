@@ -3110,7 +3110,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                                     modname
                                                     modalist))
        (tmp-occs (append init-occs-for-aliased-inputs occs-for-outputs tmp-occs))
-       (- (gc$))
+       ;;(- (gc$))
        (- (cw "Sorting occs... ~%"))
        ;; Create Listeners.
        (tmp-occs (make-fast-alist tmp-occs)) ;; necessary for occ-to-occ listeners.
@@ -3198,9 +3198,8 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                 valid-rp-state-syntaxp
                 :hyp (valid-rp-state-syntaxp rp-state)))
   (if (atom modnames)
-      (progn$ (hons-clear t)
-              (mv nil rp::rp-state))
-    (b* ((- (gc$))
+      (mv nil rp::rp-state)
+    (b* (;;(- (gc$))
          ((mv this rp::rp-state)
           (svl-flatten-mod (car modnames)
                            modalist
@@ -3570,6 +3569,7 @@ them.
         (svl-flatten-mods dont-flatten sv-design.modalist
                           dont-flatten vl-insouts
                           ))
+       (- (hons-clear t))
        (- (cw "Inserting ranks to unflattened modules... ~%"))
        (ranks (svl-mod-calculate-ranks top
                                        modules
@@ -3581,7 +3581,8 @@ them.
        (- (cw "All done! ~%"))
        (- (fast-alist-free sv-design.modalist))
 
-       (- (gc$)))
+       ;;(- (gc$))
+       )
     (mv modules rp::rp-state))
   ///
 

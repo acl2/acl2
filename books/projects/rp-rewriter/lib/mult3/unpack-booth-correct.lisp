@@ -313,6 +313,12 @@
                   )))
     :fn unpack-booth-for-s-lst)
 
+(local
+ (defthm --of-ifix
+     (equal (-- (ifix x))
+            (-- x))
+   :hints (("Goal"
+            :in-theory (e/d (--) ())))))
 
 (defret unpack-booth-meta-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)

@@ -230,20 +230,12 @@
  :formula-checks mult-formula-checks
  :returns (mv term dont-rw))
 
-(rp::add-meta-rule
+#|(rp::add-meta-rule
  :meta-fnc medw-compress-meta
  :trig-fnc medw-compress
  :valid-syntaxp t
  :formula-checks mult-formula-checks
- :returns (mv term dont-rw))
-
-(rp::add-meta-rule
- :meta-fnc medw-compress-meta
- :trig-fnc equal
- :valid-syntaxp t
- :disabledp t
- :formula-checks mult-formula-checks
- :returns (mv term dont-rw))
+ :returns (mv term dont-rw))||#
 
 (rp::add-meta-rule
  :meta-fnc unpack-booth-meta
@@ -251,3 +243,9 @@
  :valid-syntaxp t
  :formula-checks mult-formula-checks
  :returns (mv term dont-rw))
+
+(add-postprocessor
+ :processor-fnc medw-compress-any
+ :valid-syntaxp t
+ :disabledp t
+ :formula-checks mult-formula-checks)
