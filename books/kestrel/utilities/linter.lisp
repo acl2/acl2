@@ -17,7 +17,7 @@
 ;; arguments and calls of IF with resolvable tests.
 
 ;; Usage: Include the linter first, then the books to be checked.  Then call
-;; (run-linter).  Use option :check :all to check the linter itself, any books
+;; (run-linter).  Use option :event-range :all to check the linter itself, any books
 ;; included before the linter, and the ACL2 system.  Otherwise, such things are
 ;; not checked.
 
@@ -110,7 +110,7 @@
       (mv defuns-acc defthms-acc) ; oldest ones come first
     (let ((triple (first world)))
       (if (equal triple triple-to-stop-at)
-          (prog2$ (cw "~%Note: Not checking anything in the linter itself, any books included before the linter, or the ACL2 system itself.  To override, use linter option :check :all.~%~%")
+          (prog2$ (cw "~%Note: Not checking anything in the linter itself, any books included before the linter, or the ACL2 system itself.  To override, use linter option :event-range :all.~%~%")
                   (mv (reverse defuns-acc)
                       (reverse defthms-acc)))
         (let ((symb (car triple))
