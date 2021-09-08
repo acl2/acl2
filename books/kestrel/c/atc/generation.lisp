@@ -350,6 +350,10 @@
      the name of the locally generated theorem that asserts
      that the measure of the function (when recursive) yields a natural number
      (@('nil') if the function is not recursive);
+     the name of the locally generated theorem that asserts
+     that looking up the function in the function environment
+     yields the information for the function
+     (@('nil') if the function is recursive);
      and a limit that suffices to execute the code generated from the function,
      as explained below.
      The limit is a term that may depend on the function's parameters.
@@ -379,6 +383,7 @@
    (returns-value-thm symbol)
    (correct-thm symbol)
    (measure-nat-thm symbol)
+   (fun-env-thm symbol)
    (limit pseudo-term))
   :pred atc-fn-infop)
 
@@ -3404,6 +3409,7 @@
               :returns-value-thm fn-returns-value-thm
               :correct-thm fn-correct-thm
               :measure-nat-thm nil
+              :fun-env-thm nil
               :limit limit)))
     (acl2::value (list ext
                        local-events
@@ -4519,6 +4525,7 @@
                                :returns-value-thm fn-returns-value-thm
                                :correct-thm fn-correct-thm
                                :measure-nat-thm natp-of-measure-of-fn-thm
+                               :fun-env-thm nil
                                :limit loop-limit)))
     (acl2::value (list local-events
                        exported-events
