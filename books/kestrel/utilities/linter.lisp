@@ -546,6 +546,10 @@
          nil ; could not resolve
          )))))
 
+;; Used for printing substitutions.  Sometimes the substitutions can be massive.
+(defconst *subst-evisc-tuple*
+  (evisc-tuple 3 4 nil nil))
+
 ;; The subst includes bindings of vars from overarching lambdas.
 ;; TODO: Track and use the context from overarching IF tests.
 (mutual-recursion
@@ -566,22 +570,27 @@
                           (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
                           (let ((relevant-subst (filter-subst subst (all-vars test))))
                             (if relevant-subst
-                                (cw "  Relevant substitutions ~x0)~%~%" relevant-subst)
+                                (cw "  Relevant substitutions ~X01)~%~%" relevant-subst *subst-evisc-tuple*)
                               (cw ")~%~%"))))))
              (:false (progn$
                       (cw "(In ~s0,~% the IF test in ~x1 is known to be false~%" (thing-being-checked-to-string thing-being-checked) term)
                       (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
                       (let ((relevant-subst (filter-subst subst (all-vars test))))
                         (if relevant-subst
-                            (cw "  Relevant substitutions ~x0)~%~%" relevant-subst)
+                            (cw "  Relevant substitutions ~X01)~%~%" relevant-subst *subst-evisc-tuple*)
                           (cw ")~%~%")))))
              (nil nil))))
     ;; Check the test recursively:
     (lint-term (farg1 term) subst type-alist
                 nil ; we use nil here because we handle the test above
                 thing-being-checked suppress state)
-    (b* (((mv & & then-type-alist else-type-alist &)
-          (assume-true-false (farg1 term) nil nil nil type-alist (ens state) (w state) nil nil nil)))
+    (b* (;; (- (cw "  ((Type-alist before assume-true-false: ~x0)~%" (decode-type-alist type-alist)))
+         ;; (- (cw "  (Calling assume-true-false on: ~x0)~%" (farg1 term)))
+         ((mv & & then-type-alist else-type-alist &)
+          (assume-true-false (farg1 term) nil nil nil type-alist (ens state) (w state) nil nil nil))
+         ;; (- (cw "  (Then-type-alist: ~x0)~%" (decode-type-alist then-type-alist)))
+         ;; (- (cw "  (Else-type-alist:  ~x0))~%" (decode-type-alist else-type-alist)))
+         )
       (prog2$
        ;; check the then-branch:
        (if (equal (farg1 term) (farg2 term))
@@ -616,14 +625,14 @@
                       (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
                       (let ((relevant-subst (filter-subst subst (all-vars term))))
                         (if relevant-subst
-                            (cw "  Relevant substitutions ~x0)~%~%" relevant-subst)
+                            (cw "  Relevant substitutions ~X01)~%~%" relevant-subst *subst-evisc-tuple*)
                           (cw ")~%~%")))))
              (:false
               (progn$ (cw "(In ~s0,~% ~x1 is known to be false and is used in an IFF context~%" (thing-being-checked-to-string thing-being-checked) term)
                       (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
                       (let ((relevant-subst (filter-subst subst (all-vars term))))
                         (if relevant-subst
-                            (cw "  Relevant substitutions ~x0)~%~%" relevant-subst)
+                            (cw "  Relevant substitutions ~X01)~%~%" relevant-subst *subst-evisc-tuple*)
                           (cw ")~%~%")))))
              (nil nil))))
     (if (variablep term)
