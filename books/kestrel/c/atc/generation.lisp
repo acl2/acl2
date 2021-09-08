@@ -471,7 +471,7 @@
   :returns (thms symbol-listp)
   :short "Project the measure theorems
           out of a function information alist,
-          for the functions among a given list.."
+          for the functions among a given list."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -491,6 +491,34 @@
                                                           among))))
         (t (atc-symbol-fninfo-alist-to-measure-nat-thms (cdr prec-fns)
                                                         among))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-symbol-fninfo-alist-to-fun-env-thms
+  ((prec-fns atc-symbol-fninfo-alistp) (among symbol-listp))
+  :returns (thms symbol-listp)
+  :short "Project the function envirionment theorems
+          out of a function information alist,
+          for the functions among a given list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee atc-symbol-fninfo-alist-to-returns-value-thms).
+     See that function's documentation for more details.")
+   (xdoc::p
+    "We skip over recursive functions,
+     which have @('nil') as that entry."))
+  (cond ((endp prec-fns) nil)
+        ((member-eq (caar prec-fns) among)
+         (b* ((thm (atc-fn-info->fun-env-thm (cdr (car prec-fns)))))
+           (if thm
+               (cons thm
+                     (atc-symbol-fninfo-alist-to-fun-env-thms (cdr prec-fns)
+                                                              among))
+             (atc-symbol-fninfo-alist-to-fun-env-thms (cdr prec-fns)
+                                                      among))))
+        (t (atc-symbol-fninfo-alist-to-fun-env-thms (cdr prec-fns)
+                                                    among))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
