@@ -383,6 +383,9 @@
                              ;;RP-EVL-OF-QUOTE
                              len)))))
 
+
+
+
 (local
  (defthm pp-order-and-negated-termsp-implies-negated-termsp
    (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -406,9 +409,10 @@
                   (:instance rp-evlt-of-rp-equal
                              (term1 y)
                              (term2 (cadr x))))
-            :in-theory (e/d (pp-order-and-negated-termsp)
-                            (rp-evlt-of-rp-equal
-                             rp-equal))))))
+            :in-theory (e/d* (pp-order-and-negated-termsp
+                              regular-rp-evl-of_--_when_mult-formula-checks)
+                             (rp-evlt-of-rp-equal
+                              rp-equal))))))
 
 (progn
   (defthm pp-sum-merge-aux-correct

@@ -1243,6 +1243,15 @@
            (equal (rp-evlt term a)
                   (RP-EVLT-LST (CDR term) A))))
 
+
+(defthm valid-sc-single-step-lemma
+  (implies (and (rp-termp term)
+                (equal (car term) 'rp)
+                (valid-sc term a))
+           (valid-sc (caddr term) a))
+  :hints (("Goal"
+           :in-theory (e/d (valid-sc-single-step) ()))))
+
 (defret-mutual
   medw-compress-any-correct
   (defret medw-compress-any-correct
@@ -1271,26 +1280,29 @@
            :expand (;;(rp-trans (ex-from-rp term))
                     ;;(VALID-SC (EX-FROM-RP TERM) A)
                     (:free (x y) (valid-sc (cons x y) a))
+                    
                     )
            :in-theory (e/d* (medw-compress-any
                              ;;valid-sc-of-ex-from-rp-reverse
                              medw-compress-any-lst
                              regular-eval-lemmas
-                             RP-EVLT-OF-EX-FROM-RP-with-syntaxp
+                             ;;RP-EVLT-OF-EX-FROM-RP-with-syntaxp
                              RP-EVLt-OF-FNCALL-ARGS
                              ;;RP-EVL-OF-FNCALL-ARGS
                              ;;RP-EVL-OF-FNCALL-ARGS2
                              RP-EVLt-OF-FNCALL-ARGS2
-                             RP-EVLT-OF-EX-FROM-RP-REVERSE-2
+                             ;;RP-EVLT-OF-EX-FROM-RP-REVERSE-2
                              ;;is-if is-rp
                              valid-sc-subterms
+                             valid-sc-single-step
                              regular-eval-lemmas-with-ex-from-rp)
                             ((:DEFINITION EX-FROM-RP)
                              valid-sc
+                             VALID-SC-EX-FROM-RP-2
                              ;;VALID-SC-EX-FROM-RP-2
                              ;;valid-sc-subterms
                              (:REWRITE IS-IF-RP-TERMP)
-                             rp-evlt-of-ex-from-rp
+                             ;;rp-evlt-of-ex-from-rp
                              rp-termp
                              rp-term-listp
                              cons-equal
@@ -1305,7 +1317,7 @@
                              RP-TRANS-OPENER
                              )))))
 
-(create-regular-eval-lemma medw-compress 1 MULT-FORMULA-CHECKS)
+;;(create-regular-eval-lemma medw-compress 1 MULT-FORMULA-CHECKS)
 
 (defret medw-compress-meta-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -1321,7 +1333,7 @@
            :expand ((:free (x)
                            (valid-sc (cons 'equal x) a)))
            :in-theory (e/d (medw-compress-meta
-                            MEDW-COMPRESS
+                            
                             )
                            (valid-sc
                             rp-termp

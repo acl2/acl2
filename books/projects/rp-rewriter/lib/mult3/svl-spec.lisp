@@ -92,23 +92,23 @@
                   (natp start))
              (equal (svl::bits num start 1)
                     (bit-of num start)))
-    :hints (("Goal"
+    :hints (("goal"
              :in-theory (e/d (bitp
                               oddp
                               evenp
                               bit-of
-                              SV::4VEC-PART-SELECT
+                              sv::4vec-part-select
                               svl::bits
-                              SV::4VEC->LOWER
-                              SV::2VEC
-                              SV::4VEC-RSH
-                              SV::4VEC->UPPER
-                              SV::4VEC-ZERO-EXT
+                              sv::4vec->lower
+                              sv::2vec
+                              sv::4vec-rsh
+                              sv::4vec->upper
+                              sv::4vec-zero-ext
                               
-                              SV::4VEC
-                              ;SV::4VEC-CONCAT
-                              SV::4VEC-SHIFT-CORE
-;LOGHEAD
+                              sv::4vec
+                              ;sv::4vec-concat
+                              sv::4vec-shift-core
+;loghead
                               logbitp
                               ifix
                               mod
@@ -117,18 +117,18 @@
                               logbit
                               loghead
                               )
-                             (SVL::BITP-BITS-SIZE=1
+                             (svl::bitp-bits-size=1
                               ;;loghead
-                              (:REWRITE SV::4VEC-EQUAL)
+                              (:rewrite sv::4vec-equal)
                               
-                              (:DEFINITION ACL2::EXPT2$INLINE)
-                              ;(:DEFINITION ACL2::IMOD$INLINE)
+                              (:definition acl2::expt2$inline)
+                              ;(:definition acl2::imod$inline)
                               
-                              (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
-                              SVL::CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$
-                              SVL::4VEC-ZERO-EXT-IS-BITS
-                              SVL::4VEC-ZERO-EXT-IS-4VEC-CONCAT
-                              SVL::4VEC-CONCAT$-OF-SIZE=1-TERM2=0
+                              (:rewrite acl2::remove-weak-inequalities)
+                              svl::convert-4vec-concat-to-4vec-concat$
+                              svl::4vec-zero-ext-is-bits
+                              svl::4vec-zero-ext-is-4vec-concat
+                              svl::4vec-concat$-of-term2=0
                             
                               SVL::4VEC-PART-SELECT-IS-BITS)))))
 
@@ -280,7 +280,7 @@
                                     logbit)
                               (SVL::4VEC-PART-SELECT-IS-BITS
                                SVL::4VEC-ZERO-EXT-IS-BITS
-                               SVL::4VEC-CONCAT$-OF-SIZE=1-TERM2=0
+                               SVL::4VEC-CONCAT$-OF-TERM2=0
                                SVL::CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$)))))
 
    (defthm ash-minus1-is-4vec-rsh
@@ -470,7 +470,7 @@
               :in-theory (e/d (sum-pps-bycol-bybit-simple
                                svl-sum-pps-bycol-bybit)
                               (logbitp ash
-                                       SVL::4VEC-CONCAT$-OF-SIZE=1-TERM2=0
+                                       SVL::4VEC-CONCAT$-OF-TERM2=0
                                        ifix))))))
 
   (def-rp-rule$ t nil
@@ -720,13 +720,19 @@
                                  mod2-is-m2
                                  logapp-is-4vec-concat$
                                  svl::4vec-zero-ext-is-bits
-                                 svl::4vec-concat$-of-size=1-term2=0
+                                 svl::4vec-concat$-of-term2=0
                                  svl::convert-4vec-concat-to-4vec-concat$)))))))
 
   (def-rp-rule 4vec-plus++-is-4vec-adder
     (implies (and (integerp x)
                   (integerp y)
                   (integerp carry-in)
+                  #|(syntaxp (or (and (not (equal y '0))
+                                    (not (equal y ''0)))
+                               (and (or (equal y '0)
+                                        (equal y ''0))
+                                    (or (equal x '0)
+                                        (equal x ''0)))))|#
                   (natp size))
              (equal (svl::4vec-plus++ x y carry-in size)
                     (4vec-adder x y carry-in size)))
@@ -736,6 +742,8 @@
                               4vec-adder
                               ifix)
                              ()))))
+
+  
 
   (def-rp-rule 4vec-adder-opener-0
     (equal (4vec-adder x y carry-in 0)

@@ -1677,9 +1677,9 @@
                     (rp-termp (RP-RHSm RULE))
                     (NOT (INCLUDE-FNC (RP-RHSm RULE) 'FALIST))
                     (NOT (INCLUDE-FNC (RP-HYPm RULE) 'FALIST))
-                    (NOT (INCLUDE-FNC (RP-LHSm RULE) 'IF))
+                    ;;(NOT (INCLUDE-FNC (RP-LHSm RULE) 'IF))
                     (NOT (INCLUDE-FNC (RP-LHSm RULE) 'SYNP))
-                    (NO-FREE-VARIABLEP RULE)))
+                    #|(NO-FREE-VARIABLEP RULE)|#))
       :rule-classes :forward-chaining
       :hints (("Goal"
                :in-theory '(rule-syntaxp quotep

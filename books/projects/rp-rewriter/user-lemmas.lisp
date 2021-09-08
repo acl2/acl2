@@ -65,11 +65,18 @@
     :hints (("Goal"
              :in-theory (e/d (dont-rw-syntaxp) ())))))
 
-
 (def-rp-rule make-fast-alist-def
-  (equal (make-fast-alist (cons (cons x y) rest))
-         (hons-acons x y
-                     (make-fast-alist rest))))
+    (and (equal (make-fast-alist (cons (cons x y) rest))
+                (hons-acons x y
+                            (make-fast-alist rest)))
+         (equal (make-fast-alist nil)
+                nil)))
+
+(def-rp-rule make-fast-alist-when-already-fast-alist
+    (implies (syntaxp (and (consp term)
+                           (equal (car term) 'falist)))
+             (equal (make-fast-alist term)
+                    term)))
 
 (def-rp-rule len-cons
   (equal (len (cons a b))
@@ -173,3 +180,13 @@ Forced term is ~p2 ~% "
 (def-rp-rule force$-of-t
   (equal (force$ t rule-name hyp)
          t))
+
+
+(defthm return-last-from-mbe
+    (equal (return-last 'acl2::mbe1-raw x y)
+           y)
+  :rule-classes nil)
+
+(add-rp-rule return-last-from-mbe :outside-in t)
+
+(add-rp-rule acl2::throw-nonexec-error :outside-in t)

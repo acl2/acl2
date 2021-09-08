@@ -126,12 +126,27 @@
                                svexlist-eval-wog)
                               (svex-apply-is-svex-apply-wog))))))
 
+
+  (local
+   (defthm 4vec-fix-of-4vec-fix
+       (equal (4vec-fix (4vec-fix x))
+              (4vec-fix x))
+     :hints (("Goal"
+              :in-theory (e/d (4vec-fix) ())))))
+
   (local
    (defun svex-apply-cases-rw-fn-aux1 (args)
      (if (atom args)
          nil
-       (cons `(4vec-fix-wog (svex-eval-wog ,(car args) env))
+       (cons `(svex-eval-wog ,(car args) env)
              (svex-apply-cases-rw-fn-aux1 (cdr args))))))
+
+  (local
+   (defun svex-apply-cases-rw-fn-aux2 (args)
+     (if (atom args)
+         nil
+         (cons `,(car args)
+               (svex-apply-cases-rw-fn-aux2 (cdr args))))))
 
   (local
    (defun svex-apply-cases-rw-fn (svex-op-table)
@@ -143,28 +158,34 @@
              (fnc-name (cadr cur))
              (args (caddr cur)))
           `(def-rp-rule ,(sa 'svex-apply-wog sv-fnc-name 'rw)
-             (implies t #|(and ,@(pairlis$ (repeat (len args) 'sv::svex-p)
-                      (pairlis$  args nil)))||#
-                      (equal (svex-eval-wog (list ',sv-fnc-name ,@args) env)
-                             (,fnc-name ,@(svex-apply-cases-rw-fn-aux1 args))))
+               (implies t #|(and ,@(pairlis$ (repeat (len args) 'sv::svex-p)
+                        (pairlis$  args nil)))||#
+                        (and (equal (svex-eval-wog (list ',sv-fnc-name ,@args) env)
+                                    (,fnc-name ,@(svex-apply-cases-rw-fn-aux1 args)))
+                             (equal (svex-apply-wog ',sv-fnc-name (list ,@args))
+                                    (,fnc-name ,@(svex-apply-cases-rw-fn-aux2 args)))))
              :hints (("Goal"
-                      :in-theory '(;SVEX-EVAL-OF-EXPRESSION-LEMMA2
-                                   (:e KEYWORDP)
-                                   CAR-CONS
-                                   (:e zp)
-                                   (:e FNSYM-FIX)
-                                   sv::svex-p
-                                   sv::FNSYM-P
-                                   sv::SVEXLIST-P
-                                   svexlist-eval-wog
-                                   sv::4VECLIST-NTH-SAFE
-                                   svex-eval-wog-of-expression-lemma
-                                   nth
-                                   SVEX-APPLY-WOG
-                                   4vec-fix-wog-is-4vec-fix
-                                   cdr-cons
-                                   (:e eq)
-                                   svex-kind-wog)))))
+                      :in-theory (e/d ( ;SVEX-EVAL-OF-EXPRESSION-LEMMA2
+                                       (:e KEYWORDP)
+                                       ,fnc-name
+                                       4vec-fix-of-4vec-fix
+                                       SV::4VEC-ONEHOT0
+                                       CAR-CONS
+                                       (:e zp)
+                                       (:e FNSYM-FIX)
+                                       sv::svex-p
+                                       sv::FNSYM-P
+                                       sv::SVEXLIST-P
+                                       svexlist-eval-wog
+                                       sv::4VECLIST-NTH-SAFE
+                                       svex-eval-wog-of-expression-lemma
+                                       nth
+                                       SVEX-APPLY-WOG
+                                       4vec-fix-wog-is-4vec-fix
+                                       cdr-cons
+                                       (:e eq)
+                                       svex-kind-wog)
+                                      ())))))
         (svex-apply-cases-rw-fn (cdr svex-op-table))))))
 
   (make-event
@@ -189,6 +210,7 @@
    `(with-output
       :gag-mode nil
       :off :all
+      :on (error)
       (progn
         ,@(svex-apply-cases-rw-fn sv::*svex-op-table*)))))
 

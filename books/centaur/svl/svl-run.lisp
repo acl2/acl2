@@ -883,7 +883,8 @@ For example:
           (hard-error 'svl-run
                       "Something went wrong while parsing inputs... ~p0 ~%"
                       (list (cons #\0 inputs-unbound))))
-         ;; everything up to here uses only constants (only executable counterparts)
+         ;; everything up to here uses only constants (only executable
+         ;; counterparts) 
          (inputs (svexlist-list-eval-wog inputs-unbound inputs-env)))
       (svl-run-aux modname inputs output-wires out-bind-alist (make-svl-env) modules))))
 

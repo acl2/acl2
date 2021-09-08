@@ -110,6 +110,40 @@
                    (consp (ex-from-rp term)))
               (not (cddr (ex-from-rp term))))))
 
+  #|(local
+   (defthm rp-termp-consp-implies
+       (implies (and (not (consp term))
+                     (rp-termp term))
+                (not term))
+  :rule-classes :forward-chaining))|#
+
+  (local
+   (defthm guard-lemma6
+       (implies (and (equal (car term) 'if)
+                     (consp term))
+                (consp (EX-FROM-RP-ALL2 term)))
+     :rule-classes :forward-chaining
+     :hints (("Goal"
+              :expand ((EX-FROM-RP-ALL2 TERM))
+              :in-theory (e/d (IS-RP-LOOSE
+                               is-falist)
+                              ())))))
+
+  (local
+   (defthm guard-lemma7
+       (implies (and (consp term)
+                     (not (equal (car term) 'rp))
+                     (not (equal (car term) 'quote))
+                     (not (equal (car term) 'falist))
+                     (rp-termp term))
+                (rp-term-listp (CDR (EX-FROM-RP-ALL2 term))))
+     :hints (("Goal"
+              :expand ((EX-FROM-RP-ALL2 term))
+              :use ((:instance valid-sc-ex-from-rp-all2))
+              :in-theory (e/d (IS-RP-LOOSE)
+                              (valid-sc-ex-from-rp-all2
+                               ))))))
+
   (verify-guards rp-match-lhs))
 
 
@@ -634,13 +668,22 @@
 (defret attach-sc-from-context-returns-rp-termp
   (implies (and (rp-term-listp context)
                 (rp-termp term))
-           (and (rp-term-listp res-context)
+           (and ;;(rp-term-listp res-context)
                 (rp-termp res-term)))
   :fn attach-sc-from-context
   :hints (("Goal"
            :induct (ATTACH-SC-FROM-CONTEXT context term)
            :in-theory (e/d (ATTACH-SC-FROM-CONTEXT) ()))))
 
+
+(defthm attach-sc-from-context-lst-returns-rp-term-listp
+  (implies (and (rp-term-listp context)
+                (rp-term-listp terms))
+           (rp-term-listp (attach-sc-from-context-lst context terms)))
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (attach-sc-from-context-lst context terms)
+           :in-theory (e/d (attach-sc-from-context-lst) ()))))
 
 (defthm UNSIGNED-BYTE-P-and-natp-of-rw-step-limit
   (implies (rp-statep rp-state)
