@@ -100,7 +100,7 @@
             "Checking top-level event"
           (concatenate 'string loc " checking"))))))
 
-;; Returns (mv defun-names defthm-nams)
+;; Returns (mv defun-names defthm-names)
 (defun defuns-and-defthms-in-world (world triple-to-stop-at whole-world defuns-acc defthms-acc)
   (declare (xargs :guard (and (plist-worldp world)
                               (plist-worldp whole-world)
@@ -1150,9 +1150,11 @@
     :equal-self))
 
 ;; Returns state
-(defun run-linter-fn (event-range assume-guards suppress skip-fns check-defuns check-defthms step-limit state)
+(defun run-linter-fn (event-range event-names assume-guards suppress skip-fns check-defuns check-defthms step-limit state)
   (declare (xargs :stobjs state
                   :guard (and (member-eq event-range '(:after-linter :all))
+                              (or (eq :all event-names)
+                                  (symbol-listp event-names))
                               (booleanp assume-guards)
                               (subsetp-eq suppress *warning-types*)
                               (symbol-listp skip-fns)
@@ -1163,10 +1165,20 @@
   (b* ((state (set-fmt-hard-right-margin 140 state))
        (state (set-fmt-soft-right-margin 140 state))
        (world (w state))
-       (triple-to-stop-at (if (eq event-range :after-linter)
-                              '(end-of-linter label . t)
-                            nil))
+       (triple-to-stop-at (if (or (eq event-range :all)
+                                  (not (eq :all event-names))) ; if event-names are given, this allows them to be anywhere in the history
+                              ;; Lint everything (unless suppressed by filtering on names below):
+                              nil
+                            ;; Don't check the linter or anything before it:
+                            '(end-of-linter label . t)
+                            ))
        ((mv all-defuns all-defthms) (defuns-and-defthms-in-world world triple-to-stop-at world nil nil))
+       (all-defuns (if (eq event-names :all)
+                       all-defuns
+                     (intersection-eq event-names all-defuns)))
+       (all-defthms (if (eq event-names :all)
+                        all-defthms
+                     (intersection-eq event-names all-defthms)))
        (state (if check-defuns
                   (prog2$ (cw "Applying linter to ~x0 defuns:~%~%" (len all-defuns))
                           (lint-defuns all-defuns assume-guards suppress skip-fns step-limit state))
@@ -1183,6 +1195,7 @@
 
 ;; Call this macro to check every defun in the current ACL2 world.
 (defmacro run-linter (&key (event-range ':after-linter) ;; either :after-linter (check only events introduced after the linter was included) or :all
+                           (event-names ':all) ;; List of specific names to lint, or :all (meaning don't filter by name)
                            (suppress '(:ground-term :context)) ;; types of check to skip
                            (assume-guards 't) ;; whether to assume guards when analyzing function bodies
                            (skip-fns 'nil) ;; functions to skip checking
@@ -1190,7 +1203,7 @@
                            (check-defthms 't)
                            (step-limit '1000)
                            )
-  `(run-linter-fn ',event-range ',assume-guards ',suppress ',skip-fns ',check-defuns ',check-defthms ',step-limit state))
+  `(run-linter-fn ',event-range ',event-names ',assume-guards ',suppress ',skip-fns ',check-defuns ',check-defthms ',step-limit state))
 
 (deflabel end-of-linter)
 
