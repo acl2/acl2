@@ -320,7 +320,9 @@
          ((mv neg2 term2)
           (case-match term2 (('-- a) (mv t a)) (& (mv nil term2))))
          ((mv order equals)
-          (pp-order term1 term2)))
+          (pp-order term1 term2))
+         (equals (or equals
+                     (rp-equal-cnt term1 term2 0))))
       (mv  order
            (and (not (equal neg1 neg2))
                 equals)

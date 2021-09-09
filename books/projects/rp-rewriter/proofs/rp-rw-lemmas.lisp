@@ -363,6 +363,18 @@
                    `(equal ,(rp-trans (cadr x))
                            ,(rp-trans (caddr x)))))))
 
+(local
+ (defthmd rp-check-context-is-correct-iff-lemma-2
+   (implies (case-match x (('not &) t))
+            (equal (RP-TRANS x)
+                   `(not ,(rp-trans (cadr x)))))))
+
+(local
+ (defthmd rp-check-context-is-correct-iff-lemma-3
+   (implies (case-match x (('if & ''nil ''t) t))
+            (equal (RP-TRANS x)
+                   `(if ,(rp-trans (cadr x)) 'nil 't)))))
+
 (defthm rp-check-context-is-correct-iff
   (implies
    (and  (context-syntaxp context)
@@ -382,6 +394,8 @@
             :in-theory (e/d (rp-check-context
                              context-syntaxp
                              rp-check-context-is-correct-iff-lemma
+                             rp-check-context-is-correct-iff-lemma-2
+                             rp-check-context-is-correct-iff-lemma-3
                              rp-termp
                              eval-and-all
                              is-falist)
@@ -814,9 +828,9 @@
                 (NOT (INCLUDE-FNC (RP-HYP RULE) 'RP))
                 (NOT (INCLUDE-FNC (RP-RHS RULE) 'FALIST))
                 (NOT (INCLUDE-FNC (RP-HYP RULE) 'FALIST))
-                (NOT (INCLUDE-FNC (RP-LHS RULE) 'IF))
+                ;;(NOT (INCLUDE-FNC (RP-LHS RULE) 'IF))
                 (NOT (INCLUDE-FNC (RP-LHS RULE) 'SYNP))
-                (NO-FREE-VARIABLEP RULE)
+                #|(NO-FREE-VARIABLEP RULE)|#
                 (NOT (INCLUDE-FNC (RP-LHS RULE) 'LIST))
                 (NOT (INCLUDE-FNC (RP-HYP RULE) 'LIST))
                 (NOT (INCLUDE-FNC (RP-RHS RULE) 'LIST))))
@@ -1664,9 +1678,10 @@
                       (mv-nth 0
                               (rp-rw term dont-rw context  iff-flg hyp-flg limit rp-state state))))
                  (and (valid-sc res a)
-                      (if iff-flg
-                          (iff (rp-evlt res a) (rp-evlt term a))
-                        (equal (rp-evlt res a) (rp-evlt term a))))))
+                      (implies iff-flg
+                               (iff (rp-evlt res a) (rp-evlt term a)))
+                      (implies (not iff-flg)
+                               (equal (rp-evlt res a) (rp-evlt term a))))))
       :flag rp-rw)
 
     (defthm rp-evl-and-side-cond-consistent-rp-rw-rule
@@ -1690,9 +1705,10 @@
                               (rp-rw-rule term dont-rw rules-for-term context
                                           iff-flg outside-in-flg  limit rp-state state))))
                  (and (valid-sc res a)
-                      (if iff-flg
-                          (iff (rp-evlt res a) (rp-evlt term a))
-                        (equal (rp-evlt res a) (rp-evlt term a))))))
+                      (implies iff-flg
+                               (iff (rp-evlt res a) (rp-evlt term a)))
+                      (implies (not iff-flg)
+                               (equal (rp-evlt res a) (rp-evlt term a))))))
       :flag rp-rw-rule)
 
     (defthm rp-evl-and-side-cond-consistent-rp-rw-if
@@ -1714,9 +1730,10 @@
                       (mv-nth 0
                               (rp-rw-if term dont-rw context iff-flg hyp-flg limit rp-state state))))
                  (and  (valid-sc res a)
-                       (if iff-flg
-                           (iff (rp-evlt res a) (rp-evlt term a))
-                         (equal (rp-evlt res a) (rp-evlt term a))))))
+                       (implies iff-flg
+                                (iff (rp-evlt res a) (rp-evlt term a)))
+                       (implies (not iff-flg)
+                                (equal (rp-evlt res a) (rp-evlt term a))))))
       :flag rp-rw-if)
 
     (defthm rp-evl-and-side-cond-consistent-rp-rw-subterms

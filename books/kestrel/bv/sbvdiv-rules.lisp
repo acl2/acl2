@@ -180,7 +180,8 @@
                                   (x (+ x (- y))))
            :in-theory (disable BVCHOP-OF-MINUS))))
 
-(DEFTHM FLOOR-MINUS-ARG1-lemma
+;looped
+(DEFTHMd FLOOR-MINUS-ARG1-lemma
   (IMPLIES (AND (RATIONALP X1)
                 (RATIONALP X2)
                 (RATIONALP Y))

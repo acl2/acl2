@@ -51,35 +51,56 @@
 
 (make-flag rp-match-lhs :defthm-macro-name defthm-rp-match-lhs)
 
+
+
 (local
- (in-theory (disable EXTRACT-FROM-RP-WITH-CONTEXT
+ (in-theory (disable extract-from-rp-with-context
                      ex-from-rp
-                     PUT-TERM-IN-CONS
-                     SHOULD-TERM-BE-IN-CONS
+                     put-term-in-cons
+                     should-term-be-in-cons
                      context-from-rp
                      ex-from-synp)))
 
-(encapsulate
-  nil
-  (local
-   (in-theory (e/d (extract-from-rp-with-context-context)
-                   (extract-from-rp-with-context))))
-  (defthm-rp-match-lhs
+(local
+ (defthm not-is-rp-ex-from-rp
+     (and (not (IS-RP (EX-FROM-RP term))))
+   :hints (("Goal"
+            :in-theory (e/d (is-rp
+                             IS-RP-loose
+                             ex-from-rp)
+                            ())))))
+
+(local
+ (defthm is-rp-loose-is-rp-when-rp-termp
+     (implies (rp-termp term)
+              (equal (is-rp-loose term)
+                     (is-rp term)))
+   :hints (("Goal"
+            :in-theory (e/d (is-rp
+                             rp-termp
+                             is-rp-loose)
+                            ())))))
+
+(defthm-rp-match-lhs
     ;; for guard of rp-rw-rule-aux and rp-rw
     (defthm return-val-of-rp-match-lhs-context
-      (implies (and (context-syntaxp context)
-                    (rp-termp rule-lhs)
-                    (rp-termp term))
-               (context-syntaxp (mv-nth 0 (RP-MATCH-LHS term rule-lhs context
-                                                        acc-bindings))))
+        (implies (and (context-syntaxp context)
+                      (rp-termp rule-lhs)
+                      (rp-termp term))
+                 (context-syntaxp (mv-nth 0 (rp-match-lhs term rule-lhs context
+                                                            acc-bindings))))
       :flag rp-match-lhs)
     (defthm return-val-of-rp-match-lhs-context-subterms
-      (implies (and (context-syntaxp context)
-                    (rp-term-listp sublhs)
-                    (rp-term-listp subterms))
-               (context-syntaxp (mv-nth 0 (rp-match-lhs-subterms subterms sublhs context
-                                                                 acc-bindings))))
-      :flag rp-match-lhs-subterms)))
+        (implies (and (context-syntaxp context)
+                      (rp-term-listp sublhs)
+                      (rp-term-listp subterms))
+                 (context-syntaxp (mv-nth 0 (rp-match-lhs-subterms subterms sublhs context
+                                                                    acc-bindings))))
+      :flag rp-match-lhs-subterms)
+  :hints (("Goal"
+           :expand ((EX-FROM-RP-ALL2 (EX-FROM-RP (EX-FROM-FALIST TERM))))
+           :in-theory (e/d (extract-from-rp-with-context-context)
+                           (extract-from-rp-with-context)))))
 
 (defthm-rp-match-lhs
   (defthm bindings-alistp-rp-match-lhs
@@ -87,7 +108,7 @@
                   (rp-termp rule-lhs)
                   (rp-termp term))
              (bindings-alistp (mv-nth 1 (rp-match-lhs term rule-lhs context
-                                                      acc-bindings))))
+                                                       acc-bindings))))
     :flag rp-match-lhs)
   (defthm bindings-alistp-rp-match-lhs-subterms
     (implies (and (bindings-alistp acc-bindings)
@@ -95,20 +116,25 @@
                   (rp-term-listp sublhs))
              (bindings-alistp
               (mv-nth 1 (rp-match-lhs-subterms subterms
-                                               sublhs context acc-bindings))))
-    :flag rp-match-lhs-subterms))
+                                               sublhs context
+                                                acc-bindings))))
+    :flag rp-match-lhs-subterms)
+  :hints (("Goal"
+           :expand ((EX-FROM-RP-ALL2 (EX-FROM-RP (EX-FROM-FALIST TERM))))
+           :in-theory (e/d () ()))))
 
 (defthm-rp-match-lhs
   (defthm alistp-rp-match-lhs
     (implies (and (alistp acc-bindings))
              (alistp (mv-nth 1 (rp-match-lhs term rule-lhs context
-                                             acc-bindings))))
+                                              acc-bindings))))
     :flag rp-match-lhs)
   (defthm alistp-rp-match-lhs-subterms
     (implies (and (alistp acc-bindings))
              (alistp
               (mv-nth 1 (rp-match-lhs-subterms subterms
-                                               sublhs context acc-bindings))))
+                                               sublhs context
+                                                acc-bindings))))
     :flag rp-match-lhs-subterms))
 
 ; Matt K. mod 7/2021: The following lemma is no longer accepted due to a
@@ -236,6 +262,7 @@
                 (rp-match-lhs-subterms (cdr (put-term-in-cons (ex-from-rp term)))
                                        (cdr rule-lhs)
                                        (context-from-rp term context)
+                                       
                                        acc-bindings))))
       (subsetp-equal
        context
@@ -243,6 +270,7 @@
                (rp-match-lhs-subterms (cdr (put-term-in-cons (ex-from-rp term)))
                                       (cdr rule-lhs)
                                       (context-from-rp term context)
+                                      
                                       acc-bindings))))
      :instructions (:promote (:rewrite lemma1-2) :s :s)))
 
@@ -256,6 +284,7 @@
                 (rp-match-lhs-subterms (cdr (ex-from-rp term))
                                        (cdr rule-lhs)
                                        (context-from-rp term context)
+                                       
                                        acc-bindings))))
       (subsetp-equal
        context
@@ -263,6 +292,7 @@
                (rp-match-lhs-subterms (cdr (ex-from-rp term))
                                       (cdr rule-lhs)
                                       (context-from-rp term context)
+                                      
                                       acc-bindings))))
      :instructions (:promote (:rewrite lemma1-2) :s :s)))
 
@@ -270,13 +300,13 @@
     (defthm rp-match-lhs-subsetp-context
       (subsetp context
                (rp-context-from
-                (rp-match-lhs term rule-lhs context acc-bindings)))
+                (rp-match-lhs term rule-lhs context  acc-bindings)))
       :flag rp-match-lhs)
 
     (defthm rp-match-lhs-subterms-subsetp-context
       (subsetp context
                (rp-context-from
-                (rp-match-lhs-subterms subterms sublhs context acc-bindings)))
+                (rp-match-lhs-subterms subterms sublhs context  acc-bindings)))
       :flag rp-match-lhs-subterms)
     :hints (("Goal"
              :in-theory (e/d ()
@@ -284,6 +314,152 @@
                               car-cons cdr-cons endp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;:i-am-here
+
+#|(defthm-ex-from-rp-all2
+    (defthm ex-from-rp-all2-does-not-include-rp
+        (implies (rp-termp term)
+                 (not (include-fnc (ex-from-rp-all2 term) 'rp)))
+      :flag ex-from-rp-all2)
+    (defthm ex-from-rp-all2-lst-does-not-include-rp
+        (implies (rp-term-listp lst)
+                 (not (include-fnc-subterms
+                       (ex-from-rp-all2-lst lst)
+                       'rp)))
+      :flag EX-FROM-RP-ALL2-LST)
+  :hints (("Goal"
+           :in-theory (e/d (ex-from-rp-all2
+                            EX-FROM-RP-ALL2-LST)
+                           ()))))|#
+
+(progn
+  (local
+   (acl2::defines
+       include-rp
+       (define include-rp (term)
+         (if (or (atom term)(quotep term))
+             nil
+             (or (is-rp-loose term)
+                 (include-rp-subterms (cdr term)))))
+   
+     (define include-rp-subterms (subterms)
+       (if (atom subterms)
+           nil
+           (or (include-rp (car subterms))
+               (include-rp-subterms (cdr subterms)))))))
+
+  (local
+   (defthm-valid-sc
+       (defthm not-include-is-rp-means-valid-sc
+           (implies (not (include-rp term))
+                    (and (valid-sc term a)))
+         :flag valid-sc)
+       (defthm not-include-is-rp-means-valid-sc-subterms
+           (implies (not (include-rp-subterms subterms))
+                    (and (valid-sc-subterms subterms a)))
+         :flag valid-sc-subterms)
+     :hints (("Goal" 
+              :in-theory (e/d (is-rp
+                               IS-RP-LOOSE
+                               include-rp
+                               include-rp-subterms
+                               valid-sc) ())))))
+
+  (local
+   (defthm-ex-from-rp-all2
+       (defthm ex-from-rp-all2-does-not-include-rp
+           (not (include-rp (ex-from-rp-all2 term)))
+         :flag ex-from-rp-all2)
+       (defthm ex-from-rp-all2-lst-does-not-include-rp
+           (not (include-rp-subterms (ex-from-rp-all2-lst lst)))
+         :flag ex-from-rp-all2-lst)
+     :otf-flg t
+     :hints ( #|("Subgoal *1/4"
+             :do-not-induct t ;
+             :expand ((EX-FROM-RP-ALL2-LST (CDR TERM)) ;
+             (EX-FROM-RP-ALL2-LST (CDDR TERM)) ;
+             (EX-FROM-RP-ALL2-LST (CDDDR TERM))))|#
+             ("Goal"
+              :do-not-induct t
+              ;;:expand ((EX-FROM-RP-ALL2 TERM))
+              :in-theory (e/d (ex-from-rp-all2
+                               include-rp
+                               ;;is-rp
+                               include-rp-subterms
+                               ;;is-rp
+                               IS-RP-LOOSE
+                               EX-FROM-RP-ALL2-LST)
+                              (;;is-falist
+                               ;;(:REWRITE EX-FROM-RP-ALL2-DOES-NOT-INCLUDE-RP)
+                               (:DEFINITION RP-TERMP)
+                               (:DEFINITION RP-TERM-LISTP)
+                               (:DEFINITION ACL2::APPLY$-BADGEP)
+                               (:REWRITE NOT-INCLUDE-RP)))))))
+
+  (defthm-ex-from-rp-all2
+      (defthm valid-sc-ex-from-rp-all2
+          (valid-sc (ex-from-rp-all2 term) a)
+        :flag ex-from-rp-all2)
+      (defthm valid-sc-subterms-EX-FROM-RP-ALL2-LST
+          (valid-sc-subterms (ex-from-rp-all2-lst lst) a)
+        :flag EX-FROM-RP-ALL2-LST)
+    :hints (
+            ("Goal"
+             :do-not-induct t
+             #| :expand ((VALID-SC (LIST (CAR (EX-FROM-RP TERM)))
+             A) ;
+             (EX-FROM-RP-ALL2 (CADR (EX-FROM-RP TERM))) ;
+             (VALID-SC (LIST* (CAR (EX-FROM-RP TERM)) ;
+             (EX-FROM-RP-ALL2 (CADR (EX-FROM-RP TERM))) ;
+             (EX-FROM-RP-ALL2-LST (CDDR (EX-FROM-RP TERM)))) ;
+             A) ;
+             (VALID-SC (CONS (CAR (EX-FROM-RP TERM)) ;
+             (EX-FROM-RP-ALL2-LST (CDR (EX-FROM-RP TERM)))) ;
+             A) ;
+             (EX-FROM-RP-ALL2-LST (CDR (EX-FROM-RP TERM))))|#
+             :in-theory (e/d ()
+                             ())))))
+
+
+(defthm-ex-from-rp-all2
+      (defthm rp-evl-ex-from-rp-all2
+          (and (equal (rp-evl (ex-from-rp-all2 term) a)
+                      (rp-evl term a))
+               (equal (rp-evlt (ex-from-rp-all2 term) a)
+                      (rp-evlt term a)))
+        :flag ex-from-rp-all2)
+      (defthm rp-evl-lst-EX-FROM-RP-ALL2-LST
+          (and (equal (rp-evl-lst (ex-from-rp-all2-lst lst) a)
+                      (rp-evl-lst lst a))
+               (equal (rp-evlt-lst (ex-from-rp-all2-lst lst) a)
+                      (rp-evlt-lst lst a)))
+        :flag EX-FROM-RP-ALL2-LST)
+    :hints (
+            ("Goal"
+             :do-not-induct t
+             :in-theory (e/d (ex-from-rp-all2
+                              ex-from-rp-all2-lst
+                              is-rp-loose
+                              RP-EVL-OF-FNCALL-ARGS)
+                             (EX-FROM-RP-LEMMA1)))))
+
+;; (local
+;;  (defthm not-include-fnc-subterms-lemma
+;;      (implies (and (not (include-fnc-subterms lst fnc))
+;;                    (consp lst))
+;;               (not (include-fnc-subterms (cdr lst) fnc)))))
+
+;; (local
+;;  (defthm not-include-fnc-subterms-lemma-2
+;;      (implies (and (not (include-fnc lst fnc))
+;;                    (not (equal fnc (car lst)))
+;;                    (not (equal 'quote (car lst)))
+;;                    (consp lst))
+;;               (not (include-fnc-subterms (cdr lst) fnc)))))
+
+
+
 
 (encapsulate
   nil
@@ -337,41 +513,104 @@
      :hints (("Goal"
               :in-theory (e/d (put-term-in-cons) ())))))
 
+
+  (local
+   (defthm lemma6
+     (implies (and (valid-sc term a)
+                   (consp term)
+                   (is-if term))
+              (valid-sc (cadr term) a))
+     :hints (("Goal"
+              :expand ((valid-sc term a))
+              :in-theory (e/d (is-if
+                               is-rp)
+                              ())))))
+
+  (local
+   (defthm lemma7
+     (implies (and (valid-sc term a)
+                   (consp term)
+                   (is-if term)
+                   (case-split (RP-EVLT (CADR TERM) A)))
+              (valid-sc (caddr term) a))
+     :hints (("Goal"
+              :expand ((valid-sc term a))
+              :in-theory (e/d (is-if
+                               is-rp)
+                              ())))))
+
+  (local
+   (defthm lemma8
+     (implies (and (valid-sc term a)
+                   (consp term)
+                   (is-if term)
+                   (case-split (not (RP-EVLT (CADR TERM) A))))
+              (valid-sc (cadddr term) a))
+     :hints (("Goal"
+              :expand ((valid-sc term a))
+              :in-theory (e/d (is-if
+                               is-rp)
+                              ())))))
+
+  (local
+   (defthm lemma9
+       (implies (and (consp term)
+                     (not (equal (car term) 'rp))
+                     (not (equal (car term) 'quote))
+                     (not (equal (car term) 'falist)))
+                (VALID-SC-SUBTERMS (CDR (EX-FROM-RP-ALL2 term)) A))
+     :hints (("Goal"
+              :expand ((EX-FROM-RP-ALL2 term))
+              :use ((:instance valid-sc-ex-from-rp-all2))
+              :in-theory (e/d (IS-RP-LOOSE)
+                              (valid-sc-ex-from-rp-all2
+                               
+                               EX-FROM-RP-ALL2-DOES-NOT-INCLUDE-RP))))))
+
+ 
+
   (defthm-rp-match-lhs
     (defthm rp-match-lhs-returns-valid-sc-bindings
       (implies (and (valid-sc term a)
-                    (not (include-fnc rule-lhs 'if))
+                    #|(not (include-fnc rule-lhs 'if))|#
                     (valid-sc-bindings acc-bindings a)
+                    ;;(rp-termp term)
                     (mv-nth 2 (rp-match-lhs term
                                             rule-lhs
                                             context
+                                            
                                             acc-bindings)))
                (valid-sc-bindings
                 (mv-nth 1 (rp-match-lhs term
                                         rule-lhs
                                         context
+                                        
                                         acc-bindings))
                 a))
       :flag rp-match-lhs)
 
     (defthm rp-match-lhs-returns-valid-sc-bindings-subterms
       (implies (and (valid-sc-subterms subterms a)
-                    (not (include-fnc-subterms sublhs 'if))
+                    #|(not (include-fnc-subterms sublhs 'if))|#
                     (valid-sc-bindings acc-bindings a)
+                    ;;(rp-term-listp subterms)
                     (mv-nth 2 (rp-match-lhs-subterms
                                subterms
                                sublhs
                                context
+                               
                                acc-bindings)))
                (valid-sc-bindings
                 (mv-nth 1 (rp-match-lhs-subterms
                            subterms
                            sublhs
                            context
+                           
                            acc-bindings))
                 a))
       :flag rp-match-lhs-subterms)
     :hints (("Goal"
+             :do-not-induct t
              :in-theory (e/d ()
                              ((:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                               (:DEFINITION ACL2::APPLY$-BADGEP)
@@ -521,15 +760,15 @@
 (encapsulate
   nil
 
-  (local
+  #|(local
    (defthm lemma1
      (implies (and (rule-syntaxp rule)
                    (rp-rule-rwp rule))
               (not (include-fnc (rp-lhs rule) 'if)))
      :hints (("Goal"
-              :in-theory (e/d (rule-syntaxp) ())))))
+              :in-theory (e/d (rule-syntaxp) ())))))|#
 
-  (local
+  #|(local
    (defthm lemma2
      (implies (and (consp rules-for-term)
                    (rp-rule-rw-listp rules-for-term)
@@ -537,7 +776,7 @@
               (NOT (INCLUDE-FNC (RP-LHS (CAR RULES-FOR-TERM))
                                 'IF)))
      :hints (("Goal"
-              :in-theory (e/d (rule-list-syntaxp) ())))))
+              :in-theory (e/d (rule-list-syntaxp) ())))))|#
 
   (defthm valid-sc-bindings-rp-rw-rule-aux
     (mv-let (rule rules-rest bindings rp-context)
@@ -721,27 +960,58 @@
      :hints (("Goal"
               :in-theory (e/d (is-rp ex-from-rp) ())))))
 
+  (local
+   (defthm lemma3
+       (implies (and (consp term)
+                     (not (equal (car term) 'rp))
+                     (not (equal (car term) 'quote))
+                     (not (equal (car term) 'falist)))
+                (VALID-SC-SUBTERMS (CDR (EX-FROM-RP-ALL2 term)) A))
+     :hints (("Goal"
+              :expand ((EX-FROM-RP-ALL2 term))
+              :use ((:instance valid-sc-ex-from-rp-all2))
+              :in-theory (e/d (IS-RP-LOOSE)
+                              (valid-sc-ex-from-rp-all2
+                               
+                               EX-FROM-RP-ALL2-DOES-NOT-INCLUDE-RP))))))
+
+  (local
+   (defthm lemma4
+       (implies (and (consp term)
+                     (not (equal (car term) 'rp))
+                     (not (equal (car term) 'quote))
+                     (not (equal (car term) 'falist))
+                     (rp-termp term))
+                (rp-term-listp (CDR (EX-FROM-RP-ALL2 term))))
+     :hints (("Goal"
+              :expand ((EX-FROM-RP-ALL2 term))
+              :use ((:instance valid-sc-ex-from-rp-all2))
+              :in-theory (e/d (IS-RP-LOOSE)
+                              (valid-sc-ex-from-rp-all2
+                               
+                               EX-FROM-RP-ALL2-DOES-NOT-INCLUDE-RP))))))
+
   (defthm-rp-match-lhs
     (defthm valid-sc-rp-context-from-rp-match-lhs
       (implies
        (and (valid-sc term a)
             (rp-termp term)
-            (not (include-fnc rule-lhs 'if))
+            #|(not (include-fnc rule-lhs 'if))|#
             (valid-sc-subterms context a))
        (valid-sc-subterms
         (mv-nth 0 (rp-match-lhs term rule-lhs
-                                context acc-bindings))
+                                context  acc-bindings))
         a))
       :flag rp-match-lhs)
     (defthm valid-sc-rp-context-from-rp-match-lhs-subterms
       (implies
        (and (valid-sc-subterms subterms a)
             (rp-term-listp subterms)
-            (not (include-fnc-subterms sublhs 'if))
+            #|(not (include-fnc-subterms sublhs 'if))|#
             (valid-sc-subterms context a))
        (valid-sc-subterms
         (mv-nth 0 (rp-match-lhs-subterms subterms sublhs
-                                         context acc-bindings))
+                                         context  acc-bindings))
         a))
       :flag rp-match-lhs-subterms)
     :hints (("Goal"
@@ -823,6 +1093,37 @@
      :hints (("Goal"
               :in-theory (e/d (is-rp ex-from-rp) ())))))
 
+
+  (local
+   (defthm lemma5
+       (implies (and (consp term)
+                     (not (equal (car term) 'rp))
+                     (not (equal (car term) 'quote))
+                     (not (equal (car term) 'falist)))
+                (VALID-SC-SUBTERMS (CDR (EX-FROM-RP-ALL2 term)) A))
+     :hints (("Goal"
+              :expand ((EX-FROM-RP-ALL2 term))
+              :use ((:instance valid-sc-ex-from-rp-all2))
+              :in-theory (e/d (IS-RP-LOOSE)
+                              (valid-sc-ex-from-rp-all2    
+                               EX-FROM-RP-ALL2-DOES-NOT-INCLUDE-RP))))))
+
+  (local
+   (defthm lemma6
+       (implies (and (consp term)
+                     (not (equal (car term) 'rp))
+                     (not (equal (car term) 'quote))
+                     (not (equal (car term) 'falist))
+                     (rp-termp term))
+                (rp-term-listp (CDR (EX-FROM-RP-ALL2 term))))
+     :hints (("Goal"
+              :expand ((EX-FROM-RP-ALL2 term))
+              :use ((:instance valid-sc-ex-from-rp-all2))
+              :in-theory (e/d (IS-RP-LOOSE)
+                              (valid-sc-ex-from-rp-all2
+                               
+                               EX-FROM-RP-ALL2-DOES-NOT-INCLUDE-RP))))))
+  
   (defthm-rp-match-lhs
 
     (defthm rp-match-lhs-returns-valid-context
@@ -831,7 +1132,7 @@
             (rp-termp rule-lhs)
             (eval-and-all context a)
             (valid-sc term a)
-            (not (include-fnc rule-lhs 'if)))
+            #|(not (include-fnc rule-lhs 'if))|#)
        (eval-and-all
         (rp-context-from (rp-match-lhs term rule-lhs context acc-bindings))
         a))
@@ -844,9 +1145,9 @@
 
             (eval-and-all context a)
             (valid-sc-subterms subterms a)
-            (not (include-fnc-subterms sublhs 'if)))
+            #|(not (include-fnc-subterms sublhs 'if))|#)
        (eval-and-all (rp-context-from
-                      (rp-match-lhs-subterms subterms sublhs context acc-bindings))
+                      (rp-match-lhs-subterms subterms sublhs context  acc-bindings))
                      a))
       :flag rp-match-lhs-subterms)
     :hints (("Goal"
@@ -936,14 +1237,16 @@
       (implies
        (and (all-vars-bound RULE-LHS1 ACC-BINDINGS)
             (MV-NTH 2
-                    (RP-MATCH-LHS term
+                    (rp-match-lhs term
                                   rule-lhs
-                                  CONTEXT ACC-BINDINGS)))
+                                  CONTEXT  ACC-BINDINGS)))
        (ALL-VARS-BOUND RULE-LHS1
                        (MV-NTH 1
-                               (RP-MATCH-LHS term
+                               (rp-match-lhs term
                                              rule-lhs
-                                             CONTEXT ACC-BINDINGS))))
+                                             CONTEXT
+                                             
+                                             ACC-BINDINGS))))
       :flag rp-match-lhs)
 
     (defthm RP-MATCH-LHS-ALL-VARS-BOUND-subterms-lemma
@@ -952,35 +1255,40 @@
             (MV-NTH 2
                     (rp-match-lhs-subterms
                      subterms
-                     sublhs
-                     CONTEXT ACC-BINDINGS)))
+                     sublhs 
+                     CONTEXT  ACC-BINDINGS)))
        (ALL-VARS-BOUND
         RULE-LHS1
         (MV-NTH 1
                 (rp-match-lhs-subterms subterms
                                        sublhs
-                                       CONTEXT ACC-BINDINGS))))
+                                       CONTEXT
+                                       
+                                       ACC-BINDINGS))))
       :flag rp-match-lhs-subterms))
 
   (defthm-rp-match-lhs
     (defthm rp-match-lhs-binds-all
       (implies (and (mv-nth 2 (rp-match-lhs term rule-lhs
-                                            context acc-bindings))
+                                            context  acc-bindings))
                     (rp-termp rule-lhs))
                (all-vars-bound
                 rule-lhs
                 (mv-nth 1 (rp-match-lhs term rule-lhs
-                                        context acc-bindings))))
+                                        context  acc-bindings))))
       :flag rp-match-lhs)
     (defthm rp-match-lhs-binds-all-subterms
       (implies (and (mv-nth 2 (rp-match-lhs-subterms subterms
                                                      sublhs
-                                                     context acc-bindings))
+                                                     context
+                                                     
+                                                     acc-bindings))
                     (rp-term-listp sublhs))
                (all-vars-bound-subterms
                 sublhs
                 (mv-nth 1 (rp-match-lhs-subterms subterms sublhs
-                                                 context acc-bindings))))
+                                                 context
+                                                  acc-bindings))))
       :flag rp-match-lhs-subterms)))
 
 (encapsulate
@@ -1271,6 +1579,23 @@
                                        (RP-TRANS-BINDINGS ACC-BINDINGS)))
                    (CONSP (ASSOC-EQUAL RULE-LHS ACC-BINDINGS))))))
 
+
+  (local
+   (defthm lemma5-lemma4
+       (implies (and (consp term)
+                     (not (equal (car term) 'rp))
+                     (not (equal (car term) 'quote))
+                     (not (equal (car term) 'falist))
+                     (rp-termp term))
+                (rp-term-listp (CDR (EX-FROM-RP-ALL2 term))))
+     :hints (("Goal"
+              :expand ((EX-FROM-RP-ALL2 term))
+              :use ((:instance valid-sc-ex-from-rp-all2))
+              :in-theory (e/d (IS-RP-LOOSE)
+                              (valid-sc-ex-from-rp-all2
+                               
+                               EX-FROM-RP-ALL2-DOES-NOT-INCLUDE-RP))))))
+  
   (local
    (defthm-rp-match-lhs
      (defthm lemma5-term
@@ -1285,6 +1610,7 @@
              (mv-nth 2 (rp-match-lhs term
                                      rule-lhs
                                      context
+                                     
                                      acc-bindings)))
         (equal (equal (rp-evl
                        rule-lhs1
@@ -1293,6 +1619,7 @@
                          (mv-nth 1 (rp-match-lhs term
                                                  rule-lhs
                                                  context
+                                                 
                                                  acc-bindings)))
                         a))
                       (rp-evlt term1 a))
@@ -1311,6 +1638,7 @@
              (mv-nth 2 (rp-match-lhs-subterms subterms
                                               sublhs
                                               context
+                                              
                                               acc-bindings)))
         (equal (equal (rp-evl
                        rule-lhs1
@@ -1319,6 +1647,7 @@
                          (mv-nth 1 (rp-match-lhs-subterms subterms
                                                           sublhs
                                                           context
+                                                          
                                                           acc-bindings)))
                         a))
                       (rp-evlt term1 a))
@@ -1433,11 +1762,99 @@
                                RP-EVL-OF-EX-FROM-FALIST
                                EVL-OF-EXTRACT-FROM-RP))))))
 
-  (defthm-rp-match-lhs
 
+
+  (local
+   (defthm EX-FROM-RP-ALL2-when-if
+       (implies (and (consp term)
+                     (equal (car term) 'if))
+                (and (equal (EX-FROM-RP-ALL2 term)
+                           (CONS (CAR TERM)
+                                 (EX-FROM-RP-ALL2-LST (CDR TERM))))))
+     :hints (("Goal"
+              :expand (EX-FROM-RP-ALL2 term)
+              :in-theory (e/d (is-rp-loose
+                               is-falist)
+                              ())))))
+
+  (local
+   (defthmd rp-evlt-of-ex-from-rp-ex-from-falist
+       (and
+        (equal (rp-evl (EX-FROM-RP (EX-FROM-FALIST TERM)) a)
+               (rp-evl term a))
+        (equal (rp-evlt (EX-FROM-RP (EX-FROM-FALIST TERM)) a)
+               (rp-evlt term a)))
+     :hints (("Goal"
+              :in-theory (e/d (EX-FROM-FALIST) ())))))
+
+  (local
+   (defthmd rp-evlt-of-ex-from-rp-ex-from-falist-reverse
+       (implies (syntaxp (atom term))
+                (and
+                 (equal (rp-evl term a)
+                        (rp-evl (EX-FROM-RP (EX-FROM-FALIST TERM)) a))
+                 (equal (rp-evlt term a)
+                        (rp-evlt (EX-FROM-RP (EX-FROM-FALIST TERM)) a))))
+     :hints (("Goal"
+              :in-theory (e/d (EX-FROM-FALIST) ())))))
+
+  (local
+   (defthm lemma7
+       (implies (and 
+                     (consp (ex-from-rp (ex-from-falist term)))
+                     (equal 'if
+                            (car (ex-from-rp (ex-from-falist term))))
+                     
+                     (not (rp-evlt-lst (cdr (ex-from-rp (ex-from-falist term)))
+                                       a))
+                     (not
+                      (consp (ex-from-rp-all2-lst (cdr (ex-from-rp (ex-from-falist term)))))))
+                (not (rp-evlt term a)))
+     :hints (("Goal"
+              :expand ((EX-FROM-RP-ALL2-LST (CDR (EX-FROM-RP (EX-FROM-FALIST TERM)))))
+              :in-theory (e/d (rp-evlt-of-ex-from-rp-ex-from-falist-reverse)
+                              (rp-evlt-of-ex-from-falist
+                               rp-evlt-of-ex-from-rp))))))
+
+
+  (DEFTHM
+      RP-EVLt-OF-IF-CALL
+      (IMPLIES (AND (CONSP ACL2::X)
+                    (EQUAL (CAR ACL2::X) 'IF))
+               (EQUAL (RP-EVLt ACL2::X ACL2::A)
+                      (IF (RP-EVLt (CADR ACL2::X) ACL2::A)
+                          (RP-EVLt (CADDR ACL2::X) ACL2::A)
+                          (RP-EVLt (CADDDR ACL2::X) ACL2::A)))))
+  
+  (local
+   (defthm lemma8
+       (implies (and 
+                 (consp (ex-from-rp (ex-from-falist term)))
+                 (equal 'if
+                        (car (ex-from-rp (ex-from-falist term)))))
+                (and (equal (rp-evlt term a)
+                            (IF (RP-EVLt (CADR (ex-from-rp (ex-from-falist term))) a)
+                                (RP-EVLt (CADDR (ex-from-rp (ex-from-falist term))) a)
+                                (RP-EVLt (CADDDR (ex-from-rp (ex-from-falist term)))
+                                         a)))
+                     (equal (rp-evl term a)
+                            (IF (RP-EVL (CADR (ex-from-rp (ex-from-falist term))) a)
+                                (RP-EVL (CADDR (ex-from-rp (ex-from-falist term))) a)
+                                (RP-EVL (CADDDR (ex-from-rp (ex-from-falist term))) a)))))
+     :hints (("Goal"
+              ;;:expand ((rp-trans (EX-FROM-RP (EX-FROM-FALIST TERM))))
+              :in-theory (e/d (rp-evlt-of-ex-from-rp-ex-from-falist-reverse)
+                              (rp-evlt-of-ex-from-falist
+                               EVL-OF-EXTRACT-FROM-RP
+                               rp-trans
+                               RP-TRANS-LST
+                               rp-evl-of-ex-from-falist
+                               rp-evlt-of-ex-from-rp))))))
+  
+  (defthm-rp-match-lhs
     (defthm rp-match-lhs-returns-valid-bindings-lemma
       (mv-let (rp-context bindings valid-bindings)
-        (rp-match-lhs term rule-lhs context acc-bindings)
+        (rp-match-lhs term rule-lhs context  acc-bindings)
         (declare (ignorable rp-context))
         (implies (and valid-bindings
                       (bindings-alistp acc-bindings)
@@ -1453,7 +1870,7 @@
 
     (defthm rp-match-lhs-subterms-returns-valid-bindings-lemma
       (mv-let (rp-context bindings valid-bindings)
-        (rp-match-lhs-subterms subterms sublhs context acc-bindings)
+        (rp-match-lhs-subterms subterms sublhs context  acc-bindings)
         (declare (ignorable rp-context))
         (implies (and valid-bindings
                       (alistp a)
@@ -1471,15 +1888,18 @@
     :otf-flg t
     :hints (("Goal"
 ;:expand (RP-TRANS (EX-FROM-RP (EX-FROM-FALIST TERM)))
-             :do-not-induct t
-             :in-theory (e/d (rp-evlt-of-ex-from-falist)
+             :do-not-induct t 
+             :in-theory (e/d (rp-evlt-of-ex-from-falist
+                              ;;rp-evlt-of-ex-from-rp-ex-from-falist-reverse
+                              )
                              (RP-TRANS-LST-OF-RP-APPLY-BINDINGS-SUBTERMS
+                              ;;rp-evl-of-ex-from-falist
                               rp-evlt-of-ex-from-rp))))))
 
 (local
  (defthm rp-match-lhs-returns-valid-bindings-lemma-2
    (mv-let (rp-context bindings valid-bindings)
-     (rp-match-lhs term rule-lhs context acc-bindings)
+     (rp-match-lhs term rule-lhs context  acc-bindings)
      (declare (ignorable rp-context))
      (implies (and valid-bindings
                    (bindings-alistp acc-bindings)

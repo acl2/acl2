@@ -1035,7 +1035,34 @@ because guards might be executed too many times during such proofs.</p>"
 
 (rp::add-rp-rule sv::4veclist-p-of-cons)
 
-(def-rp-rule svex-env-p-of-falist
+
+(rp::def-rp-rule SV::SVEX-ENV-FIX-opener
+    (implies (force (sv::svex-env-p env))
+             (equal (sv::svex-env-fix env)
+                    env))
+  :hints (("Goal"
+           :in-theory (e/d (sv::svex-env-fix) ()))))
+
+
+(rp::def-rp-rule SV::SVEX-ENV-P-when-cons
+    (equal (SV::SVEX-ENV-P (cons x rest))
+           (and (consp x)
+                (sv::svar-p (car x))
+                (sv::4vec-p (cdr x))
+                (SV::SVEX-ENV-P rest)))
+  :hints (("Goal"
+           :expand (SV::SVEX-ENV-P (cons x rest))
+           :in-theory (e/d () ()))))
+
+(rp::def-rp-rule SV::SVEX-ENV-P-nil
+    (equal (SV::SVEX-ENV-P nil)
+           t)
+  :hints (("Goal"
+           :expand (SV::SVEX-ENV-P nil)
+           :in-theory (e/d () ()))))
+
+
+(def-rp-rule svex-env-p-of-opener
   (equal (sv::svex-env-p (cons (cons a b) rest))
          (and (sv::svar-p a)
               (sv::4vec-p b)

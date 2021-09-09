@@ -644,6 +644,7 @@
           (cons (make-custom-rule-for-meta rune);; let rhs be the name of the meta function.
                 rest))
          ((when (and (not (equal rule-type ':rewrite))
+                     (not (equal rule-type ':unknown))
                      (not (equal rule-type ':definition))
                      (not (equal rule-type ':type-prescription))))
           rest)

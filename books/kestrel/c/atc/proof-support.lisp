@@ -1223,9 +1223,7 @@
      (cond
       ((endp rtypes) nil)
       (t (b* ((rtype (car rtypes))
-              (type (if (member-eq op '(lt gt le ge eq ne))
-                        (type-sint)
-                      (uaconvert-types ltype rtype)))
+              (type (uaconvert-types ltype rtype))
               ((when (and (equal type ltype)
                           (equal type rtype)))
                (atc-integer-ops-2-conv-names-loop-right-types op

@@ -319,7 +319,9 @@
                             hons-acons-meta
                             VALID-SC)))))||#
 
-
+;; disabling this so that a "falist" instance is created even for constants
+(rp::disable-exc-counterpart hons-acons)
+(rp::disable-exc-counterpart make-fast-alist)
 
 (rp::add-meta-rule
  :meta-fnc hons-acons-meta

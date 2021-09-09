@@ -17,7 +17,7 @@
 ;; arguments and calls of IF with resolvable tests.
 
 ;; Usage: Include the linter first, then the books to be checked.  Then call
-;; (run-linter).  Use option :check :all to check the linter itself, any books
+;; (run-linter).  Use option :event-range :all to check the linter itself, any books
 ;; included before the linter, and the ACL2 system.  Otherwise, such things are
 ;; not checked.
 
@@ -100,7 +100,7 @@
             "Checking top-level event"
           (concatenate 'string loc " checking"))))))
 
-;; Returns (mv defun-names defthm-nams)
+;; Returns (mv defun-names defthm-names)
 (defun defuns-and-defthms-in-world (world triple-to-stop-at whole-world defuns-acc defthms-acc)
   (declare (xargs :guard (and (plist-worldp world)
                               (plist-worldp whole-world)
@@ -110,7 +110,7 @@
       (mv defuns-acc defthms-acc) ; oldest ones come first
     (let ((triple (first world)))
       (if (equal triple triple-to-stop-at)
-          (prog2$ (cw "~%Note: Not checking anything in the linter itself, any books included before the linter, or the ACL2 system itself.  To override, use linter option :check :all.~%~%")
+          (prog2$ (cw "~%Note: Not checking anything in the linter itself, any books included before the linter, or the ACL2 system itself.  To override, use linter option :event-range :all.~%~%")
                   (mv (reverse defuns-acc)
                       (reverse defthms-acc)))
         (let ((symb (car triple))
@@ -546,6 +546,10 @@
          nil ; could not resolve
          )))))
 
+;; Used for printing substitutions.  Sometimes the substitutions can be massive.
+(defconst *subst-evisc-tuple*
+  (evisc-tuple 3 4 nil nil))
+
 ;; The subst includes bindings of vars from overarching lambdas.
 ;; TODO: Track and use the context from overarching IF tests.
 (mutual-recursion
@@ -566,22 +570,27 @@
                           (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
                           (let ((relevant-subst (filter-subst subst (all-vars test))))
                             (if relevant-subst
-                                (cw "  Relevant substitutions ~x0)~%~%" relevant-subst)
+                                (cw "  Relevant substitutions ~X01)~%~%" relevant-subst *subst-evisc-tuple*)
                               (cw ")~%~%"))))))
              (:false (progn$
                       (cw "(In ~s0,~% the IF test in ~x1 is known to be false~%" (thing-being-checked-to-string thing-being-checked) term)
                       (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
                       (let ((relevant-subst (filter-subst subst (all-vars test))))
                         (if relevant-subst
-                            (cw "  Relevant substitutions ~x0)~%~%" relevant-subst)
+                            (cw "  Relevant substitutions ~X01)~%~%" relevant-subst *subst-evisc-tuple*)
                           (cw ")~%~%")))))
              (nil nil))))
     ;; Check the test recursively:
     (lint-term (farg1 term) subst type-alist
                 nil ; we use nil here because we handle the test above
                 thing-being-checked suppress state)
-    (b* (((mv & & then-type-alist else-type-alist &)
-          (assume-true-false (farg1 term) nil nil nil type-alist (ens state) (w state) nil nil nil)))
+    (b* (;; (- (cw "  ((Type-alist before assume-true-false: ~x0)~%" (decode-type-alist type-alist)))
+         ;; (- (cw "  (Calling assume-true-false on: ~x0)~%" (farg1 term)))
+         ((mv & & then-type-alist else-type-alist &)
+          (assume-true-false (farg1 term) nil nil nil type-alist (ens state) (w state) nil nil nil))
+         ;; (- (cw "  (Then-type-alist: ~x0)~%" (decode-type-alist then-type-alist)))
+         ;; (- (cw "  (Else-type-alist:  ~x0))~%" (decode-type-alist else-type-alist)))
+         )
       (prog2$
        ;; check the then-branch:
        (if (equal (farg1 term) (farg2 term))
@@ -616,14 +625,14 @@
                       (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
                       (let ((relevant-subst (filter-subst subst (all-vars term))))
                         (if relevant-subst
-                            (cw "  Relevant substitutions ~x0)~%~%" relevant-subst)
+                            (cw "  Relevant substitutions ~X01)~%~%" relevant-subst *subst-evisc-tuple*)
                           (cw ")~%~%")))))
              (:false
               (progn$ (cw "(In ~s0,~% ~x1 is known to be false and is used in an IFF context~%" (thing-being-checked-to-string thing-being-checked) term)
                       (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
                       (let ((relevant-subst (filter-subst subst (all-vars term))))
                         (if relevant-subst
-                            (cw "  Relevant substitutions ~x0)~%~%" relevant-subst)
+                            (cw "  Relevant substitutions ~X01)~%~%" relevant-subst *subst-evisc-tuple*)
                           (cw ")~%~%")))))
              (nil nil))))
     (if (variablep term)
@@ -1141,9 +1150,11 @@
     :equal-self))
 
 ;; Returns state
-(defun run-linter-fn (event-range assume-guards suppress skip-fns check-defuns check-defthms step-limit state)
+(defun run-linter-fn (event-range event-names assume-guards suppress skip-fns check-defuns check-defthms step-limit state)
   (declare (xargs :stobjs state
                   :guard (and (member-eq event-range '(:after-linter :all))
+                              (or (eq :all event-names)
+                                  (symbol-listp event-names))
                               (booleanp assume-guards)
                               (subsetp-eq suppress *warning-types*)
                               (symbol-listp skip-fns)
@@ -1154,10 +1165,20 @@
   (b* ((state (set-fmt-hard-right-margin 140 state))
        (state (set-fmt-soft-right-margin 140 state))
        (world (w state))
-       (triple-to-stop-at (if (eq event-range :after-linter)
-                              '(end-of-linter label . t)
-                            nil))
+       (triple-to-stop-at (if (or (eq event-range :all)
+                                  (not (eq :all event-names))) ; if event-names are given, this allows them to be anywhere in the history
+                              ;; Lint everything (unless suppressed by filtering on names below):
+                              nil
+                            ;; Don't check the linter or anything before it:
+                            '(end-of-linter label . t)
+                            ))
        ((mv all-defuns all-defthms) (defuns-and-defthms-in-world world triple-to-stop-at world nil nil))
+       (all-defuns (if (eq event-names :all)
+                       all-defuns
+                     (intersection-eq event-names all-defuns)))
+       (all-defthms (if (eq event-names :all)
+                        all-defthms
+                     (intersection-eq event-names all-defthms)))
        (state (if check-defuns
                   (prog2$ (cw "Applying linter to ~x0 defuns:~%~%" (len all-defuns))
                           (lint-defuns all-defuns assume-guards suppress skip-fns step-limit state))
@@ -1174,6 +1195,7 @@
 
 ;; Call this macro to check every defun in the current ACL2 world.
 (defmacro run-linter (&key (event-range ':after-linter) ;; either :after-linter (check only events introduced after the linter was included) or :all
+                           (event-names ':all) ;; List of specific names to lint, or :all (meaning don't filter by name)
                            (suppress '(:ground-term :context)) ;; types of check to skip
                            (assume-guards 't) ;; whether to assume guards when analyzing function bodies
                            (skip-fns 'nil) ;; functions to skip checking
@@ -1181,7 +1203,7 @@
                            (check-defthms 't)
                            (step-limit '1000)
                            )
-  `(run-linter-fn ',event-range ',assume-guards ',suppress ',skip-fns ',check-defuns ',check-defthms ',step-limit state))
+  `(run-linter-fn ',event-range ',event-names ',assume-guards ',suppress ',skip-fns ',check-defuns ',check-defthms ',step-limit state))
 
 (deflabel end-of-linter)
 

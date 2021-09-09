@@ -21,7 +21,7 @@
 ;; checking done in these tests.
 
 (include-book "query")
-(include-book "kestrel/axe/rules-in-rule-lists" :dir :system) ;for equal-same, etc
+(include-book "rules-in-rule-lists") ;for equal-same, etc
 
 ;; Test assert-equal-with-stobjs:
 (assert-equal-with-stobjs (query (equal (bvplus 8 1 x) 3))

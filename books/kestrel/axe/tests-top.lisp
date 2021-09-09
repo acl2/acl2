@@ -28,6 +28,7 @@
 (include-book "evaluator-tests")
 (include-book "make-term-into-dag-basic-tests")
 (include-book "prune-with-contexts-tests")
+(include-book "unroller-tests")
 
 (include-book "rewriter-tests")
 (include-book "rewriter-alt-tests")

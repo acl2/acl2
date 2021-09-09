@@ -40,7 +40,11 @@
 
 (include-book "svl-top")
 
-(include-book "centaur/sv/top" :dir :system)  ;; a big book; takes around 30 seconds
+(include-book "centaur/sv/svtv/process" :dir :system)  ;
+
+;;(include-book "centaur/vl/parsetree" :dir :system)
+
+;;(include-book "centaur/svl/svexl/svtv-run-with-svexl" :dir :system)
 
 (set-ignore-ok t)
 (add-rp-rule acl2::svtv-run-fn
@@ -48,13 +52,21 @@
              :hints (("Goal"
                       :in-theory (e/d (acl2::svtv-run-fn) ()))))
 
-(enable-rules '(svl::svexl-alist-correct
-                svl::svexllist-correct
-                svl::svexl-correct))
+;; (enable-rules '(svl::svexl-alist-correct
+;;                 svl::svexllist-correct
+;;                 svl::svexl-correct))
 
-(rp::bump-rp-rule svl::svexl-alist-correct)
-(rp::bump-rp-rule svl::svexllist-correct)
-(rp::bump-rp-rule svl::svexl-correct)
+;; (rp::bump-rp-rule svl::svexl-alist-correct)
+;; (rp::bump-rp-rule svl::svexllist-correct)
+;; (rp::bump-rp-rule svl::svexl-correct)
+
+;; (enable-rules '(svl::svexl-alist-fasteval-correct
+;;                 svl::svexllist-fasteval-correct
+;;                 svl::svexl-fasteval-correct))
+
+;; (rp::bump-rp-rule svl::svexl-alist-fasteval-correct)
+;; (rp::bump-rp-rule svl::svexllist-fasteval-correct)
+;; (rp::bump-rp-rule svl::svexl-fasteval-correct)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -73,147 +85,311 @@
                       local))
 
   `(encapsulate
-     nil
-     (,(if local 'local 'progn)
-      (acl2::defconsts
-       (*redefined-adders-vl-design* state)
-       (b* (((mv loadresult state)
-             (vl::vl-load (vl::make-vl-loadconfig
-                           :start-files ',new-adders-file))))
-         (mv (vl::vl-loadresult->design loadresult) state))))
-     (,(if local 'local 'progn)
-      (progn .
-             ,(loop$ for x in adder-module-names collect
-                     `(progn
-                        (acl2::defconsts
-                         (,(sa '*redefined x '-sv-design*))
-                         (b* (((mv errmsg new-sv-design & &)
-                               (vl::vl-design->sv-design ,(if dummy-top
-                                                              dummy-top x)
-                                                         *redefined-adders-vl-design*
-                                                         (vl::make-vl-simpconfig)))
-                              (- (and errmsg (acl2::raise "~@0~%" errmsg))))
-                           new-sv-design))
+       nil
 
-                        ,(if sanity-check
-                             `(progn
-                                (acl2::defconsts
-                                 (,(sa '*redefined x '-svl-design*) rp::rp-state)
-                                 (svl::svl-flatten-design ,(sa '*redefined x '-sv-design*)
-                                                          *redefined-adders-vl-design*
-                                                          :top ,x
-                                                          :dont-flatten :all))
-                                (acl2::defconsts
-                                 (,(sa '*original x '-svl-design*) rp::rp-state)
-                                 (svl::svl-flatten-design ,original-sv
-                                                          ,original-vl
-                                                          :top ,x
-                                                          :dont-flatten :all))
-
-                                (make-event
-                                 (b* ((ins1 (svl::svl-module->inputs
-                                             (cdr (assoc-equal ,x
-                                                               ,(sa '*original x
-                                                                    '-svl-design*)))))
-                                      (ins2 (svl::svl-module->inputs
-                                             (cdr (assoc-equal ,x
-                                                               ,(sa '*redefined x
-                                                                    '-svl-design*)))))
-                                      ;; some checks:
-                                      (- (or (equal ins1 ins2)
-                                             (hard-error 'replace-adders-fn
-                                                         "Input wires for ~p0
+       (local
+        (include-book "centaur/sv/top" :dir :system))
+       
+     (local
+      (defun get-vl-module (module-name vl-mods)
+        (declare (xargs :guard (and (Vl::vl-modulelist-p vl-mods)
+                                    (stringp module-name))))
+        (if (atom vl-mods)
+            (hard-error 'get-vl-module
+                        "Module ~p0 cannot be found in the given VL-design-modlist~%"
+                        (list (cons #\0 module-name)))
+            (if (equal module-name (vl::vl-module->name (car vl-mods)))
+                (car vl-mods)
+                (get-vl-module module-name (cdr vl-mods))))))
+       
+     (,(if local 'local 'progn)
+       (acl2::defconsts
+           (*redefined-adders-vl-design* state)
+           (b* (((mv loadresult state)
+                 (vl::vl-load (vl::make-vl-loadconfig
+                               :start-files ',new-adders-file))))
+             (mv (vl::vl-loadresult->design loadresult) state))))
+     (,(if local 'local 'progn)
+       ,(if dummy-top
+            `(progn
+               (acl2::defconsts
+                   (,(sa '*redefined dummy-top '-sv-design*))
+                   (b* (((mv errmsg new-sv-design & &)
+                         (vl::vl-design->sv-design ,dummy-top
+                                                   *redefined-adders-vl-design*
+                                                   (vl::make-vl-simpconfig)))
+                        (- (and errmsg (acl2::raise "~@0~%" errmsg))))
+                     new-sv-design))
+              
+               ,@(if sanity-check
+                     (list*
+                      `(acl2::defconsts
+                           (,(sa '*redefined dummy-top '-svl-design*) rp::rp-state)
+                           (svl::svl-flatten-design ,(sa '*redefined dummy-top '-sv-design*)
+                                                    *redefined-adders-vl-design*
+                                                    :top ,dummy-top
+                                                    :dont-flatten :all))
+                      `(acl2::defconsts
+                           (,(sa '*original dummy-top '-svl-design*) rp::rp-state)
+                           (b* ((sv-design ,original-sv)
+                                (- (and (hons-assoc-equal ,dummy-top sv-design)
+                                        (hard-error 'replace-adders-fn
+                                                    "Original SV design contains a module of the same name as the given dummy-top module: ~p0.
+Choose a different dummy-top name."
+                                                    (list (cons #\0 ,dummy-top)))))
+                                (sv-design (sv::change-design
+                                            sv-design
+                                            :modalist
+                                            (cons
+                                             (hons-assoc-equal ,dummy-top (sv::design->modalist ,(sa '*redefined dummy-top '-sv-design*)))
+                                             (sv::design->modalist sv-design))))
+                                (vl-design ,original-vl)
+                                (vl-design (vl::change-vl-design vl-design
+                                                                 :mods
+                                                                 (cons
+                                                                  (get-vl-module ,dummy-top
+                                                                                 (vl::vl-design->mods *redefined-adders-vl-design*))
+                                                                  (vl::vl-design->mods
+                                                                   vl-design)
+                                                      
+                                                                  )))
+                                )
+                             (svl::svl-flatten-design sv-design
+                                                      vl-design
+                                                      :top ,dummy-top
+                                                      :dont-flatten :all)))
+                      (loop$ for x in adder-module-names collect
+                            `(progn
+                               (make-event
+                                (b* ((redefined-svl-design-ws ',(sa '*redefined dummy-top '-svl-design*))
+                                     (original-svl-design-ws ',(sa '*original
+                                                                   dummy-top '-svl-design*))
+                                     (redefined-svl-design ,(sa '*redefined dummy-top '-svl-design*))
+                                     (original-svl-design ,(sa '*original
+                                                               dummy-top '-svl-design*))
+                                     (orig-mod (assoc-equal ,x original-svl-design))
+                                     (redef-mod (assoc-equal ,x redefined-svl-design))
+                                     (- (or orig-mod
+                                            (hard-error 'replace-adders-fn
+                                                        "Original svl netlist does not contain the module: ~p0 ~%"
+                                                        (list (cons #\0 ,x)))))
+                                     (- (or redef-mod
+                                            (hard-error 'replace-adders-fn
+                                                        "Redefined svl netlist does not contain the module: ~p0 ~%"
+                                                        (list (cons #\0 ,x)))))
+                                     (ins1 (svl::svl-module->inputs (cdr orig-mod)))
+                                     (ins2 (svl::svl-module->inputs (cdr redef-mod)))
+                                     ;; some checks:
+                                     (- (or (equal ins1 ins2)
+                                            (hard-error 'replace-adders-fn
+                                                        "Input wires for ~p0
 does not match with the module that is suggested for replication. ~%"
-                                                         (list (cons #\0 ,x)))))
-                                      (- (or (equal (svl::svl-module->outputs
-                                                     (cdr (assoc-equal ,x
-                                                                       ,(sa '*original x
-                                                                            '-svl-design*))))
-                                                    (svl::svl-module->outputs
-                                                     (cdr (assoc-equal ,x
-                                                                       ,(sa '*redefined x
-                                                                            '-svl-design*)))))
-                                             (hard-error 'replace-adders-fn
-                                                         "Output wires for ~p0
+                                                        (list (cons #\0 ,x)))))
+                                     (- (or (equal (svl::svl-module->outputs
+                                                    (cdr (assoc-equal ,x
+                                                                      original-svl-design)))
+                                                   (svl::svl-module->outputs
+                                                    (cdr (assoc-equal ,x
+                                                                      redefined-svl-design))))
+                                            (hard-error 'replace-adders-fn
+                                                        "Output wires for ~p0
 does not match with the module that is suggested for replication. ~%"
-                                                         (list (cons #\0 ,x)))))
-                                      (- (or (equal (svl::svl-module->outputs
-                                                     (cdr (assoc-equal ,x
-                                                                       ,(sa '*original x
-                                                                            '-svl-design*))))
-                                                    (svl::svl-module->outputs
-                                                     (cdr (assoc-equal ,x
-                                                                       ,(sa '*redefined x
-                                                                            '-svl-design*)))))
-                                             (hard-error 'replace-adders-fn
-                                                         "Output wires for ~p0
+                                                        (list (cons #\0 ,x)))))
+                                     (- (or (equal (svl::svl-module->outputs
+                                                    (cdr (assoc-equal ,x
+                                                                      original-svl-design)))
+                                                   (svl::svl-module->outputs
+                                                    (cdr (assoc-equal ,x
+                                                                      redefined-svl-design))))
+                                            (hard-error 'replace-adders-fn
+                                                        "Output wires for ~p0
 does not match with the module that is suggested for replication. ~%"
-                                                         (list (cons #\0 ,x)))))
-                                      (- (or (and (not (svl::svl-module->delayed-inputs
-                                                        (cdr (assoc-equal ,x
-                                                                          ,(sa '*original x
-                                                                               '-svl-design*)))))
-                                                  (not (svl::svl-module->delayed-inputs
-                                                        (cdr (assoc-equal ,x
-                                                                          ,(sa '*redefined x
-                                                                               '-svl-design*))))))
-                                             (hard-error 'replace-adders-fn
-                                                         "One of the module to be
+                                                        (list (cons #\0 ,x)))))
+                                     (- (or (and (not (svl::svl-module->delayed-inputs
+                                                       (cdr (assoc-equal ,x
+                                                                         original-svl-design))))
+                                                 (not (svl::svl-module->delayed-inputs
+                                                       (cdr (assoc-equal ,x
+                                                                         redefined-svl-design)))))
+                                            (hard-error 'replace-adders-fn
+                                                        "One of the module to be
 replaced includes a state holding element. This happened with module ~p0 ~%"
-                                                         (list (cons #\0 ,x)))))
-                                      (hyps
-                                       (loop$ for y in ins1 collect
-                                              `(unsigned-byte-p
-                                                ,(svl::wire-size y)
-                                                ,(sa (svl::wire-name y)
-                                                     (svl::wire-start y)
-                                                     (svl::wire-size y)))))
+                                                        (list (cons #\0 ,x)))))
+                                     (hyps
+                                      (loop$ for y in ins1 collect
+                                            `(unsigned-byte-p
+                                              ,(svl::wire-size y)
+                                              ,(sa (svl::wire-name y)
+                                                   (svl::wire-start y)
+                                                   (svl::wire-size y)))))
 
-                                      (all-bitps
-                                       (equal (loop$ for y in ins1 sum
-                                                     (if (equal (svl::wire-size y) 1)
-                                                         0 1))
-                                              0))
+                                     (all-bitps
+                                      (equal (loop$ for y in ins1 sum
+                                                   (if (equal (svl::wire-size y) 1)
+                                                       0 1))
+                                             0))
 
-                                      (ins-list
-                                       (loop$ for y in ins1 collect
-                                              (sa (svl::wire-name y)
-                                                  (svl::wire-start y)
-                                                  (svl::wire-size y)))))
+                                     (ins-list
+                                      (loop$ for y in ins1 collect
+                                            (sa (svl::wire-name y)
+                                                (svl::wire-start y)
+                                                (svl::wire-size y)))))
 
-                                   `(,(if all-bitps 'defthm 'defthmrp)
+                                  `(,(if all-bitps 'defthm 'defthmrp)
                                      ,',(sa 'redefined-adder- x '-is-correct)
                                      (implies (and . ,hyps)
                                               (equal (svl::svl-run-phase-wog
-                                                      ,',x (list . ,ins-list)
-                                                      svl::*empty-state*
-                                                      ,',(sa '*redefined x
-                                                             '-svl-design*))
+                                                      ,',x (list . ,ins-list) svl::*empty-state* ,redefined-svl-design-ws)
                                                      (svl::svl-run-phase-wog
-                                                      ,',x (list . ,ins-list)
-                                                      svl::*empty-state*
-                                                      ,',(sa '*original x
-                                                             '-svl-design*))))
+                                                      ,',x (list . ,ins-list) svl::*empty-state* ,original-svl-design-ws)))
                                      ,@(if all-bitps
                                            '(:hints (("Goal"
                                                       :in-theory (e/d (bitp)
                                                                       ()))))
-                                         '(:disable-meta-rules (s-c-spec-meta)
-                                                               :enable-rules
-                                                               (append '(unsigned-byte-p INTEGER-RANGE-P)
-                                                                       rp::*adder-rules*)))))))
-                           `(value-triple :none))
+                                           '(:disable-meta-rules (s-c-spec-meta)
+                                             :enable-rules
+                                             (append '(unsigned-byte-p INTEGER-RANGE-P)
+                                              rp::*adder-rules*)))))))))
+                     nil))
+            `(progn .
+                    ,(loop$ for x in adder-module-names collect
+                           `(progn
+                              (acl2::defconsts
+                                  (,(sa '*redefined x '-sv-design*))
+                                  (b* (((mv errmsg new-sv-design & &)
+                                        (vl::vl-design->sv-design ,(if dummy-top
+                                                                       dummy-top x)
+                                                                  *redefined-adders-vl-design*
+                                                                  (vl::make-vl-simpconfig)))
+                                       (- (and errmsg (acl2::raise "~@0~%" errmsg))))
+                                    new-sv-design))
 
-                        ))))
+                              ,(if sanity-check
+                                   `(progn
+                                      (acl2::defconsts
+                                          (,(sa '*redefined x '-svl-design*) rp::rp-state)
+                                          (svl::svl-flatten-design ,(sa '*redefined x '-sv-design*)
+                                                                   *redefined-adders-vl-design*
+                                                                   :top ,x
+                                                                   :dont-flatten :all))
+                                      (acl2::defconsts
+                                          (,(sa '*original x '-svl-design*) rp::rp-state)
+                                          (svl::svl-flatten-design ,original-sv
+                                                                   ,original-vl
+                                                                   :top ,x
+                                                                   :dont-flatten :all))
+
+                                      (make-event
+                                       (b* ((ins1 (svl::svl-module->inputs
+                                                   (cdr (assoc-equal ,x
+                                                                     ,(sa '*original x
+                                                                          '-svl-design*)))))
+                                            (ins2 (svl::svl-module->inputs
+                                                   (cdr (assoc-equal ,x
+                                                                     ,(sa '*redefined x
+                                                                          '-svl-design*)))))
+                                            ;; some checks:
+                                            (- (or (equal ins1 ins2)
+                                                   (hard-error 'replace-adders-fn
+                                                               "Input wires for ~p0
+does not match with the module that is suggested for replication. ~%"
+                                                               (list (cons #\0 ,x)))))
+                                            (- (or (equal (svl::svl-module->outputs
+                                                           (cdr (assoc-equal ,x
+                                                                             ,(sa '*original x
+                                                                                  '-svl-design*))))
+                                                          (svl::svl-module->outputs
+                                                           (cdr (assoc-equal ,x
+                                                                             ,(sa '*redefined x
+                                                                                  '-svl-design*)))))
+                                                   (hard-error 'replace-adders-fn
+                                                               "Output wires for ~p0
+does not match with the module that is suggested for replication. ~%"
+                                                               (list (cons #\0 ,x)))))
+                                            (- (or (equal (svl::svl-module->outputs
+                                                           (cdr (assoc-equal ,x
+                                                                             ,(sa '*original x
+                                                                                  '-svl-design*))))
+                                                          (svl::svl-module->outputs
+                                                           (cdr (assoc-equal ,x
+                                                                             ,(sa '*redefined x
+                                                                                  '-svl-design*)))))
+                                                   (hard-error 'replace-adders-fn
+                                                               "Output wires for ~p0
+does not match with the module that is suggested for replication. ~%"
+                                                               (list (cons #\0 ,x)))))
+                                            (- (or (and (not (svl::svl-module->delayed-inputs
+                                                              (cdr (assoc-equal ,x
+                                                                                ,(sa '*original x
+                                                                                     '-svl-design*)))))
+                                                        (not (svl::svl-module->delayed-inputs
+                                                              (cdr (assoc-equal ,x
+                                                                                ,(sa '*redefined x
+                                                                                     '-svl-design*))))))
+                                                   (hard-error 'replace-adders-fn
+                                                               "One of the module to be
+replaced includes a state holding element. This happened with module ~p0 ~%"
+                                                               (list (cons #\0 ,x)))))
+                                            (hyps
+                                             (loop$ for y in ins1 collect
+                                                   `(unsigned-byte-p
+                                                     ,(svl::wire-size y)
+                                                     ,(sa (svl::wire-name y)
+                                                          (svl::wire-start y)
+                                                          (svl::wire-size y)))))
+
+                                            (all-bitps
+                                             (equal (loop$ for y in ins1 sum
+                                                          (if (equal (svl::wire-size y) 1)
+                                                              0 1))
+                                                    0))
+
+                                            (ins-list
+                                             (loop$ for y in ins1 collect
+                                                   (sa (svl::wire-name y)
+                                                       (svl::wire-start y)
+                                                       (svl::wire-size y)))))
+
+                                         `(,(if all-bitps 'defthm 'defthmrp)
+                                            ,',(sa 'redefined-adder- x '-is-correct)
+                                            (implies (and . ,hyps)
+                                                     (equal (svl::svl-run-phase-wog
+                                                             ,',x (list . ,ins-list)
+                                                             svl::*empty-state*
+                                                             ,',(sa '*redefined x
+                                                                    '-svl-design*))
+                                                            (svl::svl-run-phase-wog
+                                                             ,',x (list . ,ins-list)
+                                                             svl::*empty-state*
+                                                             ,',(sa '*original x
+                                                                    '-svl-design*))))
+                                            ,@(if all-bitps
+                                                  '(:hints (("Goal"
+                                                             :in-theory (e/d (bitp)
+                                                                             ()))))
+                                                  '(:disable-meta-rules (s-c-spec-meta)
+                                                    :enable-rules
+                                                    (append '(unsigned-byte-p INTEGER-RANGE-P)
+                                                     rp::*adder-rules*)))))))
+                                   `(value-triple :none))
+
+                              )))))
      (acl2::defconsts
-      ,new-sv
-      (sv::change-design
-       ,original-sv
-       :modalist
-       (fast-alist-clean
-        (append ,@(loop$ for x in adder-module-names collect
-                         `(SV::DESIGN->MODALIST ,(sa '*redefined x '-sv-design*)))
-                (sv::design->modalist ,original-sv)))))))
+         ,new-sv
+         (sv::change-design
+          ,original-sv
+          :modalist
+          (fast-alist-clean
+           (append
+
+            ,@(if dummy-top
+                  `((remove1-assoc ',dummy-top
+                                   (sv::design->modalist ,(sa '*redefined
+                                                              dummy-top '-sv-design*))
+                                   :test 'equal))
+                  (loop$ for x in adder-module-names collect
+                        `(SV::DESIGN->MODALIST ,(sa '*redefined x '-sv-design*))))
+            (sv::design->modalist ,original-sv)))))))
 
 (defmacro replace-adders (&key original-sv original-vl  new-sv
                                new-adders-file adder-module-names
@@ -233,4 +409,7 @@ replaced includes a state holding element. This happened with module ~p0 ~%"
 
 (def-rp-rule unsigned-byte-p-1-to-bitp
   (equal (unsigned-byte-p 1 x)
-         (bitp x)))
+         (bitp x))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
+

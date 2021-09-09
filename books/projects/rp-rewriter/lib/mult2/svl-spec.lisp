@@ -128,7 +128,7 @@
                               SVL::CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$
                               SVL::4VEC-ZERO-EXT-IS-BITS
                               SVL::4VEC-ZERO-EXT-IS-4VEC-CONCAT
-                              SVL::4VEC-CONCAT$-OF-SIZE=1-TERM2=0
+                              svl::4vec-concat$-of-term2=0
                             
                               SVL::4VEC-PART-SELECT-IS-BITS)))))
 
@@ -280,7 +280,7 @@
                                     logbit)
                               (SVL::4VEC-PART-SELECT-IS-BITS
                                SVL::4VEC-ZERO-EXT-IS-BITS
-                               SVL::4VEC-CONCAT$-OF-SIZE=1-TERM2=0
+                               svl::4vec-concat$-of-term2=0
                                SVL::CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$)))))
 
    (defthm ash-minus1-is-4vec-rsh
@@ -470,7 +470,7 @@
               :in-theory (e/d (sum-pps-bycol-bybit-simple
                                svl-sum-pps-bycol-bybit)
                               (logbitp ash
-                                       SVL::4VEC-CONCAT$-OF-SIZE=1-TERM2=0
+                                       svl::4vec-concat$-of-term2=0
                                        ifix))))))
 
   (def-rp-rule$ t nil
@@ -678,6 +678,15 @@
                                      (c-spec sum)
                                      (1- size)))))
   ///
+
+  (local
+   (defthm lemma1
+       (implies (integerp x)
+                (equal (SVL::4VEC-LIST X 0)
+                       (bit-of x 0)))
+     :hints (("Goal"
+              :in-theory (e/d () ())))))
+  
   (def-rp-rule 2vec-adder-is-4vec-adder ;; for backwards compatibility
     (implies (and (integerp x)
                   (integerp y)
@@ -686,6 +695,7 @@
              (equal (2vec-adder x y carry-in size)
                     (4vec-adder x y carry-in size)))
     :hints (("Goal"
+             :expand ()
              :in-theory (e/d (2vec-adder
                               m2-is-bit-of-0
                               )
@@ -746,7 +756,7 @@
                                  mod2-is-m2
                                  logapp-is-4vec-concat$
                                  svl::4vec-zero-ext-is-bits
-                                 svl::4vec-concat$-of-size=1-term2=0
+                                 svl::4vec-concat$-of-term2=0
                                  svl::convert-4vec-concat-to-4vec-concat$)))))))
 
   (def-rp-rule 4vec-plus++-is-4vec-adder

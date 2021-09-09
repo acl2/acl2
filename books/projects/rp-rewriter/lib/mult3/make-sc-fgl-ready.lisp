@@ -514,12 +514,10 @@
 
 (memoize 'make-sc-fgl-ready-meta)
 
-(rp::add-meta-rule
- :meta-fnc make-sc-fgl-ready-meta-main
- :trig-fnc equal
+(add-postprocessor
+ :processor-fnc make-sc-fgl-ready-meta
  :valid-syntaxp t
  :disabledp t
  :formula-checks make-sc-fgl-ready-meta-formula-checks
- :returns (mv term dont-rw)
  :hints (("Goal"
           :in-theory (e/d (make-sc-fgl-ready-meta-main) ()))))

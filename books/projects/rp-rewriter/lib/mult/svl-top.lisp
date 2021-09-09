@@ -330,7 +330,7 @@
                              (svl::4vec-part-select-is-bits
                               SVL::4VEC-ZERO-EXT-IS-BITS
                               svl::convert-4vec-concat-to-4vec-concat$
-                              svl::4vec-concat$-of-size=1-term2=0
+                              svl::4vec-concat$-of-term2=0
                               svl::4vec-zero-ext-is-4vec-concat)))))
 
   (def-rp-rule bits-of-binary-fns-start=0
@@ -364,7 +364,7 @@
                               BITS-IS-BIT-OF
                               SVL::4VEC-ZERO-EXT-IS-BITS
                               svl::convert-4vec-concat-to-4vec-concat$
-                              svl::4vec-concat$-of-size=1-term2=0
+                              svl::4vec-concat$-of-term2=0
                               svl::4vec-zero-ext-is-4vec-concat))))))
 
 (encapsulate
@@ -409,7 +409,7 @@
                              (svl::4vec-part-select-is-bits
                               SVL::4VEC-ZERO-EXT-IS-BITS
                               svl::convert-4vec-concat-to-4vec-concat$
-                              svl::4vec-concat$-of-size=1-term2=0
+                              svl::4vec-concat$-of-term2=0
                               svl::4vec-zero-ext-is-4vec-concat)))))
 
   (def-rp-rule$ t t
@@ -431,7 +431,7 @@
                              (svl::4vec-part-select-is-bits
                               SVL::4VEC-ZERO-EXT-IS-BITS
                               svl::convert-4vec-concat-to-4vec-concat$
-                              svl::4vec-concat$-of-size=1-term2=0
+                              svl::4vec-concat$-of-term2=0
                               svl::4vec-zero-ext-is-4vec-concat))))))
 
 (def-rp-rule bits-1-1-of-b+
@@ -443,7 +443,7 @@
                             bitp)
                            (svl::4vec-part-select-is-bits
                             svl::convert-4vec-concat-to-4vec-concat$
-                            svl::4vec-concat$-of-size=1-term2=0
+                            svl::4vec-concat$-of-term2=0
                             svl::4vec-zero-ext-is-4vec-concat)))))
 
 (def-rp-rule$ t t
@@ -456,7 +456,7 @@
                             bitp)
                            (svl::4vec-part-select-is-bits
                             svl::convert-4vec-concat-to-4vec-concat$
-                            svl::4vec-concat$-of-size=1-term2=0
+                            svl::4vec-concat$-of-term2=0
                             svl::4vec-zero-ext-is-4vec-concat)))))
 
 (def-rp-rule bits-1-1-of-f2
@@ -468,7 +468,7 @@
                             bitp)
                            (svl::4vec-part-select-is-bits
                             svl::convert-4vec-concat-to-4vec-concat$
-                            svl::4vec-concat$-of-size=1-term2=0
+                            svl::4vec-concat$-of-term2=0
                             svl::4vec-zero-ext-is-4vec-concat)))))
 
 (def-rp-rule bits-of-4vec-==-binary-fncs

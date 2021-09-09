@@ -410,67 +410,82 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-symbol-fninfo-alist-to-returns-value-thms
-  ((prec-fns atc-symbol-fninfo-alistp))
+  ((prec-fns atc-symbol-fninfo-alistp) (among symbol-listp))
   :returns (thms symbol-listp)
-  :short "Project all the returns-value theorems
-          out of a function information alist."
+  :short "Project the returns-value theorems
+          out of a function information alist,
+          for the functions among a given list."
   :long
   (xdoc::topstring
    (xdoc::p
     "The proof of each of these theorems for a function @('fn')
      makes use of the same theorems for
-     the preceding functions in @('prec-fns').
-     This function serves to collect those theorem names from the alist.")
+     some of the preceding functions in @('prec-fns'),
+     more precisely the ones called in the body of @('fn').
+     This function serves to collect those theorem names from the alist.
+     The list of symbols given as input consists of
+     the functions called by @('fn'):
+     it is fine if the list contains functions that are not keys of the alist,
+     as it is merely used to filter.")
    (xdoc::p
     "The alist has no duplicate keys.
      So this function is correct."))
   (cond ((endp prec-fns) nil)
-        (t (cons (atc-fn-info->returns-value-thm (cdr (car prec-fns)))
-                 (atc-symbol-fninfo-alist-to-returns-value-thms
-                  (cdr prec-fns))))))
+        ((member-eq (caar prec-fns) among)
+         (cons (atc-fn-info->returns-value-thm (cdr (car prec-fns)))
+               (atc-symbol-fninfo-alist-to-returns-value-thms (cdr prec-fns)
+                                                              among)))
+        (t (atc-symbol-fninfo-alist-to-returns-value-thms (cdr prec-fns)
+                                                          among))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-symbol-fninfo-alist-to-correct-thms
-  ((prec-fns atc-symbol-fninfo-alistp))
+  ((prec-fns atc-symbol-fninfo-alistp) (among symbol-listp))
   :returns (thms symbol-listp)
-  :short "Project all the execution correctness theorems
-          out of a function information alist."
+  :short "Project the execution correctness theorems
+          out of a function information alist,
+          for the functions among a given list."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The proof of each of these theorems for a function @('fn')
-     makes use of the same theorems for
-     the preceding functions in @('prec-fns').
-     This function serves to collect those theorem names from the alist.")
-   (xdoc::p
-    "The alist has no duplicate keys.
-     So this function is correct."))
+    "This is similar to @(tsee atc-symbol-fninfo-alist-to-returns-value-thms).
+     See that function's documentation for more details."))
   (cond ((endp prec-fns) nil)
-        (t (cons (atc-fn-info->correct-thm (cdr (car prec-fns)))
-                 (atc-symbol-fninfo-alist-to-correct-thms
-                  (cdr prec-fns))))))
+        ((member-eq (caar prec-fns) among)
+         (cons (atc-fn-info->correct-thm (cdr (car prec-fns)))
+               (atc-symbol-fninfo-alist-to-correct-thms (cdr prec-fns)
+                                                        among)))
+        (t (atc-symbol-fninfo-alist-to-correct-thms (cdr prec-fns)
+                                                    among))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-symbol-fninfo-alist-to-measure-nat-thms
-  ((prec-fns atc-symbol-fninfo-alistp))
+  ((prec-fns atc-symbol-fninfo-alistp) (among symbol-listp))
   :returns (thms symbol-listp)
-  :short "Project all the measure theorems
-          out of a function information alist."
+  :short "Project the measure theorems
+          out of a function information alist,
+          for the functions among a given list.."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee atc-symbol-fninfo-alist-to-returns-value-thms).
+     See that function's documentation for more details.")
    (xdoc::p
     "We skip over non-recursive functions,
      which have @('nil') as that entry."))
   (cond ((endp prec-fns) nil)
-        (t (b* ((thm (atc-fn-info->measure-nat-thm (cdr (car prec-fns)))))
-             (if thm
-                 (cons thm
-                       (atc-symbol-fninfo-alist-to-measure-nat-thms
-                        (cdr prec-fns)))
-               (atc-symbol-fninfo-alist-to-measure-nat-thms
-                (cdr prec-fns)))))))
+        ((member-eq (caar prec-fns) among)
+         (b* ((thm (atc-fn-info->measure-nat-thm (cdr (car prec-fns)))))
+           (if thm
+               (cons thm
+                     (atc-symbol-fninfo-alist-to-measure-nat-thms (cdr prec-fns)
+                                                                  among))
+             (atc-symbol-fninfo-alist-to-measure-nat-thms (cdr prec-fns)
+                                                          among))))
+        (t (atc-symbol-fninfo-alist-to-measure-nat-thms (cdr prec-fns)
+                                                        among))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2860,7 +2875,8 @@
                   *atc-shift-definition-rules*
                   *atc-array-definition-rules*
                   '(,fn
-                    ,@(atc-symbol-fninfo-alist-to-returns-value-thms prec-fns)
+                    ,@(atc-symbol-fninfo-alist-to-returns-value-thms
+                       prec-fns (acl2::all-fnnames (ubody+ fn wrld)))
                     sintp-of-sint-dec-const
                     sintp-of-sint-oct-const
                     sintp-of-sint-hex-const
@@ -3162,12 +3178,13 @@
                           ,limit-var)
                 (mv (,fn ,@args)
                     ,compst-var)))
+       (called-fns (acl2::all-fnnames (ubody+ fn wrld)))
        (returns-value-thms
-        (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns))
+        (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns called-fns))
        (correct-thms
-        (atc-symbol-fninfo-alist-to-correct-thms prec-fns))
+        (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
-        (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns))
+        (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns called-fns))
        (type-prescriptions
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
@@ -4109,12 +4126,13 @@
                       (b* ((,xforming-binder ,body-term))
                         (mv nil ,final-compst))))
        (formula `(b* (,@formals-binding) (implies ,hyps ,concl)))
+       (called-fns (acl2::all-fnnames (ubody+ fn wrld)))
        (returns-value-thms
-        (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns))
+        (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns called-fns))
        (correct-thms
-        (atc-symbol-fninfo-alist-to-correct-thms prec-fns))
+        (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
-        (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns))
+        (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns called-fns))
        (type-prescriptions
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
@@ -4263,13 +4281,14 @@
                                            ,limit-var)
                           (b* ((,binding (,fn ,@args)))
                             (mv nil ,final-compst))))
+       (called-fns (acl2::all-fnnames (ubody+ fn wrld)))
        (returns-value-thms
-        (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns))
+        (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns called-fns))
        (returns-value-thms (cons fn-returns-value-thm returns-value-thms))
        (correct-thms
-        (atc-symbol-fninfo-alist-to-correct-thms prec-fns))
+        (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
-        (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns))
+        (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns called-fns))
        (type-prescriptions
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
