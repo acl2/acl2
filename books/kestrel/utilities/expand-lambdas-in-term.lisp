@@ -1,7 +1,7 @@
 ; Utilities for expanding lambdas
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,8 @@
 
 ;; STATUS: IN-PROGRESS
 
+;; TODO: Move this book to terms-light/
+
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
 (include-book "lambda-free-termp")
 (include-book "lambdas-closed-in-termp")
@@ -20,6 +22,35 @@
 (local (include-book "../alists-light/strip-cars"))
 (local (include-book "../lists-light/subsetp-equal"))
 (local (include-book "../typed-lists-light/symbol-listp"))
+
+;; Some of these could be moved to more general libraries:
+
+(local
+ (defthm subsetp-equal-of-free-vars-in-term-of-assoc-equal-and-free-vars-in-terms-of-strip-cdrs
+   (implies (and (member-equal term (strip-cars alist))
+                 (assoc-equal term alist))
+            (subsetp-equal (free-vars-in-term (cdr (assoc-equal term alist)))
+                           (free-vars-in-terms (strip-cdrs alist))))
+   :hints (("Goal" :in-theory (enable subsetp-equal assoc-equal free-vars-in-terms)))))
+
+(defthm-flag-free-vars-in-term
+  ;; If we substitute all variables in the term, then the new free vars are limited to the free vars in the terms put in by substitution.
+  (defthm subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs
+    (implies (subsetp-equal (free-vars-in-term term)
+                            (strip-cars alist))
+             (subsetp-equal (free-vars-in-term (sublis-var-simple alist term))
+                            (free-vars-in-terms (strip-cdrs alist))))
+    :flag free-vars-in-term)
+  (defthm subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-lst-and-free-vars-in-terms-of-strip-cdrs
+    (implies (subsetp-equal (free-vars-in-terms terms)
+                            (strip-cars alist))
+             (subsetp-equal (free-vars-in-terms (sublis-var-simple-lst alist terms))
+                            (free-vars-in-terms (strip-cdrs alist))))
+    :flag free-vars-in-terms)
+  :hints (("Goal" :in-theory (enable sublis-var-simple
+                                     sublis-var-simple-lst
+                                     free-vars-in-term
+                                     free-vars-in-terms))))
 
 ;; Substitution doesn't introduce lambdas if there were none to start with and
 ;; there are none in the alist being used for substitution.
@@ -36,6 +67,8 @@
     :flag sublis-var-simple-lst)
   :hints (("Goal" :in-theory (enable sublis-var-simple
                                      sublis-var-simple-lst))))
+
+;; End of library material
 
 ;; Expands away all lambdas in TERM (beta reduction).  This is similar to the
 ;; built-in function REMOVE-LAMBDAS, but that one does more (to preserve quote
@@ -124,33 +157,6 @@
            (not (consp (car (expand-lambdas-in-term term)))))
   :hints (("Goal" :use (:instance lambda-free-termp-of-expand-lambdas-in-term)
            :in-theory (disable lambda-free-termp-of-expand-lambdas-in-term))))
-
-(local
- (defthm subsetp-equal-of-free-vars-in-term-of-assoc-equal-and-free-vars-in-terms-of-strip-cdrs
-   (implies (and (member-equal term (strip-cars alist))
-                 (assoc-equal term alist))
-            (subsetp-equal (free-vars-in-term (cdr (assoc-equal term alist)))
-                           (free-vars-in-terms (strip-cdrs alist))))
-   :hints (("Goal" :in-theory (enable subsetp-equal assoc-equal free-vars-in-terms)))))
-
-;move
-(defthm-flag-free-vars-in-term
-  (defthm subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs
-    (implies (subsetp-equal (free-vars-in-term term)
-                            (strip-cars alist))
-             (subsetp-equal (free-vars-in-term (sublis-var-simple alist term))
-                            (free-vars-in-terms (strip-cdrs alist))))
-    :flag free-vars-in-term)
-  (defthm subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-lst-and-free-vars-in-terms-of-strip-cdrs
-    (implies (subsetp-equal (free-vars-in-terms terms)
-                            (strip-cars alist))
-             (subsetp-equal (free-vars-in-terms (sublis-var-simple-lst alist terms))
-                            (free-vars-in-terms (strip-cdrs alist))))
-    :flag free-vars-in-terms)
-  :hints (("Goal" :in-theory (enable sublis-var-simple
-                                     sublis-var-simple-lst
-                                     free-vars-in-term
-                                     free-vars-in-terms))))
 
 ;; Expanding lambdas doesn't introduce new free vars (assuming lambdas are
 ;; closed).  Note that expanding lambdas can remove free vars, since some
