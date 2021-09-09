@@ -1363,10 +1363,9 @@
   (b* (((mv erp hyps conc)
         (hyps-and-conc-for-axe-rule theorem-body rule-symbol))
        ((when erp) (mv erp nil))
-       ;; We can't process the hyps yet because we don't know the LHS vars (there
-       ;; may be several LHSes).  It's okay to ignore the loop-stopping-hyps when
-       ;; processing other hyps because the loop-stopping-hyps do not bind any
-       ;; vars.
+       ;; We can't process the hyps yet because we don't know the LHS vars
+       ;; (there may be several LHSes).  But we can create the
+       ;; loop-stopping-hyps here because they do not bind any vars:
        ((mv erp extra-hyps)
         (make-axe-rule-loop-stopping-hyps rule-classes rule-symbol))
        ((when erp) (mv erp nil)))
@@ -1399,8 +1398,8 @@
         (er hard? 'make-axe-rules-from-theorem! "Error making Axe rules.")
       axe-rules)))
 
-;; Returns (mv erp new-acc) where new-acc extends acc and is an axe-rule-listp.
-;keep in sync with check-that-rule-is-known
+;; Extends ACC with one or more axe-rules for RULE-NAME.  Returns (mv erp new-acc) where new-acc is an axe-rule-listp.
+;; Keep this in sync with ensure-rule-known?
 (defund add-axe-rules-for-rule (rule-name known-boolean-fns print acc wrld)
   (declare (xargs :guard (and (symbolp rule-name)
                               (symbol-listp known-boolean-fns)
