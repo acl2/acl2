@@ -63,6 +63,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define fun-info-from-fundef ((fundef fundefp))
+  :returns (finfo fun-infop)
+  :short "Create information for a function definition."
+  (b* (((fundef fundef) fundef))
+    (make-fun-info :params fundef.params
+                   :result fundef.result
+                   :body fundef.body))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defomap fun-env
   :short "Fixtype of function environments."
   :long
@@ -112,9 +123,7 @@
        ((fundef fundef) fundef)
        ((when (fun-env-lookup fundef.name fenv))
         (error (list :duplicate-function-definition fundef.name)))
-       (info (make-fun-info :params fundef.params
-                            :result fundef.result
-                            :body fundef.body)))
+       (info (fun-info-from-fundef fundef)))
     (omap::update fundef.name info fenv))
   :hooks (:fix))
 
