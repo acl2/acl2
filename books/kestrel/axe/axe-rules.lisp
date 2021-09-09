@@ -134,10 +134,12 @@
 ;;; axe-rule-hypp
 ;;;
 
-;; An axe-rule-hyp (hypothesis of an axe rule) is an axe-syntaxp hyp, an
-;; axe-bind-free hyp, or a lambda-free (currently) function call.  TODO:
-;; Consider not expanding lambdas in hyps (if they don't have free vars?).
-;; Axe creates these structures by processing hyps in theorems from the world.
+;; An axe-rule-hyp (hypothesis of an axe rule) is a special kind of structure
+;; that represents an axe-syntaxp hyp, an axe-bind-free hyp, or a lambda-free
+;; (currently) function call, which may or may not contain variables that will
+;; be free whne the hyp is relieved.  TODO: Consider not expanding lambdas in
+;; hyps (if they don't have free vars?).  Axe creates these structures by
+;; processing hyps in theorems from the world.
 (defund axe-rule-hypp (hyp)
   (declare (xargs :guard t))
   (and (consp hyp) ; can't be a variable
@@ -161,7 +163,7 @@
                ;; regular hyp with no free vars:
                (and (not (eq 'quote fn)) ; can't be a quoted constant
                     (pseudo-termp hyp)
-                    ;; consider relaxng this for efficiency of rewriting:
+                    ;; consider relaxing this for efficiency of rewriting:
                     (lambda-free-termp hyp))))))))
 
 (defthm axe-rule-hypp-when-not-special
