@@ -982,11 +982,9 @@
 ;; TODO: Should we get anything else from the :rule-classes in addition to the loop-stoppers?  Check for unknown things?
 ;; These do not bind any vars
 (defund make-axe-rule-loop-stopping-hyps (rule-classes rule-name)
-  (declare (xargs :guard t))
-  (b* (((when (not (alistp rule-classes)))
-        (er hard? 'make-axe-rule-loop-stopping-hyps "Bad rule-classes: ~x0" rule-classes)
-        (mv :bad-rule-classes nil))
-       (rewrite-keyword-value-list (lookup-eq :rewrite rule-classes))
+  (declare (xargs :guard (and (symbol-alistp rule-classes)
+                              (symbolp rule-name))))
+  (b* ((rewrite-keyword-value-list (lookup-eq :rewrite rule-classes))
        ((when (not (keyword-value-listp rewrite-keyword-value-list)))
         (er hard? 'make-axe-rule-loop-stopping-hyps "Unexpected stuff in :rewrite rule class: ~x0." rewrite-keyword-value-list)
         (mv :bad-rule-class nil))
@@ -1229,7 +1227,6 @@
                 (pseudo-term-listp hyps)
                 (axe-rule-hyp-listp extra-hyps)
                 (axe-rule-listp acc)
-                (symbol-listp known-boolean-fns)
                 (all-axe-syntaxp-hypsp extra-hyps))
            (axe-rule-listp (add-rule-for-conjunct conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld acc)))
   :hints (("Goal" :in-theory (e/d ( ;axe-rulep
@@ -1273,7 +1270,6 @@
                 (pseudo-termp conc)
                 (pseudo-term-listp hyps)
                 (axe-rule-hyp-listp extra-hyps)
-                (symbol-listp known-boolean-fns)
                 (all-axe-syntaxp-hypsp extra-hyps))
            (axe-rule-listp (make-rules-from-conclusion-aux conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld)))
   :hints (("Goal" :in-theory (enable axe-rulep make-rules-from-conclusion-aux))))
@@ -1303,8 +1299,7 @@
                 (pseudo-termp conc)
                 (pseudo-term-listp hyps)
                 (axe-rule-hyp-listp extra-hyps)
-                (all-axe-syntaxp-hypsp extra-hyps)
-                (symbol-listp known-boolean-fns))
+                (all-axe-syntaxp-hypsp extra-hyps))
            (axe-rule-listp (make-rules-from-conclusion conc hyps extra-hyps rule-symbol known-boolean-fns print wrld)))
   :hints (("Goal" :in-theory (enable make-rules-from-conclusion axe-rulep))))
 
@@ -1361,6 +1356,7 @@
 (defund make-axe-rules-from-theorem (theorem-body rule-symbol rule-classes known-boolean-fns print wrld)
   (declare (xargs :guard (and (pseudo-termp theorem-body)
                               (symbolp rule-symbol)
+                              (symbol-alistp rule-classes)
                               (symbol-listp known-boolean-fns)
                               (plist-worldp wrld))))
   ;; Split the rule into conclusion and hyps
@@ -1380,8 +1376,7 @@
 
 (defthm axe-rule-listp-of-mv-nth-1-of-make-axe-rules-from-theorem
   (implies (and (pseudo-termp theorem-body)
-                (symbolp rule-symbol)
-                (symbol-listp known-boolean-fns))
+                (symbolp rule-symbol))
            (axe-rule-listp (mv-nth 1 (make-axe-rules-from-theorem theorem-body rule-symbol rule-classes known-boolean-fns print wrld))))
   :hints (("Goal" :in-theory (enable make-axe-rules-from-theorem
                                      axe-rulep ;fixme
@@ -1395,6 +1390,7 @@
 (defund make-axe-rules-from-theorem! (theorem-body rule-symbol rule-classes known-boolean-fns print wrld)
   (declare (xargs :guard (and (pseudo-termp theorem-body)
                               (symbolp rule-symbol)
+                              (symbol-alistp rule-classes)
                               (symbol-listp known-boolean-fns)
                               (plist-worldp wrld))))
   (mv-let (erp axe-rules)
@@ -1403,18 +1399,16 @@
         (er hard? 'make-axe-rules-from-theorem! "Error making Axe rules.")
       axe-rules)))
 
-;; Returns (mv erp new-acc) where new-acc extends acc.
+;; Returns (mv erp new-acc) where new-acc extends acc and is an axe-rule-listp.
 ;keep in sync with check-that-rule-is-known
 (defund add-axe-rules-for-rule (rule-name known-boolean-fns print acc wrld)
   (declare (xargs :guard (and (symbolp rule-name)
                               (symbol-listp known-boolean-fns)
+                              (axe-rule-listp acc)
                               (ilks-plist-worldp wrld))))
   (b* (((when (eq 'quote rule-name))
         (er hard? 'add-axe-rules-for-rule "QUOTE is an illegal name for an Axe rule.")
         (mv :bad-rule-name acc))
-       ;;(rule-class (first rule-name))
-       ;;(name (second rule-name))
-       (name rule-name)
        (theoremp (theorem-symbolp rule-name wrld))
        (functionp (function-symbolp rule-name wrld)))
     (cond ((and (not functionp)
@@ -1422,7 +1416,7 @@
            (prog2$ (er hard? 'add-axe-rules-for-rule "~x0 does not seem to be a theorem or defun." rule-name)
                    (mv :rule-not-found acc)))
           ((and functionp theoremp)
-           (prog2$ (er hard? 'add-axe-rules-for-rule "Rule-Name ~x0 appears to be both a function and a theorem (so which is it?!)" name)
+           (prog2$ (er hard? 'add-axe-rules-for-rule "~x0 appears to be both a function and a theorem (so which is it?!)" rule-name)
                    (mv :confusing-rule-name acc)))
           (functionp
            ;;it's a defun:
@@ -1434,31 +1428,35 @@
                 (body (remove-guard-holders-and-clean-up-lambdas body) ;(strip-return-last body)
                       )
                 (body (drop-unused-lambda-bindings body))
-                (lhs (cons name formals))
-                ((mv erp rule) (make-axe-rule lhs body name nil nil print wrld))
+                (lhs (cons rule-name formals))
+                ;; Make a rule equating a call of the function (on its formals)
+                ;; with its body (note: for recursive functions, it may be
+                ;; better to use defopeners to get separate cases for the
+                ;; recursive case and the base case):
+                ((mv erp rule) (make-axe-rule lhs body rule-name nil nil print wrld))
                 ((when erp) (mv erp acc)))
-             ;;ffixme for recursive functions, we could generate separate cases for the recursive case and the base case (really, defopeners should be used)...
-             (mv (erp-nil)
-                 (cons rule acc))))
+             (mv (erp-nil) (cons rule acc))))
           (t ;;it's a theorem:
            (b* ((theorem-body (defthm-body rule-name wrld))
-                (rule-classes (defthm-rule-classes name wrld))
+                (rule-classes (defthm-rule-classes rule-name wrld))
+                ((when (not (symbol-alistp rule-classes)))
+                 (er hard? 'make-add-axe-rules-for-rule "Bad rule-classes: ~x0" rule-classes)
+                 (mv :bad-rule-classes nil))
                 ;;otherwise, unrolling rules of functions using mbe can loop):
                 (theorem-body ;(strip-return-last theorem-body)
                  (remove-guard-holders-and-clean-up-lambdas theorem-body))
                 (theorem-body (drop-unused-lambda-bindings theorem-body))
                 ((mv erp rules)
-                 (make-axe-rules-from-theorem theorem-body name rule-classes known-boolean-fns print wrld))
+                 (make-axe-rules-from-theorem theorem-body rule-name rule-classes known-boolean-fns print wrld))
                 ((when erp) (mv erp acc)))
              (mv (erp-nil)
                  (append rules acc)))))))
 
 (defthm axe-rule-listp-of-mv-nth-1-of-add-axe-rules-for-rule
   (implies (and (axe-rule-listp acc)
-                (symbolp rule-name)
-                (symbol-listp known-boolean-fns))
+                (symbolp rule-name))
            (axe-rule-listp (mv-nth 1 (add-axe-rules-for-rule rule-name known-boolean-fns print acc wrld))))
-  :hints (("Goal" :in-theory (enable ADD-AXE-RULES-FOR-RULE axe-rulep))))
+  :hints (("Goal" :in-theory (enable add-axe-rules-for-rule))))
 
 (defthm true-listp-of-mv-nth-1-of-add-axe-rules-for-rule
   (implies (true-listp acc)
@@ -1469,8 +1467,8 @@
 ;; Returns (mv erp rules) where rules is a list of axe-rules.
 (defund make-axe-rules-aux (rule-names known-boolean-fns print acc wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (true-listp acc)
                               (symbol-listp known-boolean-fns)
+                              (axe-rule-listp acc)
                               (ilks-plist-worldp wrld))))
   (if (endp rule-names)
       (mv (erp-nil) (reverse acc)) ;skip this reverse! or call a better version of it that doesn't handle strings?
@@ -1489,10 +1487,13 @@
 (defthm axe-rule-listp-of-mv-nth-1-of-make-axe-rules-aux
   (implies (and (axe-rule-listp acc)
                 (true-listp acc)
-                (symbol-listp rule-names)
-                (symbol-listp known-boolean-fns))
+                (symbol-listp rule-names))
            (axe-rule-listp (mv-nth 1 (make-axe-rules-aux rule-names known-boolean-fns print acc wrld))))
   :hints (("Goal" :in-theory (enable make-axe-rules-aux))))
+
+;;;
+;;; make-axe-rules
+;;;
 
 ;; Returns (mv erp rules) where rules is a list of axe-rules.
 (defund make-axe-rules (rule-names wrld)
