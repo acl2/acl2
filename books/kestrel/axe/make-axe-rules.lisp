@@ -1403,52 +1403,6 @@
         (er hard? 'make-axe-rules-from-theorem! "Error making Axe rules.")
       axe-rules)))
 
-;; (mutual-recursion
-;;  (defun strip-return-last (term)
-;;    (declare (xargs :guard (pseudo-termp term)))
-;;    (if (atom term)
-;;        term
-;;      (let ((fn (ffn-symb term)))
-;;        (if (eq 'quote fn)
-;;            term
-;;          (if (and (eq 'return-last fn) ;replace with the last arg (suitably fixed up)
-;;                   (eql 3 (len (fargs term))))
-;;              (strip-return-last (caddr (fargs term)))
-;;            ;; first fixup the args
-;;            (let ((args (strip-return-last-list (fargs term)))
-;;                  (fn (if (consp fn)
-;;                          (let* ((formals (cadr fn))
-;;                                 (body (caddr fn))
-;;                                 (body (strip-return-last body)))
-;;                            `(lambda ,formals ,body))
-;;                        fn)))
-;;              `(,fn ,@args)))))))
-
-;;  (defun strip-return-last-list (terms)
-;;    (declare (xargs :guard (pseudo-term-listp terms)))
-;;    (if (endp terms)
-;;        nil
-;;      (cons (strip-return-last (first terms))
-;;            (strip-return-last-list (rest terms))))))
-
-
-;; (my-make-flag strip-return-last)
-
-;; (defthm len-of-strip-return-last-list
-;;   (equal (len (strip-return-last-list terms))
-;;          (len terms))
-;;   :hints (("Goal" :in-theory (enable len))))
-
-;; (DEFTHM-FLAG-STRIP-RETURN-LAST
-;;   (DEFTHM pseudo-termp-of-STRIP-RETURN-LAST
-;;     (IMPLIES (pseudo-termp term)
-;;              (pseudo-termp (STRIP-RETURN-LAST TERM)))
-;;     :FLAG STRIP-RETURN-LAST)
-;;   (DEFTHM pseudo-term-listp-of-STRIP-RETURN-LAST-LIST
-;;     (IMPLIES (pseudo-term-listp terms)
-;;              (pseudo-term-listp (STRIP-RETURN-LAST-LIST TERMS)))
-;;     :FLAG STRIP-RETURN-LAST-LIST))
-
 ;; Returns (mv erp new-acc) where new-acc extends acc.
 ;keep in sync with check-that-rule-is-known
 (defund add-axe-rules-for-rule (rule-name known-boolean-fns print acc wrld)
