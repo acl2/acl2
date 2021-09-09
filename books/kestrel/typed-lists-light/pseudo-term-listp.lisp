@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function pseudo-term-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -70,6 +70,17 @@
          (and (pseudo-term-listp (true-list-fix x))
               (pseudo-term-listp y)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
+(defthm pseudo-term-listp-of-reverse-alt
+  (implies (pseudo-term-listp x)
+           (pseudo-term-listp (reverse x)))
+  :hints (("Goal" :in-theory (enable reverse))))
+
+(defthm pseudo-term-listp-of-reverse
+  (implies (not (stringp x))
+           (equal (pseudo-term-listp (reverse x))
+                  (pseudo-term-listp (true-list-fix x))))
+  :hints (("Goal" :in-theory (enable reverse))))
 
 (defthm pseudo-term-listp-of-true-list-fix
   (implies (pseudo-term-listp lst)
