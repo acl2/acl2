@@ -57,7 +57,7 @@
 (include-book "misc/expander" :dir :system)
 (include-book "misc/install-not-normalized" :dir :system)
 (include-book "kestrel/utilities/system/world-queries" :dir :system)
-(include-book "kestrel/utilities/directed-untranslate" :dir :system)
+(include-book "directed-untranslate")
 (include-book "kestrel/utilities/copy-def" :dir :system) ; includes tools/flag
 ; (include-book "utilities/process-keyword-args")
 ; (include-book "utilities/pattern-matching")

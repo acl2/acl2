@@ -135,6 +135,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "kestrel-utilities" "Kestrel Utilities Library"))
+
+   (xdoc::p
+    "Special handling of @(tsee mbt) by @(tsee directed-untranslate) has been
+     removed, as it is no longer necessary or appropriate because of the change
+     to the @(tsee apt::simplify) transformation for @(tsee mbt) noted above.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p

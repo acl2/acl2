@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/apt/isodata" :dir :system)
+(include-book "isodata")
 (include-book "std/testing/must-be-redundant" :dir :system)
 (include-book "workshops/2017/coglio-kaufmann-smith/support/simplify-defun" :dir :system)
 

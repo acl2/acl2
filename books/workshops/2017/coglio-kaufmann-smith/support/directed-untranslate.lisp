@@ -616,6 +616,25 @@
          (('if x *nil* *t*)
           (mv t (fcons-term* 'null x)))
          (& (mv nil sterm))))
+      (('return-last ''mbe1-raw *t* x) ; ('mbt x)
+       (cond ((not (ffn-symb-p sterm 'return-last))
+              (cond ((equal sterm x)
+                     (mv t tterm))
+                    ((if-tautologyp `(iff ,sterm ,x))
+                     (mv t
+                         (fcons-term* 'return-last
+                                      ''mbe1-raw
+                                      *t*
+                                      sterm)))
+                    ((if-tautologyp `(iff ,(dumb-negate-lit sterm) ,x))
+                     (mv t
+                         (fcons-term* 'not
+                                      (fcons-term* 'return-last
+                                                   ''mbe1-raw
+                                                   *t*
+                                                   (dumb-negate-lit sterm)))))
+                    (t (mv nil sterm))))
+             (t (mv nil sterm))))
       (& (mv nil sterm)))
     (or
      (case-match tterm
