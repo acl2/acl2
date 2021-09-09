@@ -1264,6 +1264,7 @@
             ;;it's an AND, represented as (if <x> <y> 'nil):
             (add-rule-for-conjunct (farg1 conc) hyps extra-hyps counter rule-symbol known-boolean-fns print wrld
                                    (make-rules-from-conclusion-aux (farg2 conc) hyps extra-hyps (+ 1 counter) rule-symbol known-boolean-fns print wrld))
+          ;; TODO: Perhaps we should support this (ACL2 can now rewrite an IF):
           (er hard? 'make-rules-from-conclusion-aux "Unexpected form of a conclusion (an IF that does not represent a conjunction): ~x0" conc))
       (add-rule-for-conjunct conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld nil))))
 
