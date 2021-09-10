@@ -18,24 +18,9 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
-;todo
-(in-theory (disable reverse
-                    mv-nth
-                    all-vars))
-;;;
-;;; light-weight copy of some library stuff:
-;;;
+(in-theory (disable mv-nth))
 
-(defthm pseudo-term-listp-of-revappend-2 ;todo: name clash
-  (implies (and (pseudo-term-listp x)
-                (pseudo-term-listp y))
-           (pseudo-term-listp (revappend x y)))
-  :hints (("Goal" :in-theory (enable revappend))))
-
-(defthm pseudo-term-listp-of-reverse
-  (implies (pseudo-term-listp x)
-           (pseudo-term-listp (reverse x)))
-  :hints (("Goal" :in-theory (enable reverse))))
+(local (in-theory (disable reverse all-vars)))
 
 ;; Walk down FORMALS and ACTUALS in sync, dropping any formal, and its
 ;; corresponding actual, that is not in BODY-VARS.  Returns (mv formals
@@ -92,8 +77,8 @@
            (equal (len (mv-nth 1 (drop-unused-lambda-formals-and-actuals formals actuals body-vars formals-acc actuals-acc)))
                   (len (mv-nth 0 (drop-unused-lambda-formals-and-actuals formals actuals body-vars formals-acc actuals-acc))))))
 
-;; Get rid of lambda formals not used in the corresponding lambda bodies, and
-;; get rid of lambdas that bind all of their formals to themselves.
+;; Gets rid of lambda formals not used in the corresponding lambda bodies, and
+;; gets rid of trivial lambdas (ones that bind all of their formals to themselves).
 (mutual-recursion
  (defun drop-unused-lambda-bindings (term)
    (declare (xargs :guard (pseudo-termp term)
