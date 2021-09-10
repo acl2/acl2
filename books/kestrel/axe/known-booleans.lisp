@@ -70,6 +70,7 @@
 ;to be passed in (but really the fact should be proved as a type-precription
 ;rule before calling this).  We need to be careful that the table entries will
 ;be merged when including books from diverse places.
+;; TODO: Disallow adding IMPLIES as a known boolean?
 (defun add-known-boolean-fn (fn state)
   (declare (xargs :guard (symbolp fn) ;todo: strengthen
                   :stobjs state))
