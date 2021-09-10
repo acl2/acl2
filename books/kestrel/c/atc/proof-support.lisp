@@ -1663,10 +1663,7 @@
 
 (defval *atc-function-environment-rules*
   :short "List of rules related to function environments."
-  '((:e omap::empty)
-    (:e omap::head)
-    (:e omap::tail)
-    (:e c::identp)
+  '((:e c::identp)
     (:e c::ident->name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
