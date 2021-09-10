@@ -1025,7 +1025,6 @@
     (:e fun-info->params)
     (:e fun-info->result)
     (:e iconst-fix)
-    (:e init-fun-env)
     (:e len)
     (:e natp)
     (:e omap::in)

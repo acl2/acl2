@@ -3122,6 +3122,7 @@
                                 (proofs booleanp)
                                 (prog-const symbolp)
                                 (fn-thms symbol-symbol-alistp)
+                                (fn-fun-env-thm symbolp)
                                 (limit pseudo-termp)
                                 (experimental keyword-listp)
                                 (wrld plist-worldp))
@@ -3272,7 +3273,8 @@
                                     ',type-prescriptions
                                     ',returns-value-thms
                                     ',correct-thms
-                                    ',measure-thms)
+                                    ',measure-thms
+                                    '(,fn-fun-env-thm))
                  :use (:instance (:guard-theorem ,fn)
                        :extra-bindings-ok ,@instantiation)
                  :expand (:lambdas
@@ -3334,7 +3336,8 @@
             fn-correct-exported-events
             fn-correct-thm)
         (atc-gen-fn-correct-thm fn pointers prec-fns proofs
-                                prog-const fn-thms limit experimental wrld))
+                                prog-const fn-thms fn-fun-env-thm
+                                limit experimental wrld))
        (progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the theorem ~x0..."
