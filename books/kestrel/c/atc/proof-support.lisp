@@ -1593,6 +1593,14 @@
      @('(read-var <ident> ...)'), and
      @('(write-var <ident> ...)')."))
 
+  (defruled equal-of-ident-and-const
+    (implies (and (syntaxp (and (quotep x)
+                                (quotep c)))
+                  (identp c))
+             (equal (equal (ident x) c)
+                    (equal (str-fix x)
+                           (ident->name c)))))
+
   (defruled equal-of-ident-and-ident
     (equal (equal (ident x)
                   (ident y))
@@ -1642,6 +1650,7 @@
     "See @(see atc-identifier-rules)."))
   '(ident-fix-when-identp
     identp-of-ident
+    equal-of-ident-and-const
     equal-of-ident-and-ident
     <<-of-ident-and-ident
     (:e str-fix)
@@ -1650,47 +1659,11 @@
     read-var-of-const-identifier
     write-var-of-const-identifier))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection atc-function-environment-rules
-  :short "Rules related to C function environments."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In the course of the symbolic execution,
-     C functions must be looked up by name in the function environment.
-     Since, as explaiend in @(tsee atc-identifier-rules),
-     we keep identifiers in the form @('(ident <string>)'),
-     we cannot simply use the executable counterpart of @(tsee fun-env-lookup).
-     Instead, we enable @(tsee fun-env-lookup), which uses @(tsee omap::in);
-     so we introduce and enable opener rules for @(tsee omap::in),
-     restricting them to the case in which the map is
-     a quoted function environment constant.
-     In order to resolve the comparison between @('(ident <string>'))
-     and the quoted identifiers in the function environment,
-     we prove and enable the rule @('equal-of-ident-and-const') below.
-     We also need to enable a few executable counterparts of functions,
-     in order to resolve the look up in the function environment.
-     See @(tsee *atc-function-environment-rules*).")
-   (xdoc::p
-    "This treatment of function environment lookups is somewhat temporary.
-     We plan to treat them in a more general way at some point."))
-
-  (defruled equal-of-ident-and-const
-    (implies (and (syntaxp (and (quotep x)
-                                (quotep c)))
-                  (identp c))
-             (equal (equal (ident x) c)
-                    (equal (str-fix x)
-                           (ident->name c))))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atc-function-environment-rules*
   :short "List of rules related to function environments."
-  '(
-    equal-of-ident-and-const
-    (:e omap::empty)
+  '((:e omap::empty)
     (:e omap::head)
     (:e omap::tail)
     (:e c::identp)
