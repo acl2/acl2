@@ -44,6 +44,11 @@
            (pseudo-term-listp (intersection-equal x y)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp intersection-equal))))
 
+(defthm pseudo-term-listp-of-set-difference-equal
+  (implies (pseudo-term-listp x)
+           (pseudo-term-listp (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp set-difference-equal))))
+
 ;; The non-standard variable names are to match STD
 (defthm pseudo-term-listp-of-remove-equal
   (implies (pseudo-term-listp x)
@@ -63,6 +68,12 @@
   (equal (pseudo-term-listp (cons a x))
          (and (pseudo-termp a)
               (pseudo-term-listp x)))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
+(defthm pseudo-term-listp-of-append-2 ;avoid name clash with std
+  (equal (pseudo-term-listp (append x y))
+         (and (pseudo-term-listp (true-list-fix x))
+              (pseudo-term-listp y)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp))))
 
 (defthm pseudo-term-listp-of-revappend
@@ -92,4 +103,11 @@
 (defthmd true-listp-when-pseudo-term-listp-2
   (implies (pseudo-term-listp lst)
            (true-listp lst))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
+;todo: name clash with defforall
+(defthm pseudo-term-listp-when-symbol-listp-cheap-2
+  (implies (symbol-listp vars)
+           (pseudo-term-listp vars))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp))))
