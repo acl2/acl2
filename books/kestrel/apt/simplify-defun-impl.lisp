@@ -1324,15 +1324,49 @@
 (defun blocked-mbt-p (term)
 
 ; Term is the result of applying block-return-last to a translated term.
-; Return a non-nil value if term could have come from an mbt call, else nil.
-; For good measure, if the original untranslated term was (mbt u), we return
-; the translation of u (with block-return-last applied).
+; Return a non-nil value if term is a blocked mbt call, else nil.
 
-  (declare (xargs :guard t :mode :logic))
-  (case-match term
-    (('acl2::mbe-fn ''t y)
-     y)
-    (t nil)))
+  (declare (xargs :guard (pseudo-termp term) :mode :logic))
+  (and (ffn-symb-p term 'acl2::mbe-fn)
+       (equal (fargn term 1) *t*)))
+
+(defun contains-blocked-mbt-p (term)
+
+; See also reconstruct-blocked-mbt-rec, and consider changing that function if
+; you change this one.
+
+; Term is the result of applying block-return-last to a translated term.
+; Return a non-nil value if term contains a blocked mbt call, else nil.
+
+; We only look for blocked mbt calls in the top-level IF structure, since our
+; key goal is to preserve mbt calls that are critical for termination
+; (otherwise we'd prefer to leave it up to the user to disable mbe-fn for
+; restricting expansion of mbt calls).  We include IF tests in that
+; exploration, to cover terms like (if (and (mbt ...) (mbt ...)) ... ...) and
+; similarly for other Boolean combinations (i.e., allowing NOT and OR at the
+; top level).
+
+; We also dive into lambda bodies.  After all, one might write a function with
+; body (if (let (...) (mbt ...)) ... ..).  Note that while theoretically one
+; might have a reason to write (if (let ((x (mbt ...))  ...) ..) ... ...), that
+; seems kind of unlikely, so we do not dive into arguments of lambda
+; applications.
+
+  (declare (xargs :guard (pseudo-termp term) :mode :logic))
+  (cond ((or (variablep term)
+             (fquotep term))
+         nil)
+        ((blocked-mbt-p term)
+         t)
+        ((flambdap (ffn-symb term))
+         (contains-blocked-mbt-p (lambda-body (ffn-symb term))))
+        ((eq (ffn-symb term) 'if)
+         (or (contains-blocked-mbt-p (fargn term 1))
+             (contains-blocked-mbt-p (fargn term 2))
+             (contains-blocked-mbt-p (fargn term 3))))
+        ((eq (ffn-symb term) 'not)
+         (contains-blocked-mbt-p (fargn term 1)))
+        (t nil)))
 
 (defun augment-term (term)
 
@@ -1380,7 +1414,7 @@
                                    (lambda-applicationp fbr)
                                    augmentedp1
                                    augmentedp2
-                                   (blocked-mbt-p (fargn term 1)))
+                                   (contains-blocked-mbt-p (fargn term 1)))
                                (mv (list :if (fargn term 1) tbr fbr)
                                    t))
                               (t (mv term nil))))))
@@ -1550,6 +1584,112 @@
 
     (make-proper-lambda formals1 actuals body1)))
 
+(defun make-blocked-mbt (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (fcons-term* 'acl2::mbe-fn *t* term))
+
+(defun reconstruct-blocked-mbt-rec (old new)
+
+; See also contains-blocked-mbt-p, and consider changing that function if you
+; change this one.
+
+; Old and new are terms.  Typically they have similar structure but new is
+; missing blocked mbt calls that are present in old.  We heuristically put
+; those calls back into new to create a term new', returning (mv changedp new')
+; where if changedp is nil then new = new'.  Our heuristics favor restoration
+; of mbt calls that could be relevant to termination proofs, so they allow
+; walking through IF and NOT calls and LAMBDA bodies.
+
+; To verify guards it would suffice to prove the following first.
+
+;  (defthm pseudo-termp-mv-nth-1-reconstruct-blocked-mbt
+;    (implies (and (pseudo-termp old) (pseudo-termp new))
+;             (pseudo-termp (mv-nth 1 (reconstruct-blocked-mbt-rec old new)))))
+
+  (declare (xargs :guard (and (pseudo-termp old) (pseudo-termp new))))
+  (cond ((or (variablep old)
+             (fquotep old)
+             (quotep new))
+         (mv nil new))
+        ((blocked-mbt-p new) ; then leave well enough alone
+         (mv nil new))
+        ((blocked-mbt-p old)
+         (mv t (make-blocked-mbt new)))
+        ((eq (ffn-symb old) 'if)
+         (let ((old1 (fargn old 1))
+               (old2 (fargn old 2))
+               (old3 (fargn old 3)))
+           (cond ((ffn-symb-p new 'if)
+                  (mv-let (changedp1 new1)
+                    (reconstruct-blocked-mbt-rec old1 (fargn new 1))
+                    (mv-let (changedp2 new2)
+                      (reconstruct-blocked-mbt-rec old2 (fargn new 2))
+                      (mv-let (changedp3 new3)
+                        (reconstruct-blocked-mbt-rec old3 (fargn new 3))
+                        (cond ((or changedp1 changedp2 changedp3)
+                               (mv t (fcons-term* 'if new1 new2 new3)))
+                              (t (mv nil new)))))))
+                 (t
+
+; It's a bit weird for (if x y z) to simplify to (mbt _).  But that could be
+; reasonable if y and z are both mbt calls, or if old is (if (mbt _) t nil).
+
+                  (cond ((and (blocked-mbt-p old2)
+                              (blocked-mbt-p old3))
+                         (mv t (make-blocked-mbt new)))
+                        ((and (blocked-mbt-p old1)
+                              (equal old2 *t*)
+                              (equal old3 *nil*))
+                         (mv t (make-blocked-mbt new)))
+                        (t (mv nil new)))))))
+        ((eq (ffn-symb old) 'not)
+         (let ((old1 (fargn old 1)))
+           (cond ((and (ffn-symb-p new 'if) ; expansion of the NOT call
+                       (not (blocked-mbt-p (fargn new 1)))
+                       (equal (fargn new 2) *nil*)
+                       (equal (fargn new 3) *t*))
+                  (mv-let (changedp1 new1)
+                    (reconstruct-blocked-mbt-rec old1 (fargn new 1))
+                    (cond (changedp1
+                           (mv t (fcons-term* 'if new1 *nil* *t*)))
+                          (t (mv nil new)))))
+                 ((and (ffn-symb-p new 'not)
+                       (not (blocked-mbt-p (fargn new 1))))
+                  (mv-let (changedp1 new1)
+                    (reconstruct-blocked-mbt-rec old1 (fargn new 1))
+                    (cond (changedp1
+                           (mv t (fcons-term* 'not new1)))
+                          (t (mv nil new)))))
+                 (t (mv nil new)))))
+        ((lambda-applicationp old)
+         (cond ((lambda-applicationp new)
+                (cond ((equal (ffn-symb old) (ffn-symb new))
+                       (mv nil new))
+                      (t
+                       (mv-let (changedp body)
+                         (reconstruct-blocked-mbt-rec
+                          (lambda-body (ffn-symb old))
+                          (lambda-body (ffn-symb new)))
+                         (cond (changedp (mv t (acl2::make-lambda-application
+                                                (lambda-formals (ffn-symb new))
+                                                body
+                                                (fargs new))))
+                               (t (mv nil new)))))))
+               (t
+                (mv-let (changedp new2)
+                  (reconstruct-blocked-mbt-rec (lambda-body (ffn-symb old))
+                                               new)
+                  (cond (changedp (mv t new2))
+                        (t (mv nil new)))))))
+        (t (mv nil new))))
+
+(defun reconstruct-blocked-mbt (old new)
+  (declare (xargs :guard (and (pseudo-termp old) (pseudo-termp new))))
+  (mv-let (changedp new2)
+    (reconstruct-blocked-mbt-rec old new)
+    (declare (ignore changedp))
+    new2))
+
 (defun rewrite-augmented-term-rec (aterm alist geneqv rrec runes ctx wrld
                                          state)
 
@@ -1600,9 +1740,8 @@
                                                           false-type-alist)
                                                   runes ctx wrld state))
                      ((mv term ttree)
-                      (rewrite-if1 (if (and (blocked-mbt-p tst)
-                                            (not (blocked-mbt-p tst2)))
-                                       (fcons-term* 'acl2::mbe-fn *t* tst2)
+                      (rewrite-if1 (if (contains-blocked-mbt-p tst)
+                                       (reconstruct-blocked-mbt tst tst2)
                                      tst2)
                                    tbr2 fbr2
                                    nil ; swapped-p
