@@ -1177,21 +1177,21 @@
   :hints (("Goal" :in-theory (enable lhs-and-rhs-of-conc))))
 
 ;;;
-;;; add-rule-for-conjunct
+;;; add-axe-rule-for-conjunct
 ;;;
 
 ;; Possibly adds an axe-rule to ACC.
 ;;fixme be more general?
 ;; TODO: Return an error?
-(defund add-rule-for-conjunct (conc
-                               hyps
-                               extra-hyps
-                               counter ;nil means this is the only conjunct of the rule
-                               rule-symbol
-                               known-boolean-fns
-                               print
-                               wrld
-                               acc)
+(defund add-axe-rule-for-conjunct (conc
+                                   hyps
+                                   extra-hyps
+                                   counter ;nil means this is the only conjunct of the rule
+                                   rule-symbol
+                                   known-boolean-fns
+                                   print
+                                   wrld
+                                   acc)
   (declare (xargs :guard (and (pseudo-termp conc)
                               (pseudo-term-listp hyps)        ;from the theorem
                               (axe-rule-hyp-listp extra-hyps) ;already processed
@@ -1221,31 +1221,31 @@
 ;;            (symbolp x))
 ;;   :hints (("Goal" :in-theory (enable symbol-listp))))
 
-(defthm axe-rule-listp-of-add-rule-for-conjunct
+(defthm axe-rule-listp-of-add-axe-rule-for-conjunct
   (implies (and (symbolp rule-symbol)
                 (pseudo-termp conc)
                 (pseudo-term-listp hyps)
                 (axe-rule-hyp-listp extra-hyps)
                 (axe-rule-listp acc)
                 (all-axe-syntaxp-hypsp extra-hyps))
-           (axe-rule-listp (add-rule-for-conjunct conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld acc)))
+           (axe-rule-listp (add-axe-rule-for-conjunct conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld acc)))
   :hints (("Goal" :in-theory (e/d ( ;axe-rulep
                                    ;;symbol-listp
-                                   add-rule-for-conjunct) ()))))
+                                   add-axe-rule-for-conjunct) ()))))
 
-(defthm true-listp-of-add-rule-for-conjunct
+(defthm true-listp-of-add-axe-rule-for-conjunct
   (implies (true-listp acc)
-           (true-listp (add-rule-for-conjunct conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld acc)))
-  :hints (("Goal" :in-theory (e/d (add-rule-for-conjunct) (true-listp)))))
+           (true-listp (add-axe-rule-for-conjunct conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld acc)))
+  :hints (("Goal" :in-theory (e/d (add-axe-rule-for-conjunct) (true-listp)))))
 
 ;;;
-;;; make-rules-from-conclusion
+;;; make-axe-rules-from-conclusion
 ;;;
 
 ;; Returns an axe-rule-list.
 ;; Extracts conjuncts from CONC and makes a rule for each
 ;; TODO: What about lambdas that hide conjunctions?
-(defund make-rules-from-conclusion-aux (conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld)
+(defund make-axe-rules-from-conclusion-aux (conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld)
   (declare (xargs :guard (and (pseudo-termp conc)
                               (pseudo-term-listp hyps)
                               (axe-rule-hyp-listp extra-hyps) ;already processed
@@ -1255,32 +1255,32 @@
                               (symbol-listp known-boolean-fns)
                               (plist-worldp wrld))))
   (if (atom conc)
-      (er hard? 'make-rules-from-conclusion-aux "Unexpected form (atom) of a conclusion for ~x0" conc)
+      (er hard? 'make-axe-rules-from-conclusion-aux "Unexpected form (atom) of a conclusion for ~x0" conc)
     (if (eq 'if (ffn-symb conc))
         (if (equal *nil* (farg3 conc))
             ;;it's an AND, represented as (if <x> <y> 'nil):
-            (add-rule-for-conjunct (farg1 conc) hyps extra-hyps counter rule-symbol known-boolean-fns print wrld
-                                   (make-rules-from-conclusion-aux (farg2 conc) hyps extra-hyps (+ 1 counter) rule-symbol known-boolean-fns print wrld))
+            (add-axe-rule-for-conjunct (farg1 conc) hyps extra-hyps counter rule-symbol known-boolean-fns print wrld
+                                   (make-axe-rules-from-conclusion-aux (farg2 conc) hyps extra-hyps (+ 1 counter) rule-symbol known-boolean-fns print wrld))
           ;; TODO: Perhaps we should support this (ACL2 can now rewrite an IF):
-          (er hard? 'make-rules-from-conclusion-aux "Unexpected form of a conclusion (an IF that does not represent a conjunction): ~x0" conc))
-      (add-rule-for-conjunct conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld nil))))
+          (er hard? 'make-axe-rules-from-conclusion-aux "Unexpected form of a conclusion (an IF that does not represent a conjunction): ~x0" conc))
+      (add-axe-rule-for-conjunct conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld nil))))
 
-(defthm axe-rule-listp-of-make-rules-from-conclusion-aux
+(defthm axe-rule-listp-of-make-axe-rules-from-conclusion-aux
   (implies (and (symbolp rule-symbol)
                 (pseudo-termp conc)
                 (pseudo-term-listp hyps)
                 (axe-rule-hyp-listp extra-hyps)
                 (all-axe-syntaxp-hypsp extra-hyps))
-           (axe-rule-listp (make-rules-from-conclusion-aux conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld)))
-  :hints (("Goal" :in-theory (enable axe-rulep make-rules-from-conclusion-aux))))
+           (axe-rule-listp (make-axe-rules-from-conclusion-aux conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld)))
+  :hints (("Goal" :in-theory (enable axe-rulep make-axe-rules-from-conclusion-aux))))
 
-(defthm true-listp-of-make-rules-from-conclusion-aux
-  (true-listp (make-rules-from-conclusion-aux conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld))
-  :hints (("Goal" :in-theory (enable axe-rulep make-rules-from-conclusion-aux))))
+(defthm true-listp-of-make-axe-rules-from-conclusion-aux
+  (true-listp (make-axe-rules-from-conclusion-aux conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld))
+  :hints (("Goal" :in-theory (enable axe-rulep make-axe-rules-from-conclusion-aux))))
 
 ;; Returns an axe-rule-list.
 ;fixme pass in a rule symbol only?
-(defund make-rules-from-conclusion (conc hyps extra-hyps rule-symbol known-boolean-fns print wrld)
+(defund make-axe-rules-from-conclusion (conc hyps extra-hyps rule-symbol known-boolean-fns print wrld)
   (declare (xargs :guard (and (pseudo-termp conc)
                               (pseudo-term-listp hyps) ;from the theorem
                               (axe-rule-hyp-listp extra-hyps) ;already processed
@@ -1290,22 +1290,22 @@
                               (plist-worldp wrld))))
   (if (call-of 'if conc)
       ;;the rules will be tagged with the conjunct number:
-      (make-rules-from-conclusion-aux conc hyps extra-hyps 1 rule-symbol known-boolean-fns print wrld)
+      (make-axe-rules-from-conclusion-aux conc hyps extra-hyps 1 rule-symbol known-boolean-fns print wrld)
     ;;there is only one conclusion:
-    (add-rule-for-conjunct conc hyps extra-hyps nil rule-symbol known-boolean-fns print wrld nil)))
+    (add-axe-rule-for-conjunct conc hyps extra-hyps nil rule-symbol known-boolean-fns print wrld nil)))
 
-(defthm axe-rule-listp-of-make-rules-from-conclusion
+(defthm axe-rule-listp-of-make-axe-rules-from-conclusion
   (implies (and (symbolp rule-symbol)
                 (pseudo-termp conc)
                 (pseudo-term-listp hyps)
                 (axe-rule-hyp-listp extra-hyps)
                 (all-axe-syntaxp-hypsp extra-hyps))
-           (axe-rule-listp (make-rules-from-conclusion conc hyps extra-hyps rule-symbol known-boolean-fns print wrld)))
-  :hints (("Goal" :in-theory (enable make-rules-from-conclusion axe-rulep))))
+           (axe-rule-listp (make-axe-rules-from-conclusion conc hyps extra-hyps rule-symbol known-boolean-fns print wrld)))
+  :hints (("Goal" :in-theory (enable make-axe-rules-from-conclusion axe-rulep))))
 
-(defthm true-listp-of-make-rules-from-conclusion
-  (true-listp (make-rules-from-conclusion conc hyps extra-hyps rule-symbol known-boolean-fns print wrld))
-  :hints (("Goal" :in-theory (e/d (make-rules-from-conclusion) (axe-rulep)))))
+(defthm true-listp-of-make-axe-rules-from-conclusion
+  (true-listp (make-axe-rules-from-conclusion conc hyps extra-hyps rule-symbol known-boolean-fns print wrld))
+  :hints (("Goal" :in-theory (e/d (make-axe-rules-from-conclusion) (axe-rulep)))))
 
 ;;;
 ;;; hyps-and-conc-for-axe-rule
@@ -1359,8 +1359,8 @@
                               (symbol-alistp rule-classes)
                               (symbol-listp known-boolean-fns)
                               (plist-worldp wrld))))
-  ;; Split the rule into conclusion and hyps
-  (b* (((mv erp hyps conc)
+  (b* ( ;; Split the rule into conclusion and hyps:
+       ((mv erp hyps conc)
         (hyps-and-conc-for-axe-rule theorem-body rule-symbol))
        ((when erp) (mv erp nil))
        ;; We can't process the hyps yet because we don't know the LHS vars
@@ -1371,7 +1371,7 @@
        ((when erp) (mv erp nil)))
     ;; the conclusion may have multiple conjuncts:
     (mv (erp-nil)
-        (make-rules-from-conclusion conc hyps extra-hyps rule-symbol known-boolean-fns print wrld))))
+        (make-axe-rules-from-conclusion conc hyps extra-hyps rule-symbol known-boolean-fns print wrld))))
 
 (defthm axe-rule-listp-of-mv-nth-1-of-make-axe-rules-from-theorem
   (implies (and (pseudo-termp theorem-body)
