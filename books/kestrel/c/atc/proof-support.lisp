@@ -1654,17 +1654,12 @@
     equal-of-ident-and-ident
     <<-of-ident-and-ident
     (:e str-fix)
+    (:e c::identp)
+    (:e c::ident->name)
     exec-fun-of-const-identifier
     create-var-of-const-identifier
     read-var-of-const-identifier
     write-var-of-const-identifier))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-function-environment-rules*
-  :short "List of rules related to function environments."
-  '((:e c::identp)
-    (:e c::ident->name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2965,7 +2960,6 @@
           *atc-other-definition-rules*
           *atc-distributivity-over-if-rewrite-rules*
           *atc-identifier-rules*
-          *atc-function-environment-rules*
           *atc-not-rules*
           *atc-integer-size-rules*
           *atc-shift-promotion-rules*
