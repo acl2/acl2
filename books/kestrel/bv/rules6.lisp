@@ -19,7 +19,6 @@
 (include-book "rules") ;for anti-slice
 (include-book "unsigned-byte-p") ;for unsigned-byte-p-forced
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
-;(local (include-book "arith"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))

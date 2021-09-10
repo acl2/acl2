@@ -110,7 +110,8 @@ my $believe_cache = 0;
 my $pcert_all = 0;
 my $include_excludes = 0;
 my $debug_up_to_date = 0;
-
+my $force_up_to_date;
+my $force_out_of_date;
 # sub cert_bookdeps {
 #     my ($cert, $depdb) = @_;
 #     my $certinfo = $depdb->certdeps->{$cert};
@@ -147,6 +148,8 @@ sub certlib_set_opts {
     $pcert_all = $opts->{"pcert_all"};
     $include_excludes = $opts->{"include_excludes"};
     $debug_up_to_date = $opts->{"debug_up_to_date"};
+    $force_up_to_date = $opts->{"force_up_to_date"};
+    $force_out_of_date = $opts->{"force_out_of_date"};
 }
 
 
@@ -1479,12 +1482,30 @@ sub newer_than_or_equal {
 sub check_up_to_date {
     my ($targets, $depdb) = @_;
 
+    foreach my $key (keys(%$force_up_to_date)) {
+	print("force_up_to_date $key $force_up_to_date->{$key}\n");
+    }
+
+    foreach my $key (keys(%$force_out_of_date)) {
+	print("force_out_of_date $key $force_out_of_date->{$key}\n");
+    }
+
     my %up_to_date = ();
     my $dfs;
     $dfs = sub {
 	my $target = shift;
 	# print "check_up_to_date dfs($target)\n";
 	if (exists $up_to_date{$target}) {
+	    return;
+	}
+
+	if ($force_up_to_date->{$target}) {
+	    $up_to_date{$target} = 1;
+	    return;
+	}
+
+	if ($force_out_of_date->{$target}) {
+	    $up_to_date{$target} = 0;
 	    return;
 	}
 	
@@ -1509,7 +1530,8 @@ sub check_up_to_date {
 	my $otherdeps = $depdb->cert_otherdeps($target);
 	
 	foreach my $dep (@$srcdeps, @$otherdeps) {
-	    if ( ! (-e $dep) || ! newer_than_or_equal($target, $dep)) {
+	    if ( (! $force_up_to_date->{$dep}) && 
+		 ($force_out_of_date->{$dep} || ! (-e $dep) || ! newer_than_or_equal($target, $dep))) {
 		$up_to_date{$target} = 0;
 		return;
 		}

@@ -1020,12 +1020,10 @@
     (:e booleanp)
     (:e expr-fix)
     (:e exprp)
-    (:e fun-env-lookup)
     (:e fun-info->body)
     (:e fun-info->params)
     (:e fun-info->result)
     (:e iconst-fix)
-    (:e init-fun-env)
     (:e len)
     (:e natp)
     (:e omap::in)
@@ -1223,9 +1221,7 @@
      (cond
       ((endp rtypes) nil)
       (t (b* ((rtype (car rtypes))
-              (type (if (member-eq op '(lt gt le ge eq ne))
-                        (type-sint)
-                      (uaconvert-types ltype rtype)))
+              (type (uaconvert-types ltype rtype))
               ((when (and (equal type ltype)
                           (equal type rtype)))
                (atc-integer-ops-2-conv-names-loop-right-types op
@@ -1597,6 +1593,14 @@
      @('(read-var <ident> ...)'), and
      @('(write-var <ident> ...)')."))
 
+  (defruled equal-of-ident-and-const
+    (implies (and (syntaxp (and (quotep x)
+                                (quotep c)))
+                  (identp c))
+             (equal (equal (ident x) c)
+                    (equal (str-fix x)
+                           (ident->name c)))))
+
   (defruled equal-of-ident-and-ident
     (equal (equal (ident x)
                   (ident y))
@@ -1646,68 +1650,16 @@
     "See @(see atc-identifier-rules)."))
   '(ident-fix-when-identp
     identp-of-ident
+    equal-of-ident-and-const
     equal-of-ident-and-ident
     <<-of-ident-and-ident
     (:e str-fix)
+    (:e c::identp)
+    (:e c::ident->name)
     exec-fun-of-const-identifier
     create-var-of-const-identifier
     read-var-of-const-identifier
     write-var-of-const-identifier))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection atc-function-environment-rules
-  :short "Rules related to C function environments."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In the course of the symbolic execution,
-     C functions must be looked up by name in the function environment.
-     Since, as explaiend in @(tsee atc-identifier-rules),
-     we keep identifiers in the form @('(ident <string>)'),
-     we cannot simply use the executable counterpart of @(tsee fun-env-lookup).
-     Instead, we enable @(tsee fun-env-lookup), which uses @(tsee omap::in);
-     so we introduce and enable opener rules for @(tsee omap::in),
-     restricting them to the case in which the map is
-     a quoted function environment constant.
-     In order to resolve the comparison between @('(ident <string>'))
-     and the quoted identifiers in the function environment,
-     we prove and enable the rule @('equal-of-ident-and-const') below.
-     We also need to enable a few executable counterparts of functions,
-     in order to resolve the look up in the function environment.
-     See @(tsee *atc-function-environment-rules*).")
-   (xdoc::p
-    "This treatment of function environment lookups is somewhat temporary.
-     We plan to treat them in a more general way at some point."))
-
-  (defopeners omap::in
-    :hyps ((syntaxp (and (quotep omap::map)
-                         (fun-envp (cadr omap::map)))))
-    :disable t)
-
-  (defruled equal-of-ident-and-const
-    (implies (and (syntaxp (and (quotep x)
-                                (quotep c)))
-                  (identp c))
-             (equal (equal (ident x) c)
-                    (equal (str-fix x)
-                           (ident->name c))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-function-environment-rules*
-  :short "List of rules related to function environments."
-  '(omap::in-base-1
-    omap::in-base-2
-    omap::in-unroll
-    fun-env-lookup
-    equal-of-ident-and-const
-    (:e c::fun-env-fix)
-    (:e omap::empty)
-    (:e omap::head)
-    (:e omap::tail)
-    (:e c::identp)
-    (:e c::ident->name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3008,7 +2960,6 @@
           *atc-other-definition-rules*
           *atc-distributivity-over-if-rewrite-rules*
           *atc-identifier-rules*
-          *atc-function-environment-rules*
           *atc-not-rules*
           *atc-integer-size-rules*
           *atc-shift-promotion-rules*

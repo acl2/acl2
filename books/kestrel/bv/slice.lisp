@@ -24,7 +24,7 @@
 (local (include-book "../arithmetic-light/minus"))
 (local (include-book "../arithmetic-light/plus"))
 (local (include-book "../arithmetic-light/integerp"))
-(local (include-book "../bv/unsigned-byte-p"))
+(local (include-book "unsigned-byte-p"))
 
 ;move
 (defthm +-of---and-0

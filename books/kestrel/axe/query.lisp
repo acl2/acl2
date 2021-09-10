@@ -18,7 +18,7 @@
 
 ;; TODO: Suppress more of the output printed during queries.
 
-(include-book "kestrel/axe/tactic-prover" :dir :system)
+(include-book "tactic-prover")
 (include-book "kestrel/utilities/assert-with-stobjs" :dir :system)
 
 (defconst *sat* :sat)

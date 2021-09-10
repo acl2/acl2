@@ -350,6 +350,10 @@
      the name of the locally generated theorem that asserts
      that the measure of the function (when recursive) yields a natural number
      (@('nil') if the function is not recursive);
+     the name of the locally generated theorem that asserts
+     that looking up the function in the function environment
+     yields the information for the function
+     (@('nil') if the function is recursive);
      and a limit that suffices to execute the code generated from the function,
      as explained below.
      The limit is a term that may depend on the function's parameters.
@@ -379,6 +383,7 @@
    (returns-value-thm symbol)
    (correct-thm symbol)
    (measure-nat-thm symbol)
+   (fun-env-thm symbol)
    (limit pseudo-term))
   :pred atc-fn-infop)
 
@@ -466,7 +471,7 @@
   :returns (thms symbol-listp)
   :short "Project the measure theorems
           out of a function information alist,
-          for the functions among a given list.."
+          for the functions among a given list."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -486,6 +491,34 @@
                                                           among))))
         (t (atc-symbol-fninfo-alist-to-measure-nat-thms (cdr prec-fns)
                                                         among))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-symbol-fninfo-alist-to-fun-env-thms
+  ((prec-fns atc-symbol-fninfo-alistp) (among symbol-listp))
+  :returns (thms symbol-listp)
+  :short "Project the function envirionment theorems
+          out of a function information alist,
+          for the functions among a given list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee atc-symbol-fninfo-alist-to-returns-value-thms).
+     See that function's documentation for more details.")
+   (xdoc::p
+    "We skip over recursive functions,
+     which have @('nil') as that entry."))
+  (cond ((endp prec-fns) nil)
+        ((member-eq (caar prec-fns) among)
+         (b* ((thm (atc-fn-info->fun-env-thm (cdr (car prec-fns)))))
+           (if thm
+               (cons thm
+                     (atc-symbol-fninfo-alist-to-fun-env-thms (cdr prec-fns)
+                                                              among))
+             (atc-symbol-fninfo-alist-to-fun-env-thms (cdr prec-fns)
+                                                      among))))
+        (t (atc-symbol-fninfo-alist-to-fun-env-thms (cdr prec-fns)
+                                                    among))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2728,6 +2761,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-fn-fun-env-thm ((fn symbolp)
+                                (proofs booleanp)
+                                (prog-const symbolp)
+                                (finfo? fun-info-optionp)
+                                (names-to-avoid symbol-listp)
+                                (wrld plist-worldp))
+  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
+               (name "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate the theorem saying that
+          looking up a certain function in the function environment
+          yields the information for that function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This serves to speed up the proofs
+     when there is a large number of functions involved.
+     A previous version of ATC was generating proofs
+     that were executing function lookups,
+     which worked fine for small programs,
+     but not for larger programs."))
+  (b* (((when (not proofs)) (mv nil nil names-to-avoid))
+       ((unless (fun-infop finfo?)) (mv nil nil names-to-avoid))
+       (thm-name (add-suffix fn "-FUN-ENV"))
+       ((mv thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix thm-name nil names-to-avoid wrld))
+       (fn-name (symbol-name fn))
+       (formula `(equal (fun-env-lookup (ident ,fn-name)
+                                        (init-fun-env ,prog-const))
+                        ',finfo?))
+       (hints '(("Goal" :in-theory '((:e fun-env-lookup)
+                                     (:e ident)
+                                     (:e init-fun-env)))))
+       ((mv event &)
+        (evmac-generate-defthm thm-name
+                               :formula formula
+                               :hints hints
+                               :enable nil)))
+    (mv (list event) thm-name names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-fn-returns-value-thm ((fn symbolp)
                                       (type? type-optionp)
                                       (xforming symbol-listp)
@@ -3046,6 +3122,7 @@
                                 (proofs booleanp)
                                 (prog-const symbolp)
                                 (fn-thms symbol-symbol-alistp)
+                                (fn-fun-env-thm symbolp)
                                 (limit pseudo-termp)
                                 (experimental keyword-listp)
                                 (wrld plist-worldp))
@@ -3196,7 +3273,8 @@
                                     ',type-prescriptions
                                     ',returns-value-thms
                                     ',correct-thms
-                                    ',measure-thms)
+                                    ',measure-thms
+                                    '(,fn-fun-env-thm))
                  :use (:instance (:guard-theorem ,fn)
                        :extra-bindings-ok ,@instantiation)
                  :expand (:lambdas
@@ -3220,6 +3298,7 @@
                          (prec-fns atc-symbol-fninfo-alistp)
                          (proofs booleanp)
                          (prog-const symbolp)
+                         (finfo? fun-info-optionp)
                          (fn-thms symbol-symbol-alistp)
                          (print evmac-input-print-p)
                          (limit pseudo-termp)
@@ -3230,6 +3309,7 @@
   :returns (mv erp
                (val "A @('(tuple (local-events pseudo-event-form-listp)
                                  (exported-events pseudo-event-form-listp)
+                                 (fn-fun-env-thm symbolp)
                                  (fn-returns-value-thm symbolp)
                                  (fn-correct-thm symbolp)
                                  (updated-names-to-avoid symbol-listp)
@@ -3238,6 +3318,11 @@
   :mode :program
   :short "Generate the theorems associated to the specified ACL2 function."
   (b* ((wrld (w state))
+       ((mv fn-fun-env-events
+            fn-fun-env-thm
+            names-to-avoid)
+        (atc-gen-fn-fun-env-thm
+         fn proofs prog-const finfo? names-to-avoid wrld))
        ((mv erp
             (list fn-returns-value-events
                   fn-returns-value-thm
@@ -3246,12 +3331,13 @@
         (atc-gen-fn-returns-value-thm fn type? xforming scope prec-fns
                                       proofs experimental
                                       names-to-avoid ctx state))
-       ((when erp) (mv erp (list nil nil nil nil nil) state))
+       ((when erp) (mv erp (list nil nil nil nil nil nil) state))
        ((mv fn-correct-local-events
             fn-correct-exported-events
             fn-correct-thm)
         (atc-gen-fn-correct-thm fn pointers prec-fns proofs
-                                prog-const fn-thms limit experimental wrld))
+                                prog-const fn-thms fn-fun-env-thm
+                                limit experimental wrld))
        (progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the theorem ~x0..."
@@ -3259,12 +3345,14 @@
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
        (local-events (append progress-start?
+                             fn-fun-env-events
                              fn-returns-value-events
                              fn-correct-local-events
                              progress-end?))
        (exported-events fn-correct-exported-events))
     (acl2::value (list local-events
                        exported-events
+                       fn-fun-env-thm
                        fn-returns-value-thm
                        fn-correct-thm
                        names-to-avoid))))
@@ -3380,21 +3468,23 @@
          (raise "Internal error: ~
                  the return type ~x0 of function ~x1 cannot be a pointer."
                 type fn)))
-       (ext (ext-declon-fundef
-             (make-fundef :result (atc-gen-tyspecseq type)
-                          :name (make-ident :name name)
-                          :params params
-                          :body (stmt-compound items))))
+       (fundef (make-fundef :result (atc-gen-tyspecseq type)
+                            :name (make-ident :name name)
+                            :params params
+                            :body (stmt-compound items)))
+       (ext (ext-declon-fundef fundef))
+       (finfo (fun-info-from-fundef fundef))
        (limit `(binary-+ '2 ,limit))
        ((mv erp
             (list local-events
                   exported-events
+                  fn-fun-env-thm
                   fn-returns-value-thm
                   fn-correct-thm
                   names-to-avoid)
             state)
         (atc-gen-fn-thms fn pointers type nil scope prec-fns
-                         proofs prog-const fn-thms print
+                         proofs prog-const finfo fn-thms print
                          limit experimental names-to-avoid ctx state))
        ((when erp) (mv erp (list (irr-ext-declon) nil nil nil nil) state))
        (info (make-atc-fn-info
@@ -3404,6 +3494,7 @@
               :returns-value-thm fn-returns-value-thm
               :correct-thm fn-correct-thm
               :measure-nat-thm nil
+              :fun-env-thm fn-fun-env-thm
               :limit limit)))
     (acl2::value (list ext
                        local-events
@@ -4402,12 +4493,13 @@
        ((mv erp
             (list local-events
                   exported-events
+                  &
                   fn-returns-value-thm
                   &
                   names-to-avoid)
             state)
         (atc-gen-fn-thms fn pointers type? loop-xforming scope prec-fns
-                         proofs prog-const fn-thms
+                         proofs prog-const nil fn-thms
                          print loop-limit experimental
                          names-to-avoid ctx state))
        ((when erp) (mv erp (list nil nil nil nil) state))
@@ -4519,6 +4611,7 @@
                                :returns-value-thm fn-returns-value-thm
                                :correct-thm fn-correct-thm
                                :measure-nat-thm natp-of-measure-of-fn-thm
+                               :fun-env-thm nil
                                :limit loop-limit)))
     (acl2::value (list local-events
                        exported-events

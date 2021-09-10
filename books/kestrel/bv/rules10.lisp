@@ -595,7 +595,7 @@
 
 (defthm getbit-of-logmask
   (implies (and (natp n)
-                (natp width))
+                (integerp width))
            (equal (GETBIT n (LOGMASK WIDTH))
                   (if (< n width)
                       1

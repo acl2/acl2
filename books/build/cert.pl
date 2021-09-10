@@ -133,7 +133,9 @@ my %certlib_opts = ( "debugging" => 0,
                      "all_deps" => 1,
                      "believe_cache" => 0,
                      "pcert_all" => 0,
-                     "debug_up_to_date" => 0);
+                     "debug_up_to_date" => 0,
+                     "force_up_to_date" => {},
+                     "force_out_of_date" => {});
 my $target_ext = "cert";
 my $cache_file = 0;
 my $cache_read_only = 0;
@@ -436,6 +438,13 @@ COMMAND LINE OPTIONS
            up to date certificates in the dependency tree.  {} is replaced
            by the base name of the book, that is, without the ".cert".
 
+   --force-up-to-date <fname>
+   --force-out-of-date <fname>
+           Consider the given file(s) up to date or out of date regardless
+           of the actual facts, for purposes of the above command forms,
+           --out-of-date-cmd and the rest. Note these do not affect the set
+           of files to be built by make.
+
    --tags-file <tagfile>
            Create an Emacs tags file containing the tags for all
            source files.  Equivalent to
@@ -693,6 +702,8 @@ GetOptions ("help|h"               => sub {
 	    "write-timestamps=s"   => \$write_timestamps,
 	    "read-timestamps=s"    => \$read_timestamps,
             "debug-up-to-date"     => \$certlib_opts{"debug_up_to_date"},
+	    "force-up-to-date=s"   => sub { shift; my $target = shift; $certlib_opts{"force_up_to_date"}->{$target} = 1; },
+	    "force-out-of-date=s"  => sub { shift; my $target = shift; $certlib_opts{"force_out_of_date"}->{$target} = 1; },
             "<>"                   => sub { push(@user_targets, shift); },
             );
 

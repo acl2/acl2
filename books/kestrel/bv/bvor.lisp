@@ -14,7 +14,7 @@
 (include-book "logior-b") ; make local?
 (include-book "bvchop")
 (include-book "getbit")
-(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "unsigned-byte-p"))
 
 (defund bvor (size x y)
   (declare (type integer x y)
