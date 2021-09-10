@@ -1020,7 +1020,6 @@
     (:e booleanp)
     (:e expr-fix)
     (:e exprp)
-    (:e fun-env-lookup)
     (:e fun-info->body)
     (:e fun-info->params)
     (:e fun-info->result)
@@ -1677,11 +1676,6 @@
     "This treatment of function environment lookups is somewhat temporary.
      We plan to treat them in a more general way at some point."))
 
-  (defopeners omap::in
-    :hyps ((syntaxp (and (quotep omap::map)
-                         (fun-envp (cadr omap::map)))))
-    :disable t)
-
   (defruled equal-of-ident-and-const
     (implies (and (syntaxp (and (quotep x)
                                 (quotep c)))
@@ -1694,12 +1688,8 @@
 
 (defval *atc-function-environment-rules*
   :short "List of rules related to function environments."
-  '(omap::in-base-1
-    omap::in-base-2
-    omap::in-unroll
-    fun-env-lookup
+  '(
     equal-of-ident-and-const
-    (:e c::fun-env-fix)
     (:e omap::empty)
     (:e omap::head)
     (:e omap::tail)
