@@ -149,7 +149,8 @@
              (lambda-free-termsp (expand-lambdas-in-terms terms)))
     :flag expand-lambdas-in-terms)
   :hints (("Goal" :in-theory (enable expand-lambdas-in-term
-                                     expand-lambdas-in-terms))))
+                                     expand-lambdas-in-terms
+                                     pairlis$))))
 
 ;; Since the new term is lambda-free
 (defthm not-consp-of-car-of-expand-lambdas-in-term
@@ -183,4 +184,5 @@
                                     expand-lambdas-in-term
                                     expand-lambdas-in-terms
                                     lambdas-closed-in-termp)
-                                   (subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs)))))
+                                   (subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs
+                                    strip-cdrs-of-pairlis$-gen)))))
