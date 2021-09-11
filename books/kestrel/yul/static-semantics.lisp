@@ -333,13 +333,14 @@
    (xdoc::p
     "According to [Yul: Specification of Yul: Restrictions on the Grammar],
      literals cannot be larger than their types,
-     and the largest type is that of unsigned 256-bit integers.
+     and the largest type is that of 256-bit words.
      For now we do not model types (i.e. we assume one type),
      so we limit the size to 256 bits.
-     This is straighforward for numeric literals.
+     This is straighforward for numeric literals,
+     which represent the unsigned value of the 256-bit words.
      For (non-hex) string, it boils down to a limit of 32 on the length
      (since every character represents 8 bits).
-     For hex strigns, it boils down to a limit of 32 on the number of hex pairs;
+     For hex strings, it boils down to a limit of 32 on the number of hex pairs;
      hex strings must also be non-empty, according to the grammar.
      Boolean literals are always well-formed;
      they are not, and they do not represent, numbers anyways.")

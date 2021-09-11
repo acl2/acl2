@@ -48,7 +48,16 @@
      a collection of supported types and their values.
      For the EVM dialect of Yul, which is our initial interest,
      the only supported type is @('u256'), i.e. unsigned 256-bit integers.
-     So for now we define values as wrapped unsigned 256-bit integers.
+     Based on discussions on Gitter,
+     it is best to view this as a type of 256-bit words,
+     rather than as a type of 256-bit unsigned integers,
+     because the intent is to match the EVM notion of word,
+     which can be operated upon as an either unsigned or signed integer.
+     Nonetheless, in our ACL2 formalization,
+     we represent 256-bit words as 256-bit unsigned integers,
+     which can be thought of as bit vectors.
+     We define values as wrapped 256-bit unsigned integers,
+     meant to represent 256-bit words.
      As explained in the "
     (xdoc::seetopic "static-semantics" "static semantics")
     ", for now we do not have explicit types,
@@ -226,7 +235,7 @@
                 :hints (("Goal"
                          :in-theory (enable acl2::ubyte8p
                                             str::hex-digit-chars-value))))
-  :short "Evaluate a pair of hex digits to an 8-bit unsigned integer."
+  :short "Evaluate a pair of hex digits to a byte."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -339,7 +348,9 @@
     "We convert the list of string elements to a list of bytes.
      If the resulting bytes exceed 32 in number, it is an error.
      Otherwise, we pad the list with 0 bytes on the right to reach 32 bytes,
-     and we turn the resulting list of 32 bytes to a 256-bit unsigned integer.
+     and we turn the resulting list of 32 bytes to a 256-bit word,
+     interpreting the bytes in big endian form,
+     i.e. the first byte contains the most significant bits of the word.
      This evaluation is not described in detail in [Yul],
      but it was explained via discussions on Gitter,
      and [Yul] is being extended with these explanations."))
@@ -406,7 +417,9 @@
     "We convert the list of hex pairs to a list of bytes.
      If the resulting bytes exceed 32 in number, it is an error.
      Otherwise, we pad the list with 0 bytes on the right to reach 32 bytes,
-     and we turn the resulting list of 32 bytes to a 256-bit unsigned integer.
+     and we turn the resulting list of 32 bytes to a 256-bit word,
+     interpreting the bytes in big endian form,
+     i.e. the first byte contains the most significant bits of the word.
      This evaluation is not described in detail in [Yul],
      but it was explained via discussions on Gitter,
      and [Yul] is being extended with these explanations."))
@@ -447,15 +460,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Since for now our only values are 256-bit unsigned integers,
-     we evaluate boolean literals to 0 (for false) and 1 (for true).
+    "Since for now our only values are 256-bit words,
+     we evaluate boolean literals to 0 (for false) and 1 (for true),
+     viewing the word as an unsigned integer.
      This is not described in [Yul], but it was discussed on Gitter.
      This should apply to at least the EVM dialect of Yul,
      while other dialects that include a boolean type
      may need to evaluate boolean literals differently.
      We will generalize this aspect of our formalization at some point.")
    (xdoc::p
-    "A decimal or hexadecimal literal evaluates to the number it represents.
+    "A decimal or hexadecimal literal evaluates to the word
+     whose unsigned integer value is the number represented by the literal.
      This number must fit in 256 bits, otherwise it is an error.")
    (xdoc::p
     "Plain and hex strings are evaluated as described in
