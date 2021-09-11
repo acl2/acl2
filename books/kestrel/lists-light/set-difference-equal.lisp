@@ -104,3 +104,20 @@
                   (remove1-equal (car y) (set-difference-equal x (cdr y)))))
   :hints (("Goal" :in-theory (enable set-difference-equal
                                      set-difference-equal-of-cdr-when-not-member-equal-of-car))))
+
+(defthm set-difference-equal-of-singleton
+  (equal (set-difference-equal (list x) ys)
+         (if (member-equal x ys)
+             nil
+           (list x)))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
+
+(defthm set-difference-equal-of-true-list-fix-arg1
+  (equal (set-difference-equal (true-list-fix x) y)
+         (set-difference-equal x y))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
+
+(defthm set-difference-equal-of-true-list-fix-arg2
+  (equal (set-difference-equal x (true-list-fix y))
+         (set-difference-equal x y))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
