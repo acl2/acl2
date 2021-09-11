@@ -25,6 +25,7 @@
 (local (include-book "kestrel/lists-light/add-to-set-equal" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
+(local (include-book "kestrel/lists-light/take" :dir :system))
 
 ;todo: use list fix to combine these into a nice rule?
 
