@@ -20,7 +20,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are defined in [ZPS:5.2]."))
+    "These are defined in [ZPS:5.1]."))
   :order-subtopics t
   :default-parent t)
 
@@ -28,7 +28,7 @@
 
 (define i2lebsp ((l natp) (x (integer-range-p 0 (expt 2 l) x)))
   :returns (bits bit-listp)
-  :short "The function @($\\mathsf{I2LEBSP}$) in [ZPS:5.2]."
+  :short "The function @($\\mathsf{I2LEBSP}$) in [ZPS:5.1]."
   (acl2::nat=>lebits l x)
   ///
 
@@ -46,7 +46,7 @@
 
 (define i2bebsp ((l natp) (x (integer-range-p 0 (expt 2 l) x)))
   :returns (bits bit-listp)
-  :short "The function @($\\mathsf{I2BEBSP}$) in [ZPS:5.2]."
+  :short "The function @($\\mathsf{I2BEBSP}$) in [ZPS:5.1]."
   (acl2::nat=>bebits l x)
   ///
 
@@ -64,7 +64,7 @@
 
 (define lebs2ip ((s bit-listp))
   :returns (x natp :rule-classes :type-prescription)
-  :short "The function @($\\mathsf{LEBS2IP}$) in [ZPS:5.2]."
+  :short "The function @($\\mathsf{LEBS2IP}$) in [ZPS:5.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -91,7 +91,7 @@
 
 (define leos2ip ((s byte-listp))
   :returns (x natp :rule-classes :type-prescription)
-  :short "The function @($\\mathsf{LEOS2IP}$) in [ZPS:5.2]."
+  :short "The function @($\\mathsf{LEOS2IP}$) in [ZPS:5.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -121,7 +121,7 @@
 
 (define lebs2osp ((bits bit-listp))
   :returns (bytes byte-listp)
-  :short "The function @($\\mathsf{LEBS2OSP}$) in [ZPS:5.2]."
+  :short "The function @($\\mathsf{LEBS2OSP}$) in [ZPS:5.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -142,7 +142,7 @@
 
 (define leos2bsp ((bytes byte-listp))
   :returns (bits bit-listp)
-  :short "The function @($\\mathsf{LEOS2BSP}$) in [ZPS:5.2]."
+  :short "The function @($\\mathsf{LEOS2BSP}$) in [ZPS:5.1]."
   :long
   (xdoc::topstring
    (xdoc::p

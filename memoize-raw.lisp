@@ -5151,17 +5151,17 @@
 
 (defun update-memo-entries-for-attachments (fns wrld state)
 
-; See the Essay on Memoization with Attachments.  Here is a brief, high-level
-; summary of what is going on.
+; See the Essay on Memoization with Attachments.  Here is a brief, high-level ;
+; summary of what is going on. ;
 
-; This function is called by update-wrld-structures, which is called when the
-; world is updated.  When a defattach event is added or removed from the world,
-; variable *defattach-fns* collects the name of the function with an attachment
-; (either being added or removed).  Ultimately, *defattach-fns* is passed as
-; the fns parameter to the present function, and functions' entries in
-; *memoize-info-ht* are correspondingly updated as necessary, in particular
-; clearing tables whose values may have depended on attachments that are no
-; longer present.
+; This function is called by update-wrld-structures, which is called when the ;
+; world is updated.  When a defattach event is added or removed from the world, ;
+; variable *defattach-fns* collects the name of the function with an attachment ;
+; (either being added or removed).  Ultimately, *defattach-fns* is passed as ;
+; the fns parameter to the present function, and functions' entries in ;
+; *memoize-info-ht* are correspondingly updated as necessary, in particular ;
+; clearing tables whose values may have depended on attachments that are no ;
+; longer present. ;
 
   (let ((ctx 'top-level)
         (fns (if (eq fns :clear)
@@ -5174,32 +5174,35 @@
       (observation ctx
                    "Memoization tables for functions memoized with :AOKP T ~
                     are being cleared."))
-    (when fns ; optimization
+    (when fns ; optimization ;
       (with-global-memoize-lock
        (mf-maphash
         (lambda (k entry)
           (when (symbolp k)
             (mv-let (changedp new-entry)
-                    (update-memo-entry-for-attachments fns entry special-name
-                                                       wrld)
-                    (when changedp
-                      (when (not (or (eq changedp t)
-                                     (eq fns :clear)))
+              (update-memo-entry-for-attachments fns entry special-name
+                                                 wrld)
+              (when changedp
+                (when (not (or (eq changedp t)
+                               (eq fns :clear)))
 
-; Note that the following observation won't be printed when executing :u, which
-; suppresses observations.  But it should show up when executing :ubt.
+; Note that the following observation won't be printed when executing :u, which ;
+; suppresses observations.  But it should show up when executing :ubt. ;
 
-                        (observation ctx
-                                     "Memoization table for function ~x0 is ~
+                  (observation ctx
+                               "Memoization table for function ~x0 is ~
                                       being cleared because ~@1."
-                                     k
-                                     (if (eq changedp special-name)
-                                         "it depends on apply$-userfn or ~
+                               k
+                               (if (eq changedp special-name)
+                                   "it depends on apply$-userfn or ~
                                           badge-userfn and at least one badge ~
                                           has changed"
-                                       (msg "the attachment to function ~x0 ~
+                                 (msg "the attachment to function ~x0 ~
                                              has changed"
-                                            changedp)))
-                        (clear-one-memo-and-pons-hash entry :auto))
-                      (mf-sethash k new-entry *memoize-info-ht*)))))
-        *memoize-info-ht*)))))
+                                      changedp)))
+                  (clear-one-memo-and-pons-hash entry :auto))
+                (mf-sethash k new-entry *memoize-info-ht*)))))
+        *memoize-info-ht*))))
+  (clear-memoize-table 'canonical-ancestors-rec)
+  (clear-memoize-table 'immediate-canonical-ancestors)
+  )

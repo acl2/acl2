@@ -2765,6 +2765,7 @@
                                 (proofs booleanp)
                                 (prog-const symbolp)
                                 (finfo? fun-info-optionp)
+                                (init-fun-env-thm symbolp)
                                 (names-to-avoid symbol-listp)
                                 (wrld plist-worldp))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
@@ -2792,9 +2793,9 @@
        (formula `(equal (fun-env-lookup (ident ,fn-name)
                                         (init-fun-env ,prog-const))
                         ',finfo?))
-       (hints '(("Goal" :in-theory '((:e fun-env-lookup)
+       (hints `(("Goal" :in-theory '((:e fun-env-lookup)
                                      (:e ident)
-                                     (:e init-fun-env)))))
+                                     ,init-fun-env-thm))))
        ((mv event &)
         (evmac-generate-defthm thm-name
                                :formula formula
@@ -3268,13 +3269,14 @@
        (instantiation
         (atc-gen-instantiation-deref-compustate pointers compst-var))
        (hints `(("Goal"
-                 :in-theory (append *atc-all-rules*
-                                    '(,fn)
-                                    ',type-prescriptions
-                                    ',returns-value-thms
-                                    ',correct-thms
-                                    ',measure-thms
-                                    '(,fn-fun-env-thm))
+                 :in-theory (union-theories
+                             (theory 'atc-all-rules)
+                             '(,fn
+                               ,@type-prescriptions
+                               ,@returns-value-thms
+                               ,@correct-thms
+                               ,@measure-thms
+                               ,fn-fun-env-thm))
                  :use (:instance (:guard-theorem ,fn)
                        :extra-bindings-ok ,@instantiation)
                  :expand (:lambdas
@@ -3299,6 +3301,7 @@
                          (proofs booleanp)
                          (prog-const symbolp)
                          (finfo? fun-info-optionp)
+                         (init-fun-env-thm symbolp)
                          (fn-thms symbol-symbol-alistp)
                          (print evmac-input-print-p)
                          (limit pseudo-termp)
@@ -3322,7 +3325,7 @@
             fn-fun-env-thm
             names-to-avoid)
         (atc-gen-fn-fun-env-thm
-         fn proofs prog-const finfo? names-to-avoid wrld))
+         fn proofs prog-const finfo? init-fun-env-thm names-to-avoid wrld))
        ((mv erp
             (list fn-returns-value-events
                   fn-returns-value-thm
@@ -3397,6 +3400,7 @@
                             (prec-fns atc-symbol-fninfo-alistp)
                             (proofs booleanp)
                             (prog-const symbolp)
+                            (init-fun-env-thm symbolp)
                             (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
                             (experimental keyword-listp)
@@ -3484,7 +3488,7 @@
                   names-to-avoid)
             state)
         (atc-gen-fn-thms fn pointers type nil scope prec-fns
-                         proofs prog-const finfo fn-thms print
+                         proofs prog-const finfo init-fun-env-thm fn-thms print
                          limit experimental names-to-avoid ctx state))
        ((when erp) (mv erp (list (irr-ext-declon) nil nil nil nil) state))
        (info (make-atc-fn-info
@@ -4142,7 +4146,7 @@
        (formula `(b* (,@formals-binding) (implies ,hyps ,concl)))
        (hints `(("Goal"
                  :do-not-induct t
-                 :in-theory (append *atc-all-rules*)
+                 :in-theory (theory 'atc-all-rules)
                  :use ((:instance (:guard-theorem ,fn)
                         :extra-bindings-ok ,@formals-binding))
                  :expand :lambdas)))
@@ -4229,11 +4233,12 @@
                collect `(:t ,callable)))
        (hints `(("Goal"
                  :do-not-induct t
-                 :in-theory (append *atc-all-rules*
-                                    ',type-prescriptions
-                                    ',returns-value-thms
-                                    ',correct-thms
-                                    ',measure-thms)
+                 :in-theory (union-theories
+                             (theory 'atc-all-rules)
+                             '(,@type-prescriptions
+                               ,@returns-value-thms
+                               ,@correct-thms
+                               ,@measure-thms))
                  :use ((:instance (:guard-theorem ,fn)
                         :extra-bindings-ok ,@formals-binding))
                  :expand :lambdas)))
@@ -4390,15 +4395,16 @@
                                                                 compst-var))
        (lemma-hints `(("Goal"
                        :do-not-induct t
-                       :in-theory (append *atc-all-rules*
-                                          '(,exec-stmt-while-for-fn)
-                                          ',type-prescriptions
-                                          ',returns-value-thms
-                                          ',correct-thms
-                                          ',measure-thms
-                                          '(,natp-of-measure-of-fn-thm)
-                                          '(,correct-test-thm
-                                            ,correct-body-thm))
+                       :in-theory (union-theories
+                                   (theory 'atc-all-rules)
+                                   '(,exec-stmt-while-for-fn
+                                     ,@type-prescriptions
+                                     ,@returns-value-thms
+                                     ,@correct-thms
+                                     ,@measure-thms
+                                     ,natp-of-measure-of-fn-thm
+                                     ,correct-test-thm
+                                     ,correct-body-thm))
                        :use ((:instance (:guard-theorem ,fn)
                               :extra-bindings-ok ,@gthm-instantiation)
                              (:instance ,termination-of-fn-thm
@@ -4499,7 +4505,7 @@
                   names-to-avoid)
             state)
         (atc-gen-fn-thms fn pointers type? loop-xforming scope prec-fns
-                         proofs prog-const nil fn-thms
+                         proofs prog-const nil nil fn-thms
                          print loop-limit experimental
                          names-to-avoid ctx state))
        ((when erp) (mv erp (list nil nil nil nil) state))
@@ -4624,6 +4630,7 @@
                                  (prec-fns atc-symbol-fninfo-alistp)
                                  (proofs booleanp)
                                  (prog-const symbolp)
+                                 (init-fun-env-thm symbolp)
                                  (fn-thms symbol-symbol-alistp)
                                  (fn-appconds symbol-symbol-alistp)
                                  (appcond-thms keyword-symbol-alistp)
@@ -4672,7 +4679,7 @@
                      ext local-events exported-events prec-fns names-to-avoid)
                     state)
                 (atc-gen-ext-declon fn prec-fns proofs
-                                    prog-const fn-thms
+                                    prog-const init-fun-env-thm fn-thms
                                     print experimental
                                     names-to-avoid ctx state))
                ((when erp) (mv erp (list nil nil nil nil) state)))
@@ -4684,7 +4691,8 @@
        ((er
          (list more-exts more-local-events more-exported-events names-to-avoid))
         (atc-gen-ext-declon-list rest-fns prec-fns proofs
-                                 prog-const fn-thms fn-appconds appcond-thms
+                                 prog-const init-fun-env-thm fn-thms
+                                 fn-appconds appcond-thms
                                  print experimental names-to-avoid ctx state)))
     (acl2::value (list (append exts more-exts)
                        (append local-events more-local-events)
@@ -4757,6 +4765,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-init-fun-env-thm ((init-fun-env-thm symbolp)
+                                  (prog-const symbolp)
+                                  (tunit transunitp))
+  :returns (event pseudo-event-formp)
+  :short "Generate the theorem asserting that
+          applying @(tsee init-fun-env) to the translation unit
+          gives the corresponding function environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The rationale for generating this theorem
+     is explained in @(tsee atc-gen-transunit)."))
+  (b* ((fenv (init-fun-env tunit))
+       (formula `(equal (init-fun-env ,prog-const)
+                        ',fenv))
+       (hints '(("Goal" :in-theory '((:e init-fun-env)))))
+       ((mv event &)
+        (evmac-generate-defthm init-fun-env-thm
+                               :formula formula
+                               :hints hints
+                               :enable nil)))
+    event))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-transunit ((fn1...fnp symbol-listp)
                            (proofs booleanp)
                            (prog-const symbolp)
@@ -4777,6 +4810,26 @@
   :mode :program
   :short "Generate a C translation unit from the ACL2 target functions,
           and accompanying event."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In order to speed up the proofs of
+     the generated theorems for the function environment
+     for relatively large C programs,
+     we generate a theorem to ``cache''
+     the result of calling @(tsee init-fun-env)
+     on the generated translation unit,
+     to avoid recomputing that for every function environment theorem.
+     We need to generate the name of this (local) theorem
+     before generating the function environment theorems,
+     so that those theorems can use the name of this theorem in the hints;
+     but we can only generate the theorem
+     after generating the translation unit.
+     So first we generate the name,
+     then we generate the translation unit,
+     and then we generate the theorem;
+     however, in the generated events,
+     we put that theorem before the ones for the functions."))
   (b* (((mv appcond-local-events fn-appconds appcond-thms names-to-avoid)
         (if proofs
             (b* (((mv appconds fn-appconds)
@@ -4788,12 +4841,22 @@
           (mv nil nil nil nil)))
        ((mv wf-thm-local-events wf-thm-exported-events)
         (atc-gen-wf-thm proofs prog-const wf-thm print))
+       (init-fun-env-thm (add-suffix prog-const "-FUN-ENV"))
+       ((mv init-fun-env-thm names-to-avoid)
+        (fresh-logical-name-with-$s-suffix init-fun-env-thm
+                                           nil
+                                           names-to-avoid
+                                           (w state)))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
         (atc-gen-ext-declon-list fn1...fnp nil proofs
-                                 prog-const fn-thms fn-appconds appcond-thms
+                                 prog-const init-fun-env-thm
+                                 fn-thms fn-appconds appcond-thms
                                  print experimental names-to-avoid ctx state))
        (tunit (make-transunit :declons exts))
+       (local-init-fun-env-event (atc-gen-init-fun-env-thm init-fun-env-thm
+                                                           prog-const
+                                                           tunit))
        ((mv local-const-event exported-const-event)
         (if proofs
             (atc-gen-prog-const prog-const tunit print)
@@ -4801,6 +4864,7 @@
        (local-events (append appcond-local-events
                              (and proofs (list local-const-event))
                              wf-thm-local-events
+                             (list local-init-fun-env-event)
                              fn-thm-local-events))
        (exported-events (append (and proofs (list exported-const-event))
                                 wf-thm-exported-events
