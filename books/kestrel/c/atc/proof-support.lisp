@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "dynamic-semantics")
+(include-book "shallow-embedding")
 
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "tools/rulesets" :dir :system)
@@ -2973,3 +2974,12 @@
           *atc-conversion-composition-rules*
           *value-disjoint-rules*
           *array-disjoint-rules*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; We define a theory for the rules because experiments show that
+; a long time is spent by ACL2 translating hints,
+; given that *ATC-ALL-RULES* consists of thousands of rules.
+; We use this theory in the generated proofs (see generation.lisp).
+
+(deftheory atc-all-rules *atc-all-rules*)

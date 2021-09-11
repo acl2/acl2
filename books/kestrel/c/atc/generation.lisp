@@ -3269,13 +3269,14 @@
        (instantiation
         (atc-gen-instantiation-deref-compustate pointers compst-var))
        (hints `(("Goal"
-                 :in-theory (append *atc-all-rules*
-                                    '(,fn)
-                                    ',type-prescriptions
-                                    ',returns-value-thms
-                                    ',correct-thms
-                                    ',measure-thms
-                                    '(,fn-fun-env-thm))
+                 :in-theory (union-theories
+                             (theory 'atc-all-rules)
+                             '(,fn
+                               ,@type-prescriptions
+                               ,@returns-value-thms
+                               ,@correct-thms
+                               ,@measure-thms
+                               ,fn-fun-env-thm))
                  :use (:instance (:guard-theorem ,fn)
                        :extra-bindings-ok ,@instantiation)
                  :expand (:lambdas
@@ -4145,7 +4146,7 @@
        (formula `(b* (,@formals-binding) (implies ,hyps ,concl)))
        (hints `(("Goal"
                  :do-not-induct t
-                 :in-theory (append *atc-all-rules*)
+                 :in-theory (theory 'atc-all-rules)
                  :use ((:instance (:guard-theorem ,fn)
                         :extra-bindings-ok ,@formals-binding))
                  :expand :lambdas)))
@@ -4232,11 +4233,12 @@
                collect `(:t ,callable)))
        (hints `(("Goal"
                  :do-not-induct t
-                 :in-theory (append *atc-all-rules*
-                                    ',type-prescriptions
-                                    ',returns-value-thms
-                                    ',correct-thms
-                                    ',measure-thms)
+                 :in-theory (union-theories
+                             (theory 'atc-all-rules)
+                             '(,@type-prescriptions
+                               ,@returns-value-thms
+                               ,@correct-thms
+                               ,@measure-thms))
                  :use ((:instance (:guard-theorem ,fn)
                         :extra-bindings-ok ,@formals-binding))
                  :expand :lambdas)))
@@ -4393,15 +4395,16 @@
                                                                 compst-var))
        (lemma-hints `(("Goal"
                        :do-not-induct t
-                       :in-theory (append *atc-all-rules*
-                                          '(,exec-stmt-while-for-fn)
-                                          ',type-prescriptions
-                                          ',returns-value-thms
-                                          ',correct-thms
-                                          ',measure-thms
-                                          '(,natp-of-measure-of-fn-thm)
-                                          '(,correct-test-thm
-                                            ,correct-body-thm))
+                       :in-theory (union-theories
+                                   (theory 'atc-all-rules)
+                                   '(,exec-stmt-while-for-fn
+                                     ,@type-prescriptions
+                                     ,@returns-value-thms
+                                     ,@correct-thms
+                                     ,@measure-thms
+                                     ,natp-of-measure-of-fn-thm
+                                     ,correct-test-thm
+                                     ,correct-body-thm))
                        :use ((:instance (:guard-theorem ,fn)
                               :extra-bindings-ok ,@gthm-instantiation)
                              (:instance ,termination-of-fn-thm
@@ -4773,7 +4776,7 @@
   (xdoc::topstring
    (xdoc::p
     "The rationale for generating this theorem
-     is explained in @(tsee atc-gen-tunit)."))
+     is explained in @(tsee atc-gen-transunit)."))
   (b* ((fenv (init-fun-env tunit))
        (formula `(equal (init-fun-env ,prog-const)
                         ',fenv))
