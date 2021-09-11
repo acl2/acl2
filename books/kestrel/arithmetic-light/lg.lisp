@@ -15,10 +15,10 @@
 ;but my current rules may target integer-length?
 
 (include-book "power-of-2p")
+(include-book "integer-length")
 (local (include-book "expt2"))
 (local (include-book "plus"))
 (local (include-book "floor"))
-(local (include-book "integer-length"))
 
 ;; The function LG computes the floor of the base-2 logarithm of its argument.
 
@@ -29,7 +29,7 @@
 
 ;; See also ceiling-of-lg.lisp.
 
-(include-book "kestrel/arithmetic-light/integer-length" :dir :system) ;move
+
 
 (defund lg (x)
   (declare (type integer x))

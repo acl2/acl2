@@ -15,20 +15,20 @@
 ;; Instead of this rewriter, consider using rewriter-basic or rewriter-jvm or
 ;; another newer rewriter.
 
-(include-book "kestrel/axe/rewriter-common" :dir :system)
-(include-book "kestrel/axe/equality-pairs" :dir :system)
-;(include-book "kestrel/axe/equality-assumptions" :dir :system)
-(include-book "kestrel/axe/refined-assumption-alists" :dir :system)
-(include-book "kestrel/axe/result-array-stobj" :dir :system)
-(include-book "kestrel/axe/prover" :dir :system)
-(include-book "kestrel/axe/simplify-xors" :dir :system)
-(include-book "kestrel/axe/leaves-of-normalized-bvxor-nest" :dir :system)
-(include-book "kestrel/axe/if-rules" :dir :system)
-(include-book "kestrel/axe/defconst-computed2" :dir :system) ;not strictly needed
+(include-book "rewriter-common")
+(include-book "equality-pairs")
+;(include-book "equality-assumptions")
+(include-book "refined-assumption-alists")
+(include-book "result-array-stobj")
+(include-book "prover")
+(include-book "simplify-xors")
+(include-book "leaves-of-normalized-bvxor-nest")
+(include-book "if-rules")
+(include-book "defconst-computed2") ;not strictly needed
 (include-book "kestrel/utilities/pseudo-termp" :dir :system) ; make local
-(include-book "kestrel/axe/rule-lists" :dir :system) ;todo: just for lookup-rules (can we do without that? - try to avoid using make-var-lookup-terms -- instead require the nested DAG alist to have a certain form and just do the lookup).
-(include-book "kestrel/axe/jvm/axe-syntaxp-evaluator-jvm" :dir :system)
-(include-book "kestrel/axe/jvm/axe-bind-free-evaluator-jvm" :dir :system)
+(include-book "rule-lists") ;todo: just for lookup-rules (can we do without that? - try to avoid using make-var-lookup-terms -- instead require the nested DAG alist to have a certain form and just do the lookup).
+(include-book "jvm/axe-syntaxp-evaluator-jvm")
+(include-book "jvm/axe-bind-free-evaluator-jvm")
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 

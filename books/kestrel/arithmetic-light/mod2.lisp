@@ -14,15 +14,15 @@
 ;; STATUS: This book could use some cleaning up.
 
 (include-book "mod")
-(local (include-book "kestrel/arithmetic-light/divides" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times" :dir :system))
-(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "divides"))
+(local (include-book "times"))
+(local (include-book "floor"))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;to prove mod-expt-mod, mod-bound, etc.
-(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times" :dir :system))
-(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "expt"))
+(local (include-book "expt2"))
+(local (include-book "times-and-divides"))
+(local (include-book "times"))
+(local (include-book "plus-and-minus"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;fixme SEE this-needs-to-be-added-to-quotient-remainder-lemmas
@@ -83,7 +83,7 @@
            (equal (< 0 (mod x y))
                   (not (equal 0 (mod x y))))))
 
-(local (include-book "kestrel/arithmetic-light/floor" :dir :system)) ;move?!
+(local (include-book "floor")) ;move?!
 
 
 

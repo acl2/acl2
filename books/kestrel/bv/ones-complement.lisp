@@ -13,7 +13,7 @@
 (include-book "bvnot")
 (include-book "bvplus")
 (include-book "bvuminus") ;make local?
-(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))

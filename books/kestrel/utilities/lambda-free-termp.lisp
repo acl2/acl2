@@ -40,3 +40,8 @@
   (implies (symbol-listp terms)
            (lambda-free-termsp terms))
   :hints (("Goal" :in-theory (enable lambda-free-termsp))))
+
+(defthm lambda-free-termsp-of-take
+  (implies (lambda-free-termsp terms)
+           (lambda-free-termsp (take n terms)))
+  :hints (("Goal" :in-theory (enable lambda-free-termsp))))

@@ -13,16 +13,11 @@
 
 ;; TODO: Organize these rules into simpler books.
 
-(include-book "kestrel/lists-light/repeat" :dir :system)
-(include-book "kestrel/lists-light/all-equal-dollar" :dir :system)
-(include-book "kestrel/lists-light/count-occs" :dir :system)
+(include-book "repeat")
+(include-book "all-equal-dollar")
+(include-book "count-occs")
 (include-book "kestrel/utilities/polarity" :dir :system)
 ;(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-;(local (include-book "kestrel/lists-light/nth" :dir :system))
-;(local (include-book "kestrel/lists-light/len" :dir :system))
-;(local (include-book "kestrel/lists-light/update-nth" :dir :system))
-;(local (include-book "kestrel/lists-light/revappend" :dir :system))
-;(local (include-book "kestrel/lists-light/take" :dir :system))
 
 ;rewrite (EQUAL (LEN L) 1) ?
 
