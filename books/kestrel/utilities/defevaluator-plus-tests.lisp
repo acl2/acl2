@@ -35,5 +35,14 @@
             (MYEV-LIST TERMS A))
      :HINTS (("Goal" :IN-THEORY (ENABLE APPEND (:I LEN)))))
    )
+
+  ;; Improved versions of the constraints:
+  (DEFTHM MYEV-OF-LAMBDA-BETTER
+    (IMPLIES (CONSP (CAR X))
+             (EQUAL (MYEV X A)
+                    (MYEV (CADDR (CAR X))
+                          (PAIRLIS$ (CADR (CAR X))
+                                    (MYEV-LIST (CDR X) A))))))
+
   ;; additional check:
   (defthm test (equal (myev '(binary-* '2 x) '((x . 3))) 6)))

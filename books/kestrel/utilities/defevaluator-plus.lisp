@@ -37,9 +37,12 @@
                   :stobjs state))
   (let* ((list-name (add-suffix-to-fn name "-LIST")))
     `(progn
+       ;; The main defevaluator call generated:
        (defevaluator ,name ,list-name
          ,(make-function-calls-on-formals fns (w state))
          :namedp t)
+
+       ;; Extra theorems:
 
        (defthm ,(add-suffix-to-fn list-name "-OF-APPEND")
          (equal (,list-name (append terms1 terms2) a)
@@ -55,7 +58,21 @@
        (defthm ,(add-suffix-to-fn list-name "-OF-TRUE-LIST_FIX")
          (equal (,list-name (true-list-fix terms) a)
                 (,list-name terms a))
-         :hints (("Goal" :in-theory (enable append (:I len))))))))
+         :hints (("Goal" :in-theory (enable append (:I len)))))
+
+       ;; Improved constraint(s);
+
+       (defthm ,(pack$ name '-of-lambda-better)
+         (implies (consp (car x)) ;; no need to assume (consp x) since it's implied by this
+                  (equal (,name x a)
+                         (,name (caddr (car x))
+                                (pairlis$ (cadr (car x))
+                                          (,list-name (cdr x) a))))))
+
+       ;; Ours is better:
+       (in-theory (disable ,(pack$ name '-of-lambda)))
+
+       )))
 
 (defmacro defevaluator+ (name &rest fns)
   `(make-event (defevaluator+-fn ',name ',fns state)))
