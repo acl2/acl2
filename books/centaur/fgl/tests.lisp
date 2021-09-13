@@ -48,48 +48,51 @@
    (defattach fgl-satlink-config my-glucose-config)))
 
 
+(define alist-to-let-bindings ((x alistp))
+  (b* (((When (atom x)) nil)
+       ((unless (mbt (consp (car x))))
+        (alist-to-let-bindings (cdr x))))
+    (cons `(,(caar x) ',(cdar x))
+          (alist-to-let-bindings (cdr x)))))
 
-(acl2::must-fail
- (fgl-thm
-  (b* ((x1 (logcdr x)))
-    (equal (loghead 3 x1) (+ 1 (loghead 3 x1))))))
+(defmacro check-counterexample (form)
+  `(progn
+     (acl2::must-fail
+      (fgl-thm ,form)
+      :with-output-off nil)
+     (make-event
+      (b* (((mv err (cons ?stobjs-out values) state)
+            (with-guard-checking-error-triple nil
+              (trans-eval `(let ,(alist-to-let-bindings (interp-st->debug-info interp-st))
+                             ,',form)
+                          '(check-counterexample ,form)
+                          state t)))
+           ((when err)
+            (er hard? 'check-counterexample "Failed to evaluate the counterexample for ~x0~%" ',form)
+            (mv t nil state))
+           ((when values)
+            (er hard? 'check-counterexample "False counterexample for ~x0~%" ',form)
+            (mv t nil state)))
+        (value '(value-triple :ok))))))
 
-;; check the counterexample assignment
-(make-event
- (if (integerp (cdr (assoc 'x (interp-st-get-counterexample-obj-alist interp-st))))
-     '(value-triple :ok)
-   (er hard? 'check-counterexample "Unexpected counterexample form~%")))
-   
-
-
-(acl2::must-fail
- (encapsulate nil
-   (local (disable-definition assoc-equal))
-   (fgl-thm
-    (b* ((x1 (logcdr (cdr (assoc '(a . b) x)))))
-      (equal (loghead 3 x1) (+ 1 (loghead 3 x1)))))))
-
-(make-event
- (b* ((alist (cdr (assoc 'x (interp-st-get-counterexample-obj-alist interp-st))))
-      (look (assoc-equal '(a . b) alist)))
-   (if (integerp (cdr look))
-       '(value-triple :ok)
-     (er hard? 'check-counterexample "Unexpected counterexample form~%"))) )
+(check-counterexample
+ (b* ((x1 (logcdr x)))
+   (equal (loghead 3 x1) (+ 1 (loghead 3 x1)))))
 
 
-(acl2::must-fail
- (fgl-thm
-  (b* ((x1 (logcons b (logcdr x)))
+
+
+(encapsulate nil
+  (local (disable-definition assoc-equal))
+  (check-counterexample
+   (b* ((x1 (logcdr (cdr (assoc '(a . b) x)))))
+     (equal (loghead 3 x1) (+ 1 (loghead 3 x1))))))
+
+(check-counterexample
+ (b* ((x1 (logcons b (logcdr x)))
        (x2 (logcons (logcar x1) y)))
-    (equal (loghead 3 x2) (loghead 3 (logcons 1 y))))))
+    (equal (loghead 3 x2) (loghead 3 (logcons 1 y)))))
 
-(make-event
- (b* ((alist (interp-st-get-counterexample-obj-alist interp-st))
-      (bpair (assoc 'b alist)))
-   (if (and bpair
-            (not (equal bpair 1)))
-       '(value-triple :ok)
-     (er hard? 'check-counterexample "Unexpected counterexample form~%"))) )
 
 
 
@@ -554,23 +557,27 @@
               #x1010101)
          -24)))
 
-(make-event
- (b* (((mv err ?val state)
-       (fgl-thm
-        :hyp (unsigned-byte-p 32 x)
-        :concl (equal (fast-logcount-32* x)
-                      (logcount x))))
-      ((unless err)
-       (er soft 'ctrex-test "Expected this to fail!~%"))
-      (x-look (assoc-equal 'x (@ :fgl-interp-error-debug-obj)))
-      ((unless x-look)
-       (er soft 'ctrex-test "Expected a counterexample binding for X~%"))
-      (x (cdr x-look))
-      ((unless (and (unsigned-byte-p 32 x)
-                    (not (equal (fast-logcount-32* x)
-                                (logcount x)))))
-       (er soft 'ctrex-test "Bad counterexample!~%")))
-   (value '(value-triple :ok))))
+
+(check-counterexample
+ (implies (unsigned-byte-p 2 x)
+          (not (equal x 2))))
+
+(check-counterexample
+ (implies (signed-byte-p 2 x)
+          (not (equal x 1))))
+
+(check-counterexample
+ (implies (signed-byte-p 2 x)
+          (not (equal x -2))))
+
+(check-counterexample
+ (implies (signed-byte-p 2 x)
+          (not (equal x -1))))
+
+(check-counterexample
+ (implies (unsigned-byte-p 32 x)
+          (equal (fast-logcount-32* x)
+                 (logcount x))))
 
 
 
@@ -780,3 +787,20 @@
                                                (simd-mult-impl 0 src1 src2 writemask))))
                (equal impl spec)))
     :hints ('(:clause-processor replace-equal-with-top-level-equal))))
+
+
+
+;; Counterexample tests.
+
+(encapsulate nil
+  (local (disable-definition assoc-equal))
+  (check-counterexample
+   (b* ((a (cdr (assoc-equal 'a x)))
+        (b (cdr (assoc-equal 'b x))))
+     (implies (unsigned-byte-p 3 a)
+              (not (and (equal (loghead 2 a) 2)
+                        (equal (loghead 4 b) 1)))))))
+
+(check-counterexample
+ (not (equal (+ (loghead 3 x) (loghead 4 y)) 9)))
+ 
