@@ -16,5 +16,24 @@
 (deftest
   (defevaluator+ myev binary-*)
   ;; expected result:
-  (must-be-redundant (defevaluator myev myev-list ((binary-* x y)) :namedp t))
+  (must-be-redundant
+   ;; the main call to defevaluator generated:
+   (defevaluator myev myev-list ((binary-* x y)) :namedp t)
+
+   ;; additional theorems generated:
+   (DEFTHM MYEV-LIST-OF-APPEND
+     (EQUAL (MYEV-LIST (APPEND TERMS1 TERMS2) A)
+            (APPEND (MYEV-LIST TERMS1 A)
+                    (MYEV-LIST TERMS2 A)))
+     :HINTS (("Goal" :IN-THEORY (ENABLE APPEND))))
+   (DEFTHM LEN-OF-MYEV-LIST
+     (EQUAL (LEN (MYEV-LIST TERMS A))
+            (LEN TERMS))
+     :HINTS (("Goal" :IN-THEORY (ENABLE APPEND (:I LEN)))))
+   (DEFTHM MYEV-LIST-OF-TRUE-LIST_FIX
+     (EQUAL (MYEV-LIST (TRUE-LIST-FIX TERMS) A)
+            (MYEV-LIST TERMS A))
+     :HINTS (("Goal" :IN-THEORY (ENABLE APPEND (:I LEN)))))
+   )
+  ;; additional check:
   (defthm test (equal (myev '(binary-* '2 x) '((x . 3))) 6)))
