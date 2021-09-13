@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "expand-lambdas-in-term")
+(include-book "kestrel/utilities/defevaluator-plus" :dir :system)
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
@@ -29,25 +30,9 @@
                            STRIP-CADRS
                            STRIP-CDRS)))
 
-(defevaluator lambda-eval lambda-eval-list nil :namedp t)
+(defevaluator+ lambda-eval) ; an evaluator with no built-in functions
 
 ;todo: automate some of this?
-
-(defthm lambda-eval-list-of-append
-  (equal (lambda-eval-list (append terms1 terms2) a)
-         (append (lambda-eval-list terms1 a)
-                 (lambda-eval-list terms2 a)))
-  :hints (("Goal" :in-theory (enable append))))
-
-(defthm len-of-lambda-eval-list
-  (equal (len (lambda-eval-list terms a))
-         (len terms))
-  :hints (("Goal" :in-theory (enable append (:I len)))))
-
-(defthm lambda-eval-list-of-true-list-fix
-  (equal (lambda-eval-list (true-list-fix terms) a)
-         (lambda-eval-list terms a))
-  :hints (("Goal" :in-theory (enable append (:I len)))))
 
 (defthm cdr-of-expand-lambdas-in-terms
   (equal (cdr (expand-lambdas-in-terms terms))
