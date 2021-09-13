@@ -31,6 +31,7 @@
 (in-package "FGL")
 (include-book "sat-stub")
 (include-book "interp-st-bfrs-ok")
+(include-book "kestrel/utilities/doublets" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (in-theory (disable resize-list)))
@@ -300,6 +301,8 @@
   '(:match
     :assigned-var
     :assign
+    :assign-cond
+    :match-conds
     :hyp
     :equiv
     :ruletype))
@@ -327,6 +330,7 @@
        ((when erp) (mv erp rest)))
     (mv nil (cons (cons (caar x) trans-term) rest))))
 
+
 (defun def-ctrex-rule-fn (name keys wrld)
   (declare (xargs :mode :program))
   (b* (((unless (symbolp name))
@@ -345,6 +349,9 @@
        ((when erp) (er hard? erp "~@0" match))
        ((mv erp assign) (ctrex-rule-translate keys.assign wrld))
        ((when erp) (er hard? erp "~@0" assign))
+       (user-assign-cond (std::getarg :assign-cond t keys))
+       ((mv erp assign-cond) (ctrex-rule-translate user-assign-cond wrld))
+       ((when erp) (er hard? erp "~@0" assign-cond))
        ((mv erp hyp) (ctrex-rule-translate keys.hyp wrld))
        ((when erp) (er hard? erp "~@0" hyp))
        ((unless (pseudo-var-p keys.assigned-var))
@@ -353,9 +360,13 @@
         (er hard? 'def-ctrex-rule "Bad ruletype: must satisfy ~x0" 'ctrex-ruletype-p))
        ((unless (pseudo-fnsym-p keys.equiv))
         (er hard? 'def-ctrex-rule "Bad equiv: must be a function symbol"))
+       ((unless (acl2::doublet-listp keys.match-conds))
+        (er hard? 'def-ctrex-rule "Bad match-conds: must be a doublet-list"))
        (rule (make-ctrex-rule :name name
                               :match match
+                              :match-conds (acl2::doublets-to-alist keys.match-conds)
                               :assign assign
+                              :assign-cond assign-cond
                               :assigned-var keys.assigned-var
                               :hyp hyp
                               :equiv keys.equiv
@@ -385,7 +396,11 @@ existing assignments.  An example:</p>
  (def-ctrex-rule intcar-intcdr-ctrex-elim
    :match ((car (intcar x))
            (cdr (intcdr x)))
-   :assign (intcons car cdr)
+   :match-conds ((cdr-match cdr)
+                 (car-match car))
+   :assign (let ((cdr (if cdr-match cdr (intcdr x)))
+                 (car (if car-match car (intcar x))))
+             (intcons car cdr))
    :assigned-var x
    :ruletype :elim)
  })
@@ -397,12 +412,24 @@ existing assignments.  An example:</p>
 rule, one or more of the @('expr') entries must be matched against an object
 with an existing assignment.  For example, to apply the above rule we must have
 an assignment of a value to some term matching @('(intcar x)'), @('(intcdr
-x)'), or both.</li>
+x)'), or both.  These assignments may come from three origins -- 1. the term
+may be one that is assigned a Boolean variable in the Boolean variable
+database (see @(see fgl-getting-bits-from-objects)); 2. the term may be contain
+no variables and thus be evaluated under the Boolean assignment; 3. the term
+may be given an assignment by applying other counterexample rules.</li>
 
 <li>@(':assigned-var') and @(':assign') respectively give the term to be
 assigned the value and the value.  In the above case, the subterm @('x') from
 that matched expressions is assigned the value @('(intcons car cdr)'), where
-@('car') and @('cdr') are the values assigned for the respective expressions.</li>
+@('car') and @('cdr') are the values assigned for the respective expressions,
+if they were assigned.  If not, @('x') may have been tentatively assigned a
+value by a previous rule and its @('intcar') or @('intcdr') may be
+preserved.</li>
+
+<li>@(':match-conds') provide variables that say whether a value was determined
+for the given variable.  In this case, @('cdr-match') will be true if
+@('(intcdr x)') (the binding of @('cdr') in the @(':match') field)) was
+successfully assigned a value.</li>
 
 <li>@(':ruletype') may be @(':elim') or @(':property'), signifying how the rule
 is intended to be used.  An @(':elim') rule should be applied once when as many
@@ -410,6 +437,11 @@ of the match expressions as possible have been assigned values; at that point,
 we apply the rule and compute the final value for the subexpression.  A
 @(':property') rule may be applied to several different matching expressions in
 order to compute a value for the same subexpression.</li>
+
+<li>An additional keyword @(':assign-cond') must (if provided) be a term, which
+will be evaluated in the same way as @(':assign').  If it evaluates to a
+non-@('nil') value, then the value is assigned; if not, the rule does not
+provide an assignment.</li>
 
 </ul>
 
@@ -432,7 +464,12 @@ compute a value for @('x').</p>
 (def-ctrex-rule intcar-intcdr-ctrex-elim
   :match ((car (intcar x))
           (cdr (intcdr x)))
-  :assign (intcons car cdr)
+  :match-conds ((cdr-match cdr)
+                (car-match car)
+                (x-match x))
+  :assign (let ((cdr (if cdr-match cdr (intcdr x)))
+                (car (if car-match car (intcar x))))
+            (intcons car cdr))
   :assigned-var x
   :hyp (integerp x)
   :ruletype :elim)
@@ -440,7 +477,11 @@ compute a value for @('x').</p>
 (def-ctrex-rule car-cdr-ctrex-elim
   :match ((car (car x))
           (cdr (cdr x)))
-  :assign (cons car cdr)
+  :match-conds ((cdr-match cdr)
+                (car-match car))
+  :assign (let ((cdr (if cdr-match cdr (cdr x)))
+                (car (if car-match car (car x))))
+            (cons car cdr))
   :assigned-var x
   :hyp (consp x)
   :ruletype :elim)
@@ -467,10 +508,16 @@ compute a value for @('x').</p>
 (defconst *fake-ctrex-rule-for-equivs*
   (make-ctrex-rule :name 'fake-ctrex-rule-for-equivs
                    :match '((val . (equiv x y)))
-                   :assign '(if val y x)
+                   :assign 'y
+                   :assign-cond 'val
                    :assigned-var 'x
                    :hyp 't
                    :ruletype nil))
+
+(defconst *fake-ctrex-edge-for-candidate-value*
+  (make-cgraph-edge :rule (make-ctrex-rule :name 'fake-ctrex-rule-for-candidate-value
+                                           :assign 'x
+                                           :assigned-var 'x)))
 
 (include-book "unify-thms")
 
@@ -852,8 +899,12 @@ compute a value for @('x').</p>
                (rule2 (change-ctrex-rule *fake-ctrex-rule-for-equivs*
                                          :match `((val . ,(pseudo-term-call x.fn '(y x))))
                                          :equiv x.fn))
-               (cgraph (add-cgraph-edge 'val `((x . ,arg2) (y . ,arg1)) rule2 cgraph))
-               (cgraph (add-cgraph-edge 'val `((x . ,arg1) (y . ,arg2)) rule1 cgraph))
+               (cgraph (if (fgl-object-variable-free-p arg2)
+                           cgraph
+                         (add-cgraph-edge 'val `((x . ,arg2) (y . ,arg1)) rule2 cgraph)))
+               (cgraph (if (fgl-object-variable-free-p arg1)
+                           cgraph
+                         (add-cgraph-edge 'val `((x . ,arg1) (y . ,arg2)) rule1 cgraph)))
                ((mv cgraph memo) (fgl-object-add-to-cgraph arg1 cgraph memo ruletable bfrstate wrld)))
             (fgl-object-add-to-cgraph arg2 cgraph memo ruletable bfrstate wrld)))
          (rules (cdr (hons-get fnsym (ctrex-ruletable-fix ruletable)))))
@@ -1817,6 +1868,16 @@ compute a value for @('x').</p>
 
 (fty::defmap cgraph-derivstates :key-type fgl-object :val-type cgraph-derivstate :true-listp t)
 
+(make-event
+ `(define cgraph-derivstate-start ()
+    :returns (st cgraph-derivstate-p)
+    ',(make-cgraph-derivstate :times-seen 0)))
+
+(make-event
+ `(define cgraph-derivstate-1 ()
+    :returns (st cgraph-derivstate-p)
+    ',(make-cgraph-derivstate :times-seen 1)))
+
 (define cgraph-derive-assigns-measure ((cgraph cgraph-p)
                                        (assigns cgraph-alist-p)
                                        (sts cgraph-derivstates-p)
@@ -2041,7 +2102,7 @@ compute a value for @('x').</p>
        (sts (cgraph-derivstates-fix sts))
        (st (cdr (hons-get x sts)))
        ((unless st)
-        (hons-acons x (make-cgraph-derivstate :times-seen 1) sts)))
+        (hons-acons x (cgraph-derivstate-1) sts)))
     (hons-acons x (change-cgraph-derivstate st :times-seen (+ 1 (cgraph-derivstate->times-seen st)))
                 sts))
   ///
@@ -2067,20 +2128,36 @@ compute a value for @('x').</p>
                 (cgraph-derive-assigns-measure cgraph assigns sts replimit)))
     :rule-classes :linear))
 
+(define candidate-assigns-remove-fake ((x candidate-assigns-p))
+  :returns (new-x candidate-assigns-p)
+  (b* (((When (atom x)) nil)
+       ((candidate-assign x1) (candidate-assign-fix (car x)))
+       ((cgraph-edge x1.edge))
+       ((ctrex-rule x1.edge.rule)))
+    (if (eq x1.edge.rule.name 'fake-ctrex-rule-for-candidate-value)
+        (candidate-assigns-remove-fake (cdr x))
+      (cons-with-hint x1 
+                      (candidate-assigns-remove-fake (cdr x))
+                      (cdr x)))))
+    
 
 
 (define cgraph-summarize-errors-and-assign ((x fgl-object-p)
-                                            errors
+                                            (errors true-listp)
                                             (cands candidate-assigns-p)
                                             (assigns cgraph-alist-p)
                                             (sts cgraph-derivstates-p))
   :returns (mv (new-assigns cgraph-alist-p)
                (new-sts cgraph-derivstates-p))
-  (b* ((vals (remove-duplicates-equal (candidate-assigns->vals cands)))
+  (b* ((cands (candidate-assigns-remove-fake cands)
+              ;; (let ((nonfake-cands ))
+              ;;   (or nonfake-cands cands))
+              )
+       (vals (remove-duplicates-equal (candidate-assigns->vals cands)))
        (cand-summary (cond ((atom vals) "No assignment succeeded")
                            ((atom (cdr vals)) nil)
                            (t "Multiple conflicting assignments")))
-       (error-summary (combine-error-messages errors))
+       (error-summary (combine-error-messages (remove-eq t errors)))
        (summary (if cand-summary
                     (if error-summary
                         (msg "~@0: ~@1" cand-summary error-summary)
@@ -2109,24 +2186,55 @@ compute a value for @('x').</p>
          :hints(("Goal" :in-theory (enable bfr-varname-p)))))
 
 
-;; If there is a property rule application among cands, add a binding of that
-;; candidate's value to rule's assigned-var and remove that candidate.  Theory
-;; being that all applicable property rules should work together to make one
-;; value.
-(define candidate-assigns-complete-match-subst ((rule ctrex-rule-p)
-                                                (cands candidate-assigns-p))
-  :returns (mv (new-match-subst symbol-alistp)
-               (rest-cands candidate-assigns-p))
-  (b* (((when (atom cands)) (mv (list (cons (ctrex-rule->assigned-var rule) nil)) nil))
-       ((candidate-assign cand) (candidate-assign-fix (car cands)))
-       ((cgraph-edge cand.edge))
-       ((ctrex-rule cand.edge.rule))
-       ((when (eq cand.edge.rule.ruletype :property))
-        (mv (list (cons (ctrex-rule->assigned-var rule) cand.val))
-            (candidate-assigns-fix (cdr cands))))
-       ((mv subst rest-cands)
-        (candidate-assigns-complete-match-subst rule (cdr cands))))
-    (mv subst (cons-with-hint cand rest-cands cands))))
+;; We used to have candidate-assigns-complete-match-subst, which looked for a
+;; property rule application among cands, removed it, and returned the new
+;; candidates as well as an assignment binding the assigned-var of rule to the
+;; candidate value.  Now, we do this in two steps, because there's no guarantee
+;; that we're going to produce a new value so we'll leave the old one
+;; otherwise.
+
+;; ;; If there is a property rule application among cands, add a binding of that
+;; ;; candidate's value to rule's assigned-var and remove that candidate.  Theory
+;; ;; being that all applicable property rules should work together to make one
+;; ;; value.
+;; (define candidate-assigns-complete-match-subst ((rule ctrex-rule-p)
+;;                                                 (cands candidate-assigns-p))
+;;   :returns (mv (new-match-subst symbol-alistp)
+;;                (rest-cands candidate-assigns-p))
+;;   (b* (((when (atom cands)) (mv (list (cons (ctrex-rule->assigned-var rule) nil)) nil))
+;;        ((candidate-assign cand) (candidate-assign-fix (car cands)))
+;;        ((cgraph-edge cand.edge))
+;;        ((ctrex-rule cand.edge.rule))
+;;        ((when (eq cand.edge.rule.ruletype :property))
+;;         (mv (list (cons (ctrex-rule->assigned-var rule) cand.val))
+;;             (candidate-assigns-fix (cdr cands))))
+;;        ((mv subst rest-cands)
+;;         (candidate-assigns-complete-match-subst rule (cdr cands))))
+;;     (mv subst (cons-with-hint cand rest-cands cands))))
+
+
+(define candidate-assigns-assigned-var-subst ((assigned-var pseudo-var-p)
+                                              (cands candidate-assigns-p))
+  :returns (new-match-subst symbol-alistp)
+  (b* ((cands (b* ((non-fake-cands (candidate-assigns-remove-fake cands)))
+                (or non-fake-cands cands)))
+       (vals (remove-duplicates-equal (candidate-assigns->vals cands))))
+    (and vals
+        (list (cons (pseudo-var-fix assigned-var) (car vals))))))
+
+(define candidate-assigns-remove-property-assign ((cands candidate-assigns-p))
+  :returns (rest-cands candidate-assigns-p)
+  (if (atom cands)
+      nil
+    (b* (((candidate-assign cand) (candidate-assign-fix (car cands)))
+         ((cgraph-edge cand.edge))
+         ((ctrex-rule cand.edge.rule)))
+      (if (eq cand.edge.rule.ruletype :property)
+          (candidate-assigns-fix (cdr cands))
+        (cons-with-hint cand
+                        (candidate-assigns-remove-property-assign (cdr cands))
+                        cands)))))
+
 
 (local (defthm symbol-alistp-of-append
          (implies (and (symbol-alistp x)
@@ -2143,8 +2251,49 @@ compute a value for @('x').</p>
          :hints(("Goal" :in-theory (enable fgl-object-bindings-fix)))
          :rule-classes :type-prescription))
 
+(define cgraph-match-cond-subst ((match-conds pseudo-term-subst-p)
+                                 (match-subst1 symbol-alistp))
+  :returns (new-subst symbol-alistp)
+  (b* (((when (atom match-conds)) nil)
+       ((unless (mbt (and (consp (car match-conds))
+                          (pseudo-var-p (caar match-conds)))))
+        (cgraph-match-cond-subst (cdr match-conds) match-subst1)))
+    (if (assoc-eq (pseudo-term-fix (cdar match-conds))
+                  match-subst1)
+        (cons (cons (caar match-conds) t)
+              (cgraph-match-cond-subst (cdr match-conds) match-subst1))
+      (cgraph-match-cond-subst (cdr match-conds) match-subst1)))
+  ///
+  (local (in-theory (enable pseudo-term-subst-fix))))
+       
+    
+#||
+
+(trace$ bvar-db-update-cgraph)
+
+(trace$ (cgraph-derive-assignments-obj-fn
+         :entry (list 'cgraph-derive-assignments-obj x)
+         :exit (b* (((list ?new-assigns ?sts) values))
+                 (list 'cgraph-derive-assignments-obj
+                     (take (- (len new-assigns) (len assigns))
+                           new-assigns)))))
+
+
+(trace$ (cgraph-derive-assignments-edge-fn
+         :entry (list 'cgraph-derive-assignments-edge x cands)
+         :exit (b* (((list ?errmsg ?new-cands ?new-assigns ?new-sts) values))
+                 (list 'cgraph-derive-assignments-edge
+                       errmsg
+                       (take (- (len new-cands) (len cands)) new-cands)
+                       (take (- (len new-assigns) (len assigns)) new-assigns)))))
+
+||#
+
+
+
 (defines cgraph-derive-assignments
   (define cgraph-derive-assignments-obj ((x fgl-object-p)
+                                         (cands candidate-assigns-p)
                                          (assigns cgraph-alist-p)
                                          (sts cgraph-derivstates-p)
                                          (env$)
@@ -2165,6 +2314,14 @@ compute a value for @('x').</p>
                    0
                    0)
     :verify-guards nil
+    ;; Tries to derive an assignment for object X by looking it up in the
+    ;; cgraph and seeing what rules (edges) are available that might help
+    ;; determine its value.
+    ;; If x is already bound in assigns, then we're done with it already and we don't add an assignment.
+    ;; If x is variable free, then it just assigns its evaluation under the Boolean env.
+    ;; If x is term for which there is a Boolean variable in the bvar-db, we assign its Boolean value.
+    ;; Otherwise, we derive candidate values for x by looking at its edges in the cgraph.
+    ;; If any edge successfully (?) derives a value, we choose the first one.
     (b* ((x (fgl-object-fix x))
          (assigns (cgraph-alist-fix assigns))
          (sts (cgraph-derivstates-fix sts))
@@ -2173,7 +2330,8 @@ compute a value for @('x').</p>
          ((when assigns-look)
           (mv assigns sts))
          ((cgraph-derivstate st)
-          (or (cdr (hons-get x sts)) '(0)))
+          (or (cdr (hons-get x sts))
+              (cgraph-derivstate-start)))
          ((when (<= (lposfix replimit) st.times-seen))
           (mv assigns sts))
          ((when (fgl-object-variable-free-p x))
@@ -2198,10 +2356,11 @@ compute a value for @('x').</p>
                                       "No rules for deriving the value of the object"
                                       sts)))
             (mv assigns sts)))
+
          (sts (cgraph-incr-seen x sts))
 
          ((mv errors candidate-assigns assigns sts)
-          (cgraph-derive-assignments-edges edges nil assigns sts env$ cgraph replimit)))
+          (cgraph-derive-assignments-edges edges cands assigns sts env$ cgraph replimit)))
 
       (cgraph-summarize-errors-and-assign x errors candidate-assigns assigns sts)))
 
@@ -2221,13 +2380,14 @@ compute a value for @('x').</p>
                 (equal (bfr-nvars) (next-bvar bvar-db))
                 (lbfr-listp (cgraph-bfrlist cgraph)))
 
-    :returns (mv errors
+    :returns (mv (errors true-listp)
                  (new-cands candidate-assigns-p)
                  (new-assigns cgraph-alist-p)
                  (new-sts cgraph-derivstates-p))
     :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
                    9
                    (len x))
+    ;; Just iterates over the list of edges applying cgraph-derive-assignments-edge to each.
     (b* (((when (atom x)) (mv nil (candidate-assigns-fix cands)
                               (cgraph-alist-fix assigns)
                               (cgraph-derivstates-fix sts)))
@@ -2266,41 +2426,101 @@ compute a value for @('x').</p>
                 (bfr-env$-p env$ (logicman->bfrstate))
                 (equal (bfr-nvars) (next-bvar bvar-db))
                 (lbfr-listp (cgraph-bfrlist cgraph)))
+    ;; For a given cgraph edge, compute the candidate value for the assigned object:
+    ;;   - compute a substitution binding all the variables that might occur in
+    ;;     rule.assign/rule.assign-cond
+    ;;   - compute the value of rule.assign/rule.assign-cond under that substitution
+    ;;   - if rule.assign-cond's value is nonnil, add the value of rule.assign
+    ;;     as a candidate value.
+
+    ;; First traverse the match variables and try to derive candidate
+    ;; assignments for them using cgraph-derive-assignments-matches.
+    ;;
+    ;; Example.  Suppose we are trying to obtain an assignment for (foo a)
+    ;; using intcar-intcdr-elim.  This rule has:
+    ;;   :match ((car (intcar x))
+    ;;           (cdr (intcdr x)))
+    ;;   :assign (intcons car cdr)
+    ;;   :assigned-var x
+    ;; The edge will have this rule, match-vars = (car cdr), and subst = ((x . (foo a))).
+    ;; First we call cgraph-derive-assignments-matches which for each var in match-vars, does:
+    ;;  - looks up the var (say car) in rule.match --> (intcar x)
+    ;;  - substitutes edge.subst into this term --> (:g-apply intcar (g-apply foo (g-var a)))
+    ;;  - tries to derive an assignment for this using cgraph-derive-assignments-obj.
+    ;;  Returns a mapping from the variables to the objects produced, i.e. car -> value, cdr -> value.
+
+    ;; For a complicated example: Suppose we are trying to
+    ;; derive an assignment for (get-alist a) using hons-get-ctrex-rule, which has
+    ;;  :match ((val (cdr (hons-get k x))))
+    ;;  :assign (redundant-hons-acons k val x)
+    ;;  :assigned-var x
+    ;; In this case the edge will have this rule with a subst including not only x but also k.
+    ;; Suppose it is ((x . (get-alist a)) (k . 'bar)). Subst will also have match-vars = (val)
+    ;; since that's the only match var.
+    ;; To find its value (cgraph-derive-assignments-match), 
+    ;;  - look up the var --> (cdr (hons-get k x))
+    ;;  - substitute edge.subst --> (cdr (hons-get 'bar (get-alist a)))
+    ;;  - try to derive the assignment for this obj.
+
+    ;; A further complication is if k (in the example above) is itself a term
+    ;; containing variables.  To deal with this case, we try to resolve all the
+    ;; objects in the edge.subst using cgraph-derive-assignments-obj.  But we
+    ;; don't want to recur on the object we're currently resolving, so we omit
+    ;; the binding of the assigned-var of the rule.
+
     (b* (((cgraph-edge x))
-         ((mv match-subst new-assigns new-sts)
-          (cgraph-derive-assignments-matches x.match-vars x.rule x.subst
-                                              assigns sts env$ cgraph replimit))
-         ((unless match-subst)
-          ;; BOZO It would kind of make sense to produce a real error message
-          ;; here, but then we'd get not just the root cause of a given error,
-          ;; but tons of messages about its various consequences.
-          (mv t (candidate-assigns-fix cands) new-assigns new-sts))
+         ((ctrex-rule x.rule))
+         (cands (candidate-assigns-fix cands))
+         ((mv eval-subst new-assigns new-sts)
+          (cgraph-derive-assignments-eval-subst x.subst x.rule.assigned-var assigns sts env$ cgraph replimit logicman bvar-db state))
+         (var-subst (candidate-assigns-assigned-var-subst x.rule.assigned-var cands))
+         (start-subst (append var-subst eval-subst))
          ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
                            (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
           (mv nil nil
               (cgraph-alist-fix assigns)
               (cgraph-derivstates-fix sts)))
-         ((mv eval-subst assigns sts)
-          (cgraph-derive-assignments-eval-subst x.subst new-assigns new-sts env$ cgraph replimit logicman bvar-db state))
-         ((ctrex-rule x.rule))
-         ((mv new-subst cands)
-          (if (eq x.rule.ruletype :property)
-              (candidate-assigns-complete-match-subst x.rule cands)
-            (mv nil (candidate-assigns-fix cands))))
-         (match-subst (append new-subst match-subst eval-subst))
+         (assigns new-assigns)
+         (sts new-sts)
+
+         ((mv match-subst assigns sts)
+          (cgraph-derive-assignments-matches x.match-vars x.rule x.subst
+                                             start-subst assigns sts env$ cgraph replimit))
+         ((unless match-subst)
+          ;; BOZO It would kind of make sense to produce a real error message
+          ;; here, but then we'd get not just the root cause of a given error,
+          ;; but tons of messages about its various consequences.
+
+          ;; Anyway, if we were unable to derive a value for any of the match
+          ;; terms, then fail.
+          (mv t cands new-assigns new-sts))
+         (match-subst1 (append match-subst start-subst))
+         (match-cond-subst (cgraph-match-cond-subst x.rule.match-conds match-subst1))
+         (full-subst (append match-cond-subst match-subst1))
+         ((mv err assign-cond)
+          (magitastic-ev x.rule.assign-cond full-subst 1000 state t t))
+         ((when err)
+          (b* ((msg (msg "Failed to evaluate assignment condition ~x0 from rule ~x1"
+                         x.rule.assign-cond x.rule.name)))
+            ;; (cw "~@0~%" msg)
+            (mv msg cands assigns sts)))
+         ((unless assign-cond)
+          (mv nil cands assigns sts))
          ((mv err val)
-          (magitastic-ev x.rule.assign match-subst 1000 state t t))
+          (magitastic-ev x.rule.assign full-subst 1000 state t t))
          ;; (- (cw "magitastic-ev ~x0: ~x2 ~x3~%" x.rule.assign nil err val))
          ((when err)
           (b* ((msg (msg "Failed to evaluate assignment ~x0 from rule ~x1"
                    x.rule.assign x.rule.name)))
             ;; (cw "~@0~%" msg)
-            (mv msg cands assigns sts))))
+            (mv msg cands assigns sts)))
+         (cands (candidate-assigns-remove-property-assign cands)))
       (mv nil
           (cons (make-candidate-assign :edge x :val val) cands)
           assigns sts)))
 
   (define cgraph-derive-assignments-eval-subst ((subst fgl-object-bindings-p)
+                                                (assigned-var pseudo-var-p)
                                                 (assigns cgraph-alist-p)
                                                 (sts cgraph-derivstates-p)
                                                 (env$)
@@ -2329,7 +2549,9 @@ compute a value for @('x').</p>
          ;;                    (pseudo-var-p (caar subst)))))
          ;;  (cgraph-derive-assignments-eval-subst (cdr subst) assigns sts env$ cgraph replimit))
          ((cons var obj) (car subst))
-         ((mv new-assigns new-sts) (cgraph-derive-assignments-obj obj assigns sts env$ cgraph replimit))
+         ((when (eq var (pseudo-var-fix assigned-var)))
+          (cgraph-derive-assignments-eval-subst (cdr subst) assigned-var assigns sts env$ cgraph replimit))
+         ((mv new-assigns new-sts) (cgraph-derive-assignments-obj obj nil assigns sts env$ cgraph replimit))
          ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
                            (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
           (mv nil
@@ -2338,7 +2560,7 @@ compute a value for @('x').</p>
          (pair (hons-get ;; (fgl-object-fix obj)
                 obj new-assigns))
          ((mv rest-subst assigns sts)
-          (cgraph-derive-assignments-eval-subst (cdr subst) new-assigns new-sts env$ cgraph replimit)))
+          (cgraph-derive-assignments-eval-subst (cdr subst) assigned-var new-assigns new-sts env$ cgraph replimit)))
       (mv (if pair
               (cons (cons var (cdr pair)) rest-subst)
             rest-subst)
@@ -2348,6 +2570,7 @@ compute a value for @('x').</p>
   (define cgraph-derive-assignments-matches ((x pseudo-var-list-p)
                                              (rule ctrex-rule-p)
                                              (subst fgl-object-bindings-p)
+                                             (start-subst symbol-alistp)
                                              (assigns cgraph-alist-p)
                                              (sts cgraph-derivstates-p)
                                              (env$)
@@ -2372,7 +2595,7 @@ compute a value for @('x').</p>
               (cgraph-alist-fix assigns)
               (cgraph-derivstates-fix sts)))
          ((mv ok val new-assigns new-sts)
-          (cgraph-derive-assignments-match (car x) rule subst
+          (cgraph-derive-assignments-match (car x) rule subst start-subst
                                            assigns sts env$ cgraph replimit))
          ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
                            (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
@@ -2380,7 +2603,7 @@ compute a value for @('x').</p>
               (cgraph-alist-fix assigns)
               (cgraph-derivstates-fix sts)))
          ((mv rest assigns sts)
-          (cgraph-derive-assignments-matches (cdr x) rule subst
+          (cgraph-derive-assignments-matches (cdr x) rule subst start-subst
                                              new-assigns new-sts env$ cgraph replimit)))
       (mv (if ok
               (cons (cons (pseudo-var-fix (car x)) val) rest)
@@ -2390,6 +2613,7 @@ compute a value for @('x').</p>
   (define cgraph-derive-assignments-match ((x pseudo-var-p)
                                            (rule ctrex-rule-p)
                                            (subst fgl-object-bindings-p)
+                                           (start-subst symbol-alistp)
                                            (assigns cgraph-alist-p)
                                            (sts cgraph-derivstates-p)
                                            (env$)
@@ -2412,8 +2636,14 @@ compute a value for @('x').</p>
     (b* (((ctrex-rule rule))
          (term (cdr (assoc (pseudo-var-fix x) rule.match)))
          (obj (pseudo-term-subst-fgl-objects term subst))
+         (cands (b* (((unless start-subst) nil)
+                     ((mv err val)
+                      (magitastic-ev term start-subst 1000 state t t))
+                     ((when err) nil))
+                  (list (make-candidate-assign :edge *fake-ctrex-edge-for-candidate-value*
+                                               :val val))))
          ((mv assigns sts)
-          (cgraph-derive-assignments-obj obj assigns sts env$ cgraph replimit))
+          (cgraph-derive-assignments-obj obj cands assigns sts env$ cgraph replimit))
          (assigns-look (hons-get obj assigns)))
       (if assigns-look
           (mv t (cdr assigns-look) assigns sts)
@@ -2459,7 +2689,7 @@ compute a value for @('x').</p>
     (defret measure-decr-of-<fn>
       (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
           (cgraph-derive-assigns-measure cgraph assigns sts replimit))
-      :hints ('(:expand (<call>)))
+      :hints ('(:expand ((:free (start-subst) <call>))))
       :rule-classes :linear
       :fn cgraph-derive-assignments-match))
 
@@ -2555,7 +2785,7 @@ compute a value for @('x').</p>
        (obj (g-var (car x)))
        ((mv assigns sts)
         (cgraph-derive-assignments-obj
-         (g-var (car x)) assigns sts env$ cgraph replimit))
+         (g-var (car x)) nil assigns sts env$ cgraph replimit))
        (pair (hons-get obj assigns))
        (vals (if pair
                  (cons (cons (pseudo-var-fix (car x)) (cdr pair)) vals)
