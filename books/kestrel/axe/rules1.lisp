@@ -2951,7 +2951,7 @@
             (<= n (+ 1 highindex)))
            (equal (take n (bv-array-clear-range elem-size len 0 highindex lst))
                   (repeat n 0)))
-  :hints ( ("Goal" :induct t
+  :hints (("Goal" :induct t
            :do-not '(generalize eliminate-destructors)
            :in-theory (enable take bv-array-clear-range take-when-most-known equal-of-append))))
 
