@@ -24,10 +24,10 @@
        ((when (not existsp))
         (progn$ (er hard? 'parse-file-as-json "JSON file does not exist: ~x0." filename)
                 (mv t state)))
-       (chars ; not that state is not returned!
+       (chars ; note that state is not returned!
         (read-file-into-character-list filename state))
-       ((when (not (consp chars))) ;I've seen this be a string error message
-        (prog2$ (er hard? 'parse-file-as-json "Failed to read any character from file: ~x0.  Result: ~x1" filename chars)
+       ((when (not (consp chars)))
+        (prog2$ (er hard? 'parse-file-as-json "Failed to read any character from file: ~x0." filename)
                 (mv t state)))
        ;; Parse the characters read:
        ((mv erp parsed-json)
