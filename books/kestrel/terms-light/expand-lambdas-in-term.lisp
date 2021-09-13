@@ -11,8 +11,6 @@
 
 (in-package "ACL2")
 
-;; TODO: Move this book to terms-light/
-
 ;; See also the proofs in expand-lambdas-in-term-proof.lisp.
 
 (include-book "sublis-var-simple")
