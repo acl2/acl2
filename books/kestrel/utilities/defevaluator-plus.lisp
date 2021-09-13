@@ -10,41 +10,29 @@
 
 (in-package "ACL2")
 
-;this is used (or will be used?) by state-machines.lisp
-
-(include-book "kestrel/utilities/world" :dir :system)
-
 ;; A nicer interface to defevaluator.  Improvements include:
 ;; 1. looks up the arities of the functions in the world.
-;; 2. auto-generates the name of the -list function that will be mutually recursive with the evaluator.
+;; 2. auto-generates the name of the -list function that will be mutually recursive with the term evaluator.
 
-(defun make-defevaluator-call (fn state)
-  (declare (xargs :stobjs state
-                  :guard (symbolp fn)))
-  (let ((formals (fn-formals fn (w state))))
-   `(,fn ,@formals)))
+(defun make-function-call-on-formals (fn wrld)
+  (declare (xargs :guard (and (symbolp fn)
+                              (plist-worldp wrld))))
+  `(,fn ,@(formals fn wrld)))
 
-;use a defmap
-(defun make-defevaluator-calls (fns state)
-  (declare (xargs :stobjs state
-                  :guard (symbol-listp fns)))
+(defun make-function-calls-on-formals (fns wrld)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (plist-worldp wrld))))
   (if (endp fns)
       nil
-    (cons (make-defevaluator-call (first fns) state)
-          (make-defevaluator-calls (rest fns) state))))
+    (cons (make-function-call-on-formals (first fns) wrld)
+          (make-function-calls-on-formals (rest fns) wrld))))
 
-(defun defevaluator+-event (name fns state)
-  (declare (xargs :stobjs state
-                  :guard (and (symbolp name)
-                              (symbol-listp fns))))
-  (let* ((lst-name (add-suffix-to-fn name "-LIST"))
-         (calls (make-defevaluator-calls fns state)))
-  `(defevaluator ,name ,lst-name
-     ,calls)))
+(defun defevaluator+-fn (name fns state)
+  (declare (xargs :guard (and (symbolp name)
+                              (symbol-listp fns))
+                  :stobjs state))
+  (let* ((list-name (add-suffix-to-fn name "-LIST")))
+    `(defevaluator ,name ,list-name ,(make-function-calls-on-formals fns (w state)))))
 
 (defmacro defevaluator+ (name &rest fns)
-  `(make-event (defevaluator+-event ',name ',fns state)))
-
-;test:
-(local (progn (defevaluator+ myev binary-*)
-              (defthm test (equal (myev '(binary-* '2 x) '((x . 3))) 6))))
+  `(make-event (defevaluator+-fn ',name ',fns state)))
