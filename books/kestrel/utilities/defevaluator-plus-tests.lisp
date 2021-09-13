@@ -16,5 +16,5 @@
 (deftest
   (defevaluator+ myev binary-*)
   ;; expected result:
-  (must-be-redundant (defevaluator+ myev binary-*))
+  (must-be-redundant (defevaluator myev myev-list ((binary-* x y)) :namedp t))
   (defthm test (equal (myev '(binary-* '2 x) '((x . 3))) 6)))

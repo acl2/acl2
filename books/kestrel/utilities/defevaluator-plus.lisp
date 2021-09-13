@@ -13,6 +13,7 @@
 ;; A nicer interface to defevaluator.  Improvements include:
 ;; 1. looks up the arities of the functions in the world.
 ;; 2. auto-generates the name of the -list function that will be mutually recursive with the term evaluator.
+;; 3. always uses the :namedp t option to defevaluator
 
 (defun make-function-call-on-formals (fn wrld)
   (declare (xargs :guard (and (symbolp fn)
@@ -32,7 +33,9 @@
                               (symbol-listp fns))
                   :stobjs state))
   (let* ((list-name (add-suffix-to-fn name "-LIST")))
-    `(defevaluator ,name ,list-name ,(make-function-calls-on-formals fns (w state)))))
+    `(defevaluator ,name ,list-name
+       ,(make-function-calls-on-formals fns (w state))
+       :namedp t)))
 
 (defmacro defevaluator+ (name &rest fns)
   `(make-event (defevaluator+-fn ',name ',fns state)))
