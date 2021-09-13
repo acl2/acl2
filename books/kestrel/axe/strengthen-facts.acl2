@@ -1,4 +1,4 @@
-; Cert-params for dagify.lisp
+; Cert params for strengthen-facts.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2020 Kestrel Institute
@@ -10,4 +10,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; cert-flags: ? T :SKIP-PROOFS-OKP T
+; cert-flags: ? T :TTAGS :ALL :SKIP-PROOFS-OKP T
