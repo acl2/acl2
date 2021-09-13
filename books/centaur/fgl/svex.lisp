@@ -409,7 +409,17 @@
 (fgl::def-ctrex-rule 4vec-elim
   :match ((upper (sv::4vec->upper x))
           (lower (sv::4vec->lower x)))
-  :assign (sv::4vec upper lower)
+  :match-conds ((upper-match upper)
+                (lower-match lower))
+  :assign (let ((upper (if upper-match upper (sv::4vec->upper x)))
+                (lower (if lower-match lower (sv::4vec->lower x))))
+            (sv::4vec upper lower))
   :assigned-var x
-  ;;:hyp (alistp x)
   :ruletype :elim)
+
+
+(fgl::def-ctrex-rule svex-env-lookup-ctrex-rule
+  :match ((val (sv::svex-env-lookup k x)))
+  :assign (hons-acons k val x)
+  :assigned-var x
+  :ruletype :property)
