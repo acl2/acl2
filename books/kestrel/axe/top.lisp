@@ -219,6 +219,7 @@
 (include-book "prune")
 (include-book "result-array-stobj")
 (include-book "defconst-computed2")
+(include-book "strengthen-facts")
 
 ;; Legacy Axe tools (many of these depend on skip-proofs):
 (include-book "prover")
@@ -229,6 +230,7 @@
 (include-book "tactic-prover")
 (include-book "query")
 (include-book "defthm-axe")
+(include-book "letify-term")
 
 ;; The JVM-specific Axe tools:
 (include-book "jvm/top")
