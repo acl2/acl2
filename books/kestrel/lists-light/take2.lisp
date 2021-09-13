@@ -11,13 +11,10 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/lists-light/repeat" :dir :system)
+(include-book "repeat")
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
-(local (include-book "kestrel/lists-light/take" :dir :system))
-(local (include-book "kestrel/lists-light/cons" :dir :system))
-;; (local (include-book "kestrel/lists-light/nth" :dir :system))
-;; (local (include-book "kestrel/lists-light/len" :dir :system))
-;; (local (include-book "kestrel/lists-light/cdr" :dir :system))
+(local (include-book "take"))
+(local (include-book "cons"))
 
 ;; Not in the take book because this mentions repeat.
 (defthm take-of-nil

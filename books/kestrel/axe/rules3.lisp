@@ -23,6 +23,7 @@
 (include-book "kestrel/bv/unsigned-byte-p2" :dir :system)
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
 (include-book "kestrel/bv/rules8" :dir :system)
+(include-book "kestrel/bv/rules11" :dir :system)
 (include-book "kestrel/bv/sbvmoddown" :dir :system)
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
 (include-book "axe-syntax") ;for work-hard -- TODO make non-work-hard versions of these
@@ -17305,60 +17306,6 @@
 ;;                                    (:REWRITE SLICE-BECOMES-GETBIT)
 ;;                                    (:REWRITE BVCHOP-1-BECOMES-GETBIT)
 ;;                                    SLICE-OF-SUM-CASES)))))
-
-
-(defthmd plus-of-bvcat-fits-in-low-bits-core-helper
-  (implies (and (<= 0 (+ k1 k2))
-                (< (+ k1 k2) (expt 2 lowsize))
-                (unsigned-byte-p lowsize k2) ;drop
-                ;(natp lowsize)
-                (integerp k1))
-           (equal (+ k1 (bvcat highsize x lowsize k2))
-                  (bvcat highsize x lowsize (+ k2 k1))))
-  :hints (("Goal" :expand ((unsigned-byte-p lowsize (+ k1 k2)))
-           :in-theory (enable bvcat logapp))))
-
-(defthm bvcat-of-+-of-bvchop
-  (implies (and (integerp k1) (integerp k2))
-           (equal (BVCAT HIGHSIZE X LOWSIZE (+ K1 (BVCHOP LOWSIZE K2)))
-                  (BVCAT HIGHSIZE X LOWSIZE (+ K1 K2)))))
-
-(defthm plus-of-bvcat-fits-in-low-bits-core
-  (implies (and (<= 0 (+ k1 (bvchop lowsize k2)))
-                (< (+ k1 (bvchop lowsize k2)) (expt 2 lowsize))
-                (natp lowsize)
-                (integerp k2)
-                (integerp k1))
-           (equal (+ k1 (bvcat highsize x lowsize k2))
-                  (bvcat highsize x lowsize (+ k2 k1))))
-  :hints (("Goal" :use (:instance plus-of-bvcat-fits-in-low-bits-core-helper (k2 (bvchop lowsize k2))))))
-
-(defthm plus-of-bvcat-fits-in-low-bits-core-negative-k1
-  (implies (and (<= 0 (+ k1 (bvchop lowsize k2)))
-                (<= k1 0)
-                (natp lowsize)
-                (integerp k1))
-           (equal (+ k1 (bvcat highsize x lowsize k2))
-                  (bvcat highsize x lowsize (+ k2 k1))))
-  :hints (("Goal" :in-theory (disable plus-of-bvcat-fits-in-low-bits-core)
-           :use (:instance plus-of-bvcat-fits-in-low-bits-core))))
-
-(defthm bvplus-of-bvcat-fits-in-low-bits-core-negative-k1-helper
-  (implies (and (<= 0 (+ k1 (bvchop lowsize k2)))
-                (<= k1 0)
-                (natp lowsize)
-                (natp highsize)
-                (<= (+ lowsize highsize) size)
-                (integerp size)
-                (integerp k1))
-           (equal (bvplus size k1 (bvcat highsize x lowsize k2))
-                  (bvcat highsize x lowsize (+ k2 k1))))
-  :hints (("Goal" :in-theory (e/d (bvplus) (plus-of-bvcat-fits-in-low-bits-core-negative-k1
-                                            BVCAT-OF-BVCHOP-LOW ;looped
-                                            ))
-           :use (:instance plus-of-bvcat-fits-in-low-bits-core-negative-k1))))
-
-
 
 ;could allow the inner size to differ
 (defthm bvplus-of-+-of-minus-of-expt

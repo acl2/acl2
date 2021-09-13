@@ -178,7 +178,10 @@
                          ,fn-runes)
                   `(cons ',fn-simp-is-fn-name
                          ,theory)
-                  verbose)))))
+                  verbose))))
+       (verify-guards-form-alt
+        (and verify-guards-form ; else don't care
+             `(verify-guards ,fn-simp))))
     (value
      `((,defun-sk? ,fn-simp ,formals
          ,@(and (not non-executable)
@@ -198,7 +201,9 @@
          ',(acl2::drop-fake-runes runes))
        ,(and verify-guards-form
              `(on-failure
-               ,verify-guards-form
+               ,(orelse-verbosely verify-guards-form
+                                  verify-guards-form-alt
+                                  verbose)
                :ctx ,ctx
                :erp :condition-failed
                :val nil

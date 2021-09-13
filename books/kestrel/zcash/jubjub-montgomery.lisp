@@ -24,7 +24,7 @@
    (xdoc::p
     "The "
     (xdoc::seetopic "jubjub" "Jubjub curve")
-    " @($\\mathbb{J}$) [ZPS:5.4.8.3] is a twisted Edwards curve.
+    " @($\\mathbb{J}$) [ZPS:5.4.9.3] is a twisted Edwards curve.
      However, because of the "
     (xdoc::seetopic "ecurve::birational-montgomery-twisted-edwards"
                     "birational equivalence between

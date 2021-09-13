@@ -23,7 +23,7 @@
 
 (defxdoc+ jubjub
   :parents (zcash)
-  :short "The Jubjub complete twisted Edwards elliptic curve [ZPS:5.4.8.3]."
+  :short "The Jubjub complete twisted Edwards elliptic curve [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -47,13 +47,13 @@
 
 (define jubjub-q ()
   :returns (q rtl::primep)
-  :short "The Jubjub prime @($q_\\mathbb{J}$) [ZPS:5.4.8.3]."
+  :short "The Jubjub prime @($q_\\mathbb{J}$) [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This defines the prime field over which Jubjub is defined.")
    (xdoc::p
-    "It is the same as @($r_\\mathbb{S}$) [ZPS:5.4.8.2],
+    "It is the same as @($r_\\mathbb{S}$) [ZPS:5.4.9.2],
      which is defined in our cryptograhic library."))
   (primes::bls12-381-scalar-field-prime)
   ///
@@ -68,7 +68,7 @@
 (define jubjub-a ()
   :returns (a (fep a (jubjub-q))
               :hints (("Goal" :in-theory (enable fep jubjub-q))))
-  :short "The Jubjub coefficient @($a_\\mathbb{J}$) [ZPS:5.4.8.3]."
+  :short "The Jubjub coefficient @($a_\\mathbb{J}$) [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -95,7 +95,7 @@
 (define jubjub-d ()
   :returns (d (fep d (jubjub-q))
               :hints (("Goal" :in-theory (enable fep jubjub-q))))
-  :short "The Jubjub coefficient @($d_\\mathbb{J}$) [ZPS:5.4.8.3]."
+  :short "The Jubjub coefficient @($d_\\mathbb{J}$) [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -153,7 +153,7 @@
 
 (define jubjub-curve ()
   :returns (curve ecurve::twisted-edwards-curvep)
-  :short "The Jubjub curve [ZPS:5.4.8.3]."
+  :short "The Jubjub curve [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -177,7 +177,7 @@
 
 (define point-on-jubjub-p ((point ecurve::pointp))
   :returns (yes/no booleanp)
-  :short "Check if a point is on the Jubjub curve [ZPS:5.4.8.3]."
+  :short "Check if a point is on the Jubjub curve [ZPS:5.4.9.3]."
   (ecurve::point-on-twisted-edwards-p point (jubjub-curve))
   :hooks (:fix))
 
@@ -185,7 +185,7 @@
 
 (define jubjub-pointp (x)
   :returns (yes/no booleanp)
-  :short "Recognize elements of @($\\mathbb{J}$) [ZPS:5.4.8.3]."
+  :short "Recognize elements of @($\\mathbb{J}$) [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -222,7 +222,7 @@
 
 (define jubjub-point->u ((point jubjub-pointp))
   :returns (u natp :rule-classes :type-prescription)
-  :short "The function @($\\mathcal{U}$) in [ZPS:5.4.8.4]."
+  :short "The function @($\\mathcal{U}$) in [ZPS:5.4.9.4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -246,7 +246,7 @@
 
 (define jubjub-point->v ((point jubjub-pointp))
   :returns (v natp :rule-classes :type-prescription)
-  :short "The function @($\\mathcal{V}$) in [ZPS:5.4.8.4]."
+  :short "The function @($\\mathcal{V}$) in [ZPS:5.4.9.4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -291,7 +291,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *jubjub-l*
-  :short "The constant @($\\ell_\\mathbb{J}$) [ZPS:5.4.8.3]."
+  :short "The constant @($\\ell_\\mathbb{J}$) [ZPS:5.4.9.3]."
   256)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -302,7 +302,7 @@
                    :hints (("Goal"
                             :in-theory (enable returns-lemma
                                                ecurve::pfield-squarep))))
-  :short "The function @($\\mathsf{abst}_\\mathbb{J}$) [ZPS:5.4.8.3]."
+  :short "The function @($\\mathsf{abst}_\\mathbb{J}$) [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -426,7 +426,7 @@
 
 (define jubjub-h ()
   :returns (h natp)
-  :short "The constant @($h_\\mathbb{J}$) in [ZPS:5.4.8.3]."
+  :short "The constant @($h_\\mathbb{J}$) in [ZPS:5.4.9.3]."
   8
   ///
   (in-theory (disable (:e jubjub-h))))
@@ -435,7 +435,7 @@
 
 (define jubjub-r ()
   :returns (r natp)
-  :short "The constant @($r_\\mathbb{J}$) in [ZPS:5.4.8.3]."
+  :short "The constant @($r_\\mathbb{J}$) in [ZPS:5.4.9.3]."
   (primes::jubjub-subgroup-prime)
 
   ///
@@ -449,7 +449,7 @@
 
 (define jubjub-r-pointp (x)
   :returns (yes/no booleanp)
-  :short "Recognize elements of @($\\mathbb{J}^{(r)}$) [ZPS:5.4.8.3]."
+  :short "Recognize elements of @($\\mathbb{J}^{(r)}$) [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -470,7 +470,7 @@
 
 (define jubjub-rstar-pointp (x)
   :returns (yes/no booleanp)
-  :short "Recognize elements of @($\\mathbb{J}^{(r)*}$) [ZPS:5.4.8.3]."
+  :short "Recognize elements of @($\\mathbb{J}^{(r)*}$) [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p

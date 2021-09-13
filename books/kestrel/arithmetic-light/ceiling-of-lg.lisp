@@ -14,7 +14,7 @@
 ;; The function CEILING-OF-LG computes the ceiling of the base-2 logarithm of
 ;; its argument.
 
-(local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
+(local (include-book "integer-length"))
 
 ;; See also lg.lisp.
 

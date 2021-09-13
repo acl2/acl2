@@ -54,7 +54,7 @@
 (define coordinate-extract ((point jubjub-pointp))
   :returns (bits bit-listp)
   :short "The function @($\\mathsf{Extract}_{\\mathbb{J}^{(r)}}$)
-          [ZPS:5.4.8.4]."
+          [ZPS:5.4.9.4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -76,7 +76,7 @@
   :returns (point? maybe-jubjub-pointp)
   :short "The function
           @($\\mathsf{GroupHash_\\mathsf{URS}^{\\mathbb{J}^{(r)*}}}$)
-          [ZPS:5.4.8.5]."
+          [ZPS:5.4.9.5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -99,7 +99,7 @@
               (< (len m) (- blake::*blake2s-max-data-byte-length* 129)))
   :returns (point? maybe-jubjub-pointp)
   :short "The function @($\\mathsf{FindGroupHash^{\\mathbb{J}^{(r)*}}}$)
-          [ZPS:5.4.8.5]."
+          [ZPS:5.4.9.5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -127,17 +127,18 @@
 
 (define pedersen-pad ((m bit-listp))
   :guard (consp m)
-  :returns (m1 bit-listp :hyp (bit-listp m))
+  :returns (m1 bit-listp)
   :short "Pedersen hash padding [ZPS:5.4.1.7]."
   :long
   (xdoc::topstring
    (xdoc::p
     "The message is padded with zero bits on the right
      to make its length a multiple of 3."))
-  (case (mod (len m) 3)
-    (0 m)
-    (1 (append m (list 0 0)))
-    (2 (append m (list 0))))
+  (append (bit-list-fix m)
+          (case (mod (len m) 3)
+            (0 nil)
+            (1 (list 0 0))
+            (2 (list 0))))
   ///
 
   (local (include-book "arithmetic-3/top" :dir :system))
@@ -175,31 +176,29 @@
 
 (define pedersen-enc ((3bits bit-listp))
   :guard (= (len 3bits) 3)
-  :returns (enc integerp
-                :rule-classes (:type-prescription :rewrite)
-                :hyp (bit-listp 3bits))
+  :returns (enc integerp :rule-classes (:type-prescription :rewrite))
   :short "The function @($\\mathsf{enc}$) in [ZPS:5.4.1.7]."
-  (b* ((s0 (first 3bits))
-       (s1 (second 3bits))
-       (s2 (third 3bits)))
+  (b* ((s0 (mbe :logic (bfix (first 3bits)) :exec (first 3bits)))
+       (s1 (mbe :logic (bfix (second 3bits)) :exec (second 3bits)))
+       (s2 (mbe :logic (bfix (third 3bits)) :exec (third 3bits))))
     (* (- 1 (* 2 s2))
        (+ 1 s0 (* 2 s1))))
+  :prepwork ((local (in-theory (disable bfix))))
   ///
 
   (defret pedersen-enc-lower-bound
     (>= enc -4)
-    :hyp (bit-listp 3bits)
-    :rule-classes :linear)
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable bfix))))
 
   (defret pedersen-enc-upper-bound
     (<= enc 4)
-    :hyp (bit-listp 3bits)
     :rule-classes :linear)
 
   (defret pedersen-enc-not-zero
     (not (equal enc 0))
-    :hyp (bit-listp 3bits)
-    :rule-classes :type-prescription)
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable bfix))))
 
   (defrule pedersen-enc-injectivity
     (implies (and (bit-listp x)
@@ -253,7 +252,7 @@
 
 (define pedersen-segment-scalar ((segment bit-listp))
   :guard (integerp (/ (len segment) 3))
-  :returns (i integerp :hyp (bit-listp segment))
+  :returns (i integerp)
   :short "The function @($\\langle\\cdot\\rangle$) in [ZPS:5.4.1.7]."
   :long
   (xdoc::topstring
@@ -268,7 +267,7 @@
 
    (define pedersen-segment-scalar-loop ((j posp) (segment bit-listp))
      :guard (integerp (/ (len segment) 3))
-     :returns (i integerp :hyp (and (posp j) (bit-listp segment)))
+     :returns (i integerp :hyp (posp j))
      :parents nil
      (if (consp segment)
          (+ (* (pedersen-enc (take 3 segment))
@@ -517,8 +516,8 @@
    (xdoc::p
     "We need to turn the index @($i$), diminished by one,
      into a byte sequence consisting of 32 bits, i.e. 4 bytes.
-     The first paragraph of [ZPS:5.2] says that, unless otherwise specified,
-     integers are encoded in little endian bytes of fixed length;
+     The first paragraph of [ZPS:5.1] says that, unless otherwise specified,
+     integers are unsigned, fixed-length, and encoded in little endian bytes;
      thus, we take the little endian byte representation of @($i-1$)."))
   (b* ((i1 (1- i))
        (i1-32bit (mod i1 (expt 2 32)))

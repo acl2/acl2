@@ -111,16 +111,30 @@
 
  <h3>Dealing with a guard verification failure</h3>
 
- <p>When @('(simplify FN ...)') performs guard verification, it does so using a
- somewhat sophisticated @(see acl2::proof-builder) macro that users are not
- expected to understand.  So when that approach fails, it is probably best to
- avoid that macro and, instead, try one of the following approaches (or more
- than one, if the first approach doesn't work out).</p>
+ <p>When @('(simplify FN ...)') fails at guard verification, then unless option
+ @(':print nil') is supplied, an attempt to run @('(verify-guards fn)') will be
+ made automatically, with prover output shown as though @(':print :all') had
+ been supplied.  That way, you can look at checkpoints to come up with helpful
+ rules, without having to run @('simplify') again (see @(see
+ acl2::the-method)).</p>
+
+ <p>Note that in some cases, there may be initial attempts at guard
+ verification that use a somewhat sophisticated @(see acl2::proof-builder)
+ macro, one that users are not expected to understand.  This explains why the
+ retry mentioned above is simply @('(verify-guards fn)'), with no hints: this
+ supports your attempt to make adjustments so that guard verification will
+ succed for your @('simplify') command.  It might be helpful to try one or more
+ of the following approaches.</p>
 
  <ul>
 
+ <li>Prove suitable rules, as noted above, towards removing the checkpoints.
+ You may wish to specify @(':guard-hints nil') in your new call of
+ @('simplify'), to match the call @('(verify-guards fn)') that generated the
+ checkpoints that you considered.</li>
+
  <li>Provide a @(':guard-hints') option, @('(simplify FN :guard-hints ...)')
- that specifies a suitable theory and, perhaps, @(':use (:guard-theorem
+ that specifies a suitable theory and, perhaps, include @(':use (:guard-theorem
  FN)').</li>
 
  <li>Delay guard verification with @('(simplify FN :verify-guards nil ...)').
@@ -128,8 +142,46 @@
  verify-guards) on @('FN'), perhaps with suitable hints as suggested
  above.</li>
 
- <li>A simple thing to try is @(':guard-hints nil'), which will simply attempt
- a proof of guard verification without any hints.</li>
+ <li>If you use @(':print info') or @(':print :all'), you may see a message
+ like the following.
+ @({
+ Saving proof-builder error state; see :DOC instructions.  To retrieve:
+ (RETRIEVE :ERROR1)
+ })
+ If you invoke that command in the ACL2 loop, e.g., @('(RETRIEVE :ERROR1)'),
+ then you will be in the @(see acl2::proof-builder).  You can run the
+ @('prove') command there and look at the checkpoints.  Consider the following
+ (admittedly artificial) example.
+ @({
+ (defun my-consp (x) (declare (xargs :guard t)) (consp x))
+ (defun my-cdr (x) (declare (xargs :guard (my-consp x))) (cdr x))
+ (defun f1 (x)
+   (if (consp x)
+       (if (my-consp (f1 (cdr x)))
+           (cons (car x) (f1 (my-cdr x)))
+         x)
+     x))
+ (defthm f1-id (equal (f1 x) x))
+ (verify-guards f1)
+ (in-theory (disable my-consp my-cdr (tau-system)))
+ (simplify f1 :print :info)
+ })
+ If you run @('(RETRIEVE :ERROR1)') and then submit @('PROVE'), you'll see the
+ following checkpoint.
+ @({
+ Goal'
+ (IMPLIES (AND (CONSP X) (MY-CONSP (CDR X)))
+          (MY-CONSP X))
+ })
+ This checkpoint rather clearly suggests enabling @('my-consp').  Indeed, you
+ can do that in the proof-builder: the command @('(IN-THEORY (ENABLE
+ MY-CONSP))') followed by @('PROVE') completes the proof in the proof-builder.
+ With that information you can exit the proof-builder and successfully run the
+ following command in the ACL2 loop.
+ @({
+ (simplify f1 :guard-hints ((\"Goal\" :in-theory (enable my-consp))))
+ })
+ </li>
 
  </ul>
 
@@ -207,8 +259,8 @@
  <li>Use @(':print :info') to get a running commentary and perhaps a more
  detailed error.</li>
 
- <li>Use (':print :all') to get even more output.  This maximal level of output
- may be distracting, but near the end of it you might find useful
+ <li>Use @(':print :all') to get even more output.  This maximal level of
+ output may be distracting, but near the end of it you might find useful
  simplification checkpoints, for example from a failed attempt to prove the
  measure conjecture.  Those checkpoints may serve, as is common when using
  ACL2, to help you to discover additional theorems to prove first, in
