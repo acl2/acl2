@@ -82,8 +82,9 @@
 ;; Returns (mv result acl2::state) where result is :pass, :fail, or :error
 (defun run-blake2s-tests (acl2::state)
   (declare (xargs :stobjs acl2::state))
-  (b* (((mv parsed-tests acl2::state)
+  (b* (((mv erp parsed-tests acl2::state)
         (acl2::parse-file-as-json "blake2-kat.json" acl2::state))
+       ((when erp) (mv :error acl2::state))
        ((when (not (and (acl2::call-of :array parsed-tests)
                         (= 1 (len (acl2::fargs parsed-tests))))))
         (mv :error acl2::state))
