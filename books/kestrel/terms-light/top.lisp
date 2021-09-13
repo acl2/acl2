@@ -19,3 +19,7 @@
 (include-book "expr-calls-fn")
 (include-book "unary-lambdap")
 (include-book "wrap-pattern-around-term")
+(include-book "lambda-free-termp")
+(include-book "lambdas-closed-in-termp")
+(include-book "expand-lambdas-in-term")
+(include-book "expand-lambdas-in-term-proof")

@@ -15,7 +15,7 @@
 
 ;; See also the proofs in expand-lambdas-in-term-proof.lisp.
 
-(include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
+(include-book "sublis-var-simple")
 (include-book "lambda-free-termp")
 (include-book "lambdas-closed-in-termp")
 (local (include-book "../alists-light/pairlis-dollar"))
