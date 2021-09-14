@@ -1398,7 +1398,7 @@
     exec-minus
     exec-bitnot
     exec-lognot
-    exec-unary
+    ;; exec-unary -- replaced with exec-unary-when-valuep below
     exec-mul
     exec-div
     exec-rem
@@ -1451,6 +1451,47 @@
     value-realp
     value-arithmeticp
     value-scalarp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-optimized-execution-rules
+  :short "Optimized execution rules."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Here we prove some rules that we use instead of
+     enabling the corresponding execution functions.
+     Compared to the definitions of the execution functions,
+     these rules take advantage of the hypotheses
+     to cut away some of the code."))
+
+  (defruled exec-unary-when-valuep
+    (implies (valuep arg)
+             (equal (exec-unary op arg)
+                    (unop-case op
+                               :plus (exec-plus arg)
+                               :minus (exec-minus arg)
+                               :bitnot (exec-bitnot arg)
+                               :lognot (exec-lognot arg))))
+    :enable (exec-unary
+             errorp
+             valuep
+             ucharp
+             scharp
+             ushortp
+             sshortp
+             uintp
+             sintp
+             ulongp
+             slongp
+             ullongp
+             sllongp
+             pointerp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-optimized-execution-rules*
+  '(exec-unary-when-valuep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2958,6 +2999,7 @@
           *atc-integer-ops-2-conv-definition-rules*
           *atc-array-definition-rules*
           *atc-other-definition-rules*
+          *atc-optimized-execution-rules*
           *atc-distributivity-over-if-rewrite-rules*
           *atc-identifier-rules*
           *atc-not-rules*
