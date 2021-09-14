@@ -1830,8 +1830,7 @@
 
 (defval *atc-integer-size-rules*
   :short "List of rules related to integer sizes."
-  '(
-    uchar-max-vs-sint-max-rewrite
+  '(uchar-max-vs-sint-max-rewrite
     ushort-max-vs-sint-max-rewrite
     uchar-max-vs-slong-max-rewrite
     ushort-max-vs-slong-max-rewrite
