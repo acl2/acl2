@@ -40,51 +40,6 @@
   :hints (("Goal" :induct (len terms)
            :in-theory (enable (:i len) expand-lambdas-in-terms))))
 
-(local
- (mutual-recursion
-  ;; The whole point of this is to recur on a different alist in the lambda case
-  (defund expand-lambdas-in-term-induct (term a)
-    (declare (xargs :measure (acl2-count term))
-             (irrelevant a))
-    (if (or (variablep term)
-            (fquotep term))
-        term
-      (let* ((args (fargs term))
-             (args (expand-lambdas-in-terms-induct args a))
-             (fn (ffn-symb term)))
-        (if (flambdap fn)
-            (let* ((lambda-body (expand-lambdas-in-term-induct (lambda-body fn)
-                                                               (pairlis$ (lambda-formals fn) args) ;note this!
-                                                               )))
-              (sublis-var-simple (pairlis$ (lambda-formals fn) args) lambda-body))
-          `(,fn ,@args)))))
-
-  (defund expand-lambdas-in-terms-induct (terms a)
-    (declare (xargs :measure (acl2-count terms))
-             (irrelevant a))
-    (if (endp terms)
-        nil
-      (cons (expand-lambdas-in-term-induct (first terms) a)
-            (expand-lambdas-in-terms-induct (rest terms) a))))))
-
-(local
- (make-flag expand-lambdas-in-term-induct))
-
-(local
- (defthm-flag-expand-lambdas-in-term-induct
-   (defthm expand-lambdas-in-term-induct-removal
-     (equal (expand-lambdas-in-term-induct term a)
-            (expand-lambdas-in-term term))
-     :flag expand-lambdas-in-term-induct)
-   (defthm expand-lambdas-in-terms-induct-removal
-     (equal (expand-lambdas-in-terms-induct terms a)
-            (expand-lambdas-in-terms terms))
-     :flag expand-lambdas-in-terms-induct)
-   :hints (("Goal" :in-theory (enable EXPAND-LAMBDAS-IN-TERM
-                                      EXPAND-LAMBDAS-IN-TERMs
-                                      EXPAND-LAMBDAS-IN-TERM-induct
-                                      EXPAND-LAMBDAS-IN-TERMs-induct)))))
-
 ;; TODO: Compare to make-lambda-term.
 ;; maybe just call this make-lambda?
 (defund wrap-term-in-lambda (body lambda-formals args)
@@ -136,13 +91,7 @@
                                      ))))
 
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
-
-;dup
-(defun lookup-equal-lst (lst alist)
-  (if (atom lst)
-      nil
-    (cons (lookup-equal (car lst) alist)
-          (lookup-equal-lst (cdr lst) alist))))
+(include-book "kestrel/alists-light/lookup-equal-lst" :dir :system)
 
 (defthm lambda-eval-list-when-symbol-listp
   (implies (and (symbol-listp vars)
@@ -154,11 +103,13 @@
                               LOOKUP-EQUAL)
            :induct (len vars))))
 
+;; Checks whether ALIST1 and ALIST2 are equivalent wrt the KEYS.  For these
+;; purposes, not having a binding for a key is equivalent to binding it to nil.
 (defun alists-equiv-on (keys alist1 alist2)
   (if (endp keys)
       t
     (let ((key (first keys)))
-      (and (equal (cdr (assoc-equal key alist1)) ; ok if boun to nil in one alist and not bound in the other
+      (and (equal (cdr (assoc-equal key alist1)) ; ok if bound to nil in one alist and not bound in the other
                   (cdr (assoc-equal key alist2)))
            (alists-equiv-on (rest keys) alist1 alist2)))))
 
@@ -186,22 +137,6 @@
   :hints (("Goal" :expand (PSEUDO-TERMP TERM)
            :in-theory (enable free-vars-in-terms
                               LAMBDA-EVAL-OF-FNCALL-ARGS))))
-
-(local
- (defthm-flag-expand-lambdas-in-term-induct
-   (defthm expand-lambdas-in-term-induct-removal
-     (equal (expand-lambdas-in-term-induct term a)
-            (expand-lambdas-in-term term))
-     :flag expand-lambdas-in-term-induct)
-   (defthm expand-lambdas-in-terms-induct-removal
-     (equal (expand-lambdas-in-terms-induct terms a)
-            (expand-lambdas-in-terms terms))
-     :flag expand-lambdas-in-terms-induct)
-   :hints (("Goal" :in-theory (enable EXPAND-LAMBDAS-IN-TERM
-                                      EXPAND-LAMBDAS-IN-TERMs
-                                      EXPAND-LAMBDAS-IN-TERM-induct
-                                      EXPAND-LAMBDAS-IN-TERMs-induct)))))
-
 
 (defthm ALISTS-EQUIV-ON-of-cons-and-cons-same
   (implies (ALISTS-EQUIV-ON KEYS alist1 alist2)
@@ -420,19 +355,19 @@
          (free-vars-in-terms terms))
   :hints (("Goal" :in-theory (enable true-list-fix free-vars-in-terms))))
 
-(defthm-flag-expand-lambdas-in-term-induct
+(defthm-flag-expand-lambdas-in-term
   (defthm free-vars-in-term-of-expand-lambdas-in-term
     (implies (and (pseudo-termp term)
                   (LAMBDAS-CLOSED-IN-TERMP term))
              (subsetp-equal (free-vars-in-term (expand-lambdas-in-term term))
                             (free-vars-in-term term)))
-    :flag expand-lambdas-in-term-induct)
+    :flag expand-lambdas-in-term)
   (defthm free-vars-in-terms-of-expand-lambdas-in-terms
     (implies (and (pseudo-term-listp terms)
                   (LAMBDAS-CLOSED-IN-TERMsP terms))
              (subsetp-equal (free-vars-in-terms (expand-lambdas-in-terms terms))
                             (free-vars-in-terms terms)))
-    :flag expand-lambdas-in-terms-induct)
+    :flag expand-lambdas-in-terms)
   :hints (("Goal" :expand ((expand-lambdas-in-term terms)
                            (FREE-VARS-IN-TERM TERM))
            :do-not '(generalize eliminate-destructors)
@@ -498,69 +433,68 @@
                               FREE-VARS-IN-TERMS
                               LAMBDAS-CLOSED-IN-TERMP))))
 
-;can we combine this with the other -induct function above?
 (local
  (mutual-recursion
   ;; The whole point of this is to recur on a different alist in the lambda case
-  (defund expand-lambdas-in-term-induct2 (term a)
+  (defund expand-lambdas-in-term-induct (term a)
     (declare (xargs :measure (acl2-count term))
              (irrelevant a))
     (if (or (variablep term)
             (fquotep term))
         term
       (let* ((args (fargs term))
-             (args (expand-lambdas-in-terms-induct2 args a))
+             (args (expand-lambdas-in-terms-induct args a))
              (fn (ffn-symb term)))
         (if (flambdap fn)
-            (let* ((lambda-body (expand-lambdas-in-term-induct2 (lambda-body fn)
+            (let* ((lambda-body (expand-lambdas-in-term-induct (lambda-body fn)
                                                                (pairlis$ (lambda-formals fn) (lambda-eval-list args a)) ;note this!
                                                                )))
               (sublis-var-simple (pairlis$ (lambda-formals fn) args) lambda-body))
           `(,fn ,@args)))))
 
-  (defund expand-lambdas-in-terms-induct2 (terms a)
+  (defund expand-lambdas-in-terms-induct (terms a)
     (declare (xargs :measure (acl2-count terms))
              (irrelevant a))
     (if (endp terms)
         nil
-      (cons (expand-lambdas-in-term-induct2 (first terms) a)
-            (expand-lambdas-in-terms-induct2 (rest terms) a))))))
+      (cons (expand-lambdas-in-term-induct (first terms) a)
+            (expand-lambdas-in-terms-induct (rest terms) a))))))
 
 (local
- (make-flag expand-lambdas-in-term-induct2))
+ (make-flag expand-lambdas-in-term-induct))
 
 (local
- (defthm-flag-expand-lambdas-in-term-induct2
-   (defthm expand-lambdas-in-term-induct2-removal
-     (equal (expand-lambdas-in-term-induct2 term a)
+ (defthm-flag-expand-lambdas-in-term-induct
+   (defthm expand-lambdas-in-term-induct-removal
+     (equal (expand-lambdas-in-term-induct term a)
             (expand-lambdas-in-term term))
-     :flag expand-lambdas-in-term-induct2)
-   (defthm expand-lambdas-in-terms-induct2-removal
-     (equal (expand-lambdas-in-terms-induct2 terms a)
+     :flag expand-lambdas-in-term-induct)
+   (defthm expand-lambdas-in-terms-induct-removal
+     (equal (expand-lambdas-in-terms-induct terms a)
             (expand-lambdas-in-terms terms))
-     :flag expand-lambdas-in-terms-induct2)
+     :flag expand-lambdas-in-terms-induct)
    :hints (("Goal" :in-theory (enable EXPAND-LAMBDAS-IN-TERM
                                       EXPAND-LAMBDAS-IN-TERMs
-                                      EXPAND-LAMBDAS-IN-TERM-induct2
-                                      EXPAND-LAMBDAS-IN-TERMs-induct2)))))
+                                      EXPAND-LAMBDAS-IN-TERM-induct
+                                      EXPAND-LAMBDAS-IN-TERMs-induct)))))
 
 ;; Correctness of expand-lambdas-in-term: The meaning of terms is preserved.
 ;; TODO: Can some assumptions be dropped?
-(defthm-flag-expand-lambdas-in-term-induct2
+(defthm-flag-expand-lambdas-in-term-induct
   (defthm expand-lambdas-in-term-correct
     (implies (and (pseudo-termp term)
                   (no-nils-in-termp term)
                   (lambdas-closed-in-termp term))
              (equal (lambda-eval (expand-lambdas-in-term term) a)
                     (lambda-eval term a)))
-    :flag expand-lambdas-in-term-induct2)
+    :flag expand-lambdas-in-term-induct)
   (defthm expand-lambdas-in-terms-correct
     (implies (and (pseudo-term-listp terms)
                   (no-nils-in-termsp terms)
                   (lambdas-closed-in-termsp terms))
              (equal (lambda-eval-list (expand-lambdas-in-terms terms) a)
                     (lambda-eval-list terms a)))
-    :flag expand-lambdas-in-terms-induct2)
+    :flag expand-lambdas-in-terms-induct)
   :hints (("Goal" :expand ((expand-lambdas-in-term terms)
                            (free-vars-in-term term)
                            (lambdas-closed-in-termp term))
