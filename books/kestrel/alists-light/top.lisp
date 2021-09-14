@@ -29,6 +29,7 @@
 (include-book "lookup-equal-safe")
 (include-book "lookup-safe")
 (include-book "lookup-eq-lst")
+(include-book "lookup-equal-lst")
 (include-book "pairlis-dollar")
 (include-book "pairlis-dollar-fast")
 (include-book "uniquify-alist-eq")
