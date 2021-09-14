@@ -31,3 +31,23 @@
                   (and (stringp str)
                        ;; the call to coerce here gets computed:
                        (equal x (coerce str 'list))))))
+
+(defthm equal-of-coerce-and-coerce-string-case
+  (implies (and (character-listp x)
+                (character-listp y))
+           (equal (equal (coerce x 'string)
+                         (coerce y 'string))
+                  (equal x y)))
+  :hints (("Goal" :use ((:instance coerce-inverse-1 (x x))
+                        (:instance coerce-inverse-1 (x y)))
+           :in-theory (disable coerce-inverse-1))))
+
+(defthm equal-of-coerce-and-coerce-list-case
+  (implies (and (stringp x)
+                (stringp y))
+           (equal (equal (coerce x 'list)
+                         (coerce y 'list))
+                  (equal x y)))
+  :hints (("Goal" :use ((:instance coerce-inverse-2 (x x))
+                        (:instance coerce-inverse-2 (x y)))
+           :in-theory (disable coerce-inverse-2))))
