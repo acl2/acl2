@@ -1510,7 +1510,14 @@
        (exec-op (pack 'exec- (unop-kind op)))
        (name (pack exec-op '-when- pred))
        (op-type (pack (unop-kind op) '- fixtype))
-       (formula `(implies (,pred x)
+       (op-type-okp (and (type-signed-integerp type)
+                         (unop-case op :minus)
+                         (pack op-type '-okp)))
+       (hyps (if op-type-okp
+                 `(and (,pred x)
+                       (,op-type-okp x))
+               `(,pred x)))
+       (formula `(implies ,hyps
                           (equal (,exec-op x)
                                  (,op-type x))))
        (event `(defrule ,name
