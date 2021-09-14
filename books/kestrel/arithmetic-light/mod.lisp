@@ -780,3 +780,13 @@
                                    (x (* x y))
                                    (y z))
             :in-theory (disable acl2::mod-of-*-of-mod))))
+
+;; Disabled by default for speed
+(defthmd equal-when-equal-of-floors-and-equal-of-mods
+  (implies (and (equal (floor i1 j) (floor i2 j)) ; j is a free var
+                (equal (mod i1 j) (mod i2 j))
+                (acl2-numberp i1)
+                (acl2-numberp i2))
+           (equal (equal i1 i2)
+                  t))
+  :hints (("Goal" :in-theory (enable mod))))
