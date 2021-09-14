@@ -1141,7 +1141,7 @@
                     (type-uchar)
                     (type-sshort)
                     (type-ushort))))
-    (atc-integer-ops-1-conv-names-loop-ops '(plus minus bitnot shl shr) types))
+    (atc-integer-ops-1-conv-names-loop-ops '(minus bitnot shl shr) types))
 
   :prepwork
 
