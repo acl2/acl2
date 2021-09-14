@@ -91,13 +91,7 @@
                                      ))))
 
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
-
-;dup
-(defun lookup-equal-lst (lst alist)
-  (if (atom lst)
-      nil
-    (cons (lookup-equal (car lst) alist)
-          (lookup-equal-lst (cdr lst) alist))))
+(include-book "kestrel/alists-light/lookup-equal-lst" :dir :system)
 
 (defthm lambda-eval-list-when-symbol-listp
   (implies (and (symbol-listp vars)
