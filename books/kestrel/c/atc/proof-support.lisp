@@ -1495,60 +1495,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-exec-plus-rule ((type typep))
+(define atc-exec-unop-rule ((op unopp) (type typep))
   :guard (type-integerp type)
   :returns (mv (name symbolp) (event pseudo-event-formp))
-  :short "Name and event of the rule for
-          @(tsee exec-plus) on values of a certain type."
+  :short "Name and event of the rule for executing
+          a unary operator on values of a type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The rule reduces @(tsee exec-plus) to
+    "The rule reduces @(tsee exec-<op>) to
      the representation of the operation in the shallow embedding."))
   (b* ((fixtype (atc-integer-type-fixtype type))
        (pred (pack fixtype 'p))
-       (name (pack 'exec-plus-when- pred))
-       (plus-type (pack 'plus- fixtype))
+       (exec-op (pack 'exec- (unop-kind op)))
+       (name (pack exec-op '-when- pred))
+       (op-type (pack (unop-kind op) '- fixtype))
        (formula `(implies (,pred x)
-                          (equal (exec-plus x)
-                                 (,plus-type x))))
+                          (equal (,exec-op x)
+                                 (,op-type x))))
        (event `(defrule ,name
                  ,formula
-                 :enable (exec-plus
+                 :enable (,exec-op
                           value-arithmeticp
                           value-realp
                           value-integerp
                           value-signed-integerp
                           value-unsigned-integerp
                           promote-value
-                          ,plus-type))))
+                          ,op-type))))
     (mv name event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-exec-plus-rule-loop ((types type-listp))
+(define atc-exec-unop-rule-loop-types ((op unopp) (types type-listp))
   :guard (type-integer-listp types)
   :returns (mv (names symbol-listp)
                (events pseudo-event-form-listp))
-  :short "Names and events of the rules for
-          @(tsee exec-plus) on values of certain types."
+  :short "Names and events of the rules for executing
+          a unary operator on values of types from a list."
   (b* (((when (endp types)) (mv nil nil))
-       ((mv name event) (atc-exec-plus-rule (car types)))
-       ((mv names events) (atc-exec-plus-rule-loop (cdr types))))
+       ((mv name event) (atc-exec-unop-rule op (car types)))
+       ((mv names events) (atc-exec-unop-rule-loop-types op (cdr types))))
     (mv (cons name names) (cons event events))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-exec-plus-rule-all ()
-  :returns (event pseudo-event-formp)
-  :short "Rules for @(tsee exec-plus) on values of the integer types,
-          and constant with the list of those rules."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We generate a @(tsee defsection) for the rules,
-     and a @(tsee defval) for the list of rules."))
-  (b* ((types (list (type-schar)
+(define atc-exec-unop-rule-loop-ops ((ops unop-listp))
+  :returns (mv (names symbol-listp)
+               (events pseudo-event-form-listp))
+  :short "Names and events of the rules for executing
+          a unary operator from a list on values of the integer types."
+  (b* (((when (endp ops)) (mv nil nil))
+       (types (list (type-schar)
                     (type-uchar)
                     (type-sshort)
                     (type-ushort)
@@ -1558,7 +1556,20 @@
                     (type-ulong)
                     (type-sllong)
                     (type-ullong)))
-       ((mv names events) (atc-exec-plus-rule-loop types))
+       ((mv names events) (atc-exec-unop-rule-loop-types (car ops) types))
+       ((mv more-names more-events) (atc-exec-unop-rule-loop-ops (cdr ops))))
+    (mv (append names more-names) (append events more-events)))
+  :prepwork ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-exec-unop-rule-all ()
+  :returns (event pseudo-event-formp)
+  :short "Rules for executing
+          the unary operators on values of the integer types,
+          and constant with the list of those rules."
+  (b* ((ops (list (unop-plus)))
+       ((mv names events) (atc-exec-unop-rule-loop-ops ops))
        (defsection-event
          `(defsection atc-exec-plus-rules
             :short "Rules for @(tsee exec-plus)."
@@ -1573,7 +1584,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(make-event (atc-exec-plus-rule-all))
+(make-event (atc-exec-unop-rule-all))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
