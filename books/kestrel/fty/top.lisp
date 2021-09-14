@@ -47,6 +47,7 @@
 (include-book "nat-list-result")
 (include-book "nat-natlist")
 (include-book "nat-natlist-result")
+(include-book "nat-option")
 (include-book "nat-result")
 (include-book "nat-set")
 (include-book "nati")
