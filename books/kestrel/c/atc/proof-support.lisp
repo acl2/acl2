@@ -1141,13 +1141,13 @@
                     (type-uchar)
                     (type-sshort)
                     (type-ushort))))
-    (atc-integer-ops-1-conv-names-loop-ops '(bitnot shl shr) types))
+    (atc-integer-ops-1-conv-names-loop-ops '(shl shr) types))
 
   :prepwork
 
   ((define atc-integer-ops-1-conv-names-loop-types ((op symbolp)
                                                     (types type-listp))
-     :guard (and (member-eq op '(bitnot shl shr))
+     :guard (and (member-eq op '(shl shr))
                  (type-integer-listp types))
      :returns (name symbol-listp)
      :parents nil
@@ -1164,7 +1164,7 @@
 
    (define atc-integer-ops-1-conv-names-loop-ops ((ops symbol-listp)
                                                   (types type-listp))
-     :guard (and (subsetp-eq ops '(bitnot shl shr))
+     :guard (and (subsetp-eq ops '(shl shr))
                  (type-integer-listp types))
      :returns (names symbol-listp)
      :parents nil
@@ -1394,7 +1394,6 @@
     exec-iconst
     exec-const
     exec-ident
-    exec-bitnot
     exec-lognot
     exec-mul
     exec-div
@@ -1576,7 +1575,8 @@
           the unary operators on values of the integer types,
           and constant with the list of those rules."
   (b* ((ops (list (unop-plus)
-                  (unop-minus)))
+                  (unop-minus)
+                  (unop-bitnot)))
        ((mv names events) (atc-exec-unop-rule-loop-ops ops))
        (defsection-event
          `(defsection atc-exec-unop-rules
