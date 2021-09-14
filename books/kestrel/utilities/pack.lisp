@@ -13,6 +13,10 @@
 
 ;; STATUS: IN-PROGRESS
 
+(local (include-book "coerce"))
+(local (include-book "explode-nonnegative-integer"))
+(local (include-book "kestrel/lists-light/append" :dir :system))
+
 ;; See also the built-in functions add-suffix and add-suffix-to-fn, which are
 ;; less general than pack$ but may suffice for many uses.
 
@@ -50,6 +54,15 @@
               "ERROR IN NAT-TO-STRING")
     (coerce (explode-nonnegative-integer n 10 nil) 'string)))
 
+;; NAT-TO-STRING is essentially injective
+(defthm equal-of-nat-to-string-and-nat-to-string
+  (implies (and (natp n1)
+                (natp n2))
+           (equal (equal (nat-to-string n1)
+                         (nat-to-string n2))
+                  (equal n1 n2)))
+  :hints (("Goal" :in-theory (enable nat-to-string))))
+
 (defthm stringp-of-nat-to-string
   (stringp (nat-to-string x))
   :hints (("Goal" :in-theory (enable nat-to-string))))
@@ -79,6 +92,14 @@
 (defund binary-pack (x y)
   (declare (type t x y))
   (concatenate 'string (to-string x) (to-string y)))
+
+;; binary-pack is injective on its second argument
+(defthm equal-of-binary-pack-and-binary-pack-same-arg1
+  (equal (equal (binary-pack x y1)
+                (binary-pack x y2))
+         (equal (to-string y1)
+                (to-string y2)))
+  :hints (("Goal" :in-theory (e/d (binary-pack) (to-string)))))
 
 ;lst should be a list of 1 or more arguments, which must be symbols, string, or natps
 ;allow 0 args?
