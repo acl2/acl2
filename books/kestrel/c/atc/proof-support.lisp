@@ -1394,7 +1394,7 @@
     exec-iconst
     exec-const
     exec-ident
-    exec-plus
+    ;; exec-plus -- replaced with *atc-exec-plus-rules* below
     exec-minus
     exec-bitnot
     exec-lognot
@@ -1492,6 +1492,88 @@
 
 (defval *atc-optimized-execution-rules*
   '(exec-unary-when-valuep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-exec-plus-rule ((type typep))
+  :guard (type-integerp type)
+  :returns (mv (name symbolp) (event pseudo-event-formp))
+  :short "Name and event of the rule for
+          @(tsee exec-plus) on values of a certain type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The rule reduces @(tsee exec-plus) to
+     the representation of the operation in the shallow embedding."))
+  (b* ((fixtype (atc-integer-type-fixtype type))
+       (pred (pack fixtype 'p))
+       (name (pack 'exec-plus-when- pred))
+       (plus-type (pack 'plus- fixtype))
+       (formula `(implies (,pred x)
+                          (equal (exec-plus x)
+                                 (,plus-type x))))
+       (event `(defrule ,name
+                 ,formula
+                 :enable (exec-plus
+                          value-arithmeticp
+                          value-realp
+                          value-integerp
+                          value-signed-integerp
+                          value-unsigned-integerp
+                          promote-value
+                          ,plus-type))))
+    (mv name event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-exec-plus-rule-loop ((types type-listp))
+  :guard (type-integer-listp types)
+  :returns (mv (names symbol-listp)
+               (events pseudo-event-form-listp))
+  :short "Names and events of the rules for
+          @(tsee exec-plus) on values of certain types."
+  (b* (((when (endp types)) (mv nil nil))
+       ((mv name event) (atc-exec-plus-rule (car types)))
+       ((mv names events) (atc-exec-plus-rule-loop (cdr types))))
+    (mv (cons name names) (cons event events))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-exec-plus-rule-all ()
+  :returns (event pseudo-event-formp)
+  :short "Rules for @(tsee exec-plus) on values of the integer types,
+          and constant with the list of those rules."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We generate a @(tsee defsection) for the rules,
+     and a @(tsee defval) for the list of rules."))
+  (b* ((types (list (type-schar)
+                    (type-uchar)
+                    (type-sshort)
+                    (type-ushort)
+                    (type-sint)
+                    (type-uint)
+                    (type-slong)
+                    (type-ulong)
+                    (type-sllong)
+                    (type-ullong)))
+       ((mv names events) (atc-exec-plus-rule-loop types))
+       (defsection-event
+         `(defsection atc-exec-plus-rules
+            :short "Rules for @(tsee exec-plus)."
+            ,@events))
+       (defval-event
+         `(defval *atc-exec-plus-rules*
+            :short "List of rules for @(tsee exec-plus)."
+            '(,@names))))
+    `(progn
+       ,defsection-event
+       ,defval-event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event (atc-exec-plus-rule-all))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3000,6 +3082,7 @@
           *atc-array-definition-rules*
           *atc-other-definition-rules*
           *atc-optimized-execution-rules*
+          *atc-exec-plus-rules*
           *atc-distributivity-over-if-rewrite-rules*
           *atc-identifier-rules*
           *atc-not-rules*
