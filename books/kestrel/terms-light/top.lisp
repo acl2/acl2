@@ -23,3 +23,4 @@
 (include-book "lambdas-closed-in-termp")
 (include-book "expand-lambdas-in-term")
 (include-book "expand-lambdas-in-term-proof")
+(include-book "add-param-to-calls-in-term")
