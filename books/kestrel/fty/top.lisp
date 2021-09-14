@@ -50,6 +50,7 @@
 (include-book "nat-option")
 (include-book "nat-option-list")
 (include-book "nat-option-result")
+(include-book "nat-option-list-result")
 (include-book "nat-result")
 (include-book "nat-set")
 (include-book "nati")
