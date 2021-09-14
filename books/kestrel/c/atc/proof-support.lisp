@@ -1394,7 +1394,6 @@
     exec-iconst
     exec-const
     exec-ident
-    exec-lognot
     exec-mul
     exec-div
     exec-rem
@@ -1521,6 +1520,7 @@
        (event `(defrule ,name
                  ,formula
                  :enable (,exec-op
+                          value-scalarp
                           value-arithmeticp
                           value-realp
                           value-integerp
@@ -1576,7 +1576,8 @@
           and constant with the list of those rules."
   (b* ((ops (list (unop-plus)
                   (unop-minus)
-                  (unop-bitnot)))
+                  (unop-bitnot)
+                  (unop-lognot)))
        ((mv names events) (atc-exec-unop-rule-loop-ops ops))
        (defsection-event
          `(defsection atc-exec-unop-rules
