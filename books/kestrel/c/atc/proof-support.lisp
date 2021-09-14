@@ -1141,20 +1141,20 @@
                     (type-uchar)
                     (type-sshort)
                     (type-ushort))))
-    (atc-integer-ops-1-conv-names-loop-ops '(minus bitnot shl shr) types))
+    (atc-integer-ops-1-conv-names-loop-ops '(bitnot shl shr) types))
 
   :prepwork
 
   ((define atc-integer-ops-1-conv-names-loop-types ((op symbolp)
                                                     (types type-listp))
-     :guard (and (member-eq op '(plus minus bitnot shl shr))
+     :guard (and (member-eq op '(bitnot shl shr))
                  (type-integer-listp types))
      :returns (name symbol-listp)
      :parents nil
      (cond ((endp types) nil)
            (t (b* ((type (car types))
                    (fixtype (atc-integer-type-fixtype type))
-                   (names (if (member-eq op '(minus shl shr))
+                   (names (if (member-eq op '(shl shr))
                               (list (pack op '- fixtype)
                                     (pack op '- fixtype '-okp))
                             (list (pack op '- fixtype))))
@@ -1164,7 +1164,7 @@
 
    (define atc-integer-ops-1-conv-names-loop-ops ((ops symbol-listp)
                                                   (types type-listp))
-     :guard (and (subsetp-eq ops '(plus minus bitnot shl shr))
+     :guard (and (subsetp-eq ops '(bitnot shl shr))
                  (type-integer-listp types))
      :returns (names symbol-listp)
      :parents nil
@@ -1394,11 +1394,8 @@
     exec-iconst
     exec-const
     exec-ident
-    ;; exec-plus -- replaced with *atc-exec-plus-rules* below
-    exec-minus
     exec-bitnot
     exec-lognot
-    ;; exec-unary -- replaced with exec-unary-when-valuep below
     exec-mul
     exec-div
     exec-rem
@@ -1510,8 +1507,10 @@
        (exec-op (pack 'exec- (unop-kind op)))
        (name (pack exec-op '-when- pred))
        (op-type (pack (unop-kind op) '- fixtype))
-       (op-type-okp (and (type-signed-integerp type)
-                         (unop-case op :minus)
+       (op-type-okp (and (unop-case op :minus)
+                         (member-eq (type-kind type)
+                                    '(:schar :sshort :sint :slong :sllong
+                                      :uchar :ushort))
                          (pack op-type '-okp)))
        (hyps (if op-type-okp
                  `(and (,pred x)
@@ -1529,7 +1528,8 @@
                           value-signed-integerp
                           value-unsigned-integerp
                           promote-value
-                          ,op-type))))
+                          ,op-type
+                          ,@(and op-type-okp (list op-type-okp))))))
     (mv name event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1575,15 +1575,16 @@
   :short "Rules for executing
           the unary operators on values of the integer types,
           and constant with the list of those rules."
-  (b* ((ops (list (unop-plus)))
+  (b* ((ops (list (unop-plus)
+                  (unop-minus)))
        ((mv names events) (atc-exec-unop-rule-loop-ops ops))
        (defsection-event
-         `(defsection atc-exec-plus-rules
-            :short "Rules for @(tsee exec-plus)."
+         `(defsection atc-exec-unop-rules
+            :short "Rules for executing unary operators."
             ,@events))
        (defval-event
-         `(defval *atc-exec-plus-rules*
-            :short "List of rules for @(tsee exec-plus)."
+         `(defval *atc-exec-unop-rules*
+            :short "List of rules for executing unary operators."
             '(,@names))))
     `(progn
        ,defsection-event
@@ -3100,7 +3101,7 @@
           *atc-array-definition-rules*
           *atc-other-definition-rules*
           *atc-optimized-execution-rules*
-          *atc-exec-plus-rules*
+          *atc-exec-unop-rules*
           *atc-distributivity-over-if-rewrite-rules*
           *atc-identifier-rules*
           *atc-not-rules*
