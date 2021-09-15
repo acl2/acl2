@@ -17,6 +17,8 @@
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 
+(local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-proof-support
@@ -1192,7 +1194,7 @@
      they are defined in terms of conversions and
      of operations on equal types of rank at least @('int'):
      this is what the dynamic semantics of C uses."))
-  (b* ((ops (list 'add 'sub 'mul 'div 'rem
+  (b* ((ops (list 'add 'sub 'div 'rem
                   'lt 'gt 'le 'ge 'eq 'ne
                   'bitand 'bitxor 'bitior))
        (types (list (type-schar)
@@ -1212,7 +1214,7 @@
   ((define atc-integer-ops-2-conv-names-loop-right-types ((op symbolp)
                                                           (ltype typep)
                                                           (rtypes type-listp))
-     :guard (and (member-eq op (list 'add 'sub 'mul 'div 'rem
+     :guard (and (member-eq op (list 'add 'sub 'div 'rem
                                      'lt 'gt 'le 'ge 'eq 'ne
                                      'bitand 'bitxor 'bitior))
                  (type-integerp ltype)
@@ -1232,7 +1234,7 @@
               (rfixtype (atc-integer-type-fixtype rtype))
               (names (if (or (member-eq op '(div rem))
                              (and (type-signed-integerp type)
-                                  (member-eq op '(add sub mul))))
+                                  (member-eq op '(add sub))))
                          (list (pack op '- lfixtype '- rfixtype)
                                (pack op '- lfixtype '- rfixtype '-okp))
                        (list (pack op '- lfixtype '- rfixtype))))
@@ -1247,7 +1249,7 @@
    (define atc-integer-ops-2-conv-names-loop-left-types ((op symbolp)
                                                          (ltypes type-listp)
                                                          (rtypes type-listp))
-     :guard (and (member-eq op (list 'add 'sub 'mul 'div 'rem
+     :guard (and (member-eq op (list 'add 'sub 'div 'rem
                                      'lt 'gt 'le 'ge 'eq 'ne
                                      'bitand 'bitxor 'bitior))
                  (type-integer-listp ltypes)
@@ -1266,7 +1268,7 @@
    (define atc-integer-ops-2-conv-names-loop-ops ((ops symbol-listp)
                                                   (ltypes type-listp)
                                                   (rtypes type-listp))
-     :guard (and (subsetp-eq ops (list 'add 'sub 'mul 'div 'rem
+     :guard (and (subsetp-eq ops (list 'add 'sub 'div 'rem
                                        'lt 'gt 'le 'ge 'eq 'ne
                                        'bitand 'bitxor 'bitior))
                  (type-integer-listp ltypes)
@@ -1394,7 +1396,6 @@
     exec-iconst
     exec-const
     exec-ident
-    exec-mul
     exec-div
     exec-rem
     exec-add
@@ -1752,7 +1753,8 @@
   :guard (type-integerp type)
   :returns (mv (name symbolp) (event pseudo-event-formp))
   :short "Name and event of the rule for executing
-          a unary operator on values of a type."
+          the unary operator @('op')
+          on an operand of type @('type')."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1796,7 +1798,8 @@
   :returns (mv (names symbol-listp)
                (events pseudo-event-form-listp))
   :short "Names and events of the rules for executing
-          a unary operator on values of types from a list."
+          the unary operator @('op')
+          on operands of types in @('types')."
   (b* (((when (endp types)) (mv nil nil))
        ((mv name event) (atc-exec-unop-rule op (car types)))
        ((mv names events) (atc-exec-unop-rule-loop-types op (cdr types))))
@@ -1808,7 +1811,8 @@
   :returns (mv (names symbol-listp)
                (events pseudo-event-form-listp))
   :short "Names and events of the rules for executing
-          a unary operator from a list on values of the integer types."
+          a unary operator in @('ops')
+          on operands of all the integer type."
   (b* (((when (endp ops)) (mv nil nil))
        (types (list (type-schar)
                     (type-uchar)
@@ -1822,15 +1826,15 @@
                     (type-ullong)))
        ((mv names events) (atc-exec-unop-rule-loop-types (car ops) types))
        ((mv more-names more-events) (atc-exec-unop-rule-loop-ops (cdr ops))))
-    (mv (append names more-names) (append events more-events)))
-  :prepwork ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))
+    (mv (append names more-names) (append events more-events))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-exec-unop-rule-all ()
   :returns (event pseudo-event-formp)
   :short "Rules for executing
-          the unary operators on values of the integer types,
+          all the unary operators
+          on operand of all the integer types,
           and constant with the list of those rules."
   (b* ((ops (list (unop-plus)
                   (unop-minus)
@@ -1852,6 +1856,156 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event (atc-exec-unop-rule-all))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-exec-binop-rule ((op binopp) (ltype typep) (rtype typep))
+  :guard (and (type-integerp ltype)
+              (type-integerp rtype))
+  :returns (mv (name symbolp) (event pseudo-event-formp))
+  :short "Name and event of the rule for executing
+          the binary operator @('op')
+          on a left operand of type @('ltype')
+          and a right operand of type @('rtype')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The rule reduces @(tsee exec-<op>) to
+     the representation of the operation in the shallow embedding."))
+  (b* ((lfixtype (atc-integer-type-fixtype ltype))
+       (rfixtype (atc-integer-type-fixtype rtype))
+       (lpred (pack lfixtype 'p))
+       (rpred (pack rfixtype 'p))
+       (exec-op (pack 'exec- (binop-kind op)))
+       (name (pack exec-op '-when- lpred '-and- rpred))
+       (op-ltype-rtype (pack (binop-kind op) '- lfixtype '- rfixtype))
+       (op-ltype-rtype-okp (and (type-signed-integerp
+                                 (uaconvert-types ltype rtype))
+                                (pack op-ltype-rtype '-okp)))
+       (hyps `(and (,lpred x)
+                   (,rpred y)
+                   ,@(and op-ltype-rtype-okp
+                          `((,op-ltype-rtype-okp x y)))))
+       (formula `(implies ,hyps
+                          (equal (,exec-op x y)
+                                 (,op-ltype-rtype x y))))
+       (event `(defrule ,name
+                 ,formula
+                 :enable (,exec-op
+                          value-scalarp
+                          value-arithmeticp
+                          value-realp
+                          value-integerp
+                          value-signed-integerp
+                          value-unsigned-integerp
+                          promote-value
+                          uaconvert-values
+                          ,op-ltype-rtype
+                          ,@(and op-ltype-rtype-okp
+                                 (list op-ltype-rtype-okp))
+                          ,@*atc-conversion-composition-rules*))))
+    (mv name event))
+  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
+                                           type-realp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-exec-binop-rule-loop-rtypes ((op binopp)
+                                         (ltype typep)
+                                         (rtypes type-listp))
+  :guard (and (type-integerp ltype)
+              (type-integer-listp rtypes))
+  :returns (mv (names symbol-listp)
+               (events pseudo-event-form-listp))
+  :short "Names and events of the rules for executing
+          the binary operator @('op')
+          on a left operand of type @('ltype')
+          and right operands of types in @('rtypes')."
+  (b* (((when (endp rtypes)) (mv nil nil))
+       ((mv name event) (atc-exec-binop-rule op ltype (car rtypes)))
+       ((mv names events) (atc-exec-binop-rule-loop-rtypes op
+                                                           ltype
+                                                           (cdr rtypes))))
+    (mv (cons name names) (cons event events))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-exec-binop-rule-loop-ltypes ((op binopp) (ltypes type-listp))
+  :guard (type-integer-listp ltypes)
+  :returns (mv (names symbol-listp)
+               (events pseudo-event-form-listp))
+  :short "Names and events of the rules for executing
+          the binary operator @('op')
+          on left operands of types in @('ltypes')
+          and right operands of all the integer types."
+  (b* (((when (endp ltypes)) (mv nil nil))
+       ((mv names events)
+        (atc-exec-binop-rule-loop-rtypes op
+                                         (car ltypes)
+                                         (list (type-schar)
+                                               (type-uchar)
+                                               (type-sshort)
+                                               (type-ushort)
+                                               (type-sint)
+                                               (type-uint)
+                                               (type-slong)
+                                               (type-ulong)
+                                               (type-sllong)
+                                               (type-ullong))))
+       ((mv more-names more-events)
+        (atc-exec-binop-rule-loop-ltypes op (cdr ltypes))))
+    (mv (append names more-names) (append events more-events))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-exec-binop-rule-loop-ops ((ops binop-listp))
+  :returns (mv (names symbol-listp)
+               (events pseudo-event-form-listp))
+  :short "Names and events of the rules for executing
+          the binary operators in @('ops')
+          on left and right operands of all the integer types."
+  (b* (((when (endp ops)) (mv nil nil))
+       ((mv names events)
+        (atc-exec-binop-rule-loop-ltypes (car ops)
+                                         (list (type-schar)
+                                               (type-uchar)
+                                               (type-sshort)
+                                               (type-ushort)
+                                               (type-sint)
+                                               (type-uint)
+                                               (type-slong)
+                                               (type-ulong)
+                                               (type-sllong)
+                                               (type-ullong))))
+       ((mv more-names more-events)
+        (atc-exec-binop-rule-loop-ops (cdr ops))))
+    (mv (append names more-names) (append events more-events))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-exec-binop-rule-all ()
+  :returns (event pseudo-event-formp)
+  :short "Rules for executing
+          all the binary operators
+          on left and right operand of all the integer types,
+          and constant with the list of those rules."
+  (b* ((ops (list (binop-mul)))
+       ((mv names events) (atc-exec-binop-rule-loop-ops ops))
+       (defsection-event
+         `(defsection atc-exec-binop-rules
+            :short "Rules for executing binary operators."
+            ,@events))
+       (defval-event
+         `(defval *atc-exec-binop-rules*
+            :short "List of rules for executing binary operators."
+            '(,@names))))
+    `(progn
+       ,defsection-event
+       ,defval-event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event (atc-exec-binop-rule-all))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
