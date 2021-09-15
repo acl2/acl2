@@ -11,11 +11,9 @@
 
 (in-package "ACL2")
 
-;; STATUS: IN-PROGRESS
+;; See also the proofs in expand-lambdas-in-term-proof.lisp.
 
-;; TODO: Move this book to terms-light/
-
-(include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
+(include-book "sublis-var-simple")
 (include-book "lambda-free-termp")
 (include-book "lambdas-closed-in-termp")
 (local (include-book "../alists-light/pairlis-dollar"))
@@ -157,7 +155,9 @@
   (implies (pseudo-termp term)
            (not (consp (car (expand-lambdas-in-term term)))))
   :hints (("Goal" :use (:instance lambda-free-termp-of-expand-lambdas-in-term)
-           :in-theory (disable lambda-free-termp-of-expand-lambdas-in-term))))
+           ;; :expand (expand-lambdas-in-term term)
+           :in-theory (e/d (lambda-free-termp)
+                           (lambda-free-termp-of-expand-lambdas-in-term)))))
 
 ;; Expanding lambdas doesn't introduce new free vars (assuming lambdas are
 ;; closed).  Note that expanding lambdas can remove free vars, since some
@@ -176,13 +176,13 @@
              (subsetp-equal (free-vars-in-terms (expand-lambdas-in-terms terms))
                             (free-vars-in-terms terms)))
     :flag expand-lambdas-in-terms)
-  :hints ( ("subgoal *1/2" :use (:instance subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs
-                                           (term (expand-lambdas-in-term (caddr (car term))))
-                                           (alist (pairlis$ (cadr (car term))
-                                                            (expand-lambdas-in-terms (cdr term))))))
-           ("Goal" :in-theory (e/d (free-vars-in-term
-                                    expand-lambdas-in-term
-                                    expand-lambdas-in-terms
-                                    lambdas-closed-in-termp)
-                                   (subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs
-                                    strip-cdrs-of-pairlis$-gen)))))
+  :hints (("subgoal *1/2" :use (:instance subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs
+                                          (term (expand-lambdas-in-term (caddr (car term))))
+                                          (alist (pairlis$ (cadr (car term))
+                                                           (expand-lambdas-in-terms (cdr term))))))
+          ("Goal" :in-theory (e/d (free-vars-in-term
+                                   expand-lambdas-in-term
+                                   expand-lambdas-in-terms
+                                   lambdas-closed-in-termp)
+                                  (subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs
+                                   strip-cdrs-of-pairlis$-gen)))))

@@ -293,7 +293,7 @@
                       (concatenate
                        'string (symbol-name arg) "-EQUIV")
                       pkg)))
-       ((mv err tr-form) (acl2::translate-cmp form t t nil 'deffixequiv-basic-parse
+       ((mv err tr-form) (acl2::translate-cmp form t nil nil 'deffixequiv-basic-parse
                                               world (acl2::default-state-vars t)))
        ((when err)
         (raise "Error translating form: ~@0" tr-form))

@@ -25,9 +25,10 @@ ACL2 !>>(DEFUN BASIC-1 (TOP)
 ACL2 Error in ( DEFUN BASIC-1 ...):  The variable ST1 is bound in a
 stobj-let form to the expression (ST1$FIX (TBL-GET 'ST1 TOP)), which
 has the form of a stobj fixer, ST1$FIX, applied to a stobj-table access,
-(TBL-GET 'ST1 TOP).  However, that alleged stobj-table access is illegal
-because ST1 is not the name of a stobj.  See :DOC stobj-table.  The
-form (STOBJ-LET ((ST1 (ST1$FIX (TBL-GET # TOP)))) (VAL1) (FLD1 ST1) VAL1)
+(TBL-GET 'ST1 TOP).
+However, that alleged stobj-table access is illegal because ST1 is
+not the name of a stobj.  See :DOC stobj-table.  The form 
+(STOBJ-LET ((ST1 (ST1$FIX (TBL-GET # TOP)))) (VAL1) (FLD1 ST1) VAL1)
 is thus illegal.  See :DOC stobj-let.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
@@ -1064,8 +1065,9 @@ ACL2 !>>(DEFUN UPDATE-1A-BAD (TOP)
 ACL2 Error in ( DEFUN UPDATE-1A-BAD ...):  The variable ST3A is bound
 in a stobj-let form to the expression (ST3A$FIX (TBL-GET 'ST3 TOP)),
 which has the form of a stobj fixer, ST3A$FIX, applied to a stobj-
-table access, (TBL-GET 'ST3 TOP).  However, the stobj fixer for ST3
-is ST3$FIX, not ST3A$FIX.  See :DOC stobj-table.  The form 
+table access, (TBL-GET 'ST3 TOP).
+However, the stobj fixer for ST3 is ST3$FIX, not ST3A$FIX.  See :DOC
+stobj-table.  The form 
 (STOBJ-LET ((ST3 (ST3$FIX (TBL-GET # TOP)))
             (ST3A (ST3A$FIX (TBL-GET # TOP))))
            (ST3 ST3A VAL3 VAL3A)
@@ -1092,7 +1094,8 @@ ACL2 !>>(ST1$FIX T)
 
 ACL2 Error in TOP-LEVEL:  It is illegal to call ST1$FIX in this context
 because it is a stobj fixer.  Note that stobj fixers cannot be called
-directly except in theorems.  See :DOC stobj-let.  Note:  this error
+directly except in theorems or, in a specific way, when accessing stobj-
+tables (see :DOC stobj-table).  See :DOC stobj.  Note:  this error
 occurred in the context (ST1$FIX T).
 
 ACL2 !>>(DEFUN FOO NIL (ST1$FIX T))
@@ -1100,8 +1103,9 @@ ACL2 !>>(DEFUN FOO NIL (ST1$FIX T))
 
 ACL2 Error in ( DEFUN FOO ...):  It is illegal to call ST1$FIX in this
 context because it is a stobj fixer.  Note that stobj fixers cannot
-be called directly except in theorems.  See :DOC stobj-let.  Note:
-this error occurred in the context (ST1$FIX T).
+be called directly except in theorems or, in a specific way, when accessing
+stobj-tables (see :DOC stobj-table).  See :DOC stobj.  Note:  this
+error occurred in the context (ST1$FIX T).
 
 ACL2 !>>(WITH-OUTPUT :ON :ALL :OFF PROOF-TREE
                      (THM (EQUAL (ST1$FIX T) (CREATE-ST1))))
@@ -1178,9 +1182,9 @@ ACL2 !>>(ENCAPSULATE NIL (LOCAL (DEFSTOBJ ST5 FLD5))
 ACL2 Error in ( DEFUN SET-ST-IN-STOBJ-TABLE ...):  The variable ST5
 is bound in a stobj-let form to the expression (ST5$FIX (TBL-GET 'ST5 TOP)),
 which has the form of a stobj fixer, ST5$FIX, applied to a stobj-table
-access, (TBL-GET 'ST5 TOP).  However, that alleged stobj-table access
-is illegal because ST5 is not the name of a stobj.  See :DOC stobj-
-table.  The form 
+access, (TBL-GET 'ST5 TOP).
+However, that alleged stobj-table access is illegal because ST5 is
+not the name of a stobj.  See :DOC stobj-table.  The form 
 (STOBJ-LET ((ST5 (ST5$FIX (TBL-GET # TOP))))
            (ST5)
            (UPDATE-FLD5 FLD-VAL ST5)

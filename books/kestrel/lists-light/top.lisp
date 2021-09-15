@@ -90,3 +90,5 @@
 (include-book "rules2")
 
 (include-book "append-with-key")
+
+(include-book "union-eql-tail")

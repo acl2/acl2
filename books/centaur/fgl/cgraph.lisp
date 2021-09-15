@@ -42,18 +42,45 @@
 
 (defprod ctrex-rule
   ((name symbolp :rule-classes :type-prescription)
-   (match pseudo-term-subst-p)
-   (assign pseudo-termp)
-   (assigned-var pseudo-var-p :rule-classes :type-prescription)
+   (assigned-var pseudo-var-p :rule-classes :type-prescription
+                 "Variable name standing for the object whose value is determined
+                  by an application of this rule")
+   (assign pseudo-termp
+           "Value to be assigned to assigned-var, in terms of the assigned-var
+            itself and variables both used and bound in match, and keys of match-conds.
+            Possible restriction: elim rules should only use the keys of match/match-conds,
+            not e.g. the assigned-var")
+   (match pseudo-term-subst-p
+          "Substitution giving values to variables. When we make the cgraph,
+           addition of an edge with this rule is triggered when a cgraph node matches
+           one of the terms in the substitution.")
+   (match-conds pseudo-term-subst-p
+                "Each key will be assigned T if its value/match variable has an
+                 assignment after recurring over the match expressions.")
+   (assign-cond pseudo-termp
+                "Condition under which to perform the assignment, in terms of the
+                 same variables as assign"
+                :default ''t)
    (hyp pseudo-termp)
    (equiv pseudo-fnsym-p)
    (ruletype ctrex-ruletype-p))
   :layout :tree)
 
 (defprod cgraph-edge
-  ((match-vars pseudo-var-list-p :rule-classes :type-prescription)
+  ((match-vars pseudo-var-list-p :rule-classes :type-prescription
+               "The subset of variables bound in rule.match that we should try
+                to compute values for in order to apply the rule. When building
+                the cgraph, we always add a new edge with a single match var, but
+                if two edges are added with the same rule and compatible substitutions,
+                then we replace the two edges with a single edge with the union
+                of their match-vars.")
    (rule ctrex-rule-p)
-   (subst fgl-object-bindings))
+   (subst fgl-object-bindings
+          "Substitution to be applied to match terms of the rule. This is a source
+           of confusion because the match itself is a substitution, but each term
+           within it usually contain references to variables: usually the assigned-var,
+           but also sometimes e.g. the key for an @('assoc')-like operation, array
+           index, etc."))
   :layout :tree)
 
 (fty::deflist cgraph-edgelist :elt-type cgraph-edge :true-listp t)

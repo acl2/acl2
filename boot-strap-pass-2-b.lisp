@@ -478,6 +478,8 @@
 ; We skip raw Lisp functions here; see *thread-unsafe-builtin-memoizations*.
 
   (memoize 'fchecksum-obj :stats nil :forget t)
+  (memoize 'immediate-canonical-ancestors :stats nil)
+  (memoize 'canonical-ancestors-rec :stats nil)
 
 ; We no longer define pkg-names-memoize (other than to cause an error); see the
 ; comment there.

@@ -18,7 +18,7 @@
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
 (include-book "kestrel/terms-light/expr-calls-fn" :dir :system) ;todo: drop?
 (include-book "symbol-term-alistp")
-(include-book "expand-lambdas-in-term")
+(include-book "kestrel/terms-light/expand-lambdas-in-term" :dir :system)
 (include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))

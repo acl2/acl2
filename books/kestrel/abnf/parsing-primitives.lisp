@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -124,6 +124,7 @@
   (b* (((mv error? input) (parse-exact-list-aux nats input))
        ((when error?) (mv error? nil input)))
     (mv nil (tree-leafterm nats) input))
+  :hooks (:fix)
 
   :prepwork
   ((define parse-exact-list-aux ((nats nat-listp) (input nat-listp))
@@ -138,7 +139,35 @@
                (cons input-nat input)))
           ((mv error? input) (parse-exact-list-aux (cdr nats) input))
           ((when error?) (mv error? input)))
-       (mv nil input)))))
+       (mv nil input))
+     :hooks (:fix)
+     ///
+
+     (defret len-of-parse-exact-list-aux-linear-<=
+       (<= (len rest-input)
+           (len input))
+       :rule-classes :linear)
+
+     (defret len-of-parse-exact-list-aux-linear-<
+       (implies (and (not error?)
+                     (consp nats))
+                (< (len rest-input)
+                   (len input)))
+       :rule-classes :linear)))
+
+  ///
+
+  (defret len-of-parse-exact-list-linear-<=
+    (<= (len rest-input)
+        (len input))
+    :rule-classes :linear)
+
+  (defret len-of-parse-exact-list-linear-<
+    (implies (and (not error?)
+                  (consp nats))
+             (< (len rest-input)
+                (len input)))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
