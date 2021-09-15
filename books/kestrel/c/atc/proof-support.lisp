@@ -13,6 +13,7 @@
 
 (include-book "dynamic-semantics")
 (include-book "shallow-embedding")
+(include-book "execution-rules")
 
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "tools/rulesets" :dir :system)
@@ -1185,7 +1186,7 @@
      they are defined in terms of conversions and
      of operations on equal types of rank at least @('int'):
      this is what the dynamic semantics of C uses."))
-  (b* ((ops (list 'add 'sub 'rem
+  (b* ((ops (list 'sub
                   'lt 'gt 'le 'ge 'eq 'ne
                   'bitand 'bitxor 'bitior)))
     (atc-integer-ops-2-conv-names-loop-ops ops
@@ -1197,7 +1198,7 @@
   ((define atc-integer-ops-2-conv-names-loop-right-types ((op symbolp)
                                                           (ltype typep)
                                                           (rtypes type-listp))
-     :guard (and (member-eq op (list 'add 'sub 'rem
+     :guard (and (member-eq op (list 'sub
                                      'lt 'gt 'le 'ge 'eq 'ne
                                      'bitand 'bitxor 'bitior))
                  (type-integerp ltype)
@@ -1215,9 +1216,8 @@
                                                               (cdr rtypes)))
               (lfixtype (atc-integer-type-fixtype ltype))
               (rfixtype (atc-integer-type-fixtype rtype))
-              (names (if (or (member-eq op '(rem))
-                             (and (type-signed-integerp type)
-                                  (member-eq op '(add sub))))
+              (names (if (and (type-signed-integerp type)
+                              (member-eq op '(sub)))
                          (list (pack op '- lfixtype '- rfixtype)
                                (pack op '- lfixtype '- rfixtype '-okp))
                        (list (pack op '- lfixtype '- rfixtype))))
@@ -1232,7 +1232,7 @@
    (define atc-integer-ops-2-conv-names-loop-left-types ((op symbolp)
                                                          (ltypes type-listp)
                                                          (rtypes type-listp))
-     :guard (and (member-eq op (list 'add 'sub 'rem
+     :guard (and (member-eq op (list 'sub
                                      'lt 'gt 'le 'ge 'eq 'ne
                                      'bitand 'bitxor 'bitior))
                  (type-integer-listp ltypes)
@@ -1251,7 +1251,7 @@
    (define atc-integer-ops-2-conv-names-loop-ops ((ops symbol-listp)
                                                   (ltypes type-listp)
                                                   (rtypes type-listp))
-     :guard (and (subsetp-eq ops (list 'add 'sub 'rem
+     :guard (and (subsetp-eq ops (list 'sub
                                        'lt 'gt 'le 'ge 'eq 'ne
                                        'bitand 'bitxor 'bitior))
                  (type-integer-listp ltypes)
@@ -1370,8 +1370,6 @@
     exec-iconst
     exec-const
     exec-ident
-    exec-rem
-    exec-add
     exec-sub
     exec-shl
     exec-shr
@@ -1423,264 +1421,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-conversion-composition-rules
-  :short "Rules about the composition of conversions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The "
-    (xdoc::seetopic "atc-integer-operations" "integer operations")
-    " operate on all the combinations of integer types for their arguments.
-     When the types differ or have rank below @('int'),
-     conversions are applied to the arguments
-     so that they have the same type of rank @('int') or higher,
-     and then the version of the operation
-     with homogeneous argument types of rank @('int') or higher
-     is applied to the converted operands.
-     When the types have smaller rank than @('int'),
-     a conversion is applied to both,
-     which corresponds to the integer promotions.
-     when one of the types has rank @('unsigned int') or higher,
-     a single conversion is applied to the ``smaller'' type,
-     which corresponds to both an integer promotion
-     and the usual arithmetic conversions.
-     However, in the C dynamic semantics,
-     integer promotions and usual arithmetic conversions
-     are separate processed that may produce two conversions in sequence.")
-   (xdoc::p
-    "For example, @(tsee add-slong-schar) is defined to
-     apply @(tsee slong-from-schar) to the second argument
-     and then use @(tsee add-slong-slong) to obtain the result.
-     If @(tsee add-slong-schar) is used
-     in an ACL2 function that represents a C function,
-     the @(tsee slong-from-uchar) shows up in the symbolic execution.
-     However, in the C counterpart of the operation,
-     two conversions show up:
-     @(tsee sint-from-schar) from @(tsee promote-value),
-     and @(tsee slong-from-sint) from @(tsee uaconvert-values),
-     one after the other.")
-   (xdoc::p
-    "Thus, here we prove theorems saying that
-     the conversions that may arise
-     from the integer promotions,
-     followed by the conversions that may arise
-     from the usual arithmetic conversions,
-     can be reduced to single conversions
-     from the starting type to the ending type.
-     In the example above,
-     @(tsee sint-from-schar) folowed by @(tsee slong-from-sint)
-     is the same as the single @(tsee slong-from-schar).")
-   (xdoc::p
-    "With these rules,
-     the symbolic execution can recognize the equality of
-     the execution of the ACL2 function
-     and the execution of the C function.")
-   (xdoc::p
-    "All these rules have @('int') as the intermediate type,
-     because that is the target of the integer promotions.
-     This depends on the fact that
-     we have certain hardwired assumptions
-     about relations among sizes of various integer types.
-     We should generalize this to accommodate for
-     the possibility of integer promotions to yield @('unsigned int') values."))
-
-  ;; unsigned int as final type:
-
-  (defruled uint-from-sint-of-sint-from-schar
-    (equal (uint-from-sint (sint-from-schar x))
-           (uint-from-schar x))
-    :enable (uint-from-sint
-             sint-from-schar
-             uint-from-schar
-             sint-integerp-alt-def))
-
-  (defruled uint-from-sint-of-sint-from-uchar
-    (equal (uint-from-sint (sint-from-uchar x))
-           (uint-from-uchar x))
-    :enable (uint-from-sint
-             sint-from-uchar
-             uint-from-uchar
-             sint-integerp-alt-def))
-
-  (defruled uint-from-sint-of-sint-from-sshort
-    (equal (uint-from-sint (sint-from-sshort x))
-           (uint-from-sshort x))
-    :enable (uint-from-sint
-             sint-from-sshort
-             uint-from-sshort
-             sint-integerp-alt-def))
-
-  (defruled uint-from-sint-of-sint-from-ushort
-    (equal (uint-from-sint (sint-from-ushort x))
-           (uint-from-ushort x))
-    :enable (uint-from-sint
-             sint-from-ushort
-             uint-from-ushort
-             sint-integerp-alt-def))
-
-  ;; signed long as final type:
-
-  (defruled slong-from-sint-of-sint-from-schar
-    (equal (slong-from-sint (sint-from-schar x))
-           (slong-from-schar x))
-    :enable (slong-from-sint
-             sint-from-schar
-             slong-from-schar
-             sint-integerp-alt-def))
-
-  (defruled slong-from-sint-of-sint-from-uchar
-    (equal (slong-from-sint (sint-from-uchar x))
-           (slong-from-uchar x))
-    :enable (slong-from-sint
-             sint-from-uchar
-             slong-from-uchar
-             sint-integerp-alt-def))
-
-  (defruled slong-from-sint-of-sint-from-sshort
-    (equal (slong-from-sint (sint-from-sshort x))
-           (slong-from-sshort x))
-    :enable (slong-from-sint
-             sint-from-sshort
-             slong-from-sshort
-             sint-integerp-alt-def))
-
-  (defruled slong-from-sint-of-sint-from-ushort
-    (equal (slong-from-sint (sint-from-ushort x))
-           (slong-from-ushort x))
-    :enable (slong-from-sint
-             sint-from-ushort
-             slong-from-ushort
-             sint-integerp-alt-def))
-
-  ;; unsigned long as final type:
-
-  (defruled ulong-from-sint-of-sint-from-schar
-    (equal (ulong-from-sint (sint-from-schar x))
-           (ulong-from-schar x))
-    :enable (ulong-from-sint
-             sint-from-schar
-             ulong-from-schar
-             sint-integerp-alt-def))
-
-  (defruled ulong-from-sint-of-sint-from-uchar
-    (equal (ulong-from-sint (sint-from-uchar x))
-           (ulong-from-uchar x))
-    :enable (ulong-from-sint
-             sint-from-uchar
-             ulong-from-uchar
-             sint-integerp-alt-def))
-
-  (defruled ulong-from-sint-of-sint-from-sshort
-    (equal (ulong-from-sint (sint-from-sshort x))
-           (ulong-from-sshort x))
-    :enable (ulong-from-sint
-             sint-from-sshort
-             ulong-from-sshort
-             sint-integerp-alt-def))
-
-  (defruled ulong-from-sint-of-sint-from-ushort
-    (equal (ulong-from-sint (sint-from-ushort x))
-           (ulong-from-ushort x))
-    :enable (ulong-from-sint
-             sint-from-ushort
-             ulong-from-ushort
-             sint-integerp-alt-def))
-
-  ;; signed long long as final type:
-
-  (defruled sllong-from-sint-of-sint-from-schar
-    (equal (sllong-from-sint (sint-from-schar x))
-           (sllong-from-schar x))
-    :enable (sllong-from-sint
-             sint-from-schar
-             sllong-from-schar
-             sint-integerp-alt-def))
-
-  (defruled sllong-from-sint-of-sint-from-uchar
-    (equal (sllong-from-sint (sint-from-uchar x))
-           (sllong-from-uchar x))
-    :enable (sllong-from-sint
-             sint-from-uchar
-             sllong-from-uchar
-             sint-integerp-alt-def))
-
-  (defruled sllong-from-sint-of-sint-from-sshort
-    (equal (sllong-from-sint (sint-from-sshort x))
-           (sllong-from-sshort x))
-    :enable (sllong-from-sint
-             sint-from-sshort
-             sllong-from-sshort
-             sint-integerp-alt-def))
-
-  (defruled sllong-from-sint-of-sint-from-ushort
-    (equal (sllong-from-sint (sint-from-ushort x))
-           (sllong-from-ushort x))
-    :enable (sllong-from-sint
-             sint-from-ushort
-             sllong-from-ushort
-             sint-integerp-alt-def))
-
-  ;; unsigned long long as final type:
-
-  (defruled ullong-from-sint-of-sint-from-schar
-    (equal (ullong-from-sint (sint-from-schar x))
-           (ullong-from-schar x))
-    :enable (ullong-from-sint
-             sint-from-schar
-             ullong-from-schar
-             sint-integerp-alt-def))
-
-  (defruled ullong-from-sint-of-sint-from-uchar
-    (equal (ullong-from-sint (sint-from-uchar x))
-           (ullong-from-uchar x))
-    :enable (ullong-from-sint
-             sint-from-uchar
-             ullong-from-uchar
-             sint-integerp-alt-def))
-
-  (defruled ullong-from-sint-of-sint-from-sshort
-    (equal (ullong-from-sint (sint-from-sshort x))
-           (ullong-from-sshort x))
-    :enable (ullong-from-sint
-             sint-from-sshort
-             ullong-from-sshort
-             sint-integerp-alt-def))
-
-  (defruled ullong-from-sint-of-sint-from-ushort
-    (equal (ullong-from-sint (sint-from-ushort x))
-           (ullong-from-ushort x))
-    :enable (ullong-from-sint
-             sint-from-ushort
-             ullong-from-ushort
-             sint-integerp-alt-def)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-conversion-composition-rules*
-  :short "List of rules about the composition of conversions."
-  '(uint-from-sint-of-sint-from-schar
-    uint-from-sint-of-sint-from-uchar
-    uint-from-sint-of-sint-from-sshort
-    uint-from-sint-of-sint-from-ushort
-    slong-from-sint-of-sint-from-schar
-    slong-from-sint-of-sint-from-uchar
-    slong-from-sint-of-sint-from-sshort
-    slong-from-sint-of-sint-from-ushort
-    ulong-from-sint-of-sint-from-schar
-    ulong-from-sint-of-sint-from-uchar
-    ulong-from-sint-of-sint-from-sshort
-    ulong-from-sint-of-sint-from-ushort
-    sllong-from-sint-of-sint-from-schar
-    sllong-from-sint-of-sint-from-uchar
-    sllong-from-sint-of-sint-from-sshort
-    sllong-from-sint-of-sint-from-ushort
-    ullong-from-sint-of-sint-from-schar
-    ullong-from-sint-of-sint-from-uchar
-    ullong-from-sint-of-sint-from-sshort
-    ullong-from-sint-of-sint-from-ushort))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection atc-optimized-execution-rules
   :short "Optimized execution rules."
   :long
@@ -1719,241 +1459,6 @@
 
 (defval *atc-optimized-execution-rules*
   '(exec-unary-when-valuep))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-exec-unop-rule ((op unopp) (type typep))
-  :guard (type-integerp type)
-  :returns (mv (name symbolp) (event pseudo-event-formp))
-  :short "Name and event of the rule for executing
-          the unary operator @('op')
-          on an operand of type @('type')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The rule reduces @(tsee exec-<op>) to
-     the representation of the operation in the shallow embedding."))
-  (b* ((fixtype (atc-integer-type-fixtype type))
-       (pred (pack fixtype 'p))
-       (exec-op (pack 'exec- (unop-kind op)))
-       (name (pack exec-op '-when- pred))
-       (op-type (pack (unop-kind op) '- fixtype))
-       (op-type-okp (and (unop-case op :minus)
-                         (member-eq (type-kind type)
-                                    '(:schar :sshort :sint :slong :sllong
-                                      :uchar :ushort))
-                         (pack op-type '-okp)))
-       (hyps (if op-type-okp
-                 `(and (,pred x)
-                       (,op-type-okp x))
-               `(,pred x)))
-       (formula `(implies ,hyps
-                          (equal (,exec-op x)
-                                 (,op-type x))))
-       (event `(defrule ,name
-                 ,formula
-                 :enable (,exec-op
-                          value-scalarp
-                          value-arithmeticp
-                          value-realp
-                          value-integerp
-                          value-signed-integerp
-                          value-unsigned-integerp
-                          promote-value
-                          ,op-type
-                          ,@(and op-type-okp (list op-type-okp))))))
-    (mv name event)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-exec-unop-rule-loop-types ((op unopp) (types type-listp))
-  :guard (type-integer-listp types)
-  :returns (mv (names symbol-listp)
-               (events pseudo-event-form-listp))
-  :short "Names and events of the rules for executing
-          the unary operator @('op')
-          on operands of types in @('types')."
-  (b* (((when (endp types)) (mv nil nil))
-       ((mv name event) (atc-exec-unop-rule op (car types)))
-       ((mv names events) (atc-exec-unop-rule-loop-types op (cdr types))))
-    (mv (cons name names) (cons event events))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-exec-unop-rule-loop-ops ((ops unop-listp))
-  :returns (mv (names symbol-listp)
-               (events pseudo-event-form-listp))
-  :short "Names and events of the rules for executing
-          a unary operator in @('ops')
-          on operands of all the integer type."
-  (b* (((when (endp ops)) (mv nil nil))
-       ((mv names events)
-        (atc-exec-unop-rule-loop-types (car ops) *atc-integer-types*))
-       ((mv more-names more-events) (atc-exec-unop-rule-loop-ops (cdr ops))))
-    (mv (append names more-names) (append events more-events))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-exec-unop-rule-all ()
-  :returns (event pseudo-event-formp)
-  :short "Rules for executing
-          all the unary operators
-          on operand of all the integer types,
-          and constant with the list of those rules."
-  (b* ((ops (list (unop-plus)
-                  (unop-minus)
-                  (unop-bitnot)
-                  (unop-lognot)))
-       ((mv names events) (atc-exec-unop-rule-loop-ops ops))
-       (defsection-event
-         `(defsection atc-exec-unop-rules
-            :short "Rules for executing unary operators."
-            ,@events))
-       (defval-event
-         `(defval *atc-exec-unop-rules*
-            :short "List of rules for executing unary operators."
-            '(,@names))))
-    `(progn
-       ,defsection-event
-       ,defval-event)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(make-event (atc-exec-unop-rule-all))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-exec-binop-rule ((op binopp) (ltype typep) (rtype typep))
-  :guard (and (type-integerp ltype)
-              (type-integerp rtype))
-  :returns (mv (name symbolp) (event pseudo-event-formp))
-  :short "Name and event of the rule for executing
-          the binary operator @('op')
-          on a left operand of type @('ltype')
-          and a right operand of type @('rtype')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The rule reduces @(tsee exec-<op>) to
-     the representation of the operation in the shallow embedding."))
-  (b* ((lfixtype (atc-integer-type-fixtype ltype))
-       (rfixtype (atc-integer-type-fixtype rtype))
-       (lpred (pack lfixtype 'p))
-       (rpred (pack rfixtype 'p))
-       (exec-op (pack 'exec- (binop-kind op)))
-       (name (pack exec-op '-when- lpred '-and- rpred))
-       (op-ltype-rtype (pack (binop-kind op) '- lfixtype '- rfixtype))
-       (op-ltype-rtype-okp (and (or (binop-case op :div)
-                                    (type-signed-integerp
-                                     (uaconvert-types ltype rtype)))
-                                (pack op-ltype-rtype '-okp)))
-       (hyps `(and (,lpred x)
-                   (,rpred y)
-                   ,@(and op-ltype-rtype-okp
-                          `((,op-ltype-rtype-okp x y)))))
-       (formula `(implies ,hyps
-                          (equal (,exec-op x y)
-                                 (,op-ltype-rtype x y))))
-       (event `(defrule ,name
-                 ,formula
-                 :enable (,exec-op
-                          value-scalarp
-                          value-arithmeticp
-                          value-realp
-                          value-integerp
-                          value-signed-integerp
-                          value-unsigned-integerp
-                          promote-value
-                          uaconvert-values
-                          ,op-ltype-rtype
-                          ,@(and op-ltype-rtype-okp
-                                 (list op-ltype-rtype-okp))
-                          ,@*atc-conversion-composition-rules*))))
-    (mv name event))
-  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
-                                           type-realp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-exec-binop-rule-loop-rtypes ((op binopp)
-                                         (ltype typep)
-                                         (rtypes type-listp))
-  :guard (and (type-integerp ltype)
-              (type-integer-listp rtypes))
-  :returns (mv (names symbol-listp)
-               (events pseudo-event-form-listp))
-  :short "Names and events of the rules for executing
-          the binary operator @('op')
-          on a left operand of type @('ltype')
-          and right operands of types in @('rtypes')."
-  (b* (((when (endp rtypes)) (mv nil nil))
-       ((mv name event) (atc-exec-binop-rule op ltype (car rtypes)))
-       ((mv names events) (atc-exec-binop-rule-loop-rtypes op
-                                                           ltype
-                                                           (cdr rtypes))))
-    (mv (cons name names) (cons event events))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-exec-binop-rule-loop-ltypes ((op binopp) (ltypes type-listp))
-  :guard (type-integer-listp ltypes)
-  :returns (mv (names symbol-listp)
-               (events pseudo-event-form-listp))
-  :short "Names and events of the rules for executing
-          the binary operator @('op')
-          on left operands of types in @('ltypes')
-          and right operands of all the integer types."
-  (b* (((when (endp ltypes)) (mv nil nil))
-       ((mv names events)
-        (atc-exec-binop-rule-loop-rtypes op
-                                         (car ltypes)
-                                         *atc-integer-types*))
-       ((mv more-names more-events)
-        (atc-exec-binop-rule-loop-ltypes op (cdr ltypes))))
-    (mv (append names more-names) (append events more-events))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-exec-binop-rule-loop-ops ((ops binop-listp))
-  :returns (mv (names symbol-listp)
-               (events pseudo-event-form-listp))
-  :short "Names and events of the rules for executing
-          the binary operators in @('ops')
-          on left and right operands of all the integer types."
-  (b* (((when (endp ops)) (mv nil nil))
-       ((mv names events)
-        (atc-exec-binop-rule-loop-ltypes (car ops)
-                                         *atc-integer-types*))
-       ((mv more-names more-events)
-        (atc-exec-binop-rule-loop-ops (cdr ops))))
-    (mv (append names more-names) (append events more-events))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-exec-binop-rule-all ()
-  :returns (event pseudo-event-formp)
-  :short "Rules for executing
-          all the binary operators
-          on left and right operand of all the integer types,
-          and constant with the list of those rules."
-  (b* ((ops (list (binop-mul)
-                  (binop-div)))
-       ((mv names events) (atc-exec-binop-rule-loop-ops ops))
-       (defsection-event
-         `(defsection atc-exec-binop-rules
-            :short "Rules for executing binary operators."
-            ,@events))
-       (defval-event
-         `(defval *atc-exec-binop-rules*
-            :short "List of rules for executing binary operators."
-            '(,@names))))
-    `(progn
-       ,defsection-event
-       ,defval-event)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(make-event (atc-exec-binop-rule-all))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
