@@ -444,3 +444,79 @@
   (swcase->value x)
   ///
   (fty::deffixequiv swcase-list->value-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum data-value
+  :short "Fixtype of data values in Yul objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A data value is either a hex string or a plain string.")
+   (xdoc::p
+    "See @(tsee data-item)."))
+  (:hex ((get hex-string)))
+  (:plain ((get plain-string)))
+  :pred data-value-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod data-item
+  :short "Fixtype of data items in Yul objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A data item consits of a name (a plain string) and a value."))
+  ((name plain-string)
+   (value data-value))
+  :tag :data
+  :pred data-item-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftypes objects
+  :short "Fixtypes of objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The concrete syntax of Yul objects is described in
+     [Yul: Specification of Yul Object].
+     That description refers to the old grammar (see (@see concrete-syntax));
+     the new grammar does not include Yul objects.")
+   (xdoc::p
+    "Here we formalize an abstract syntax version of Yul objects.
+     We ``map'' from the old grammar to the new grammar as needed."))
+
+  (fty::defprod object
+    :short "Fixtype of objects."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An object consists of
+       a name (a plain string literal),
+       a code block,
+       and a sequence of zero or more objects and data items.
+       In that sequence of objects and data items,
+       the objects are sub-objects of this object,
+       which motivates our choice of field name."))
+    ((name plain-string)
+     (code block)
+     (sub/data object/data-list))
+    :tag :object
+    :pred objectp
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  (fty::deftagsum object/data
+    :short "Fixtype of objects and data items."
+    (:object ((get object)))
+    (:data ((get data-item)))
+    :pred object/data-p
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  (fty::deflist object/data-list
+    :short "Fixtype of lists of objects and data items."
+    :elt-type object/data
+    :true-listp t
+    :elementp-of-nil nil
+    :pred object/data-listp
+    :measure (two-nats-measure (acl2-count x) 0)))
