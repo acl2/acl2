@@ -11,6 +11,7 @@
 (in-package "YUL")
 
 (include-book "abstract-syntax")
+(include-book "literal-evaluation")
 
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/defunit" :dir :system)
@@ -336,39 +337,17 @@
      and the largest type is that of 256-bit words.
      For now we do not model types (i.e. we assume one type),
      so we limit the size to 256 bits.
-     This is straighforward for numeric literals,
-     which represent the unsigned value of the 256-bit words.
-     For (non-hex) string, it boils down to a limit of 32 on the length
-     (since every character represents 8 bits).
-     For hex strings, it boils down to a limit of 32 on the number of hex pairs;
-     hex strings must also be non-empty, according to the grammar.
-     Boolean literals are always well-formed;
-     they are not, and they do not represent, numbers anyways.")
+     To check this constraint,
+     we just evaluate the literal
+     and ensure that the evaluation does not return an error:
+     this captures exactly the static constraints on literals.")
    (xdoc::p
-    "We do not impose other restrictions on (non-hex) strings here,
+    "We do not impose other restrictions on plain strings here,
      such as that a string surrounded by double quotes
      cannot contain (unescaped) double quotes.
      Those are simply syntactic restrictions."))
-  (b* ((err (err (list :bad-literal (literal-fix lit)))))
-    (literal-case
-     lit
-     :boolean :wellformed
-     :dec-number (if (< lit.get
-                        (expt 2 256))
-                     :wellformed
-                   err)
-     :hex-number (if (< (str::hex-digit-chars-value
-                         (hex-digit-list->chars lit.get))
-                        (expt 2 256))
-                     :wellformed
-                   err)
-     :plain-string (if (<= (len lit.content) 32)
-                       :wellformed
-                     err)
-     :hex-string (if (and (< 0 (len lit.content))
-                          (<= (len lit.content) 32))
-                     :wellformed
-                   err)))
+  (b* (((ok &) (eval-literal lit)))
+    :wellformed)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
