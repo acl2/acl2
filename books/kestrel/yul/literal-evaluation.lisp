@@ -182,18 +182,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-plain-string-literal ((content string-element-listp))
+(define eval-plain-string-literal ((pstring plain-stringp))
   :returns (val value-resultp)
   :short "Evaluate a plain string literal to a value."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "A plain string literal consists of
-     a list of string elements
-     and a flag indicating whether the surrounding quotes are double or single
-     (see @(tsee literal)).
-     The flag does not affect the value of the literal,
-     so this function only takes the list of string elements as arguments.")
    (xdoc::p
     "We convert the list of string elements to a list of bytes.
      If the resulting bytes exceed 32 in number, it is an error.
@@ -204,7 +197,8 @@
      This evaluation is not described in detail in [Yul],
      but it was explained via discussions on Gitter,
      and [Yul] is being extended with these explanations."))
-  (b* ((bytes (eval-string-element-list content))
+  (b* ((content (plain-string->content pstring))
+       (bytes (eval-string-element-list content))
        ((unless (<= (len bytes) 32))
         (err (list :plain-string-too-long bytes)))
        (bytes (append bytes (repeat (- 32 (len bytes)) 0))))
@@ -216,8 +210,10 @@
     :use (:instance acl2::bendian=>nat-upper-bound
           (base 256)
           (digits (append
-                   (eval-string-element-list content)
-                   (repeat (- 32 (len (eval-string-element-list content)))
+                   (eval-string-element-list
+                    (plain-string->content pstring))
+                   (repeat (- 32 (len (eval-string-element-list
+                                       (plain-string->content pstring))))
                            0))))))
   :hooks (:fix)
 
@@ -251,18 +247,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-hex-string-literal ((content hex-pair-listp))
+(define eval-hex-string-literal ((hstring hex-stringp))
   :returns (val value-resultp)
   :short "Evaluate a hex string literal to a value."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "A hex string literal consists of
-     a list of hex pairs
-     and a flag indicating whether the surrounding quotes are double or single
-     (see @(tsee literal)).
-     The flag does not affect the value of the literal,
-     so this function only takes the list of hex pairs as arguments.")
    (xdoc::p
     "We convert the list of hex pairs to a list of bytes.
      If the resulting bytes exceed 32 in number, it is an error.
@@ -273,7 +262,8 @@
      This evaluation is not described in detail in [Yul],
      but it was explained via discussions on Gitter,
      and [Yul] is being extended with these explanations."))
-  (b* ((bytes (eval-hex-pair-list content))
+  (b* ((content (hex-string->content hstring))
+       (bytes (eval-hex-pair-list content))
        ((unless (<= (len bytes) 32))
         (err (list :hex-string-too-long bytes)))
        (bytes (append bytes (repeat (- 32 (len bytes)) 0))))
@@ -285,8 +275,10 @@
     :use (:instance acl2::bendian=>nat-upper-bound
           (base 256)
           (digits (append
-                   (eval-hex-pair-list content)
-                   (repeat (- 32 (len (eval-hex-pair-list content)))
+                   (eval-hex-pair-list
+                    (hex-string->content hstring))
+                   (repeat (- 32 (len (eval-hex-pair-list
+                                       (hex-string->content hstring))))
                            0))))))
   :hooks (:fix)
 
@@ -336,6 +328,6 @@
                  (if (acl2::ubyte256p num)
                      (value num)
                    (err (list :hex-number-too-large lit.get))))
-   :plain-string (eval-plain-string-literal lit.content)
-   :hex-string (eval-hex-string-literal lit.content))
+   :plain-string (eval-plain-string-literal lit.get)
+   :hex-string (eval-hex-string-literal lit.get))
   :hooks (:fix))

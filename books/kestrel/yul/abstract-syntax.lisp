@@ -229,6 +229,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod plain-string
+  :short "Fixtype of plain strings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used as literals; they are the regular, non-hex strings.
+     We call them `plain' to clearly distinguish them from hex strings.")
+   (xdoc::p
+    "We represent a plain string as a list of elements,
+     plus a flag saying whether
+     the surrounding quotes are double or not (i.e. single).
+     This captures the full concrete syntax information."))
+  ((content string-element-list)
+   (double-quote-p bool))
+  :tag :plain-string
+  :pred plain-stringp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod hex-string
+  :short "Fixtype of hex strings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We represent a hex string as a list of hex pairs,
+     plus a flag saying whether
+     the surrounding quotes are double or not (i.e. single).
+     We do not capture the optional underscores for now."))
+  ((content hex-pair-list)
+   (double-quote-p bool))
+  :tag :hex-string
+  :pred hex-stringp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum literal
   :short "Fixtype of literals."
   :long
@@ -244,24 +279,13 @@
      which therefore captures full information:
      leading zeros and capitalization of the letters.")
    (xdoc::p
-    "We represent a (non-hex) string as a list of elements,
-     plus a flag saying whether the surrounding quotes are double
-     or not (i.e. single).
-     This captures the full concrete syntax information.
-     To more clearly distinguish this kind of string literal from hex strings,
-     we call these strings `plain strings'.")
-   (xdoc::p
-    "We represent a hex string as a list of hex pairs,
-     plus a flag saying whether the surrounding quotes are double
-     or not (i.e. single).
-     We do not capture the optional underscores for now."))
+    "We represent plain and hex strings
+     as described in @(tsee plain-string) and @(tsee hex-string)."))
   (:boolean ((get bool)))
   (:dec-number ((get nat)))
   (:hex-number ((get hex-digit-list)))
-  (:plain-string ((content string-element-list)
-                  (double-quote-p bool)))
-  (:hex-string ((content hex-pair-list)
-                (double-quote-p bool)))
+  (:plain-string ((get plain-string)))
+  (:hex-string ((get hex-string)))
   :pred literalp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
