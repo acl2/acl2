@@ -446,13 +446,13 @@ I don't need this?
           `(with-output
             ,@(if debug?
                   '(:on :all :off (proof-builder proof-tree) :gag-mode nil)
-                '(:off :all :on (summary) :summary-off (:other-than time) :gag-mode nil ))
+                '(:off :all :on (summary comment) :summary-off (:other-than time) :gag-mode nil ))
             (encapsulate
              nil
              (with-output
               ,@(if debug?
                     '(:on :all :off (proof-builder proof-tree) :gag-mode nil)
-                  '(:off :all))
+                  '(:off :all :on comment))
               (thm-no-test ,guards))))
           ctx state t)))
        ((list* & thm-erp &) val)
@@ -524,12 +524,12 @@ I don't need this?
          timeout
          (trans-eval `(with-output
                        ;;:on :all :off (proof-builder proof-tree) :gag-mode nil
-                       :off :all :on (summary) :summary-off (:other-than time) :gag-mode nil
+                       :off :all :on (summary comment) :summary-off (:other-than time) :gag-mode nil
                        (encapsulate
                         nil
                         (with-output
                          ;;:on :all :off (proof-builder proof-tree) :gag-mode nil
-                         :off :all
+                         :off :all :on comment
                          (thm-no-test ,guards))))
                      ctx state t)))
        ((list* & thm-erp &) val)
@@ -688,7 +688,7 @@ I don't need this?
       (encapsulate
        ()
        (with-output
-        :off :all
+        :off :all :on comment
         (make-event (property-fn ',args state)))
        (value-triple (cw "~|Form:  ( PROPERTY CHECKING SUCCESSFUL )~%"))))))
 
