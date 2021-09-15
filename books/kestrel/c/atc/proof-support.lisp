@@ -1194,7 +1194,7 @@
      they are defined in terms of conversions and
      of operations on equal types of rank at least @('int'):
      this is what the dynamic semantics of C uses."))
-  (b* ((ops (list 'add 'sub 'div 'rem
+  (b* ((ops (list 'add 'sub 'rem
                   'lt 'gt 'le 'ge 'eq 'ne
                   'bitand 'bitxor 'bitior))
        (types (list (type-schar)
@@ -1214,7 +1214,7 @@
   ((define atc-integer-ops-2-conv-names-loop-right-types ((op symbolp)
                                                           (ltype typep)
                                                           (rtypes type-listp))
-     :guard (and (member-eq op (list 'add 'sub 'div 'rem
+     :guard (and (member-eq op (list 'add 'sub 'rem
                                      'lt 'gt 'le 'ge 'eq 'ne
                                      'bitand 'bitxor 'bitior))
                  (type-integerp ltype)
@@ -1232,7 +1232,7 @@
                                                               (cdr rtypes)))
               (lfixtype (atc-integer-type-fixtype ltype))
               (rfixtype (atc-integer-type-fixtype rtype))
-              (names (if (or (member-eq op '(div rem))
+              (names (if (or (member-eq op '(rem))
                              (and (type-signed-integerp type)
                                   (member-eq op '(add sub))))
                          (list (pack op '- lfixtype '- rfixtype)
@@ -1249,7 +1249,7 @@
    (define atc-integer-ops-2-conv-names-loop-left-types ((op symbolp)
                                                          (ltypes type-listp)
                                                          (rtypes type-listp))
-     :guard (and (member-eq op (list 'add 'sub 'div 'rem
+     :guard (and (member-eq op (list 'add 'sub 'rem
                                      'lt 'gt 'le 'ge 'eq 'ne
                                      'bitand 'bitxor 'bitior))
                  (type-integer-listp ltypes)
@@ -1268,7 +1268,7 @@
    (define atc-integer-ops-2-conv-names-loop-ops ((ops symbol-listp)
                                                   (ltypes type-listp)
                                                   (rtypes type-listp))
-     :guard (and (subsetp-eq ops (list 'add 'sub 'div 'rem
+     :guard (and (subsetp-eq ops (list 'add 'sub 'rem
                                        'lt 'gt 'le 'ge 'eq 'ne
                                        'bitand 'bitxor 'bitior))
                  (type-integer-listp ltypes)
@@ -1396,7 +1396,6 @@
     exec-iconst
     exec-const
     exec-ident
-    exec-div
     exec-rem
     exec-add
     exec-sub
@@ -1879,8 +1878,9 @@
        (exec-op (pack 'exec- (binop-kind op)))
        (name (pack exec-op '-when- lpred '-and- rpred))
        (op-ltype-rtype (pack (binop-kind op) '- lfixtype '- rfixtype))
-       (op-ltype-rtype-okp (and (type-signed-integerp
-                                 (uaconvert-types ltype rtype))
+       (op-ltype-rtype-okp (and (or (binop-case op :div)
+                                    (type-signed-integerp
+                                     (uaconvert-types ltype rtype)))
                                 (pack op-ltype-rtype '-okp)))
        (hyps `(and (,lpred x)
                    (,rpred y)
@@ -1989,7 +1989,8 @@
           all the binary operators
           on left and right operand of all the integer types,
           and constant with the list of those rules."
-  (b* ((ops (list (binop-mul)))
+  (b* ((ops (list (binop-mul)
+                  (binop-div)))
        ((mv names events) (atc-exec-binop-rule-loop-ops ops))
        (defsection-event
          `(defsection atc-exec-binop-rules
@@ -3258,6 +3259,7 @@
           *atc-conversion-composition-rules*
           *atc-optimized-execution-rules*
           *atc-exec-unop-rules*
+          *atc-exec-binop-rules*
           *atc-distributivity-over-if-rewrite-rules*
           *atc-identifier-rules*
           *atc-not-rules*
