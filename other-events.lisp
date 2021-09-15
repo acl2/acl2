@@ -18395,11 +18395,11 @@
                     (and (consp (cdr type))
                          (cadr type))))
                ((and (cddr type)
-                     (not (posp (caddr type))))
+                     (not (natp (caddr type))))
                 (er soft ctx
                     "A hash-table type of the form (HASH-TABLE TEST SIZE) ~
-                     must specify SIZE as a positive integer.  The type ~x0 ~
-                     is thus illegal.~%"
+                     must specify SIZE as a natural number  The type ~x0 is ~
+                     thus illegal.~%"
                     type))
                (t (value nil))))
         ((and (consp type)
