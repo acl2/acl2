@@ -298,6 +298,7 @@
     :short "Fixtype of function calls."
     ((name identifier)
      (args expression-list))
+    :tag :funcall
     :pred funcallp
     :measure (two-nats-measure (acl2-count x) 1)))
 
@@ -375,6 +376,7 @@
   (fty::defprod block
     :short "Fixtype of blocks."
     ((statements statement-list))
+    :tag :block
     :pred blockp
     :measure (two-nats-measure (acl2-count x) 1))
 
@@ -388,6 +390,7 @@
     :short "Fixtype of cases (of switch statements)."
     ((value literal)
      (body block))
+    :tag :swcase
     :pred swcasep
     :measure (two-nats-measure (acl2-count x) 2))
 
