@@ -1078,17 +1078,8 @@
      on C integers (first argument) and ACL2 integers (second argument).
      We include in this list not only the function themselves,
      but also the ones expressing their guards."))
-  (b* ((types (list (type-schar)
-                    (type-uchar)
-                    (type-sshort)
-                    (type-ushort)
-                    (type-sint)
-                    (type-uint)
-                    (type-slong)
-                    (type-ulong)
-                    (type-sllong)
-                    (type-ullong))))
-    (atc-shl/shr-names-loop-left-types types types))
+  (atc-shl/shr-names-loop-left-types *atc-integer-types*
+                                     *atc-integer-types*)
 
   :prepwork
 
@@ -1196,18 +1187,10 @@
      this is what the dynamic semantics of C uses."))
   (b* ((ops (list 'add 'sub 'rem
                   'lt 'gt 'le 'ge 'eq 'ne
-                  'bitand 'bitxor 'bitior))
-       (types (list (type-schar)
-                    (type-uchar)
-                    (type-sshort)
-                    (type-ushort)
-                    (type-sint)
-                    (type-uint)
-                    (type-slong)
-                    (type-ulong)
-                    (type-sllong)
-                    (type-ullong))))
-    (atc-integer-ops-2-conv-names-loop-ops ops types types))
+                  'bitand 'bitxor 'bitior)))
+    (atc-integer-ops-2-conv-names-loop-ops ops
+                                           *atc-integer-types*
+                                           *atc-integer-types*))
 
   :prepwork
 
@@ -1299,17 +1282,8 @@
      array ooperations involving indices that are ACL2 integers.
      We include in this list not only the function themselves,
      but also the ones expressing their guards."))
-  (b* ((types (list (type-schar)
-                    (type-uchar)
-                    (type-sshort)
-                    (type-ushort)
-                    (type-sint)
-                    (type-uint)
-                    (type-slong)
-                    (type-ulong)
-                    (type-sllong)
-                    (type-ullong))))
-    (atc-array-ops-names-loop-element-types types types))
+  (atc-array-ops-names-loop-element-types *atc-integer-types*
+                                          *atc-integer-types*)
 
   :prepwork
 
@@ -1813,17 +1787,8 @@
           a unary operator in @('ops')
           on operands of all the integer type."
   (b* (((when (endp ops)) (mv nil nil))
-       (types (list (type-schar)
-                    (type-uchar)
-                    (type-sshort)
-                    (type-ushort)
-                    (type-sint)
-                    (type-uint)
-                    (type-slong)
-                    (type-ulong)
-                    (type-sllong)
-                    (type-ullong)))
-       ((mv names events) (atc-exec-unop-rule-loop-types (car ops) types))
+       ((mv names events)
+        (atc-exec-unop-rule-loop-types (car ops) *atc-integer-types*))
        ((mv more-names more-events) (atc-exec-unop-rule-loop-ops (cdr ops))))
     (mv (append names more-names) (append events more-events))))
 
@@ -1942,16 +1907,7 @@
        ((mv names events)
         (atc-exec-binop-rule-loop-rtypes op
                                          (car ltypes)
-                                         (list (type-schar)
-                                               (type-uchar)
-                                               (type-sshort)
-                                               (type-ushort)
-                                               (type-sint)
-                                               (type-uint)
-                                               (type-slong)
-                                               (type-ulong)
-                                               (type-sllong)
-                                               (type-ullong))))
+                                         *atc-integer-types*))
        ((mv more-names more-events)
         (atc-exec-binop-rule-loop-ltypes op (cdr ltypes))))
     (mv (append names more-names) (append events more-events))))
@@ -1967,16 +1923,7 @@
   (b* (((when (endp ops)) (mv nil nil))
        ((mv names events)
         (atc-exec-binop-rule-loop-ltypes (car ops)
-                                         (list (type-schar)
-                                               (type-uchar)
-                                               (type-sshort)
-                                               (type-ushort)
-                                               (type-sint)
-                                               (type-uint)
-                                               (type-slong)
-                                               (type-ulong)
-                                               (type-sllong)
-                                               (type-ullong))))
+                                         *atc-integer-types*))
        ((mv more-names more-events)
         (atc-exec-binop-rule-loop-ops (cdr ops))))
     (mv (append names more-names) (append events more-events))))
@@ -2708,18 +2655,8 @@
 (defval *atc-integer-ops-1-return-rewrite-rules*
   :short "List of rewrite rules for the return types of
           models of C integer operations that involve one C integer type."
-  (b* ((ops '(plus minus bitnot lognot shl shr))
-       (types (list (type-schar)
-                    (type-uchar)
-                    (type-sshort)
-                    (type-ushort)
-                    (type-sint)
-                    (type-uint)
-                    (type-slong)
-                    (type-ulong)
-                    (type-sllong)
-                    (type-ullong))))
-    (atc-integer-ops-1-return-names-loop-ops ops types))
+  (b* ((ops '(plus minus bitnot lognot shl shr)))
+    (atc-integer-ops-1-return-names-loop-ops ops *atc-integer-types*))
 
   :prepwork
 
@@ -2757,18 +2694,10 @@
           models of C integer operations that involve two C integer types."
   (b* ((ops (list 'add 'sub 'mul 'div 'rem
                   'lt 'gt 'le 'ge 'eq 'ne
-                  'bitand 'bitxor 'bitior))
-       (types (list (type-schar)
-                    (type-uchar)
-                    (type-sshort)
-                    (type-ushort)
-                    (type-sint)
-                    (type-uint)
-                    (type-slong)
-                    (type-ulong)
-                    (type-sllong)
-                    (type-ullong))))
-    (atc-integer-ops-2-return-names-loop-ops ops types types))
+                  'bitand 'bitxor 'bitior)))
+    (atc-integer-ops-2-return-names-loop-ops ops
+                                             *atc-integer-types*
+                                             *atc-integer-types*))
 
   :prepwork
 
@@ -2842,17 +2771,8 @@
 (defval *atc-integer-convs-return-rewrite-rules*
   :short "List of rewrite rules for the return types of
           models of C integer conversions."
-  (b* ((types (list (type-schar)
-                    (type-uchar)
-                    (type-sshort)
-                    (type-ushort)
-                    (type-sint)
-                    (type-uint)
-                    (type-slong)
-                    (type-ulong)
-                    (type-sllong)
-                    (type-ullong))))
-    (atc-integer-convs-return-names-loop-src-types types types))
+  (atc-integer-convs-return-names-loop-src-types *atc-integer-types*
+                                                 *atc-integer-types*)
 
   :prepwork
 
@@ -2983,18 +2903,8 @@
 (defval *atc-integer-ops-1-type-prescription-rules*
   :short "List of type prescription rules for the
           models of C integer operations that involve one C integer type."
-  (b* ((ops '(plus minus bitnot lognot shl shr))
-       (types (list (type-schar)
-                    (type-uchar)
-                    (type-sshort)
-                    (type-ushort)
-                    (type-sint)
-                    (type-uint)
-                    (type-slong)
-                    (type-ulong)
-                    (type-sllong)
-                    (type-ullong))))
-    (atc-integer-ops-1-type-presc-rules-loop-ops ops types))
+  (b* ((ops '(plus minus bitnot lognot shl shr)))
+    (atc-integer-ops-1-type-presc-rules-loop-ops ops *atc-integer-types*))
 
   :prepwork
 
@@ -3031,18 +2941,10 @@
           models of C integer operations that involve two C integer types."
   (b* ((ops (list 'add 'sub 'mul 'div 'rem
                   'lt 'gt 'le 'ge 'eq 'ne
-                  'bitand 'bitxor 'bitior))
-       (types (list (type-schar)
-                    (type-uchar)
-                    (type-sshort)
-                    (type-ushort)
-                    (type-sint)
-                    (type-uint)
-                    (type-slong)
-                    (type-ulong)
-                    (type-sllong)
-                    (type-ullong))))
-    (atc-integer-ops-2-type-presc-rules-loop-ops ops types types))
+                  'bitand 'bitxor 'bitior)))
+    (atc-integer-ops-2-type-presc-rules-loop-ops ops
+                                                 *atc-integer-types*
+                                                 *atc-integer-types*))
 
   :prepwork
 
@@ -3114,17 +3016,8 @@
 (defval *atc-integer-convs-type-prescription-rules*
   :short "List of type prescription rules for the
           models of C integer conversions."
-  (b* ((types (list (type-schar)
-                    (type-uchar)
-                    (type-sshort)
-                    (type-ushort)
-                    (type-sint)
-                    (type-uint)
-                    (type-slong)
-                    (type-ulong)
-                    (type-sllong)
-                    (type-ullong))))
-    (atc-integer-convs-type-presc-rules-loop-src-types types types))
+  (atc-integer-convs-type-presc-rules-loop-src-types *atc-integer-types*
+                                                     *atc-integer-types*)
 
   :prepwork
 

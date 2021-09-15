@@ -46,23 +46,6 @@
   :order-subtopics t
   :default-parent t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-integer-types*
-  :short "List of symbols used to denote types
-          in the names of the ACL2 functions
-          that represent C operations and conversions."
-  '(uchar
-    schar
-    ushort
-    sshort
-    uint
-    sint
-    ulong
-    slong
-    ullong
-    sllong))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atc-boolean-from-type-fns*
@@ -73,7 +56,7 @@
   :prepwork
   ((defun atc-boolean-from-type-fns-gen (types)
      (cond ((endp types) nil)
-           (t (cons (pack 'boolean-from- (car types))
+           (t (cons (pack 'boolean-from- (type-kind (car types)))
                     (atc-boolean-from-type-fns-gen (cdr types))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -87,7 +70,7 @@
 
   ((defun atc-type-base-const-fns-gen-aux (type bases)
      (cond ((endp bases) nil)
-           (t (cons (pack type '- (car bases) '-const)
+           (t (cons (pack (type-kind type) '- (car bases) '-const)
                     (atc-type-base-const-fns-gen-aux type (cdr bases))))))
 
    (defun atc-type-base-const-fns-gen (types)
@@ -109,7 +92,7 @@
 
   ((defun atc-op-type-fns-gen-aux (type ops)
      (cond ((endp ops) nil)
-           (t (cons (pack (car ops) '- type)
+           (t (cons (pack (car ops) '- (type-kind type))
                     (atc-op-type-fns-gen-aux type (cdr ops))))))
 
    (defun atc-op-type-fns-gen (types)
@@ -132,7 +115,7 @@
 
   ((defun atc-op-type1-type2-fns-gen-aux-aux (type1 type2 ops)
      (cond ((endp ops) nil)
-           (t (cons (pack (car ops) '- type1 '- type2)
+           (t (cons (pack (car ops) '- (type-kind type1) '- (type-kind type2))
                     (atc-op-type1-type2-fns-gen-aux-aux type1
                                                         type2
                                                         (cdr ops))))))
@@ -177,8 +160,10 @@
 
   ((defun atc-type1-from-type2-fns-gen-aux (type1 type2s)
      (cond ((endp type2s) nil)
-           (t (append (and (not (eq type1 (car type2s)))
-                           (list (pack type1 '-from- (car type2s))))
+           (t (append (and (not (equal type1 (car type2s)))
+                           (list (pack (type-kind type1)
+                                       '-from-
+                                       (type-kind (car type2s)))))
                       (atc-type1-from-type2-fns-gen-aux type1 (cdr type2s))))))
 
    (defun atc-type1-from-type2-fns-gen (type1s)
