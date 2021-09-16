@@ -21,6 +21,8 @@
 (include-book "wrap-pattern-around-term")
 (include-book "lambda-free-termp")
 (include-book "lambdas-closed-in-termp")
+(include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "expand-lambdas-in-term")
 (include-book "expand-lambdas-in-term-proof")
 (include-book "add-param-to-calls-in-term")
+(include-book "rename-vars-in-term")

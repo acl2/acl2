@@ -16,6 +16,7 @@
 (include-book "pack")
 (local (include-book "intern-in-package-of-symbol"))
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 ;(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 
 ;rename fresh-symbol-aux ?
@@ -69,11 +70,13 @@
                               syms-to-avoid)))
   :hints (("Goal" :in-theory (enable fresh-var-name))))
 
-;; (defthm not-member-equal-of-fresh-var-name
-;;   (implies (subsetp-equal syms syms-to-avoid)
-;;            (not (member-equal (fresh-var-name base-name current-num syms-to-avoid)
-;;                               syms)))
-;;   :hints (("Goal" :in-theory (enable fresh-var-name))))
+(defthm not-member-equal-of-fresh-var-name
+  (implies (and (subsetp-equal syms syms-to-avoid)
+                (natp current-num))
+           (not (member-equal (fresh-var-name base-name current-num syms-to-avoid)
+                              syms)))
+  :hints (("Goal" :use (:instance not-member-equal-of-fresh-var-name-same)
+           :in-theory (disable not-member-equal-of-fresh-var-name-same))))
 
 ;rename fresh-symbol ?
 ;example: (make-fresh-name 'x '(x x1 x2 x3 x5)) = x4
