@@ -228,6 +228,17 @@
            (subsetp-equal (cdr x) y))
   :hints (("Goal" :in-theory (enable subsetp-equal))))
 
+(defthm subsetp-equal-of-cdr-arg2-cheap
+  (implies (subsetp-equal x (cdr y))
+           (subsetp-equal x y))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable subsetp-equal))))
+
+;; Would loop if enabled.
+(defthmd subsetp-equal-of-cdr-arg2
+  (implies (subsetp-equal x (cdr y))
+           (subsetp-equal x y)))
+
 (defthm subsetp-equal-of-true-list-fix-arg1
   (equal (subsetp-equal (true-list-fix x) y)
          (subsetp-equal x y))
