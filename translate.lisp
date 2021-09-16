@@ -12319,8 +12319,8 @@
             (let ((stobjs-out (stobjs-out st-get wrld))
                   (prelude "The variable ~x0 is bound in a stobj-let form to ~
                             the expression ~x1, which has the form of a stobj ~
-                            fixer, ~x2, applied to a stobj-table access, ~x3. ~
-                            ~ ")
+                            fixer, ~x2, applied to a stobj-table access, ~
+                            ~x3.~|")
                   (postlude "  See :DOC stobj-table."))
               (cond
                ((not (eq (car stobjs-out) *stobj-table-stobj*))
@@ -17713,14 +17713,15 @@
     (trans-er+ x ctx
                "It is illegal to call ~x0 in this context because it is a ~
                 ~@1.  Note that ~@1s cannot be called directly except in ~
-                theorems.  See :DOC ~@2."
+                theorems~@2.  See :DOC stobj."
                (car x)
                (if (null (cdr x))
                    "stobj creator"
                  "stobj fixer")
                (if (null (cdr x))
-                   "with-local-stobj"
-                 "stobj-let")))
+                   ""
+                 " or, in a specific way, when accessing stobj-tables (see ~
+                  :DOC stobj-table)")))
    ((eql (arity (car x) wrld) (length (cdr x)))
     (cond ((untouchable-fn-p (car x)
                              wrld

@@ -229,6 +229,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod plain-string
+  :short "Fixtype of plain strings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used as literals; they are the regular, non-hex strings.
+     We call them `plain' to clearly distinguish them from hex strings.")
+   (xdoc::p
+    "We represent a plain string as a list of elements,
+     plus a flag saying whether
+     the surrounding quotes are double or not (i.e. single).
+     This captures the full concrete syntax information."))
+  ((content string-element-list)
+   (double-quote-p bool))
+  :tag :plain-string
+  :pred plain-stringp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod hex-string
+  :short "Fixtype of hex strings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We represent a hex string as a list of hex pairs,
+     plus a flag saying whether
+     the surrounding quotes are double or not (i.e. single).
+     We do not capture the optional underscores for now."))
+  ((content hex-pair-list)
+   (double-quote-p bool))
+  :tag :hex-string
+  :pred hex-stringp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum literal
   :short "Fixtype of literals."
   :long
@@ -244,24 +279,13 @@
      which therefore captures full information:
      leading zeros and capitalization of the letters.")
    (xdoc::p
-    "We represent a (non-hex) string as a list of elements,
-     plus a flag saying whether the surrounding quotes are double
-     or not (i.e. single).
-     This captures the full concrete syntax information.
-     To more clearly distinguish this kind of string literal from hex strings,
-     we call these strings `plain strings'.")
-   (xdoc::p
-    "We represent a hex string as a list of hex pairs,
-     plus a flag saying whether the surrounding quotes are double
-     or not (i.e. single).
-     We do not capture the optional underscores for now."))
+    "We represent plain and hex strings
+     as described in @(tsee plain-string) and @(tsee hex-string)."))
   (:boolean ((get bool)))
   (:dec-number ((get nat)))
   (:hex-number ((get hex-digit-list)))
-  (:plain-string ((content string-element-list)
-                  (double-quote-p bool)))
-  (:hex-string ((content hex-pair-list)
-                (double-quote-p bool)))
+  (:plain-string ((get plain-string)))
+  (:hex-string ((get hex-string)))
   :pred literalp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -298,6 +322,7 @@
     :short "Fixtype of function calls."
     ((name identifier)
      (args expression-list))
+    :tag :funcall
     :pred funcallp
     :measure (two-nats-measure (acl2-count x) 1)))
 
@@ -375,6 +400,7 @@
   (fty::defprod block
     :short "Fixtype of blocks."
     ((statements statement-list))
+    :tag :block
     :pred blockp
     :measure (two-nats-measure (acl2-count x) 1))
 
@@ -388,6 +414,7 @@
     :short "Fixtype of cases (of switch statements)."
     ((value literal)
      (body block))
+    :tag :swcase
     :pred swcasep
     :measure (two-nats-measure (acl2-count x) 2))
 
@@ -417,3 +444,79 @@
   (swcase->value x)
   ///
   (fty::deffixequiv swcase-list->value-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum data-value
+  :short "Fixtype of data values in Yul objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A data value is either a hex string or a plain string.")
+   (xdoc::p
+    "See @(tsee data-item)."))
+  (:hex ((get hex-string)))
+  (:plain ((get plain-string)))
+  :pred data-value-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod data-item
+  :short "Fixtype of data items in Yul objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A data item consits of a name (a plain string) and a value."))
+  ((name plain-string)
+   (value data-value))
+  :tag :data
+  :pred data-item-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftypes objects
+  :short "Fixtypes of objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The concrete syntax of Yul objects is described in
+     [Yul: Specification of Yul Object].
+     That description refers to the old grammar (see (@see concrete-syntax));
+     the new grammar does not include Yul objects.")
+   (xdoc::p
+    "Here we formalize an abstract syntax version of Yul objects.
+     We ``map'' from the old grammar to the new grammar as needed."))
+
+  (fty::defprod object
+    :short "Fixtype of objects."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An object consists of
+       a name (a plain string literal),
+       a code block,
+       and a sequence of zero or more objects and data items.
+       In that sequence of objects and data items,
+       the objects are sub-objects of this object,
+       which motivates our choice of field name."))
+    ((name plain-string)
+     (code block)
+     (sub/data object/data-list))
+    :tag :object
+    :pred objectp
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  (fty::deftagsum object/data
+    :short "Fixtype of objects and data items."
+    (:object ((get object)))
+    (:data ((get data-item)))
+    :pred object/data-p
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  (fty::deflist object/data-list
+    :short "Fixtype of lists of objects and data items."
+    :elt-type object/data
+    :true-listp t
+    :elementp-of-nil nil
+    :pred object/data-listp
+    :measure (two-nats-measure (acl2-count x) 0)))
