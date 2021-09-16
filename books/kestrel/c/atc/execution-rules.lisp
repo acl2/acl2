@@ -28,6 +28,82 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-shift-promotion-rules
+  :short "Rules related to the promotions of shift distance operands."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee *atc-shift-definition-rules*),
+     we expand the definitions of the shift operations
+     that take C integers as second arguments
+     into the shift operations that take ACL2 integers as second arguments;
+     this also includes the accompanying @('okp') predicates.
+     Thus, for example, @('(shl-sint-schar x y)')
+     is turned into @('(shl-sint x (schar-integer-value y))')
+     in the symbolic execution.
+     The C code generated from @('(shl-sint-schar x y)') is @('X << Y'),
+     where @('X') and @('Y') are the translations of @('x') and @('y').
+     When that C code is symbolically executed,
+     it is turned into
+     @('(shl-sint x (sint-integer-value (sint-from-schar Y)))'),
+     because @('Y') is promoted and then turned into an ACL2 integer.
+     Thus, we need the fact that @(tsee schar-integer-value)
+     is the same as @(tsee sint-integer-value) after @(tsee sint-from-schar).")
+   (xdoc::p
+    "In general, we need rules that turn
+     @('(sint-integer-value (sint-from-<type> x))')
+     into @('(<type>-integer-value x)')
+     for the types of rank smaller than @('int'),
+     which are promoted to @('int').
+     These rules are given here."))
+
+  (defruled sint-integer-value-of-sint-from-schar
+    (implies (scharp x)
+             (equal (sint-integer-value (sint-from-schar x))
+                    (schar-integer-value x)))
+    :enable (sint-integer-value
+             schar-integer-value
+             sint-from-schar
+             sint-integerp-alt-def))
+
+  (defruled sint-integer-value-of-sint-from-uchar
+    (implies (ucharp x)
+             (equal (sint-integer-value (sint-from-uchar x))
+                    (uchar-integer-value x)))
+    :enable (sint-integer-value
+             uchar-integer-value
+             sint-from-uchar
+             sint-integerp-alt-def))
+
+  (defruled sint-integer-value-of-sint-from-sshort
+    (implies (sshortp x)
+             (equal (sint-integer-value (sint-from-sshort x))
+                    (sshort-integer-value x)))
+    :enable (sint-integer-value
+             sshort-integer-value
+             sint-from-sshort
+             sint-integerp-alt-def))
+
+  (defruled sint-integer-value-of-sint-from-ushort
+    (implies (ushortp x)
+             (equal (sint-integer-value (sint-from-ushort x))
+                    (ushort-integer-value x)))
+    :enable (sint-integer-value
+             ushort-integer-value
+             sint-from-ushort
+             sint-integerp-alt-def)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-shift-promotion-rules*
+  :short "List of rules related to the promotions of shift distance operands."
+  '(sint-integer-value-of-sint-from-schar
+    sint-integer-value-of-sint-from-uchar
+    sint-integer-value-of-sint-from-sshort
+    sint-integer-value-of-sint-from-ushort))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-conversion-composition-rules
   :short "Rules about the composition of conversions."
   :long
@@ -600,11 +676,11 @@
                           ,@(and (or (not (equal type ltype))
                                      (not (equal type rtype)))
                                  (list op-ltype-rtype))
-                          ,@*atc-uaconvert-values-rules*
                           ,@(and op-ltype-rtype-okp
                                  (or (not (equal type ltype))
                                      (not (equal type rtype)))
-                                 (list op-ltype-rtype-okp))))))
+                                 (list op-ltype-rtype-okp))
+                          ,@*atc-uaconvert-values-rules*))))
     (mv name event))
   :guard-hints (("Goal" :in-theory (enable type-arithmeticp type-realp))))
 
