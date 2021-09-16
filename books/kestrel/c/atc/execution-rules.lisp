@@ -660,7 +660,7 @@
        (name (pack exec-op '-when- lpred '-and- rpred))
        (op-ltype-rtype (pack (binop-kind op) '- lfixtype '- rfixtype))
        (op-ltype-rtype-okp (and (or (member-eq (binop-kind op)
-                                               '(:div :rem))
+                                               '(:div :rem :shl :shr))
                                     (type-signed-integerp type))
                                 (pack op-ltype-rtype '-okp)))
        (hyps `(and (,lpred x)
@@ -674,13 +674,24 @@
                  ,formula
                  :enable (,exec-op
                           ,@(and (or (not (equal type ltype))
-                                     (not (equal type rtype)))
+                                     (not (equal type rtype))
+                                     (member-eq (binop-kind op) '(:shl :shr)))
                                  (list op-ltype-rtype))
                           ,@(and op-ltype-rtype-okp
                                  (or (not (equal type ltype))
-                                     (not (equal type rtype)))
+                                     (not (equal type rtype))
+                                     (member-eq (binop-kind op) '(:shl :shr)))
                                  (list op-ltype-rtype-okp))
-                          ,@*atc-uaconvert-values-rules*))))
+                          ,@(and (member-eq (binop-kind op) '(:shl :shr))
+                                 (not (equal ltype (promote-type ltype)))
+                                 (list
+                                  (pack (binop-kind op) '- lfixtype)
+                                  (pack (binop-kind op) '- lfixtype '-okp)))
+                          ,@(and (member-eq (binop-kind op) '(:shl :shr))
+                                 (cons 'exec-integer
+                                       *atc-shift-promotion-rules*))
+                          ,@*atc-uaconvert-values-rules*
+                          ,@*atc-promote-value-rules*))))
     (mv name event))
   :guard-hints (("Goal" :in-theory (enable type-arithmeticp type-realp))))
 
@@ -749,7 +760,9 @@
                   (binop-div)
                   (binop-rem)
                   (binop-add)
-                  (binop-sub)))
+                  (binop-sub)
+                  (binop-shl)
+                  (binop-shr)))
        ((mv names events)
         (atc-exec-binop-rules-gen-loop-ops ops
                                            *atc-integer-types*
