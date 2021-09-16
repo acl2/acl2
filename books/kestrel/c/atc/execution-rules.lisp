@@ -672,7 +672,8 @@
   (b* ((ops (list (binop-mul)
                   (binop-div)
                   (binop-rem)
-                  (binop-add)))
+                  (binop-add)
+                  (binop-sub)))
        ((mv names events)
         (atc-exec-binop-rules-gen-loop-ops ops
                                            *atc-integer-types*
