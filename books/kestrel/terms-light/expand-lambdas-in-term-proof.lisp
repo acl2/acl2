@@ -225,7 +225,7 @@
 ;; term may have free vars not among the lambda formals
 (defthm lambda-eval-of-wrap-term-in-lambda
   (implies (and (pseudo-termp term)
-                (not (member-equal nil (free-vars-in-term term))) ;drop?
+                (not (member-equal nil (free-vars-in-term term))) ;drop? may need the notion of alists agreeing on a set of keys not involving nil
                 (equal (len lambda-formals) (len args)))
            (equal (lambda-eval (wrap-term-in-lambda term lambda-formals args) a)
                   (lambda-eval term

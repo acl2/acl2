@@ -130,3 +130,24 @@
              (equal (sublis-var-simple-lst nil terms)
                     terms))
     :flag sublis-var-simple-lst))
+
+(local
+ (defthm symbolp-of-cdr-of-assoc-equal-when-symbol-listp-of-strip-cdrs
+   (implies (symbol-listp (strip-cdrs alist))
+            (symbolp (cdr (assoc-equal term alist))))
+   :hints (("Goal" :in-theory (enable assoc-equal strip-cdrs)))))
+
+(defthm-flag-sublis-var-simple
+  ;; If we apply a variable renaming to a variable, we get a variable back.
+  (defthm symbolp-of-sublis-var-simple-when-symbolp
+    (implies (and (symbol-listp (strip-cdrs alist))
+                  (symbolp term))
+             (symbolp (sublis-var-simple alist term)))
+    :flag sublis-var-simple)
+  (defthm symbol-listp-of-sublis-var-simple-lst-when-symbol-listp
+    (implies (and (symbol-listp (strip-cdrs alist))
+                  (symbol-listp terms))
+             (symbol-listp (sublis-var-simple-lst alist terms)))
+    :flag sublis-var-simple-lst)
+  :hints (("Goal" :in-theory (enable sublis-var-simple
+                                     sublis-var-simple-lst))))
