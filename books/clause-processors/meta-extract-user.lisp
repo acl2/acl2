@@ -433,7 +433,7 @@
            (implies (and (alistp a)
                          (alistp b))
                     (alistp (append a b)))))
-  (local (include-book "std/lists/take" :dir :system))
+  ;; (local (include-book "std/lists/take" :dir :system))
   (local (defthm commutativity-2-of-+
            (equal (+ x (+ y z))
                   (+ y (+ x z)))))
