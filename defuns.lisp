@@ -6078,7 +6078,7 @@
               (if (member-equal (symbol-package-name (base-symbol rune))
                                 known-pkgs)
                   acc
-                (cons rune acc)))))))
+                (cons (car useless-runes) acc)))))))
 
 (defun set-difference-equal-sorted (lst1 lst2)
 
@@ -6119,6 +6119,65 @@
          (remove-executable-counterpart-useless-runes1 useless-runes))
         (t useless-runes)))
 
+(defun print-rune (rune channel state)
+  (pprogn (princ$ #\( channel state)
+          (prin1$ (car rune) channel state)
+          (princ$ #\Space channel state)
+          (prin1$ (cadr rune) channel state)
+          (cond ((cddr rune)
+                 (pprogn (princ$ " . " channel state)
+                         (prin1$ (cddr rune) channel state)))
+                (t state))
+          (princ$ #\) channel state)))
+
+(defun useless-runes-report-p (lst)
+  (cond ((atom lst) (null lst))
+        ((let ((x (car lst)))
+           (and (true-listp x)
+                (natp (car x))
+                (natp (cadr x))
+                (caddr x) ; very weak check; should syntactically be a rune
+                (null (cdddr x))))
+         (useless-runes-report-p (cdr lst)))
+        (t nil)))
+
+(defun print-useless-runes-tuples-rec (lst channel state)
+
+; See print-useless-runes-tuples.  Here, lst is initially non-nil.
+
+  (declare (xargs :guard (useless-runes-report-p lst)))
+  (cond
+   ((endp lst)
+    (pprogn (newline channel state)
+            (princ$ " )" channel state)
+            (newline channel state)))
+   (t (let* ((triple (car lst))
+             (n1 (car triple))
+             (n2 (cadr triple))
+             (rune (caddr triple)))
+        (pprogn (newline channel state)
+                (princ$ " (" channel state)
+                (prin1$ n1 channel state)
+                (princ$ #\Space channel state)
+                (prin1$ n2 channel state)
+                (princ$ #\Space channel state)
+                (print-rune rune channel state)
+                (princ$ #\) channel state)
+                (print-useless-runes-tuples-rec (cdr lst) channel state))))))
+
+(defun print-useless-runes-tuples (lst channel state)
+
+; This function prints the given list of triples (n1 n2 rune), each preceded by
+; a newline and a space, and finally concluding with a space, right paren, and
+; newline.  Except, if lst is empty then we print the concluding right paren
+; immediately, without a space.
+
+  (declare (xargs :guard (useless-runes-report-p lst)))
+  (cond ((null lst)
+         (pprogn (princ$ #\) channel state)
+                 (newline channel state)))
+        (t (print-useless-runes-tuples-rec lst channel state))))
+
 (defun print-useless-runes (name channel known-pkgs state)
 
 ; We are given an output channel for a @useless-runes.lsp file.  We print an
@@ -6135,6 +6194,10 @@
 ; (as of this writing) sublis-var!, eval-ground-subexpressions1, scons-term,
 ; ev-respecting-ens, and even rewrite and expand-abbreviations.
 
+; WARNING: Avoid fmt functions below!  They use the world's evisc-table, which
+; the user may have modified so that certain numbers are printed as constants
+; -- but we expect the numbers to be printed as numbers!
+
   (error-free-triple-to-state
    'print-useless-runes
    (er-let* ((accp-info (accp-info state)))
@@ -6142,62 +6205,61 @@
       ((current-package "ACL2" set-current-package-state)
        (fmt-hard-right-margin 10000 set-fmt-hard-right-margin)
        (fmt-soft-right-margin 10000 set-fmt-soft-right-margin))
-      (cond
-       ((member-equal (symbol-package-name name) known-pkgs)
-        (let* ((useless-runes0 (remove-executable-counterpart-useless-runes
-                                (useless-runes accp-info)))
-               (bad-tuples (bad-useless-runes useless-runes0 known-pkgs nil))
-               (useless-runes (if (null bad-tuples) ; optimization
-                                  useless-runes0
-                                (set-difference-equal-sorted useless-runes0
-                                                             bad-tuples))))
-          (mv-let (col state)
-            (fmt1 "~@0(~x1~*2"
-                  (list (cons #\0 (if bad-tuples
-                                      (msg "; Skipping ~#0~[this ~
-                                            useless-rune~/these useless ~
-                                            runess~] below~|; (unknown ~
-                                            package in certification ~
-                                            world):~|#|~|~*1|#~|"
-                                           bad-tuples
-                                           `(""
-                                             "~x*~|"
-                                             "~x*~|"
-                                             "~x*~|"
-                                             ,bad-tuples))
-                                    ""))
-                        (cons #\1 name)
-                        (cons #\2
-                              `(")~%"          ; when there's nothing to print
-                                "~% ~x*~% )~%" ; print the last element
-                                "~% ~x*"       ; print the 2nd to last element
-                                "~% ~x*"       ; print all other elements
-                                ,useless-runes))
-                        (cons #\2 nil))
-                  0 channel state nil)
-            (declare (ignore col))
-            (prog2$
+      (let* ((bad-pkg
+              (not (member-equal (symbol-package-name name) known-pkgs)))
+             (useless-runes0 (remove-executable-counterpart-useless-runes
+                              (useless-runes accp-info)))
+             (bad-tuples (and (not bad-pkg) ; else print all useless runes
+                              (bad-useless-runes useless-runes0 known-pkgs
+                                                 nil)))
+             (useless-runes (if (null bad-tuples) ; optimization
+                                useless-runes0
+                              (set-difference-equal-sorted useless-runes0
+                                                           bad-tuples))))
+        (pprogn
+         (cond
+          (bad-tuples
+           (pprogn
+
+; WARNING: Before changing any of this printing, see the WARNING above about
+; fmt functions.
+
+            (princ$ "; Just below, skipping the following list where the rune"
+                    channel state)
+            (newline channel state)
+            (princ$ "; has an unknown package in the certification world:"
+                    channel state)
+            (newline channel state)
+            (princ$ "#|" channel state)
+            (newline channel state)
+            (princ$ "(" channel state)
+            (print-useless-runes-tuples bad-tuples channel state)
+            (princ$ "|#" channel state)
+            (newline channel state)))
+          (bad-pkg
+           (pprogn
+            (princ$ "; Omitting the following entry because the package of"
+                    channel state)
+            (newline channel state)
+            (princ$ "; the event name is unknown in the certification world."
+                    channel state)
+            (newline channel state)
+            (princ$ "#|" channel state)
+            (newline channel state)))
+          (t state))
+         (princ$ #\( channel state)
+         (prin1$ name channel state)
+         (print-useless-runes-tuples useless-runes channel state)
+         (cond (bad-pkg
+                (pprogn (princ$ "|#" channel state)
+                        (newline channel state)))
+               (t state))
+         (prog2$
 
 ; We are done printing, so turn off accumulated-persistence.
 
-             (accumulated-persistence nil)
-             (value nil)))))
-       (t
-        (mv-let (col state)
-          (fmt1 "; Omitting the following entry because the package of~|; ~
-                 the event name is unknown in the certification ~
-                 world.~|#|~|~x0~||#~|"
-                (list (cons #\0 (cons name
-                                      (remove-executable-counterpart-useless-runes
-                                       (useless-runes accp-info)))))
-                0 channel state nil)
-          (declare (ignore col))
-          (prog2$
-
-; We are done printing, so turn off accumulated-persistence.
-
-           (accumulated-persistence nil)
-           (value nil)))))))))
+          (accumulated-persistence nil)
+          (value nil))))))))
 
 (defun augmented-runes-after-1 (nume pairs)
 

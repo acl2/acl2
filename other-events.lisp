@@ -15887,17 +15887,6 @@
     (er-progn (eval-hidden-packages (known-package-alist state) state)
               ,form)))
 
-(defun useless-runes-report-p (lst)
-  (cond ((atom lst) (null lst))
-        ((let ((x (car lst)))
-           (and (true-listp x)
-                (natp (car x))
-                (natp (cadr x))
-                (caddr x) ; very weak check; should syntactically be a rune
-                (null (cdddr x))))
-         (useless-runes-report-p (cdr lst)))
-        (t nil)))
-
 (defun read-useless-runes2 (r alist fal filename ctx state)
 
 ; See read-useless-runes1.

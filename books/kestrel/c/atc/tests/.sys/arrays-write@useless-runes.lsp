@@ -16,3 +16,6 @@
  )
 (|NATP-OF-MEASURE-OF-copy$loop|)
 (C::*PROGRAM*-WELL-FORMED)
+(C::*PROGRAM*-FUN-ENV)
+(|f-FUN-ENV|)
+(|copy-FUN-ENV|)
