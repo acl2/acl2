@@ -1084,8 +1084,7 @@
      they are defined in terms of conversions and
      of operations on equal types of rank at least @('int'):
      this is what the dynamic semantics of C uses."))
-  (b* ((ops (list 'lt 'gt 'le 'ge 'eq 'ne
-                  'bitand 'bitxor 'bitior)))
+  (b* ((ops (list 'bitand 'bitxor 'bitior)))
     (atc-integer-ops-2-conv-names-loop-ops ops
                                            *atc-integer-types*
                                            *atc-integer-types*))
@@ -1095,8 +1094,7 @@
   ((define atc-integer-ops-2-conv-names-loop-right-types ((op symbolp)
                                                           (ltype typep)
                                                           (rtypes type-listp))
-     :guard (and (member-eq op (list 'lt 'gt 'le 'ge 'eq 'ne
-                                     'bitand 'bitxor 'bitior))
+     :guard (and (member-eq op (list 'bitand 'bitxor 'bitior))
                  (type-integerp ltype)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
@@ -1128,8 +1126,7 @@
    (define atc-integer-ops-2-conv-names-loop-left-types ((op symbolp)
                                                          (ltypes type-listp)
                                                          (rtypes type-listp))
-     :guard (and (member-eq op (list 'lt 'gt 'le 'ge 'eq 'ne
-                                     'bitand 'bitxor 'bitior))
+     :guard (and (member-eq op (list 'bitand 'bitxor 'bitior))
                  (type-integer-listp ltypes)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
@@ -1146,8 +1143,7 @@
    (define atc-integer-ops-2-conv-names-loop-ops ((ops symbol-listp)
                                                   (ltypes type-listp)
                                                   (rtypes type-listp))
-     :guard (and (subsetp-eq ops (list 'lt 'gt 'le 'ge 'eq 'ne
-                                       'bitand 'bitxor 'bitior))
+     :guard (and (subsetp-eq ops (list 'bitand 'bitxor 'bitior))
                  (type-integer-listp ltypes)
                  (type-integer-listp rtypes))
      :returns (names symbol-listp)
@@ -1264,14 +1260,6 @@
     exec-iconst
     exec-const
     exec-ident
-    ;; exec-shl
-    ;; exec-shr
-    exec-lt
-    exec-gt
-    exec-le
-    exec-ge
-    exec-eq
-    exec-ne
     exec-bitand
     exec-bitxor
     exec-bitior
