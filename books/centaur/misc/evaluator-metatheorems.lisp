@@ -62,6 +62,7 @@
    (nth n x)
    (cons a b)
    (consp x)
+   (cons-with-hint x y hint)
 ; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
 ;  (replaced assoc-eq by assoc-equal).]
    (assoc-equal x a)
@@ -116,12 +117,14 @@
 ;;                              (evmeta-ev-meta-extract-formula))))))
   
 
-(local (defthm evmeta-ev-of-match-tree
-         (b* (((mv ok alist) (match-tree pat x alist)))
-           (implies ok
-                    (equal (evmeta-ev x a)
-                           (evmeta-ev (subst-tree pat alist) a))))
-         :hints(("Goal" :in-theory (enable match-tree-is-subst-tree)))))
+(defthmd evmeta-ev-of-match-tree
+  (b* (((mv ok alist) (match-tree pat x alist)))
+    (implies ok
+             (equal (evmeta-ev x a)
+                    (evmeta-ev (subst-tree pat alist) a))))
+  :hints(("Goal" :in-theory (enable match-tree-is-subst-tree))))
+
+(local (in-theory (enable evmeta-ev-of-match-tree)))
 
 ;; Constraint 0.
 (define check-ev-of-fncall-args ((evfn symbolp)
@@ -364,6 +367,22 @@
                     (evmeta-ev-lst (ev-of-arglist n evfn arglist alist) nil)))
     :hints(("Goal" :in-theory (enable evmeta-ev-of-fncall-args)))))
 
+(define ev-of-arglist-symb ((n natp)
+                            (evfn symbolp)
+                            arglist-term alist-term)
+  (if (zp n)
+      nil
+    (cons `(,evfn (car ,arglist-term) ,alist-term)
+          (ev-of-arglist-symb (1- n) evfn
+                              `(cdr ,arglist-term) alist-term)))
+  ///
+  (defthm evmeta-ev-lst-of-ev-of-arglist-symb
+    (implies (not (equal evfn 'quote))
+             (equal (evmeta-ev-lst (ev-of-arglist-symb n evfn arglist-term alist-term) a)
+                    (evmeta-ev-lst (ev-of-arglist n evfn (evmeta-ev arglist-term a) (evmeta-ev alist-term a))
+                                   nil)))
+    :hints(("Goal" :in-theory (enable evmeta-ev-of-fncall-args ev-of-arglist)))))
+
 (define ev-of-call-check-args (args
                                (evfn symbolp)
                                (arglist-term pseudo-termp)
@@ -427,6 +446,40 @@
                              (evmeta-ev-meta-extract-formula)))))
 
   (assert-event (check-ev-of-call 'evmeta-ev 'synp 3 'evmeta-ev-of-synp-call (w state))))
+
+(define check-ev-of-call-weak ((evfn symbolp)
+                               (fn symbolp)
+                               (name symbolp)
+                               (world plist-worldp))
+  (b* ((form (meta-extract-formula-w name world))
+       ((unless-match form
+                      (IMPLIES (IF (CONSP X)
+                                   (EQUAL (CAR X) '(:! fn))
+                                   'NIL)
+                               (EQUAL ((:! evfn) X A)
+                                      (:? rhs))))
+        nil))
+    rhs)
+  ///
+  (defthm check-ev-of-call-weak-correct
+    (implies (and (check-ev-of-call-weak evfn fn name (w state))
+                  (consp (evmeta-ev x1 a))
+                  (equal (car (evmeta-ev x1 a)) fn)
+                  (not (equal fn 'quote))
+                  (evmeta-ev-meta-extract-global-facts)
+                  (not (equal evfn 'quote)))
+             (equal (evmeta-ev (list evfn x1 a1) a)
+                    (evmeta-ev `((lambda (x a) ,(check-ev-of-call-weak evfn fn name (w state)))
+                                 ,x1 ,a1) a)))
+    :hints (("goal" :use ((:instance evmeta-ev-meta-extract-formula
+                           (name name)
+                           (st state)
+                           (a `((x . ,(evmeta-ev x1 a))
+                                (a . ,(evmeta-ev a1 a))))))
+             :in-theory (e/d (evmeta-ev-of-fncall-args)
+                             (evmeta-ev-meta-extract-formula)))))
+
+  (assert-event (check-ev-of-call-weak 'evmeta-ev 'cons-with-hint 'evmeta-ev-of-cons-with-hint-call (w state))))
 
 
 
@@ -494,14 +547,22 @@
 
                ;; constraints 6+: ev-function
                ;; special case 1: return-last
-               (((('consp 'x) ('equal ('car 'x) '(quote return-last)))
+               (((('consp 'x) ('equal ('car 'x) ''return-last))
                  (!evfn . '((car (cdr (cdr (cdr x)))) a)))
                 (hons-acons 'return-last (cons 3 rune)
                             rest))
 
-               (((('consp 'x) ('equal ('car 'x) '(quote mv-list)))
+               ;; special case 2: mv-list
+               (((('consp 'x) ('equal ('car 'x) ''mv-list))
                  (!evfn . '((car (cdr (cdr x))) a)))
                 (hons-acons 'mv-list (cons 2 rune)
+                            rest))
+
+               ;; special case 3: cons-with-hint
+               (((('consp 'x) ('equal ('car 'x) ''cons-with-hint))
+                 ('cons (!evfn . '((car (cdr x)) a))
+                       (!evfn . '((car (cdr (cdr x))) a))))
+                (hons-acons 'cons-with-hint (cons 2 rune)
                             rest))
 
                (((('consp 'x) ('equal ('car 'x) ('quote fn)))
@@ -536,3 +597,176 @@
 
 
 
+(defthmd evmeta-ev-of-fncall-args-even-if-alist-is-nil
+  (implies (and (syntaxp (not (and (consp args) (eq (car args) 'kwote-lst))))
+                (not (equal fn 'quote)))
+           (equal (evmeta-ev (cons fn args) a)
+                  (evmeta-ev (cons fn (kwote-lst (evmeta-ev-lst args a))) nil)))
+  :hints(("Goal" :in-theory (enable evmeta-ev-of-fncall-args))))
+
+
+(defthmd kwote-lst-of-cons
+  (equal (kwote-lst (cons a b))
+         (cons (kwote a) (kwote-lst b))))
+
+(defconst *def-evaluator-expander-theory*
+  '((:DEFINITION KWOTE)
+    (:DEFINITION NFIX)
+    (:DEFINITION SYNP)
+    (:DEFINITION subst-tree)
+    (:EXECUTABLE-COUNTERPART EQUAL)
+    (:EXECUTABLE-COUNTERPART KWOTE-LST)
+    (:executable-counterpart match-tree-binder-p)
+    (:REWRITE CAR-CONS)
+    (:REWRITE CDR-CONS)
+    (:REWRITE CHECK-EV-OF-CALL-CORRECT)
+    (:REWRITE CHECK-EV-OF-CALL-WEAK-CORRECT)
+    (:REWRITE EVMETA-EV-LST-OF-ATOM)
+    (:REWRITE EVMETA-EV-LST-OF-CONS)
+    (:REWRITE EVMETA-EV-LST-OF-EV-OF-ARGLIST-SYMB)
+    (:REWRITE EVMETA-EV-OF-CONS-CALL)
+    (:rewrite evmeta-ev-of-match-tree)
+    (:rewrite evmeta-ev-of-lambda)
+    (:REWRITE EVMETA-EV-OF-FNCALL-ARGS)
+    (:REWRITE EVMETA-EV-OF-QUOTE)
+    (:REWRITE KWOTE-LST-OF-CONS)
+    (:rewrite not-quote-by-match-tree-restrictions)
+    (:executable-counterpart intersectp-equal)
+    (:executable-counterpart match-tree-restrictions)
+    (:TYPE-PRESCRIPTION CHECK-EV-OF-CALL)
+    (:TYPE-PRESCRIPTION EV-OF-ARGLIST-SYMB)
+    (:TYPE-PRESCRIPTION LEN)))
+
+(defconst *def-evaluator-expander-guard-theory*
+  '((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+    (:DEFINITION EQ)
+    (:DEFINITION HONS-GET)
+    (:DEFINITION KWOTE)
+    (:DEFINITION STATE-P)
+    (:EXECUTABLE-COUNTERPART EQUAL)
+    (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQLABLEP)
+        (:EXECUTABLE-COUNTERPART IF)
+        (:EXECUTABLE-COUNTERPART MATCH-TREE-BINDERS)
+        (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
+        (:executable-counterpart intersectp-equal)
+        (:executable-counterpart match-tree-restrictions)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART SYMBOL-ALISTP)
+        (:REWRITE MATCH-TREE-BINDERS-BOUND)
+        (:REWRITE SYMBOL-ALISTP-MATCH-TREE)
+        (:rewrite symbolp-by-match-tree-restrictions)
+    (:rewrite assoc-eql-exec-is-assoc-equal)
+    (:REWRITE PLIST-WORLDP-W-STATE)
+    (:TYPE-PRESCRIPTION EV-OF-ARGLIST-SYMB)
+    (:TYPE-PRESCRIPTION HONS-ASSOC-EQUAL)
+    (:TYPE-PRESCRIPTION LEN)
+    (:TYPE-PRESCRIPTION STATE-P1)))
+
+
+
+(defconst *def-evaluator-expander-form*
+  '(progn
+     (make-event
+      `(defconst thm-alist-const
+         ',(ev-collect-apply-lemmas 'evfn nil (w state))))
+
+
+
+     (define metafn (x mfc state)
+       (declare (ignorable mfc))
+       :guard-hints (("goal" :in-theory *def-evaluator-expander-guard-theory*)
+                     ;; (and stable-under-simplificationp
+                     ;;      '(:in-theory (Enable)))
+                     )
+       (b* (((unless-match x (evfn (:? form) (:? a))) x)
+            ((mv fn ?args)
+             (b* (((when-match form
+                               (cons '(:?F fn) (:? args)))
+                   (mv fn args))
+                  ((when-match form '((:?F fn) . (:? args)))
+                   (mv fn (kwote args))))
+               (mv nil nil))
+             
+                               
+             ;; (case-match x
+             ;;   (('evfn ('cons ('quote fn) args) a)
+             ;;    (mv fn args a))
+             ;;   (('evfn ('quote (fn . args)) a)
+             ;;    (mv fn (kwote args) a))
+             ;;   (& (mv nil nil nil)))
+             )
+            ((unless fn) x)
+            ;; ((unless (and fn (symbolp fn) (not (eq fn 'quote)))) x)
+            (pair (hons-get fn thm-alist-const))
+            ((unless (and pair
+                          (consp (cdr pair))
+                          (consp (cddr pair))
+                          (consp (cdddr pair))
+                          (symbolp (caddr (cdr pair)))))
+             x)
+            (arity (len (getpropc fn 'formals t (w state))))
+            ((unless (check-ev-of-call 'evfn fn arity (caddr (cdr pair)) (w state)))
+             (b* ((rhs (check-ev-of-call-weak 'evfn fn (caddr (cdr pair)) (w state)))
+                  ((unless rhs) x))
+               `((lambda (x a) ,rhs) ,form ,a))))
+         (cons fn (ev-of-arglist-symb arity 'evfn args a)))
+       ///
+       (defthm metafn-correct
+         (implies (evmeta-ev-meta-extract-global-facts)
+                  (equal (evmeta-ev x a)
+                         (evmeta-ev (metafn x mfc state) a)))
+         :hints (("goal" :do-not-induct t
+                  :in-theory (cons 'metafn *def-evaluator-expander-theory*))
+                 (and stable-under-simplificationp
+                      '(:in-theory (cons 'evmeta-ev-of-fncall-args-even-if-alist-is-nil
+                                         (set-difference-equal *def-evaluator-expander-theory*
+                                                               '((:definition kwote-lst)
+                                                                 (:rewrite kwote-lst-of-cons)))))))
+         :rule-classes ((:meta :trigger-fns (evfn)))
+         :otf-flg t))))
+
+(defun def-evaluator-expander-fn (evfn metafn metafn-correct thm-alist-const)
+  (b* ((metafn (or metafn
+                   (intern-in-package-of-symbol
+                    (concatenate 'string (symbol-name evfn) "-EXPANDER")
+                    evfn)))
+       (metafn-correct (or metafn-correct
+                           (intern-in-package-of-symbol
+                            (concatenate 'string (symbol-name metafn) "-CORRECT")
+                            metafn)))
+       (thm-alist-const (or thm-alist-const
+                            (intern-in-package-of-symbol
+                             (concatenate 'string "*" (symbol-name evfn) "-THM-ALIST*")
+                             evfn))))
+    (sublis `((evfn . ,evfn)
+              (metafn . ,metafn)
+              (metafn-correct . ,metafn-correct)
+              (thm-alist-const . ,thm-alist-const))
+            *def-evaluator-expander-form*)))
+
+(defmacro def-evaluator-expander (evfn &key metafn metafn-correct thm-alist-const)
+  (def-evaluator-expander-fn evfn metafn metafn-correct thm-alist-const))
+
+(local
+ (progn
+   (defevaluator test-ev test-ev-lst
+     ((if a b c)
+      (equal p q)
+      (cons-with-hint x y hint))
+     :namedp t)
+   (encapsulate nil
+     (local (in-theory nil)) ;; test whether the included hints are enough
+     (def-evaluator-expander test-ev))
+     
+   (defthm test-ev-of-equal
+     (equal (test-ev (list 'equal x y) a)
+            (equal (test-ev x a) (test-ev y a)))
+     :hints(("Goal" :in-theory (disable test-ev-of-equal-call))))
+
+   (defthm test-ev-of-cons-with-hint
+     (equal (test-ev (list 'cons-with-hint x y z) a)
+            (cons-with-hint (test-ev x a) (test-ev y a) (test-ev z a)))
+     :hints(("Goal" :in-theory (disable test-ev-of-cons-with-hint-call))))))
