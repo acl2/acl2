@@ -770,7 +770,10 @@
                   (binop-le)
                   (binop-ge)
                   (binop-eq)
-                  (binop-ne)))
+                  (binop-ne)
+                  (binop-bitand)
+                  (binop-bitxor)
+                  (binop-bitior)))
        ((mv names events)
         (atc-exec-binop-rules-gen-loop-ops ops
                                            *atc-integer-types*
