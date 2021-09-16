@@ -121,3 +121,15 @@
   (equal (set-difference-equal x (true-list-fix y))
          (set-difference-equal x y))
   :hints (("Goal" :in-theory (enable set-difference-equal))))
+
+(defthm set-difference-equal-of-remove-equal
+  (equal (set-difference-equal (remove-equal a x) y)
+         (remove-equal a (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable set-difference-equal remove-equal))))
+
+;might be expensive?
+(defthm set-difference-equal-when-not-consp
+  (implies (not (consp y))
+           (equal (set-difference-equal x y)
+                  (true-list-fix x)))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
