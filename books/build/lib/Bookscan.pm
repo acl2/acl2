@@ -407,7 +407,7 @@ sub scan_acl2devel {
 
 sub start_acl2devel_event {
 
-    return [ifdef_event, 0, "ACL2_DEVEL"];
+    return [ifdef_event, 0, "ACL2_HAS_ACL2_DEVEL"];
 
 }
 
