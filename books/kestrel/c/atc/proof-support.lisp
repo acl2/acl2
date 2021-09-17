@@ -1167,7 +1167,6 @@
     assign
     exec-iconst
     exec-const
-    exec-ident
     exec-binary-strict-pure
     exec-test
     exec-integer
@@ -2362,6 +2361,7 @@
      that depend on the specific C-representing ACL2 functions involved.
      See @(see atc-implementation)."))
   (append *atc-symbolic-computation-state-rules*
+          *atc-identifier-execution-rules*
           *atc-opener-rules*
           *atc-abstract-syntax-rules*
           *atc-other-executable-counterpart-rules*
