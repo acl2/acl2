@@ -62,7 +62,6 @@
    (nth n x)
    (cons a b)
    (consp x)
-   (cons-with-hint x y hint)
 ; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
 ;  (replaced assoc-eq by assoc-equal).]
    (assoc-equal x a)
@@ -479,7 +478,12 @@
              :in-theory (e/d (evmeta-ev-of-fncall-args)
                              (evmeta-ev-meta-extract-formula)))))
 
-  (assert-event (check-ev-of-call-weak 'evmeta-ev 'cons-with-hint 'evmeta-ev-of-cons-with-hint-call (w state))))
+  (local
+   (progn
+     (defevaluator test-cwh-ev test-cwh-ev-lst
+       ((cons-with-hint x y hint))
+       :namedp t)
+     (assert-event (check-ev-of-call-weak 'test-cwh-ev 'cons-with-hint 'test-cwh-ev-of-cons-with-hint-call (w state))))))
 
 
 
