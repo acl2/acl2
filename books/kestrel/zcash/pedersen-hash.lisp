@@ -252,7 +252,7 @@
 
 (define pedersen-segment-scalar ((segment bit-listp))
   :guard (integerp (/ (len segment) 3))
-  :returns (i integerp)
+  :returns (i integerp :rule-classes (:type-prescription :rewrite))
   :short "The function @($\\langle\\cdot\\rangle$) in [ZPS:5.4.1.7]."
   :long
   (xdoc::topstring
@@ -267,7 +267,9 @@
 
    (define pedersen-segment-scalar-loop ((j posp) (segment bit-listp))
      :guard (integerp (/ (len segment) 3))
-     :returns (i integerp :hyp (posp j))
+     :returns (i integerp
+                 :hyp (posp j)
+                 :rule-classes (:type-prescription :rewrite))
      :parents nil
      (if (consp segment)
          (+ (* (pedersen-enc (take 3 segment))
