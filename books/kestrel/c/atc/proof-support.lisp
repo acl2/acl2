@@ -1196,7 +1196,6 @@
     ullong-oct-const
     ullong-hex-const
     type-of-value
-    uaconvert-values
     value-unsigned-integerp
     value-signed-integerp
     value-integerp
