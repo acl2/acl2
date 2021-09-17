@@ -25,6 +25,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ pedersen-hash-bound-properties
+  :parents (pedersen-hash)
   :short "Some properties about bounds of @(tsee pedersen-segment-scalar)."
   :long
   (xdoc::topstring

@@ -38,6 +38,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ pedersen-hash-injectivity-properties
+  :parents (pedersen-hash)
   :short "Injectivity of @(tsee pedersen-segment-scalar)."
   :long
   (xdoc::topstring
