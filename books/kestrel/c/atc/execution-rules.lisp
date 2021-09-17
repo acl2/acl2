@@ -35,7 +35,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "To symbolically execute an identifier (expression),
+    "To symbolically execute an identifier (which is an expression),
      we simply expand the definition of @(tsee exec-ident)
      which unconditionally yields @(tsee read-var).
      The @(tsee read-var) call may undergo further rewriting,
@@ -46,6 +46,44 @@
 (defval *atc-identifier-execution-rules*
   :short "List of rules for executing identifiers."
   '(exec-ident))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atc-constant-execution-rules
+  :short "Rules for executing constants."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "To symbolically execute a constant (which is an expression),
+     we simply expand the definitions of a number of functions,
+     starting with @(tsee exec-const)
+     and including all the functions called by it (directly or indirectly)
+     except for the fixtype constructors of the integer values
+     (i.e. @(tsee sint) etc.).
+     The argument of @(tsee exec-const) is a quoted constant
+     during symbolic execution,
+     because it is taken from the ASTs being executed;
+     thus, for certain functions we only need to enable
+     the executable counterpart.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-constant-execution-rules*
+  :short "List of rules for executing constants."
+  '(exec-const
+    (:e const-int->get)
+    exec-iconst
+    (:e iconst->base)
+    (:e iconst->type)
+    (:e iconst->unsignedp)
+    (:e iconst->value)
+    (:e iconst-tysuffix-kind)
+    (:e sint-integerp)
+    (:e uint-integerp)
+    (:e slong-integerp)
+    (:e ulong-integerp)
+    (:e sllong-integerp)
+    (:e ullong-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

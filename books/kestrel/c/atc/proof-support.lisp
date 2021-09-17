@@ -963,7 +963,6 @@
     (:e block-item-declon->get)
     (:e block-item-kind)
     (:e block-item-stmt->get)
-    (:e const-int->get)
     (:e const-kind)
     (:e declon->init)
     (:e declon->declor)
@@ -987,11 +986,6 @@
     (:e expr-kind)
     (:e expr-unary->arg)
     (:e expr-unary->op)
-    (:e iconst->base)
-    (:e iconst->type)
-    (:e iconst->unsignedp)
-    (:e iconst->value)
-    (:e iconst-tysuffix-kind)
     (:e param-declon->declor)
     (:e param-declon->type)
     (:e stmt-compound->items)
@@ -1040,12 +1034,6 @@
     (:e uchar-integerp)
     (:e sshort-integerp)
     (:e ushort-integerp)
-    (:e sint-integerp)
-    (:e uint-integerp)
-    (:e slong-integerp)
-    (:e ulong-integerp)
-    (:e sllong-integerp)
-    (:e ullong-integerp)
     (:e tyname)
     (:e type-name-to-type)
     (:e type-pointer)
@@ -1166,7 +1154,6 @@
     declar
     assign
     exec-iconst
-    exec-const
     exec-binary-strict-pure
     exec-test
     exec-integer
@@ -2362,6 +2349,7 @@
      See @(see atc-implementation)."))
   (append *atc-symbolic-computation-state-rules*
           *atc-identifier-execution-rules*
+          *atc-constant-execution-rules*
           *atc-opener-rules*
           *atc-abstract-syntax-rules*
           *atc-other-executable-counterpart-rules*
