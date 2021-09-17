@@ -135,3 +135,18 @@
   :short "Fixtype of errors and statement outcomes."
   :ok soutcome
   :pred soutcome-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-literal ((lit literalp) (cstate cstatep))
+  :returns (outcome eoutcome-resultp)
+  :short "Execute a literal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Executing a literal
+     returns a single value
+     and does not change the computation state."))
+  (b* (((ok val) (eval-literal lit)))
+    (make-eoutcome :cstate cstate :values (list val)))
+  :hooks (:fix))
