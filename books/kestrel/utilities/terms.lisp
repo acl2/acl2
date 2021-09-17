@@ -371,16 +371,7 @@
                            (nth 1 (cdr (car term))))
            :in-theory (enable beta-reduce nth))))
 
-;; where should this go?
-;; Negate TERM by adding or removing a call of not (avoids double negation)
-(defun negate-term (term)
-  (declare (xargs :guard t ;(pseudo-termp term)
-                  ))
-  (if (and (call-of 'not term)
-           (consp (cdr term)) ;for guards
-           )
-      (farg1 term) ;negation of (not x) is just x
-    `(not ,term)))
+
 
 ;; Kept disabled for speed
 ;; Matches the one in std.
