@@ -57,7 +57,7 @@
      this consists of a local state object and a global state object.
      The latter is generic in generic Yul.
      For now, for simplicity, we ignore the global state completely,
-     and just defined a computational state as a (wrapped) local state.")
+     and just define a computational state as a (wrapped) local state.")
    (xdoc::p
     "We plan to extend this notion of computation states
      to also include the Yul global state."))
@@ -101,6 +101,13 @@
   :tag :eoutcome
   :pred eoutcomep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult eoutcome-result
+  :short "Fixtype of errors and expression outcomes."
+  :ok eoutcome
+  :pred eoutcome-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod soutcome
@@ -122,6 +129,9 @@
   :tag :soutcome
   :pred soutcomep)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: continue
+(fty::defresult soutcome-result
+  :short "Fixtype of errors and statement outcomes."
+  :ok soutcome
+  :pred soutcome-resultp)
