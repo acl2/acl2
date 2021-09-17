@@ -41,6 +41,10 @@
 
   (xdoc::evmac-topic-implementation-item-input "proof")
 
+  (xdoc::evmac-topic-implementation-item-input "disable")
+
+  (xdoc::evmac-topic-implementation-item-input "rule-classes")
+
   "@('hyps') is the list of hypotheses of @('formula')."
 
   "@('concl') is the conclusion of @('formula')"
@@ -319,7 +323,8 @@
                      formula
                      (events pseudo-event-form-listp)
                      (facts keyword-fact-info-alistp)
-                     (disable booleanp))
+                     (disable booleanp)
+                     rule-classes)
   :returns (new-events pseudo-event-form-listp
                        :hyp (pseudo-event-form-listp events))
   :short "Execute the @(':qed') command."
@@ -327,9 +332,14 @@
        (fact-thm-names (fact-info-list->thm-name-list fact-infos))
        (hints `(("Goal" :in-theory nil :use ,fact-thm-names)))
        (defthm/defthmd (if disable 'defthmd 'defthm))
-       (local-thm `(local (,defthm/defthmd ,name ,formula :hints ,hints)))
+       (local-thm `(local (,defthm/defthmd ,name
+                            ,formula
+                            :hints ,hints
+                            :rule-classes ,rule-classes)))
        (local-thm (restore-output local-thm))
-       (exported-thm `(,defthm/defthmd ,name ,formula))
+       (exported-thm `(,defthm/defthmd ,name
+                        ,formula
+                        :rule-classes ,rule-classes))
        (print-event `(cw-event "~%~%~%~s0~%~x1~%~%"
                                "****************************************"
                                '(:qed)))
@@ -346,6 +356,7 @@
                           (facts keyword-fact-info-alistp)
                           (bindings symbol-alistp)
                           (disable booleanp)
+                          rule-classes
                           ctx
                           state)
   :returns (mv erp
@@ -377,24 +388,24 @@
                     ((when erp) (mv erp nil state)))
                  (defisar-commands (cdr commands)
                    name formula hyps
-                   events facts bindings disable ctx state)))
+                   events facts bindings disable rule-classes ctx state)))
       (:let (b* (((mv erp bindings state)
                   (defisar-let (cdr command) bindings ctx state))
                  ((when erp) (mv erp nil state)))
               (defisar-commands (cdr commands)
                 name formula hyps
-                events facts bindings disable ctx state)))
+                events facts bindings disable rule-classes ctx state)))
       (:derive (b* (((mv erp (list events facts) state)
                      (defisar-derive (cdr command)
                        name events facts bindings ctx state))
                     ((when erp) (mv erp nil state)))
                  (defisar-commands (cdr commands)
                    name formula hyps
-                   events facts bindings disable ctx state)))
+                   events facts bindings disable rule-classes ctx state)))
       (:qed (b* (((run-unless (endp (cdr commands)))
                   (cw "Commands ~x0 found after :QED." (cdr commands))))
               (value
-               (defisar-qed name formula events facts disable))))
+               (defisar-qed name formula events facts disable rule-classes))))
       (t (er-soft+ ctx t nil
                    "Unrecognized command ~x0." command-name)))))
 
@@ -404,6 +415,7 @@
                        (name symbolp)
                        formula
                        (disable booleanp)
+                       rule-classes
                        ctx
                        state)
   :returns (mv erp (events pseudo-event-form-listp) state)
@@ -411,7 +423,8 @@
   (b* (((mv hyps &) (defisar-formula-to-hyps+concl formula))
        ((er events)
         (defisar-commands
-          commands name formula hyps nil nil nil disable ctx state)))
+          commands name formula hyps nil nil nil
+          disable rule-classes ctx state)))
     (value (rev events)))
   :prepwork
   ((defrulel rev-of-pseudo-event-form-listp
@@ -420,7 +433,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defisar-fn (name formula proof disable ctx state)
+(define defisar-fn (name formula proof disable rule-classes ctx state)
   :returns (mv erp (event pseudo-event-formp) state)
   :short "Generate and submit the @(tsee defisar) events."
   (b* (((unless (symbolp name))
@@ -436,7 +449,7 @@
                   "The :DISABLE input must be a boolean, ~
                    but it is ~x0 instead." disable))
        ((mv erp events state)
-        (defisar-proof proof name formula disable ctx state))
+        (defisar-proof proof name formula disable rule-classes ctx state))
        ((when erp) (mv erp '(_) state)))
     (value `(progn
               (encapsulate ()
@@ -448,12 +461,13 @@
 
 (defsection defisar-macro-definition
   :short "Definition of the @(tsee defisar) macro."
-  (defmacro defisar (name formula &key proof disable)
+  (defmacro defisar (name formula &key proof disable (rule-classes ':rewrite))
     `(make-event-terse (defisar-fn
                          ',name
                          ',formula
                          ',proof
                          ',disable
+                         ',rule-classes
                          (cons 'defisar ',name)
                          state)
                        :suppress-errors nil)))
