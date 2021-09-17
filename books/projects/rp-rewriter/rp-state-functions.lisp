@@ -40,9 +40,13 @@
 
 (include-book "aux-functions")
 
-(include-book "projects/apply/top" :dir :system)
+(include-book "macros")
 
-
+;;(fetch-new-theory
+ (include-book "projects/apply/top" :dir :system)
+ ;; use-apply-top-lemmas
+ ;; :disabled t)
+ 
 
 (progn
   (defun rule-result-comperator (x y)

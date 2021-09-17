@@ -45,7 +45,7 @@
 (include-book "std/lists/mfc-utils" :dir :system)
 
 (local
- (fetch-new-events
+ (fetch-new-theory
   (include-book "arithmetic-5/top" :dir :system)
   use-arith-5
   :disabled t))

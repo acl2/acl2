@@ -294,3 +294,140 @@
          ,(rp-defthm-fnc (car args))
          . ,(cdr args))
        (defthm ,name . ,args)))||#)
+
+
+
+(encapsulate
+  nil
+
+  (defun fetch-new-theory-step1 (event)
+    `(make-event
+      (b* ((?current-theory (let ((world (w state))) (current-theory :here))))
+        `(progn ,',event
+
+                (table fetch-new-theory 'a ',current-theory)))))
+
+  (defun fetch-new-theory-step2 (macro-name)
+    `(make-event
+      (b* ((new-current-theory (let ((world (w state))) (current-theory :here)))
+           (old-current-theory (cdr (assoc-equal 'a (table-alist
+                                                     'fetch-new-theory
+                                                     (w state)))))
+           (- (cw "Scanning for newly added event ..."))
+           (added-theory (set-difference$ new-current-theory
+                                          old-current-theory
+                                          :test 'equal))
+           (- (cw "Scanning for disabled theory ..."))
+           (removed-theory (set-difference$ old-current-theory
+                                            new-current-theory
+                                            :test 'equal)))
+        (if (and (not removed-theory)
+                 (not added-theory))
+            `(value-triple (cw "~%Event did not change current theory, not ~
+    creating macro ~p0. ~%" ',',macro-name))
+          `(defmacro ,',macro-name (use)
+             (if use
+                 `(in-theory (e/d ,',added-theory
+                                  ,',removed-theory))
+               `(in-theory (e/d ,',removed-theory
+                                ,',added-theory))))))))
+
+  (defmacro fetch-new-theory (event macro-name &key (disabled 'nil) )
+    `(with-output
+       :off (warning event  prove  observation)
+       :gag-mode :goals
+       (progn
+         ,(fetch-new-theory-step1 event)
+         ,(fetch-new-theory-step2 macro-name)
+         ,@(if disabled
+               `((,macro-name nil))
+             nil)))))
+
+
+(defmacro fetch-new-events (&rest rst)
+  `(fetch-new-theory ,@rst))
+
+(xdoc::defxdoc
+ fetch-new-theory
+ :short "A macro that detects the changes in the theory when a book is
+ included, and creates a macro to enable users to enable and disable the new theory."
+ :parents (rp-utilities)
+ :long "<p>Gives users the ability to undo and redo the changes an event, such
+ as include-book, makes to current theory.
+
+<code>
+@('
+ (fetch-new-theory
+  <event>               ;; e.g., (include-book \"arithmetic-5\" :dir :system)
+  <macro-name>          ;; e.g., use-aritmetic-5
+  ;;optional key
+  :disabled <disabled> ;; When non-nil, the event does not change the current
+  theory. Default: nil.
+  )
+')
+</code>
+</p>
+
+<p>
+After including the arithmetic library as given below, users can enable and
+disable the library as given.
+
+<code>
+@('
+ (fetch-new-theory
+  (include-book \"arithmetic-5\" :dir :system)
+  use-aritmetic-5)
+')
+</code>
+
+<code>
+(use-aritmetic-5 t)
+</code>
+
+<code>
+(use-aritmetic-5 nil)
+</code>
+
+</p>
+
+<p>
+Note that when current theory contains many items, this utility may work very
+slowly. If you do not wish to generate a macro, you may also use @(see
+rp::preserve-current-theory). This utility will work with current theory of any size.
+</p>
+"
+ )
+
+
+
+(encapsulate
+  nil
+
+  (defun preserve-current-theory-step1 (event)
+    `(make-event
+      (b* ((?current-theory (let ((world (w state))) (current-theory :here))))
+        `(progn ,',event
+                (table preserve-current-theory 'a ',current-theory)))))
+
+  (defun preserve-current-theory-step2 ()
+    `(make-event
+      (b* ((old-current-theory (cdr (assoc-equal 'a (table-alist
+                                                     'preserve-current-theory
+                                                     (w state))))))
+        `(in-theory ',old-current-theory))))
+
+  (defmacro preserve-current-theory (event)
+    `(with-output
+       :off (warning event  prove  observation)
+       :gag-mode :goals
+       (progn
+         ,(preserve-current-theory-step1 event)
+         ,(preserve-current-theory-step2)))))
+
+(xdoc::defxdoc
+ preserve-current-theory
+ :short "A macro that detects the changes in the theory when a book is
+ included, and retains the current theory"
+ :parents (rp-utilities)
+ :long "See @(see rp::fetch-new-events)"
+ )
