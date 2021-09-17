@@ -67,6 +67,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define read-var ((var identifierp) (cstate cstatep))
+  :returns (val value-resultp)
+  :short "Read a variable from the computaition state."
+  (b* ((lstate (cstate->local cstate))
+       (var-val (omap::in (identifier-fix var) lstate))
+       ((unless (consp var-val))
+        (err (list :variable-not-found (identifier-fix var)))))
+    (value-fix (cdr var-val)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum mode
   :short "Fixtype of modes."
   :long
@@ -135,6 +147,29 @@
   :short "Fixtype of errors and statement outcomes."
   :ok soutcome
   :pred soutcome-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-path ((path pathp) (cstate cstatep))
+  :returns (outcome eoutcome-resultp)
+  :short "Execute a path."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "To execute a path, we require, as in the static semantics,
+     the path to consist of a single identifier.
+     We look up the variable in the computation state.
+     This always returns a single value,
+     and does not change the computation state."))
+  (b* ((idens (path->get path))
+       ((unless (consp idens))
+        (err (list :empty-path (path-fix path))))
+       ((unless (endp (cdr idens)))
+        (err (list :non-singleton-path (path-fix path))))
+       (var (car idens))
+       ((ok val) (read-var var cstate)))
+    (make-eoutcome :cstate cstate :values (list val)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
