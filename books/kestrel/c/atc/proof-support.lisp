@@ -1176,7 +1176,6 @@
     exec-binary-pure
     exec-cast
     exec-arrsub
-    promote-value
     sint-from-boolean
     sint-dec-const
     sint-oct-const
