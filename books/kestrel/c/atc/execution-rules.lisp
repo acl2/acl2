@@ -15,6 +15,80 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule integer-value-kinds
+  (implies (or (scharp x)
+               (ucharp x)
+               (sshortp x)
+               (ushortp x)
+               (sintp x)
+               (uintp x)
+               (slongp x)
+               (ulongp x)
+               (sllongp x)
+               (ullongp x))
+           (and (value-scalarp x)
+                (value-arithmeticp x)
+                (value-realp x)
+                (value-integerp x)))
+  :rule-classes :tau-system
+  :enable (value-scalarp
+           value-arithmeticp
+           value-realp
+           value-integerp
+           value-signed-integerp
+           value-unsigned-integerp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule not-errorp-when-value-or-array
+  (implies (or (scharp x)
+               (ucharp x)
+               (sshortp x)
+               (ushortp x)
+               (sintp x)
+               (uintp x)
+               (slongp x)
+               (ulongp x)
+               (sllongp x)
+               (ullongp x)
+               (pointerp x)
+               (schar-arrayp x)
+               (uchar-arrayp x)
+               (sshort-arrayp x)
+               (ushort-arrayp x)
+               (sint-arrayp x)
+               (uint-arrayp x)
+               (slong-arrayp x)
+               (ulong-arrayp x)
+               (sllong-arrayp x)
+               (ullong-arrayp x))
+           (not (errorp x)))
+  :rule-classes :tau-system
+  :enable (scharp
+           ucharp
+           sshortp
+           ushortp
+           sintp
+           uintp
+           slongp
+           ulongp
+           sllongp
+           ullongp
+           pointerp
+           schar-arrayp
+           uchar-arrayp
+           sshort-arrayp
+           ushort-arrayp
+           sint-arrayp
+           uint-arrayp
+           slong-arrayp
+           ulong-arrayp
+           sllong-arrayp
+           ullong-arrayp
+           errorp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ atc-execution-rules
   :short "Execution rules for ATC."
   :long
@@ -509,6 +583,8 @@
     (mv name event))
   :guard-hints (("Goal" :in-theory (enable type-arithmeticp type-realp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-uaconvert-values-rules-gen-loop-rtypes ((ltype typep)
                                                     (rtypes type-listp))
   :guard (and (type-integerp ltype)
@@ -522,6 +598,8 @@
        ((mv names events)
         (atc-uaconvert-values-rules-gen-loop-rtypes ltype (cdr rtypes))))
     (mv (cons name names) (cons event events))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-uaconvert-values-rules-gen-loop-ltypes ((ltypes type-listp)
                                                     (rtypes type-listp))
@@ -537,6 +615,8 @@
        ((mv names1 events1)
         (atc-uaconvert-values-rules-gen-loop-ltypes (cdr ltypes) rtypes)))
     (mv (append names names1) (append events events1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-uaconvert-values-rules-gen-all ()
   :returns (event pseudo-event-formp)
@@ -554,32 +634,98 @@
                  on values of given types."
          '(,@names)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (make-event (atc-uaconvert-values-rules-gen-all))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrulel value-kinds-lemma
-  (implies (or (scharp x)
-               (ucharp x)
-               (sshortp x)
-               (ushortp x)
-               (sintp x)
-               (uintp x)
-               (slongp x)
-               (ulongp x)
-               (sllongp x)
-               (ullongp x))
-           (and (value-scalarp x)
-                (value-arithmeticp x)
-                (value-realp x)
-                (value-integerp x)))
-  :rule-classes :tau-system
-  :enable (value-scalarp
-           value-arithmeticp
-           value-realp
-           value-integerp
-           value-signed-integerp
-           value-unsigned-integerp))
+(define atc-exec-arrsub-rules-gen ((atype typep) (itype typep))
+  :guard (and (type-integerp atype)
+              (type-integerp itype))
+  :returns (mv (name symbolp)
+               (event pseudo-event-formp))
+  :short "Generate a rule for reading
+          from an array of a given type
+          with an index of a given type."
+  (b* ((afixtype (atc-integer-type-fixtype atype))
+       (ifixtype (atc-integer-type-fixtype itype))
+       (apred (pack afixtype '-arrayp))
+       (ipred (pack ifixtype 'p))
+       (atype-array-itype-index-okp
+        (pack afixtype '-array- ifixtype '-index-okp))
+       (atype-array-read-itype
+        (pack afixtype '-array-read- ifixtype))
+       (name (pack 'exec-arrsub-when- apred '-and- ipred))
+       (formula `(implies (and (pointerp x)
+                               (,apred (deref x heap))
+                               (,ipred y)
+                               (,atype-array-itype-index-okp (deref x heap) y))
+                          (equal (exec-arrsub x y heap)
+                                 (,atype-array-read-itype (deref x heap) y))))
+       (event `(defruled ,name
+                 ,formula
+                 :enable (exec-arrsub
+                          exec-integer
+                          ,atype-array-itype-index-okp
+                          ,atype-array-read-itype))))
+    (mv name event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-exec-arrsub-rules-gen-loop-itypes ((atype typep)
+                                               (itypes type-listp))
+  :guard (and (type-integerp atype)
+              (type-integer-listp itypes))
+  :returns (mv (names symbol-listp)
+               (events pseudo-event-form-listp))
+  :short "Generate rules for reading
+          from an array of a given type
+          with an index of a given list of types."
+  (b* (((when (endp itypes)) (mv nil nil))
+       ((mv name event) (atc-exec-arrsub-rules-gen atype (car itypes)))
+       ((mv names events)
+        (atc-exec-arrsub-rules-gen-loop-itypes atype (cdr itypes))))
+    (mv (cons name names) (cons event events))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-exec-arrsub-rules-gen-loop-atypes ((atypes type-listp)
+                                               (itypes type-listp))
+  :guard (and (type-integer-listp atypes)
+              (type-integer-listp itypes))
+  :returns (mv (names symbol-listp)
+               (events pseudo-event-form-listp))
+  :short "Generate rules for reading
+          from an array of a given list of types
+          with an index of a given list of types."
+  (b* (((when (endp atypes)) (mv nil nil))
+       ((mv names events)
+        (atc-exec-arrsub-rules-gen-loop-itypes (car atypes) itypes))
+       ((mv more-names more-events)
+        (atc-exec-arrsub-rules-gen-loop-atypes (cdr atypes) itypes)))
+    (mv (append names more-names) (append events more-events))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-exec-arrsub-rules-gen-all ()
+  :returns (event pseudo-event-formp)
+  :short "Generate all the rules for reading arrays,
+          and a constant with a list of their names."
+  (b* (((mv names events)
+        (atc-exec-arrsub-rules-gen-loop-atypes *atc-integer-types*
+                                               *atc-integer-types*)))
+    `(progn
+       (defsection atc-exec-arrsub-rules
+         :short "Rules for executing array reads."
+         ,@events)
+       (defval *atc-exec-arrsub-rules*
+         :short "List of rules for executing array reads."
+         '(,@names)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event (atc-exec-arrsub-rules-gen-all))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

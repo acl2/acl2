@@ -1156,12 +1156,10 @@
     exec-iconst
     exec-binary-strict-pure
     exec-test
-    exec-integer
     exec-binary-logand
     exec-binary-logor
     exec-binary-pure
     exec-cast
-    exec-arrsub
     sint-from-boolean
     sint-dec-const
     sint-oct-const
@@ -2357,6 +2355,7 @@
           *atc-other-definition-rules*
           *atc-conversion-composition-rules*
           *atc-optimized-execution-rules*
+          *atc-exec-arrsub-rules*
           *atc-exec-unop-rules*
           *atc-exec-binop-rules*
           *atc-distributivity-over-if-rewrite-rules*
