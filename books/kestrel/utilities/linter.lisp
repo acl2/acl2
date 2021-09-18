@@ -79,11 +79,13 @@
 (include-book "world")
 (include-book "conjuncts-and-disjuncts")
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
+(include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/bound-vars-in-term" :dir :system)
 (include-book "tools/prove-dollar" :dir :system)
 (include-book "book-of-event")
 (include-book "fresh-names")
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
      ;move?
 ;; TODO: Maybe print paths relative to the cbd?

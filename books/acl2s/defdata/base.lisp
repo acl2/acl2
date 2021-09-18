@@ -642,6 +642,18 @@ No longer needed.
 
 (register-custom-type keyword t nth-keyword-builtin keywordp)
 
+(defun non-keyword-symbolp (x)
+  (declare (xargs :guard t))
+  (and (symbolp x)
+       (not (keywordp x))))
+
+(defun nth-non-keyword-symbol-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (nth-proper-symbol-builtin n))
+
+(register-custom-type
+  non-keyword-symbol t nth-non-keyword-symbol-builtin non-keyword-symbolp)
+
 (defun nth-character-uniform-builtin (m seed)
     (declare (ignorable m))
      (declare (type (unsigned-byte 31) seed))

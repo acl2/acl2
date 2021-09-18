@@ -14,6 +14,8 @@
 (include-book "abstract-syntax")
 (include-book "errors")
 
+(include-book "std/util/defval" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-types
@@ -223,3 +225,23 @@
   (type-name-to-type x)
   ///
   (fty::deffixequiv type-name-list-to-type-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-integer-types*
+  :short "List of the supported C integer types except plain @('char')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This list is used in code that generates functions and theorems
+     for different combinations of integer types."))
+  (list (type-schar)
+        (type-uchar)
+        (type-sshort)
+        (type-ushort)
+        (type-sint)
+        (type-uint)
+        (type-slong)
+        (type-ulong)
+        (type-sllong)
+        (type-ullong)))

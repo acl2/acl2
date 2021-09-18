@@ -16,6 +16,7 @@
 
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
+(include-book "kestrel/utilities/messages2" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system) ;for repeat
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
@@ -141,6 +142,19 @@
       (elaborate-mut-rec-map-option option-value option-name clique-members ctx)
     ;; No :map was used, so all functions get the same value (possibly the default):
     (value-cmp (pairlis$ clique-members (repeat (len clique-members) option-value)))))
+
+;; Builds an alist from function names in the clique to their values of the
+;; option.
+;; TODO: deprecate the other version?
+(defund elaborate-mut-rec-option2 (option-value option-name clique-members ctx)
+  (b* (((mv erp alist-or-msg)
+        (elaborate-mut-rec-option option-value option-name clique-members ctx))
+       ((when erp)
+        ;; alist-or-msg is a msgp:
+        (hard-error ctx (message-string alist-or-msg)
+                    (message-alist alist-or-msg))
+        nil))
+    alist-or-msg))
 
 ;; Returns an error triple.  (Needlessly takes and returns state.)
 (defun elaborate-mut-rec-option-with-state (option-value option-name clique-members ctx state)

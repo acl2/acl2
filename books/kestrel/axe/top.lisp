@@ -40,11 +40,13 @@
 (include-book "bv-rules-axe")
 (include-book "bv-rules")
 (include-book "check-equivs")
+(include-book "concretize-with-contexts")
 (include-book "conjoin-term-with-dag")
 (include-book "conjunctions-and-disjunctions")
 (include-book "consecutivep2")
 (include-book "consecutivep")
 (include-book "contexts")
+(include-book "contexts2")
 (include-book "count-worlds")
 (include-book "crunch-dag2")
 (include-book "crunch-dag")
@@ -227,6 +229,7 @@
 (include-book "result-array-stobj")
 (include-book "defconst-computed2")
 (include-book "strengthen-facts")
+(include-book "letify-term")
 
 ;; Legacy Axe tools (many of these depend on skip-proofs):
 (include-book "prover")
@@ -237,7 +240,7 @@
 (include-book "tactic-prover")
 (include-book "query")
 (include-book "defthm-axe")
-(include-book "letify-term")
+(include-book "equivalence-checker")
 
 ;; The JVM-specific Axe tools:
 (include-book "jvm/top")

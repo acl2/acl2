@@ -236,12 +236,38 @@
           (append (tagsum-tree-shape half `(,car ,expr) consp car cdr)
                   (tagsum-tree-shape (- len half) `(,cdr ,expr) consp car cdr)))))
 
+(logic)
+
+;; Checks that ALIST is an alist whose cars are exactly CARS, in that order.
+;; Unlike, strip-cars, this avoids consing.
+(defund alist-with-carsp (alist cars)
+  (declare (xargs :guard (symbol-listp cars)))
+  (if (atom cars)
+      (null alist)
+    (and (consp alist)
+         (let ((entry (first alist)))
+           (and (consp entry)
+                (eq (first cars) (car entry))
+                (alist-with-carsp (rest alist) (rest cars)))))))
+
+(defthm alist-with-carsp-correct
+  (implies (true-listp cars)
+           (equal (alist-with-carsp alist cars)
+                  (and (alistp alist)
+                       (equal (strip-cars alist) cars))))
+  :hints (("Goal" :in-theory (enable alist-with-carsp))))
+
+(program)
+
 (define tagsum-fields-to-shape (fields xvar layout)
   ;; This is used for both tagsum and defprod.  In tagsum, xvar is actually `(cdr
   ;; ,xvar) because this doesn't involve the tag.
   (case layout
-    (:alist    `(and (alistp ,xvar)
-                     (equal (strip-cars ,xvar) ',(strip-cars fields))))
+    (:alist    `(mbe :logic
+                     (and (alistp ,xvar)
+                          (equal (strip-cars ,xvar) ',(strip-cars fields)))
+                     :exec
+                     (alist-with-carsp ,xvar ',(strip-cars fields))))
     (:list     `(and (true-listp ,xvar)
                      (eql (len ,xvar) ,(len fields))))
     (:tree     `(and . ,(tagsum-tree-shape (len fields) xvar 'prod-consp 'prod-car 'prod-cdr)))
@@ -808,7 +834,3 @@
                     (:post-fix-events . ,post-fix-events)
                     . ,kwd-alist)))
     (change-flexsum flexsum :kwd-alist kwd-alist)))
-
-
-
-

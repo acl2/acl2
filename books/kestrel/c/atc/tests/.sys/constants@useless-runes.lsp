@@ -17,6 +17,8 @@
 (|unsigned_long_long_octal|)
 (|unsigned_long_long_hexadecimal|)
 (C::*PROGRAM*-WELL-FORMED)
+(C::*PROGRAM*-FUN-ENV)
+(|signed_int_decimal-FUN-ENV|)
 (|signed_int_decimal-RETURNS-VALUE|)
 (C::|*PROGRAM*-signed_int_decimal-CORRECT|
  (95 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -77,7 +79,6 @@
  (3 3 (:REWRITE C::NOT-ERRORP-WHEN-SCOPEP))
  (3 3 (:REWRITE C::NOT-ERRORP-WHEN-SCOPE-LISTP))
  (3 3 (:REWRITE C::NOT-ERRORP-WHEN-SCHAR-ARRAYP))
- (3 1 (:REWRITE OMAP::IN-UNROLL))
  (2 1 (:REWRITE C::EXEC-STMT-BASE-7))
  (2 1 (:REWRITE C::EXEC-STMT-BASE-5))
  (2 1 (:REWRITE C::EXEC-STMT-BASE-4))
@@ -91,6 +92,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|signed_int_octal-FUN-ENV|)
 (|signed_int_octal-RETURNS-VALUE|)
 (C::|*PROGRAM*-signed_int_octal-CORRECT|
  (95 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -164,6 +166,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|signed_int_hexadecimal-FUN-ENV|)
 (|signed_int_hexadecimal-RETURNS-VALUE|)
 (C::|*PROGRAM*-signed_int_hexadecimal-CORRECT|
  (95 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -237,6 +240,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|unsigned_int_decimal-FUN-ENV|)
 (|unsigned_int_decimal-RETURNS-VALUE|)
 (C::|*PROGRAM*-unsigned_int_decimal-CORRECT|
  (100 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -310,6 +314,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|unsigned_int_octal-FUN-ENV|)
 (|unsigned_int_octal-RETURNS-VALUE|)
 (C::|*PROGRAM*-unsigned_int_octal-CORRECT|
  (100 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -383,6 +388,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|unsigned_int_hexadecimal-FUN-ENV|)
 (|unsigned_int_hexadecimal-RETURNS-VALUE|)
 (C::|*PROGRAM*-unsigned_int_hexadecimal-CORRECT|
  (100 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -456,6 +462,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|signed_long_decimal-FUN-ENV|)
 (|signed_long_decimal-RETURNS-VALUE|)
 (C::|*PROGRAM*-signed_long_decimal-CORRECT|
  (85 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -523,6 +530,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|signed_long_octal-FUN-ENV|)
 (|signed_long_octal-RETURNS-VALUE|)
 (C::|*PROGRAM*-signed_long_octal-CORRECT|
  (85 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -590,6 +598,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|signed_long_hexadecimal-FUN-ENV|)
 (|signed_long_hexadecimal-RETURNS-VALUE|)
 (C::|*PROGRAM*-signed_long_hexadecimal-CORRECT|
  (85 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -657,6 +666,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|unsigned_long_decimal-FUN-ENV|)
 (|unsigned_long_decimal-RETURNS-VALUE|)
 (C::|*PROGRAM*-unsigned_long_decimal-CORRECT|
  (90 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -728,6 +738,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|unsigned_long_octal-FUN-ENV|)
 (|unsigned_long_octal-RETURNS-VALUE|)
 (C::|*PROGRAM*-unsigned_long_octal-CORRECT|
  (90 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -799,6 +810,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|unsigned_long_hexadecimal-FUN-ENV|)
 (|unsigned_long_hexadecimal-RETURNS-VALUE|)
 (C::|*PROGRAM*-unsigned_long_hexadecimal-CORRECT|
  (90 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -870,6 +882,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|signed_long_long_decimal-FUN-ENV|)
 (|signed_long_long_decimal-RETURNS-VALUE|)
 (C::|*PROGRAM*-signed_long_long_decimal-CORRECT|
  (75 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -923,6 +936,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|signed_long_long_octal-FUN-ENV|)
 (|signed_long_long_octal-RETURNS-VALUE|)
 (C::|*PROGRAM*-signed_long_long_octal-CORRECT|
  (75 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -976,6 +990,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|signed_long_long_hexadecimal-FUN-ENV|)
 (|signed_long_long_hexadecimal-RETURNS-VALUE|)
 (C::|*PROGRAM*-signed_long_long_hexadecimal-CORRECT|
  (75 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -1029,6 +1044,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|unsigned_long_long_decimal-FUN-ENV|)
 (|unsigned_long_long_decimal-RETURNS-VALUE|)
 (C::|*PROGRAM*-unsigned_long_long_decimal-CORRECT|
  (80 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -1090,6 +1106,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|unsigned_long_long_octal-FUN-ENV|)
 (|unsigned_long_long_octal-RETURNS-VALUE|)
 (C::|*PROGRAM*-unsigned_long_long_octal-CORRECT|
  (80 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))
@@ -1151,6 +1168,7 @@
  (1 1 (:REWRITE C::EXEC-FUN-OF-CONST-IDENTIFIER))
  (1 1 (:REWRITE C::COMPUSTATEP-WHEN-COMPUSTATE-RESULTP-AND-NOT-ERRORP))
  )
+(|unsigned_long_long_hexadecimal-FUN-ENV|)
 (|unsigned_long_long_hexadecimal-RETURNS-VALUE|)
 (C::|*PROGRAM*-unsigned_long_long_hexadecimal-CORRECT|
  (80 1 (:REWRITE C::EXEC-BLOCK-ITEM-LIST-UNROLL))

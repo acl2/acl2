@@ -13,7 +13,7 @@
 
 (include-book "kestrel/std/system/pseudo-lambdap" :dir :system) ;reduce?
 
-;; Recognize a unary lambda (not a lambda application).  Example: (lambda (x y) (+ x y))
+;; Recognize a unary lambda (not a lambda application).  Example: (lambda (x) (foo 3 x))
 ;; todo: check that all vars mentioned in farg2 are in farg1?
 ;; todo: add pseudo to the name?
 (defun unary-lambdap (x)

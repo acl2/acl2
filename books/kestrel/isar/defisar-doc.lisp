@@ -50,7 +50,8 @@
      "(defisar name"
      "  formula"
      "  :proof   ..."
-     "  :disable ...)"))
+     "  :disable ..."
+     "  :rule-classes ...)"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -191,7 +192,12 @@
     (xdoc::desc
      "@(':disable') &mdash; default @('nil')"
      (xdoc::p
-      "Specifies if the theorem is disabled.")))
+      "Specifies if the theorem is disabled."))
+
+    (xdoc::desc
+     "@(':rule-classes') &mdash; default @(':rewrite')"
+     (xdoc::p
+      "Specifies the rule classes of the theorem.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -25,6 +25,10 @@
 ;;; TODO and FIXME items to consider doing
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; - Rewrite IF terms whose tests contain MBT calls (not currently done by
+;   rewrite-augmented-term-rec, as of September 2021).  When that's done,
+;   consider eliminating blocked-mbt-p-deep (but careful; some proprietary
+;   books may depend on it).
 ; - Perhaps add to ./package.lsp to eliminate "acl2::" prefixes below.
 ; - Consider showing simplified hypotheses, as was done before mid-October
 ;   2020.  Note however that now we simplify hypotheses and governors together,
@@ -1330,7 +1334,21 @@
   (and (ffn-symb-p term 'acl2::mbe-fn)
        (equal (fargn term 1) *t*)))
 
-(defun contains-blocked-mbt-p (term)
+; The behavior of SIMPLIFY was modified in September 2021 to do a more thorough
+; job of reconstructing MBT calls under IF tests.  But a particular proprietary
+; book slowed down from a few minutes to hours, probably because a rewrite rule
+; hung on IF was critical for performance and MBT reconstruction ignores such
+; rules (see rewrite-augmented-term-rec.  So we provide an attachment for
+; backward compatibility: use
+;   (defattach blocked-mbt-p-deep constant-nil-function-arity-0)
+; to restore the old (weaker) behavior.
+; Note that this zero-ary function is in the "ACL2" package, to make it
+; convenient to use in books that do not define "APT" in their portcullis
+; commands.
+(defstub acl2::blocked-mbt-p-deep () t)
+(defattach acl2::blocked-mbt-p-deep acl2::constant-t-function-arity-0)
+
+(defun contains-blocked-mbt-p-rec (term)
 
 ; See also reconstruct-blocked-mbt-rec, and consider changing that function if
 ; you change this one.
@@ -1359,14 +1377,20 @@
         ((blocked-mbt-p term)
          t)
         ((flambdap (ffn-symb term))
-         (contains-blocked-mbt-p (lambda-body (ffn-symb term))))
+         (contains-blocked-mbt-p-rec (lambda-body (ffn-symb term))))
         ((eq (ffn-symb term) 'if)
-         (or (contains-blocked-mbt-p (fargn term 1))
-             (contains-blocked-mbt-p (fargn term 2))
-             (contains-blocked-mbt-p (fargn term 3))))
+         (or (contains-blocked-mbt-p-rec (fargn term 1))
+             (contains-blocked-mbt-p-rec (fargn term 2))
+             (contains-blocked-mbt-p-rec (fargn term 3))))
         ((eq (ffn-symb term) 'not)
-         (contains-blocked-mbt-p (fargn term 1)))
+         (contains-blocked-mbt-p-rec (fargn term 1)))
         (t nil)))
+
+(defun contains-blocked-mbt-p (term)
+  (declare (xargs :guard (pseudo-termp term) :mode :logic))
+  (if (acl2::blocked-mbt-p-deep)
+      (contains-blocked-mbt-p-rec term)
+    (blocked-mbt-p term)))
 
 (defun augment-term (term)
 
@@ -1690,6 +1714,17 @@
     (declare (ignore changedp))
     new2))
 
+(defun maybe-reconstruct-blocked-mbt (old new)
+  (cond ((acl2::blocked-mbt-p-deep)
+         (if (contains-blocked-mbt-p old)
+             (reconstruct-blocked-mbt old new)
+           new))
+        (t
+         (if (and (blocked-mbt-p old)
+                  (not (blocked-mbt-p new)))
+             (make-blocked-mbt new)
+           new))))
+
 (defun rewrite-augmented-term-rec (aterm alist geneqv rrec runes ctx wrld
                                          state)
 
@@ -1740,9 +1775,7 @@
                                                           false-type-alist)
                                                   runes ctx wrld state))
                      ((mv term ttree)
-                      (rewrite-if1 (if (contains-blocked-mbt-p tst)
-                                       (reconstruct-blocked-mbt tst tst2)
-                                     tst2)
+                      (rewrite-if1 (maybe-reconstruct-blocked-mbt tst tst2)
                                    tbr2 fbr2
                                    nil ; swapped-p
                                    type-alist

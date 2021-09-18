@@ -16,7 +16,8 @@
 ;; TODO: Reduce dependencies?
 (include-book "tools/flag" :dir :system)
 (include-book "kestrel/utilities/wrap-all" :dir :system)
-(include-book "kestrel/utilities/terms" :dir :system) ;for negate-term
+;(include-book "kestrel/utilities/terms" :dir :system) ;for negate-term
+(include-book "negate-term")
 (local (include-book "pseudo-termp"))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
