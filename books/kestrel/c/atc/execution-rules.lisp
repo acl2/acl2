@@ -15,44 +15,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule integer-value-kinds
-  (implies (or (scharp x)
-               (ucharp x)
-               (sshortp x)
-               (ushortp x)
-               (sintp x)
-               (uintp x)
-               (slongp x)
-               (ulongp x)
-               (sllongp x)
-               (ullongp x))
-           (and (value-scalarp x)
-                (value-arithmeticp x)
-                (value-realp x)
-                (value-integerp x)))
-  :rule-classes :tau-system
-  :enable (value-scalarp
-           value-arithmeticp
-           value-realp
-           value-integerp
-           value-signed-integerp
-           value-unsigned-integerp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule not-errorp-when-value-or-array
-  (implies (or (scharp x)
-               (ucharp x)
-               (sshortp x)
-               (ushortp x)
-               (sintp x)
-               (uintp x)
-               (slongp x)
-               (ulongp x)
-               (sllongp x)
-               (ullongp x)
-               (pointerp x)
-               (schar-arrayp x)
+(defrule not-errorp-when-array
+  (implies (or (schar-arrayp x)
                (uchar-arrayp x)
                (sshort-arrayp x)
                (ushort-arrayp x)
@@ -64,18 +28,7 @@
                (ullong-arrayp x))
            (not (errorp x)))
   :rule-classes :tau-system
-  :enable (scharp
-           ucharp
-           sshortp
-           ushortp
-           sintp
-           uintp
-           slongp
-           ulongp
-           sllongp
-           ullongp
-           pointerp
-           schar-arrayp
+  :enable (schar-arrayp
            uchar-arrayp
            sshort-arrayp
            ushort-arrayp

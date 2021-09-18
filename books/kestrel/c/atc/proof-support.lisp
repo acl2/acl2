@@ -1670,7 +1670,7 @@
              (equal (value-result-fix x)
                     x)))
 
-  (defruled not-errorp-when-valuep
+  (defruled not-errorp-when-valuep-rewrite
     (implies (valuep x)
              (not (errorp x)))
     :enable (errorp
@@ -1779,7 +1779,7 @@
     not-zp-of-limit-variable
     not-zp-of-limit-minus-const
     value-result-fix-when-valuep
-    not-errorp-when-valuep
+    not-errorp-when-valuep-rewrite
     not-errorp-when-value-listp
     not-errorp-when-scopep
     not-errorp-when-scope-listp
