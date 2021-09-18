@@ -2362,7 +2362,6 @@
           *atc-identifier-rules*
           *atc-not-rules*
           *atc-integer-size-rules*
-          *atc-shift-promotion-rules*
           *atc-other-rewrite-rules*
           *atc-integer-ops-1-return-rewrite-rules*
           *atc-integer-ops-2-return-rewrite-rules*
