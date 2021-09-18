@@ -35,7 +35,7 @@
      (expressed by a function introduced here)
      and an exclusive lower bound of 0.
      Since @(tsee pedersen-segment-scalar)
-     is defined via @(tsee pedersen-segment-scalar-loop),
+     is defined via @('pedersen-segment-scalar-loop'),
      we also prove bounds about the latter."))
   :order-subtopics t
   :default-parent t)

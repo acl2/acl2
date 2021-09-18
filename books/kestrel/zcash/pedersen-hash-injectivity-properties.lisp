@@ -51,7 +51,7 @@
      and in @(see pedersen-segment-scalar-not-zero-proof).")
    (xdoc::p
     "Since @(tsee pedersen-segment-scalar)
-     is defined via @(tsee pedersen-segment-scalar-loop),
+     is defined via @('pedersen-segment-scalar-loop'),
      so we need to prove injectivity properties for the latter first.")
    (xdoc::p
     "The proof is explained in the comments in this file."))
