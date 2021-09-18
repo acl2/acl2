@@ -252,7 +252,7 @@
 
 (define pedersen-segment-scalar ((segment bit-listp))
   :guard (integerp (/ (len segment) 3))
-  :returns (i integerp)
+  :returns (i integerp :rule-classes (:type-prescription :rewrite))
   :short "The function @($\\langle\\cdot\\rangle$) in [ZPS:5.4.1.7]."
   :long
   (xdoc::topstring
@@ -267,7 +267,9 @@
 
    (define pedersen-segment-scalar-loop ((j posp) (segment bit-listp))
      :guard (integerp (/ (len segment) 3))
-     :returns (i integerp :hyp (posp j))
+     :returns (i integerp
+                 :hyp (posp j)
+                 :rule-classes (:type-prescription :rewrite))
      :parents nil
      (if (consp segment)
          (+ (* (pedersen-enc (take 3 segment))
@@ -432,7 +434,12 @@
      we introduce a predicate for being outside the interval
      and we prove some theorems about it.
      Some of these theorems are currently somewhat specific;
-     perhaps there is a way to improve the form of the proof."))
+     perhaps there is a way to improve the form of the proof.")
+   (xdoc::p
+    "The fact, mentioned above, that
+     the loop function is outside a certain interval
+     is also useful to prove other properties.
+     Thus, we export a theorem asserting that."))
 
   (local
    (define outsidep (x b)
@@ -489,6 +496,18 @@
              outsidep-lemma1
              outsidep-lemma3
              posp-of-bound))
+
+  (defrule pedersen-segment-scalar-loop-outside-interval
+    (implies (and (posp j)
+                  (bit-listp segment)
+                  (integerp (/ (len segment) 3))
+                  (consp segment))
+             (or (<= (pedersen-segment-scalar-loop j segment)
+                     (- (expt 2 (+ -4 (* 4 j)))))
+                 (<= (expt 2 (+ -4 (* 4 j)))
+                     (pedersen-segment-scalar-loop j segment))))
+    :use outsidep-of-pedersen-segment-scalar-loop
+    :enable outsidep)
 
   (defrule pedersen-segment-scalar-not-zero
     (implies (and (bit-listp segment)

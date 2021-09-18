@@ -32,13 +32,15 @@
                               (pseudo-termp then-part)
                               (pseudo-termp else-part))))
   (if (call-of 'if then-part) ;; (if <test> (if <test2> .. ..) ..)
-      (if (equal (farg2 then-part) else-part) ;; (if <test> (if <test2> else-part ..) else-part)
+      (if (equal (farg2 then-part) else-part)
           (mv t `(if (if ,test ; an and
                          ,(negate-term (farg1 then-part))
                        'nil)
                      ,(farg3 then-part)
                    ,else-part))
-        (if (equal (farg3 then-part) else-part) ;; (if <test> (if <test2> .. else-part) else-part)
+        (if (and (equal (farg3 then-part) else-part) ;; (if <test> (if <test2> .. else-part) else-part)
+                 (not (equal *nil* else-part)) ; avoids changing (IF X (IF Y Z 'NIL) 'NIL), which is (and x y z)
+                 )
             (mv t `(if (if ,test ; an and
                            ,(farg1 then-part)
                          'nil)
