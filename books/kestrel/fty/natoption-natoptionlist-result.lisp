@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult natoption/natoptionlist-result
+  :parents (fty::fty-extensions fty::specific-types)
   :short "Fixtype of errors and
           optional natural numbers and lists of optional natural numbers."
   :ok natoption/natoptionlist

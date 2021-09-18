@@ -16,5 +16,6 @@
 
 (fty::defoption nat-option
   nat
+  :parents (fty::fty-extensions fty::specific-types)
   :short "Fixtype of optional natural numbers."
   :pred nat-optionp)
