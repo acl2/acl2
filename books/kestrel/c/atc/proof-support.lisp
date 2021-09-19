@@ -1106,7 +1106,6 @@
     declar
     assign
     exec-iconst
-    exec-binary-strict-pure
     exec-test
     exec-binary-logand
     exec-binary-logor
@@ -2317,7 +2316,7 @@
   (append *atc-symbolic-computation-state-rules*
           *atc-exec-arrsub-rules*
           *atc-exec-unary-rules*
-          *atc-exec-binop-strict-pure-rules*
+          *atc-exec-binary-strict-pure-rules*
           *atc-exec-ident-rules*
           *atc-exec-const-rules*
           *atc-opener-rules*

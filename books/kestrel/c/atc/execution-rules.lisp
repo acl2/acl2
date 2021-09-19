@@ -622,12 +622,10 @@
                                       '(:schar :sshort :sint :slong :sllong
                                         :uchar :ushort))
                            (pack op-type '-okp)))
-         (hyps (if op-type-okp
-                   `(and (unop-case op ,op-kind)
-                         (,pred x)
-                         (,op-type-okp x))
-                 `(and (unop-case op ,op-kind)
-                       (,pred x))))
+         (hyps `(and (unop-case op ,op-kind)
+                     (,pred x)
+                     ,@(and op-type-okp
+                            `((,op-type-okp x)))))
          (formula `(implies ,hyps
                             (equal (exec-unary op x)
                                    (,op-type x))))
@@ -695,11 +693,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-exec-binop-strict-pure-rules-generation
+(defsection atc-exec-binary-strict-pure-rules-generation
   :short "Code to generate the rules for executing
           strict pure binary operations."
 
-  (define atc-exec-binop-rules-gen ((op binopp) (ltype typep) (rtype typep))
+  (define atc-exec-binary-rules-gen ((op binopp) (ltype typep) (rtype typep))
     :guard (and (type-integerp ltype)
                 (type-integerp rtype))
     :returns (mv (name symbolp) (event pseudo-event-formp))
@@ -708,41 +706,44 @@
          (rfixtype (atc-integer-type-fixtype rtype))
          (lpred (pack lfixtype 'p))
          (rpred (pack rfixtype 'p))
-         (exec-op (pack 'exec- (binop-kind op)))
+         (op-kind (binop-kind op))
+         (exec-op (pack 'exec- op-kind))
          (type (uaconvert-types ltype rtype))
          (name (pack exec-op '-when- lpred '-and- rpred))
-         (op-ltype-rtype (pack (binop-kind op) '- lfixtype '- rfixtype))
-         (op-ltype-rtype-okp (and (or (member-eq (binop-kind op)
+         (op-ltype-rtype (pack op-kind '- lfixtype '- rfixtype))
+         (op-ltype-rtype-okp (and (or (member-eq op-kind
                                                  '(:div :rem :shl :shr))
-                                      (and (member-eq (binop-kind op)
+                                      (and (member-eq op-kind
                                                       '(:add :sub :mul))
                                            (type-signed-integerp type)))
                                   (pack op-ltype-rtype '-okp)))
-         (hyps `(and (,lpred x)
+         (hyps `(and (binop-case op ,op-kind)
+                     (,lpred x)
                      (,rpred y)
                      ,@(and op-ltype-rtype-okp
                             `((,op-ltype-rtype-okp x y)))))
          (formula `(implies ,hyps
-                            (equal (,exec-op x y)
+                            (equal (exec-binary-strict-pure op x y)
                                    (,op-ltype-rtype x y))))
          (event `(defrule ,name
                    ,formula
-                   :enable (,exec-op
+                   :enable (exec-binary-strict-pure
+                            ,exec-op
                             ,@(and (or (not (equal type ltype))
                                        (not (equal type rtype))
-                                       (member-eq (binop-kind op) '(:shl :shr)))
+                                       (member-eq op-kind '(:shl :shr)))
                                    (list op-ltype-rtype))
                             ,@(and op-ltype-rtype-okp
                                    (or (not (equal type ltype))
                                        (not (equal type rtype))
-                                       (member-eq (binop-kind op) '(:shl :shr)))
+                                       (member-eq op-kind '(:shl :shr)))
                                    (list op-ltype-rtype-okp))
-                            ,@(and (member-eq (binop-kind op) '(:shl :shr))
+                            ,@(and (member-eq op-kind '(:shl :shr))
                                    (not (equal ltype (promote-type ltype)))
                                    (list
-                                    (pack (binop-kind op) '- lfixtype)
-                                    (pack (binop-kind op) '- lfixtype '-okp)))
-                            ,@(and (member-eq (binop-kind op) '(:shl :shr))
+                                    (pack op-kind '- lfixtype)
+                                    (pack op-kind '- lfixtype '-okp)))
+                            ,@(and (member-eq op-kind '(:shl :shr))
                                    (cons 'exec-integer
                                          *atc-integer-value-rules*))
                             ,@*atc-uaconvert-values-rules*
@@ -750,23 +751,23 @@
       (mv name event))
     :guard-hints (("Goal" :in-theory (enable type-arithmeticp type-realp))))
 
-  (define atc-exec-binop-rules-gen-loop-rtypes ((op binopp)
-                                                (ltype typep)
-                                                (rtypes type-listp))
+  (define atc-exec-binary-rules-gen-loop-rtypes ((op binopp)
+                                                 (ltype typep)
+                                                 (rtypes type-listp))
     :guard (and (type-integerp ltype)
                 (type-integer-listp rtypes))
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
     (b* (((when (endp rtypes)) (mv nil nil))
-         ((mv name event) (atc-exec-binop-rules-gen op ltype (car rtypes)))
+         ((mv name event) (atc-exec-binary-rules-gen op ltype (car rtypes)))
          ((mv names events)
-          (atc-exec-binop-rules-gen-loop-rtypes op ltype (cdr rtypes))))
+          (atc-exec-binary-rules-gen-loop-rtypes op ltype (cdr rtypes))))
       (mv (cons name names) (cons event events))))
 
-  (define atc-exec-binop-rules-gen-loop-ltypes ((op binopp)
-                                                (ltypes type-listp)
-                                                (rtypes type-listp))
+  (define atc-exec-binary-rules-gen-loop-ltypes ((op binopp)
+                                                 (ltypes type-listp)
+                                                 (rtypes type-listp))
     :guard (and (type-integer-listp ltypes)
                 (type-integer-listp rtypes))
     :returns (mv (names symbol-listp)
@@ -774,14 +775,14 @@
     :parents nil
     (b* (((when (endp ltypes)) (mv nil nil))
          ((mv names events)
-          (atc-exec-binop-rules-gen-loop-rtypes op (car ltypes) rtypes))
+          (atc-exec-binary-rules-gen-loop-rtypes op (car ltypes) rtypes))
          ((mv more-names more-events)
-          (atc-exec-binop-rules-gen-loop-ltypes op (cdr ltypes) rtypes)))
+          (atc-exec-binary-rules-gen-loop-ltypes op (cdr ltypes) rtypes)))
       (mv (append names more-names) (append events more-events))))
 
-  (define atc-exec-binop-rules-gen-loop-ops ((ops binop-listp)
-                                             (ltypes type-listp)
-                                             (rtypes type-listp))
+  (define atc-exec-binary-rules-gen-loop-ops ((ops binop-listp)
+                                              (ltypes type-listp)
+                                              (rtypes type-listp))
     :guard (and (type-integer-listp ltypes)
                 (type-integer-listp rtypes))
     :returns (mv (names symbol-listp)
@@ -789,12 +790,12 @@
     :parents nil
     (b* (((when (endp ops)) (mv nil nil))
          ((mv names events)
-          (atc-exec-binop-rules-gen-loop-ltypes (car ops) ltypes rtypes))
+          (atc-exec-binary-rules-gen-loop-ltypes (car ops) ltypes rtypes))
          ((mv more-names more-events)
-          (atc-exec-binop-rules-gen-loop-ops (cdr ops) ltypes rtypes)))
+          (atc-exec-binary-rules-gen-loop-ops (cdr ops) ltypes rtypes)))
       (mv (append names more-names) (append events more-events))))
 
-  (define atc-exec-binop-rules-gen-all ()
+  (define atc-exec-binary-rules-gen-all ()
     :returns (event pseudo-event-formp)
     :parents nil
     (b* ((ops (list (binop-mul)
@@ -814,17 +815,17 @@
                     (binop-bitxor)
                     (binop-bitior)))
          ((mv names events)
-          (atc-exec-binop-rules-gen-loop-ops ops
-                                             *atc-integer-types*
-                                             *atc-integer-types*)))
+          (atc-exec-binary-rules-gen-loop-ops ops
+                                              *atc-integer-types*
+                                              *atc-integer-types*)))
       `(progn
-         (defsection atc-exec-binop-strict-pure-rules
+         (defsection atc-exec-binary-strict-pure-rules
            :short "Rules for executing strict pure binary operations."
            ,@events)
-         (defval *atc-exec-binop-strict-pure-rules*
+         (defval *atc-exec-binary-strict-pure-rules*
            :short "List of rules for executing strict pure binary operations."
            '(,@names))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(make-event (atc-exec-binop-rules-gen-all))
+(make-event (atc-exec-binary-rules-gen-all))
