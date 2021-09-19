@@ -1141,47 +1141,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-optimized-execution-rules
-  :short "Optimized execution rules."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Here we prove some rules that we use instead of
-     enabling the corresponding execution functions.
-     Compared to the definitions of the execution functions,
-     these rules take advantage of the hypotheses
-     to cut away some of the code."))
-
-  (defruled exec-unary-when-valuep
-    (implies (valuep arg)
-             (equal (exec-unary op arg)
-                    (unop-case op
-                               :plus (exec-plus arg)
-                               :minus (exec-minus arg)
-                               :bitnot (exec-bitnot arg)
-                               :lognot (exec-lognot arg))))
-    :enable (exec-unary
-             errorp
-             valuep
-             ucharp
-             scharp
-             ushortp
-             sshortp
-             uintp
-             sintp
-             ulongp
-             slongp
-             ullongp
-             sllongp
-             pointerp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-optimized-execution-rules*
-  '(exec-unary-when-valuep))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection atc-distributivity-over-if-rewrite-rules
   :short "Rewrite rules about certain functions distributing over @(tsee if)."
 
@@ -2357,7 +2316,7 @@
      See @(see atc-implementation)."))
   (append *atc-symbolic-computation-state-rules*
           *atc-exec-arrsub-rules*
-          *atc-exec-unop-rules*
+          *atc-exec-unary-rules*
           *atc-exec-binop-strict-pure-rules*
           *atc-exec-ident-rules*
           *atc-exec-const-rules*
@@ -2365,7 +2324,6 @@
           *atc-abstract-syntax-rules*
           *atc-other-executable-counterpart-rules*
           *atc-other-definition-rules*
-          *atc-optimized-execution-rules*
           *atc-distributivity-over-if-rewrite-rules*
           *atc-identifier-rules*
           *atc-not-rules*
