@@ -2356,17 +2356,16 @@
      that depend on the specific C-representing ACL2 functions involved.
      See @(see atc-implementation)."))
   (append *atc-symbolic-computation-state-rules*
-          *atc-identifier-execution-rules*
-          *atc-constant-execution-rules*
+          *atc-exec-arrsub-rules*
+          *atc-exec-unop-rules*
+          *atc-exec-binop-strict-pure-rules*
+          *atc-exec-ident-rules*
+          *atc-exec-const-rules*
           *atc-opener-rules*
           *atc-abstract-syntax-rules*
           *atc-other-executable-counterpart-rules*
           *atc-other-definition-rules*
-          *atc-conversion-composition-rules*
           *atc-optimized-execution-rules*
-          *atc-exec-arrsub-rules*
-          *atc-exec-unop-rules*
-          *atc-exec-binop-rules*
           *atc-distributivity-over-if-rewrite-rules*
           *atc-identifier-rules*
           *atc-not-rules*
