@@ -87,8 +87,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-shift-promotion-rules
-  :short "Rules related to the promotions of shift distance operands."
+(defsection atc-integer-value-composition-rules
+  :short "Rules about the composition of @(tsee sint-integer-value)
+          with @('sint-from-<type>') functions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are not used during the symbolic execution;
+     they are used to prove rules used during the symbolic execution."))
 
   (defruled sint-integer-value-of-sint-from-schar
     (implies (scharp x)
@@ -128,8 +134,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atc-shift-promotion-rules*
-  :short "List of rules related to the promotions of shift distance operands."
+(defval *atc-integer-value-composition-rules*
+  :short "List of rules about the composition of @(tsee sint-integer-value)
+          with @('sint-from-<type>') functions."
   '(sint-integer-value-of-sint-from-schar
     sint-integer-value-of-sint-from-uchar
     sint-integer-value-of-sint-from-sshort
@@ -796,7 +803,7 @@
                                   (pack (binop-kind op) '- lfixtype '-okp)))
                           ,@(and (member-eq (binop-kind op) '(:shl :shr))
                                  (cons 'exec-integer
-                                       *atc-shift-promotion-rules*))
+                                       *atc-integer-value-composition-rules*))
                           ,@*atc-uaconvert-values-rules*
                           ,@*atc-promote-value-rules*))))
     (mv name event))
