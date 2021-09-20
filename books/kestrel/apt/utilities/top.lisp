@@ -11,7 +11,9 @@
 (in-package "APT")
 
 (include-book "defaults-table")
+(include-book "deftransformation")
 (include-book "defun-variant")
+(include-book "def-equality-transformation")
 (include-book "fixup-ignores")
 (include-book "function-renamingp")
 (include-book "input-processing")
