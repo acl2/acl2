@@ -58,6 +58,7 @@
 (include-book "nati")
 (include-book "nibble")
 (include-book "nibble-list")
+(include-book "pos-list")
 (include-book "set")
 (include-book "string-list-result")
 (include-book "string-result")

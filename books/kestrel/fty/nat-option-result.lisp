@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult nat-option-result
+  :parents (fty::fty-extensions fty::specific-types)
   :short "Fixtype of errors and optional natural numbers."
   :ok nat-option
   :pred nat-option-resultp)

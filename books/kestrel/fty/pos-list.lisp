@@ -10,13 +10,14 @@
 
 (in-package "ACL2")
 
-(include-book "nat-option-list")
-(include-book "defresult")
+(include-book "centaur/fty/top" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult nat-option-list-result
-  :parents (fty::fty-extensions fty::specific-types)
-  :short "Fixtype of errors and lists of optional natural numbers."
-  :ok nat-option-list
-  :pred nat-option-list-resultp)
+(fty::deflist pos-list
+  :parents (fty::fty-extensions fty::specific-types pos-listp)
+  :short "Fixtype of lists of positive integers."
+  :elt-type pos
+  :true-listp t
+  :elementp-of-nil nil
+  :pred pos-listp)

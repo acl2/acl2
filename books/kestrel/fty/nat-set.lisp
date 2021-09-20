@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defset nat-set
-  :parents (natp)
+  :parents (fty::fty-extensions fty::specific-types)
   :short "Fixtype of finite sets of natural numbers."
   :elt-type nat
   :elementp-of-nil nil

@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult nat/natlist-result
+  :parents (fty::fty-extensions fty::specific-types)
   :short "Fixtype of errors and
           natural numbers and lists or natural numbers."
   :ok nat/natlist
