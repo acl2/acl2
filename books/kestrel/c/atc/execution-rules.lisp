@@ -849,3 +849,82 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event (atc-exec-binary-rules-gen-all))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exec-test-rules
+  :short "Rules for executing tests on values."
+
+  (defruled exec-test-when-scharp
+    (implies (scharp x)
+             (equal (exec-test x)
+                    (boolean-from-schar x)))
+    :enable exec-test)
+
+  (defruled exec-test-when-ucharp
+    (implies (ucharp x)
+             (equal (exec-test x)
+                    (boolean-from-uchar x)))
+    :enable exec-test)
+
+  (defruled exec-test-when-sshortp
+    (implies (sshortp x)
+             (equal (exec-test x)
+                    (boolean-from-sshort x)))
+    :enable exec-test)
+
+  (defruled exec-test-when-ushortp
+    (implies (ushortp x)
+             (equal (exec-test x)
+                    (boolean-from-ushort x)))
+    :enable exec-test)
+
+  (defruled exec-test-when-sintp
+    (implies (sintp x)
+             (equal (exec-test x)
+                    (boolean-from-sint x)))
+    :enable exec-test)
+
+  (defruled exec-test-when-uintp
+    (implies (uintp x)
+             (equal (exec-test x)
+                    (boolean-from-uint x)))
+    :enable exec-test)
+
+  (defruled exec-test-when-slongp
+    (implies (slongp x)
+             (equal (exec-test x)
+                    (boolean-from-slong x)))
+    :enable exec-test)
+
+  (defruled exec-test-when-ulongp
+    (implies (ulongp x)
+             (equal (exec-test x)
+                    (boolean-from-ulong x)))
+    :enable exec-test)
+
+  (defruled exec-test-when-sllongp
+    (implies (sllongp x)
+             (equal (exec-test x)
+                    (boolean-from-sllong x)))
+    :enable exec-test)
+
+  (defruled exec-test-when-ullongp
+    (implies (ullongp x)
+             (equal (exec-test x)
+                    (boolean-from-ullong x)))
+    :enable exec-test))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-exec-test-rules*
+  '(exec-test-when-scharp
+    exec-test-when-ucharp
+    exec-test-when-sshortp
+    exec-test-when-ushortp
+    exec-test-when-sintp
+    exec-test-when-uintp
+    exec-test-when-slongp
+    exec-test-when-ulongp
+    exec-test-when-sllongp
+    exec-test-when-ullongp))

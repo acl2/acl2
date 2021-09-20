@@ -1106,7 +1106,6 @@
     declar
     assign
     exec-iconst
-    exec-test
     exec-binary-logand
     exec-binary-logor
     exec-binary-pure
@@ -2314,11 +2313,12 @@
      that depend on the specific C-representing ACL2 functions involved.
      See @(see atc-implementation)."))
   (append *atc-symbolic-computation-state-rules*
+          *atc-exec-ident-rules*
+          *atc-exec-const-rules*
           *atc-exec-arrsub-rules*
           *atc-exec-unary-rules*
           *atc-exec-binary-strict-pure-rules*
-          *atc-exec-ident-rules*
-          *atc-exec-const-rules*
+          *atc-exec-test-rules*
           *atc-opener-rules*
           *atc-abstract-syntax-rules*
           *atc-other-executable-counterpart-rules*
