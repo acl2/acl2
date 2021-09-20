@@ -1492,6 +1492,32 @@
 (rp::add-rp-rule acl2::fast-logext-fn)
 
 
+(encapsulate
+  nil
+
+  (local
+   (use-arithmetic-5 t))
+
+  (def-rp-rule logbitp-to-bits
+    (implies (and (integerp x)
+                  (natp index))
+             (equal (acl2::logbitp index x)
+                    (equal (svl::bits x index 1)
+                           1)))
+    :hints (("Goal"
+             :in-theory (e/d (SV::4VEC-PART-SELECT
+                              svl::bits
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              SV::4VEC-SHIFT-CORE
+                              SV::4VEC-CONCAT
+                              SV::4VEC-RSH)
+                             (SVL::EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1
+                              MOD2-IS-M2
+                              +-is-sum
+                              floor2-if-f2
+                              ))))))
+
 (bump-all-meta-rules)
 
 ;;(bump-down-rp-rule (:META medw-compress-meta . equal))
