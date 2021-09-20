@@ -34,7 +34,6 @@
 ; Original Author(s):
 ; Mertcan Temel         <mert@utexas.edu>
 
-
 (in-package "RP")
 
 (include-book "centaur/svl/top" :dir :system)
@@ -53,6 +52,12 @@
  (fetch-new-events
   (include-book "arithmetic-5/top" :dir :system)
   use-arithmetic-5
+  :disabled t))
+
+(local
+ (rp::fetch-new-events
+  (include-book "centaur/bitops/ihs-extensions" :dir :system)
+  use-ihs-extensions
   :disabled t))
 
 (defun bits-to-bit-of (x)
@@ -83,7 +88,7 @@
 
 (encapsulate
   nil
-  
+
   (local
    (use-arithmetic-5 t))
 
@@ -104,9 +109,9 @@
                               sv::4vec-rsh
                               sv::4vec->upper
                               sv::4vec-zero-ext
-                              
+
                               sv::4vec
-                              ;sv::4vec-concat
+;sv::4vec-concat
                               sv::4vec-shift-core
 ;loghead
                               logbitp
@@ -120,16 +125,16 @@
                              (svl::bitp-bits-size=1
                               ;;loghead
                               (:rewrite sv::4vec-equal)
-                              
+
                               (:definition acl2::expt2$inline)
-                              ;(:definition acl2::imod$inline)
-                              
+;(:definition acl2::imod$inline)
+
                               (:rewrite acl2::remove-weak-inequalities)
                               svl::convert-4vec-concat-to-4vec-concat$
                               svl::4vec-zero-ext-is-bits
                               svl::4vec-zero-ext-is-4vec-concat
                               svl::4vec-concat$-of-term2=0
-                            
+
                               SVL::4VEC-PART-SELECT-IS-BITS)))))
 
   (defthm bits-is-bit-of
@@ -146,7 +151,6 @@
                   (natp start))
              (equal (bit-of num start)
                     (svl::bits num start 1)))))
-
 
 ;; multiplier-spec:
 (progn
@@ -169,7 +173,7 @@
                  (svl-sum-col-bybit-aux (svl::4vec-rsh 1 mult)
                                         mcand
                                         (1- col-index)))))))
-  
+
   (define svl-sum-col-bybit ((mult integerp)
                              (start integerp)
                              (mcand integerp)
@@ -187,8 +191,8 @@
                       (svl::bits mcand col-index 1 ))
                 (svl-sum-col-bybit mult
                                    (1+ start)
-                                            mcand
-                                            (1- col-index))))))
+                                   mcand
+                                   (1- col-index))))))
 
   (define svl-sum-pps-bycol-bybit ((mult integerp)
                                    (mcand integerp)
@@ -322,13 +326,12 @@
                                 (term mult)))
               :in-theory (e/d () (ash-minus1-is-4vec-rsh)))))
 
-
    (define m2 (x)
      (mod (ifix x) 2))
 
    (define f2 (x)
      (floor (ifix x) 2))
-   
+
    (defthm +-is-SUM
      (implies (and (integerp a)
                    (integerp b))
@@ -344,7 +347,6 @@
      :hints (("Goal"
               :in-theory (e/d (m2) (mod)))))
 
-
    (defthm floor2-if-f2
      (implies (integerp x)
               (equal (floor x 2)
@@ -352,24 +354,23 @@
      :hints (("Goal"
               :in-theory (e/d (f2) (floor)))))
 
-
    #|(defthm c-is-f2
-     (equal (c hash-code a b c)
-            (f2 (sum (sum-list a) (sum-list b) c)))
-     :hints (("Goal"
-              :in-theory (e/d (c f2 sum sum-list)
-                              (+-is-SUM
-                               floor2-if-f2
-                               mod2-is-m2)))))||#
+   (equal (c hash-code a b c)
+   (f2 (sum (sum-list a) (sum-list b) c)))
+   :hints (("Goal"
+   :in-theory (e/d (c f2 sum sum-list)
+   (+-is-SUM
+   floor2-if-f2
+   mod2-is-m2)))))||#
 
    #|(defthm s-is-m2
-     (equal (s hash-code b c)
-            (m2 (sum (sum-list b) c)))
-     :hints (("Goal"
-              :in-theory (e/d (s m2 sum sum-list)
-                              (+-is-SUM
-                               floor2-if-f2
-                               mod2-is-m2)))))||#
+   (equal (s hash-code b c)
+   (m2 (sum (sum-list b) c)))
+   :hints (("Goal"
+   :in-theory (e/d (s m2 sum sum-list)
+   (+-is-SUM
+   floor2-if-f2
+   mod2-is-m2)))))||#
 
    (defthm sum-list-is-sum
      (equal (sum-list (cons a b))
@@ -483,8 +484,6 @@
              :in-theory (e/d (mult-final-spec
                               svl-mult-final-spec) ())))))
 
-
-
 (def-rp-rule loghead-of-*-is-svl-mult-final-spec-1 ;;for unsigned multiplication
   (implies (and (integerp mult)
                 (integerp mcand)
@@ -492,8 +491,8 @@
                 (natp mcand-size)
                 (natp out-size)
                 #|(syntaxp (or (rp::pp-and$-order mult mcand)
-                             (not (cw "WARNING! Proof will be faster if var name ~p0 ~
-  came before var name ~p1 as determined by rp::pp-and$-order ~%" mult mcand))))||#)
+                (not (cw "WARNING! Proof will be faster if var name ~p0 ~
+                came before var name ~p1 as determined by rp::pp-and$-order ~%" mult mcand))))||#)
            (equal (loghead out-size
                            (* (loghead mult-size mult)
                               (loghead mcand-size mcand)))
@@ -510,8 +509,6 @@
                                  loghead-of-*-is-mult-final-spec)))))
 
 
-
-
 (def-rp-rule loghead-of-*-is-svl-mult-final-spec-2 ;;for signed multiplication.
   (implies (and (integerp mult)
                 (integerp mcand)
@@ -521,8 +518,8 @@
                 (bitp mcand-msb)
                 (natp out-size)
                 #|(syntaxp (or (rp::pp-and$-order mult mcand)
-                             (not (cw "WARNING! Proof will be faster if var name ~p0 ~
-  came before var name ~p1 as determined by rp::pp-and$-order ~%" mult mcand))))||#)
+                (not (cw "WARNING! Proof will be faster if var name ~p0 ~
+                came before var name ~p1 as determined by rp::pp-and$-order ~%" mult mcand))))||#)
            (equal (loghead out-size
                            (* (logapp mult-size mult (- mult-msb))
                               (logapp mcand-size mcand (- mcand-msb))))
@@ -544,8 +541,8 @@
                 (integerp mcand)
                 (natp out-size)
                 #|(syntaxp (or (rp::pp-and$-order mult mcand)
-                             (not (cw "WARNING! Proof will be faster if var name ~p0 ~
-  came before var name ~p1 as determined by rp::pp-and$-order ~%" mult mcand))))||#)
+                (not (cw "WARNING! Proof will be faster if var name ~p0 ~
+                came before var name ~p1 as determined by rp::pp-and$-order ~%" mult mcand))))||#)
            (equal (svl::bits (* mult mcand) 0 out-size)
                   (svl-mult-final-spec mult mcand out-size)))
   :hints (("Goal"
@@ -558,7 +555,6 @@
                             SVL::4VEC-CONCAT$)
                            (nfix loghead
                                  loghead-of-*-is-mult-final-spec)))))
-
 
 (def-rp-rule integerp-of-*
   (implies (and (integerp x)
@@ -635,7 +631,6 @@
 
 (in-theory (enable svl-mult-final-spec))
 
-
 (define 4vec-adder ((x integerp)
                     (y integerp)
                     (carry-in integerp)
@@ -684,16 +679,16 @@
                                  (acl2::x x)
                                  (acl2::z 1/2)))
 
-                :in-theory (e/d (f2 
-                                    ash
-                                    ifix
-                                    sv::4vec-shift-core
-                                    sv::4vec->upper
-                                    sv::4vec->lower
-                                    acl2::|arith (* x 1)|
-                                    acl2::|(* y (* x z))|
-                                    acl2::|arith (* y (* x z))|
-                                    sv::4vec-rsh)
+                :in-theory (e/d (f2
+                                 ash
+                                 ifix
+                                 sv::4vec-shift-core
+                                 sv::4vec->upper
+                                 sv::4vec->lower
+                                 acl2::|arith (* x 1)|
+                                 acl2::|(* y (* x z))|
+                                 acl2::|arith (* y (* x z))|
+                                 sv::4vec-rsh)
                                 (floor2-if-f2
                                  ash-minus1-is-4vec-rsh)))))
 
@@ -703,7 +698,7 @@
                        (m2 x)))
        :hints (("goal"
                 :do-not '(preprocess)
-                :in-theory (e/d (m2 svl::bits 
+                :in-theory (e/d (m2 svl::bits
                                     sv::4vec-part-select
                                     ifix
                                     sv::4vec->upper
@@ -714,7 +709,7 @@
                                     sv::4vec-zero-ext
                                     sv::4vec->lower)
                                 (svl::4vec-part-select-is-bits
-                                 
+
                                  loghead-is-logapp
                                  svl::4vec-zero-ext-is-4vec-concat
                                  mod2-is-m2
@@ -728,11 +723,11 @@
                   (integerp y)
                   (integerp carry-in)
                   #|(syntaxp (or (and (not (equal y '0))
-                                    (not (equal y ''0)))
-                               (and (or (equal y '0)
-                                        (equal y ''0))
-                                    (or (equal x '0)
-                                        (equal x ''0)))))|#
+                  (not (equal y ''0)))
+                  (and (or (equal y '0)
+                  (equal y ''0))
+                  (or (equal x '0)
+                  (equal x ''0)))))|#
                   (natp size))
              (equal (svl::4vec-plus++ x y carry-in size)
                     (4vec-adder x y carry-in size)))
@@ -742,8 +737,6 @@
                               4vec-adder
                               ifix)
                              ()))))
-
-  
 
   (def-rp-rule 4vec-adder-opener-0
     (equal (4vec-adder x y carry-in 0)
@@ -757,11 +750,11 @@
                     (b* (((list s c) (s-c-spec (list (bits-to-bit-of (svl::bits x 0 1))
                                                      (bits-to-bit-of (svl::bits y 0 1))
                                                      carry-in))))
-                         (svl::4vec-concat$ 1 (s-of-c-trig s)
-                                            (4vec-adder (sv::4vec-rsh 1 x)
-                                                        (sv::4vec-rsh 1 y)
-                                                        c
-                                                        (1- size))))))
+                      (svl::4vec-concat$ 1 (s-of-c-trig s)
+                                         (4vec-adder (sv::4vec-rsh 1 x)
+                                                     (sv::4vec-rsh 1 y)
+                                                     c
+                                                     (1- size))))))
     :hints (("goal"
              :in-theory (e/d (4vec-adder
                               s-c-spec) ())))))
@@ -771,7 +764,6 @@
 
 (defmacro rp::sign-ext (num size)
   `(logapp ,size ,num (- (svl::bits ,num (1- ,size) 1))))
-
 
 (def-rw-opener-error
   bits-to-bit-of-opener-error
@@ -788,3 +780,70 @@
                 (syntaxp (atom (ex-from-rp num))))
            (equal (bits-to-bit-of (svl::bits num start 1))
                   (bit-of num start))))
+
+(encapsulate
+  nil
+
+  (local
+   (use-ihs-extensions t))
+
+  (def-rp-rule bits-of-plus
+    (implies (and (natp start)
+                  (natp size)
+                  (integerp x)
+                  (integerp y))
+             (equal (svl::bits (+ x y) start size)
+                    (svl::bits (loghead (+ start size) (+ x y))
+                               start size)))
+    :hints (("Goal"
+             :cases ((equal start 0))
+             :in-theory (e/d (svl::bits
+                              natp
+                              ;;SVL::ASH-TO-4VEC-RSH
+                              SV::4VEC-PART-SELECT
+                              SV::4VEC-CONCAT
+                              SVL::4VEC-CONCAT$
+                              SV::4VEC->LOWER
+                              SV::4VEC->upper
+                              SV::4VEC-ZERO-EXT
+                              SV::4VEC-RSH
+                              SV::4VEC-SHIFT-CORE)
+                             (loghead
+                              LOGHEAD-OF-+-IS-2VEC-ADDER-WITHOUT-CARRY
+                              SVL::4VEC-ZERO-EXT-IS-4VEC-CONCAT
+                              LOGAPP-IS-4VEC-CONCAT$
+                              LOGHEAD-IS-LOGAPP
+                              +-is-SUM
+                              mod2-is-m2
+                              floor2-if-f2)))))
+
+  (def-rp-rule bits-of-mult
+    (implies (and (natp start)
+                  (natp size)
+                  (integerp x)
+                  (integerp y))
+             (equal (svl::bits (* x y) start size)
+                    (svl::bits (loghead (+ start size) (* x y))
+                               start size)))
+    :hints (("Goal"
+             :cases ((equal start 0))
+             :in-theory (e/d (svl::bits
+                              natp
+                              ;;SVL::ASH-TO-4VEC-RSH
+                              SV::4VEC-PART-SELECT
+                              SV::4VEC-CONCAT
+                              SVL::4VEC-CONCAT$
+                              SV::4VEC->LOWER
+                              SV::4VEC->upper
+                              SV::4VEC-ZERO-EXT
+                              SV::4VEC-RSH
+                              SV::4VEC-SHIFT-CORE)
+                             (loghead
+                              LOGHEAD-OF-*-IS-MULT-FINAL-SPEC
+                              LOGHEAD-OF-+-IS-2VEC-ADDER-WITHOUT-CARRY
+                              SVL::4VEC-ZERO-EXT-IS-4VEC-CONCAT
+                              LOGAPP-IS-4VEC-CONCAT$
+                              LOGHEAD-IS-LOGAPP
+                              +-is-SUM
+                              mod2-is-m2
+                              floor2-if-f2))))))
