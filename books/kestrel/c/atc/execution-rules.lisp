@@ -622,7 +622,7 @@
                                       '(:schar :sshort :sint :slong :sllong
                                         :uchar :ushort))
                            (pack op-type '-okp)))
-         (hyps `(and (unop-case op ,op-kind)
+         (hyps `(and (equal op (,(pack 'unop- op-kind)))
                      (,pred x)
                      ,@(and op-type-okp
                             `((,op-type-okp x)))))
@@ -685,7 +685,11 @@
            ,@events)
          (defval *atc-exec-unary-rules*
            :short "List of rules for executing unary operations."
-           '(,@names))))))
+           '(,@names
+             (:e unop-plus)
+             (:e unop-minus)
+             (:e unop-bitnot)
+             (:e unop-lognot)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -717,7 +721,7 @@
                                                       '(:add :sub :mul))
                                            (type-signed-integerp type)))
                                   (pack op-ltype-rtype '-okp)))
-         (hyps `(and (binop-case op ,op-kind)
+         (hyps `(and (equal op (,(pack 'binop- op-kind)))
                      (,lpred x)
                      (,rpred y)
                      ,@(and op-ltype-rtype-okp
@@ -824,7 +828,23 @@
            ,@events)
          (defval *atc-exec-binary-strict-pure-rules*
            :short "List of rules for executing strict pure binary operations."
-           '(,@names))))))
+           '(,@names
+             (:e binop-mul)
+             (:e binop-div)
+             (:e binop-rem)
+             (:e binop-add)
+             (:e binop-sub)
+             (:e binop-shl)
+             (:e binop-shr)
+             (:e binop-lt)
+             (:e binop-gt)
+             (:e binop-le)
+             (:e binop-ge)
+             (:e binop-eq)
+             (:e binop-ne)
+             (:e binop-bitand)
+             (:e binop-bitxor)
+             (:e binop-bitior)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
