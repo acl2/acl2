@@ -26,3 +26,6 @@
 (include-book "expand-lambdas-in-term-proof")
 (include-book "add-param-to-calls-in-term")
 (include-book "rename-vars-in-term")
+(include-book "count-ifs-in-term")
+(include-book "count-ifs-in-then-and-else-branches")
+(include-book "combine-ifs-in-then-and-else-branches")

@@ -162,12 +162,6 @@
       (list x y)
     (cdr-remove-caar-induct (cdr x) (remove-equal (caar x) y))))
 
-;dup in android
-(defthm SET-DIFFERENCE-EQUAL-of-remove-equal
-  (equal (SET-DIFFERENCE-EQUAL (REMOVE-EQUAL a x) y)
-         (remove-equal a (SET-DIFFERENCE-EQUAL x y)))
-  :hints (("Goal" :in-theory (enable SET-DIFFERENCE-EQUAL remove-equal))))
-
 (defthm alists-equiv-on-of-append-and-append-same
   (implies (and (alists-equiv-on (set-difference-equal keys (strip-cars alist1))
                                  alist2
