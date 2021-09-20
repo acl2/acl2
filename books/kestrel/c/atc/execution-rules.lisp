@@ -511,7 +511,8 @@
            (xdoc::topstring
             (xdoc::p
              "These are not used during the symbolic execution;
-     they are used to prove rules used during the symbolic execution."))
+              they are used to prove rules
+              used during the symbolic execution."))
            ,@events)
          (defval *atc-uaconvert-values-rules*
            :short "List of rules about @(tsee uaconvert-values)
@@ -989,3 +990,99 @@
     exec-test-when-ulongp
     exec-test-when-sllongp
     exec-test-when-ullongp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exec-binary-logand/logor-rules-generation
+  :short "Code to generate the rules for
+          @(tsee exec-binary-logand) and @(tsee exec-binary-logor)."
+
+  (define atc-exec-binary-logand/logor-rules-gen ((ltype typep) (rtype typep))
+    :guard (and (type-integerp ltype)
+                (type-integerp rtype))
+    :returns (mv (names symbol-listp)
+                 (events pseudo-event-form-listp))
+    :parents nil
+    (b* ((lfixtype (atc-integer-type-fixtype ltype))
+         (rfixtype (atc-integer-type-fixtype rtype))
+         (lpred (pack lfixtype 'p))
+         (rpred (pack rfixtype 'p))
+         (boolean-from-ltype (pack 'boolean-from- lfixtype))
+         (boolean-from-rtype (pack 'boolean-from- rfixtype))
+         (name1 (pack 'exec-binary-logand-when- lpred '-and- rpred))
+         (name2 (pack 'exec-binary-logor-when- lpred '-and- rpred))
+         (event1 `(defruled ,name1
+                    (implies (and (,lpred x)
+                                  (,rpred y))
+                             (equal (exec-binary-logand x y)
+                                    (if (and (,boolean-from-ltype x)
+                                             (,boolean-from-rtype y))
+                                        (sint 1)
+                                      (sint 0))))
+                    :enable (exec-binary-logand exec-test)))
+         (event2 `(defruled ,name2
+                    (implies (and (,lpred x)
+                                  (,rpred y))
+                             (equal (exec-binary-logor x y)
+                                    (if (or (,boolean-from-ltype x)
+                                            (,boolean-from-rtype y))
+                                        (sint 1)
+                                      (sint 0))))
+                    :enable (exec-binary-logor exec-test))))
+      (mv (list name1 name2) (list event1 event2))))
+
+  (define atc-exec-binary-logand/logor-rules-gen-loop-rtypes
+    ((ltype typep)
+     (rtypes type-listp))
+    :guard (and (type-integerp ltype)
+                (type-integer-listp rtypes))
+    :returns (mv (names symbol-listp)
+                 (events pseudo-event-form-listp))
+    :parents nil
+    (b* (((when (endp rtypes)) (mv nil nil))
+         ((mv names events)
+          (atc-exec-binary-logand/logor-rules-gen ltype
+                                                  (car rtypes)))
+         ((mv names1 events1)
+          (atc-exec-binary-logand/logor-rules-gen-loop-rtypes ltype
+                                                              (cdr rtypes))))
+      (mv (append names names1) (append events events1))))
+
+  (define atc-exec-binary-logand/logor-rules-gen-loop-ltypes
+    ((ltypes type-listp)
+     (rtypes type-listp))
+    :guard (and (type-integer-listp ltypes)
+                (type-integer-listp rtypes))
+    :returns (mv (names symbol-listp)
+                 (events pseudo-event-form-listp))
+    :parents nil
+    (b* (((when (endp ltypes)) (mv nil nil))
+         ((mv names events)
+          (atc-exec-binary-logand/logor-rules-gen-loop-rtypes (car ltypes)
+                                                              rtypes))
+         ((mv names1 events1)
+          (atc-exec-binary-logand/logor-rules-gen-loop-ltypes (cdr ltypes)
+                                                              rtypes)))
+      (mv (append names names1) (append events events1))))
+
+  (define atc-exec-binary-logand/logor-rules-gen-all ()
+    :returns (event pseudo-event-formp)
+    :parents nil
+    (b* (((mv names events)
+          (atc-exec-binary-logand/logor-rules-gen-loop-ltypes
+           *atc-integer-types*
+           *atc-integer-types*)))
+      `(progn
+         (defsection atc-exec-binary-logand/logor-rules
+           :short "Rules about
+                   @(tsee exec-binary-logand) and @(tsee exec-binary-logor)
+                   on values of given types."
+           ,@events)
+         (defval *atc-exec-binary-logand/logor-rules*
+           :short "List of rules about @(tsee exec-binary-logand/logor)
+                 on values of given types."
+           '(,@names))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event (atc-exec-binary-logand/logor-rules-gen-all))
