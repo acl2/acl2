@@ -23,7 +23,7 @@
    (xdoc::p
     "We define the dynamic semantics of Yul
      by formalizing the Yul computation state
-     and by defining functions that manipulate the computation state
+     and by defining ACL2 functions that manipulate the computation state
      via execution of the Yul abstract syntax.")
    (xdoc::p
     "This is based on the formal specification in
@@ -48,6 +48,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod funinfo
+  :short "Fixtype of function information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is all the information about a function definition,
+     except for its name.
+     This is used for the values of function states (see @(tsee fstate)."))
+  ((inputs identifier-list)
+   (outputs identifier-list)
+   (body block))
+  :tag :funinfo
+  :pred funinfop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap fstate
+  :short "Fixtype of function states."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a finite map from identifiers (function names)
+     to function information:
+     it models the function definitions currently in scope;
+     this changes as blocks are entered and exited.
+     [Yul: Specification of Yul: Formal Specification]
+     does not explicitly mention this,
+     but its presence is implicit in the description of
+     the scope of function definitions."))
+  :key-type identifier
+  :val-type funinfo
+  :pred fstatep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod cstate
   :short "Fixtype of computational states."
   :long
@@ -57,24 +92,88 @@
      this consists of a local state object and a global state object.
      The latter is generic in generic Yul.
      For now, for simplicity, we ignore the global state completely,
-     and just define a computational state as a (wrapped) local state.")
-   (xdoc::p
-    "We plan to extend this notion of computation states
-     to also include the Yul global state."))
-  ((local lstate))
+     but we plan to add that at some point.
+     We also include the function state,
+     whose motivation is discussed in @(tsee fstate)."))
+  ((local lstate)
+   (functions fstate))
   :tag :cstate
   :pred cstatep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult cstate-result
+  :short "Fixtype of errors and computation states."
+  :ok cstate
+  :pred cstate-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-var ((var identifierp) (cstate cstatep))
+(define read-var-value ((var identifierp) (cstate cstatep))
   :returns (val value-resultp)
-  :short "Read a variable from the computaition state."
+  :short "Read a variable from the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An error is returned if the variable does not exist."))
   (b* ((lstate (cstate->local cstate))
        (var-val (omap::in (identifier-fix var) lstate))
        ((unless (consp var-val))
         (err (list :variable-not-found (identifier-fix var)))))
     (value-fix (cdr var-val)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-fun ((fun identifierp) (info funinfop) (cstate cstatep))
+  :returns (new-cstate cstate-resultp)
+  :short "Add a function to the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An error is returned if the function already exists.")
+   (xdoc::p
+    "This is the dynamic counterpart of
+     @(tsee add-funtype) in the static semantics."))
+  (b* ((fstate (cstate->functions cstate))
+       (fun-info (omap::in (identifier-fix fun) fstate))
+       ((when (consp fun-info))
+        (err (list :function-already-exists (identifier-fix fun))))
+       (new-fstate
+        (omap::update (identifier-fix fun) (funinfo-fix info) fstate))
+       (new-cstate (change-cstate cstate :functions new-fstate)))
+    new-cstate)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-funs-in-statement-list ((stmts statement-listp) (cstate cstatep))
+  :returns (new-cstate cstate-resultp)
+  :short "Add all the functions in a block to the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Just before executing a block,
+     all the function definitions in the block
+     are added to computation states.
+     This is because,
+     as explained in [Yul: Specification of Yul: Scoping Rules],
+     all the functions defined in a block are accessible in the whole block,
+     even before they are defined in the block.")
+   (xdoc::p
+    "This is the dynamic counterpart of
+     @(tsee add-funtypes-in-statement-list) in the static semantics."))
+  (b* (((when (endp stmts)) (cstate-fix cstate))
+       (stmt (car stmts))
+       ((unless (statement-case stmt :fundef))
+        (add-funs-in-statement-list (cdr stmts) cstate))
+       ((fundef fundef) (statement-fundef->get stmt))
+       ((ok cstate) (add-fun fundef.name
+                             (make-funinfo :inputs fundef.inputs
+                                           :outputs fundef.outputs
+                                           :body fundef.body)
+                             cstate)))
+    (add-funs-in-statement-list (cdr stmts) cstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -167,7 +266,7 @@
        ((unless (endp (cdr idens)))
         (err (list :non-singleton-path (path-fix path))))
        (var (car idens))
-       ((ok val) (read-var var cstate)))
+       ((ok val) (read-var-value var cstate)))
     (make-eoutcome :cstate cstate :values (list val)))
   :hooks (:fix))
 

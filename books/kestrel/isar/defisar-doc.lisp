@@ -148,7 +148,7 @@
        (xdoc::codeblock
         "(:derive (<id> <fact>)"
         " :from (<id1> <id2> ...)"
-        " :hints <hints>)")
+        " :hints <hints>) ; or other defrule options")
        (xdoc::p
         "where:")
        (xdoc::ul
@@ -167,7 +167,8 @@
         (xdoc::li
          "@('<hints>') are regular ACL2 hints,
           used to prove @('<fact>') from the names facts.
-          This may be omitted, just like in @(tsee defthm).")))
+          This may be omitted, just like in @(tsee defthm).
+          In addition, any of the @(tsee defrule) options may be used.")))
       (xdoc::li
        (xdoc::p
         "A proof-finishing command of the form")
@@ -219,12 +220,12 @@
     (xdoc::p
      "Each @(':derive') command generates a theorem")
     (xdoc::codeblock
-     "(defthm name<id>"
+     "(defrule name<id>"
      "  (let* ((<var1> <term1>) (<var2> <term2>) ...)"
      "    (implies (and <fact1> <fact2> ...)"
      "             <fact>))"
      "  :rule-classes nil"
-     "  :hints <hints>)")
+     "  :hints <hints>) ; or other defrule options")
     (xdoc::p
      "where @('<fact1>'), @('<fact2>'), ... are the facts
       named by @('<id1>'), @('<id2>'), ... in @(':from'), and
