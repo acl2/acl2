@@ -371,6 +371,16 @@
   ;; Some wrapper functions to the macros above to make the EVEX dispatch
   ;; functions' guard proofs simpler:
 
+  (define evex->aaa ((evex-prefixes evex-prefixes-p))
+    :short "Get the @('aaa') field (embedded opmask) of @('evex-prefixes')"
+    :returns (aaa (unsigned-byte-p 3 aaa) :hyp :guard)
+    (evex-byte3->aaa (evex-prefixes->byte3 evex-prefixes)))
+
+  (define evex->z ((evex-prefixes evex-prefixes-p))
+    :short "Get the @('z') field (embedded opmask) of @('evex-prefixes')"
+    :returns (z (unsigned-byte-p 1 z) :hyp :guard)
+    (evex-byte3->z (evex-prefixes->byte3 evex-prefixes)))
+
   (define evex->vvvv ((evex-prefixes evex-prefixes-p))
     :short "Get the @('VVVV') field of @('evex-prefixes')"
     :returns (vvvv (unsigned-byte-p 4 vvvv) :hyp :guard)
