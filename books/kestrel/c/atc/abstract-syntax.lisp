@@ -258,6 +258,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deflist unop-list
+  :short "Fixtype of lists of unary operators."
+  :elt-type unop
+  :true-listp t
+  :elementp-of-nil nil
+  :pred unop-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define irr-unop ()
   :returns (op unopp)
   :short "An irrelevant unary operator, usable as a dummy return value."
@@ -323,6 +332,15 @@
   (:asg-xor ())
   (:asg-ior ())
   :pred binopp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist binop-list
+  :short "Fixtype of lists of binary operators."
+  :elt-type binop
+  :true-listp t
+  :elementp-of-nil nil
+  :pred binop-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

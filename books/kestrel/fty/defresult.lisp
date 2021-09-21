@@ -270,7 +270,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod resulterr
+(defprod resulterr
   :short "Fixtype of error results."
   :long
   (xdoc::topstring
@@ -297,10 +297,32 @@
   (xdoc::p
    "This macro constructs an error result of fixtype @(tsee resulterr)
     with the specified information
-    and with the current function name as singleton stack.
-    This assumes that @('__function__') is bound to the function name,
+    and with the current function name as singleton stack.")
+  (xdoc::p
+   "This assumes that @('__function__') is bound to the function name,
     which happens automatically with @(tsee define)."))
  `(make-resulterr :info ,x :stack (list __function__)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::defmacro+
+ err-push (error)
+ :short "Push the current function onto the stack of an error result."
+ :long
+ (xdoc::topstring
+  (xdoc::p
+   "This is useful when receiving an error result from a called function,
+     to add the caller to the stack before propagating the error.
+     This addition is handled automatically when using @(tsee patbind-ok),
+     but when that binder cannot be used for some reason,
+     then this @('err-push') macro is handy.")
+  (xdoc::p
+   "This assumes that @('__function__') is bound to the current function name,
+     which is automatically the case when using @(tsee define)."))
+ `(b* ((error ,error)
+       (stack (resulterr->stack error))
+       (new-stack (cons __function__ stack)))
+    (change-resulterr error :stack new-stack)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,10 +367,7 @@
   :body
   `(b* ((patbinder-ok-fresh-variable-for-result ,(car acl2::forms))
         ((when (resulterrp patbinder-ok-fresh-variable-for-result))
-         (b* ((stack (resulterr->stack patbinder-ok-fresh-variable-for-result))
-              (new-stack (cons __function__ stack)))
-           (change-resulterr patbinder-ok-fresh-variable-for-result
-                             :stack new-stack)))
+         (err-push patbinder-ok-fresh-variable-for-result))
         (,(car args) patbinder-ok-fresh-variable-for-result))
      ,acl2::rest-expr))
 
@@ -394,9 +413,9 @@
                         (wrld plist-worldp))
     :returns event ; PSEUDO-EVENT-FORMP
     :mode :program
-    (b* ((fty-table (fty::get-fixtypes-alist wrld))
-         (fty-info (fty::find-fixtype ok fty-table))
-         (ok-pred (fty::fixtype->pred fty-info))
+    (b* ((fty-table (get-fixtypes-alist wrld))
+         (fty-info (find-fixtype ok fty-table))
+         (ok-pred (fixtype->pred fty-info))
          (type-pred (or pred (add-suffix type "-P")))
          (type-fix (or fix (add-suffix type "-FIX")))
          (type-equiv (or equiv (add-suffix type "-EQUIV")))
@@ -405,7 +424,7 @@
                            type)))
       `(encapsulate ()
          ,@prepwork
-         (fty::defflatsum ,type
+         (defflatsum ,type
            ,@(and parents? (list :parents parents))
            ,@(and short (list :short short))
            ,@(and long (list :long long))

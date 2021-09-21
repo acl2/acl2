@@ -61,6 +61,12 @@
            (state (newline channel state))
            (state (princ$ "EXPORTED_VARS += ACL2_HAS_REALS" channel state))
            (state (newline channel state))
+           (state (princ$ #+acl2-devel "export ACL2_HAS_ACL2_DEVEL := 1"
+                          #-acl2-devel "export ACL2_HAS_ACL2_DEVEL := "
+                          channel state))
+           (state (newline channel state))
+           (state (princ$ "EXPORTED_VARS += ACL2_HAS_ACL2_DEVEL" channel state))
+           (state (newline channel state))
            (state (princ$ "export ACL2_COMP_EXT := " channel state))
            (state (princ$ (@ compiled-file-extension) channel state))
            (state (newline channel state))

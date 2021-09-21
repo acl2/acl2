@@ -228,6 +228,7 @@ with the same hints and directives that defthm accepts.
                  (('=> hyps &)
                   (hyps-list-from-hyps hyps))
                  (& nil)))
+;      ((unless (tlp x-hyps)) nil)
        (find-duplicate-x-hyps (find-first-duplicate x-hyps))
        (- (cw? find-duplicate-x-hyps
                "~|**Warning: Your conjecture has duplicate hypothesis, ~x0. ~
@@ -375,8 +376,18 @@ I don't need this?
                (extract-body (car prop-rest))))
        (hyps-list (cond (hyps? (hyps-list-from-hyps
                                 (defdata::get1 :hyps kwd-alist)))
-                        (body? nil)
-                        (t (extract-hyps (car prop-rest)))))
+                        (body? nil)))
+       ((mv erp pt-hyps-list)
+        (if (or hyps? body?)
+            (mv nil nil)
+          (acl2::pseudo-translate (car prop-rest) nil wrld)))
+       ((when erp)
+        (ecw "~|**ERROR: The translation of hyps: ~
+              ~x0 ~
+              resulted in an error."
+             (car prop-rest)
+             nil))
+       (hyps-list (if pt-hyps-list (extract-hyps pt-hyps-list) hyps-list))
        (find-duplicate-hyp (find-first-duplicate hyps-list))
        (- (cw? find-duplicate-hyp
                "~%**Warning: Your property has a duplicate hypothesis, ~x0. ~
@@ -446,13 +457,13 @@ I don't need this?
           `(with-output
             ,@(if debug?
                   '(:on :all :off (proof-builder proof-tree) :gag-mode nil)
-                '(:off :all :on (summary) :summary-off (:other-than time) :gag-mode nil ))
+                '(:off :all :on (summary comment) :summary-off (:other-than time) :gag-mode nil ))
             (encapsulate
              nil
              (with-output
               ,@(if debug?
                     '(:on :all :off (proof-builder proof-tree) :gag-mode nil)
-                  '(:off :all))
+                  '(:off :all :on comment))
               (thm-no-test ,guards))))
           ctx state t)))
        ((list* & thm-erp &) val)
@@ -524,12 +535,12 @@ I don't need this?
          timeout
          (trans-eval `(with-output
                        ;;:on :all :off (proof-builder proof-tree) :gag-mode nil
-                       :off :all :on (summary) :summary-off (:other-than time) :gag-mode nil
+                       :off :all :on (summary comment) :summary-off (:other-than time) :gag-mode nil
                        (encapsulate
                         nil
                         (with-output
                          ;;:on :all :off (proof-builder proof-tree) :gag-mode nil
-                         :off :all
+                         :off :all :on comment
                          (thm-no-test ,guards))))
                      ctx state t)))
        ((list* & thm-erp &) val)
@@ -688,7 +699,7 @@ I don't need this?
       (encapsulate
        ()
        (with-output
-        :off :all
+        :off :all :on comment
         (make-event (property-fn ',args state)))
        (value-triple (cw "~|Form:  ( PROPERTY CHECKING SUCCESSFUL )~%"))))))
 
@@ -710,16 +721,16 @@ Properties are just tested with a short timeout.
 
 |#
 
-(defmacro modeling-set-parms (cgen cgen-local defunc table)
+(defmacro modeling-set-parms (cgen cgen-local defunc proof testing)
   `(progn
      (acl2s-defaults :set cgen-timeout ,cgen)
      (acl2s-defaults :set cgen-local-timeout ,cgen-local)
      (set-defunc-timeout ,defunc)
-     (set-acl2s-property-table-proof-timeout ,table)
-     (set-acl2s-property-table-testing-timeout ,table)))
+     (set-acl2s-property-table-proof-timeout ,proof)
+     (set-acl2s-property-table-testing-timeout ,testing)))
 
 (defmacro modeling-start
-  (&key (cgen '2) (cgen-local '1) (defunc '5) (table '5))
+  (&key (cgen '2) (cgen-local '1) (defunc '5) (proof '5) (testing '5))
   `(progn
      (acl2s-defaults :set testing-enabled t)
      (set-defunc-skip-admissibilityp t)
@@ -727,11 +738,11 @@ Properties are just tested with a short timeout.
      (set-defunc-skip-body-contractsp t)
      (set-acl2s-property-table-proofs? nil)
      (set-acl2s-property-table-testing? t)
-     (modeling-set-parms ,cgen ,cgen-local ,defunc ,table)))
+     (modeling-set-parms ,cgen ,cgen-local ,defunc ,proof ,testing)))
 
 
 (defmacro modeling-validate-defs
-  (&key (cgen '4) (cgen-local '2) (defunc '10) (table '10))
+  (&key (cgen '4) (cgen-local '2) (defunc '10) (proof '10) (testing '10))
   `(progn
      (acl2s-defaults :set testing-enabled t)
      (set-defunc-skip-admissibilityp nil)
@@ -742,10 +753,10 @@ Properties are just tested with a short timeout.
      (set-defunc-body-contracts-strictp nil)
      (set-acl2s-property-table-proofs? nil)
      (set-acl2s-property-table-testing? t)
-     (modeling-set-parms ,cgen ,cgen-local ,defunc ,table)))
+     (modeling-set-parms ,cgen ,cgen-local ,defunc ,proof ,testing)))
 
 (defmacro modeling-admit-defs
-  (&key (cgen '30) (cgen-local '15) (defunc '60) (table '30))
+  (&key (cgen '30) (cgen-local '15) (defunc '60) (proof '60) (testing '30))
   `(progn
      (acl2s-defaults :set testing-enabled t)
      (set-defunc-skip-admissibilityp nil)
@@ -756,10 +767,10 @@ Properties are just tested with a short timeout.
      (set-defunc-body-contracts-strictp t)
      (set-acl2s-property-table-proofs? nil)
      (set-acl2s-property-table-testing? t)
-     (modeling-set-parms ,cgen ,cgen-local ,defunc ,table)))
+     (modeling-set-parms ,cgen ,cgen-local ,defunc ,proof ,testing)))
 
 (defmacro modeling-admit-all
-  (&key (cgen '30) (cgen-local '15) (defunc '60) (table '30))
+  (&key (cgen '60) (cgen-local '15) (defunc '90) (proof '120) (testing '60))
   `(progn
      (acl2s-defaults :set testing-enabled t)
      (set-defunc-skip-admissibilityp nil)
@@ -770,7 +781,7 @@ Properties are just tested with a short timeout.
      (set-defunc-body-contracts-strictp t)
      (set-acl2s-property-table-proofs? t)
      (set-acl2s-property-table-testing? t)
-     (modeling-set-parms ,cgen ,cgen-local ,defunc ,table)))
+     (modeling-set-parms ,cgen ,cgen-local ,defunc ,proof ,testing)))
 
 #|
 (modeling-start)

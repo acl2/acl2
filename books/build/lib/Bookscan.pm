@@ -391,6 +391,29 @@ sub scan_local {
     return 0;
 }
 
+sub scan_acl2devel {
+    my ($base, $the_line) = @_;
+    if ($the_line =~ m/^[^;]*           # disallow comment but allow other leading trash
+                      \#\+acl2-devel
+                      \s*               # allow only whitespace or comment after #+acl2-devel
+                      (?:;.*)?
+                      $/xi) {
+	return 1;
+    }
+    return 0;
+
+
+}
+
+sub start_acl2devel_event {
+
+    return [ifdef_event, 0, "ACL2_HAS_ACL2_DEVEL"];
+
+}
+
+sub end_acl2devel_event {
+    return [endif_event]
+}
 
 # Scans a source file line by line to get the list of
 # dependency-affecting events.
@@ -399,9 +422,10 @@ sub scan_src {
     my @events = ();
     if (open(my $file, "<", $fname)) {
 	my $islocal = 0;
+	my $acl2devel = 0;
 	while (my $the_line = <$file>) {
 	    if ($the_line =~ m/^\s*$/) {
-		# just whitespace so skip, in particular don't remove $islocal
+		# just whitespace so skip, in particular don't remove $islocal or $acl2devel
 	    } else {
 		my $event = scan_include_book($fname, $the_line, $islocal)
 		    || scan_cert_param($fname, $the_line)
@@ -419,7 +443,15 @@ sub scan_src {
 		if ($event) {
 		    push @events, $event;
 		}
+		if ($acl2devel) {
+		    push @events, end_acl2devel_event();
+		    $acl2devel = 0;
+		}
 		$islocal = scan_local($fname, $the_line);
+		$acl2devel = scan_acl2devel($fname, $the_line);
+		if ($acl2devel) {
+		    push @events, start_acl2devel_event();
+		}
 	    }
 	}
 	close($file);

@@ -16,14 +16,14 @@
 
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
-(include-book "kestrel/utilities/terms" :dir :system) ; for lambda-free-termp
+(include-book "kestrel/terms-light/lambda-free-termp" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/lists-light/perm-def" :dir :system)
 (include-book "kestrel/lists-light/perm" :dir :system) ;for the fact that perm is an equiv
 ;(local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
-(local (include-book "kestrel/lists-light/perm" :dir :system))
+;; (local (include-book "kestrel/lists-light/perm" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 
 ;(local (in-theory (disable all-vars)))

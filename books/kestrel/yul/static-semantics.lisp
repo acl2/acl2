@@ -11,6 +11,7 @@
 (in-package "YUL")
 
 (include-book "abstract-syntax")
+(include-book "literal-evaluation")
 
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/defunit" :dir :system)
@@ -26,7 +27,7 @@
   (xdoc::topstring
    (xdoc::p
     "We define the static semantics of Yul
-     via functions that check that the abstract syntax of Yul
+     via ACL2 functions that check that the abstract syntax of Yul
      satisfy a number of constraints.")
    (xdoc::p
     "Since, as explained in @(see abstract-syntax), we omit types for now,
@@ -135,6 +136,44 @@
                     (funtable-fix funtab))))
   ///
   (fty::deffixequiv add-funtype :hints (("Goal" :in-theory (disable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-funtypes-in-statement-list ((stmts statement-listp)
+                                        (funtab funtablep))
+  :returns (funtab? funtable-resultp)
+  :short "Extend a function table with
+          all the function definitions in a list of statements."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "According to [Yul: Specification of Yul: Scoping Rules],
+     all the functions defined in a block are accessible in the whole block,
+     even before they are defined in the block.
+     Thus, just before checking a block,
+     we extend the function table
+     with all the function definitions in the block.
+     The function table already contains the functions
+     already accessible just before the block start,
+     which are also accessible in the block,
+     so extending the function table (as opposed to creating a new one)
+     is appropriate here.")
+   (xdoc::p
+    "As soon as a duplication function is found, we stop with an error.")
+   (xdoc::p
+    "This ACL2 function is called on the list of statements
+     contained in a block."))
+  (b* (((when (endp stmts)) (funtable-fix funtab))
+       (stmt (car stmts))
+       ((unless (statement-case stmt :fundef))
+        (add-funtypes-in-statement-list (cdr stmts) funtab))
+       ((fundef fundef) (statement-fundef->get stmt))
+       ((ok funtab) (add-funtype fundef.name
+                                 (len fundef.inputs)
+                                 (len fundef.outputs)
+                                 funtab)))
+    (add-funtypes-in-statement-list (cdr stmts) funtab))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -336,39 +375,17 @@
      and the largest type is that of 256-bit words.
      For now we do not model types (i.e. we assume one type),
      so we limit the size to 256 bits.
-     This is straighforward for numeric literals,
-     which represent the unsigned value of the 256-bit words.
-     For (non-hex) string, it boils down to a limit of 32 on the length
-     (since every character represents 8 bits).
-     For hex strings, it boils down to a limit of 32 on the number of hex pairs;
-     hex strings must also be non-empty, according to the grammar.
-     Boolean literals are always well-formed;
-     they are not, and they do not represent, numbers anyways.")
+     To check this constraint,
+     we just evaluate the literal
+     and ensure that the evaluation does not return an error:
+     this captures exactly the static constraints on literals.")
    (xdoc::p
-    "We do not impose other restrictions on (non-hex) strings here,
+    "We do not impose other restrictions on plain strings here,
      such as that a string surrounded by double quotes
      cannot contain (unescaped) double quotes.
      Those are simply syntactic restrictions."))
-  (b* ((err (err (list :bad-literal (literal-fix lit)))))
-    (literal-case
-     lit
-     :boolean :wellformed
-     :dec-number (if (< lit.get
-                        (expt 2 256))
-                     :wellformed
-                   err)
-     :hex-number (if (< (str::hex-digit-chars-value
-                         (hex-digit-list->chars lit.get))
-                        (expt 2 256))
-                     :wellformed
-                   err)
-     :plain-string (if (<= (len lit.content) 32)
-                       :wellformed
-                     err)
-     :hex-string (if (and (< 0 (len lit.content))
-                          (<= (len lit.content) 32))
-                     :wellformed
-                   err)))
+  (b* (((ok &) (eval-literal lit)))
+    :wellformed)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -459,44 +476,6 @@
     (("Goal" :in-theory (enable acl2::natp-when-nat-resultp-and-not-resulterrp))))
 
   (fty::deffixequiv-mutual check-expressions/funcalls))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define add-functions-in-statement-list ((stmts statement-listp)
-                                         (funtab funtablep))
-  :returns (funtab? funtable-resultp)
-  :short "Extend a function table with
-          all the function definitions in a list of statements."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "According to [Yul: Specification of Yul: Scoping Rules],
-     all the functions defined in a block are accessible in the whole block,
-     even before they are defined in the block.
-     Thus, just before checking a block,
-     we extend the function table
-     with all the function definitions in the block.
-     The function table already contains the functions
-     already accessible just before the block start,
-     which are also accessible in the block,
-     so extending the function table (as opposed to creating a new one)
-     is appropriate here.")
-   (xdoc::p
-    "As soon as a duplication function is found, we stop with an error.")
-   (xdoc::p
-    "This ACL2 function is called on the list of statements
-     contained in a block."))
-  (b* (((when (endp stmts)) (funtable-fix funtab))
-       (stmt (car stmts))
-       ((unless (statement-case stmt :fundef))
-        (add-functions-in-statement-list (cdr stmts) funtab))
-       ((fundef fundef) (statement-fundef->get stmt))
-       ((ok funtab) (add-funtype fundef.name
-                                 (len fundef.inputs)
-                                 (len fundef.outputs)
-                                 funtab)))
-    (add-functions-in-statement-list (cdr stmts) funtab))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -718,7 +697,7 @@
        but those changes do not surface outside those blocks.
        Note also that the function table is not updated
        while checking function definition statements:
-       as explained in @(tsee add-functions-in-statement-list),
+       as explained in @(tsee add-funtypes-in-statement-list),
        the function definitions in a block are collected,
        and used to extend the function table,
        before processing the statements in a block.")
@@ -930,13 +909,13 @@
        which is treated specially as explained in
        [Yul: Specification of Yul: Scoping Rules].")
      (xdoc::p
-      "As explained in @(tsee add-functions-in-statement-list),
+      "As explained in @(tsee add-funtypes-in-statement-list),
        all the functions defined in a block are visible in the whole block,
        so we first collect them from the statements that form the block,
        updating the function table with them,
        and then we check the statements that form the block."))
     (b* ((stmts (block->statements block))
-         ((ok funtab) (add-functions-in-statement-list stmts funtab))
+         ((ok funtab) (add-funtypes-in-statement-list stmts funtab))
          ((ok vartab) (check-statement-list stmts
                                             vartab
                                             varvis
@@ -1056,7 +1035,7 @@
        does not surface outside the function's body.
        Also recall that the function definition itself
        is added to the function table prior to checking it;
-       see @(tsee add-functions-in-statement-list).")
+       see @(tsee add-funtypes-in-statement-list).")
      (xdoc::p
       "To check the function definition, we construct an initial variable table
        from the inputs and outputs of the function.

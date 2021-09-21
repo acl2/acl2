@@ -173,17 +173,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- (b* ((types (list (type-schar)
-                   (type-uchar)
-                   (type-sshort)
-                   (type-ushort)
-                   (type-sint)
-                   (type-uint)
-                   (type-slong)
-                   (type-ulong)
-                   (type-sllong)
-                   (type-ullong))))
-   `(progn ,@(atc-def-integer-conversions-loop-outer types types))))
+ `(progn ,@(atc-def-integer-conversions-loop-outer *atc-integer-types*
+                                                   *atc-integer-types*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

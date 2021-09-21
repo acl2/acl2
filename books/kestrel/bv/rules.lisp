@@ -1652,7 +1652,7 @@
 
 
 ;;   :otf-flg t
-;;   :hints ( ("Goal" :use ((:instance integer-squeeze-0-1 (x (* (/ (EXPT 2 N)) (BVCHOP N A))))
+;;   :hints (("Goal" :use ((:instance integer-squeeze-0-1 (x (* (/ (EXPT 2 N)) (BVCHOP N A))))
 ;;                          (:instance multiply-both-sides-hack (x (+ (BVCHOP N A) (* B (EXPT 2 N)))) (y (EXPT 2 (+ -1 M))) (z (/ (expt 2 n))))
 ;;                          (:instance multiply-both-sides-hack (x (+ (BVCHOP N A) (* B (EXPT 2 N)))) (y (- (EXPT 2 (+ -1 M)))) (z (/ (expt 2 n))))
 ;;                          (:instance multiply-both-sides-hack (x b) (y (- (* 1/2 (EXPT 2 M) (/ (EXPT 2 N))))) (z (expt 2 n)))
