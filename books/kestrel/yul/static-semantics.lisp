@@ -27,7 +27,7 @@
   (xdoc::topstring
    (xdoc::p
     "We define the static semantics of Yul
-     via functions that check that the abstract syntax of Yul
+     via ACL2 functions that check that the abstract syntax of Yul
      satisfy a number of constraints.")
    (xdoc::p
     "Since, as explained in @(see abstract-syntax), we omit types for now,
