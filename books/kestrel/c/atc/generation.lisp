@@ -2949,8 +2949,7 @@
                   *atc-integer-ops-1-return-rewrite-rules*
                   *atc-integer-ops-2-return-rewrite-rules*
                   *atc-integer-convs-return-rewrite-rules*
-                  ;; *atc-shift-definition-rules*
-                  *atc-array-definition-rules*
+                  *atc-array-read-return-rewrite-rules*
                   '(,fn
                     ,@(atc-symbol-fninfo-alist-to-returns-value-thms
                        prec-fns (acl2::all-fnnames (ubody+ fn wrld)))
@@ -2973,16 +2972,6 @@
                     ullongp-of-ullong-oct-const
                     ullongp-of-ullong-hex-const
                     sintp-of-sint-from-boolean
-                    scharp-of-schar-array-read
-                    ucharp-of-uchar-array-read
-                    sshortp-of-sshort-array-read
-                    ushortp-of-ushort-array-read
-                    sintp-of-sint-array-read
-                    uintp-of-uint-array-read
-                    slongp-of-slong-array-read
-                    ulongp-of-ulong-array-read
-                    sllongp-of-sllong-array-read
-                    ullongp-of-ullong-array-read
                     declar
                     assign
                     mv-nth-of-cons

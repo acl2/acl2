@@ -54,6 +54,11 @@
            (or (> (ifix min) (ifix max))
                (natp (ifix min)))))
 
+  (defrule pos-listp-of-integers-from-to
+    (equal (pos-listp (integers-from-to min max))
+           (or (> (ifix min) (ifix max))
+               (posp (ifix min)))))
+
   (defcong int-equiv equal (integers-from-to min max) 1)
 
   (defcong int-equiv equal (integers-from-to min max) 2)

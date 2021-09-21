@@ -15,6 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum natoption/natoptionlist
+  :parents (fty::fty-extensions fty::specific-types)
   :short "Fixtype of optional natural numbers
           and lists of optional natural numbers."
   (:one ((get nat-option)))

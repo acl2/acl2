@@ -1108,76 +1108,6 @@
   :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep)))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-binary-logand ((arg1 value-resultp) (arg2 value-resultp))
-  :returns (result value-resultp)
-  :short "Execute a binary logical conjunction expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We test the first operand;
-     if it yields @('nil'),
-     we return the @('int') 0 and ignore the second operand.
-     Otherwise, the test the second operand,
-     and we return the @('int') 0 or 1 accordingly.")
-   (xdoc::p
-    "Note that this binary operator is non-strict but pure."))
-  (b* ((arg1 (value-result-fix arg1))
-       (arg2 (value-result-fix arg2))
-       (test1 (exec-test arg1))
-       ((when (errorp test1)) test1)
-       ((when (not test1)) (sint 0))
-       (test2 (exec-test arg2))
-       ((when (errorp test2)) test2))
-    (if test2 (sint 1) (sint 0)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-binary-logor ((arg1 value-resultp) (arg2 value-resultp))
-  :returns (result value-resultp)
-  :short "Execute a binary logical disjunction expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We test the first operand;
-     if it yields @('t'),
-     we return the @('int') 1 and ignore the second operand.
-     Otherwise, the test the second operand,
-     and we return the @('int') 0 or 1 accordingly.")
-   (xdoc::p
-    "Note that this binary operator is non-strict but pure."))
-  (b* ((arg1 (value-result-fix arg1))
-       (arg2 (value-result-fix arg2))
-       (test1 (exec-test arg1))
-       ((when (errorp test1)) test1)
-       ((when test1) (sint 1))
-       (test2 (exec-test arg2))
-       ((when (errorp test2)) test2))
-    (if test2 (sint 1) (sint 0)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-binary-pure ((op binopp) (arg1 value-resultp) (arg2 value-resultp))
-  :guard (binop-purep op)
-  :returns (result value-resultp)
-  :short "Execute a pure binary expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Here we only define the execution of pure binary operators.
-     Assignments is handled in @(tsee exec-expr-asg)."))
-  (if (binop-strictp op)
-      (exec-binary-strict-pure op arg1 arg2)
-    (case (binop-kind op)
-      (:logand (exec-binary-logand arg1 arg2))
-      (:logor (exec-binary-logor arg1 arg2))
-      (t (error (impossible)))))
-  :guard-hints (("Goal" :in-theory (enable binop-purep binop-strictp)))
-  :hooks (:fix))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-cast ((tyname tynamep) (arg value-resultp))
@@ -1460,10 +1390,6 @@
     "We also reject pre/post-increment/decrement expressions,
      which are obviously non-pure.")
    (xdoc::p
-    "For now we reject tests of conditionals
-     that are non-@('int') values.
-     We will add support for them later.")
-   (xdoc::p
     "Recall that our C abstract syntax does not cover
      all the possible C expressions yet.
      Thus, we may extend this ACL2 function
@@ -1487,11 +1413,25 @@
      :predec (error (list :non-pure-expr e))
      :unary (exec-unary e.op (exec-expr-pure e.arg compst))
      :cast (exec-cast e.type (exec-expr-pure e.arg compst))
-     :binary (b* (((unless (binop-purep e.op))
-                   (error (list :non-pure-expr e))))
-               (exec-binary-pure e.op
-                                 (exec-expr-pure e.arg1 compst)
-                                 (exec-expr-pure e.arg2 compst)))
+     :binary (b* (((unless (binop-purep e.op)) (error (list :non-pure-expr e))))
+               (case (binop-kind e.op)
+                 (:logand
+                  (b* ((test1 (exec-test (exec-expr-pure e.arg1 compst)))
+                       ((when (errorp test1)) test1)
+                       ((when (not test1)) (sint 0))
+                       (test2 (exec-test (exec-expr-pure e.arg2 compst)))
+                       ((when (errorp test2)) test2))
+                    (if test2 (sint 1) (sint 0))))
+                 (:logor
+                  (b* ((test1 (exec-test (exec-expr-pure e.arg1 compst)))
+                       ((when (errorp test1)) test1)
+                       ((when test1) (sint 1))
+                       (test2 (exec-test (exec-expr-pure e.arg2 compst)))
+                       ((when (errorp test2)) test2))
+                    (if test2 (sint 1) (sint 0))))
+                 (t (exec-binary-strict-pure e.op
+                                             (exec-expr-pure e.arg1 compst)
+                                             (exec-expr-pure e.arg2 compst)))))
      :cond (b* ((test (exec-test (exec-expr-pure e.test compst)))
                 ((when (errorp test)) test))
              (if test
@@ -1507,7 +1447,8 @@
     :rule-classes ((:forward-chaining
                     :trigger-terms ((exec-expr-pure e compst)))))
 
-  (verify-guards exec-expr-pure))
+  (verify-guards exec-expr-pure
+    :hints (("Goal" :in-theory (enable binop-strictp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
