@@ -441,8 +441,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-functions-in-statement-list ((stmts statement-listp)
-                                         (funtab funtablep))
+(define add-funtypes-in-statement-list ((stmts statement-listp)
+                                        (funtab funtablep))
   :returns (funtab? funtable-resultp)
   :short "Extend a function table with
           all the function definitions in a list of statements."
@@ -468,13 +468,13 @@
   (b* (((when (endp stmts)) (funtable-fix funtab))
        (stmt (car stmts))
        ((unless (statement-case stmt :fundef))
-        (add-functions-in-statement-list (cdr stmts) funtab))
+        (add-funtypes-in-statement-list (cdr stmts) funtab))
        ((fundef fundef) (statement-fundef->get stmt))
        ((ok funtab) (add-funtype fundef.name
                                  (len fundef.inputs)
                                  (len fundef.outputs)
                                  funtab)))
-    (add-functions-in-statement-list (cdr stmts) funtab))
+    (add-funtypes-in-statement-list (cdr stmts) funtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -697,7 +697,7 @@
        but those changes do not surface outside those blocks.
        Note also that the function table is not updated
        while checking function definition statements:
-       as explained in @(tsee add-functions-in-statement-list),
+       as explained in @(tsee add-funtypes-in-statement-list),
        the function definitions in a block are collected,
        and used to extend the function table,
        before processing the statements in a block.")
@@ -909,13 +909,13 @@
        which is treated specially as explained in
        [Yul: Specification of Yul: Scoping Rules].")
      (xdoc::p
-      "As explained in @(tsee add-functions-in-statement-list),
+      "As explained in @(tsee add-funtypes-in-statement-list),
        all the functions defined in a block are visible in the whole block,
        so we first collect them from the statements that form the block,
        updating the function table with them,
        and then we check the statements that form the block."))
     (b* ((stmts (block->statements block))
-         ((ok funtab) (add-functions-in-statement-list stmts funtab))
+         ((ok funtab) (add-funtypes-in-statement-list stmts funtab))
          ((ok vartab) (check-statement-list stmts
                                             vartab
                                             varvis
@@ -1035,7 +1035,7 @@
        does not surface outside the function's body.
        Also recall that the function definition itself
        is added to the function table prior to checking it;
-       see @(tsee add-functions-in-statement-list).")
+       see @(tsee add-funtypes-in-statement-list).")
      (xdoc::p
       "To check the function definition, we construct an initial variable table
        from the inputs and outputs of the function.
