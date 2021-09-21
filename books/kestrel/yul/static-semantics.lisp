@@ -139,6 +139,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define add-funtypes-in-statement-list ((stmts statement-listp)
+                                        (funtab funtablep))
+  :returns (funtab? funtable-resultp)
+  :short "Extend a function table with
+          all the function definitions in a list of statements."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "According to [Yul: Specification of Yul: Scoping Rules],
+     all the functions defined in a block are accessible in the whole block,
+     even before they are defined in the block.
+     Thus, just before checking a block,
+     we extend the function table
+     with all the function definitions in the block.
+     The function table already contains the functions
+     already accessible just before the block start,
+     which are also accessible in the block,
+     so extending the function table (as opposed to creating a new one)
+     is appropriate here.")
+   (xdoc::p
+    "As soon as a duplication function is found, we stop with an error.")
+   (xdoc::p
+    "This ACL2 function is called on the list of statements
+     contained in a block."))
+  (b* (((when (endp stmts)) (funtable-fix funtab))
+       (stmt (car stmts))
+       ((unless (statement-case stmt :fundef))
+        (add-funtypes-in-statement-list (cdr stmts) funtab))
+       ((fundef fundef) (statement-fundef->get stmt))
+       ((ok funtab) (add-funtype fundef.name
+                                 (len fundef.inputs)
+                                 (len fundef.outputs)
+                                 funtab)))
+    (add-funtypes-in-statement-list (cdr stmts) funtab))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defset vartable
   :short "Fixtype of variable tables."
   :long
@@ -438,44 +476,6 @@
     (("Goal" :in-theory (enable acl2::natp-when-nat-resultp-and-not-resulterrp))))
 
   (fty::deffixequiv-mutual check-expressions/funcalls))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define add-funtypes-in-statement-list ((stmts statement-listp)
-                                        (funtab funtablep))
-  :returns (funtab? funtable-resultp)
-  :short "Extend a function table with
-          all the function definitions in a list of statements."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "According to [Yul: Specification of Yul: Scoping Rules],
-     all the functions defined in a block are accessible in the whole block,
-     even before they are defined in the block.
-     Thus, just before checking a block,
-     we extend the function table
-     with all the function definitions in the block.
-     The function table already contains the functions
-     already accessible just before the block start,
-     which are also accessible in the block,
-     so extending the function table (as opposed to creating a new one)
-     is appropriate here.")
-   (xdoc::p
-    "As soon as a duplication function is found, we stop with an error.")
-   (xdoc::p
-    "This ACL2 function is called on the list of statements
-     contained in a block."))
-  (b* (((when (endp stmts)) (funtable-fix funtab))
-       (stmt (car stmts))
-       ((unless (statement-case stmt :fundef))
-        (add-funtypes-in-statement-list (cdr stmts) funtab))
-       ((fundef fundef) (statement-fundef->get stmt))
-       ((ok funtab) (add-funtype fundef.name
-                                 (len fundef.inputs)
-                                 (len fundef.outputs)
-                                 funtab)))
-    (add-funtypes-in-statement-list (cdr stmts) funtab))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
