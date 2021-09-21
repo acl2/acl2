@@ -23,7 +23,7 @@
    (xdoc::p
     "We define the dynamic semantics of Yul
      by formalizing the Yul computation state
-     and by defining functions that manipulate the computation state
+     and by defining ACL2 functions that manipulate the computation state
      via execution of the Yul abstract syntax.")
    (xdoc::p
     "This is based on the formal specification in
@@ -48,6 +48,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod funinfo
+  :short "Fixtype of function information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is all the information about a function definition,
+     except for its name.
+     This is used for the values of function states (see @(tsee fstate)."))
+  ((inputs identifier-list)
+   (outputs identifier-list)
+   (body block))
+  :tag :funinfo
+  :pred funinfop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap fstate
+  :short "Fixtype of function states."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a finite map from identifiers (function names)
+     to function information:
+     it models the function definitions currently in scope;
+     this changes as blocks are entered and exited.
+     [Yul: Specification of Yul: Formal Specification]
+     does not explicitly mention this,
+     but its presence is implicit in the description of
+     the scope of function definitions."))
+  :key-type identifier
+  :val-type funinfo
+  :pred fstatep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod cstate
   :short "Fixtype of computational states."
   :long
@@ -57,11 +92,11 @@
      this consists of a local state object and a global state object.
      The latter is generic in generic Yul.
      For now, for simplicity, we ignore the global state completely,
-     and just define a computational state as a (wrapped) local state.")
-   (xdoc::p
-    "We plan to extend this notion of computation states
-     to also include the Yul global state."))
-  ((local lstate))
+     but we plan to add that at some point.
+     We also include the function state,
+     whose motivation is discussed in @(tsee fstate)."))
+  ((local lstate)
+   (functions fstate))
   :tag :cstate
   :pred cstatep)
 
@@ -69,7 +104,7 @@
 
 (define read-var ((var identifierp) (cstate cstatep))
   :returns (val value-resultp)
-  :short "Read a variable from the computaition state."
+  :short "Read a variable from the computation state."
   (b* ((lstate (cstate->local cstate))
        (var-val (omap::in (identifier-fix var) lstate))
        ((unless (consp var-val))
