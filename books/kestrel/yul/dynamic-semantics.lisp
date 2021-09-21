@@ -131,7 +131,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "An error is returned if the function already exists."))
+    "An error is returned if the function already exists.")
+   (xdoc::p
+    "This is the dynamic counterpart of
+     @(tsee add-funtype) in the static semantics."))
   (b* ((fstate (cstate->functions cstate))
        (fun-info (omap::in (identifier-fix fun) fstate))
        ((when (consp fun-info))
@@ -140,6 +143,37 @@
         (omap::update (identifier-fix fun) (funinfo-fix info) fstate))
        (new-cstate (change-cstate cstate :functions new-fstate)))
     new-cstate)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-funs-in-statement-list ((stmts statement-listp) (cstate cstatep))
+  :returns (new-cstate cstate-resultp)
+  :short "Add all the functions in a block to the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Just before executing a block,
+     all the function definitions in the block
+     are added to computation states.
+     This is because,
+     as explained in [Yul: Specification of Yul: Scoping Rules],
+     all the functions defined in a block are accessible in the whole block,
+     even before they are defined in the block.")
+   (xdoc::p
+    "This is the dynamic counterpart of
+     @(tsee add-funtypes-in-statement-list) in the static semantics."))
+  (b* (((when (endp stmts)) (cstate-fix cstate))
+       (stmt (car stmts))
+       ((unless (statement-case stmt :fundef))
+        (add-funs-in-statement-list (cdr stmts) cstate))
+       ((fundef fundef) (statement-fundef->get stmt))
+       ((ok cstate) (add-fun fundef.name
+                             (make-funinfo :inputs fundef.inputs
+                                           :outputs fundef.outputs
+                                           :body fundef.body)
+                             cstate)))
+    (add-funs-in-statement-list (cdr stmts) cstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
