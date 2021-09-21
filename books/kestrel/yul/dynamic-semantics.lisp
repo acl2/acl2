@@ -109,7 +109,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-var ((var identifierp) (cstate cstatep))
+(define read-var-value ((var identifierp) (cstate cstatep))
   :returns (val value-resultp)
   :short "Read a variable from the computation state."
   :long
@@ -232,7 +232,7 @@
        ((unless (endp (cdr idens)))
         (err (list :non-singleton-path (path-fix path))))
        (var (car idens))
-       ((ok val) (read-var var cstate)))
+       ((ok val) (read-var-value var cstate)))
     (make-eoutcome :cstate cstate :values (list val)))
   :hooks (:fix))
 
