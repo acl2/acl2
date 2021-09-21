@@ -15,7 +15,7 @@
        (reordered-term
         (reorder-hypotheses-cp (cdar expanded-term) hints))
        (- (cw "after reorder-hypotheses-cp: ~q0" (cdar reordered-term)))
-       (typed-goal-1
+       ((mv & typed-goal-1 state)
         (type-judge-bottomup-cp (cdar reordered-term) hints state))
        (- (cw "after bottomup: ~q0" (cdar typed-goal-1)))
        ((mv & term-with-type state)

@@ -741,7 +741,44 @@
                               pseudo-term-listp-of-symbol-listp
                               acl2::pseudo-termp-opener))))
 
-stop
+(encapsulate nil ; A brutal proof of the obvious
+  (local (defthm lemma-1
+	   (implies (and (pseudo-termp x) (consp x))
+		    (true-listp x))
+           :hints(("Goal" :expand ((pseudo-termp x))))))
+
+  (local (defthm lemma-2
+	   (implies (good-typed-if-p tterm)
+		    (equal (car (typed-term->term tterm)) 'if))
+           :hints(("Goal" :in-theory (enable good-typed-if-p)))))
+
+  (local (defthm lemma-3
+	   (implies (good-typed-if-p tterm)
+		    (equal (len (cdr (typed-term->term tterm))) 3))
+           :hints(("Goal" :in-theory (enable good-typed-if-p)))))
+
+  (local (defthm lemma-4
+	   (implies (and (true-listp x) (equal (len (cdr x)) 3))
+		    (and (consp (cdddr x))
+			 (equal (cddddr x) nil)))
+	   :hints (("Goal"
+		    :expand ((len (cdr x)) (len (cddr x)) (len (cdddr x)) (len (cddddr x)))))))
+
+  (local (defthm lemma-5
+	   (implies (and (equal (car x) 'if)
+			 (consp (cdddr x))
+			 (equal (cddddr x) nil))
+		    (equal (list 'if (cadr x) (caddr x) (cadddr x))
+			   x))))
+
+  (defthm if-constructor-of-destructors
+    (implies (good-typed-if-p tterm)
+	           (equal (list 'if
+			                    (cadr (typed-term->term tterm))
+		                      (caddr (typed-term->term tterm))
+			                    (cadddr (typed-term->term tterm)))
+		                (typed-term->term tterm)))))
+
 (defthm-unify-type-flag
   (defthm unify-if-maintains-term
     (implies (and (pseudo-termp expected)
@@ -753,7 +790,7 @@ stop
                     (typed-term->term tterm)))
     :flag unify-if
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (e/d () ())
+                 '(:in-theory (e/d (make-typed-if) ())
                               :expand (unify-if tterm expected options state)))))
   (defthm unify-fncall-maintains-term
     (implies (and (type-options-p options)
@@ -831,6 +868,38 @@ stop
        (hinted-goal `((hint-please ',the-hint) ,@new-cl)))
     (value (list hinted-goal))))
 
+(local
+(defthm crock3
+  (implies (and (not (ev-smtcp (cadr (disjoin cl)) a))
+                (pseudo-term-listp cl)
+                (alistp a)
+                (consp (disjoin cl))
+                (equal (car (disjoin cl)) 'implies)
+                (consp (cdr (disjoin cl)))
+                (consp (cddr (disjoin cl)))
+                (not (cdddr (disjoin cl))))
+           (acl2::or-list (ev-smtcp-lst cl a)))
+  :hints (("Goal"
+           :in-theory (enable disjoin))))
+)
+
+
+(local
+ (defthm crock4
+   (implies (and (pseudo-term-listp cl)
+                 (alistp a)
+                 (consp (disjoin cl))
+                 (equal (car (disjoin cl)) 'implies)
+                 (consp (cdr (disjoin cl)))
+                 (consp (cddr (disjoin cl)))
+                 (not (cdddr (disjoin cl)))
+                 (ev-smtcp (caddr (disjoin cl)) a))
+            (acl2::or-list (ev-smtcp-lst cl a)))
+   :hints (("Goal"
+            :in-theory (enable disjoin))))
+ )
+
+
 (defthm correctness-of-type-judge-topdown-cp
   (implies (and (ev-smtcp-meta-extract-global-facts)
                 (pseudo-term-listp cl)
@@ -843,7 +912,10 @@ stop
            (ev-smtcp (disjoin cl) a))
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (enable type-judge-topdown-cp)
+           :in-theory (e/d (type-judge-topdown-cp correct-typed-term disjoin)
+                           (correctness-of-unify-type
+                            unify-type-maintains-path-cond
+                            unify-type-maintains-term))
            :use ((:instance correctness-of-unify-type
                             (options (construct-type-options hints (disjoin cl)))
                             (expected ''t)
@@ -857,6 +929,11 @@ stop
                             (expected ''t)
                             (tterm (typed-term (caddr (disjoin cl))
                                                ''t
+                                               (cadr (disjoin cl)))))
+                 (:instance unify-type-maintains-term
+                            (options (construct-type-options hints (disjoin cl)))
+                            (expected ''t)
+                            (tterm (typed-term (caddr (disjoin cl))
+                                               ''t
                                                (cadr (disjoin cl))))))))
-  :rule-classes :clause-processor
-  )
+  :rule-classes :clause-processor)

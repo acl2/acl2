@@ -558,7 +558,12 @@
            :hints (("Goal"
                     :in-theory (disable good-typed-if-p-of-good-term)
                     :use ((:instance good-typed-if-p-of-good-term))))
-           :name acl2-count-of-typed-term-if->cond))
+           :name acl2-count-of-typed-term-if->cond)
+   (new-tt :name path-cond-of-if->cond
+           (implies (and (equal (typed-term->kind tterm) 'ifp)
+                         (good-typed-term-p tterm))
+	                  (equal (typed-term->path-cond new-tt)
+		                       (typed-term->path-cond tterm)))))
   (defthm correctness-of-typed-term-if->cond
     (implies (and (ev-smtcp-meta-extract-global-facts)
                   (good-typed-if-p tterm)
@@ -611,7 +616,14 @@
            :hints (("Goal"
                     :in-theory (disable good-typed-if-p-of-good-term)
                     :use ((:instance good-typed-if-p-of-good-term))))
-           :name acl2-count-of-typed-term-if->then))
+           :name acl2-count-of-typed-term-if->then)
+   (new-tt :name path-cond-of-if->then
+           (implies (and (equal (typed-term->kind tterm) 'ifp)
+                         (good-typed-term-p tterm))
+	                  (equal (typed-term->path-cond new-tt)
+		                       `(if ,(simple-transformer (cadr (typed-term->term tterm)))
+                                ,(typed-term->path-cond tterm)
+			                        'nil)))))
   (defthm correctness-of-typed-term-if->then
     (implies (and (ev-smtcp-meta-extract-global-facts)
                   (good-typed-if-p tterm)
@@ -664,7 +676,14 @@
            :hints (("Goal"
                     :in-theory (disable good-typed-if-p-of-good-term)
                     :use ((:instance good-typed-if-p-of-good-term))))
-           :name acl2-count-of-typed-term-if->else))
+           :name acl2-count-of-typed-term-if->else)
+   (new-tt :name path-cond-of-if->else
+           (implies (and (equal (typed-term->kind tterm) 'ifp)
+                         (good-typed-term-p tterm))
+	                  (equal (typed-term->path-cond new-tt)
+		                       `(if ,(simple-transformer `(not ,(cadr (typed-term->term tterm))))
+                                ,(typed-term->path-cond tterm)
+			                        'nil)))))
   (defthm correctness-of-typed-term-if->else
     (implies (and (ev-smtcp-meta-extract-global-facts)
                   (good-typed-if-p tterm)

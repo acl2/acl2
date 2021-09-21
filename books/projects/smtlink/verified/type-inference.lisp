@@ -34,13 +34,14 @@
        (names (acl2::simple-term-vars goal))
        (type-judgements (type-judgement goal ''t options names state))
        (typed-term (make-typed-term :term goal :path-cond ''t
+
                                     :judgements type-judgements))
        ;; This check is probably provable
-       ((unless (good-typed-term-p typed-term options))
+       ((unless (good-typed-term-p typed-term))
         (prog2$ (er hard? 'type-inference=>type-judge-fn
                     "Not a good-typed-term-p: ~q0" typed-term)
                 (list cl)))
-       (unified-typed-term (unify-type typed-term ''t options names state))
+       (unified-typed-term (unify-type typed-term ''t options state))
        (unified-judgements (typed-term->judgements unified-typed-term))
        (new-cl `((implies ,unified-judgements ,goal)))
        (next-cp (cdr (assoc-equal 'type-inference *SMT-architecture*)))
@@ -75,7 +76,6 @@
                             symbol-listp))
            :use ((:instance correctness-of-unify-type
                             (options (construct-type-options hint (disjoin cl)))
-                            (names (acl2::simple-term-vars (disjoin cl)))
                             (expected ''t)
                             (tterm
                              (typed-term

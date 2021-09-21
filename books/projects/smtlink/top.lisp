@@ -16,7 +16,7 @@
 (include-book "verified/expand-cp")
 (include-book "verified/reorder-hypotheses")
 (include-book "verified/type-inference")
-(include-book "verified/term-replacement")
+;; (include-book "verified/term-replacement")
 
 ;; ;; trusted
 ;; (include-book "trusted/prove")
