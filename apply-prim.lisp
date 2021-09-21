@@ -411,12 +411,15 @@
 ; may take several minutes, and then performing the appropriate checks.  It
 ; assumes that "ACL2" below references your ACL2 sources directory.  Note:
 ; Replace "saved_acl2d" as necessary, e.g., perhaps "ccl-saved_acl2d".
+; Also note that including "ACL2_USELESS_RUNES= " as shown below may be
+; necessary because of how proofs differ between normal and #+acl2-devel
+; versions of ACL2.
 
 ; cd ACL2
 ; make ACL2_DEVEL=t
 ; make clean-books
 ; cd books
-; (time ./build/cert.pl -j 16 --acl2 `pwd`/../saved_acl2d system/devel-check)
+; (time make -j 16 ACL2=`pwd`/../saved_acl2d ACL2_USELESS_RUNES= system/devel-check.cert)
 ; cd ACL2
 ; make devel-check ACL2=`pwd`/saved_acl2d
 
