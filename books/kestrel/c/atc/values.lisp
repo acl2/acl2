@@ -213,6 +213,65 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection value-tau-rules
+  :short "Some tau rules about values."
+
+  (defrule signed-integer-value-kinds
+    (implies (or (scharp x)
+                 (sshortp x)
+                 (sintp x)
+                 (slongp x)
+                 (sllongp x))
+             (and (value-scalarp x)
+                  (value-arithmeticp x)
+                  (value-realp x)
+                  (value-integerp x)
+                  (value-signed-integerp x)))
+    :rule-classes :tau-system
+    :enable (value-scalarp
+             value-arithmeticp
+             value-realp
+             value-integerp
+             value-signed-integerp))
+
+  (defrule unsigned-integer-value-kinds
+    (implies (or (ucharp x)
+                 (ushortp x)
+                 (uintp x)
+                 (ulongp x)
+                 (ullongp x))
+             (and (value-scalarp x)
+                  (value-arithmeticp x)
+                  (value-realp x)
+                  (value-integerp x)
+                  (value-unsigned-integerp x)))
+    :rule-classes :tau-system
+    :enable (value-scalarp
+             value-arithmeticp
+             value-realp
+             value-integerp
+             value-unsigned-integerp))
+
+  (defrule not-errorp-when-valuep
+    (implies (valuep x)
+             (not (errorp x)))
+    :rule-classes :tau-system
+    :enable (scharp
+             ucharp
+             sshortp
+             ushortp
+             sintp
+             uintp
+             slongp
+             ulongp
+             sllongp
+             ullongp
+             pointerp
+             valuep
+             errorp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-of-value ((val valuep))
   :returns (type typep)
   :short "Type of a value."

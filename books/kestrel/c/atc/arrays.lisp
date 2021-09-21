@@ -409,3 +409,33 @@
                    (type-sllong)
                    (type-ullong))))
    `(progn ,@(atc-def-integer-arrays-loop-outer types types))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection array-tau-rules
+  :short "Some tau rules about arrays."
+
+  (defrule not-errorp-when-arrayp
+    (implies (or (schar-arrayp x)
+                 (uchar-arrayp x)
+                 (sshort-arrayp x)
+                 (ushort-arrayp x)
+                 (sint-arrayp x)
+                 (uint-arrayp x)
+                 (slong-arrayp x)
+                 (ulong-arrayp x)
+                 (sllong-arrayp x)
+                 (ullong-arrayp x))
+             (not (errorp x)))
+    :rule-classes :tau-system
+    :enable (schar-arrayp
+             uchar-arrayp
+             sshort-arrayp
+             ushort-arrayp
+             sint-arrayp
+             uint-arrayp
+             slong-arrayp
+             ulong-arrayp
+             sllong-arrayp
+             ullong-arrayp
+             errorp)))
