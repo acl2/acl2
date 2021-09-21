@@ -270,12 +270,11 @@
    (xdoc::p
     "The bindings are reversed before being put into the formula,
      because they are @(tsee cons)ed as go through the @(':let')s."))
-  (b* (((mv okp derive-id derive-fact derive-from derive-hints)
+  (b* (((mv okp derive-id derive-fact derive-from derive-hints-etc)
         (case-match derive-args
           (((id fact)) (mv t id fact nil nil))
-          (((id fact) :from from) (mv t id fact from nil))
-          (((id fact) :hints hints) (mv t id fact nil hints))
-          (((id fact) :from from :hints hints) (mv t id fact from hints))
+          (((id fact) :from from . hints-etc) (mv t id fact from hints-etc))
+          (((id fact) . hints-etc) (mv t id fact nil hints-etc))
           (& (mv nil nil nil nil nil))))
        ((when (not okp))
         (er-soft+ ctx t (list nil nil)
@@ -299,12 +298,12 @@
                         `(let* ,(rev (alist-to-doublets bindings))
                            ,thm-formula)
                       thm-formula))
-       (thm-hints derive-hints)
+       (thm-hints-etc derive-hints-etc)
        (thm-event `(local
-                    (defthm ,thm-name
+                    (defrule ,thm-name
                       ,thm-formula
-                      :hints ,thm-hints
-                      :rule-classes nil)))
+                      :rule-classes nil
+                      ,@thm-hints-etc)))
        (thm-event (restore-output thm-event))
        (print-event `(cw-event "~%~%~%~s0~%~x1~%~%"
                                "****************************************"
