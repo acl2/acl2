@@ -1110,7 +1110,6 @@
     declar
     assign
     exec-iconst
-    exec-binary-pure
     exec-cast
     sint-from-boolean
     sint-dec-const
@@ -2321,7 +2320,6 @@
           *atc-exec-unary-rules*
           *atc-exec-binary-strict-pure-rules*
           *atc-exec-test-rules*
-          *atc-exec-binary-logand/logor-rules*
           *atc-opener-rules*
           *atc-abstract-syntax-rules*
           *atc-other-executable-counterpart-rules*
