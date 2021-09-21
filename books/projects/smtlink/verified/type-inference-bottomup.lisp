@@ -595,16 +595,21 @@
 ;; -------------------------------------------------------
 
 (define type-judge-bottomup-cp ((cl pseudo-term-listp)
-                                (hints t)
+                                (smtlink-hint t)
                                 state)
-  (b* (((unless (type-options-p hints))
-        (value (list cl)))
-       ((type-options h) hints)
+  (b* (((unless (pseudo-term-listp cl)) (value nil))
+       ((unless (smtlink-hint-p smtlink-hint)) (value (list cl)))
        (goal (disjoin cl))
-       (judges (type-judgement goal ''t hints h.names state)))
-    (value (list (list `(implies ,judges ,goal))))))
-
-(local (in-theory (enable type-judge-bottomup-cp)))
+       ((type-options h) (construct-type-options smtlink-hint goal))
+       (judges (type-judgement goal ''t h h.names state))
+       (new-cl `((implies ,judges ,goal)))
+       (next-cp (cdr (assoc-equal 'type-inference-bottomup
+                                  *SMT-architecture*)))
+       ((if (null next-cp)) (value (list cl)))
+       (the-hint
+        `(:clause-processor (,next-cp clause ',h state)))
+       (hinted-goal `((hint-please ',the-hint) ,@new-cl)))
+    (value (list hinted-goal))))
 
 (defthm correctness-of-type-judge-bottomup-cp
   (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -616,4 +621,6 @@
                    (type-judge-bottomup-cp cl hints state)))
                  a))
            (ev-smtcp (disjoin cl) a))
+  :hints (("Goal"
+           :in-theory (enable type-judge-bottomup-cp)))
   :rule-classes :clause-processor)

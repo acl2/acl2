@@ -11,15 +11,18 @@
   (b* ((cl (pseudo-term-list-fix cl))
        (hints (smtlink-hint-fix hints))
        ((mv & expanded-term state) (expand-cp cl hints state))
-       (- (cw "after expand-cp: ~q0" (cdr (car expanded-term))))
+       (- (cw "after expand-cp: ~q0" (cdar expanded-term)))
        (reordered-term
-        (reorder-hypotheses-cp (cdr (car expanded-term)) hints))
-       (- (cw "after reorder-hypotheses-cp: ~q0"
-              (cdr (car reordered-term))))
+        (reorder-hypotheses-cp (cdar expanded-term) hints))
+       (- (cw "after reorder-hypotheses-cp: ~q0" (cdar reordered-term)))
+       (typed-goal-1
+        (type-judge-bottomup-cp (cdar reordered-term) hints state))
+       (- (cw "after bottomup: ~q0" (cdar typed-goal-1)))
        ((mv & term-with-type state)
-        (type-judge-cp (cdr (car reordered-term)) hints state))
-       (- (cw "after type-judge-cp: ~q0" (cdr (car term-with-type)))))
-    (value (cadr (car term-with-type)))))
+        (type-judge-cp (cdar reordered-term) hints state))
+       (- (cw "after type-judge-cp: ~q0" (cdar term-with-type)))
+       (final (cdar term-with-type)))
+  (value final)))
 
 (defun term1 ()
   '(if (if (integerp x)

@@ -55,13 +55,15 @@
 
 ;; current tag . next computed-hint
 (defval *SMT-architecture*
-  '((process-hint             . add-hypo-cp)
-    (add-hypo                 . expand-cp)
-    (expand                   . reorder-cp)
-    (reorder                  . type-judge-cp)
-    (type-inference           . term-replacement-cp)
-    (term-replacement         . smt-trusted-cp)
-    (term-replacement-custom  . smt-trusted-cp-custom)))
+  '((process-hint              . add-hypo-cp)
+    (add-hypo                  . expand-cp)
+    (expand                    . reorder-cp)
+    (reorder                   . type-inference-bottomup-cp)
+    (type-inference-bottomup   . type-inference-topdown-cp)
+    (type-inference-topdown    . type-replacement-cp)
+    (type-replacement          . term-simplify-cp)
+    (term-simplify             . smt-trusted-cp)
+    (term-simplify-custom      . smt-trusted-cp-custom)))
 
 ;;----------------------------------------------------------------
 
