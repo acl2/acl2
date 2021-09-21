@@ -953,13 +953,17 @@ returns (mv rule rules-rest bindings rp-context)"
          (atom term)
          (acl2::fquotep term)
          (zp limit))
-     (mv nil (rp-check-context term context iff-flg) dont-rw rp-state));))
+     (b* ((new-term (rp-check-context term context iff-flg))
+          (dont-rw (if (not (equal new-term term)) t dont-rw)))
+       (mv nil new-term dont-rw rp-state))) ;))
     (t
      (b* (
           ((mv rule rules-for-term-rest var-bindings rp-context)
            (rp-rw-rule-aux term rules-for-term context iff-flg state))
           ((when (not rule)) ;; no rules found
-           (mv nil (rp-check-context term context iff-flg) dont-rw rp-state))
+           (b* ((new-term (rp-check-context term context iff-flg))
+                (dont-rw (if (not (equal new-term term)) t dont-rw)))
+             (mv nil new-term dont-rw rp-state)))
 
           ((when (rp-rule-metap rule))
            (b* (((mv term-changed term dont-rw rp-state)
