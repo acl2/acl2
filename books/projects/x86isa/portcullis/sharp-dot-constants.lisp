@@ -592,6 +592,8 @@
 
 (make-event (define-zmm-registers))
 
+(make-event (define-opmsk-registers))
+
 (make-event (define-model-specific-registers))
 
 ;; ======================================================================
