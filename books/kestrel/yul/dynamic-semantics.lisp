@@ -100,16 +100,46 @@
   :tag :cstate
   :pred cstatep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult cstate-result
+  :short "Fixtype of errors and computation states."
+  :ok cstate
+  :pred cstate-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-var ((var identifierp) (cstate cstatep))
   :returns (val value-resultp)
   :short "Read a variable from the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An error is returned if the variable does not exist."))
   (b* ((lstate (cstate->local cstate))
        (var-val (omap::in (identifier-fix var) lstate))
        ((unless (consp var-val))
         (err (list :variable-not-found (identifier-fix var)))))
     (value-fix (cdr var-val)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-fun ((fun identifierp) (info funinfop) (cstate cstatep))
+  :returns (new-cstate cstate-resultp)
+  :short "Add a function to the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An error is returned if the function already exists."))
+  (b* ((fstate (cstate->functions cstate))
+       (fun-info (omap::in (identifier-fix fun) fstate))
+       ((when (consp fun-info))
+        (err (list :function-already-exists (identifier-fix fun))))
+       (new-fstate
+        (omap::update (identifier-fix fun) (funinfo-fix info) fstate))
+       (new-cstate (change-cstate cstate :functions new-fstate)))
+    new-cstate)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
