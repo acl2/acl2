@@ -1460,10 +1460,6 @@
     "We also reject pre/post-increment/decrement expressions,
      which are obviously non-pure.")
    (xdoc::p
-    "For now we reject tests of conditionals
-     that are non-@('int') values.
-     We will add support for them later.")
-   (xdoc::p
     "Recall that our C abstract syntax does not cover
      all the possible C expressions yet.
      Thus, we may extend this ACL2 function
@@ -1487,11 +1483,25 @@
      :predec (error (list :non-pure-expr e))
      :unary (exec-unary e.op (exec-expr-pure e.arg compst))
      :cast (exec-cast e.type (exec-expr-pure e.arg compst))
-     :binary (b* (((unless (binop-purep e.op))
-                   (error (list :non-pure-expr e))))
-               (exec-binary-pure e.op
-                                 (exec-expr-pure e.arg1 compst)
-                                 (exec-expr-pure e.arg2 compst)))
+     :binary (b* (((unless (binop-purep e.op)) (error (list :non-pure-expr e))))
+               (case (binop-kind e.op)
+                 (:logand
+                  (b* ((test1 (exec-test (exec-expr-pure e.arg1 compst)))
+                       ((when (errorp test1)) test1)
+                       ((when (not test1)) (sint 0))
+                       (test2 (exec-test (exec-expr-pure e.arg2 compst)))
+                       ((when (errorp test2)) test2))
+                    (if test2 (sint 1) (sint 0))))
+                 (:logor
+                  (b* ((test1 (exec-test (exec-expr-pure e.arg1 compst)))
+                       ((when (errorp test1)) test1)
+                       ((when test1) (sint 1))
+                       (test2 (exec-test (exec-expr-pure e.arg2 compst)))
+                       ((when (errorp test2)) test2))
+                    (if test2 (sint 1) (sint 0))))
+                 (t (exec-binary-strict-pure e.op
+                                             (exec-expr-pure e.arg1 compst)
+                                             (exec-expr-pure e.arg2 compst)))))
      :cond (b* ((test (exec-test (exec-expr-pure e.test compst)))
                 ((when (errorp test)) test))
              (if test
@@ -1507,7 +1517,8 @@
     :rule-classes ((:forward-chaining
                     :trigger-terms ((exec-expr-pure e compst)))))
 
-  (verify-guards exec-expr-pure))
+  (verify-guards exec-expr-pure
+    :hints (("Goal" :in-theory (enable binop-strictp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

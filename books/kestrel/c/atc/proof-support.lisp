@@ -919,11 +919,15 @@
        Experiments sugges that it does speed up some proofs quite a bit."))
     (set-difference-eq
      ',(get-ruleset 'atc-openers (w state))
-     '(exec-expr-pure-base-6
+     '(exec-expr-pure-base-3
+       exec-expr-pure-base-4
+       exec-expr-pure-base-5
+       exec-expr-pure-base-6
        exec-expr-pure-base-7
        exec-expr-pure-base-8
        exec-expr-pure-list-base-2
        exec-stmt-base-1
+       exec-stmt-base-2
        exec-stmt-base-6
        exec-stmt-base-8
        exec-stmt-while-base-1
