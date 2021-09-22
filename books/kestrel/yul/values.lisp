@@ -67,3 +67,10 @@
   :short "Fixtype of errors and values."
   :ok value
   :pred value-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult value-list-result
+  :short "Fixtype of errors and lists of values."
+  :ok value-list
+  :pred value-list-resultp)

@@ -28,7 +28,18 @@
    (xdoc::p
     "This is based on the formal specification in
      [Yul: Specification of Yul: Formal Specification],
-     which defines an interpreter for Yul."))
+     which defines an interpreter for Yul.")
+   (xdoc::p
+    "We formalize a big-step interpretive semantics,
+     which consists of mutually recursive execution functions.
+     To ensure their termination, as required by ACL2,
+     these functions take a limit argument
+     that is decremented at each recursive call.
+     This is an artificial limit,
+     that has no counterpart in the run-time data of an executing Yul program.
+     Formal proofs need to deal with this limit,
+     e.g. the termination of a Yul program is proved
+     by showing that there is a suitable limit that does not run out."))
   :order-subtopics t
   :default-parent t)
 
@@ -61,6 +72,13 @@
    (body block))
   :tag :funinfo
   :pred funinfop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult funinfo-result
+  :short "Fixtype of errors and function information."
+  :ok funinfo
+  :pred funinfo-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -111,7 +129,7 @@
 
 (define read-var-value ((var identifierp) (cstate cstatep))
   :returns (val value-resultp)
-  :short "Read a variable from the computation state."
+  :short "Read a variable value from the computation state."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -121,6 +139,106 @@
        ((unless (consp var-val))
         (err (list :variable-not-found (identifier-fix var)))))
     (value-fix (cdr var-val)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-vars-values ((vars identifier-listp) (cstate cstatep))
+  :returns (vals
+            value-list-resultp
+            :hints
+            (("Goal"
+              :in-theory
+              (enable
+               valuep-when-value-resultp-and-not-resulterrp
+               value-listp-when-value-list-resultp-and-not-resulterrp))))
+  :short "Lift @(tsee read-var-value) to lists."
+  (b* (((when (endp vars)) nil)
+       ((ok val) (read-var-value (car vars) cstate))
+       ((ok vals) (read-vars-values (cdr vars) cstate)))
+    (cons val vals))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-var-value ((var identifierp) (val valuep) (cstate cstatep))
+  :returns (new-cstate cstate-resultp)
+  :short "Write a variable value to the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An error is returned if the variable does not exist."))
+  (b* ((lstate (cstate->local cstate))
+       (var-val (omap::in (identifier-fix var) lstate))
+       ((unless (consp var-val))
+        (err (list :variable-not-found (identifier-fix var))))
+       (new-lstate (omap::update (identifier-fix var)
+                                 (value-fix val)
+                                 lstate))
+       (new-cstate (change-cstate cstate :local new-lstate)))
+    new-cstate)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-vars-values ((vars identifier-listp)
+                           (vals value-listp)
+                           (cstate cstatep))
+  :guard (= (len vars) (len vals))
+  :returns (new-cstate cstate-resultp)
+  :short "Lift @(tsee write-var-value) to lists."
+  (b* (((when (endp vars)) (cstate-fix cstate))
+       ((ok cstate) (write-var-value (car vars) (car vals) cstate)))
+    (write-vars-values (cdr vars) (cdr vals) cstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-var-value ((var identifierp) (val valuep) (cstate cstatep))
+  :returns (new-cstate cstate-resultp)
+  :short "Add a variable with a value to the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An error is returned if the variable already exists."))
+  (b* ((lstate (cstate->local cstate))
+       (var-val (omap::in (identifier-fix var) lstate))
+       ((when (consp var-val))
+        (err (list :variable-already-exists (identifier-fix var))))
+       (new-lstate (omap::update (identifier-fix var)
+                                 (value-fix val)
+                                 lstate))
+       (new-cstate (change-cstate cstate :local new-lstate)))
+    new-cstate)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-vars-values ((vars identifier-listp)
+                         (vals value-listp)
+                         (cstate cstatep))
+  :guard (= (len vars) (len vals))
+  :returns (new-cstate cstate-resultp)
+  :short "Lift @(tsee add-var-value) to lists."
+  (b* (((when (endp vars)) (cstate-fix cstate))
+       ((ok cstate) (add-var-value (car vars) (car vals) cstate)))
+    (add-vars-values (cdr vars) (cdr vals) cstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-fun ((fun identifierp) (cstate cstatep))
+  :returns (info funinfo-resultp)
+  :short "Obtain information about a function from the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if the function does not exist."))
+  (b* ((fstate (cstate->functions cstate))
+       (fun-info (omap::in (identifier-fix fun) fstate))
+       ((unless (consp fun-info))
+        (err (list :function-not-found (identifier-fix fun)))))
+    (cdr fun-info))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -284,3 +402,164 @@
   (b* (((ok val) (eval-literal lit)))
     (make-eoutcome :cstate cstate :values (list val)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines exec
+  :short "Mutually recursive execution functions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Executing expressions involves executing function calls,
+     which involves executing the statements in function bodies,
+     which involves executing the expressions in the statements."))
+
+  (define exec-expression ((expr expressionp) (cstate cstatep) (limit natp))
+    :returns (outcome eoutcome-resultp)
+    :short "Execute an expression."
+    (b* (((when (zp limit)) (err (list :limit (expression-fix expr)))))
+      (expression-case
+       expr
+       :path (exec-path expr.get cstate)
+       :literal (exec-literal expr.get cstate)
+       :funcall (exec-funcall expr.get cstate (1- limit))))
+    :measure (nfix limit))
+
+  (define exec-expression-list ((exprs expression-listp)
+                                (cstate cstatep)
+                                (limit natp))
+    :returns (outcome eoutcome-resultp)
+    :short "Execute a list of expressions."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Lists of expressions are evaluated left-to-right.
+       Lists of expressions are used as arguments of function calls.
+       Each expression in the list must return exactly one result.
+       The returned expression outcome,
+       if all the expressions are successfuly evaluated,
+       includes a list of values, one for each expression, in the same order."))
+    (b* (((when (zp limit)) (err (list :limit (expression-list-fix exprs))))
+         ((when (endp exprs)) (make-eoutcome :cstate (cstate-fix cstate)
+                                             :values nil))
+         ((ok outcome) (exec-expression (car exprs) cstate (1- limit)))
+         (cstate (eoutcome->cstate outcome))
+         (vals (eoutcome->values outcome))
+         ((unless (and (consp vals) (endp (cdr vals))))
+          (err (list :not-single-value vals)))
+         (val (car vals))
+         ((ok outcome) (exec-expression-list (cdr exprs) cstate (1- limit)))
+         (cstate (eoutcome->cstate outcome))
+         (vals (eoutcome->values outcome)))
+      (make-eoutcome :cstate cstate :values (cons val vals)))
+    :measure (nfix limit))
+
+  (define exec-funcall ((call funcallp) (cstate cstatep) (limit natp))
+    :returns (outcome eoutcome-resultp)
+    :short "Execute a function call."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We evaluate the argument expressions,
+       and then we delegate the rest to @(tsee exec-function)."))
+    (b* (((when (zp limit)) (err (list :limit (funcall-fix call))))
+         ((funcall call) call)
+         ((ok outcome) (exec-expression-list call.args cstate (1- limit)))
+         (cstate (eoutcome->cstate outcome))
+         (vals (eoutcome->values outcome)))
+      (exec-function call.name vals cstate (1- limit)))
+    :measure (nfix limit))
+
+  (define exec-function ((fun identifierp)
+                         (args value-listp)
+                         (cstate cstatep)
+                         (limit natp))
+    :returns (outcome eoutcome-resultp)
+    :short "Execution a function on some values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The code in this ACL2 function
+       could be inlined into @(tsee exec-funcall),
+       but it seems useful to have a separate ACL2 function
+       that takes values directly as arguments,
+       in case we want to formally talk about function calls."))
+    (b* (((when (zp limit)) (err (list :limit
+                                   (identifier-fix fun)
+                                   (value-list-fix args)))))
+      (err (list :todo (cstate-fix cstate))))
+    :measure (nfix limit))
+
+  (define exec-statement ((stmt statementp) (cstate cstatep) (limit natp))
+    :returns (outcome soutcome-resultp)
+    :short "Execute a statement."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A function definition
+       does not change the computation state
+       and terminates regularly.
+       It is like a no-op when it is encountered as a statement.
+       The function definitions in a block
+       are incorporated into the function state of the computation state
+       prior to starting to execute the statements in the block."))
+    (b* (((when (zp limit)) (err (list :limit (statement-fix stmt)))))
+      (statement-case
+       stmt
+       :block (err :todo)
+       :variable-single (err :todo)
+       :variable-multi (err :todo)
+       :assign-single (err :todo)
+       :assign-multi (err :todo)
+       :funcall (err :todo)
+       :if (err :todo)
+       :for (err :todo)
+       :switch (err :todo)
+       :leave (err :todo)
+       :break (err :todo)
+       :continue (err :todo)
+       :fundef (make-soutcome :cstate (cstate-fix cstate)
+                              :mode (mode-regular))))
+    :measure (nfix limit))
+
+  (define exec-statement-list ((stmts statement-listp)
+                               (cstate cstatep)
+                               (limit natp))
+    :returns (outcome soutcome-resultp)
+    :short "Execute a list of statements."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The statements are executed one after the other,
+       threading the computation state through.
+       As soon as a statement terminates non-regularly,
+       we stop executing the statements and return that non-regular mode.
+       Otherwise, the statement list is executed to completion regularly."))
+    (b* (((when (zp limit)) (err (list :limit (statement-list-fix stmts))))
+         ((when (endp stmts)) (make-soutcome :cstate (cstate-fix cstate)
+                                             :mode (mode-regular)))
+         ((ok outcome) (exec-statement (car stmts) cstate (1- limit)))
+         (mode (soutcome->mode outcome))
+         ((unless (mode-case mode :regular)) outcome)
+         (cstate (soutcome->cstate outcome)))
+      (exec-statement-list (cdr stmts) cstate (1- limit)))
+    :measure (nfix limit))
+
+  (define exec-block ((block blockp) (cstate cstatep) (limit natp))
+    :returns (outcome soutcome-resultp)
+    :short "Execute a block."
+    (b* (((when (zp limit)) (err (list :limit (block-fix block)))))
+      (err (list :todo (cstate-fix cstate))))
+    :measure (nfix limit))
+
+  ;; exec-swcase
+
+  ;; exec-swcase-list
+
+  :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards exec-expression)
+
+  (fty::deffixequiv-mutual exec))
