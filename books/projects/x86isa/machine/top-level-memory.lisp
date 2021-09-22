@@ -60,7 +60,7 @@
 
 (define address-aligned-p
   ((addr :type (signed-byte #.*max-linear-address-size*))
-   (operand-size :type (member 1 2 4 6 8 10 16))
+   (operand-size :type (member 1 2 4 6 8 10 16 32 64))
    (memory-ptr? booleanp))
   :inline t
   :no-function t
@@ -97,7 +97,7 @@
    it cannot be a memory pointer of the form m16:xx.
    </p>"
   (b* ((addr (the (signed-byte #.*max-linear-address-size*) addr))
-       (operand-size (the (integer 0 16) operand-size)))
+       (operand-size (the (integer 0 65) operand-size)))
     (case operand-size
       ;; Every byte access is always aligned.
       (1 t)
@@ -107,8 +107,7 @@
        (if (and memory-ptr?
                 (eql operand-size 4))
            (equal (logand addr #b1) 0) ; m16:16
-         (equal (logand addr
-                        (the (integer 0 15) (- operand-size 1)))
+         (equal (logand addr (the (integer 0 65) (- operand-size 1)))
                 0)))))
 
   ///
@@ -532,7 +531,7 @@
    access is allowed.  The only case in which it is not allowed is when a
    read access is attempted on an execute-only code segment, in 32-bit
    mode.  In 64-bit mode, the R bit of the code segment descriptor is
-   ignored; see Atmel manual, Dec'17, Volume 2, Section 4.8.1</p>"
+   ignored; see Intel manual, Dec'17, Volume 2, Section 4.8.1</p>"
   (b* (((when (and (/= proc-mode #.*64-bit-mode*)
                    (= seg-reg #.*cs*)
                    (eq r-x :r)
