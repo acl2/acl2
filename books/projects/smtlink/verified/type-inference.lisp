@@ -34,7 +34,6 @@
        (names (acl2::simple-term-vars goal))
        (type-judgements (type-judgement goal ''t options names state))
        (typed-term (make-typed-term :term goal :path-cond ''t
-
                                     :judgements type-judgements))
        ;; This check is probably provable
        ((unless (good-typed-term-p typed-term))
