@@ -332,47 +332,7 @@
                     (x nextst)))))))
 
 
-(define svex-identity-subst ((x svarlist-p))
-  :returns (subst svex-alist-p)
-  (pairlis$ (svarlist-fix x) (svarlist->svexes x))
-  ///
-  (defret svex-alist-keys-of-<fn>
-    (equal (svex-alist-keys subst) (svarlist-fix x)))
 
-  (local (defthm nth-of-svarlist->svexes
-           (equal (nth n (svarlist->svexes x))
-                  (and (< (nfix n) (len x))
-                       (svex-var (nth n x))))
-           :hints(("Goal" :in-theory (enable svarlist->svexes nth)))))
-
-
-  (local (defthm hons-assoc-equal-of-pairlis
-           (equal (hons-assoc-equal var (pairlis$ (svarlist-fix x)
-                                                  (svarlist->svexes x)))
-                  (and (member-equal var (svarlist-fix x))
-                       (cons var (svex-var var))))
-           :hints(("Goal" :in-theory (enable pairlis$ svarlist-fix svarlist->svexes)))))
-
-  (defret svex-lookup-of-<fn>
-    (equal (svex-lookup var subst)
-           (and (member-equal (svar-fix var) (svarlist-fix x))
-                (svex-var var)))
-    :hints(("Goal" :in-theory (e/d (svex-lookup) (len) ;; svarlist-fix svarlist->svexes
-                                   ))))
-
-  (local (include-book "std/lists/sets" :dir :system))
-
-  (local
-   (deflist svarlist :elt-type svar :true-listp t :elementp-of-nil nil))
-
-  (defcong set-equiv svex-alist-eval-equiv (svex-identity-subst x) 1
-    :hints (("goal" :in-theory (disable set-equiv svex-identity-subst))
-            (witness)))
-
-  (defthm svex-alist-eval-of-svex-identity-subst
-    (equal (svex-alist-eval (svex-identity-subst vars) env)
-           (svex-env-extract vars env))
-    :hints(("Goal" :in-theory (enable svex-alist-eval svex-env-extract pairlis$ svarlist-fix svarlist->svexes svex-eval)))))
 
 
 
