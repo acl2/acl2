@@ -33,6 +33,7 @@
 (include-book "kestrel/std/system/uguard-plus" :dir :system)
 (include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
+(include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "std/typed-alists/keyword-symbol-alistp" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "tools/trivial-ancestors-check" :dir :system)
@@ -3260,7 +3261,8 @@
        (hints `(("Goal"
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
-                             '(,fn
+                             '(not
+                               ,fn
                                ,@type-prescriptions
                                ,@returns-value-thms
                                ,@correct-thms
@@ -4135,7 +4137,9 @@
        (formula `(b* (,@formals-binding) (implies ,hyps ,concl)))
        (hints `(("Goal"
                  :do-not-induct t
-                 :in-theory (theory 'atc-all-rules)
+                 :in-theory (union-theories
+                             (theory 'atc-all-rules)
+                             '(not))
                  :use ((:instance (:guard-theorem ,fn)
                         :extra-bindings-ok ,@formals-binding))
                  :expand :lambdas)))
@@ -4224,7 +4228,8 @@
                  :do-not-induct t
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
-                             '(,@type-prescriptions
+                             '(not
+                               ,@type-prescriptions
                                ,@returns-value-thms
                                ,@correct-thms
                                ,@measure-thms))
@@ -4336,36 +4341,31 @@
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
-       (limit (atc-gen-term-with-read-var-compustate limit compst-var))
-       (guard (uguard+ fn wrld))
-       (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var))
-       (hyps (atc-gen-term-with-read-var-compustate hyps compst-var))
-       (hyps (conjoin (list `(compustatep ,compst-var)
-                            `(not
-                              (equal
-                               (compustate-frames-number ,compst-var) 0))
-                            hyps
-                            `(equal ,fenv-var (init-fun-env ,prog-const))
-                            `(integerp ,limit-var)
-                            `(>= ,limit-var ,limit))))
-       (hyps (flatten-ands-in-lit hyps))
-       (hyps `(and ,@(untranslate-lst hyps t wrld)))
-       (args (atc-gen-fn-args-deref-compustate formals pointers compst-var))
-       (args (atc-gen-terms-with-read-var-compustate args compst-var))
-       (binding (if (endp (cdr xforming))
-                    (car xforming)
-                  `(mv ,@xforming)))
+       ((mv formals-binding pointer-hyps)
+        (atc-gen-bindings-for-loop-formals formals pointers compst-var))
+       (hyps `(and (compustatep ,compst-var)
+                   (not (equal (compustate-frames-number ,compst-var) 0))
+                   (equal ,fenv-var (init-fun-env ,prog-const))
+                   (integerp ,limit-var)
+                   (>= ,limit-var ,limit)
+                   (and ,@pointer-hyps)
+                   ,(untranslate (uguard+ fn wrld) nil wrld)))
+       (xforming-binder (if (endp (cdr xforming))
+                            (car xforming)
+                          `(mv ,@xforming)))
        (final-compst (atc-gen-loop-final-compustate xforming compst-var))
        (concl-lemma `(equal (,exec-stmt-while-for-fn ,compst-var ,limit-var)
-                            (b* ((,binding (,fn ,@args)))
+                            (b* ((,xforming-binder (,fn ,@formals)))
                               (mv nil ,final-compst))))
        (concl-thm `(equal (exec-stmt-while ',loop-test
                                            ',loop-body
                                            ,compst-var
                                            ,fenv-var
                                            ,limit-var)
-                          (b* ((,binding (,fn ,@args)))
+                          (b* ((,xforming-binder (,fn ,@formals)))
                             (mv nil ,final-compst))))
+       (formula-lemma `(b* (,@formals-binding) (implies ,hyps ,concl-lemma)))
+       (formula-thm `(b* (,@formals-binding) (implies ,hyps ,concl-thm)))
        (called-fns (acl2::all-fnnames (ubody+ fn wrld)))
        (returns-value-thms
         (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns called-fns))
@@ -4377,16 +4377,12 @@
        (type-prescriptions
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
-       (tthm-instantiation
-        (alist-to-doublets (pairlis$ formals args)))
-       (gthm-instantiation (atc-gen-instantiation-for-loop-gthm formals
-                                                                pointers
-                                                                compst-var))
        (lemma-hints `(("Goal"
                        :do-not-induct t
                        :in-theory (union-theories
                                    (theory 'atc-all-rules)
-                                   '(,exec-stmt-while-for-fn
+                                   '(not
+                                     ,exec-stmt-while-for-fn
                                      ,@type-prescriptions
                                      ,@returns-value-thms
                                      ,@correct-thms
@@ -4395,26 +4391,29 @@
                                      ,correct-test-thm
                                      ,correct-body-thm))
                        :use ((:instance (:guard-theorem ,fn)
-                              :extra-bindings-ok ,@gthm-instantiation)
+                              :extra-bindings-ok ,@formals-binding)
                              (:instance ,termination-of-fn-thm
-                              :extra-bindings-ok ,@tthm-instantiation))
+                              :extra-bindings-ok ,@formals-binding))
                        :expand (:lambdas
-                                (,fn ,@args)))))
+                                (,fn ,@(fsublis-var-lst
+                                        (acl2::doublets-to-alist
+                                         formals-binding)
+                                        formals))))))
        (lemma-instructions
         `((:in-theory '(,exec-stmt-while-for-fn))
-          :induct
+          (:induct (,exec-stmt-while-for-fn ,compst-var ,limit-var))
           (:repeat (:prove :hints ,lemma-hints))))
        (thm-hints `(("Goal"
                      :in-theory nil
                      :use (,correct-lemma ,exec-stmt-while-for-fn-thm))))
        ((mv correct-lemma-event &)
         (evmac-generate-defthm correct-lemma
-                               :formula `(implies ,hyps ,concl-lemma)
+                               :formula formula-lemma
                                :instructions lemma-instructions
                                :enable nil))
        ((mv correct-thm-local-event correct-thm-exported-event)
         (evmac-generate-defthm correct-thm
-                               :formula `(implies ,hyps ,concl-thm)
+                               :formula formula-thm
                                :hints thm-hints
                                :enable nil))
        (local-events (list correct-lemma-event
