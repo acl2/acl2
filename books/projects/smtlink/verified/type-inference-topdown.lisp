@@ -852,8 +852,7 @@
                     "The input term is of wrong shape. It should look like ~
                      (typed-goal ...) ~%")
                 (value (list cl))))
-       ((unless (and (correct-typed-term tterm)
-                     (good-typed-term-p tterm)))
+       ((unless (good-typed-term-p tterm))
         (prog2$ (er hard? 'type-inference-topdown=>type-judge-topdown-cp
                     "Not a good-typed-term-p: ~q0" tterm)
                 (value (list cl))))
