@@ -18,6 +18,7 @@
 (include-book "pedersen-hash")
 (include-book "pedersen-hash-bound-properties")
 (include-book "pedersen-hash-injectivity-properties")
+(include-book "pedersen-hash-image-properties")
 (include-book "randomness-beacon")
 
 (include-book "gadgets/top")
