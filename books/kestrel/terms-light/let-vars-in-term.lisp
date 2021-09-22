@@ -22,7 +22,8 @@
 ;; Returns (mv non-trivial-formals non-trivial-args).
 (defun non-trivial-formals-and-args (formals args)
   (declare (xargs :guard (and (symbol-listp formals)
-                              (pseudo-term-listp args))))
+                              (true-listp args) ;; not necessarily pseudo-terms
+                              )))
   (if (endp formals)
       (mv nil nil)
     (b* ((formal (first formals))
@@ -34,6 +35,22 @@
           (mv cdr-formals cdr-args)
         (mv (cons formal cdr-formals)
             (cons arg cdr-args))))))
+
+(defthm symbol-listp-of-mv-nth-0-of-non-trivial-formals-and-args
+  (implies (symbol-listp formals)
+           (symbol-listp (mv-nth 0 (non-trivial-formals-and-args formals args)))))
+
+(defthm true-listp-of-mv-nth-0-of-non-trivial-formals-and-args
+  (implies (symbol-listp formals)
+           (true-listp (mv-nth 0 (non-trivial-formals-and-args formals args)))))
+
+(defthm true-listp-of-mv-nth-1-of-non-trivial-formals-and-args
+  (implies (true-listp args)
+           (true-listp (mv-nth 1 (non-trivial-formals-and-args formals args)))))
+
+(defthm pseudo-term-listp-of-mv-nth-1-of-non-trivial-formals-and-args
+  (implies (pseudo-term-listp args)
+           (pseudo-term-listp (mv-nth 1 (non-trivial-formals-and-args formals args)))))
 
 ;; Returns the members of formals that don't correspond to themselves in the args.
 (defun non-trivial-formals (formals args)
