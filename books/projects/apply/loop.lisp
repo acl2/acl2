@@ -78,7 +78,10 @@
 
 (encapsulate
   nil
-  (local (include-book "arithmetic-5/top" :dir :system))
+  ;; (local (include-book "arithmetic-5/top" :dir :system))
+  (local (include-book "arithmetic/top-with-meta" :dir :system))
+  (local (include-book "centaur/bitops/floor-mod" :dir :system))
+  (local (in-theory (disable floor mod)))
 
   (defthm member-equal-from-to-by-exact
     (implies (and (integerp i)
@@ -90,7 +93,11 @@
                        (<= i newv)
                        (<= newv j)
                        (equal (mod (- newv i) k) 0))))
-    :hints (("Goal" :in-theory (disable |(integerp (- x))|))))
+    :hints (("goal" :induct (from-to-by i j k)
+             :expand ((MOD (+ (- I) NEWV) K)
+                      (mod 0 k))))
+    ;; :hints (("Goal" :in-theory (disable |(integerp (- x))|)))
+    )
 
   (defthm integerp==>numerator-=-x
     (implies (integerp x)
@@ -123,7 +130,8 @@
 
 (encapsulate
   nil
-  (local (include-book "arithmetic-5/top" :dir :system))
+  (local (include-book
+          "arithmetic-5/top" :dir :system))
 
   (defthm member-pos-from-to-by-exact
     (implies (and (integerp i)

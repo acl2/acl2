@@ -83,6 +83,9 @@
 
 (include-book "apply-prim-support")
 
+;; Supports an optimization for the proof of APPLY$-PRIM-META-FN-CORRECT.
+(local (include-book "centaur/misc/evaluator-metatheorems" :dir :system))
+
 ; We locally re-enable runes that were disabled during the build.
 (local (in-theory (enable apply$-primp badge-prim)))
 
@@ -247,6 +250,11 @@
         ((apply$-prim fn args)
          ,@(strip-cars *first-order-like-terms-and-out-arities*))))
 
+    (local
+     (with-output
+       :off (prove event)
+       (def-evaluator-expander apply$-prim-meta-fn-ev)))
+
 ; To prove correctness we need to force car-cadr-caddr-etc
 ; to open.
 
@@ -287,6 +295,15 @@
        (equal (hide x) x)
        :hints (("Goal" :expand ((hide x))))))
 
+    (local
+     (make-event
+      `(defthm open-apply$-prim-of-quote
+         (implies (syntaxp (quotep fn))
+                  (equal (apply$-prim fn args)
+                         ,(body 'apply$-prim t (w state))))
+         :hints (("goal" :expand ((apply$-prim fn args))
+                  :in-theory nil)))))
+
     (defthm apply$-prim-meta-fn-correct
       (equal (apply$-prim-meta-fn-ev term alist)
              (apply$-prim-meta-fn-ev (meta-apply$-prim term)
@@ -298,17 +315,31 @@
                                     (:definition hons-get)
                                     (:definition meta-apply$-prim)
                                     (:definition quotep)
+                                    ;; (:definition apply$-prim)
                                     (:executable-counterpart car)
                                     (:executable-counterpart cdr)
-                                    (:executable-counterpart consp))))
+                                    (:executable-counterpart consp)
+                                    ;; (:meta apply$-prim-meta-fn-ev-expander-correct)
+                                    )))
         (:in-theory (union-theories
-                     '((:definition apply$-prim)
-                       (:definition n-car-cadr-caddr-etc))
+                     '(; (:definition apply$-prim)
+                       (:rewrite open-apply$-prim-of-quote)
+                       (:definition n-car-cadr-caddr-etc)
+                       ;; (:definition hons-equal)
+                       ;; (:definition hons-get)
+                       (:meta apply$-prim-meta-fn-ev-expander-correct)
+                       (:REWRITE APPLY$-PRIM-META-FN-EV-CONSTRAINT-8)
+                       n-car-cadr-caddr-etc-opener
+                       (natp)
+                       ;; apply$-prim-meta-fn-ev-constraint-1
+                       apply$-prim-meta-fn-ev-constraint-2
+                       quotep
+                       car-cons cdr-cons hide-is-identity)
                      (union-theories *expandable-boot-strap-non-rec-fns*
-                                     (set-difference-theories
-                                      (current-theory :here)
-                                      (cons '(:rewrite default-car)
-                                            (function-theory :here))))))
+                                     (intersection-theories
+                                       (current-theory :here)
+                                       (executable-counterpart-theory :here))))
+                     )
         (:repeat :prove)))
       :rule-classes ((:meta :trigger-fns (apply$-prim))))
 
