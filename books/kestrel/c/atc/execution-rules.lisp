@@ -1166,7 +1166,19 @@
                     (if test
                         (sint 1)
                       (sint 0))))
-    :enable sint-from-boolean-with-error))
+    :enable sint-from-boolean-with-error)
+
+  (defruled exec-expr-pure-when-cond
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :cond)
+                  (equal test (exec-test
+                               (exec-expr-pure (expr-cond->test e) compst)))
+                  (booleanp test))
+             (equal (exec-expr-pure e compst)
+                    (if test
+                        (exec-expr-pure (expr-cond->then e) compst)
+                      (exec-expr-pure (expr-cond->else e) compst))))
+    :enable exec-expr-pure))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1180,4 +1192,5 @@
     exec-expr-pure-when-binary-logand
     exec-expr-pure-when-binary-logor
     sint-from-boolean-with-error-when-booleanp
+    exec-expr-pure-when-cond
     (:e member-equal)))

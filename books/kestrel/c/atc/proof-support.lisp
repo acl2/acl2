@@ -934,6 +934,7 @@
                                ; exec-expr-pure-when-strict-pure-binary,
                                ; exec-expr-pure-when-binary-longand,
                                ; exec-expr-pure-when-binary-longor
+       exec-expr-pure-unroll-5 ; superseded by exec-expr-pure-when-cond
        exec-expr-pure-list-base-2
        exec-stmt-base-1
        exec-stmt-base-2
