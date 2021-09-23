@@ -143,3 +143,8 @@
                   2))
   :hints (("Goal" :expand (pseudo-termp term)
            :in-theory (enable pseudo-termp))))
+
+;; Kept disabled for speed
+(defthmd pseudo-termp-when-symbolp
+  (implies (symbolp term)
+           (pseudo-termp term)))
