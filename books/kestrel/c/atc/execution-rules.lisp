@@ -1081,6 +1081,14 @@
              (equal (exec-expr-pure e compst)
                     (exec-unary (expr-unary->op e)
                                 (exec-expr-pure (expr-unary->arg e) compst))))
+    :enable exec-expr-pure)
+
+  (defruled exec-expr-pure-when-cast
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :cast))
+             (equal (exec-expr-pure e compst)
+                    (exec-cast (expr-cast->type e)
+                               (exec-expr-pure (expr-cast->arg e) compst))))
     :enable exec-expr-pure))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1089,4 +1097,5 @@
   '(exec-expr-pure-when-ident
     exec-expr-pure-when-const
     exec-expr-pure-when-arrsub
-    exec-expr-pure-when-unary))
+    exec-expr-pure-when-unary
+    exec-expr-pure-when-cast))

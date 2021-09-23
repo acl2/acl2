@@ -929,6 +929,7 @@
        exec-expr-pure-base-8
        exec-expr-pure-unroll-1 ; superseded by exec-expr-pure-when-arrsub
        exec-expr-pure-unroll-2 ; superseded by exec-expr-pure-when-unary
+       exec-expr-pure-unroll-3 ; superseded by exec-expr-pure-when-cast
        exec-expr-pure-list-base-2
        exec-stmt-base-1
        exec-stmt-base-2
