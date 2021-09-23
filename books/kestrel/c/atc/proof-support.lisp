@@ -919,7 +919,8 @@
        Experiments sugges that it does speed up some proofs quite a bit."))
     (set-difference-eq
      ',(get-ruleset 'atc-openers (w state))
-     '(exec-expr-pure-base-3
+     '(exec-expr-pure-base-1 ; superseded by exec-expr-pure-when-ident
+       exec-expr-pure-base-3
        exec-expr-pure-base-4
        exec-expr-pure-base-5
        exec-expr-pure-base-6
@@ -2319,6 +2320,7 @@
           *atc-exec-cast-rules*
           *atc-exec-binary-strict-pure-rules*
           *atc-exec-test-rules*
+          *atc-exec-expr-pure-rules*
           *atc-opener-rules*
           *atc-abstract-syntax-rules*
           *atc-other-executable-counterpart-rules*

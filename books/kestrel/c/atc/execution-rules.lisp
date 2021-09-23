@@ -1046,3 +1046,20 @@
     exec-test-when-ulongp
     exec-test-when-sllongp
     exec-test-when-ullongp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exec-expr-pure-rules
+  :short "Rules for @(tsee exec-expr-pure)."
+
+  (defruled exec-expr-pure-when-ident
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :ident))
+             (equal (exec-expr-pure e compst)
+                    (exec-ident (expr-ident->get e) compst)))
+    :enable exec-expr-pure))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-exec-expr-pure-rules*
+  '(exec-expr-pure-when-ident))
