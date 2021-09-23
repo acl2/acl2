@@ -184,10 +184,22 @@
 (define write-vars-values ((vars identifier-listp)
                            (vals value-listp)
                            (cstate cstatep))
-  :guard (= (len vars) (len vals))
   :returns (new-cstate cstate-resultp)
   :short "Lift @(tsee write-var-value) to lists."
-  (b* (((when (endp vars)) (cstate-fix cstate))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if there are extra values or extra variables.
+     Their number must be the same.
+     We make this a run-time check because
+     it is part of the conditions to be checked
+     by the defensive dynamic semantics."))
+  (b* (((when (endp vars))
+        (if (endp vals)
+            (cstate-fix cstate)
+          (err (list :extra-values (value-list-fix vals)))))
+       ((when (endp vals))
+        (err (list :extra-variables (identifier-list-fix vars))))
        ((ok cstate) (write-var-value (car vars) (car vals) cstate)))
     (write-vars-values (cdr vars) (cdr vals) cstate))
   :hooks (:fix))
@@ -217,10 +229,22 @@
 (define add-vars-values ((vars identifier-listp)
                          (vals value-listp)
                          (cstate cstatep))
-  :guard (= (len vars) (len vals))
   :returns (new-cstate cstate-resultp)
   :short "Lift @(tsee add-var-value) to lists."
-  (b* (((when (endp vars)) (cstate-fix cstate))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if there are extra values or extra variables.
+     Their number must be the same.
+     We make this a run-time check because
+     it is part of the conditions to be checked
+     by the defensive dynamic semantics."))
+  (b* (((when (endp vars))
+        (if (endp vals)
+            (cstate-fix cstate)
+          (err (list :extra-values (value-list-fix vals)))))
+       ((when (endp vals))
+        (err (list :extra-variables (identifier-list-fix vars))))
        ((ok cstate) (add-var-value (car vars) (car vals) cstate)))
     (add-vars-values (cdr vars) (cdr vals) cstate))
   :hooks (:fix))
