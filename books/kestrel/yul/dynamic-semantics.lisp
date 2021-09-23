@@ -496,6 +496,10 @@
     :long
     (xdoc::topstring
      (xdoc::p
+      "A @('leave'), @('break'), or @('continue') statement
+       leaves the computation state unchanged
+       and returns the corresponding mode.")
+     (xdoc::p
       "A function definition
        does not change the computation state
        and terminates regularly.
@@ -515,9 +519,12 @@
        :if (err :todo)
        :for (err :todo)
        :switch (err :todo)
-       :leave (err :todo)
-       :break (err :todo)
-       :continue (err :todo)
+       :leave (make-soutcome :cstate (cstate-fix cstate)
+                             :mode (mode-leave))
+       :break (make-soutcome :cstate (cstate-fix cstate)
+                             :mode (mode-break))
+       :continue (make-soutcome :cstate (cstate-fix cstate)
+                                :mode (mode-continue))
        :fundef (make-soutcome :cstate (cstate-fix cstate)
                               :mode (mode-regular))))
     :measure (nfix limit))
