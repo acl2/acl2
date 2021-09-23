@@ -15,6 +15,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; To generate additional theorems.
+(local
+ (fty::deflist value-list
+   :elt-type value
+   :true-listp t
+   :elementp-of-nil nil
+   :pred value-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ dynamic-semantics
   :parents (yul)
   :short "Dynamic semantics of Yul."
@@ -320,6 +330,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define init-local ((in-vars identifier-listp)
+                    (in-vals value-listp)
+                    (out-vars identifier-listp)
+                    (cstate cstatep))
+  :returns (new-cstate cstate-resultp)
+  :short "Initialize the local state of a computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used at the beginning of the execution of a function call.
+     The local state is set to consist of
+     the input and output variables of the fucntion,
+     which are passed as the @('in-vars') and @('out-vars') parameters.
+     The input variables are initialized with the input values,
+     passed as the @('in-vals') parameters;
+     note that we implicitly check that the number of input variables
+     matches the number of input values.
+     The output variables are initialized to 0."))
+  (b* ((cstate (change-cstate cstate :local nil))
+       ((ok cstate) (add-vars-values in-vars in-vals cstate))
+       ((ok cstate) (add-vars-values out-vars
+                                     (repeat (len out-vars) (value 0))
+                                     cstate)))
+    cstate)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum mode
   :short "Fixtype of modes."
   :long
@@ -507,11 +545,21 @@
        could be inlined into @(tsee exec-funcall),
        but it seems useful to have a separate ACL2 function
        that takes values directly as arguments,
-       in case we want to formally talk about function calls."))
+       in case we want to formally talk about function calls.")
+     (xdoc::p
+      "We initialize the local state with the function's inputs and outputs.
+       We run the function body on the resulting computation state.
+       We read the final values of the function output variables
+       and return them as result.
+       We also restore the computation state prior to the function call."))
     (b* (((when (zp limit)) (err (list :limit
                                    (identifier-fix fun)
-                                   (value-list-fix args)))))
-      (err (list :todo (cstate-fix cstate))))
+                                   (value-list-fix args))))
+         ((ok (funinfo info)) (get-fun fun cstate))
+         ((ok cstate1) (init-local info.inputs args info.outputs cstate))
+         ((ok cstate1) (exec-block info.body cstate1 (1- limit)))
+         ((ok vals) (read-vars-values info.outputs cstate1)))
+      (make-eoutcome :cstate (cstate-fix cstate) :values vals))
     :measure (nfix limit))
 
   (define exec-statement ((stmt statementp) (cstate cstatep) (limit natp))
