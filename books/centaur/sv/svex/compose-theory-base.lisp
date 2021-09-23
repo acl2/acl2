@@ -38,6 +38,7 @@
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "arithmetic/top" :Dir :system))
+(local (include-book "clause-processors/find-subterms" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 
@@ -869,7 +870,16 @@
   ;;                                       (neteval-ordering-compile val network))))
   ;;   :hints(("Goal" :in-theory (enable pair-keys svex-alist-compose svex-alist-reduce svex-acons))))
   (verify-guards neteval-ordering-compile)
-  )
+
+
+  (defret eval-lookup-of-neteval-ordering-compile
+    (equal (svex-eval (svex-lookup key compose) env)
+           (svex-env-lookup key (neteval-ordering-eval x network env)))
+    :hints (("goal" :use ((:instance svex-env-lookup-of-svex-alist-eval
+                           (k key) (x compose)))
+             :in-theory (disable svex-env-lookup-of-svex-alist-eval
+                                 <fn>)))
+    :fn neteval-ordering-compile))
 
 
 (defthm svex-lookup-of-append
