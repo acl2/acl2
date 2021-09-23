@@ -920,6 +920,7 @@
     (set-difference-eq
      ',(get-ruleset 'atc-openers (w state))
      '(exec-expr-pure-base-1 ; superseded by exec-expr-pure-when-ident
+       exec-expr-pure-base-2 ; superseded by exec-expr-pure-when-const
        exec-expr-pure-base-3
        exec-expr-pure-base-4
        exec-expr-pure-base-5

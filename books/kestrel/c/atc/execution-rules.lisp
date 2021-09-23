@@ -1057,9 +1057,17 @@
                   (equal (expr-kind e) :ident))
              (equal (exec-expr-pure e compst)
                     (exec-ident (expr-ident->get e) compst)))
+    :enable exec-expr-pure)
+
+  (defruled exec-expr-pure-when-const
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :const))
+             (equal (exec-expr-pure e compst)
+                    (exec-const (expr-const->get e))))
     :enable exec-expr-pure))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atc-exec-expr-pure-rules*
-  '(exec-expr-pure-when-ident))
+  '(exec-expr-pure-when-ident
+    exec-expr-pure-when-const))
