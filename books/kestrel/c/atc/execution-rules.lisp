@@ -1064,10 +1064,20 @@
                   (equal (expr-kind e) :const))
              (equal (exec-expr-pure e compst)
                     (exec-const (expr-const->get e))))
+    :enable exec-expr-pure)
+
+  (defruled exec-expr-pure-when-arrsub
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :arrsub))
+             (equal (exec-expr-pure e compst)
+                    (exec-arrsub (exec-expr-pure (expr-arrsub->arr e) compst)
+                                 (exec-expr-pure (expr-arrsub->sub e) compst)
+                                 (compustate->heap compst))))
     :enable exec-expr-pure))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atc-exec-expr-pure-rules*
   '(exec-expr-pure-when-ident
-    exec-expr-pure-when-const))
+    exec-expr-pure-when-const
+    exec-expr-pure-when-arrsub))
