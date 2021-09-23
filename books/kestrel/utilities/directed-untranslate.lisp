@@ -1578,7 +1578,7 @@
                                               wrld
                                               state-vars)
                                (and (null erp)
-                                    (not (intersectp-eq ignore-vars tbody)))))
+                                    (not (intersectp-eq ignore-vars (all-vars tbody))))))
                             `(mv-let ,vars
                                ,mv-let-body
                                ,@(and ignore-vars
