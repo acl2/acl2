@@ -55,6 +55,7 @@
       `(revert-world ,form)
     form))
 
+;; Returns a progn.
 (defun deftransformation-fn (name required-args optional-args-and-values
                                   pass-print ;whether to pass the print arg to the -event function (will come after the optional args)
                                   pass-context ;whether to pass the context arg to the -event function (will come just before state)
@@ -286,15 +287,17 @@
 ;; Expects there to be a function called <name>-event.  It's params should be:
 ;; ...required-args...
 ;; ...optional-args...
-;; verbose (maybe)
-;; ctx (maybe)
+;; verbose (if :pass-print is true)
+;; ctx (if :pass-context is true)
 ;; state
-(defmacro deftransformation (name required-args optional-args-and-values
-                                  &key
-                                  (pass-print 'nil) ;whether to pass the print arg to the -event function (will come after the optional args)
-                                  (pass-context 'nil) ;whether to pass the context arg to the -event function (will come just before state)
-                                  (revert-world 'nil)
-                                  )
+(defmacro deftransformation (name ; name of the transformation (e.g., expand-lets)
+                             required-args ; a list of symbols, usually contains at least FN for the name of the function being transformed
+                             optional-args-and-values ; a list of doublets (optional arg names and their quoted default values)
+                             &key
+                             (pass-print 'nil) ;whether to pass the print arg to the -event function (will come after the optional args)
+                             (pass-context 'nil) ;whether to pass the context arg to the -event function (will come just before state)
+                             (revert-world 'nil)
+                             )
   ;; This previously used make-event to avoid a problem with calling FLPR in safe mode via fmt1-to-string.
   (deftransformation-fn name required-args optional-args-and-values pass-print pass-context revert-world))
 
