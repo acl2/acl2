@@ -644,7 +644,7 @@
          (formula `(implies ,hyps
                             (equal (exec-unary op x)
                                    (,op-type x))))
-         (event `(defrule ,name
+         (event `(defruled ,name
                    ,formula
                    :enable (exec-unary
                             ,exec-op
@@ -752,7 +752,7 @@
          (formula `(implies ,hyps
                             (equal (exec-cast ',dtyname x)
                                    ,rhs)))
-         (event `(defrule ,name
+         (event `(defruled ,name
                    ,formula
                    :enable (exec-cast))))
       (mv name event)))
@@ -837,7 +837,7 @@
          (formula `(implies ,hyps
                             (equal (exec-binary-strict-pure op x y)
                                    (,op-ltype-rtype x y))))
-         (event `(defrule ,name
+         (event `(defruled ,name
                    ,formula
                    :enable (exec-binary-strict-pure
                             ,exec-op
@@ -1073,6 +1073,14 @@
                     (exec-arrsub (exec-expr-pure (expr-arrsub->arr e) compst)
                                  (exec-expr-pure (expr-arrsub->sub e) compst)
                                  (compustate->heap compst))))
+    :enable exec-expr-pure)
+
+  (defruled exec-expr-pure-when-unary
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :unary))
+             (equal (exec-expr-pure e compst)
+                    (exec-unary (expr-unary->op e)
+                                (exec-expr-pure (expr-unary->arg e) compst))))
     :enable exec-expr-pure))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1080,4 +1088,5 @@
 (defval *atc-exec-expr-pure-rules*
   '(exec-expr-pure-when-ident
     exec-expr-pure-when-const
-    exec-expr-pure-when-arrsub))
+    exec-expr-pure-when-arrsub
+    exec-expr-pure-when-unary))
