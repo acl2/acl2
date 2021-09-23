@@ -280,8 +280,8 @@
              ',(xdoc-for-macro-general-form name
                                             (append required-args
                                                     '(&key)
-                                                    optional-args-and-values
-                                                    '((show-only 'nil) (print ':result)))
+                                                    '((show-only 'nil) (print ':result)) ; optional args that are always present
+                                                    optional-args-and-values)
                                             (symbol-package-name name))))))))
 
 ;; Expects there to be a function called <name>-event.  It's params should be:
