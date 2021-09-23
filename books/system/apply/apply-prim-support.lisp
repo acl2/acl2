@@ -141,12 +141,12 @@
 
 ; But establishing the equivalence of the :logic and :exec branches under the
 ; guard is actually pretty subtle so we do it in the following encapsulate.
-
+#+acl2-devel
 (encapsulate
   nil
 
-  (local
-   (include-book "arithmetic-5/top" :dir :system))
+  #+acl2-devel  ;; for build machinery
+  (local (include-book "arithmetic-5/top" :dir :system))
 
   (local
    (defthm alt-def-from-to-by
