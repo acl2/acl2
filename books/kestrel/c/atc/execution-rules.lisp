@@ -712,6 +712,99 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-exec-cast-rules-generation
+  :short "Code to generate the rules for executing cast operations."
+
+  (define atc-exec-cast-rules-gen ((dtype typep) (stype typep))
+    :guard (and (type-integerp dtype)
+                (type-integerp stype))
+    :returns (mv (name symbolp) (event pseudo-event-formp))
+    :parents nil
+    (b* ((dfixtype (atc-integer-type-fixtype dtype))
+         (sfixtype (atc-integer-type-fixtype stype))
+         (spred (pack sfixtype 'p))
+         (name (pack 'exec-cast-of- dfixtype '-when- spred))
+         (dtyname (integer-type-to-type-name dtype))
+         (dtype-from-stype (pack dfixtype '-from- sfixtype))
+         (dtype-from-stype-okp (pack dtype-from-stype '-okp))
+         (hyps (cond
+                ((and (not (equal dtype stype))
+                      (or (type-case dtype :schar)
+                          (and (type-case dtype :sshort)
+                               (not (member-eq (type-kind stype)
+                                               '(:schar))))
+                          (and (type-case dtype :sint)
+                               (not (member-eq (type-kind stype)
+                                               '(:schar :sshort))))
+                          (and (type-case dtype :slong)
+                               (not (member-eq (type-kind stype)
+                                               '(:schar :sshort :sint))))
+                          (and (type-case dtype :sllong)
+                               (not (member-eq (type-kind stype)
+                                               '(:schar :sshort
+                                                 :sint :slong))))))
+                 `(and (,spred x)
+                       (,dtype-from-stype-okp x)))
+                (t `(,spred x))))
+         (rhs (if (equal dtype stype)
+                  'x
+                `(,dtype-from-stype x)))
+         (formula `(implies ,hyps
+                            (equal (exec-cast ',dtyname x)
+                                   ,rhs)))
+         (event `(defrule ,name
+                   ,formula
+                   :enable (exec-cast))))
+      (mv name event)))
+
+  (define atc-exec-cast-rules-gen-loop-stypes ((dtype typep)
+                                               (stypes type-listp))
+    :guard (and (type-integerp dtype)
+                (type-integer-listp stypes))
+    :returns (mv (names symbol-listp)
+                 (events pseudo-event-form-listp))
+    :parents nil
+    (b* (((when (endp stypes)) (mv nil nil))
+         ((mv name event) (atc-exec-cast-rules-gen dtype
+                                                   (car stypes)))
+         ((mv names events) (atc-exec-cast-rules-gen-loop-stypes dtype
+                                                                 (cdr stypes))))
+      (mv (cons name names) (cons event events))))
+
+  (define atc-exec-cast-rules-gen-loop-dtypes ((dtypes type-listp)
+                                               (stypes type-listp))
+    :guard (and (type-integer-listp dtypes)
+                (type-integer-listp stypes))
+    :returns (mv (names symbol-listp)
+                 (events pseudo-event-form-listp))
+    :parents nil
+    (b* (((when (endp dtypes)) (mv nil nil))
+         ((mv names events) (atc-exec-cast-rules-gen-loop-stypes (car dtypes)
+                                                                 stypes))
+         ((mv names1 events1) (atc-exec-cast-rules-gen-loop-dtypes (cdr dtypes)
+                                                                   stypes)))
+      (mv (append names names1) (append events events1))))
+
+  (define atc-exec-cast-rules-gen-all ()
+    :returns (event pseudo-event-formp)
+    :parents nil
+    (b* (((mv names events)
+          (atc-exec-cast-rules-gen-loop-dtypes *atc-integer-types*
+                                               *atc-integer-types*)))
+      `(progn
+         (defsection atc-exec-cast-rules
+           :short "Rules for executing casts."
+           ,@events)
+         (defval *atc-exec-cast-rules*
+           :short "List of rules for executing casts."
+           '(,@names))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event (atc-exec-cast-rules-gen-all))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-exec-binary-strict-pure-rules-generation
   :short "Code to generate the rules for executing
           strict pure binary operations."

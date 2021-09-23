@@ -1109,8 +1109,6 @@
   '(condexpr
     declar
     assign
-    exec-iconst
-    exec-cast
     sint-from-boolean
     sint-dec-const
     sint-oct-const
@@ -2318,6 +2316,7 @@
           *atc-exec-const-rules*
           *atc-exec-arrsub-rules*
           *atc-exec-unary-rules*
+          *atc-exec-cast-rules*
           *atc-exec-binary-strict-pure-rules*
           *atc-exec-test-rules*
           *atc-opener-rules*
