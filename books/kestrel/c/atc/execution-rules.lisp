@@ -1051,6 +1051,18 @@
 
 (defsection atc-exec-expr-pure-rules
   :short "Rules for @(tsee exec-expr-pure)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are opener rules, since @(tsee exec-expr-pure) is recursive.
+     We use binding hypotheses for non-strict expressions,
+     to avoid symbolically executing the same expression multiple times.
+     For @('&&') and @('||'),
+     we use the auxiliary function @('sint-from-boolean-with-error')
+     as an intermediate rewriting stage.
+     We also include the executable counterpart of @(tsee member-equal),
+     needed to discharge the hypothesis of
+     the rule for strict pure binary expressions."))
 
   (defruled exec-expr-pure-when-ident
     (implies (and (syntaxp (quotep e))
@@ -1089,7 +1101,72 @@
              (equal (exec-expr-pure e compst)
                     (exec-cast (expr-cast->type e)
                                (exec-expr-pure (expr-cast->arg e) compst))))
-    :enable exec-expr-pure))
+    :enable exec-expr-pure)
+
+  (defruled exec-expr-pure-when-strict-pure-binary
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :binary)
+                  (equal op (expr-binary->op e))
+                  (member-equal (binop-kind op)
+                                '(:mul :div :rem :add :sub :shl :shr
+                                  :lt :gt :le :ge :eq :ne
+                                  :bitand :bitxor :bitior)))
+             (equal (exec-expr-pure e compst)
+                    (exec-binary-strict-pure op
+                                             (exec-expr-pure (expr-binary->arg1 e)
+                                                             compst)
+                                             (exec-expr-pure (expr-binary->arg2 e)
+                                                             compst))))
+    :enable (exec-expr-pure binop-purep))
+
+  (defund sint-from-boolean-with-error (test)
+    (if (errorp test)
+        test
+      (if test
+          (sint 1)
+        (sint 0))))
+
+  (defruled exec-expr-pure-when-binary-logand
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :binary)
+                  (equal op (expr-binary->op e))
+                  (equal (binop-kind op) :logand)
+                  (equal test1 (exec-test
+                                (exec-expr-pure (expr-binary->arg1 e)
+                                                compst)))
+                  (booleanp test1))
+             (equal (exec-expr-pure e compst)
+                    (if test1
+                        (sint-from-boolean-with-error
+                         (exec-test
+                          (exec-expr-pure (expr-binary->arg2 e) compst)))
+                      (sint 0))))
+    :enable (exec-expr-pure binop-purep sint-from-boolean-with-error))
+
+  (defruled exec-expr-pure-when-binary-logor
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :binary)
+                  (equal op (expr-binary->op e))
+                  (equal (binop-kind op) :logor)
+                  (equal test1 (exec-test
+                                (exec-expr-pure (expr-binary->arg1 e)
+                                                compst)))
+                  (booleanp test1))
+             (equal (exec-expr-pure e compst)
+                    (if test1
+                        (sint 1)
+                      (sint-from-boolean-with-error
+                       (exec-test
+                        (exec-expr-pure (expr-binary->arg2 e) compst))))))
+    :enable (exec-expr-pure binop-purep sint-from-boolean-with-error))
+
+  (defruled sint-from-boolean-with-error-when-booleanp
+    (implies (booleanp test)
+             (equal (sint-from-boolean-with-error test)
+                    (if test
+                        (sint 1)
+                      (sint 0))))
+    :enable sint-from-boolean-with-error))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1098,4 +1175,9 @@
     exec-expr-pure-when-const
     exec-expr-pure-when-arrsub
     exec-expr-pure-when-unary
-    exec-expr-pure-when-cast))
+    exec-expr-pure-when-cast
+    exec-expr-pure-when-strict-pure-binary
+    exec-expr-pure-when-binary-logand
+    exec-expr-pure-when-binary-logor
+    sint-from-boolean-with-error-when-booleanp
+    (:e member-equal)))

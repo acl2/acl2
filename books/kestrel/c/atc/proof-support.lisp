@@ -930,6 +930,10 @@
        exec-expr-pure-unroll-1 ; superseded by exec-expr-pure-when-arrsub
        exec-expr-pure-unroll-2 ; superseded by exec-expr-pure-when-unary
        exec-expr-pure-unroll-3 ; superseded by exec-expr-pure-when-cast
+       exec-expr-pure-unroll-4 ; superseded by
+                               ; exec-expr-pure-when-strict-pure-binary,
+                               ; exec-expr-pure-when-binary-longand,
+                               ; exec-expr-pure-when-binary-longor
        exec-expr-pure-list-base-2
        exec-stmt-base-1
        exec-stmt-base-2
@@ -1648,7 +1652,7 @@
              sllongp
              pointerp))
 
-  (defruled not-errorp-when-value-listp
+  (defruled not-errorp-when-value-listp-rewrite
     (implies (value-listp x)
              (not (errorp x)))
     :enable errorp)
@@ -1741,7 +1745,7 @@
     not-zp-of-limit-minus-const
     value-result-fix-when-valuep
     not-errorp-when-valuep-rewrite
-    not-errorp-when-value-listp
+    not-errorp-when-value-listp-rewrite
     not-errorp-when-scopep
     not-errorp-when-scope-listp
     not-errorp-when-schar-arrayp
