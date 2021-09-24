@@ -38,7 +38,16 @@
      in the ACL2 functions from which C code is represented:
      thus, the rewrite rules serve to turn (the execution of) the C code
      into the ACL2 terms from which the C code is generated,
-     which is at the core of proving the correctness of the generated C code."))
+     which is at the core of proving the correctness of the generated C code.")
+   (xdoc::p
+    "For recursive ACL2 functions that model C execution
+     (e.g. @(tsee exec-expr-pure)),
+     we introduce opener rules,
+     which include @(tsee syntaxp) hypotheses requiring that
+     the C abstract syntax being executed is a quoted constant.
+     Some of these opener rules include binding hypotheses,
+     which avoid symbolically executing the same pieces of C abstract syntax
+     multiple times in some situations."))
   :order-subtopics t
   :default-parent t)
 
@@ -1054,10 +1063,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are opener rules, since @(tsee exec-expr-pure) is recursive.
-     We use binding hypotheses for non-strict expressions,
-     to avoid symbolically executing the same expression multiple times.
-     For @('&&') and @('||'),
+    "For @('&&') and @('||'),
      we use the auxiliary function @('sint-from-boolean-with-error')
      as an intermediate rewriting stage.
      We also include the executable counterpart of @(tsee member-equal),
