@@ -849,12 +849,6 @@
   (def-ruleset atc-openers nil)
 
   (progn
-    (defopeners exec-expr-pure
-      :hyps ((syntaxp (quotep e)))
-      :disable t)
-    (add-to-ruleset atc-openers (defopeners-names exec-expr-pure)))
-
-  (progn
     (defopeners exec-expr-pure-list
       :hyps ((syntaxp (quotep es)))
       :disable t)
@@ -919,23 +913,7 @@
        Experiments sugges that it does speed up some proofs quite a bit."))
     (set-difference-eq
      ',(get-ruleset 'atc-openers (w state))
-     '(exec-expr-pure-base-1 ; superseded by exec-expr-pure-when-ident
-       exec-expr-pure-base-2 ; superseded by exec-expr-pure-when-const
-       exec-expr-pure-base-3
-       exec-expr-pure-base-4
-       exec-expr-pure-base-5
-       exec-expr-pure-base-6
-       exec-expr-pure-base-7
-       exec-expr-pure-base-8
-       exec-expr-pure-unroll-1 ; superseded by exec-expr-pure-when-arrsub
-       exec-expr-pure-unroll-2 ; superseded by exec-expr-pure-when-unary
-       exec-expr-pure-unroll-3 ; superseded by exec-expr-pure-when-cast
-       exec-expr-pure-unroll-4 ; superseded by
-                               ; exec-expr-pure-when-strict-pure-binary,
-                               ; exec-expr-pure-when-binary-longand,
-                               ; exec-expr-pure-when-binary-longor
-       exec-expr-pure-unroll-5 ; superseded by exec-expr-pure-when-cond
-       exec-expr-pure-list-base-2
+     '(exec-expr-pure-list-base-2
        exec-stmt-base-1
        exec-stmt-base-2
        exec-stmt-base-6
