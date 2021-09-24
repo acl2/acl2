@@ -148,7 +148,7 @@
 
  <li>A better untranslation might be obtainable when the simplified
  term (@('sterm')) has similar structure to a proper subterm of the original
- term @('@('tterm')').  As it stands now, the original untranslated term @('uterm')
+ term (@('tterm')).  As it stands now, the original untranslated term @('uterm')
  is probably useless in that case.</li>
 
  <li>More macros could quite reasonably be handled, but aren't yet, such as

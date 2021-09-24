@@ -428,14 +428,14 @@
                  )))
 
 ;; The core function for copy-function (does nothing).
-;; Core functions always take: fn, body, wrld, and transformation-specific args (none for copy-function).
+;; Core functions always take: fn, untranslated-body, wrld, and then transformation-specific args (none for copy-function).
 (defun copy-function-core-function (fn
-                                    body ;untranslated
+                                    untranslated-body
                                     wrld)
   (declare (xargs :guard (and (symbolp fn)
                               (plist-worldp wrld)))
            (ignore fn wrld))
-  body)
+  untranslated-body)
 
 ;; Copy-function is needed by most other tranformations, because they call
 ;; copy-function-in-defun for clique functions they do not intend to change.

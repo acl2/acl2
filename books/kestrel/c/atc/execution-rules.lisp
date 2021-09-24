@@ -38,9 +38,46 @@
      in the ACL2 functions from which C code is represented:
      thus, the rewrite rules serve to turn (the execution of) the C code
      into the ACL2 terms from which the C code is generated,
-     which is at the core of proving the correctness of the generated C code."))
+     which is at the core of proving the correctness of the generated C code.")
+   (xdoc::p
+    "For recursive ACL2 functions that model C execution
+     (e.g. @(tsee exec-expr-pure)),
+     we introduce opener rules,
+     which include @(tsee syntaxp) hypotheses requiring that
+     the C abstract syntax being executed is a quoted constant.
+     Some of these opener rules include binding hypotheses,
+     which avoid symbolically executing the same pieces of C abstract syntax
+     multiple times in some situations."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-syntaxp-hyp-for-expr-pure ((var symbolp))
+  :returns (hyp pseudo-termp :hyp (symbolp var))
+  :short "Construct a @(tsee syntaxp) hypothesis for
+          a symbolic execution rule for pure expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use these hypotheses to ensure that
+     certain execution subterms are rewritten
+     to their shallow embedding counterparts
+     before their enclosing terms are rewritten.
+     These hypotheses require that the (sub)term in question
+     does not contain any of the execution functions
+     that are expected to be rewritten
+     to their shallow embedding counterparts."))
+  `(syntaxp (or (atom ,var)
+                (not (member-eq ,var '(exec-ident
+                                       exec-const
+                                       exec-iconst
+                                       exec-arrsub
+                                       exec-unary
+                                       exec-cast
+                                       exec-binary-strict-pure
+                                       exec-test
+                                       exec-expr-pure))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -557,7 +594,9 @@
          (atype-array-read-itype
           (pack afixtype '-array-read- ifixtype))
          (name (pack 'exec-arrsub-when- apred '-and- ipred))
-         (formula `(implies (and (pointerp x)
+         (formula `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+                                 ,(atc-syntaxp-hyp-for-expr-pure 'y)
+                                 (pointerp x)
                                  (,apred (deref x heap))
                                  (,ipred y)
                                  (,atype-array-itype-index-okp (deref x heap) y))
@@ -644,7 +683,7 @@
          (formula `(implies ,hyps
                             (equal (exec-unary op x)
                                    (,op-type x))))
-         (event `(defrule ,name
+         (event `(defruled ,name
                    ,formula
                    :enable (exec-unary
                             ,exec-op
@@ -712,6 +751,99 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-exec-cast-rules-generation
+  :short "Code to generate the rules for executing cast operations."
+
+  (define atc-exec-cast-rules-gen ((dtype typep) (stype typep))
+    :guard (and (type-integerp dtype)
+                (type-integerp stype))
+    :returns (mv (name symbolp) (event pseudo-event-formp))
+    :parents nil
+    (b* ((dfixtype (atc-integer-type-fixtype dtype))
+         (sfixtype (atc-integer-type-fixtype stype))
+         (spred (pack sfixtype 'p))
+         (name (pack 'exec-cast-of- dfixtype '-when- spred))
+         (dtyname (integer-type-to-type-name dtype))
+         (dtype-from-stype (pack dfixtype '-from- sfixtype))
+         (dtype-from-stype-okp (pack dtype-from-stype '-okp))
+         (hyps (cond
+                ((and (not (equal dtype stype))
+                      (or (type-case dtype :schar)
+                          (and (type-case dtype :sshort)
+                               (not (member-eq (type-kind stype)
+                                               '(:schar))))
+                          (and (type-case dtype :sint)
+                               (not (member-eq (type-kind stype)
+                                               '(:schar :sshort))))
+                          (and (type-case dtype :slong)
+                               (not (member-eq (type-kind stype)
+                                               '(:schar :sshort :sint))))
+                          (and (type-case dtype :sllong)
+                               (not (member-eq (type-kind stype)
+                                               '(:schar :sshort
+                                                 :sint :slong))))))
+                 `(and (,spred x)
+                       (,dtype-from-stype-okp x)))
+                (t `(,spred x))))
+         (rhs (if (equal dtype stype)
+                  'x
+                `(,dtype-from-stype x)))
+         (formula `(implies ,hyps
+                            (equal (exec-cast ',dtyname x)
+                                   ,rhs)))
+         (event `(defruled ,name
+                   ,formula
+                   :enable (exec-cast))))
+      (mv name event)))
+
+  (define atc-exec-cast-rules-gen-loop-stypes ((dtype typep)
+                                               (stypes type-listp))
+    :guard (and (type-integerp dtype)
+                (type-integer-listp stypes))
+    :returns (mv (names symbol-listp)
+                 (events pseudo-event-form-listp))
+    :parents nil
+    (b* (((when (endp stypes)) (mv nil nil))
+         ((mv name event) (atc-exec-cast-rules-gen dtype
+                                                   (car stypes)))
+         ((mv names events) (atc-exec-cast-rules-gen-loop-stypes dtype
+                                                                 (cdr stypes))))
+      (mv (cons name names) (cons event events))))
+
+  (define atc-exec-cast-rules-gen-loop-dtypes ((dtypes type-listp)
+                                               (stypes type-listp))
+    :guard (and (type-integer-listp dtypes)
+                (type-integer-listp stypes))
+    :returns (mv (names symbol-listp)
+                 (events pseudo-event-form-listp))
+    :parents nil
+    (b* (((when (endp dtypes)) (mv nil nil))
+         ((mv names events) (atc-exec-cast-rules-gen-loop-stypes (car dtypes)
+                                                                 stypes))
+         ((mv names1 events1) (atc-exec-cast-rules-gen-loop-dtypes (cdr dtypes)
+                                                                   stypes)))
+      (mv (append names names1) (append events events1))))
+
+  (define atc-exec-cast-rules-gen-all ()
+    :returns (event pseudo-event-formp)
+    :parents nil
+    (b* (((mv names events)
+          (atc-exec-cast-rules-gen-loop-dtypes *atc-integer-types*
+                                               *atc-integer-types*)))
+      `(progn
+         (defsection atc-exec-cast-rules
+           :short "Rules for executing casts."
+           ,@events)
+         (defval *atc-exec-cast-rules*
+           :short "List of rules for executing casts."
+           '(,@names))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event (atc-exec-cast-rules-gen-all))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-exec-binary-strict-pure-rules-generation
   :short "Code to generate the rules for executing
           strict pure binary operations."
@@ -744,7 +876,7 @@
          (formula `(implies ,hyps
                             (equal (exec-binary-strict-pure op x y)
                                    (,op-ltype-rtype x y))))
-         (event `(defrule ,name
+         (event `(defruled ,name
                    ,formula
                    :enable (exec-binary-strict-pure
                             ,exec-op
@@ -953,3 +1085,148 @@
     exec-test-when-ulongp
     exec-test-when-sllongp
     exec-test-when-ullongp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exec-expr-pure-rules
+  :short "Rules for @(tsee exec-expr-pure)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For @('&&') and @('||'),
+     we use the auxiliary function @('sint-from-boolean-with-error')
+     as an intermediate rewriting stage.
+     We also include the executable counterpart of @(tsee member-equal),
+     needed to discharge the hypothesis of
+     the rule for strict pure binary expressions."))
+
+  (defruled exec-expr-pure-when-ident
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :ident))
+             (equal (exec-expr-pure e compst)
+                    (exec-ident (expr-ident->get e) compst)))
+    :enable exec-expr-pure)
+
+  (defruled exec-expr-pure-when-const
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :const))
+             (equal (exec-expr-pure e compst)
+                    (exec-const (expr-const->get e))))
+    :enable exec-expr-pure)
+
+  (defruled exec-expr-pure-when-arrsub
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :arrsub))
+             (equal (exec-expr-pure e compst)
+                    (exec-arrsub (exec-expr-pure (expr-arrsub->arr e) compst)
+                                 (exec-expr-pure (expr-arrsub->sub e) compst)
+                                 (compustate->heap compst))))
+    :enable exec-expr-pure)
+
+  (defruled exec-expr-pure-when-unary
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :unary))
+             (equal (exec-expr-pure e compst)
+                    (exec-unary (expr-unary->op e)
+                                (exec-expr-pure (expr-unary->arg e) compst))))
+    :enable exec-expr-pure)
+
+  (defruled exec-expr-pure-when-cast
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :cast))
+             (equal (exec-expr-pure e compst)
+                    (exec-cast (expr-cast->type e)
+                               (exec-expr-pure (expr-cast->arg e) compst))))
+    :enable exec-expr-pure)
+
+  (defruled exec-expr-pure-when-strict-pure-binary
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :binary)
+                  (equal op (expr-binary->op e))
+                  (member-equal (binop-kind op)
+                                '(:mul :div :rem :add :sub :shl :shr
+                                  :lt :gt :le :ge :eq :ne
+                                  :bitand :bitxor :bitior)))
+             (equal (exec-expr-pure e compst)
+                    (exec-binary-strict-pure op
+                                             (exec-expr-pure (expr-binary->arg1 e)
+                                                             compst)
+                                             (exec-expr-pure (expr-binary->arg2 e)
+                                                             compst))))
+    :enable (exec-expr-pure binop-purep))
+
+  (defund sint-from-boolean-with-error (test)
+    (if (errorp test)
+        test
+      (if test
+          (sint 1)
+        (sint 0))))
+
+  (defruled exec-expr-pure-when-binary-logand
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :binary)
+                  (equal op (expr-binary->op e))
+                  (equal (binop-kind op) :logand)
+                  (equal test1 (exec-test
+                                (exec-expr-pure (expr-binary->arg1 e)
+                                                compst)))
+                  (booleanp test1))
+             (equal (exec-expr-pure e compst)
+                    (if test1
+                        (sint-from-boolean-with-error
+                         (exec-test
+                          (exec-expr-pure (expr-binary->arg2 e) compst)))
+                      (sint 0))))
+    :enable (exec-expr-pure binop-purep sint-from-boolean-with-error))
+
+  (defruled exec-expr-pure-when-binary-logor
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :binary)
+                  (equal op (expr-binary->op e))
+                  (equal (binop-kind op) :logor)
+                  (equal test1 (exec-test
+                                (exec-expr-pure (expr-binary->arg1 e)
+                                                compst)))
+                  (booleanp test1))
+             (equal (exec-expr-pure e compst)
+                    (if test1
+                        (sint 1)
+                      (sint-from-boolean-with-error
+                       (exec-test
+                        (exec-expr-pure (expr-binary->arg2 e) compst))))))
+    :enable (exec-expr-pure binop-purep sint-from-boolean-with-error))
+
+  (defruled sint-from-boolean-with-error-when-booleanp
+    (implies (booleanp test)
+             (equal (sint-from-boolean-with-error test)
+                    (if test
+                        (sint 1)
+                      (sint 0))))
+    :enable sint-from-boolean-with-error)
+
+  (defruled exec-expr-pure-when-cond
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :cond)
+                  (equal test (exec-test
+                               (exec-expr-pure (expr-cond->test e) compst)))
+                  (booleanp test))
+             (equal (exec-expr-pure e compst)
+                    (if test
+                        (exec-expr-pure (expr-cond->then e) compst)
+                      (exec-expr-pure (expr-cond->else e) compst))))
+    :enable exec-expr-pure))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-exec-expr-pure-rules*
+  '(exec-expr-pure-when-ident
+    exec-expr-pure-when-const
+    exec-expr-pure-when-arrsub
+    exec-expr-pure-when-unary
+    exec-expr-pure-when-cast
+    exec-expr-pure-when-strict-pure-binary
+    exec-expr-pure-when-binary-logand
+    exec-expr-pure-when-binary-logor
+    sint-from-boolean-with-error-when-booleanp
+    exec-expr-pure-when-cond
+    (:e member-equal)))

@@ -228,6 +228,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define integer-type-to-type-name ((type typep))
+  :guard (type-integerp type)
+  :returns (tyname tynamep)
+  :short "Turn an integer type into a type name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Our model of type names does not cover all the types we model;
+     specifically, our type names only have one level of pointers allowed,
+     while our types allow multiple levels.
+     So at the moment we cannot have a total function
+     from all our types to our type names.
+     For now we actually only need the mapping for integer types,
+     so we define this function on integer types for now."))
+  (case (type-kind type)
+    (:char (make-tyname :specs (tyspecseq-char) :pointerp nil))
+    (:schar (make-tyname :specs (tyspecseq-schar) :pointerp nil))
+    (:uchar (make-tyname :specs (tyspecseq-uchar) :pointerp nil))
+    (:sshort (make-tyname :specs (tyspecseq-sshort) :pointerp nil))
+    (:ushort (make-tyname :specs (tyspecseq-ushort) :pointerp nil))
+    (:sint (make-tyname :specs (tyspecseq-sint) :pointerp nil))
+    (:uint (make-tyname :specs (tyspecseq-uint) :pointerp nil))
+    (:slong (make-tyname :specs (tyspecseq-slong) :pointerp nil))
+    (:ulong (make-tyname :specs (tyspecseq-ulong) :pointerp nil))
+    (:sllong (make-tyname :specs (tyspecseq-sllong) :pointerp nil))
+    (:ullong (make-tyname :specs (tyspecseq-ullong) :pointerp nil))
+    (t (prog2$ (impossible) (irr-tyname))))
+  :guard-hints (("Goal" :in-theory (enable type-integerp
+                                           type-signed-integerp
+                                           type-unsigned-integerp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atc-integer-types*
   :short "List of the supported C integer types except plain @('char')."
   :long
