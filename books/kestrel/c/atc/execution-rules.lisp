@@ -868,7 +868,9 @@
                                                       '(:add :sub :mul))
                                            (type-signed-integerp type)))
                                   (pack op-ltype-rtype '-okp)))
-         (hyps `(and (equal op (,(pack 'binop- op-kind)))
+         (hyps `(and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+                     ,(atc-syntaxp-hyp-for-expr-pure 'y)
+                     (equal op (,(pack 'binop- op-kind)))
                      (,lpred x)
                      (,rpred y)
                      ,@(and op-ltype-rtype-okp
