@@ -54,7 +54,7 @@ traditional way of introducing macros.  @('Defmac') is similar to @('defmacro')
 except that the resulting macro may execute significantly more efficiently, as
 explained below.  You can use @('defmac') just as you would normally use
 @('defmacro'), though your @('defmac') form should include the declaration
-@('(declare (xargs :mode :program)) to be truly compatible with @('defmacro'),
+@('(declare (xargs :mode :program))') to be truly compatible with @('defmacro'),
 which allows calls of @(':')@(see program) mode functions in its body.</p>
 
 <p>A @('defmac') form generates the following form, which introduces a @(see
