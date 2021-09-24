@@ -1907,7 +1907,7 @@
 
   (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
-  (defruledl montogomery-mul-nonneg-of-scalar-addition
+  (defruledl twisted-edwards-mul-nonneg-of-scalar-addition
     (implies (and (twisted-edwards-add-associativity)
                   (twisted-edwards-curve-completep curve)
                   (pointp point)
@@ -1933,7 +1933,8 @@
                      (twisted-edwards-mul scalar1 point curve)
                      (twisted-edwards-mul scalar2 point curve)
                      curve)))
-    :enable (twisted-edwards-mul montogomery-mul-nonneg-of-scalar-addition))
+    :enable (twisted-edwards-mul
+             twisted-edwards-mul-nonneg-of-scalar-addition))
 
   (defruledl twisted-edwards-mul-of-scalar-addition-when-nonneg-converse
     (implies (and (twisted-edwards-add-associativity)
@@ -1964,7 +1965,7 @@
                      (twisted-edwards-mul scalar2 point curve)
                      curve)))
     :enable (twisted-edwards-mul
-             montogomery-mul-nonneg-of-scalar-addition))
+             twisted-edwards-mul-nonneg-of-scalar-addition))
 
   (local
    (acl2::defisar
