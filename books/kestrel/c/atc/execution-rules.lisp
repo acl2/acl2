@@ -676,7 +676,8 @@
                                       '(:schar :sshort :sint :slong :sllong
                                         :uchar :ushort))
                            (pack op-type '-okp)))
-         (hyps `(and (equal op (,(pack 'unop- op-kind)))
+         (hyps `(and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+                     (equal op (,(pack 'unop- op-kind)))
                      (,pred x)
                      ,@(and op-type-okp
                             `((,op-type-okp x)))))
