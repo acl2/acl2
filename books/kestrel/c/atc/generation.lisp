@@ -3246,6 +3246,9 @@
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
+       (instantiation
+        (atc-gen-instantiation-deref-compustate pointers compst-var))
+       (limit-inst (fsublis-var (acl2::doublets-to-alist instantiation) limit))
        (args (atc-gen-fn-args-deref-compustate formals pointers compst-var))
        (guard (uguard+ fn wrld))
        (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var))
@@ -3253,7 +3256,7 @@
                             hyps
                             `(equal ,fenv-var (init-fun-env ,prog-const))
                             `(integerp ,limit-var)
-                            `(>= ,limit-var ,limit))))
+                            `(>= ,limit-var ,limit-inst))))
        (hyps (flatten-ands-in-lit hyps))
        (hyps `(and ,@(untranslate-lst hyps t wrld)))
        (concl `(equal
@@ -3274,8 +3277,6 @@
        (type-prescriptions
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
-       (instantiation
-        (atc-gen-instantiation-deref-compustate pointers compst-var))
        (hints `(("Goal"
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
