@@ -290,7 +290,7 @@
        ;; The final answer from running the decomposed circuit the second
        ;; time, after feeding its partial products back into itself.
        (svex-env-lookup 'o out-alist2)
-       
+
        ;; The answer from running the original circuit.
        (svex-env-lookup 'o orig-out-alist)))
     :hints ((svtv-decomp-hints);; ("goal"
@@ -799,7 +799,7 @@ results from the step 1 run. That is, the composed run has a call like this:</p>
 
 <p>The composition has several <it>override value</it> variables such as
 @('(:var "pp01_c2" . -6)') and <it>override test</it> variables such as
-@('(:var "pp01_c2" . -7)) bound (the -6 and -7 are just bitwise encodings of
+@('(:var "pp01_c2" . -7)') bound (the -6 and -7 are just bitwise encodings of
 several switches pertaining to the variable, including whether it is an
 override value or override test variable).  The bindings for these variables
 are taken from the step 1 run. What we need to show is that overriding this
@@ -825,7 +825,7 @@ taking the values from, which we do as follows:</p>
 
 <p>The proof of @('boothpipe-decomp-is-boothpipe') and similar theorems are
 automated with a computed hint @('(svtv-decomp-hints)').  This computed hint
-macro takes two arguments @(':enables') and @(':disables), each a list of rules
+macro takes two arguments @(':enables') and @(':disables'), each a list of rules
 that should be enabled/disabled in the first simplification phase of the
 proof.</p>
 
