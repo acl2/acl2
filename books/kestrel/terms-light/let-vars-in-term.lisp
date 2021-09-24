@@ -52,6 +52,11 @@
   (implies (pseudo-term-listp args)
            (pseudo-term-listp (mv-nth 1 (non-trivial-formals-and-args formals args)))))
 
+(defthm len-of-mv-nth-1-of-non-trivial-formals-and-args
+  (equal (len (mv-nth 1 (non-trivial-formals-and-args formals args)))
+         (len (mv-nth 0 (non-trivial-formals-and-args formals args))))
+  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
+
 ;; Returns the members of formals that don't correspond to themselves in the args.
 (defun non-trivial-formals (formals args)
   (declare (xargs :guard (and (symbol-listp formals)
