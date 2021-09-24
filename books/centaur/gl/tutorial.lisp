@@ -155,7 +155,7 @@ integers as</p>
 <p>Where @('lsb-bits') is a list of Boolean expressions that represent the
 two's complement bits of the number.  The bits are in lsb-first order, and the
 last, most significant bit is the sign bit.  For instance, if @('p') is the
-following @(':g-integer),</p>
+following @(':g-integer'),</p>
 
 @({
     p = (:g-integer true   false   A & B   false)

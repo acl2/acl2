@@ -862,13 +862,13 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
 
        (defsection rest-events-1
          ,@(and want-xdoc-p `(:extension ,name))
-         ;; It seems OK to do this even if we're in program mode, because in that
-         ;; case you shouldn't be trying to provide return-value theorems, right?
          ,@(and returns-induct
                 `((make-event
-                   (let ((event (returnspec-flag-thm
-                                 ',thm-macro ',gutslist ',returns-hints (w state))))
-                     `(with-output :stack :pop ,event)))))
+                   (if (logic-mode-p ',(defguts->name-fn (car gutslist)) (w state))
+                       (let ((event (returnspec-flag-thm
+                                     ',thm-macro ',gutslist ',returns-hints (w state))))
+                         `(with-output :stack :pop ,event))
+                     (value '(value-triple :invisible))))))
          (with-output :stack :pop (progn . ,rest-events1))
          ,@fn-sections
          (with-output :stack :pop (progn . ,rest-events2)))

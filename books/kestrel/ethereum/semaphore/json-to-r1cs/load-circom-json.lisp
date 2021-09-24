@@ -113,7 +113,8 @@
   (declare (xargs :stobjs state
                   :guard (stringp cj-filename)
                   :verify-guards nil))
-  (b* (((mv cj state) (parse-file-as-json cj-filename state))
+  (b* (((mv erp cj state) (parse-file-as-json cj-filename state))
+       ((when erp) (mv erp nil nil state))
        (- (cw "Parsed JSON from ~x0.~%" cj-filename))
        ;; ((when erp) (mv erp nil nil state)) ;EM maybe do later
        ((mv constraints vars) (cj-to-r1cs cj))

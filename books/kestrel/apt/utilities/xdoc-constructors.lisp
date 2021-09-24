@@ -555,7 +555,7 @@
      Based on that, the text is slightly customized
      with plural for `generated functions' or not.")
    (xdoc::p
-    "The @(':additional-text) parameter of this macro
+    "The @(':additional-text') parameter of this macro
      must be either @('nil') (the default) or an XDOC tree.
      The tree (if any) is added at the end of the boilerplate text."))
   `(xdoc::desc

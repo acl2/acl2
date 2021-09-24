@@ -35,6 +35,7 @@
 (include-book "base-arithmetic" :ttags :all)
 (include-book "base-lists" :ttags :all)
 (include-book "acl2s/cgen/base-cgen-rules" :dir :system)
+(include-book "match" :ttags :all)
 
 (set-termination-method :ccg)
 

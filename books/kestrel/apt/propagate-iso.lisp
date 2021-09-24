@@ -47,6 +47,7 @@
 (include-book "kestrel/std/util/defiso" :dir :system)
 (include-book "kestrel/utilities/conjunctions" :dir :system)
 (include-book "kestrel/utilities/defun-forms" :dir :system)
+(include-book "kestrel/utilities/negate-term" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "tools/remove-hyps" :dir :system)
 (include-book "kestrel/utilities/make-and-nice" :dir :system)
