@@ -354,7 +354,7 @@
      in the @(tsee encapsulate)),
      or just @('core') otherwise.
      @('core') should have one of the following forms,
-     where @('arg1'), ..., @('argN') are the formal arguments of @('fn;),
+     where @('arg1'), ..., @('argN') are the formal arguments of @('fn'),
      and @('matrix') is the <see topic='@(url term)'>translated</see> matrix:")
    (xdoc::ul
     (xdoc::li
