@@ -433,6 +433,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define jubjub-neg ((point jubjub-pointp))
+  :returns (-point jubjub-pointp
+                   :hyp (jubjub-pointp point)
+                   :hints (("Goal" :in-theory (enable jubjub-pointp
+                                                      point-on-jubjub-p))))
+  :short "Group negation, on Jubjub."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the inverse with respect to @(tsee jubjub-add)."))
+  (ecurve::twisted-edwards-neg point (jubjub-curve))
+  :guard-hints (("Goal" :in-theory (enable jubjub-pointp point-on-jubjub-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *jubjub-l*
   :short "The constant @($\\ell_\\mathbb{J}$) [ZPS:5.4.9.3]."
   256)
