@@ -1194,7 +1194,7 @@ only member is @('a')."
 
 (defsection sbitset-union
   :parents (sbitsets)
-  :short "@('(sbitset-union X Y ...) constructs the set @('X U Y U ...')."
+  :short "@('(sbitset-union X Y ...)') constructs the set @('X U Y U ...')."
   :long "@(def sbitset-union)"
 
   (define sbitset-union-exec ((x sbitsetp)
@@ -1347,7 +1347,7 @@ only member is @('a')."
 
 (defsection sbitset-intersect
   :parents (sbitsets)
-  :short "@('(sbitset-intersect X Y ...) constructs the set @('X \\intersect Y
+  :short "@('(sbitset-intersect X Y ...)') constructs the set @('X \\intersect Y
 \\intersect ...')."
   :long "@(def sbitset-intersect)"
 
