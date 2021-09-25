@@ -1317,3 +1317,32 @@
   :short "List of @(tsee exec-expr-call-or-pure) rules."
   '(exec-expr-call-or-pure-when-pure
     exec-expr-call-of-pure-when-call))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exec-expr-asg-rules
+  :short "Rules for @(tsee exec-expr-asg)."
+
+  (defruled exec-expr-asg-open
+    (implies (and (syntaxp (quotep e))
+                  (not (zp limit))
+                  (equal (expr-kind e) :binary)
+                  (equal (binop-kind (expr-binary->op e)) :asg)
+                  (equal e1 (expr-binary->arg1 e))
+                  (equal (expr-kind e1) :ident)
+                  (equal val+compst1
+                         (exec-expr-call-or-pure (expr-binary->arg2 e)
+                                                 compst
+                                                 fenv
+                                                 (1- limit)))
+                  (equal val (mv-nth 0 val+compst1))
+                  (equal compst1 (mv-nth 1 val+compst1))
+                  (valuep val))
+             (equal (exec-expr-asg e compst fenv limit)
+                    (write-var (expr-ident->get e1) val compst1)))
+    :enable exec-expr-asg))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-exec-expr-asg-rules*
+  '(exec-expr-asg-open))
