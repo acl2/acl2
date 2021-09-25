@@ -1346,3 +1346,18 @@
 
 (defval *atc-exec-expr-asg-rules*
   '(exec-expr-asg-open))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atc-exec-fun-rules
+  :short "Rules for @(tsee exec-fun)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not have rules to open @(tsee exec-fun)
+     because we modularize the proofs so that
+     there is one theorem per non-recursive target function.
+     Thus, @(tsee exec-fun) only appears
+     in the formulas of the theorems for the non-recursive target functions,
+     and we expand that via an @(':expand') hint.
+     We have no rules for @(tsee exec-fun) as such.")))
