@@ -1218,13 +1218,15 @@
                         (exec-expr-pure (expr-binary->arg2 e) compst))))))
     :enable (exec-expr-pure binop-purep sint-from-boolean-with-error))
 
-  (defruled sint-from-boolean-with-error-when-booleanp
-    (implies (booleanp test)
-             (equal (sint-from-boolean-with-error test)
-                    (if test
-                        (sint 1)
-                      (sint 0))))
-    :enable sint-from-boolean-with-error)
+  (make-event
+   `(defruled sint-from-boolean-with-error-when-booleanp
+      (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'test)
+                    (booleanp test))
+               (equal (sint-from-boolean-with-error test)
+                      (if test
+                          (sint 1)
+                        (sint 0))))
+      :enable sint-from-boolean-with-error))
 
   (defruled exec-expr-pure-when-cond
     (implies (and (syntaxp (quotep e))
