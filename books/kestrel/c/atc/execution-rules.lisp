@@ -1243,6 +1243,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atc-exec-expr-pure-rules*
+  :short "List of rules for @(tsee exec-expr-pure)."
   '(exec-expr-pure-when-ident
     exec-expr-pure-when-const
     exec-expr-pure-when-arrsub
@@ -1254,3 +1255,33 @@
     sint-from-boolean-with-error-when-booleanp
     exec-expr-pure-when-cond
     (:e member-equal)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exec-expr-pure-list-rules
+  :short "Rules for @(tsee exec-expr-pure-list)."
+
+  (defruled exec-expr-pure-list-when-not-consp
+    (implies (and (syntaxp (quotep es))
+                  (not (consp es)))
+             (equal (exec-expr-pure-list es compst)
+                    nil))
+    :enable exec-expr-pure-list)
+
+  (defruled exec-expr-pure-list-when-consp
+    (implies (and (syntaxp (quotep es))
+                  (consp es)
+                  (equal val (exec-expr-pure (car es) compst))
+                  (valuep val)
+                  (equal vals (exec-expr-pure-list (cdr es) compst))
+                  (value-listp vals))
+             (equal (exec-expr-pure-list es compst)
+                    (cons val vals)))
+    :enable exec-expr-pure-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-exec-expr-pure-list-rules*
+  :short "List of rules for @(tsee exec-expr-pure-list)."
+  '(exec-expr-pure-list-when-not-consp
+    exec-expr-pure-list-when-consp))
