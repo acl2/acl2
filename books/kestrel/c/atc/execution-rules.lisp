@@ -1458,3 +1458,51 @@
     exec-stmt-when-while
     exec-stmt-when-return
     (:e value-optionp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exec-block-item-rules
+  :short "Rules for @(tsee exec-block-item)."
+
+  (defruled exec-block-item-when-declon
+    (implies (and (syntaxp (quotep item))
+                  (not (zp limit))
+                  (equal (block-item-kind item) :declon)
+                  (equal declon (block-item-declon->get item))
+                  (equal val+compst1
+                         (exec-expr-call-or-pure (declon->init declon)
+                                                 compst
+                                                 fenv
+                                                 (1- limit)))
+                  (equal val (mv-nth 0 val+compst1))
+                  (equal compst1 (mv-nth 1 val+compst1))
+                  (valuep val)
+                  (equal declor (declon->declor declon))
+                  (equal (type-of-value val)
+                         (type-name-to-type
+                          (make-tyname :specs (declon->type declon)
+                                       :pointerp (declor->pointerp declor))))
+                  (equal compst2
+                         (create-var (declor->ident declor) val compst1))
+                  (compustatep compst2))
+             (equal (exec-block-item item compst fenv limit)
+                    (mv nil compst2)))
+    :enable exec-block-item)
+
+  (defruled exex-block-item-when-stmt
+    (implies (and (syntaxp (quotep item))
+                  (not (zp limit))
+                  (equal (block-item-kind item) :stmt))
+             (equal (exec-block-item item compst fenv limit)
+                    (exec-stmt (block-item-stmt->get item)
+                               compst
+                               fenv
+                               (1- limit))))
+    :enable exec-block-item))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-exec-block-item-rules*
+  :short "List of rules for @(tsee exec-block-item)."
+  '(exec-block-item-when-declon
+    exex-block-item-when-stmt))

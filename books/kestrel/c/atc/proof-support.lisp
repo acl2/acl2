@@ -849,12 +849,6 @@
   (def-ruleset atc-openers nil)
 
   (progn
-    (defopeners exec-block-item
-      :hyps ((syntaxp item))
-      :disable t)
-    (add-to-ruleset atc-openers (defopeners-names exec-block-item)))
-
-  (progn
     (defopeners exec-block-item-list
       :hyps ((syntaxp (quotep items)))
       :disable t)
@@ -2273,6 +2267,7 @@
           *atc-exec-expr-call-or-pure-rules*
           *atc-exec-expr-asg-rules*
           *atc-exec-stmt-rules*
+          *atc-exec-block-item-rules*
           *atc-opener-rules*
           *atc-abstract-syntax-rules*
           *atc-other-executable-counterpart-rules*
