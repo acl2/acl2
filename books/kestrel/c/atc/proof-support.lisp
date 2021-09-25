@@ -849,12 +849,6 @@
   (def-ruleset atc-openers nil)
 
   (progn
-    (defopeners exec-stmt
-      :hyps ((syntaxp (quotep s)))
-      :disable t)
-    (add-to-ruleset atc-openers (defopeners-names exec-stmt)))
-
-  (progn
     (defopeners exec-stmt-while
       :hyps ((syntaxp (quotep test))
              (syntaxp (quotep body)))
@@ -895,11 +889,7 @@
        Experiments sugges that it does speed up some proofs quite a bit."))
     (set-difference-eq
      ',(get-ruleset 'atc-openers (w state))
-     '(exec-stmt-base-1
-       exec-stmt-base-2
-       exec-stmt-base-6
-       exec-stmt-base-8
-       exec-stmt-while-base-1
+     '(exec-stmt-while-base-1
        exec-stmt-while-base-2
        exec-stmt-while-base-4
        exec-block-item-list-base-1
@@ -2292,6 +2282,7 @@
           *atc-exec-expr-pure-list-rules*
           *atc-exec-expr-call-or-pure-rules*
           *atc-exec-expr-asg-rules*
+          *atc-exec-stmt-rules*
           *atc-opener-rules*
           *atc-abstract-syntax-rules*
           *atc-other-executable-counterpart-rules*
