@@ -1338,7 +1338,23 @@
                      (< x p))
                 (equal (mod x p) x))
        :prep-books
-       ((include-book "kestrel/arithmetic-light/mod" :dir :system))))))
+       ((include-book "kestrel/arithmetic-light/mod" :dir :system)))))
+
+  (defrule twisted-edwards-neg-is-zero-iff-zero
+    (implies (and (pointp point)
+                  (point-on-twisted-edwards-p point curve))
+             (equal (equal (twisted-edwards-neg point curve)
+                           (twisted-edwards-zero))
+                    (equal point (twisted-edwards-zero))))
+    :rule-classes nil
+    :enable (twisted-edwards-zero
+             pointp
+             point-on-twisted-edwards-p
+             point-finite
+             point-finite->x
+             point-finite->y)
+    :prep-books
+    ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
