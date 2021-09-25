@@ -849,12 +849,6 @@
   (def-ruleset atc-openers nil)
 
   (progn
-    (defopeners exec-expr-call-or-pure
-      :hyps ((syntaxp (quotep e)))
-      :disable t)
-    (add-to-ruleset atc-openers (defopeners-names exec-expr-call-or-pure)))
-
-  (progn
     (defopeners exec-expr-asg
       :hyps ((syntaxp (quotep e)))
       :disable t)
@@ -2302,6 +2296,7 @@
           *atc-exec-test-rules*
           *atc-exec-expr-pure-rules*
           *atc-exec-expr-pure-list-rules*
+          *atc-exec-expr-call-or-pure-rules*
           *atc-opener-rules*
           *atc-abstract-syntax-rules*
           *atc-other-executable-counterpart-rules*

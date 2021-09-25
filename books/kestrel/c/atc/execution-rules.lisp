@@ -1285,3 +1285,35 @@
   :short "List of rules for @(tsee exec-expr-pure-list)."
   '(exec-expr-pure-list-when-not-consp
     exec-expr-pure-list-when-consp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exec-expr-call-or-pure-rules
+  :short "Rules for @(tsee exec-expr-call-or-pure)."
+
+  (defruled exec-expr-call-or-pure-when-pure
+    (implies (and (syntaxp (quotep e))
+                  (not (zp limit))
+                  (not (equal (expr-kind e) :call))
+                  (compustatep compst))
+             (equal (exec-expr-call-or-pure e compst fenv limit)
+                    (mv (exec-expr-pure e compst)
+                        compst)))
+    :enable exec-expr-call-or-pure)
+
+  (defruled exec-expr-call-of-pure-when-call
+    (implies (and (syntaxp (quotep e))
+                  (not (zp limit))
+                  (equal (expr-kind e) :call)
+                  (equal vals (exec-expr-pure-list (expr-call->args e) compst))
+                  (value-listp vals))
+             (equal (exec-expr-call-or-pure e compst fenv limit)
+                    (exec-fun (expr-call->fun e) vals compst fenv (1- limit))))
+    :enable exec-expr-call-or-pure))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-exec-expr-call-or-pure-rules*
+  :short "List of @(tsee exec-expr-call-or-pure) rules."
+  '(exec-expr-call-or-pure-when-pure
+    exec-expr-call-of-pure-when-call))
