@@ -1346,7 +1346,6 @@
              (equal (equal (twisted-edwards-neg point curve)
                            (twisted-edwards-zero))
                     (equal point (twisted-edwards-zero))))
-    :rule-classes nil
     :enable (twisted-edwards-zero
              pointp
              point-on-twisted-edwards-p
@@ -2560,3 +2559,46 @@
                       (twisted-edwards-mul scalar point curve)))
       :from (:decompose-scalar :reduce-to-mod))
      (:qed)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled twisted-edwards-point-orderp-of-neg
+  :short "If a point has a certain order, its negation has the same order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The key property used here is that
+     the multiplication of a negated point
+     is the same as the negation of the multiplied point."))
+  (implies (and (twisted-edwards-add-associativity)
+                (twisted-edwards-curve-completep curve)
+                (pointp point)
+                (point-on-twisted-edwards-p point curve)
+                (natp order)
+                (twisted-edwards-point-orderp point order curve))
+           (twisted-edwards-point-orderp (twisted-edwards-neg point
+                                                              curve)
+                                         order
+                                         curve))
+  :enable (twisted-edwards-point-orderp
+           twisted-edwards-mul-of-neg)
+
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (twisted-edwards-add-associativity)
+                   (twisted-edwards-curve-completep curve)
+                   (pointp point)
+                   (point-on-twisted-edwards-p point curve)
+                   (natp order)
+                   (twisted-edwards-point-order-leastp point order curve))
+              (twisted-edwards-point-order-leastp (twisted-edwards-neg point
+                                                                       curve)
+                                                  order
+                                                  curve))
+     :expand (twisted-edwards-point-order-leastp (twisted-edwards-neg point
+                                                                      curve)
+                                                 order
+                                                 curve)
+     :enable (twisted-edwards-mul-of-neg
+              twisted-edwards-point-order-leastp-necc)
+     :disable twisted-edwards-neg-of-mul)))
