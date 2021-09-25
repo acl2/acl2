@@ -849,13 +849,6 @@
   (def-ruleset atc-openers nil)
 
   (progn
-    (defopeners exec-stmt-while
-      :hyps ((syntaxp (quotep test))
-             (syntaxp (quotep body)))
-      :disable t)
-    (add-to-ruleset atc-openers (defopeners-names exec-stmt-while)))
-
-  (progn
     (defopeners exec-block-item
       :hyps ((syntaxp item))
       :disable t)
@@ -889,10 +882,7 @@
        Experiments sugges that it does speed up some proofs quite a bit."))
     (set-difference-eq
      ',(get-ruleset 'atc-openers (w state))
-     '(exec-stmt-while-base-1
-       exec-stmt-while-base-2
-       exec-stmt-while-base-4
-       exec-block-item-list-base-1
+     '(exec-block-item-list-base-1
        exec-block-item-list-base-3
        init-scope-base-2))))
 
