@@ -433,6 +433,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define jubjub-neg ((point jubjub-pointp))
+  :returns (-point jubjub-pointp
+                   :hyp (jubjub-pointp point)
+                   :hints (("Goal" :in-theory (enable jubjub-pointp
+                                                      point-on-jubjub-p))))
+  :short "Group negation, on Jubjub."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the inverse with respect to @(tsee jubjub-add)."))
+  (ecurve::twisted-edwards-neg point (jubjub-curve))
+  :guard-hints (("Goal" :in-theory (enable jubjub-pointp point-on-jubjub-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled jubjub-mul-of-2
+  :short "Doubling a point is like adding the point to itself."
+  (implies (jubjub-pointp point)
+           (equal (jubjub-mul 2 point)
+                  (jubjub-add point point)))
+  :enable (jubjub-mul
+           jubjub-add
+           jubjub-pointp
+           point-on-jubjub-p
+           ecurve::twisted-edwards-mul
+           ecurve::twisted-edwards-mul-nonneg))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *jubjub-l*
   :short "The constant @($\\ell_\\mathbb{J}$) [ZPS:5.4.9.3]."
   256)
@@ -607,7 +636,17 @@
   (defrule jubjub-pointp-when-jubjub-r-pointp
     (implies (jubjub-r-pointp x)
              (jubjub-pointp x))
-    :enable ecurve::twisted-edwards-zero))
+    :enable ecurve::twisted-edwards-zero)
+
+  (defruled jubjub-point-of-neg
+    (implies (and (ecurve::twisted-edwards-add-associativity)
+                  (jubjub-r-pointp point))
+             (jubjub-r-pointp (jubjub-neg point)))
+    :enable (jubjub-r-pointp
+             jubjub-neg
+             jubjub-pointp
+             point-on-jubjub-p
+             ecurve::twisted-edwards-point-orderp-of-neg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
