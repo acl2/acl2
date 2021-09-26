@@ -849,12 +849,6 @@
   (def-ruleset atc-openers nil)
 
   (progn
-    (defopeners exec-block-item-list
-      :hyps ((syntaxp (quotep items)))
-      :disable t)
-    (add-to-ruleset atc-openers (defopeners-names exec-block-item-list)))
-
-  (progn
     (defopeners init-scope
       :hyps ((syntaxp formals))
       :disable t)
@@ -876,9 +870,7 @@
        Experiments sugges that it does speed up some proofs quite a bit."))
     (set-difference-eq
      ',(get-ruleset 'atc-openers (w state))
-     '(exec-block-item-list-base-1
-       exec-block-item-list-base-3
-       init-scope-base-2))))
+     '(init-scope-base-2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2268,6 +2260,7 @@
           *atc-exec-expr-asg-rules*
           *atc-exec-stmt-rules*
           *atc-exec-block-item-rules*
+          *atc-exec-block-item-list-rules*
           *atc-opener-rules*
           *atc-abstract-syntax-rules*
           *atc-other-executable-counterpart-rules*

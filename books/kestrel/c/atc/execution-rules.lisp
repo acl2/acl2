@@ -1506,3 +1506,42 @@
   :short "List of rules for @(tsee exec-block-item)."
   '(exec-block-item-when-declon
     exex-block-item-when-stmt))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exec-block-item-list-rules
+  :short "Rules for @(tsee exec-block-item-list)."
+
+  (defruled exec-block-item-list-when-not-consp
+    (implies (and (syntaxp (quotep items))
+                  (not (zp limit))
+                  (not (consp items))
+                  (compustatep compst))
+             (equal (exec-block-item-list items compst fenv limit)
+                    (mv nil compst)))
+    :enable exec-block-item-list)
+
+  (defruled exec-block-item-list-when-consp
+    (implies (and (syntaxp (quotep items))
+                  (not (zp limit))
+                  (consp items)
+                  (equal val?+compst1
+                         (exec-block-item (car items) compst fenv (1- limit)))
+                  (equal val? (mv-nth 0 val?+compst1))
+                  (value-optionp val?)
+                  (equal compst1 (mv-nth 1 val?+compst1)))
+             (equal (exec-block-item-list items compst fenv limit)
+                    (if val?
+                        (mv val? compst1)
+                      (exec-block-item-list (cdr items)
+                                            compst1
+                                            fenv
+                                            (1- limit)))))
+    :enable exec-block-item-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-exec-block-item-list-rules*
+  :short "List of rules for @(tsee exec-block-item-list)."
+  '(exec-block-item-list-when-not-consp
+    exec-block-item-list-when-consp))
