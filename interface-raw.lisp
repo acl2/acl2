@@ -1139,20 +1139,23 @@
           (declare (ignore erp state))
           val))
 
-(defun oneified-stobj-let-actuals (actuals fixps fns w program-p)
+(defun oneified-stobj-let-actuals (actuals creators fns w program-p)
   (cond
    ((endp actuals) nil)
-   ((car fixps) ; (st$fix (tbl-get 'st parent))
-    (let ((actual (car actuals)))
-      (assert$
-       (and (true-listp actual)
-            (equal (length actual) 2))
-       (cons (list (car actual) ; st$fix
-                   (oneify (cadr actual)  fns w program-p))
-             (oneified-stobj-let-actuals (cdr actuals) (cdr fixps)
-                                         fns w program-p)))))
-   (t (cons (oneify (car actuals) fns w program-p)
-            (oneified-stobj-let-actuals (cdr actuals) (cdr fixps)
+   (t (cons (cond ((car creators) ; (tbl-get 'st parent (create-st))
+                   (let ((actual (car actuals)))
+                     (case-match actual
+                       ((tbl-get ('quote st) parent (create-st))
+                        `(or ,(oneify `(,tbl-get ',st ,parent nil)
+                                      fns w program-p)
+                             (,create-st)))
+                       (& (er hard 'oneified-stobj-let-actuals
+                              "Implementation error: unexpected stobj-let ~
+                               actual, ~x0.  Please contact the ACL2 ~
+                               implementors."
+                              actual)))))
+                  (t (oneify (car actuals) fns w program-p)))
+            (oneified-stobj-let-actuals (cdr actuals) (cdr creators)
                                         fns w program-p)))))
 
 (defun stobj-let-fn-oneify (x fns w program-p)
@@ -1161,7 +1164,7 @@
 ; stobj-let-fn-raw.
 
   (mv-let
-    (msg bound-vars actuals fixps stobj producer-vars producer updaters
+    (msg bound-vars actuals creators stobj producer-vars producer updaters
          bindings consumer)
     (parse-stobj-let x)
     (declare (ignore bindings))
@@ -1178,7 +1181,7 @@
               `(let* ,(pairlis-x1 stobj (pairlis$ oneified-updaters nil))
                  ,oneified-consumer))
              (oneified-actuals
-              (oneified-stobj-let-actuals actuals fixps fns w program-p))
+              (oneified-stobj-let-actuals actuals creators fns w program-p))
              (form
               `(let (,@(pairlis$ bound-vars (pairlis$ oneified-actuals nil)))
                  (declare (ignorable ,@bound-vars))
@@ -1189,7 +1192,7 @@
                        ,updated-oneified-consumer))
                    (t `(let ((,(car producer-vars) ,oneified-producer))
                          ,updated-oneified-consumer))))))
-        (mv form bound-vars actuals fixps producer-vars stobj w))))))
+        (mv form bound-vars actuals creators producer-vars stobj w))))))
 
 (mutual-recursion
 
@@ -1564,10 +1567,10 @@
 ; Stobj-let is rather complicated, so we prefer to take advantage of the logic
 ; code for that macro.
 
-    (mv-let (temp bound-vars actuals fixps producer-vars stobj)
+    (mv-let (temp bound-vars actuals creators producer-vars stobj)
       (stobj-let-fn-oneify x fns w program-p)
       (let ((dups-check (no-duplicate-indices-checks-for-stobj-let-actuals
-                         bound-vars actuals fixps producer-vars stobj w)))
+                         bound-vars actuals creators producer-vars stobj w)))
         (cond (dups-check
                `(prog2$ (flet ((chk-no-stobj-array-index-aliasing
                                 (x1 x2)
