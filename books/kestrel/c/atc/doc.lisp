@@ -68,7 +68,9 @@
        that satisfies the conditions discussed in the section
        `Representation of C Code in ACL2'.")
      (xdoc::p
-      "These function names must be all distinct."))
+      "These function names must be all distinct.")
+     (xdoc::p
+      "There must be at least one target function."))
 
     (xdoc::desc
      "@(':output-file') &mdash; no default"
@@ -246,7 +248,7 @@
       "@('(ullong-arrayp x)'), representing @('unsigned long long *')."))
     (xdoc::p
      "The conjuncts may be at any level of nesting,
-      but must be easily extractable by flattening
+      but must be extractable by flattening
       the @(tsee and) structure of the (translated) guard term.
       The rest of the guard (i.e. other than the conjuncts above)
       is not explicitly represented in the C code.")
