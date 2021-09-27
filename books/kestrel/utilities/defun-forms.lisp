@@ -74,7 +74,7 @@
            (defun-formp (replace-declares-in-defun defun declares)))
   :hints (("Goal" :in-theory (enable replace-declares-in-defun defun-formp))))
 
-(defun get-body-from-defun (defun)
+(defund get-body-from-defun (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))))
   (car (last defun))) ; (defun <name> <formals> <declare> ... <declare> <body>)
@@ -97,20 +97,38 @@
 
 ;(defforall-simple defun-formp)
 ;(verify-guards all-defun-formp)
-(defun all-defun-formp (forms)
+(defund all-defun-formp (forms)
   (declare (xargs :guard t))
   (if (atom forms)
       t
     (and (defun-formp (first forms))
          (all-defun-formp (rest forms)))))
 
+(defthm defun-formp-of-car
+  (implies (all-defun-formp forms)
+           (equal (defun-formp (car forms))
+                  (consp forms)))
+  :hints (("Goal" :in-theory (enable all-defun-formp))))
+
+(defthm all-defun-formp-of-cdr
+  (implies (all-defun-formp forms)
+           (all-defun-formp (cdr forms)))
+  :hints (("Goal" :in-theory (enable all-defun-formp))))
+
 ;add more to this!
-(defun mutual-recursion-formp (mut-rec)
+(defund mutual-recursion-formp (mut-rec)
   (declare (xargs :guard t))
   (and (consp mut-rec)
        (eq 'mutual-recursion (ffn-symb mut-rec))
        (true-listp mut-rec)
        (all-defun-formp (fargs mut-rec))))
+
+(defthm mutual-recursion-formp-forward-to-equal-of-ffn-symb
+  (implies (mutual-recursion-formp mut-rec)
+           (equal (ffn-symb mut-rec)
+                  'mutual-recursion))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable mutual-recursion-formp))))
 
 (defun defun-or-mutual-recursion-formp (event)
   (declare (xargs :guard t))
@@ -121,7 +139,8 @@
   (declare (xargs :guard (and (symbolp fn)
                               (true-listp defuns)
                               (all-defun-formp defuns))
-                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
+                  :guard-hints (("Goal" :in-theory (enable all-defun-formp
+                                                           defun-formp)))))
   (if (endp defuns)
       nil
     (if (eq fn (second (first defuns)))
@@ -131,7 +150,8 @@
 (defun get-declares-from-event (fn event)
   (declare (xargs :guard (and (symbolp fn)
                               (defun-or-mutual-recursion-formp event))
-                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
+                  :guard-hints (("Goal" :in-theory (enable defun-formp
+                                                           mutual-recursion-formp)))))
   (let ((event-type (ffn-symb event)))
     (if (member-eq event-type *defun-types*)
         (get-declares-from-defun event)
@@ -150,8 +170,8 @@
 (defun get-xargs-from-event (fn event)
   (declare (xargs :guard (and (symbolp fn)
                               (defun-or-mutual-recursion-formp event))
-                  :guard-hints (("Goal" :in-theory (enable defun-formp)))
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable defun-formp
+                                                           mutual-recursion-formp)))))
   (let ((event-type (ffn-symb event)))
     (if (member-eq event-type *defun-types*)
         (get-xargs-from-defun event)
@@ -167,8 +187,8 @@
 (defund get-body-from-event (fn event)
   (declare (xargs :guard (and (symbolp fn)
                               (defun-or-mutual-recursion-formp event))
-                  :guard-hints (("Goal" :in-theory (enable defun-formp)))
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable defun-formp
+                                                           mutual-recursion-formp)))))
   (let ((event-type (ffn-symb event)))
     (if (member-eq event-type *defun-types*)
         (get-body-from-defun event)
@@ -223,7 +243,8 @@
 
 (defun guards-were-verified-in-eventp (fn-event) ;;TODO This assumes the verify-guards-eagerness was 1 when FN-EVENT was submitted.
   (declare (xargs :guard (defun-or-mutual-recursion-formp fn-event)
-                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
+                  :guard-hints (("Goal" :in-theory (enable defun-formp
+                                                           mutual-recursion-formp)))))
   (if (member-eq (ffn-symb fn-event) *defun-types*)
       (guards-were-verified-in-defunp fn-event)
     ;; it's a mutual-recursion
@@ -231,7 +252,7 @@
       (and (any-defun-has-explicit-guardp defuns)
            (not (any-defun-has-verify-guards-nilp defuns))))))
 
-(defun add-verify-guards-nil-to-defun (defun)
+(defund add-verify-guards-nil-to-defun (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))
                   ))
@@ -240,7 +261,7 @@
          (defun (replace-declares-in-defun defun declares)))
     defun))
 
-(defun add-verify-guards-t-to-defun (defun)
+(defund add-verify-guards-t-to-defun (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))
                   ))
@@ -276,7 +297,8 @@
 
 (defund replace-xarg-in-mutual-recursion (xarg val mutual-recursion)
   (declare (xargs :guard (and (keywordp xarg)
-                              (mutual-recursion-formp mutual-recursion))))
+                              (mutual-recursion-formp mutual-recursion))
+                  :guard-hints (("Goal" :in-theory (enable mutual-recursion-formp)))))
   `(mutual-recursion ,@(replace-xarg-in-defuns xarg val (fargs mutual-recursion))))
 
 ;; Removes hints (and similar things) from a defun's xargs.
