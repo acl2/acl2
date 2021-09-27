@@ -1554,8 +1554,8 @@
   (defruled init-scope-when-consp
     (implies (and (syntaxp (quotep formals))
                   (consp formals)
-                  (param-declon-listp formals)
                   (equal formal (car formals))
+                  (param-declonp formal)
                   (equal declor (param-declon->declor formal))
                   (valuep val)
                   (equal (type-of-value val)
@@ -1577,4 +1577,4 @@
   :short "List of rules for @(tsee init-scope)."
   '(init-scope-when-consp
     (:e init-scope)
-    (:e param-declon-listp)))
+    (:e param-declonp)))
