@@ -1385,9 +1385,7 @@
      for openers etc., which are collected separately.")
    (xdoc::p
     "During symbolic execution, certain term patterns appear,
-     which are amenable to simplification via the following rewrite rules.
-     These are non-opener rewrite rules; opener rules are considered separately
-     (see @(tsee atc-opener-rules)).")
+     which are amenable to simplification via the following rewrite rules.")
    (xdoc::p
     "The following rules are general
      and should be probably moved to a more general place.
