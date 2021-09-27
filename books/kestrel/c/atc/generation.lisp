@@ -2348,16 +2348,13 @@
                 member-equal
                 acl2::member-when-atom
                 acl2::pseudo-term-listp-when-not-consp
-                acl2::symbolp-of-car-of-car-when-symbol-term-alistp-type
                 acl2::symbolp-of-car-when-member-equal-of-symbol-pseudoterm-alistp
                 symbolp-of-car-when-member-equal-of-atc-symbol-fninfo-alistp
                 type-optionp-of-car-when-type-option-listp
                 typep-of-car-when-type-listp
                 acl2::symbolp-of-car-when-member-equal-of-symbol-symbol-alistp
                 symbolp-of-car-when-member-equal-of-atc-symbol-type-alistp
-                acl2::symbol-term-alistp ; :type-prescription
                 type-listp-when-not-consp
-                acl2::consp-of-car-when-symbol-term-alistp-cheap
                 type-option-listp-of-cdr-when-type-option-listp
                 acl2::pseudo-term-listp-cdr-when-pseudo-term-listp
                 type-listp-of-cdr-when-type-listp

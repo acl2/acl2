@@ -15,7 +15,6 @@
 (include-book "shallow-embedding")
 (include-book "execution-rules")
 
-(include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
