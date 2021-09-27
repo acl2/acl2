@@ -31,7 +31,7 @@
 	(var-occurrence-term-list x (cdr l)))))
 
 ;; Function free-occurrence (x f) checks if formula f contains
-;; x as a free varible.
+;; x as a free variable.
 
 (defun free-occurrence (x f)
   (declare (xargs :guard (and (variable-term x) (wff f))))
@@ -66,10 +66,3 @@
   (implies (and (free-occurrence y f)
                 (not (equal x y)))
            (free-occurrence y (subst-free f x tm))))
-
-
-
-
-
-
-

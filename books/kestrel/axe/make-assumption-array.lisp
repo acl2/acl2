@@ -16,6 +16,7 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+(local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 
 (local (in-theory (disable symbol-listp)))
 

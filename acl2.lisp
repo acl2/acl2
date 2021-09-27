@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -537,7 +537,7 @@
 #+ccl
 (when (fboundp 'ccl::gc-verbose) ; not in OpenMCL 1.0 (CCL)
 
-; This gets overridden for ACL2(h) in acl2h-init.
+; This gets overridden (originally only for ACL2(h)) in acl2h-init.
 
   (apply 'ccl::gc-verbose nil nil))
 
@@ -964,18 +964,18 @@
 
   '(
     #+acl2-par "multi-threading-raw"
-    #+hons "serialize-raw"
+    "serialize-raw"
     "axioms"
-    "hons"      ; but only get special under-the-hood treatment with #+hons
-    #+hons "hons-raw" ; avoid possible inlining of hons fns in later sources
+    "hons"
+    "hons-raw" ; avoid possible inlining of hons fns in later sources
     "basis-a"   ; to be included in any "toothbrush"
-    "memoize"   ; but only get special under-the-hood treatment with #+hons
-    "serialize" ; but only get special under-the-hood treatment with #+hons
+    "memoize"
+    "serialize"
     "basis-b"   ; not to be included in any "toothbrush"
     "parallel" ; but only get special under-the-hood treatment with #+acl2-par
     #+acl2-par "futures-raw"
     #+acl2-par "parallel-raw"
-    #+hons "memoize-raw"
+    "memoize-raw"
     "translate"
     "type-set-a"
     "linear-a"
@@ -1061,7 +1061,7 @@ ACL2 from scratch.")
    (setq acl2::*copy-of-acl2-version*
 ;  Keep this in sync with the value of acl2-version in *initial-global-table*.
          (concatenate 'string
-                      "ACL2 Version 8.3"
+                      "ACL2 Version 8.4"
                       #+non-standard-analysis
                       "(r)"
                       #+(and mcl (not ccl))
@@ -1157,9 +1157,6 @@ ACL2 from scratch.")
        #+gcl ; for every OS, including Windows (thanks to Camm Maguire)
        (when (boundp 'si::*tmp-dir*)
          (f-put-global 'tmp-dir si::*tmp-dir* state))
-       #-acl2-mv-as-values
-       (f-put-global 'raw-arity-alist *initial-raw-arity-alist*
-                     state)
        nil)))
 
 (defconstant *suppress-compile-build-time*
@@ -1384,12 +1381,11 @@ ACL2 from scratch.")
 
 ; See acl2-check.lisp for more checks.
 
-; We allow ACL2(h) code to take advantage of Ansi CL features.  It's
-; conceivable that we don't need this restriction (which only applies to GCL),
-; but it doesn't currently seem worth the trouble to figure that out.
-#+(and hons (not cltl2))
+; We allow ACL2 code to take advantage of Ansi CL features.  It's conceivable
+; that we don't need this restriction (which only applies to GCL), but it
+; doesn't currently seem worth the trouble to figure that out.
+#+(not cltl2)
 (progn
-; ACL2(c) deprecated: no longer says "build a hons-enabled version of ACL2".
   (format t "~%ERROR: It is illegal to build ACL2 in this non-ANSI Common ~
              Lisp.~%~%")
   (acl2::exit-lisp))
@@ -1717,10 +1713,10 @@ which is saved just in case it's needed later.")
 
 (defun set-new-dispatch-macro-character (char subchar fn)
 
-; This function currently causes an error when attempting to build ACL2(h) on
-; top of CLISP, where (get-dispatch-macro-character #\# #\Y) evaluates to
-; #<SYSTEM-FUNCTION SYSTEM::CLOSURE-READER>.  Here is a discussion of that
-; issue.
+; This function has caused an error when attempting to build ACL2 (actually
+; ACL2(h), some time ago) on top of CLISP, where (get-dispatch-macro-character
+; #\# #\Y) evaluates to #<SYSTEM-FUNCTION SYSTEM::CLOSURE-READER>.  Here is a
+; discussion of that issue.
 
 ; With some thought we might be able to avoid the special cases below for which
 ; char is #\# and subchar is, for example, #\Y -- i.e., smashing (in that
@@ -1733,11 +1729,10 @@ which is saved just in case it's needed later.")
 ; as must be the case when we install a reader for #\Y.  We may think all this
 ; through when there is sufficient reason to do so.  For now, the only problem
 ; pertaining to our handling of dispatch macro characters is in the case of
-; CLISP and ACL2(h), since #\Y is already defined in CLISP -- this function
-; causes an error when attempting to build ACL2(h) on CLISP.  Since CLISP is
-; much slower than the other six host Lisps that we support, and since ACL2(h)
-; is optimized for CCL such that it is really only intended for CCL at this
-; point (June 2013), we can live without CLISP support for ACL2(h).
+; CLISP and ACL2, since #\Y is already defined in CLISP -- this function causes
+; an error when attempting to build ACL2 on CLISP.  Since CLISP is much slower
+; than the other host Lisps that we support, we can live without CLISP support
+; for ACL2.
 
   (let ((old (get-dispatch-macro-character char subchar)))
     (cond ((or (null old)
@@ -1822,13 +1817,11 @@ which is saved just in case it's needed later.")
 ; set-new-dispatch-macro-character).  Keep these two settings in sync with
 ; *reckless-acl2-readtable*.
 
-    #+hons ; SBCL requires #+hons (same restriction as ser-hons-reader-macro)
     (set-new-dispatch-macro-character
      #\#
      #\Z
      'ser-hons-reader-macro)
 
-    #+hons ; SBCL requires #+hons (same restriction as ser-cons-reader-macro)
     (set-new-dispatch-macro-character
      #\#
      #\Y
@@ -2313,7 +2306,7 @@ You are using version ~s.~s.~s."
 ; slow build for GCL (where we compile all *1* functions as we go through
 ; initialization).
 
-    #+(and gcl acl2-mv-as-values)
+    #+gcl
     (when fast
       (setq user::*fast-acl2-gcl-build* t))
 
@@ -2561,7 +2554,6 @@ You are using version ~s.~s.~s."
 ; The following constants were originally in memoize-raw.lisp, but CMUCL caused
 ; a redefinition error.  This may be the same problem as mentioned above for
 ; Allegro.
-#+hons
 (progn
 
 ; locals used in functions generated by memoize-fn
@@ -2727,4 +2719,3 @@ You are using version ~s.~s.~s."
 
 #+ccl ; originally for ACL2(h), but let's make behavior the same for ACL2
 (setq ccl::*quit-on-eof* t)
-

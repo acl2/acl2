@@ -25,6 +25,10 @@
 ;;; TODO and FIXME items to consider doing
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; - Rewrite IF terms whose tests contain MBT calls (not currently done by
+;   rewrite-augmented-term-rec, as of September 2021).  When that's done,
+;   consider eliminating blocked-mbt-p-deep (but careful; some proprietary
+;   books may depend on it).
 ; - Perhaps add to ./package.lsp to eliminate "acl2::" prefixes below.
 ; - Consider showing simplified hypotheses, as was done before mid-October
 ;   2020.  Note however that now we simplify hypotheses and governors together,
@@ -768,6 +772,65 @@
                         wrld))))
     g?equiv))
 
+(defmacro prefix-event-verbosely (form event)
+
+; This macro is designed to be called in an environment where output has been
+; inhibited using (with-output :stack :push ...), as arranged by
+; deftransformation.  We want to allow output provided the top-level call of
+; the transformation is not made with :print nil.  We arrange this by checking
+; that error output is enabled, since deftransformation allows for error output
+; except for :print nil.
+
+; Event is an event, but form is any form that evaluates to state.  Here is an
+; example call of this macro.
+
+;   (prefix-event-verbosely (prog2$ (cw "Hello ~x0.~%" 'world)
+;                                   (value t))
+;                           (defun h (x) (cons x x)))
+
+  `(with-output ; turn off summary output for make-event, below
+     :off summary
+     (make-event
+      (if (member-eq 'error (f-get-global 'acl2::inhibit-output-lst state))
+
+; As noted in the comment at the top of this function, the test above is
+; intended to correlate reasonably well with the transformation having been
+; issued without :print nil.  When the goal is to fail silently we cause a
+; simple error here.
+
+          (value '(value-triple (mv t nil state) :stobjs-out :auto))
+        (pprogn ,form
+                (value '(with-output
+
+; Undo removal of summary output above, and also pop stack to expose original
+; output settings before the transformation was called.
+
+                          :stack :pop
+                          ,event)))))))
+
+(defun orelse-verbosely (form form-alt verbose)
+
+; This macro is designed to be called in an environment where output has been
+; inhibited using (with-output :stack :push ...), as arranged by
+; deftransformation.  We try form, and if that fails we try form-alt verbosely,
+; in the sense of prefix-event-verbosely; see comments about that macro.
+
+  `(acl2::orelse
+    ,(if verbose
+         form
+       `(with-output :off :all ,form))
+    (prefix-event-verbosely
+     (let ((chan (standard-co state)))
+       (pprogn (fms "==============================" nil chan state nil)
+               (fms "The proof failed for:~|~x0.~|"
+                    (list (cons #\0 ',form))
+                    chan state nil)
+               (fms "We now verbosely attempt to admit:~|~x0."
+                    (list (cons #\0 ',form-alt))
+                    chan state nil)
+               (fms "==============================~|" nil chan state nil)))
+     ,form-alt)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Handling hypotheses
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -890,9 +953,7 @@
                             (value '(value-triple :invisible))))))
           (local
            (on-failure
-            ,(if verbose
-                 defthm-form
-               `(with-output :off :all ,defthm-form))
+            ,defthm-form
             :ctx ,ctx
             :erp :condition-failed
             :val nil
@@ -1264,6 +1325,73 @@
 ;;; Simplifying a term
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun blocked-mbt-p (term)
+
+; Term is the result of applying block-return-last to a translated term.
+; Return a non-nil value if term is a blocked mbt call, else nil.
+
+  (declare (xargs :guard (pseudo-termp term) :mode :logic))
+  (and (ffn-symb-p term 'acl2::mbe-fn)
+       (equal (fargn term 1) *t*)))
+
+; The behavior of SIMPLIFY was modified in September 2021 to do a more thorough
+; job of reconstructing MBT calls under IF tests.  But a particular proprietary
+; book slowed down from a few minutes to hours, probably because a rewrite rule
+; hung on IF was critical for performance and MBT reconstruction ignores such
+; rules (see rewrite-augmented-term-rec.  So we provide an attachment for
+; backward compatibility: use
+;   (defattach blocked-mbt-p-deep constant-nil-function-arity-0)
+; to restore the old (weaker) behavior.
+; Note that this zero-ary function is in the "ACL2" package, to make it
+; convenient to use in books that do not define "APT" in their portcullis
+; commands.
+(defstub acl2::blocked-mbt-p-deep () t)
+(defattach acl2::blocked-mbt-p-deep acl2::constant-t-function-arity-0)
+
+(defun contains-blocked-mbt-p-rec (term)
+
+; See also reconstruct-blocked-mbt-rec, and consider changing that function if
+; you change this one.
+
+; Term is the result of applying block-return-last to a translated term.
+; Return a non-nil value if term contains a blocked mbt call, else nil.
+
+; We only look for blocked mbt calls in the top-level IF structure, since our
+; key goal is to preserve mbt calls that are critical for termination
+; (otherwise we'd prefer to leave it up to the user to disable mbe-fn for
+; restricting expansion of mbt calls).  We include IF tests in that
+; exploration, to cover terms like (if (and (mbt ...) (mbt ...)) ... ...) and
+; similarly for other Boolean combinations (i.e., allowing NOT and OR at the
+; top level).
+
+; We also dive into lambda bodies.  After all, one might write a function with
+; body (if (let (...) (mbt ...)) ... ..).  Note that while theoretically one
+; might have a reason to write (if (let ((x (mbt ...))  ...) ..) ... ...), that
+; seems kind of unlikely, so we do not dive into arguments of lambda
+; applications.
+
+  (declare (xargs :guard (pseudo-termp term) :mode :logic))
+  (cond ((or (variablep term)
+             (fquotep term))
+         nil)
+        ((blocked-mbt-p term)
+         t)
+        ((flambdap (ffn-symb term))
+         (contains-blocked-mbt-p-rec (lambda-body (ffn-symb term))))
+        ((eq (ffn-symb term) 'if)
+         (or (contains-blocked-mbt-p-rec (fargn term 1))
+             (contains-blocked-mbt-p-rec (fargn term 2))
+             (contains-blocked-mbt-p-rec (fargn term 3))))
+        ((eq (ffn-symb term) 'not)
+         (contains-blocked-mbt-p-rec (fargn term 1)))
+        (t nil)))
+
+(defun contains-blocked-mbt-p (term)
+  (declare (xargs :guard (pseudo-termp term) :mode :logic))
+  (if (acl2::blocked-mbt-p-deep)
+      (contains-blocked-mbt-p-rec term)
+    (blocked-mbt-p term)))
+
 (defun augment-term (term)
 
 ; The set of augmented terms u is defined recursively as follows.  (Note that u
@@ -1273,8 +1401,10 @@
 ; - If u is a term, then u is an augmented term.  We call u an "ordinary term".
 
 ; - If u is (:IF tst tbr fbr), then u is an augmented term iff tst is a term
-;   and both tbr and fbr are augmented terms, and at least one of tbr and fbr
-;   is either a lambda application or is not an ordinary term.
+;   and both tbr and fbr are augmented terms, and at least one of the following
+;   two conditions hold: either tst is the translation of an mbt call; or at
+;   least one of tbr and fbr is either a lambda application or is not an
+;   ordinary term.
 
 ; - If u is ((lambda (v1 ... vk) body) a1 ... ak), then each ai is an ordinary
 ;   term, the vi are distrinct variables, all free variables of body are among
@@ -1307,7 +1437,8 @@
                         (cond ((or (lambda-applicationp tbr)
                                    (lambda-applicationp fbr)
                                    augmentedp1
-                                   augmentedp2)
+                                   augmentedp2
+                                   (contains-blocked-mbt-p (fargn term 1)))
                                (mv (list :if (fargn term 1) tbr fbr)
                                    t))
                               (t (mv term nil))))))
@@ -1320,15 +1451,33 @@
                                  t))
                             (t (mv term t)))))
                    ((rassoc-eq fn *return-last-blocker-alist*)
+
+; This is the case that inserts "calls" of :BLOCKER.  These calls are important
+; for noticing lambda applications at the top level of the IF structure.
+; Consider the following simpler variant (i.e., without b*) of an example from
+; simplify-defun-tests.lisp.
+
+;   (defun f1 (x) (prog2$ (cw "hi") (let ((y x)) (car (cons y y)))))
+;   (simplify f1 :disable prog2$-fn)
+
+; Without this case, the body of the resulting definition is (PROG2$ (CW "hi")
+; X), where otherwise it is (PROG2$ (CW "hi") (LET ((Y X)) Y)).  Similarly,
+; without the :disable keyword the resulting body is X when we omit this case,
+; and otherwise is (LET ((Y X)) Y).  Note that with or without this case, the
+; body is (LET ((Y X)) Y) if we instead define f1 with body (let ((y x)) (car
+; (cons y y))).
+
                     (mv-let (arg1 augmentedp1)
                       (augment-term (fargn term 1))
                       (mv-let (arg2 augmentedp2)
                         (augment-term (fargn term 2))
                         (cond ((or augmentedp1 augmentedp2)
                                (mv (list :blocker
-; We probably don't need to quote fn, but we do so just in case some function
-; crawls over the resulting pseudo-term, so that fn isn't considered to be a
-; variable.
+
+; We probably don't need to quote fn below, but we do so just in case some
+; function crawls over the resulting pseudo-term, so that fn isn't considered
+; to be a variable.
+
                                          (kwote fn)
                                          arg1
                                          arg2)
@@ -1459,7 +1608,125 @@
 
     (make-proper-lambda formals1 actuals body1)))
 
-(defun rewrite-augmented-term-rec (aterm alist geneqv rrec runes ctx wrld state)
+(defun make-blocked-mbt (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (fcons-term* 'acl2::mbe-fn *t* term))
+
+(defun reconstruct-blocked-mbt-rec (old new)
+
+; See also contains-blocked-mbt-p, and consider changing that function if you
+; change this one.
+
+; Old and new are terms.  Typically they have similar structure but new is
+; missing blocked mbt calls that are present in old.  We heuristically put
+; those calls back into new to create a term new', returning (mv changedp new')
+; where if changedp is nil then new = new'.  Our heuristics favor restoration
+; of mbt calls that could be relevant to termination proofs, so they allow
+; walking through IF and NOT calls and LAMBDA bodies.
+
+; To verify guards it would suffice to prove the following first.
+
+;  (defthm pseudo-termp-mv-nth-1-reconstruct-blocked-mbt
+;    (implies (and (pseudo-termp old) (pseudo-termp new))
+;             (pseudo-termp (mv-nth 1 (reconstruct-blocked-mbt-rec old new)))))
+
+  (declare (xargs :guard (and (pseudo-termp old) (pseudo-termp new))))
+  (cond ((or (variablep old)
+             (fquotep old)
+             (quotep new))
+         (mv nil new))
+        ((blocked-mbt-p new) ; then leave well enough alone
+         (mv nil new))
+        ((blocked-mbt-p old)
+         (mv t (make-blocked-mbt new)))
+        ((eq (ffn-symb old) 'if)
+         (let ((old1 (fargn old 1))
+               (old2 (fargn old 2))
+               (old3 (fargn old 3)))
+           (cond ((ffn-symb-p new 'if)
+                  (mv-let (changedp1 new1)
+                    (reconstruct-blocked-mbt-rec old1 (fargn new 1))
+                    (mv-let (changedp2 new2)
+                      (reconstruct-blocked-mbt-rec old2 (fargn new 2))
+                      (mv-let (changedp3 new3)
+                        (reconstruct-blocked-mbt-rec old3 (fargn new 3))
+                        (cond ((or changedp1 changedp2 changedp3)
+                               (mv t (fcons-term* 'if new1 new2 new3)))
+                              (t (mv nil new)))))))
+                 (t
+
+; It's a bit weird for (if x y z) to simplify to (mbt _).  But that could be
+; reasonable if y and z are both mbt calls, or if old is (if (mbt _) t nil).
+
+                  (cond ((and (blocked-mbt-p old2)
+                              (blocked-mbt-p old3))
+                         (mv t (make-blocked-mbt new)))
+                        ((and (blocked-mbt-p old1)
+                              (equal old2 *t*)
+                              (equal old3 *nil*))
+                         (mv t (make-blocked-mbt new)))
+                        (t (mv nil new)))))))
+        ((eq (ffn-symb old) 'not)
+         (let ((old1 (fargn old 1)))
+           (cond ((and (ffn-symb-p new 'if) ; expansion of the NOT call
+                       (not (blocked-mbt-p (fargn new 1)))
+                       (equal (fargn new 2) *nil*)
+                       (equal (fargn new 3) *t*))
+                  (mv-let (changedp1 new1)
+                    (reconstruct-blocked-mbt-rec old1 (fargn new 1))
+                    (cond (changedp1
+                           (mv t (fcons-term* 'if new1 *nil* *t*)))
+                          (t (mv nil new)))))
+                 ((and (ffn-symb-p new 'not)
+                       (not (blocked-mbt-p (fargn new 1))))
+                  (mv-let (changedp1 new1)
+                    (reconstruct-blocked-mbt-rec old1 (fargn new 1))
+                    (cond (changedp1
+                           (mv t (fcons-term* 'not new1)))
+                          (t (mv nil new)))))
+                 (t (mv nil new)))))
+        ((lambda-applicationp old)
+         (cond ((lambda-applicationp new)
+                (cond ((equal (ffn-symb old) (ffn-symb new))
+                       (mv nil new))
+                      (t
+                       (mv-let (changedp body)
+                         (reconstruct-blocked-mbt-rec
+                          (lambda-body (ffn-symb old))
+                          (lambda-body (ffn-symb new)))
+                         (cond (changedp (mv t (acl2::make-lambda-application
+                                                (lambda-formals (ffn-symb new))
+                                                body
+                                                (fargs new))))
+                               (t (mv nil new)))))))
+               (t
+                (mv-let (changedp new2)
+                  (reconstruct-blocked-mbt-rec (lambda-body (ffn-symb old))
+                                               new)
+                  (cond (changedp (mv t new2))
+                        (t (mv nil new)))))))
+        (t (mv nil new))))
+
+(defun reconstruct-blocked-mbt (old new)
+  (declare (xargs :guard (and (pseudo-termp old) (pseudo-termp new))))
+  (mv-let (changedp new2)
+    (reconstruct-blocked-mbt-rec old new)
+    (declare (ignore changedp))
+    new2))
+
+(defun maybe-reconstruct-blocked-mbt (old new)
+  (cond ((acl2::blocked-mbt-p-deep)
+         (if (contains-blocked-mbt-p old)
+             (reconstruct-blocked-mbt old new)
+           new))
+        (t
+         (if (and (blocked-mbt-p old)
+                  (not (blocked-mbt-p new)))
+             (make-blocked-mbt new)
+           new))))
+
+(defun rewrite-augmented-term-rec (aterm alist geneqv rrec runes ctx wrld
+                                         state)
 
 ; The key idea here is that when rewriting (let ((x expr)) body), we rewrite
 ; expr to expr', then we rewrite body with x bound to expr' to produce body',
@@ -1508,7 +1775,8 @@
                                                           false-type-alist)
                                                   runes ctx wrld state))
                      ((mv term ttree)
-                      (rewrite-if1 tst2 tbr2 fbr2
+                      (rewrite-if1 (maybe-reconstruct-blocked-mbt tst tst2)
+                                   tbr2 fbr2
                                    nil ; swapped-p
                                    type-alist
                                    geneqv ens ok-to-force wrld nil)))
@@ -1601,6 +1869,14 @@
 ; state), where if erp is nil then val is (cons rewritten-term runes).
 
   (with-output!
+
+; We turn off prover output because it doesn't seem useful, even when option
+; :print :all is supplied, to show the user output from rewrite$ such as the
+; following.
+
+;   <<Rewrite$ NOTE:>>
+;   Starting second call of the rewriter.
+
     :off prove
     (b* (((mv changedp bterm)
           (block-return-last term))
@@ -2204,8 +2480,11 @@
                 ,fn-simp
                 ,@(and verify-guards-hints
                        `(:hints ,verify-guards-hints)))))
+       (verify-guards-form-alt
+        (and verify-guards-p ; else don't care
+             `(verify-guards ,fn-simp)))
        (on-failure-msg
-        (msg "Guard verification has failed for the new function, ~x0. ~ See ~
+        (msg "Guard verification has failed for the new function, ~x0.  See ~
               :DOC apt::simplify-failure for some ways to address this ~
               failure."
              fn-simp)))
@@ -2233,10 +2512,22 @@
                                      0 wrld))
        ,(and verify-guards-p
              `(on-failure
-               ,(if verbose
-                    verify-guards-form
-                  `(with-output :off :all
-                     ,verify-guards-form))
+
+; We want to show a verify-guards proof failure if the attempt to verify guards
+; fails, so that the user can look at checkpoints and come up with helpful
+; rules without having to run simplify again.  (This behavior was requested by
+; Eric Smith.)  Below we call prefix-event-verbosely in that case to force an
+; extra verify-guards attempt, without hints.  Still, when verbose is true it
+; is tempting to avoid that replay because if :print :all is supplied to
+; SIMPLIFY then we can expect to have enough output already.  Unfortunately, we
+; cannot distinguish here between :print :all and :print :info, where the
+; latter does not show a verify-guards proof attempt's output.  Perhaps though
+; it's fine to do a replay in all cases, for the sake of uniformity -- all
+; cases except when :print nil holds, of course (see prefix-event-verbosely).
+
+               ,(orelse-verbosely verify-guards-form
+                                  verify-guards-form-alt
+                                  verbose)
                :ctx ,ctx
                :erp :condition-failed
                :val nil
@@ -2705,6 +2996,11 @@
 
   `(local
     (with-output
+
+; Presumably nobody wants to see the output from the events below.  They should
+; never cause an error, so we ensure that error output is on so that such an
+; unexpected error will be apparent.
+
       :off :all
       :on error
       (progn
@@ -2809,7 +3105,11 @@
                                    ctx state)
   (b* ((clique-runic-designators (clique-runic-designators clique))
        ((er -)
-        (trans-eval '(with-output :off (event summary)
+        (trans-eval '(with-output
+
+; Presumably nobody wants to see the output from the event below.
+
+                       :off (event summary)
                        (set-ignore-ok t))
                     ctx state nil))
        (wrld0 (w state))

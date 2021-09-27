@@ -211,7 +211,7 @@
 
 (acl2::defabsstobj-events mem
 
-  :concrete mem$c
+  :foundation mem$c
 
   :recognizer (memp :logic mem$ap :exec mem$cp)
 
@@ -406,7 +406,7 @@
   <p>An obvious application of @('bigmem') is to model memory;
   @('mem') can be used as a child stobj to define a field representing
   the memory (up to @('2^64') bytes) in a parent stobj that models
-  some machine's state. See @(see x86isa::x86isa-state) for such an
-  example.</p>")
+  some machine's state. See @('projects/x86isa/machine/state.lisp')
+  for one such example.</p>")
 
 ;; ----------------------------------------------------------------------

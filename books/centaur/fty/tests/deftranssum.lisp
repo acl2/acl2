@@ -29,11 +29,6 @@
 ; Original authors: Sol Swords <sswords@centtech.com>
 ;                   Jared Davis <jared@centtech.com>
 
-; Added by Matt K.: Not sure this is necessary, but certification took less
-; than 10 minutes when running on ACL2 but was still running after 20 minutes
-; on ACL2(c), so I killed the latter job.
-; cert_param: (hons-only)
-
 (in-package "FTY")
 (include-book "utils")
 

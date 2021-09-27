@@ -83,6 +83,7 @@
  :trig-fnc equal
  :valid-syntaxp t
  :returns (mv term dont-rw)
+ :disabledp t
  :hints (("Goal"
           :in-theory (e/d (rp-equal-meta) ()))))
 

@@ -47,6 +47,7 @@
 (include-book "kestrel/std/util/defiso" :dir :system)
 (include-book "kestrel/utilities/conjunctions" :dir :system)
 (include-book "kestrel/utilities/defun-forms" :dir :system)
+(include-book "kestrel/utilities/negate-term" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "tools/remove-hyps" :dir :system)
 (include-book "kestrel/utilities/make-and-nice" :dir :system)
@@ -1901,7 +1902,7 @@ Example: int10-map-p-->-int20-map-p
        (local-events (cons event nil))
        (install-not-normalized-event `(local (install-not-normalized ,fun1)))
        (local-events (cons install-not-normalized-event local-events))
-       (fun1-not-normalized (pack$ fun1 "$NOT-NORMALIZED"))
+       (fun1-not-normalized (install-not-normalized-name fun1))
 
        ;; names of the FUN = FUN' and FUN' = FUN theorems:
        (fun-is-iso-fun1 (pack$ fun '-is-iso- fun1))

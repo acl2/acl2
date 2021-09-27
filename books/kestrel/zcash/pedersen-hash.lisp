@@ -17,24 +17,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Two somewhat specific theorems, but more general than Pedersen hash.
-
-(defrulel len-of-nthcdr-multiple-of-3
-  (implies (and (integerp (* 1/3 (len x)))
-                (consp x))
-           (integerp (* 1/3 (len (nthcdr 3 x)))))
-  :prep-books ((include-book "std/lists/nthcdr" :dir :system)))
-
-(defrulel bit-listp-of-take-3
-  (implies (and (bit-listp segment)
-                (integerp (/ (len segment) 3))
-                (consp segment))
-           (bit-listp (take 3 segment)))
-  :prep-books ((include-book "arithmetic-3/top" :dir :system)
-               (include-book "std/lists/top" :dir :system)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ pedersen-hash
   :parents (zcash)
   :short "A formalization of Zcash's Pedersen hash."
@@ -54,7 +36,7 @@
 (define coordinate-extract ((point jubjub-pointp))
   :returns (bits bit-listp)
   :short "The function @($\\mathsf{Extract}_{\\mathbb{J}^{(r)}}$)
-          [ZPS:5.4.8.4]."
+          [ZPS:5.4.9.4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -76,19 +58,19 @@
   :returns (point? maybe-jubjub-pointp)
   :short "The function
           @($\\mathsf{GroupHash_\\mathsf{URS}^{\\mathbb{J}^{(r)*}}}$)
-          [ZPS:5.4.8.5]."
+          [ZPS:5.4.9.5]."
   :long
   (xdoc::topstring
    (xdoc::p
     "[ZPS] allows the argument @($M$) to have any length,
      but there is a (large) limit (see guard of @(tsee blake2s-256)).
-     The limit here must be dimished by 64,
+     The limit here must be diminished by 64,
      which is the length of @($\\mathsf{URS}$)."))
   (b* ((hash (blake2s-256 d (append *urs* m)))
        (point (jubjub-abst (leos2bsp hash)))
        ((unless (jubjub-pointp point)) nil)
        (qoint (jubjub-mul (jubjub-h) point))
-       ((when (equal qoint (ecurve::twisted-edwards-zero))) nil))
+       ((when (equal qoint (twisted-edwards-zero))) nil))
     qoint)
   :guard-hints (("Goal" :do-not-induct t)))
 
@@ -99,7 +81,7 @@
               (< (len m) (- blake::*blake2s-max-data-byte-length* 129)))
   :returns (point? maybe-jubjub-pointp)
   :short "The function @($\\mathsf{FindGroupHash^{\\mathbb{J}^{(r)*}}}$)
-          [ZPS:5.4.8.5]."
+          [ZPS:5.4.9.5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -127,17 +109,18 @@
 
 (define pedersen-pad ((m bit-listp))
   :guard (consp m)
-  :returns (m1 bit-listp :hyp (bit-listp m))
+  :returns (m1 bit-listp)
   :short "Pedersen hash padding [ZPS:5.4.1.7]."
   :long
   (xdoc::topstring
    (xdoc::p
     "The message is padded with zero bits on the right
      to make its length a multiple of 3."))
-  (case (mod (len m) 3)
-    (0 m)
-    (1 (append m (list 0 0)))
-    (2 (append m (list 0))))
+  (append (bit-list-fix m)
+          (case (mod (len m) 3)
+            (0 nil)
+            (1 (list 0 0))
+            (2 (list 0))))
   ///
 
   (local (include-book "arithmetic-3/top" :dir :system))
@@ -175,31 +158,29 @@
 
 (define pedersen-enc ((3bits bit-listp))
   :guard (= (len 3bits) 3)
-  :returns (enc integerp
-                :rule-classes (:type-prescription :rewrite)
-                :hyp (bit-listp 3bits))
+  :returns (enc integerp :rule-classes (:type-prescription :rewrite))
   :short "The function @($\\mathsf{enc}$) in [ZPS:5.4.1.7]."
-  (b* ((s0 (first 3bits))
-       (s1 (second 3bits))
-       (s2 (third 3bits)))
+  (b* ((s0 (mbe :logic (bfix (first 3bits)) :exec (first 3bits)))
+       (s1 (mbe :logic (bfix (second 3bits)) :exec (second 3bits)))
+       (s2 (mbe :logic (bfix (third 3bits)) :exec (third 3bits))))
     (* (- 1 (* 2 s2))
        (+ 1 s0 (* 2 s1))))
+  :prepwork ((local (in-theory (disable bfix))))
   ///
 
   (defret pedersen-enc-lower-bound
     (>= enc -4)
-    :hyp (bit-listp 3bits)
-    :rule-classes :linear)
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable bfix))))
 
   (defret pedersen-enc-upper-bound
     (<= enc 4)
-    :hyp (bit-listp 3bits)
     :rule-classes :linear)
 
   (defret pedersen-enc-not-zero
     (not (equal enc 0))
-    :hyp (bit-listp 3bits)
-    :rule-classes :type-prescription)
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable bfix))))
 
   (defrule pedersen-enc-injectivity
     (implies (and (bit-listp x)
@@ -253,7 +234,7 @@
 
 (define pedersen-segment-scalar ((segment bit-listp))
   :guard (integerp (/ (len segment) 3))
-  :returns (i integerp :hyp (bit-listp segment))
+  :returns (i integerp :rule-classes (:type-prescription :rewrite))
   :short "The function @($\\langle\\cdot\\rangle$) in [ZPS:5.4.1.7]."
   :long
   (xdoc::topstring
@@ -268,7 +249,9 @@
 
    (define pedersen-segment-scalar-loop ((j posp) (segment bit-listp))
      :guard (integerp (/ (len segment) 3))
-     :returns (i integerp :hyp (and (posp j) (bit-listp segment)))
+     :returns (i integerp
+                 :hyp (posp j)
+                 :rule-classes (:type-prescription :rewrite))
      :parents nil
      (if (consp segment)
          (+ (* (pedersen-enc (take 3 segment))
@@ -293,211 +276,6 @@
 
      (verify-guards pedersen-segment-scalar-loop))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define pedersen-segment-scalar-bound ((segment bit-listp))
-  :guard (integerp (/ (len segment) 3))
-  :returns (bound natp)
-  :short "Bound on the value of @(tsee pedersen-segment-scalar)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Theorem 5.4.1 in [ZPS:5.4.1.7] defines @$(\\Delta$) as
-     a bound on the value of the encoding function @($\\langle\\cdot\\rangle$):
-     the value of the function is between @($-\\Delta$) and @($\\Delta$).
-     In [ZPS], @($\\Delta$) is a constant because @($\\langle\\cdot\\rangle$)
-     is defined over segments of maximum size @($3c$).
-     However, our @(tsee pedersen-segment-scalar) is more generally defined
-     over segments of any length that is a multiple of 3.
-     Accordingly, we define a function that expresses @($\\Delta$)
-     in terms of (the length of) the segment.
-     Since @(tsee pedersen-segment-scalar) is defined in terms of
-     an auxiliary recursive function that is defined even more generally
-     over not only a segment of length multiple of 3
-     but also the index @($j$) of the chunk of 3 bits,
-     we also introduce a function that expresses
-     the bound on the recursive function.")
-   (xdoc::p
-    "Based on the summation that defines @($\\Delta$) in [ZPS],
-     we define the bound for the recursive function
-     by recursively adding @($4\\cdot2^{4\\cdot(j-1)}$)
-     while @($j$) is incremented until there is no 3-bit chunk left.
-     The bound for @(tsee pedersen-segment-scalar) is obtained from that
-     by setting @($j$) to 1.")
-   (xdoc::p
-    "To prove that these are actual bounds,
-     we start with a proof by induction for the recursive function and bound.
-     We need a lemma about the length of @('(nthcdr 3 x)') being a multiple of 3
-     when the length of @('x') is:
-     this serves to relieve the hypothesis of the induction hypothesis.
-     We also need a lemma saying that @('(take 3 segment)') is a list of bits
-     under the hypothesis of the theorem:
-     this is needed for the base case,
-     to relieve the hypothesis of the bound rules of @(tsee pedersen-enc).
-     We also need a few arithmetic lemmas
-     to nudge the proof in the right direction.
-     With linear bound rules for the recursive function in hand,
-     the bound proofs for @(tsee pedersen-segment-scalar) are automatic."))
-  (pedersen-segment-scalar-loop-bound 1 segment)
-
-  :prepwork
-  ((define pedersen-segment-scalar-loop-bound ((j posp) (segment bit-listp))
-     :guard (integerp (/ (len segment) 3))
-     :returns (bound natp :hyp (posp j))
-     :parents nil
-     (if (consp segment)
-         (+ (* 4 (expt 2 (* 4 (1- j))))
-            (pedersen-segment-scalar-loop-bound (1+ j) (nthcdr 3 segment)))
-       0)
-     :measure (len segment)
-     :prepwork ((local (include-book "std/lists/nthcdr" :dir :system))
-                (local (include-book "arithmetic-3/top" :dir :system)))))
-
-  ///
-
-  (defruledl arith-lemma1
-    (implies (<= x y)
-             (<= (* x (expt 2 a))
-                 (* y (expt 2 a))))
-    :prep-books ((include-book "arithmetic/top" :dir :system)))
-
-  (defruledl arith-lemma2
-    (implies (and (<= a b)
-                  (<= x y))
-             (<= (+ a x)
-                 (+ y b))))
-
-  (defruledl arith-lemma3
-    (equal (- (* 4 x))
-           (* -4 x)))
-
-  (defrule pedersen-segment-scalar-loop-upper-bound
-    (implies (and (posp j)
-                  (bit-listp segment)
-                  (integerp (/ (len segment) 3))
-                  (consp segment))
-             (<= (pedersen-segment-scalar-loop j segment)
-                 (pedersen-segment-scalar-loop-bound j segment)))
-    :rule-classes :linear
-    :enable (pedersen-segment-scalar-loop
-             pedersen-segment-scalar-loop-bound
-             arith-lemma1 arith-lemma2))
-
-  (defrule pedersen-segment-scalar-loop-lower-bound
-    (implies (and (posp j)
-                  (bit-listp segment)
-                  (integerp (/ (len segment) 3))
-                  (consp segment))
-             (<= (- (pedersen-segment-scalar-loop-bound j segment))
-                 (pedersen-segment-scalar-loop j segment)))
-    :rule-classes :linear
-    :enable (pedersen-segment-scalar-loop
-             pedersen-segment-scalar-loop-bound
-             arith-lemma1 arith-lemma2 arith-lemma3))
-
-  (defrule pedersen-segment-scalar-upper-bound
-    (implies (and (bit-listp segment)
-                  (integerp (/ (len segment) 3))
-                  (consp segment))
-             (<= (pedersen-segment-scalar segment)
-                 (pedersen-segment-scalar-bound segment)))
-    :rule-classes :linear
-    :enable (pedersen-segment-scalar pedersen-segment-scalar-bound))
-
-  (defrule pedersen-segment-scalar-lower-bound
-    (implies (and (bit-listp segment)
-                  (integerp (/ (len segment) 3))
-                  (consp segment))
-             (<= (- (pedersen-segment-scalar-bound segment))
-                 (pedersen-segment-scalar segment)))
-    :rule-classes :linear
-    :enable (pedersen-segment-scalar pedersen-segment-scalar-bound)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection pedersen-segment-scalar-not-zero-proof
-  :short "Proof that @(tsee pedersen-segment-scalar) is not 0."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is proved by first proving that
-     the loop function is outside the interval
-     between @($-2^{4\\cdot(j-1)}$) to @($2^{4\\cdot(j-1)}$)
-     both exclusive.
-     Setting @($j=1$), we have that @(tsee pedersen-segment-scalar)
-     is outside the interval from -1 to 1 exclusive, i.e. it is not 0.
-     To prove the lemma about the loop function,
-     to avoid dealing with a disjunction of inequalities,
-     we introduce a predicate for being outside the interval
-     and we prove some theorems about it.
-     Some of these theorems are currently somewhat specific;
-     perhaps there is a way to improve the form of the proof."))
-
-  (local
-   (define outsidep (x b)
-     (or (<= x (- b))
-         (<= b x))
-     :verify-guards nil))
-
-  (defruledl outsidep-lemma1
-    (implies (posp c)
-             (equal (outsidep (* c x) c)
-                    (outsidep x 1)))
-    :enable outsidep
-    :prep-books ((include-book "arithmetic-3/top" :dir :system)))
-
-  (defruledl outsidep-lemma2
-    (implies (and (posp c)
-                  (outsidep x (* c b))
-                  (integerp y)
-                  (< (- c) y)
-                  (< y c))
-             (outsidep (+ x (* y b)) b))
-    :enable outsidep
-    :prep-books ((include-book "arithmetic-5/top" :dir :system)
-                 (set-default-hints '((acl2::nonlinearp-default-hint
-                                       stable-under-simplificationp
-                                       hist
-                                       pspv)))))
-
-  (defruledl outsidep-lemma3
-    (implies (and (posp j)
-                  (outsidep x (expt 2 (* 4 j)))
-                  (integerp y)
-                  (< -16 y)
-                  (< y 16))
-             (outsidep (+ x (* y (expt 2 (+ -4 (* 4 j)))))
-                       (expt 2 (+ -4 (* 4 j)))))
-    :use (:instance outsidep-lemma2 (c 16) (b (expt 2 (+ -4 (* 4 j)))))
-    :prep-books ((include-book "arithmetic/top" :dir :system)))
-
-  (defruledl posp-of-bound
-    (implies (posp j)
-             (posp (expt 2 (+ -4 (* 4 j)))))
-    :rule-classes :type-prescription
-    :prep-books ((include-book "arithmetic-3/top" :dir :system)))
-
-  (defruledl outsidep-of-pedersen-segment-scalar-loop
-    (implies (and (posp j)
-                  (bit-listp segment)
-                  (integerp (/ (len segment) 3))
-                  (consp segment))
-             (outsidep (pedersen-segment-scalar-loop j segment)
-                       (expt 2 (+ -4 (* 4 j)))))
-    :enable (pedersen-segment-scalar-loop
-             outsidep-lemma1
-             outsidep-lemma3
-             posp-of-bound))
-
-  (defrule pedersen-segment-scalar-not-zero
-    (implies (and (bit-listp segment)
-                  (integerp (/ (len segment) 3))
-                  (consp segment))
-             (not (equal (pedersen-segment-scalar segment) 0)))
-    :rule-classes :type-prescription
-    :enable pedersen-segment-scalar
-    :use (:instance outsidep-of-pedersen-segment-scalar-loop (j 1))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pedersen-segment-point ((d byte-listp) (i posp))
@@ -515,8 +293,8 @@
    (xdoc::p
     "We need to turn the index @($i$), diminished by one,
      into a byte sequence consisting of 32 bits, i.e. 4 bytes.
-     The first paragraph of [ZPS:5.2] says that, unless otherwise specified,
-     integers are encoded in little endian bytes of fixed length;
+     The first paragraph of [ZPS:5.1] says that, unless otherwise specified,
+     integers are unsigned, fixed-length, and encoded in little endian bytes;
      thus, we take the little endian byte representation of @($i-1$)."))
   (b* ((i1 (1- i))
        (i1-32bit (mod i1 (expt 2 32)))
@@ -531,7 +309,7 @@
               (integerp (/ (len segment) 3)))
   :returns (point? maybe-jubjub-pointp)
   :short "The addend point in the definition of
-          @($\\mathsf{PedersenHashPoint}$) [ZPS:5.4.1.7]."
+          @($\\mathsf{PedersenHashToPoint}$) [ZPS:5.4.1.7]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -577,7 +355,7 @@
   (xdoc::topstring
    (xdoc::p
     "We return @('nil') if, instead of a point, an error is returned.
-     This is distinguishes from a valid hash, which is not empty."))
+     This is distinguished from a valid hash, which is not empty."))
   (b* ((point (pedersen-point d m))
        ((unless (jubjub-pointp point)) nil))
     (coordinate-extract point)))

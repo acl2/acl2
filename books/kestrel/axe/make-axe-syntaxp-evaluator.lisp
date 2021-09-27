@@ -223,6 +223,7 @@
        (local (include-book "kestrel/lists-light/union-equal" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
        (local (include-book "kestrel/lists-light/len" :dir :system))
+       (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 
        (local (in-theory (enable assoc-equal-iff-two
                                  natp-of-lookup-equal-when-all-dargp-of-strip-cdrs-when-member-equal

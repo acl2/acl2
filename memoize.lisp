@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -27,28 +27,28 @@
 
 (in-package "ACL2")
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn clear-memoize-table (fn)
 
 ; Warning: Keep the return values in sync for the logic and raw Lisp.
 
   fn)
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn clear-memoize-tables ()
 
 ; Warning: Keep the return values in sync for the logic and raw Lisp.
 
   nil)
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn memoize-summary ()
 
 ; Warning: Keep the return values in sync for the logic and raw Lisp.
 
   nil)
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn clear-memoize-statistics ()
 
 ; Warning: Keep the return values in sync for the logic and raw Lisp.
@@ -400,15 +400,7 @@
   `(memoize ,fn :condition nil :recursive nil ,@r))
 
 (defmacro memoizedp-world (fn wrld)
-  `(let ((fn ,fn)
-         (wrld ,wrld))
-     (cond
-      ((not (global-val 'hons-enabled wrld))
-       (er hard 'memoizedp
-           "Memoizedp cannot be called in this ACL2 image, as it requires a ~
-            hons-aware ACL2.  See :DOC hons-and-memoization."))
-      (t
-       (cdr (assoc-eq fn (table-alist 'memoize-table wrld)))))))
+  `(cdr (assoc-eq ,fn (table-alist 'memoize-table ,wrld))))
 
 (defmacro memoizedp (fn)
   (declare (xargs :guard t))
@@ -418,11 +410,7 @@
 ; those books to certify in vanilla ACL2, we define a default value for that
 ; variable here.
 
-#+(and (not hons) (not acl2-loop-only))
-(defparameter *never-profile-ht*
-  (make-hash-table :test 'eq))
-
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defun never-memoize-fn (fn)
 
 ; Warning: Keep the return values in sync for the logic and raw Lisp.

@@ -77,3 +77,5 @@
 (include-book "bvplus-list")
 
 (include-book "logext-list")
+
+(include-book "byte-fix-list")

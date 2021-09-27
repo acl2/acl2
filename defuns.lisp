@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -6078,7 +6078,7 @@
               (if (member-equal (symbol-package-name (base-symbol rune))
                                 known-pkgs)
                   acc
-                (cons rune acc)))))))
+                (cons (car useless-runes) acc)))))))
 
 (defun set-difference-equal-sorted (lst1 lst2)
 
@@ -6119,6 +6119,65 @@
          (remove-executable-counterpart-useless-runes1 useless-runes))
         (t useless-runes)))
 
+(defun print-rune (rune channel state)
+  (pprogn (princ$ #\( channel state)
+          (prin1$ (car rune) channel state)
+          (princ$ #\Space channel state)
+          (prin1$ (cadr rune) channel state)
+          (cond ((cddr rune)
+                 (pprogn (princ$ " . " channel state)
+                         (prin1$ (cddr rune) channel state)))
+                (t state))
+          (princ$ #\) channel state)))
+
+(defun useless-runes-report-p (lst)
+  (cond ((atom lst) (null lst))
+        ((let ((x (car lst)))
+           (and (true-listp x)
+                (natp (car x))
+                (natp (cadr x))
+                (caddr x) ; very weak check; should syntactically be a rune
+                (null (cdddr x))))
+         (useless-runes-report-p (cdr lst)))
+        (t nil)))
+
+(defun print-useless-runes-tuples-rec (lst channel state)
+
+; See print-useless-runes-tuples.  Here, lst is initially non-nil.
+
+  (declare (xargs :guard (useless-runes-report-p lst)))
+  (cond
+   ((endp lst)
+    (pprogn (newline channel state)
+            (princ$ " )" channel state)
+            (newline channel state)))
+   (t (let* ((triple (car lst))
+             (n1 (car triple))
+             (n2 (cadr triple))
+             (rune (caddr triple)))
+        (pprogn (newline channel state)
+                (princ$ " (" channel state)
+                (prin1$ n1 channel state)
+                (princ$ #\Space channel state)
+                (prin1$ n2 channel state)
+                (princ$ #\Space channel state)
+                (print-rune rune channel state)
+                (princ$ #\) channel state)
+                (print-useless-runes-tuples-rec (cdr lst) channel state))))))
+
+(defun print-useless-runes-tuples (lst channel state)
+
+; This function prints the given list of triples (n1 n2 rune), each preceded by
+; a newline and a space, and finally concluding with a space, right paren, and
+; newline.  Except, if lst is empty then we print the concluding right paren
+; immediately, without a space.
+
+  (declare (xargs :guard (useless-runes-report-p lst)))
+  (cond ((null lst)
+         (pprogn (princ$ #\) channel state)
+                 (newline channel state)))
+        (t (print-useless-runes-tuples-rec lst channel state))))
+
 (defun print-useless-runes (name channel known-pkgs state)
 
 ; We are given an output channel for a @useless-runes.lsp file.  We print an
@@ -6135,6 +6194,10 @@
 ; (as of this writing) sublis-var!, eval-ground-subexpressions1, scons-term,
 ; ev-respecting-ens, and even rewrite and expand-abbreviations.
 
+; WARNING: Avoid fmt functions below!  They use the world's evisc-table, which
+; the user may have modified so that certain numbers are printed as constants
+; -- but we expect the numbers to be printed as numbers!
+
   (error-free-triple-to-state
    'print-useless-runes
    (er-let* ((accp-info (accp-info state)))
@@ -6142,62 +6205,61 @@
       ((current-package "ACL2" set-current-package-state)
        (fmt-hard-right-margin 10000 set-fmt-hard-right-margin)
        (fmt-soft-right-margin 10000 set-fmt-soft-right-margin))
-      (cond
-       ((member-equal (symbol-package-name name) known-pkgs)
-        (let* ((useless-runes0 (remove-executable-counterpart-useless-runes
-                                (useless-runes accp-info)))
-               (bad-tuples (bad-useless-runes useless-runes0 known-pkgs nil))
-               (useless-runes (if (null bad-tuples) ; optimization
-                                  useless-runes0
-                                (set-difference-equal-sorted useless-runes0
-                                                             bad-tuples))))
-          (mv-let (col state)
-            (fmt1 "~@0(~x1~*2"
-                  (list (cons #\0 (if bad-tuples
-                                      (msg "; Skipping ~#0~[this ~
-                                            useless-rune~/these useless ~
-                                            runess~] below~|; (unknown ~
-                                            package in certification ~
-                                            world):~|#|~|~*1|#~|"
-                                           bad-tuples
-                                           `(""
-                                             "~x*~|"
-                                             "~x*~|"
-                                             "~x*~|"
-                                             ,bad-tuples))
-                                    ""))
-                        (cons #\1 name)
-                        (cons #\2
-                              `(")~%"          ; when there's nothing to print
-                                "~% ~x*~% )~%" ; print the last element
-                                "~% ~x*"       ; print the 2nd to last element
-                                "~% ~x*"       ; print all other elements
-                                ,useless-runes))
-                        (cons #\2 nil))
-                  0 channel state nil)
-            (declare (ignore col))
-            (prog2$
+      (let* ((bad-pkg
+              (not (member-equal (symbol-package-name name) known-pkgs)))
+             (useless-runes0 (remove-executable-counterpart-useless-runes
+                              (useless-runes accp-info)))
+             (bad-tuples (and (not bad-pkg) ; else print all useless runes
+                              (bad-useless-runes useless-runes0 known-pkgs
+                                                 nil)))
+             (useless-runes (if (null bad-tuples) ; optimization
+                                useless-runes0
+                              (set-difference-equal-sorted useless-runes0
+                                                           bad-tuples))))
+        (pprogn
+         (cond
+          (bad-tuples
+           (pprogn
+
+; WARNING: Before changing any of this printing, see the WARNING above about
+; fmt functions.
+
+            (princ$ "; Just below, skipping the following list where the rune"
+                    channel state)
+            (newline channel state)
+            (princ$ "; has an unknown package in the certification world:"
+                    channel state)
+            (newline channel state)
+            (princ$ "#|" channel state)
+            (newline channel state)
+            (princ$ "(" channel state)
+            (print-useless-runes-tuples bad-tuples channel state)
+            (princ$ "|#" channel state)
+            (newline channel state)))
+          (bad-pkg
+           (pprogn
+            (princ$ "; Omitting the following entry because the package of"
+                    channel state)
+            (newline channel state)
+            (princ$ "; the event name is unknown in the certification world."
+                    channel state)
+            (newline channel state)
+            (princ$ "#|" channel state)
+            (newline channel state)))
+          (t state))
+         (princ$ #\( channel state)
+         (prin1$ name channel state)
+         (print-useless-runes-tuples useless-runes channel state)
+         (cond (bad-pkg
+                (pprogn (princ$ "|#" channel state)
+                        (newline channel state)))
+               (t state))
+         (prog2$
 
 ; We are done printing, so turn off accumulated-persistence.
 
-             (accumulated-persistence nil)
-             (value nil)))))
-       (t
-        (mv-let (col state)
-          (fmt1 "; Omitting the following entry because the package of~|; ~
-                 the event name is unknown in the certification ~
-                 world.~|#|~|~x0~||#~|"
-                (list (cons #\0 (cons name
-                                      (remove-executable-counterpart-useless-runes
-                                       (useless-runes accp-info)))))
-                0 channel state nil)
-          (declare (ignore col))
-          (prog2$
-
-; We are done printing, so turn off accumulated-persistence.
-
-           (accumulated-persistence nil)
-           (value nil)))))))))
+          (accumulated-persistence nil)
+          (value nil))))))))
 
 (defun augmented-runes-after-1 (nume pairs)
 
@@ -7016,8 +7078,8 @@
         ((not (stobjp (car lst) t wrld))
          (er soft ctx
              "Every name used as a stobj (whether declared explicitly via the ~
-              :STOBJ keyword argument or implicitly via *-notation) must have ~
-              been previously defined as a single-threaded object with ~
+              :STOBJS keyword argument or implicitly via *-notation) must ~
+              have been previously defined as a single-threaded object with ~
               defstobj or defabsstobj.  ~x0 is used as stobj name ~#1~[~/in ~
               ~@1 ~]but has not been defined as a stobj."
              (car lst)
@@ -7049,9 +7111,8 @@
              (cond
               ((not (symbol-listp lst))
                (er soft ctx
-                   "The value specified for the :STOBJS xarg ~
-                          must be a true list of symbols and ~x0 is ~
-                          not."
+                   "The value specified for the :STOBJS xarg must be a true ~
+                    list of symbols and ~x0 is not."
                    lst))
               (t (er-progn
                   (chk-all-stobj-names lst
@@ -7407,7 +7468,7 @@
 ; that treats 3 as a stobj.
 
       (msg "the proposed and existing definitions for ~x0 differ on their ~
-            :stobj declarations."
+            :stobjs declarations."
            (car def1)))
      ((not (equal (fetch-dcl-field 'type all-but-body1)
                   (fetch-dcl-field 'type all-but-body2)))
@@ -9055,13 +9116,13 @@
 ; definition will be loaded from that compiled file, presumably without any
 ; #-acl2-loop-only.
 
-; The following book certified in ACL2 Version_3.3 built on SBCL, where we have
-; #+acl2-mv-as-values and also we load compiled files.  In this case the
-; problem was that while ACL2 defined prog2$ as a macro in #-acl2-loop-only,
-; for proper multiple-value handling, nevertheless that definition was
-; overridden by the compiled definition loaded by the compiled file associated
-; with the book "prog2" (not shown here, but containing the redundant
-; #+acl2-loop-only definition of prog2$).
+; The following book certified in ACL2 Version_3.3 built on SBCL, where mv was
+; values and also we load compiled files.  In this case the problem was that
+; while ACL2 defined prog2$ as a macro in #-acl2-loop-only, for proper
+; multiple-value handling, nevertheless that definition was overridden by the
+; compiled definition loaded by the compiled file associated with the book
+; "prog2" (not shown here, but containing the redundant #+acl2-loop-only
+; definition of prog2$).
 
 ; (in-package "ACL2")
 ;
@@ -10674,56 +10735,100 @@
                    (car names)))
          (t
           (let* ((name (car names))
-                 (old-tp (car (getpropc name 'type-prescriptions nil wrld))))
-            (cond
-             ((null old-tp)
-              (er soft ctx
-                  "It is illegal to specify a non-nil :type-prescription in ~
-                   an xargs declaration for ~x0, because ACL2 computed no ~
-                   built-in type prescription for ~x0."
-                  name))
-             (t
-              (let* ((old-basic-ts (access type-prescription old-tp :basic-ts))
-                     (old-vars (access type-prescription old-tp :vars))
-                     (subsetp-vars (subsetp-eq old-vars vars)))
-                (assert$
-                 (null (access type-prescription old-tp :hyps))
-                 (cond
-                  ((and (ts= old-basic-ts basic-ts)
-                        (or (equal vars old-vars) ; optimization
-                            (and subsetp-vars
-                                 (subsetp-eq vars old-vars))))
-                   (chk-type-prescription-lst (cdr names)
-                                              (cdr arglists)
-                                              (cdr type-prescription-lst)
-                                              ens wrld ctx state))
-                  ((and (ts-subsetp old-basic-ts basic-ts)
-                        (subsetp-eq old-vars vars))
-                   (pprogn
-                    (warning$ ctx "Type-prescription"
-                              "The type-prescription specified by the xargs ~
-                               :type-prescription for ~x0 is strictly weaker ~
-                               than the computed type of ~x0~@1."
-                              name
-                              (if (member-eq 'event
-                                             (f-get-global 'inhibit-output-lst
-                                                           state))
-                                  ""
-                                " that is noted above"))
-                    (chk-type-prescription-lst (cdr names)
-                                               (cdr arglists)
-                                               (cdr type-prescription-lst)
-                                               ens wrld ctx state)))
-                  (t (er soft ctx
-                         "The type-prescription specified by the xargs ~
-                          :type-prescription for ~x0 is not implied by the ~
-                          computed type of ~x0~@1."
-                         name
-                         (if (member-eq 'event
+                 (old-tp (car (getpropc name 'type-prescriptions nil wrld)))
+                 (uncertified-str
+                  "This warning may occur when including an uncertified book, ~
+                   when a :type-prescription declaration depends on ~
+                   a type-prescription from a locally included book."))
+            (er-progn
+             (cond
+              ((null old-tp)
+               (let ((str "It is illegal to specify a non-nil ~
+                           :type-prescription in an xargs declaration for ~
+                           ~x0, because ACL2 computed no built-in type ~
+                           prescription for ~x0."))
+                 (cond ((f-get-global 'including-uncertified-p state)
+
+; See commennt below about including uncertified books.
+
+                        (pprogn (warning$ ctx "Uncertified"
+                                          "~@0  ~@1"
+                                          (msg str name)
+                                          uncertified-str)
+                                (value nil)))
+                       (t
+                        (er soft ctx str name)))))
+              (t
+               (let* ((old-basic-ts (access type-prescription old-tp :basic-ts))
+                      (old-vars (access type-prescription old-tp :vars))
+                      (subsetp-vars (subsetp-eq old-vars vars)))
+                 (assert$
+                  (null (access type-prescription old-tp :hyps))
+                  (cond
+                   ((and (ts= old-basic-ts basic-ts)
+                         (or (equal vars old-vars) ; optimization
+                             (and subsetp-vars
+                                  (subsetp-eq vars old-vars))))
+                    (value nil))
+                   ((and (ts-subsetp old-basic-ts basic-ts)
+                         (subsetp-eq old-vars vars))
+                    (pprogn
+                     (warning$ ctx "Type-prescription"
+                               "The type-prescription specified by the xargs ~
+                                :type-prescription for ~x0 is strictly weaker ~
+                                than the computed type of ~x0~@1."
+                               name
+                               (if (or (member-eq
+                                        'event
                                         (f-get-global 'inhibit-output-lst
                                                       state))
-                             ""
-                           " that is noted above"))))))))))))))))
+                                       (ld-skip-proofsp state))
+                                   ""
+                                 " that is noted above"))
+                     (value nil)))
+                   (t
+                    (let ((msg
+                           (msg "The type-prescription specified by the xargs ~
+                                 :type-prescription for ~x0 is not implied by ~
+                                 the computed type of ~x0~@1.~|OLD:~|  ~
+                                 ~x2~|NEW:~|  ~x3~|"
+                                name
+                                (if (or (member-eq
+                                         'event
+                                         (f-get-global 'inhibit-output-lst
+                                                       state))
+                                        (ld-skip-proofsp state))
+                                    ""
+                                  " that is noted above")
+                                (access type-prescription old-tp :corollary)
+                                term)))
+                      (cond
+                       ((f-get-global 'including-uncertified-p state)
+
+; We skip soome checks for :type-prescription xargs when including an
+; uncertified book, because they are presumably intended to pass but actually
+; might not pass.  In a certified book we expect type-prescription information
+; to be preserved in the certificate's cert-data, from local include-book
+; forms, but there is no such expectation when including an uncertified book
+; (where cert-data is unavailable).  It was a bit tempting to exclude the check
+; whenever (ld-skip-proofsp state) holds, but the check seems necessary during
+; the second pass of a non-trivial encapsulate.  We could presumably check for
+; such an environment, but the check seems inexpensive so for robustness, we
+; make it except for the problematic case of including an uncertified book.  An
+; example in August 2021, pointed out by Eric Smith, was including the
+; community book "kestrel/bv/defs-bitwise" as an uncertified book.
+
+                        (pprogn (warning$ ctx "Uncertified"
+                                          "~@0~@1"
+                                          msg
+                                          uncertified-str)
+                                (value nil)))
+                       (t
+                        (er soft ctx "~@0" msg))))))))))
+             (chk-type-prescription-lst (cdr names)
+                                        (cdr arglists)
+                                        (cdr type-prescription-lst)
+                                        ens wrld ctx state))))))))))
 
 (defun chk-acceptable-defuns1 (names fives stobjs-in-lst defun-mode
                                      symbol-class rc non-executablep ctx wrld
@@ -11353,7 +11458,6 @@
 ; arranging for a call of verify-guards here.
 
          (chk-acceptable-defuns-verify-guards-er names ctx wrld state))
-        #+hons
         ((and (eq rc 'reclassifying)
               (conditionally-memoized-fns names
                                           (table-alist 'memoize-table wrld)))

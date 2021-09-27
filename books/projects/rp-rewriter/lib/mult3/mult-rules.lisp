@@ -182,7 +182,7 @@
            :in-theory (e/d (bitp) ()))))
 
 (progn
-  (def-rp-rule binary-xor-1-of-s
+  (def-rp-rule$ t t binary-xor-1-of-s
     (and (equal (binary-xor 1 (s hash-code pp c/d))
                 (sum 1 (-- (s hash-code pp c/d))))
          (equal (binary-xor (s hash-code pp c/d) 1)
@@ -191,20 +191,20 @@
              :in-theory (e/d (binary-xor m2)
                              ()))))
 
-  (def-rp-rule binary-not-of-s
+  (def-rp-rule$ t t binary-not-of-s
     (equal (binary-not (s hash-code pp c/d))
            (sum 1 (-- (s hash-code pp c/d))))
     :hints (("Goal"
              :in-theory (e/d (binary-xor m2) ()))))
 
-  (def-rp-rule binary-not-of-c
+  (def-rp-rule$ t t binary-not-of-c
     (implies (bitp (c hash-code s pp c/d))
              (equal (binary-not (c hash-code s pp c/d))
                     (sum 1 (-- (c hash-code s pp c/d)))))
     :hints (("Goal"
              :in-theory (e/d (binary-xor m2) ()))))
 
-  (def-rp-rule binary-not-of-s-c-res
+  (def-rp-rule$ t t binary-not-of-s-c-res
     (implies (bitp (s-c-res s pp c/d))
              (equal (binary-not (s-c-res s pp c/d))
                     (sum 1 (-- (s-c-res s pp c/d)))))
@@ -275,13 +275,31 @@
            :in-theory (e/d (sum --)
                            (+-IS-SUM)))))
 
+(rp::def-rp-rule
+ sum-of-negated
+ (and (equal (rp::sum x (rp::-- x) other)
+             (ifix other))
+      (equal (rp::sum (rp::-- x) x other)
+             (ifix other)))
+ :hints (("Goal"
+          :in-theory (e/d (rp::sum
+                           rp::--)
+                          (+-IS-SUM)))))
+
 (def-rp-rule equal-sides-to-s
   (implies (and (bitp side1)
                 (bitp side2)
-                (syntaxp (and (not (equal side1 0))
-                              (not (equal side2 0))
-                              (not (equal side1 ''0))
-                              (not (equal side2 ''0))
+                (syntaxp (and (or (and (not (equal side1 0))
+                                       (not (equal side1 ''0)))
+                                  (and (unpack-booth-later-enabled)
+                                       (not (include-fnc side2 'and-list))
+                                       (include-fnc side2 'binary-or)))
+                              (or (and (not (equal side2 0))
+                                       (not (equal side2 ''0)))
+                                  (and (unpack-booth-later-enabled)
+                                       (not (include-fnc side1 'and-list))
+                                       (include-fnc side1 'binary-or)))
+                              
                               (or ;;(pp-has-bitp-rp side1)
                                (single-s-p (ex-from-rp-loose side1))
                                (s-c-res-p (ex-from-rp-loose side1))
@@ -290,7 +308,7 @@
                                (binary-sum-p (ex-from-rp-loose side1))
                                
                                (single-s-p (ex-from-rp-loose side2))
-                               (s-c-res-p (ex-from-rp-loose side1))
+                               (s-c-res-p (ex-from-rp-loose side2))
                                (single-c-p (ex-from-rp-loose side2))
                                (binary-fnc-p (ex-from-rp-loose side2))
                                (binary-sum-p (ex-from-rp-loose side2))
@@ -301,7 +319,7 @@
                                   (bit-of-p (ex-from-rp-loose side2))
                                   (binary-fnc-p (ex-from-rp-loose side2)))||#)))
            (equal (equal side1 side2)
-                  (equal (s-spec (list side1 side2))
+                  (equal (unpack-booth (s-spec (list 2 side1 side2)))
                          0)))
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))

@@ -40,15 +40,12 @@
   :hints (("Goal" :in-theory (enable sub))))
 
 (defthm sub-same
-  (implies (and (fep x p)
-                (integerp p))
-           (equal (sub x x p)
-                  0))
+  (equal (sub x x p)
+         0)
   :hints (("Goal" :in-theory (enable sub neg add))))
 
 (defthm sub-same-2
-  (implies (and (fep x p)
-                (fep y p)
+  (implies (and (fep y p)
                 (integerp p))
            (equal (sub x (sub x y p) p)
                   y))
@@ -63,8 +60,7 @@
   :hints (("Goal" :in-theory (enable sub add neg acl2::mod-sum-cases))))
 
 (defthm equal-of-sub-and-sub-cancel-1
-  (implies (and (fep x p)
-                (fep y p)
+  (implies (and (fep y p)
                 (fep z p)
                 (integerp p))
            (equal (equal (sub x y p) (sub x z p))
@@ -76,7 +72,6 @@
                               (quotep k2)))
                 (fep x p)
                 (fep k1 p)
-                (fep k2 p)
                 (integerp p))
            (equal (equal k1 (sub k2 x p))
                   (equal x (sub k2 k1 p))))

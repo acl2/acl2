@@ -24,7 +24,7 @@
 (local (include-book "../arithmetic-light/minus"))
 (local (include-book "../arithmetic-light/plus"))
 (local (include-book "../arithmetic-light/integerp"))
-(local (include-book "../bv/unsigned-byte-p"))
+(local (include-book "unsigned-byte-p"))
 
 ;move
 (defthm +-of---and-0
@@ -102,7 +102,7 @@
   (implies (and (< high n)
                 (natp high)
                 (natp low)
-                (natp n))
+                (integerp n))
            (equal (slice high low (bvchop n x))
                   (slice high low x)))
   :hints (("Goal" :cases ((and (<= low high) (integerp x))
@@ -113,7 +113,7 @@
 (defthm slice-of-bvchop-tighten
   (implies (and (<= n high)
                 ;; (<= low high)
-                (<= low n)
+                ;; (<= low n)
                 (natp high)
                 (natp low)
                 (natp n))
@@ -124,9 +124,10 @@
 
 (defthm slice-of-bvchop-too-high
   (implies (and (<= n n2)
-                (natp n)
+                ;; (natp n)
                 (natp n2)
-                (natp m))
+                ;;(natp m)
+                )
            (equal (slice m n2 (bvchop n x))
                   0))
   :hints (("Goal" :cases ((integerp x))
@@ -135,7 +136,7 @@
 (defthm slice-of-bvchop-low-gen
   (implies (and (natp high)
                 (natp low)
-                (natp n))
+                (integerp n))
            (equal (slice high low (bvchop n x))
                   (if (< high n)
                       (slice high low x)
@@ -167,8 +168,8 @@
 (defthmd unsigned-byte-p-of-slice-helper
   (implies (and (equal n (+ 1 high (- low)))
                 (<= low high) ;todo
-                (natp high)
-                (natp low))
+                (integerp high)
+                (integerp low))
            (UNSIGNED-BYTE-P n (SLICE high low x)))
   :hints (("Goal" ;:cases ( (< high low))
            :in-theory (e/d (SLICE) (SLICE-BECOMES-BVCHOP)))))
@@ -255,10 +256,8 @@
   (implies (and (natp n)
                 (natp m)
                 (natp low)
-                (<= (+ low2 -1 low) m) ;todo?
                 (<= low2 n)
-                (natp low2)
-                )
+                (natp low2))
            (equal (slice n low2 (slice m low x))
                   (slice (min (+ low n) m) (+ low2 low) x)))
   :hints (("Goal" :cases ((integerp x))
@@ -304,7 +303,7 @@
 (defthmd logtail-becomes-slice
   (implies (and (unsigned-byte-p m x) ;m is a free var
                 (< n m)
-                (integerp m);could drop
+                ;; (integerp m);could drop
                 (natp n))
            (equal (logtail n x)
                   (slice (+ -1 m) n x)))
@@ -352,7 +351,7 @@
 
 ;fixme get rid of slice-of-slice?
 (defthm slice-of-slice-gen-better
-  (implies (and (natp n)
+  (implies (and (integerp n)
                 (natp m)
                 (natp low)
                 (natp low2))

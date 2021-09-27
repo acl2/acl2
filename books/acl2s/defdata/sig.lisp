@@ -1071,7 +1071,7 @@ constant). In the latter return a lambda expression"
         (and cgenp
              '((LOCAL (ACL2S::ACL2S-DEFAULTS :SET ACL2S::TESTING-ENABLED nil))))))
     `(WITH-OUTPUT
-      :on (acl2::summary acl2::error)
+      :on (acl2::summary acl2::error acl2::comment)
       :SUMMARY-OFF (:OTHER-THAN ACL2::FORM)
       (ENCAPSULATE
        NIL
@@ -1083,7 +1083,7 @@ constant). In the latter return a lambda expression"
   (b* ((verbose (let ((lst (member :verbose args)))
                   (and lst (cadr lst)))))
     `(with-output
-      ,@(and (not verbose) '(:off :all))
+      ,@(and (not verbose) '(:off :all :on comment))
       :gag-mode t
       :stack :push
       (make-event

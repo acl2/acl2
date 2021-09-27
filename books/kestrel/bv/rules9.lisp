@@ -36,7 +36,7 @@
   (implies (and (< 32 size) ; prevent loops
                 (< n 32)
                 (natp n)
-                (natp size))
+                (integerp size))
            (equal (getbit n (bvplus size x y))
                   (getbit n (bvplus 32 x y))))
   :hints (("Goal" :in-theory (e/d (bvplus)
@@ -58,8 +58,8 @@
                                    )))))
 
 (defthmd bvchop-of-bvplus-tighten-to-32
-  (implies (and (< 32 n)
-                (natp n))
+  (implies (and (< 32 n) ; prevent loops
+                (integerp n))
            (equal (bvchop 32 (bvplus n x y))
                   (bvchop 32 (bvplus 32 x y))))
   :hints (("Goal" :in-theory (e/d (bvplus)
@@ -68,21 +68,21 @@
 
 (defthm bvplus-of-bvplus-trim-to-32-arg1
   (implies (and (< 32 n)
-                (natp n))
+                (integerp n))
            (equal (bvplus 32 (bvplus n x y) z)
                   (bvplus 32 (bvplus 32 x y) z)))
   :hints (("Goal" :in-theory (enable acl2::bvplus))))
 
 (defthm bvplus-of-bvplus-trim-to-32-arg2
   (implies (and (< 32 n)
-                (natp n))
+                (integerp n))
            (equal (bvplus 32 z (bvplus n x y))
                   (bvplus 32 (bvplus 32 x y) z)))
   :hints (("Goal" :in-theory (enable acl2::bvplus))))
 
 (defthm bvcat-of-slice-tighten
   (implies (and (<= highsize (- high low))
-                (<= low high)
+                ;; (<= low high)
                 (natp highsize)
                 (natp low)
                 (natp high))
@@ -168,7 +168,7 @@
                 (natp lowsize)
                 (< lowsize upper-bit)
                 (< highsize upper-bit)
-                (posp highsize) ;gen
+                ;(posp highsize) ;gen
                 )
            (equal (BVCAT highsize x lowsize (SLICE upper-bit highsize x))
                   (acl2::rightrotate (+ 1 upper-bit) highsize x)))
@@ -214,8 +214,8 @@
                 (natp low2)
                 (natp high1)
                 (natp high2)
-                (posp high1) ;why?
-                (posp high2) ;why?
+                ;(posp high1) ;why?
+                ;(posp high2) ;why?
                 )
            (equal (bvcat 1 (bitxor (getbit high1 x) (getbit high2 y))
                          n (bvxor n (slice high1minus1 low1 x) (slice high2minus1 low2 y)))
@@ -235,8 +235,8 @@
                 (natp low2)
                 (natp high1)
                 (natp high2)
-                (posp high1) ;why?
-                (posp high2) ;why?
+                ;(posp high1) ;why?
+                ;(posp high2) ;why?
                 )
            (equal (bvcat 1 (bitxor (getbit high2 y) (getbit high1 x))
                                n (bvxor n (slice high1minus1 low1 x) (slice high2minus1 low2 y)))
@@ -263,8 +263,8 @@
                 (natp mid2)
                 (natp high1)
                 (natp high2)
-                (posp high1) ;why?
-                (posp high2) ;why?
+                ;(posp high1) ;why?
+                ;(posp high2) ;why?
                 )
            (equal (bvcat n1 (bvxor n1 (slice high1 mid1 x) (slice high2 mid2 y))
                                n2 (bvxor n2 (slice high1minus1 low1 x) (slice high2minus1 low2 y)))
@@ -291,8 +291,8 @@
                 (natp mid2)
                 (natp high1)
                 (natp high2)
-                (posp high1) ;why?
-                (posp high2) ;why?
+                ;(posp high1) ;why?
+                ;(posp high2) ;why?
                 )
            (equal (bvcat n1 (bvxor n1 (slice high2 mid2 y) (slice high1 mid1 x))
                                n2 (bvxor n2 (slice high1minus1 low1 x) (slice high2minus1 low2 y)))
@@ -320,8 +320,8 @@
                 (natp high2)
                 (posp mid1) ;why?
                 (posp mid2) ;why?
-                (posp high1) ;why?
-                (posp high2) ;why?
+                ;(posp high1) ;why?
+                ;(posp high2) ;why?
                 )
            (equal (bvcat n1 (bvxor n1 (slice high1 mid1 x) (slice high2 mid2 y))
                                1 (bitxor (getbit mid1minus1 x) (getbit mid2minus1 y)))
@@ -351,8 +351,8 @@
                 (natp high2)
                 (posp mid1) ;why?
                 (posp mid2) ;why?
-                (posp high1) ;why?
-                (posp high2) ;why?
+                ;(posp high1) ;why?
+                ;(posp high2) ;why?
                 )
            (equal (bvcat n1 (bvxor n1 (slice high2 mid2 y) (slice high1 mid1 x))
                                1 (bitxor (getbit mid1minus1 x) (getbit mid2minus1 y)))
@@ -399,8 +399,8 @@
                 (natp mid2)
                 (natp high1)
                 (natp high2)
-                (posp high1) ;why?
-                (posp high2) ;why?
+                ;(posp high1) ;why?
+                ;(posp high2) ;why?
                 (natp zsize)
                 )
            (equal (bvcat n1+zsize (bvcat zsize z n1 (bvxor n1 (slice high1 mid1 x) (slice high2 mid2 y)))
@@ -431,8 +431,8 @@
                 (natp mid2)
                 (natp high1)
                 (natp high2)
-                (posp high1) ;why?
-                (posp high2) ;why?
+                ;(posp high1) ;why?
+                ;(posp high2) ;why?
                 (natp zsize)
                 )
            (equal (bvcat n1+zsize (bvcat zsize z n1 (bvxor n1 (slice high2 mid2 y) (slice high1 mid1 x)))
@@ -638,7 +638,7 @@
                 (<= low2 high2)
                 (natp size)
                 (natp high1)
-                (natp low1)
+                ;; (natp low1)
                 (natp high2)
                 (natp low2))
            (equal (bvcat size1 (bvcat size y size2 (slice high1 low1 x))
@@ -655,7 +655,7 @@
                 (<= low1 high1)
                 (natp size)
                 (natp high1)
-                (natp low1)
+                ;; (natp low1)
                 (natp n))
            (equal (bvcat size1 (bvcat size y size2 (slice high1 low1 x))
                                1 (getbit n x))
@@ -771,7 +771,8 @@
                 (equal k (expt 2 n))
                 (natp n)
                 (integerp x)
-                (integerp k))
+                ;(integerp k)
+                )
            (equal (acl2::getbit n (+ k x))
                   (acl2::bitnot (acl2::getbit n x))))
   :hints (("Goal" :use (getbit-of-+-of-expt-same-arg1)

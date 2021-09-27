@@ -154,8 +154,7 @@
 
 (defthm bound-lemma-for-adder
   (implies (and (UNSIGNED-BYTE-P (+ -1 N) X)
-                (UNSIGNED-BYTE-P (+ -1 N) Y)
-                (Natp n))
+                (UNSIGNED-BYTE-P (+ -1 N) Y))
            (< (+ X Y) (EXPT 2 N)))
   :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P expt))))
 
@@ -170,8 +169,7 @@
 
 (defthm bound-lemma-strong
   (implies (and (UNSIGNED-BYTE-P (+ -1 N) X)
-                (UNSIGNED-BYTE-P (+ -1 N) Y)
-                (Natp n))
+                (UNSIGNED-BYTE-P (+ -1 N) Y))
            (< (+ X Y)  (+ -1 (EXPT 2 N))))
   :hints (("Goal" :in-theory (e/d (UNSIGNED-BYTE-P expt-split) (EXPT-OF-ONE-LESS-COMBINE)))))
 
@@ -226,11 +224,12 @@
 
 (defthm split-bv-linear-when-top-bit-1
   (implies (and (equal (getbit (+ -1 n) x) 1)
-                (posp n)
+                ;; (posp n)
                 (unsigned-byte-p n x))
            (equal x (+ (expt 2 (+ -1 n)) (bvchop (+ -1 n) x))))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable bvcat logapp)
+           :cases ((equal n 0))
            :use (:instance split-bv (y x)
                            (m (+ -1 n))))))
 
@@ -260,8 +259,7 @@
   :hints (("Goal" :in-theory (e/d (expt-hack) (EQUAL-OF-SUM-OF-LOW-BITS)) :use (:instance split-bv-linear-when-top-bit-1 (x x)))))
 
 (defthmd bvplus-becomes-ripple-carry-adder-helper
-   (implies (and (natp n)
-                 (unsigned-byte-p n x)
+   (implies (and (unsigned-byte-p n x)
                  (unsigned-byte-p n y)
                  (unsigned-byte-p 1 carry))
             (equal (+ carry x y) ;(bvplus (+ 1 n) carry (bvplus (+ 1 n) x y))

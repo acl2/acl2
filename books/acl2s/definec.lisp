@@ -92,7 +92,7 @@ both expand into
 
 (defmacro definec-core (name d? &rest args)
   `(with-output
-    :stack :push :off :all :on (error)
+    :stack :push :off :all :on (error comment)
     (make-event
      (b* ((tbl (table-alist 'type-metadata-table (w state)))
           (atbl (table-alist 'type-alias-table (w state)))

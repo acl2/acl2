@@ -205,7 +205,7 @@
                  pfield::add-of-0-arg1
                  pfield::neg-of-0
 ;pfield::add-associative-when-constant ; at least move constants forward, so they can be combined
-;pfield::add-combine-constants
+;pfield::add-of-add-combine-constants
 ;pfield::equal-of-add-combine-constants
                  acl2::ifix-when-integerp
                  pfield::mod-of-ifix-when-fep ; which rules introduce this?
@@ -217,8 +217,8 @@
                  acl2::bvcat-when-lowsize-is-not-positive
                  acl2::bvchop-1-becomes-getbit
                  acl2::getbit-0-of-bitnot
-                 PFIELD::MUL-COMBINE-CONSTANTS
-                 PFIELD::MUL-COMBINE-CONSTANTS-alt
+                 PFIELD::MUL-OF-MUL-COMBINE-CONSTANTS
+                 PFIELD::MUL-OF-MUL-COMBINE-CONSTANTS-alt
                  PFIELD::MUL-OF-CONSTANT-NORMALIZE-TO-FEP
                  PFIELD::MUL-OF-1-ARG1
                  pfield::mul-of--1-becomes-neg-alt

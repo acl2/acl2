@@ -261,7 +261,7 @@
 (define ea-to-la ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
 		  (eff-addr  :type (signed-byte 64))
 		  (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
-                  (nbytes :type (member 1 2 4 6 8 10 16))
+                  (nbytes :type (member 1 2 4 6 8 10 16 32 64))
 		  x86)
   :returns (mv flg
 	       (lin-addr i64p :hyp (i64p eff-addr)))

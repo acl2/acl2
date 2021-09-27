@@ -284,7 +284,7 @@
     :RULE-CLASSES NIL)
 
   (defabsstobj top
-    :concrete top$c
+    :foundation top$c
     :corr-fn top-corr
     :recognizer (topp :logic top$ap :exec top$cp)
     :creator (create-top :logic create-top$a :exec create-top$c)

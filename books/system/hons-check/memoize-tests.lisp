@@ -42,8 +42,6 @@
 (include-book "std/lists/flatten" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 
-; cert_param: (hons-only)
-
 ; This file does nothing useful and should never be included in another
 ; book.  We just do some very basic computations to make sure the memoize
 ; system seems to be working right.

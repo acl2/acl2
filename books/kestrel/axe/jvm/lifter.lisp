@@ -64,6 +64,7 @@
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
+(include-book "kestrel/event-macros/cw-event" :dir :system)
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 
@@ -501,7 +502,7 @@
              ;; jvm::call-stack-size-OF-POP-frame
              jvm::call-stack-size-of-pop-frame-strong
              comparison
-             <-of-+-arg2-same-arg2
+             <-of-+-cancel-1-2
              equal-of-same-cancel-1
              equal-of-same-cancel-2
              equal-of-same-cancel-3
@@ -627,7 +628,7 @@
 
     ;get-pc-designator-from-state
     ;; MEMBER-BECOMES-MEMBER-EQUAL
-    <-of-+-arg2-same-arg2 ;add
+    <-of-+-cancel-1-2 ;add
     equal-of-same-cancel-1
     equal-of-same-cancel-2
     equal-of-same-cancel-3

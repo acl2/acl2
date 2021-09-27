@@ -494,11 +494,11 @@ ACL2 !>>(DEFUN FOO-BAD (TOP)
                           (MV TOP SUB$C-VAL SUB$C-CONG-VAL)))
 
 
-ACL2 Error in ( DEFUN FOO-BAD ...):  The stobj-let bindings 
-((SUB$C (SUB0 TOP)) (SUB$C-CONG (SUB0-AGAIN TOP))) ultimately access
-the same field SUB0$C of concrete stobj TOP$C.  Since variables SUB$C
-and SUB$C-CONG are to be updated (i.e., they are among the stobj-let
-form's producer variables), this aliasing is illegal.  The form 
+ACL2 Error in ( DEFUN FOO-BAD ...):  The stobj-let binding expressions
+((SUB0 TOP) (SUB0-AGAIN TOP)) both ultimately read concrete stobj TOP$C
+with accessor SUB0$C.  Since variables SUB$C and SUB$C-CONG are to
+be updated (i.e., they are among the stobj-let form's producer variables),
+this aliasing is illegal.  The form 
 (STOBJ-LET ((SUB$C (SUB0 TOP))
             (SUB$C-CONG (SUB0-AGAIN TOP)
                         UPDATE-SUB0))
@@ -741,11 +741,11 @@ ACL2 !>>(DEFUN FOO2-BAD (TOP2)
                           (MV TOP2 SUB$C-VAL SUB$C-CONG-VAL)))
 
 
-ACL2 Error in ( DEFUN FOO2-BAD ...):  The stobj-let bindings 
-((SUB$C (SUB02 TOP2)) (SUB$C-CONG (SUB02-AGAIN TOP2))) ultimately access
-the same field SUB0$C of concrete stobj TOP$C.  Since variables SUB$C
-and SUB$C-CONG are to be updated (i.e., they are among the stobj-let
-form's producer variables), this aliasing is illegal.  The form 
+ACL2 Error in ( DEFUN FOO2-BAD ...):  The stobj-let binding expressions
+((SUB02 TOP2) (SUB02-AGAIN TOP2)) both ultimately read concrete stobj
+TOP$C with accessor SUB0$C.  Since variables SUB$C and SUB$C-CONG are
+to be updated (i.e., they are among the stobj-let form's producer variables),
+this aliasing is illegal.  The form 
 (STOBJ-LET ((SUB$C (SUB02 TOP2))
             (SUB$C-CONG (SUB02-AGAIN TOP2)
                         UPDATE-SUB02))
@@ -780,11 +780,11 @@ ACL2 !>>(DEFUN FOO2-BAD2 (TOP2)
                           (MV TOP2 SUB$C-VAL SUB$C-CONG-VAL)))
 
 
-ACL2 Error in ( DEFUN FOO2-BAD2 ...):  The stobj-let bindings 
-((SUB$C (SUB02 TOP2)) (SUB$C-CONG (SUB02-AGAIN TOP2))) ultimately access
-the same field SUB0$C of concrete stobj TOP$C.  Since variable SUB$C-CONG
-is to be updated (i.e., it is among the stobj-let form's producer variables),
-this aliasing is illegal.  The form 
+ACL2 Error in ( DEFUN FOO2-BAD2 ...):  The stobj-let binding expressions
+((SUB02 TOP2) (SUB02-AGAIN TOP2)) both ultimately read concrete stobj
+TOP$C with accessor SUB0$C.  Since variable SUB$C-CONG is to be updated
+(i.e., it is among the stobj-let form's producer variables), this aliasing
+is illegal.  The form 
 (STOBJ-LET ((SUB$C (SUB02 TOP2))
             (SUB$C-CONG (SUB02-AGAIN TOP2)
                         UPDATE-SUB02))
@@ -1365,16 +1365,16 @@ ACL2 !>>(DEFUN FOO3-BAD (NTOP)
                           NTOP))
 
 
-ACL2 Error in ( DEFUN FOO3-BAD ...):  The stobj-let bindings 
-((SUB$C (NSUB1 NTOP)) (SUB$C-CONG (NSUB1-AGAIN NTOP))) ultimately access
-the same field NSUB1$C of concrete stobj NTOP$C.  Since variables SUB$C
-and SUB$C-CONG are to be updated (i.e., they are among the stobj-let
-form's producer variables), this aliasing is illegal.
-Also: The stobj-let bindings 
-((SUB$C-CONG1 (NSUB2 NTOP)) (SUB$C-CONG2 (NSUB2-AGAIN NTOP))) ultimately
-access the same field NSUB2$C of concrete stobj NTOP$C.  Since variable
-SUB$C-CONG2 is to be updated (i.e., it is among the stobj-let form's
-producer variables), this aliasing is illegal.  The form 
+ACL2 Error in ( DEFUN FOO3-BAD ...):  The stobj-let binding expressions
+((NSUB1 NTOP) (NSUB1-AGAIN NTOP)) both ultimately read concrete stobj
+NTOP$C with accessor NSUB1$C.  Since variables SUB$C and SUB$C-CONG
+are to be updated (i.e., they are among the stobj-let form's producer
+variables), this aliasing is illegal.
+Also: The stobj-let binding expressions ((NSUB2 NTOP) (NSUB2-AGAIN NTOP))
+both ultimately read concrete stobj NTOP$C with accessor NSUB2$C. 
+Since variable SUB$C-CONG2 is to be updated (i.e., it is among the
+stobj-let form's producer variables), this aliasing is illegal.  The
+form 
 (STOBJ-LET ((SUB$C (NSUB1 NTOP))
             (SUB$C-CONG (NSUB1-AGAIN NTOP)
                         UPDATE-NSUB1)

@@ -13,7 +13,7 @@
 (include-book "bvnot")
 (include-book "bvplus")
 (include-book "bvuminus") ;make local?
-(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -202,7 +202,7 @@
   (+ -1 (expt 2 size)))
 
 (defthm to-ones-complement-of-from-ones-complement
-  (implies (and (posp size)
+  (implies (and ;; (posp size)
                 (unsigned-byte-p size x)
                 (not (equal x (negative-zero size)))
                 )
@@ -258,7 +258,7 @@
 (defthmd bvplus1c-correct
   (implies (and (unsigned-byte-p size x)
                 (unsigned-byte-p size y)
-                (posp size)
+                ;; (posp size)
                 ;; the sum is representable:
                 (representable-as-ones-complementp
                  size

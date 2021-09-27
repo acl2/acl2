@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -411,12 +411,15 @@
 ; may take several minutes, and then performing the appropriate checks.  It
 ; assumes that "ACL2" below references your ACL2 sources directory.  Note:
 ; Replace "saved_acl2d" as necessary, e.g., perhaps "ccl-saved_acl2d".
+; Also note that including "ACL2_USELESS_RUNES= " as shown below may be
+; necessary because of how proofs differ between normal and #+acl2-devel
+; versions of ACL2.
 
 ; cd ACL2
 ; make ACL2_DEVEL=t
 ; make clean-books
 ; cd books
-; (time ./build/cert.pl -j 16 --acl2 `pwd`/../saved_acl2d system/devel-check)
+; (time make -j 16 ACL2=`pwd`/../saved_acl2d ACL2_USELESS_RUNES= system/devel-check.cert)
 ; cd ACL2
 ; make devel-check ACL2=`pwd`/saved_acl2d
 
@@ -676,9 +679,9 @@
 
                (all-nils (getpropc fn 'stobjs-out nil wrld)))
 
-; Note that stobj creators take no stobjs in but return stobjs.  We don't want
-; any such functions in our answer!  Also, we don't want to think about
-; functions like BOUNDP-GLOBAL1 and 32-BIT-INTEGER-STACK-LENGTH1 that use
+; Note that stobj creators and fixers take no stobjs in but return stobjs.  We
+; don't want any such functions in our answer!  Also, we don't want to think
+; about functions like BOUNDP-GLOBAL1 and 32-BIT-INTEGER-STACK-LENGTH1 that use
 ; STATE-STATE as a formal preventing their execution.
 
           (first-order-like-terms-and-out-arities1

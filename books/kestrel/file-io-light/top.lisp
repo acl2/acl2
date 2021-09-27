@@ -22,7 +22,7 @@
 (include-book "read-object-from-file")
 (include-book "read-file-into-byte-list")
 (include-book "read-file-into-character-list")
-(include-book "read-file-into-stobj")
+(include-book "read-file-into-byte-array-stobj")
 
 (include-book "write-byte-dollar")
 (include-book "write-bytes-to-channel")

@@ -33,7 +33,7 @@
 (defthm unsigned-byte-p-of-*-of-expt-constant-version
   (implies (and (syntaxp (quotep k))
                 (power-of-2p k)
-                (natp (lg k)) ;drop? or simplify?
+                ;; (natp (lg k)) ;drop? or simplify?
                 (<= (lg k) n)
                 (integerp x)
                 (integerp n))

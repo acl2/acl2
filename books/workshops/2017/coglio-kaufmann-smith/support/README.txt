@@ -12,3 +12,12 @@ Supporting file for Section 2.2:
 
 The remaining files support the definition of simplify-defun.  To play
 with simplify-defun, evaluate the forms in simplify-defun-tests.lisp.
+
+Update, September 2021.  Before now, community book
+kestrel/utilities/directed-untranslate.lisp supported the present
+directory's version of simplify-defun.  But with this update, we have
+copied that version of directed-untranslate.lisp to the present
+directory and make simplify-defun.lisp depend on it, which allows
+future changes to kestrel/utilities/directed-untranslate.lisp without
+affecting the present directory.  Because directed-untranslate.lisp
+includes make-executable.lisp, that was copied here as well.

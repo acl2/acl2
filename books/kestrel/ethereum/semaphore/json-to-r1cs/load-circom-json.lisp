@@ -113,7 +113,8 @@
   (declare (xargs :stobjs state
                   :guard (stringp cj-filename)
                   :verify-guards nil))
-  (b* (((mv cj state) (parse-file-as-json cj-filename state))
+  (b* (((mv erp cj state) (parse-file-as-json cj-filename state))
+       ((when erp) (mv erp nil nil state))
        (- (cw "Parsed JSON from ~x0.~%" cj-filename))
        ;; ((when erp) (mv erp nil nil state)) ;EM maybe do later
        ((mv constraints vars) (cj-to-r1cs cj))
@@ -122,7 +123,7 @@
        (defun-nx-name (file-name-to-r1cs-maker-fn-name cj-filename))
        (event (make-r1cs-event constraints vars prime-form
                                defun-constraints-name defun-vars-name defun-nx-name))
-       (- (cw "Created R1CS event.~%" cj-filename)))
+       (- (cw "Created R1CS event.~%")))
     (mv (erp-nil) event defun-nx-name state)))
 
 ;Returns (mv erp event state).

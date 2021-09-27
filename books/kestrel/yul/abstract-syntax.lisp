@@ -52,7 +52,7 @@
   (xdoc::topstring
    (xdoc::p
     "An identifier is a sequence of characters satisfying certain conditions.
-     For now we use an ACL2 string, wrapper in a one-field product type.
+     For now we use an ACL2 string, wrapped in a one-field product type.
      ACL2 strings suffice to represent all identifiers, and more.
      In the future we may add restrictions on the string
      to be a true identifier as defined in the concrete syntax."))
@@ -76,13 +76,6 @@
   :elt-type identifier
   :elementp-of-nil nil
   :pred identifier-setp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule identifier-setp-of-mergesort
-  (implies (identifier-listp x)
-           (identifier-setp (set::mergesort x)))
-  :enable set::mergesort)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -236,6 +229,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod plain-string
+  :short "Fixtype of plain strings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used as literals; they are the regular, non-hex strings.
+     We call them `plain' to clearly distinguish them from hex strings.")
+   (xdoc::p
+    "We represent a plain string as a list of elements,
+     plus a flag saying whether
+     the surrounding quotes are double or not (i.e. single).
+     This captures the full concrete syntax information."))
+  ((content string-element-list)
+   (double-quote-p bool))
+  :tag :plain-string
+  :pred plain-stringp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod hex-string
+  :short "Fixtype of hex strings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We represent a hex string as a list of hex pairs,
+     plus a flag saying whether
+     the surrounding quotes are double or not (i.e. single).
+     We do not capture the optional underscores for now."))
+  ((content hex-pair-list)
+   (double-quote-p bool))
+  :tag :hex-string
+  :pred hex-stringp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum literal
   :short "Fixtype of literals."
   :long
@@ -251,27 +279,28 @@
      which therefore captures full information:
      leading zeros and capitalization of the letters.")
    (xdoc::p
-    "We represent a string literals is a list of elements,
-     plus a flag saying whether the surrounding quotes are double
-     or not (i.e. single).
-     This captures the full concrete syntax information.")
-   (xdoc::p
-    "We represent a hex string as a list of hex pairs,
-     plus a flag saying whether the surrounding quotes are double
-     or not (i.e. single).
-     We do not capture the optional underscores for now."))
+    "We represent plain and hex strings
+     as described in @(tsee plain-string) and @(tsee hex-string)."))
   (:boolean ((get bool)))
   (:dec-number ((get nat)))
   (:hex-number ((get hex-digit-list)))
-  (:string ((content string-element-list)
-            (double-quote-p bool)))
-  (:hex-string ((content hex-pair-list)
-                (double-quote-p bool)))
+  (:plain-string ((get plain-string)))
+  (:hex-string ((get hex-string)))
   :pred literalp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist literal-list
+  :short "Fixtype of lists of literals."
+  :elt-type literal
+  :true-listp t
+  :elementp-of-nil nil
+  :pred literal-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes expressions/funcalls
+  :short "Fixtypes of expressions and function calls."
 
   (fty::deftagsum expression
     :short "Fixtype of expressions."
@@ -293,6 +322,7 @@
     :short "Fixtype of function calls."
     ((name identifier)
      (args expression-list))
+    :tag :funcall
     :pred funcallp
     :measure (two-nats-measure (acl2-count x) 1)))
 
@@ -313,6 +343,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes statements/blocks/cases/fundefs
+  :short "Fixtypes of statements, blocks, cases, and function definitions."
 
   (fty::deftagsum statement
     :short "Fixtype of statements."
@@ -350,7 +381,7 @@
            (body block)))
     (:switch ((target expression)
               (cases swcase-list)
-              (default block)))
+              (default block-option)))
     (:leave ())
     (:break ())
     (:continue ())
@@ -358,20 +389,34 @@
     :pred statementp
     :measure (two-nats-measure (acl2-count x) 0))
 
-  (fty::deflist block
-    :short "Fixtype of blocks."
+  (fty::deflist statement-list
+    :short "Fixtype of lists of statements."
     :elt-type statement
     :true-listp t
     :elementp-of-nil nil
-    :pred blockp
+    :pred statement-listp
     :measure (two-nats-measure (acl2-count x) 0))
+
+  (fty::defprod block
+    :short "Fixtype of blocks."
+    ((statements statement-list))
+    :tag :block
+    :pred blockp
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  (fty::defoption block-option
+    block
+    :short "Fixtye of optional blocks."
+    :pred block-optionp
+    :measure (two-nats-measure (acl2-count x) 2))
 
   (fty::defprod swcase
     :short "Fixtype of cases (of switch statements)."
     ((value literal)
      (body block))
+    :tag :swcase
     :pred swcasep
-    :measure (two-nats-measure (acl2-count x) 1))
+    :measure (two-nats-measure (acl2-count x) 2))
 
   (fty::deflist swcase-list
     :short "Fixtype of lists of cases (of switch statements)."
@@ -389,4 +434,89 @@
      (body block))
     :tag :fundef
     :pred fundefp
-    :measure (two-nats-measure (acl2-count x) 1)))
+    :measure (two-nats-measure (acl2-count x) 2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection swcase-list->value-list ((x swcase-listp))
+  :returns (lits literal-listp)
+  :short "Lift @(tsee swcase->value) to lists."
+  (swcase->value x)
+  ///
+  (fty::deffixequiv swcase-list->value-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum data-value
+  :short "Fixtype of data values in Yul objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A data value is either a hex string or a plain string.")
+   (xdoc::p
+    "See @(tsee data-item)."))
+  (:hex ((get hex-string)))
+  (:plain ((get plain-string)))
+  :pred data-value-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod data-item
+  :short "Fixtype of data items in Yul objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A data item consits of a name (a plain string) and a value."))
+  ((name plain-string)
+   (value data-value))
+  :tag :data
+  :pred data-item-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftypes objects
+  :short "Fixtypes of objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The concrete syntax of Yul objects is described in
+     [Yul: Specification of Yul Object].
+     That description refers to the old grammar (see (@see concrete-syntax));
+     the new grammar does not include Yul objects.")
+   (xdoc::p
+    "Here we formalize an abstract syntax version of Yul objects.
+     We ``map'' from the old grammar to the new grammar as needed."))
+
+  (fty::defprod object
+    :short "Fixtype of objects."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An object consists of
+       a name (a plain string literal),
+       a code block,
+       and a sequence of zero or more objects and data items.
+       In that sequence of objects and data items,
+       the objects are sub-objects of this object,
+       which motivates our choice of field name."))
+    ((name plain-string)
+     (code block)
+     (sub/data object/data-list))
+    :tag :object
+    :pred objectp
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  (fty::deftagsum object/data
+    :short "Fixtype of objects and data items."
+    (:object ((get object)))
+    (:data ((get data-item)))
+    :pred object/data-p
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  (fty::deflist object/data-list
+    :short "Fixtype of lists of objects and data items."
+    :elt-type object/data
+    :true-listp t
+    :elementp-of-nil nil
+    :pred object/data-listp
+    :measure (two-nats-measure (acl2-count x) 0)))

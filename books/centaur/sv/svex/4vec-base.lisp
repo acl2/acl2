@@ -190,7 +190,11 @@ make-4vec) and @(see make-honsed-4vec).</p>
       (and (consp x)
            (integerp (car x))
            (integerp (cdr x))
-           (not (equal (car x) (cdr x))))))
+           (not (equal (car x) (cdr x)))))
+  ///
+  (defthmd 4vec-p-when-integerp
+    (implies (integerp x)
+             (4vec-p x))))
 
 
 (local (in-theory (enable 4vec-p)))

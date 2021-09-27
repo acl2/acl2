@@ -18,8 +18,6 @@
 (include-book "bvplus")
 (include-book "bv-syntax")
 (include-book "rules") ;(local (include-book "rules"))
-(include-book "kestrel/axe/axe-syntax" :dir :system)
-(include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
@@ -169,7 +167,7 @@
                 )
            (equal (logand x y)
                   (bvand size x y)))
-  :hints (("Goal" :in-theory (enable bvand))))
+  :hints (("Goal" :in-theory (enable bvand logand-of-bvchop))))
 
 (defthmd floor-of-/
   (equal (FLOOR X (/ y))
@@ -250,8 +248,8 @@
   (implies (and (syntaxp (quotep k))
                 (equal k (expt 2 (+ -1 (integer-length k))))
                 (<= (integer-length k) size)
-                (natp size)
-                (natp k))
+                (integerp size)
+                (integerp k))
            (equal (bvand size k x)
                   (bvcat 1
                                (getbit (+ -1 (integer-length k))
@@ -281,7 +279,8 @@
 (defthm slice-of-all-ones-too-high
   (implies (and (natp low)
                 (natp high)
-                (<= low high))
+                ;(<= low high)
+                )
            (equal (slice high low (+ -1 (expt 2 low)))
                   0))
   :hints (("Goal" :in-theory (e/d (slice)
@@ -300,7 +299,7 @@
 (defthm bvand-with-mask-basic-gen
   (implies (and (<= size n)
                 (natp size)
-                (natp n))
+                (integerp n))
            (equal (bvand size (+ -1 (expt 2 n)) x)
                   (bvchop size x)))
   :hints (("Goal" :in-theory (e/d (;bitops::part-install-width-low
@@ -320,7 +319,7 @@
 (defthm bvand-with-mask-basic-gen-alt
   (implies (and (<= size n)
                 (natp size)
-                (natp n))
+                (integerp n))
            (equal (bvand size x (+ -1 (expt 2 n)))
                   (bvchop size x)))
   :hints (("Goal" :use (:instance bvand-with-mask-basic-gen)
@@ -329,7 +328,7 @@
 ;drop in favor of a general trim rule?
 (defthm bvand-of-bvnot-trim
   (implies (and (< low size)
-                (natp size)
+                (integerp size)
                 (natp low))
            (equal (bvand low x (bvnot size y))
                   (bvand low x (bvnot low y))))
@@ -338,8 +337,8 @@
 ;move
 (defthm slice-of-ash
   (implies (and (<= n low)
-                (natp low)
-                (natp high)
+                (integerp low)
+                (integerp high)
                 (<= low high)
                 (natp n))
            (equal (slice high low (ash x n))
@@ -448,7 +447,8 @@
                  (:instance BVCHOP-LOGNOT-BVCHOP
                             (n low)
                             (x Y)))
-           :in-theory (e/d (bvnot) (BVCHOP-LOGNOT-BVCHOP)))))
+           :in-theory (e/d (bvnot) (BVCHOP-LOGNOT-BVCHOP ; are these 2 the same?
+                                    BVCHOP-OF-LOGNOT-OF-BVCHOP)))))
 
 ;helpful for address calculations (yikes, this almost seems to violate our normal form)
 (defthmd logext-of-bvplus-64
@@ -595,7 +595,7 @@
 
 (defthm getbit-of-logmask
   (implies (and (natp n)
-                (natp width))
+                (integerp width))
            (equal (GETBIT n (LOGMASK WIDTH))
                   (if (< n width)
                       1
@@ -658,13 +658,6 @@
                          (bvplus 64 x y))
                   t))
   :hints (("Goal" :in-theory (enable bvplus))))
-
-(defthm logext-trim-arg-axe-all
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
-                (posp size))
-           (equal (logext size x)
-                  (logext size (trim size x))))
-  :hints (("Goal" :in-theory (e/d (trim) nil))))
 
 (defthm bvsx-lemma
   (equal (bvcat 128 ;not tight

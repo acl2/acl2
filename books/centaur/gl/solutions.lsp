@@ -39,7 +39,6 @@
 
 (in-package "ACL2")
 (include-book "gl")
-; cert_param: (hons-only)
 
 
 ;; Solutions to exercises in the GL Basic Tutorial

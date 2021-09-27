@@ -179,6 +179,26 @@
   
   (fty::deffixequiv-mutual term-unify-strict)
 
+  (defund-nx term-unify-strict-ok (pat x alist)
+    (mv-nth 0 (term-unify-strict pat x alist)))
+
+  (local (in-theory (enable term-unify-strict-ok)))
+
+  (defthm term-unify-strict-ok-when-ok
+    (implies (term-unify-strict-ok pat x alist)
+             (mv-nth 0 (term-unify-strict pat x alist)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+  (defund-nx termlist-unify-strict-ok (pat x alist)
+    (mv-nth 0 (termlist-unify-strict pat x alist)))
+
+  (local (in-theory (enable termlist-unify-strict-ok)))
+
+  (defthm termlist-unify-strict-ok-when-ok
+    (implies (termlist-unify-strict-ok pat x alist)
+             (mv-nth 0 (termlist-unify-strict pat x alist)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
   (defret-mutual <fn>-preserves-pairs
     (defret <fn>-preserves-pairs
       (implies (and (hons-assoc-equal k (pseudo-term-subst-fix alist)) ok)
@@ -338,5 +358,27 @@
 
   (in-theory (disable term-unify-strict-reversible
                       termlist-unify-strict-reversible))
+
+  (defret <fn>-reversible-iff-rw
+    (implies (acl2::rewriting-negative-literal
+              `(mv-nth '0 (term-unify-strict ,pat ,x ,alist)))
+             (iff ok
+                  (and (term-unify-strict-ok pat x alist)
+                       (equal (term-subst-strict pat new-alist)
+                              (pseudo-term-fix x)))))
+    :fn term-unify-strict)
+
+  (defret <fn>-reversible-iff-rw
+    (implies (acl2::rewriting-negative-literal
+              `(mv-nth '0 (termlist-unify-strict ,pat ,x ,alist)))
+             (iff ok
+                  (and (termlist-unify-strict-ok pat x alist)
+                       (equal (termlist-subst-strict pat new-alist)
+                              (pseudo-term-list-fix x)))))
+    :fn termlist-unify-strict)
+
+  (in-theory (disable term-unify-strict-reversible-iff
+                      termlist-unify-strict-reversible-iff))
+
 
   (fty::deffixequiv-mutual term-unify-strict))

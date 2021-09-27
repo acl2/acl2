@@ -36,11 +36,7 @@
 (defmacro test-serialize (x &rest write-args)
   (declare (ignorable x write-args))
   `(make-event
-    (b* ((hons-disabledp (not (hons-enabledp state)))
-         ((when hons-disabledp)
-          (value `(value-triple :does-not-work-without-hons)))
-
-         (- (cw ">>> Writing file with serialize-write~%"))
+    (b* ((- (cw ">>> Writing file with serialize-write~%"))
          (state (serialize-write "test.sao" ,x :verbosep t))
 
          (- (cw ">>> Reading with serialize-read~%"))
@@ -173,40 +169,37 @@
 
 
 
-(make-event
- (if (not (hons-enabledp state))
-     '(value-triple :does-not-work-without-hons)
-   '(local
-     (encapsulate
-      ()
-      ;; Write NIL to test.sao
-      (make-event
-       (let ((state (serialize-write "test.sao" nil)))
-         (value '(value-triple :invisible))))
+(local
+ (encapsulate
+   ()
+   ;; Write NIL to test.sao
+   (make-event
+    (let ((state (serialize-write "test.sao" nil)))
+      (value '(value-triple :invisible))))
 
-      ;; Prove that test.sao contains NIL.
-      (defthm lemma-1
-        (equal (unsound-read "test.sao") nil)
-        :rule-classes nil)
+   ;; Prove that test.sao contains NIL.
+   (defthm lemma-1
+     (equal (unsound-read "test.sao") nil)
+     :rule-classes nil)
 
-      ;; Write T to test.sao
-      (make-event
-       (let ((state (serialize-write "test.sao" t)))
-         (value '(value-triple :invisible))))
+   ;; Write T to test.sao
+   (make-event
+    (let ((state (serialize-write "test.sao" t)))
+      (value '(value-triple :invisible))))
 
-      ;; Prove that test.sao contains T.
-      (defthm lemma-2
-        (equal (unsound-read "test.sao") t)
-        :rule-classes nil)
+   ;; Prove that test.sao contains T.
+   (defthm lemma-2
+     (equal (unsound-read "test.sao") t)
+     :rule-classes nil)
 
-      ;; Arrive at our contradiction.
-      (defthm qed
-        nil
-        :rule-classes nil
-        :hints(("Goal"
-                :use ((:instance lemma-1)
-                      (:instance lemma-2))
-                :in-theory (disable (unsound-read-fn)))))))))
+   ;; Arrive at our contradiction.
+   (defthm qed
+     nil
+     :rule-classes nil
+     :hints(("Goal"
+             :use ((:instance lemma-1)
+                   (:instance lemma-2))
+             :in-theory (disable (unsound-read-fn)))))))
 
 
 (make-event

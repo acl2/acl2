@@ -207,6 +207,16 @@
              (len  (len lst)))
           (cons 'mv (append lst (list len)))))))
 
+(defun define-opmsk-registers ()
+  ;; 64-bit registers
+
+  `(defconsts (*K0* *K1* *K2* *K3* *K4* *K5* *K6* *K7*
+                    *opmsk-register-names-len*)
+
+     ,(b* ((lst (increasing-list 0 1 8))
+           (len  (len lst)))
+        (cons 'mv (append lst (list len))))))
+
 (defun define-model-specific-registers ()
 
   ;; Source: Section 2.1 (Architectural MSRs), Intel Vol. 4, Model-Specific

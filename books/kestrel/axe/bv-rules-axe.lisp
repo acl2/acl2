@@ -738,7 +738,7 @@
   :hints (("Goal" :use (:instance sbvlt-becomes-bvlt-cheap)
            :in-theory (e/d (unsigned-byte-p-forced)( sbvlt-becomes-bvlt-cheap)))))
 
-(defthm equal-constant-when-unsigned-byte-p-bind-free-dag
+(defthm not-equal-constant-when-unsigned-byte-p-bind-free-dag
   (implies (and (syntaxp (quotep k))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (syntaxp (quotep xsize))
@@ -1292,7 +1292,7 @@
            (equal (bvand size x y)
                   (bvand xsize x y)))
   :hints (("Goal" :cases ((integerp y))
-           :in-theory (enable BVAND logand-bvchop-when-usb))))
+           :in-theory (enable bvand-tighten-1 logand-bvchop-when-usb))))
 
 (defthmd bvand-with-small-arg2
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -1964,3 +1964,10 @@
                   (bvmod (+ -1 size) x y)))
   :hints (("Goal" :use (:instance sbvrem-when-positive)
            :in-theory (disable sbvrem-when-positive))))
+
+(defthm logext-trim-arg-axe-all
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
+                (posp size))
+           (equal (logext size x)
+                  (logext size (trim size x))))
+  :hints (("Goal" :in-theory (e/d (trim) nil))))

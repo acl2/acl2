@@ -24,7 +24,13 @@
     "The meaning of the starting @('f') in the name of this utility
      is analogous to @(tsee fcons-term) compared to @(tsee cons-term).")
    (xdoc::@def "fsublis-var")
-   (xdoc::@def "fsublis-var-lst"))
+   (xdoc::@def "fsublis-var-lst")
+   (xdoc::p
+    "The file @('fsublis-var-more-theorems.lisp') contains theorems
+     about these functions and @(tsee symbol-pseudoterm-alistp).
+     They are similar to the return type theorems,
+     but involve that stronger alist recognizer;
+     they are disabled by default."))
 
   (define fsublis-var ((alist (and (symbol-alistp alist)
                                    (pseudo-term-listp (strip-cdrs alist))))

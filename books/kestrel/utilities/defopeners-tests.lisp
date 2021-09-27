@@ -120,28 +120,26 @@
 
 ;test of the mutual recursion version
 (deftest
+  (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
   (defopeners-mut-rec sublis-var-simple)
   (must-be-redundant
-   (defthm
-     sublis-var-simple-base-1
-     (implies (atom form)
-              (equal (sublis-var-simple alist form)
-                     ((lambda (a form) (if a (cdr a) form))
-                      (assoc-equal form alist)
-                      form))))
-   (defthm
-     sublis-var-simple-base-2
-     (implies (and (not (atom form))
-                   (eq 'quote (car form)))
-              (equal (sublis-var-simple alist form) form)))
-   (defthm
-     sublis-var-simple-unroll
-     (implies (if (not (atom form))
-                  (not (eq 'quote (car form)))
+   (defthm sublis-var-simple-base-1
+     (implies (atom term)
+              (equal (sublis-var-simple alist term)
+                     ((lambda (res term) (if res (cdr res) term))
+                      (assoc-equal term alist)
+                      term))))
+   (defthm sublis-var-simple-base-2
+     (implies (and (not (atom term))
+                   (eq 'quote (car term)))
+              (equal (sublis-var-simple alist term) term)))
+   (defthm sublis-var-simple-unroll
+     (implies (if (not (atom term))
+                  (not (eq 'quote (car term)))
                 'nil)
-              (equal (sublis-var-simple alist form)
-                     (cons (car form)
-                           (sublis-var-simple-lst alist (cdr form))))))))
+              (equal (sublis-var-simple alist term)
+                     (cons (car term)
+                           (sublis-var-simple-lst alist (cdr term))))))))
 
 
 ;;test of the special handling for 0-ary functions (which get expanded during normalization)
@@ -252,3 +250,59 @@
        :EXPAND ((WEIRD-LEN X))
        :IN-THEORY (UNION-THEORIES '(WEIRD-LEN$NOT-NORMALIZED)
                                   (THEORY 'MINIMAL-THEORY)))))))
+
+;; Test that uses :hyps (non-recursive function)
+(deftest
+  (defopeners natp :hyps ((syntaxp (quotep x))))
+  (must-be-redundant
+   (defthm natp-base
+     (implies (syntaxp (quotep x))
+              (equal (natp x)
+                     (if (integerp x) (not (< x '0)) 'nil))))))
+
+;; Test that uses :hyps (recursive function)
+(deftest
+  (defopeners binary-append :hyps ((syntaxp (quotep x))))
+  (must-be-redundant
+   (DEFTHM BINARY-APPEND-BASE
+     (IMPLIES (AND (SYNTAXP (QUOTEP X))
+                   (ENDP X))
+              (EQUAL (BINARY-APPEND X Y) Y)))
+   (DEFTHM BINARY-APPEND-UNROLL
+     (IMPLIES (and (SYNTAXP (QUOTEP X))
+                   (NOT (ENDP X)))
+              (EQUAL (BINARY-APPEND X Y)
+                     (CONS (CAR X)
+                           (BINARY-APPEND (CDR X) Y))))
+     :HINTS
+     (("Goal"
+       :EXPAND ((BINARY-APPEND X Y))
+       :IN-THEORY (UNION-THEORIES '(BINARY-APPEND$NOT-NORMALIZED)
+                                  (THEORY 'MINIMAL-THEORY)))))))
+
+;; Test with uses :hyps with more than 1 hyp (non-recursive function)
+(deftest
+  (defopeners natp :hyps ((syntaxp (quotep x)) (< x 0)))
+  (must-be-redundant
+   (DEFTHM NATP-BASE
+     (IMPLIES (and (SYNTAXP (QUOTEP X))
+                   (< X 0))
+                (EQUAL (NATP X)
+                       (IF (INTEGERP X) (NOT (< X '0)) 'NIL))))))
+
+;; Test that uses :hyps with more than 1 hyp (recursive function)
+(deftest
+  (defopeners binary-append :hyps ((syntaxp (quotep x)) (< x y)))
+  (must-be-redundant
+   (DEFTHM BINARY-APPEND-BASE
+     (IMPLIES (and (SYNTAXP (QUOTEP X))
+                   (< X Y)
+                   (ENDP X))
+              (EQUAL (BINARY-APPEND X Y) Y)))
+   (DEFTHM BINARY-APPEND-UNROLL
+     (IMPLIES (and (SYNTAXP (QUOTEP X))
+                   (< X Y)
+                   (NOT (ENDP X)))
+              (EQUAL (BINARY-APPEND X Y)
+                     (CONS (CAR X)
+                           (BINARY-APPEND (CDR X) Y)))))))

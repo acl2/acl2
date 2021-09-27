@@ -588,6 +588,21 @@ inspected with the following operations:</p>
     (implies (vl-extinttoken-p x)
              (vl-token-p x))))
 
+(define vl-tokentype-p (x)
+  (or (consp (member-eq x '(:vl-idtoken
+                            :vl-inttoken
+                            :vl-sysidtoken
+                            :vl-stringtoken
+                            :vl-realtoken
+                            :vl-timetoken
+                            :vl-extinttoken)))
+      (vl-plaintokentype-p x))
+  ///
+  (deflist vl-tokentypelist-p (x)
+    :elementp-of-nil nil
+    :true-listp t
+    (vl-tokentype-p x)))
+
 
 (define vl-token->type
   :short "Get the type of a token."
@@ -644,6 +659,11 @@ efficient implementation is beneficial.  We specially arrange our definition of
               hons-assoc-equal
               acl2::hons-assoc-equal-of-cons)
     :use ((:instance return-type-of-vl-plaintoken->type)))
+
+  (defret vl-tokentype-p-of-<fn>
+    (implies (vl-token-p x)
+             (vl-tokentype-p type))
+    :hints(("Goal" :in-theory (enable vl-tokentype-p))))
 
   (defrule vl-inttoken-p-when-token-of-type-inttoken
     (implies (and (equal (vl-token->type x) :vl-inttoken)

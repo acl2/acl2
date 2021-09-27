@@ -40,7 +40,7 @@
 (local (include-book "std/lists/repeat" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))
 (local (in-theory (disable nth update-nth)))
-
+(std::make-returnspec-config :hints-sub-returnnames t)
 (local (std::add-default-post-define-hook :fix))
 
 (local #!satlink

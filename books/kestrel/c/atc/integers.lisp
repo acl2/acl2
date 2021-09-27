@@ -19,6 +19,12 @@
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
+;; to have FTY::DEFLIST generate theorems about NTH:
+(local (include-book "std/lists/nth" :dir :system))
+
+;; to have FTY::DEFLIST generate theorems about UPDATE-NTH:
+(local (include-book "std/lists/update-nth" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-integers
@@ -369,17 +375,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- (b* ((types (list (type-schar)
-                   (type-uchar)
-                   (type-sshort)
-                   (type-ushort)
-                   (type-sint)
-                   (type-uint)
-                   (type-slong)
-                   (type-ulong)
-                   (type-sllong)
-                   (type-ullong))))
-   `(progn ,@(atc-def-integer-values-loop types))))
+ `(progn ,@(atc-def-integer-values-loop *atc-integer-types*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

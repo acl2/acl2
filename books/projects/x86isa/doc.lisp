@@ -345,10 +345,6 @@
   the x86 ISA. In the Fifteenth International Workshop on the ACL2 Theorem
   Prover and Its Applications (ACL2 Workshop), 2018</li>
 
- <li>Alessandro Coglio and Shilpi Goel. Adding 32-bit Mode to the ACL2 Model of
-  the x86 ISA. In the Fifteenth International Workshop on the ACL2 Theorem
-  Prover and Its Applications (ACL2 Workshop), 2018</li>
-
  <li>Shilpi Goel and Rob Sumners. Using @('x86isa') for Microcode
  Verification. In the Workshop on Instruction Set Architecture
  Specification (SpISA), 2019.</li>

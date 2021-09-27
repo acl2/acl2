@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -472,12 +472,14 @@
 ;;; Memoization
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#+(and hons acl2-loop-only)
+#+acl2-loop-only
 (progn
 
 ; We skip raw Lisp functions here; see *thread-unsafe-builtin-memoizations*.
 
   (memoize 'fchecksum-obj :stats nil :forget t)
+  (memoize 'immediate-canonical-ancestors :stats nil)
+  (memoize 'canonical-ancestors-rec :stats nil)
 
 ; We no longer define pkg-names-memoize (other than to cause an error); see the
 ; comment there.
@@ -661,15 +663,6 @@
         (cons ',new args)))
      (add-macro-alias ,old ,new)
      (value-triple ',old)))
-
-(defdeprecate symbol-< symbol< "8.4")
-(defdeprecate strict-symbol-<-sortedp strict-symbol<-sortedp "8.4")
-(defdeprecate strict-merge-symbol-< strict-merge-symbol< "8.4")
-(defdeprecate strict-merge-sort-symbol-< strict-merge-sort-symbol< "8.4")
-(defdeprecate strict-merge-sort-symbol-<-cdrs strict-merge-sort-symbol<-cdrs "8.4")
-(defdeprecate merge-symbol-< merge-symbol< "8.4")
-(defdeprecate merge-sort-symbol-< merge-sort-symbol< "8.4")
-(defdeprecate logical-defun get-defun-event "8.4")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End

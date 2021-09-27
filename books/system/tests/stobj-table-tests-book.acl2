@@ -1,0 +1,12 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "stobj-table-tests"
+            :inhibit-output-lst
+; Inhibit observation output since :oops prints differently in CCL/SBCL
+; vs. other Lisps (which add a note about compilation).
+            '(event summary observation prove proof-tree))
+
+; Help dependency scanner.
+#||
+(depends-on "stobj-table-tests-input.lsp")
+(depends-on "stobj-table-tests-log.txt")
+||#

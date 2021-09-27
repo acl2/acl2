@@ -1779,7 +1779,11 @@ common types:</p>
  (def-ctrex-rule intcar-intcdr-ctrex-elim
    :match ((car (intcar x))
            (cdr (intcdr x)))
-   :assign (intcons car cdr)
+   :match-conds ((cdr-match cdr)
+                 (car-match car))
+   :assign (let ((cdr (if cdr-match cdr (intcdr x)))
+                 (car (if car-match car (intcar x))))
+             (intcons car cdr))
    :assigned-var x
    :ruletype :elim)
 
@@ -1796,7 +1800,10 @@ symbol is @('intcar')) and an assignment to some other object matching
 @('(intcdr x)') (that is, a @(':g-apply') object whose function symbol is
 @('intcdr') and whose argument is the same as that of the @('intcar') object),
 then we can derive a value for @('x') (the shared argument of the two objects),
-namely the @('intcons') of the two values.</p>
+namely the @('intcons') of the two values.  If we only have an assignment to
+one or the other, @('intcar') or @('intcdr'), then the other part is defaulted
+to the @('intcar/intcdr') of any current value tentatively assigned to
+@('x').</p>
 
 <p>The second rule says that if we have an assignment of a value @('pair') to
 @('(assoc-equal k x)'), then we can modify @('x') to accomodate that by setting

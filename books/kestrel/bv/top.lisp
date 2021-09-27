@@ -154,6 +154,7 @@
 (include-book "single-bit")
 
 ;; Mixed rules:
+(include-book "bvcat-rules")
 (include-book "rules0")
 (include-book "rules")
 (include-book "rules2")
@@ -165,6 +166,7 @@
 (include-book "rules8")
 (include-book "rules9")
 (include-book "rules10")
+(include-book "rules11")
 
 ;; (include-book "bv-tests") ; not including this one because it just contains tests
 

@@ -18,7 +18,7 @@
 
 ;; TODO: Suppress more of the output printed during queries.
 
-(include-book "kestrel/axe/tactic-prover" :dir :system)
+(include-book "tactic-prover")
 (include-book "kestrel/utilities/assert-with-stobjs" :dir :system)
 
 (defconst *sat* :sat)
@@ -60,7 +60,7 @@
        ;;  (if simplify-assumptions
        ;;      (simplify-terms-using-each-other assumptions rule-alist)
        ;;    (mv assumptions state)))
-       (vars (merge-sort-symbol-< (dag-vars dag)))
+       (vars (merge-sort-symbol< (dag-vars dag)))
        (- (and print (cw "Variables in DAG: ~x0~%" vars)))
        ((mv result info-acc state)
         (apply-proof-tactics-to-problem (make-problem dag assumptions)

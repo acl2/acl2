@@ -23,7 +23,7 @@
 
 (defxdoc+ jubjub
   :parents (zcash)
-  :short "The Jubjub complete twisted Edwards elliptic curve [ZPS:5.4.8.3]."
+  :short "The Jubjub complete twisted Edwards elliptic curve [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -47,13 +47,13 @@
 
 (define jubjub-q ()
   :returns (q rtl::primep)
-  :short "The Jubjub prime @($q_\\mathbb{J}$) [ZPS:5.4.8.3]."
+  :short "The Jubjub prime @($q_\\mathbb{J}$) [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This defines the prime field over which Jubjub is defined.")
    (xdoc::p
-    "It is the same as @($r_\\mathbb{S}$) [ZPS:5.4.8.2],
+    "It is the same as @($r_\\mathbb{S}$) [ZPS:5.4.9.2],
      which is defined in our cryptograhic library."))
   (primes::bls12-381-scalar-field-prime)
   ///
@@ -68,7 +68,7 @@
 (define jubjub-a ()
   :returns (a (fep a (jubjub-q))
               :hints (("Goal" :in-theory (enable fep jubjub-q))))
-  :short "The Jubjub coefficient @($a_\\mathbb{J}$) [ZPS:5.4.8.3]."
+  :short "The Jubjub coefficient @($a_\\mathbb{J}$) [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -95,7 +95,7 @@
 (define jubjub-d ()
   :returns (d (fep d (jubjub-q))
               :hints (("Goal" :in-theory (enable fep jubjub-q))))
-  :short "The Jubjub coefficient @($d_\\mathbb{J}$) [ZPS:5.4.8.3]."
+  :short "The Jubjub coefficient @($d_\\mathbb{J}$) [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -153,7 +153,7 @@
 
 (define jubjub-curve ()
   :returns (curve ecurve::twisted-edwards-curvep)
-  :short "The Jubjub curve [ZPS:5.4.8.3]."
+  :short "The Jubjub curve [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -177,7 +177,7 @@
 
 (define point-on-jubjub-p ((point ecurve::pointp))
   :returns (yes/no booleanp)
-  :short "Check if a point is on the Jubjub curve [ZPS:5.4.8.3]."
+  :short "Check if a point is on the Jubjub curve [ZPS:5.4.9.3]."
   (ecurve::point-on-twisted-edwards-p point (jubjub-curve))
   :hooks (:fix))
 
@@ -185,7 +185,7 @@
 
 (define jubjub-pointp (x)
   :returns (yes/no booleanp)
-  :short "Recognize elements of @($\\mathbb{J}$) [ZPS:5.4.8.3]."
+  :short "Recognize elements of @($\\mathbb{J}$) [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -195,6 +195,7 @@
   (and (ecurve::pointp x)
        (point-on-jubjub-p x))
   ///
+
   (defruled point-finite-when-jubjub-pointp
     (implies (jubjub-pointp x)
              (equal (ecurve::point-kind x) :finite))
@@ -214,6 +215,7 @@
   (or (jubjub-pointp x)
       (eq x nil))
   ///
+
   (defrule maybe-jubjub-pointp-when-jubjub-pointp
     (implies (jubjub-pointp x)
              (maybe-jubjub-pointp x))))
@@ -222,7 +224,7 @@
 
 (define jubjub-point->u ((point jubjub-pointp))
   :returns (u natp :rule-classes :type-prescription)
-  :short "The function @($\\mathcal{U}$) in [ZPS:5.4.8.4]."
+  :short "The function @($\\mathcal{U}$) in [ZPS:5.4.9.4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -233,6 +235,7 @@
   (ecurve::point-finite->x point)
   :guard-hints (("Goal" :in-theory (enable jubjub-pointp point-on-jubjub-p)))
   ///
+
   (defret jubjub-point->u-upper-bound
     (< u (jubjub-q))
     :hyp (jubjub-pointp point)
@@ -246,7 +249,7 @@
 
 (define jubjub-point->v ((point jubjub-pointp))
   :returns (v natp :rule-classes :type-prescription)
-  :short "The function @($\\mathcal{V}$) in [ZPS:5.4.8.4]."
+  :short "The function @($\\mathcal{V}$) in [ZPS:5.4.9.4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -257,6 +260,7 @@
   (ecurve::point-finite->y point)
   :guard-hints (("Goal" :in-theory (enable jubjub-pointp point-on-jubjub-p)))
   ///
+
   (defret jubjub-point->v-upper-bound
     (< v (jubjub-q))
     :hyp (jubjub-pointp point)
@@ -265,6 +269,145 @@
                                        point-on-jubjub-p
                                        ecurve::point-on-twisted-edwards-p
                                        jubjub-curve)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled jubjub-point-satisfies-curve-equation
+  :short "A Jubjub point satisfies the curve equation."
+  (implies (jubjub-pointp uv)
+           (b* ((u (jubjub-point->u uv))
+                (v (jubjub-point->v uv))
+                (u^2 (mul u u (jubjub-q)))
+                (v^2 (mul v v (jubjub-q)))
+                (u^2.v^2 (mul u^2 v^2 (jubjub-q)))
+                (a.u^2 (mul (jubjub-a) u^2 (jubjub-q)))
+                (d.u^2.v^2 (mul (jubjub-d) u^2.v^2 (jubjub-q))))
+             (equal (add a.u^2 v^2 (jubjub-q))
+                    (add 1 d.u^2.v^2 (jubjub-q)))))
+  :enable (jubjub-pointp
+           point-on-jubjub-p
+           jubjub-point->u
+           jubjub-point->v
+           jubjub-curve
+           ecurve::point-on-twisted-edwards-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled jubjub-point-abscissa-is-not-1
+  :short "A Jubjub point cannot have abscissa 1."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The reason is that, if we set @($u = 1$) in the curve equation,
+     we obtain that @($v^2$) is equal to the non-square @($(1-a)/(1-d)$),
+     an impossibility (the fact that @($(1-a)/(1-d)$), which has a known value,
+     is not a square, can be seen using Euler's criterion.
+     A more detailed proof is in Theorem 5.4.5 in [ZPS:5.4.8.2]."))
+  (implies (jubjub-pointp point)
+           (not (equal (jubjub-point->u point) 1)))
+  :use lemma
+  :prep-lemmas
+  ((defisar lemma
+     (implies (and (jubjub-pointp point)
+                   (equal (jubjub-point->u point) 1))
+              nil)
+     :proof
+     ((:assume (:point (jubjub-pointp point)))
+      (:assume (:u-is-1 (equal (jubjub-point->u point) 1)))
+      (:let (u (jubjub-point->u point)))
+      (:let (v (jubjub-point->v point)))
+      (:let (a (jubjub-a)))
+      (:let (d (jubjub-d)))
+      (:let (q (jubjub-q)))
+      (:derive (:equation (equal (add (mul a (mul u u q) q)
+                                      (mul v v q)
+                                      q)
+                                 (add 1
+                                      (mul d
+                                           (mul (mul u u q)
+                                                (mul v v q)
+                                                q)
+                                           q)
+                                      q)))
+       :from (:point)
+       :use (:instance jubjub-point-satisfies-curve-equation (uv point)))
+      (:derive (:equation-simp (equal (add a
+                                           (mul v v q)
+                                           q)
+                                      (add 1
+                                           (mul d
+                                                (mul v v q)
+                                                q)
+                                           q)))
+       :from (:equation :u-is-1)
+       :enable jubjub-q)
+      (:derive (:factor (equal (sub 1 a q)
+                               (mul (sub 1 d q)
+                                    (mul v v q)
+                                    q)))
+       :from (:equation-simp)
+       :prep-books
+       ((include-book "kestrel/prime-fields/bind-free-rules" :dir :system)))
+      (:derive (:square-is-nonsquare (equal (mul v v q)
+                                            (div (sub 1 a q)
+                                                 (sub 1 d q)
+                                                 q)))
+       :from (:factor)
+       :enable (jubjub-a jubjub-d jubjub-q)
+       :use (:instance pfield::equal-of-div
+             (x (mul (jubjub-point->v point)
+                     (jubjub-point->v point)
+                     (jubjub-q)))
+             (y (sub 1 (jubjub-a) (jubjub-q)))
+             (z (sub 1 (jubjub-d) (jubjub-q))))
+       :prep-books
+       ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+      (:derive (:square (ecurve::pfield-squarep (mul v v q) q))
+       :from (:point)
+       :enable fep
+       :use (:instance ecurve::pfield-squarep-suff
+             (r (jubjub-point->v point))
+             (p (jubjub-q))
+             (x (mul (jubjub-point->v point)
+                     (jubjub-point->v point)
+                     (jubjub-q)))))
+      (:let (nsq (div (sub 1 a q)
+                      (sub 1 d q)
+                      q)))
+      (:derive (:mod-expt-of-nsq (not (equal (mod (expt nsq
+                                                        (/ (1- q) 2))
+                                                  q)
+                                             1)))
+       :use (lemma
+             (:instance acl2::mod-expt-fast
+              (a (div (sub 1 (jubjub-a) (jubjub-q))
+                      (sub 1 (jubjub-d) (jubjub-q))
+                      (jubjub-q)))
+              (i (/ (1- (jubjub-q)) 2))
+              (n (jubjub-q))))
+       :prep-books ((include-book "arithmetic-3/top" :dir :system))
+       :prep-lemmas
+       ((defruled lemma
+          (not (equal (acl2::mod-expt-fast (div (sub 1 (jubjub-a) (jubjub-q))
+                                                (sub 1 (jubjub-d) (jubjub-q))
+                                                (jubjub-q))
+                                           (/ (1- (jubjub-q)) 2)
+                                           (jubjub-q))
+                      1))
+          :enable (jubjub-a jubjub-d jubjub-q))))
+      (:derive (:nonsquare (not (ecurve::pfield-squarep nsq q)))
+       :from (:mod-expt-of-nsq)
+       :enable (ecurve::weak-euler-criterion-contrapositive
+                jubjub-a
+                jubjub-d
+                jubjub-q)
+       :disable ((:e expt))
+       :prep-books
+       ((include-book "kestrel/crypto/ecurve/prime-field-squares-euler-criterion" :dir :system)))
+      (:derive (:impossible nil)
+       :from (:square-is-nonsquare :square :nonsquare))
+      (:qed))
+     :rule-classes nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -290,8 +433,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define jubjub-neg ((point jubjub-pointp))
+  :returns (-point jubjub-pointp
+                   :hyp (jubjub-pointp point)
+                   :hints (("Goal" :in-theory (enable jubjub-pointp
+                                                      point-on-jubjub-p))))
+  :short "Group negation, on Jubjub."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the inverse with respect to @(tsee jubjub-add)."))
+  (ecurve::twisted-edwards-neg point (jubjub-curve))
+  :guard-hints (("Goal" :in-theory (enable jubjub-pointp point-on-jubjub-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled jubjub-mul-of-2
+  :short "Doubling a point is like adding the point to itself."
+  (implies (jubjub-pointp point)
+           (equal (jubjub-mul 2 point)
+                  (jubjub-add point point)))
+  :enable (jubjub-mul
+           jubjub-add
+           jubjub-pointp
+           point-on-jubjub-p
+           ecurve::twisted-edwards-mul
+           ecurve::twisted-edwards-mul-nonneg))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *jubjub-l*
-  :short "The constant @($\\ell_\\mathbb{J}$) [ZPS:5.4.8.3]."
+  :short "The constant @($\\ell_\\mathbb{J}$) [ZPS:5.4.9.3]."
   256)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -302,7 +474,7 @@
                    :hints (("Goal"
                             :in-theory (enable returns-lemma
                                                ecurve::pfield-squarep))))
-  :short "The function @($\\mathsf{abst}_\\mathbb{J}$) [ZPS:5.4.8.3]."
+  :short "The function @($\\mathsf{abst}_\\mathbb{J}$) [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -426,7 +598,7 @@
 
 (define jubjub-h ()
   :returns (h natp)
-  :short "The constant @($h_\\mathbb{J}$) in [ZPS:5.4.8.3]."
+  :short "The constant @($h_\\mathbb{J}$) in [ZPS:5.4.9.3]."
   8
   ///
   (in-theory (disable (:e jubjub-h))))
@@ -435,7 +607,7 @@
 
 (define jubjub-r ()
   :returns (r natp)
-  :short "The constant @($r_\\mathbb{J}$) in [ZPS:5.4.8.3]."
+  :short "The constant @($r_\\mathbb{J}$) in [ZPS:5.4.9.3]."
   (primes::jubjub-subgroup-prime)
 
   ///
@@ -449,7 +621,7 @@
 
 (define jubjub-r-pointp (x)
   :returns (yes/no booleanp)
-  :short "Recognize elements of @($\\mathbb{J}^{(r)}$) [ZPS:5.4.8.3]."
+  :short "Recognize elements of @($\\mathbb{J}^{(r)}$) [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -464,13 +636,23 @@
   (defrule jubjub-pointp-when-jubjub-r-pointp
     (implies (jubjub-r-pointp x)
              (jubjub-pointp x))
-    :enable ecurve::twisted-edwards-zero))
+    :enable ecurve::twisted-edwards-zero)
+
+  (defruled jubjub-point-of-neg
+    (implies (and (ecurve::twisted-edwards-add-associativity)
+                  (jubjub-r-pointp point))
+             (jubjub-r-pointp (jubjub-neg point)))
+    :enable (jubjub-r-pointp
+             jubjub-neg
+             jubjub-pointp
+             point-on-jubjub-p
+             ecurve::twisted-edwards-point-orderp-of-neg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define jubjub-rstar-pointp (x)
   :returns (yes/no booleanp)
-  :short "Recognize elements of @($\\mathbb{J}^{(r)*}$) [ZPS:5.4.8.3]."
+  :short "Recognize elements of @($\\mathbb{J}^{(r)*}$) [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
    (xdoc::p

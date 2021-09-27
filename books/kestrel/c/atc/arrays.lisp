@@ -144,7 +144,6 @@
        (<type>p (pack <type> 'p))
        (<type>-fix (pack <type> '-fix))
        (<type>-list (pack <type> '-list))
-       (<type>-listp (pack <type>-list 'p))
        (<type>-array (pack <type> '-array))
        (<type>-arrayp (pack <type>-array 'p))
        (<type>-array-fix (pack <type>-array '-fix))
@@ -173,6 +172,7 @@
                                              elements
                                            (list (,<type> 0)))))
          :require (consp elements)
+         :tag ,(intern$ (symbol-name <type>-array) "KEYWORD")
          :pred ,<type>-arrayp)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -208,16 +208,7 @@
          (,<type>-fix (nth index (,<type>-array->elements array)))
          :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp
                                                   ,<type>-array-length)))
-         :hooks (:fix)
-
-         :prepwork
-         ;; to generate theorems about NTH:
-         ((local (include-book "std/lists/nth" :dir :system))
-          (local (fty::deflist ,<type>-list
-                   :elt-type ,<type>
-                   :true-listp t
-                   :elementp-of-nil nil
-                   :pred ,<type>-listp))))
+         :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -240,15 +231,6 @@
          :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp
                                                   ,<type>-array-length)))
          :hooks (:fix)
-
-         :prepwork
-         ;; to generate theorems about UPDATE-NTH:
-         ((local (include-book "std/lists/update-nth" :dir :system))
-          (local (fty::deflist ,<type>-list
-                   :elt-type ,<type>
-                   :true-listp t
-                   :elementp-of-nil nil
-                   :pred ,<type>-listp)))
 
          ///
 
@@ -427,3 +409,33 @@
                    (type-sllong)
                    (type-ullong))))
    `(progn ,@(atc-def-integer-arrays-loop-outer types types))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection array-tau-rules
+  :short "Some tau rules about arrays."
+
+  (defrule not-errorp-when-arrayp
+    (implies (or (schar-arrayp x)
+                 (uchar-arrayp x)
+                 (sshort-arrayp x)
+                 (ushort-arrayp x)
+                 (sint-arrayp x)
+                 (uint-arrayp x)
+                 (slong-arrayp x)
+                 (ulong-arrayp x)
+                 (sllong-arrayp x)
+                 (ullong-arrayp x))
+             (not (errorp x)))
+    :rule-classes :tau-system
+    :enable (schar-arrayp
+             uchar-arrayp
+             sshort-arrayp
+             ushort-arrayp
+             sint-arrayp
+             uint-arrayp
+             slong-arrayp
+             ulong-arrayp
+             sllong-arrayp
+             ullong-arrayp
+             errorp)))

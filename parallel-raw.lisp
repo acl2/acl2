@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -482,15 +482,13 @@
   (catch :worker-thread-no-longer-needed
     (let ((*throwable-worker-thread* t)
 
-; If #+hons is set, we must bind *default-hs* to NIL so that each thread will
-; get its own hons space whenever it uses honsing code.  We could alternately
-; call (hl-hspace-init) here, but using NIL allows us to avoid the overhead of
+; We must bind *default-hs* to NIL so that each thread will get its own hons
+; space whenever it uses honsing code.  We could alternately call
+; (hl-hspace-init) here, but using NIL allows us to avoid the overhead of
 ; initializing a hons space unless honsing is used in this thread.  See also
 ; the notes in hons-raw.lisp.
 
-           #+hons
            (*default-hs* nil))
-      #+hons
       (declare (special *default-hs*)) ; special declared in hons-raw.lisp
       (loop ; "forever" - really until :worker-thread-no-longer-needed thrown
 

@@ -51,7 +51,6 @@
 (include-book "std/strings/pretty" :dir :system)
 
 ; cert_param: (non-lispworks)
-; cert_param: (hons-only)
 
 ;; Matt Kaufmann discovered that LispWorks complained about making an
 ;; array whose length is more than twice the legal limit.  Here's the
@@ -464,6 +463,20 @@
            ;; a power-up or reset.
            :fix (acl2::loghead 32 (ifix x))
            :initially 8064)
+    (:doc "</li>")
+
+
+    (:doc "<li>@('OPMASK'): 8 opmask registers are used for
+    conditional execution and merging of data elements in the
+    destination operands of AVX-512 EVEX-encoded instructions.  They
+    are also used as operands in opmask instructions like KMOV, etc.")
+    (opmsk :type (array (unsigned-byte 64)
+                        (#.*opmsk-register-names-len*))
+           :fix (acl2::loghead 64 (ifix x))
+           :initially 0
+           :resizable nil
+           :accessor opmski
+           :updater !opmski)
     (:doc "</li>")
 
     (:doc "<li>@('ZMM'): ZMM 512-bit data registers --- the lower

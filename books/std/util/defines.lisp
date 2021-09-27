@@ -454,7 +454,10 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                                                   ',guts.returnspecs
                                                   world)))
                     `(with-output :stack :pop (progn . ,events))))))
-        (local (set-define-current-function ,guts.name))
+; Matt K. mod, 8/27/2021, for GitHub Issue #1302: allow current-function to be
+; seen even when including an uncertified book, by making the following
+; non-local.
+        (set-define-current-function ,guts.name)
         (with-output :stack :pop (progn . ,guts.rest-events)))
       ;; Make sure the section gets processed first.  Once it's done,
       ;; we can add the signature block.
@@ -524,14 +527,17 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
         (caar retspec-hints)
       (find-first-string-hint (cdr retspec-hints)))))
 
-(defun returnspecs-flag-entries (retspecs flag fnname fnname-fn binds body-subst hint-subst world)
+(defun returnspecs-flag-entries (retspecs flag fnname fnname-fn binds body-subst ruleclass-subst retspec-config world)
   (b* (((when (atom retspecs)) nil)
        (formula (returnspec-thm-body fnname-fn binds (car retspecs) world))
        ((when (eq formula t))
-        (returnspecs-flag-entries (cdr retspecs) flag fnname fnname-fn binds body-subst hint-subst world))
+        (returnspecs-flag-entries (cdr retspecs) flag fnname fnname-fn binds body-subst ruleclass-subst retspec-config world))
        ((returnspec x) (car retspecs))
        (subgoal (find-first-string-hint x.hints))
        (strsubst (returnspec-strsubst fnname fnname-fn))
+       (hints-sub-returnnames (getarg :hints-sub-returnnames
+                                      (getarg :hints-sub-returnnames nil retspec-config)
+                                      x.opts))
        (- (and subgoal
                (er hard? 'defines
                    "Error in returnspec theorems: unless using ~x0,~
@@ -544,12 +550,16 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                                   "." (symbol-name x.name))
                      fnname)
              ,(returnspec-sublis body-subst nil formula)
-             :hints ,(returnspec-sublis hint-subst strsubst x.hints)
-             :rule-classes ,(returnspec-sublis hint-subst nil x.rule-classes)
+             :hints ,(returnspec-sublis ;; ruleclass-subst
+                      (if hints-sub-returnnames
+                          ruleclass-subst
+                        body-subst)
+                      strsubst x.hints)
+             :rule-classes ,(returnspec-sublis ruleclass-subst nil x.rule-classes)
              :flag ,flag)
-          (returnspecs-flag-entries (cdr retspecs) flag fnname fnname-fn binds body-subst hint-subst world))))
+          (returnspecs-flag-entries (cdr retspecs) flag fnname fnname-fn binds body-subst ruleclass-subst retspec-config world))))
 
-(defun fn-returnspec-flag-entries (guts world)
+(defun fn-returnspec-flag-entries (guts retspec-config world)
   (b* (((defguts guts) guts)
        (flag (guts->flag guts))
        (formals (look-up-formals guts.name-fn world))
@@ -559,16 +569,16 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                 (if (consp (cdr ignorable-names))
                     `((mv . ,ignorable-names) ,fncall)
                   `(,(car ignorable-names) ,fncall))))
-       ((mv body-subst hint-subst)
+       ((mv body-subst ruleclass-subst)
         (returnspec-return-value-subst
          guts.name guts.name-fn formals (returnspeclist->names guts.returnspecs))))
-    (returnspecs-flag-entries guts.returnspecs flag guts.name guts.name-fn binds body-subst hint-subst world)))
+    (returnspecs-flag-entries guts.returnspecs flag guts.name guts.name-fn binds body-subst ruleclass-subst retspec-config world)))
 
-(defun collect-returnspec-flag-thms (gutslist world)
+(defun collect-returnspec-flag-thms (gutslist retspec-config world)
   (if (atom gutslist)
       nil
-    (append (fn-returnspec-flag-entries (car gutslist) world)
-            (collect-returnspec-flag-thms (cdr gutslist) world))))
+    (append (fn-returnspec-flag-entries (car gutslist) retspec-config world)
+            (collect-returnspec-flag-thms (cdr gutslist) retspec-config world))))
 
 (defun returnspec-mrec-default-default-hint (fnname id world)
   (let ((fns (acl2::recursivep fnname t world)))
@@ -591,7 +601,9 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
 
 
 (defun returnspec-flag-thm (defthm-macro gutslist returns-hints world)
-  (let* ((thms (collect-returnspec-flag-thms gutslist world))
+  (let* ((thms (collect-returnspec-flag-thms gutslist
+                                             (cdr (assoc 'returnspec-config (table-alist 'define world)))
+                                             world))
          (hints (if (eq returns-hints :none)
                     (returnspec-mrec-default-hints
                      (defguts->name-fn (car gutslist)) world)
@@ -850,13 +862,13 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
 
        (defsection rest-events-1
          ,@(and want-xdoc-p `(:extension ,name))
-         ;; It seems OK to do this even if we're in program mode, because in that
-         ;; case you shouldn't be trying to provide return-value theorems, right?
          ,@(and returns-induct
                 `((make-event
-                   (let ((event (returnspec-flag-thm
-                                 ',thm-macro ',gutslist ',returns-hints (w state))))
-                     `(with-output :stack :pop ,event)))))
+                   (if (logic-mode-p ',(defguts->name-fn (car gutslist)) (w state))
+                       (let ((event (returnspec-flag-thm
+                                     ',thm-macro ',gutslist ',returns-hints (w state))))
+                         `(with-output :stack :pop ,event))
+                     (value '(value-triple :invisible))))))
          (with-output :stack :pop (progn . ,rest-events1))
          ,@fn-sections
          (with-output :stack :pop (progn . ,rest-events2)))

@@ -13,6 +13,7 @@
 (include-book "fep")
 (include-book "kestrel/utilities/pos-fix" :dir :system)
 (include-book "../utilities/smaller-termp")
+(include-book "../utilities/forms") ; for call-of, farg1, etc
 (local (include-book "../arithmetic-light/mod"))
 
 ;; Compute the sum of x and y modulo the prime.
@@ -83,28 +84,30 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable add))))
 
-(defun strip-neg (x)
+;; (Can't use ACL2's invisible-fns-table, because it requires the invisible fns
+;; to be unary.)
+(defund strip-invisible-fns-for-add (x)
   (declare (xargs :guard (pseudo-termp x)))
-  (if (and (consp x)
-           (eq 'neg (ffn-symb x)))
-      (cadr x)
-    x))
+  (if (or (acl2::call-of 'neg x)
+          (acl2::call-of 'bind-free-id x))
+      (strip-invisible-fns-for-add (acl2::farg1 x))
+    (if (and (acl2::call-of 'mul x)
+             (quotep (acl2::farg1 x)))
+        (strip-invisible-fns-for-add (acl2::farg2 x))
+      x)))
 
-(defun strip-constant-mul (x)
-  (declare (xargs :guard (pseudo-termp x)))
-  (if (and (consp x)
-           (eq 'mul (ffn-symb x))
-           (quotep (cadr x)))
-      (caddr x)
-    x))
+(defthm pseudo-termp-of-strip-invisible-fns-for-add
+  (implies (pseudo-termp x)
+           (pseudo-termp (strip-invisible-fns-for-add x)))
+  :hints (("Goal" :in-theory (enable strip-invisible-fns-for-add))))
 
 ;; compare terms ignoring calls to inv and constant factors (so that terms that
 ;; can be combined are brought together)
-(defun smaller-add-termp (x y)
+(defund smaller-add-termp (x y)
   (declare (xargs :guard (and (pseudo-termp x)
                               (pseudo-termp y))))
-  (smaller-termp (strip-constant-mul (strip-neg x))
-                 (strip-constant-mul (strip-neg y))))
+  (smaller-termp (strip-invisible-fns-for-add x)
+                 (strip-invisible-fns-for-add y)))
 
 (defthm add-commutative
   (implies (syntaxp (smaller-add-termp y x))
@@ -120,10 +123,10 @@
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (enable add))))
 
-(defthm add-combine-constants
-  (implies (and (syntaxp (and (quotep x)
-                              (quotep y)))
-                (integerp p))
+(defthm add-of-add-combine-constants
+  (implies (syntaxp (and (quotep y) ; most likely to fail
+                         (quotep x)
+                         (quotep p)))
            (equal (add x (add y z p) p)
                   (add (add x y p) z p)))
   :hints (("Goal" :in-theory (enable add))))

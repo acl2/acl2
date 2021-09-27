@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function pseudo-term-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -44,6 +44,11 @@
            (pseudo-term-listp (intersection-equal x y)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp intersection-equal))))
 
+(defthm pseudo-term-listp-of-set-difference-equal
+  (implies (pseudo-term-listp x)
+           (pseudo-term-listp (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp set-difference-equal))))
+
 ;; The non-standard variable names are to match STD
 (defthm pseudo-term-listp-of-remove-equal
   (implies (pseudo-term-listp x)
@@ -65,8 +70,44 @@
               (pseudo-term-listp x)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp))))
 
+(defthm pseudo-term-listp-of-append-2 ;avoid name clash with std
+  (equal (pseudo-term-listp (append x y))
+         (and (pseudo-term-listp (true-list-fix x))
+              (pseudo-term-listp y)))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
 (defthm pseudo-term-listp-of-revappend
   (equal (pseudo-term-listp (revappend x y))
          (and (pseudo-term-listp (true-list-fix x))
               (pseudo-term-listp y)))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
+(defthm pseudo-term-listp-of-reverse-alt
+  (implies (pseudo-term-listp x)
+           (pseudo-term-listp (reverse x)))
+  :hints (("Goal" :in-theory (enable reverse))))
+
+(defthm pseudo-term-listp-of-reverse
+  (implies (not (stringp x))
+           (equal (pseudo-term-listp (reverse x))
+                  (pseudo-term-listp (true-list-fix x))))
+  :hints (("Goal" :in-theory (enable reverse))))
+
+(defthm pseudo-term-listp-of-true-list-fix
+  (implies (pseudo-term-listp lst)
+           (pseudo-term-listp (true-list-fix lst)))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
+;; Kept disabled
+;; Avoids name clash with STD, where the rule is a :compound-recognizer
+(defthmd true-listp-when-pseudo-term-listp-2
+  (implies (pseudo-term-listp lst)
+           (true-listp lst))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
+;todo: name clash with defforall
+(defthm pseudo-term-listp-when-symbol-listp-cheap-2
+  (implies (symbol-listp vars)
+           (pseudo-term-listp vars))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp))))

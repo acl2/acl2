@@ -895,6 +895,13 @@
             (cons ',(car ins) ,(car ins)))
           (autoins-lookup-cases (cdr ins)))))
 
+(defun autoins-svex-env-lookup-cases (ins)
+  (declare (xargs :guard t))
+  (if (atom ins)
+      '((t (4vec-x)))
+    (cons `(,(car ins) (4vec-fix ,(car ins)))
+          (autoins-svex-env-lookup-cases (cdr ins)))))
+
 (defun autoins-lookup-casesplit (ins var)
   (declare (xargs :guard t))
   (if (atom ins)
@@ -903,6 +910,29 @@
           (autoins-lookup-casesplit (cdr ins) var))))
 
 
+(defthmd svex-env-lookup-of-cons
+  (implies (and (iff match (double-rewrite (and (consp pair)
+                                                (svar-p (car pair))
+                                                (equal (svar-fix key) (car pair)))))
+                (syntaxp (quotep match)))
+           (equal (svex-env-lookup key (cons pair rest))
+                  (if match
+                      (4vec-fix (cdr pair))
+                    (svex-env-lookup key rest))))
+  :hints(("Goal" :in-theory (enable svex-env-lookup))))
+
+
+
+(defthmd svex-env-boundp-of-cons
+  (implies (and (iff match (double-rewrite (and (consp pair)
+                                                (svar-p (car pair))
+                                                (equal (svar-fix key) (car pair)))))
+                (syntaxp (quotep match)))
+           (equal (svex-env-boundp key (cons pair rest))
+                  (if match
+                      t
+                    (svex-env-boundp key rest))))
+  :hints(("Goal" :in-theory (enable svex-env-boundp))))
 
 
 
@@ -911,6 +941,7 @@
                         labels
                         define-macros
                         parents short long)
+  :prepwork ((local (in-theory (disable (tau-system) append))))
   :hooks nil
   (b* (((svtv svtv))
        (name svtv.name)
@@ -964,6 +995,9 @@ defined with @(see sv::defsvtv).</p>"
        (name-alist-autohyps  (intern-in-package-of-symbol
                               (str::cat (symbol-name name) "-ALIST-AUTOHYPS")
                               name))
+       (name-env-autohyps  (intern-in-package-of-symbol
+                              (str::cat (symbol-name name) "-ENV-AUTOHYPS")
+                              name))
        (name-autoins         (intern-in-package-of-symbol
                               (str::cat (symbol-name name) "-AUTOINS")
                                 name))
@@ -976,6 +1010,13 @@ defined with @(see sv::defsvtv).</p>"
        (name-alist-autoins   (intern-in-package-of-symbol
                               (str::cat (symbol-name name) "-ALIST-AUTOINS")
                               name))
+       (name-env-autoins   (intern-in-package-of-symbol
+                            (str::cat (symbol-name name) "-ENV-AUTOINS")
+                              name))
+       (name-env-autoins-in-terms-of-svex-env-extract
+        (intern-in-package-of-symbol
+         (str::cat (symbol-name name) "-ENV-AUTOINS-IN-TERMS-OF-SVEX-ENV-EXTRACT")
+         name))
        (name-autobinds       (intern-in-package-of-symbol
                               (str::cat (symbol-name name) "-AUTOBINDS")
                               name))
@@ -991,6 +1032,7 @@ defined with @(see sv::defsvtv).</p>"
 
                (define ,name ()
                  :returns (svtv svtv-p)
+                 :parents nil
                  ,stvconst
                  ///
 
@@ -1038,8 +1080,14 @@ defined with @(see sv::defsvtv).</p>"
                        (add-to-ruleset! gl::shape-spec-obj-in-range-open
                                         ,name-autohyps-fn)
 
+                       (define ,name-env-autohyps ((x svex-env-p))
+                         (declare (ignorable x)) ;; incase there are no input vars
+                         (b* (((svassocs . ,invars) x))
+                           (,name-autohyps)))
+
                        (add-to-ruleset! svtv-autohyps ,name-autohyps-fn)
                        (add-to-ruleset! svtv-alist-autohyps ,name-alist-autohyps)
+                       (add-to-ruleset! svtv-env-autohyps ,name-env-autohyps)
 
                        (define ,name-autoins (&key . ,invar-defaults)
                          ,(svtv-autoins svtv))
@@ -1055,10 +1103,46 @@ defined with @(see sv::defsvtv).</p>"
                                                             assoc-of-acons
                                                             assoc-of-nil
                                                             car-cons cdr-cons
-                                                            member-equal))
+                                                            member-equal
+                                                            (member-equal)))
                                   ,@(if (consp invars)
                                         `(:cases ,(autoins-lookup-casesplit invars 'k))
                                       nil))))
+
+                       (defthm ,(intern-in-package-of-symbol
+                                 (str::cat "SVEX-ENV-LOOKUP-OF-" (symbol-name name) "-AUTOINS")
+                                 name)
+                         (implies (syntaxp (quotep k))
+                                  (equal (svex-env-lookup k (,name-autoins))
+                                         (case (svar-fix k)
+                                           . ,(autoins-svex-env-lookup-cases invars))))
+                         :hints (("goal" :in-theory (e/d** (,name-autoins-fn
+                                                            svex-env-lookup-of-cons
+                                                            svex-env-lookup-in-empty
+                                                            car-cons cdr-cons
+                                                            (svar-p)))
+                                  ,@(if (consp invars)
+                                        `(:cases ,(autoins-lookup-casesplit invars '(svar-fix k)))
+                                      nil))))
+
+                       (defthm ,(intern-in-package-of-symbol
+                                 (str::cat "SVEX-ENV-BOUNDP-OF-" (symbol-name name) "-AUTOINS")
+                                 name)
+                         (implies (syntaxp (quotep k))
+                                  (iff (svex-env-boundp k (,name-autoins))
+                                       (member-equal (svar-fix k) ',invars)))
+                         :hints (("goal" :in-theory (e/d** (,name-autoins-fn
+                                                            svex-env-boundp-of-cons
+                                                            svex-env-boundp-of-nil
+                                                            car-cons cdr-cons
+                                                            (svar-p)
+                                                            member-equal
+                                                            (member-equal)))
+                                  ,@(if (consp invars)
+                                        `(:cases ,(autoins-lookup-casesplit invars '(svar-fix k)))
+                                      nil))))
+
+
                        (defmacro ,name-autoins-body ()
                          ',(svtv-autoins svtv))
 
@@ -1072,8 +1156,22 @@ defined with @(see sv::defsvtv).</p>"
                          (b* (((acl2::assocs . ,invars) x))
                            (,name-autoins)))
 
+                       (define ,name-env-autoins ((x svex-env-p))
+                         (declare (ignorable x)) ;; in case there are no input vars
+                         :returns (env svex-env-p :hints(("Goal" :in-theory (enable ,name-autoins))))
+                         (b* (((svassocs . ,invars) x))
+                           (,name-autoins))
+                         ///
+                         (defret ,name-env-autoins-in-terms-of-svex-env-extract
+                           (equal env
+                                  (svex-env-extract ',(rev (alist-keys (svtv->inmasks svtv))) x))
+                           :hints(("Goal" :in-theory (enable svex-env-extract ,name-autoins)))))
+
                        (add-to-ruleset! svtv-autoins ,name-autoins-fn)
                        (add-to-ruleset! svtv-alist-autoins ,name-alist-autoins)
+                       (add-to-ruleset! svtv-env-autoins ,name-env-autoins-in-terms-of-svex-env-extract)
+                       (add-to-ruleset! svtv-env-autoins-in-terms-of-svex-env-extract
+                                        ,name-env-autoins-in-terms-of-svex-env-extract)
 
                        (defthm ,(intern-in-package-of-symbol
                                  (str::cat (symbol-name name) "-ALIST-AUTOINS-IDEMPOTENT")
@@ -1112,6 +1210,22 @@ defined with @(see sv::defsvtv).</p>"
                                                            assoc-of-acons
                                                            car-cons cdr-cons
                                                            (assoc))))))
+
+                       (defthm ,(intern-in-package-of-symbol
+                                 (str::cat (symbol-name name) "-ENV-AUTOHYPS-OF-AUTOINS")
+                                 name)
+                         (equal (,name-env-autohyps (,name-env-autoins x))
+                                (,name-env-autohyps x))
+                         :hints(("Goal" :in-theory (e/d** (,name-env-autohyps
+                                                           ,name-env-autoins
+                                                           ,name-autoins-fn
+                                                           svex-env-lookup-of-cons
+                                                           svex-env-lookup-in-empty
+                                                           car-cons cdr-cons
+                                                           (4vec-fix) (svar-p)
+                                                           4vec-fix-of-4vec
+                                                           4vec-p-of-svex-env-lookup
+                                                           (svar-fix))))))
 
                        (defmacro ,name-autobinds ()
                          ',(svtv-autobinds svtv)))
@@ -1509,7 +1623,23 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
                                    svtv inalist
                                    :include nil :skip skip :boolvars boolvars :allvars allvars
                                    :simplify simplify :quiet quiet :readable readable))
-                    (assoc signal (svtv-run svtv inalist))))))
+                    (assoc signal (svtv-run svtv inalist)))))
+
+  (local (defthm cdr-hons-assoc-equal-when-svex-alist-p
+           (implies (svex-alist-p x)
+                    (iff (cdr (hons-assoc-equal k x))
+                         (hons-assoc-equal k x)))
+           :hints(("Goal" :in-theory (enable svex-alist-p)))))
+
+  (defthm svex-env-boundp-of-svtv-run
+    (iff (svex-env-boundp key (svtv-run svtv inalist
+                                        :include include :skip skip :boolvars boolvars :allvars allvars
+                                        :simplify simplify :quiet quiet :readable readable))
+         (and (if include
+                  (member-equal (svar-fix key) include)
+                (not (member-equal (svar-fix key) skip)))
+              (svex-lookup key (svtv->outexprs svtv))))
+    :hints(("Goal" :in-theory (enable svex-env-boundp svex-lookup)))))
 
 (defthm svex-env-p-of-pairlis
   (implies (and (svarlist-p a)

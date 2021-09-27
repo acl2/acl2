@@ -354,7 +354,16 @@ the order given (LSBs-first).</p>")
                  (lhrange-eval (car x) env)
                  (lhs-eval-zero (cdr x) env)))
   ///
-  (deffixequiv lhs-eval-zero))
+  (deffixequiv lhs-eval-zero)
+
+  (defthm lhs-eval-zero-of-cons
+    (equal (lhs-eval-zero (cons a x) env)
+           (4vec-concat (2vec (lhrange->w a))
+                        (lhrange-eval a env)
+                        (lhs-eval-zero x env))))
+
+  (defthm lhs-eval-zero-of-nil
+    (equal (lhs-eval-zero nil env) 0)))
 
 
 

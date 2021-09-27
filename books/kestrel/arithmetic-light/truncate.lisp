@@ -176,3 +176,13 @@
 ;;                            (equal y -1)))))
 ;;  :hints (("Goal" :cases ((< x 0))
 ;;           :in-theory (enable truncate-becomes-floor-gen))))
+
+(defthmd nonnegative-integer-quotient-of---of-numerator-and-denominator
+  (implies (and (rationalp x)
+                (< x 0))
+           (equal (- (nonnegative-integer-quotient (- (numerator x))
+                                                   (denominator x)))
+                  (truncate x 1)))
+  :hints (("Goal" :use (:instance nonnegative-integer-quotient-of-numerator-and-denominator (x (- x)))
+           :in-theory (e/d (truncate)
+                           (nonnegative-integer-quotient-of-numerator-and-denominator)))))

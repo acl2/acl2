@@ -166,7 +166,8 @@
   (implies (and (syntaxp (quotep k))
                 (not (equal x val)) ;val is a free var
                 (syntaxp (quotep val))
-                (member-equal val k))
+                (member-equal val k) ; not logically necessary but prevents loops
+                )
            (iff (member-equal x k)
                 (member-equal x (remove-equal val k))))
   :hints (("Goal" :in-theory (enable member-equal))))

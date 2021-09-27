@@ -446,8 +446,7 @@ This is a trace-co test"))
 (defun worker-thread (stream)
   (format t "Starting worker thread~%")
   (handler-case
-   (let (#+hons
-         (acl2::*default-hs* (acl2::hl-hspace-init))
+   (let ((acl2::*default-hs* (acl2::hl-hspace-init))
          (*package*          (find-package "ACL2"))
          (ostream            (make-instance 'bridge-ostream
                                             :stream stream

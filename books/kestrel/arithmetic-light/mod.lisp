@@ -216,21 +216,25 @@
 
 (defthm mod-of-2-when-even-cheap
   (implies (and (integerp (* 1/2 x))
-                (rationalp x))
+                ;; (rationalp x)
+                )
            (equal (mod x 2)
                   0))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable equal-of-0-and-mod))))
 
 (defthm mod-of-*-lemma
   (implies (and (integerp x)
-                (posp y))
+                (posp y) ;; todo: drop
+                )
            (equal (mod (* x y) y)
-                  0)))
+                  0))
+  :hints (("Goal" :cases ((posp y)))))
 
 (defthm mod-of-*-lemma-alt
   (implies (and (integerp x)
-                (posp y))
+                (posp y) ;; todo: drop
+                )
            (equal (mod (* y x) y)
                   0)))
 
@@ -360,7 +364,7 @@
                    (not (acl2-numberp x))))))
 
 (defthm mod-of-minus-arg2
-  (implies (and (rationalp x)
+  (implies (and ;; (rationalp x)
                 (rationalp y))
            (equal (mod x (- y))
                   (- (mod (- x) y))))
@@ -369,8 +373,8 @@
 
 (defthm mod-when-multiple
   (implies (and (integerp (* x (/ y)))
-                (rationalp x)
-                (rationalp y)
+                ;; (rationalp x)
+                (acl2-numberp y)
                 (not (equal 0 y)))
            (equal (mod x y)
                   0))
@@ -562,7 +566,7 @@
                 (syntaxp (and (quotep free)
                               (not (quotep x))))
                 (integerp y)
-                (rationalp free)
+                ;; (rationalp free)
                 (integerp p))
            (equal (mod (* x y) p)
                   (mod (* free y) p))))
@@ -572,7 +576,7 @@
                 (syntaxp (and (quotep free)
                               (not (quotep x))))
                 (integerp y)
-                (rationalp free)
+                ;; (rationalp free)
                 (integerp p))
            (equal (mod (* y x) p)
                   (mod (* y free) p))))
@@ -628,7 +632,7 @@
 ;gen
 (defthmd mod-of-mod-when-multiple
   (implies (and (equal 0 (mod y1 y2))
-                (rationalp y2)
+                ;; (rationalp y2)
                 (< 0 y2)
                 (rationalp y1)
                 (not (equal 0 y1)))
@@ -642,7 +646,7 @@
   (implies (and (syntaxp (and (quotep y1)
                               (quotep y2)))
                 (equal 0 (mod y1 y2)) ;gets computed
-                (rationalp y2)
+                ;; (rationalp y2)
                 (< 0 y2)
                 (rationalp y1)
                 (not (equal 0 y1)))
@@ -654,15 +658,15 @@
   (implies (and (<= y (expt 2 size))
                 (integerp x)
                 (posp y)
-                (natp size))
+                (integerp size))
            (unsigned-byte-p size (mod x y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 (defthm unsigned-byte-p-of-mod
   (implies (and (unsigned-byte-p size y)
                 (< 0 y)
-                (natp size)
-                (natp x))
+                ;; (natp size)
+                (integerp x))
            (unsigned-byte-p size (mod x y)))
   :hints (("Goal"
            :in-theory (enable unsigned-byte-p))))
@@ -671,10 +675,9 @@
   (implies (and (syntaxp (not (quotep x1))) ; prevent ACL2 from matching (- x1) with a constant
                 (equal (mod x1 y) k)
                 (syntaxp (quotep k))
-                (integerp x1)
-                (integerp x2)
-                (posp y)
-                )
+                (rationalp x1)
+                (rationalp x2)
+                (posp y))
            (equal (mod (+ (- x1) x2) y)
                   (mod (+ (- k) x2) y))))
 
@@ -682,10 +685,9 @@
   (implies (and (syntaxp (not (quotep x1))) ; prevent ACL2 from matching (- x1) with a constant
                 (equal (mod x1 y) k)
                 (syntaxp (quotep k))
-                (integerp x1)
-                (integerp x2)
-                (posp y)
-                )
+                (rationalp x1)
+                (rationalp x2)
+                (posp y))
            (equal (mod (+ x2 (- x1)) y)
                   (mod (+ x2 (- k)) y))))
 
@@ -708,16 +710,16 @@
 
 (defthm equal-of-mod-of-+-of-*-same-3-last
   (implies (and (posp p)
-                (integerp x)
-                (integerp y)
+                (rationalp x)
+                (rationalp y)
                 (integerp z))
            (equal (mod (+ x y (* p z)) p)
                   (mod (+ x y) p))))
 
 (defthm equal-of-mod-of-+-of-*-same-3-last-alt
   (implies (and (posp p)
-                (integerp x)
-                (integerp y)
+                (rationalp x)
+                (rationalp y)
                 (integerp z))
            (equal (mod (+ x y (* z p)) p)
                   (mod (+ x y) p))))
@@ -727,7 +729,7 @@
   (implies (and (< x 0)
                 (< (- y) x)
                 (integerp x)
-                (posp y))
+                (integerp y))
            (equal (mod x y)
                   (+ x y)))
   :hints (("Goal" :use (:instance acl2::mod-when-<
@@ -778,3 +780,13 @@
                                    (x (* x y))
                                    (y z))
             :in-theory (disable acl2::mod-of-*-of-mod))))
+
+;; Disabled by default for speed
+(defthmd equal-when-equal-of-floors-and-equal-of-mods
+  (implies (and (equal (floor i1 j) (floor i2 j)) ; j is a free var
+                (equal (mod i1 j) (mod i2 j))
+                (acl2-numberp i1)
+                (acl2-numberp i2))
+           (equal (equal i1 i2)
+                  t))
+  :hints (("Goal" :in-theory (enable mod))))

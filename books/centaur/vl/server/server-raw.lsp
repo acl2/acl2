@@ -283,8 +283,7 @@ a bleeding edge zip.</p>")
 ; Runs forever.  Tries to load any translations that are added to the load
 ; queue.
 
-  (let (#+hons
-        (acl2::*default-hs*
+  (let ((acl2::*default-hs*
          ;; Bigger sizes might be better for large models, but it might be nice
          ;; not to grow these beyond reason.
          ;; Bugfix 2014-12-05, do not call time$ here because it uses fmt, which
@@ -349,9 +348,9 @@ a bleeding edge zip.</p>")
         ;; Hons space configuration.  Most threads probably don't need a hons
         ;; space at all.  For those that do, we'd like to make sure we create
         ;; hons spaces that are small so that creating threads isn't expensive.
-        #+hons (acl2::*hl-hspace-addr-ht-default-size* 1000)
-        #+hons (acl2::*hl-hspace-sbits-default-size*   1000)
-        #+hons (acl2::*default-hs*                     nil)
+        (acl2::*hl-hspace-addr-ht-default-size* 1000)
+        (acl2::*hl-hspace-sbits-default-size*   1000)
+        (acl2::*default-hs*                     nil)
 
         ;; I think we shouldn't need this anymore with thread-safe memoize?
         ;; (acl2::*read-string-should-check-bad-lisp-object*

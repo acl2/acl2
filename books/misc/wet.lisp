@@ -158,77 +158,82 @@
 
 (defmacro wet! (form
                 &key
+                (fullp 'nil)
                 (evisc-tuple 'nil evisc-tuple-p)
                 (fns 't)
                 (compile ':same compile-p))
   `(with-output
-    :off summary
-    (make-event
-     (progn
-       (defttag :trace!)
-       (remove-untouchable trace-evisceration-alist t)
-       (progn!
-        (pprogn
-         (f-put-global 'wet-stack nil state)
-         (mv-let
-          (erp val state)
-          (er-let* ((specs (wet-trace-specs ',form
-                                            ,fns
-                                            ,(if compile-p
-                                                 compile
-                                               `(if (eq ,fns :all)
-                                                    nil
-                                                  ,compile))
-                                            state)))
-                   (with-trace-saved
-                    (er-progn (untrace$)
-                              (trans-eval (cons 'trace$ specs)
-                                          'wet
-                                          state
-                                          t)
-                              (mv-let
-                               (erp val state)
-                               (trans-eval ',form 'wet state t)
-                               (cond
-                                (erp
-                                 (let ((evisc-tuple
-                                        ,(if evisc-tuple-p
-                                             evisc-tuple
-                                           '(evisc-tuple 3
-                                                         4
-                                                         (trace-evisceration-alist
-                                                          state)
-                                                         nil)))
-                                       (val (f-get-global 'wet-stack state)))
-                                   (pprogn
-                                    (fms "Backtrace stack:"
-                                         nil *standard-co* state nil)
-                                    (fms "----------------~|"
-                                         nil *standard-co* state nil)
+     :off summary
+     (make-event
+      (progn
+        (defttag :trace!)
+        (remove-untouchable trace-evisceration-alist t)
+        (progn!
+         (pprogn
+          (f-put-global 'wet-stack nil state)
+          (mv-let
+            (erp val state)
+            (er-let* ((specs (wet-trace-specs ',form
+                                              ,fns
+                                              ,(if compile-p
+                                                   compile
+                                                 `(if (eq ,fns :all)
+                                                      nil
+                                                    ,compile))
+                                              state)))
+              (with-trace-saved
+               (er-progn (untrace$)
+                         (trans-eval (cons 'trace$ specs)
+                                     'wet
+                                     state
+                                     t)
+                         (mv-let
+                           (erp val state)
+                           ,(if fullp
+                                `(with-guard-checking-error-triple
+                                  :all
+                                  (trans-eval ',form 'wet state t))
+                              `(trans-eval ',form 'wet state t))
+                           (cond
+                            (erp
+                             (let ((evisc-tuple
+                                    ,(if evisc-tuple-p
+                                         evisc-tuple
+                                       '(evisc-tuple 3
+                                                     4
+                                                     (trace-evisceration-alist
+                                                      state)
+                                                     nil)))
+                                   (val (f-get-global 'wet-stack state)))
+                               (pprogn
+                                (fms "Backtrace stack:"
+                                     nil *standard-co* state nil)
+                                (fms "----------------~|"
+                                     nil *standard-co* state nil)
 
 ; We use 'evisc-hitp-without-iprint as it is used by ACL2 source function,
 ; fmt-abbrev1.  We can't get the effect we want by calling fmt-abbrev1 directly
 ; because we don't want to print the extra message until all printing calls
 ; under the print-numbered-list call have completed.
 
-                                    (f-put-global 'evisc-hitp-without-iprint nil state)
-                                    (print-numbered-list val
-                                                         *standard-co*
-                                                         evisc-tuple
-                                                         state)
-                                    (cond ((f-get-global 'evisc-hitp-without-iprint
-                                                         state)
-                                           (assert$
-                                            (not (iprint-enabledp state))
-                                            (mv-let
-                                              (col state)
-                                              (fmx "~@0~|" *see-doc-set-iprint*)
-                                              (declare (ignore col))
-                                              state)))
-                                          (t state))
-                                    (value (list 'value-triple
-                                                 :invisible)))))
-                                (t (value (list 'value-triple
-                                                (kwote (cdr val))))))))))
-          (cond (erp (mv "WET! failed." nil state))
-                (t (mv nil val state))))))))))
+                                (f-put-global 'evisc-hitp-without-iprint nil state)
+                                (print-numbered-list val
+                                                     *standard-co*
+                                                     evisc-tuple
+                                                     state)
+                                (cond ((f-get-global 'evisc-hitp-without-iprint
+                                                     state)
+                                       (assert$
+                                        (not (iprint-enabledp state))
+                                        (mv-let
+                                          (col state)
+                                          (fmx "~@0~|" *see-doc-set-iprint*)
+                                          (declare (ignore col))
+                                          state)))
+                                      (t state))
+                                (value (list 'value-triple
+                                             :invisible)))))
+                            (t (value (list 'value-triple
+                                            (kwote (cdr val))))))))))
+            (cond (erp (mv "WET! failed." nil state))
+                  (t (mv nil val state))))))))))

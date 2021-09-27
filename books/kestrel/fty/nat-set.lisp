@@ -15,10 +15,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defset nat-set
-  :parents (natp)
+  :parents (fty::fty-extensions fty::specific-types)
   :short "Fixtype of finite sets of natural numbers."
   :elt-type nat
   :elementp-of-nil nil
   :pred nat-setp
   :fix nat-sfix
-  :equiv nat-sequiv)
+  :equiv nat-sequiv
+  ///
+
+  (defrule natp-of-head-when-nat-setp-type-prescription
+    (implies (and (nat-setp x)
+                  (not (set::empty x)))
+             (natp (set::head x)))
+    :rule-classes :type-prescription))

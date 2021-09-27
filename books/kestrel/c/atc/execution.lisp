@@ -65,49 +65,49 @@
      If the value is too large, we return an error.")
    (xdoc::p
     "This is the dynamic counterpart of @(tsee check-iconst)."))
-  (b* ((ic (iconst-fix ic))
-       ((iconst ic) ic))
+  (b* (((iconst ic) ic)
+       (error (error (list :iconst-out-of-range (iconst-fix ic)))))
     (if ic.unsignedp
         (iconst-tysuffix-case
          ic.type
          :none (cond ((uint-integerp ic.value) (uint ic.value))
                      ((ulong-integerp ic.value) (ulong ic.value))
                      ((ullong-integerp ic.value) (ullong ic.value))
-                     (t (error (list :iconst-out-of-range ic))))
+                     (t error))
          :long (cond ((ulong-integerp ic.value) (ulong ic.value))
                      ((ullong-integerp ic.value) (ullong ic.value))
-                     (t (error (list :iconst-out-of-range ic))))
+                     (t error))
          :llong (cond ((ullong-integerp ic.value) (ullong ic.value))
-                      (t (error (list :iconst-out-of-range ic)))))
+                      (t error)))
       (iconst-tysuffix-case
        ic.type
        :none (if (iconst-base-case ic.base :dec)
                  (cond ((sint-integerp ic.value) (sint ic.value))
                        ((slong-integerp ic.value) (slong ic.value))
                        ((sllong-integerp ic.value) (sllong ic.value))
-                       (t (error (list :iconst-out-of-range ic))))
+                       (t error))
                (cond ((sint-integerp ic.value) (sint ic.value))
                      ((uint-integerp ic.value) (uint ic.value))
                      ((slong-integerp ic.value) (slong ic.value))
                      ((ulong-integerp ic.value) (ulong ic.value))
                      ((sllong-integerp ic.value) (sllong ic.value))
                      ((ullong-integerp ic.value) (ullong ic.value))
-                     (t (error (list :iconst-out-of-range ic)))))
+                     (t error)))
        :long (if (iconst-base-case ic.base :dec)
                  (cond ((slong-integerp ic.value) (slong ic.value))
                        ((sllong-integerp ic.value) (sllong ic.value))
-                       (t (error (list :iconst-out-of-range ic))))
+                       (t error))
                (cond ((slong-integerp ic.value) (slong ic.value))
                      ((ulong-integerp ic.value) (ulong ic.value))
                      ((sllong-integerp ic.value) (sllong ic.value))
                      ((ullong-integerp ic.value) (ullong ic.value))
-                     (t (error (list :iconst-out-of-range ic)))))
+                     (t error)))
        :llong (if (iconst-base-case ic.base :dec)
                   (cond ((sllong-integerp ic.value) (sllong ic.value))
-                        (t (error (list :iconst-out-of-range ic))))
+                        (t error))
                 (cond ((sllong-integerp ic.value) (sllong ic.value))
                       ((ullong-integerp ic.value) (ullong ic.value))
-                      (t (error (list :iconst-out-of-range ic))))))))
+                      (t error))))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1108,76 +1108,6 @@
   :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep)))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-binary-logand ((arg1 value-resultp) (arg2 value-resultp))
-  :returns (result value-resultp)
-  :short "Execute a binary logical conjunction expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We test the first operand;
-     if it yields @('nil'),
-     we return the @('int') 0 and ignore the second operand.
-     Otherwise, the test the second operand,
-     and we return the @('int') 0 or 1 accordingly.")
-   (xdoc::p
-    "Note that this binary operator is non-strict but pure."))
-  (b* ((arg1 (value-result-fix arg1))
-       (arg2 (value-result-fix arg2))
-       (test1 (exec-test arg1))
-       ((when (errorp test1)) test1)
-       ((when (not test1)) (sint 0))
-       (test2 (exec-test arg2))
-       ((when (errorp test2)) test2))
-    (if test2 (sint 1) (sint 0)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-binary-logor ((arg1 value-resultp) (arg2 value-resultp))
-  :returns (result value-resultp)
-  :short "Execute a binary logical disjunction expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We test the first operand;
-     if it yields @('t'),
-     we return the @('int') 1 and ignore the second operand.
-     Otherwise, the test the second operand,
-     and we return the @('int') 0 or 1 accordingly.")
-   (xdoc::p
-    "Note that this binary operator is non-strict but pure."))
-  (b* ((arg1 (value-result-fix arg1))
-       (arg2 (value-result-fix arg2))
-       (test1 (exec-test arg1))
-       ((when (errorp test1)) test1)
-       ((when test1) (sint 1))
-       (test2 (exec-test arg2))
-       ((when (errorp test2)) test2))
-    (if test2 (sint 1) (sint 0)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-binary-pure ((op binopp) (arg1 value-resultp) (arg2 value-resultp))
-  :guard (binop-purep op)
-  :returns (result value-resultp)
-  :short "Execute a pure binary expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Here we only define the execution of pure binary operators.
-     Assignments is handled in @(tsee exec-expr-asg)."))
-  (if (binop-strictp op)
-      (exec-binary-strict-pure op arg1 arg2)
-    (case (binop-kind op)
-      (:logand (exec-binary-logand arg1 arg2))
-      (:logor (exec-binary-logor arg1 arg2))
-      (t (error (impossible)))))
-  :guard-hints (("Goal" :in-theory (enable binop-purep binop-strictp)))
-  :hooks (:fix))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-cast ((tyname tynamep) (arg value-resultp))
@@ -1391,12 +1321,56 @@
        ((when (errorp array))
         (error (list :array-not-found arr (heap-fix heap))))
        (index (exec-integer sub))
-       ((unless (uchar-array-index-okp array index))
-        (error (list :array-index-out-of-range
-                     :pointer arr
-                     :array array
-                     :index sub))))
-    (uchar-array-read array index))
+       (err (error (list :array-index-out-of-range
+                         :pointer arr
+                         :array array
+                         :index sub))))
+    (cond ((uchar-arrayp array)
+           (if (uchar-array-index-okp array index)
+               (uchar-array-read array index)
+             err))
+          ((schar-arrayp array)
+           (if (schar-array-index-okp array index)
+               (schar-array-read array index)
+             err))
+          ((ushort-arrayp array)
+           (if (ushort-array-index-okp array index)
+               (ushort-array-read array index)
+             err))
+          ((sshort-arrayp array)
+           (if (sshort-array-index-okp array index)
+               (sshort-array-read array index)
+             err))
+          ((uint-arrayp array)
+           (if (uint-array-index-okp array index)
+               (uint-array-read array index)
+             err))
+          ((sint-arrayp array)
+           (if (sint-array-index-okp array index)
+               (sint-array-read array index)
+             err))
+          ((ulong-arrayp array)
+           (if (ulong-array-index-okp array index)
+               (ulong-array-read array index)
+             err))
+          ((slong-arrayp array)
+           (if (slong-array-index-okp array index)
+               (slong-array-read array index)
+             err))
+          ((ullong-arrayp array)
+           (if (ullong-array-index-okp array index)
+               (ullong-array-read array index)
+             err))
+          ((sllong-arrayp array)
+           (if (sllong-array-index-okp array index)
+               (sllong-array-read array index)
+             err))
+          (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use (:instance array-resultp-of-deref (ptr arr))
+                 :in-theory (e/d (arrayp
+                                  array-resultp)
+                                 (array-resultp-of-deref))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1415,10 +1389,6 @@
    (xdoc::p
     "We also reject pre/post-increment/decrement expressions,
      which are obviously non-pure.")
-   (xdoc::p
-    "For now we reject tests of conditionals
-     that are non-@('int') values.
-     We will add support for them later.")
    (xdoc::p
     "Recall that our C abstract syntax does not cover
      all the possible C expressions yet.
@@ -1443,11 +1413,25 @@
      :predec (error (list :non-pure-expr e))
      :unary (exec-unary e.op (exec-expr-pure e.arg compst))
      :cast (exec-cast e.type (exec-expr-pure e.arg compst))
-     :binary (b* (((unless (binop-purep e.op))
-                   (error (list :non-pure-expr e))))
-               (exec-binary-pure e.op
-                                 (exec-expr-pure e.arg1 compst)
-                                 (exec-expr-pure e.arg2 compst)))
+     :binary (b* (((unless (binop-purep e.op)) (error (list :non-pure-expr e))))
+               (case (binop-kind e.op)
+                 (:logand
+                  (b* ((test1 (exec-test (exec-expr-pure e.arg1 compst)))
+                       ((when (errorp test1)) test1)
+                       ((when (not test1)) (sint 0))
+                       (test2 (exec-test (exec-expr-pure e.arg2 compst)))
+                       ((when (errorp test2)) test2))
+                    (if test2 (sint 1) (sint 0))))
+                 (:logor
+                  (b* ((test1 (exec-test (exec-expr-pure e.arg1 compst)))
+                       ((when (errorp test1)) test1)
+                       ((when test1) (sint 1))
+                       (test2 (exec-test (exec-expr-pure e.arg2 compst)))
+                       ((when (errorp test2)) test2))
+                    (if test2 (sint 1) (sint 0))))
+                 (t (exec-binary-strict-pure e.op
+                                             (exec-expr-pure e.arg1 compst)
+                                             (exec-expr-pure e.arg2 compst)))))
      :cond (b* ((test (exec-test (exec-expr-pure e.test compst)))
                 ((when (errorp test)) test))
              (if test
@@ -1463,7 +1447,8 @@
     :rule-classes ((:forward-chaining
                     :trigger-terms ((exec-expr-pure e compst)))))
 
-  (verify-guards exec-expr-pure))
+  (verify-guards exec-expr-pure
+    :hints (("Goal" :in-theory (enable binop-strictp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

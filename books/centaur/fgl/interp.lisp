@@ -51,6 +51,8 @@
 (local (include-book "centaur/meta/urewrite" :dir :system))
 (local (include-book "centaur/meta/let-abs" :dir :system))
 
+(std::make-returnspec-config :hints-sub-returnnames t)
+
 (local (std::add-default-post-define-hook :fix))
 
 (local (in-theory (e/d (acl2::kwote-lst-redef)

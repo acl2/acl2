@@ -16,14 +16,16 @@
 (include-book "forms") ;for farg1, etc.
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
+(include-book "kestrel/terms-light/expr-calls-fn" :dir :system) ;todo: drop?
 (include-book "symbol-term-alistp")
-(include-book "expand-lambdas-in-term")
+(include-book "kestrel/terms-light/expand-lambdas-in-term" :dir :system)
 (include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/add-to-set-equal" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
+(local (include-book "kestrel/lists-light/take" :dir :system))
 
 ;todo: use list fix to combine these into a nice rule?
 
@@ -237,11 +239,11 @@
     :flag get-fns-in-terms-aux))
 
 (defthm pseudo-termp-of-lambda-body-cheap
-  (implies (and (consp term)
-                (consp (car term))
+  (implies (and ;; (consp term)
+                ;; (consp (car term))
                 (pseudo-termp term))
            (pseudo-termp (caddr term)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 0 0)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :expand ((pseudo-termp term)))))
 
 (defthm-flag-get-fns-in-term-aux
@@ -281,28 +283,7 @@
            (symbol-listp (get-fns-in-terms terms)))
   :hints (("Goal" :in-theory (enable get-fns-in-terms))))
 
-(mutual-recursion
- (defun expr-calls-fn (fn expr)
-   (declare (xargs :measure (acl2-count expr)
-                   :guard (and (symbolp fn)
-                               (pseudo-termp expr))))
-   (cond ((variablep expr) nil)
-         ((fquotep expr) nil)
-         ;;lambda:
-         ((consp (ffn-symb expr))
-          (or (expr-calls-fn fn (third (ffn-symb expr))) ;lambda body
-              (some-expr-calls-fn fn (fargs expr))))
-         (t (or (eq fn (ffn-symb expr))
-                (some-expr-calls-fn fn (fargs expr))))))
 
- (defun some-expr-calls-fn (fn exprs)
-   (declare (xargs :measure (acl2-count exprs)
-                   :guard (and (symbolp fn)
-                               (pseudo-term-listp exprs))))
-   (if (atom exprs)
-       nil
-     (or (expr-calls-fn fn (car exprs))
-         (some-expr-calls-fn fn (cdr exprs))))))
 
 ;; (RENAME-FN 'foo 'bar '(foo '1 (baz (foo x y))))
 (mutual-recursion
@@ -382,7 +363,7 @@
 
 (defthm pseudo-termp-of-beta-reduce
   (implies (and (pseudo-termp term)
-                (consp term)
+                ;; (consp term)
                 (consp (car term)))
            (pseudo-termp (beta-reduce term)))
   :hints (("Goal" :expand ((pseudo-termp term)
@@ -390,16 +371,7 @@
                            (nth 1 (cdr (car term))))
            :in-theory (enable beta-reduce nth))))
 
-;; where should this go?
-;; Negate TERM by adding or removing a call of not (avoids double negation)
-(defun negate-term (term)
-  (declare (xargs :guard t ;(pseudo-termp term)
-                  ))
-  (if (and (call-of 'not term)
-           (consp (cdr term)) ;for guards
-           )
-      (farg1 term) ;negation of (not x) is just x
-    `(not ,term)))
+
 
 ;; Kept disabled for speed
 ;; Matches the one in std.
@@ -536,19 +508,19 @@
 
 (defthm-flag-sublis-var-simple
   (defthm not-member-equal-of-fns-in-term-of-sublis-var-simple
-    (implies (and (not (member-equal fn (fns-in-term form)))
+    (implies (and (not (member-equal fn (fns-in-term term)))
                   (not (member-equal fn (fns-in-terms (strip-cdrs alist))))
-                  (pseudo-termp form))
-             (not (member-equal fn (fns-in-term (sublis-var-simple alist form)))))
+                  (pseudo-termp term))
+             (not (member-equal fn (fns-in-term (sublis-var-simple alist term)))))
     :flag sublis-var-simple)
   (defthm not-member-equal-of-fns-in-term-of-sublis-var-simple-lst
-    (implies (and (not (member-equal fn (fns-in-terms l)))
+    (implies (and (not (member-equal fn (fns-in-terms terms)))
                   (not (member-equal fn (fns-in-terms (strip-cdrs alist))))
-                  (pseudo-term-listp l))
-             (not (member-equal fn (fns-in-terms (sublis-var-simple-lst alist l)))))
+                  (pseudo-term-listp terms))
+             (not (member-equal fn (fns-in-terms (sublis-var-simple-lst alist terms)))))
     :flag sublis-var-simple-lst)
-  :hints (("Goal" :expand ((FNS-IN-TERM (CONS (CAR FORM)
-                                              (SUBLIS-VAR-SIMPLE-LST ALIST (CDR FORM)))))
+  :hints (("Goal" :expand ((FNS-IN-TERM (CONS (CAR TERM)
+                                              (SUBLIS-VAR-SIMPLE-LST ALIST (CDR TERM)))))
            :in-theory (enable fns-in-term
                               sublis-var-simple
                               sublis-var-simple-lst))))

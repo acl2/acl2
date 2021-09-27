@@ -15,6 +15,7 @@
 (include-book "defun-forms")
 (include-book "verify-guards-forms")
 (include-book "defthm-forms")
+(include-book "kestrel/event-macros/cw-event" :dir :system)
 
 ;; Drops :hints, :otf-flg, :guard-debug, and :guard-simplify from VERIFY-GUARDS.
 (defun clean-up-hints-in-verify-guards (verify-guards)

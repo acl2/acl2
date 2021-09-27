@@ -99,7 +99,7 @@
       (:rewrite 4vec-part-install-is-sbits)
       (:rewrite sbits-of-bits)
       (:rewrite sbits-size=0)
-      (:rewrite 4vec-concat$-of-size=1-term2=0)
+      (:rewrite 4vec-concat$-of-term2=0)
       (:rewrite concat-of-size=0)
       (:rewrite sbits-of-concat)
       (:rewrite bits-of-concat-2)                  ;; remove?
@@ -283,7 +283,7 @@
 
       (:rewrite 4vec-?*-test=1)
       (:rewrite 4vec-?*-test=0)
-      (:rewrite remove-3vec-fix)
+      (:rewrite 3vec-fix-of-3vec-p)
       (:rewrite cdr-cons)
       (:rewrite car-cons)
 

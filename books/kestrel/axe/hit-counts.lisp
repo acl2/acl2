@@ -324,9 +324,7 @@
   :hints (("Goal" :in-theory (enable hit-count-alistp subtract-hit-count-alists))))
 
 (defthm alistp-of-subtract-hit-count-alists
-  (implies (and (hit-count-alistp alist1)
-                (hit-count-alistp alist2))
-           (alistp (subtract-hit-count-alists alist1 alist2)))
+  (alistp (subtract-hit-count-alists alist1 alist2))
   :hints (("Goal" :in-theory (enable hit-count-alistp subtract-hit-count-alists))))
 
 (verify-guards subtract-hit-count-alists

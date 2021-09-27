@@ -68,19 +68,20 @@
            :use ((:instance imagpart-complex (y x))
                  (:instance complex-definition (y x))))))
 
-(defthm imagpart-of-*-when-rationalp-and-complex-rationalp
-  (implies (and (rationalp x)
-                (complex-rationalp y))
+(defthm imagpart-of-*-when-rationalp-arg1
+  (implies (rationalp x)
            (equal (imagpart (* x y))
                   (* x (imagpart y))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :use ((:instance complex-split (x y))))))
 
 ;commuted version
-(defthm imagpart-of-*-when-rationalp-and-complex-rationalp-alt
-  (implies (and (rationalp x)
-                (complex-rationalp y))
-           (equal (imagpart (* y x))
-                  (* x (imagpart y))))
+(defthm imagpart-of-*-when-rationalp-arg2
+  (implies (rationalp y)
+           (equal (imagpart (* x y))
+                  (* y (imagpart x))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :use ((:instance complex-split (x y))))))
+           :in-theory (disable imagpart-of-*-when-rationalp-arg1)
+           :use (:instance imagpart-of-*-when-rationalp-arg1
+                           (x y)
+                           (y x)))))

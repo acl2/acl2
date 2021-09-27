@@ -38,17 +38,28 @@
 
 (include-book "fnc-defs")
 
-(include-book "summation-tree-meta-fncs")
+(include-book "make-sc-fgl-ready")
 
-(local
- (include-book "summation-tree-meta-fncs-correct")) 
+(include-book "medw-compress")
+
+(include-book "unpack-booth")
+
+(include-book "summation-tree-meta-fncs")
 
 (include-book "equal-meta")
 
 (include-book "adder-rules-meta")
 
-;;(include-book "verify-guards")
+(local
+ (include-book "summation-tree-meta-fncs-correct"))
 
+(local
+ (include-book "medw-compress-correct"))
+
+(local
+ (include-book "unpack-booth-correct"))
+
+;;(include-book "verify-guards")
 
 ;;(include-book "4vec-to-binary-fncs-meta")
 
@@ -219,3 +230,22 @@
  :formula-checks mult-formula-checks
  :returns (mv term dont-rw))
 
+#|(rp::add-meta-rule
+ :meta-fnc medw-compress-meta
+ :trig-fnc medw-compress
+ :valid-syntaxp t
+ :formula-checks mult-formula-checks
+ :returns (mv term dont-rw))||#
+
+(rp::add-meta-rule
+ :meta-fnc unpack-booth-meta
+ :trig-fnc unpack-booth
+ :valid-syntaxp t
+ :formula-checks mult-formula-checks
+ :returns (mv term dont-rw))
+
+(add-postprocessor
+ :processor-fnc medw-compress-any
+ :valid-syntaxp t
+ :disabledp t
+ :formula-checks mult-formula-checks)

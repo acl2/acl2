@@ -18,6 +18,7 @@
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 
 ;; Returns :fail (meaning failure to match) or an alist binding the free vars in HYP.
 ;; hyp is a tree with leaves that are quoteps, nodenums (from vars already bound), and free vars.

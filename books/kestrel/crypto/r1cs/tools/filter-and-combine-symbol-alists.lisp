@@ -28,6 +28,7 @@
 (include-book "kestrel/alists-light/assoc-equal" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (local
  (defthm symbol-listp-of-take
@@ -40,13 +41,6 @@
    (implies (symbol-listp l)
             (symbol-listp (nthcdr n l)))
    :hints (("Goal" :in-theory (enable nthcdr)))))
-
-(local
- (defthm symbolp-of-nth-when-symbol-listp
-   (implies (symbol-listp l)
-            (symbolp (nth n l)))
-   :hints (("Goal" :in-theory (enable nth)))))
-
 
 ;;from axioms.lisp:
 (defthm equal-coerce
@@ -120,12 +114,12 @@
            (equal (cdr (assoc-equal key1 (filter-keys-symbol< key2 alist)))
                   (cdr (assoc-equal key1 alist)))))
 
-(defthm assoc-equal-of-filter-keys-symbol<-when-symbol->=
+(defthm assoc-equal-of-filter-keys-symbol<-when-symbol>=
   (implies (not (symbol< key1 key2))
            (equal (assoc-equal key1 (filter-keys-symbol< key2 alist))
                   nil)))
 
-(defun filter-keys-symbol->= (key alist)
+(defun filter-keys-symbol>= (key alist)
   (declare (xargs :guard (and (symbolp key)
                               (symbol-alistp alist))))
   (if (endp alist)
@@ -135,67 +129,67 @@
       (if (not (symbol< entry-key key))
           (acons entry-key
                  (cdr entry)
-                 (filter-keys-symbol->= key (rest alist)))
-        (filter-keys-symbol->= key (rest alist))))))
+                 (filter-keys-symbol>= key (rest alist)))
+        (filter-keys-symbol>= key (rest alist))))))
 
-(defthm true-listp-of-filter-keys-symbol->=
-  (true-listp (filter-keys-symbol->= key alist))
+(defthm true-listp-of-filter-keys-symbol>=
+  (true-listp (filter-keys-symbol>= key alist))
   :rule-classes :type-prescription)
 
-(defthm alistp-of-filter-keys-symbol->=
-  (alistp (filter-keys-symbol->= key alist))
+(defthm alistp-of-filter-keys-symbol>=
+  (alistp (filter-keys-symbol>= key alist))
   :rule-classes :type-prescription)
 
-(defthm assoc-equal-of-filter-keys-symbol->=-when-symbol<
+(defthm assoc-equal-of-filter-keys-symbol>=-when-symbol<
   (implies (symbol< key1 key2)
-           (equal (assoc-equal key1 (filter-keys-symbol->= key2 alist))
+           (equal (assoc-equal key1 (filter-keys-symbol>= key2 alist))
                   nil)))
 
-(defthm cdr-of-assoc-equal-of-filter-keys-symbol->=-when-symbol->=
+(defthm cdr-of-assoc-equal-of-filter-keys-symbol>=-when-symbol>=
   (implies (not (symbol< key1 key2))
-           (equal (cdr (assoc-equal key1 (filter-keys-symbol->= key2 alist)))
+           (equal (cdr (assoc-equal key1 (filter-keys-symbol>= key2 alist)))
                   (cdr (assoc-equal key1 alist)))))
 
-;; Drop pairs from alist-small and alist-large that violate the constraints
-(defun filter-and-combine-symbol-alists (key alist-small alist-large)
+;; Drop pairs from alist-before-key and alist-after-key that violate the constraints
+(defun filter-and-combine-symbol-alists (key alist-before-key alist-after-key)
   (declare (xargs :guard (and (symbolp key)
-                              (symbol-alistp alist-small)
-                              (symbol-alistp alist-large)
-                              ;; (all-symbol< (strip-cars alist-small key))
-                              ;; (all-symbol-> (strip-cars alist-large key))
+                              (symbol-alistp alist-before-key)
+                              (symbol-alistp alist-after-key)
+                              ;; (all-symbol< (strip-cars alist-before-key key))
+                              ;; (all-symbol>= (strip-cars alist-after-key key))
                               )))
-  (append (filter-keys-symbol< key alist-small)
-          (filter-keys-symbol->= key alist-large)))
+  (append (filter-keys-symbol< key alist-before-key)
+          (filter-keys-symbol>= key alist-after-key)))
 
 (defthm alistp-of-filter-and-combine-symbol-alists
-  (alistp (filter-and-combine-symbol-alists key alist-small alist-large)))
+  (alistp (filter-and-combine-symbol-alists key alist-before-key alist-after-key)))
 
 (defthm symbol-alistp-of-filter-and-combine-symbol-alists
-  (implies (and (symbol-alistp alist-small)
-                (symbol-alistp alist-large))
-           (symbol-alistp (filter-and-combine-symbol-alists key alist-small alist-large))))
+  (implies (and (symbol-alistp alist-before-key)
+                (symbol-alistp alist-after-key))
+           (symbol-alistp (filter-and-combine-symbol-alists key alist-before-key alist-after-key))))
 
 ;; The key rule
 (defthm lookup-equal-of-filter-and-combine-symbol-alists
-  (implies (and (symbolp key1)
-                (symbolp key2))
-           (equal (lookup-equal key1 (filter-and-combine-symbol-alists key2 alist-small alist-large))
-                  (if (symbol< key1 key2)
-                      (lookup-equal key1 alist-small)
-                    (lookup-equal key1 alist-large))))
+  (implies (and (symbolp desired-key)
+                (symbolp key))
+           (equal (lookup-equal desired-key (filter-and-combine-symbol-alists key alist-before-key alist-after-key))
+                  (if (symbol< desired-key key)
+                      (lookup-equal desired-key alist-before-key)
+                    (lookup-equal desired-key alist-after-key))))
   :hints (("Goal" :in-theory (enable lookup-equal))))
 
-;; Since key1 and key2 are required to be constants, this does not introduce
+;; Since desired-key and key are required to be constants, this does not introduce
 ;; IFs.  Furthermore, the resulting lookup-equal term should be about half the
-;; size of the LHS, provided alist-small and alist-large are roughly the same
+;; size of the LHS, provided alist-before-key and alist-after-key are roughly the same
 ;; size.
 (defthm lookup-equal-of-filter-and-combine-symbol-alists-safe
-  (implies (and (syntaxp (and (quotep key1)
-                              (quotep key2)))
-                (symbolp key1)
-                (symbolp key2))
-           (equal (lookup-equal key1 (filter-and-combine-symbol-alists key2 alist-small alist-large))
-                  (if (symbol< key1 key2)
-                      (lookup-equal key1 alist-small)
-                    (lookup-equal key1 alist-large))))
+  (implies (and (syntaxp (and (quotep desired-key)
+                              (quotep key)))
+                (symbolp desired-key)
+                (symbolp key))
+           (equal (lookup-equal desired-key (filter-and-combine-symbol-alists key alist-before-key alist-after-key))
+                  (if (symbol< desired-key key)
+                      (lookup-equal desired-key alist-before-key)
+                    (lookup-equal desired-key alist-after-key))))
   :hints (("Goal" :in-theory (enable lookup-equal))))

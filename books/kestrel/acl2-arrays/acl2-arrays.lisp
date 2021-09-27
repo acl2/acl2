@@ -872,7 +872,6 @@
   (implies (and (natp index)
                 ;; (< index (car (dimensions name l)))
                 (array1p name l) ;name is mostly irrel here?
-                (symbolp name)
                 )
            (equal (assoc-equal index (compress1 name l))
                   (if (and (equal (cdr (assoc-equal index l))

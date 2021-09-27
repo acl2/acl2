@@ -45,10 +45,13 @@
                    (equal (mul inv a prime) 1))))
 
 (defthm nonzero-constraint-correct-1
-  (implies (and (fep a prime)
-                (rtl::primep prime))
-           (implies (nonzero-constraint a prime)
-                    (not (equal a 0)))))
+  ;; (implies (and (fep a prime)
+  ;;               (rtl::primep prime)
+  ;;               )
+  (implies (nonzero-constraint a prime)
+           (not (equal a 0)))
+  ;;)
+  )
 
 (defthm nonzero-constraint-correct-2
   (implies (and (fep a prime)

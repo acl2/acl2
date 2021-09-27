@@ -338,9 +338,9 @@ Use one or more previously-proved theorems efficiently."
                            :skip)
                         ,(vb verbose
                              (pc-fancy-use-fn1 lmi-lst nil)))))
-           (instr2 (if instr2a
+           (instr2 (if instr2b
                        `(orelse ,instr2a ,instr2b)
-                     instr2b)))
+                     instr2a)))
       `(orelse ,instr1 ,instr2))))
 
 (define-pc-macro prove-guard (old-fn

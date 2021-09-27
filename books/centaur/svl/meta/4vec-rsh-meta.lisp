@@ -87,8 +87,7 @@
                 (t 
                  (mv term `(nil t t))))))))
     (& (progn$
-        (cw "unexpected instances in 4vec-rsh-of-meta ~%")
-        (hard-error '4vec-rsh-of-meta "error" nil)
+        (cw "Warning. Unexpected instances in 4vec-rsh-of-meta. Shift amount is not quoted.~%")
         (mv term nil)))))
 
 (encapsulate

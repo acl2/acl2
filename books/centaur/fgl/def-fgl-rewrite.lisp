@@ -203,7 +203,7 @@
                           (remove-equal rune (cdr (hons-get (car fns) alist)))
                           alist)))
     (alist-remove-rune-entries (cdr fns) rune alist)))
-    
+
 
 (defun add-fgl-rewrite-fn (name alist world)
   (declare (xargs :mode :program))
@@ -365,7 +365,7 @@ rewrite rule runes recognized in FGL.</p>")
 
 (defxdoc add-fgl-branch-merges
   :short "Enable some rewrite rules's use for branch merging in FGL."
-  :long "<p>Adds the given rewrite rule runes to the @('fgl-branch-merge-rules) table so
+  :long "<p>Adds the given rewrite rule runes to the @('fgl-branch-merge-rules') table so
 that they can be used to merge @('if') branches in FGL. See @(see
 add-fgl-rewrites) for details on rewrite rule runes recognized in FGL.  Each rule
 must have as its LHS a call of @('if') with a function call as its @('then')
@@ -388,7 +388,7 @@ branch.</p>")
 (defxdoc remove-fgl-branch-merges
   :short "Disable some rewrite rules' use for branch merging in FGL."
   :long "<p>Removes the given rewrite rule runes from the
-@('fgl-branch-merge-rules) table so that they won't be used to merge @('if')
+@('fgl-branch-merge-rules') table so that they won't be used to merge @('if')
 branches in FGL. See @(see add-fgl-rewrites) for details on rewrite rule runes
 recognized in FGL.</p>")
 
@@ -802,7 +802,7 @@ them with their second arguments; otherwise, it just provides a body of @('nil')
          `(non-exec ,(remove-bind-var-calls (caddr x))))
         (t (cons (remove-bind-var-calls (car x))
                  (remove-bind-var-calls (cdr x))))))
-    
+
 
 
 (defun def-fgl-program-fn (name args world)

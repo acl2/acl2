@@ -148,7 +148,7 @@
 
  <li>A better untranslation might be obtainable when the simplified
  term (@('sterm')) has similar structure to a proper subterm of the original
- term @('@('tterm')').  As it stands now, the original untranslated term @('uterm')
+ term (@('tterm')).  As it stands now, the original untranslated term @('uterm')
  is probably useless in that case.</li>
 
  <li>More macros could quite reasonably be handled, but aren't yet, such as
@@ -617,6 +617,13 @@
           (mv t (fcons-term* 'null x)))
          (& (mv nil sterm))))
       (('return-last ''mbe1-raw *t* x) ; ('mbt x)
+
+; This COND branch was originally intended to assist the apt::simplify
+; transformation in its handling of MBT.  That task is best handled instead by
+; that transformation, which is doing so as of this writing.  However, other
+; transformations apparently depend on this as well (as reported by Stephen
+; Westfold), so this branch remains for now.
+
        (cond ((not (ffn-symb-p sterm 'return-last))
               (cond ((equal sterm x)
                      (mv t tterm))
@@ -1571,7 +1578,7 @@
                                               wrld
                                               state-vars)
                                (and (null erp)
-                                    (not (intersectp-eq ignore-vars tbody)))))
+                                    (not (intersectp-eq ignore-vars (all-vars tbody))))))
                             `(mv-let ,vars
                                ,mv-let-body
                                ,@(and ignore-vars

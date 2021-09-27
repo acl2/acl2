@@ -27,6 +27,7 @@
      ecw
      ecw?
      _ ;range
+     comment
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
@@ -236,10 +237,33 @@
 
       _  ;range
 
-      d<
+      d< ; ordinals, orderings
       l<
       <<
       lexp
+      o-p
+      o^
+      o+
+      o<
+      o*
+      o+
+      o-infp
+      e0-ord-<
+      e0-ordinalp
+      llist
+      llist-macro
+      omega-term
+      omega
+      o-max
+      natpart
+      limitp
+      olen
+      ob+
+      o-
+      count1
+      count2
+      ob*
+      ob^ 
 
       tshell-ensure
       tshell-call

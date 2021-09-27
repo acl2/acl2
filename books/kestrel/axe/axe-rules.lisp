@@ -16,14 +16,14 @@
 
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
-(include-book "kestrel/utilities/terms" :dir :system) ; for lambda-free-termp
+(include-book "kestrel/terms-light/lambda-free-termp" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/lists-light/perm-def" :dir :system)
 (include-book "kestrel/lists-light/perm" :dir :system) ;for the fact that perm is an equiv
 ;(local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
-(local (include-book "kestrel/lists-light/perm" :dir :system))
+;; (local (include-book "kestrel/lists-light/perm" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 
 ;(local (in-theory (disable all-vars)))
@@ -134,10 +134,12 @@
 ;;; axe-rule-hypp
 ;;;
 
-;; An axe-rule-hyp (hypothesis of an axe rule) is an axe-syntaxp hyp, an
-;; axe-bind-free hyp, or a lambda-free (currently) function call.  TODO:
-;; Consider not expanding lambdas in hyps (if they don't have free vars?).
-;; Axe creates these structures by processing hyps in theorems from the world.
+;; An axe-rule-hyp (hypothesis of an axe rule) is a special kind of structure
+;; that represents an axe-syntaxp hyp, an axe-bind-free hyp, or a lambda-free
+;; (currently) function call, which may or may not contain variables that will
+;; be free whne the hyp is relieved.  TODO: Consider not expanding lambdas in
+;; hyps (if they don't have free vars?).  Axe creates these structures by
+;; processing hyps in theorems from the world.
 (defund axe-rule-hypp (hyp)
   (declare (xargs :guard t))
   (and (consp hyp) ; can't be a variable
@@ -161,7 +163,7 @@
                ;; regular hyp with no free vars:
                (and (not (eq 'quote fn)) ; can't be a quoted constant
                     (pseudo-termp hyp)
-                    ;; consider relaxng this for efficiency of rewriting:
+                    ;; consider relaxing this for efficiency of rewriting:
                     (lambda-free-termp hyp))))))))
 
 (defthm axe-rule-hypp-when-not-special

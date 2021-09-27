@@ -713,7 +713,7 @@
    "The example function @('f') may be regarded
     as an internal function in the sense above.
     For simplicity, we assume that every parameter of the function
-    is faily small, more precisely not above 10 in absolute value.
+    is fairly small, more precisely not above 10 in absolute value.
     The following is the function @('|f|') with the complete guard
     and the hints and book inclusion and command to verify the guards:")
   (xdoc::codeblock

@@ -79,7 +79,6 @@
                   (stringp new)
                   (stringp x)
                   (natp n)
-                  (natp xl)
                   (posp oldl)
                   (= oldl (length old))
                   (= xl (length x))

@@ -612,11 +612,11 @@ ACL2 !>>(DEFUN FOO-BAD (TOP)
                           (MV TOP SUB$C-VAL SUB$C-CONG-VAL)))
 
 
-ACL2 Error in ( DEFUN FOO-BAD ...):  The stobj-let bindings 
-((SUB$C (SUB0 TOP)) (SUB$C-CONG (SUB0-AGAIN TOP))) ultimately access
-the same field SUB0$C of concrete stobj TOP$C.  Since variables SUB$C
-and SUB$C-CONG are to be updated (i.e., they are among the stobj-let
-form's producer variables), this aliasing is illegal.  The form 
+ACL2 Error in ( DEFUN FOO-BAD ...):  The stobj-let binding expressions
+((SUB0 TOP) (SUB0-AGAIN TOP)) both ultimately read concrete stobj TOP$C
+with accessor SUB0$C.  Since variables SUB$C and SUB$C-CONG are to
+be updated (i.e., they are among the stobj-let form's producer variables),
+this aliasing is illegal.  The form 
 (STOBJ-LET ((SUB$C (SUB0 TOP))
             (SUB$C-CONG (SUB0-AGAIN TOP)
                         UPDATE-SUB0))
@@ -837,11 +837,11 @@ ACL2 !>>(DEFUN FOO2-BAD (TOP2)
                           (MV TOP2 SUB$C-VAL SUB$C-CONG-VAL)))
 
 
-ACL2 Error in ( DEFUN FOO2-BAD ...):  The stobj-let bindings 
-((SUB$C (SUB02 TOP2)) (SUB$C-CONG (SUB02-AGAIN TOP2))) ultimately access
-the same field SUB0$C of concrete stobj TOP$C.  Since variables SUB$C
-and SUB$C-CONG are to be updated (i.e., they are among the stobj-let
-form's producer variables), this aliasing is illegal.  The form 
+ACL2 Error in ( DEFUN FOO2-BAD ...):  The stobj-let binding expressions
+((SUB02 TOP2) (SUB02-AGAIN TOP2)) both ultimately read concrete stobj
+TOP$C with accessor SUB0$C.  Since variables SUB$C and SUB$C-CONG are
+to be updated (i.e., they are among the stobj-let form's producer variables),
+this aliasing is illegal.  The form 
 (STOBJ-LET ((SUB$C (SUB02 TOP2))
             (SUB$C-CONG (SUB02-AGAIN TOP2)
                         UPDATE-SUB02))

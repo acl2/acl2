@@ -46,7 +46,7 @@
   (implies (and (items-have-len m items)
                 (true-listp items) ;drop?
                 (natp n)
-                (natp m)
+                (integerp m)
                 (<= n m)
                 )
            (all->=-len items n) ;todo: this should not check the final cdr

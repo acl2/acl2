@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -26,10 +26,6 @@
 ; This file was developed and contributed by Jared Davis on behalf of
 ; Centaur Technology.
 
-; Note: The serialization routines are restricted to work only in
-; ACL2(h).  However, they are independent of the remainder of the HONS
-; extension and might some day become part of ordinary ACL2.
-
 ; Please direct correspondence about this file to Jared Davis
 ; <jared@centtech.com>.
 
@@ -40,18 +36,12 @@
 
 (defun serialize-write-fn (filename obj verbosep state)
   (declare (xargs :guard (and (stringp filename)
-                              (booleanp verbosep)
-                              (state-p state))
+                              (booleanp verbosep))
                   :stobjs state)
            (ignorable filename obj verbosep))
   #-acl2-loop-only
   (cond
    ((live-state-p state)
-    #-hons
-    (er hard? 'serialize-write-fn
-        "Serialization routines are currently only available in the HONS ~
-         version of ACL2.")
-    #+hons
     (with-open-file
      (stream filename
              :direction :output
@@ -82,8 +72,7 @@
 
   (declare (xargs :guard (and (stringp filename)
                               (member hons-mode '(:never :always :smart))
-                              (booleanp verbosep)
-                              (state-p state))
+                              (booleanp verbosep))
                   :stobjs state)
            (ignorable filename hons-mode verbosep))
 
@@ -92,12 +81,6 @@
    ((live-state-p state)
     (return-from
      serialize-read-fn
-     #-hons
-     (progn (er hard? 'serialize-read-fn
-                "Serialization routines are currently only available in the ~
-                 HONS version of ACL2.")
-            (mv nil state))
-     #+hons
      (with-open-file
       (stream filename :direction :input)
       (let* ((*ser-verbose* verbosep)

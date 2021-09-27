@@ -371,7 +371,7 @@ Does not seem to be used.
 (defun defdata-core-events (a1 wrld)
   (b* (((list D kwd-alist) a1)) ;a1 is the result of parse-defdata
     `(WITH-OUTPUT
-      :ON (SUMMARY ERROR) :OFF (PROVE EVENT OBSERVATION)
+      :ON (SUMMARY ERROR COMMENT) :OFF (PROVE EVENT OBSERVATION)
       :SUMMARY-OFF (:OTHER-THAN ACL2::FORM ACL2::TIME)
       (PROGN
        ,@(collect-events :pre-events D kwd-alist)
@@ -982,7 +982,7 @@ Example use
       (encapsulate
        nil
        (with-output
-        ,@(and (not verbosep) '(:off :all))
+        ,@(and (not verbosep) '(:off :all :on comment))
         :gag-mode t
         :stack :push
         (make-event

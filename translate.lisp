@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1706,7 +1706,8 @@
                           rst))))))
 
 (defun remove-strings (l)
-  (cond ((null l) nil)
+  (declare (xargs :guard (true-listp l) :mode :logic))
+  (cond ((endp l) nil)
         ((stringp (car l))
          (remove-strings (cdr l)))
         (t (cons (car l) (remove-strings (cdr l))))))
@@ -2125,8 +2126,7 @@
 ; is not the stobj specified by the signature of fn, but rather is congruent to
 ; it.
 
-  (the #+acl2-mv-as-values (values t t t)
-       #-acl2-mv-as-values t
+  (the (values t t t)
        (let* ((*aokp*
 
 ; We expect the parameter aok, here and in all functions in the "ev family"
@@ -2188,9 +2188,6 @@
                      (prog1
                          (let ((*hard-error-returns-nilp*
                                 hard-error-returns-nilp))
-                           #-acl2-mv-as-values
-                           (apply applied-fn arg-values)
-                           #+acl2-mv-as-values
                            (cond ((null (cdr stobjs-out))
                                   (apply applied-fn arg-values))
                                  (t (multiple-value-list
@@ -2221,18 +2218,7 @@
                  t)
                (ev-fncall-msg val w user-stobj-alist)
                latches))
-          (t #-acl2-mv-as-values ; adjust val for the multiple value case
-             (let ((val
-                    (cond
-                     ((null (cdr stobjs-out)) val)
-                     (t (cons val
-                              (mv-refs (1- (length stobjs-out))))))))
-               (mv nil
-                   val
-                   (latch-stobjs stobjs-out ; adjusted to actual-stobjs-out
-                                 val
-                                 latches)))
-             #+acl2-mv-as-values ; val already adjusted for multiple value case
+          (t ; val already adjusted for multiple value case
              (mv nil
                  val
 ; The next form was originally conditionalized with #+acl2-extra-checks, with
@@ -10884,7 +10870,7 @@
 ; STOBJS-OUT is also $s, and the ith actual of a call is a live stobj, then the
 ; jth return value from that call is that same live stobj.  This is the only
 ; way that a live stobj can be found in the output (unless there is a call of a
-; creator function, which is untouchable).
+; creator or fixer function, which cannot be made directly in code).
 
 (defun compute-stobj-flags (lst known-stobjs w)
 
@@ -11537,7 +11523,7 @@
             (chk-flet-declare-form names (car declare-form-list) ctx)
             (chk-flet-declare-form-list names (cdr declare-form-list) ctx)))))
 
-(defun stobj-updater-guess-from-accessor (accessor)
+(defun stobj-updater-guess-from-accessor (accessor tblp)
 
 ; Warning: Keep the following in sync with defstobj-fnname.
 
@@ -11545,6 +11531,13 @@
 ; for that field.  We use it to supply a reasonable default when a stobj-let
 ; binding does not specify an updater, but ultimately we check it just as we
 ; would check a supplied updater name.
+
+; Tblp is non-nil when accessor is a stobj-table or hash-table access (though
+; as of this writing, we use this function only in stobj-let and thus
+; hash-table accesses aren't relevant here since there are no hash-table
+; accesses that return stobjs).  If the access isn't of the form PREFIXget for
+; some PREFIX (typically ending in a hyphen, consistently with
+; defstobj-fnname), then we pretend that tblp is nil.
 
 ; The following example shows why this is only a guess.
 
@@ -11555,97 +11548,249 @@
 ; the call of pack-pos below, with acc bound to ACL2::FLDI, yields
 ; ACL2::UPDATE-FLDI.
 
-  (packn-pos (list "UPDATE-" accessor)
-             accessor))
+  (declare (xargs :guard (symbolp accessor)))
+  (or (and tblp
+           (let* ((name (symbol-name accessor))
+                  (len (length name)))
+             (and (< 3 len)
+                  (equal (subseq name (- len 3) len) "GET")
+                  (intern-in-package-of-symbol
+                   (concatenate 'string (subseq name 0 (- len 3)) "PUT")
+                   accessor))))
+      (packn-pos (list "UPDATE-" accessor)
+                 accessor)))
 
-(defun parse-stobj-let1 (bindings producer-vars bound-vars actuals stobj
-                                  updaters)
+(defun parse-stobj-let-actual (actual)
 
-; Either return (mv binding nil nil ... nil) for some unsuitable binding in
-; bindings, or else return the result of accumulating from bindings into the
-; other arguments.  See parse-stobj-let.  Note that stobj is initially nil, but
-; is bound by the first recursive call and must be the same at every ensuing
+; Actual is an untranslated expression to which a variable is bound in a
+; stobj-let binding.  When the actual syntactically represents a stobj-table
+; access, we return the various components of the access, as is made clear in
+; the code below.  Otherwise we return four nil (and irrelevant) values.
+
+  (case-match actual
+    ((st-get ('quote s2) parent (s2-creator))
+     (mv st-get parent s2 s2-creator))
+    (&
+     (mv nil nil nil nil))))
+
+(defun unquoted-symbol (x)
+
+; If x is of the form (quote y) where y is a symbol, return y; otherwise return
+; nil.  Note that the result does not distinguish between the case that x is
+; (quote nil) and that x is other than a quoted symbol.
+
+  (case-match x
+    (('quote y)
+     (and (symbolp y)
+          y))
+    (& nil)))
+
+(defun parse-stobj-let1 (bindings producer-vars bound-vars
+                                  actuals creators
+                                  stobj updaters)
+
+; Either return (mv bad-binding msg nil ... nil) for some unsuitable binding in
+; bindings and explanatory msg to be passed as the first argument to function
+; illegal-stobj-let-msg (the second argument will be the stobj-let form), or
+; else return the result of accumulating from bindings into the other
+; arguments.  See parse-stobj-let.  Note that stobj is initially nil, but is
+; bound by the first recursive call and must be the same at every ensuing
 ; recursive call.
 
   (declare (xargs :guard (and (true-listp bindings)
                               (true-listp producer-vars)
                               (true-listp bound-vars)
                               (true-listp actuals)
+                              (true-listp creators)
                               (true-listp updaters))))
   (cond
    ((endp bindings)
     (mv nil
         (reverse bound-vars)
         (reverse actuals)
+        (reverse creators)
         stobj
         (reverse updaters)))
-   (t (let ((binding (car bindings)))
-        (case-match binding
-          ((s act . rest) ; e.g. (st1 (fld1 st+) update-fld1)
-           (cond
-            ((not (or (null rest)
-                      (and (consp rest)
-                           (null (cdr rest))
-                           (symbolp (car rest)))))
-             (mv binding nil nil nil nil))
-            ((not (and (true-listp act)
-                       (member (length act) '(2 3))
-                       (symbolp (car act))
-                       (symbolp (car (last act)))))
-             (mv binding nil nil nil nil))
-            (t (let ((arrayp (eql (length act) 3))) ; e.g. (fld3i 4 st+)
-                 (cond
-                  ((and arrayp
-                        (let ((index (cadr act)))
+   (t
+    (let ((binding (car bindings)))
+      (case-match binding
+        ((s act . rest)
+         (cond
+          ((not (and (symbolp s)
+                     (or (null rest)
+                         (and (consp rest)
+                              (null (cdr rest))
+                              (symbolp (car rest))))))
+           (mv binding
+               (msg "That binding is not of the form (var expression) or (var ~
+                     expression updater).")
+               nil nil nil nil))
+          (t
+           (mv-let (st-get stobj0 s2 s2-creator)
+             (parse-stobj-let-actual act)
+             (cond
+              (s2-creator
+               (cond
+                ((not (and (symbolp s2-creator) s2-creator
+                           (symbolp st-get) st-get
+                           (symbolp s2) s2
+                           (symbolp stobj0) stobj0))
+                 (let ((msg
+                        (mv-let (str sym)
+                          (cond
+                           ((not (and (symbolp s2-creator) s2-creator))
+                            (mv "ST-CREATOR" s2-creator))
+                           ((not (and (symbolp st-get) st-get))
+                            (mv "STOBJ-TBL-GET" st-get))
+                           ((not (and (symbolp s2) s2))
+                            (mv "ST" s2))
+                           (t ; (not (and (symbolp stobj0) stobj0))
+                            (mv "TOP-ST" stobj0)))
+                          (msg "For a binding of the form~|(STOBJ-TBL-GET ST ~
+                                TOP-ST ST-CREATOR)), ~a0 must be a non-nil ~
+                                symbol, but ~x1 is not."
+                               str sym))))
+                   (mv binding msg nil nil nil nil)))
+                ((and stobj
+                      (not (eq stobj0 stobj)))
+                 (mv binding
+                     (msg "The stobj accessed in a stobj-let binding must be ~
+                           the same as the stobj accessed in preceding ~
+                           bindings of that stobj-let, but ~x0 does not agree ~
+                           with the earlier ~x1."
+                          stobj0 stobj)
+                     nil nil nil nil))
+                (t
+                 (parse-stobj-let1
+                  (cdr bindings)
+                  producer-vars
+                  (cons s bound-vars)
+                  (cons act actuals)
+                  (cons s2-creator creators)
+                  stobj0
+                  (if (member-eq s producer-vars)
+                      (cons (list (or (car rest) ; update-fn
+                                      (stobj-updater-guess-from-accessor
+                                       st-get
+                                       t))
+                                  (kwote s)
+                                  s
+                                  (caddr act))
+                            updaters)
+                    updaters)))))
+              (t
+
+; In this case act should be of one of the following forms, where of course the
+; names may be different than shown below (updaters shown are the defaults).
+; We already cover stobj-table fields in the preceding case; when we allow
+; hash-table fields whose entries are of a specified stobj type, the present
+; case may need some adjustment.
+
+;   (st (fld stobj0))
+;   (st (fld stobj0) update-fld)
+;   (st (fldi i stobj0))
+;   (st (fldi i stobj0) update-fldi)
+
+               (cond
+                ((not (and (true-listp act)
+                           (member (length act) '(2 3))
+                           (symbolp (car act))
+                           (symbolp (car (last act)))))
+                 (mv binding
+                     (msg "The stobj-let binding of ~x0 is to ~x1, which is ~
+                           not an expression of length 2 or 3 that starts and ~
+                           ends with a symbol, and is also not a valid ~
+                           stobj-table access."
+                          s act)
+                     nil nil nil nil))
+                (t (let ((arrayp (eql (length act) 3))) ; e.g. (fld3i 4 st+)
+                     (cond
+                      ((and arrayp
+                            (let ((index (cadr act)))
 
 ; As discussed in the Essay on Nested Stobjs, the index must be a natural
 ; number or else a symbol that is not among the producer variables.  We relax
 ; the former condition to allow a quoted natural.
 
-                          (not (or (and (symbolp index)
-                                        (not (member-eq index
-                                                        producer-vars)))
-                                   (natp index)
-                                   (and (consp index)
-                                        (consp (cdr index))
-                                        (null (cddr index))
-                                        (eq (car index) 'quote)
-                                        (natp (cadr index)))))))
-                   (mv binding nil nil nil nil))
-                  (t
-                   (let ((accessor (car act))
-                         (stobj0 (car (last act)))
-                         (update-fn (car rest)))
-                     (cond
-                      ((or (null stobj0)
-                           (and stobj
-                                (not (eq stobj0 stobj))))
-                       (mv binding nil nil nil nil))
-                      ((member-eq s producer-vars)
-                       (parse-stobj-let1
-                        (cdr bindings)
-                        producer-vars
-                        (cons s bound-vars)
-                        (cons act actuals)
-                        stobj0
-                        (cons (cons (or update-fn
-                                        (stobj-updater-guess-from-accessor
-                                         accessor))
-                                    (if arrayp
-                                        (list* (cadr act) ; index
-                                               s
-                                               (cddr act))
-                                      (cons s (cdr act))))
-                              updaters)))
+                              (not (or (and (symbolp index)
+                                            (not (member-eq index
+                                                            producer-vars)))
+                                       (natp index)
+                                       (and (consp index)
+                                            (consp (cdr index))
+                                            (null (cddr index))
+                                            (eq (car index) 'quote)
+                                            (natp (cadr index)))))))
+                       (mv binding
+                           (if (unquoted-symbol (cadr act))
+                               (msg "The stobj-let binding of variable ~x0 to ~
+                                     expression ~x1 is illegal.  If a ~
+                                     stobj-table access was intended, the ~
+                                     stobj creator for ~x2 should be called ~
+                                     as a third argument of that expression; ~
+                                     see :DOC stobj-table."
+                                    s act (unquoted-symbol (cadr act)))
+                             (msg "Illegal array index, ~x0, in stobj-let ~
+                                   binding of variable ~x1."
+                                  (cadr act) s))
+                           nil nil nil nil))
                       (t
-                       (parse-stobj-let1
-                        (cdr bindings)
-                        producer-vars
-                        (cons s bound-vars)
-                        (cons act actuals)
-                        stobj0
-                        updaters))))))))))
-          (& (mv binding nil nil nil nil)))))))
+                       (let ((accessor (car act))
+                             (stobj0 (car (last act)))
+                             (update-fn (car rest)))
+                         (cond
+                          ((or (null stobj0)
+                               (eq stobj0 'state)
+                               (and stobj
+                                    (not (eq stobj0 stobj))))
+                           (mv binding
+                               (msg "In the stobj-let binding of variable ~
+                                     ~x0, the expression ~x1 ends with ~x2, ~
+                                     which ~@3."
+                                    s act stobj0
+                                    (cond
+                                     ((null stobj0)
+                                      (msg "is ~x0" nil))
+                                     ((eq stobj0 'state)
+                                      (msg "is ~x0" 'state))
+                                     (t
+                                      (msg "fails to agree with the stobj ~
+                                            name indicated in the first ~
+                                            expression, ~x0"
+                                           stobj))))
+                               nil nil nil nil))
+                          ((member-eq s producer-vars)
+                           (parse-stobj-let1
+                            (cdr bindings)
+                            producer-vars
+                            (cons s bound-vars)
+                            (cons act actuals)
+                            (cons nil creators)
+                            stobj0
+                            (cons (cons (or update-fn
+                                            (stobj-updater-guess-from-accessor
+                                             accessor
+                                             nil))
+                                        (if arrayp
+                                            (list* (cadr act) ; index
+                                                   s
+                                                   (cddr act))
+                                          (cons s (cdr act))))
+                                  updaters)))
+                          (t
+                           (parse-stobj-let1
+                            (cdr bindings)
+                            producer-vars
+                            (cons s bound-vars)
+                            (cons act actuals)
+                            (cons nil creators)
+                            stobj0
+                            updaters)))))))))))))))
+        (& (mv binding
+               (msg "The stobj-let binding ~x0 fails to be a null-terminated ~
+                     list of length at least 2."
+                    binding)
+               nil nil nil nil)))))))
 
 (defun illegal-stobj-let-msg (msg form)
   (msg "~@0  The form ~x1 is thus illegal.  See :DOC stobj-let."
@@ -11667,7 +11812,10 @@
 ; producer-vars producer updaters bindings consumer), where
 ; erp is either a msg or nil, and when erp is nil:
 ; - bound-vars is a list of symbols;
-; - actuals is a corresponding list of untranslated field accessors;
+; - actuals is a corresponding list of untranslated expressions to which
+;   bound-vars is bound
+; - creators is a corresponding list of nils and alleged stobj creators (for
+;   stobj-table accesses);
 ; - stobj is the stobj accessed by those field accessors;
 ; - producer-vars is the true-list of producer variables
 ; - producer is an untranslated expression that returns values corresponding to
@@ -11693,6 +11841,7 @@
 ;   (mv nil                                    ; erp
 ;       (st1 st2 st3)                          ; bound-vars
 ;       ((fld1 st+) (fld2 st+) (fld3i 4 st+))  ; untranslated actuals
+;       (nil nil nil)                          ; creators
 ;       st+                                    ; stobj accessed above
 ;       (x st1 y st3)                          ; producer-vars
 ;       (producer st1 u st2 v st3)             ; producer (untranslated)
@@ -11721,30 +11870,27 @@
        (mv (illegal-stobj-let-msg
             "The bindings of a STOBJ-LET form must be a non-empty true-list."
             x)
-           nil nil nil nil nil nil nil nil))
+           nil nil nil nil nil nil nil nil nil))
       ((not (and producer-vars
                  (arglistp producer-vars)))
        (mv (illegal-stobj-let-msg
             "The producer-variables of a STOBJ-LET form must be a non-empty ~
              list of legal variable names without duplicates."
             x)
-           nil nil nil nil nil nil nil nil))
+           nil nil nil nil nil nil nil nil nil))
       (t (mv-let
-          (bad bound-vars actuals stobj updaters)
-          (parse-stobj-let1 bindings producer-vars nil nil nil nil)
+          (bad-binding bound-vars-or-msg actuals creators stobj updaters)
+          (parse-stobj-let1 bindings producer-vars nil nil nil nil nil)
           (cond
-           (bad (mv (illegal-stobj-let-msg
-                     (msg "Illegal binding for stobj-let, ~x0."
-                          bad)
-                     x)
-                    nil nil nil nil nil nil nil nil))
-           (t (mv nil bound-vars actuals stobj producer-vars producer
-                  updaters bindings consumer)))))))
+           (bad-binding (mv (illegal-stobj-let-msg bound-vars-or-msg x)
+                            nil nil nil nil nil nil nil nil nil))
+           (t (mv nil bound-vars-or-msg actuals creators stobj producer-vars
+                  producer updaters bindings consumer)))))))
     (& (mv (illegal-stobj-let-msg
             "The proper form of a stobj-let is (STOBJ-LET <bindings> ~
              <producer-variables> <producer> <consumer>)."
             x)
-           nil nil nil nil nil nil nil nil))))
+           nil nil nil nil nil nil nil nil nil))))
 
 (defun split-values-by-keys (keys alist lst1 lst2)
 
@@ -11829,7 +11975,7 @@
                       (concrete-accessor accessor$c (cdr tuples-lst)))))))
 
 (defun no-duplicate-indices-checks-for-stobj-let-actuals-1
-    (bound-vars exprs producer-vars tuples-lst alist)
+    (bound-vars exprs creators producer-vars tuples-lst alist)
 
 ; It is useful to introduce the notion that st$c "ultimately underlies" a stobj
 ; st: st$c is just st if st is a concrete stobj, and otherwise (recursively)
@@ -11857,25 +12003,29 @@
    (t (no-duplicate-indices-checks-for-stobj-let-actuals-1
        (cdr bound-vars)
        (cdr exprs)
+       (cdr creators)
        producer-vars
        tuples-lst
-       (let ((bound-var (car bound-vars))
-             (expr (car exprs)))
-         (cond
-          ((eql (length expr) 3) ; array case, (fldi index st)
-           (let* ((name (car expr))
-                  (index (cadr expr))
-                  (index (if (consp index)
-                             (assert$ (and (eq (car index) 'quote)
-                                           (natp (cadr index)))
-                                      (cadr index))
-                           index))
-                  (fld$c (concrete-accessor name tuples-lst))
-                  (entry (assoc-eq fld$c alist)))
-             (put-assoc-eq fld$c
-                           (cons (cons bound-var index) (cdr entry))
-                           alist)))
-          (t alist)))))))
+       (cond
+        ((car creators) alist) ; stobj-table access
+        (t
+         (let ((bound-var (car bound-vars))
+               (expr (car exprs)))
+           (cond
+            ((eql (length expr) 3) ; array case, (fldi index st)
+             (let* ((name (car expr))
+                    (index (cadr expr))
+                    (index (if (consp index)
+                               (assert$ (and (eq (car index) 'quote)
+                                             (natp (cadr index)))
+                                        (cadr index))
+                             index))
+                    (fld$c (concrete-accessor name tuples-lst))
+                    (entry (assoc-eq fld$c alist)))
+               (put-assoc-eq fld$c
+                             (cons (cons bound-var index) (cdr entry))
+                             alist)))
+            (t alist)))))))))
 
 (defrec absstobj-info
 
@@ -11898,25 +12048,20 @@
                                         wrld))))))
 
 (defun no-duplicate-indices-checks-for-stobj-let-actuals
+    (bound-vars exprs creators producer-vars st wrld)
 
 ; This function is called in translate11, to lay down a prog2$ call whose first
 ; argument is a call of chk-no-stobj-array-index-aliasing, which is a function
 ; whose body is nil but whose guard insists that array indices from stobj-let
 ; bindings are suitably distinct.
 
-    (bound-vars exprs producer-vars st wrld)
   (let ((tuples-lst (absstobj-tuples-lst st wrld)))
     (no-duplicate-indices-checks-for-stobj-let-actuals-1
-     bound-vars exprs producer-vars tuples-lst nil)))
+     bound-vars exprs creators producer-vars tuples-lst nil)))
 
 (defun stobj-let-fn (x)
 
-; Warning: Keep this in sync with stobj-let-fn-raw and with the handling of
-; stobj-let in both translate11 and oneify.
-
-; Warning: Do not merge stobj-let-fn and stobj-let-fn-raw into a single
-; function.  We call stobj-let-fn in oneify, so we need that logical code even
-; in raw Lisp.
+; Warning: Keep this in sync with stobj-let-fn-raw and stobj-let-fn-oneify.
 
 ; Warning: This function does not do all necessary checks.  Among the checks
 ; missing here but performed by translate11 (via chk-stobj-let) are duplicate
@@ -11935,30 +12080,28 @@
 ; See the Essay on Nested Stobjs.
 
   (mv-let
-    (msg bound-vars actuals stobj producer-vars producer updaters
+    (msg bound-vars actuals creators stobj producer-vars producer updaters
          bindings consumer)
     (parse-stobj-let x)
-    (declare (ignore bindings))
+    (declare (ignore bindings creators))
     (cond
-     (msg (mv (er hard 'stobj-let "~@0" msg) nil nil nil nil))
+     (msg (er hard 'stobj-let "~@0" msg))
      (t (let* ((guarded-producer
                 `(check-vars-not-free (,stobj) ,producer))
                (guarded-consumer
                 `(check-vars-not-free ,bound-vars ,consumer))
                (updated-guarded-consumer
                 `(let* ,(pairlis-x1 stobj (pairlis$ updaters nil))
-                   ,guarded-consumer))
-               (form
-                `(let (,@(pairlis$ bound-vars (pairlis$ actuals nil)))
-                   (declare (ignorable ,@bound-vars))
-                   ,(cond
-                     ((cdr producer-vars)
-                      `(mv-let ,producer-vars
-                         ,guarded-producer
-                         ,updated-guarded-consumer))
-                     (t `(let ((,(car producer-vars) ,guarded-producer))
-                           ,updated-guarded-consumer))))))
-          (mv form bound-vars actuals producer-vars stobj))))))
+                   ,guarded-consumer)))
+          `(let (,@(pairlis$ bound-vars (pairlis$ actuals nil)))
+             (declare (ignorable ,@bound-vars))
+             ,(cond
+               ((cdr producer-vars)
+                `(mv-let ,producer-vars
+                   ,guarded-producer
+                   ,updated-guarded-consumer))
+               (t `(let ((,(car producer-vars) ,guarded-producer))
+                     ,updated-guarded-consumer)))))))))
 
 #-acl2-loop-only
 (defun non-memoizable-stobj-raw (name)
@@ -11971,20 +12114,42 @@
             (cdr d)
             :non-memoizable)))
 
+(defun stobj-let-fn-raw-let-bindings (vars actuals creators)
+  (cond
+   ((endp vars) nil)
+   (t
+    (let ((act (car actuals))
+          (cre (car creators)))
+      (cons (list (car vars)
+                  (cond (cre
+                         (case-match act
+                           ((st-get ('quote st) parent (!cre))
+
+; We avoid calling the creator unless it's necessary.  In case a concern
+; arises, we note that this is correct even if the creator logically returns
+; nil.
+
+                            `(or (,st-get ',st ,parent nil)
+                                 (,cre)))
+                           (& (er hard 'stobj-let-fn-raw-bindings
+                                  "Implementation error: unexpected stobj-let ~
+                                   actual, ~x0.  Please contact the ACL2 ~
+                                   implementors."
+                                  act))))
+                        (t act)))
+            (stobj-let-fn-raw-let-bindings (cdr vars)
+                                           (cdr actuals)
+                                           (cdr creators)))))))
+
 #-acl2-loop-only
 (defun stobj-let-fn-raw (x)
 
-; Warning: Keep this in sync with stobj-let-fn and with the
-; handling of stobj-let in translate11.
-
-; Warning: Do not merge stobj-let-fn and stobj-let-fn-raw into a single
-; function.  We call stobj-let-fn in oneify, so we need that logical code even
-; in raw Lisp.
+; Warning: Keep this in sync with stobj-let-fn and stobj-let-fn-oneify.
 
 ; See the Essay on Nested Stobjs.
 
   (mv-let
-    (msg bound-vars actuals stobj producer-vars producer updaters
+    (msg bound-vars actuals creators stobj producer-vars producer updaters
          bindings consumer)
     (parse-stobj-let x)
     (declare (ignore bindings))
@@ -11993,10 +12158,10 @@
            (let* ((updated-consumer
                    `(let* ,(pairlis-x1 stobj (pairlis$ updaters nil))
                       ,consumer))
-                  #+hons
                   (flush-form
 
-; Here is a proof of nil in ACL2(h)  6.4 that exploits an unfortunate
+; Here is a proof of nil in ACL2(h)  6.4 (back when we supported both that
+; "hons version" of ACL2 and "classic" ACL2) that exploits an unfortunate
 ; "interaction of stobj-let and memoize", discussed in :doc note-6-5.  This
 ; example led us to add the call of memoize-flush in flush-form, below.  A
 ; comment in chk-stobj-field-descriptor explains how this flushing is important
@@ -12061,19 +12226,19 @@
                         `(memoize-flush ,(congruent-stobj-rep-raw
                                           stobj))))
                   (form0
-                   `(let* ,(pairlis$ bound-vars (pairlis$ actuals nil))
+                   `(let* ,(stobj-let-fn-raw-let-bindings bound-vars
+                                                          actuals
+                                                          creators)
                       (declare (ignorable ,@bound-vars))
                       ,(cond
                         ((cdr producer-vars)
                          `(mv-let ,producer-vars
                             ,producer
                             ,(cond
-                              #+hons
                               (flush-form
                                `(progn ,flush-form ,updated-consumer))
                               (t updated-consumer))))
                         (t `(let ((,(car producer-vars) ,producer))
-                              #+hons
                               ,@(and flush-form (list flush-form))
                               ,updated-consumer))))))
              (if (and (eq (car (get (the-live-var stobj)
@@ -12105,10 +12270,9 @@
 
    (eq (getpropc fn 'stobj-function nil wrld)
        stobj)
-
-; The 'stobj property of stobj is (*the-live-var* recognizer creator ...).
-
-   (member-eq fn (cdddr (getpropc stobj 'stobj nil wrld)))
+   (member-eq fn (access stobj-property
+                         (getpropc stobj 'stobj nil wrld)
+                         :names))
 
 ; The remaining tests are different for concrete and abstract stobjs.
 
@@ -12133,6 +12297,29 @@
           (not (eq (car (stobjs-out fn wrld))
                    stobj))))))))
 
+(defconst *stobj-table-stobj*
+
+; This is a value that is not a proper stobjs-out value, to indicate the values
+; returned by a stobj-table access.
+
+  :stobj-table-stobj)
+
+(defun stobj-fixerp (fixer wrld)
+
+; If fixer is a stobj-fixer for stobj st, return st.
+
+; Recall this comment from put-stobjs-in-and-outs:
+
+;      fn                  stobjs-in          stobjs-out
+; ....
+; fixer                    (nil)              (name)
+
+  (let ((st (getpropc fixer 'stobj-function nil wrld)))
+    (and st
+         (equal (stobjs-in fixer wrld) '(nil))
+         (eq (car (stobjs-out fixer wrld)) st)
+         st)))
+
 (defun chk-stobj-let/bindings (stobj acc-stobj first-acc bound-vars actuals
                                      wrld)
 
@@ -12149,110 +12336,194 @@
 ; different accessors aren't aliases for the same underlying concrete stobj
 ; accessor.  See chk-stobj-let/accessors.
 
-  (cond ((endp bound-vars) nil)
-        (t (let* ((var (car bound-vars))
-                  (actual (car actuals))
-                  (accessor (car actual))
-                  (st (car (last actual))))
-             (assert$
-              (eq st stobj) ; guaranteed by parse-stobj-let
-              (cond ((not (stobj-field-accessor-p accessor acc-stobj wrld))
-                     (msg "The name ~x0 is not the name of a field accessor ~
-                           for the stobj ~x1.~@2~@3"
-                          accessor acc-stobj
-                          (if (eq acc-stobj stobj)
-                              ""
-                            (msg "  (The first accessor used in a stobj-let, ~
-                                  in this case ~x0, determines the stobj with ~
-                                  which all other accessors must be ~
-                                  associated, namely ~x1.)"
-                                 first-acc acc-stobj))
-                          (let* ((abs-info (getpropc st 'absstobj-info nil
-                                                     wrld))
-                                 (tuples (and abs-info
-                                              (access absstobj-info abs-info
-                                                      :absstobj-tuples))))
-                            (cond
-                             ((assoc-eq accessor tuples)
-                              (msg "  Note that even though ~x0 is an ~
-                                      abstract stobj primitive (for ~x1), it ~
-                                      is not an accessor because it is not ~
-                                      associated with an :UPDATER."
-                                   accessor st))
-                             (t "")))))
-                    ((not (stobjp var t wrld))
-                     (msg "The stobj-let bound variable ~x0 is not the name ~
-                           of a known single-threaded object in the current ~
-                           ACL2 world."
-                          var))
-                    ((not (eq (congruent-stobj-rep var wrld)
-                              (congruent-stobj-rep
-                               (car (stobjs-out accessor wrld))
-                               wrld)))
-                     (msg "The stobj-let bound variable ~x0 is not the same ~
-                           as, or even congruent to, the output ~x1 of accessor ~
-                           ~x2 (of stobj ~x3)."
-                          var
-                          (car (stobjs-out (caar actuals) wrld))
-                          (caar actuals)
-                          stobj))
-                    (t (chk-stobj-let/bindings stobj acc-stobj first-acc
-                                               (cdr bound-vars)
-                                               (cdr actuals)
-                                               wrld))))))))
+  (cond
+   ((endp bound-vars) nil)
+   (t
+    (let ((actual (car actuals))
+          (var (car bound-vars)))
+      (mv-let (st-get parent s2 s2-creator)
+        (parse-stobj-let-actual actual)
+        (mv-let (msg parent accessor stobj-out)
+          (cond
+           (s2-creator ; "get" function for a stobj-table field
+            (let ((stobjs-out (stobjs-out st-get wrld))
+                  (prelude "The variable ~x0 is bound in a stobj-let form to ~
+                            the expression ~x1, which has the form of a ~
+                            stobj-table access.~|")
+                  (postlude "  See :DOC stobj-table."))
+              (cond
+               ((not (eq (car stobjs-out) *stobj-table-stobj*))
+                (mv (msg "~@0However, the function symbol of that access, ~
+                          ~x1, is not a stobj-table accessor.~@2"
+                         (msg prelude
+                              (car bound-vars)
+                              actual)
+                         st-get postlude)
+                    nil nil nil))
+               ((not (stobjp s2 t wrld))
+                (mv (msg "~@0However, that alleged stobj-table access is ~
+                          illegal because ~x1 is not the name of a stobj.~@2"
+                         (msg prelude
+                              (car bound-vars)
+                              actual)
+                         s2 postlude)
+                    nil nil nil))
+               ((not (eq (access stobj-property
+                                 (getpropc s2 'stobj nil wrld)
+                                 :creator)
+                         s2-creator))
+                (mv (msg "~@0However, the stobj creator for ~x1 is ~x2, not ~
+                          ~x3.~@4"
+                         (msg prelude
+                              (car bound-vars)
+                              actual)
+                         s2
+                         (access stobj-property
+                                 (getpropc s2 'stobj nil wrld)
+                                 :creator)
+                         s2-creator
+                         postlude)
+                    nil nil nil))
+               (t (mv nil parent st-get s2)))))
+           ((eq (car (getpropc (car actual) 'stobjs-out '(nil) wrld))
+                *stobj-table-stobj*)
+            (mv (msg "The variable ~x0 is bound in a stobj-let form to a call ~
+                      of the function ~x1, which directly accesses a ~
+                      stobj-table.  This is illegal because a stobj fixer ~
+                      must be applied to any such access.  See :DOC ~
+                      stobj-table."
+                     (car bound-vars)
+                     (car actual))
+                nil nil nil))
+           (t
+            (mv nil
+                (car (last actual))
+                (car actual)
+                (car (stobjs-out (car actual) wrld)))))
+          (cond
+           (msg)
+           (t
+            (assert$
+             (eq parent stobj) ; guaranteed by parse-stobj-let
+             (cond
+              ((not (stobj-field-accessor-p accessor acc-stobj wrld))
+               (msg "The name ~x0 is not the name of a field accessor for the ~
+                     stobj ~x1.~@2~@3"
+                    accessor acc-stobj
+                    (if (eq acc-stobj stobj)
+                        ""
+                      (msg "  (The first accessor used in a stobj-let, in ~
+                            this case ~x0, determines the stobj with which ~
+                            all other accessors must be associated, namely ~
+                            ~x1.)"
+                           first-acc acc-stobj))
+                    (let* ((abs-info (getpropc parent 'absstobj-info nil
+                                               wrld))
+                           (tuples (and abs-info
+                                        (access absstobj-info abs-info
+                                                :absstobj-tuples))))
+                      (cond
+                       ((assoc-eq accessor tuples)
+                        (msg "  Note that even though ~x0 is an abstract ~
+                              stobj primitive (for ~x1), it is not an ~
+                              accessor because it is not associated with an ~
+                              :UPDATER."
+                             accessor parent))
+                       (t "")))))
+              ((not (stobjp var t wrld))
+               (msg "The stobj-let bound variable ~x0 is not the name of a ~
+                     known single-threaded object in the current ACL2 world."
+                    var))
+              ((not (eq (congruent-stobj-rep var wrld)
+                        (congruent-stobj-rep stobj-out wrld)))
+               (msg "The stobj-let bound variable ~x0 is not the same as, or ~
+                     even congruent to, the output ~x1 from applying accessor ~
+                     ~x2 to stobj ~x3)."
+                    var stobj-out accessor stobj))
+              ((not (equal (length (formals accessor wrld))
+                           (length (cdr actual))))
+
+; Even if this case is caught be translation, it seems reasonable to provide an
+; error specific to stobj-let right here.
+
+               (msg "The function symbol ~x0 is called with ~n1 ~
+                     argument~#2~[~/s~] in a stobj-let binding where ~n3 ~
+                     argument~#4~[ is~/s are~] required."
+                    accessor
+                    (length (cdr actual))
+                    (if (eql (length (cdr actual)) 1) 0 1)
+                    (length (formals accessor wrld))
+                    (if (eql (length (formals accessor wrld)) 1) 0 1)))
+              (t (chk-stobj-let/bindings stobj acc-stobj first-acc
+                                         (cdr bound-vars)
+                                         (cdr actuals)
+                                         wrld))))))))))))
 
 (defun chk-stobj-let/updaters-1 (bindings producer-vars lst)
 
 ; Bindings is from a form (stobj-let bindings ...), where bindings has already
-; been checked to have a correct shape, and lst is the cdddr of the 'stobj
+; been checked to have a correct shape, and lst is the :names of the 'stobj
 ; property of a stobj in an implicit world.  We check that for each binding
 ; that specifies an updater explicitly, or even implicitly if the bound child
 ; stobj variable is to be updated (by virtue of belonging to producer-vars),
 ; that updater is indeed the stobj field updater corresponding to the accessor
-; in that binding.  Recall that the 'stobj property is a list of the form
-; (*the-live-var* recognizer creator ...), and that each field updater
-; immediately follows the corresponding field accessor in that list.
+; in that binding.  Recall that in the :names field of a 'stobj property, each
+; field updater immediately follows the corresponding field accessor in that
+; list.
 
   (cond
    ((endp bindings) nil)
    (t
     (let ((binding (car bindings)))
       (case-match binding
-        ((var (accessor . &) . updater?)
-         (cond
-          ((and (null updater?)
-                (not (member-eq var producer-vars)))
-           (chk-stobj-let/updaters-1 (cdr bindings) producer-vars lst))
-          (t (let* ((updater (if updater?
-                                 (car updater?)
-                               (stobj-updater-guess-from-accessor
-                                accessor)))
-                    (accessor-tail (member-eq accessor lst))
-                    (actual-updater (cadr accessor-tail)))
-               (assert$
+        ((var actual . updater?)
+         (mv-let (st-get stobj0 s2 s2-creator)
+           (parse-stobj-let-actual actual)
+           (declare (ignore st-get s2 stobj0))
+           (let ((accessor (car actual)))
+             (cond
+              ((and (null updater?)
+                    (not (member-eq var producer-vars)))
+               (chk-stobj-let/updaters-1 (cdr bindings) producer-vars lst))
+              (t (let* ((updater (if updater?
+                                     (car updater?)
+                                   (stobj-updater-guess-from-accessor
+                                    accessor
+                                    s2-creator)))
+                        (accessor-tail (member-eq accessor lst))
+                        (actual-updater (cadr accessor-tail)))
+                   (assert$
 
 ; This assertion should be true because of the check done by a call of
 ; stobj-field-accessor-p in chk-stobj-let/bindings.
 
-                accessor-tail
-                (cond
-                 ((eq updater actual-updater)
-                  (chk-stobj-let/updaters-1 (cdr bindings) producer-vars lst))
-                 (t (msg "The stobj-let bindings have specified~@0 that the ~
-                          stobj field updater corresponding to accessor ~x1 ~
-                          is ~x2, but the actual corresponding updater is ~
-                          ~x3.~@4"
-                         (if updater? "" " implicitly")
-                         accessor
-                         updater
-                         actual-updater
-                         (if (member-eq var producer-vars)
-                             ""
-                           (msg "  (This error can be eliminated by replacing ~
-                                 the offending binding, ~x0, by ~x1.)"
-                                binding
-                                (list (car binding)
-                                      (cadr binding)))))))))))))))))
+                    accessor-tail
+                    (cond
+                     ((eq updater actual-updater)
+                      (chk-stobj-let/updaters-1 (cdr bindings) producer-vars lst))
+                     (t (msg "The stobj-let bindings have specified~@0 that ~
+                              the stobj field updater corresponding to ~
+                              accessor ~x1 is ~x2, but the actual ~
+                              corresponding updater is ~x3.~@4"
+                             (if updater? "" " implicitly")
+                             accessor
+                             updater
+                             actual-updater
+                             (if (member-eq var producer-vars)
+                                 ""
+                               (msg "  (This error can be eliminated by ~
+                                     replacing the offending binding, ~x0, by ~
+                                     ~x1.)"
+                                    binding
+                                    (list (car binding)
+                                          (cadr binding))))))))))))))
+        (&
+
+; We should already have checked that this case is impossible.
+
+         (msg "Implementation error: unexpected form of stobj-let binding for ~
+               ~x0."
+              binding)))))))
 
 (defun chk-stobj-let/updaters (bindings producer-vars stobj wrld)
 
@@ -12267,8 +12538,7 @@
   (chk-stobj-let/updaters-1
    bindings
    producer-vars
-   (cdddr ; pop live-var, recognizer, and creator
-    (getpropc stobj 'stobj nil wrld))))
+   (access stobj-property (getpropc stobj 'stobj nil wrld) :names)))
 
 (defun alist-to-doublets (alist)
   (declare (xargs :guard (alistp alist)))
@@ -12293,37 +12563,40 @@
    ((endp alist) nil)
    (t (let* ((msg1 (chk-stobj-let/accessors2 (cdr alist) producer-vars
                                              concretep wrld))
-             (key (caar alist))
+             (key (caar alist)) ; accessor function or (cons acc index)
              (indexp (consp key))
              (fn$c (if indexp
                        (car key)
                      key))
              (pairs (and (cdr (cdar alist)) ; not just one pair
                          (reverse (cdar alist))))
-             (bad-vars (strip-cars (restrict-alist producer-vars pairs)))
-             (msg2 (and bad-vars
-                        (msg "The stobj-let bindings ~x0~@1 access ~
-                              the same field ~x2 of~@3 stobj ~x4~@5.  ~
-                              Since variable~#6~[ ~&6 is~/s ~&6 are~] to be ~
-                              updated (i.e., ~#6~[it is~/they are~] among the ~
+             (bad-pairs (restrict-alist producer-vars pairs))
+             (msg2 (and bad-pairs
+                        (msg "The stobj-let binding expressions ~x0 ~@1~@2 ~
+                              read~@3 stobj ~x4 with accessor ~x5~@6.  Since ~
+                              variable~#7~[ ~&7 is~/s ~&7 are~] to be updated ~
+                              (i.e., ~#7~[it is~/they are~] among the ~
                               stobj-let form's producer variables), this ~
                               aliasing is illegal."
-                             (alist-to-doublets pairs)
+                             (strip-cdrs pairs)
+                             (if (cddr pairs) "all" "both")
                              (if concretep "" " ultimately")
-                             fn$c
                              (if concretep "" " concrete")
                              (getpropc fn$c 'stobj-function nil wrld)
+                             fn$c
                              (if indexp
-                                 " (with identical array indices)"
+                                 (if (unquoted-symbol (cdr key))
+                                     " using identical stobj keys"
+                                   " using identical array indices")
                                "")
-                             bad-vars))))
+                             (strip-cars bad-pairs)))))
         (cond
          ((null msg1) msg2)
          ((null msg2) msg1)
          (t (msg "~@0~|Also: ~@1" msg2 msg1)))))))
 
-(defun chk-stobj-let/accessors1 (bound-vars actuals producer-vars
-                                            tuples tuples-lst wrld alist)
+(defun chk-stobj-let/accessors1 (bound-vars actuals producer-vars tuples
+                                            tuples-lst wrld alist)
 
 ; This function returns a msgp if there is aliasing caused by ultimately
 ; invoking the same concrete stobj export of a stobj-let form (which is
@@ -12359,15 +12632,15 @@
                                  (fn$c0 (caddr tuple)))
                             (concrete-accessor fn$c0 tuples-lst)))
                          (t fn)))
-             (index (and (= (length actual) 3)
+             (index (and (not (= (length actual) 2))
                          (cadr actual)))
              (key (if index
-                      (cons fn$c index) ; array case
+                      (cons fn$c index) ; array and stobj-table case
                     fn$c))
              (new (cons var actual))
              (old (cdr (assoc-equal key alist))))
-        (chk-stobj-let/accessors1 (cdr bound-vars) (cdr actuals) producer-vars
-                                  tuples tuples-lst wrld
+        (chk-stobj-let/accessors1 (cdr bound-vars) (cdr actuals)
+                                  producer-vars tuples tuples-lst wrld
                                   (put-assoc-equal key
                                                    (cons new old)
                                                    alist))))))
@@ -12431,8 +12704,7 @@
      "The name ~x0 is being used as a single-threaded object.  But in the ~
       current context, ~x0 is not a declared stobj name."
      stobj))
-   (t (let* ((first-actual (car actuals))
-             (first-accessor (car first-actual))
+   (t (let* ((first-accessor (car (car actuals)))
              (acc-stobj (getpropc first-accessor 'stobj-function nil wrld)))
         (cond
          ((not (eq (congruent-stobj-rep acc-stobj wrld)
@@ -12499,9 +12771,10 @@
          (let ((abs-info (getpropc st 'absstobj-info nil wrld)))
            (cond
             (abs-info ; st is an abstract stobj
-             (let ((stobj-prop (getpropc st 'stobj nil wrld)))
-               (and (not (eq fn (cadr stobj-prop)))  ; recognizer
-                    (not (eq fn (caddr stobj-prop))) ; creator
+             (let ((prop (getpropc st 'stobj nil wrld)))
+               (and (not (eq fn (access stobj-property prop :recognizer)))
+                    (not (eq fn (access stobj-property prop :creator)))
+                    (not (eq fn (access stobj-property prop :fixer)))
                     (absstobj-field-fn-of-stobj-type-p
                      fn
 ; We take the cddr to remove the tuples for the recognizer and creator.
@@ -14935,30 +15208,43 @@
                           stobjs-out bindings known-stobjs flet-alist x
                           ctx wrld state-vars)))))))))))
 
-(defun translate-stobj-calls (calls len bindings known-stobjs flet-alist
-                                    cform ctx wrld state-vars)
+(defun translate-stobj-calls (calls creators accp bindings known-stobjs
+                                    flet-alist cform ctx wrld state-vars)
 
-; Calls is a list of applications of stobj accessor or updater calls, as
-; returned by parse-stobj-let1 and vetted by chk-stobj-let.  We translate those
-; applications without going through translate11, because in the case of
-; updater calls, the calls update stobj fields, which is illegal except in
-; proper support of a stobj-let form.
+; Calls is the list of untranslated expressions to which stobjs are bound in
+; the bindings of a stobj-let if accp=t, else corresponding untranslated
+; updater expressions (accp=nil).  Creators (relevant only when accp=t) is the
+; corresponding list of Booleans indicating whether the call appears to be a
+; proper stobj-table access, as vetted (together with calls) by parse-stobj-let
+; and chk-stobj-let.  We translate those expressions without going through
+; translate11, which would signal some of these expressions as illegal (when
+; not in the context of stobj-let).
 
 ; We return a usual context-message triple: either (mv ctx erp bindings) or (mv
-; nil translated-calls bindings).  The only syntax changed by translation is
-; in the case of an index for an array update, where len is the length of a
-; call for such a case (3 for accessor calls, 4 for updater calls).
+; nil translated-calls bindings).  The only syntax changed by translation is in
+; the cases of array access or update (translating the index) and a stobj-table
+; access (fixing the value obtained from the stobj-table).
 
-  (cond ((endp calls) (trans-value nil))
-        (t (trans-er-let*
-            ((rest (translate-stobj-calls (cdr calls) len bindings
-                                          known-stobjs flet-alist
-                                          cform ctx wrld state-vars)))
-            (let ((call (car calls)))
-              (cond
-               ((eql (length call) len) ; e.g. (fldi index parent-st)
-                (trans-er-let*
-                 ((index
+  (cond
+   ((endp calls) (trans-value nil))
+   (t
+    (trans-er-let*
+     ((rest (translate-stobj-calls (cdr calls) (cdr creators) accp bindings
+                                   known-stobjs flet-alist
+                                   cform ctx wrld state-vars)))
+     (let ((call (car calls)))
+       (cond
+        ((and accp (car creators)) ; stobj-table access
+         (assert$ (and (= (length call) 4)
+                       (unquoted-symbol (cadr call)))
+
+; We know (stobjp (unquote (cadr call)) known-stobjs wrld) because the
+; stobj-let form has passed chk-stobj-let.
+
+                  (trans-value (cons call rest))))
+        ((= (length call) (if accp 3 4)) ; non-scalar access or update
+         (trans-er-let*
+          ((index
 
 ; We know from parse-stobj-let1 that the index is either a symbol, a natural
 ; number, or the quotation of a natural number.  But in case we relax that
@@ -14968,11 +15254,11 @@
 ; Note: No stobj accessor or updater accepts functional arguments so we can use
 ; ilk = nil below.
 
-                   (translate11 (cadr call) nil '(nil) bindings known-stobjs
-                                flet-alist cform ctx wrld state-vars)))
-                 (trans-value (cons (list* (car call) index (cddr call))
-                                    rest))))
-               (t (trans-value (cons call rest)))))))))
+            (translate11 (cadr call) nil '(nil) bindings known-stobjs
+                         flet-alist cform ctx wrld state-vars)))
+          (trans-value (cons (list* (car call) index (cddr call))
+                             rest))))
+        (t (trans-value (cons call rest)))))))))
 
 (defun translate11-let (x tbody0 targs stobjs-out bindings known-stobjs
                           flet-alist ctx wrld state-vars)
@@ -17038,42 +17324,6 @@
                               symbol."
                              (cons #\0 (car form)))
                      ""))))))
-   ((eq (car x) 'check-vars-not-free) ; optimization; see check-vars-not-free
-
-; Warning: Keep this in sync with the code for check-vars-not-free.
-
-    (cond ((not (equal (length x) 3))
-           (trans-er+ x ctx
-                      "CHECK-VARS-NOT-FREE requires exactly two arguments."))
-          ((null (cadr x)) ; optimization for perhaps a common case
-
-; We pass ilk = nil below because a non-erroneous lambda$ always yields a
-; quoted object, so there's no reason to support check-vars-not-free dealing
-; with lambda$s.
-
-           (translate11 (caddr x)
-                        nil ; ilk (see comment above)
-                        stobjs-out bindings
-                        known-stobjs flet-alist x ctx wrld
-                        state-vars))
-          ((not (symbol-listp (cadr x)))
-           (trans-er+ x ctx
-                      "CHECK-VARS-NOT-FREE requires its first argument to be ~
-                       a true-list of symbols."))
-          (t
-           (trans-er-let*
-            ((ans (translate11 (caddr x)
-                               nil ; ilk
-                               stobjs-out bindings
-                               known-stobjs flet-alist x ctx wrld
-                               state-vars)))
-            (let ((msg (check-vars-not-free-test (cadr x) ans)))
-              (cond
-               ((not (eq msg t))
-                (trans-er+ x ctx
-                           "CHECK-VARS-NOT-FREE failed:~|~@0"
-                           msg))
-               (t (trans-value ans))))))))
    ((eq (car x) 'translate-and-test)
     (cond ((not (equal (length x) 3))
            (trans-er+ x ctx
@@ -17127,7 +17377,7 @@
                                       (cadr x) ans msg))
                           ((or (consp msg)
                                (stringp msg))
-                           (trans-er ctx "~@0" msg))
+                           (trans-er+? cform x ctx "~@0" msg))
                           (t (trans-value ans)))))))))))
    ((eq (car x) 'with-local-stobj)
 
@@ -17247,7 +17497,7 @@
 ;       (consumer st+ u x y v w))))
 
     (mv-let
-     (msg bound-vars actuals stobj producer-vars producer updaters
+     (msg bound-vars actuals creators stobj producer-vars producer updaters
           stobj-let-bindings consumer)
      (parse-stobj-let x)
      (cond
@@ -17256,6 +17506,9 @@
 
 ; We need to disallow the use of ev etc. for stobj-let, because the latching
 ; mechanism assumes that all stobjs are global, i.e., in the user-stobj-alist.
+; (If we remove this check, then there might also be needless stobj creation
+; for stobj-field accesses, though we haven't thought that through; see the
+; avoidance of a needless stobj-creator call in defstobj-field-fns-raw-defs.)
 
        (trans-er ctx
                  "Calls of stobj-let, such as ~x0, cannot be evaluated ~
@@ -17291,11 +17544,13 @@
                                            ,body1)))))
              (trans-er-let*
               ((tactuals
-                (translate-stobj-calls actuals 3 bindings new-known-stobjs
-                                       flet-alist x ctx wrld state-vars))
+                (translate-stobj-calls actuals creators t bindings
+                                       new-known-stobjs flet-alist x ctx wrld
+                                       state-vars))
                (tupdaters
-                (translate-stobj-calls updaters 4 bindings new-known-stobjs
-                                       flet-alist x ctx wrld state-vars))
+                (translate-stobj-calls updaters creators nil bindings
+                                       new-known-stobjs flet-alist x ctx wrld
+                                       state-vars))
                (tconsumer
                 (translate11 guarded-consumer
                              nil ; ilk
@@ -17318,7 +17573,7 @@
                      (translate-deref stobjs-out bindings))
                     (dups-check
                      (no-duplicate-indices-checks-for-stobj-let-actuals
-                      bound-vars actuals producer-vars stobj wrld))
+                      bound-vars actuals creators producer-vars stobj wrld))
                     (producer-stobjs
                      (collect-non-x
                       nil
@@ -17446,17 +17701,36 @@
     (translate11-flet x stobjs-out bindings known-stobjs flet-alist ctx
                       wrld state-vars))
    ((and (not (eq stobjs-out t))
-         (null (cdr x)) ; optimization
-         (stobj-creatorp (car x) wrld))
+         (if (null (cdr x))
+             (getpropc (car x) 'stobj-function nil wrld) ; stobj-creatorp
+
+; Below we prohibit calls of stobj fixers in code (hence, in particular, in the
+; top-level loop).  Before removing that prohibition, consider the effect on a
+; case like the following.
+
+; (defstobj st fld)
+; (trace$ stp st$fix)
+; (let ((st (st$fix '(nil)))) (update-fld 3 st))
+; (fld st)
+
+; You'll see that st$fix returned '(nil), yet the live stobj is updated so that
+; (fld st) is 3.  That's nonsense, presumably an artifact of how we latch
+; stobjs, since st$fix is supposed to return a live st.
+
+           (and (null (cddr x)) ; optimization
+                (stobj-fixerp (car x) wrld))))
     (trans-er+ x ctx
                "It is illegal to call ~x0 in this context because it is a ~
-                stobj creator.  Stobj creators cannot be called directly ~
-                except in theorems.  If you did not explicitly call a stobj ~
-                creator, then this error is probably due to an attempt to ~
-                evaluate a with-local-stobj form directly in the top-level ~
-                loop.  Such forms are only allowed in the bodies of functions ~
-                and in theorems.  Also see :DOC with-local-stobj."
-               (car x)))
+                ~@1.  Note that ~@1s cannot be called directly except in ~
+                theorems~@2.  See :DOC stobj."
+               (car x)
+               (if (null (cdr x))
+                   "stobj creator"
+                 "stobj fixer")
+               (if (null (cdr x))
+                   ""
+                 " or, in a specific way, when accessing stobj-tables (see ~
+                  :DOC stobj-table)")))
    ((eql (arity (car x) wrld) (length (cdr x)))
     (cond ((untouchable-fn-p (car x)
                              wrld

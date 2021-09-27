@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -166,7 +166,7 @@
      (list* 'ev-fncall-null-body-er
             nil
             'doppelganger-badge-userfn
-            (print-list-without-stobj-arrays
+            (replace-live-stobjs-in-list
              (list fn)))))
 
 ; Recall the Note on Strengthening the Constraint in badge-userfn-type found in
@@ -216,7 +216,7 @@
                          (cond (bad-fn-msg bad-fn-msg)
                                (t (msg "~x0 has not been warranted"
                                        fn))))
-                    (print-list-without-stobj-arrays
+                    (replace-live-stobjs-in-list
                      (list fn))))))))))
 
 ; Notes on DOPPELGANGER-BADGE-USERFN
@@ -247,7 +247,7 @@
 ;    (list* 'ev-fncall-null-body-er
 ;            nil
 ;           ',fn
-;           (print-list-without-stobj-arrays (list ,@formals))))
+;           (replace-live-stobjs-in-list (list ,@formals))))
 
 ; When fn is a symbol, throw-raw-ev-fncall uses the standard undefined function
 ; error msg, reporting fn as the culprit.  If fn is a consp,
@@ -346,7 +346,7 @@
                    (msg "The value of ~x0 is not specified on ~x1 because the ~
                          use of warrants is not permitted in this context."
                         caller fn)
-                   (print-list-without-stobj-arrays
+                   (replace-live-stobjs-in-list
                     (list fn args)))))
           ((symbolp warrant-reqs) ; invalid value for *warrant-reqs*
            (er hard! 'maybe-extend-warrant-reqs
@@ -391,7 +391,7 @@
      (list* 'ev-fncall-null-body-er
             nil
             'doppelganger-apply$-userfn
-            (print-list-without-stobj-arrays
+            (replace-live-stobjs-in-list
              (list fn args)))))
    (t (mv-let (bad-fn-msg badge warrantp)
         (query-badge-userfn-structure fn (w *the-live-state*))
@@ -414,7 +414,7 @@
                        (cond (bad-fn-msg bad-fn-msg)
                              (t (msg "~x0 has not been warranted"
                                      fn))))
-                  (print-list-without-stobj-arrays
+                  (replace-live-stobjs-in-list
                    (list fn args)))))
 
 ; If we get here we know that fn has a badge and that either *aokp* is true (so
@@ -458,7 +458,7 @@
                         is ~x2.  Fn has badge ~x3 and args is not known to ~
                         satisfy the tameness requirement of that badge."
                        'APPLY$-USERFN fn args badge)
-                  (print-list-without-stobj-arrays
+                  (replace-live-stobjs-in-list
                    (list fn args))))))))))
 
 (defun-*1* doppelganger-apply$-userfn (fn args)

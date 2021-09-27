@@ -590,6 +590,14 @@ of @(see svex-env-lookup), and they bind the same variables.")
              (svex-env-lookup key env)))
     :hints(("Goal" :in-theory (enable svex-env-lookup))))
 
+  (defthm svex-env-removekeys-of-append
+    (equal (svex-env-removekeys keys (append x y))
+           (append (svex-env-removekeys keys x) (svex-env-removekeys keys y))))
+
+  (defthm svex-env-removekeys-id
+    (equal (svex-env-removekeys keys (svex-env-removekeys keys x))
+           (svex-env-removekeys keys x)))
+
   (local (in-theory (enable svex-env-fix))))
 
 (define svex-alist-removekeys ((keys svarlist-p) (alist svex-alist-p))

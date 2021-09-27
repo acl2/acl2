@@ -1,6 +1,6 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 8.3 Installation Guide: Obtaining and
-    Installing <a href="http://www.cs.utexas.edu/users/moore/acl2/v8-3/index.html">ACL2</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 8.4 Installation Guide: Obtaining and
+    Installing <a href="http://www.cs.utexas.edu/users/moore/acl2/v8-4/index.html">ACL2</TITLE></HEAD>
 
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" STYLE="font-family:'Verdana'">
 
@@ -45,7 +45,7 @@
 
 ACL2 is more than just the executable image.  In particular, it comes
 with
-a <a href="http://www.cs.utexas.edu/users/moore/acl2/v8-3/index.html#User's-Manual">user's
+a <a href="http://www.cs.utexas.edu/users/moore/acl2/v8-4/index.html#User's-Manual">user's
 manual</a>, and the system is distributed with libraries developed by
 the ACL2 community, the
 <i><a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/?topic=ACL2____COMMUNITY-BOOKS">community
@@ -54,7 +54,7 @@ the ACL2 community, the
 
 <p>
 
-First, create a directory under which to store ACL2 Version 8.3.  We will
+First, create a directory under which to store ACL2 Version 8.4.  We will
 call this directory <I>dir</I>.  For example, <I>dir</I> might be
 <CODE>/home/jones/acl2/</CODE>.
 
@@ -73,7 +73,7 @@ there are other shortcuts available.
 
 <font color="red"><b>WARNING</b></font>: Some of these packages might
 be for old versions of ACL2.  We recommend that you use the latest
-version of ACL2 (Version 8.3).
+version of ACL2 (Version 8.4).
 
 <UL>
 
@@ -101,7 +101,7 @@ and <code>run_acl2.exe</code> on Windows, to start an ACL2 session.
 the certificate (<code>.cert</code>) files are automatically
 fixed, according to the full pathname of your <code>books/</code> directory.)
 Also see
-the <a href="http://www.cs.utexas.edu/users/moore/acl2/v8-3/combined-manual/index.html?topic=ACL2____ACL2-SEDAN">ACL2
+the <a href="http://www.cs.utexas.edu/users/moore/acl2/v8-4/combined-manual/index.html?topic=ACL2____ACL2-SEDAN">ACL2
 documentation topic on the ACL2 Sedan</a>.
 
 
@@ -123,7 +123,7 @@ Windows</a>.
 <p>
 
 ACL2 versions are sometimes been made available under MacPorts.  We
-have been informed that ACL2 Version 8.3 can be installed on MacOS via
+have been informed that ACL2 Version 8.4 can be installed on MacOS via
 MacPorts.
 
 <LI><B><A NAME="Shortcut-debian">Debian GNU Linux</A></B>
@@ -163,8 +163,8 @@ conversion.)
 
 <UL>
 
-<LI>Save <A HREF="https://github.com/acl2-devel/acl2-devel/releases/download/8.3/acl2-8.3.tar.gz">
-    acl2-8.3.tar.gz</A> on directory <I>dir</I>.
+<LI>Save <A HREF="https://github.com/acl2-devel/acl2-devel/releases/download/8.4/acl2-8.4.tar.gz">
+    acl2-8.4.tar.gz</A> on directory <I>dir</I>.
   </LI>
 <BR>
 
@@ -172,7 +172,7 @@ conversion.)
 and community books.  (<b>Note</b>: Gnu tar is preferred, as there
 have been some problems with long file names when using at least one other tar
 program.  You may want to use the -i option, "<code>tar xpvfi
-8.3.tar</code>", if you have problems with other than Gnu tar.  You
+8.4.tar</code>", if you have problems with other than Gnu tar.  You
 can see if you have Gnu tar by running "<code>tar -v</code>".)  The
 resulting tarball and its extracted directory may consist of
 about 100 MB and 300+ MB, respectively.  Additional space is
@@ -183,9 +183,9 @@ will be required to <A HREF="using.html#Certifying">certify books</A>.
 
 <BR><BR>
 <CODE>cd <I>dir</I></CODE><BR>
-<CODE>tar xfz acl2-8.3.tar.gz</CODE><BR>
-<CODE>rm acl2-8.3.tar.gz</CODE><BR>
-<CODE>cd acl2-8.3</CODE><BR>
+<CODE>tar xfz acl2-8.4.tar.gz</CODE><BR>
+<CODE>rm acl2-8.4.tar.gz</CODE><BR>
+<CODE>cd acl2-8.4</CODE><BR>
 <BR>
 </LI>
 
@@ -237,7 +237,7 @@ instructions for building an executable.
 <H3><A NAME="Pre-Built-Images">Short Cut:  Pre-Built ACL2 Images</A></H3>
 
 The site <a
-href="http://www.cs.utexas.edu/users/moore/acl2/v8-3/distrib/images/Readme.html">http://www.cs.utexas.edu/users/moore/acl2/v8-3/distrib/images/Readme.html</a>
+href="http://www.cs.utexas.edu/users/moore/acl2/v8-4/distrib/images/Readme.html">http://www.cs.utexas.edu/users/moore/acl2/v8-4/distrib/images/Readme.html</a>
 contains links to ACL2 executables and packages.  Each <code>-md5sum</code> file
 was created using <code>md5sum</code>.  We may add additional
 links from time to time.
@@ -258,7 +258,7 @@ If you downloaded a <A
 HREF="#Pre-Built-Images">pre-built ACL2 image</A>, you may skip this section.
 <!-- End of only for non-incremental releases. -->
 Connect to <I>dir</I> as above and execute <BR><BR> <CODE>cd
-acl2-8.3</CODE><BR> <CODE>make LISP=</CODE><I>xxx</I><BR>
+acl2-8.4</CODE><BR> <CODE>make LISP=</CODE><I>xxx</I><BR>
 <BR>
 where <I>xxx</I> is the command to run your local Common Lisp.
 <P>
@@ -270,7 +270,7 @@ href="requirements.html#Obtaining-CCL">explained in the Requirements document</a
 <P>
 
 This will create executable <code>saved_acl2</code> in the
-<code>acl2-8.3</code> directory.
+<code>acl2-8.4</code> directory.
 
 <P>
 
@@ -282,7 +282,7 @@ a couple hundred megabytes or so.
 <P>
 This <CODE>make</CODE> works for the Common Lisp implementations listed
 in <A HREF="requirements.html">Requirements document</A> on systems we
-have tested.  See the file <CODE>acl2-8.3/GNUmakefile</CODE> for
+have tested.  See the file <CODE>acl2-8.4/GNUmakefile</CODE> for
 further details.  If this <CODE>make</CODE> command does not work for
 you, please see the instructions below for <A HREF="#Non-Unix">other
 than Unix-like systems</A>.
@@ -315,13 +315,13 @@ Otherwise, proceed as follows.
 
 Your Common Lisp should be one of those listed in
 <A HREF="requirements.html">Requirements document</A>.  Filenames
-below should default to the <I>dir</I><CODE>/acl2-8.3</CODE>
+below should default to the <I>dir</I><CODE>/acl2-8.4</CODE>
 directory; please connect to that directory before continuing.
 
 <OL>
 <P><LI> Remove file <CODE>nsaved_acl2</CODE> if it exists.</LI>
 
-<P><LI> Start up Common Lisp in the <CODE>acl2-8.3</CODE> directory
+<P><LI> Start up Common Lisp in the <CODE>acl2-8.4</CODE> directory
 and submit the following sequence of commands.
 
 <PRE>
@@ -332,14 +332,14 @@ and submit the following sequence of commands.
 </PRE>
 
   The commands above will compile the ACL2 sources and create compiled object
-  files on your <CODE>acl2-8.3</CODE> subdirectory.  Here we assume
+  files on your <CODE>acl2-8.4</CODE> subdirectory.  Here we assume
   that executables have extension <code>.dxl</code>, but this will
   depend on your host Lisp and operating system.
 </LI>
 
 <P><LI> Now exit your Common Lisp and invoke a fresh copy of it (mainly to avoid
   saving an image with the garbage created by the compilation process). Again
-  arrange to connect to the <CODE>acl2-8.3</CODE> subdirectory. In the
+  arrange to connect to the <CODE>acl2-8.4</CODE> subdirectory. In the
   fresh Lisp <a name="initialization-first-pass">type</a>:
 
 <PRE>
@@ -360,7 +360,7 @@ and submit the following sequence of commands.
 </LI>
 
 <P><LI> So now exit your Common Lisp and invoke a fresh copy of it (again arranging
-  to connect to your <CODE>acl2-8.3</CODE> subdirectory). Then, in the
+  to connect to your <CODE>acl2-8.4</CODE> subdirectory). Then, in the
   fresh Lisp type:
 
 <PRE>
@@ -493,12 +493,12 @@ C:\gcl\gclm\lib\gcl-2.6.2\unixport\saved_gcl.exe -dir C:/gcl/gclm/lib/gcl-2.6.2/
     may be called
 <code>saved_acl2.exe</code> rather than <code>saved_acl2</code>.
 
-<!-- NOTE to developers: v8-3 below indicates a normal release, which is OK. -->
+<!-- NOTE to developers: v8-4 below indicates a normal release, which is OK. -->
 <!-- Do not edit that for incremental releases. -->
 
 <li><b>FINALLY</b>, create a file <code>acl2.bat</code> as explained in
-<code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-3/distrib/images/Readme.html#acl2-bat">
-http://www.cs.utexas.edu/users/moore/acl2/v8-3/distrib/images/Readme.html</a></code>.
+<code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-4/distrib/images/Readme.html#acl2-bat">
+http://www.cs.utexas.edu/users/moore/acl2/v8-4/distrib/images/Readme.html</a></code>.
 
 </ol>
 
@@ -563,7 +563,7 @@ HREF="#Sources-Non-Unix">other</A> platforms.
 (If you downloaded a <A
 HREF="#Pre-Built-Images">pre-built ACL2 image</A>, then you may skip this section.)
 <!-- End of only for non-incremental releases. -->
-Connect to subdirectory <CODE>acl2-8.3</CODE> of <I>dir</I>,
+Connect to subdirectory <CODE>acl2-8.4</CODE> of <I>dir</I>,
 start up your Common Lisp, and compile by executing the following forms.
 <I>This sequence of steps need only be performed once.</I>
 
@@ -574,7 +574,7 @@ start up your Common Lisp, and compile by executing the following forms.
 </PRE>
 
 Now each time you want to use ACL2, execute the following forms
-after starting up Common Lisp in subdirectory <CODE>acl2-8.3</CODE> of
+after starting up Common Lisp in subdirectory <CODE>acl2-8.4</CODE> of
 <I>dir</I>.  This may take a minute or two (which is another reason to
 consider installing an executable image as described above, using
 `<code>make</code>' if possible).
@@ -607,11 +607,11 @@ the <a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/?
 books</a>.  Below we describe the ACL2 distribution only (without the
 community books) from the University of Texas at Austin.  Its files
 are available by exploring the
-<code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-3/distrib/">distrib/<a></code>
+<code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-4/distrib/">distrib/<a></code>
 directory on this website or by obtaining a gzipped tarfile,
-<code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-3/distrib/acl2.tar.gz">acl2.tar.gz</a></code>,
+<code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-4/distrib/acl2.tar.gz">acl2.tar.gz</a></code>,
 which extracts to the contents
-of <code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-3/distrib/">distrib/acl2-sources/<a></code>,
+of <code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-4/distrib/">distrib/acl2-sources/<a></code>,
 which in turn contains the ACL2 source files as well as the following
 (and a few others not mentioned here).
 
@@ -630,15 +630,15 @@ Also available are the following.
 
 <ul>
 
-<li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-3/distrib/images/">images/</a></code>:
-Some gzip'd tar'd executables; see <code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-3/distrib/images/Readme.html">images/Readme.html</a></code></li>
+<li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-4/distrib/images/">images/</a></code>:
+Some gzip'd tar'd executables; see <code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-4/distrib/images/Readme.html">images/Readme.html</a></code></li>
 
-<li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-3/distrib/split/">split/</a></code>: The result of splitting up <code>acl2.tar.gz</code></li>
+<li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-4/distrib/split/">split/</a></code>: The result of splitting up <code>acl2.tar.gz</code></li>
 
 </ul>
 
 <BR><HR noshade size=8><BR>
-<H2><A NAME="GitHub">Github Distributions</A></H2>
+<H2><A NAME="GitHub">GitHub Distributions</A></H2>
 
 We strongly recommend that ACL2 users update their local copies of the
 system and community books at each ACL2 release.  While that should

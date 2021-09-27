@@ -112,3 +112,9 @@
            (equal (logeqv i j)
                   (lognot i)))
   :hints (("Goal" :in-theory (enable logeqv))))
+
+(defthm signed-byte-p-of-logeqv
+  (implies (and (signed-byte-p size x)
+                (signed-byte-p size y))
+           (signed-byte-p size (logeqv x y)))
+  :hints (("Goal" :in-theory (e/d (logeqv) (signed-byte-p)))))

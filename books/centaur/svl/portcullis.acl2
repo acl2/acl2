@@ -36,6 +36,7 @@
             acl2::logapp
             acl2::loghead
             acl2::logtail
+	    acl2::defines
             
             sv::3vec-bitand
             sv::2vec
@@ -65,6 +66,8 @@
 	    sv::svex-eval
 	    sv::svex-var->name
 	    sv::svex-apply-cases
+	    std::defret
+	    std::defret-mutual
 
 	    sv::4VEC-CONCAT
 	    sv::4VEC-BITAND

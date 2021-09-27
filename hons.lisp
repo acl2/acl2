@@ -1,4 +1,4 @@
-; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -38,7 +38,7 @@
 (defmacro defnd (f a &rest r)
   `(defund ,f ,a (declare (xargs :guard t)) ,@r))
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn hons-equal (x y)
   (declare (xargs :mode :logic))
   ;; Has an under-the-hood implementation
@@ -54,25 +54,25 @@
         (t
          (hons-assoc-equal key (cdr alist)))))
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn hons-get (key alist)
   (declare (xargs :mode :logic))
   ;; Has an under-the-hood implementation
   (hons-assoc-equal key alist))
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn hons-acons (key val alist)
   (declare (xargs :mode :logic))
   ;; Has an under-the-hood implementation
   (cons (cons key val) alist))
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defmacro fast-alist-free-on-exit-raw (alist form)
   ;; Has an under-the-hood implementation
   (declare (ignore alist))
   form)
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn fast-alist-free (alist)
   (declare (xargs :mode :logic))
   ;; Has an under-the-hood implementation
@@ -81,50 +81,50 @@
 (defmacro fast-alist-free-on-exit (alist form)
   `(return-last 'fast-alist-free-on-exit-raw ,alist ,form))
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn hons-copy (x)
   ;; Has an under-the-hood implementation
   (declare (xargs :mode :logic)) ; for attaching early to acl2x-expansion-alist
   x)
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn hons-copy-persistent (x)
   ;; Has an under-the-hood implementation
   x)
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn hons (x y)
   ;; Has an under-the-hood implementation
   (cons x y))
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn hons-equal-lite (x y)
   ;; Has an under-the-hood implementation
   (equal x y))
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn hons-clear (gc)
   ;; Has an under-the-hood implementation
   (declare (ignore gc))
   nil)
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn hons-clear! (gc)
   ;; Has an under-the-hood implementation
   (declare (ignore gc))
   nil)
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn hons-wash ()
   ;; Has an under-the-hood implementation
   nil)
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn hons-wash! ()
   ;; Has an under-the-hood implementation
   nil)
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn hons-summary ()
   ;; Has an under-the-hood implementation
   nil)
@@ -136,7 +136,7 @@
                    ,addr-ht ,other-ht ,sbits
                    ,fal-ht ,persist-ht))
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn hons-resize-fn (str-ht nil-ht cdr-ht cdr-ht-eql
                                  addr-ht other-ht sbits
                                  fal-ht persist-ht)
@@ -165,17 +165,17 @@
                              (not action))))
   `(table hons 'slow-alist-warning ,action))
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn hons-acons! (key val alist)
   ;; Has an under-the-hood implementation
   (cons (cons key val) alist))
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn make-fast-alist (alist)
   ;; Has an under-the-hood implementation
   alist)
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn fast-alist-fork (alist ans)
   ;; Has an under-the-hood implementation
   (cond ((atom alist)
@@ -187,7 +187,7 @@
         (t
          (fast-alist-fork (cdr alist) (cons (car alist) ans)))))
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn fast-alist-fork! (alist ans)
   ;; Has an under-the-hood implementation
   (fast-alist-fork alist ans))
@@ -201,7 +201,7 @@
 (add-macro-alias hons-shrink-alist fast-alist-fork)
 (add-macro-alias hons-shrink-alist! fast-alist-fork!)
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn fast-alist-clean (alist)
   ;; Has an under-the-hood implementation
   (fast-alist-fork alist
@@ -209,22 +209,22 @@
                        (cdr (last alist))
                      alist)))
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn fast-alist-clean! (alist)
   ;; Has an under-the-hood implementation
   (fast-alist-clean alist))
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn fast-alist-len (alist)
   ;; Has an under-the-hood implementation
   (len (fast-alist-fork alist nil)))
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn fast-alist-summary ()
   ;; Has an under-the-hood implementation
   nil)
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defmacro with-fast-alist-raw (alist form)
   ;; Has an under-the-hood implementation
   (declare (ignore alist))
@@ -233,7 +233,7 @@
 (defmacro with-fast-alist (alist form)
   `(return-last 'with-fast-alist-raw ,alist ,form))
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defmacro with-stolen-alist-raw (alist form)
   ;; Has an under-the-hood implementation
   (declare (ignore alist))
@@ -252,7 +252,7 @@
           (car x)
           (cons-subtrees (cdr x) (hons-acons x t al))))))
 
-#+(or acl2-loop-only (not hons))
+#+acl2-loop-only
 (defn number-subtrees (x)
   ;; Has an under-the-hood implementation
   (len (cons-subtrees x 'number-subtrees)))

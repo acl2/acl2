@@ -13,9 +13,9 @@
 
 ;; This book contains theorems that mix LOGAND with BVCHOP and LOGTAIL.
 
-(include-book "kestrel/bv/logand" :dir :system)
-(include-book "kestrel/bv/bvchop-def" :dir :system)
-(include-book "kestrel/bv/logtail-def" :dir :system)
+(include-book "logand")
+(include-book "bvchop-def")
+(include-book "logtail-def")
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))

@@ -160,3 +160,23 @@
                   (bvmult size y x)))
   :hints (("Goal" :cases ((natp size))
            :in-theory (enable bvmult))))
+
+(defthm bvmult-subst2-constant-version
+  (implies (and (equal (bvchop size2 x) y)
+                (syntaxp (and (quotep y)
+                              (not (quotep x))))
+                (<= size size2)
+                (natp size2)
+                (natp size))
+           (equal (bvmult size x z)
+                  (bvmult size y z))))
+
+(defthm bvmult-subst2-alt-constant-version
+  (implies (and (equal (bvchop size2 x) y)
+                (syntaxp (and (quotep y)
+                              (not (quotep x))))
+                (<= size size2)
+                (natp size2)
+                (natp size))
+           (equal (bvmult size z x)
+                  (bvmult size z y))))

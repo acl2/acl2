@@ -16,7 +16,12 @@
 (include-book "jubjub")
 (include-book "jubjub-montgomery")
 (include-book "pedersen-hash")
+(include-book "pedersen-hash-bound-properties")
+(include-book "pedersen-hash-injectivity-properties")
+(include-book "pedersen-hash-image-properties")
 (include-book "randomness-beacon")
+
+(include-book "gadgets/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,8 +39,9 @@
      The formalization is based on the "
     (xdoc::ahref
      "https://github.com/zcash/zips/blob/master/protocol/protocol.pdf"
-     "Zcash Protocol Specification (Version 2021.1.16)")
-    ", referenced as `[ZPS]' in the documentation of this library.
+     "Zcash Protocol Specification")
+    " (Version 2021.1.15 [NU5 proposal] of 2021-09-01, as of this writing),
+     referenced as `[ZPS]' in the documentation of this library.
      Sections, appendices, theorems, etc. are referenced
      by appending their designations separated by colo,
      e.g.

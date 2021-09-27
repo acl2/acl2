@@ -588,9 +588,9 @@
                        (alist-keys y)))
     :hints((set-reasoning))))
 
-(defcong acl2::nat-equiv equal (str::natchars n) 1
-  :event-name natchars-preserves-nat-equiv
-  :hints(("Goal" :in-theory (enable str::natchars))))
+(defcong acl2::nat-equiv equal (str::nat-to-dec-chars n) 1
+  :event-name nat-to-dec-chars-preserves-nat-equiv
+  :hints(("Goal" :in-theory (enable str::nat-to-dec-chars))))
 
 (defcong acl2::nat-equiv equal (natstr n) 1
   :event-name natstr-preserves-nat-equiv)

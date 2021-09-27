@@ -41,6 +41,7 @@
 (local (include-book "ihsext-basics"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (std::add-default-post-define-hook :fix))
+(std::make-returnspec-config :hints-sub-returnnames t)
 
 (defxdoc sparseint-impl
   :parents (sparseint)

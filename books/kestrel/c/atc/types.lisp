@@ -14,6 +14,8 @@
 (include-book "abstract-syntax")
 (include-book "errors")
 
+(include-book "std/util/defval" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-types
@@ -223,3 +225,57 @@
   (type-name-to-type x)
   ///
   (fty::deffixequiv type-name-list-to-type-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-type-to-type-name ((type typep))
+  :guard (type-integerp type)
+  :returns (tyname tynamep)
+  :short "Turn an integer type into a type name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Our model of type names does not cover all the types we model;
+     specifically, our type names only have one level of pointers allowed,
+     while our types allow multiple levels.
+     So at the moment we cannot have a total function
+     from all our types to our type names.
+     For now we actually only need the mapping for integer types,
+     so we define this function on integer types for now."))
+  (case (type-kind type)
+    (:char (make-tyname :specs (tyspecseq-char) :pointerp nil))
+    (:schar (make-tyname :specs (tyspecseq-schar) :pointerp nil))
+    (:uchar (make-tyname :specs (tyspecseq-uchar) :pointerp nil))
+    (:sshort (make-tyname :specs (tyspecseq-sshort) :pointerp nil))
+    (:ushort (make-tyname :specs (tyspecseq-ushort) :pointerp nil))
+    (:sint (make-tyname :specs (tyspecseq-sint) :pointerp nil))
+    (:uint (make-tyname :specs (tyspecseq-uint) :pointerp nil))
+    (:slong (make-tyname :specs (tyspecseq-slong) :pointerp nil))
+    (:ulong (make-tyname :specs (tyspecseq-ulong) :pointerp nil))
+    (:sllong (make-tyname :specs (tyspecseq-sllong) :pointerp nil))
+    (:ullong (make-tyname :specs (tyspecseq-ullong) :pointerp nil))
+    (t (prog2$ (impossible) (irr-tyname))))
+  :guard-hints (("Goal" :in-theory (enable type-integerp
+                                           type-signed-integerp
+                                           type-unsigned-integerp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-integer-types*
+  :short "List of the supported C integer types except plain @('char')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This list is used in code that generates functions and theorems
+     for different combinations of integer types."))
+  (list (type-schar)
+        (type-uchar)
+        (type-sshort)
+        (type-ushort)
+        (type-sint)
+        (type-uint)
+        (type-slong)
+        (type-ulong)
+        (type-sllong)
+        (type-ullong)))

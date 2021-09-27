@@ -50,3 +50,11 @@
                        (integerp val))))
   :hints (("Goal" :in-theory (enable update-nth integer-listp)
            :induct (update-nth index val lst))))
+
+(defthm integerp-of-nth-when-integer-listp-cheap
+  (implies (and (integer-listp x)
+                (natp n)
+                (< n (len x)))
+           (integerp (nth n x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
+  :hints (("Goal" :in-theory (enable integer-listp))))

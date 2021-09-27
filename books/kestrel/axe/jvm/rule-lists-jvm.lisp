@@ -1412,7 +1412,7 @@
            (more-rules-bv-misc)
            ;;(amazing-rules) ;this seemed slow - BBOZO why?? lots of bvchop 7 of larger values?
            '(;fixme what other of the amazing rules do we need?
-             <-of-+-arg2-same-arg2 ;just added -where else is this needed?  what else do we need here?
+             <-of-+-cancel-1-2 ;just added -where else is this needed?  what else do we need here?
              getbit-list-of-bv-array-write-too-high
              update-nth-of-cons
              myif-of-cons-and-cons ;drop?
@@ -1746,7 +1746,7 @@
              boolor-of-equal-and-not-of-equal-constants
              boolor-of-equal-and-not-of-equal-constants-alt
              booland-of-booland-of-boolif
-             equal-constant-when-unsigned-byte-p-bind-free-dag ;was just in prover-rules ;Wed Mar 17 04:03:01 2010
+             not-equal-constant-when-unsigned-byte-p-bind-free-dag ;was just in prover-rules ;Wed Mar 17 04:03:01 2010
              sha1-context-hack ;Wed Mar 17 03:54:02 2010 (how much does this help?)
              boolor-of-booland-same-2 ;Wed Mar 17 03:06:45 2010
              bvlt-of-constant-when-unsigned-byte-p-tighter

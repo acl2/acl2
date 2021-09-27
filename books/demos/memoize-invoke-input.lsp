@@ -39,6 +39,11 @@
       0 (if (eql n 1)
             1
           (+ (fib (- n 1)) (fib (- n 2))))))
+(with-output
+  :off summary ; With progn, avoid comp return value differences per Lisp.
+  (progn
+    (comp 'fib) ; for major speed-up in other than CCL or SBCL
+    (value-triple t)))
 ; Provide an immediate result for a specific value.
 (defun fib2 (n)
   (declare (xargs :guard (natp n)))

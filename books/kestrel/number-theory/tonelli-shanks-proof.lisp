@@ -492,7 +492,7 @@
                   (natp i)
                   (< i m)
                   (< 2 p)
-                  (< 0 m)
+                  ;; (< 0 m)
                   (= (mod (expt tt (expt 2 i)) p) 1))
              (= (mod (expt tt (expt 2 (least-repeated-square tt m p))) p) 1))
     :hints (("Goal"
@@ -1138,7 +1138,6 @@
                 (<= 0 tt)
                 (integerp r)
                 (<= 0 r)
-                (<= 0 p)
                 (< n p)
                 (< 2 p)
                 (equal (mod (expt c (expt 2 (+ -1 m))) p)
@@ -1164,7 +1163,6 @@
                  (natp c)
                  (natp tt)
                  (natp r)
-                 (natp p)
                  (< n p)
                  (rtl::primep p)
                  (< 2 p)
@@ -1228,10 +1226,8 @@
   (local (include-book "arithmetic-3/top" :dir :system))
 
   (defthm tonelli-shanks-sqrt-aux-is-correct
-    (implies (and (natp n)
-                  (natp z)
+    (implies (and (natp z)
                   (> p 2)
-                  (< n p)
                   (< z p)
                   (rtl::primep p)
                   (not (has-square-root? z p))
@@ -1306,10 +1302,8 @@
   (local (include-book "arithmetic-3/top" :dir :system))
 
   (defthm tonelli-shanks-is-correct
-    (implies (and (natp n)
-                  (natp z)
+    (implies (and (natp z)
                   (> p 2)
-                  (< n p)
                   (< z p)
                   (rtl::primep p)
                   (not (has-square-root? z p))

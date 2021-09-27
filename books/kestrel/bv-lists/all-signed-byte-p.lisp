@@ -31,7 +31,6 @@
 
 (defthm all-signed-byte-p-of-update-nth
   (implies (and (signed-byte-p m val)
-                (natp m)
                 (<= n (len lst))
                 (all-signed-byte-p m lst))
            (all-signed-byte-p m (update-nth n val lst)))
