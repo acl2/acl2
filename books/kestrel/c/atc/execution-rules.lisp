@@ -1293,8 +1293,8 @@
 
   (defruled exec-expr-call-or-pure-when-pure
     (implies (and (syntaxp (quotep e))
-                  (not (zp limit))
                   (not (equal (expr-kind e) :call))
+                  (not (zp limit))
                   (compustatep compst))
              (equal (exec-expr-call-or-pure e compst fenv limit)
                     (mv (exec-expr-pure e compst)
@@ -1303,8 +1303,8 @@
 
   (defruled exec-expr-call-of-pure-when-call
     (implies (and (syntaxp (quotep e))
-                  (not (zp limit))
                   (equal (expr-kind e) :call)
+                  (not (zp limit))
                   (equal vals (exec-expr-pure-list (expr-call->args e) compst))
                   (value-listp vals))
              (equal (exec-expr-call-or-pure e compst fenv limit)
@@ -1325,9 +1325,9 @@
 
   (defruled exec-expr-asg-open
     (implies (and (syntaxp (quotep e))
-                  (not (zp limit))
                   (equal (expr-kind e) :binary)
                   (equal (binop-kind (expr-binary->op e)) :asg)
+                  (not (zp limit))
                   (equal e1 (expr-binary->arg1 e))
                   (equal (expr-kind e1) :ident)
                   (equal val+compst1
@@ -1369,8 +1369,8 @@
 
   (defruled exec-stmt-when-compound
     (implies (and (syntaxp (quotep s))
-                  (not (zp limit))
                   (equal (stmt-kind s) :compound)
+                  (not (zp limit))
                   (equal val?+compst1
                          (exec-block-item-list (stmt-compound->items s)
                                                (enter-scope compst)
@@ -1385,8 +1385,8 @@
 
   (defruled exec-stmt-when-expr
     (implies (and (syntaxp (quotep s))
-                  (not (zp limit))
                   (equal (stmt-kind s) :expr)
+                  (not (zp limit))
                   (equal compst1
                          (exec-expr-asg (stmt-expr->get s)
                                         compst
@@ -1399,8 +1399,8 @@
 
   (defruled exec-stmt-when-if
     (implies (and (syntaxp (quotep s))
-                  (not (zp limit))
                   (equal (stmt-kind s) :if)
+                  (not (zp limit))
                   (compustatep compst)
                   (equal test
                          (exec-test (exec-expr-pure (stmt-if->test s) compst)))
@@ -1413,8 +1413,8 @@
 
   (defruled exec-stmt-when-ifelse
     (implies (and (syntaxp (quotep s))
-                  (not (zp limit))
                   (equal (stmt-kind s) :ifelse)
+                  (not (zp limit))
                   (equal test
                          (exec-test
                           (exec-expr-pure (stmt-ifelse->test s) compst)))
@@ -1427,8 +1427,8 @@
 
   (defruled exec-stmt-when-while
     (implies (and (syntaxp (quotep s))
-                  (not (zp limit))
-                  (equal (stmt-kind s) :while))
+                  (equal (stmt-kind s) :while)
+                  (not (zp limit)))
              (equal (exec-stmt s compst fenv limit)
                     (exec-stmt-while (stmt-while->test s)
                                      (stmt-while->body s)
@@ -1439,8 +1439,8 @@
 
   (defruled exec-stmt-when-return
     (implies (and (syntaxp (quotep s))
-                  (not (zp limit))
                   (equal (stmt-kind s) :return)
+                  (not (zp limit))
                   (equal e (stmt-return->value s))
                   e)
              (equal (exec-stmt s compst fenv limit)
@@ -1466,8 +1466,8 @@
 
   (defruled exec-block-item-when-declon
     (implies (and (syntaxp (quotep item))
-                  (not (zp limit))
                   (equal (block-item-kind item) :declon)
+                  (not (zp limit))
                   (equal declon (block-item-declon->get item))
                   (equal val+compst1
                          (exec-expr-call-or-pure (declon->init declon)
@@ -1491,8 +1491,8 @@
 
   (defruled exex-block-item-when-stmt
     (implies (and (syntaxp (quotep item))
-                  (not (zp limit))
-                  (equal (block-item-kind item) :stmt))
+                  (equal (block-item-kind item) :stmt)
+                  (not (zp limit)))
              (equal (exec-block-item item compst fenv limit)
                     (exec-stmt (block-item-stmt->get item)
                                compst
@@ -1514,8 +1514,8 @@
 
   (defruled exec-block-item-list-when-not-consp
     (implies (and (syntaxp (quotep items))
-                  (not (zp limit))
                   (not (consp items))
+                  (not (zp limit))
                   (compustatep compst))
              (equal (exec-block-item-list items compst fenv limit)
                     (mv nil compst)))
@@ -1523,8 +1523,8 @@
 
   (defruled exec-block-item-list-when-consp
     (implies (and (syntaxp (quotep items))
-                  (not (zp limit))
                   (consp items)
+                  (not (zp limit))
                   (equal val?+compst1
                          (exec-block-item (car items) compst fenv (1- limit)))
                   (equal val? (mv-nth 0 val?+compst1))
@@ -1553,8 +1553,8 @@
 
   (defruled init-scope-when-consp
     (implies (and (syntaxp (quotep formals))
-                  (param-declon-listp formals)
                   (consp formals)
+                  (param-declon-listp formals)
                   (equal formal (car formals))
                   (equal declor (param-declon->declor formal))
                   (valuep val)
