@@ -755,3 +755,40 @@
 ; we avoid runtime overhead of the fixer call.
 (thm (implies (stobj-tablep stobj-table)
               (integerp (read-fld-from-stobj-table stobj-table))))
+
+; Here is a macro that may serve some day as a replacement for stobj-fixers,
+; followed by another version of the function defined just above but this time
+; using the new macro below.
+
+(defmacro stobj-fix (st &key recognizer creator)
+  (declare (xargs :guard (and (symbolp st)
+                              (symbolp recognizer)
+                              (symbolp creator))))
+  (let ((recognizer (or recognizer
+                        (defstobj-fnname st :recognizer nil nil)))
+        (creator (or creator
+                     (defstobj-fnname st :creator nil nil))))
+    `(if (,recognizer ,st) ,st (,creator))))
+
+(defun read-fld-from-stobj-table-2 (stobj-table)
+  (declare (xargs :stobjs (stobj-table)))
+  (stobj-let ((st (tbl-get 'st stobj-table (create-st))))
+             (val)
+             (mbe :logic (non-exec (fld (stobj-fix st)))
+                  :exec (fld st))
+             val))
+
+(thm (implies (stobj-tablep stobj-table)
+              (integerp (read-fld-from-stobj-table-2 stobj-table))))
+
+; And here is a test adapted from an email from Sol Swords, which exposed a bug
+; in the initial implementation of the use of stobj-fixers in generating guard
+; proof obligations (ACL2 source function fix-stobj-table-get-calls).
+
+(defun foo (sum stobj-table)
+  (declare (xargs :stobjs (stobj-table)
+                  :guard (acl2-numberp sum)))
+  (stobj-let ((st (tbl-get 'st stobj-table (create-st))))
+	     (sum)
+	     (+ sum (fld st))
+	     sum))
