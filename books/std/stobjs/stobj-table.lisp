@@ -26,18 +26,18 @@
 
 (defun update-st1-in-tbl (val stobj-table)
   (declare (xargs :stobjs stobj-table))
-  (stobj-let ((st1 (st1$fix (tbl-get 'st1 stobj-table)))) ; bindings
-             (st1)                                        ; producer variable
-             (update-fld1 val st1)                        ; producer
-             stobj-table                                  ; consumer
+  (stobj-let ((st1 (tbl-get 'st1 stobj-table (create-st1)))) ; bindings
+             (st1)                 ; producer variable
+             (update-fld1 val st1) ; producer
+             stobj-table           ; consumer
              ))
              
 (defun read-st1-in-tbl1 (stobj-table)
   (declare (xargs :stobjs stobj-table))
-  (stobj-let ((st1 (st1$fix (tbl-get 'st1 stobj-table)))) ; bindings
-             (val)                                        ; producer variable
-             (fld1 st1)                                   ; producer
-             val                                          ; consumer
+  (stobj-let ((st1 (tbl-get 'st1 stobj-table (create-st1)))) ; bindings
+             (val)      ; producer variable
+             (fld1 st1) ; producer
+             val        ; consumer
              ))
 
 (assert-event
@@ -57,10 +57,10 @@
 
 (defun read-st2-in-tbl (stobj-table)
   (declare (xargs :stobjs stobj-table))
-  (stobj-let ((st2 (st2$fix (tbl-get 'st2 stobj-table)))) ; bindings
-             (val)                                        ; producer variable
-             (fld2 st2)                                   ; producer
-             val                                          ; consumer
+  (stobj-let ((st2 (tbl-get 'st2 stobj-table (create-st2)))) ; bindings
+             (val)      ; producer variable
+             (fld2 st2) ; producer
+             val        ; consumer
              ))
 
 (defthm read-over-write-st2-in-tbl
