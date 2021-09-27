@@ -33,7 +33,6 @@
 (include-book "env-ops")
 (local (include-book "std/lists/sets" :dir :system))
 
-
 (defsection svex-alist-eval-equiv
   (def-universal-equiv svex-alist-eval-equiv
     :qvars (var)
@@ -252,6 +251,7 @@
 (define svex-compose-lookup ((var svar-p)
                              (x svex-alist-p))
   :returns (look svex-p)
+  :hooks (:fix)
   ;; Looks up var in x
   (or (svex-lookup var x)
       (svex-var var)))
@@ -287,4 +287,7 @@
   (defthm svex-alist-compose-equiv-of-svex-identity-subst
     (svex-alist-compose-equiv (svex-identity-subst vars) nil)
     :hints(("Goal" :in-theory (enable svex-alist-compose-equiv
-                                      svex-compose-lookup)))))
+                                      svex-compose-lookup))))
+
+  (defcong svex-alist-compose-equiv svex-eval-equiv (svex-compose-lookup var x) 2
+    :hints((witness))))
