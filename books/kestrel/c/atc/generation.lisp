@@ -2348,16 +2348,13 @@
                 member-equal
                 acl2::member-when-atom
                 acl2::pseudo-term-listp-when-not-consp
-                acl2::symbolp-of-car-of-car-when-symbol-term-alistp-type
                 acl2::symbolp-of-car-when-member-equal-of-symbol-pseudoterm-alistp
                 symbolp-of-car-when-member-equal-of-atc-symbol-fninfo-alistp
                 type-optionp-of-car-when-type-option-listp
                 typep-of-car-when-type-listp
                 acl2::symbolp-of-car-when-member-equal-of-symbol-symbol-alistp
                 symbolp-of-car-when-member-equal-of-atc-symbol-type-alistp
-                acl2::symbol-term-alistp ; :type-prescription
                 type-listp-when-not-consp
-                acl2::consp-of-car-when-symbol-term-alistp-cheap
                 type-option-listp-of-cdr-when-type-option-listp
                 acl2::pseudo-term-listp-cdr-when-pseudo-term-listp
                 type-listp-of-cdr-when-type-listp
@@ -3246,6 +3243,9 @@
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
+       (instantiation
+        (atc-gen-instantiation-deref-compustate pointers compst-var))
+       (limit-inst (fsublis-var (acl2::doublets-to-alist instantiation) limit))
        (args (atc-gen-fn-args-deref-compustate formals pointers compst-var))
        (guard (uguard+ fn wrld))
        (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var))
@@ -3253,7 +3253,7 @@
                             hyps
                             `(equal ,fenv-var (init-fun-env ,prog-const))
                             `(integerp ,limit-var)
-                            `(>= ,limit-var ,limit))))
+                            `(>= ,limit-var ,limit-inst))))
        (hyps (flatten-ands-in-lit hyps))
        (hyps `(and ,@(untranslate-lst hyps t wrld)))
        (concl `(equal
@@ -3274,8 +3274,6 @@
        (type-prescriptions
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
-       (instantiation
-        (atc-gen-instantiation-deref-compustate pointers compst-var))
        (hints `(("Goal"
                  :in-theory (union-theories
                              (theory 'atc-all-rules)

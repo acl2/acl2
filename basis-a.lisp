@@ -6996,10 +6996,6 @@
 
 (defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
 
-; Warning: Keep the formals in the definitions below in sync with corresponding
-; formals defstobj-field-fns-raw-defs.  Otherwise trace$ may not work
-; correctly; we saw such a problem in Version_5.0 for a resize function.
-
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
 
   (cond
@@ -7086,9 +7082,19 @@
                           '(hons-copy k)
                         'k))))
            `((,accessor-name
-              (k ,var)
-              ,@(and inline (list *stobj-inline-declare*))
-              (values (gethash ,key (the hash-table ,fld))))
+              ,@(cond (hashp ; (not stobj-tablep)
+                       `((k ,var)
+                         ,@(and inline (list *stobj-inline-declare*))
+                         (values (gethash ,key (the hash-table ,fld)))))
+                      (t
+                       `((k ,var
+; We use v for the default, since we know that v is not ,var.
+                            ,@(and stobj-tablep '(v)))
+                         ,@(and inline (list *stobj-inline-declare*))
+                         (multiple-value-bind
+                          (val boundp)
+                          (gethash ,key (the hash-table ,fld))
+                          (if boundp val v))))))
              (,updater-name
               (k v ,var)
               ,@(and inline (list *stobj-inline-declare*))

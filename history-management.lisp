@@ -13986,6 +13986,68 @@
         0
       1)))
 
+(mutual-recursion
+
+(defun fix-stobj-table-get-calls-1 (term wrld)
+  (cond ((or (variablep term)
+             (fquotep term))
+         (mv nil term))
+        ((lambda-applicationp term)
+         (mv-let (changedp1 body)
+           (fix-stobj-table-get-calls-1 (lambda-body term) wrld)
+           (mv-let (changedp2 args)
+             (fix-stobj-table-get-calls-1-lst (fargs term) wrld)
+             (cond ((or changedp1 changedp2)
+                    (mv t (fcons-term (make-lambda (lambda-formals
+                                                    (ffn-symb term))
+                                                   body)
+                                      args)))
+                   (t (mv nil term))))))
+        ((throw-nonexec-error-p term :non-exec nil)
+
+; We are doing this simplification assuming stobj-opt is t (in the superior
+; call of fix-stobj-table-get-calls).  Thus, we don't want this help for guard
+; verification under (non-exec ...), where stobj tracking isn't being done.
+
+         (mv nil term))
+        (t (let ((st (case-match term
+                       ((tbl-get ('quote st) parent &)
+                        (and (not (member-eq tbl-get *stobjs-out-invalid*))
+                             (equal (stobjs-out tbl-get wrld)
+                                    (list *stobj-table-stobj*))
+                             (equal (stobjs-in tbl-get wrld)
+                                    (list nil parent *stobj-table-stobj*))
+                             st))
+                       (& nil))))
+             (cond (st (let* ((prop (getpropc st 'stobj nil wrld))
+                              (fixer
+                               (assert$ prop
+                                        (access stobj-property prop :fixer))))
+                         (mv t (fcons-term* fixer term))))
+                   (t (mv-let (changedp args)
+                        (fix-stobj-table-get-calls-1-lst (fargs term) wrld)
+                        (cond (changedp (mv t (fcons-term (ffn-symb term)
+                                                          args)))
+                              (t (mv nil term))))))))))
+
+(defun fix-stobj-table-get-calls-1-lst (lst wrld)
+  (cond ((endp lst) (mv nil nil))
+        (t (mv-let (changedp1 x)
+             (fix-stobj-table-get-calls-1 (car lst) wrld)
+             (mv-let (changedp2 lst)
+               (fix-stobj-table-get-calls-1-lst (cdr lst) wrld)
+               (cond ((or changedp1 changedp2)
+                      (mv t (cons x lst)))
+                     (t (mv nil lst))))))))
+)
+
+(defun fix-stobj-table-get-calls (term stobj-optp wrld)
+  (cond (stobj-optp (mv-let (changedp x)
+                      (fix-stobj-table-get-calls-1 term wrld)
+                      (declare (ignore changedp))
+                      x))
+        (t term)))
+
 (defun guard-clauses-for-fn1 (name debug-p ens wrld safe-mode gc-off ttree)
 
 ; Warning: name must be either the name of a function defined in wrld or a
@@ -14031,7 +14093,7 @@
                                   t)))))
     (mv-let
       (cl-set1 ttree)
-      (guard-clauses+ guard
+      (guard-clauses+ (fix-stobj-table-get-calls guard stobj-optp wrld)
                       (and debug-p `(:guard (:guard ,name)))
 
 ; Observe that when we generate the guard clauses for the guard we optimize
@@ -14078,7 +14140,10 @@
             (mv-let
               (cl-set2 ttree)
               (guard-clauses-for-body hyp-segments
-                                      unnormalized-body
+                                      (fix-stobj-table-get-calls
+                                       unnormalized-body
+                                       stobj-optp
+                                       wrld)
                                       (and debug-p `(:guard (:body ,name)))
 
 ; Observe that when we generate the guard clauses for the body we optimize

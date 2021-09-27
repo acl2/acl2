@@ -40,6 +40,18 @@
     ;; No override-hints, so do nothing:
     nil))
 
+;; Returns a (possibly-empty) list of events that ensure that the
+;; verify-guards-eagerness is EAGERNESS.  Note that the effect is local to the
+;; enclosing book or encapsulate.
+(defun maybe-set-verify-guards-eagerness (eagerness wrld)
+  (declare (xargs :guard (and (member eagerness '(0 1 2))
+                              (plist-worldp wrld)
+                              (alistp (table-alist 'acl2-defaults-table wrld)))))
+  (if (not (equal eagerness (default-verify-guards-eagerness wrld)))
+      `((set-verify-guards-eagerness ,eagerness))
+    ;; verify-guards-eagerness is already as desired, so do nothing:
+    nil))
+
 ;; Returns a list of standard events for transforming FN.  These go at the
 ;; beginning of the encapsulate.  Everything in this is local to the
 ;; surrounding encapsulate.
@@ -49,6 +61,7 @@
                               (alistp (table-alist 'acl2-defaults-table wrld))
                               (alistp (table-alist 'default-hints-table wrld)))))
   (append (maybe-switch-to-logic-mode wrld)
+          (maybe-set-verify-guards-eagerness 1 wrld)
           ;; todo: consider install-not-normalized-event:
           `((local (install-not-normalized ,fn))) ;todo: omit if not necessary (because the normalized and unnormalized bodies are the same)?
           ;; TODO: We may not want to do this until after applicability conditions (if any) are proved:
