@@ -293,20 +293,48 @@ but instead you passed ~p0~%"
 
 
 (defmacro disable-preprocessor (processor-fnc)
-  `(table rp-processors '(:preprocessor ,processor-fnc)
-           nil))
+  `(make-event
+    (b* (((unless (hons-assoc-equal '(:preprocessor ,processor-fnc)
+                                    (table-alist rp-processors (w state))))
+          (hard-error 'disable-preprocessor
+                      "The given preprocessor function ~p0 is not registered
+with RP-Rewriter. ~%"
+                      (list (cons #\0 ',processor-fnc)))))
+      `(table rp-processors '(:preprocessor ,,processor-fnc)
+              nil))))
 
 (defmacro enable-preprocessor (processor-fnc)
-  `(table rp-processors '(:preprocessor ,processor-fnc)
-           t))
+  `(make-event
+    (b* (((unless (hons-assoc-equal '(:preprocessor ,processor-fnc)
+                                    (table-alist rp-processors (w state))))
+          (hard-error 'enable-preprocessor
+                      "The given preprocessor function ~p0 is not registered
+with RP-Rewriter. ~%"
+                      (list (cons #\0 ',processor-fnc)))))
+      `(table rp-processors '(:preprocessor ,,processor-fnc)
+              t))))
 
 (defmacro disable-postprocessor (processor-fnc)
-  `(table rp-processors '(:postprocessor ,processor-fnc)
-           nil))
+  `(make-event
+    (b* (((unless (hons-assoc-equal '(:postprocessor ,processor-fnc)
+                                    (table-alist rp-processors (w state))))
+          (hard-error 'disable-postprocessor
+                      "The given postprocessor function ~p0 is not registered
+with RP-Rewriter. ~%"
+                      (list (cons #\0 ',processor-fnc)))))
+      `(table rp-processors '(:postprocessor ,,processor-fnc)
+              nil))))
 
 (defmacro enable-postprocessor (processor-fnc)
-  `(table rp-processors '(:postprocessor ,processor-fnc)
-           t))
+  `(make-event
+    (b* (((unless (hons-assoc-equal '(:postprocessor ,processor-fnc)
+                                    (table-alist rp-processors (w state))))
+          (hard-error 'enable-postprocessor
+                      "The given postprocessor function ~p0 is not registered
+with RP-Rewriter. ~%"
+                      (list (cons #\0 ',processor-fnc)))))
+      `(table rp-processors '(:postprocessor ,,processor-fnc)
+              t))))
 
 (defund add-processor-fn (processor-fnc formula-checks  
                                    valid-syntaxp hints cl-name-prefix disabledp
@@ -517,7 +545,8 @@ which means that it only returns the rewritten term. Other acceptable forms are
 order. </li>
 <li> :outside-in  whether the meta rule be applied from outside-in or
 inside-out. You can pass t, nil, or :both. If you choose to make it outside-in,
-then it is recommended that you input the current dont-rw structure and update
+then it is recommended that you input the current dont-rw structure to the meta
+function and update
 it accordingly. </li>
 <li> :valid-syntaxp  if you proved that your meta function returns rp-termp,
 then set this to t. Otherwise, RP-Rewriter will have to call rp-termp everytime
@@ -532,7 +561,7 @@ lemma to be proved.</li>
 defattach mechanism. By default, add-meta-rule will not trigger this mechanism,
 and the user needs to call @(see attach-meta-fncs) once all the necessary meta
 rules are created and included in the same book. If you wish to call @(see
-attach-meta-fncs) autommatically with rp::add-meta-rule, then pass a unique
+attach-meta-fncs) automatically with rp::add-meta-rule, then pass a unique
 name for :cl-name-prefix. It is nil by default, which will prevent @(see
 attach-meta-fncs) from being executed. </li>
 </ul>
@@ -861,7 +890,7 @@ symbol for the updated meta-rule caller function. ~%"
     `(make-event
       (b* ((rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules (w state)))
            (meta-rules (strip-cars rp-rw-all-meta-rules)))
-        `(bump-rp-rules ,@(reverse meta-rules))))))
+        `(bump-rules ,@(reverse meta-rules))))))
 
 (defthm iff-of-rp-evlt-lst
   (iff (rp-evlt-lst subterms a)

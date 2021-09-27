@@ -322,11 +322,12 @@ which submits an event.
              (search-source-in-stack-var-bindings rw-stack (cdr var-bindings))))))
 
 (progn
-  (define pp-rw-stack-aux (rw-stack omit only evisc-tuple untranslate search-source state)
+  (define pp-rw-stack-aux (rw-stack frames omit only evisc-tuple untranslate search-source state)
     (declare (xargs :stobjs (state)
                     :mode :program))
     :verify-guards nil
-    (if (atom rw-stack)
+    (if (or (atom rw-stack)
+            (= frames 0))
         state
       (b* ((entry (car rw-stack))
            ((when (and only
@@ -337,6 +338,7 @@ which submits an event.
                                 (member-equal (cadr (assoc-equal ':meta-fnc (cdr entry)))
                                               only)))))
             (pp-rw-stack-aux (cdr rw-stack)
+                             frames
                              omit
                              only
                              evisc-tuple
@@ -350,6 +352,7 @@ which submits an event.
                       (member-equal (cadr (assoc-equal ':meta-fnc (cdr entry)))
                                     omit)))
             (pp-rw-stack-aux (cdr rw-stack)
+                             frames
                              omit
                              only
                              evisc-tuple
@@ -390,6 +393,7 @@ which submits an event.
                         (cons #\0 (cons (car entry) sub-entries)))
                        *standard-co* state evisc-tuple)))
         (pp-rw-stack-aux (cdr rw-stack)
+                         (1- frames)
                          omit
                          only
                          evisc-tuple
@@ -445,18 +449,18 @@ pp-rw-stack. </p>
 </code>
 
 <p>
-frames: Number of rewriter steps to print. Default value is -1, that is all the
+frames: Number of rewriter steps to print. Default value is -1, which indicates all the
 frames.
 </p>
 <p>
 frames-offset: Number of frames to skip. Defualt value = 0.
 </p>
 <p>
-omit: List of runes or entries in a frame to omit. For example, it can have:
-(:rewrite some-rule), :context, a-meta-fnc-name etc.. Default value is nil.
+omit: Quoted list of runes or entries in a frame to omit. For example, it can have:
+(:rewrite some-rule), :context, a-meta-fnc-name etc. Default value is nil.
 </p>
 <p>
-only: Similar to only, print only the given entries.
+only: Similar to omit print only the frames regarding given runes.
 </p>
 <p>
 evisc-tuple: See @(see evisc-tuple). Used in order to shorten long terms.
@@ -464,7 +468,7 @@ Default value: '(NIL 3 4 NIL)
 </p>
 <p>
 untranslate: whether or not to untranslate the term. See @(see
-untranslate). Default value = t.
+untranslate). Default value = nil.
 </p>
 "
     (b* ((rw-stack (rw-stack rp-state))
@@ -472,9 +476,8 @@ untranslate). Default value = t.
           (progn$
            (cw "Nothing to print. Run (rp::update-rp-brr t rp-state) ~%")
            state))
-         (rw-stack (nthcdr (nfix frames-offset) rw-stack))
-         (rw-stack (if (natp frames) (take$ frames rw-stack) rw-stack)))
-      (pp-rw-stack-aux rw-stack omit only evisc-tuple untranslate search-source state))))
+         (rw-stack (nthcdr (nfix frames-offset) rw-stack)))
+      (pp-rw-stack-aux rw-stack frames omit only evisc-tuple untranslate search-source state))))
 
 (defmacro show-rule-frames ()
   `(merge-comperator-sort (fast-alist-clean (rule-frame-cnts rp-state))

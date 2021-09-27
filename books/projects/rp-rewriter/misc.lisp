@@ -261,7 +261,7 @@
  beta-reduction without rewriting subterms first can cause performance issues
  due to repetition.</p>
 <p> To mitigate this issue, we use a macro defthm-lambda that can retain the
- functionality of lambda expressions for RHS of rewrite rules. defthm-lambda
+ functionality of lambda expressions rewrite rules. defthm-lambda
  has the same signature as defthm. </p>
 
 <p> Below is an example defthm-lambda event and what it translates to:</p>
@@ -295,27 +295,19 @@
 ")
 
 (progn
-  (defund is-rhs-a-lambda-expression (body)
-    (declare (xargs :guard t))
-    (case-match body
-      (('implies & ('equal & rhs))
-       (and (consp rhs)
-            (consp (car rhs))))
-      (('implies & ('iff & rhs))
-       (and (consp rhs)
-            (consp (car rhs))))
-      (('implies & &)
-       nil)
-      (('equal & rhs)
-       (and (consp rhs)
-            (consp (car rhs))))
-      (('iff & rhs)
-       (and (consp rhs)
-            (consp (car rhs))))
-      (&
-       nil)))
+  (mutual-recursion 
+   (defund contains-lambda-expression (body)
+     (declare (xargs :guard t))
+     (cond ((atom body) nil)
+           ((quotep body) nil)
+           ((is-lambda body) t)
+           (t (contains-lambda-expression-lst (cdr body)))))
+   (defund contains-lambda-expression-lst (lst)
+     (and (consp lst)
+          (or (contains-lambda-expression (car lst))
+              (contains-lambda-expression-lst (cdr lst))))))
 
-  (defmacro bump-rp-rule (rule-name/rune)
+  (defmacro bump-rule (rule-name/rune)
     `(with-output
        :off :all
        :gag-mode nil
@@ -327,7 +319,7 @@
              (entry (hons-assoc-equal rune (table-alist
                                             'rp-rules (w state))))
              (- (and (not (consp entry))
-                     (hard-error 'bump-rp-rule
+                     (hard-error 'bump-rule
                                  "This rule is not added with add-rp-rule There is
 nothing to bump!" nil)))
              ;;(cur-table (table-alist 'rp-rules (w state)))
@@ -339,7 +331,7 @@ nothing to bump!" nil)))
              (table rp-rules ',rune ',(cdr entry))
              )))))
 
-  (defmacro bump-down-rp-rule (rule-name/rune)
+  (defmacro bump-down-rule (rule-name/rune)
     `(with-output
        :off :all
        :gag-mode nil
@@ -351,7 +343,7 @@ nothing to bump!" nil)))
              (entry (hons-assoc-equal rune (table-alist
                                             'rp-rules (w state))))
              (- (and (not (consp entry))
-                     (hard-error 'bump-rp-rule
+                     (hard-error 'bump-rule
                                  "This rule is not added with add-rp-rule There is
 nothing to bump!" nil)))
              ;; (cur-table (table-alist 'rp-rules (w state)))
@@ -365,36 +357,38 @@ nothing to bump!" nil)))
              ;;(table rp-rules ',rune ',(cdr entry))
              )))))
 
-  (defun bump-rp-rules-body (args)
+  (defun bump-rules-body (args)
     (if (atom args)
         nil
-      (cons `(bump-rp-rule ,(car args))
-            (bump-rp-rules-body (cdr args)))))
+      (cons `(bump-rule ,(car args))
+            (bump-rules-body (cdr args)))))
 
-  (defmacro bump-rp-rules (&rest args)
+  (defmacro bump-rules (&rest args)
     `(progn
-       . ,(bump-rp-rules-body args)))
+       . ,(bump-rules-body args)))
 
   (defmacro add-rp-rule (rule-name &key
                                    (disabled 'nil)
                                    (beta-reduce 'nil)
                                    (hints 'nil)
-                                   (inside-out ':default)
                                    (outside-in 'nil))
-    (b* ((inside-out (if (equal inside-out ':default)
-                         (not outside-in)
-                       inside-out))
-         (- (and (Not inside-out)
-                 (Not outside-in)
-                 (hard-error 'add-rp-rule
-                             "Inside-out and outside-in options cannot be nil
-at the same time. ~%" nil))))
-
+    
+    (b* ((rw-direction
+          (cond ((or (equal outside-in ':inside-out)
+                     (equal outside-in ':both))
+                 :both)
+                ((equal outside-in t)
+                 :outside-in)
+                ((equal outside-in nil)
+                 :inside-out)
+                (t (hard-error 'add-rp-rule
+                               ":outside-in can only be :inside-out, t, or nil but we are given: ~p0 ~%"
+                               (list (cons #\0 outside-in)))))))
       `(make-event
         (b* ((body (and ,beta-reduce
                         (meta-extract-formula ',rule-name state)))
              (beta-reduce (and ,beta-reduce
-                               (is-rhs-a-lambda-expression body)))
+                               (contains-lambda-expression body)))
              (new-rule-name (if beta-reduce
                                 (intern$ (str::cat (symbol-name ',rule-name)
                                                    "-FOR-RP")
@@ -411,11 +405,7 @@ at the same time. ~%" nil))))
                     `(progn
                        (table rp-rules
                               ',rune
-                              (cons ,(cond
-                                      ((and ,,outside-in ,,inside-out)
-                                       ':both)
-                                      (,,outside-in ':outside-in)
-                                      (t ':inside-out))
+                              (cons ,,',rw-direction
                                     ,(not disabled)))))))))
           (if beta-reduce
               `(progn
@@ -429,7 +419,7 @@ at the same time. ~%" nil))))
                                               ,body
                                               :hints ,',hints))
                      (in-theory (disable ,new-rule-name))
-                     (value-triple (cw "This rule has a lambda expression on its RHS, ~
+                     (value-triple (cw "This rule has a lambda expression, ~
 and it is automatically put through rp::defthm-lambda  and a ~
 new rule is created to be used by RP-Rewriter. You can disable this by setting ~
 :beta-reduce to nil ~% The name of this rule is: ~p0 ~%" ',new-rule-name))
