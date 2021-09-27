@@ -1545,3 +1545,36 @@
   :short "List of rules for @(tsee exec-block-item-list)."
   '(exec-block-item-list-when-not-consp
     exec-block-item-list-when-consp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-init-scope-rules
+  :short "Rules for @(tsee init-scope)."
+
+  (defruled init-scope-when-consp
+    (implies (and (syntaxp (quotep formals))
+                  (param-declon-listp formals)
+                  (consp formals)
+                  (equal formal (car formals))
+                  (equal declor (param-declon->declor formal))
+                  (valuep val)
+                  (equal (type-of-value val)
+                         (type-name-to-type
+                          (make-tyname :specs (param-declon->type formal)
+                                       :pointerp (declor->pointerp declor))))
+                  (value-listp vals)
+                  (equal scope (init-scope (cdr formals) vals))
+                  (scopep scope)
+                  (equal name (declor->ident declor))
+                  (not (omap::in name scope)))
+             (equal (init-scope formals (cons val vals))
+                    (omap::update name val scope)))
+    :enable init-scope))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-init-scope-rules*
+  :short "List of rules for @(tsee init-scope)."
+  '(init-scope-when-consp
+    (:e init-scope)
+    (:e param-declon-listp)))
