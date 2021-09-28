@@ -40,7 +40,6 @@
 (include-book "kestrel/utilities/my-get-event" :dir :system)
 (include-book "kestrel/apt/utilities/verify-guards-for-defun" :dir :system)
 (include-book "kestrel/utilities/system/world-queries" :dir :system)
-(include-book "misc/install-not-normalized" :dir :system)
 (include-book "kestrel/utilities/defmacroq" :dir :system)
 (include-book "kestrel/utilities/maybe-unquote" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
@@ -275,8 +274,8 @@
                       (enables (append (list (install-not-normalized-name fn)
                                              (install-not-normalized-name new-fn))
                                        ',enables))
-                      ;; TODO: Can we often avoid adding the :verify-guards t?
-                      (new-defun-to-export (if verify-guards (add-verify-guards-t-to-defun new-defun) new-defun))
+                      ;; Drop the :verify-guards nil if needed, and add :verify-guards t if appropriate:
+                      (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
                       (becomes-theorem (,make-becomes-theorem-name fn new-fn nil (not theorem-disabled) enables '(theory 'minimal-theory) ,@make-becomes-theorem-extra-args state))
                       ;; Remove :hints from the theorem before exporting it (:guard-hints have already been removed since the verify-guards is now separate):
                       (becomes-theorem-to-export (clean-up-defthm becomes-theorem)))
@@ -307,7 +306,7 @@
                         (enables (append (list (install-not-normalized-name fn)
                                                (install-not-normalized-name new-fn))
                                          ',enables))
-                        (new-defun-to-export (if verify-guards (add-verify-guards-t-to-defun new-defun) new-defun))
+                        (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
                         (new-defun-to-export (remove-hints-from-defun new-defun-to-export))
                         (becomes-theorem (,make-becomes-theorem-name fn new-fn :single (not theorem-disabled) enables '(theory 'minimal-theory)
                                                                       ,@make-becomes-theorem-extra-args state))
@@ -348,7 +347,7 @@
                                                        state))
                     (mutual-recursion `(mutual-recursion ,@new-defuns))
                     ;; TODO: Clean up measure :hints in this:
-                    (mutual-recursion-to-export (if verify-guards
+                    (mutual-recursion-to-export (if verify-guards ;todo: call a variant of ensure-defun-demands-guard-verification here:
                                                     (replace-xarg-in-mutual-recursion :verify-guards t mutual-recursion) ; todo: or just set the verify-guards eagerness and ensure there is a guard?
                                                   mutual-recursion))
                     (fn-and-not-normalized-fn-doublets (make-doublets fns (add-not-normalized-suffixes fns)))
