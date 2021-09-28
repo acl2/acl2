@@ -46,9 +46,7 @@
   (implies (rtl::primep p)
            (equal (mul x (inv x p) p)
                   (if (equal 0 (fep-fix x p))
-                      (if (equal p 2)
-                          (fep-fix x p)
-                        0)
+                      0
                     ;; usual case:
                     1)))
   :hints (("Goal" :in-theory (e/d (inv minus1) (pow-of-+ my-fermat-little))

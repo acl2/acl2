@@ -123,20 +123,6 @@
                                   (y (mod (ifix y) p)))
            :in-theory (disable equal-of-0-and-mul))))
 
-;was called inv-correct
-(defthm mul-of-inv-arg2
-  (implies (primep p)
-           (equal (mul x (inv x p) p)
-                  (if (equal 0 (fep-fix x p))
-                      (if (equal p 2)
-                          (fep-fix x p)
-                        0)
-                    ;; usual case:
-                    1)))
-  :hints (("Goal" :in-theory (e/d (inv minus1) (pow-of-+ my-fermat-little))
-           :expand (pow x (+ -1 p) p)
-           :use (:instance my-fermat-little (a (mod (ifix x) p))))))
-
 ;; commutes the args to MUL in the lhs
 (defthm mul-of-inv-arg1
   (implies (primep p)
