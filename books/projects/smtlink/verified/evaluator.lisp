@@ -45,6 +45,30 @@
   (equal (ev-smtcp-alist (pairlis$ x y) a)
          (pairlis$ x (ev-smtcp-lst y a))))
 
+(defthm ev-smtcp-of-implies1
+  (implies (and (pseudo-term-listp cl)
+                (alistp a)
+                (consp (disjoin cl))
+                (equal (car (disjoin cl)) 'implies)
+                (consp (cdr (disjoin cl)))
+                (consp (cddr (disjoin cl)))
+                (not (cdddr (disjoin cl)))
+                (ev-smtcp (caddr (disjoin cl)) a))
+           (acl2::or-list (ev-smtcp-lst cl a)))
+  :hints (("Goal" :in-theory (enable disjoin))))
+
+(defthm ev-smtcp-of-implies2
+  (implies (and (pseudo-term-listp cl)
+                (alistp a)
+                (consp (disjoin cl))
+                (equal (car (disjoin cl)) 'implies)
+                (consp (cdr (disjoin cl)))
+                (consp (cddr (disjoin cl)))
+                (not (cdddr (disjoin cl)))
+                (not (ev-smtcp (cadr (disjoin cl)) a)))
+           (acl2::or-list (ev-smtcp-lst cl a)))
+  :hints (("Goal" :in-theory (enable disjoin))))
+
 ;; Function for removing hint-please from the clause.
 (define remove-hint-please ((cl pseudo-term-listp))
   :returns (cl-removed pseudo-term-list-listp

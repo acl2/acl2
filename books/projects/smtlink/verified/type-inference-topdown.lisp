@@ -867,38 +867,6 @@
        (hinted-goal `((hint-please ',the-hint) ,@new-cl)))
     (value (list hinted-goal))))
 
-(local
-(defthm crock3
-  (implies (and (not (ev-smtcp (cadr (disjoin cl)) a))
-                (pseudo-term-listp cl)
-                (alistp a)
-                (consp (disjoin cl))
-                (equal (car (disjoin cl)) 'implies)
-                (consp (cdr (disjoin cl)))
-                (consp (cddr (disjoin cl)))
-                (not (cdddr (disjoin cl))))
-           (acl2::or-list (ev-smtcp-lst cl a)))
-  :hints (("Goal"
-           :in-theory (enable disjoin))))
-)
-
-
-(local
- (defthm crock4
-   (implies (and (pseudo-term-listp cl)
-                 (alistp a)
-                 (consp (disjoin cl))
-                 (equal (car (disjoin cl)) 'implies)
-                 (consp (cdr (disjoin cl)))
-                 (consp (cddr (disjoin cl)))
-                 (not (cdddr (disjoin cl)))
-                 (ev-smtcp (caddr (disjoin cl)) a))
-            (acl2::or-list (ev-smtcp-lst cl a)))
-   :hints (("Goal"
-            :in-theory (enable disjoin))))
- )
-
-
 (defthm correctness-of-type-judge-topdown-cp
   (implies (and (ev-smtcp-meta-extract-global-facts)
                 (pseudo-term-listp cl)

@@ -19,8 +19,9 @@
        ((cons type-hd type-tl) type-lst))
     (acons (smt-type->recognizer type-hd) nil (construct-type-alist type-tl))))
 
-(define construct-reorder-option ((hints smtlink-hint-p))
+(define construct-reorder-options ((hints smtlink-hint-p))
   :returns (type-alst symbol-symbol-alistp)
   (b* ((hints (smtlink-hint-fix hints))
        ((smtlink-hint h) hints))
     (construct-type-alist h.types)))
+

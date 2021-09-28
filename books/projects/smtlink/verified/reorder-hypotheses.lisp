@@ -13,7 +13,7 @@
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
 (include-book "extractor")
-(include-book "reorder-option")
+(include-book "reorder-options")
 
 (local (in-theory (disable pseudo-termp pseudo-term-listp)))
 
@@ -599,7 +599,7 @@
        (next-cp (cdr (assoc-equal 'reorder *SMT-architecture*)))
        ((if (null next-cp)) (list cl))
        (the-hint `(:clause-processor (,next-cp clause ',hints state)))
-       (options (construct-reorder-option hints))
+       (options (construct-reorder-options hints))
        (new-goal (reorder-hypotheses goal options)))
     (list `((hint-please ',the-hint) ,new-goal))))
 
@@ -617,5 +617,5 @@
                            (correctness-of-reorder-hypotheses))
            :use ((:instance correctness-of-reorder-hypotheses
                             (term (disjoin cl))
-                            (type-info (construct-reorder-option hint))))))
+                            (type-info (construct-reorder-options hint))))))
   :rule-classes :clause-processor)
