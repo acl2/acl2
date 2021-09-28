@@ -47,20 +47,20 @@
         (first defuns)
       (find-defun-in-mut-rec fn (rest defuns)))))
 
+
 (defthm defun-formp-of-find-defun-in-mut-rec
   (implies (all-defun-formp defuns)
            (iff (defun-formp (find-defun-in-mut-rec fn defuns))
                 (find-defun-in-mut-rec fn defuns)))
   :hints (("Goal" :in-theory (enable find-defun-in-mut-rec))))
 
-;TODO: Consider stobj declarations (these act like guards?)
-(defun any-defun-has-explicit-guardp (defuns)
+;; Note that :STOBJS xargs and TYPE declares both count as guards.
+(defun any-defun-has-a-guardp (defuns)
   (declare (xargs :guard (all-defun-formp defuns)))
   (if (atom defuns)
       nil
-    (or (defun-has-explicit-guardp (first defuns))
-        (any-defun-has-explicit-guardp (rest defuns)))))
-
+    (or (defun-has-a-guardp (first defuns))
+        (any-defun-has-a-guardp (rest defuns)))))
 
 (defun any-defun-has-verify-guards-nilp (defuns)
   (declare (xargs :guard (all-defun-formp defuns)))
@@ -77,6 +77,15 @@
       nil
     (cons (replace-xarg-in-defun xarg val (first defuns))
           (replace-xarg-in-defuns xarg val (rest defuns)))))
+
+(defund remove-xarg-in-defuns (xarg defuns)
+  (declare (xargs :guard (and (keywordp xarg)
+                              (true-listp defuns)
+                              (all-defun-formp defuns))))
+  (if (endp defuns)
+      nil
+    (cons (remove-xarg-in-defun xarg (first defuns))
+          (remove-xarg-in-defuns xarg (rest defuns)))))
 
 ;;;
 ;;; mutual-recursion forms

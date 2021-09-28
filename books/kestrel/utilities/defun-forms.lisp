@@ -101,11 +101,11 @@
 ;;          (called-fns (get-called-fns-in-untranslated-term body)))
 ;;     (if (member-eq fn called-fns) t nil)))
 
-;; todo: is a type declare really an explicit guard?  what about a :stobjs xarg?
-(defund defun-has-explicit-guardp (defun)
+;; Note that :STOBJS xargs and TYPE declares both count as guards.
+(defund defun-has-a-guardp (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))))
-  (some-declare-has-a-guard-or-type (get-declares-from-defun defun)))
+  (some-declare-contributes-a-guardp (get-declares-from-defun defun)))
 
 (local (in-theory (disable len)))
 
@@ -121,7 +121,7 @@
 (defun guards-were-verified-in-defunp (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))))
-  (and (defun-has-explicit-guardp defun)
+  (and (defun-has-a-guardp defun)
        (not (defun-has-verify-guards-nilp defun))))
 
 (defund add-verify-guards-nil-to-defun (defun)
@@ -193,6 +193,6 @@
                   ))
   (let* ((defun (remove-xarg-in-defun :verify-guards defun))) ; remove any :verify-guards, no matter what it is
     ;; Add back :verify-guards only in the case of no explicit :guard, (declare (type ...)), or :stobj
-    (if (defun-has-explicit-guardp defun)
+    (if (defun-has-a-guardp defun)
         defun ; no need for :verify-guards
       (add-verify-guards-t-to-defun defun))))

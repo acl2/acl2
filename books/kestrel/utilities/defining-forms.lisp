@@ -67,6 +67,7 @@
               (get-body-from-event fn defun)))
         (er hard? 'get-body-from-event "Unknown type of event for ~x0." fn)))))
 
+;todo: what if no guard is given but :verify-guards t is?
 (defun guards-were-verified-in-eventp (fn-event) ;;TODO This assumes the verify-guards-eagerness was 1 when FN-EVENT was submitted.
   (declare (xargs :guard (defun-or-mutual-recursion-formp fn-event)
                   :guard-hints (("Goal" :in-theory (enable defun-formp
@@ -75,5 +76,5 @@
       (guards-were-verified-in-defunp fn-event)
     ;; it's a mutual-recursion
     (let ((defuns (rest fn-event)))
-      (and (any-defun-has-explicit-guardp defuns)
+      (and (any-defun-has-a-guardp defuns)
            (not (any-defun-has-verify-guards-nilp defuns))))))
