@@ -27,6 +27,7 @@
   '(defun defund defun-nx defund-nx))
 
 ;add more to this!
+;; (<defun-type> <name> <formals> <declare> ... <declare> <body>)
 (defund defun-formp (defun)
   (declare (xargs :guard t))
   (and (true-listp defun)
@@ -36,13 +37,12 @@
        (symbol-listp (third defun)) ;the formals
        ;; not much to say about the body, since it is an untranslated term
        ;; todo: should we allow a doc-string before the declares?
-       (all-declarep (butlast (cdr (cdr (cdr defun))) 1)) ;skip the defun, name, formals, and body.
+       (all-declarep (butlast (cdr (cdr (cdr defun))) 1)) ;skip the defun-type, name, formals, and body.
        ))
 
 (defund get-declares-from-defun (defun)
   (declare (xargs :guard (defun-formp defun)
-                  :guard-hints (("Goal" :in-theory (enable defun-formp)))
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
   (butlast (cdr (cdr (cdr defun))) 1)) ; (defun <name> <formals> <declare> ... <declare> <body>)
 
 (defthm all-declarep-of-get-declares-from-defun
@@ -50,6 +50,23 @@
            (all-declarep (get-declares-from-defun defun)))
   :hints (("Goal" :in-theory (enable get-declares-from-defun
                                      defun-formp))))
+
+(defund get-xargs-from-defun (defun)
+  (declare (xargs :guard (defun-formp defun)
+                  :guard-hints (("Goal" :in-theory (enable defun-formp)))
+                  ))
+  (get-xargs-from-declares (get-declares-from-defun defun)))
+
+(defthm keyword-value-listp-of-get-xargs-from-defun
+  (implies (defun-formp defun)
+           (keyword-value-listp (get-xargs-from-defun defun)))
+  :hints (("Goal" :in-theory (enable defun-formp get-xargs-from-defun))))
+
+(defund get-body-from-defun (defun)
+  (declare (xargs :guard (defun-formp defun)
+                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
+  (car (last defun)))
+
 
 ;; DEFUN is of the form (defun <name> <formals> <declare> ... <declare> <body>)
 (defund replace-declares-in-defun (defun declares)
@@ -73,11 +90,7 @@
                 (all-declarep declares))
            (defun-formp (replace-declares-in-defun defun declares)))
   :hints (("Goal" :in-theory (enable replace-declares-in-defun defun-formp))))
-
-(defun get-body-from-defun (defun)
-  (declare (xargs :guard (defun-formp defun)
-                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
-  (car (last defun))) ; (defun <name> <formals> <declare> ... <declare> <body>)
+ ; (defun <name> <formals> <declare> ... <declare> <body>)
 
 ;; ;Check whether a defun form is recursive (TOOD: what about mutual recursion?)
 ;; (defun defun-recursivep (defun)
@@ -89,57 +102,78 @@
 ;;     (if (member-eq fn called-fns) t nil)))
 
 
-(defund get-xargs-from-defun (defun)
-  (declare (xargs :guard (defun-formp defun)
-                  :guard-hints (("Goal" :in-theory (enable defun-formp)))
-                  ))
-  (get-xargs-from-declares (get-declares-from-defun defun)))
-
 ;(defforall-simple defun-formp)
 ;(verify-guards all-defun-formp)
-(defun all-defun-formp (forms)
+(defund all-defun-formp (forms)
   (declare (xargs :guard t))
   (if (atom forms)
       t
     (and (defun-formp (first forms))
          (all-defun-formp (rest forms)))))
 
+(defthm defun-formp-of-car
+  (implies (all-defun-formp forms)
+           (equal (defun-formp (car forms))
+                  (consp forms)))
+  :hints (("Goal" :in-theory (enable all-defun-formp))))
+
+(defthm all-defun-formp-of-cdr
+  (implies (all-defun-formp forms)
+           (all-defun-formp (cdr forms)))
+  :hints (("Goal" :in-theory (enable all-defun-formp))))
+
 ;add more to this!
-(defun mutual-recursion-formp (mut-rec)
+(defund mutual-recursion-formp (mut-rec)
   (declare (xargs :guard t))
   (and (consp mut-rec)
-       (eq 'mutual-recursion (ffn-symb mut-rec))
+       (eq 'mutual-recursion (car mut-rec))
        (true-listp mut-rec)
        (all-defun-formp (fargs mut-rec))))
+
+(defthm mutual-recursion-formp-forward-to-equal-of-car
+  (implies (mutual-recursion-formp mut-rec)
+           (equal (car mut-rec)
+                  'mutual-recursion))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable mutual-recursion-formp))))
 
 (defun defun-or-mutual-recursion-formp (event)
   (declare (xargs :guard t))
   (or (defun-formp event)
       (mutual-recursion-formp event)))
 
+;todo: rename find-defun-in-list?
 (defun find-defun-in-mut-rec (fn defuns)
   (declare (xargs :guard (and (symbolp fn)
                               (true-listp defuns)
                               (all-defun-formp defuns))
-                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
+                  :guard-hints (("Goal" :in-theory (enable all-defun-formp
+                                                           defun-formp)))))
   (if (endp defuns)
       nil
     (if (eq fn (second (first defuns)))
         (first defuns)
       (find-defun-in-mut-rec fn (rest defuns)))))
 
+(defthm defun-formp-of-find-defun-in-mut-rec
+  (implies (all-defun-formp defuns)
+           (iff (defun-formp (find-defun-in-mut-rec fn defuns))
+                (find-defun-in-mut-rec fn defuns)))
+  :hints (("Goal" :in-theory (enable find-defun-in-mut-rec))))
+
 (defun get-declares-from-event (fn event)
   (declare (xargs :guard (and (symbolp fn)
                               (defun-or-mutual-recursion-formp event))
-                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
-  (let ((event-type (ffn-symb event)))
+                  :guard-hints (("Goal" :in-theory (enable defun-formp
+                                                           mutual-recursion-formp)))))
+  (let ((event-type (car event)))
     (if (member-eq event-type *defun-types*)
         (get-declares-from-defun event)
-      (if (eq 'mutual-recursion event-type)
+      (if (mbt (eq 'mutual-recursion event-type))
           (let ((defun (find-defun-in-mut-rec fn (fargs event))))
             (if (not (defun-formp defun))
-                nil ;TODO error!
-          (get-declares-from-event fn defun)))
+                (er hard? 'get-declares-from-event "Failed to find a defun for ~x0 in ~x1." fn event)
+              (get-declares-from-event fn defun)))
         (hard-error 'get-declares-from-event "Unknown type of event for ~x0." (acons #\0 fn nil))))))
 
 (defthm all-declarep-of-get-declares-from-event
@@ -150,25 +184,17 @@
 (defun get-xargs-from-event (fn event)
   (declare (xargs :guard (and (symbolp fn)
                               (defun-or-mutual-recursion-formp event))
-                  :guard-hints (("Goal" :in-theory (enable defun-formp)))
-                  ))
-  (let ((event-type (ffn-symb event)))
-    (if (member-eq event-type *defun-types*)
-        (get-xargs-from-defun event)
-      (if (eq 'mutual-recursion event-type)
-          (let ((defun (find-defun-in-mut-rec fn (fargs event))))
-            (if (not (defun-formp defun))
-                nil ;TODO error!
-          (get-xargs-from-event fn defun)))
-        (hard-error 'get-xargs-from-event "Unknown type of event for ~x0." (acons #\0 fn nil))))))
+                  :guard-hints (("Goal" :in-theory (enable defun-formp
+                                                           mutual-recursion-formp)))))
+  (get-xargs-from-declares (get-declares-from-event fn event)))
 
 ;; Returns the *untranslated* body provided for FN in EVENT, which should be a DEFUN or MUTUAL-RECURSION.
 ;; TODO: Perhaps add support for DEFUNS, which is like MUTUAL-RECURSION.
 (defund get-body-from-event (fn event)
   (declare (xargs :guard (and (symbolp fn)
                               (defun-or-mutual-recursion-formp event))
-                  :guard-hints (("Goal" :in-theory (enable defun-formp)))
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable defun-formp
+                                                           mutual-recursion-formp)))))
   (let ((event-type (ffn-symb event)))
     (if (member-eq event-type *defun-types*)
         (get-body-from-defun event)
@@ -179,7 +205,8 @@
               (get-body-from-event fn defun)))
         (er hard? 'get-body-from-event "Unknown type of event for ~x0." fn)))))
 
-(defun defun-has-explicit-guardp (defun)
+;; todo: is a type declare really an explicit guard?  what about a :stobjs xarg?
+(defund defun-has-explicit-guardp (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))))
   (some-declare-has-a-guard-or-type (get-declares-from-defun defun)))
@@ -191,11 +218,6 @@
       nil
     (or (defun-has-explicit-guardp (first defuns))
         (any-defun-has-explicit-guardp (rest defuns)))))
-
-(defthm keyword-value-listp-of-get-xargs-from-defun
- (implies (defun-formp defun)
-          (keyword-value-listp (get-xargs-from-defun defun)))
- :hints (("Goal" :in-theory (enable defun-formp get-xargs-from-defun))))
 
 (local (in-theory (disable len)))
 
@@ -223,7 +245,8 @@
 
 (defun guards-were-verified-in-eventp (fn-event) ;;TODO This assumes the verify-guards-eagerness was 1 when FN-EVENT was submitted.
   (declare (xargs :guard (defun-or-mutual-recursion-formp fn-event)
-                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
+                  :guard-hints (("Goal" :in-theory (enable defun-formp
+                                                           mutual-recursion-formp)))))
   (if (member-eq (ffn-symb fn-event) *defun-types*)
       (guards-were-verified-in-defunp fn-event)
     ;; it's a mutual-recursion
@@ -231,7 +254,7 @@
       (and (any-defun-has-explicit-guardp defuns)
            (not (any-defun-has-verify-guards-nilp defuns))))))
 
-(defun add-verify-guards-nil-to-defun (defun)
+(defund add-verify-guards-nil-to-defun (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))
                   ))
@@ -240,7 +263,7 @@
          (defun (replace-declares-in-defun defun declares)))
     defun))
 
-(defun add-verify-guards-t-to-defun (defun)
+(defund add-verify-guards-t-to-defun (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))
                   ))
@@ -259,6 +282,21 @@
          (defun (replace-declares-in-defun defun declares)))
     defun))
 
+(defund remove-xarg-in-defun (xarg defun)
+  (declare (xargs :guard (and (keywordp xarg)
+                              (defun-formp defun))
+                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
+  (let* ((declares (get-declares-from-defun defun))
+         (declares (remove-xarg-in-declares xarg declares))
+         (defun (replace-declares-in-defun defun declares)))
+    defun))
+
+(defthm defun-formp-of-remove-xarg-in-defun
+  (implies (and (keywordp xarg)
+                (defun-formp defun))
+           (defun-formp (remove-xarg-in-defun xarg defun)))
+  :hints (("Goal" :in-theory (enable remove-xarg-in-defun))))
+
 (defthm defun-formp-of-replace-xarg-in-defun
   (implies (and (keywordp xarg)
                 (defun-formp defun))
@@ -276,7 +314,8 @@
 
 (defund replace-xarg-in-mutual-recursion (xarg val mutual-recursion)
   (declare (xargs :guard (and (keywordp xarg)
-                              (mutual-recursion-formp mutual-recursion))))
+                              (mutual-recursion-formp mutual-recursion))
+                  :guard-hints (("Goal" :in-theory (enable mutual-recursion-formp)))))
   `(mutual-recursion ,@(replace-xarg-in-defuns xarg val (fargs mutual-recursion))))
 
 ;; Removes hints (and similar things) from a defun's xargs.
@@ -291,3 +330,14 @@
          (declares (remove-xarg-in-declares :guard-simplify declares))
          (declares (remove-xarg-in-declares :guard-debug declares)))
     (replace-declares-in-defun defun declares)))
+
+;; This assumes the verify-guard-eagerness is 1 (the usual value).
+(defund ensure-defun-demands-guard-verification (defun)
+  (declare (xargs :guard (defun-formp defun)
+;                  :guard-hints (("Goal" :in-theory (enable defun-formp)))
+                  ))
+  (let* ((defun (remove-xarg-in-defun :verify-guards defun))) ; remove any :verify-guards, no matter what it is
+    ;; Add back :verify-guards only in the case of no explicit :guard, (declare (type ...)), or :stobj
+    (if (defun-has-explicit-guardp defun)
+        defun ; no need for :verify-guards
+      (add-verify-guards-t-to-defun defun))))
