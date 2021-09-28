@@ -206,7 +206,7 @@
         (er hard? 'get-body-from-event "Unknown type of event for ~x0." fn)))))
 
 ;; todo: is a type declare really an explicit guard?  what about a :stobjs xarg?
-(defun defun-has-explicit-guardp (defun)
+(defund defun-has-explicit-guardp (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))))
   (some-declare-has-a-guard-or-type (get-declares-from-defun defun)))
@@ -291,6 +291,12 @@
          (defun (replace-declares-in-defun defun declares)))
     defun))
 
+(defthm defun-formp-of-remove-xarg-in-defun
+  (implies (and (keywordp xarg)
+                (defun-formp defun))
+           (defun-formp (remove-xarg-in-defun xarg defun)))
+  :hints (("Goal" :in-theory (enable remove-xarg-in-defun))))
+
 (defthm defun-formp-of-replace-xarg-in-defun
   (implies (and (keywordp xarg)
                 (defun-formp defun))
@@ -324,3 +330,14 @@
          (declares (remove-xarg-in-declares :guard-simplify declares))
          (declares (remove-xarg-in-declares :guard-debug declares)))
     (replace-declares-in-defun defun declares)))
+
+;; This assumes the verify-guard-eagerness is 1 (the usual value).
+(defund ensure-defun-demands-guard-verification (defun)
+  (declare (xargs :guard (defun-formp defun)
+;                  :guard-hints (("Goal" :in-theory (enable defun-formp)))
+                  ))
+  (let* ((defun (remove-xarg-in-defun :verify-guards defun))) ; remove any :verify-guards, no matter what it is
+    ;; Add back :verify-guards only in the case of no explicit :guard, (declare (type ...)), or :stobj
+    (if (defun-has-explicit-guardp defun)
+        defun ; no need for :verify-guards
+      (add-verify-guards-t-to-defun defun))))
