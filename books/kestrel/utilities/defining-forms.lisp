@@ -76,3 +76,12 @@
       (defun-demands-guard-verificationp event)
     ;; it's a mutual-recursion:
     (mutual-recursion-demands-guard-verificationp event)))
+
+(defund ensure-event-demands-guard-verification (event)
+  (declare (xargs :guard (defun-or-mutual-recursion-formp event)
+                  :guard-hints (("Goal" :in-theory (enable defun-formp
+                                                           mutual-recursion-formp)))))
+  (if (member-eq (ffn-symb event) *defun-types*)
+      (ensure-defun-demands-guard-verification event)
+    ;; it's a mutual-recursion:
+    (ensure-mutual-recursion-demands-guard-verification event)))
