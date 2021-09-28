@@ -32,7 +32,7 @@
 (include-book "kestrel/utilities/world" :dir :system)
 (include-book "kestrel/untranslated-terms/rename-functions" :dir :system)
 (include-book "kestrel/utilities/ruler-extenders" :dir :system)
-(include-book "kestrel/utilities/defun-forms" :dir :system) ;for get-body-from-event
+(include-book "kestrel/utilities/defining-forms" :dir :system) ;for get-body-from-event
 (include-book "kestrel/apt/utilities/function-renamingp" :dir :system)
 (include-book "kestrel/apt/utilities/set-stobjs-in-declares-to-match" :dir :system)
 (include-book "kestrel/apt/utilities/transformation-prologue" :dir :system)
