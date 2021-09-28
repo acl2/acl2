@@ -87,6 +87,15 @@
     (cons (remove-xarg-in-defun xarg (first defuns))
           (remove-xarg-in-defuns xarg (rest defuns)))))
 
+(defund any-defun-demands-guard-verificationp (defuns)
+  (declare (xargs :guard (and (all-defun-formp defuns)
+                              (true-listp defuns))))
+  (if (endp defuns)
+      nil
+    (or (defun-demands-guard-verificationp (first defuns))
+        (any-defun-demands-guard-verificationp (rest defuns)))))
+
+
 ;;;
 ;;; mutual-recursion forms
 ;;;
@@ -97,7 +106,7 @@
   (and (consp mut-rec)
        (eq 'mutual-recursion (car mut-rec))
        (true-listp mut-rec)
-       (all-defun-formp (fargs mut-rec))))
+       (all-defun-formp (cdr mut-rec))))
 
 (defthm mutual-recursion-formp-forward-to-equal-of-car
   (implies (mutual-recursion-formp mut-rec)
@@ -111,3 +120,19 @@
                               (mutual-recursion-formp mutual-recursion))
                   :guard-hints (("Goal" :in-theory (enable mutual-recursion-formp)))))
   `(mutual-recursion ,@(replace-xarg-in-defuns xarg val (fargs mutual-recursion))))
+
+(defthm mutual-recursion-formp-forward-to-all-defun-formp-of-cdr
+  (implies (mutual-recursion-formp mut-rec)
+           (all-defun-formp (cdr mut-rec)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable mutual-recursion-formp))))
+
+(defthm mutual-recursion-formp-forward-to-true-listp-of-cdr
+  (implies (mutual-recursion-formp mut-rec)
+           (true-listp (cdr mut-rec)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable mutual-recursion-formp))))
+
+(defund mutual-recursion-demands-guard-verificationp (mut-rec)
+  (declare (xargs :guard (mutual-recursion-formp mut-rec)))
+  (any-defun-demands-guard-verificationp (cdr mut-rec)))

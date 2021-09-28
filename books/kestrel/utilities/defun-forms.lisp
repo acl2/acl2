@@ -109,7 +109,8 @@
 
 (local (in-theory (disable len)))
 
-(defun defun-has-verify-guards-nilp (defun)
+;; Checker whether DEFUN has an explicit :verify-guards nil.
+(defund defun-has-verify-guards-nilp (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))))
   (let* ((xargs (get-xargs-from-defun defun))
@@ -118,11 +119,23 @@
         nil
       (eq nil (cadr verify-guards)))))
 
-(defun guards-were-verified-in-defunp (defun)
+;; Checker whether DEFUN has an explicit :verify-guards t.
+(defund defun-has-verify-guards-tp (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))))
-  (and (defun-has-a-guardp defun)
-       (not (defun-has-verify-guards-nilp defun))))
+  (let* ((xargs (get-xargs-from-defun defun))
+         (verify-guards (assoc-keyword :verify-guards xargs)))
+    (if (not verify-guards)
+        nil
+      (eq t (cadr verify-guards)))))
+
+;; This assumes the verify-guard-eagerness is 1 (the usual value).
+(defun defun-demands-guard-verificationp (defun)
+  (declare (xargs :guard (defun-formp defun)
+                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
+  (or (defun-has-verify-guards-tp defun)
+      (and (defun-has-a-guardp defun)
+           (not (defun-has-verify-guards-nilp defun)))))
 
 (defund add-verify-guards-nil-to-defun (defun)
   (declare (xargs :guard (defun-formp defun)
