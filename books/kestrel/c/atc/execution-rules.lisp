@@ -26,7 +26,7 @@
      The other rules are used to prove
      the rules used for the symbolic execution.")
    (xdoc::p
-    "Many of the rules that are used in the symbolic execution
+    "Some of the rules that are used in the symbolic execution
      rewrite calls of functions used in the deeply embedded dynamic semantics
      into their shallowly embedded counterparts,
      under hypothesis on the types of the arguments.
@@ -47,7 +47,12 @@
      the C abstract syntax being executed is a quoted constant.
      Some of these opener rules include binding hypotheses,
      which avoid symbolically executing the same pieces of C abstract syntax
-     multiple times in some situations."))
+     multiple times in some situations.")
+   (xdoc::p
+    "We collect the rules in lists,
+     each of which serves a particular symbolic execution purpose.
+     Certain rules (proved elsewhere) may appear in multiple lists,
+     when they serve different symbolic execution purposes."))
   :order-subtopics t
   :default-parent t)
 
@@ -86,7 +91,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "To symbolically execute an identifier (which is an expression),
+    "To symbolically execute an identifier (as an expression),
      we simply expand the definition of @(tsee exec-ident)
      which unconditionally yields @(tsee read-var).
      The @(tsee read-var) call may undergo further rewriting,
@@ -102,7 +107,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "To symbolically execute a constant (which is an expression),
+    "To symbolically execute a constant,
      we simply expand the definitions of a number of functions,
      starting with @(tsee exec-const)
      and including all the functions called by it (directly or indirectly)
@@ -116,6 +121,7 @@
 
   (defval *atc-exec-const-rules*
     '(exec-const
+      (:e const-kind)
       (:e const-int->get)
       exec-iconst
       (:e iconst->base)
@@ -1094,10 +1100,14 @@
    (xdoc::p
     "For @('&&') and @('||'),
      we use the auxiliary function @('sint-from-boolean-with-error')
-     as an intermediate rewriting stage.
-     We also include the executable counterpart of @(tsee member-equal),
+     as an intermediate rewriting stage.")
+   (xdoc::p
+    "We include the executable counterpart of @(tsee member-equal),
      needed to discharge the hypothesis of
-     the rule for strict pure binary expressions."))
+     the rule for strict pure binary expressions.")
+   (xdoc::p
+    "We include executable counterparts of accessor functions for expressions,
+     used to check the kind of expression and to retrieve its constituents."))
 
   (defruled exec-expr-pure-when-ident
     (implies (and (syntaxp (quotep e))
@@ -1228,7 +1238,23 @@
       exec-expr-pure-when-binary-logor
       sint-from-boolean-with-error-when-booleanp
       exec-expr-pure-when-cond
-      (:e member-equal))))
+      (:e member-equal)
+      (:e expr-kind)
+      (:e expr-ident->get)
+      (:e expr-const->get)
+      (:e expr-arrsub->arr)
+      (:e expr-arrsub->sub)
+      (:e expr-unary->op)
+      (:e expr-unary->arg)
+      (:e expr-cast->type)
+      (:e expr-cast->arg)
+      (:e expr-binary->op)
+      (:e expr-binary->arg1)
+      (:e expr-binary->arg2)
+      (:e binop-kind)
+      (:e expr-cond->test)
+      (:e expr-cond->then)
+      (:e expr-cond->else))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
