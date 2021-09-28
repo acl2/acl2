@@ -200,6 +200,7 @@
     (replace-declares-in-defun defun declares)))
 
 ;; This assumes the verify-guard-eagerness is 1 (the usual value).
+;; This avoids leaving in an unnecessary :verify-guards t.
 (defund ensure-defun-demands-guard-verification (defun)
   (declare (xargs :guard (defun-formp defun)
 ;                  :guard-hints (("Goal" :in-theory (enable defun-formp)))
