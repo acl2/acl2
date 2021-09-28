@@ -298,6 +298,10 @@
         ;; include it because it is a non-xarg:
         (cons declare-arg (get-non-xargs-from-declare-args (rest declare-args)))))))
 
+(defthm get-non-xargs-from-declare-args-of-append
+  (equal (get-non-xargs-from-declare-args (append x y))
+         (append (get-non-xargs-from-declare-args x)
+                 (get-non-xargs-from-declare-args y))))
 (defthm all-declare-argp-of-get-non-xargs-from-declare-args
   (implies (all-declare-argp declare-args)
            (all-declare-argp (get-non-xargs-from-declare-args declare-args))))
@@ -570,7 +574,9 @@
                                                                   :measure (acl2-count count)))))
                      '(acl2-count count)))
 
-
+;;;
+;;; removing xargs
+;;;
 
 (defun remove-xarg (xarg xargs)
   (declare (xargs :guard (and (keywordp xarg)
@@ -612,6 +618,23 @@
            (declarep (remove-xarg-in-declare xarg declare)))
   :hints (("Goal" :in-theory (enable declarep remove-xarg-in-declare))))
 
+(defund remove-xarg-in-declares (xarg declares)
+  (declare (xargs :guard (and (keywordp xarg)
+                              (all-declarep declares))))
+  (if (atom declares)
+      nil
+    (cons (remove-xarg-in-declare xarg (first declares))
+          (remove-xarg-in-declares xarg (rest declares)))))
+
+(defthm all-declare-argp-of-remove-xarg-in-declares
+  (implies (all-declarep declares)
+           (all-declarep (remove-xarg-in-declares xarg declares)))
+  :hints (("Goal" :in-theory (enable remove-xarg-in-declares))))
+
+;;;
+;;; adding xargs
+;;;
+
 (defund add-xarg-in-declare (xarg val declare)
   (declare (xargs :guard (and (keywordp xarg)
                               (declarep declare))))
@@ -626,34 +649,6 @@
                 (keywordp xarg))
            (declarep (add-xarg-in-declare xarg val declare)))
   :hints (("Goal" :in-theory (enable add-xarg-in-declare))))
-
-;;  Replace the value of XARG with VAL in DECLARE if it's present.  If it's not
-;;  present, add it with value VAL.
-(defun replace-xarg-in-declare (xarg val declare)
-  (declare (xargs :guard (and (keywordp xarg)
-                              (declarep declare))
-                  :guard-hints (("Goal" :in-theory (disable declarep) ;make global
-                                 ))))
-  (add-xarg-in-declare xarg val (remove-xarg-in-declare xarg declare)))
-
-(defthm declarep-of-replace-xarg-in-declare
-  (implies (and (declarep declare)
-                (keywordp xarg))
-           (declarep (replace-xarg-in-declare xarg val declare)))
-  :hints (("Goal" :in-theory (enable add-xarg-in-declare))))
-
-(defund remove-xarg-in-declares (xarg declares)
-  (declare (xargs :guard (and (keywordp xarg)
-                              (all-declarep declares))))
-  (if (atom declares)
-      nil
-    (cons (remove-xarg-in-declare xarg (first declares))
-          (remove-xarg-in-declares xarg (rest declares)))))
-
-(defthm all-declare-argp-of-remove-xarg-in-declares
-  (implies (all-declarep declares)
-           (all-declarep (remove-xarg-in-declares xarg declares)))
-  :hints (("Goal" :in-theory (enable remove-xarg-in-declares))))
 
 (defund add-xarg-in-declares (xarg val declares)
   (declare (xargs :guard (and (keywordp xarg)
@@ -672,6 +667,25 @@
                 (all-declarep declares))
            (all-declarep (add-xarg-in-declares xarg val declares)))
   :hints (("Goal" :in-theory (enable add-xarg-in-declares))))
+
+;;;
+;;; replacing xargs
+;;;
+
+;;  Replace the value of XARG with VAL in DECLARE if it's present.  If it's not
+;;  present, add it with value VAL.
+(defun replace-xarg-in-declare (xarg val declare)
+  (declare (xargs :guard (and (keywordp xarg)
+                              (declarep declare))
+                  :guard-hints (("Goal" :in-theory (disable declarep) ;make global
+                                 ))))
+  (add-xarg-in-declare xarg val (remove-xarg-in-declare xarg declare)))
+
+(defthm declarep-of-replace-xarg-in-declare
+  (implies (and (declarep declare)
+                (keywordp xarg))
+           (declarep (replace-xarg-in-declare xarg val declare)))
+  :hints (("Goal" :in-theory (enable add-xarg-in-declare))))
 
 ;;  Replace the value of XARG with VAL in DECLARES if it's present.  If it's
 ;;  not present, add it with value VAL.
@@ -693,12 +707,6 @@
                 (all-declarep declares))
            (all-declarep (replace-xarg-in-declares xarg val declares)))
   :hints (("Goal" :in-theory (enable replace-xarg-in-declares))))
-
-
-(defthm get-non-xargs-from-declare-args-of-append
-  (equal (get-non-xargs-from-declare-args (append x y))
-         (append (get-non-xargs-from-declare-args x)
-                 (get-non-xargs-from-declare-args y))))
 
 ;;; Remove entire :measure (if any)
 
