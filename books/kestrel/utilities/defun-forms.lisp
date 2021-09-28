@@ -88,7 +88,6 @@
 ;;          (called-fns (get-called-fns-in-untranslated-term body)))
 ;;     (if (member-eq fn called-fns) t nil)))
 
-
 (defund get-xargs-from-defun (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))
@@ -277,6 +276,15 @@
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))))
   (let* ((declares (get-declares-from-defun defun))
          (declares (replace-xarg-in-declares xarg val declares))
+         (defun (replace-declares-in-defun defun declares)))
+    defun))
+
+(defund remove-xarg-in-defun (xarg defun)
+  (declare (xargs :guard (and (keywordp xarg)
+                              (defun-formp defun))
+                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
+  (let* ((declares (get-declares-from-defun defun))
+         (declares (remove-xarg-in-declares xarg declares))
          (defun (replace-declares-in-defun defun declares)))
     defun))
 
