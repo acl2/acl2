@@ -26,7 +26,7 @@
      The other rules are used to prove
      the rules used for the symbolic execution.")
    (xdoc::p
-    "Many of the rules that are used in the symbolic execution
+    "Some of the rules that are used in the symbolic execution
      rewrite calls of functions used in the deeply embedded dynamic semantics
      into their shallowly embedded counterparts,
      under hypothesis on the types of the arguments.
@@ -47,7 +47,12 @@
      the C abstract syntax being executed is a quoted constant.
      Some of these opener rules include binding hypotheses,
      which avoid symbolically executing the same pieces of C abstract syntax
-     multiple times in some situations."))
+     multiple times in some situations.")
+   (xdoc::p
+    "We collect the rules in lists,
+     each of which serves a particular symbolic execution purpose.
+     Certain rules (proved elsewhere) may appear in multiple lists,
+     when they serve different symbolic execution purposes."))
   :order-subtopics t
   :default-parent t)
 
@@ -81,31 +86,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc atc-exec-ident-rules
+(defsection atc-exec-ident-rules
   :short "Rules for executing identifiers."
   :long
   (xdoc::topstring
    (xdoc::p
-    "To symbolically execute an identifier (which is an expression),
+    "To symbolically execute an identifier (as an expression),
      we simply expand the definition of @(tsee exec-ident)
      which unconditionally yields @(tsee read-var).
      The @(tsee read-var) call may undergo further rewriting,
-     as explained in @(see atc-symbolic-computation-state-rules).")))
+     as explained in @(see atc-symbolic-computation-state-rules)."))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-exec-ident-rules*
-  :short "List of rules for executing identifiers."
-  '(exec-ident))
+  (defval *atc-exec-ident-rules*
+    '(exec-ident)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc atc-exec-const-rules
+(defsection atc-exec-const-rules
   :short "Rules for executing constants."
   :long
   (xdoc::topstring
    (xdoc::p
-    "To symbolically execute a constant (which is an expression),
+    "To symbolically execute a constant,
      we simply expand the definitions of a number of functions,
      starting with @(tsee exec-const)
      and including all the functions called by it (directly or indirectly)
@@ -115,26 +117,24 @@
      during symbolic execution,
      because it is taken from the ASTs being executed;
      thus, for certain functions we only need to enable
-     the executable counterpart.")))
+     the executable counterpart."))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-exec-const-rules*
-  :short "List of rules for executing constants."
-  '(exec-const
-    (:e const-int->get)
-    exec-iconst
-    (:e iconst->base)
-    (:e iconst->type)
-    (:e iconst->unsignedp)
-    (:e iconst->value)
-    (:e iconst-tysuffix-kind)
-    (:e sint-integerp)
-    (:e uint-integerp)
-    (:e slong-integerp)
-    (:e ulong-integerp)
-    (:e sllong-integerp)
-    (:e ullong-integerp)))
+  (defval *atc-exec-const-rules*
+    '(exec-const
+      (:e const-kind)
+      (:e const-int->get)
+      exec-iconst
+      (:e iconst->base)
+      (:e iconst->type)
+      (:e iconst->unsignedp)
+      (:e iconst->value)
+      (:e iconst-tysuffix-kind)
+      (:e sint-integerp)
+      (:e uint-integerp)
+      (:e slong-integerp)
+      (:e ulong-integerp)
+      (:e sllong-integerp)
+      (:e ullong-integerp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -181,17 +181,13 @@
     :enable (sint-integer-value
              ushort-integer-value
              sint-from-ushort
-             sint-integerp-alt-def)))
+             sint-integerp-alt-def))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-integer-value-rules*
-  :short "List of rules about the composition of @(tsee sint-integer-value)
-          with @('sint-from-<type>') functions."
-  '(sint-integer-value-of-sint-from-schar
-    sint-integer-value-of-sint-from-uchar
-    sint-integer-value-of-sint-from-sshort
-    sint-integer-value-of-sint-from-ushort))
+  (defval *atc-integer-value-rules*
+    '(sint-integer-value-of-sint-from-schar
+      sint-integer-value-of-sint-from-uchar
+      sint-integer-value-of-sint-from-sshort
+      sint-integer-value-of-sint-from-ushort)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -371,32 +367,29 @@
     :enable (ullong-from-sint
              sint-from-ushort
              ullong-from-ushort
-             sint-integerp-alt-def)))
+             sint-integerp-alt-def))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-integer-conv-rules*
-  :short "List of rules about the composition of integer conversions."
-  '(uint-from-sint-of-sint-from-schar
-    uint-from-sint-of-sint-from-uchar
-    uint-from-sint-of-sint-from-sshort
-    uint-from-sint-of-sint-from-ushort
-    slong-from-sint-of-sint-from-schar
-    slong-from-sint-of-sint-from-uchar
-    slong-from-sint-of-sint-from-sshort
-    slong-from-sint-of-sint-from-ushort
-    ulong-from-sint-of-sint-from-schar
-    ulong-from-sint-of-sint-from-uchar
-    ulong-from-sint-of-sint-from-sshort
-    ulong-from-sint-of-sint-from-ushort
-    sllong-from-sint-of-sint-from-schar
-    sllong-from-sint-of-sint-from-uchar
-    sllong-from-sint-of-sint-from-sshort
-    sllong-from-sint-of-sint-from-ushort
-    ullong-from-sint-of-sint-from-schar
-    ullong-from-sint-of-sint-from-uchar
-    ullong-from-sint-of-sint-from-sshort
-    ullong-from-sint-of-sint-from-ushort))
+  (defval *atc-integer-conv-rules*
+    '(uint-from-sint-of-sint-from-schar
+      uint-from-sint-of-sint-from-uchar
+      uint-from-sint-of-sint-from-sshort
+      uint-from-sint-of-sint-from-ushort
+      slong-from-sint-of-sint-from-schar
+      slong-from-sint-of-sint-from-uchar
+      slong-from-sint-of-sint-from-sshort
+      slong-from-sint-of-sint-from-ushort
+      ulong-from-sint-of-sint-from-schar
+      ulong-from-sint-of-sint-from-uchar
+      ulong-from-sint-of-sint-from-sshort
+      ulong-from-sint-of-sint-from-ushort
+      sllong-from-sint-of-sint-from-schar
+      sllong-from-sint-of-sint-from-uchar
+      sllong-from-sint-of-sint-from-sshort
+      sllong-from-sint-of-sint-from-ushort
+      ullong-from-sint-of-sint-from-schar
+      ullong-from-sint-of-sint-from-uchar
+      ullong-from-sint-of-sint-from-sshort
+      ullong-from-sint-of-sint-from-ushort)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -470,21 +463,19 @@
     (implies (ullongp x)
              (equal (promote-value x)
                     x))
-    :enable promote-value))
+    :enable promote-value)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-promote-value-rules*
-  '(promote-value-when-scharp
-    promote-value-when-ucharp
-    promote-value-when-sshortp
-    promote-value-when-ushortp
-    promote-value-when-sintp
-    promote-value-when-uintp
-    promote-value-when-slongp
-    promote-value-when-ulongp
-    promote-value-when-sllongp
-    promote-value-when-ullongp))
+  (defval *atc-promote-value-rules*
+    '(promote-value-when-scharp
+      promote-value-when-ucharp
+      promote-value-when-sshortp
+      promote-value-when-ushortp
+      promote-value-when-sintp
+      promote-value-when-uintp
+      promote-value-when-slongp
+      promote-value-when-ulongp
+      promote-value-when-sllongp
+      promote-value-when-ullongp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -564,11 +555,9 @@
              "These are not used during the symbolic execution;
               they are used to prove rules
               used during the symbolic execution."))
-           ,@events)
-         (defval *atc-uaconvert-values-rules*
-           :short "List of rules about @(tsee uaconvert-values)
-                 on values of given types."
-           '(,@names))))))
+           ,@events
+           (defval *atc-uaconvert-values-rules*
+             '(,@names)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -646,10 +635,9 @@
       `(progn
          (defsection atc-exec-arrsub-rules
            :short "Rules for executing array subscript expressions."
-           ,@events)
-         (defval *atc-exec-arrsub-rules*
-           :short "List of rules for executing array subscript expressions."
-           '(,@names))))))
+           ,@events
+           (defval *atc-exec-arrsub-rules*
+             '(,@names)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -737,14 +725,13 @@
       `(progn
          (defsection atc-exec-unary-rules
            :short "Rules for executing unary operations"
-           ,@events)
-         (defval *atc-exec-unary-rules*
-           :short "List of rules for executing unary operations."
-           '(,@names
-             (:e unop-plus)
-             (:e unop-minus)
-             (:e unop-bitnot)
-             (:e unop-lognot)))))))
+           ,@events
+           (defval *atc-exec-unary-rules*
+             '(,@names
+               (:e unop-plus)
+               (:e unop-minus)
+               (:e unop-bitnot)
+               (:e unop-lognot))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -833,10 +820,9 @@
       `(progn
          (defsection atc-exec-cast-rules
            :short "Rules for executing casts."
-           ,@events)
-         (defval *atc-exec-cast-rules*
-           :short "List of rules for executing casts."
-           '(,@names))))))
+           ,@events
+           (defval *atc-exec-cast-rules*
+             '(,@names)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -974,26 +960,25 @@
       `(progn
          (defsection atc-exec-binary-strict-pure-rules
            :short "Rules for executing strict pure binary operations."
-           ,@events)
-         (defval *atc-exec-binary-strict-pure-rules*
-           :short "List of rules for executing strict pure binary operations."
-           '(,@names
-             (:e binop-mul)
-             (:e binop-div)
-             (:e binop-rem)
-             (:e binop-add)
-             (:e binop-sub)
-             (:e binop-shl)
-             (:e binop-shr)
-             (:e binop-lt)
-             (:e binop-gt)
-             (:e binop-le)
-             (:e binop-ge)
-             (:e binop-eq)
-             (:e binop-ne)
-             (:e binop-bitand)
-             (:e binop-bitxor)
-             (:e binop-bitior)))))))
+           ,@events
+           (defval *atc-exec-binary-strict-pure-rules*
+             '(,@names
+               (:e binop-mul)
+               (:e binop-div)
+               (:e binop-rem)
+               (:e binop-add)
+               (:e binop-sub)
+               (:e binop-shl)
+               (:e binop-shr)
+               (:e binop-lt)
+               (:e binop-gt)
+               (:e binop-le)
+               (:e binop-ge)
+               (:e binop-eq)
+               (:e binop-ne)
+               (:e binop-bitand)
+               (:e binop-bitxor)
+               (:e binop-bitior))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1092,21 +1077,19 @@
                     (ullongp x))
                (equal (exec-test x)
                       (boolean-from-ullong x)))
-      :enable exec-test)))
+      :enable exec-test))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-exec-test-rules*
-  '(exec-test-when-scharp
-    exec-test-when-ucharp
-    exec-test-when-sshortp
-    exec-test-when-ushortp
-    exec-test-when-sintp
-    exec-test-when-uintp
-    exec-test-when-slongp
-    exec-test-when-ulongp
-    exec-test-when-sllongp
-    exec-test-when-ullongp))
+  (defval *atc-exec-test-rules*
+    '(exec-test-when-scharp
+      exec-test-when-ucharp
+      exec-test-when-sshortp
+      exec-test-when-ushortp
+      exec-test-when-sintp
+      exec-test-when-uintp
+      exec-test-when-slongp
+      exec-test-when-ulongp
+      exec-test-when-sllongp
+      exec-test-when-ullongp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1117,10 +1100,14 @@
    (xdoc::p
     "For @('&&') and @('||'),
      we use the auxiliary function @('sint-from-boolean-with-error')
-     as an intermediate rewriting stage.
-     We also include the executable counterpart of @(tsee member-equal),
+     as an intermediate rewriting stage.")
+   (xdoc::p
+    "We include the executable counterpart of @(tsee member-equal),
      needed to discharge the hypothesis of
-     the rule for strict pure binary expressions."))
+     the rule for strict pure binary expressions.")
+   (xdoc::p
+    "We include executable counterparts of accessor functions for expressions,
+     used to check the kind of expression and to retrieve its constituents."))
 
   (defruled exec-expr-pure-when-ident
     (implies (and (syntaxp (quotep e))
@@ -1238,34 +1225,45 @@
                     (if test
                         (exec-expr-pure (expr-cond->then e) compst)
                       (exec-expr-pure (expr-cond->else e) compst))))
-    :enable exec-expr-pure))
+    :enable exec-expr-pure)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-exec-expr-pure-rules*
-  :short "List of rules for @(tsee exec-expr-pure)."
-  '(exec-expr-pure-when-ident
-    exec-expr-pure-when-const
-    exec-expr-pure-when-arrsub
-    exec-expr-pure-when-unary
-    exec-expr-pure-when-cast
-    exec-expr-pure-when-strict-pure-binary
-    exec-expr-pure-when-binary-logand
-    exec-expr-pure-when-binary-logor
-    sint-from-boolean-with-error-when-booleanp
-    exec-expr-pure-when-cond
-    (:e member-equal)))
+  (defval *atc-exec-expr-pure-rules*
+    '(exec-expr-pure-when-ident
+      exec-expr-pure-when-const
+      exec-expr-pure-when-arrsub
+      exec-expr-pure-when-unary
+      exec-expr-pure-when-cast
+      exec-expr-pure-when-strict-pure-binary
+      exec-expr-pure-when-binary-logand
+      exec-expr-pure-when-binary-logor
+      sint-from-boolean-with-error-when-booleanp
+      exec-expr-pure-when-cond
+      (:e member-equal)
+      (:e expr-kind)
+      (:e expr-ident->get)
+      (:e expr-const->get)
+      (:e expr-arrsub->arr)
+      (:e expr-arrsub->sub)
+      (:e expr-unary->op)
+      (:e expr-unary->arg)
+      (:e expr-cast->type)
+      (:e expr-cast->arg)
+      (:e expr-binary->op)
+      (:e expr-binary->arg1)
+      (:e expr-binary->arg2)
+      (:e binop-kind)
+      (:e expr-cond->test)
+      (:e expr-cond->then)
+      (:e expr-cond->else))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-exec-expr-pure-list-rules
   :short "Rules for @(tsee exec-expr-pure-list)."
 
-  (defruled exec-expr-pure-list-when-not-consp
-    (implies (and (syntaxp (quotep es))
-                  (not (consp es)))
-             (equal (exec-expr-pure-list es compst)
-                    nil))
+  (defruled exec-expr-pure-list-of-nil
+    (equal (exec-expr-pure-list nil compst)
+           nil)
     :enable exec-expr-pure-list)
 
   (defruled exec-expr-pure-list-when-consp
@@ -1277,14 +1275,11 @@
                   (value-listp vals))
              (equal (exec-expr-pure-list es compst)
                     (cons val vals)))
-    :enable exec-expr-pure-list))
+    :enable exec-expr-pure-list)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-exec-expr-pure-list-rules*
-  :short "List of rules for @(tsee exec-expr-pure-list)."
-  '(exec-expr-pure-list-when-not-consp
-    exec-expr-pure-list-when-consp))
+  (defval *atc-exec-expr-pure-list-rules*
+    '(exec-expr-pure-list-of-nil
+      exec-expr-pure-list-when-consp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1309,14 +1304,11 @@
                   (value-listp vals))
              (equal (exec-expr-call-or-pure e compst fenv limit)
                     (exec-fun (expr-call->fun e) vals compst fenv (1- limit))))
-    :enable exec-expr-call-or-pure))
+    :enable exec-expr-call-or-pure)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-exec-expr-call-or-pure-rules*
-  :short "List of @(tsee exec-expr-call-or-pure) rules."
-  '(exec-expr-call-or-pure-when-pure
-    exec-expr-call-of-pure-when-call))
+  (defval *atc-exec-expr-call-or-pure-rules*
+    '(exec-expr-call-or-pure-when-pure
+      exec-expr-call-of-pure-when-call)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1340,12 +1332,10 @@
                   (valuep val))
              (equal (exec-expr-asg e compst fenv limit)
                     (write-var (expr-ident->get e1) val compst1)))
-    :enable exec-expr-asg))
+    :enable exec-expr-asg)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-exec-expr-asg-rules*
-  '(exec-expr-asg-open))
+  (defval *atc-exec-expr-asg-rules*
+    '(exec-expr-asg-open)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1445,19 +1435,16 @@
                   e)
              (equal (exec-stmt s compst fenv limit)
                     (exec-expr-call-or-pure e compst fenv (1- limit))))
-    :enable exec-stmt))
+    :enable exec-stmt)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-exec-stmt-rules*
-  :short "List of rules for @(tsee exec-stmt)."
-  '(exec-stmt-when-compound
-    exec-stmt-when-expr
-    exec-stmt-when-if
-    exec-stmt-when-ifelse
-    exec-stmt-when-while
-    exec-stmt-when-return
-    (:e value-optionp)))
+  (defval *atc-exec-stmt-rules*
+    '(exec-stmt-when-compound
+      exec-stmt-when-expr
+      exec-stmt-when-if
+      exec-stmt-when-ifelse
+      exec-stmt-when-while
+      exec-stmt-when-return
+      (:e value-optionp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1489,7 +1476,7 @@
                     (mv nil compst2)))
     :enable exec-block-item)
 
-  (defruled exex-block-item-when-stmt
+  (defruled exec-block-item-when-stmt
     (implies (and (syntaxp (quotep item))
                   (equal (block-item-kind item) :stmt)
                   (not (zp limit)))
@@ -1498,14 +1485,11 @@
                                compst
                                fenv
                                (1- limit))))
-    :enable exec-block-item))
+    :enable exec-block-item)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-exec-block-item-rules*
-  :short "List of rules for @(tsee exec-block-item)."
-  '(exec-block-item-when-declon
-    exex-block-item-when-stmt))
+  (defval *atc-exec-block-item-rules*
+    '(exec-block-item-when-declon
+      exec-block-item-when-stmt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1537,14 +1521,11 @@
                                             compst1
                                             fenv
                                             (1- limit)))))
-    :enable exec-block-item-list))
+    :enable exec-block-item-list)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-exec-block-item-list-rules*
-  :short "List of rules for @(tsee exec-block-item-list)."
-  '(exec-block-item-list-when-not-consp
-    exec-block-item-list-when-consp))
+  (defval *atc-exec-block-item-list-rules*
+    '(exec-block-item-list-when-not-consp
+      exec-block-item-list-when-consp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1569,12 +1550,9 @@
                   (not (omap::in name scope)))
              (equal (init-scope formals (cons val vals))
                     (omap::update name val scope)))
-    :enable init-scope))
+    :enable init-scope)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-init-scope-rules*
-  :short "List of rules for @(tsee init-scope)."
-  '(init-scope-when-consp
-    (:e init-scope)
-    (:e param-declonp)))
+  (defval *atc-init-scope-rules*
+    '(init-scope-when-consp
+      (:e init-scope)
+      (:e param-declonp))))

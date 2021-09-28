@@ -4,12 +4,14 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Eric McCarthy (mccarthy@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ECURVE")
 
+(include-book "kestrel/isar/defisar" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -42,6 +44,16 @@
            (pfield-squarep 0 p))
   :enable fep
   :use (:instance pfield-squarep-suff (r 0) (x 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pfield-squarep-of-1
+  (implies (and (posp p)
+                (> p 1))
+           (pfield-squarep 1 p))
+  :enable fep
+  :prep-books ((include-book "arithmetic-5/top" :dir :system))
+  :use (:instance pfield-squarep-suff (r 1) (x 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -89,3 +101,126 @@
                    (evenp r)
                    (equal (mul r r p) x)))
   :skolem-name pfield-square->even-root)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pfield-squarep-of-inv
+  :short "The inverse of @('x') is a prime field square iff @('x') is."
+  (implies (and (rtl::primep p)
+                (fep x p))
+           (equal (pfield-squarep (inv x p) p)
+                  (pfield-squarep x p)))
+  :use (pfield-squarep-when-pfield-squarep-of-inv
+        pfield-squarep-of-inv-when-pfield-squarep)
+
+  :prep-lemmas
+
+  (;; 'only if' part:
+
+   (defruled pfield-squarep-when-pfield-squarep-of-inv
+     (implies (and (rtl::primep p)
+                   (fep x p)
+                   (pfield-squarep (inv x p) p))
+              (pfield-squarep x p))
+     :cases ((equal x 0))
+
+     :prep-lemmas
+
+     ((defruled equal-of-inv-swap
+        (implies (and (rtl::primep p)
+                      (fep x p)
+                      (fep y p)
+                      (not (equal x 0))
+                      (not (equal y 0)))
+                 (equal (equal (inv x p) y)
+                        (equal x (inv y p))))
+        :prep-books
+        ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+
+      (defruled inv-of-inv
+        (implies (and (rtl::primep p)
+                      (fep a p))
+                 (equal (inv (inv a p) p)
+                        (if (equal a 0)
+                            (if (equal p 2)
+                                1
+                              0)
+                          a)))
+        :prep-books
+        ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+
+      (acl2::defisar
+       pfield-squarep-when-pfield-squarep-of-inv-and-not-zero
+       (implies (and (rtl::primep p)
+                     (fep x p)
+                     (not (equal x 0))
+                     (pfield-squarep (inv x p) p))
+                (pfield-squarep x p))
+       :proof
+       ((:assume (:prime (rtl::primep p)))
+        (:assume (:fep (fep x p)))
+        (:assume (:nonzero (not (equal x 0))))
+        (:assume (:inv-square (pfield-squarep (inv x p) p)))
+        (:derive (:nonzero-inv (not (equal (inv x p) 0)))
+         :from (:nonzero :prime :fep)
+         :prep-books
+         ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+        (:let (r (pfield-square->root (inv x p) p)))
+        (:derive (:1/x-is-rr (equal (inv x p) (mul r r p)))
+         :from (:inv-square)
+         :enable pfield-squarep)
+        (:derive (:fep-root (fep r p))
+         :from (:inv-square)
+         :enable pfield-squarep)
+        (:derive (:x-is-1/rr (equal x (inv (mul r r p) p)))
+         :from (:1/x-is-rr :prime :fep :fep-root :nonzero :nonzero-inv)
+         :use (:instance equal-of-inv-swap
+               (y (mul (pfield-square->root (inv x p) p)
+                       (pfield-square->root (inv x p) p)
+                       p))))
+        (:derive (:x-is-1/r-1/r (equal x (mul (inv r p) (inv r p) p)))
+         :from (:1/x-is-rr :prime :fep :nonzero)
+         :use (:instance pfield::inv-of-mul
+               (x (pfield-square->root (inv x p) p))
+               (y (pfield-square->root (inv x p) p))
+               (p p))
+         :enable inv-of-inv
+         :disable (pfield::inv-of-mul pfield::inv-of-inv)
+         :prep-books
+         ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+        (:derive (:conclusion (pfield-squarep x p))
+         :from (:x-is-1/r-1/r :fep-root :prime)
+         :use (:instance pfield-squarep-suff
+               (r (inv (pfield-square->root (inv x p) p) p))))
+        (:qed)))))
+
+   ;; 'if' part:
+
+   (defruled pfield-squarep-of-inv-when-pfield-squarep
+     (implies (and (rtl::primep p)
+                   (fep x p)
+                   (pfield-squarep x p))
+              (pfield-squarep (inv x p) p))
+     :cases ((equal x 0))
+
+     :prep-lemmas
+
+     ((defrule pfield-squarep-of-inv-when-pfield-squarep-when-not-zero
+        (implies (and (rtl::primep p)
+                      (fep x p)
+                      (not (equal x 0))
+                      (pfield-squarep x p))
+                 (pfield-squarep (inv x p) p))
+        :expand (pfield-squarep x p)
+        :use (:instance pfield-squarep-suff
+              (x (inv x p))
+              (r (inv (pfield-square->root x p) p)))
+        :prep-books
+        ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+
+      (defrule pfield-squarep-of-inv-of-0
+        (implies (rtl::primep p)
+                 (pfield-squarep (inv 0 p) p))
+        :cases ((equal p 2))
+        :prep-books
+        ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))))))

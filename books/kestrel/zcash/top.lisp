@@ -14,6 +14,7 @@
 (include-book "blake2-hash")
 (include-book "constants")
 (include-book "jubjub")
+(include-book "jubjub-r-properties")
 (include-book "jubjub-montgomery")
 (include-book "pedersen-hash")
 (include-book "pedersen-hash-bound-properties")
