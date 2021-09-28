@@ -46,6 +46,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule pfield-squarep-of-1
+  (implies (and (posp p)
+                (> p 1))
+           (pfield-squarep 1 p))
+  :enable fep
+  :prep-books ((include-book "arithmetic-5/top" :dir :system))
+  :use (:instance pfield-squarep-suff (r 1) (x 1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defrule fep-of-pfield-square->root
   (implies (pfield-squarep x p)
            (fep (pfield-square->root x p) p))
