@@ -320,13 +320,18 @@
       (append (get-non-xargs-from-declare declare)
               (get-non-xargs-from-declares (rest declares))))))
 
+;; Checks whether DECLARE-ARG contributes a guard (or part of a guard) to its
+;; enclosing defun.
 (defun declare-arg-has-a-guard-or-type (declare-arg)
   (declare (xargs :guard (declare-argp declare-arg)))
-  (let ((kind (ffn-symb declare-arg)))
+  (let ((kind (car declare-arg)))
     (or (eq 'type kind)
         (and (eq 'xargs kind)
-             (assoc-keyword :guard (fargs declare-arg))))))
+             (or (assoc-keyword :guard (fargs declare-arg))
+                 (assoc-keyword :stobjs (fargs declare-arg)))))))
 
+;; Checks whether any of the DECLARE-ARGS contributes a guard (or part of a
+;; guard) to the enclosing defun.
 (defun some-declare-arg-has-a-guard-or-type (declare-args)
   (declare (xargs :guard (all-declare-argp declare-args)))
   (if (atom declare-args)
@@ -334,10 +339,14 @@
     (or (declare-arg-has-a-guard-or-type (first declare-args))
         (some-declare-arg-has-a-guard-or-type (rest declare-args)))))
 
+;; Checks whether DECLARE contributes a guard (or part of a guard) to its
+;; enclosing defun.
 (defun declare-has-a-guard-or-type (declare)
   (declare (xargs :guard (declarep declare)))
   (some-declare-arg-has-a-guard-or-type (fargs declare)))
 
+;; Checks whether any of the DECLARES contributes a guard (or part of a guard)
+;; to its enclosing defun.
 (defun some-declare-has-a-guard-or-type (declares)
   (declare (xargs :guard (all-declarep declares)))
   (if (atom declares)
