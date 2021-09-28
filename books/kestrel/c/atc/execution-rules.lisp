@@ -1261,11 +1261,9 @@
 (defsection atc-exec-expr-pure-list-rules
   :short "Rules for @(tsee exec-expr-pure-list)."
 
-  (defruled exec-expr-pure-list-when-not-consp
-    (implies (and (syntaxp (quotep es))
-                  (not (consp es)))
-             (equal (exec-expr-pure-list es compst)
-                    nil))
+  (defruled exec-expr-pure-list-of-nil
+    (equal (exec-expr-pure-list nil compst)
+           nil)
     :enable exec-expr-pure-list)
 
   (defruled exec-expr-pure-list-when-consp
@@ -1280,7 +1278,7 @@
     :enable exec-expr-pure-list)
 
   (defval *atc-exec-expr-pure-list-rules*
-    '(exec-expr-pure-list-when-not-consp
+    '(exec-expr-pure-list-of-nil
       exec-expr-pure-list-when-consp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
