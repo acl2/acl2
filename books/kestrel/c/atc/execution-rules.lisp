@@ -1569,7 +1569,15 @@
 
   (defval *atc-exec-block-item-rules*
     '(exec-block-item-when-declon
-      exec-block-item-when-stmt)))
+      exec-block-item-when-stmt
+      (:e block-item-kind)
+      (:e block-item-declon->get)
+      (:e block-item-stmt->get)
+      (:e declon->type)
+      (:e declon->declor)
+      (:e declon->init)
+      (:e declor->pointerp)
+      (:e declor->ident))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
