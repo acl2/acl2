@@ -1584,12 +1584,10 @@
 (defsection atc-exec-block-item-list-rules
   :short "Rules for @(tsee exec-block-item-list)."
 
-  (defruled exec-block-item-list-when-not-consp
-    (implies (and (syntaxp (quotep items))
-                  (not (consp items))
-                  (not (zp limit))
+  (defruled exec-block-item-list-of-nil
+    (implies (and (not (zp limit))
                   (compustatep compst))
-             (equal (exec-block-item-list items compst fenv limit)
+             (equal (exec-block-item-list nil compst fenv limit)
                     (mv nil compst)))
     :enable exec-block-item-list)
 
@@ -1612,7 +1610,7 @@
     :enable exec-block-item-list)
 
   (defval *atc-exec-block-item-list-rules*
-    '(exec-block-item-list-when-not-consp
+    '(exec-block-item-list-of-nil
       exec-block-item-list-when-consp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
