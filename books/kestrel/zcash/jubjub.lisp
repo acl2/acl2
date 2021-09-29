@@ -243,7 +243,12 @@
     :hints (("Goal" :in-theory (enable jubjub-pointp
                                        point-on-jubjub-p
                                        ecurve::point-on-twisted-edwards-p
-                                       jubjub-curve)))))
+                                       jubjub-curve))))
+
+  (defret fep-of-jubjub-point->u
+    (fep u (jubjub-q))
+    :hyp (jubjub-pointp point)
+    :hints (("Goal" :in-theory (e/d (fep) (jubjub-point->u))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -268,7 +273,12 @@
     :hints (("Goal" :in-theory (enable jubjub-pointp
                                        point-on-jubjub-p
                                        ecurve::point-on-twisted-edwards-p
-                                       jubjub-curve)))))
+                                       jubjub-curve))))
+
+  (defret fep-of-jubjub-point->v
+    (fep v (jubjub-q))
+    :hyp (jubjub-pointp point)
+    :hints (("Goal" :in-theory (e/d (fep) (jubjub-point->v))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
