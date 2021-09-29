@@ -13,6 +13,8 @@
 (include-book "pow")
 (include-book "minus1")
 (include-book "fep-fix")
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 ;; Compute the multiplicative inverse of x modulo the prime.
 ;; See theorem inv-correct below.
@@ -21,7 +23,11 @@
                               (fep x p)
                               (not (equal x 0)))
                   :guard-hints (("Goal" :in-theory (enable minus1)))))
-  (pow x (+ -1 (minus1 p)) p))
+  (if (equal 0 (fep-fix x p))
+      ;; Special case (disallowed by the guard): inverse of 0 is 0, regardless
+      ;; of p (otherwise, (inv 0 2) would be 1):
+      0
+    (pow x (+ -1 (minus1 p)) p)))
 
 (defthm natp-of-inv
   (natp (inv x p))
@@ -41,6 +47,12 @@
   :hints (("Goal" :use (:instance fep-of-inv)
            :in-theory (disable fep-of-inv))))
 
+;; a bit odd, but we should not usually be calling inv on 0
+(defthm inv-of-0
+  (equal (inv 0 p)
+         0)
+  :hints (("Goal" :in-theory (enable inv))))
+
 ;was called inv-correct
 (defthm mul-of-inv-arg2
   (implies (rtl::primep p)
@@ -59,16 +71,20 @@
                 (< 1 p))
            (equal (inv (mul x y p) p)
                   (mul (inv x p) (inv y p) p)))
-  :hints (("Goal" :in-theory (enable inv pow-of-mul-arg1))))
+  :hints (("Goal" :in-theory (enable inv mul-of-pow-and-pow;pow-of-mul-arg1
+                                     minus1
+                                     ))))
 
 (defthm inv-of-+-same-arg1
-  (equal (inv (+ p x) p)
-         (inv x p))
-  :hints (("Goal" :in-theory (enable inv))))
+  (implies (integerp p)
+           (equal (inv (+ p x) p)
+                  (inv x p)))
+  :hints (("Goal" :in-theory (enable inv minus1))))
 
 (defthm inv-of-+-same-arg2
-  (equal (inv (+ x p) p)
-         (inv x p))
+  (implies (integerp p)
+           (equal (inv (+ x p) p)
+                  (inv x p)))
   :hints (("Goal" :in-theory (enable inv))))
 
 (defthm inv-of--1

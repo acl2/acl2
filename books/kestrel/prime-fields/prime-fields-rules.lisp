@@ -128,9 +128,7 @@
   (implies (primep p)
            (equal (mul (inv x p) x p)
                   (if (equal 0 (mod (ifix x) p))
-                      (if (equal p 2)
-                          (mod (ifix x) p)
-                        0)
+                      0
                     ;; usual case:
                     1)))
   :hints (("Goal" :use ((:instance mul-of-inv-arg2)
@@ -570,22 +568,11 @@
                                   (p p))
            :in-theory (disable mul-of-inv-mul-of-inv))))
 
-;; a bit odd, but we should not usually be calling inv on 0
-(defthm inv-of-0
-  (implies (primep p)
-           (equal (inv 0 p)
-                  (if (equal p 2)
-                      1
-                    0)))
-  :hints (("Goal" :in-theory (enable inv))))
-
 (defthm inv-of-inv
   (implies (and (fep a p)
                 (rtl::primep p))
            (equal (inv (inv a p) p)
-                  (if (equal p 2)
-                      1
-                    a)))
+                  a))
   :hints (("Goal" :cases ((equal 0 a)))))
 
 ;; a cancellation rule
@@ -687,9 +674,7 @@
   (implies (and (primep p)
                 (integerp x))
            (equal (div x 0 p)
-                  (if (equal p 2)
-                      (mod x p)
-                    0)))
+                  0))
   :hints (("Goal" :in-theory (enable div))))
 
 ;; for all primes other than 2
