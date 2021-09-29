@@ -448,6 +448,35 @@
     var)
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define paths-to-vars ((paths path-listp))
+  :returns
+  (vars
+   identifier-list-resultp
+   :hints
+   (("Goal"
+     :in-theory
+     (enable
+      identifierp-when-identifier-resultp-and-not-resulterrp
+      identifier-listp-when-identifier-list-resultp-and-not-resulterrp))))
+  :short "Extract variables from paths."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee path-to-var) to lists."))
+  (b* (((when (endp paths)) nil)
+       ((ok var) (path-to-var (car paths)))
+       ((ok vars) (paths-to-vars (cdr paths))))
+    (cons var vars))
+  :hooks (:fix)
+  ///
+
+  (defret len-of-paths-to-vars
+    (implies (not (resulterrp vars))
+             (equal (len vars)
+                    (len paths)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-path ((path pathp) (cstate cstatep))
@@ -598,6 +627,18 @@
        In both kinds of assignments,
        we extend the computation state with the new variable(s).")
      (xdoc::p
+      "For a single variable assignment,
+       we ensure that the path is a singleton,
+       we execute the expression, which must return a single value,
+       and we write to the variable.
+       For a multiple variable assignment,
+       we ensure that each path is a singleton
+       and that there are at least two variables,
+       we execute the function call,
+       which must return the same number of values as the variables
+       (this is checked in @(tsee write-vars-values),
+       and we write to the variables.")
+     (xdoc::p
       "A @('leave'), @('break'), or @('continue') statement
        leaves the computation state unchanged
        and returns the corresponding mode.")
@@ -655,7 +696,15 @@
              (err (list :not-single-value vals)))
             ((ok cstate) (write-var-value var (car vals) cstate)))
          (make-soutcome :cstate cstate :mode (mode-regular)))
-       :assign-multi (err :todo)
+       :assign-multi
+       (b* (((unless (>= (len stmt.targets) 2))
+             (err (list :non-multiple-variables stmt.targets)))
+            ((ok vars) (paths-to-vars stmt.targets))
+            ((ok outcome) (exec-funcall stmt.value cstate (1- limit)))
+            (cstate (eoutcome->cstate outcome))
+            (vals (eoutcome->values outcome))
+            ((ok cstate) (write-vars-values vars vals cstate)))
+         (make-soutcome :cstate cstate :mode (mode-regular)))
        :funcall (err :todo)
        :if (err :todo)
        :for (err :todo)

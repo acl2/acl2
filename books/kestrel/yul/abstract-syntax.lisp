@@ -84,6 +84,13 @@
   :ok identifier
   :pred identifier-resultp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult identifier-list-result
+  :short "Fixtype of errors and lists of identifiers."
+  :ok identifier-list
+  :pred identifier-list-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod path
