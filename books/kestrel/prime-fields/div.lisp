@@ -59,6 +59,7 @@
   :hints (("Goal" :in-theory (enable div))))
 
 (defthm div-of-+-same-arg2-arg2
-  (equal (div x (+ y p) p)
-         (div x y p))
+  (implies (integerp p)
+           (equal (div x (+ y p) p)
+                  (div x y p)))
   :hints (("Goal" :in-theory (enable div))))

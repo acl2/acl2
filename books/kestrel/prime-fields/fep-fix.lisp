@@ -16,6 +16,9 @@
 ;; Coerce X to satisfy (fep x p).
 ;; TODO: Disable?
 (defun fep-fix (x p)
+  (declare (xargs :guard (and (posp p)
+                              ;(integerp x)
+                              )))
   (mod (ifix x) p))
 
 (defthm fep-of-fep-fix

@@ -12,6 +12,7 @@
 
 (include-book "prime-fields")
 (include-book "kestrel/axe/unguarded-primitives" :dir :system)
+(include-book "kestrel/axe/unguarded-built-ins" :dir :system) ; for mod-unguarded
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 ;; These functions, each of whose guard is T, are used by the Axe evaluator.
@@ -126,10 +127,20 @@
   :hints (("Goal" :in-theory (enable minus1
                                      minus1-unguarded))))
 
+(defun fep-fix-unguarded (x p)
+  (declare (xargs :guard t))
+  (acl2::mod-unguarded (ifix x) p))
+
+(defthm fep-fix-unguarded-correct
+  (equal (fep-fix-unguarded x p)
+         (fep-fix x p)))
+
 (defun inv-unguarded (x p)
   (declare (xargs :guard t
                   :guard-hints (("Goal" :in-theory (enable minus1)))))
-  (pow-unguarded x (+ -1 (minus1-unguarded p)) p))
+  (if (equal 0 (fep-fix-unguarded x p))
+      0
+    (pow-unguarded x (+ -1 (minus1-unguarded p)) p)))
 
 (defthm inv-unguarded-correct
   (equal (inv-unguarded x p)
