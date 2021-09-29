@@ -999,7 +999,7 @@
      from the point of view of the top level of
      where this call term occurs.")
    (xdoc::p
-    "This is used on C-valued terms,
+    "This is used on expression terms returning C values,
      so the called function must be non-recursive,
      i.e. it must represent a C function, not a C loop."))
   (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) nil))
@@ -1226,8 +1226,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are for pure C-valued terms
-     and for boolean terms (which are always pure)."))
+    "These are for pure expression terms returning C values
+     and for expression terms returning booleans (which are always pure)."))
 
   (define atc-gen-expr-cval-pure ((term pseudo-termp)
                                   (inscope atc-symbol-type-alist-listp)
@@ -1241,12 +1241,12 @@
                  state)
     :parents (atc-event-and-code-generation atc-gen-expr-pure)
     :short "Generate a C expression from an ACL2 term
-            that must be a pure C-valued term."
+            that must be a pure expression term returning a C value."
     :long
     (xdoc::topstring
      (xdoc::p
       "At the same time,
-       we check that the term is a pure C-valued term,
+       we check that the term is a pure expression term returning a C value,
        as described in the user documentation.")
      (xdoc::p
       "We also return the C type of the expression.")
@@ -1276,7 +1276,8 @@
      (xdoc::p
       "If the term is a call of @(tsee c::sint-from-boolean),
        we call the mutually recursive ACL2 function
-       that translates the argument (which must be a boolean term)
+       that translates the argument
+       (which must be an expression term returning a boolean)
        to an expression, which we return.
        The type of this expression is always @('int').")
      (xdoc::p
@@ -1287,7 +1288,7 @@
        We ensure that the two branches have the same type.")
      (xdoc::p
       "In all other cases, we fail with an error.
-       The term is not a pure C-valued term.
+       The term is not a pure expression term returning a C value.
        We could extend this code to provide
        more information to the user at some point."))
     (b* (((acl2::fun (irr)) (list (irr-expr) (irr-type)))
@@ -1397,7 +1398,7 @@
       (er-soft+ ctx t (list (irr-expr) (irr-type))
                 "When generating C code for the function ~x0, ~
                  at a point where ~
-                 a C-valued ACL2 term is expected, ~
+                 an expression term returning a C value is expected, ~
                  the term ~x1 is encountered instead."
                 fn term))
     :measure (pseudo-term-count term))
@@ -1410,26 +1411,27 @@
     :returns (mv erp (expr exprp) state)
     :parents (atc-event-and-code-generation atc-gen-expr-pure)
     :short "Generate a C expression from an ACL2 term
-            that must be a boolean term."
+            that must be an expression term returning a boolean."
     :long
     (xdoc::topstring
      (xdoc::p
-      "At the same time, we check that the term is a boolean term,
+      "At the same time, we check that the term is an expression term returning a boolean,
        as described in the user documentation.")
      (xdoc::p
       "If the term is a call of @(tsee not), @(tsee and), or @(tsee or),
        we recursively translate the arguments,
-       which must be a boolean terms,
+       which must be an expression term returning a boolean,
        and we construct a logical expression
        with the corresponding C operators.")
      (xdoc::p
       "If the term is a call of @('boolean-from-<type>'),
        we call the mutually recursive function
-       that translates the argument, which must be a C-valued term,
+       that translates the argument,
+       which must be an expression term returning a C value,
        to an expression, which we return.")
      (xdoc::p
       "In all other cases, we fail with an error.
-       The term is not a C-valued term.
+       The term is not an expression term returning a C value.
        We could extend this code to provide
        more information to the user at some point."))
     (b* (((mv okp arg) (fty-check-not-call term))
@@ -1512,7 +1514,7 @@
                                      state)
   :returns (mv erp (exprs expr-listp) state)
   :short "Generate a list of C expressions from a list of ACL2 terms
-          that must be pure C-valued terms."
+          that must be pure expression terms returning C values."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1548,12 +1550,12 @@
                            val))
                state)
   :short "Generate a C expression from an ACL2 term
-          that must be a C-valued term."
+          that must be an expression term returning a C value."
   :long
   (xdoc::topstring
    (xdoc::p
     "At the same time,
-     we check that the term is a C-valued term,
+     we check that the term is an expression term returning a C value,
      as described in the user documentation.")
    (xdoc::p
     "We also return the C type of the expression.")
@@ -1575,7 +1577,7 @@
      done by @(tsee exec-expr-call-or-pure) when it calls @(tsee exec-fun).")
    (xdoc::p
     "Otherwise, we attempt to translate the term
-     as a pure C-valued terms.
+     as a pure expression term returning a C value.
      The type is the one returned by that translation.
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
@@ -1876,7 +1878,8 @@
      which implies that it must be in scope,
      and we also ensure that it has the same type as the one in scope;
      we generate an assignment whose right-hand side is
-     obtained from the unwrapped term, which must be a C-valued term.
+     obtained from the unwrapped term,
+     which must be an expression term returning a C value.
      Otherwise, if the term involves no wrapper,
      we also ensure that the variable is assignable,
      and that the non-wrapped term represents a conditional of loop in C;
@@ -1936,7 +1939,8 @@
    (xdoc::p
     "If the @(':experimental') input to ATC allows array writes,
      we also allow @(tsee mv) calls
-     whose first argument represents a pure C-valued expression to return,
+     whose first argument represents
+     a pure expression term returning a C value,
      and whose remaining aguments are presumably modified arrays.
      For now we do not check the remaining arguments:
      we simply ignore them.
@@ -1948,7 +1952,7 @@
      we will carefully check these arguments, along with other constraints.")
    (xdoc::p
     "If the term does not have any of the forms above,
-     we treat it as a C-valued term.
+     we treat it as an expression term returning a C value.
      But we must check that @('xforming') is @('nil'),
      because if we are transforming some variables,
      and the two cases described in the previous two paragraphs do not apply,
@@ -2440,7 +2444,7 @@
      If the test is an @(tsee mbt) or @(tsee mbt$),
      test and `else' branch are ignored,
      while the `then' branch is recursively processed.
-     Otherwise, the test must be a boolean term
+     Otherwise, the test must be an expression term returning a boolean
      from which we generate the loop test;
      the `then' branch must be a statement term,
      from which we generate the loop body;
