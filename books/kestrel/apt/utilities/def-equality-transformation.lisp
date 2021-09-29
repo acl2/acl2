@@ -416,7 +416,7 @@
                                        transform-specific-required-args
                                        transform-specific-optional-args-ands-defaults ; a list of doublets containing arg names and quoted default values
                                        &key
-                                       (enables 'nil) ; enabled to used in all equivalence proofs
+                                       (enables 'nil) ; enables to use in all equivalence proofs
                                        (make-becomes-theorem-name 'make-becomes-theorem)
                                        (make-becomes-theorems-name 'make-becomes-theorems)
                                        (make-becomes-theorem-extra-args 'nil))
