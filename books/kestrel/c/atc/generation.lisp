@@ -628,7 +628,7 @@
 (define atc-check-iconst ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (const iconstp)
-               (type typep))
+               (out-type typep))
   :short "Check if a term represents an integer constant."
   :long
   (xdoc::topstring
@@ -1302,11 +1302,11 @@
             (acl2::value
              (list (expr-ident (make-ident :name (symbol-name var)))
                    (type-fix type)))))
-         ((mv okp const type) (atc-check-iconst term))
+         ((mv okp const out-type) (atc-check-iconst term))
          ((when okp)
           (acl2::value
            (list (expr-const (const-int const))
-                 type)))
+                 out-type)))
          ((mv okp op arg type) (atc-check-unop term))
          ((when okp)
           (b* (((er (list arg-expr &)) (atc-gen-expr-cval-pure arg
@@ -1415,7 +1415,8 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "At the same time, we check that the term is an expression term returning a boolean,
+      "At the same time, we check that the term is
+       an expression term returning a boolean,
        as described in the user documentation.")
      (xdoc::p
       "If the term is a call of @(tsee not), @(tsee and), or @(tsee or),
