@@ -697,6 +697,10 @@
        leaves the computation state unchanged
        and returns the corresponding mode.")
      (xdoc::p
+      "For a switch statement, we execute the target,
+       ensuring it returns a single value.
+       Then we delegate the rest to a separate ACL2 function.")
+     (xdoc::p
       "A function definition
        does not change the computation state
        and terminates regularly.
@@ -778,7 +782,18 @@
              (make-soutcome :cstate cstate :mode (mode-regular))
            (exec-block stmt.body cstate (1- limit))))
        :for (err :todo)
-       :switch (err :todo)
+       :switch
+       (b* (((ok outcome) (exec-expression stmt.target cstate (1- limit)))
+            (cstate (eoutcome->cstate outcome))
+            (vals (eoutcome->values outcome))
+            ((unless (and (consp vals)
+                          (not (consp (cdr vals)))))
+             (err (list :not-single-value vals))))
+         (exec-switch-rest stmt.cases
+                           stmt.default
+                           (car vals)
+                           cstate
+                           (1- limit)))
        :leave (make-soutcome :cstate (cstate-fix cstate)
                              :mode (mode-leave))
        :break (make-soutcome :cstate (cstate-fix cstate)
@@ -841,9 +856,36 @@
       (make-soutcome :cstate cstate :mode mode))
     :measure (nfix limit))
 
-  ;; exec-swcase
-
-  ;; exec-swcase-list
+  (define exec-switch-rest ((cases swcase-listp)
+                            (default block-optionp)
+                            (target valuep)
+                            (cstate cstatep)
+                            (limit natp))
+    :returns (outcome soutcome-resultp)
+    :short "Execute the rest of a switch statement,
+            after evaluating the target."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We go through the cases, until we find a match,
+       in which case we return the result of executing the corresponding block.
+       If we reach the end of the list,
+       we execute the default block, if present.
+       If the default block is absent, we terminate regularly."))
+    (b* (((when (zp limit)) (err (list :limit
+                                   (swcase-list-fix cases)
+                                   (block-option-fix default))))
+         ((when (endp cases))
+          (block-option-case default
+                             :some (exec-block default.val cstate (1- limit))
+                             :none (make-soutcome :cstate (cstate-fix cstate)
+                                                  :mode (mode-regular))))
+         ((swcase case) (car cases))
+         ((ok caseval) (eval-literal case.value))
+         ((when (value-equiv target caseval))
+          (exec-block case.body cstate (1- limit))))
+      (exec-switch-rest (cdr cases) default target cstate (1- limit)))
+    :measure (nfix limit))
 
   :verify-guards nil ; done below
   ///
