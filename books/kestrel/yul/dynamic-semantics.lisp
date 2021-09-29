@@ -67,6 +67,20 @@
   :val-type value
   :pred lstatep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule lstatep-of-restrict
+  (implies (lstatep map)
+           (lstatep (omap::restrict keys map)))
+  :enable omap::restrict)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule identifier-setp-of-keys-when-lstatep
+  (implies (lstatep map)
+           (identifier-setp (omap::keys map)))
+  :enable omap::keys)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod funinfo
@@ -257,6 +271,25 @@
         (err (list :extra-variables (identifier-list-fix vars))))
        ((ok cstate) (add-var-value (car vars) (car vals) cstate)))
     (add-vars-values (cdr vars) (cdr vals) cstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define restrict-vars ((vars identifier-setp) (cstate cstatep))
+  :returns (new-cstate cstatep)
+  :short "Restrict the variables in the local state to a specified set."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when a block is exited:
+     any new variable declared in the block is discarded,
+     by retaining only the variables
+     present in the local state before the block;
+     any of the retained variables must retain their values from the block
+     (i.e. the block may modify them)."))
+  (b* ((lstate (cstate->local cstate))
+       (new-lstate (omap::restrict (identifier-set-fix vars) lstate)))
+    (change-cstate cstate :local new-lstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -594,13 +627,23 @@
        We run the function body on the resulting computation state.
        We read the final values of the function output variables
        and return them as result.
-       We also restore the computation state prior to the function call."))
+       We also restore the computation state prior to the function call.")
+     (xdoc::p
+      "As a defensive check, we ensure that the function's body
+       terminates regularly or via @('leave'),
+       not via @('break') or @('continue')."))
     (b* (((when (zp limit)) (err (list :limit
                                    (identifier-fix fun)
                                    (value-list-fix args))))
          ((ok (funinfo info)) (get-fun fun cstate))
          ((ok cstate1) (init-local info.inputs args info.outputs cstate))
-         ((ok cstate1) (exec-block info.body cstate1 (1- limit)))
+         ((ok outcome) (exec-block info.body cstate1 (1- limit)))
+         (cstate1 (soutcome->cstate outcome))
+         (mode (soutcome->mode outcome))
+         ((when (mode-case mode :break))
+          (err (list :break-from-function (identifier-fix fun))))
+         ((when (mode-case mode :continue))
+          (err (list :continue-from-function (identifier-fix fun))))
          ((ok vals) (read-vars-values info.outputs cstate1)))
       (make-eoutcome :cstate (cstate-fix cstate) :values vals))
     :measure (nfix limit))
@@ -772,15 +815,35 @@
   (define exec-block ((block blockp) (cstate cstatep) (limit natp))
     :returns (outcome soutcome-resultp)
     :short "Execute a block."
-    (b* (((when (zp limit)) (err (list :limit (block-fix block)))))
-      (err (list :todo (cstate-fix cstate))))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We save (the names of) the variables just before the block,
+       so that we can restrict the computation state after the block
+       to only those variables, as explained in @(tsee restrict-vars).
+       We also save the function state before the block,
+       because we need to restore that after the block.
+       We extend the function state with the functions in the block.
+       We execute the block's statements.
+       We return the resulting outcome,
+       but we restore the function state before the block
+       and we remove all the variables added by the block."))
+    (b* (((when (zp limit)) (err (list :limit (block-fix block))))
+         (vars-before-block (omap::keys (cstate->local cstate)))
+         (fstate (cstate->functions cstate))
+         (stmts (block->statements block))
+         ((ok cstate) (add-funs-in-statement-list stmts cstate))
+         ((ok outcome) (exec-statement-list stmts cstate (1- limit)))
+         (cstate (soutcome->cstate outcome))
+         (mode (soutcome->mode outcome))
+         (cstate (change-cstate cstate :functions fstate))
+         (cstate (restrict-vars vars-before-block cstate)))
+      (make-soutcome :cstate cstate :mode mode))
     :measure (nfix limit))
 
   ;; exec-swcase
 
   ;; exec-swcase-list
-
-  :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove
 
   :verify-guards nil ; done below
   ///
