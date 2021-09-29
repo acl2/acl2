@@ -568,6 +568,14 @@
     :long
     (xdoc::topstring
      (xdoc::p
+      "Executing a block statement reduces to the execution of the block,
+       which is handled by a separate ACL2 function.")
+     (xdoc::p
+      "In a single variable declaration with an initializing expression,
+       the expression must yield exactly one value;
+       if there is no initializing expression, the default value is 0.
+       We extend the computation state with the new variable.")
+     (xdoc::p
       "A @('leave'), @('break'), or @('continue') statement
        leaves the computation state unchanged
        and returns the corresponding mode.")
@@ -583,7 +591,21 @@
       (statement-case
        stmt
        :block (exec-block stmt.get cstate (1- limit))
-       :variable-single (err :todo)
+       :variable-single
+       (expression-option-case
+        stmt.init
+        :some
+        (b* (((ok outcome) (exec-expression stmt.init.val cstate (1- limit)))
+             (cstate (eoutcome->cstate outcome))
+             (vals (eoutcome->values outcome))
+             ((unless (and (consp vals)
+                           (not (consp (cdr vals)))))
+              (err (list :not-single-value vals)))
+             ((ok cstate) (add-var-value stmt.name (car vals) cstate)))
+          (make-soutcome :cstate cstate :mode (mode-regular)))
+        :none
+        (b* (((ok cstate) (add-var-value stmt.name (value 0) cstate)))
+          (make-soutcome :cstate cstate :mode (mode-regular))))
        :variable-multi (err :todo)
        :assign-single (err :todo)
        :assign-multi (err :todo)
