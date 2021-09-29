@@ -1380,7 +1380,13 @@
     :enable exec-expr-asg)
 
   (defval *atc-exec-expr-asg-rules*
-    '(exec-expr-asg-open)))
+    '(exec-expr-asg-open
+      (:e expr-kind)
+      (:e expr-binary->op)
+      (:e expr-binary->arg1)
+      (:e expr-binary->arg2)
+      (:e binop-kind)
+      (:e expr-ident->get))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
