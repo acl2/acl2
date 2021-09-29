@@ -582,7 +582,7 @@
      for now we require each path to be a singleton;
      see discussion there about non-singleton paths.")
    (xdoc::p
-    "We check the expression, and and ensure that it returns
+    "We check the function call, and ensure that it returns
      a number of results equal to the number of variables.
      The variables must be two or more.")
    (xdoc::p

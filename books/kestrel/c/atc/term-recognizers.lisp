@@ -176,7 +176,7 @@
 
 (define atc-boolean-termp ((term pseudo-termp))
   :returns (yes/no booleanp)
-  :short "Recognize boolean terms."
+  :short "Recognize expression terms returning booleans."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -198,13 +198,14 @@
 
 (define atc-pure-c-valued-termp ((term pseudo-termp))
   :returns (yes/no booleanp)
-  :short "Recognize pure C-valued terms."
+  :short "Recognize pure expression terms returning C values terms."
   :long
   (xdoc::topstring
    (xdoc::p
     "We just check that the term is either a variable
      or a call of one of the functions
-     listed in the user documentation for pure C-valued terms."))
+     listed in the user documentation for
+     pure expression terms returning C values."))
   (b* (((when (acl2::variablep term)) t))
     (case-match term
       ((fn . &)
@@ -223,11 +224,12 @@
 
 (define atc-c-valued-termp ((term pseudo-termp) (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :short "Recognize C-valued terms."
+  :short "Recognize expression terms returning C values."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We just check whether the term is either a pure C-valued term
+    "We just check whether the term is
+     either a pure expression term returning a C value
      or is a call of a non-recursive function,
      which we therefore assume to be a target function."))
   (b* (((when (atc-pure-c-valued-termp term)) t))
@@ -240,7 +242,8 @@
 
 (define atc-stmt-noncval-termp ((term pseudo-termp) (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :short "Recognize statement terms that are not C-valued terms"
+  :short "Recognize statement terms that are not
+          expression terms returning C values."
   :long
   (xdoc::topstring
    (xdoc::p

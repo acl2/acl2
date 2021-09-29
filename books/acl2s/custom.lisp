@@ -204,6 +204,7 @@
     (set-ccg-inhibit-output-lst
      '(QUERY BASICS PERFORMANCE BUILD/REFINE SIZE-CHANGE))
     (assign acl2::splitter-output nil)
+    (assign abort-soft nil)
     (value '(value-triple :invisible))))
       
   (set-default-hints
@@ -266,6 +267,7 @@
     (assign evalable-printing-abstractions '(list cons))
     (assign triple-print-prefix "; ")
 
+    (assign abort-soft nil)
     ))
 
 #!ACL2
@@ -285,6 +287,8 @@
     (assign evalable-printing-abstractions '(list cons))
     (assign triple-print-prefix "; ")
 
+    (assign abort-soft nil)
+
 ; Non-events:
     (acl2::set-guard-checking :all)
     ))
@@ -303,6 +307,8 @@
     (set-guard-checking :all)
     (table acl2s::defunc-defaults-table :skip-tests nil :put)
     (table acl2s::defunc-defaults-table :timeout 60 :put)
+
+    (assign abort-soft nil)
 
 
 ;(set-verify-guards-eagerness 0)
