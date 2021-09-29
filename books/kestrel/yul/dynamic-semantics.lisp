@@ -429,23 +429,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define path-to-var ((path pathp))
+  :returns (var identifier-resultp)
+  :short "Extract a variable from a path."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As in the static semantics, also in the dynamic semantics
+     we require a path to consist of a single identifier.
+     This ACL2 function makes that check, returning the identifier.
+     This is the variable denoted by the path."))
+  (b* ((idens (path->get path))
+       ((unless (consp idens))
+        (err (list :empty-path (path-fix path))))
+       ((unless (endp (cdr idens)))
+        (err (list :non-singleton-path (path-fix path))))
+       (var (car idens)))
+    var)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-path ((path pathp) (cstate cstatep))
   :returns (outcome eoutcome-resultp)
   :short "Execute a path."
   :long
   (xdoc::topstring
    (xdoc::p
-    "To execute a path, we require, as in the static semantics,
-     the path to consist of a single identifier.
-     We look up the variable in the computation state.
+    "We look up the variable in the computation state.
      This always returns a single value,
      and does not change the computation state."))
-  (b* ((idens (path->get path))
-       ((unless (consp idens))
-        (err (list :empty-path (path-fix path))))
-       ((unless (endp (cdr idens)))
-        (err (list :non-singleton-path (path-fix path))))
-       (var (car idens))
+  (b* (((ok var) (path-to-var path))
        ((ok val) (read-var-value var cstate)))
     (make-eoutcome :cstate cstate :values (list val)))
   :hooks (:fix))
