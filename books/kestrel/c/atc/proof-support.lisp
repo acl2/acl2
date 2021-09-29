@@ -813,8 +813,6 @@
      e.g. to check whether a binary operator is strict."))
   '((:e binop-purep)
     (:e binop-strictp)
-    (:e param-declon->declor)
-    (:e param-declon->type)
     (:e type-kind)
     (:e unop-fix)
     (:e unop-kind)))

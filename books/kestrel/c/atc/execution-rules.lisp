@@ -1617,6 +1617,13 @@
 
 (defsection atc-init-scope-rules
   :short "Rules for @(tsee init-scope)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The base case is a call @('(init-scope nil nil)'),
+     which is handled by the executable counterpart of @(tsee init-scope).
+     For the step case, during symbolic execution we expect that
+     there is always the same number of formals and actuals."))
 
   (defruled init-scope-when-consp
     (implies (and (syntaxp (quotep formals))
@@ -1641,4 +1648,8 @@
   (defval *atc-init-scope-rules*
     '(init-scope-when-consp
       (:e init-scope)
-      (:e param-declonp))))
+      (:e param-declonp)
+      (:e param-declon->type)
+      (:e param-declon->declor)
+      (:e declor->pointerp)
+      (:e declor->ident))))
