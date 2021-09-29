@@ -268,7 +268,13 @@
              ullongp
              pointerp
              valuep
-             errorp)))
+             errorp))
+
+  (defrule not-errorp-when-value-listp
+    (implies (value-listp x)
+             (not (errorp x)))
+    :rule-classes :tau-system
+    :enable errorp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

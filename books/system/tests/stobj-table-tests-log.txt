@@ -16,21 +16,19 @@ ACL2 !>>(DEFSTOBJ TOP (TBL :TYPE (STOBJ-TABLE)))
  TOP
 ACL2 !>>(DEFUN BASIC-1 (TOP)
                (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (ST1$FIX (TBL-GET 'ST1 TOP))))
+               (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (CREATE-ST1))))
                           (VAL1)
                           (FLD1 ST1)
                           VAL1))
 
 
 ACL2 Error in ( DEFUN BASIC-1 ...):  The variable ST1 is bound in a
-stobj-let form to the expression (ST1$FIX (TBL-GET 'ST1 TOP)), which
-has the form of a stobj fixer, ST1$FIX, applied to a stobj-table access,
-(TBL-GET 'ST1 TOP).
+stobj-let form to the expression (TBL-GET 'ST1 TOP (CREATE-ST1)), which
+has the form of a stobj-table access.
 However, that alleged stobj-table access is illegal because ST1 is
 not the name of a stobj.  See :DOC stobj-table.  The form 
-(STOBJ-LET ((ST1 (ST1$FIX (TBL-GET # TOP)))) (VAL1) (FLD1 ST1) VAL1)
+(STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (CREATE-ST1)))) (VAL1) (FLD1 ST1) VAL1)
 is thus illegal.  See :DOC stobj-let.
-(See :DOC set-iprint to be able to see elided values in this message.)
 
 ACL2 !>>(DEFSTOBJ ST1 (FLD1 :TYPE INTEGER :INITIALLY 0))
  ST1
@@ -43,7 +41,7 @@ ACL2 !>>(DEFSTOBJ ST3A (FLD3A :TYPE INTEGER :INITIALLY 0)
  ST3A
 ACL2 !>>(DEFUN BASIC-1 (TOP)
                (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (ST1$FIX (TBL-GET 'ST1 TOP))))
+               (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (CREATE-ST1))))
                           (VAL1)
                           (FLD1 ST1)
                           VAL1))
@@ -58,17 +56,17 @@ ACL2 !>>(DEFUN BAD (TOP)
 
 ACL2 Error in ( DEFUN BAD ...):  The stobj-let binding of variable
 ST1 to expression (TBL-GET 'ST1 TOP) is illegal.  If a stobj-table
-access was intended, the stobj fixer for ST1 should be applied to that
-expression; see :DOC stobj-table.  The form 
+access was intended, the stobj creator for ST1 should be called as
+a third argument of that expression; see :DOC stobj-table.  The form
 (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP))) (VAL1) (FLD1 ST1) VAL1) is thus
 illegal.  See :DOC stobj-let.
 
 ACL2 !>>(DEFUN UPDATE-1 (TOP)
                (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (ST1$FIX (TBL-GET 'ST1 TOP)))
-                           (ST2 (ST2$FIX (TBL-GET 'ST2 TOP)))
-                           (ST3 (ST3$FIX (TBL-GET 'ST3 TOP)))
-                           (ST3A (ST3A$FIX (TBL-GET 'ST3A TOP))))
+               (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (CREATE-ST1)))
+                           (ST2 (TBL-GET 'ST2 TOP (CREATE-ST2)))
+                           (ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
+                           (ST3A (TBL-GET 'ST3A TOP (CREATE-ST3A))))
                           (ST3 ST2 ST1 E)
                           (LET* ((VAL1 (FLD1 ST1))
                                  (VAL2 (FLD2 ST2))
@@ -82,10 +80,10 @@ ACL2 !>>(DEFUN UPDATE-1 (TOP)
  UPDATE-1
 ACL2 !>>(DEFUN READ-1 (TOP)
                (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (ST1$FIX (TBL-GET 'ST1 TOP)))
-                           (ST2 (ST2$FIX (TBL-GET 'ST2 TOP)))
-                           (ST3 (ST3$FIX (TBL-GET 'ST3 TOP)))
-                           (ST3A (ST3A$FIX (TBL-GET 'ST3A TOP))))
+               (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (CREATE-ST1)))
+                           (ST2 (TBL-GET 'ST2 TOP (CREATE-ST2)))
+                           (ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
+                           (ST3A (TBL-GET 'ST3A TOP (CREATE-ST3A))))
                           (VAL1 VAL2 VAL3 VAL3A)
                           (MV (FLD1 ST1)
                               (FLD2 ST2)
@@ -345,8 +343,8 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (TBL-COUNT TOP) 2))
  :PASSED
 ACL2 !>>(DEFUN UPDATE-1A (TOP)
                (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST3 (ST3$FIX (TBL-GET 'ST3 TOP)))
-                           (ST3A (ST3A$FIX (TBL-GET 'ST3A TOP))))
+               (STOBJ-LET ((ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
+                           (ST3A (TBL-GET 'ST3A TOP (CREATE-ST3A))))
                           (ST3 ST3A VAL3 VAL3A)
                           (LET* ((VAL3 (FLD3 ST3A))
                                  (VAL3A (FLD3 ST3A))
@@ -357,8 +355,8 @@ ACL2 !>>(DEFUN UPDATE-1A (TOP)
  UPDATE-1A
 ACL2 !>>(DEFUN UPDATE-1A-BAD (TOP)
                (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST3 (ST3$FIX (TBL-GET 'ST3 TOP)))
-                           (ST3A (ST3$FIX (TBL-GET 'ST3 TOP))))
+               (STOBJ-LET ((ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
+                           (ST3A (TBL-GET 'ST3 TOP (CREATE-ST3))))
                           (ST3 ST3A VAL3 VAL3A)
                           (LET* ((VAL3 (FLD3 ST3A))
                                  (VAL3A (FLD3 ST3A))
@@ -369,13 +367,43 @@ ACL2 !>>(DEFUN UPDATE-1A-BAD (TOP)
 
 
 ACL2 Error in ( DEFUN UPDATE-1A-BAD ...):  The stobj-let binding expressions
-((ST3$FIX (TBL-GET 'ST3 TOP)) (ST3$FIX (TBL-GET 'ST3 TOP))) access
-the same field TBL-GET of stobj TOP with identical stobj keys.  Since
+((TBL-GET 'ST3 TOP (CREATE-ST3)) (TBL-GET 'ST3 TOP (CREATE-ST3))) both
+read stobj TOP with accessor TBL-GET using identical stobj keys.  Since
 variables ST3 and ST3A are to be updated (i.e., they are among the
 stobj-let form's producer variables), this aliasing is illegal.  The
 form 
-(STOBJ-LET ((ST3 (ST3$FIX (TBL-GET # TOP)))
-            (ST3A (ST3$FIX (TBL-GET # TOP))))
+(STOBJ-LET ((ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
+            (ST3A (TBL-GET 'ST3 TOP (CREATE-ST3))))
+           (ST3 ST3A VAL3 VAL3A)
+           (LET* ((VAL3 (FLD3 ST3A))
+                  (VAL3A (FLD3 ST3A))
+                  (ST3 (UPDATE-FLD3 # ST3))
+                  (ST3A (UPDATE-FLD3 # ST3A)))
+                 (MV ST3 ST3A VAL3 VAL3A))
+           (MV VAL3 VAL3A TOP))
+is thus illegal.  See :DOC stobj-let.
+(See :DOC set-iprint to be able to see elided values in this message.)
+
+ACL2 !>>(DEFUN UPDATE-1A-BAD (TOP)
+               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+               (STOBJ-LET ((ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
+                           (ST3A (TBL-GET 'ST3 TOP (CREATE-ST3A))))
+                          (ST3 ST3A VAL3 VAL3A)
+                          (LET* ((VAL3 (FLD3 ST3A))
+                                 (VAL3A (FLD3 ST3A))
+                                 (ST3 (UPDATE-FLD3 (+ 3 VAL3) ST3))
+                                 (ST3A (UPDATE-FLD3 (+ 3 VAL3A) ST3A)))
+                                (MV ST3 ST3A VAL3 VAL3A))
+                          (MV VAL3 VAL3A TOP)))
+
+
+ACL2 Error in ( DEFUN UPDATE-1A-BAD ...):  The variable ST3A is bound
+in a stobj-let form to the expression (TBL-GET 'ST3 TOP (CREATE-ST3A)),
+which has the form of a stobj-table access.
+However, the stobj creator for ST3 is CREATE-ST3, not CREATE-ST3A.
+See :DOC stobj-table.  The form 
+(STOBJ-LET ((ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
+            (ST3A (TBL-GET 'ST3 TOP (CREATE-ST3A))))
            (ST3 ST3A VAL3 VAL3A)
            (LET* ((VAL3 (FLD3 ST3A))
                   (VAL3A (FLD3 ST3A))
@@ -397,7 +425,7 @@ ACL2 !>>(DEFTHM INTEGERP-NTH-AR4P
  INTEGERP-NTH-AR4P
 ACL2 !>>(DEFUN UPDATE-2 (TOP)
                (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST4 (ST4$FIX (TBL-GET 'ST4 TOP))))
+               (STOBJ-LET ((ST4 (TBL-GET 'ST4 TOP (CREATE-ST4))))
                           (ST4)
                           (LET* ((V0 (AR4I 0 ST4))
                                  (V1 (AR4I 1 ST4))
@@ -410,7 +438,7 @@ ACL2 !>>(DEFUN UPDATE-2 (TOP)
  UPDATE-2
 ACL2 !>>(DEFUN READ-2 (TOP)
                (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST4 (ST4$FIX (TBL-GET 'ST4 TOP))))
+               (STOBJ-LET ((ST4 (TBL-GET 'ST4 TOP (CREATE-ST4))))
                           (V0 V1 V2 V3)
                           (MV (AR4I 0 ST4)
                               (AR4I 1 ST4)
@@ -510,9 +538,10 @@ ACL2 !>>(DEFUN CREATE-TOP2$A
                NIL (DECLARE (XARGS :GUARD T))
                NIL)
  CREATE-TOP2$A
-ACL2 !>>(DEFUN TBL2$A-GET (KEY X)
+ACL2 !>>(DEFUN TBL2$A-GET (KEY X DEFAULT)
                (DECLARE (XARGS :GUARD (AND (SYMBOLP KEY) (TOP2$AP X))))
-               (CDR (ASSOC-EQ KEY X)))
+               (LET ((PAIR (ASSOC-EQ KEY X)))
+                    (IF PAIR (CDR PAIR) DEFAULT)))
  TBL2$A-GET
 ACL2 !>>(DEFUN TBL2$A-PUT (KEY VAL X)
                (DECLARE (XARGS :GUARD (AND (SYMBOLP KEY) (TOP2$AP X))))
@@ -562,8 +591,8 @@ ACL2 !>>(DEFTHM TBL2-GET{CORRESPONDENCE}
                 (IMPLIES (AND (TOP2$CORR TOP TOP2)
                               (SYMBOLP K)
                               (TOP2$AP TOP2))
-                         (EQUAL (TBL-GET K TOP)
-                                (TBL2$A-GET K TOP2)))
+                         (EQUAL (TBL-GET K TOP V)
+                                (TBL2$A-GET K TOP2 V)))
                 :RULE-CLASSES NIL)
  TBL2-GET{CORRESPONDENCE}
 ACL2 !>>(DEFTHM TBL2-PUT{CORRESPONDENCE}
@@ -651,10 +680,10 @@ ACL2 !>>(DEFABSSTOBJ TOP2
  TOP2
 ACL2 !>>(DEFUN UPDATE-3 (TOP2)
                (DECLARE (XARGS :STOBJS TOP2 :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (ST1$FIX (TBL2-GET 'ST1 TOP2)))
-                           (ST2 (ST2$FIX (TBL2-GET 'ST2 TOP2)))
-                           (ST3 (ST3$FIX (TBL2-GET 'ST3 TOP2)))
-                           (ST3A (ST3A$FIX (TBL2-GET 'ST3A TOP2))))
+               (STOBJ-LET ((ST1 (TBL2-GET 'ST1 TOP2 (CREATE-ST1)))
+                           (ST2 (TBL2-GET 'ST2 TOP2 (CREATE-ST2)))
+                           (ST3 (TBL2-GET 'ST3 TOP2 (CREATE-ST3)))
+                           (ST3A (TBL2-GET 'ST3A TOP2 (CREATE-ST3A))))
                           (ST3 ST2 ST1 E)
                           (LET* ((VAL1 (FLD1 ST1))
                                  (VAL2 (FLD2 ST2))
@@ -668,10 +697,10 @@ ACL2 !>>(DEFUN UPDATE-3 (TOP2)
  UPDATE-3
 ACL2 !>>(DEFUN READ-3 (TOP2)
                (DECLARE (XARGS :STOBJS TOP2 :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (ST1$FIX (TBL2-GET 'ST1 TOP2)))
-                           (ST2 (ST2$FIX (TBL2-GET 'ST2 TOP2)))
-                           (ST3 (ST3$FIX (TBL2-GET 'ST3 TOP2)))
-                           (ST3A (ST3A$FIX (TBL2-GET 'ST3A TOP2))))
+               (STOBJ-LET ((ST1 (TBL2-GET 'ST1 TOP2 (CREATE-ST1)))
+                           (ST2 (TBL2-GET 'ST2 TOP2 (CREATE-ST2)))
+                           (ST3 (TBL2-GET 'ST3 TOP2 (CREATE-ST3)))
+                           (ST3A (TBL2-GET 'ST3A TOP2 (CREATE-ST3A))))
                           (VAL1 VAL2 VAL3 VAL3A)
                           (MV (FLD1 ST1)
                               (FLD2 ST2)
@@ -773,7 +802,7 @@ ACL2 !>>(DEFUN UPDATE-1-REC (TOP0 N)
                               (UPDATE-1 TOP0)
                               (DECLARE (IGNORE E))
                               TOP0))
-                     (T (STOBJ-LET ((TOP (TOP$FIX (TBL-GET 'TOP TOP0))))
+                     (T (STOBJ-LET ((TOP (TBL-GET 'TOP TOP0 (CREATE-TOP))))
                                    (TOP)
                                    (UPDATE-1-REC TOP (1- N))
                                    TOP0))))
@@ -783,7 +812,7 @@ ACL2 !>>(DEFUN READ-1-REC (TOP0 N)
                                :GUARD (NATP N)
                                :VERIFY-GUARDS NIL))
                (COND ((ZP N) (READ-1 TOP0))
-                     (T (STOBJ-LET ((TOP (TOP$FIX (TBL-GET 'TOP TOP0))))
+                     (T (STOBJ-LET ((TOP (TBL-GET 'TOP TOP0 (CREATE-TOP))))
                                    (VAL)
                                    (READ-1-REC TOP (1- N))
                                    VAL))))
@@ -1022,64 +1051,12 @@ ACL2 !>>>(ASSERT-EVENT (EQUAL (LIST (READ-1-REC TOP 0)
  :PASSED
 ACL2 !>>>Bye.
  :EOF
-ACL2 !>>(DEFUN UPDATE-1A-BAD (TOP)
+ACL2 !>>(DEFUN UPDATE-1B (TOP)
                (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST3 (ST3$FIX (TBL-GET 'ST3 TOP)))
-                           (ST3A (ST3$FIX (TBL0-GET 'ST3 TOP))))
-                          (ST3 ST3A VAL3 VAL3A)
-                          (LET* ((VAL3 (FLD3 ST3A))
-                                 (VAL3A (FLD3 ST3A))
-                                 (ST3 (UPDATE-FLD3 (+ 3 VAL3) ST3))
-                                 (ST3A (UPDATE-FLD3 (+ 3 VAL3A) ST3A)))
-                                (MV ST3 ST3A VAL3 VAL3A))
-                          (MV VAL3 VAL3A TOP)))
-
-
-ACL2 Error in ( DEFUN UPDATE-1A-BAD ...):  The name TBL0-GET is not
-the name of a field accessor for the stobj TOP.  The form 
-(STOBJ-LET ((ST3 (ST3$FIX (TBL-GET # TOP)))
-            (ST3A (ST3$FIX (TBL0-GET # TOP))))
-           (ST3 ST3A VAL3 VAL3A)
-           (LET* ((VAL3 (FLD3 ST3A))
-                  (VAL3A (FLD3 ST3A))
-                  (ST3 (UPDATE-FLD3 # ST3))
-                  (ST3A (UPDATE-FLD3 # ST3A)))
-                 (MV ST3 ST3A VAL3 VAL3A))
-           (MV VAL3 VAL3A TOP))
-is thus illegal.  See :DOC stobj-let.
-(See :DOC set-iprint to be able to see elided values in this message.)
-
-ACL2 !>>(DEFUN UPDATE-1A-BAD (TOP)
-               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST3 (ST3$FIX (TBL-GET 'ST3 TOP)))
-                           (ST3A (ST3A$FIX (TBL-GET 'ST3 TOP))))
-                          (ST3 ST3A VAL3 VAL3A)
-                          (LET* ((VAL3 (FLD3 ST3A))
-                                 (VAL3A (FLD3 ST3A))
-                                 (ST3 (UPDATE-FLD3 (+ 3 VAL3) ST3))
-                                 (ST3A (UPDATE-FLD3 (+ 3 VAL3A) ST3A)))
-                                (MV ST3 ST3A VAL3 VAL3A))
-                          (MV VAL3 VAL3A TOP)))
-
-
-ACL2 Error in ( DEFUN UPDATE-1A-BAD ...):  The variable ST3A is bound
-in a stobj-let form to the expression (ST3A$FIX (TBL-GET 'ST3 TOP)),
-which has the form of a stobj fixer, ST3A$FIX, applied to a stobj-
-table access, (TBL-GET 'ST3 TOP).
-However, the stobj fixer for ST3 is ST3$FIX, not ST3A$FIX.  See :DOC
-stobj-table.  The form 
-(STOBJ-LET ((ST3 (ST3$FIX (TBL-GET # TOP)))
-            (ST3A (ST3A$FIX (TBL-GET # TOP))))
-           (ST3 ST3A VAL3 VAL3A)
-           (LET* ((VAL3 (FLD3 ST3A))
-                  (VAL3A (FLD3 ST3A))
-                  (ST3 (UPDATE-FLD3 # ST3))
-                  (ST3A (UPDATE-FLD3 # ST3A)))
-                 (MV ST3 ST3A VAL3 VAL3A))
-           (MV VAL3 VAL3A TOP))
-is thus illegal.  See :DOC stobj-let.
-(See :DOC set-iprint to be able to see elided values in this message.)
-
+               (STOBJ-LET ((ST1 (TBL0-GET 'ST1 TOP (CREATE-ST1))))
+                          (ST1)
+                          ST1 TOP))
+ UPDATE-1B
 ACL2 !>>(DEFSTOBJ TOP-BAD (TBL :TYPE STOBJ-TABLE))
 
 
@@ -1154,47 +1131,269 @@ Rules: ((:DEFINITION CREATE-ST1)
         (:EXECUTABLE-COUNTERPART ST1P))
 
 Proof succeeded.
-ACL2 !>>(ENCAPSULATE NIL (DEFSTOBJ ST5 FLD5)
-                     (DEFUN SET-ST-IN-STOBJ-TABLE (FLD-VAL TOP)
-                            (DECLARE (XARGS :STOBJS TOP))
-                            (STOBJ-LET ((ST5 (ST5$FIX (TBL-GET 'ST5 TOP))))
-                                       (ST5)
-                                       (UPDATE-FLD5 FLD-VAL ST5)
-                                       TOP))
-                     (MAKE-EVENT (LET ((TOP (SET-ST-IN-STOBJ-TABLE 100 TOP)))
-                                      (MV NIL '(VALUE-TRIPLE :OK)
-                                          STATE TOP))))
+ACL2 !>>(ENCAPSULATE
+             NIL (DEFSTOBJ ST5 FLD5)
+             (DEFUN SET-ST-IN-STOBJ-TABLE (FLD-VAL TOP)
+                    (DECLARE (XARGS :STOBJS TOP))
+                    (STOBJ-LET ((ST5 (TBL-GET 'ST5 TOP (CREATE-ST5))))
+                               (ST5)
+                               (UPDATE-FLD5 FLD-VAL ST5)
+                               TOP))
+             (MAKE-EVENT (LET ((TOP (SET-ST-IN-STOBJ-TABLE 100 TOP)))
+                              (MV NIL '(VALUE-TRIPLE :OK)
+                                  STATE TOP))))
  T
 ACL2 !>>(U)
-          47:x(VERIFY-GUARDS READ-1-REC)
-ACL2 !>>(ENCAPSULATE NIL (LOCAL (DEFSTOBJ ST5 FLD5))
-                     (DEFUN SET-ST-IN-STOBJ-TABLE (FLD-VAL TOP)
-                            (DECLARE (XARGS :STOBJS TOP))
-                            (STOBJ-LET ((ST5 (ST5$FIX (TBL-GET 'ST5 TOP))))
-                                       (ST5)
-                                       (UPDATE-FLD5 FLD-VAL ST5)
-                                       TOP))
-                     (MAKE-EVENT (LET ((TOP (SET-ST-IN-STOBJ-TABLE 100 TOP)))
-                                      (MV NIL '(VALUE-TRIPLE :OK)
-                                          STATE TOP))))
+ L        48:x(DEFUN UPDATE-1B (TOP) ...)
+ACL2 !>>(ENCAPSULATE
+             NIL (LOCAL (DEFSTOBJ ST5 FLD5))
+             (DEFUN SET-ST-IN-STOBJ-TABLE (FLD-VAL TOP)
+                    (DECLARE (XARGS :STOBJS TOP))
+                    (STOBJ-LET ((ST5 (TBL-GET 'ST5 TOP (CREATE-ST5))))
+                               (ST5)
+                               (UPDATE-FLD5 FLD-VAL ST5)
+                               TOP))
+             (MAKE-EVENT (LET ((TOP (SET-ST-IN-STOBJ-TABLE 100 TOP)))
+                              (MV NIL '(VALUE-TRIPLE :OK)
+                                  STATE TOP))))
 
 
 ACL2 Error in ( DEFUN SET-ST-IN-STOBJ-TABLE ...):  The variable ST5
-is bound in a stobj-let form to the expression (ST5$FIX (TBL-GET 'ST5 TOP)),
-which has the form of a stobj fixer, ST5$FIX, applied to a stobj-table
-access, (TBL-GET 'ST5 TOP).
+is bound in a stobj-let form to the expression 
+(TBL-GET 'ST5 TOP (CREATE-ST5)), which has the form of a stobj-table
+access.
 However, that alleged stobj-table access is illegal because ST5 is
 not the name of a stobj.  See :DOC stobj-table.  The form 
-(STOBJ-LET ((ST5 (ST5$FIX (TBL-GET # TOP))))
+(STOBJ-LET ((ST5 (TBL-GET 'ST5 TOP (CREATE-ST5))))
            (ST5)
            (UPDATE-FLD5 FLD-VAL ST5)
            TOP)
 is thus illegal.  See :DOC stobj-let.
-(See :DOC set-iprint to be able to see elided values in this message.)
 
 
 ACL2 Warning in ( ENCAPSULATE NIL (LOCAL ...) ...):  The error reported
 above is the manifestation of a local incompatibility.  See :DOC local-
 incompatibility.  The attempted ENCAPSULATE has failed.
 
+ACL2 !>>(UBT 2)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(DEFSTOBJ TOP (TBL :TYPE (STOBJ-TABLE))
+                  :RENAMING ((TBL-GET TOP-TBL-GET)))
+ TOP
+ACL2 !>>(DEFSTOBJ ST1 (FLD1 :TYPE INTEGER :INITIALLY 0)
+                  :RENAMING ((CREATE-ST1 NEW-ST1)))
+ ST1
+ACL2 !>>(DEFUN UPDATE-1-1 (TOP)
+               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+               (STOBJ-LET ((ST1 (TOP-TBL-GET 'ST1 TOP (CREATE-ST1))))
+                          (ST1 E)
+                          (LET* ((VAL1 (FLD1 ST1))
+                                 (ST1 (UPDATE-FLD1 (+ 1 VAL1) ST1)))
+                                (MV ST1 (EQUAL VAL1 3)))
+                          (MV E TOP)))
+
+
+ACL2 Error in ( DEFUN UPDATE-1-1 ...):  The variable ST1 is bound in
+a stobj-let form to the expression (TOP-TBL-GET 'ST1 TOP (CREATE-ST1)),
+which has the form of a stobj-table access.
+However, the stobj creator for ST1 is NEW-ST1, not CREATE-ST1.  See
+:DOC stobj-table.  The form 
+(STOBJ-LET ((ST1 (TOP-TBL-GET 'ST1 TOP (CREATE-ST1))))
+           (ST1 E)
+           (LET* ((VAL1 (FLD1 ST1))
+                  (ST1 (UPDATE-FLD1 # ST1)))
+                 (MV ST1 (EQUAL VAL1 3)))
+           (MV E TOP))
+is thus illegal.  See :DOC stobj-let.
+(See :DOC set-iprint to be able to see elided values in this message.)
+
+ACL2 !>>(DEFUN UPDATE-1-2 (TOP)
+               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+               (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (NEW-ST1))))
+                          (ST1 E)
+                          (LET* ((VAL1 (FLD1 ST1))
+                                 (ST1 (UPDATE-FLD1 (+ 1 VAL1) ST1)))
+                                (MV ST1 (EQUAL VAL1 3)))
+                          (MV E TOP)))
+
+
+ACL2 Error in ( DEFUN UPDATE-1-2 ...):  The name TBL-GET is not the
+name of a field accessor for the stobj TOP, or even one congruent to
+it.  The form 
+(STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (NEW-ST1))))
+           (ST1 E)
+           (LET* ((VAL1 (FLD1 ST1))
+                  (ST1 (UPDATE-FLD1 # ST1)))
+                 (MV ST1 (EQUAL VAL1 3)))
+           (MV E TOP))
+is thus illegal.  See :DOC stobj-let.
+(See :DOC set-iprint to be able to see elided values in this message.)
+
+ACL2 !>>(DEFUN UPDATE-1-3 (TOP)
+               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+               (STOBJ-LET ((ST1 (TOP-TBL-GET 'ST1 TOP (NEW-ST1))))
+                          (ST1 E)
+                          (LET* ((VAL1 (FLD1 ST1))
+                                 (ST1 (UPDATE-FLD1 (+ 1 VAL1) ST1)))
+                                (MV ST1 (EQUAL VAL1 3)))
+                          (MV E TOP)))
+
+
+ACL2 Error in ( DEFUN UPDATE-1-3 ...):  The stobj-let bindings have
+specified implicitly that the stobj field updater corresponding to
+accessor TOP-TBL-GET is TOP-TBL-PUT, but the actual corresponding updater
+is TBL-PUT.  The form 
+(STOBJ-LET ((ST1 (TOP-TBL-GET 'ST1 TOP (NEW-ST1))))
+           (ST1 E)
+           (LET* ((VAL1 (FLD1 ST1))
+                  (ST1 (UPDATE-FLD1 # ST1)))
+                 (MV ST1 (EQUAL VAL1 3)))
+           (MV E TOP))
+is thus illegal.  See :DOC stobj-let.
+(See :DOC set-iprint to be able to see elided values in this message.)
+
+ACL2 !>>(DEFUN UPDATE-1-4 (TOP)
+               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+               (STOBJ-LET ((ST1 (TOP-TBL-GET 'ST1 TOP (NEW-ST1))
+                                TBL-PUT))
+                          (ST1 E)
+                          (LET* ((VAL1 (FLD1 ST1))
+                                 (ST1 (UPDATE-FLD1 (+ 1 VAL1) ST1)))
+                                (MV ST1 (EQUAL VAL1 3)))
+                          (MV E TOP)))
+ UPDATE-1-4
+ACL2 !>>(UBT 2)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(INCLUDE-BOOK "std/stobjs/stobj-table"
+                      :DIR :SYSTEM)
+ "[books]/std/stobjs/stobj-table.lisp"
+ACL2 !>>(IN-THEORY (DISABLE NTH UPDATE-NTH))
+ :CURRENT-THEORY-UPDATED
+ACL2 !>>(DEFSTOBJ FOO (FOO-FLD))
+ FOO
+ACL2 !>>(DEFTHM FOO-FLD-OF-UPDATE-FOO-FLD
+                (EQUAL (FOO-FLD (UPDATE-FOO-FLD VAL FOO))
+                       VAL))
+
+ACL2 Warning [Non-rec] in ( DEFTHM FOO-FLD-OF-UPDATE-FOO-FLD ...):
+A :REWRITE rule generated from FOO-FLD-OF-UPDATE-FOO-FLD will be triggered
+only by terms containing the function symbols FOO-FLD and UPDATE-FOO-FLD,
+which have non-recursive definitions.  Unless these definitions are
+disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM FOO-FLD-OF-UPDATE-FOO-FLD ...):
+The previously added rule FOO-FLD subsumes a newly proposed :REWRITE
+rule generated from FOO-FLD-OF-UPDATE-FOO-FLD, in the sense that the
+old rule rewrites a more general target.  Because the new rule will
+be tried first, it may nonetheless find application.
+
+ FOO-FLD-OF-UPDATE-FOO-FLD
+ACL2 !>>(IN-THEORY (DISABLE FOOP FOO-FLD UPDATE-FOO-FLD))
+ :CURRENT-THEORY-UPDATED
+ACL2 !>>(DEFUND DO-SOMETHING-COMPLICATED-WITH-FOO
+                (IN FOO)
+                (DECLARE (XARGS :STOBJS FOO))
+                (UPDATE-FOO-FLD IN FOO))
+ (:DEFUND DO-SOMETHING-COMPLICATED-WITH-FOO)
+ACL2 !>>(DEFTHM
+            FOO-FLD-OF-DO-SOMETHING-COMPLICATED
+            (EQUAL (FOO-FLD (DO-SOMETHING-COMPLICATED-WITH-FOO IN FOO))
+                   IN)
+            :HINTS
+            (("Goal" :IN-THEORY (ENABLE DO-SOMETHING-COMPLICATED-WITH-FOO))))
+ FOO-FLD-OF-DO-SOMETHING-COMPLICATED
+ACL2 !>>(DEFUN TEST1 (STOBJ-TABLE)
+               (DECLARE (XARGS :STOBJS (STOBJ-TABLE)))
+               (STOBJ-LET ((FOO (TBL-GET 'FOO
+                                         STOBJ-TABLE (CREATE-FOO))))
+                          (FLD)
+                          (FOO-FLD FOO)
+                          FLD))
+ TEST1
+ACL2 !>>(DEFTHM TEST1-OF-DO-SOMETHING-COMPLICATED
+                (LET* ((FOO1 (DO-SOMETHING-COMPLICATED-WITH-FOO IN FOO))
+                       (STOBJ-TABLE (TBL-PUT 'FOO FOO1 STOBJ-TABLE)))
+                      (EQUAL (TEST1 STOBJ-TABLE) IN)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM TEST1-OF-DO-SOMETHING-COMPLICATED
+...):  A :REWRITE rule generated from TEST1-OF-DO-SOMETHING-COMPLICATED
+will be triggered only by terms containing the function symbols TEST1
+and TBL-PUT, which have non-recursive definitions.  Unless these definitions
+are disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM TEST1-OF-DO-SOMETHING-COMPLICATED
+...):  The previously added rule TEST1 subsumes a newly proposed :REWRITE
+rule generated from TEST1-OF-DO-SOMETHING-COMPLICATED, in the sense
+that the old rule rewrites a more general target.  Because the new
+rule will be tried first, it may nonetheless find application.
+
+ TEST1-OF-DO-SOMETHING-COMPLICATED
+ACL2 !>>(UBT 2)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(INCLUDE-BOOK "std/stobjs/stobj-table"
+                      :DIR :SYSTEM)
+ "[books]/std/stobjs/stobj-table.lisp"
+ACL2 !>>(DEFSTOBJ ST (FLD :TYPE INTEGER :INITIALLY 0))
+ ST
+ACL2 !>>(DEFUN READ-FLD-FROM-STOBJ-TABLE-TRY1
+               (STOBJ-TABLE)
+               (DECLARE (XARGS :STOBJS (STOBJ-TABLE)))
+               (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+                          (VAL)
+                          (FLD ST)
+                          VAL))
+ READ-FLD-FROM-STOBJ-TABLE-TRY1
+ACL2 !>>(THM
+           (IMPLIES (STOBJ-TABLEP STOBJ-TABLE)
+                    (INTEGERP (READ-FLD-FROM-STOBJ-TABLE-TRY1 STOBJ-TABLE))))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 !>>(DEFUN
+          READ-FLD-FROM-STOBJ-TABLE (STOBJ-TABLE)
+          (DECLARE (XARGS :STOBJS (STOBJ-TABLE)))
+          (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+                     (VAL)
+                     (MBE :LOGIC (NON-EXEC (LET ((ST (ST$FIX ST))) (FLD ST)))
+                          :EXEC (FLD ST))
+                     VAL))
+ READ-FLD-FROM-STOBJ-TABLE
+ACL2 !>>(THM (IMPLIES (STOBJ-TABLEP STOBJ-TABLE)
+                      (INTEGERP (READ-FLD-FROM-STOBJ-TABLE STOBJ-TABLE))))
+ACL2 !>>(DEFMACRO
+             STOBJ-FIX (ST &KEY RECOGNIZER CREATOR)
+             (DECLARE (XARGS :GUARD (AND (SYMBOLP ST)
+                                         (SYMBOLP RECOGNIZER)
+                                         (SYMBOLP CREATOR))))
+             (LET ((RECOGNIZER (OR RECOGNIZER
+                                   (DEFSTOBJ-FNNAME ST :RECOGNIZER NIL NIL)))
+                   (CREATOR (OR CREATOR
+                                (DEFSTOBJ-FNNAME ST :CREATOR NIL NIL))))
+                  (CONS 'IF
+                        (CONS (CONS RECOGNIZER (CONS ST 'NIL))
+                              (CONS ST (CONS (CONS CREATOR 'NIL) 'NIL))))))
+ STOBJ-FIX
+ACL2 !>>(DEFUN READ-FLD-FROM-STOBJ-TABLE-2
+               (STOBJ-TABLE)
+               (DECLARE (XARGS :STOBJS (STOBJ-TABLE)))
+               (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+                          (VAL)
+                          (MBE :LOGIC (NON-EXEC (FLD (STOBJ-FIX ST)))
+                               :EXEC (FLD ST))
+                          VAL))
+ READ-FLD-FROM-STOBJ-TABLE-2
+ACL2 !>>(THM (IMPLIES (STOBJ-TABLEP STOBJ-TABLE)
+                      (INTEGERP (READ-FLD-FROM-STOBJ-TABLE-2 STOBJ-TABLE))))
+ACL2 !>>(DEFUN FOO (SUM STOBJ-TABLE)
+               (DECLARE (XARGS :STOBJS (STOBJ-TABLE)
+                               :GUARD (ACL2-NUMBERP SUM)))
+               (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+                          (SUM)
+                          (+ SUM (FLD ST))
+                          SUM))
+ FOO
 ACL2 !>>Bye.

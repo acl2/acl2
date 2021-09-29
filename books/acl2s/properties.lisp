@@ -475,7 +475,9 @@ I don't need this?
        (- (cw? debug? "~|**val is: ~x0~%" val))
        (- (cw? debug? "~|**thm-erp is: ~x0~%" thm-erp))
        ((when thm-erp)
-        (ecw "~|**ERROR During Contract Checking.**"
+        (ecw "~|**ERROR During Contract Checking.** ~
+              ~|**The Contract Checking Proof Obligation is: ~x0"
+             guards
              parsed))
        (- (cw? thm-erp "~|Form:  ( TESTING PROPERTY CONTRACTS ...)"))
        ((mv te-test-erp val state)

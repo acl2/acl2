@@ -29,6 +29,7 @@
                           define-sk
                           defxdoc+
                           nat-setp
+                          ecurve::twisted-edwards-zero
                           isar::defisar
                           pfield::fep
                           pfield::add

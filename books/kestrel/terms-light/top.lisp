@@ -29,3 +29,4 @@
 (include-book "count-ifs-in-term")
 (include-book "count-ifs-in-then-and-else-branches")
 (include-book "combine-ifs-in-then-and-else-branches")
+(include-book "restore-mv-in-branches")

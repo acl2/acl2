@@ -39,7 +39,7 @@
    (xdoc::p
     "The @('.txt') files in this directory contain
      ACL2 representations of R1CS and tree gadgets,
-     generated via the @('bellman') and @('librustzcash) Rust libraries.
+     generated via the @('bellman') and @('librustzcash') Rust libraries.
      The R1CS and tree gadgets are functionally equivalent,
      but the tree gadgets have more structure than the R1CS gadgets;
      the additional structure has been derived

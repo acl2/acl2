@@ -52,9 +52,10 @@
   (declare (xargs :guard t))
   nil)
 
-(defun stbl-get$a (k stobjtab$a)
+(defun stbl-get$a (k stobjtab$a default)
   (declare (xargs :guard t))
-  (cdr (hons-assoc-equal k stobjtab$a)))
+  (let ((pair (hons-assoc-equal k stobjtab$a)))
+    (if pair (cdr pair) default)))
 
 (defun stbl-put$a (k v stobjtab$a)
   (declare (xargs :guard t))
