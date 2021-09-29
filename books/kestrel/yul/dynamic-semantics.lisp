@@ -574,7 +574,15 @@
       "In a single variable declaration with an initializing expression,
        the expression must yield exactly one value;
        if there is no initializing expression, the default value is 0.
-       We extend the computation state with the new variable.")
+       In a multiple variable declaration with an initializing function call,
+       the funcion call may yield any number of values,
+       which must match the number of variables
+       (this is checked in @(tsee add-vars-values)),
+       which must be two or more;
+       if there is no initializing function call,
+       the default value is 0 for each variable.
+       In both kinds of assignments,
+       we extend the computation state with the new variable(s).")
      (xdoc::p
       "A @('leave'), @('break'), or @('continue') statement
        leaves the computation state unchanged
@@ -606,7 +614,23 @@
         :none
         (b* (((ok cstate) (add-var-value stmt.name (value 0) cstate)))
           (make-soutcome :cstate cstate :mode (mode-regular))))
-       :variable-multi (err :todo)
+       :variable-multi
+       (if (>= (len stmt.names) 2)
+           (funcall-option-case
+            stmt.init
+            :some
+            (b* (((ok outcome) (exec-funcall stmt.init.val cstate (1- limit)))
+                 (cstate (eoutcome->cstate outcome))
+                 (vals (eoutcome->values outcome))
+                 ((ok cstate) (add-vars-values stmt.names vals cstate)))
+              (make-soutcome :cstate cstate :mode (mode-regular)))
+            :none
+            (b* (((ok cstate) (add-vars-values stmt.names
+                                               (repeat (len stmt.names)
+                                                       (value 0))
+                                               cstate)))
+              (make-soutcome :cstate cstate :mode (mode-regular))))
+         (err (list :non-multiple-variables stmt.names)))
        :assign-single (err :todo)
        :assign-multi (err :todo)
        :funcall (err :todo)
