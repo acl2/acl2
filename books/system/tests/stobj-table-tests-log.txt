@@ -1364,4 +1364,36 @@ ACL2 !>>(DEFUN
  READ-FLD-FROM-STOBJ-TABLE
 ACL2 !>>(THM (IMPLIES (STOBJ-TABLEP STOBJ-TABLE)
                       (INTEGERP (READ-FLD-FROM-STOBJ-TABLE STOBJ-TABLE))))
+ACL2 !>>(DEFMACRO
+             STOBJ-FIX (ST &KEY RECOGNIZER CREATOR)
+             (DECLARE (XARGS :GUARD (AND (SYMBOLP ST)
+                                         (SYMBOLP RECOGNIZER)
+                                         (SYMBOLP CREATOR))))
+             (LET ((RECOGNIZER (OR RECOGNIZER
+                                   (DEFSTOBJ-FNNAME ST :RECOGNIZER NIL NIL)))
+                   (CREATOR (OR CREATOR
+                                (DEFSTOBJ-FNNAME ST :CREATOR NIL NIL))))
+                  (CONS 'IF
+                        (CONS (CONS RECOGNIZER (CONS ST 'NIL))
+                              (CONS ST (CONS (CONS CREATOR 'NIL) 'NIL))))))
+ STOBJ-FIX
+ACL2 !>>(DEFUN READ-FLD-FROM-STOBJ-TABLE-2
+               (STOBJ-TABLE)
+               (DECLARE (XARGS :STOBJS (STOBJ-TABLE)))
+               (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+                          (VAL)
+                          (MBE :LOGIC (NON-EXEC (FLD (STOBJ-FIX ST)))
+                               :EXEC (FLD ST))
+                          VAL))
+ READ-FLD-FROM-STOBJ-TABLE-2
+ACL2 !>>(THM (IMPLIES (STOBJ-TABLEP STOBJ-TABLE)
+                      (INTEGERP (READ-FLD-FROM-STOBJ-TABLE-2 STOBJ-TABLE))))
+ACL2 !>>(DEFUN FOO (SUM STOBJ-TABLE)
+               (DECLARE (XARGS :STOBJS (STOBJ-TABLE)
+                               :GUARD (ACL2-NUMBERP SUM)))
+               (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+                          (SUM)
+                          (+ SUM (FLD ST))
+                          SUM))
+ FOO
 ACL2 !>>Bye.
