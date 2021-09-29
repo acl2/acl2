@@ -295,45 +295,45 @@ but instead you passed ~p0~%"
 (defmacro disable-preprocessor (processor-fnc)
   `(make-event
     (b* (((unless (hons-assoc-equal '(:preprocessor ,processor-fnc)
-                                    (table-alist rp-processors (w state))))
+                                    (table-alist 'rp-processors (w state))))
           (hard-error 'disable-preprocessor
-                      "The given preprocessor function ~p0 is not registered
+                      "The given preprocessor function ~p0 is not registered ~
 with RP-Rewriter. ~%"
                       (list (cons #\0 ',processor-fnc)))))
-      `(table rp-processors '(:preprocessor ,,processor-fnc)
+      `(table rp-processors '(:preprocessor ,',processor-fnc)
               nil))))
 
 (defmacro enable-preprocessor (processor-fnc)
   `(make-event
     (b* (((unless (hons-assoc-equal '(:preprocessor ,processor-fnc)
-                                    (table-alist rp-processors (w state))))
+                                    (table-alist 'rp-processors (w state))))
           (hard-error 'enable-preprocessor
-                      "The given preprocessor function ~p0 is not registered
+                      "The given preprocessor function ~p0 is not registered ~
 with RP-Rewriter. ~%"
                       (list (cons #\0 ',processor-fnc)))))
-      `(table rp-processors '(:preprocessor ,,processor-fnc)
+      `(table rp-processors '(:preprocessor ,',processor-fnc)
               t))))
 
 (defmacro disable-postprocessor (processor-fnc)
   `(make-event
     (b* (((unless (hons-assoc-equal '(:postprocessor ,processor-fnc)
-                                    (table-alist rp-processors (w state))))
+                                    (table-alist 'rp-processors (w state))))
           (hard-error 'disable-postprocessor
-                      "The given postprocessor function ~p0 is not registered
+                      "The given postprocessor function ~p0 is not registered ~
 with RP-Rewriter. ~%"
                       (list (cons #\0 ',processor-fnc)))))
-      `(table rp-processors '(:postprocessor ,,processor-fnc)
+      `(table rp-processors '(:postprocessor ,',processor-fnc)
               nil))))
 
 (defmacro enable-postprocessor (processor-fnc)
   `(make-event
     (b* (((unless (hons-assoc-equal '(:postprocessor ,processor-fnc)
-                                    (table-alist rp-processors (w state))))
+                                    (table-alist 'rp-processors (w state))))
           (hard-error 'enable-postprocessor
-                      "The given postprocessor function ~p0 is not registered
+                      "The given postprocessor function ~p0 is not registered ~
 with RP-Rewriter. ~%"
                       (list (cons #\0 ',processor-fnc)))))
-      `(table rp-processors '(:postprocessor ,,processor-fnc)
+      `(table rp-processors '(:postprocessor ,',processor-fnc)
               t))))
 
 (defund add-processor-fn (processor-fnc formula-checks  
