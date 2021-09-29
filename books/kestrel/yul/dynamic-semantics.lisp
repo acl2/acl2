@@ -643,6 +643,13 @@
        we execute the function call (for side effects),
        which must return no values.")
      (xdoc::p
+      "For a conditional, we first execute the condition.
+       Given that our current model of Yul does not include boolean,
+       and also based on discussions on Gitter,
+       we consider 0 to be false and any non-0 value to be true.
+       If the condition is true, we execute the body;
+       otherwise we terminate regularly.")
+     (xdoc::p
       "A @('leave'), @('break'), or @('continue') statement
        leaves the computation state unchanged
        and returns the corresponding mode.")
@@ -716,7 +723,17 @@
             ((when (consp vals))
              (err (list :funcall-statement-returns vals))))
          (make-soutcome :cstate cstate :mode (mode-regular)))
-       :if (err :todo)
+       :if
+       (b* (((ok outcome) (exec-expression stmt.test cstate (1- limit)))
+            (cstate (eoutcome->cstate outcome))
+            (vals (eoutcome->values outcome))
+            ((unless (and (consp vals)
+                          (not (consp (cdr vals)))))
+             (err (list :if-test-not-single-value vals)))
+            (val (car vals)))
+         (if (equal val (value 0))
+             (make-soutcome :cstate cstate :mode (mode-regular))
+           (exec-block stmt.body cstate (1- limit))))
        :for (err :todo)
        :switch (err :todo)
        :leave (make-soutcome :cstate (cstate-fix cstate)
