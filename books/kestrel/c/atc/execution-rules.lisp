@@ -93,7 +93,7 @@
    (xdoc::p
     "Some symbolic execution rules have hypotheses saying that
      certain terms are values, i.e. satisfy @(tsee valuep).
-     These are discharged by backward chaining to
+     These are discharged by backchaining to
      the fact that those terms satisfy specific value predicates,
      such as @(tsee sintp)."))
 
@@ -125,6 +125,25 @@
   (defval *atc-value-listp-rules*
     '((:e value-listp)
       value-listp-of-cons)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-value-optionp-rules
+  :short "Rules for discharging @(tsee value-optionp) hypotheses."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some symbolic execution rules have hypotheses saying that
+     certain terms are optional values, i.e. satisfy @(tsee value-optionp).
+     These are discharged by the rules here.
+     The executable counterpart of @(tsee value-optionp)
+     takes care of the @('nil') case.
+     The non-@('nil') case is taken care by backchaining to
+     the rules in @(see atc-valuep-rules)."))
+
+  (defval *atc-value-optionp-rules*
+    '((:e value-optionp)
+      value-optionp-when-valuep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -821,8 +821,6 @@
     (:e declon->type)
     (:e declor->ident)
     (:e declor->pointerp)
-    (:e expr-call->args)
-    (:e expr-call->fun)
     (:e param-declon->declor)
     (:e param-declon->type)
     (:e stmt-compound->items)
@@ -1851,8 +1849,7 @@
     sllongp-of-sllong
     ullongp-of-ullong
     value-fix-when-valuep
-    value-list-fix-of-cons
-    value-optionp-when-valuep))
+    value-list-fix-of-cons))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2132,6 +2129,7 @@
   (append *atc-symbolic-computation-state-rules*
           *atc-valuep-rules*
           *atc-value-listp-rules*
+          *atc-value-optionp-rules*
           *atc-exec-ident-rules*
           *atc-exec-const-rules*
           *atc-exec-arrsub-rules*
