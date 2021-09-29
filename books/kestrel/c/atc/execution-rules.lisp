@@ -1350,7 +1350,10 @@
 
   (defval *atc-exec-expr-call-or-pure-rules*
     '(exec-expr-call-or-pure-when-pure
-      exec-expr-call-of-pure-when-call)))
+      exec-expr-call-of-pure-when-call
+      (:e expr-kind)
+      (:e expr-call->fun)
+      (:e expr-call->args))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
