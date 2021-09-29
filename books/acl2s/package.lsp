@@ -303,6 +303,14 @@
       begin-book
       rev ;why do we need to add this??
       with-time-limit
+      rules
+      warnings
+      errors
+      hint-events
+      redundant
+      splitter-rules
+      system-attachments
+      steps
       
 ;community books
       u::defloop def-ruleset

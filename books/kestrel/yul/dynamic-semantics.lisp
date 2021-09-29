@@ -15,6 +15,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; To generate additional theorems.
+(local
+ (fty::deflist value-list
+   :elt-type value
+   :true-listp t
+   :elementp-of-nil nil
+   :pred value-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ dynamic-semantics
   :parents (yul)
   :short "Dynamic semantics of Yul."
@@ -184,10 +194,22 @@
 (define write-vars-values ((vars identifier-listp)
                            (vals value-listp)
                            (cstate cstatep))
-  :guard (= (len vars) (len vals))
   :returns (new-cstate cstate-resultp)
   :short "Lift @(tsee write-var-value) to lists."
-  (b* (((when (endp vars)) (cstate-fix cstate))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if there are extra values or extra variables.
+     Their number must be the same.
+     We make this a run-time check because
+     it is part of the conditions to be checked
+     by the defensive dynamic semantics."))
+  (b* (((when (endp vars))
+        (if (endp vals)
+            (cstate-fix cstate)
+          (err (list :extra-values (value-list-fix vals)))))
+       ((when (endp vals))
+        (err (list :extra-variables (identifier-list-fix vars))))
        ((ok cstate) (write-var-value (car vars) (car vals) cstate)))
     (write-vars-values (cdr vars) (cdr vals) cstate))
   :hooks (:fix))
@@ -217,10 +239,22 @@
 (define add-vars-values ((vars identifier-listp)
                          (vals value-listp)
                          (cstate cstatep))
-  :guard (= (len vars) (len vals))
   :returns (new-cstate cstate-resultp)
   :short "Lift @(tsee add-var-value) to lists."
-  (b* (((when (endp vars)) (cstate-fix cstate))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if there are extra values or extra variables.
+     Their number must be the same.
+     We make this a run-time check because
+     it is part of the conditions to be checked
+     by the defensive dynamic semantics."))
+  (b* (((when (endp vars))
+        (if (endp vals)
+            (cstate-fix cstate)
+          (err (list :extra-values (value-list-fix vals)))))
+       ((when (endp vals))
+        (err (list :extra-variables (identifier-list-fix vars))))
        ((ok cstate) (add-var-value (car vars) (car vals) cstate)))
     (add-vars-values (cdr vars) (cdr vals) cstate))
   :hooks (:fix))
@@ -296,6 +330,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define init-local ((in-vars identifier-listp)
+                    (in-vals value-listp)
+                    (out-vars identifier-listp)
+                    (cstate cstatep))
+  :returns (new-cstate cstate-resultp)
+  :short "Initialize the local state of a computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used at the beginning of the execution of a function call.
+     The local state is set to consist of
+     the input and output variables of the fucntion,
+     which are passed as the @('in-vars') and @('out-vars') parameters.
+     The input variables are initialized with the input values,
+     passed as the @('in-vals') parameters;
+     note that we implicitly check that the number of input variables
+     matches the number of input values.
+     The output variables are initialized to 0."))
+  (b* ((cstate (change-cstate cstate :local nil))
+       ((ok cstate) (add-vars-values in-vars in-vals cstate))
+       ((ok cstate) (add-vars-values out-vars
+                                     (repeat (len out-vars) (value 0))
+                                     cstate)))
+    cstate)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum mode
   :short "Fixtype of modes."
   :long
@@ -367,23 +429,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define path-to-var ((path pathp))
+  :returns (var identifier-resultp)
+  :short "Extract a variable from a path."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As in the static semantics, also in the dynamic semantics
+     we require a path to consist of a single identifier.
+     This ACL2 function makes that check, returning the identifier.
+     This is the variable denoted by the path."))
+  (b* ((idens (path->get path))
+       ((unless (consp idens))
+        (err (list :empty-path (path-fix path))))
+       ((unless (endp (cdr idens)))
+        (err (list :non-singleton-path (path-fix path))))
+       (var (car idens)))
+    var)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define paths-to-vars ((paths path-listp))
+  :returns
+  (vars
+   identifier-list-resultp
+   :hints
+   (("Goal"
+     :in-theory
+     (enable
+      identifierp-when-identifier-resultp-and-not-resulterrp
+      identifier-listp-when-identifier-list-resultp-and-not-resulterrp))))
+  :short "Extract variables from paths."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee path-to-var) to lists."))
+  (b* (((when (endp paths)) nil)
+       ((ok var) (path-to-var (car paths)))
+       ((ok vars) (paths-to-vars (cdr paths))))
+    (cons var vars))
+  :hooks (:fix)
+  ///
+
+  (defret len-of-paths-to-vars
+    (implies (not (resulterrp vars))
+             (equal (len vars)
+                    (len paths)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-path ((path pathp) (cstate cstatep))
   :returns (outcome eoutcome-resultp)
   :short "Execute a path."
   :long
   (xdoc::topstring
    (xdoc::p
-    "To execute a path, we require, as in the static semantics,
-     the path to consist of a single identifier.
-     We look up the variable in the computation state.
+    "We look up the variable in the computation state.
      This always returns a single value,
      and does not change the computation state."))
-  (b* ((idens (path->get path))
-       ((unless (consp idens))
-        (err (list :empty-path (path-fix path))))
-       ((unless (endp (cdr idens)))
-        (err (list :non-singleton-path (path-fix path))))
-       (var (car idens))
+  (b* (((ok var) (path-to-var path))
        ((ok val) (read-var-value var cstate)))
     (make-eoutcome :cstate cstate :values (list val)))
   :hooks (:fix))
@@ -483,11 +588,21 @@
        could be inlined into @(tsee exec-funcall),
        but it seems useful to have a separate ACL2 function
        that takes values directly as arguments,
-       in case we want to formally talk about function calls."))
+       in case we want to formally talk about function calls.")
+     (xdoc::p
+      "We initialize the local state with the function's inputs and outputs.
+       We run the function body on the resulting computation state.
+       We read the final values of the function output variables
+       and return them as result.
+       We also restore the computation state prior to the function call."))
     (b* (((when (zp limit)) (err (list :limit
                                    (identifier-fix fun)
-                                   (value-list-fix args)))))
-      (err (list :todo (cstate-fix cstate))))
+                                   (value-list-fix args))))
+         ((ok (funinfo info)) (get-fun fun cstate))
+         ((ok cstate1) (init-local info.inputs args info.outputs cstate))
+         ((ok cstate1) (exec-block info.body cstate1 (1- limit)))
+         ((ok vals) (read-vars-values info.outputs cstate1)))
+      (make-eoutcome :cstate (cstate-fix cstate) :values vals))
     :measure (nfix limit))
 
   (define exec-statement ((stmt statementp) (cstate cstatep) (limit natp))
@@ -495,6 +610,49 @@
     :short "Execute a statement."
     :long
     (xdoc::topstring
+     (xdoc::p
+      "Executing a block statement reduces to the execution of the block,
+       which is handled by a separate ACL2 function.")
+     (xdoc::p
+      "In a single variable declaration with an initializing expression,
+       the expression must yield exactly one value;
+       if there is no initializing expression, the default value is 0.
+       In a multiple variable declaration with an initializing function call,
+       the funcion call may yield any number of values,
+       which must match the number of variables
+       (this is checked in @(tsee add-vars-values)),
+       which must be two or more;
+       if there is no initializing function call,
+       the default value is 0 for each variable.
+       In both kinds of assignments,
+       we extend the computation state with the new variable(s).")
+     (xdoc::p
+      "For a single variable assignment,
+       we ensure that the path is a singleton,
+       we execute the expression, which must return a single value,
+       and we write to the variable.
+       For a multiple variable assignment,
+       we ensure that each path is a singleton
+       and that there are at least two variables,
+       we execute the function call,
+       which must return the same number of values as the variables
+       (this is checked in @(tsee write-vars-values),
+       and we write to the variables.")
+     (xdoc::p
+      "For a function call statement,
+       we execute the function call (for side effects),
+       which must return no values.")
+     (xdoc::p
+      "For a conditional, we first execute the condition.
+       Given that our current model of Yul does not include boolean,
+       and also based on discussions on Gitter,
+       we consider 0 to be false and any non-0 value to be true.
+       If the condition is true, we execute the body;
+       otherwise we terminate regularly.")
+     (xdoc::p
+      "A @('leave'), @('break'), or @('continue') statement
+       leaves the computation state unchanged
+       and returns the corresponding mode.")
      (xdoc::p
       "A function definition
        does not change the computation state
@@ -506,18 +664,84 @@
     (b* (((when (zp limit)) (err (list :limit (statement-fix stmt)))))
       (statement-case
        stmt
-       :block (err :todo)
-       :variable-single (err :todo)
-       :variable-multi (err :todo)
-       :assign-single (err :todo)
-       :assign-multi (err :todo)
-       :funcall (err :todo)
-       :if (err :todo)
+       :block (exec-block stmt.get cstate (1- limit))
+       :variable-single
+       (expression-option-case
+        stmt.init
+        :some
+        (b* (((ok outcome) (exec-expression stmt.init.val cstate (1- limit)))
+             (cstate (eoutcome->cstate outcome))
+             (vals (eoutcome->values outcome))
+             ((unless (and (consp vals)
+                           (not (consp (cdr vals)))))
+              (err (list :not-single-value vals)))
+             ((ok cstate) (add-var-value stmt.name (car vals) cstate)))
+          (make-soutcome :cstate cstate :mode (mode-regular)))
+        :none
+        (b* (((ok cstate) (add-var-value stmt.name (value 0) cstate)))
+          (make-soutcome :cstate cstate :mode (mode-regular))))
+       :variable-multi
+       (if (>= (len stmt.names) 2)
+           (funcall-option-case
+            stmt.init
+            :some
+            (b* (((ok outcome) (exec-funcall stmt.init.val cstate (1- limit)))
+                 (cstate (eoutcome->cstate outcome))
+                 (vals (eoutcome->values outcome))
+                 ((ok cstate) (add-vars-values stmt.names vals cstate)))
+              (make-soutcome :cstate cstate :mode (mode-regular)))
+            :none
+            (b* (((ok cstate) (add-vars-values stmt.names
+                                               (repeat (len stmt.names)
+                                                       (value 0))
+                                               cstate)))
+              (make-soutcome :cstate cstate :mode (mode-regular))))
+         (err (list :non-multiple-variables stmt.names)))
+       :assign-single
+       (b* (((ok var) (path-to-var stmt.target))
+            ((ok outcome) (exec-expression stmt.value cstate (1- limit)))
+            (cstate (eoutcome->cstate outcome))
+            (vals (eoutcome->values outcome))
+            ((unless (and (consp vals)
+                          (not (consp (cdr vals)))))
+             (err (list :not-single-value vals)))
+            ((ok cstate) (write-var-value var (car vals) cstate)))
+         (make-soutcome :cstate cstate :mode (mode-regular)))
+       :assign-multi
+       (b* (((unless (>= (len stmt.targets) 2))
+             (err (list :non-multiple-variables stmt.targets)))
+            ((ok vars) (paths-to-vars stmt.targets))
+            ((ok outcome) (exec-funcall stmt.value cstate (1- limit)))
+            (cstate (eoutcome->cstate outcome))
+            (vals (eoutcome->values outcome))
+            ((ok cstate) (write-vars-values vars vals cstate)))
+         (make-soutcome :cstate cstate :mode (mode-regular)))
+       :funcall
+       (b* (((ok outcome) (exec-funcall stmt.get cstate (1- limit)))
+            (cstate (eoutcome->cstate outcome))
+            (vals (eoutcome->values outcome))
+            ((when (consp vals))
+             (err (list :funcall-statement-returns vals))))
+         (make-soutcome :cstate cstate :mode (mode-regular)))
+       :if
+       (b* (((ok outcome) (exec-expression stmt.test cstate (1- limit)))
+            (cstate (eoutcome->cstate outcome))
+            (vals (eoutcome->values outcome))
+            ((unless (and (consp vals)
+                          (not (consp (cdr vals)))))
+             (err (list :if-test-not-single-value vals)))
+            (val (car vals)))
+         (if (equal val (value 0))
+             (make-soutcome :cstate cstate :mode (mode-regular))
+           (exec-block stmt.body cstate (1- limit))))
        :for (err :todo)
        :switch (err :todo)
-       :leave (err :todo)
-       :break (err :todo)
-       :continue (err :todo)
+       :leave (make-soutcome :cstate (cstate-fix cstate)
+                             :mode (mode-leave))
+       :break (make-soutcome :cstate (cstate-fix cstate)
+                             :mode (mode-break))
+       :continue (make-soutcome :cstate (cstate-fix cstate)
+                                :mode (mode-continue))
        :fundef (make-soutcome :cstate (cstate-fix cstate)
                               :mode (mode-regular))))
     :measure (nfix limit))
