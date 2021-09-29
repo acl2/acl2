@@ -582,7 +582,7 @@
     (b* (((when (zp limit)) (err (list :limit (statement-fix stmt)))))
       (statement-case
        stmt
-       :block (err :todo)
+       :block (exec-block stmt.get cstate (1- limit))
        :variable-single (err :todo)
        :variable-multi (err :todo)
        :assign-single (err :todo)
