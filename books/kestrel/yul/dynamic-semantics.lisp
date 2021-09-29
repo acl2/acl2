@@ -639,6 +639,10 @@
        (this is checked in @(tsee write-vars-values),
        and we write to the variables.")
      (xdoc::p
+      "For a function call statement,
+       we execute the function call (for side effects),
+       which must return no values.")
+     (xdoc::p
       "A @('leave'), @('break'), or @('continue') statement
        leaves the computation state unchanged
        and returns the corresponding mode.")
@@ -705,7 +709,13 @@
             (vals (eoutcome->values outcome))
             ((ok cstate) (write-vars-values vars vals cstate)))
          (make-soutcome :cstate cstate :mode (mode-regular)))
-       :funcall (err :todo)
+       :funcall
+       (b* (((ok outcome) (exec-funcall stmt.get cstate (1- limit)))
+            (cstate (eoutcome->cstate outcome))
+            (vals (eoutcome->values outcome))
+            ((when (consp vals))
+             (err (list :funcall-statement-returns vals))))
+         (make-soutcome :cstate cstate :mode (mode-regular)))
        :if (err :todo)
        :for (err :todo)
        :switch (err :todo)
