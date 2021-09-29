@@ -813,29 +813,8 @@
      e.g. to check whether a binary operator is strict."))
   '((:e binop-purep)
     (:e binop-strictp)
-    (:e block-item-declon->get)
-    (:e block-item-kind)
-    (:e block-item-stmt->get)
-    (:e declon->init)
-    (:e declon->declor)
-    (:e declon->type)
-    (:e declor->ident)
-    (:e declor->pointerp)
-    (:e expr-call->args)
-    (:e expr-call->fun)
     (:e param-declon->declor)
     (:e param-declon->type)
-    (:e stmt-compound->items)
-    (:e stmt-expr->get)
-    (:e stmt-if->test)
-    (:e stmt-if->then)
-    (:e stmt-ifelse->else)
-    (:e stmt-ifelse->test)
-    (:e stmt-ifelse->then)
-    (:e stmt-kind)
-    (:e stmt-return->value)
-    (:e stmt-while->test)
-    (:e stmt-while->body)
     (:e type-kind)
     (:e unop-fix)
     (:e unop-kind)))
@@ -886,7 +865,6 @@
     (:e type-ullong)
     (:e valuep)
     (:e value-list-fix)
-    (:e value-listp)
     (:e zp)
     (:e <<)))
 
@@ -1851,21 +1829,8 @@
     ulongp-of-ulong
     sllongp-of-sllong
     ullongp-of-ullong
-    valuep-when-pointerp
-    valuep-when-scharp
-    valuep-when-ucharp
-    valuep-when-sshortp
-    valuep-when-ushortp
-    valuep-when-sintp
-    valuep-when-uintp
-    valuep-when-slongp
-    valuep-when-ulongp
-    valuep-when-sllongp
-    valuep-when-ullongp
     value-fix-when-valuep
-    value-listp-of-cons
-    value-list-fix-of-cons
-    value-optionp-when-valuep))
+    value-list-fix-of-cons))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2143,6 +2108,9 @@
      that depend on the specific C-representing ACL2 functions involved.
      See @(see atc-implementation)."))
   (append *atc-symbolic-computation-state-rules*
+          *atc-valuep-rules*
+          *atc-value-listp-rules*
+          *atc-value-optionp-rules*
           *atc-exec-ident-rules*
           *atc-exec-const-rules*
           *atc-exec-arrsub-rules*

@@ -86,6 +86,67 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-valuep-rules
+  :short "Rules for discharging @(tsee valuep) hypotheses."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some symbolic execution rules have hypotheses saying that
+     certain terms are values, i.e. satisfy @(tsee valuep).
+     These are discharged by backchaining to
+     the fact that those terms satisfy specific value predicates,
+     such as @(tsee sintp)."))
+
+  (defval *atc-valuep-rules*
+    '(valuep-when-pointerp
+      valuep-when-scharp
+      valuep-when-ucharp
+      valuep-when-sshortp
+      valuep-when-ushortp
+      valuep-when-sintp
+      valuep-when-uintp
+      valuep-when-slongp
+      valuep-when-ulongp
+      valuep-when-sllongp
+      valuep-when-ullongp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-value-listp-rules
+  :short "Rules for discharging @(tsee value-listp) hypotheses."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some symbolic execution rules have hypotheses saying that
+     certain terms are lists of values, i.e. satisfy @(tsee value-listp).
+     These are discharged by the rules here,
+     in conjunction with the rules in @(see atc-valuep-rules)."))
+
+  (defval *atc-value-listp-rules*
+    '((:e value-listp)
+      value-listp-of-cons)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-value-optionp-rules
+  :short "Rules for discharging @(tsee value-optionp) hypotheses."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some symbolic execution rules have hypotheses saying that
+     certain terms are optional values, i.e. satisfy @(tsee value-optionp).
+     These are discharged by the rules here.
+     The executable counterpart of @(tsee value-optionp)
+     takes care of the @('nil') case.
+     The non-@('nil') case is taken care by backchaining to
+     the rules in @(see atc-valuep-rules)."))
+
+  (defval *atc-value-optionp-rules*
+    '((:e value-optionp)
+      value-optionp-when-valuep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-exec-ident-rules
   :short "Rules for executing identifiers."
   :long
@@ -1308,7 +1369,10 @@
 
   (defval *atc-exec-expr-call-or-pure-rules*
     '(exec-expr-call-or-pure-when-pure
-      exec-expr-call-of-pure-when-call)))
+      exec-expr-call-of-pure-when-call
+      (:e expr-kind)
+      (:e expr-call->fun)
+      (:e expr-call->args))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1335,7 +1399,13 @@
     :enable exec-expr-asg)
 
   (defval *atc-exec-expr-asg-rules*
-    '(exec-expr-asg-open)))
+    '(exec-expr-asg-open
+      (:e expr-kind)
+      (:e expr-binary->op)
+      (:e expr-binary->arg1)
+      (:e expr-binary->arg2)
+      (:e binop-kind)
+      (:e expr-ident->get))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1444,7 +1514,17 @@
       exec-stmt-when-ifelse
       exec-stmt-when-while
       exec-stmt-when-return
-      (:e value-optionp))))
+      (:e stmt-kind)
+      (:e stmt-compound->items)
+      (:e stmt-expr->get)
+      (:e stmt-if->test)
+      (:e stmt-if->then)
+      (:e stmt-ifelse->test)
+      (:e stmt-ifelse->then)
+      (:e stmt-ifelse->else)
+      (:e stmt-while->test)
+      (:e stmt-while->body)
+      (:e stmt-return->value))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1489,7 +1569,15 @@
 
   (defval *atc-exec-block-item-rules*
     '(exec-block-item-when-declon
-      exec-block-item-when-stmt)))
+      exec-block-item-when-stmt
+      (:e block-item-kind)
+      (:e block-item-declon->get)
+      (:e block-item-stmt->get)
+      (:e declon->type)
+      (:e declon->declor)
+      (:e declon->init)
+      (:e declor->pointerp)
+      (:e declor->ident))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

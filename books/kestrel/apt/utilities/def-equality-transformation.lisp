@@ -32,7 +32,7 @@
 (include-book "kestrel/utilities/world" :dir :system)
 (include-book "kestrel/untranslated-terms/rename-functions" :dir :system)
 (include-book "kestrel/utilities/ruler-extenders" :dir :system)
-(include-book "kestrel/utilities/defun-forms" :dir :system) ;for get-body-from-event
+(include-book "kestrel/utilities/defining-forms" :dir :system) ;for get-body-from-event
 (include-book "kestrel/apt/utilities/function-renamingp" :dir :system)
 (include-book "kestrel/apt/utilities/set-stobjs-in-declares-to-match" :dir :system)
 (include-book "kestrel/apt/utilities/transformation-prologue" :dir :system)
@@ -416,7 +416,7 @@
                                        transform-specific-required-args
                                        transform-specific-optional-args-ands-defaults ; a list of doublets containing arg names and quoted default values
                                        &key
-                                       (enables 'nil) ; enabled to used in all equivalence proofs
+                                       (enables 'nil) ; enables to use in all equivalence proofs
                                        (make-becomes-theorem-name 'make-becomes-theorem)
                                        (make-becomes-theorems-name 'make-becomes-theorems)
                                        (make-becomes-theorem-extra-args 'nil))

@@ -75,7 +75,7 @@
 (include-book "format-strings")
 (include-book "quote")
 (include-book "my-get-event")
-(include-book "defun-forms")
+(include-book "defining-forms")
 (include-book "world")
 (include-book "conjuncts-and-disjuncts")
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
