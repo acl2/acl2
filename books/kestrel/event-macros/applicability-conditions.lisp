@@ -267,8 +267,8 @@
                      :rule-classes nil
                      ,@(and thm-hints (list :hints thm-hints))))
        (error-msg (msg
-                   "The proof of the ~x0 applicability condition fails:~%~x1~|"
-                   appcond.name thm-formula))
+                   "The proof of the ~x0 applicability condition fails:~%~X12~|"
+                   appcond.name thm-formula nil))
        (try?-thm-event (if (eq print :all)
                            thm-event
                          (try-event thm-event ctx t nil error-msg)))
@@ -276,8 +276,8 @@
        (progress-start? (and show-progress-p
                              `((cw-event
                                 "~%Attempting to prove the ~x0 ~
-                                 applicability condition:~%~x1~|"
-                                ',appcond.name ',thm-formula))))
+                                 applicability condition:~%~X12~|"
+                                ',appcond.name ',thm-formula nil))))
        (progress-end? (and show-progress-p
                            `((cw-event "Done.~%"))))
        (event `(local (progn ,@progress-start?
