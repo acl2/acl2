@@ -886,7 +886,6 @@
     (:e type-ullong)
     (:e valuep)
     (:e value-list-fix)
-    (:e value-listp)
     (:e zp)
     (:e <<)))
 
@@ -1852,7 +1851,6 @@
     sllongp-of-sllong
     ullongp-of-ullong
     value-fix-when-valuep
-    value-listp-of-cons
     value-list-fix-of-cons
     value-optionp-when-valuep))
 
@@ -2133,6 +2131,7 @@
      See @(see atc-implementation)."))
   (append *atc-symbolic-computation-state-rules*
           *atc-valuep-rules*
+          *atc-value-listp-rules*
           *atc-exec-ident-rules*
           *atc-exec-const-rules*
           *atc-exec-arrsub-rules*

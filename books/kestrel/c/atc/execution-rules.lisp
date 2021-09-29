@@ -112,6 +112,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-value-listp-rules
+  :short "Rules for discharging @(tsee value-listp) hypotheses."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some symbolic execution rules have hypotheses saying that
+     certain terms are lists of values, i.e. satisfy @(tsee value-listp).
+     These are discharged by the rules here,
+     in conjunction with the rules in @(see atc-valuep-rules)."))
+
+  (defval *atc-value-listp-rules*
+    '((:e value-listp)
+      value-listp-of-cons)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-exec-ident-rules
   :short "Rules for executing identifiers."
   :long
