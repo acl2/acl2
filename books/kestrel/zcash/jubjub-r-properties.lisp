@@ -14,7 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The following belongs to the prime field library.
+; The following belong to the prime field library.
 
 (defruled zero-when-equal-to-neg-with-odd-p
   (implies (and (fep x p)
@@ -24,6 +24,17 @@
                   (equal x 0)))
   :enable (fep neg oddp)
   :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+(defruled solve-by-div
+  (implies (and (rtl::primep p)
+                (fep x p)
+                (fep a p)
+                (fep b p)
+                (not (equal b 0)))
+           (equal (equal a (mul x b p))
+                  (equal x (div a b p))))
+  :prep-books
+  ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -553,5 +564,196 @@
        :enable not-jubjub-r-pointp-when-0-ordinate)
       (:derive (:contradiction nil)
        :from (:not-point :point))
+      (:qed))
+     :rule-classes nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule jubjub-point->u-injective-on-jubjub-r-pointp
+  :short "@(tsee jubjub-point->u) is injective in @(tsee jubjub-r-pointp)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is Theorem 5.4.8 in [ZPS].
+     This ACL2 proof follows the proof in [ZPS]."))
+  (implies (and (ecurve::twisted-edwards-add-associativity)
+                (jubjub-r-pointp point)
+                (jubjub-r-pointp qoint))
+           (equal (equal (jubjub-point->u point)
+                         (jubjub-point->u qoint))
+                  (equal point qoint)))
+  :use injectivity-lemma
+
+  :prep-lemmas
+
+  ((defisar d-square-when-1-d-usquare-is-zero
+     (implies (and (rtl::primep q)
+                   (fep u q)
+                   (fep d q)
+                   (not (equal d 0))
+                   (equal (sub 1
+                               (mul d
+                                    (mul u u q)
+                                    q)
+                               q)
+                          0))
+              (ecurve::pfield-squarep d q))
+     :proof
+     ((:assume (:q (rtl::primep q)))
+      (:assume (:u (fep u q)))
+      (:assume (:d (and (fep d q) (not (equal d 0)))))
+      (:assume (:1-d.u^2=0 (equal (sub 1
+                                       (mul d
+                                            (mul u u q)
+                                            q)
+                                       q)
+                                  0)))
+      (:derive (:u^2=1/d (equal (mul u u q)
+                                (inv d q)))
+       :from (:1-d.u^2=0 :q :u :d)
+       :prep-books
+       ((include-book "kestrel/prime-fields/bind-free-rules" :dir :system)))
+      (:derive (:1/d-square (ecurve::pfield-squarep (inv d q) q))
+       :from (:u^2=1/d :u)
+       :use (:instance ecurve::pfield-squarep-suff (r u) (p q) (x (inv d q))))
+      (:derive (:d-square (ecurve::pfield-squarep d q))
+       :from (:1/d-square :q :d))
+      (:qed))
+     :disable t)
+
+   (defisar jubjub-point-resolve-square-ordinate
+     (implies (jubjub-pointp point)
+              (b* ((u (jubjub-point->u point))
+                   (v (jubjub-point->v point)))
+                (equal (mul v v (jubjub-q))
+                       (div (sub 1
+                                 (mul (jubjub-a)
+                                      (mul u u (jubjub-q))
+                                      (jubjub-q))
+                                 (jubjub-q))
+                            (sub 1
+                                 (mul (jubjub-d)
+                                      (mul u u (jubjub-q))
+                                      (jubjub-q))
+                                 (jubjub-q))
+                            (jubjub-q)))))
+     :proof
+     ((:assume (:point (jubjub-pointp point)))
+      (:let (u (jubjub-point->u point)))
+      (:let (v (jubjub-point->v point)))
+      (:derive (:curve-equation
+                (b* ((u^2 (mul u u (jubjub-q)))
+                     (v^2 (mul v v (jubjub-q)))
+                     (u^2.v^2 (mul u^2 v^2 (jubjub-q)))
+                     (a.u^2 (mul (jubjub-a) u^2 (jubjub-q)))
+                     (d.u^2.v^2 (mul (jubjub-d) u^2.v^2 (jubjub-q))))
+                  (equal (add a.u^2 v^2 (jubjub-q))
+                         (add 1 d.u^2.v^2 (jubjub-q)))))
+       :from (:point)
+       :enable jubjub-point-satisfies-curve-equation)
+      (:derive (:separate
+                (equal (sub 1
+                            (mul (jubjub-a)
+                                 (mul u u (jubjub-q))
+                                 (jubjub-q))
+                            (jubjub-q))
+                       (mul (mul v v (jubjub-q))
+                            (sub 1
+                                 (mul (jubjub-d)
+                                      (mul u u (jubjub-q))
+                                      (jubjub-q))
+                                 (jubjub-q))
+                            (jubjub-q))))
+       :from (:curve-equation)
+       :prep-books
+       ((include-book "kestrel/prime-fields/bind-free-rules" :dir :system)))
+      (:derive (:nonzero (not (equal (sub 1
+                                          (mul (jubjub-d)
+                                               (mul u u (jubjub-q))
+                                               (jubjub-q))
+                                          (jubjub-q))
+                                     0)))
+       :from (:point)
+       :use (:instance d-square-when-1-d-usquare-is-zero
+             (q (jubjub-q))
+             (d (jubjub-d))
+             (u (jubjub-point->u point)))
+       :enable fep)
+      (:derive (:conclusion
+                (equal (mul v v (jubjub-q))
+                       (div (sub 1
+                                 (mul (jubjub-a)
+                                      (mul u u (jubjub-q))
+                                      (jubjub-q))
+                                 (jubjub-q))
+                            (sub 1
+                                 (mul (jubjub-d)
+                                      (mul u u (jubjub-q))
+                                      (jubjub-q))
+                                 (jubjub-q))
+                            (jubjub-q))))
+       :from (:separate :nonzero :point)
+       :enable solve-by-div
+       :disable pfield::mul-associative)
+      (:qed))
+     :disable t)
+
+   (defisar injectivity-lemma
+     (implies (and (ecurve::twisted-edwards-add-associativity)
+                   (jubjub-r-pointp point)
+                   (jubjub-r-pointp qoint)
+                   (equal (jubjub-point->u point)
+                          (jubjub-point->u qoint)))
+              (equal point qoint))
+     :proof
+     ((:assume (:associativity (ecurve::twisted-edwards-add-associativity)))
+      (:assume (:point (jubjub-r-pointp point)))
+      (:assume (:qoint (jubjub-r-pointp qoint)))
+      (:assume (:equal-u-u (equal (jubjub-point->u point)
+                                  (jubjub-point->u qoint))))
+      (:let (vp (jubjub-point->v point)))
+      (:let (vq (jubjub-point->v qoint)))
+      (:derive (:equal-vp^2-vq^2 (equal (mul vp vp (jubjub-q))
+                                        (mul vq vq (jubjub-q))))
+       :from (:point :qoint :equal-u-u)
+       :use (jubjub-point-resolve-square-ordinate
+             (:instance jubjub-point-resolve-square-ordinate (point qoint))))
+      (:derive (:refactor (equal 0
+                                 (mul (sub vq vp (jubjub-q))
+                                      (add vq vp (jubjub-q))
+                                      (jubjub-q))))
+       :from (:equal-vp^2-vq^2 :point)
+       :prep-books
+       ((include-book "kestrel/prime-fields/bind-free-rules" :dir :system)))
+      (:derive (:vq-disjunction
+                (or (equal vq vp)
+                    (equal vq (neg vp (jubjub-q)))))
+       :from (:refactor :point :qoint)
+       :use (:instance pfield::equal-of-0-and-mul
+             (p (jubjub-q))
+             (x (sub (jubjub-point->v qoint)
+                     (jubjub-point->v point)
+                     (jubjub-q)))
+             (y (add (jubjub-point->v qoint)
+                     (jubjub-point->v point)
+                     (jubjub-q))))
+       :prep-books
+       ((include-book "kestrel/prime-fields/bind-free-rules" :dir :system)))
+      (:derive (:qoint-disjunction
+                (or (equal qoint point)
+                    (equal qoint (ecurve::point-finite (jubjub-point->u point)
+                                                       (neg vp (jubjub-q))))))
+       :from (:vq-disjunction :point :qoint :equal-u-u)
+       :enable (jubjub-r-pointp
+                jubjub-pointp
+                jubjub-point->u
+                jubjub-point->v
+                ecurve::point-finite
+                ecurve::pointp
+                ecurve::point-finite->x
+                ecurve::point-finite->y))
+      (:derive (:point=qoint (equal point qoint))
+       :from (:qoint-disjunction :associativity :point :qoint)
+       :use not-jubjub-r-pointp-of-jubjub-r-point-with-neg-ordinate)
       (:qed))
      :rule-classes nil)))
