@@ -697,7 +697,8 @@
   :returns (mv (yes/no booleanp)
                (op unopp)
                (arg pseudo-termp)
-               (type typep))
+               (in-type typep)
+               (out-type typep))
   :short "Check if a term may represent a unary expression."
   :long
   (xdoc::topstring
@@ -706,24 +707,24 @@
      that represent C unary operators,
      we return the operator and the argument term.")
    (xdoc::p
-    "We also return the result C type of the operator.")
+    "We also return the input and output C types of the operator.")
    (xdoc::p
     "If the term does not have that form, we return an indication of failure.
      The term may represent some other kind of C expression."))
-  (b* (((acl2::fun (no)) (mv nil (irr-unop) nil (irr-type)))
+  (b* (((acl2::fun (no)) (mv nil (irr-unop) nil (irr-type) (irr-type)))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((mv okp op fixtype) (atc-check-symbol-2part term.fn))
        ((when (not okp)) (no))
-       (type (atc-integer-fixtype-to-type fixtype))
-       ((when (not type)) (no))
+       (in-type (atc-integer-fixtype-to-type fixtype))
+       ((when (not in-type)) (no))
        ((unless (list-lenp 1 term.args)) (no))
        (arg (first term.args)))
     (case op
-      (plus (mv t (unop-plus) arg (promote-type type)))
-      (minus (mv t (unop-minus) arg (promote-type type)))
-      (bitnot (mv t (unop-bitnot) arg (promote-type type)))
-      (lognot (mv t (unop-lognot) arg (type-sint)))
+      (plus (mv t (unop-plus) arg in-type (promote-type in-type)))
+      (minus (mv t (unop-minus) arg in-type (promote-type in-type)))
+      (bitnot (mv t (unop-bitnot) arg in-type (promote-type in-type)))
+      (lognot (mv t (unop-lognot) arg in-type (type-sint)))
       (t (no))))
   ///
 
@@ -1307,15 +1308,23 @@
           (acl2::value
            (list (expr-const (const-int const))
                  out-type)))
-         ((mv okp op arg type) (atc-check-unop term))
+         ((mv okp op arg in-type out-type) (atc-check-unop term))
          ((when okp)
-          (b* (((er (list arg-expr &)) (atc-gen-expr-cval-pure arg
-                                                               inscope
-                                                               fn
-                                                               ctx
-                                                               state)))
+          (b* (((er (list arg-expr type)) (atc-gen-expr-cval-pure arg
+                                                                  inscope
+                                                                  fn
+                                                                  ctx
+                                                                  state))
+               ((unless (equal type in-type))
+                (er-soft+ ctx t (irr)
+                          "The unary operator ~x0 ~
+                           is applied to a term ~x1 returning ~x1, ~
+                           but a ~x3 operand is expected. ~
+                           This is indicative of provably dead code, ~
+                           given that the code is guard-verified."
+                          op arg type in-type)))
             (acl2::value (list (make-expr-unary :op op :arg arg-expr)
-                               type))))
+                               out-type))))
          ((mv okp op arg1 arg2 type) (atc-check-binop term))
          ((when okp)
           (b* (((er (list arg1-expr &)) (atc-gen-expr-cval-pure arg1
