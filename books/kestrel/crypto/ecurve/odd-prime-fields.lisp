@@ -222,7 +222,9 @@
 
 (defund /p (x)
   (declare (xargs :guard (integerp x)))
-  (expt (ifix x) (- (prime) 2)))
+  (if (equal 0 (mod x (prime)))
+      0 ;; special behavior in (undefined) case
+    (expt (ifix x) (- (prime) 2))))
 
 (in-theory (disable (:e /p))) ; because it depends on non-executable PRIME
 
@@ -317,12 +319,21 @@
                         (y x))))
   :rule-classes ((:forward-chaining :trigger-terms ((=p (i* x x) 0)))))
 
+(local
+ (defthmd *-of-expt-and-expt
+   (equal (* (EXPT r1 i)
+             (EXPT r2 i))
+          (expt (* r1 r2) i))))
+
 (encapsulate ()
   (local (include-book "arithmetic/top-with-meta" :dir :system))
+  (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
   (defthm distributivity-of-/p-over-i*
     (=p (/p (i* x y))
         (i* (/p x) (/p y)))
-    :hints (("Goal" :in-theory (enable i* =p /p)))))
+    :hints (("Goal" :in-theory (e/d (i* =p /p modp *-of-expt-and-expt)
+                                    (acl2::distributivity-of-expt-over-*
+                                     acl2::expt-of-*))))))
 
 (encapsulate ()
   (local (include-book "arithmetic/top-with-meta" :dir :system))

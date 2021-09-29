@@ -141,11 +141,7 @@
         (implies (and (rtl::primep p)
                       (fep a p))
                  (equal (inv (inv a p) p)
-                        (if (equal a 0)
-                            (if (equal p 2)
-                                1
-                              0)
-                          a)))
+                        a))
         :prep-books
         ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
 

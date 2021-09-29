@@ -128,6 +128,17 @@
                   (mod (expt x i) y)))
   :hints (("Goal" :in-theory (enable expt mod-of-*-subst-arg1))))
 
+(defthm mod-of-expt-when-equal-of-mod-subst-constant
+  (implies (and (syntaxp (not (quotep r)))
+                (equal (mod r y) k)
+                (syntaxp (quotep k))
+                (natp i)
+                (integerp r)
+                (integerp y))
+           (equal (mod (expt r i) y)
+                  (mod (expt k i) y)))
+  :hints (("Goal" :in-theory (enable expt mod-of-*-subst-arg1))))
+
 (defthm mod-of-*-of-expt-of-mod
   (implies (and (natp i)
                 (integerp x1)
