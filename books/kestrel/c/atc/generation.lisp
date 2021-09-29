@@ -741,7 +741,9 @@
                (op binopp)
                (arg1 pseudo-termp)
                (arg2 pseudo-termp)
-               (type typep))
+               (in-type1 typep)
+               (in-type2 typep)
+               (out-type typep))
   :short "Check if a term may represent a strict pure binary expression."
   :long
   (xdoc::topstring
@@ -750,39 +752,50 @@
      that represent C strict pure binary operators,
      we return the operator and the argument terms.")
    (xdoc::p
-    "We also return the result C type of the operator.")
+    "We also return the input and output C types of the operator.")
    (xdoc::p
     "If the term does not have that form, we return an indication of failure.
      The term may represent some other kind of C expression."))
-  (b* (((acl2::fun (no)) (mv nil (irr-binop) nil nil (irr-type)))
+  (b* (((acl2::fun (no))
+        (mv nil (irr-binop) nil nil (irr-type) (irr-type) (irr-type)))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((mv okp op fixtype1 fixtype2) (atc-check-symbol-3part term.fn))
        ((when (not okp)) (no))
-       (type1 (atc-integer-fixtype-to-type fixtype1))
-       ((when (not type1)) (no))
-       (type2 (atc-integer-fixtype-to-type fixtype2))
-       ((when (not type2)) (no))
+       (in-type1 (atc-integer-fixtype-to-type fixtype1))
+       ((when (not in-type1)) (no))
+       (in-type2 (atc-integer-fixtype-to-type fixtype2))
+       ((when (not in-type2)) (no))
        ((unless (list-lenp 2 term.args)) (no))
        (arg1 (first term.args))
        (arg2 (second term.args)))
     (case op
-      (add (mv t (binop-add) arg1 arg2 (uaconvert-types type1 type2)))
-      (sub (mv t (binop-sub) arg1 arg2 (uaconvert-types type1 type2)))
-      (mul (mv t (binop-mul) arg1 arg2 (uaconvert-types type1 type2)))
-      (div (mv t (binop-div) arg1 arg2 (uaconvert-types type1 type2)))
-      (rem (mv t (binop-rem) arg1 arg2 (uaconvert-types type1 type2)))
-      (shl (mv t (binop-shl) arg1 arg2 (promote-type type1)))
-      (shr (mv t (binop-shr) arg1 arg2 (promote-type type1)))
-      (lt (mv t (binop-lt) arg1 arg2 (type-sint)))
-      (le (mv t (binop-le) arg1 arg2 (type-sint)))
-      (gt (mv t (binop-gt) arg1 arg2 (type-sint)))
-      (ge (mv t (binop-ge) arg1 arg2 (type-sint)))
-      (eq (mv t (binop-eq) arg1 arg2 (type-sint)))
-      (ne (mv t (binop-ne) arg1 arg2 (type-sint)))
-      (bitand (mv t (binop-bitand) arg1 arg2 (uaconvert-types type1 type2)))
-      (bitxor (mv t (binop-bitxor) arg1 arg2 (uaconvert-types type1 type2)))
-      (bitior (mv t (binop-bitior) arg1 arg2 (uaconvert-types type1 type2)))
+      (add (mv t (binop-add) arg1 arg2
+               in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
+      (sub (mv t (binop-sub) arg1 arg2
+               in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
+      (mul (mv t (binop-mul) arg1 arg2
+               in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
+      (div (mv t (binop-div) arg1 arg2
+               in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
+      (rem (mv t (binop-rem) arg1 arg2
+               in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
+      (shl (mv t (binop-shl) arg1 arg2
+               in-type1 in-type2 (promote-type in-type1)))
+      (shr (mv t (binop-shr) arg1 arg2
+               in-type1 in-type2 (promote-type in-type1)))
+      (lt (mv t (binop-lt) arg1 arg2 in-type1 in-type2 (type-sint)))
+      (le (mv t (binop-le) arg1 arg2 in-type1 in-type2 (type-sint)))
+      (gt (mv t (binop-gt) arg1 arg2 in-type1 in-type2 (type-sint)))
+      (ge (mv t (binop-ge) arg1 arg2 in-type1 in-type2 (type-sint)))
+      (eq (mv t (binop-eq) arg1 arg2 in-type1 in-type2 (type-sint)))
+      (ne (mv t (binop-ne) arg1 arg2 in-type1 in-type2 (type-sint)))
+      (bitand (mv t (binop-bitand) arg1 arg2
+                  in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
+      (bitxor (mv t (binop-bitxor) arg1 arg2
+                  in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
+      (bitior (mv t (binop-bitior) arg1 arg2
+                  in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
       (t (no))))
   ///
 
@@ -1318,29 +1331,40 @@
                ((unless (equal type in-type))
                 (er-soft+ ctx t (irr)
                           "The unary operator ~x0 ~
-                           is applied to a term ~x1 returning ~x1, ~
+                           is applied to a term ~x1 returning ~x2, ~
                            but a ~x3 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
                           op arg type in-type)))
             (acl2::value (list (make-expr-unary :op op :arg arg-expr)
                                out-type))))
-         ((mv okp op arg1 arg2 type) (atc-check-binop term))
+         ((mv okp op arg1 arg2 in-type1 in-type2 out-type)
+          (atc-check-binop term))
          ((when okp)
-          (b* (((er (list arg1-expr &)) (atc-gen-expr-cval-pure arg1
-                                                                inscope
-                                                                fn
-                                                                ctx
-                                                                state))
-               ((er (list arg2-expr &)) (atc-gen-expr-cval-pure arg2
-                                                                inscope
-                                                                fn
-                                                                ctx
-                                                                state)))
+          (b* (((er (list arg1-expr type1)) (atc-gen-expr-cval-pure arg1
+                                                                    inscope
+                                                                    fn
+                                                                    ctx
+                                                                    state))
+               ((er (list arg2-expr type2)) (atc-gen-expr-cval-pure arg2
+                                                                    inscope
+                                                                    fn
+                                                                    ctx
+                                                                    state))
+               ((unless (and (equal type1 in-type1)
+                             (equal type2 in-type2)))
+                (er-soft+ ctx t (irr)
+                          "The binary operator ~x0 ~
+                           is applied to a term ~x1 returning ~x2
+                           and to a term ~x3 returning ~x4,
+                           but a ~x5 and a ~x6 operand is expected. ~
+                           This is indicative of provably dead code, ~
+                           given that the code is guard-verified."
+                          op arg1 type1 arg2 type2 in-type1 in-type2)))
             (acl2::value (list (make-expr-binary :op op
                                                  :arg1 arg1-expr
                                                  :arg2 arg2-expr)
-                               type))))
+                               out-type))))
          ((mv okp tyname arg) (atc-check-conv term))
          ((when okp)
           (b* (((er (list arg-expr &)) (atc-gen-expr-cval-pure arg
