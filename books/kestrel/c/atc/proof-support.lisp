@@ -1851,17 +1851,6 @@
     ulongp-of-ulong
     sllongp-of-sllong
     ullongp-of-ullong
-    valuep-when-pointerp
-    valuep-when-scharp
-    valuep-when-ucharp
-    valuep-when-sshortp
-    valuep-when-ushortp
-    valuep-when-sintp
-    valuep-when-uintp
-    valuep-when-slongp
-    valuep-when-ulongp
-    valuep-when-sllongp
-    valuep-when-ullongp
     value-fix-when-valuep
     value-listp-of-cons
     value-list-fix-of-cons
@@ -2143,6 +2132,7 @@
      that depend on the specific C-representing ACL2 functions involved.
      See @(see atc-implementation)."))
   (append *atc-symbolic-computation-state-rules*
+          *atc-valuep-rules*
           *atc-exec-ident-rules*
           *atc-exec-const-rules*
           *atc-exec-arrsub-rules*

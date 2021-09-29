@@ -86,6 +86,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-valuep-rules
+  :short "Rules for discharging @(tsee valuep) hypotheses."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some symbolic execution rules have hypotheses saying that
+     certain terms are values, i.e. satisfy @(tsee valuep).
+     These are discharged by backward chaining to
+     the fact that those terms satisfy specific value predicates,
+     such as @(tsee sintp)."))
+
+  (defval *atc-valuep-rules*
+    '(valuep-when-pointerp
+      valuep-when-scharp
+      valuep-when-ucharp
+      valuep-when-sshortp
+      valuep-when-ushortp
+      valuep-when-sintp
+      valuep-when-uintp
+      valuep-when-slongp
+      valuep-when-ulongp
+      valuep-when-sllongp
+      valuep-when-ullongp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-exec-ident-rules
   :short "Rules for executing identifiers."
   :long
