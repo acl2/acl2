@@ -598,11 +598,14 @@
     (xdoc::topstring
      (xdoc::p
       "We evaluate the argument expressions,
-       and then we delegate the rest to @(tsee exec-function)."))
+       and then we delegate the rest to @(tsee exec-function).
+       The expressions are evaluated in reverse,
+       consistently with the formal interpreter
+       in [Yul: Specification of Yul: Formal Specification]."))
     (b* (((when (zp limit)) (err (list :limit (funcall-fix call))))
          ((funcall call) call)
          ((ok (eoutcome outcome))
-          (exec-expression-list call.args cstate (1- limit))))
+          (exec-expression-list (rev call.args) cstate (1- limit))))
       (exec-function call.name outcome.values outcome.cstate (1- limit)))
     :measure (nfix limit))
 
