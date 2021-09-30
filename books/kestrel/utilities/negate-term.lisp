@@ -15,7 +15,7 @@
 
 ;; Negate TERM by adding or removing a call of not (avoids double negation)
 ;; See also dumb-negate-lit.
-(defun negate-term (term)
+(defund negate-term (term)
   (declare (xargs :guard t ;(pseudo-termp term)
                   ))
   (if (and (call-of 'not term)
@@ -23,3 +23,8 @@
            )
       (farg1 term) ;negation of (not x) is just x
     `(not ,term)))
+
+(defthm pseudo-termp-of-negate-term
+  (implies (pseudo-termp term)
+           (pseudo-termp (negate-term term)))
+  :hints (("Goal" :in-theory (enable negate-term))))
