@@ -38,7 +38,7 @@ date created: [2016-03-22 Tue]
                    (and lst (cadr lst))))
        (keys (defdata::remove-keywords-from-args '(:verbose) keys)))
     `(with-output 
-      ,@(and (not verbosep) '(:off :all :on (error comment))) :stack :push
+      ,@(and (not verbosep) '(:off :all :summary-off :all :on (error comment))) :stack :push
       (make-event
        (cgen-rule-events ',name ',keys ',verbosep (w state) state)))))
 
