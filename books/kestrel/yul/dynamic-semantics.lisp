@@ -67,6 +67,20 @@
   :val-type value
   :pred lstatep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule lstatep-of-restrict
+  (implies (lstatep map)
+           (lstatep (omap::restrict keys map)))
+  :enable omap::restrict)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule identifier-setp-of-keys-when-lstatep
+  (implies (lstatep map)
+           (identifier-setp (omap::keys map)))
+  :enable omap::keys)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod funinfo
@@ -257,6 +271,25 @@
         (err (list :extra-variables (identifier-list-fix vars))))
        ((ok cstate) (add-var-value (car vars) (car vals) cstate)))
     (add-vars-values (cdr vars) (cdr vals) cstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define restrict-vars ((vars identifier-setp) (cstate cstatep))
+  :returns (new-cstate cstatep)
+  :short "Restrict the variables in the local state to a specified set."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when a block is exited:
+     any new variable declared in the block is discarded,
+     by retaining only the variables
+     present in the local state before the block;
+     any of the retained variables must retain their values from the block
+     (i.e. the block may modify them)."))
+  (b* ((lstate (cstate->local cstate))
+       (new-lstate (omap::restrict (identifier-set-fix vars) lstate)))
+    (change-cstate cstate :local new-lstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -547,16 +580,15 @@
     (b* (((when (zp limit)) (err (list :limit (expression-list-fix exprs))))
          ((when (endp exprs)) (make-eoutcome :cstate (cstate-fix cstate)
                                              :values nil))
-         ((ok outcome) (exec-expression (car exprs) cstate (1- limit)))
-         (cstate (eoutcome->cstate outcome))
-         (vals (eoutcome->values outcome))
-         ((unless (and (consp vals) (endp (cdr vals))))
-          (err (list :not-single-value vals)))
-         (val (car vals))
-         ((ok outcome) (exec-expression-list (cdr exprs) cstate (1- limit)))
-         (cstate (eoutcome->cstate outcome))
-         (vals (eoutcome->values outcome)))
-      (make-eoutcome :cstate cstate :values (cons val vals)))
+         ((ok (eoutcome outcome))
+          (exec-expression (car exprs) cstate (1- limit)))
+         ((unless (and (consp outcome.values)
+                       (endp (cdr outcome.values))))
+          (err (list :not-single-value outcome.values)))
+         (val (car outcome.values))
+         ((ok (eoutcome outcome))
+          (exec-expression-list (cdr exprs) outcome.cstate (1- limit))))
+      (make-eoutcome :cstate outcome.cstate :values (cons val outcome.values)))
     :measure (nfix limit))
 
   (define exec-funcall ((call funcallp) (cstate cstatep) (limit natp))
@@ -566,13 +598,15 @@
     (xdoc::topstring
      (xdoc::p
       "We evaluate the argument expressions,
-       and then we delegate the rest to @(tsee exec-function)."))
+       and then we delegate the rest to @(tsee exec-function).
+       The expressions are evaluated in reverse,
+       consistently with the formal interpreter
+       in [Yul: Specification of Yul: Formal Specification]."))
     (b* (((when (zp limit)) (err (list :limit (funcall-fix call))))
          ((funcall call) call)
-         ((ok outcome) (exec-expression-list call.args cstate (1- limit)))
-         (cstate (eoutcome->cstate outcome))
-         (vals (eoutcome->values outcome)))
-      (exec-function call.name vals cstate (1- limit)))
+         ((ok (eoutcome outcome))
+          (exec-expression-list (rev call.args) cstate (1- limit))))
+      (exec-function call.name outcome.values outcome.cstate (1- limit)))
     :measure (nfix limit))
 
   (define exec-function ((fun identifierp)
@@ -594,14 +628,23 @@
        We run the function body on the resulting computation state.
        We read the final values of the function output variables
        and return them as result.
-       We also restore the computation state prior to the function call."))
+       We also restore the computation state prior to the function call.")
+     (xdoc::p
+      "As a defensive check, we ensure that the function's body
+       terminates regularly or via @('leave'),
+       not via @('break') or @('continue')."))
     (b* (((when (zp limit)) (err (list :limit
                                    (identifier-fix fun)
                                    (value-list-fix args))))
          ((ok (funinfo info)) (get-fun fun cstate))
          ((ok cstate1) (init-local info.inputs args info.outputs cstate))
-         ((ok cstate1) (exec-block info.body cstate1 (1- limit)))
-         ((ok vals) (read-vars-values info.outputs cstate1)))
+         ((ok (soutcome outcome))
+          (exec-block info.body cstate1 (1- limit)))
+         ((when (mode-case outcome.mode :break))
+          (err (list :break-from-function (identifier-fix fun))))
+         ((when (mode-case outcome.mode :continue))
+          (err (list :continue-from-function (identifier-fix fun))))
+         ((ok vals) (read-vars-values info.outputs outcome.cstate)))
       (make-eoutcome :cstate (cstate-fix cstate) :values vals))
     :measure (nfix limit))
 
@@ -654,6 +697,34 @@
        leaves the computation state unchanged
        and returns the corresponding mode.")
      (xdoc::p
+      "For a switch statement, we execute the target,
+       ensuring it returns a single value.
+       Then we delegate the rest to a separate ACL2 function.")
+     (xdoc::p
+      "For a loop statement,
+       we start by saving (the names of) the variables before the loop,
+       similarly to @(tsee exec-block);
+       we also save the fucntion sate, similarly to @(tsee exec-block).
+       The initialization block of a loop statement
+       is not treated like other blocks:
+       its scope extends to the rest of the loop statement.
+       Thus, instead of executing the initialization block as a block,
+       we take the statements in the block,
+       extend the function state with any function declared there,
+       and execute the statements,
+       which may result in new and updated variables.
+       We defensively stop with an error if the initialization block
+       terminates with @('break') or @('continue');
+       if it termnates with @('leave'), we also terminate with @('leave'),
+       removing extra variables and restoring the function state.
+       We delegate the execution of the loop iterations
+       to another ACL2 function.
+       We take the result of that ACL2 function,
+       restore the function state
+       (similarly to @(tsee exec-block),
+       and remove the variables added by the loop
+       (similarly to @(tsee exec-block)).")
+     (xdoc::p
       "A function definition
        does not change the computation state
        and terminates regularly.
@@ -669,13 +740,13 @@
        (expression-option-case
         stmt.init
         :some
-        (b* (((ok outcome) (exec-expression stmt.init.val cstate (1- limit)))
-             (cstate (eoutcome->cstate outcome))
-             (vals (eoutcome->values outcome))
-             ((unless (and (consp vals)
-                           (not (consp (cdr vals)))))
-              (err (list :not-single-value vals)))
-             ((ok cstate) (add-var-value stmt.name (car vals) cstate)))
+        (b* (((ok (eoutcome outcome))
+              (exec-expression stmt.init.val cstate (1- limit)))
+             ((unless (and (consp outcome.values)
+                           (not (consp (cdr outcome.values)))))
+              (err (list :not-single-value outcome.values)))
+             ((ok cstate)
+              (add-var-value stmt.name (car outcome.values) outcome.cstate)))
           (make-soutcome :cstate cstate :mode (mode-regular)))
         :none
         (b* (((ok cstate) (add-var-value stmt.name (value 0) cstate)))
@@ -685,10 +756,10 @@
            (funcall-option-case
             stmt.init
             :some
-            (b* (((ok outcome) (exec-funcall stmt.init.val cstate (1- limit)))
-                 (cstate (eoutcome->cstate outcome))
-                 (vals (eoutcome->values outcome))
-                 ((ok cstate) (add-vars-values stmt.names vals cstate)))
+            (b* (((ok (eoutcome outcome))
+                  (exec-funcall stmt.init.val cstate (1- limit)))
+                 ((ok cstate)
+                  (add-vars-values stmt.names outcome.values outcome.cstate)))
               (make-soutcome :cstate cstate :mode (mode-regular)))
             :none
             (b* (((ok cstate) (add-vars-values stmt.names
@@ -699,43 +770,80 @@
          (err (list :non-multiple-variables stmt.names)))
        :assign-single
        (b* (((ok var) (path-to-var stmt.target))
-            ((ok outcome) (exec-expression stmt.value cstate (1- limit)))
-            (cstate (eoutcome->cstate outcome))
-            (vals (eoutcome->values outcome))
-            ((unless (and (consp vals)
-                          (not (consp (cdr vals)))))
-             (err (list :not-single-value vals)))
-            ((ok cstate) (write-var-value var (car vals) cstate)))
+            ((ok (eoutcome outcome))
+             (exec-expression stmt.value cstate (1- limit)))
+            ((unless (and (consp outcome.values)
+                          (not (consp (cdr outcome.values)))))
+             (err (list :not-single-value outcome.values)))
+            ((ok cstate)
+             (write-var-value var (car outcome.values) outcome.cstate)))
          (make-soutcome :cstate cstate :mode (mode-regular)))
        :assign-multi
        (b* (((unless (>= (len stmt.targets) 2))
              (err (list :non-multiple-variables stmt.targets)))
             ((ok vars) (paths-to-vars stmt.targets))
-            ((ok outcome) (exec-funcall stmt.value cstate (1- limit)))
-            (cstate (eoutcome->cstate outcome))
-            (vals (eoutcome->values outcome))
-            ((ok cstate) (write-vars-values vars vals cstate)))
+            ((ok (eoutcome outcome))
+             (exec-funcall stmt.value cstate (1- limit)))
+            ((ok cstate)
+             (write-vars-values vars outcome.values outcome.cstate)))
          (make-soutcome :cstate cstate :mode (mode-regular)))
        :funcall
-       (b* (((ok outcome) (exec-funcall stmt.get cstate (1- limit)))
-            (cstate (eoutcome->cstate outcome))
-            (vals (eoutcome->values outcome))
-            ((when (consp vals))
-             (err (list :funcall-statement-returns vals))))
-         (make-soutcome :cstate cstate :mode (mode-regular)))
+       (b* (((ok (eoutcome outcome))
+             (exec-funcall stmt.get cstate (1- limit)))
+            ((when (consp outcome.values))
+             (err (list :funcall-statement-returns outcome.values))))
+         (make-soutcome :cstate outcome.cstate :mode (mode-regular)))
        :if
-       (b* (((ok outcome) (exec-expression stmt.test cstate (1- limit)))
-            (cstate (eoutcome->cstate outcome))
-            (vals (eoutcome->values outcome))
-            ((unless (and (consp vals)
-                          (not (consp (cdr vals)))))
-             (err (list :if-test-not-single-value vals)))
-            (val (car vals)))
+       (b* (((ok (eoutcome outcome))
+             (exec-expression stmt.test cstate (1- limit)))
+            ((unless (and (consp outcome.values)
+                          (not (consp (cdr outcome.values)))))
+             (err (list :if-test-not-single-value outcome.values)))
+            (val (car outcome.values)))
          (if (equal val (value 0))
-             (make-soutcome :cstate cstate :mode (mode-regular))
-           (exec-block stmt.body cstate (1- limit))))
-       :for (err :todo)
-       :switch (err :todo)
+             (make-soutcome :cstate outcome.cstate :mode (mode-regular))
+           (exec-block stmt.body outcome.cstate (1- limit))))
+       :for
+       (b* ((vars-before (omap::keys (cstate->local cstate)))
+            (fstate-before (cstate->functions cstate))
+            (stmts (block->statements stmt.init))
+            ((ok cstate) (add-funs-in-statement-list stmts cstate))
+            ((ok (soutcome outcome))
+             (exec-statement-list stmts cstate (1- limit)))
+            ((when (mode-case outcome.mode :break))
+             (err (list :break-from-for-init (statement-fix stmt))))
+            ((when (mode-case outcome.mode :continue))
+             (err (list :continue-from-for-init (statement-fix stmt))))
+            ((when (mode-case outcome.mode :leave))
+             (b* ((cstate (change-cstate outcome.cstate
+                                         :functions fstate-before))
+                  (cstate (restrict-vars vars-before cstate)))
+               (make-soutcome :cstate cstate :mode (mode-leave))))
+            ((ok (soutcome outcome))
+             (exec-for-iterations stmt.test
+                                  stmt.update
+                                  stmt.body
+                                  cstate
+                                  (1- limit)))
+            ((when (mode-case outcome.mode :break))
+             (err (list :break-from-for (statement-fix stmt))))
+            ((when (mode-case outcome.mode :continue))
+             (err (list :continue-from-for (statement-fix stmt))))
+            (cstate (change-cstate outcome.cstate
+                                   :functions fstate-before))
+            (cstate (restrict-vars vars-before cstate)))
+         (make-soutcome :cstate cstate :mode outcome.mode))
+       :switch
+       (b* (((ok (eoutcome outcome))
+             (exec-expression stmt.target cstate (1- limit)))
+            ((unless (and (consp outcome.values)
+                          (not (consp (cdr outcome.values)))))
+             (err (list :not-single-value outcome.values))))
+         (exec-switch-rest stmt.cases
+                           stmt.default
+                           (car outcome.values)
+                           outcome.cstate
+                           (1- limit)))
        :leave (make-soutcome :cstate (cstate-fix cstate)
                              :mode (mode-leave))
        :break (make-soutcome :cstate (cstate-fix cstate)
@@ -762,25 +870,130 @@
     (b* (((when (zp limit)) (err (list :limit (statement-list-fix stmts))))
          ((when (endp stmts)) (make-soutcome :cstate (cstate-fix cstate)
                                              :mode (mode-regular)))
-         ((ok outcome) (exec-statement (car stmts) cstate (1- limit)))
-         (mode (soutcome->mode outcome))
-         ((unless (mode-case mode :regular)) outcome)
-         (cstate (soutcome->cstate outcome)))
-      (exec-statement-list (cdr stmts) cstate (1- limit)))
+         ((ok (soutcome outcome))
+          (exec-statement (car stmts) cstate (1- limit)))
+         ((unless (mode-case outcome.mode :regular)) outcome))
+      (exec-statement-list (cdr stmts) outcome.cstate (1- limit)))
     :measure (nfix limit))
 
   (define exec-block ((block blockp) (cstate cstatep) (limit natp))
     :returns (outcome soutcome-resultp)
     :short "Execute a block."
-    (b* (((when (zp limit)) (err (list :limit (block-fix block)))))
-      (err (list :todo (cstate-fix cstate))))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We save (the names of) the variables just before the block,
+       so that we can restrict the computation state after the block
+       to only those variables, as explained in @(tsee restrict-vars).
+       We also save the function state before the block,
+       because we need to restore that after the block.
+       We extend the function state with the functions in the block.
+       We execute the block's statements.
+       We return the resulting outcome,
+       but we restore the function state before the block
+       and we remove all the variables added by the block."))
+    (b* (((when (zp limit)) (err (list :limit (block-fix block))))
+         (vars-before (omap::keys (cstate->local cstate)))
+         (fstate-before (cstate->functions cstate))
+         (stmts (block->statements block))
+         ((ok cstate) (add-funs-in-statement-list stmts cstate))
+         ((ok (soutcome outcome))
+          (exec-statement-list stmts cstate (1- limit)))
+         (cstate (change-cstate outcome.cstate :functions fstate-before))
+         (cstate (restrict-vars vars-before cstate)))
+      (make-soutcome :cstate cstate :mode outcome.mode))
     :measure (nfix limit))
 
-  ;; exec-swcase
+  (define exec-for-iterations ((test expressionp)
+                               (update blockp)
+                               (body blockp)
+                               (cstate cstatep)
+                               (limit natp))
+    :returns (outcome soutcome-resultp)
+    :short "Execute the iterations of a loop statement."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We execute the test, ensuring it returns one value.
+       As also explained for @('if') (see @(tsee exec-statement)),
+       we consider 0 to be false and any non-0 value to be true.")
+     (xdoc::p
+      "If the test is false, we terminate regularly.")
+     (xdoc::p
+      "If the test is true, we first execute the body.
+       If it terminates with @('break'),
+       we turn that into a regular termination:
+       we break out of the loop gracefully, no more iterations will happen.
+       If the body terminates with @('leave'),
+       we terminate in the same way.
+       If the body terminates with @('continue') or regularly,
+       we continue the iteration,
+       by executing the update block.
+       If the update block terminates with @('leave'),
+       we terminate the loop in the same way.
+       If the update block terminates with @('break') or @('continue'),
+       we defensively return an error.
+       If the update block terminates regularly,
+       we recursively call this ACL2 function,
+       to continue iterating."))
+    (b* (((when (zp limit)) (err (list :limit
+                                   (expression-fix test)
+                                   (block-fix update)
+                                   (block-fix body))))
+         ((ok (eoutcome outcome))
+          (exec-expression test cstate (1- limit)))
+         ((unless (and (consp outcome.values)
+                       (not (consp (cdr outcome.values)))))
+          (err (list :for-test-not-single-value outcome.values)))
+         ((when (equal (car outcome.values) (value 0)))
+          (make-soutcome :cstate outcome.cstate :mode (mode-regular)))
+         ((ok (soutcome outcome))
+          (exec-block body outcome.cstate (1- limit)))
+         ((when (mode-case outcome.mode :break))
+          (make-soutcome :cstate outcome.cstate :mode (mode-regular)))
+         ((when (mode-case outcome.mode :leave))
+          (make-soutcome :cstate outcome.cstate :mode outcome.mode))
+         ((ok (soutcome outcome))
+          (exec-block update outcome.cstate (1- limit)))
+         ((when (mode-case outcome.mode :break))
+          (err (list :break-from-for-update (block-fix update))))
+         ((when (mode-case outcome.mode :continue))
+          (err (list :continue-from-for-update (block-fix update))))
+         ((when (mode-case outcome.mode :leave))
+          (make-soutcome :cstate outcome.cstate :mode outcome.mode)))
+      (exec-for-iterations test update body outcome.cstate (1- limit)))
+    :measure (nfix limit))
 
-  ;; exec-swcase-list
-
-  :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove
+  (define exec-switch-rest ((cases swcase-listp)
+                            (default block-optionp)
+                            (target valuep)
+                            (cstate cstatep)
+                            (limit natp))
+    :returns (outcome soutcome-resultp)
+    :short "Execute the rest of a switch statement,
+            after evaluating the target."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We go through the cases, until we find a match,
+       in which case we return the result of executing the corresponding block.
+       If we reach the end of the list,
+       we execute the default block, if present.
+       If the default block is absent, we terminate regularly."))
+    (b* (((when (zp limit)) (err (list :limit
+                                   (swcase-list-fix cases)
+                                   (block-option-fix default))))
+         ((when (endp cases))
+          (block-option-case default
+                             :some (exec-block default.val cstate (1- limit))
+                             :none (make-soutcome :cstate (cstate-fix cstate)
+                                                  :mode (mode-regular))))
+         ((swcase case) (car cases))
+         ((ok caseval) (eval-literal case.value))
+         ((when (value-equiv target caseval))
+          (exec-block case.body cstate (1- limit))))
+      (exec-switch-rest (cdr cases) default target cstate (1- limit)))
+    :measure (nfix limit))
 
   :verify-guards nil ; done below
   ///

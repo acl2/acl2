@@ -146,6 +146,13 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable pow))))
 
+(defthm pow-when-<-of-0-arg2-cheap
+  (implies (< n 0)
+           (equal (pow x n p)
+                  1))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable pow))))
+
 ;; Cherry-pick Fermat's Little Theorem
 (encapsulate ()
   (local (include-book "../../projects/quadratic-reciprocity/fermat"))
@@ -187,6 +194,20 @@
   :hints (("Goal" :cases ((integerp x))
            :in-theory (enable mul
                               pow-of-*-arg1))))
+
+(defthmd mul-of-pow-and-pow
+  (implies (and (< 1 p)
+                (integerp p))
+           (equal (mul (pow x n p) (pow y n p) p)
+                  (if (equal 0 n)
+                      1
+                    (pow (mul x y p) n p))))
+  :hints (("Goal" :cases ((natp n))
+           :in-theory (enable mul
+                              pow-of-*-arg1))))
+
+(theory-invariant (incompatible (:rewrite pow-of-mul-arg1)
+                                (:rewrite mul-of-pow-and-pow)))
 
 (defthm pow-of-+-same-arg1-arg1
   (equal (pow (+ p x) n p)
