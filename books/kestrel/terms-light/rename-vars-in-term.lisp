@@ -20,6 +20,7 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 
 (defthm symbolp-of-cdr-of-assoc-equal-when-symbol-listp-of-strip-cdrs
   (implies (symbol-listp (strip-cdrs alist))
@@ -217,10 +218,6 @@
   :hints (("Goal" :in-theory (enable rename-vars-in-terms))))
 
 (make-flag rename-vars-in-term)
-
-(defthm pseudo-termp-when-symbolp
-  (implies (symbolp term)
-           (pseudo-termp term)))
 
 (defthm-flag-rename-vars-in-term
   (defthm pseudo-termp-of-rename-vars-in-term

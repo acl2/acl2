@@ -849,12 +849,6 @@
   (def-ruleset atc-openers nil)
 
   (progn
-    (defopeners exec-expr-pure
-      :hyps ((syntaxp (quotep e)))
-      :disable t)
-    (add-to-ruleset atc-openers (defopeners-names exec-expr-pure)))
-
-  (progn
     (defopeners exec-expr-pure-list
       :hyps ((syntaxp (quotep es)))
       :disable t)
@@ -919,13 +913,7 @@
        Experiments sugges that it does speed up some proofs quite a bit."))
     (set-difference-eq
      ',(get-ruleset 'atc-openers (w state))
-     '(exec-expr-pure-base-3
-       exec-expr-pure-base-4
-       exec-expr-pure-base-5
-       exec-expr-pure-base-6
-       exec-expr-pure-base-7
-       exec-expr-pure-base-8
-       exec-expr-pure-list-base-2
+     '(exec-expr-pure-list-base-2
        exec-stmt-base-1
        exec-stmt-base-2
        exec-stmt-base-6
@@ -1109,8 +1097,6 @@
   '(condexpr
     declar
     assign
-    exec-iconst
-    exec-cast
     sint-from-boolean
     sint-dec-const
     sint-oct-const
@@ -1645,7 +1631,7 @@
              sllongp
              pointerp))
 
-  (defruled not-errorp-when-value-listp
+  (defruled not-errorp-when-value-listp-rewrite
     (implies (value-listp x)
              (not (errorp x)))
     :enable errorp)
@@ -1738,7 +1724,7 @@
     not-zp-of-limit-minus-const
     value-result-fix-when-valuep
     not-errorp-when-valuep-rewrite
-    not-errorp-when-value-listp
+    not-errorp-when-value-listp-rewrite
     not-errorp-when-scopep
     not-errorp-when-scope-listp
     not-errorp-when-schar-arrayp
@@ -2318,8 +2304,10 @@
           *atc-exec-const-rules*
           *atc-exec-arrsub-rules*
           *atc-exec-unary-rules*
+          *atc-exec-cast-rules*
           *atc-exec-binary-strict-pure-rules*
           *atc-exec-test-rules*
+          *atc-exec-expr-pure-rules*
           *atc-opener-rules*
           *atc-abstract-syntax-rules*
           *atc-other-executable-counterpart-rules*

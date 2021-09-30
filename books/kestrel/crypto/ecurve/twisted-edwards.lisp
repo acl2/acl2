@@ -211,7 +211,7 @@
     (xdoc::seetopic "birational-montgomery-twisted-edwards"
                     "birational equivalence between
                      Montgomery and twisted Edwards curves")
-    ": points with @($x = 0$ or @($y = 0$) on a twisted Edwards curve
+    ": points with @($x = 0$) or @($y = 0$) on a twisted Edwards curve
      are not amenable to the rational mapping,
      because they make a denominator zero;
      thus, they have to be treated specially for the mapping.

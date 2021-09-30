@@ -33,6 +33,7 @@
 (include-book "kestrel/std/system/uguard-plus" :dir :system)
 (include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
+(include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "std/typed-alists/keyword-symbol-alistp" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "tools/trivial-ancestors-check" :dir :system)
@@ -2711,7 +2712,7 @@
   :returns (mv erp
                (val (tuple (params param-declon-listp)
                            (scope atc-symbol-type-alistp)
-                           (pointers symbol-listp)
+                           (pointers atc-symbol-type-alistp)
                            val))
                state)
   :short "Generate a list of C parameter declarations
@@ -2722,8 +2723,9 @@
     "Also generate an initial scope
      that maps the formal parameters to their C types.")
    (xdoc::p
-    "Also return a list of the formal parameters
-     that are pointers in C.
+    "Also return a alist whose keys are
+     the formal parameters that are pointers in C
+     and whose values are the types referenced by the pointers.
      These get a special treatment
      in the formulation of the generated correctness theorems."))
   (b* (((when (endp formals)) (acl2::value (list nil nil nil)))
@@ -2746,7 +2748,9 @@
                                    ctx state)))
     (acl2::value (list (cons param params)
                        (acons formal type scope)
-                       (if pointerp (cons formal pointers) pointers))))
+                       (if pointerp
+                           (acons formal type pointers)
+                         pointers))))
 
   :verify-guards nil ; done below
 
@@ -3026,7 +3030,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fn-guard-deref-compustate ((guard pseudo-termp)
-                                           (pointers symbol-listp)
+                                           (pointers atc-symbol-type-alistp)
                                            (compst-var symbolp))
   :returns (new-guard "A @(tsee pseudo-termp).")
   :verify-guards nil
@@ -3061,18 +3065,30 @@
      this must be the same used
      in the formulation of the correctness theorems."))
   (b* ((derefs (loop$ for pointer in pointers
-                      collect `(deref ,pointer (compustate->heap ,compst-var))))
-       (guard-subst (fsubcor-var pointers derefs guard))
-       (pointer-hyps (loop$ for pointer in pointers
-                            append (list `(pointerp ,pointer)
-                                         `(equal (pointer->reftype ,pointer)
-                                                 (type-uchar))))))
-    (conjoin (append pointer-hyps (list guard-subst)))))
+                      collect `(deref ,(car pointer)
+                                      (compustate->heap ,compst-var))))
+       (guard-subst (fsubcor-var (strip-cars pointers) derefs guard))
+       (pointer-hyps (atc-gen-fn-guard-deref-compustate-aux pointers)))
+    (conjoin (append pointer-hyps (list guard-subst))))
+
+  :prepwork
+  ((define atc-gen-fn-guard-deref-compustate-aux
+     ((pointers atc-symbol-type-alistp))
+     :returns (terms "A @(tsee pseudo-term-listp).")
+     :verify-guards nil
+     :parents nil
+     (cond ((endp pointers) nil)
+           (t (list* `(pointerp ,(caar pointers))
+                     `(equal (pointer->reftype ,(caar pointers))
+                             ',(type-pointer->referenced
+                                (cdar pointers)))
+                     (atc-gen-fn-guard-deref-compustate-aux
+                      (cdr pointers))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fn-args-deref-compustate ((args symbol-listp)
-                                          (pointers symbol-listp)
+                                          (pointers atc-symbol-type-alistp)
                                           (compst-var symbolp))
   :returns (new-args pseudo-term-listp)
   :short "Transform a target function's arguments
@@ -3085,7 +3101,7 @@
      It adjusts the pointer arguments in the call of the ACL2 function,
      replacing them with the dereferenced arrays."))
   (cond ((endp args) nil)
-        (t (cons (if (member-eq (car args) pointers)
+        (t (cons (if (assoc-eq (car args) pointers)
                      `(deref ,(symbol-fix (car args))
                              (compustate->heap ,(symbol-fix compst-var)))
                    (symbol-fix (car args)))
@@ -3095,19 +3111,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-instantiation-deref-compustate ((pointers symbol-listp)
-                                                (compst-var symbolp))
+(define atc-gen-instantiation-deref-compustate
+  ((pointers atc-symbol-type-alistp)
+   (compst-var symbolp))
   :returns (instantiation "A @('doublet-listp').")
+  :verify-guards nil
   :short "Calculate an instantiation for lemmas instances,
           where pointer arguments are replaced with dereferenced arrays."
   (loop$ for pointer in pointers
-         collect (list pointer
-                       `(deref ,pointer (compustate->heap ,compst-var)))))
+         collect (list (car pointer)
+                       `(deref ,(car pointer)
+                               (compustate->heap ,compst-var)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fn-correct-thm ((fn symbolp)
-                                (pointers symbol-listp)
+                                (pointers atc-symbol-type-alistp)
                                 (prec-fns atc-symbol-fninfo-alistp)
                                 (proofs booleanp)
                                 (prog-const symbolp)
@@ -3260,7 +3279,8 @@
        (hints `(("Goal"
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
-                             '(,fn
+                             '(not
+                               ,fn
                                ,@type-prescriptions
                                ,@returns-value-thms
                                ,@correct-thms
@@ -3282,7 +3302,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fn-thms ((fn symbolp)
-                         (pointers symbol-listp)
+                         (pointers atc-symbol-type-alistp)
                          (type? type-optionp)
                          (xforming symbol-listp)
                          (scope atc-symbol-type-alistp)
@@ -3585,7 +3605,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-instantiation-for-loop-gthm ((formals symbol-listp)
-                                             (pointers symbol-listp)
+                                             (pointers atc-symbol-type-alistp)
                                              (compst-var symbolp))
   :returns (instantiation doublet-listp)
   :short "Generate the instantiation for the lemma instance
@@ -3598,7 +3618,7 @@
      also replaces variables with @(tsee read-var) calls."))
   (b* (((when (endp formals)) nil)
        (formal (car formals))
-       (inst (if (member-eq formal pointers)
+       (inst (if (assoc-eq formal pointers)
                  (atc-gen-term-with-read-var-compustate
                   `(deref ,formal (compustate->heap ,compst-var))
                   compst-var)
@@ -4052,7 +4072,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-bindings-for-loop-formals ((formals symbol-listp)
-                                           (pointers symbol-listp)
+                                           (pointers atc-symbol-type-alistp)
                                            (compst-var symbolp))
   :returns (mv (doublets doublet-listp)
                (pointer-hyps true-listp))
@@ -4078,7 +4098,7 @@
   (b* (((when (endp formals)) (mv nil nil))
        (formal (car formals))
        (term `(read-var (ident ,(symbol-name formal)) ,compst-var))
-       ((mv term hyp?) (if (member-eq formal pointers)
+       ((mv term hyp?) (if (assoc-eq formal pointers)
                            (mv `(deref ,term (compustate->heap ,compst-var))
                                (list `(pointerp ,term)))
                          (mv term nil)))
@@ -4092,7 +4112,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-test-correct-thm ((fn symbolp)
-                                       (pointers symbol-listp)
+                                       (pointers atc-symbol-type-alistp)
                                        (loop-test exprp)
                                        (test-term pseudo-termp)
                                        (fn-thms symbol-symbol-alistp)
@@ -4135,7 +4155,9 @@
        (formula `(b* (,@formals-binding) (implies ,hyps ,concl)))
        (hints `(("Goal"
                  :do-not-induct t
-                 :in-theory (theory 'atc-all-rules)
+                 :in-theory (union-theories
+                             (theory 'atc-all-rules)
+                             '(not))
                  :use ((:instance (:guard-theorem ,fn)
                         :extra-bindings-ok ,@formals-binding))
                  :expand :lambdas)))
@@ -4151,7 +4173,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-body-correct-thm ((fn symbolp)
-                                       (pointers symbol-listp)
+                                       (pointers atc-symbol-type-alistp)
                                        (xforming symbol-listp)
                                        (loop-body stmtp)
                                        (test-term pseudo-termp)
@@ -4224,7 +4246,8 @@
                  :do-not-induct t
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
-                             '(,@type-prescriptions
+                             '(not
+                               ,@type-prescriptions
                                ,@returns-value-thms
                                ,@correct-thms
                                ,@measure-thms))
@@ -4243,7 +4266,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-correct-thm ((fn symbolp)
-                                  (pointers symbol-listp)
+                                  (pointers atc-symbol-type-alistp)
                                   (xforming symbol-listp)
                                   (loop-test exprp)
                                   (loop-body stmtp)
@@ -4336,36 +4359,31 @@
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
-       (limit (atc-gen-term-with-read-var-compustate limit compst-var))
-       (guard (uguard+ fn wrld))
-       (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var))
-       (hyps (atc-gen-term-with-read-var-compustate hyps compst-var))
-       (hyps (conjoin (list `(compustatep ,compst-var)
-                            `(not
-                              (equal
-                               (compustate-frames-number ,compst-var) 0))
-                            hyps
-                            `(equal ,fenv-var (init-fun-env ,prog-const))
-                            `(integerp ,limit-var)
-                            `(>= ,limit-var ,limit))))
-       (hyps (flatten-ands-in-lit hyps))
-       (hyps `(and ,@(untranslate-lst hyps t wrld)))
-       (args (atc-gen-fn-args-deref-compustate formals pointers compst-var))
-       (args (atc-gen-terms-with-read-var-compustate args compst-var))
-       (binding (if (endp (cdr xforming))
-                    (car xforming)
-                  `(mv ,@xforming)))
+       ((mv formals-binding pointer-hyps)
+        (atc-gen-bindings-for-loop-formals formals pointers compst-var))
+       (hyps `(and (compustatep ,compst-var)
+                   (not (equal (compustate-frames-number ,compst-var) 0))
+                   (equal ,fenv-var (init-fun-env ,prog-const))
+                   (integerp ,limit-var)
+                   (>= ,limit-var ,limit)
+                   (and ,@pointer-hyps)
+                   ,(untranslate (uguard+ fn wrld) nil wrld)))
+       (xforming-binder (if (endp (cdr xforming))
+                            (car xforming)
+                          `(mv ,@xforming)))
        (final-compst (atc-gen-loop-final-compustate xforming compst-var))
        (concl-lemma `(equal (,exec-stmt-while-for-fn ,compst-var ,limit-var)
-                            (b* ((,binding (,fn ,@args)))
+                            (b* ((,xforming-binder (,fn ,@formals)))
                               (mv nil ,final-compst))))
        (concl-thm `(equal (exec-stmt-while ',loop-test
                                            ',loop-body
                                            ,compst-var
                                            ,fenv-var
                                            ,limit-var)
-                          (b* ((,binding (,fn ,@args)))
+                          (b* ((,xforming-binder (,fn ,@formals)))
                             (mv nil ,final-compst))))
+       (formula-lemma `(b* (,@formals-binding) (implies ,hyps ,concl-lemma)))
+       (formula-thm `(b* (,@formals-binding) (implies ,hyps ,concl-thm)))
        (called-fns (acl2::all-fnnames (ubody+ fn wrld)))
        (returns-value-thms
         (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns called-fns))
@@ -4377,16 +4395,12 @@
        (type-prescriptions
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
-       (tthm-instantiation
-        (alist-to-doublets (pairlis$ formals args)))
-       (gthm-instantiation (atc-gen-instantiation-for-loop-gthm formals
-                                                                pointers
-                                                                compst-var))
        (lemma-hints `(("Goal"
                        :do-not-induct t
                        :in-theory (union-theories
                                    (theory 'atc-all-rules)
-                                   '(,exec-stmt-while-for-fn
+                                   '(not
+                                     ,exec-stmt-while-for-fn
                                      ,@type-prescriptions
                                      ,@returns-value-thms
                                      ,@correct-thms
@@ -4395,26 +4409,29 @@
                                      ,correct-test-thm
                                      ,correct-body-thm))
                        :use ((:instance (:guard-theorem ,fn)
-                              :extra-bindings-ok ,@gthm-instantiation)
+                              :extra-bindings-ok ,@formals-binding)
                              (:instance ,termination-of-fn-thm
-                              :extra-bindings-ok ,@tthm-instantiation))
+                              :extra-bindings-ok ,@formals-binding))
                        :expand (:lambdas
-                                (,fn ,@args)))))
+                                (,fn ,@(fsublis-var-lst
+                                        (acl2::doublets-to-alist
+                                         formals-binding)
+                                        formals))))))
        (lemma-instructions
         `((:in-theory '(,exec-stmt-while-for-fn))
-          :induct
+          (:induct (,exec-stmt-while-for-fn ,compst-var ,limit-var))
           (:repeat (:prove :hints ,lemma-hints))))
        (thm-hints `(("Goal"
                      :in-theory nil
                      :use (,correct-lemma ,exec-stmt-while-for-fn-thm))))
        ((mv correct-lemma-event &)
         (evmac-generate-defthm correct-lemma
-                               :formula `(implies ,hyps ,concl-lemma)
+                               :formula formula-lemma
                                :instructions lemma-instructions
                                :enable nil))
        ((mv correct-thm-local-event correct-thm-exported-event)
         (evmac-generate-defthm correct-thm
-                               :formula `(implies ,hyps ,concl-thm)
+                               :formula formula-thm
                                :hints thm-hints
                                :enable nil))
        (local-events (list correct-lemma-event

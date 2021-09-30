@@ -141,7 +141,7 @@ of names to @('1')."
                                  (stickyp booleanp))
   :returns (mv (okp booleanp :rule-classes :type-prescription)
                (def (iff (vl-define-p def) okp)))
-  :short "Essentially treats @('\"foo\") like @('`define foo'), or
+  :short "Essentially treats @('\"foo\"') like @('`define foo'), or
 @('\"foo=3\"') like @('`define foo 3`')."
   :long "<p>BOZO we could do better sanity checking here.</p>"
   (b* ((x (string-fix x))
@@ -273,5 +273,3 @@ of names to @('1')."
        (prev-uses (cdr (hons-get name map)))
        (new-uses  (cons ctx prev-uses)))
     (hons-acons name new-uses map)))
-
-

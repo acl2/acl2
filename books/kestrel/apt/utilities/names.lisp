@@ -232,8 +232,8 @@
       (increment-name-suffix-safe old-name state)
     new-name))
 
-;; Handle :auto in the vals of the alist (also check the values).  Preserves
-;; the order of the entries in the alist.
+;; Returns an alist.  Handles :auto in the vals of the alist (also checks the
+;; values).  Preserves the order of the entries in the alist.
 (defun pick-new-names (new-name-alist state)
   (declare (xargs :guard (symbol-alistp new-name-alist)
                   :stobjs state))
