@@ -868,7 +868,9 @@
   :returns (mv (yes/no booleanp)
                (arr pseudo-termp)
                (sub pseudo-termp)
-               (type typep))
+               (in-type1 typep)
+               (in-type2 typep)
+               (out-type typep))
   :short "Check if a term may represent an array read."
   :long
   (xdoc::topstring
@@ -877,11 +879,11 @@
      that represent C array read operations,
      we return the two argument terms.")
    (xdoc::p
-    "We also return the result C type of the operator.")
+    "We also return the input and output C types of the array read.")
    (xdoc::p
     "If the term does not have the form explained above,
      we return an indication of failure."))
-  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type)))
+  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) (irr-type) (irr-type)))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((mv okp etype array read itype) (atc-check-symbol-4part term.fn))
@@ -889,13 +891,15 @@
                      (eq array 'array)
                      (eq read 'read)))
         (no))
-       ((unless (atc-integer-fixtype-to-type itype)) (no))
-       (type (atc-integer-fixtype-to-type etype))
-       ((when (not type)) (no))
+       (out-type (atc-integer-fixtype-to-type etype))
+       ((when (not out-type)) (no))
+       (in-type1 (type-pointer out-type))
+       (in-type2 (atc-integer-fixtype-to-type itype))
+       ((when (not in-type2)) (no))
        ((unless (list-lenp 2 term.args)) (no))
        (arr (first term.args))
        (sub (second term.args)))
-    (mv t arr sub type))
+    (mv t arr sub in-type1 in-type2 out-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-array-read-arr
@@ -1371,21 +1375,32 @@
             (acl2::value (list (make-expr-cast :type tyname
                                                :arg arg-expr)
                                out-type))))
-         ((mv okp arr sub type) (atc-check-array-read term))
+         ((mv okp arr sub in-type1 in-type2 out-type)
+          (atc-check-array-read term))
          ((when okp)
-          (b* (((er (list arr-expr &)) (atc-gen-expr-cval-pure arr
-                                                               inscope
-                                                               fn
-                                                               ctx
-                                                               state))
-               ((er (list sub-expr &)) (atc-gen-expr-cval-pure sub
-                                                               inscope
-                                                               fn
-                                                               ctx
-                                                               state)))
+          (b* (((er (list arr-expr type1)) (atc-gen-expr-cval-pure arr
+                                                                   inscope
+                                                                   fn
+                                                                   ctx
+                                                                   state))
+               ((er (list sub-expr type2)) (atc-gen-expr-cval-pure sub
+                                                                   inscope
+                                                                   fn
+                                                                   ctx
+                                                                   state))
+               ((unless (and (equal type1 in-type1)
+                             (equal type2 in-type2)))
+                (er-soft+ ctx t (irr)
+                          "The reading of a ~x0 array with a ~x1 index ~
+                           is applied to a term ~x2 returning ~x3
+                           and to a term ~x4 returning ~x5,
+                           but a ~x0 and a ~x1 operand is expected. ~
+                           This is indicative of provably dead code, ~
+                           given that the code is guard-verified."
+                          in-type1 in-type2 arg1 type1 arg2 type2)))
             (acl2::value (list (make-expr-arrsub :arr arr-expr
                                                  :sub sub-expr)
-                               type))))
+                               out-type))))
          ((mv okp arg) (atc-check-sint-from-boolean term))
          ((when okp)
           (b* (((mv erp expr state)
