@@ -916,6 +916,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-sint-from-boolean ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (arg pseudo-termp))
+  :short "Check if a term may represent a conversion
+          from an ACL2 boolean to a C @('int') value."
+  (b* (((acl2::fun (no)) (mv nil nil))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless (and okp
+                     (eq fn 'c::sint-from-boolean)
+                     (list-lenp 1 args)))
+        (no)))
+    (mv t (first args)))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-sint-from-boolean
+    (implies yes/no
+             (< (pseudo-term-count arg)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-array-write ((var symbolp) (val pseudo-termp))
   :returns (mv (yes/no booleanp)
                (sub pseudo-termp)
@@ -1137,28 +1159,6 @@
     (implies yes/no
              (< (+ (pseudo-term-count val)
                    (pseudo-term-count body))
-                (pseudo-term-count term)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-sint-from-boolean ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (arg pseudo-termp))
-  :short "Check if a term may represent a conversion
-          from an ACL2 boolean to a C @('int') value."
-  (b* (((acl2::fun (no)) (mv nil nil))
-       ((mv okp fn args) (fty-check-fn-call term))
-       ((unless (and okp
-                     (eq fn 'c::sint-from-boolean)
-                     (list-lenp 1 args)))
-        (no)))
-    (mv t (first args)))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-sint-from-boolean
-    (implies yes/no
-             (< (pseudo-term-count arg)
                 (pseudo-term-count term)))
     :rule-classes :linear))
 
