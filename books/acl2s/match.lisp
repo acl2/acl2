@@ -85,7 +85,7 @@
       '(;; (t nil))
         ;; Made this change to enforce exhaustiveness
         (t (illegal 'match "match is not exhaustive" ())))
-    (b* ((pat (car pats))
+    (B* ((pat (car pats))
          (code (car codes))
          (type? (or (and (keywordp pat)
                          (get-type-from-keyword pat))
@@ -215,6 +215,19 @@ definition of acl2-count2, above.  </p>
 If you are not matching a recognizer, then match behaves like 
 @(see? case-match).
 </p>
+
+<p> 
+One important difference with @(see? case-match) is that match
+requires that the cases are complete. It does this by returning 
+the following if there are no matches.
+</p>
+
+@({
+
+ (illegal 'match \"match is not exhaustive\" ())
+
+})
+
 "
   )
 
