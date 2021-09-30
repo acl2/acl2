@@ -938,6 +938,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-condexpr ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (test pseudo-termp)
+               (then pseudo-termp)
+               (else pseudo-termp))
+  :short "Check if a term may represent a C conditional expression."
+  (b* (((acl2::fun (no)) (mv nil nil nil nil))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless (and okp
+                     (eq fn 'c::condexpr)
+                     (list-lenp 1 args)))
+        (no)))
+    (fty-check-if-call (first args)))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-condexpr.test
+    (implies yes/no
+             (< (pseudo-term-count test)
+                (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-condexpr.then
+    (implies yes/no
+             (< (pseudo-term-count then)
+                (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-condexpr.else
+    (implies yes/no
+             (< (pseudo-term-count else)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-array-write ((var symbolp) (val pseudo-termp))
   :returns (mv (yes/no booleanp)
                (sub pseudo-termp)
@@ -1159,41 +1194,6 @@
     (implies yes/no
              (< (+ (pseudo-term-count val)
                    (pseudo-term-count body))
-                (pseudo-term-count term)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-condexpr ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (test pseudo-termp)
-               (then pseudo-termp)
-               (else pseudo-termp))
-  :short "Check if a term may represent a C conditional expression."
-  (b* (((acl2::fun (no)) (mv nil nil nil nil))
-       ((mv okp fn args) (fty-check-fn-call term))
-       ((unless (and okp
-                     (eq fn 'c::condexpr)
-                     (list-lenp 1 args)))
-        (no)))
-    (fty-check-if-call (first args)))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-condexpr.test
-    (implies yes/no
-             (< (pseudo-term-count test)
-                (pseudo-term-count term)))
-    :rule-classes :linear)
-
-  (defret pseudo-term-count-of-atc-check-condexpr.then
-    (implies yes/no
-             (< (pseudo-term-count then)
-                (pseudo-term-count term)))
-    :rule-classes :linear)
-
-  (defret pseudo-term-count-of-atc-check-condexpr.else
-    (implies yes/no
-             (< (pseudo-term-count else)
                 (pseudo-term-count term)))
     :rule-classes :linear))
 
