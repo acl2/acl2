@@ -42,7 +42,7 @@
  (include-book "lemmas"))
 
 (local
- (fetch-new-events
+ (fetch-new-theory
   (include-book "arithmetic-5/top" :dir :system)
   use-arithmetic-5))
 

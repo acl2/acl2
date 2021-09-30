@@ -14,14 +14,11 @@
 (defloop get1-lst (a xs)
   (for ((x in xs))
        (collect (get1 a x))))
-       
-
 
 (defloop filter-terms-without-vars (terms vars)
   (for ((term in terms))
        (when (not (intersectp-eq (acl2::all-vars term) vars))
          (collect term))))
-
        
 (program)
 (set-state-ok t)
@@ -54,13 +51,24 @@
        (collect (cons (cdr x.y) (car x.y)))))
 
 (defun bash-fn (query hints verbosep ctx state)
-  (b* ((ohints (acl2::override-hints (w state)))
-       ((er ?ign) (acl2::table-fn 'ACL2::DEFAULT-HINTS-TABLE
-                                  (list :OVERRIDE 'nil) state nil))
-       ((mv erp res state) (acl2::bash-fn query hints verbosep ctx state))
-       ((er ?ign) (acl2::table-fn 'ACL2::DEFAULT-HINTS-TABLE
-                                  (list :OVERRIDE (kwote ohints)) state nil)))
-    (mv erp res state)))
+  (acl2::state-global-let*
+   ((acl2::inhibit-output-lst
+     (if verbosep
+         '(summary)
+       ;;shut everything except error
+       #!acl2(remove1-eq 'error *valid-output-names*)))
+    (acl2::inhibited-summary-types acl2::*summary-types*))
+   (b* ((ohints
+         (acl2::override-hints (w state)))
+        ((er ?ign)
+         (acl2::table-fn 'ACL2::DEFAULT-HINTS-TABLE
+                         (list :OVERRIDE 'nil) state nil))
+        ((mv erp res state)
+         (acl2::bash-fn query hints verbosep ctx state))
+        ((er ?ign)
+         (acl2::table-fn 'ACL2::DEFAULT-HINTS-TABLE
+                         (list :OVERRIDE (kwote ohints)) state nil)))
+     (mv erp res state))))
 
 (defun equation-p (term)
   (and (consp term)
@@ -72,7 +80,6 @@
 (defun valid-output-symbols (xs)
   (and (proper-symbol-listp xs)
        (no-duplicatesp xs)))
-
 
 (defloop filter-terms-with-vars (terms vars)
   (for ((term in terms))
@@ -363,13 +370,10 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
                    )))
     (cons nm rule)))
 
-
 (defloop dummy-eq-frule-instances (hyps)
   (for ((hyp in hyps))
        (when (is-var-equality-hyp hyp)
          (collect (make-dummy-equality-frule-instance hyp)))))
-
-
 
 (include-book "acl2s/cgen/prove-cgen" :dir :system :ttags :all)
 
@@ -409,7 +413,7 @@ existing: ~x0 new: ~x1~%" fxri-data frule1I))
                     (w state)))
        ((mv & cgen-state state) (test/cgen query nil cgen-state state))
        ;; ((er &) (print-testing-summary cgen-state ctx state))
-       
+       ;; (- (cw "~|Fixer query~%"))
        (gcs% (cget gcs))
        (num-vac (access gcs% vacs))
        (total-runs (access gcs% runs))

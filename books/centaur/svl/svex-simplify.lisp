@@ -764,7 +764,8 @@
           (or (rp::context-syntaxp context)
               (cw "ATTENTION! Given context must satisfy rp::context-syntaxp ~%")))
 
-  (b* ((linearize (or only-local
+  (b* ((- (and reload-rules (rp::check-if-clause-processor-up-to-date (w state))))
+       (linearize (or only-local
                       (if (eq linearize ':auto)
                           (zp (cons-count-compare svex 2048))
                         linearize)))
@@ -866,7 +867,8 @@
               (or (rp::context-syntaxp context)
                   (cw "ATTENTION!  Given context must satisfy rp::context-syntaxp ~%")))
 
-  (b* ((linearize (or only-local
+  (b* ((- (and reload-rules (rp::check-if-clause-processor-up-to-date (w state))))
+       (linearize (or only-local
                       (if (eq linearize ':auto)
                           (zp (cons-count-compare svexlist 2048))
                         linearize)))

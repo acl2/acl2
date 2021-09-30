@@ -40,13 +40,16 @@
 
 (include-book "centaur/svl/portcullis" :dir :system)
 
+(include-book "centaur/fgl/portcullis" :dir :system)
+
    
 (xdoc::defxdoc
  Multiplier-Verification
  :parents (rp-rewriter/applications)
  :short "An efficient library to verify large integer multiplier designs
  following the S-C-Rewriting algorithm."
- :long "  <p> Implemented and verified  completely in ACL2, we  provide a novel
+
+ :long  " <p> Implemented and verified  completely in ACL2, we  provide a new
  method to  verify complex integer  multiplier designs implemented  in (System)
  Verilog. With a very efficient proof-time scaling factor, this tool can verify
  integer  multipliers that  may  be implemented  with  Booth Encoding,  various
@@ -56,15 +59,15 @@
  1024x1024-bit  multipliers in  around  5  minutes as  tested  with almost  100
  different  designs.  This library  can  also  verify other  multiplier-centric
  designs such as multiply-accumulate and dot-product. Designs can be truncated,
- right-shifted, bit-masked, and input sizes can be arbitrary.</p>
+ right-shifted, bit-masked, rounded, saturated, and input sizes can be arbitrary.</p>
 
-<p> The outline of this new verification method appeared in CAV 2020 (Automated
-and  Scalable  Verification  of  Integer Multipliers  by  Mertcan  Temel,  Anna
-Slobodova,     Warren     A.      Hunt,    Jr.)      available     here:     <a
+  <p>  The outline  of  this  new verification  method  first  appeared in  CAV
+2020 (Automated  and Scalable  Verification of  Integer Multipliers  by Mertcan
+Temel,   Anna  Slobodova,   Warren   A.   Hunt,   Jr.)    available  here:   <a
 href=\"http://doi.org/10.1007/978-3-030-53288-8_23\">
-http://doi.org/10.1007/978-3-030-53288-8_23</a>.  More  improvements have  been
-made  to this  method  after this  paper  and they  are  implemented into  this
-library. </p>
+http://doi.org/10.1007/978-3-030-53288-8_23</a>. A follow-up study is to appear
+in FMCAD21 by Mertcan Temel and Warran A. Hunt, Jr.. This method is also
+described in Mertcan Temel's PhD thesis from University of Texas at Austin.  </p>
 
 <p> Our framework currently supports  (System) Verilog with design hierarchy as
 inputs only.  These  designs are translated to @(see  SVL) design without
@@ -80,7 +83,8 @@ that might help speed-up the proofs (and/or reduce memory use) or in some cases
 help proofs finish.   We enable very aggressive heuristics by  default for best
 coverage.   If   you  wish  to   tune  the   performance  of  your   proofs  by
 enabling/disabling    these   heuristics,    you    can    check   out    @(see
-Multiplier-Verification-Heuristics).  </p>
+Multiplier-Verification-Heuristics). Enabling/disabling these heuristics might
+help a proof attempt to go through. </p>
 
 <p>  We  present  two demos  that  show  how  this  tool  can be  used  in  new
 designs. @(see Multiplier-Verification-demo-1) shows  a very basic verification
@@ -100,6 +104,12 @@ design and we can verify this test vector with out tool. This mechanism is
 described in @(see Multiplier-Verification-demo-3).
 </p>
 
+<p> This library can be used to quickly generate counterexamples using an
+external SAT solver, or help finish proofs with a SAT solver when our library
+fails to finish the job. You may include the book
+projects/rp-rewriter/lib/mult/fgl, @(see FGL::FGL) book and use
+rp::defthmrp-then-fgl utility instead of rp::defthmrp to submit conjectures to
+ACL2. </p>
 
 <p> There  are two older  versions of  this library. If  you would like  to use
 those   for    some   reason,    you   may   view    their   demo    files   at
@@ -118,7 +128,7 @@ have some  significant improvements but  the methods are essentially  the same.
  :parents (Multiplier-Verification)
  :short "Some heuristics that can be enabled/disabled by the user for
  @(see Multiplier-Verification)"
- :long  "<p>Our   @(see  Multiplier-Verification)  system   implements  various
+ :long   "<p>Our   @(see  Multiplier-Verification)  system   implements  various
  heuristics to efficiently  verify different designs. Some  of those heuristics
  are applied  for all the designs,  some are specific to  certain corner cases,
  and some are  just alternatives to others that might  prove more beneficial in
@@ -135,19 +145,40 @@ have some  significant improvements but  the methods are essentially  the same.
  time. </p>
 
 
-<p> STINGY-PP-CLEAN:  Booth Encoded designs produce  a lot of terms  as part of
-the partial product (pp) logic. These terms eventually cancel out each other as
-the multiplier designs  are expanded and simplified. This  happens through some
+<p> UNPACK-BOOTH-LATER </p>
+
+<p>In  Booth encoded multipliers,  partial products are generated  with basic
+logical gates. We perform algebraic rewriting on these gates when rewriting the
+overall circuit.  In some corner  cases, this can prevent  some simplifications
+and  cause a  proof attempt  to fail.  We implement  a heuristic  that we  call
+\"unpack-booth-later\" that doesn't perform  algebraic rewriting right away but
+leaves logical gates  from Booth encoding intact. When all  the other rewriting
+is finished,  only then these gates  are rewriting in the  algebraic form. This
+heuristic is not expected to be necessary for the majority of designs and it is
+disabled by default. If a proof attempt of a Booth encoded design is failing,
+we recommend that you enable this heuristic: </p>
+
+<code> @('(rp::enable-unpack-booth-later <t-or-nil>)') </code>
+
+
+<p> STINGY-PP-CLEAN </p>
+<p>  Booth Encoded  designs produce  a  lot of  terms  as part  of the  partial
+product  (pp) logic.   These  terms eventually  cancel out  each  other as  the
+multiplier  designs are  expanded and  simplified.  This  happens through  some
 \"pp-clean\"  operations. By  default,  \"pp-clean\" is  rather aggressive  and
 creates a lot of copies of the same terms. When \"stingy-pp-clean\" is enabled,
 this  operation  is  done  more   selectively  which  can  deliver  performance
-improvements.  That can  range from  a 10%  improvement to  2-3x or  even more,
-depending on  many different factors. If  you'd like to enable  this heuristic,
-submit (rp::enable-stingy-pp-clean  t), or (rp::enable-stingy-pp-clean  nil) to
-disable. This heuristic is disabled by default because we have seen that it can
-cause some proofs to fail.  </p>
+improvements.  That  can range  from a  10% improvement to  2-3x or  even more,
+depending on  many different  factors.  This heuristic  might cause  some proof
+attempts to fail and it is disabled by default, and its setting is ignored when
+unpack-booth-later is enabled.  </p>
 
-<p> C-PATTERN1-REDUCE: Enabled by default, this heuristic can cover some corner
+<code> @('(rp::enable-stingy-pp-clean <t-or-nil>)') </code>
+
+
+<p>S-PATTERN1-REDUCE</p>
+
+<p> Enabled by default, this heuristic can cover some corner
 cases  that emerge  especially in  merged  multipliers. This  usually does  not
 affect the proof-time performance, but in some cases (e.g., constant propagated
 designs), it can have a negative  impact. We have never observed this heuristic
@@ -156,26 +187,30 @@ to cause a proof to fail, therefore it is enabled by default. To disable it
 it (rp::enable-c-pattern1-reduce t).
 </p>
 
+<code> @('(rp::enable-s-pattern1-reduce <t-or-nil>)') </code>
 
-<p>      S-PATTERN1-REDUCE:      similar       to      C-PATTERN1-REDUCE.
-Enabled  by default. To  disable (rp::enable-s-pattern1-reduce
-nil), to enable (rp::enable-s-pattern1-reduce
-t) </p>
-
-<p>      PATTERN2-REDUCE:      similar       to      C-PATTERN1-REDUCE      and
+<p>PATTERN2-REDUCE</p>
+<p>            Similar       to     
 S-PATTERN1-REDUCE. Enabled  by default. To  disable (rp::enable-pattern2-reduce
 nil), to enable (rp::enable-pattern2-reduce t) </p>
 
-<p> PATTERN3-REDUCE: similar  to other \"pattern-reduce\" heuristics  but it is
-way too  aggressive than  others and  disabled by  default..  It  removes \"1\"
+<code> @('(rp::enable-pattern2-reduce <t-or-nil>)') </code>
+
+<p>PATTERN3-REDUCE</p>
+
+<p>  Similar  to other \"pattern-reduce\" heuristics  but it is
+ too  aggressive  and  disabled by  default.  It  removes \"1\"
 instances from
 (s  1  others)  and  (c  1  others) terms.   We  have  added  this  pattern  for
 experimentation  purposes and  have yet  to  observe its  usefulness. This  can
-reduce the  proof-time performance  significantly, therefore,  it is  disabled by
-default.       To      enable      (rp::enable-pattern3-reduce      t),      to
-disable (rp::enable-pattern3-reduce nil) </p>
+cause proofs to go through very slowly, therefore,  it is  disabled by
+default. </p>
 
-<p> C-OF-S-FIX-MODE:  We have  found mainly three  different efficient  ways to
+<code> @('(rp::enable-pattern3-reduce <t-or-nil>)') </code>
+
+
+<p>C-OF-S-FIX-MODE</p>
+<p>   We have  found mainly three  different efficient  ways to
 merge sum of two instances of \"c\" terms. The first method is described in our
 CAV2020 paper (see @(see Multiplier-Verification) for the link) and it pertains
 to converting \"c\" terms to \"d\"  terms. We discontinued this support in this
@@ -186,8 +221,11 @@ and
 seen   that  the   performance  between   two  methods   is  very   similar  in
 general. However, if c-of-s-fix-mode and stingy-pp-clean are both disabled, you
 may  observe  a  significant  reduction in  proof-time  performance  for  large
-Booth-Encoded designs.
+Booth-Encoded designs. Disabling c-of-s-fix-mode may cause problems with the
+unpack-booth-later heuristic.
 </p>
+
+<code> @('(rp::enable-c-of-s-fix-mode <t-or-nil>)') </code>
 
 ")
 
