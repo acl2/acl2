@@ -61,7 +61,7 @@
 
 
 
-(fty::defmap svar-splittable :key-type svar :val-type svar-split :true-listp t)
+(fty::defmap svar-splittab :key-type svar :val-type svar-split :true-listp t)
 
 
 ;; Collect the variables in an svar-split.
@@ -73,16 +73,16 @@
     :remainder (list x.var)))
 
 ;; Collect the variables in all the splits (values) of a splitstable.
-(define svar-splittable-vars ((x svar-splittable-p))
+(define svar-splittab-vars ((x svar-splittab-p))
   :returns (vars svarlist-p)
   (b* (((when (atom x)) nil)
        ((unless (mbt (and (consp (car x))
                           (svar-p (caar x)))))
-        (svar-splittable-vars (cdr x))))
+        (svar-splittab-vars (cdr x))))
     (append (svar-split-vars (cdar x))
-            (svar-splittable-vars (cdr x))))
+            (svar-splittab-vars (cdr x))))
   ///
-  (local (in-theory (enable svar-splittable-fix))))
+  (local (in-theory (enable svar-splittab-fix))))
 
 
 ;; Evaluate a split under an environment.
@@ -128,40 +128,40 @@
     :hints(("Goal" :in-theory (enable svar-split-vars)))))
 
 ;; Evaluate a splitstable, producing a new environment.
-(define svar-splittable-eval ((x svar-splittable-p)
+(define svar-splittab-eval ((x svar-splittab-p)
                                (env svex-env-p))
   :returns (eval svex-env-p)
   (b* (((when (atom x)) nil)
        ((unless (mbt (and (consp (car x))
                           (svar-p (caar x)))))
-        (svar-splittable-eval (cdr x) env)))
+        (svar-splittab-eval (cdr x) env)))
     (svex-env-acons (caar x) (svar-split-eval (cdar x) env)
-                    (svar-splittable-eval (cdr x) env)))
+                    (svar-splittab-eval (cdr x) env)))
   ///
-  (defthm svar-splittable-eval-of-acons-non-member
-    (implies (not (member-equal (svar-fix var) (svar-splittable-vars x)))
-             (equal (svar-splittable-eval x (svex-env-acons var val rest))
-                    (svar-splittable-eval x rest)))
-    :hints(("Goal" :in-theory (enable svar-splittable-vars))))
+  (defthm svar-splittab-eval-of-acons-non-member
+    (implies (not (member-equal (svar-fix var) (svar-splittab-vars x)))
+             (equal (svar-splittab-eval x (svex-env-acons var val rest))
+                    (svar-splittab-eval x rest)))
+    :hints(("Goal" :in-theory (enable svar-splittab-vars))))
 
   (local (defthm member-alist-keys
            (iff (member k (alist-keys x))
                 (hons-assoc-equal k x))
            :hints(("Goal" :in-theory (enable alist-keys)))))
 
-  (defthm svar-splittable-eval-of-append-superset
-    (implies (subsetp-equal (svar-splittable-vars x) (alist-keys (svex-env-fix env1)))
-             (equal (svar-splittable-eval x (append env1 env2))
-                    (svar-splittable-eval x env1)))
-    :hints(("Goal" :in-theory (enable svar-splittable-vars svex-env-boundp))))
+  (defthm svar-splittab-eval-of-append-superset
+    (implies (subsetp-equal (svar-splittab-vars x) (alist-keys (svex-env-fix env1)))
+             (equal (svar-splittab-eval x (append env1 env2))
+                    (svar-splittab-eval x env1)))
+    :hints(("Goal" :in-theory (enable svar-splittab-vars svex-env-boundp))))
 
-  (defthm svar-splittable-eval-of-append-non-intersecting
-    (implies (not (intersectp-equal (svar-splittable-vars x) (alist-keys (svex-env-fix env1))))
-             (equal (svar-splittable-eval x (append env1 env2))
-                    (svar-splittable-eval x env2)))
-    :hints(("Goal" :in-theory (enable svar-splittable-vars svex-env-boundp))))
+  (defthm svar-splittab-eval-of-append-non-intersecting
+    (implies (not (intersectp-equal (svar-splittab-vars x) (alist-keys (svex-env-fix env1))))
+             (equal (svar-splittab-eval x (append env1 env2))
+                    (svar-splittab-eval x env2)))
+    :hints(("Goal" :in-theory (enable svar-splittab-vars svex-env-boundp))))
 
-  (local (in-theory (enable svar-splittable-fix))))
+  (local (in-theory (enable svar-splittab-fix))))
 
 
 ;; Find the remainder of a split at an offset (right shift).  Returns NIL if
@@ -207,7 +207,7 @@
              (member-equal (svar-split-remainder->var new-x) (svar-split-vars x)))
     :hints(("Goal" :in-theory (enable svar-split-vars)))))
 
-;; Assumign var is a variable that is used in split x, find the offset of the
+;; Assuming var is a variable that is used in split x, find the offset of the
 ;; segment of that variable.
 (define svar-split-var-offset ((var svar-p) (x svar-split-p))
   :returns (offset natp :rule-classes :type-prescription)
@@ -265,6 +265,47 @@
                (equal (svar-split-remainder->var shift) (svar-fix var))))
     :hints(("Goal" :in-theory (enable svar-split-shift svar-split-vars)))))
 
+;; Returns the width of the segment containing the given variable or NIL if it
+;; is the remainder or not present.
+(define svar-split-var-width ((var svar-p) (x svar-split-p))
+  :returns (width maybe-natp :rule-classes :type-prescription)
+  :measure (svar-split-count x)
+  (svar-split-case x
+    :segment (if (equal (svar-fix var) x.var)
+                 x.width
+               (svar-split-var-width var x.rest))
+    :remainder nil)
+  ///
+  (defthm svar-split-var-width-of-svar-split-shift-segment
+    (let ((shift (svar-split-shift offset x)))
+      (implies (and shift
+                    (svar-split-case shift :segment)
+                    (no-duplicatesp-equal (svar-split-vars x)))
+               (equal (svar-split-var-width (svar-split-segment->var shift) x)
+                      (svar-split-segment->width shift))))
+    :hints(("Goal" :in-theory (enable svar-split-shift svar-split-vars)
+            :induct (svar-split-shift offset x))
+           (and stable-under-simplificationp
+                '(:use ((:instance svar-split-shift-var-member-vars-segment
+                         (offset (+ offset (- (svar-split-segment->width x))))
+                         (x (svar-split-segment->rest x))))
+                  :in-theory (disable svar-split-shift-var-member-vars-segment)))))
+
+  (defthm svar-split-var-width-of-svar-split-shift-remainder
+    (let ((shift (svar-split-shift offset x)))
+      (implies (and shift
+                    (svar-split-case shift :remainder)
+                    (no-duplicatesp-equal (svar-split-vars x)))
+               (equal (svar-split-var-width (svar-split-remainder->var shift) x)
+                      nil)))
+    :hints(("Goal" :in-theory (enable svar-split-shift svar-split-vars)
+            :induct (svar-split-shift offset x))
+           (and stable-under-simplificationp
+                '(:use ((:instance svar-split-shift-var-member-vars-remainder
+                         (offset (+ offset (- (svar-split-segment->width x))))
+                         (x (svar-split-segment->rest x))))
+                  :in-theory (disable svar-split-shift-var-member-vars-remainder))))))
+
 ;; Make an SVEX that reproduces a split; that is, that evaluates under
 ;; svex-eval to the same value that x evaluates to under svar-split-eval.
 (define svar-split->svex ((x svar-split-p))
@@ -301,28 +342,28 @@
 
 ;; Make an svex-alist that replicates a splitstable, that is, that evaluates
 ;; under svex-alist-eval to the same env as x evaluates to under
-;; svar-splittable-eval.
-(define svar-splittable->subst ((x svar-splittable-p))
+;; svar-splittab-eval.
+(define svar-splittab->subst ((x svar-splittab-p))
   :returns (subst svex-alist-p)
   (b* (((when (atom x)) nil)
        ((unless (mbt (and (consp (car x))
                           (svar-p (caar x)))))
-        (svar-splittable->subst (cdr x))))
+        (svar-splittab->subst (cdr x))))
     (cons (cons (caar x) (svar-split->svex (cdar x)))
-          (svar-splittable->subst (cdr x))))
+          (svar-splittab->subst (cdr x))))
   ///
   (defret eval-of-<fn>
     (equal (svex-alist-eval subst env)
-           (svar-splittable-eval x env))
-    :hints(("Goal" :in-theory (enable svar-splittable-eval
+           (svar-splittab-eval x env))
+    :hints(("Goal" :in-theory (enable svar-splittab-eval
                                       svex-env-acons
                                       svex-alist-eval)
             :induct t)))
 
   (defret svex-alist-keys-of-<fn>
     (equal (svex-alist-keys subst)
-           (alist-keys (svar-splittable-fix x)))
-    :hints(("Goal" :in-theory (enable svex-alist-keys svar-splittable-fix alist-keys))))
+           (alist-keys (svar-splittab-fix x)))
+    :hints(("Goal" :in-theory (enable svex-alist-keys svar-splittab-fix alist-keys))))
 
   (defret svex-lookup-of-<fn>
     (equal (svex-lookup v subst)
@@ -330,31 +371,31 @@
              (and look
                   (svar-split->svex (cdr look))))))
 
-  (local (in-theory (enable svar-splittable-fix)))
+  (local (in-theory (enable svar-splittab-fix)))
 
   (defret svex-alist-vars-of-<fn>
     (set-equiv (svex-alist-vars subst)
-               (svar-splittable-vars x))
-    :hints(("Goal" :in-theory (enable svex-alist-vars svar-splittable-vars)))))
+               (svar-splittab-vars x))
+    :hints(("Goal" :in-theory (enable svex-alist-vars svar-splittab-vars)))))
 
 
 ;; Given a splitstable x, find a key of x such that var is one of the variables
 ;; in the bound value (split) of that key in x.
-(define svar-splittable-find-domainvar ((var svar-p)
-                                         (x svar-splittable-p))
+(define svar-splittab-find-domainvar ((var svar-p)
+                                         (x svar-splittab-p))
   :returns (domainvar (iff (svar-p domainvar) domainvar))
   (b* (((when (atom x)) nil)
        ((unless (mbt (and (consp (car x))
                           (svar-p (caar x)))))
-        (svar-splittable-find-domainvar var (cdr x))))
+        (svar-splittab-find-domainvar var (cdr x))))
     (if (member-equal (svar-fix var) (svar-split-vars (cdar x)))
         (caar x)
-      (svar-splittable-find-domainvar var (cdr x))))
+      (svar-splittab-find-domainvar var (cdr x))))
   ///
-  (local (in-theory (enable svar-splittable-vars)))
+  (local (in-theory (enable svar-splittab-vars)))
   (defret <fn>-under-iff
     (iff domainvar
-         (member-equal (svar-fix var) (svar-splittable-vars x))))
+         (member-equal (svar-fix var) (svar-splittab-vars x))))
 
   (defret lookup-exists-of-<fn>
     (implies domainvar
@@ -368,39 +409,39 @@
   (defret member-svar-split-vars-of-<fn>
     (implies (and (equal var1 (svar-fix var))
                   domainvar
-                  (no-duplicatesp-equal (alist-keys (svar-splittable-fix x))))
+                  (no-duplicatesp-equal (alist-keys (svar-splittab-fix x))))
              (member-equal var1 (svar-split-vars
                                  (cdr (hons-assoc-equal domainvar x)))))
-    :hints(("Goal" :in-theory (enable svar-splittable-fix alist-keys))))
+    :hints(("Goal" :in-theory (enable svar-splittab-fix alist-keys))))
 
   (local (defthm intersectp-when-member-both
            (implies (and (member-equal k y)
                          (member-equal k x))
                     (intersectp-equal x y))))
 
-  (local (defthm member-svar-splittable-vars-when-member-svar-split-vars-of-lookup
+  (local (defthm member-svar-splittab-vars-when-member-svar-split-vars-of-lookup
            (implies (and (svar-p k)
-                         (hons-assoc-equal k decomp)
+                         (hons-assoc-equal k splittab)
                          (member-equal var
-                                       (svar-split-vars (cdr (hons-assoc-equal k decomp)))))
-                    (member-equal var (svar-splittable-vars decomp)))
-           :hints(("Goal" :in-theory (enable svar-splittable-vars)))))
+                                       (svar-split-vars (cdr (hons-assoc-equal k splittab)))))
+                    (member-equal var (svar-splittab-vars splittab)))
+           :hints(("Goal" :in-theory (enable svar-splittab-vars)))))
 
   (defret member-svar-split-vars-of-<fn>-when-no-duplicate-vars
     (implies (and (svar-p var)
-                  (hons-assoc-equal key (svar-splittable-fix x))
-                  (no-duplicatesp-equal (alist-keys (svar-splittable-fix x)))
-                  (no-duplicatesp-equal (svar-splittable-vars x)))
+                  (hons-assoc-equal key (svar-splittab-fix x))
+                  (no-duplicatesp-equal (alist-keys (svar-splittab-fix x)))
+                  (no-duplicatesp-equal (svar-splittab-vars x)))
              (iff (member-equal var (svar-split-vars
                                       (cdr (hons-assoc-equal key x))))
                   (and domainvar
                        (equal key domainvar))))
-    :hints(("Goal" :in-theory (enable svar-splittable-fix alist-keys)
+    :hints(("Goal" :in-theory (enable svar-splittab-fix alist-keys)
             :induct <call>
-            :expand ((svar-splittable-vars x)))))
+            :expand ((svar-splittab-vars x)))))
 
 
-  (local (in-theory (enable svar-splittable-fix))))
+  (local (in-theory (enable svar-splittab-fix))))
 
 ;; Extract the portion of the env that is used in split x.  For each variable
 ;; of x that is used in a segment, zero-extend its value at that segment's
@@ -463,15 +504,14 @@
              
              (equal new-val
                     (let* ((offset (svar-split-var-offset var x))
-                           (shift (svar-split-shift offset x)))
-                      (svar-split-case shift
-                        :segment
-                        (4vec-part-select (2vec (+ (nfix position) offset))
-                                          (2vec shift.width)
-                                          val)
-                        :remainder (4vec-rsh (2vec (+ (nfix position) offset)) val)))))
+                           (width  (svar-split-var-width var x)))
+                      (if width
+                          (4vec-part-select (2vec (+ (nfix position) offset))
+                                            (2vec width)
+                                            val)
+                        (4vec-rsh (2vec (+ (nfix position) offset)) val)))))
     :hints(("Goal" :in-theory (enable svar-split-var-offset
-                                      svar-split-shift
+                                      svar-split-var-width
                                       svar-split-vars)))))
 
 ;; Makes an env for the variables of split x assuming it has value val.  Each
@@ -568,10 +608,9 @@
            (if (member-equal (svar-fix key) (svar-split-vars x))
                (svar-split-lookup key x position val)
              (4vec-x)))
-    :hints(("Goal" :in-theory (enable svar-split-lookup
-                                      svar-split-vars
+    :hints(("Goal" :in-theory (enable svar-split-vars
                                       svar-split-var-offset
-                                      svar-split-shift)))))
+                                      svar-split-var-width)))))
 
 ;; Makes an svex-alist in which each variable of split x is bound to an svex
 ;; giving its value assuming x has value val (another svex).  Symbolic version
@@ -673,13 +712,13 @@
     (implies (member-equal (svar-fix key) (svar-split-vars x))
              (svex-eval-equiv (svex-lookup key alist)
                               (b* ((offset (svar-split-var-offset key x))
-                                   (shift (svar-split-shift offset x)))
-                                (svar-split-case shift
-                                  :segment (svex-concat
-                                            shift.width
-                                            (svex-rsh (+ (nfix position) offset) val)
-                                            0)
-                                  :remainder (svex-rsh (+ (nfix position) offset) val)))))
+                                   (width (svar-split-var-width key x)))
+                                (if width
+                                    (svex-concat
+                                     width
+                                     (svex-rsh (+ (nfix position) offset) val)
+                                     0)
+                                  (svex-rsh (+ (nfix position) offset) val)))))
     :hints(("Goal" :in-theory (e/d (svex-eval-equiv svex-apply 4vec-part-select 4vec-zero-ext)
                                    (<fn>)))))
                               
@@ -693,27 +732,27 @@
 ;; find the value of var.  Looks through the table for a split that contains
 ;; that variable and produces its lookup under the assumption that the split
 ;; has the value bound to its key in env.
-(define svar-splittable-lookup ((var svar-p)
-                                 (x svar-splittable-p)
+(define svar-splittab-lookup ((var svar-p)
+                                 (x svar-splittab-p)
                                  (env svex-env-p))
   :returns (new-val (iff (4vec-p new-val) new-val))
   (b* (((when (atom x)) nil)
        ((unless (mbt (and (consp (car x))
                           (svar-p (caar x)))))
-        (svar-splittable-lookup var (cdr x) env)))
+        (svar-splittab-lookup var (cdr x) env)))
     (or (svar-split-lookup var (cdar x) 0 (svex-env-lookup (caar x) env))
-        (svar-splittable-lookup var (cdr x) env)))
+        (svar-splittab-lookup var (cdr x) env)))
   ///
   (defret <fn>-under-iff
-    (iff new-val (member-equal (svar-fix var) (svar-splittable-vars x)))
+    (iff new-val (member-equal (svar-fix var) (svar-splittab-vars x)))
     :hints(("Goal" 
             :induct <call>
-            :expand ((svar-splittable-vars x)))))
+            :expand ((svar-splittab-vars x)))))
 
-  (defthm svar-splittable-lookup-of-acons-non-var
-    (implies (not (hons-assoc-equal (svar-fix v) (svar-splittable-fix decomp)))
-             (equal (svar-splittable-lookup var decomp (cons (cons v val) env))
-                    (svar-splittable-lookup var decomp env)))
+  (defthm svar-splittab-lookup-of-acons-non-var
+    (implies (not (hons-assoc-equal (svar-fix v) (svar-splittab-fix splittab)))
+             (equal (svar-splittab-lookup var splittab (cons (cons v val) env))
+                    (svar-splittab-lookup var splittab env)))
     :hints(("Goal" :in-theory (enable svex-env-lookup))))
 
   (local (defthm member-alist-keys
@@ -721,22 +760,22 @@
                 (hons-assoc-equal k x))
            :hints(("Goal" :in-theory (enable alist-keys)))))
 
-  (defthm svar-splittable-lookup-of-acons-when-key-not-in-new-var-decomp
+  (defthm svar-splittab-lookup-of-acons-when-key-not-in-new-var-split
     (implies (or (not (svar-p v))
                  (and (not (member-equal (svar-fix var)
-                                         (svar-split-vars (cdr (hons-assoc-equal v decomp)))))
-                      (no-duplicatesp-equal (alist-keys (svar-splittable-fix decomp)))))
-             (equal (svar-splittable-lookup var decomp (cons (cons v val) env))
-                    (svar-splittable-lookup var decomp env)))
-    :hints(("Goal" :in-theory (enable svex-env-lookup alist-keys svar-splittable-fix))))
+                                         (svar-split-vars (cdr (hons-assoc-equal v splittab)))))
+                      (no-duplicatesp-equal (alist-keys (svar-splittab-fix splittab)))))
+             (equal (svar-splittab-lookup var splittab (cons (cons v val) env))
+                    (svar-splittab-lookup var splittab env)))
+    :hints(("Goal" :in-theory (enable svex-env-lookup alist-keys svar-splittab-fix))))
 
-  ;; (defthm svar-splittable-lookup-empty-env
-  ;;   (Equal (svar-splittable-lookup key decomp nil)
-  ;;          (and (member-equal (svar-fix key) (svar-splittable-vars decomp))
+  ;; (defthm svar-splittab-lookup-empty-env
+  ;;   (Equal (svar-splittab-lookup key splittab nil)
+  ;;          (and (member-equal (svar-fix key) (svar-splittab-vars splittab))
   ;;               (4vec-x)))
-  ;;   :hints(("Goal" :in-theory (enable svar-splittable-vars))))
+  ;;   :hints(("Goal" :in-theory (enable svar-splittab-vars))))
 
-  (local (in-theory (enable svar-splittable-fix)))
+  (local (in-theory (enable svar-splittab-fix)))
 
 
   (local (defthm svex-env-boundp-by-member-alist-keys
@@ -744,22 +783,22 @@
                     (svex-env-boundp var env))
            :hints(("Goal" :in-theory (enable svex-env-boundp alist-keys)))))
 
-  (defthm svar-splittable-lookup-of-append-env-when-alist-keys-subsetp
-    (implies (subsetp-equal (alist-keys (svar-splittable-fix x)) (alist-keys (svex-env-fix env)))
-             (equal (svar-splittable-lookup var x (append env rest))
-                    (svar-splittable-lookup var x env)))
+  (defthm svar-splittab-lookup-of-append-env-when-alist-keys-subsetp
+    (implies (subsetp-equal (alist-keys (svar-splittab-fix x)) (alist-keys (svex-env-fix env)))
+             (equal (svar-splittab-lookup var x (append env rest))
+                    (svar-splittab-lookup var x env)))
     :hints(("Goal" :in-theory (e/d (alist-keys) (member-alist-keys)))))
 
 
-  (defthmd svar-splittable-lookup-in-terms-of-svar-splittable-find-domainvar
-    (implies (and (member-equal (svar-fix var) (svar-splittable-vars x))
-                  (no-duplicatesp-equal (alist-keys (svar-splittable-fix x))))
-             (equal (svar-splittable-lookup var x env)
-                    (let* ((dom (svar-splittable-find-domainvar var x))
-                           (decomp (cdr (hons-assoc-equal dom (svar-splittable-fix x)))))
-                      (svar-split-lookup var decomp 0 (svex-env-lookup dom env)))))
-    :hints(("Goal" :in-theory (enable svar-splittable-find-domainvar
-                                      svar-splittable-vars
+  (defthmd svar-splittab-lookup-in-terms-of-svar-splittab-find-domainvar
+    (implies (and (member-equal (svar-fix var) (svar-splittab-vars x))
+                  (no-duplicatesp-equal (alist-keys (svar-splittab-fix x))))
+             (equal (svar-splittab-lookup var x env)
+                    (let* ((dom (svar-splittab-find-domainvar var x))
+                           (split (cdr (hons-assoc-equal dom (svar-splittab-fix x)))))
+                      (svar-split-lookup var split 0 (svex-env-lookup dom env)))))
+    :hints(("Goal" :in-theory (enable svar-splittab-find-domainvar
+                                      svar-splittab-vars
                                       alist-keys)))))
 
 
@@ -771,76 +810,76 @@
 
 
 ;; Given env in the split variable domain, reduce it to the env relevant to
-;; splittable x.  Assumes no duplicate variables in x.
-(define svar-splittable-extract ((x svar-splittable-p)
+;; splittab x.  Assumes no duplicate variables in x.
+(define svar-splittab-extract ((x svar-splittab-p)
                                   (env svex-env-p))
   :returns (new-env svex-env-p)
   (b* (((when (atom x)) nil)
        ((unless (mbt (and (consp (car x))
                           (svar-p (caar x)))))
-        (svar-splittable-extract (cdr x) env)))
+        (svar-splittab-extract (cdr x) env)))
     (append (svar-split-extract (cdar x) env)
-            (svar-splittable-extract (cdr x) env)))
+            (svar-splittab-extract (cdr x) env)))
   ///
 
-  (defret svar-splittable-eval-of-<fn>
-    (implies (no-duplicatesp-equal (svar-splittable-vars x))
-             (equal (svar-splittable-eval x new-env)
-                    (svar-splittable-eval x env)))
-    :hints(("Goal" :in-theory (enable svar-splittable-eval svar-splittable-vars))))
+  (defret svar-splittab-eval-of-<fn>
+    (implies (no-duplicatesp-equal (svar-splittab-vars x))
+             (equal (svar-splittab-eval x new-env)
+                    (svar-splittab-eval x env)))
+    :hints(("Goal" :in-theory (enable svar-splittab-eval svar-splittab-vars))))
 
   (defret alist-keys-of-<fn>
-    (equal (alist-keys (svar-splittable-extract x env))
-           (svar-splittable-vars x))
-    :hints(("Goal" :in-theory (enable svar-splittable-vars))))
+    (equal (alist-keys (svar-splittab-extract x env))
+           (svar-splittab-vars x))
+    :hints(("Goal" :in-theory (enable svar-splittab-vars))))
 
-  (local (in-theory (enable svar-splittable-fix))))
+  (local (in-theory (enable svar-splittab-fix))))
 
 
 ;; Given an env in the un-split variable domain, produce an env for the split
-;; variable name such that splittable x evaluates to a compatible env (namely
+;; variable name such that splittab x evaluates to a compatible env (namely
 ;; the svex-env-extract of the keys of x).
-(define svar-splittable-inverse-env ((x svar-splittable-p)
+(define svar-splittab-inverse-env ((x svar-splittab-p)
                                       (env svex-env-p))
   :returns (new-env svex-env-p)
   (b* (((when (atom x)) nil)
        ((unless (mbt (and (consp (car x))
                           (svar-p (caar x)))))
-        (svar-splittable-inverse-env (cdr x) env)))
+        (svar-splittab-inverse-env (cdr x) env)))
     (append (svar-split-inverse-env (cdar x) 0 (svex-env-lookup (caar x) env))
-            (svar-splittable-inverse-env (cdr x) env)))
+            (svar-splittab-inverse-env (cdr x) env)))
   ///
 
-  (defret svar-splittable-eval-with-<fn>
-    (implies (no-duplicatesp-equal (svar-splittable-vars x))
-             (equal (svar-splittable-eval x new-env)
-                    (svex-env-extract (alist-keys (svar-splittable-fix x)) env)))
-    :hints(("Goal" :in-theory (enable svar-splittable-eval svar-splittable-vars alist-keys
+  (defret svar-splittab-eval-with-<fn>
+    (implies (no-duplicatesp-equal (svar-splittab-vars x))
+             (equal (svar-splittab-eval x new-env)
+                    (svex-env-extract (alist-keys (svar-splittab-fix x)) env)))
+    :hints(("Goal" :in-theory (enable svar-splittab-eval svar-splittab-vars alist-keys
                                       svex-env-extract svex-env-acons)
             :induct <call>
-            :expand ((svar-splittable-fix x)))))
+            :expand ((svar-splittab-fix x)))))
                            
-  (defthm svar-splittable-inverse-env-of-svex-env-acons-non-member
-    (implies (not (member (svar-fix v) (alist-keys (svar-splittable-fix x))))
-             (equal (svar-splittable-inverse-env x (svex-env-acons v val env))
-                    (svar-splittable-inverse-env x env)))
-    :hints(("Goal" :in-theory (enable svar-splittable-fix alist-keys))))
+  (defthm svar-splittab-inverse-env-of-svex-env-acons-non-member
+    (implies (not (member (svar-fix v) (alist-keys (svar-splittab-fix x))))
+             (equal (svar-splittab-inverse-env x (svex-env-acons v val env))
+                    (svar-splittab-inverse-env x env)))
+    :hints(("Goal" :in-theory (enable svar-splittab-fix alist-keys))))
 
-  (defret <fn>-of-svar-splittable-eval
-    :pre-bind ((env (svar-splittable-eval x env1)))
-    (implies (and (no-duplicatesp-equal (svar-splittable-vars x))
-                  (no-duplicatesp-equal (alist-keys (svar-splittable-fix x))))
-             (equal new-env (svar-splittable-extract x env1)))
-    :hints(("Goal" :in-theory (enable svar-splittable-eval
-                                      svar-splittable-vars
-                                      svar-splittable-extract
-                                      svar-splittable-fix
+  (defret <fn>-of-svar-splittab-eval
+    :pre-bind ((env (svar-splittab-eval x env1)))
+    (implies (and (no-duplicatesp-equal (svar-splittab-vars x))
+                  (no-duplicatesp-equal (alist-keys (svar-splittab-fix x))))
+             (equal new-env (svar-splittab-extract x env1)))
+    :hints(("Goal" :in-theory (enable svar-splittab-eval
+                                      svar-splittab-vars
+                                      svar-splittab-extract
+                                      svar-splittab-fix
                                       alist-keys))))
 
   (defret alist-keys-of-<fn>
     (equal (alist-keys new-env)
-           (svar-splittable-vars x))
-    :hints(("Goal" :in-theory (enable svar-splittable-vars))))
+           (svar-splittab-vars x))
+    :hints(("Goal" :in-theory (enable svar-splittab-vars))))
 
   
 
@@ -856,13 +895,13 @@
 
   (defret lookup-in-<fn>
     (equal (svex-env-lookup key new-env)
-           (if (member-equal (svar-fix key) (svar-splittable-vars x))
-               (svar-splittable-lookup key x env)
+           (if (member-equal (svar-fix key) (svar-splittab-vars x))
+               (svar-splittab-lookup key x env)
              (4vec-x)))
-    :hints(("Goal" :in-theory (enable svar-splittable-lookup
-                                      svar-splittable-vars))))
+    :hints(("Goal" :in-theory (enable svar-splittab-lookup
+                                      svar-splittab-vars))))
 
-  (local (in-theory (enable svar-splittable-fix))))
+  (local (in-theory (enable svar-splittab-fix))))
 
 (local
  (defthm svex-alist-keys-of-append
@@ -872,22 +911,22 @@
    :hints(("Goal" :in-theory (enable svex-alist-keys)))))
 
 
-;; Produce an svex-alist that evaluates to the svar-splittable-inverse-env.
-;; I.e.  each variable in the range of the splittable is mapped to a (svex)
+;; Produce an svex-alist that evaluates to the svar-splittab-inverse-env.
+;; I.e.  each variable in the range of the splittab is mapped to a (svex)
 ;; select of its corresponding domain variable.
-(define svar-splittable->inverse ((x svar-splittable-p))
+(define svar-splittab->inverse ((x svar-splittab-p))
   :returns (alist svex-alist-p)
   (b* (((when (atom x)) nil)
        ((unless (mbt (and (consp (car x))
                           (svar-p (caar x)))))
-        (svar-splittable->inverse (cdr x))))
+        (svar-splittab->inverse (cdr x))))
     (append (svar-split->inverse (cdar x) 0 (svex-var (caar x)))
-            (svar-splittable->inverse (cdr x))))
+            (svar-splittab->inverse (cdr x))))
   ///
   (defret eval-of-<fn>
     (equal (svex-alist-eval alist env)
-           (svar-splittable-inverse-env x env))
-    :hints(("Goal" :in-theory (enable svar-splittable-inverse-env svex-alist-eval)
+           (svar-splittab-inverse-env x env))
+    :hints(("Goal" :in-theory (enable svar-splittab-inverse-env svex-alist-eval)
             :induct <call>
             :expand ((:free (v) (svex-eval (svex-var v) env))))))
 
@@ -897,27 +936,27 @@
                            (svex-env-extract vars env)))
            :hints(("Goal" :in-theory (enable svex-alist-eval svex-env-extract svarlist->svexes svex-eval)))))
 
-  (local (defthm svarlist-p-keys-of-svar-splittable
-           (implies (svar-splittable-p x)
+  (local (defthm svarlist-p-keys-of-svar-splittab
+           (implies (svar-splittab-p x)
                     (svarlist-p (alist-keys x)))
            :hints(("Goal" :in-theory (enable alist-keys)))))
 
-  (defthm svar-splittable-svex-of-inverse
-    (implies (no-duplicatesp-equal (svar-splittable-vars x))
-             (svex-alist-eval-equiv (svex-alist-compose (svar-splittable->subst x) (svar-splittable->inverse x))
-                                    (svex-identity-subst (alist-keys (svar-splittable-fix x)))))
+  (defthm svar-splittab-svex-of-inverse
+    (implies (no-duplicatesp-equal (svar-splittab-vars x))
+             (svex-alist-eval-equiv (svex-alist-compose (svar-splittab->subst x) (svar-splittab->inverse x))
+                                    (svex-identity-subst (alist-keys (svar-splittab-fix x)))))
     :hints(("Goal" :in-theory (enable svex-alist-eval-equiv-in-terms-of-envs-equivalent)
             :do-not-induct t)))
 
   (defret svex-lookup-under-iff-of-<fn>
     (iff (svex-lookup key alist)
-         (member-equal (svar-fix key) (svar-splittable-vars x)))
-    :hints(("Goal" :in-theory (enable svar-splittable-vars))))
+         (member-equal (svar-fix key) (svar-splittab-vars x)))
+    :hints(("Goal" :in-theory (enable svar-splittab-vars))))
 
   (defret eval-lookup-of-<fn>
     (equal (svex-eval (svex-lookup key alist) env)
-           (if (member-equal (svar-fix key) (svar-splittable-vars x))
-               (svar-splittable-lookup key x env)
+           (if (member-equal (svar-fix key) (svar-splittab-vars x))
+               (svar-splittab-lookup key x env)
              (4vec-x)))
     :hints (("goal" :use ((:instance svex-env-lookup-of-svex-alist-eval
                            (k key)
@@ -939,31 +978,30 @@
                                              4vec-zero-ext)))))
 
   (defretd lookup-of-<fn>-under-svex-eval-equiv
-    (implies (and (member-equal (Svar-fix key) (svar-splittable-vars x))
-                  (no-duplicatesp-equal (alist-keys (svar-splittable-fix x))))
+    (implies (and (member-equal (Svar-fix key) (svar-splittab-vars x))
+                  (no-duplicatesp-equal (alist-keys (svar-splittab-fix x))))
              (svex-eval-equiv (svex-lookup key alist)
-                              (b* ((dom (svar-splittable-find-domainvar key x))
-                                   (decomp (cdr (hons-assoc-equal dom (svar-splittable-fix x))))
-                                   (offset (svar-split-var-offset key decomp))
-                                   (shift (svar-split-shift offset decomp)))
-                                (svar-split-case shift
-                                  :segment
-                                  (svex-concat shift.width
-                                               (svex-rsh Offset (svex-var dom))
-                                               0)
-                                  :remainder (svex-rsh Offset (svex-var dom))))))
+                              (b* ((dom (svar-splittab-find-domainvar key x))
+                                   (split (cdr (hons-assoc-equal dom (svar-splittab-fix x))))
+                                   (offset (svar-split-var-offset key split))
+                                   (width  (svar-split-var-width key split)))
+                                (if width
+                                    (svex-concat width
+                                                 (svex-rsh Offset (svex-var dom))
+                                                 0)
+                                  (svex-rsh Offset (svex-var dom))))))
     :hints(("Goal" :in-theory (e/d (svex-eval-equiv
                                     svex-apply
-                                    svar-splittable-lookup-in-terms-of-svar-splittable-find-domainvar)
+                                    svar-splittab-lookup-in-terms-of-svar-splittab-find-domainvar)
                                    (<fn>))
             :expand ((:free (x env) (svex-eval (svex-var x) env))))))
 
   (defret svex-alist-keys-of-<fn>
     (equal (svex-alist-keys alist)
-           (svar-splittable-vars x))
-    :hints(("Goal" :in-theory (enable svar-splittable-vars))))
+           (svar-splittab-vars x))
+    :hints(("Goal" :in-theory (enable svar-splittab-vars))))
 
-  (local (in-theory (enable svar-splittable-fix))))
+  (local (in-theory (enable svar-splittab-fix))))
 
 
 
@@ -981,21 +1019,86 @@
                   (svex-lookup key x))
          :hints(("Goal" :in-theory (enable svex-alist-keys svex-lookup)))))
 
-(define svex-alist-decomptable-decompose ((x svex-alist-p)
-                                          (decomp svar-splittable-p))
+
+
+(local
+ (progn
+   (defthm svarlist-p-alist-keys-when-svar-splittab-p
+     (implies (svar-splittab-p x)
+              (svarlist-p (alist-keys x)))
+     :hints(("Goal" :in-theory (enable svar-splittab-p alist-keys))))
+   (defcong svex-alist-eval-equiv svex-alist-eval-equiv (append x y) 1
+     :hints ((and stable-under-simplificationp `(:expand (,(car (last clause)))))))
+
+   (defcong svex-alist-eval-equiv svex-alist-eval-equiv (append x y) 2
+     :hints ((and stable-under-simplificationp `(:expand (,(car (last clause)))))))
+
+   
+   (defthm svex-compose-lookup-of-append
+     (equal (Svex-compose-lookup key (append x y))
+            (or (svex-lookup key x)
+                (svex-compose-lookup key y)))
+     :hints(("Goal" :in-theory (enable svex-compose-lookup))))
+
+   (defcong svex-alist-compose-equiv svex-alist-compose-equiv (append x y) 2
+     :hints ((and stable-under-simplificationp `(:expand (,(car (last clause)))))))
+
+   (defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-removekeys keys x) 2
+     :hints((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
+   (local (defthm svex-compose-lookup-of-svex-alist-removekeys
+            (equal (svex-compose-lookup v (svex-alist-removekeys keys x))
+                   (if (member-equal (svar-fix v) (svarlist-fix keys))
+                       (svex-var v)
+                     (svex-compose-lookup v x)))
+            :hints(("Goal" :in-theory (enable svex-compose-lookup)))))
+
+   (defcong svex-alist-compose-equiv svex-alist-compose-equiv (svex-alist-removekeys keys x) 2
+     :hints((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
+   (defthm svex-compose-lookup-of-svex-alist-compose
+     (equal (Svex-compose-lookup v (svex-alist-compose x a))
+            (if (svex-lookup v x)
+                (svex-compose (svex-lookup v x) a)
+              (svex-var v)))
+     :hints(("Goal" :in-theory (enable svex-compose-lookup))))))
+
+;; Transforms x by replacing each pair whose key is bound in splittab with one
+;; pair for each variable in its split.
+(define svex-alist-splittab-split-keys ((x svex-alist-p)
+                                        (splittab svar-splittab-p))
+  :returns (new-x svex-alist-p)
+  :enabled t
+  
+  (append (svex-alist-compose (svar-splittab->inverse splittab) x)
+          (svex-alist-removekeys (alist-keys (svar-splittab-fix splittab)) x))
+  ///
+  (defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-splittab-split-keys x splittab) 1)
+  (defcong svex-alist-compose-equiv svex-alist-compose-equiv (svex-alist-splittab-split-keys x splittab) 1))
+
+;; We prove below -- <fn>-in-terms-of-svar-splittab->inverse --
+;; that this is equivalent to
+;;  (append (svex-alist-compose (svar-splittab->inverse splittab) x)
+;;          (svex-alist-removekeys (alist-keys (svar-splittab-fix splittab)) x)).
+(define svex-alist-splittab-split-keys-exec ((x svex-alist-p)
+                                             (splittab svar-splittab-p))
   ;; Just affects the keys, not the values
   :returns (new-x svex-alist-p)
   (b* (((when (atom x)) nil)
        ((unless (mbt (and (consp (car x)) (svar-p (caar x)))))
-        (svex-alist-decomptable-decompose (cdr x) decomp))
+        (svex-alist-splittab-split-keys-exec (cdr x) splittab))
        ((cons var val) (car x))
-       (look (hons-assoc-equal var (svar-splittable-fix decomp)))
+       (look (hons-assoc-equal var (svar-splittab-fix splittab)))
        ((unless look)
         (cons (cons var (svex-fix val))
-              (svex-alist-decomptable-decompose (cdr x) decomp))))
+              (svex-alist-splittab-split-keys-exec (cdr x) splittab))))
     (append (svar-split->inverse (cdr look) 0 val)
-            (svex-alist-decomptable-decompose (cdr x) decomp)))
+            (svex-alist-splittab-split-keys-exec (cdr x) splittab)))
   ///
+  
+
   (local (defthm svex-p-lookup-in-svex-alist
            (implies (and (svex-alist-p x)
                          (hons-assoc-equal k x))
@@ -1012,26 +1115,26 @@
                          (member-equal k x))
                     (intersectp-equal x y))))
 
-  (local (defthm member-svar-splittable-vars-when-member-svar-split-vars-of-lookup
+  (local (defthm member-svar-splittab-vars-when-member-svar-split-vars-of-lookup
            (implies (and (svar-p k)
-                         (hons-assoc-equal k decomp)
+                         (hons-assoc-equal k splittab)
                          (member-equal key
-                                       (svar-split-vars (cdr (hons-assoc-equal k decomp)))))
-                    (member-equal key (svar-splittable-vars decomp)))
-           :hints(("Goal" :in-theory (enable svar-splittable-vars)))))
+                                       (svar-split-vars (cdr (hons-assoc-equal k splittab)))))
+                    (member-equal key (svar-splittab-vars splittab)))
+           :hints(("Goal" :in-theory (enable svar-splittab-vars)))))
 
-  (local (defthm svar-splittable-lookup-when-var-in-look
+  (local (defthm svar-splittab-lookup-when-var-in-look
            (implies (and (svar-p k)
-                         (hons-assoc-equal k decomp)
-                         ;; (no-duplicatesp-equal (alist-keys (svar-splittable-fix decomp)))
+                         (hons-assoc-equal k splittab)
+                         ;; (no-duplicatesp-equal (alist-keys (svar-splittab-fix splittab)))
                          (member-equal (svar-fix key)
-                                       (svar-split-vars (cdr (hons-assoc-equal k decomp))))
-                         (no-duplicatesp-equal (svar-splittable-vars decomp)))
-                    (equal (svar-splittable-lookup key decomp env)
-                           (svar-split-lookup key (cdr (hons-assoc-equal k decomp))
+                                       (svar-split-vars (cdr (hons-assoc-equal k splittab))))
+                         (no-duplicatesp-equal (svar-splittab-vars splittab)))
+                    (equal (svar-splittab-lookup key splittab env)
+                           (svar-split-lookup key (cdr (hons-assoc-equal k splittab))
                                                0 (svex-env-lookup k env))))
-           :hints(("Goal" :in-theory (enable svar-splittable-lookup svar-splittable-vars
-                                             svar-splittable-fix alist-keys)))))
+           :hints(("Goal" :in-theory (enable svar-splittab-lookup svar-splittab-vars
+                                             svar-splittab-fix alist-keys)))))
 
   (local (defthm svex-env-lookup-of-cons
            (equal (svex-env-lookup k (cons (cons key val) env))
@@ -1043,16 +1146,16 @@
 
   (defret eval-svex-lookup-of-<fn>
     (implies (and (not (intersectp-equal (svex-alist-keys x)
-                                         (svar-splittable-vars decomp)))
-                  (no-duplicatesp-equal (svar-splittable-vars decomp))
-                  (no-duplicatesp-equal (alist-keys (svar-splittable-fix decomp))))
+                                         (svar-splittab-vars splittab)))
+                  (no-duplicatesp-equal (svar-splittab-vars splittab))
+                  (no-duplicatesp-equal (alist-keys (svar-splittab-fix splittab))))
              (equal (svex-eval (svex-lookup key new-x) env)
-                    (cond ((member-equal (svar-fix key) (svar-splittable-vars decomp))
-                           (if (svex-lookup (svar-splittable-find-domainvar key decomp)
+                    (cond ((member-equal (svar-fix key) (svar-splittab-vars splittab))
+                           (if (svex-lookup (svar-splittab-find-domainvar key splittab)
                                             x)
-                               (svar-splittable-lookup key decomp (svex-alist-eval x env))
+                               (svar-splittab-lookup key splittab (svex-alist-eval x env))
                              (4vec-x)))
-                          ((member-equal (svar-fix key) (alist-keys (svar-splittable-fix decomp)))
+                          ((member-equal (svar-fix key) (alist-keys (svar-splittab-fix splittab)))
                            (4vec-x))
                           (t (svex-eval (svex-lookup key x) env)))))
     :hints(("Goal" :in-theory (enable svex-lookup svex-alist-keys svex-alist-eval))))
@@ -1064,14 +1167,14 @@
 
   (defret svex-lookup-under-iff-of-<fn>
     (implies (and (not (intersectp-equal (svex-alist-keys x)
-                                         (svar-splittable-vars decomp)))
-                  (no-duplicatesp-equal (svar-splittable-vars decomp))
-                  (no-duplicatesp-equal (alist-keys (svar-splittable-fix decomp))))
+                                         (svar-splittab-vars splittab)))
+                  (no-duplicatesp-equal (svar-splittab-vars splittab))
+                  (no-duplicatesp-equal (alist-keys (svar-splittab-fix splittab))))
              (iff (svex-lookup key new-x)
-                  (cond ((member-equal (svar-fix key) (svar-splittable-vars decomp))
-                         (svex-lookup (svar-splittable-find-domainvar key decomp)
+                  (cond ((member-equal (svar-fix key) (svar-splittab-vars splittab))
+                         (svex-lookup (svar-splittab-find-domainvar key splittab)
                                       x))
-                        ((member-equal (svar-fix key) (alist-keys (svar-splittable-fix decomp)))
+                        ((member-equal (svar-fix key) (alist-keys (svar-splittab-fix splittab)))
                          nil)
                         (t (svex-lookup key x)))))
     :hints(("Goal" :in-theory (enable svex-lookup svex-alist-keys svex-alist-eval))))
@@ -1084,43 +1187,38 @@
            (svex-alist-keys x))
     :hints(("Goal" :in-theory (enable svex-alist-keys svex-alist-eval alist-keys))))
 
-  (defret <fn>-in-terms-of-svar-splittable->inverse
+  (defret <fn>-in-terms-of-svar-splittab->inverse
     (implies (and (not (intersectp-equal (svex-alist-keys x)
-                                         (svar-splittable-vars decomp)))
-                  (no-duplicatesp-equal (svar-splittable-vars decomp))
-                  (no-duplicatesp-equal (alist-keys (svar-splittable-fix decomp)))
-                  (subsetp-equal (alist-keys (svar-splittable-fix decomp))
+                                         (svar-splittab-vars splittab)))
+                  (no-duplicatesp-equal (svar-splittab-vars splittab))
+                  (no-duplicatesp-equal (alist-keys (svar-splittab-fix splittab)))
+                  (subsetp-equal (alist-keys (svar-splittab-fix splittab))
                                  (svex-alist-keys x)))
              (svex-alist-eval-equiv new-x
-                                    (append (svex-alist-compose (svar-splittable->inverse decomp) x)
-                                            (svex-alist-removekeys (alist-keys (svar-splittable-fix decomp)) x))))
+                                    (svex-alist-splittab-split-keys x splittab)))
     :hints(("Goal" :in-theory (enable svex-alist-eval-equiv
                                       svex-eval-equiv)
             :do-not-induct t)))
+
 
   (local (in-theory (enable svex-alist-fix))))
 
 
 
-
+;; Transforms x into the split namespace by (1) composing it with the
+;; substitution generated by splittab and (2) splitting the bindings with
+;; splittab-split-keys.
 (define svex-alist-to-split ((x svex-alist-p)
-                              (decomp svar-splittable-p))
+                             (splittab svar-splittab-p))
   :returns (new-x svex-alist-p)
-  (svex-alist-decomptable-decompose (svex-alist-compose x (svar-splittable->subst decomp)) decomp))
+  (svex-alist-compose (svex-alist-splittab-split-keys x splittab)
+                      (svar-splittab->subst splittab))
+  ///
+  (defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-to-split x splittab) 1))
 
 
 (local
  (progn
-   (defcong svex-alist-eval-equiv svex-alist-eval-equiv (append x y) 1
-     :hints ((and stable-under-simplificationp `(:expand (,(car (last clause)))))))
-
-   (defcong svex-alist-eval-equiv svex-alist-eval-equiv (append x y) 2
-     :hints ((and stable-under-simplificationp `(:expand (,(car (last clause)))))))
-
-   (defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-removekeys keys x) 2
-     :hints((and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))))))
-
    (defthm svex-compose-nil
      (svex-eval-equiv (svex-compose x nil) x)
      :hints(("Goal" :in-theory (enable svex-eval-equiv svex-alist-eval))))
@@ -1135,26 +1233,30 @@
      :hints(("Goal" :in-theory (enable svex-alist-removekeys))))))
 
 
-(define svex-alist-decomptable-recompose ((x svex-alist-p)
-                                          (decomp svar-splittable-p))
+;; Translate the pairs of x into the un-split space, not touching the expressions.
+(define svex-alist-splittab-unsplit-keys ((x svex-alist-p)
+                                            (splittab svar-splittab-p))
   :returns (new-x svex-alist-p)
-  (append (svex-alist-compose (svar-splittable->subst decomp) x)
-          (svex-alist-removekeys (svar-splittable-vars decomp) x))
+  (append (svex-alist-compose (svar-splittab->subst splittab) x)
+          (svex-alist-removekeys (svar-splittab-vars splittab) x))
   ///
-  (defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-decomptable-recompose x decomp) 1)
-  (defthm svex-alist-decomptable-recompose-of-nil
-    (svex-alist-eval-equiv (svex-alist-decomptable-recompose nil decomp)
-                           (svar-splittable->subst decomp))))
+  (defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-splittab-unsplit-keys x splittab) 1)
+  (defthm svex-alist-splittab-unsplit-keys-of-nil
+    (svex-alist-eval-equiv (svex-alist-splittab-unsplit-keys nil splittab)
+                           (svar-splittab->subst splittab))))
 
-
+;; Translate x into the un-split space, composing it with the inverse
+;; substitution and then unsplitting the keys.  We append the composition with
+;; the inverse to the inverse itself to compensate for any variables left out
+;; of x -- presumably in most cases x should bind all these variables and
+;; therefore this append is a no-op.
 (define svex-alist-from-split ((x svex-alist-p)
-                                (decomp svar-splittable-p))
+                               (splittab svar-splittab-p))
   :returns (new-x svex-alist-p)
-  (svex-alist-decomptable-recompose (append (svex-alist-compose x (svar-splittable->inverse decomp))
-                                            (svar-splittable->inverse decomp))
-                                    decomp)
+  (svex-alist-compose (svex-alist-splittab-unsplit-keys x splittab)
+                      (svar-splittab->inverse splittab))
   ///
-  (defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-from-split x decomp) 1))
+  (defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-from-split x splittab) 1))
 
 
 (local
@@ -1322,55 +1424,55 @@
 ;;
 (defthm from-split-of-to-split-preserves-netcomp-p
   (implies (and (not (intersectp-equal (svex-alist-keys comp1)
-                                       (svar-splittable-vars decomp)))
+                                       (svar-splittab-vars splittab)))
                 (not (intersectp-equal (svex-alist-vars comp1)
-                                       (svar-splittable-vars decomp)))
-                (no-duplicatesp-equal (svar-splittable-vars decomp))
-                (no-duplicatesp-equal (alist-keys (svar-splittable-fix decomp)))
-                (subsetp-equal (alist-keys (svar-splittable-fix decomp))
+                                       (svar-splittab-vars splittab)))
+                (no-duplicatesp-equal (svar-splittab-vars splittab))
+                (no-duplicatesp-equal (alist-keys (svar-splittab-fix splittab)))
+                (subsetp-equal (alist-keys (svar-splittab-fix splittab))
                                (svex-alist-keys comp1))
-                (netcomp-p compdec2 (svex-alist-to-split comp1 decomp)))
-           (netcomp-p (svex-alist-from-split compdec2 decomp) comp1))
+                (netcomp-p compdec2 (svex-alist-to-split comp1 splittab)))
+           (netcomp-p (svex-alist-from-split compdec2 splittab) comp1))
   :hints ('(:computed-hint-replacement
             ((and stable-under-simplificationp
                   (let ((ordering (acl2::find-call-lst 'netcomp-p-witness clause)))
                     `(:clause-processor (acl2::generalize-with-alist-cp clause '((,ordering . ordering)))))))
-            :expand ((netcomp-p compdec2 (svex-alist-to-split comp1 decomp))))))
+            :expand ((netcomp-p compdec2 (svex-alist-to-split comp1 splittab))))))
 
 ;; this reduces to:
 (IMPLIES
- (AND (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+ (AND (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                              (SVEX-ALIST-KEYS COMP1)))
-      (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+      (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                              (SVEX-ALIST-VARS COMP1)))
-      (NO-DUPLICATESP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP))
-      (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP)))
-      (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP))
+      (NO-DUPLICATESP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB))
+      (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB)))
+      (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB))
                      (SVEX-ALIST-KEYS COMP1)))
  (NETCOMP-P
   (SVEX-ALIST-FROM-SPLIT
    (NETEVAL-ORDERING-COMPILE ORDERING
-                             (SVEX-ALIST-TO-SPLIT COMP1 DECOMP))
-   DECOMP)
+                             (SVEX-ALIST-TO-SPLIT COMP1 SPLITTAB))
+   SPLITTAB)
   COMP1))
-;; so we have to construct (from-to-split-ordering ordering decomp)
+;; so we have to construct (from-to-split-ordering ordering splittab)
 ;; for which:
 
 (IMPLIES
- (AND (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+ (AND (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                              (SVEX-ALIST-KEYS COMP1)))
-      (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+      (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                              (SVEX-ALIST-VARS COMP1)))
-      (NO-DUPLICATESP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP))
-      (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP)))
-      (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP))
+      (NO-DUPLICATESP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB))
+      (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB)))
+      (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB))
                      (SVEX-ALIST-KEYS COMP1)))
  (svex-alist-eval-equiv
   (SVEX-ALIST-FROM-SPLIT
    (NETEVAL-ORDERING-COMPILE ORDERING
-                             (SVEX-ALIST-TO-SPLIT COMP1 DECOMP))
-   DECOMP)
-  (neteval-ordering-compile (from-split-ordering ordering decomp) COMP1)))
+                             (SVEX-ALIST-TO-SPLIT COMP1 SPLITTAB))
+   SPLITTAB)
+  (neteval-ordering-compile (from-split-ordering ordering splittab) COMP1)))
 
 ||#
 
@@ -1456,6 +1558,11 @@
                            (svex-alist-removekeys vars b)))
             :hints(("Goal" :in-theory (enable svex-alist-removekeys)))))
 
+   (local (defthm svex-alist-compose-of-removekeys
+            (equal (svex-alist-compose (svex-alist-removekeys keys x) a)
+                   (svex-alist-removekeys keys (svex-alist-compose x a)))
+            :hints(("Goal" :in-theory (enable svex-alist-compose svex-alist-removekeys svex-acons)))))
+
 
    (local
     (std::defret-mutual svex-eval-of-append-reduce-superset
@@ -1538,25 +1645,8 @@
    ;;      :fn svexlist-eval)
    ;;    :mutual-recursion svex-eval))
 
-   (local (defthm svex-compose-lookup-of-append
-            (equal (Svex-compose-lookup key (append x y))
-                   (or (svex-lookup key x)
-                       (svex-compose-lookup key y)))
-            :hints(("Goal" :in-theory (enable svex-compose-lookup)))))
 
-   (local (defthm svex-compose-lookup-of-svex-alist-removekeys
-            (equal (svex-compose-lookup v (svex-alist-removekeys keys x))
-                   (if (member-equal (svar-fix v) (svarlist-fix keys))
-                       (svex-var v)
-                     (svex-compose-lookup v x)))
-            :hints(("Goal" :in-theory (enable svex-compose-lookup)))))
-
-   (local (defthm svex-compose-lookup-of-svex-alist-compose
-            (equal (Svex-compose-lookup v (svex-alist-compose x a))
-                   (if (svex-lookup v x)
-                       (svex-compose (svex-lookup v x) a)
-                     (svex-var v)))
-            :hints(("Goal" :in-theory (enable svex-compose-lookup)))))
+   
 
    (local (Defthm svex-compose-lookup-when-svex-lookup
             (implies (svex-lookup v x)
@@ -1713,42 +1803,27 @@
       (svex-eval-equiv (svex-rsh 0 x) x)
       :hints(("Goal" :in-theory (enable svex-eval-equiv svex-apply)))))
 
-   (local (defthm svarlist-p-alist-keys-when-svar-splittable-p
-            (implies (svar-splittable-p x)
-                     (svarlist-p (alist-keys x)))
-            :hints(("Goal" :in-theory (enable svar-splittable-p alist-keys)))))
-
-   ;; (define decomp-var-correspondence-p ((relevant-width maybe-natp)
-   ;;                                      (signal svar-p)
-   ;;                                      (offset natp)
-   ;;                                      (decomp-signal svar-p)
-   ;;                                      (decomp-offset natp)
-   ;;                                      (decomp svar-splittable-p))
-   ;;   (b* ((signal-decomp (hons-assoc-equal (svar-fix signal) (svar-splittable-fix decomp)))
-   ;;        ((unless signal-decomp)
-   ;;         (and (equal (svar-fix signal) (svar-fix decomp-signal))
-   ;;              (eql (lnfix offset) (lnfix decomp-offset))))
    
 
    (progn ;; put back in defines form below?
-     (local (defthm svar-splittable-domainvar-rw
+     (local (defthm svar-splittab-domainvar-rw
               (implies (and (bind-free
                              (let ((call (acl2::find-call 'hons-assoc-equal var)))
                                (and call `((signal . ,(cadr call)))))
                              (signal))
-                            (equal look (hons-assoc-equal signal (svar-splittable-fix x)))
+                            (equal look (hons-assoc-equal signal (svar-splittab-fix x)))
                             look
                             (member-equal (svar-fix var) (svar-split-vars (cdr look)))
-                            (no-duplicatesp-equal (svar-splittable-vars x))
-                            (no-duplicatesp-equal (alist-keys (svar-splittable-fix x))))
-                       (equal (svar-splittable-find-domainvar var x)
+                            (no-duplicatesp-equal (svar-splittab-vars x))
+                            (no-duplicatesp-equal (alist-keys (svar-splittab-fix x))))
+                       (equal (svar-splittab-find-domainvar var x)
                               signal))))
 
-     (local (defthm no-duplicate-decomp-vars-when-no-duplicate-decomptable-vars
-              (implies (and (no-duplicatesp-equal (svar-splittable-vars x))
+     (local (defthm no-duplicate-split-vars-when-no-duplicate-splittab-vars
+              (implies (and (no-duplicatesp-equal (svar-splittab-vars x))
                             (svar-p signal))
                        (no-duplicatesp-equal (svar-split-vars (cdr (hons-assoc-equal signal x)))))
-              :hints(("Goal" :in-theory (enable svar-splittable-vars)))))
+              :hints(("Goal" :in-theory (enable svar-splittab-vars)))))
 
      (defthm neteval-sigordering-compile-concat-under-svex-eval-equiv
        (svex-eval-equiv (neteval-sigordering-compile
@@ -1817,13 +1892,34 @@
      :hints(("Goal" :in-theory (enable svex-eval-equiv))))
 
 
+
+   ;; Aux function that captures the recursive behavior of
+   ;; from-split-ordering-ordering-or-null. Namely, this is going to be called
+   ;; with network = (svex-alist-to-split comp1 splittab), and if signal is not
+   ;; bound there (i.e. it is a key of splittab or just some nonsense) then
+   ;; we're going to use (svex-compose (svex-compose-lookup signal comp1)
+   ;; (svar-splittab->subst splittab)), i.e. the translation of signal's binding
+   ;; in comp1 to the split space.  Why? All we're doing in
+   ;; from-split-ordering-ordering-or-null is applying from-split-ordering to
+   ;; the ordering if there is one.  So the result of
+   ;; neteval-ordering-or-null-compile on the result with some signal from the
+   ;; un-split space is going to be that variable (for null) or the composition
+   ;; of the signal's compose-lookup in comp1 with the sub-order's composition
+   ;; in the un-split space.  How can we express this in terms of the split
+   ;; space?  If signal is not a key of splittab then it's just the same as the
+   ;; neteval-ordering-or-null-compile (-when-signal-bound and -of-svex-var
+   ;; thms below).  But if it is a key of splittab, then it makes no sense in
+   ;; the split space and won't be bound in network.  Instead, what we get --
+   ;; the composition of the signal's expression in comp1 composed with the
+   ;; splittab substitution -- we provide as lookup to use as an extra arg to
+   ;; this function.
    (define neteval-ordering-or-null-compile-split ((x neteval-ordering-or-null-p)
-                                                   ;; a signal from the non-decomposed space
+                                                   ;; a signal from the un-split space
                                                    (signal svar-p)
                                                    ;; a substitute for the lookup of signal in network
                                                    ;; in case it isn't bound
                                                    (lookup svex-p)
-                                                   ;; this is the decomposed network.
+                                                   ;; this is the network in the split space.
                                                    (network svex-alist-p))
      :returns (compose svex-p)
      (neteval-ordering-or-null-case x
@@ -1845,8 +1941,8 @@
               (neteval-ordering-or-null-compile x signal network))
        :hints(("Goal" :in-theory (enable neteval-ordering-or-null-compile))))
      
-     ;; Signal2 is the signal in the decomposed space, therefore not bound in decomp.
-     ;; Signal is a signal from the non-decomposed space, therefore not in the vars of decomp.
+     ;; Signal2 is the signal in the decomposed space, therefore not bound in splittab.
+     ;; Signal is a signal from the non-decomposed space, therefore not in the vars of splittab
      (defretd <fn>-switch-vars
        (implies (and (svex-eval-equiv lookup (svex-lookup signal2 network))
                      (svex-eval-equiv (svex-compose-lookup signal inverse) (svex-compose-lookup signal2 inverse))
@@ -1943,13 +2039,20 @@
 
 
      (defcong svex-alist-eval-equiv svex-eval-equiv
-       (neteval-ordering-or-null-compile-split x signal lookup network) 4))
+       (neteval-ordering-or-null-compile-split x signal lookup network) 4)
 
+     (defcong svex-eval-equiv svex-eval-equiv
+       (neteval-ordering-or-null-compile-split x signal lookup network) 3))
 
+   ;; Extends neteval-ordering-or-null-compile-split to a sigordering, giving a
+   ;; spec for from-split-ordering-sigord.  Again, if the signal is bound in
+   ;; the split network or not bound in the un-split network, this reduces to
+   ;; the regular neteval-sigordering-compile without the lookup.
    (define neteval-sigordering-compile-split ((x neteval-sigordering-p)
-                                              (signal svar-p)
-                                              (offset natp)
-                                              (lookup svex-p)
+                                              (signal svar-p) ;; from the un-split network
+                                              (offset natp)   ;; of the signal in the un-split network
+                                              (lookup svex-p) 
+                                              ;; the split network.
                                               (network svex-alist-p))
      :measure (neteval-sigordering-count x)
      :returns (compose svex-p)
@@ -2172,15 +2275,24 @@
               ))
      
      (defcong svex-alist-eval-equiv svex-eval-equiv
-       (neteval-sigordering-compile-split x signal offset lookup network) 5))
+       (neteval-sigordering-compile-split x signal offset lookup network) 5)
 
+     (defcong svex-eval-equiv svex-eval-equiv
+       (neteval-sigordering-compile-split x signal offset lookup network) 4))
+
+   ;; Takes part of a split and builds it into an svex as spec for
+   ;; from-split-ordering-splittab-keys-split-suffix.  Signal is an
+   ;; un-split variable that is a key in splittab, and dec here is the suffix
+   ;; at offset of signal's split.  We're going to build an svex by parts
+   ;; according to dec, for each segment getting the composition for its
+   ;; variable using neteval-sigordering-compile-split and then concatenating
+   ;; them all together.
    (define svar-split-neteval-sigordering-compile ((dec svar-split-p)
-                                                    (x neteval-ordering-p)
-                                                    (signal svar-p)
-                                                    (offset natp)
-                                                    (comp-net svex-alist-p)
-                                                    (decomp-net svex-alist-p)
-                                                    (decomp svar-splittable-p))
+                                                   (x neteval-ordering-p) ;; for the split network
+                                                   (signal svar-p) ;; from the unsplit network
+                                                   (offset natp)   ;; offset for signal
+                                                   (unsplit-network svex-alist-p)
+                                                   (splittab svar-splittab-p))
      :measure (svar-split-count dec)
      :returns (val svex-p)
      :verify-guards :after-returns
@@ -2188,13 +2300,15 @@
                  :segment dec.var
                  :remainder dec.var))
           (sigord (cdr (hons-assoc-equal var (neteval-ordering-fix x))))
-          (look ;; (svex-rsh offset 
-           (svex-compose (svex-compose-lookup ;; var
-                          signal comp-net)
-                         (svar-splittable->subst decomp)))
+          (look
+           ;; Signal's value in the unsplit-network, translated to be in terms of split vars
+           (svex-compose (svex-compose-lookup
+                          signal unsplit-network)
+                         (svar-splittab->subst splittab)))
           (val1 (if sigord
                     (neteval-sigordering-compile-split sigord signal offset ;; var 0
-                                                       look decomp-net)
+                                                       look
+                                                       (svex-alist-to-split unsplit-network splittab))
                   ;; ????
                   (svex-rsh offset (svex-var signal))
                   ;; look
@@ -2202,13 +2316,13 @@
        (svar-split-case dec
          :segment (svex-concat dec.width val1 (svar-split-neteval-sigordering-compile
                                                dec.rest x signal (+ dec.width (lnfix offset))
-                                               comp-net decomp-net decomp))
+                                               unsplit-network splittab))
          :remainder val1))
      ///
 
      (defcong svex-alist-eval-equiv svex-eval-equiv
-       (svar-split-neteval-sigordering-compile dec x signal offset comp-net decomp-net decomp)
-       6 ;; decomp-net
+       (svar-split-neteval-sigordering-compile dec x signal offset unsplit-network splittab)
+       5 ;; split-network
        )
 
      (local (defthm member-svar-split-remainder->var-when-subsetp
@@ -2231,10 +2345,10 @@
 
      (local (defthm svar-split-vars-of-lookup
               (implies (and (svar-p var)
-                            (hons-assoc-equal var decomp))
-                       (subsetp-equal (svar-split-vars (cdr (hons-assoc-equal var decomp)))
-                                      (svar-splittable-vars decomp)))
-              :hints(("Goal" :in-theory (enable svar-splittable-vars)))))
+                            (hons-assoc-equal var splittab))
+                       (subsetp-equal (svar-split-vars (cdr (hons-assoc-equal var splittab)))
+                                      (svar-splittab-vars splittab)))
+              :hints(("Goal" :in-theory (enable svar-splittab-vars)))))
 
      (local (defthm neteval-sigordering-fix-under-iff
               (neteval-sigordering-fix x)))
@@ -2289,86 +2403,53 @@
         :fn neteval-sigordering-compile-split))
 
      (local
+      ;; This is the inductive generalization of
+      ;; prop-for-svar-split-neteval-sigordering-compile.  We just need to
+      ;; require that dec is the appropriate shift by offset of signal's split.
       (defthmd prop-for-svar-split-neteval-sigordering-compile-aux
         (implies (and (not (intersectp-equal (svex-alist-keys comp1)
-                                             (svar-splittable-vars decomp)))
-                      (no-duplicatesp-equal (svar-splittable-vars decomp))
-                      (no-duplicatesp-equal (alist-keys (svar-splittable-fix decomp)))
-                      (subsetp-equal (alist-keys (svar-splittable-fix decomp))
+                                             (svar-splittab-vars splittab)))
+                      (no-duplicatesp-equal (svar-splittab-vars splittab))
+                      (no-duplicatesp-equal (alist-keys (svar-splittab-fix splittab)))
+                      (subsetp-equal (alist-keys (svar-splittab-fix splittab))
                                      (svex-alist-keys comp1))
-                      (hons-assoc-equal decomp-key (svar-splittable-fix decomp))
-                      ;; (subsetp-equal (svar-split-vars dec) (svar-splittable-vars decomp))
+                      (hons-assoc-equal signal (svar-splittab-fix splittab))
+                      ;; (subsetp-equal (svar-split-vars dec) (svar-splittab-vars splittab))
                       (let ((shift (svar-split-shift offset
-                                                      (cdr (hons-assoc-equal (svar-fix decomp-key)
-                                                                             (svar-splittable-fix decomp))))))
+                                                      (cdr (hons-assoc-equal (svar-fix signal)
+                                                                             (svar-splittab-fix splittab))))))
                         (and shift
                              (equal dec shift))))
                  (svex-eval-equiv (SVEX-COMPOSE (SVAR-SPLIT-NETEVAL-SIGORDERING-COMPILE
                                                  dec
-                                                 X decomp-key
+                                                 X signal
                                                  offset COMP1
-                                                 (SVEX-ALIST-TO-SPLIT COMP1 DECOMP)
-                                                 DECOMP)
-                                                (SVAR-SPLITTABLE->INVERSE DECOMP))
+                                                 SPLITTAB)
+                                                (SVAR-SPLITTAB->INVERSE SPLITTAB))
                                   (SVEX-compose
                                    (svar-split->svex dec)
                                    (APPEND
                                     (SVEX-ALIST-COMPOSE
                                      (NETEVAL-ORDERING-COMPILE
                                       X
-                                      (SVEX-ALIST-TO-SPLIT COMP1 DECOMP))
-                                     (SVAR-SPLITTABLE->INVERSE DECOMP))
-                                    (SVAR-SPLITTABLE->INVERSE DECOMP)))))
+                                      (SVEX-ALIST-TO-SPLIT COMP1 SPLITTAB))
+                                     (SVAR-SPLITTAB->INVERSE SPLITTAB))
+                                    (SVAR-SPLITTAB->INVERSE SPLITTAB)))))
         :hints(("Goal" :induct (SVAR-SPLIT-NETEVAL-SIGORDERING-COMPILE
                                 dec
-                                X decomp-key
+                                X signal
                                 offset COMP1
-                                decomp-net
-                                DECOMP)
+                                SPLITTAB)
                 :expand ((:free (look) (svar-split->svex (svar-split-shift offset look))))
                 :do-not-induct t)
                (and stable-under-simplificationp
                     '(:in-theory (enable svex-alist-to-split
-                                         svex-alist-decomptable-recompose
+                                         svex-alist-splittab-unsplit-keys
                                          svex-compose-lookup
-                                         lookup-of-svar-splittable->inverse-under-svex-eval-equiv
+                                         lookup-of-svar-splittab->inverse-under-svex-eval-equiv
                                          NETEVAL-SIGORDERING-COMPILE-SPLIT-SWITCH-VARS-EQUIV
                                          NETEVAL-SIGORDERING-COMPILE-SPLIT-SWITCH-VARS-concat-EQUIV
                                          ))))))
-
-     ;; (local
-     ;;  (defthm prop-for-svar-split-neteval-sigordering-compile-aux2
-     ;;    (implies (and (not (intersectp-equal (svex-alist-keys comp1)
-     ;;                                         (svar-splittable-vars decomp)))
-     ;;                  (no-duplicatesp-equal (svar-splittable-vars decomp))
-     ;;                  (no-duplicatesp-equal (alist-keys (svar-splittable-fix decomp)))
-     ;;                  (subsetp-equal (alist-keys (svar-splittable-fix decomp))
-     ;;                                 (svex-alist-keys comp1))
-     ;;                  (hons-assoc-equal decomp-key (svar-splittable-fix decomp))
-     ;;                  ;; (subsetp-equal (svar-split-vars dec) (svar-splittable-vars decomp))
-     ;;                  (let ((shift (svar-split-shift offset
-     ;;                                                  (cdr (hons-assoc-equal (svar-fix decomp-key)
-     ;;                                                                         (svar-splittable-fix decomp))))))
-     ;;                    (and shift
-     ;;                         (equal (svar-split-fix dec) shift))))
-     ;;             (svex-eval-equiv (SVEX-COMPOSE (SVAR-SPLIT-NETEVAL-SIGORDERING-COMPILE
-     ;;                                             dec
-     ;;                                             X decomp-key
-     ;;                                             offset COMP1
-     ;;                                             (SVEX-ALIST-TO-SPLIT COMP1 DECOMP)
-     ;;                                             DECOMP)
-     ;;                                            (SVAR-SPLITTABLE->INVERSE DECOMP))
-     ;;                              (SVEX-compose
-     ;;                               (svar-split->svex dec)
-     ;;                               (APPEND
-     ;;                                (SVEX-ALIST-COMPOSE
-     ;;                                 (NETEVAL-ORDERING-COMPILE
-     ;;                                  X
-     ;;                                  (SVEX-ALIST-TO-SPLIT COMP1 DECOMP))
-     ;;                                 (SVAR-SPLITTABLE->INVERSE DECOMP))
-     ;;                                (SVAR-SPLITTABLE->INVERSE DECOMP)))))
-     ;;    :hints (("goal" :use ((:instance prop-for-svar-split-neteval-sigordering-compile-aux
-     ;;                           (dec (svar-split-fix dec))))))))
 
 
      (local (defthm svar-split-shift-0
@@ -2389,79 +2470,77 @@
 
      (defthm prop-for-svar-split-neteval-sigordering-compile
        (implies (and (not (intersectp-equal (svex-alist-keys comp1)
-                                            (svar-splittable-vars decomp)))
-                     (no-duplicatesp-equal (svar-splittable-vars decomp))
-                     (no-duplicatesp-equal (alist-keys (svar-splittable-fix decomp)))
-                     (subsetp-equal (alist-keys (svar-splittable-fix decomp))
+                                            (svar-splittab-vars splittab)))
+                     (no-duplicatesp-equal (svar-splittab-vars splittab))
+                     (no-duplicatesp-equal (alist-keys (svar-splittab-fix splittab)))
+                     (subsetp-equal (alist-keys (svar-splittab-fix splittab))
                                     (svex-alist-keys comp1))
-                     (hons-assoc-equal (svar-fix decomp-key) decomp))
+                     (hons-assoc-equal (svar-fix signal) splittab))
                 (svex-eval-equiv (SVEX-COMPOSE (SVAR-SPLIT-NETEVAL-SIGORDERING-COMPILE
-                                                (CDR (HONS-ASSOC-EQUAL (svar-fix decomp-key)
-                                                                       DECOMP))
-                                                X decomp-key
+                                                (CDR (HONS-ASSOC-EQUAL (svar-fix signal)
+                                                                       SPLITTAB))
+                                                X signal
                                                 0 COMP1
-                                                (SVEX-ALIST-TO-SPLIT COMP1 DECOMP)
-                                                DECOMP)
-                                               (SVAR-SPLITTABLE->INVERSE DECOMP))
+                                                SPLITTAB)
+                                               (SVAR-SPLITTAB->INVERSE SPLITTAB))
                                  (SVEX-LOOKUP
-                                  decomp-key
+                                  signal
                                   (SVEX-ALIST-FROM-SPLIT
                                    (APPEND
-                                    (NETEVAL-ORDERING-COMPILE X (SVEX-ALIST-TO-SPLIT COMP1 DECOMP))
-                                    (SVEX-IDENTITY-SUBST (SVAR-SPLITTABLE-VARS DECOMP)))
-                                   DECOMP))))
+                                    (NETEVAL-ORDERING-COMPILE X (SVEX-ALIST-TO-SPLIT COMP1 SPLITTAB))
+                                    (SVEX-IDENTITY-SUBST (SVAR-SPLITTAB-VARS SPLITTAB)))
+                                   SPLITTAB))))
        :hints(("Goal" :use ((:instance prop-for-svar-split-neteval-sigordering-compile-aux
-                             (dec (svar-split-fix (CDR (HONS-ASSOC-EQUAL (svar-fix decomp-key)
-                                                                          DECOMP))))
-                             (decomp-key (svar-fix decomp-key))
+                             (dec (svar-split-fix (CDR (HONS-ASSOC-EQUAL (svar-fix signal)
+                                                                          SPLITTAB))))
+                             (signal (svar-fix signal))
                              (offset 0)))
                :in-theory (e/d (svex-alist-from-split
-                                svex-alist-decomptable-recompose)
+                                svex-alist-splittab-unsplit-keys)
                                (svar-split-neteval-sigordering-compile))
                :do-not-induct t))
        :otf-flg t))
 
    (defines from-split-ordering
-     ;; The ordering is in terms of decomposed variables.  We want to create one
-     ;; in terms of the non-decomposed variables.  To do this for the decomposed
-     ;; variables, we go through the decomptable and for each non-decomp
-     ;; variable bound, we create a neteval-sigordering based on its
-     ;; decomposition.  But we also need to translate the part involving the
-     ;; non-decomposed variables.
+     ;; The ordering is in terms of split-domain variables.  We want to create
+     ;; one in terms of the un-split variables.  To do this for the split
+     ;; variables, we go through the keys of splittab and for each one, we
+     ;; create a neteval-sigordering based on its split.  But we also
+     ;; need to translate the part involving the uninvolved variables.
      :ruler-extenders :lambdas
      (define from-split-ordering ((x neteval-ordering-p)
-                                   (decomp svar-splittable-p))
+                                   (splittab svar-splittab-p))
        :measure (nat-list-measure (list (neteval-ordering-count x) 2 0))
        :returns (new-x neteval-ordering-p)
        :verify-guards nil
-       (append (from-split-ordering-decomp-vars x (alist-keys (svar-splittable-fix decomp)) decomp)
-               (from-split-ordering-non-decomp-vars x decomp)))
+       (append (from-split-ordering-splittab-keys x (alist-keys (svar-splittab-fix splittab)) splittab)
+               (from-split-ordering-uninvolved-vars x splittab)))
      
-     ;; Going through all the keys in decomp to produce a neteval-ordering that
+     ;; Going through all the keys in splittab to produce a neteval-ordering that
      ;; covers all decomposed variables.
-     (define from-split-ordering-decomp-vars ((x neteval-ordering-p)
-                                               (decomp-keys svarlist-p)
-                                               (decomp svar-splittable-p))
-       :measure (nat-list-measure (list (neteval-ordering-count x) 1 (len decomp-keys)))
+     (define from-split-ordering-splittab-keys ((x neteval-ordering-p)
+                                               (splittab-keys svarlist-p)
+                                               (splittab svar-splittab-p))
+       :measure (nat-list-measure (list (neteval-ordering-count x) 1 (len splittab-keys)))
        :returns (new-x neteval-ordering-p)
-       (b* (((when (Atom decomp-keys)) nil)
-            (var (svar-fix (car decomp-keys)))
-            (look  (hons-assoc-equal var decomp))
+       (b* (((when (Atom splittab-keys)) nil)
+            (var (svar-fix (car splittab-keys)))
+            (look  (hons-assoc-equal var splittab))
             ((unless look)
-             (from-split-ordering-decomp-vars x (cdr decomp-keys) decomp))
+             (from-split-ordering-splittab-keys x (cdr splittab-keys) splittab))
             (dec (cdr look)))
-         (cons (cons var (from-split-ordering-decomp-vars-decomp-sigordering dec x ;; var 0
-                                                                              decomp))
-               (from-split-ordering-decomp-vars x (cdr decomp-keys) decomp))))
+         (cons (cons var (from-split-ordering-splittab-keys-split-suffix dec x ;; var 0
+                                                                              splittab))
+               (from-split-ordering-splittab-keys x (cdr splittab-keys) splittab))))
 
 
-     ;; Dec is the suffix at offset of the decomp entry for signal.  We
+     ;; Dec is the suffix at offset of the splittab entry for signal.  We
      ;; concatenate together the transformed sigorderings for the remaining parts of dec.
-     (define from-split-ordering-decomp-vars-decomp-sigordering ((dec svar-split-p)
+     (define from-split-ordering-splittab-keys-split-suffix ((dec svar-split-p)
                                                                   (x neteval-ordering-p)
                                                                   ;; (signal svar-p)
                                                                   ;; (offset natp)
-                                                                  (decomp svar-splittable-p))
+                                                                  (splittab svar-splittab-p))
        ;; (declare (ignorable offset))
        :measure (nat-list-measure (list (neteval-ordering-count x) 0 (svar-split-count dec)))
        :returns (new-x neteval-sigordering-p)
@@ -2474,170 +2553,145 @@
                                                          ;; signal offset
                                                          ;; var 0
                                                          ;; width
-                                                         decomp)
+                                                         splittab)
                           (make-neteval-sigordering-remainder :ord (make-neteval-ordering-or-null-null)))))
          (svar-split-case dec
            :segment (neteval-sigordering-concat
                      dec.width new-sigord
-                     (from-split-ordering-decomp-vars-decomp-sigordering
+                     (from-split-ordering-splittab-keys-split-suffix
                       dec.rest x ;; signal (+ dec.width (lnfix offset))
-                      decomp))
+                      splittab))
            :remainder new-sigord)))
 
      ;; The relevant signal for the signal ordering produced here is either
-     ;;  1) a key in svar-splittable, as when called through
-     ;; from-split-ordering-decomp-vars-decomp-sigordering from from-split-ordering-decomp-vars
-     ;;  2) a variable not in the decomptable vars nor keys, as when called by from-split-ordering-non-decomp-vars.
+     ;;  1) a key in svar-splittab, as when called through
+     ;; from-split-ordering-splittab-keys-split-suffix from from-split-ordering-splittab-keys
+     ;;  2) a variable not in the splittab vars nor keys, as when called by from-split-ordering-uninvolved-vars.
 
-     ;; We transform sigordering x in the decomposed space to a sigordering in the
-     ;; composed space.  Signal/offset will be the context for evaluating the
+     ;; We transform sigordering x in the split space to a sigordering in the
+     ;; un-split space.  Signal/offset will be the context for evaluating the
      ;; resulting sigordering, decomp-signal/decomp-offset are the context for
      ;; evaluating the input sigordering.
 
      (define from-split-ordering-sigord ((x neteval-sigordering-p)
-                                          ;; (signal svar-p)
-                                          ;; (offset natp)
-                                          ;; (decomp-signal svar-p)
-                                          ;; (decomp-offset natp)
-                                          ;; (relevant-width maybe-natp)
-                                          (decomp svar-splittable-p))
+                                          (splittab svar-splittab-p))
        :measure (nat-list-measure (list (neteval-sigordering-count x) 0 0))
        :returns (new-x neteval-sigordering-p)
-       ;; (declare (ignorable offset decomp-signal decomp-offset))
        (neteval-sigordering-case x
-         :segment (b* ((ord (from-split-ordering-ordering-or-null x.ord
-                                                                   ;; signal offset decomp-signal decomp-offset relevant-width
-                                                                   decomp)))
-                    ;; (if (or (not relevant-width) (< x.width (lnfix relevant-width)))
+         :segment (b* ((ord (from-split-ordering-ordering-or-null x.ord splittab)))
                     (make-neteval-sigordering-segment
                      :width x.width
                      :ord ord
-                     :rest (from-split-ordering-sigord x.rest ;; signal (+ x.width (lnfix offset)) decomp-signal decomp-offset (and relevant-width (- (lnfix relevant-width) x.width))
-                                                        decomp))
+                     :rest (from-split-ordering-sigord x.rest splittab))
                     ;; (make-neteval-sigordering-remainder :ord ord)
                     )
          :remainder (make-neteval-sigordering-remainder
-                     :ord (from-split-ordering-ordering-or-null x.ord ;; signal
-                                                                 ;; decomp-signal
-                                                                 decomp))))
+                     :ord (from-split-ordering-ordering-or-null x.ord splittab))))
 
      (define from-split-ordering-ordering-or-null ((x neteval-ordering-or-null-p)
-                                                    ;; (signal svar-p)
-                                                    ;; (offset natp)
-                                                    ;; (decomp-signal svar-p)
-                                                    ;; (decomp-offset natp)
-                                                    ;; (relevant-width maybe-natp)
-                                                    (decomp svar-splittable-p))
+                                                    (splittab svar-splittab-p))
        :measure (nat-list-measure (list (neteval-ordering-or-null-count x) 0 0))
        :returns (new-x neteval-ordering-or-null-p)
-       ;; (declare (ignorable signal decomp-signal))
        (neteval-ordering-or-null-case x
          :null (make-neteval-ordering-or-null-null)
-         :ordering ;; (if (and ;; (hons-assoc-equal (svar-fix signal) x.ord)
-         ;;          (hons-assoc-equal (svar-fix signal) (svar-splittable-fix decomp)))
-         ;;     ;; if signal is a key in decomp (therefore a variable in
-         ;;     ;; the non-decomposed space and not the decomposed space) 
-         ;;     ;; the LHS of from-split-ordering-ordering-or-null-prop reduces to (svex-var signal).
-         ;;     (make-neteval-ordering-or-null-null)
-         (make-neteval-ordering-or-null-ordering
-          :ord (from-split-ordering x.ord decomp))))
+         :ordering (make-neteval-ordering-or-null-ordering
+                    :ord (from-split-ordering x.ord splittab))))
      
-     (define from-split-ordering-non-decomp-vars ((x neteval-ordering-p)
-                                                   (decomp svar-splittable-p))
+     (define from-split-ordering-uninvolved-vars ((x neteval-ordering-p)
+                                                   (splittab svar-splittab-p))
        :measure (nat-list-measure (list (neteval-ordering-count x) 0 0))
        :returns (new-x neteval-ordering-p)
        (b* ((x (neteval-ordering-fix x))
             ((when (atom x)) nil)
             ((cons signal sigordering) (car x))
-            ((when (or (member-equal signal (svar-splittable-vars decomp))
-                       (hons-assoc-equal signal (svar-splittable-fix decomp))))
-             (from-split-ordering-non-decomp-vars (cdr x) decomp)))
-         (cons (cons signal (from-split-ordering-sigord sigordering ;; signal 0 signal 0
-                                                         decomp))
-               (from-split-ordering-non-decomp-vars (cdr x) decomp))))
+            ((when (or (member-equal signal (svar-splittab-vars splittab))
+                       (hons-assoc-equal signal (svar-splittab-fix splittab))))
+             (from-split-ordering-uninvolved-vars (cdr x) splittab)))
+         (cons (cons signal (from-split-ordering-sigord sigordering splittab))
+               (from-split-ordering-uninvolved-vars (cdr x) splittab))))
      ///
      (verify-guards from-split-ordering)
 
 
-     (defun-sk from-split-ordering-sigord-prop (x comp1 decomp-net decomp)
+     (defun-sk from-split-ordering-sigord-prop (x comp1 splittab)
        (forall (signal offset)
                (implies ;; (svex-lookup signal comp1)
-                (not (member-equal (svar-fix signal) (svar-splittable-vars decomp)))
+                (not (member-equal (svar-fix signal) (svar-splittab-vars splittab)))
                 (svex-eval-equiv
-                 (neteval-sigordering-compile (from-split-ordering-sigord x decomp) signal offset COMP1)
+                 (neteval-sigordering-compile (from-split-ordering-sigord x splittab) signal offset COMP1)
                  (svex-compose
                   (NETEVAL-sigORDERING-COMPILE-split x signal offset
                                                      (svex-compose (svex-compose-lookup signal comp1)
-                                                                   (svar-splittable->subst decomp))
-                                                     decomp-net)
-                  (svar-splittable->inverse decomp)))))
+                                                                   (svar-splittab->subst splittab))
+                                                     (svex-alist-to-split comp1 splittab))
+                  (svar-splittab->inverse splittab)))))
        :rewrite :direct)
 
      (local (in-theory (disable from-split-ordering-sigord-prop)))
 
-     (defun-sk from-split-ordering-ordering-or-null-prop (x comp1 decomp-net decomp)
+     (defun-sk from-split-ordering-ordering-or-null-prop (x comp1 splittab)
        (forall (signal)
                (implies ;; (svex-lookup signal comp1)
-                (not (member-equal (svar-fix signal) (svar-splittable-vars decomp)))
+                (not (member-equal (svar-fix signal) (svar-splittab-vars splittab)))
                 (svex-eval-equiv
-                 (neteval-ordering-or-null-compile (from-split-ordering-ordering-or-null x decomp) signal COMP1)
-                 ;; if signal is a key of decomp, then it is not bound in
-                 ;; decomp-net and so the neteval-ordering-or-null-compile of it
+                 (neteval-ordering-or-null-compile (from-split-ordering-ordering-or-null x splittab) signal COMP1)
+                 ;; if signal is a key of splittab, then it is not bound in
+                 ;; split-net and so the neteval-ordering-or-null-compile of it
                  ;; (below) will reduce to the identity, i.e. (svex-var signal).
-                 ;; Then, since it's not in the decomptable vars, it isn't bound
+                 ;; Then, since it's not in the splittab vars, it isn't bound
                  ;; in the inverse either so all this reduces to (svex-var
                  ;; signal).  What do we want instead?
                  (svex-compose
-                  ;; (if (hons-assoc-equal (svar-fix signal) (svar-splittable-fix decomp))
+                  ;; (if (hons-assoc-equal (svar-fix signal) (svar-splittab-fix splittab))
                   
                   (neteval-ordering-or-null-compile-split
                    x signal
                    (svex-compose (svex-compose-lookup signal comp1)
-                                 (svar-splittable->subst decomp))
-                   decomp-net)
-                  (svar-splittable->inverse decomp)))))
+                                 (svar-splittab->subst splittab))
+                   (svex-alist-to-split comp1 splittab))
+                  (svar-splittab->inverse splittab)))))
        :rewrite :direct)
 
      (local (in-theory (disable from-split-ordering-ordering-or-null-prop)))
 
 
-     (defun-sk from-split-ordering-decomp-vars-decomp-sigordering-prop (dec x comp1 decomp-net decomp)
+     (defun-sk from-split-ordering-splittab-keys-split-suffix-prop (dec x comp1 splittab)
        (forall (signal offset)
-               (implies (hons-assoc-equal (svar-fix signal) (svar-splittable-fix decomp))
+               (implies (hons-assoc-equal (svar-fix signal) (svar-splittab-fix splittab))
                         (svex-eval-equiv
                          ;; (svex-lookup signal
-                         (neteval-sigordering-compile (from-split-ordering-decomp-vars-decomp-sigordering
-                                                       dec x decomp)
+                         (neteval-sigordering-compile (from-split-ordering-splittab-keys-split-suffix
+                                                       dec x splittab)
                                                       signal offset COMP1)
                          (svex-compose
                           (svar-split-neteval-sigordering-compile
-                           dec x signal offset comp1 decomp-net decomp)
-                          (svar-splittable->inverse decomp)))))
+                           dec x signal offset comp1 splittab)
+                          (svar-splittab->inverse splittab)))))
        :rewrite :direct)
 
-     (local (in-theory (disable from-split-ordering-decomp-vars-decomp-sigordering-prop)))
+     (local (in-theory (disable from-split-ordering-splittab-keys-split-suffix-prop)))
 
      (local (in-theory (disable append acl2::consp-of-append)))
 
      (local (in-theory (disable from-split-ordering
-                                from-split-ordering-decomp-vars
-                                from-split-ordering-non-decomp-vars
+                                from-split-ordering-splittab-keys
+                                from-split-ordering-uninvolved-vars
                                 from-split-ordering-sigord
                                 from-split-ordering-ordering-or-null
-                                from-split-ordering-decomp-vars-decomp-sigordering)))
+                                from-split-ordering-splittab-keys-split-suffix)))
 
      ;; (defret member-svar-split-vars-of-<fn>-when-no-duplicate-vars
      ;;     (implies (and (svar-p key)
-     ;;                   (hons-assoc-equal var (svar-splittable-fix x))
-     ;;                   (no-duplicatesp-equal (alist-keys (svar-splittable-fix x)))
-     ;;                   (no-duplicatesp-equal (svar-splittable-vars x)))
+     ;;                   (hons-assoc-equal var (svar-splittab-fix x))
+     ;;                   (no-duplicatesp-equal (alist-keys (svar-splittab-fix x)))
+     ;;                   (no-duplicatesp-equal (svar-splittab-vars x)))
      ;;              (iff (member-equal key (svar-split-vars
      ;;                                       (cdr (hons-assoc-equal var x))))
      ;;                   (and domainvar
      ;;                        (equal var domainvar))))
-     ;;     :hints(("Goal" :in-theory (enable svar-splittable-fix alist-keys)
+     ;;     :hints(("Goal" :in-theory (enable svar-splittab-fix alist-keys)
      ;;             :induct <call>
-     ;;             :expand ((svar-splittable-vars x)))))
+     ;;             :expand ((svar-splittab-vars x)))))
 
 
      ;; (local (defthm svex-alist-eval-equiv-special-case
@@ -2649,65 +2703,11 @@
 
      (local (defthm svar-split-vars-of-lookup
               (implies (and (svar-p var)
-                            (hons-assoc-equal var decomp))
-                       (subsetp-equal (svar-split-vars (cdr (hons-assoc-equal var decomp)))
-                                      (svar-splittable-vars decomp)))
-              :hints(("Goal" :in-theory (enable svar-splittable-vars)))))
+                            (hons-assoc-equal var splittab))
+                       (subsetp-equal (svar-split-vars (cdr (hons-assoc-equal var splittab)))
+                                      (svar-splittab-vars splittab)))
+              :hints(("Goal" :in-theory (enable svar-splittab-vars)))))
 
-     ;; (local (defthmd lemma
-     ;;          (IMPLIES
-     ;;           (AND
-     ;;            (SVEX-ALIST-EVAL-EQUIV
-     ;;             decomp-vars-result
-     ;;             (SVEX-ALIST-REDUCE
-     ;;              (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP))
-     ;;              (APPEND
-     ;;               (SVEX-ALIST-COMPOSE
-     ;;                (SVAR-SPLITTABLE->SUBST DECOMP)
-     ;;                (APPEND
-     ;;                 (SVEX-ALIST-COMPOSE
-     ;;                  (NETEVAL-ORDERING-COMPILE X (SVEX-ALIST-TO-SPLIT COMP1 DECOMP))
-     ;;                  (SVAR-SPLITTABLE->INVERSE DECOMP))
-     ;;                 (SVAR-SPLITTABLE->INVERSE DECOMP)))
-     ;;               (SVEX-ALIST-REMOVEKEYS
-     ;;                (SVAR-SPLITTABLE-VARS DECOMP)
-     ;;                (SVEX-ALIST-COMPOSE
-     ;;                 (NETEVAL-ORDERING-COMPILE X (SVEX-ALIST-TO-SPLIT COMP1 DECOMP))
-     ;;                 (SVAR-SPLITTABLE->INVERSE DECOMP))))))
-     ;;            (SVEX-ALIST-EVAL-EQUIV
-     ;;             non-decomp-vars-result
-     ;;             (SVEX-ALIST-REMOVEKEYS
-     ;;              (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP))
-     ;;              (SVEX-ALIST-REMOVEKEYS
-     ;;               (SVAR-SPLITTABLE-VARS DECOMP)
-     ;;               (SVEX-ALIST-REMOVEKEYS
-     ;;                (SVAR-SPLITTABLE-VARS DECOMP)
-     ;;                (SVEX-ALIST-COMPOSE
-     ;;                 (NETEVAL-ORDERING-COMPILE X (SVEX-ALIST-TO-SPLIT COMP1 DECOMP))
-     ;;                 (SVAR-SPLITTABLE->INVERSE DECOMP))))))
-     ;;            (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
-     ;;                                   (SVEX-ALIST-KEYS COMP1)))
-     ;;            (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
-     ;;                                   (SVEX-ALIST-VARS COMP1)))
-     ;;            (NO-DUPLICATESP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP))
-     ;;            (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP)))
-     ;;            (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP))
-     ;;                           (SVEX-ALIST-KEYS COMP1)))
-     ;;           (SVEX-ALIST-COMPOSE-EQUIV
-     ;;            (APPEND decomp-vars-result non-decomp-vars-result)
-     ;;            (APPEND
-     ;;             (SVEX-ALIST-COMPOSE
-     ;;              (SVAR-SPLITTABLE->SUBST DECOMP)
-     ;;              (APPEND
-     ;;               (SVEX-ALIST-COMPOSE
-     ;;                (NETEVAL-ORDERING-COMPILE X (SVEX-ALIST-TO-SPLIT COMP1 DECOMP))
-     ;;                (SVAR-SPLITTABLE->INVERSE DECOMP))
-     ;;               (SVAR-SPLITTABLE->INVERSE DECOMP)))
-     ;;             (SVEX-ALIST-REMOVEKEYS
-     ;;              (SVAR-SPLITTABLE-VARS DECOMP)
-     ;;              (SVEX-ALIST-COMPOSE
-     ;;               (NETEVAL-ORDERING-COMPILE X (SVEX-ALIST-TO-SPLIT COMP1 DECOMP))
-     ;;               (SVAR-SPLITTABLE->INVERSE DECOMP))))))
      
      (local (defthm append-svex-alist-reduce-under-svex-alist-eval-equiv
               (svex-alist-eval-equiv (append (svex-alist-reduce keys x) x) x)
@@ -2717,37 +2717,37 @@
               (IMPLIES
                (AND
                 (SVEX-ALIST-EVAL-EQUIV
-                 decomp-vars-result
+                 splittab-keys-result
                  (SVEX-ALIST-REDUCE
-                  (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP))
+                  (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB))
                   (SVEX-ALIST-FROM-SPLIT
-                   (APPEND (NETEVAL-ORDERING-COMPILE X (SVEX-ALIST-TO-SPLIT COMP1 DECOMP))
-                           (SVEX-IDENTITY-SUBST (SVAR-SPLITTABLE-VARS DECOMP)))
-                   DECOMP)))
+                   (APPEND (NETEVAL-ORDERING-COMPILE X (SVEX-ALIST-TO-SPLIT COMP1 SPLITTAB))
+                           (SVEX-IDENTITY-SUBST (SVAR-SPLITTAB-VARS SPLITTAB)))
+                   SPLITTAB)))
                 (SVEX-ALIST-EVAL-EQUIV
-                 non-decomp-vars-result
+                 uninvolved-vars-result
                  (SVEX-ALIST-REMOVEKEYS
-                  (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP))
+                  (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB))
                   (SVEX-ALIST-REMOVEKEYS
-                   (SVAR-SPLITTABLE-VARS DECOMP)
+                   (SVAR-SPLITTAB-VARS SPLITTAB)
                    (SVEX-ALIST-FROM-SPLIT
                     (APPEND
-                     (NETEVAL-ORDERING-COMPILE X (SVEX-ALIST-TO-SPLIT COMP1 DECOMP))
-                     (SVEX-IDENTITY-SUBST (SVAR-SPLITTABLE-VARS DECOMP)))
-                    DECOMP))))
-                (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+                     (NETEVAL-ORDERING-COMPILE X (SVEX-ALIST-TO-SPLIT COMP1 SPLITTAB))
+                     (SVEX-IDENTITY-SUBST (SVAR-SPLITTAB-VARS SPLITTAB)))
+                    SPLITTAB))))
+                (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                                        (SVEX-ALIST-KEYS COMP1)))
-                (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+                (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                                        (SVEX-ALIST-VARS COMP1)))
-                (NO-DUPLICATESP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP))
-                (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP)))
-                (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP))
+                (NO-DUPLICATESP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB))
+                (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB)))
+                (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB))
                                (SVEX-ALIST-KEYS COMP1)))
                (equal (SVEX-ALIST-COMPOSE-EQUIV
-                       (APPEND decomp-vars-result non-decomp-vars-result)
+                       (APPEND splittab-keys-result uninvolved-vars-result)
                        (SVEX-ALIST-FROM-SPLIT
-                        (NETEVAL-ORDERING-COMPILE X (SVEX-ALIST-TO-SPLIT COMP1 DECOMP))
-                        DECOMP))
+                        (NETEVAL-ORDERING-COMPILE X (SVEX-ALIST-TO-SPLIT COMP1 SPLITTAB))
+                        SPLITTAB))
                       t))
               :hints(("Goal" :in-theory (enable svex-alist-compose-equiv))
                      (and stable-under-simplificationp
@@ -2755,33 +2755,33 @@
                             `(:clause-processor (acl2::generalize-with-alist-cp clause '((,wit . key))))))
                      (and stable-under-simplificationp
                           '(:in-theory (enable svex-alist-from-split
-                                               svex-alist-decomptable-recompose
+                                               svex-alist-splittab-unsplit-keys
                                                svex-alist-compose-equiv))))))
 
      (std::defret-mutual <fn>-correct
        (defret <fn>-correct
          (IMPLIES
-          (AND (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+          (AND (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                                       (SVEX-ALIST-KEYS COMP1)))
-               (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+               (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                                       (SVEX-ALIST-VARS COMP1)))
-               (NO-DUPLICATESP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP))
-               (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP)))
-               (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP))
+               (NO-DUPLICATESP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB))
+               (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB)))
+               (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB))
                               (SVEX-ALIST-KEYS COMP1)))
           (svex-alist-compose-equiv
            (neteval-ordering-compile new-x COMP1)
            (SVEX-ALIST-FROM-SPLIT
             (NETEVAL-ORDERING-COMPILE x
-                                      (SVEX-ALIST-TO-SPLIT COMP1 DECOMP))
-            DECOMP)))
+                                      (SVEX-ALIST-TO-SPLIT COMP1 SPLITTAB))
+            SPLITTAB)))
          :hints ('(:expand (;; (:free (net) (neteval-ordering-compile x net))
                             <call>
                             ;; (:free (net) (neteval-ordering-compile new-x net))
                             )
                    :in-theory (enable from-split-ordering-lemma)
                    ;; :in-theory (enable svex-alist-from-split
-                   ;;                    svex-alist-decomptable-recompose)
+                   ;;                    svex-alist-splittab-unsplit-keys)
                    ;; (and stable-under-simplificationp
                    ;;      '(:expand ((:free (x) <call>))))
                    )
@@ -2791,54 +2791,54 @@
          :fn from-split-ordering)
        (defret <fn>-correct
          (IMPLIES
-          (AND (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+          (AND (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                                       (SVEX-ALIST-KEYS COMP1)))
-               (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+               (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                                       (SVEX-ALIST-VARS COMP1)))
-               (NO-DUPLICATESP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP))
-               (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP)))
-               (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP))
+               (NO-DUPLICATESP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB))
+               (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB)))
+               (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB))
                               (SVEX-ALIST-KEYS COMP1))
-               (subsetp-equal (svarlist-fix decomp-keys) (alist-keys (svar-splittable-fix decomp))))
+               (subsetp-equal (svarlist-fix splittab-keys) (alist-keys (svar-splittab-fix splittab))))
           (svex-alist-eval-equiv
            (neteval-ordering-compile new-x COMP1)
-           (svex-alist-reduce decomp-keys
+           (svex-alist-reduce splittab-keys
                               (SVEX-ALIST-FROM-SPLIT
                                (append (NETEVAL-ORDERING-COMPILE x
-                                                                 (SVEX-ALIST-TO-SPLIT COMP1 DECOMP))
-                                       (svex-identity-subst (svar-splittable-vars decomp)))
-                               DECOMP))))
+                                                                 (SVEX-ALIST-TO-SPLIT COMP1 SPLITTAB))
+                                       (svex-identity-subst (svar-splittab-vars splittab)))
+                               SPLITTAB))))
          :hints ('(:expand (;; (:free (net) (neteval-ordering-compile x net))
                             <call>
-                            ;; (svar-splittable-vars decomp)
-                            ;; (svar-splittable-fix decomp)
-                            (:free (x) (svex-alist-reduce decomp-keys x))
-                            (svarlist-fix decomp-keys)
+                            ;; (svar-splittab-vars splittab)
+                            ;; (svar-splittab-fix splittab)
+                            (:free (x) (svex-alist-reduce splittab-keys x))
+                            (svarlist-fix splittab-keys)
                             ;; (:free (net) (neteval-ordering-compile new-x net))
                             )
                    :in-theory (enable svex-alist-from-split
-                                      svex-alist-decomptable-recompose))
+                                      svex-alist-splittab-unsplit-keys))
                  ;; :in-theory (enable alist-keys))
                  ;; (and stable-under-simplificationp
                  ;;      '(:expand ((:free (x) <call>))))
                  )
-         :fn from-split-ordering-decomp-vars)
+         :fn from-split-ordering-splittab-keys)
 
        (defret <fn>-correct
          (IMPLIES
-          (AND (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+          (AND (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                                       (SVEX-ALIST-KEYS COMP1)))
-               (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+               (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                                       (SVEX-ALIST-VARS COMP1)))
-               (NO-DUPLICATESP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP))
-               (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP)))
-               (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP))
+               (NO-DUPLICATESP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB))
+               (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB)))
+               (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB))
                               (SVEX-ALIST-KEYS COMP1))
-               ;; (member-equal (svar-fix signal) (alist-keys (svar-splittable-fix decomp)))
-               (subsetp-equal (svar-split-vars dec) (svar-splittable-vars decomp))
+               ;; (member-equal (svar-fix signal) (alist-keys (svar-splittab-fix splittab)))
+               (subsetp-equal (svar-split-vars dec) (svar-splittab-vars splittab))
                ;; (let ((offs (svar-split-shift offset
                ;;                                (cdr (hons-assoc-equal (svar-fix signal)
-               ;;                                                       (svar-splittable-fix decomp))))))
+               ;;                                                       (svar-splittab-fix splittab))))))
                ;;   (and offs
                ;;        (equal dec offs)))
                )
@@ -2848,15 +2848,14 @@
           ;;  (svex-compose
           ;;   (svex-compose (svar-split->svex dec)
           ;;                 (NETEVAL-ORDERING-COMPILE x
-          ;;                                           (SVEX-ALIST-TO-SPLIT COMP1 DECOMP)))
-          ;;   (svar-splittable->inverse decomp)))
-          (from-split-ordering-decomp-vars-decomp-sigordering-prop dec x comp1
-                                                                    (svex-alist-to-split comp1 decomp)
-                                                                    decomp)
+          ;;                                           (SVEX-ALIST-TO-SPLIT COMP1 SPLITTAB)))
+          ;;   (svar-splittab->inverse splittab)))
+          (from-split-ordering-splittab-keys-split-suffix-prop dec x comp1
+                                                                    splittab)
           )
          :hints ((and stable-under-simplificationp
                       `(:computed-hint-replacement
-                        ((let ((wit (acl2::find-call-lst 'from-split-ordering-decomp-vars-decomp-sigordering-prop-witness clause)))
+                        ((let ((wit (acl2::find-call-lst 'from-split-ordering-splittab-keys-split-suffix-prop-witness clause)))
                            `(:clause-processor (acl2::generalize-with-alist-cp clause '(((mv-nth '0 ,wit) . signal)
                                                                                         ((mv-nth '1 ,wit) . offset))))))
                         :expand (,(car (last clause))
@@ -2866,47 +2865,47 @@
                                  (svar-split->svex dec)
                                  (:free (offset) (neteval-sigordering-compile '(:remainder (:null)) signal offset comp1))
                                  (neteval-ordering-or-null-compile '(:null) signal comp1)
-                                 (:free (x signal offset comp-net decomp-net decomp)
-                                  (svar-split-neteval-sigordering-compile dec x signal offset comp-net decomp-net decomp))
-                                 ;; (svar-splittable-vars decomp)
-                                 ;; (svar-splittable-fix decomp)
-                                 ;; (:free (x) (svex-alist-reduce decomp-keys x))
-                                 ;; (svarlist-fix decomp-keys)
+                                 (:free (x signal offset comp-net splittab)
+                                  (svar-split-neteval-sigordering-compile dec x signal offset comp-net splittab))
+                                 ;; (svar-splittab-vars splittab)
+                                 ;; (svar-splittab-fix splittab)
+                                 ;; (:free (x) (svex-alist-reduce splittab-keys x))
+                                 ;; (svarlist-fix splittab-keys)
                                  ;; (:free (net) (neteval-ordering-compile new-x net))
                                  )
-                        ;; :in-theory (enable lookup-of-svar-splittable->inverse-under-svex-eval-equiv)
+                        ;; :in-theory (enable lookup-of-svar-splittab->inverse-under-svex-eval-equiv)
                         ))
                  ;; (and stable-under-simplificationp
                  ;;      '(:in-theory (enable svex-alist-from-split
                  ;;                      svex-alist-to-split
-                 ;;                      svex-alist-decomptable-recompose)))
+                 ;;                      svex-alist-splittab-unsplit-keys)))
                  ;; :in-theory (enable alist-keys))
                  ;; (and stable-under-simplificationp
                  ;;      '(:expand ((:free (x) <call>))))
                  )
-         :fn from-split-ordering-decomp-vars-decomp-sigordering)
+         :fn from-split-ordering-splittab-keys-split-suffix)
        
        (defret <fn>-correct
          (IMPLIES
-          (AND (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+          (AND (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                                       (SVEX-ALIST-KEYS COMP1)))
-               (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+               (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                                       (SVEX-ALIST-VARS COMP1)))
-               (NO-DUPLICATESP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP))
-               (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP)))
-               (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP))
+               (NO-DUPLICATESP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB))
+               (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB)))
+               (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB))
                               (SVEX-ALIST-KEYS COMP1)))
           (svex-alist-eval-equiv
            (neteval-ordering-compile new-x COMP1)
            (svex-alist-removekeys
-            (alist-keys (svar-splittable-fix decomp))
+            (alist-keys (svar-splittab-fix splittab))
             (svex-alist-removekeys
-             (svar-splittable-vars decomp)
+             (svar-splittab-vars splittab)
              (SVEX-ALIST-FROM-SPLIT
               (append (NETEVAL-ORDERING-COMPILE x
-                                                (SVEX-ALIST-TO-SPLIT COMP1 DECOMP))
-                      (svex-identity-subst (svar-splittable-vars decomp)))
-              DECOMP)))))
+                                                (SVEX-ALIST-TO-SPLIT COMP1 SPLITTAB))
+                      (svex-identity-subst (svar-splittab-vars splittab)))
+              SPLITTAB)))))
          :hints ('(:expand ((:free (net) (neteval-ordering-compile x net))
                             <call>
                             (:free (vars a b) (svex-alist-removekeys vars (cons a b)))
@@ -2915,7 +2914,7 @@
                             )
                    :in-theory (enable svex-alist-from-split
                                       svex-alist-to-split
-                                      svex-alist-decomptable-recompose
+                                      svex-alist-splittab-unsplit-keys
                                       svex-acons)
                    :do-not-induct t)
                  (and stable-under-simplificationp
@@ -2923,28 +2922,28 @@
                  ;; (and stable-under-simplificationp
                  ;;      '(:expand ((:free (x) <call>))))
                  )
-         :fn from-split-ordering-non-decomp-vars)
+         :fn from-split-ordering-uninvolved-vars)
        (defret <fn>-correct
          (IMPLIES
-          (AND (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+          (AND (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                                       (SVEX-ALIST-KEYS COMP1)))
-               (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+               (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                                       (SVEX-ALIST-VARS COMP1)))
-               (NO-DUPLICATESP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP))
-               (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP)))
-               (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP))
+               (NO-DUPLICATESP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB))
+               (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB)))
+               (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB))
                               (SVEX-ALIST-KEYS COMP1)))
           ;; (implies ;; (svex-lookup signal comp1)
-          ;;  (not (member-equal (svar-fix signal) (svar-splittable-vars decomp)))
+          ;;  (not (member-equal (svar-fix signal) (svar-splittab-vars splittab)))
           ;;       (svex-eval-equiv
           ;;        (svex-compose
-          ;;         (NETEVAL-sigORDERING-COMPILE x decomp-signal decomp-offset (svex-alist-to-split comp1 decomp))
-          ;;         (svar-splittable->inverse decomp))
-          ;;        (neteval-sigordering-compile (from-split-ordering-sigord x signal offset decomp-signal decomp-offset decomp)
+          ;;         (NETEVAL-sigORDERING-COMPILE x splittab-signal splittab-offset (svex-alist-to-split comp1 splittab))
+          ;;         (svar-splittab->inverse splittab))
+          ;;        (neteval-sigordering-compile (from-split-ordering-sigord x signal offset splittab-signal splittab-offset splittab)
           ;;                                     signal offset COMP1)))
           (from-split-ordering-sigord-prop x comp1
-                                            (svex-alist-to-split comp1 decomp)
-                                            decomp)
+                                           ;;(svex-alist-to-split comp1 splittab)
+                                            splittab)
           )
          :hints ((and stable-under-simplificationp
                       `(:computed-hint-replacement
@@ -2968,24 +2967,22 @@
 
        (defret <fn>-correct
          (IMPLIES
-          (AND (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+          (AND (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                                       (SVEX-ALIST-KEYS COMP1)))
-               (NOT (INTERSECTP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP)
+               (NOT (INTERSECTP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB)
                                       (SVEX-ALIST-VARS COMP1)))
-               (NO-DUPLICATESP-EQUAL (SVAR-SPLITTABLE-VARS DECOMP))
-               (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP)))
-               (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTABLE-FIX DECOMP))
+               (NO-DUPLICATESP-EQUAL (SVAR-SPLITTAB-VARS SPLITTAB))
+               (NO-DUPLICATESP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB)))
+               (SUBSETP-EQUAL (ALIST-KEYS (SVAR-SPLITTAB-FIX SPLITTAB))
                               (SVEX-ALIST-KEYS COMP1)))
-          (from-split-ordering-ordering-or-null-prop x comp1
-                                                      (svex-alist-to-split comp1 decomp)
-                                                      decomp)
+          (from-split-ordering-ordering-or-null-prop x comp1 splittab)
           ;; (implies ;; (svex-lookup signal comp1)
-          ;;       (not (member-equal (svar-fix signal) (svar-splittable-vars decomp)))
+          ;;       (not (member-equal (svar-fix signal) (svar-splittab-vars splittab)))
           ;;       (svex-eval-equiv
-          ;;        (neteval-ordering-or-null-compile (from-split-ordering-ordering-or-null x signal decomp-signal decomp) signal COMP1)
+          ;;        (neteval-ordering-or-null-compile (from-split-ordering-ordering-or-null x signal splittab-signal splittab) signal COMP1)
           ;;        (svex-compose
-          ;;         (NETEVAL-ordering-or-null-COMPILE x decomp-signal (svex-alist-to-split comp1 decomp))
-          ;;         (svar-splittable->inverse decomp))))
+          ;;         (NETEVAL-ordering-or-null-COMPILE x splittab-signal (svex-alist-to-split comp1 splittab))
+          ;;         (svar-splittab->inverse splittab))))
           )
          :hints ((and stable-under-simplificationp
                       `(:computed-hint-replacement
@@ -3000,13 +2997,13 @@
                                  (:free (ord net signal)
                                   (neteval-ordering-or-null-compile
                                    (neteval-ordering-or-null-ordering ord) signal net))
-                                 (svex-compose (svex-var signal) (svar-splittable->inverse decomp))
+                                 (svex-compose (svex-var signal) (svar-splittab->inverse splittab))
                                  )
                         :in-theory (enable neteval-ordering-or-null-compile-split)
                         :do-not-induct t))
                  (and stable-under-simplificationp
                       '(:in-theory (enable svex-alist-to-split
-                                           svex-alist-decomptable-recompose
+                                           svex-alist-splittab-unsplit-keys
                                            svex-alist-from-split)))
                  (and stable-under-simplificationp
                       '(:in-theory (enable neteval-sigordering-compile-when-signal-not-in-network)))
@@ -3015,30 +3012,35 @@
        :skip-others t))))
 
 
+;; Main theorem: 
 (defthm from-split-of-to-split-preserves-netcomp-p
-  (implies (and (not (intersectp-equal (svex-alist-keys comp1)
-                                       (svar-splittable-vars decomp)))
-                (not (intersectp-equal (svex-alist-vars comp1)
-                                       (svar-splittable-vars decomp)))
-                (no-duplicatesp-equal (svar-splittable-vars decomp))
-                (no-duplicatesp-equal (alist-keys (svar-splittable-fix decomp)))
-                (subsetp-equal (alist-keys (svar-splittable-fix decomp))
-                               (svex-alist-keys comp1))
-                (netcomp-p compdec2 (svex-alist-to-split comp1 decomp)))
-           (netcomp-p (svex-alist-from-split compdec2 decomp) comp1))
+  (implies (and
+            ;; Technical hyps: the variables of splittab are fresh and the keys are bound in comp1
+            (not (intersectp-equal (svex-alist-keys comp1)
+                                   (svar-splittab-vars splittab)))
+            (not (intersectp-equal (svex-alist-vars comp1)
+                                   (svar-splittab-vars splittab)))
+            (no-duplicatesp-equal (svar-splittab-vars splittab))
+            (no-duplicatesp-equal (alist-keys (svar-splittab-fix splittab)))
+            (subsetp-equal (alist-keys (svar-splittab-fix splittab))
+                           (svex-alist-keys comp1))
+            ;; Main hyp -- compsplit2 is a composition of the translation of comp1 into the split domain
+            (netcomp-p compsplit2 (svex-alist-to-split comp1 splittab)))
+           ;; Translating compsplit2 back to the unsplit domain produces a composition of comp1.
+           (netcomp-p (svex-alist-from-split compsplit2 splittab) comp1))
   :hints ('(:computed-hint-replacement
             ((and stable-under-simplificationp
                   (let ((ordering (acl2::find-call-lst 'netcomp-p-eval-equiv-witness clause)))
                     `(:clause-processor (acl2::generalize-with-alist-cp clause '((,ordering . ordering)))))))
-            :expand ((netcomp-p compdec2 (svex-alist-to-split comp1 decomp))))
+            :expand ((netcomp-p compsplit2 (svex-alist-to-split comp1 splittab))))
           (and stable-under-simplificationp
                '(:use ((:instance netcomp-p-suff
                         (comp (svex-alist-from-split
                                (neteval-ordering-compile ordering
-                                                         (svex-alist-to-split comp1 decomp))
-                               decomp))
+                                                         (svex-alist-to-split comp1 splittab))
+                               splittab))
                         (decomp comp1)
-                        (ordering (from-split-ordering ordering decomp))))))))
+                        (ordering (from-split-ordering ordering splittab))))))))
 
 (local
  (progn
@@ -3082,10 +3084,10 @@
 
    (local (defthm svar-split-vars-of-lookup
             (implies (and (svar-p var)
-                          (hons-assoc-equal var decomp))
-                     (subsetp-equal (svar-split-vars (cdr (hons-assoc-equal var decomp)))
-                                    (svar-splittable-vars decomp)))
-            :hints(("Goal" :in-theory (enable svar-splittable-vars)))))
+                          (hons-assoc-equal var splittab))
+                     (subsetp-equal (svar-split-vars (cdr (hons-assoc-equal var splittab)))
+                                    (svar-splittab-vars splittab)))
+            :hints(("Goal" :in-theory (enable svar-splittab-vars)))))
 
    (local (defthm not-intersectp-subset
             (implies (and (not (intersectp-equal y x))
@@ -3098,26 +3100,26 @@
                              x)
             :hints(("Goal" :in-theory (enable svex-eval-equiv svex-apply)))))
 
-   (defthm svar-split->svex-of-decomptable-inverse
-     (implies (and (no-duplicatesp-equal (svar-splittable-vars decomp))
-                   (hons-assoc-equal (svar-fix key) decomp))
+   (defthm svar-split->svex-of-splittab-inverse
+     (implies (and (no-duplicatesp-equal (svar-splittab-vars splittab))
+                   (hons-assoc-equal (svar-fix key) splittab))
               (svex-eval-equiv
-               (svex-compose (svar-split->svex (cdr (hons-assoc-equal (svar-fix key) decomp)))
-                             (svar-splittable->inverse decomp))
+               (svex-compose (svar-split->svex (cdr (hons-assoc-equal (svar-fix key) splittab)))
+                             (svar-splittab->inverse splittab))
                (svex-var key)))
-     :hints(("Goal" :in-theory (enable svar-splittable->inverse
-                                       svar-splittable-vars))))
+     :hints(("Goal" :in-theory (enable svar-splittab->inverse
+                                       svar-splittab-vars))))
 
-   (defthm svar-split->svex-of-decomptable-inverse-composed
-     (implies (and (no-duplicatesp-equal (svar-splittable-vars decomp))
-                   (hons-assoc-equal (svar-fix key) decomp))
+   (defthm svar-split->svex-of-splittab-inverse-composed
+     (implies (and (no-duplicatesp-equal (svar-splittab-vars splittab))
+                   (hons-assoc-equal (svar-fix key) splittab))
               (svex-eval-equiv
-               (svex-compose (svar-split->svex (cdr (hons-assoc-equal (svar-fix key) decomp)))
-                             (svex-alist-compose (svar-splittable->inverse decomp) a))
+               (svex-compose (svar-split->svex (cdr (hons-assoc-equal (svar-fix key) splittab)))
+                             (svex-alist-compose (svar-splittab->inverse splittab) a))
                (svex-compose-lookup key a)))
      :hints (("goal" :use ((:instance svex-compose-of-compose
-                            (x (svar-split->svex (cdr (hons-assoc-equal (svar-fix key) decomp))))
-                            (a (svar-splittable->inverse decomp)) (b a)))
+                            (x (svar-split->svex (cdr (hons-assoc-equal (svar-fix key) splittab))))
+                            (a (svar-splittab->inverse splittab)) (b a)))
               :in-theory (disable svex-compose-of-compose))))
 
 
@@ -3130,21 +3132,21 @@
 
 (defthm from-split-of-to-split
   (implies (and (not (intersectp-equal (svex-alist-keys x)
-                                       (svar-splittable-vars decomp)))
+                                       (svar-splittab-vars splittab)))
                 (not (intersectp-equal (svex-alist-vars x)
-                                       (svar-splittable-vars decomp)))
-                (no-duplicatesp-equal (svar-splittable-vars decomp))
-                (no-duplicatesp-equal (alist-keys (svar-splittable-fix decomp)))
-                (subsetp-equal (alist-keys (svar-splittable-fix decomp))
+                                       (svar-splittab-vars splittab)))
+                (no-duplicatesp-equal (svar-splittab-vars splittab))
+                (no-duplicatesp-equal (alist-keys (svar-splittab-fix splittab)))
+                (subsetp-equal (alist-keys (svar-splittab-fix splittab))
                                (svex-alist-keys x)))
-           (svex-alist-compose-equiv (svex-alist-from-split (svex-alist-to-split x decomp) decomp)
+           (svex-alist-eval-equiv (svex-alist-from-split (svex-alist-to-split x splittab) splittab)
                                   x))
   :hints(("Goal" :in-theory (enable svex-alist-from-split svex-alist-to-split
-                                    svex-alist-decomptable-recompose
-                                    svex-alist-compose-equiv
+                                    svex-alist-splittab-unsplit-keys
+                                    svex-alist-eval-equiv
                                     svex-compose-lookup))
          (and stable-under-simplificationp
-              (let ((key (acl2::find-call-lst 'SVEX-ALIST-compose-equiv-witness clause)))
+              (let ((key (acl2::find-call-lst 'SVEX-ALIST-eval-equiv-witness clause)))
                    `(:clause-processor (acl2::generalize-with-alist-cp clause '((,key . key))))))))
 
 

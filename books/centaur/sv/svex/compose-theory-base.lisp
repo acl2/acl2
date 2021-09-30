@@ -122,13 +122,18 @@
 ;; --------------------------------------------------------------------
 
 
-;; A neteval ordering is a mapping from signals (svars) to
-;; neteval-sigorderings, which are sequences in which all elements except the
-;; last are a width and a neteval ordering, and the last is only a neteval
-;; ordering.
 (fty::deftypes neteval-ordering
-  (fty::defmap neteval-ordering :key-type svar :val-type neteval-sigordering :true-listp t
+  ;; A neteval-ordering is a mapping from variables (internal signals)
+  ;; to sigorderings (specifications for how that signal should be composed).
+  (fty::defmap neteval-ordering
+    :key-type svar
+    :val-type neteval-sigordering
+    :true-listp t
     :measure (two-nats-measure (acl2-count x) 0))
+  ;; A sigordering is a series of segments giving the instructions for
+  ;; composing slices of a variable.  Each segment has a width and an
+  ;; ordering-or-null, and the series ends with a remainder which gives an
+  ;; ordering for the rest of the variable.
   (fty::deftagsum neteval-sigordering
     (:segment ((width posp :rule-classes :type-prescription)
                (ord neteval-ordering-or-null-p)
@@ -136,6 +141,9 @@
     (:remainder ((ord neteval-ordering-or-null-p)))
     :measure (two-nats-measure (acl2-count x) 1)
     :base-case-override :remainder)
+  ;; A neteval-ordering-or-null says either (null) don't compose this signal,
+  ;; just leave it bound to itself, or (ordering) gives a neteval ordering to
+  ;; be composed with its assignment.
   (fty::deftagsum neteval-ordering-or-null
     (:null ())
     (:ordering ((ord neteval-ordering-p)))
@@ -339,74 +347,39 @@
                                  (network svex-alist-p)
                                  (env svex-env-p))
 
-    ;; ;; Env must only bind primary input signals, not internal ones.
-    ;; :guard (not (intersectp-equal (alist-keys (svex-env-fix env))
-    ;;                               (svex-alist-keys network)))
     :verify-guards nil
     :measure (neteval-ordering-count x)
     :returns (neteval svex-env-p)
+    ;; For each pair in the neteval-ordering, pair the signal to its
+    ;; composition according to its sigordering.
     (b* ((x (neteval-ordering-fix x))
          ((when (atom x))
           nil)
-         ((cons signal sigordering) (car x))
-         ;; (function (svex-lookup signal network))
-         ;; ((unless function)
-         ;;  ;; ????  Do we want to bind signal to its env lookup here?  I think
-         ;;  ;; no: if this is the "original" network then we don't want to add
-         ;;  ;; signals that aren't bound, and if not, it can't hurt to not bind a
-         ;;  ;; signal that's already unbound.
-         ;;  ;; (cons (cons signal (svex-env-lookup signal env))
-         ;;  (neteval-ordering-eval (cdr x) network env))
-
-         ;; New approach: we use svex-compose-lookup everywhere, i.e. if the
-         ;; signal is not bound in network it's as though it's bound to
-         ;; (svex-var signal).
-         )
+         ((cons signal sigordering) (car x)))
       (cons (cons signal
                   (neteval-sigordering-eval sigordering
-                                            signal 0 network env)
-                  ;; (svex-eval assign
-                  ;;            ;; (svex-network-join-envs network 
-                  ;;            (append (neteval-ordering-eval ordering network env)
-                  ;;                    env))
-                  )
+                                            signal 0 network env))
             (neteval-ordering-eval (cdr x) network env))))
   (define neteval-sigordering-eval ((x neteval-sigordering-p)
                                     (signal svar-p)
                                     (offset natp)
                                     (network svex-alist-p)
                                     (env svex-env-p))
-    ;; :guard (not (intersectp-equal (alist-keys (svex-env-fix env))
-    ;;                               (svex-alist-keys network)))
-    ;; :guard (svex-lookup signal network)
     :measure (neteval-sigordering-count x)
     :returns (val 4vec-p)
+    ;; Concatenate together the compositions specified by the segments of the sigordering.
     (neteval-sigordering-case x
-      ;; Bunch of possible ways to code this:
-      ;;  - take the offset as an additional parameter (no; extra parameter
-      ;;    seems like it would complicate things)
-      ;;  - rightshift the result of the recursion (no, this doesn't work, confusingly)
-      ;;  - modify the function when we recur on it
       :segment (4vec-concat (2vec x.width)
                             (4vec-rsh (2vec (lnfix offset))
                                       (neteval-ordering-or-null-eval
                                        x.ord signal network env))
-                            ;; (svex-eval function
-                            ;;            (append (neteval-ordering-eval x.ord network env)
-                            ;;                    env))
                             (neteval-sigordering-eval x.rest signal (+ x.width (lnfix offset)) network env))
       :remainder (4vec-rsh (2vec (lnfix offset))
-                           (neteval-ordering-or-null-eval x.ord signal network env))
-      ;; (svex-eval function (append (neteval-ordering-eval x.ord network env)
-      ;;                                          env))
-      ))
+                           (neteval-ordering-or-null-eval x.ord signal network env))))
   (define neteval-ordering-or-null-eval ((x neteval-ordering-or-null-p)
                                          (signal svar-p)
                                          (network svex-alist-p)
                                          (env svex-env-p))
-    ;; :guard (not (intersectp-equal (alist-keys (svex-env-fix env))
-    ;;                               (svex-alist-keys network)))
-    ;; :guard (svex-lookup signal network)
     :measure (neteval-ordering-or-null-count x)
     :returns (val 4vec-p)
     (neteval-ordering-or-null-case x
@@ -785,41 +758,36 @@
     :verify-guards nil
     :measure (neteval-ordering-count x)
     :returns (compose svex-alist-p)
+    ;; For each pair in the neteval-ordering, pair the signal to its
+    ;; composition according to its sigordering.
     (b* ((x (neteval-ordering-fix x))
          ((when (atom x))
           nil)
-         ((cons signal ordering) (car x))
-         ;; (assign (svex-lookup signal network))
-         ;; ((unless assign)
-         ;;  ;;; ??? Assign signal to self?
-         ;;  ;; (cons (cons signal (svex-var signal))
-         ;;  (neteval-ordering-compile (cdr x) network))
-         )
+         ((cons signal ordering) (car x)))
       (cons (cons signal
                   (neteval-sigordering-compile ordering signal 0 network))
-            ;; (svex-compose assign
-            ;;               (neteval-ordering-compile ordering network)))
             (neteval-ordering-compile (cdr x) network))))
+
   (define neteval-sigordering-compile ((x neteval-sigordering-p)
                                        (signal svar-p)
                                        (offset natp)
                                        (network svex-alist-p))
     :measure (neteval-sigordering-count x)
     :returns (compose svex-p)
-    ;; :guard (svex-lookup signal network)
+    ;; Concatenate together the compositions specified by the segments of the sigordering.
     (neteval-sigordering-case x
       :segment (svex-concat x.width
                             (svex-rsh offset (neteval-ordering-or-null-compile x.ord signal network))
                             (neteval-sigordering-compile x.rest signal (+ x.width (lnfix offset)) network))
-      :remainder (svex-rsh offset (neteval-ordering-or-null-compile x.ord signal network))
-      ;;(svex-compose function (neteval-ordering-compile x.ord network))
-      ))
+      :remainder (svex-rsh offset (neteval-ordering-or-null-compile x.ord signal network))))
+
   (define neteval-ordering-or-null-compile ((x neteval-ordering-or-null-p)
                                             (signal svar-p)
                                             (network svex-alist-p))
     :measure (neteval-ordering-or-null-count x)
     :returns (compose svex-p)
-    ;; :guard (svex-lookup signal network)
+    ;; Produces either the signal itself or a composition of the signal's
+    ;; binding in the network with the given ordering.
     (neteval-ordering-or-null-case x
       :null (svex-var signal)
       :ordering (svex-compose
@@ -839,29 +807,6 @@
                     (not (svex-env-boundp k x)))
            :hints(("Goal" :in-theory (enable svex-env-boundp svex-alist-keys svex-env-fix alist-keys intersectp-equal)
                    :induct (svex-env-fix x)))))
-
-  ;; (local (defthm svex-env-boundp-when-svex-lookup-and-subsetp
-  ;;          (implies (and (subsetp-equal (alist-keys (svex-env-fix x))
-  ;;                                       (svex-alist-keys y))
-  ;;                        (not (svex-lookup k y)))
-  ;;                   (not (svex-env-boundp k x)))
-  ;;          :hints(("Goal" :in-theory (enable svex-env-boundp svex-alist-keys svex-env-fix alist-keys intersectp-equal)
-  ;;                  :induct (svex-env-fix x)))))
-
-  ;; (local (defthm svex-env-lookup-when-not-boundp
-  ;;          (implies (not (svex-env-boundp k x))
-  ;;                   (equal (svex-env-lookup k x) (4vec-x)))
-  ;;          :hints(("Goal" :in-theory (enable svex-env-lookup svex-env-boundp)))))
-
-
-  ;; (defthm svex-network-join-envs-when-env-not-intersectp
-  ;;   (implies (and (not (intersectp-equal (alist-keys (svex-env-fix input-env))
-  ;;                                        (svex-alist-keys network)))
-  ;;                 (subsetp-equal (alist-keys (svex-env-fix internal-env))
-  ;;                                (svex-alist-keys network)))
-  ;;            (svex-envs-similar (svex-network-join-envs network internal-env input-env)
-  ;;                               (append internal-env input-env)))
-  ;;   :hints(("Goal" :in-theory (enable svex-envs-similar svex-network-join-envs))))
 
   (local (defthm svex-rsh-0
            (svex-eval-equiv (svex-rsh 0 x) x)
@@ -940,19 +885,6 @@
                            (x (neteval-ordering-compile x network))
                            (y (neteval-ordering-compile x network-equiv)))))))
 
-  ;; (local (defthm svex-lookup-when-consp-svex-alist-fix
-  ;;        (implies (consp (svex-alist-fix x))
-  ;;                 (equal (svex-lookup k x)
-  ;;                        (if (equal (svar-fix k) (caar (svex-alist-fix x)))
-  ;;                            (cdar (svex-alist-fix x))
-  ;;                          (svex-lookup k (cdr (svex-alist-fix x))))))
-  ;;        :hints(("Goal" :in-theory (enable svex-lookup svex-alist-fix)))))
-
-  ;; (local (defthm svex-lookup-when-not-consp-svex-alist-fix
-  ;;          (implies (not (consp (svex-alist-fix x)))
-  ;;                   (equal (svex-lookup k x) nil))
-  ;;        :hints(("Goal" :in-theory (enable svex-lookup svex-alist-fix)))))
-
   (defret svex-lookup-of-<fn>
     (equal (svex-lookup key compose)
            (b* ((ord-look (hons-assoc-equal (svar-fix key) (neteval-ordering-fix x)))
@@ -1015,12 +947,6 @@
                                      network))))
       :hints(("Goal" :in-theory (enable svex-envs-equivalent-implies-alist-eval-equiv))))
 
-  ;; (defthm neteval-ordering-compile-of-pair-keys
-  ;;   (implies (svarlist-p keys)
-  ;;            (equal (neteval-ordering-compile (pair-keys keys val) network)
-  ;;                   (svex-alist-compose (svex-alist-reduce keys network)
-  ;;                                       (neteval-ordering-compile val network))))
-  ;;   :hints(("Goal" :in-theory (enable pair-keys svex-alist-compose svex-alist-reduce svex-acons))))
   (verify-guards neteval-ordering-compile)
 
 
@@ -1083,25 +1009,15 @@
 (define neteval-sigordering-rsh ((n natp)
                                  (x neteval-sigordering-p))
   :returns (new-x neteval-sigordering-p)
-               ;; (rem natp :rule-classes :type-prescription))
   (neteval-sigordering-case x
     :segment (if (< (lnfix n) x.width)
-                 ;; (mv ;; (neteval-sigordering-fix x)
-                     (change-neteval-sigordering-segment
-                      x :width (- x.width (lnfix n)))
-               ;;0)
+                 (change-neteval-sigordering-segment
+                  x :width (- x.width (lnfix n)))
                (neteval-sigordering-rsh
                 (- (lnfix n) x.width) x.rest))
-    :remainder (neteval-sigordering-fix x);; (mv (neteval-sigordering-fix x) (lnfix n))
-    )
+    :remainder (neteval-sigordering-fix x))
   ///
   (local (include-book "arithmetic/top-with-meta" :dir :system))
-  ;; (defret rem-of-<fn>-bound
-  ;;   (<= rem (nfix n))
-  ;;   :rule-classes :linear)
-  ;; (defretd <fn>-rem-nonzero
-  ;;   (implies (not (equal rem 0))
-  ;;            (neteval-sigordering-case new-x :remainder)))
 
   (defret eval-of-<fn>
     (implies (<= (nfix n) (nfix offset))
@@ -1188,9 +1104,9 @@
 ;; that recurs over subst, inserting the composition at the "leaves".
 
 ;; That is, we're looking for a new ordering, comp, that satisfies
-;;  (neteval-ordering-compile comp network) ===       (svex-alist-eval-equiv)
+;;  (neteval-ordering-compile comp network) ===       ;; svex-alist-eval-equiv
 ;;  (neteval-ordering-compile x (neteval-ordering-compile subst network))
-;; or (neteval-ordering-eval comp network env) ===    (svex-envs-equivalent)
+;; or (neteval-ordering-eval comp network env) ===    ;; svex-envs-equivalent
 ;;    (neteval-ordering-eval x (neteval-ordering-compile subst network) env).
 ;; To do this, we need a function that produces a secondary compound ordering
 ;; aux, such that:
@@ -1340,61 +1256,6 @@
   (verify-guards neteval-ordering-compose-aux))
 
 
-;; (verify
-;;  (implies (and (consp (neteval-ordering-fix compose))
-;;                (consp (neteval-ordering-fix x))
-;;                (equal (caar (neteval-ordering-fix compose))
-;;                       (caar (neteval-ordering-fix x)))
-;;                (hons-assoc-equal (caar (neteval-ordering-fix x))
-;;                                  (neteval-ordering-fix subst)))
-;;           (equal (neteval-ordering-eval compose network env)
-;;                  (neteval-ordering-eval x (neteval-ordering-compile subst network) env))))
-
-
-;; (verify 
-;;  (implies (and (consp (neteval-ordering-fix x))
-;;                (consp (neteval-ordering-fix compose))
-;;                (equal (caar (neteval-ordering-fix x))
-;;                       (caar (neteval-ordering-fix compose)))
-;;                (hons-assoc-equal (caar (neteval-ordering-fix x)) subst))
-;;           (equal (neteval-ordering-eval compose network env)
-;;                  (neteval-ordering-eval x (neteval-ordering-compile subst network) env))))
-
-
-;; (verify 
-;;  (implies (And (neteval-sigordering-case compose-sigord :segment)
-;;                (neteval-sigordering-case x-sigord :segment)
-;;                (equal (neteval-sigordering-segment->width compose-sigord)
-;;                       (neteval-sigordering-segment->width x-sigord)))
-;;           (equal (neteval-sigordering-eval compose-sigord function network env)
-;;                  (neteval-sigordering-eval x-sigord
-;;                                           (neteval-sigordering-compile
-;;                                            subst-fn function network)
-;;                                           (neteval-ordering-compile subst network)
-;;                                           env))))
-
-;; (verify
-;;  (implies (And (neteval-sigordering-case compose-sigord :segment)
-;;                (neteval-sigordering-case x-sigord :segment)
-;;                ;; (equal (neteval-sigordering-segment->width compose-sigord)
-;;                ;;        (neteval-sigordering-segment->width x-sigord))
-;;                )
-;;          (equal (neteval-sigordering-eval compose-sigord function network env)
-;;                 (neteval-sigordering-eval x-sigord
-;;                                           (neteval-sigordering-compile
-;;                                            subst-fn function network)
-;;                                           (neteval-ordering-compile subst network)
-;;                                           env))))
-
-;; ;; Example of composing a neteval-ordering.
-;; ;; Suppose we have 
-
-;; (verify
- 
-;;  (equal (neteval-ordering-eval compose network env)
-;;         (neteval-ordering-eval x (neteval-ordering-compile subst network) env)))
-
-
 
 (defcong svex-eval-equiv svex-eval-equiv (svex-concat n x y) 2
   :hints((and stable-under-simplificationp
@@ -1424,18 +1285,10 @@
          :hints(("Goal" :in-theory (enable svex-eval-equiv svex-apply)))))
                           
   
-;; (defcong svex-eval-equiv svex-eval-equiv (neteval-sigordering-compile x function network) 2
-;;   :hints ((and stable-under-simplificationp
-;;                `(:expand (,(car (last clause)))))))
 
 (local (defthm svex-rsh-of-0
          (svex-eval-equiv (svex-rsh 0 x) x)
          :hints(("Goal" :in-theory (enable svex-eval-equiv svex-apply)))))
-
-
-;; (defstub foo (ord) nil)
-;; (defaxiom neteval-sigordering-p-foo
-;;   (neteval-sigordering-p (foo ord)))
 
 
 (defines neteval-ordering-compose
@@ -1451,230 +1304,49 @@
     (b* ((x (neteval-ordering-fix x))
          ((when (atom x)) nil)
          ((cons signal sigordering) (car x))
-         ;; (subst-look (hons-assoc-equal signal (neteval-ordering-fix subst)))
-         ;; ;; We want to produce an ordering (compose) that reflects an ordering (x)
-         ;; ;; applied to the network resulting from applying an ordering (subst) to
-         ;; ;; the original network (network).
-         
-         ;; ;; ;; For each binding of a signal to an ordering in X, first, if the signal
-         ;; ;; ;; isn't bound in subst then it won't be bound in the composed network so
-         ;; ;; ;; we skip it.
-         ;; ((unless subst-look)
-         ;;  ;; (cons (cons signal (make-neteval-sigordering-remainder
-         ;;  ;;                     :ord (make-neteval-ordering-or-null-null)))
-         ;;  (neteval-ordering-compose (cdr x) subst))
-         
-         ;; Assuming it is bound, then we want its binding to reflect the
-         ;; composition from x and subst.
-         ;; We want the following identity:
-         ;; (svex-envs-equiv (neteval-ordering-eval (neteval-ordering-compose x subst) network env)
-         ;;                 (neteval-ordering-eval x (neteval-ordering-compile subst network) env))
-
-         ;; Therefore for each signal, we need the following
-         ;; need the following
-         ;; (equal (neteval-sigordering-eval new-sigord function network env)
-         ;;        (neteval-sigordering-eval sigordering
-         ;;                                  (neteval-sigordering-compile
-         ;;                                   subst-sigord function network)
-         ;;                                  (neteval-ordering-compile subst network) env))
-        
-         ;; which means we need for each segment of new-sigord:
-         ;; (equal (select-segment
-         ;;           (svex-eval function
-         ;;             (append (NETEVAL-ORDERING-EVAL new-sigord-segment-ord
-         ;;                                    NETWORK ENV)
-         ;;                     ENV))
-         ;;        (select-segment
-         ;;           (svex-eval function
-         ;;               (APPEND
-         ;;                (NETEVAL-ORDERING-EVAL
-         ;;                 (NETEVAL-SIGORDERING-SEGMENT->ORD SUBST-SIGORD)
-         ;;                 NETWORK
-         ;;                 (APPEND
-         ;;                   (NETEVAL-ORDERING-EVAL (NETEVAL-SIGORDERING-SEGMENT->ORD SIGORDERING)
-         ;;                                          (NETEVAL-ORDERING-COMPILE SUBST NETWORK)
-         ;;                                          ENV)
-         ;;                   ENV))
-         ;;                (NETEVAL-ORDERING-EVAL (NETEVAL-SIGORDERING-SEGMENT->ORD SIGORDERING)
-         ;;                                       (NETEVAL-ORDERING-COMPILE SUBST NETWORK)
-         ;;                                       ENV)
-         ;;                ENV))
-
-         ;; So for each segment of new-sigord we need
-         ;; (svex-envs-equiv
-         ;;             (append 
-         ;;                (NETEVAL-ORDERING-EVAL new-sigord-segment-ord
-         ;;                                    NETWORK ENV)
-         ;;                env)
-         ;;              (APPEND
-         ;;                (NETEVAL-ORDERING-EVAL
-         ;;                 subst-sigord-segment-ord
-         ;;                 NETWORK
-         ;;                 (APPEND
-         ;;                   (NETEVAL-ORDERING-EVAL old-sigord-segment-ord
-         ;;                                          (NETEVAL-ORDERING-COMPILE SUBST NETWORK)
-         ;;                                          ENV)
-         ;;                   ENV))
-         ;;                (NETEVAL-ORDERING-EVAL old-sigord-segment-ord
-         ;;                                       (NETEVAL-ORDERING-COMPILE SUBST NETWORK)
-         ;;                                       ENV)
-         ;;                env))
-         ;; Inductively using our original desired identity we have
-         ;;  (svex-envs-equiv  (NETEVAL-ORDERING-EVAL old-sigord-segment-ord
-         ;;                           (NETEVAL-ORDERING-COMPILE SUBST NETWORK)
-         ;;                           ENV)
-         ;;           (neteval-ordering-eval (neteval-ordering-compose old-sigord-segment-ord subst) network env)
-         ;; Call this compose term NEW-ORD1. Restating the above, we need:
-         ;; (svex-envs-equiv
-         ;;             (append 
-         ;;                (NETEVAL-ORDERING-EVAL new-sigord-segment-ord
-         ;;                                    NETWORK ENV)
-         ;;                env)
-         ;;              (APPEND
-         ;;                (NETEVAL-ORDERING-EVAL
-         ;;                 subst-sigord-segment-ord
-         ;;                 NETWORK
-         ;;                 (APPEND (neteval-ordering-eval new-ord1 network env) env))
-         ;;                (neteval-ordering-eval new-ord1 network env)
-         ;;                env))
-
-         ;; Now suppose we have a function neteval-ordering-compose-aux that satisfies
-         ;; (equal (neteval-ordering-eval (neteval-ordering-compose-aux x subst) network env)
-         ;;        (neteval-ordering-eval x network (append (neteval-ordering-eval subst network env) env)))
-         
-         ;; Let new-sigord-segment-ord be
-         ;;     (append (neteval-ordering-compose-aux subst-sigord-segment-ord new-ord1) new-ord1)
-         ;; Substituting in on the LHS above we get
-         ;;             (append 
-         ;;                (NETEVAL-ORDERING-EVAL
-         ;;                 (append (neteval-ordering-compose-aux subst-sigord-segment-ord new-ord1) new-ord1)
-         ;;                 NETWORK ENV)
-         ;;                env)
-         ;;     =       (append
-         ;;                (neteval-ordering-eval
-         ;;                    (neteval-ordering-compose-aux subst-sigord-segment-ord new-ord1)
-         ;;                    network env)
-         ;;                (neteval-ordering-eval new-ord1 network env)
-         ;;                env)
-         ;;     =      (append
-         ;;                (neteval-ordering-eval subst-sigord-segment-ord network
-         ;;                                      (append (neteval-ordering-eval new-ord1 network env)
-         ;;                                              env))
-         ;;                (neteval-ordering-eval new-ord1 network env)
-         ;;                env).
-
-         ;; So then we need neteval-ordering-compose-aux.
-
-         
-
-         (new-sigord (neteval-sigordering-compose sigordering signal 0 ;; (cdr subst-look)
-                                                  subst)))
+         (new-sigord (neteval-sigordering-compose sigordering signal 0 subst)))
       (cons (cons signal new-sigord)
             (neteval-ordering-compose (cdr x) subst))))
 
   (define neteval-sigordering-compose ((x neteval-sigordering-p)
-                                       ;; (subst-sigord neteval-sigordering-p)
                                        (signal svar-p)
                                        (offset natp)
                                        (subst neteval-ordering-p))
     :measure (two-nats-measure (neteval-sigordering-count x) 0)
-    ;; :guard (hons-assoc-equal signal subst)
     :returns (composed neteval-sigordering-p)
     (neteval-sigordering-case x
-      :segment (b* (;; (compose-ord (neteval-ordering-or-null-compose x.ord signal subst))
-                    (full-sigord (neteval-ordering-or-null-compose
-                                  x.ord signal subst
-                                  ;; (cdr (hons-assoc-equal (svar-fix signal)
-                                  ;;                        (neteval-ordering-fix subst)))
-                                  ;; signal 0 compose-ord
-                                  ))
+      :segment (b* ((full-sigord (neteval-ordering-or-null-compose
+                                  x.ord signal subst))
                     (rest (neteval-sigordering-compose x.rest signal (+ x.width (lnfix offset)) subst)))
                  (neteval-sigordering-concat
                   x.width
                   (neteval-sigordering-rsh offset full-sigord)
                   rest))
-      :remainder (b* (;; (compose-ord (neteval-ordering-or-null-compose x.ord signal subst))
-                      (full-sigord (neteval-ordering-or-null-compose
-                                    x.ord signal subst
-                                    ;; (cdr (hons-assoc-equal (svar-fix signal)
-                                    ;;                        (neteval-ordering-fix subst)))
-                                    ;; signal 0 compose-ord
-                                    )))
+      :remainder (b* ((full-sigord (neteval-ordering-or-null-compose
+                                    x.ord signal subst)))
                    (neteval-sigordering-rsh offset full-sigord))))
                                   
 
-
-    ;; (b* (((mv width x-ord x-rest subst-ord subst-rest)
-    ;;       (neteval-sigordering-case x
-    ;;         :segment (neteval-sigordering-case subst-sigord
-    ;;                    :segment (cond ((< x.width subst-sigord.width)
-    ;;                                    (mv x.width x.ord x.rest
-    ;;                                        subst-sigord.ord
-    ;;                                        (make-neteval-sigordering-segment
-    ;;                                         :width (- subst-sigord.width x.width)
-    ;;                                         :ord subst-sigord.ord
-    ;;                                         :rest subst-sigord.rest)))
-    ;;                                   ((eql x.width subst-sigord.width)
-    ;;                                    (mv x.width x.ord x.rest subst-sigord.ord subst-sigord.rest))
-    ;;                                   (t ;; (< subst-sigord.width x.width)
-    ;;                                    (mv subst-sigord.width
-    ;;                                        x.ord
-    ;;                                        (make-neteval-sigordering-segment
-    ;;                                         :width (- x.width subst-sigord.width)
-    ;;                                         :ord x.ord
-    ;;                                         :rest x.rest)
-    ;;                                        subst-sigord.ord
-    ;;                                        subst-sigord.rest)))
-    ;;                    :remainder (mv x.width x.ord x.rest subst-sigord.ord subst-sigord))
-    ;;         :remainder (neteval-sigordering-case subst-sigord
-    ;;                      :segment (mv subst-sigord.width x.ord x subst-sigord.ord subst-sigord.rest)
-    ;;                      :remainder (mv nil x.ord x subst-sigord.ord subst-sigord))))
-    ;;      ;; width is nil means we're done.
-    ;;      (new-ord (neteval-ordering-or-null-compose x-ord subst-ord subst))
-    ;;      ;; (new-ord1 (neteval-ordering-compose x-ord subst))
-    ;;      ;; (new-ord-full
-    ;;      ;;  (append (neteval-ordering-or-null-compose-aux subst-ord new-ord1) new-ord1))
-    ;;      )
-    ;;   (if width
-    ;;       (make-neteval-sigordering-segment
-    ;;        :width width
-    ;;        :ord new-ord
-    ;;        :rest (neteval-sigordering-compose x-rest subst-rest subst))
-    ;;     (make-neteval-sigordering-remainder :ord new-ord))))
   (define neteval-ordering-or-null-compose ((x neteval-ordering-or-null-p)
                                             (signal svar-p)
-                                            ;; (subst-ord neteval-ordering-or-null-p)
                                             (subst neteval-ordering-p))
     (declare (ignorable signal))
     :measure (two-nats-measure (neteval-ordering-or-null-count x)
-                               ;; (neteval-ordering-or-null-count subst-ord)
                                0)
-    ;; :guard (hons-assoc-equal signal subst)
     :returns (composed neteval-sigordering-p)
     (neteval-ordering-or-null-case x
       :null (make-neteval-sigordering-remainder :ord (make-neteval-ordering-or-null-null))
-      :ordering ;; (neteval-ordering-or-null-case x
-                ;;   :null (make-neteval-ordering-or-null-null)
-                ;;   :ordering
-                  ;; (b* ((new-ord1 )
-                            ;;      (new-ord-full
-                            ;;       (append (neteval-ordering-compose-aux
-                            ;;                subst-ord.ord new-ord1)
-                            ;;               new-ord1)))
+      :ordering
       (b* ((ord (neteval-ordering-compose x.ord subst))
            (look (hons-assoc-equal
-                            (svar-fix signal) (neteval-ordering-fix subst)))
-           ;; ((unless look)
-           ;;  (make-neteval-sigordering-remainder
-           ;;                              :ord (make-neteval-ordering-or-null-n )))
+                  (svar-fix signal) (neteval-ordering-fix subst)))
            ((unless look)
             (let ((ord-look (hons-assoc-equal (svar-fix signal) ord)))
               (if ord-look
                   (cdr ord-look)
                 (make-neteval-sigordering-remainder
                  :ord (make-neteval-ordering-or-null-null)))))
-           (sigord ;; (if look (cdr look) (foo ord))
-            (cdr look))
+           (sigord (cdr look))
            (full-ord (neteval-sigordering-compose-aux
                       sigord signal 0 ord)))
         full-ord)))
@@ -1688,28 +1360,6 @@
            :hints(("Goal" :in-theory (enable svex-eval-equiv svex-apply)
                    :expand ((:free (signal offset env) (neteval-sigordering-eval x signal offset network env))
                             (:free (x signal offset env) (neteval-ordering-or-null-eval x signal network env)))))))
-
-
-  ;; (local
-  ;;  (defquant eval-of-neteval-sigordering-compose-cond (composed x signal  subst network env)
-  ;;    (forall (sig offset)
-  ;;            (equal (neteval-sigordering-eval composed sig offset network env)
-  ;;                   (neteval-sigordering-eval x sig offset
-  ;;                                             (neteval-ordering-compile subst network) env)))
-  ;;    :rewrite :direct))
-
-  ;; (local
-  ;;  (defquant eval-of-neteval-ordering-or-null-compose-cond (composed x subst-sigord subst network env)
-  ;;    (forall (sig offset)
-  ;;            (equal (neteval-ordering-or-null-eval composed sig network env)
-  ;;                   (neteval-ordering-or-null-eval x sig
-  ;;                                             (neteval-ordering-compile subst network) env)))
-  ;;    :rewrite :direct))
-
-  ;; (local (in-theory (e/d (eval-of-neteval-sigordering-compose-cond-necc
-  ;;                         eval-of-neteval-ordering-or-null-compose-cond-necc)
-  ;;                        (eval-of-neteval-sigordering-compose-cond
-  ;;                         eval-of-neteval-ordering-or-null-compose-cond))))
 
 
   (local
@@ -1733,42 +1383,12 @@
                                                  (neteval-ordering-compile subst network)
                                                  env)))
        :hints ('(:expand
-                 ((:free (net) (neteval-sigordering-eval x signal offset net env))))
-
-;; (acl2::witness :ruleset (eval-of-neteval-sigordering-compose-cond-witnessing))
-               
-               ;; (and stable-under-simplificationp
-               ;;      `(:expand ((neteval-sigordering-compose x subst-sigord subst) ;;,(Car (last clause))
-               ;;                 (:free (function network) (neteval-sigordering-eval x function network env))
-               ;;                 (:free (function network env)
-               ;;                  (neteval-sigordering-eval subst-sigord function network env))
-               ;;                 (:free (ord function network env)
-               ;;                  (neteval-sigordering-eval
-               ;;                   (neteval-sigordering-remainder ord) function network env))
-               ;;                 (:free (width ord rest function network env)
-               ;;                  (neteval-sigordering-eval
-               ;;                   (neteval-sigordering-segment width ord rest) function network env))
-               ;;                 (:free (ord function network env)
-               ;;                  (neteval-sigordering-compile
-               ;;                   (neteval-sigordering-remainder ord) function network))
-               ;;                 (:free (width ord rest function network env)
-               ;;                  (neteval-sigordering-compile
-               ;;                   (neteval-sigordering-segment width ord rest) function network))
-               ;;                 )))
-               ;; (and stable-under-simplificationp
-               ;;      `(:expand ((:free (function network)
-               ;;                  (neteval-sigordering-compile subst-sigord function network)))))
-               )
+                 ((:free (net) (neteval-sigordering-eval x signal offset net env)))))
        :fn neteval-sigordering-compose)
      (defret eval-of-neteval-ordering-or-null-compose-lemma
-       (implies (and ;; (hons-assoc-equal (svar-fix signal)
-                     ;;                   (neteval-ordering-fix subst))
-                     ;; (svex-lookup signal network)
-                     )
-                (equal (neteval-sigordering-eval composed signal 0 network env)
-                       (neteval-ordering-or-null-eval x signal (neteval-ordering-compile subst network) env)))
-       :hints (;; (acl2::witness :ruleset (eval-of-neteval-ordering-or-null-compose-cond-witnessing))
-               (and stable-under-simplificationp
+       (equal (neteval-sigordering-eval composed signal 0 network env)
+              (neteval-ordering-or-null-eval x signal (neteval-ordering-compile subst network) env))
+       :hints ((and stable-under-simplificationp
                     '(:expand ((:free (sig offset env)
                                 (neteval-ordering-or-null-eval
                                  '(:null) sig network env))
@@ -1784,29 +1404,7 @@
                                  x sig network env)))
                       :in-theory (enable svex-compose-lookup)))
                (and stable-under-simplificationp
-                    '(:expand ((:Free (var env) (svex-eval (svex-var var) env)))))
-               ;; (and stable-under-simplificationp
-               ;;      `(:expand ((neteval-ordering-or-null-compose x subst-sigord subst) ;;,(Car (last clause))
-               ;;                 (:free (function network) (neteval-ordering-or-null-eval x function network env))
-               ;;                 (:free (function network env)
-               ;;                  (neteval-ordering-or-null-eval subst-sigord function network env))
-               ;;                 (:free (ord function network env)
-               ;;                  (neteval-ordering-or-null-eval
-               ;;                   (neteval-ordering-or-null-remainder ord) function network env))
-               ;;                 (:free (width ord rest function network env)
-               ;;                  (neteval-ordering-or-null-eval
-               ;;                   (neteval-ordering-or-null-segment width ord rest) function network env))
-               ;;                 (:free (ord function network env)
-               ;;                  (neteval-ordering-or-null-compile
-               ;;                   (neteval-ordering-or-null-remainder ord) function network))
-               ;;                 (:free (width ord rest function network env)
-               ;;                  (neteval-ordering-or-null-compile
-               ;;                   (neteval-ordering-or-null-segment width ord rest) function network))
-               ;;                 )))
-               ;; (and stable-under-simplificationp
-               ;;      `(:expand ((:free (function network)
-               ;;                  (neteval-ordering-or-null-compile subst-sigord function network)))))
-               )
+                    '(:expand ((:Free (var env) (svex-eval (svex-var var) env))))))
        :fn neteval-ordering-or-null-compose)))
 
   (defret eval-of-neteval-ordering-compose
@@ -1815,13 +1413,9 @@
     :fn neteval-ordering-compose)
 
   (defret eval-of-neteval-sigordering-compose
-    (implies (and ;; (hons-assoc-equal (svar-fix signal)
-                  ;;                   (neteval-ordering-fix subst))
-                  ;; (svex-lookup signal network)
-                  )
-             (equal (neteval-sigordering-eval composed signal offset network env)
-                    (neteval-sigordering-eval x signal offset
-                                              (neteval-ordering-compile subst network) env)))
+    (equal (neteval-sigordering-eval composed signal offset network env)
+           (neteval-sigordering-eval x signal offset
+                                     (neteval-ordering-compile subst network) env))
     :hints (("Goal" :use eval-of-neteval-sigordering-compose-lemma
              :in-theory (disable eval-of-neteval-sigordering-compose-lemma)))
     :fn neteval-sigordering-compose)
@@ -1859,10 +1453,7 @@
 
   (defret compile-of-<fn>
     (svex-alist-eval-equiv (neteval-ordering-compile ordering network)
-                           (svex-identity-subst keys)
-                           ;; (intersection-equal (svarlist-fix keys)
-                           ;;                                          (svex-alist-keys network))
-                           )
+                           (svex-identity-subst keys))
     :hints(("Goal" :in-theory (e/d (svex-alist-eval-equiv-in-terms-of-envs-equivalent)
                                    (<fn>))))))
             
@@ -2112,20 +1703,6 @@
                            (decomp y)
                            (ordering (neteval-ordering-reduce keys (netcomp-p-eval-equiv-witness x y)))))
              :expand ((netcomp-p x y)))))
-
-
-  ;; (defcong svex-alist-compose-equiv svex-alist-compose-equiv
-  ;;   (svex-alist-compose x subst) 1
-  ;;   :hints ((and stable-under-simplificationp
-  ;;                (let* ((lit (car (last clause))))
-  ;;                  `(:expand (,lit
-  ;;                             (:free (var) (svex-compose (Svex-var var) subst)))
-  ;;                    :use ((:instance svex-alist-compose-equiv-necc
-  ;;                           (var (svex-alist-compose-equiv-witness . ,(cdr lit)))
-  ;;                           (y x-equiv)))
-  ;;                    :in-theory (e/d (svex-compose-lookup)
-  ;;                                    (svex-alist-compose-equiv-necc
-  ;;                                     svex-alist-compose-equiv-implies-svex-eval-equiv-svex-compose-lookup-2)))))))
   
   (defthm append-svex-alist-eval-when-svex-alist-compose-equiv
     (implies (svex-alist-compose-equiv x y)
@@ -2209,73 +1786,6 @@
              :do-not-induct t))))
 
 
-
-
-;; (define svex-alist-bijection-p ((ab svex-alist-p)
-;;                                 (ba svex-alist-p))
-;;   :verify-guards nil
-;;   (and (svex-alist-eval-equiv
-;;         (svex-alist-compose ab ba)
-;;         (svex-identity-subst (svex-alist-keys ab)))
-;;        (svex-alist-eval-equiv
-;;         (svex-alist-compose ba ab)
-;;         (svex-identity-subst (svex-alist-keys ba))))
-;;   ///
-;;   (defthm svex-alist-bijection-p-rewrite
-;;     (implies (svex-alist-bijection-p ab ba)
-;;              (and (svex-alist-eval-equiv
-;;                    (svex-alist-compose ab ba)
-;;                    (svex-identity-subst (svex-alist-keys ab)))
-;;                   (svex-alist-eval-equiv
-;;                    (svex-alist-compose ba ab)
-;;                    (svex-identity-subst (svex-alist-keys ba))))))
-
-;;   (defthm svex-alist-bijection-p-eval
-;;     (implies (svex-alist-bijection-p ab ba)
-;;              (and (svex-envs-equivalent
-;;                    (svex-alist-eval ab (append (svex-alist-eval ba env) env))
-;;                    (svex-env-extract (svex-alist-keys ab) env))
-;;                   (svex-envs-equivalent
-;;                    (svex-alist-eval ba (append (svex-alist-eval ab env) env))
-;;                    (svex-env-extract (svex-alist-keys ba) env))))
-;;     :hints (("goal" :use ((:instance svex-alist-eval-of-svex-compose
-;;                            (x ab) (subst ba))
-;;                           (:instance svex-alist-eval-of-svex-compose
-;;                            (x ba) (subst ab)))
-;;              :in-theory (disable svex-alist-eval-of-svex-compose)))))
-
-
-;; (defines neteval-ordering-transform
-;;   (define neteval-ordering-transform ((x neteval-ordering-p)
-;;                                       (network svex-alist-p)
-;;                                       (ab svex-alist-p)
-;;                                       (ba svex-alist-p))
-;;     (b* ((x (neteval-ordering-fix x))
-;;          ((when (atom x))
-;;           nil)
-;;          ((cons signal sigordering) (car x))
-;;          (function (svex-lookup signal network))
-;;          ((unless function)
-;;           (neteval-ordering-eval (cdr x) network env)))
-;;       (cons (cons signal
-;;                   (neteval-sigordering-eval sigordering function network env)
-;;                   ;; (svex-eval assign
-;;                   ;;            ;; (svex-network-join-envs network 
-;;                   ;;            (append (neteval-ordering-eval ordering network env)
-;;                   ;;                    env))
-;;                   )
-;;             (neteval-ordering-eval (cdr x) network env)))
-
-
-
-
-;; (defthm netcomp-p-of-bijective-composition
-;;   (implies (and (svex-alist-bijection-p ab ba)
-;;                 (netcomp-p x network))
-;;            (netcomp-p (svex-alist-compose ba
-;;                                           (svex-alist-compose x ab))
-;;                       (svex-alist-compose ba
-;;                                           (svex-alist-compose network ab)))))
 
 
 (defcong svex-envs-similar svex-envs-similar (svex-env-removekeys keys env) 2
