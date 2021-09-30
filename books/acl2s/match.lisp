@@ -204,6 +204,9 @@ recognizer) form; an example is (:r complex/complex-rationalp) in the
 acl2-count2 definition above. In this way, you can also specify the
 package of the recognizer.  </p>
 
+<p>If you want to match a keyword, you can do that by quoting it.
+So <tt>':rational</tt> matches the keyword, not the type.</p>
+
 <p> If you are matching a recognizer, you can either have a single
 form after that, in which case, that form is an ACL2 expression that
 gets associated with the recognizer, or you can have a list of forms,
