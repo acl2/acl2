@@ -550,6 +550,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
 ;and set the new value v
      `(with-output
        :off summary
+       :summary-off :all
        (make-event
         (b* ((param-rec-pair
              (assoc-eq ',(keywordify param)
