@@ -82,7 +82,9 @@
   :timeout 500
   (declare (xargs :consider-only-ccms ((acl2s-size codes))))
   (if (endp pats)
-      '((t nil))
+      '(;; (t nil))
+        ;; Made this change to enforce exhaustiveness
+        (t (illegal 'match "match is not exhaustive" ())))
     (b* ((pat (car pats))
          (code (car codes))
          (type? (or (and (keywordp pat)
