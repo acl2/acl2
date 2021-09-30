@@ -634,37 +634,10 @@ I don't need this?
        (args (if name?
                  (list* name prop flat-kwds)
                (list* prop flat-kwds)))
-       ((when (and proofs? testing?))
+       ((when proofs?)
         `(with-output
           :off :all :on (comment summary) 
           :summary-on :all :summary-off (:other-than time)
-          (encapsulate
-           ()
-           (value-triple (cw "~|Form:  ( TESTING PROPERTY )~%"))
-           (with-time-limit
-            ,testing-timeout
-            (with-output
-             ,@(if debug?
-                   '(:on :all :off (proof-builder proof-tree)
-                         :summary-on :all :gag-mode nil)
-                 '(:off :all :on (error comment)))
-             (test? ,prop)))
-           ;; (with-output :stack :pop (test? ,prop)))
-           (value-triple (cw "~|Form:  ( PROVING PROPERTY )~%"))
-           (with-time-limit
-            ,proof-timeout
-            (with-output
-             ,@(if debug?
-                   '(:on :all :off (proof-builder proof-tree)
-                         :summary-on :all :gag-mode nil)
-                 '(:stack :pop :on (error summary comment)
-                          :summary-on :all
-                          :summary-off (:other-than time rules warnings)))
-             (,prove ,@args)))
-           (value-triple (cw "~|Form:  ( ACCEPTED PROPERTY AS THEOREM )~%")))))
-       ((when proofs?)
-        `(with-output
-          :off :all :on comment
           (encapsulate
            ()
            (value-triple (cw "~|Form:  ( PROVING PROPERTY )~%"))
@@ -681,7 +654,8 @@ I don't need this?
            (value-triple (cw "~|Form:  ( ACCEPTED PROPERTY AS THEOREM )~%")))))
        ((when (and testing? name?))
         `(with-output
-          :off :all :on comment
+          :off :all :on (comment summary) 
+          :summary-on :all :summary-off (:other-than time)
           (encapsulate
            ()
            (value-triple (cw "~|Form:  ( TESTING PROPERTY )~%"))
@@ -695,12 +669,12 @@ I don't need this?
                           :summary-on :all
                           :summary-off (:other-than time rules warnings)))
              (defthm-test-no-proof ,@args)))
-           ;; (with-output :stack :pop (defthm-test-no-proof ,@args)))
            (value-triple
             (cw "~|Form:  ( ACCEPTED PROPERTY AS A THEOREM WITHOUT PROOF )~%")))))
        ((when testing?)
         `(with-output
-          :off :all :on comment
+          :off :all :on (comment summary) 
+          :summary-on :all :summary-off (:other-than time)
           (encapsulate
            ()
            (value-triple (cw "~|Form:  ( TESTING PROPERTY )~%"))
@@ -717,10 +691,11 @@ I don't need this?
             (cw "~|Form:  ( PROPERTY PASSED TESTING )~%")))))
        ((when name?)
         `(with-output
-          :off :all :on comment
+          :off :all :on (comment summary) 
+          :summary-on :all :summary-off (:other-than time)
           (encapsulate
            ()
-           (value-triple (cw "~|Form:  ( TESTING PROPERTY )~%"))
+           (value-triple (cw "~|Form:  ( ANALYZING PROPERTY )~%"))
            (with-time-limit
             ,proof-timeout
             (with-output
