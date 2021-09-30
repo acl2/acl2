@@ -261,7 +261,7 @@
  beta-reduction without rewriting subterms first can cause performance issues
  due to repetition.</p>
 <p> To mitigate this issue, we use a macro defthm-lambda that can retain the
- functionality of lambda expressions for RHS of rewrite rules. defthm-lambda
+ functionality of lambda expressions rewrite rules. defthm-lambda
  has the same signature as defthm. </p>
 
 <p> Below is an example defthm-lambda event and what it translates to:</p>
@@ -295,27 +295,19 @@
 ")
 
 (progn
-  (defund is-rhs-a-lambda-expression (body)
-    (declare (xargs :guard t))
-    (case-match body
-      (('implies & ('equal & rhs))
-       (and (consp rhs)
-            (consp (car rhs))))
-      (('implies & ('iff & rhs))
-       (and (consp rhs)
-            (consp (car rhs))))
-      (('implies & &)
-       nil)
-      (('equal & rhs)
-       (and (consp rhs)
-            (consp (car rhs))))
-      (('iff & rhs)
-       (and (consp rhs)
-            (consp (car rhs))))
-      (&
-       nil)))
+  (mutual-recursion 
+   (defund contains-lambda-expression (body)
+     (declare (xargs :guard t))
+     (cond ((atom body) nil)
+           ((quotep body) nil)
+           ((is-lambda body) t)
+           (t (contains-lambda-expression-lst (cdr body)))))
+   (defund contains-lambda-expression-lst (lst)
+     (and (consp lst)
+          (or (contains-lambda-expression (car lst))
+              (contains-lambda-expression-lst (cdr lst))))))
 
-  (defmacro bump-rp-rule (rule-name/rune)
+  (defmacro bump-rule (rule-name/rune)
     `(with-output
        :off :all
        :gag-mode nil
@@ -327,7 +319,7 @@
              (entry (hons-assoc-equal rune (table-alist
                                             'rp-rules (w state))))
              (- (and (not (consp entry))
-                     (hard-error 'bump-rp-rule
+                     (hard-error 'bump-rule
                                  "This rule is not added with add-rp-rule There is
 nothing to bump!" nil)))
              ;;(cur-table (table-alist 'rp-rules (w state)))
@@ -339,7 +331,7 @@ nothing to bump!" nil)))
              (table rp-rules ',rune ',(cdr entry))
              )))))
 
-  (defmacro bump-down-rp-rule (rule-name/rune)
+  (defmacro bump-down-rule (rule-name/rune)
     `(with-output
        :off :all
        :gag-mode nil
@@ -351,7 +343,7 @@ nothing to bump!" nil)))
              (entry (hons-assoc-equal rune (table-alist
                                             'rp-rules (w state))))
              (- (and (not (consp entry))
-                     (hard-error 'bump-rp-rule
+                     (hard-error 'bump-rule
                                  "This rule is not added with add-rp-rule There is
 nothing to bump!" nil)))
              ;; (cur-table (table-alist 'rp-rules (w state)))
@@ -365,36 +357,38 @@ nothing to bump!" nil)))
              ;;(table rp-rules ',rune ',(cdr entry))
              )))))
 
-  (defun bump-rp-rules-body (args)
+  (defun bump-rules-body (args)
     (if (atom args)
         nil
-      (cons `(bump-rp-rule ,(car args))
-            (bump-rp-rules-body (cdr args)))))
+      (cons `(bump-rule ,(car args))
+            (bump-rules-body (cdr args)))))
 
-  (defmacro bump-rp-rules (&rest args)
+  (defmacro bump-rules (&rest args)
     `(progn
-       . ,(bump-rp-rules-body args)))
+       . ,(bump-rules-body args)))
 
   (defmacro add-rp-rule (rule-name &key
                                    (disabled 'nil)
                                    (beta-reduce 'nil)
                                    (hints 'nil)
-                                   (inside-out ':default)
                                    (outside-in 'nil))
-    (b* ((inside-out (if (equal inside-out ':default)
-                         (not outside-in)
-                       inside-out))
-         (- (and (Not inside-out)
-                 (Not outside-in)
-                 (hard-error 'add-rp-rule
-                             "Inside-out and outside-in options cannot be nil
-at the same time. ~%" nil))))
-
+    
+    (b* ((rw-direction
+          (cond ((or (equal outside-in ':inside-out)
+                     (equal outside-in ':both))
+                 :both)
+                ((equal outside-in t)
+                 :outside-in)
+                ((equal outside-in nil)
+                 :inside-out)
+                (t (hard-error 'add-rp-rule
+                               ":outside-in can only be :inside-out, t, or nil but we are given: ~p0 ~%"
+                               (list (cons #\0 outside-in)))))))
       `(make-event
         (b* ((body (and ,beta-reduce
                         (meta-extract-formula ',rule-name state)))
              (beta-reduce (and ,beta-reduce
-                               (is-rhs-a-lambda-expression body)))
+                               (contains-lambda-expression body)))
              (new-rule-name (if beta-reduce
                                 (intern$ (str::cat (symbol-name ',rule-name)
                                                    "-FOR-RP")
@@ -411,11 +405,7 @@ at the same time. ~%" nil))))
                     `(progn
                        (table rp-rules
                               ',rune
-                              (cons ,(cond
-                                      ((and ,,outside-in ,,inside-out)
-                                       ':both)
-                                      (,,outside-in ':outside-in)
-                                      (t ':inside-out))
+                              (cons ,,',rw-direction
                                     ,(not disabled)))))))))
           (if beta-reduce
               `(progn
@@ -429,7 +419,7 @@ at the same time. ~%" nil))))
                                               ,body
                                               :hints ,',hints))
                      (in-theory (disable ,new-rule-name))
-                     (value-triple (cw "This rule has a lambda expression on its RHS, ~
+                     (value-triple (cw "This rule has a lambda expression, ~
 and it is automatically put through rp::defthm-lambda  and a ~
 new rule is created to be used by RP-Rewriter. You can disable this by setting ~
 :beta-reduce to nil ~% The name of this rule is: ~p0 ~%" ',new-rule-name))
@@ -772,134 +762,6 @@ RP-Rewriter will throw an eligible error.</p>"
 "
  )
 
-(encapsulate
-  nil
-
-  (defun fetch-new-events-step1 (event)
-    `(make-event
-      (b* ((?current-theory (let ((world (w state))) (current-theory :here))))
-        `(progn ,',event
-
-                (table fetch-new-events 'a ',current-theory)))))
-
-  (defun fetch-new-events-step2 (macro-name)
-    `(make-event
-      (b* ((new-current-theory (let ((world (w state))) (current-theory :here)))
-           (old-current-theory (cdr (assoc-equal 'a (table-alist
-                                                     'fetch-new-events
-                                                     (w state)))))
-           (- (cw "Scanning for newly added event ..."))
-           (added-events (set-difference$ new-current-theory
-                                          old-current-theory
-                                          :test 'equal))
-           (- (cw "Scanning for disabled events ..."))
-           (removed-events (set-difference$ old-current-theory
-                                            new-current-theory
-                                            :test 'equal)))
-        (if (and (not removed-events)
-                 (not added-events))
-            `(value-triple (cw "~%Event did not change current theory, not ~
-    creating macro ~p0. ~%" ',',macro-name))
-          `(defmacro ,',macro-name (use)
-             (if use
-                 `(in-theory (e/d ,',added-events
-                                  ,',removed-events))
-               `(in-theory (e/d ,',removed-events
-                                ,',added-events))))))))
-
-  (defmacro fetch-new-events (event macro-name &key (disabled 'nil) )
-    `(with-output
-       :off (warning event  prove  observation)
-       :gag-mode :goals
-       (progn
-         ,(fetch-new-events-step1 event)
-         ,(fetch-new-events-step2 macro-name)
-         ,@(if disabled
-               `((,macro-name nil))
-             nil)))))
-
-(xdoc::defxdoc
- fetch-new-events
- :short "A macro that detects the changes in the theory when a book is
- included, and creates a macro to enable users to enable and disable the new events."
- :parents (rp-utilities)
- :long "<p>Gives users the ability to undo and redo the changes an event, such
- as include-book, makes to current theory.
-
-<code>
-@('
- (fetch-new-events
-  <event>               ;; e.g., (include-book \"arithmetic-5\" :dir :system)
-  <macro-name>          ;; e.g., use-aritmetic-5
-  ;;optional key
-  :disabled <disabled> ;; When non-nil, the event does not change the current
-  theory. Default: nil.
-  )
-')
-</code>
-</p>
-
-<p>
-After including the arithmetic library as given below, users can enable and
-disable the library as given.
-
-<code>
-@('
- (fetch-new-events
-  (include-book \"arithmetic-5\" :dir :system)
-  use-aritmetic-5)
-')
-</code>
-
-<code>
-(use-aritmetic-5 t)
-</code>
-
-<code>
-(use-aritmetic-5 nil)
-</code>
-
-</p>
-
-<p>
-Note that when current theory contains many events, this utility may work very
-slowly. If you do not wish to generate a macro, you may also use @(see
-rp::preserve-current-theory). This utility will work with current theory of any size.
-</p>
-"
- )
-
-(encapsulate
-  nil
-
-  (defun preserve-current-theory-step1 (event)
-    `(make-event
-      (b* ((?current-theory (let ((world (w state))) (current-theory :here))))
-        `(progn ,',event
-                (table preserve-current-theory 'a ',current-theory)))))
-
-  (defun preserve-current-theory-step2 ()
-    `(make-event
-      (b* ((old-current-theory (cdr (assoc-equal 'a (table-alist
-                                                     'preserve-current-theory
-                                                     (w state))))))
-        `(in-theory ',old-current-theory))))
-
-  (defmacro preserve-current-theory (event)
-    `(with-output
-       :off (warning event  prove  observation)
-       :gag-mode :goals
-       (progn
-         ,(preserve-current-theory-step1 event)
-         ,(preserve-current-theory-step2)))))
-
-(xdoc::defxdoc
- preserve-current-theory
- :short "A macro that detects the changes in the theory when a book is
- included, and retains the current theory"
- :parents (rp-utilities)
- :long "See @(see rp::fetch-new-events)"
- )
 
 (xdoc::defxdoc
  rp-other-utilities

@@ -46,6 +46,9 @@
 
 (include-book "centaur/svl/portcullis" :dir :system)
 
+(local
+ (include-book "projects/rp-rewriter/proofs/aux-function-lemmas" :dir :system))
+
 (progn
   (define binary-sum (x y)
     (+ (ifix x)
@@ -1109,6 +1112,41 @@
                  ''bitp)
           (has-bitp-rp (caddr term)))
     nil))
+
+(define append-wog (l1 l2)
+  ;;(append l1 l2)
+  ;; same as append 
+  (if (atom l1)
+      l2
+    (cons (car l1)
+          (append-wog (cdr l1) l2))))
+
+(progn
+  (define negate-lst-aux ((lst rp-term-listp))
+    :returns (negated-lst rp-term-listp :hyp (rp-term-listp lst))
+    (b* (((when (atom lst)) lst)
+         (rest (negate-lst-aux (cdr lst)))
+         (cur-orig (car lst))
+         (cur (ex-from-rp$ cur-orig)))
+      (case-match cur
+        (('-- term)
+         (cons term rest))
+        (& (cons `(-- ,cur-orig)
+                 rest)))))
+
+  (define negate-lst ((lst rp-term-listp)
+                      &optional (enabled 't))
+    :inline t
+    :returns (negated-lst rp-term-listp :hyp (rp-term-listp lst))
+    (if enabled
+        (negate-lst-aux lst)
+      lst))
+
+  (define negate-list-instance ((term rp-termp)
+                                &optional (enabled 't))
+    :returns (res rp-termp :hyp (rp-termp term))
+    :inline t
+    (create-list-instance (negate-lst (list-to-lst term) enabled))))
 
 (encapsulate
   nil

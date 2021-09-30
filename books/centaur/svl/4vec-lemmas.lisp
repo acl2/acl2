@@ -4872,6 +4872,31 @@
   (rp-attach-sc logand-to-4vec-bitand
                 logand-to-4vec-bitand-side-cond))
 
+
+(progn
+  (def-rp-rule$ t nil
+    lognot-to-4vec-bitnot
+    (implies (and (integerp x))
+             (and (equal (lognot x)
+                         (sv::4vec-bitnot x))))
+    :hints (("Goal"
+             :in-theory (e/d (SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              sv::4vec-bitnot
+                              SV::3VEC-BITnot) ()))))
+  (defthmd lognot-to-4vec-bitnot-side-cond
+    (implies (and (integerp x))
+             (integerp (sv::4vec-bitnot x)))
+    :hints (("Goal"
+             :in-theory (e/d ( sv::4vec-bitnot
+                               4vec
+                               SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                               SV::3VEC-BITnot) ()))))
+
+  (rp-attach-sc lognot-to-4vec-bitnot
+                lognot-to-4vec-bitnot-side-cond))
+
 (progn
   (def-rp-rule$ t nil
     logxor-to-4vec-bitxor

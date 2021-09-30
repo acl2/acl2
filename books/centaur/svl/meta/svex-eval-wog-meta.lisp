@@ -29,6 +29,7 @@
 (include-book "../svexl/svexl")
 (include-book "../svexl/svexl-correct")
 (include-book "../svex-reduce-with-env")
+;;(include-book "centaur/sv/svex/rewrite" :dir :system)
 
 (local
  (include-book "projects/rp-rewriter/proofs/aux-function-lemmas" :dir :system))
@@ -340,6 +341,10 @@ fast-alist. Consider making it one for a better performance.~%"))
                                     :min-time 0
                                     :msg "The total runtime of svl::svex-alist-reduce-w/-env ~
 was ~st seconds."))
+                   ;;(- (cw "Starting: sv::svex-alist-rewrite-top ~%"))
+                   ;;(alist (sv::svex-alist-rewrite-top alist))
+                   ;;(alist (sv::svex-alist-rewrite-fixpoint alist))
+                   
                    (- (cw "Starting: svl::svex-alist-to-svexl-alist ~%"))
                    (svexl-alist (svex-alist-to-svexl-alist alist))
                    (- (let ((x (svexl-alist->node-array svexl-alist))) ;; for guards

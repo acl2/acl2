@@ -949,12 +949,14 @@
     (local
      (use-arithmetic-5 t))
 
-  (def-rp-rule$ t nil unsigned-byte-p-to-ash-form
+  (def-rp-rule$ t nil unsigned-byte-p-redefined-with-loghead
       (implies (natp size)
                (equal (unsigned-byte-p size x)
-                      (and (hide (unsigned-byte-p size x))
+                      (and (integerp x)
+                           (equal x (loghead size x)))
+                      #|(and (hide (unsigned-byte-p size x))
                            (integerp x)
-                           (equal (ash x (- size)) 0))))
+                           (equal (ash x (- size)) 0))|#))
       :hints (("Goal"
                :expand ((hide (unsigned-byte-p size x)))
              :in-theory (e/d ((:REWRITE ACL2::ASH-TO-FLOOR)
@@ -1126,7 +1128,7 @@
             :do-not-induct t
             ;;:induct (2VEC-ADDER X Y carry-in SIZE)
             :in-theory (e/d (SVL::4VEC-CONCAT$-OF-TERM2=0
-                             unsigned-byte-p-to-ash-form
+                             
                              4VEC-ADDER-IS-2VEC-ADDER
                              
                              SV::4VEC-PLUS
@@ -1143,7 +1145,8 @@
                              SV::4VEC->LOWER)
                             (4vec-adder-opener-size>0
                              ACL2::POSP-REDEFINITION
-                             UNSIGNED-BYTE-P-TO-ASH-FORM
+                             unsigned-byte-p-redefined-with-loghead
+                             ;; UNSIGNED-BYTE-P-TO-ASH-FORM
                              2vec-adder-is-4vec-adder
                              unsigned-byte-p
                              ash
@@ -1491,6 +1494,32 @@
 
 (rp::add-rp-rule acl2::fast-logext-fn)
 
+
+(encapsulate
+  nil
+
+  (local
+   (use-arithmetic-5 t))
+
+  (def-rp-rule logbitp-to-bits
+    (implies (and (integerp x)
+                  (natp index))
+             (equal (acl2::logbitp index x)
+                    (equal (svl::bits x index 1)
+                           1)))
+    :hints (("Goal"
+             :in-theory (e/d (SV::4VEC-PART-SELECT
+                              svl::bits
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              SV::4VEC-SHIFT-CORE
+                              SV::4VEC-CONCAT
+                              SV::4VEC-RSH)
+                             (SVL::EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1
+                              MOD2-IS-M2
+                              +-is-sum
+                              floor2-if-f2
+                              ))))))
 
 (bump-all-meta-rules)
 
