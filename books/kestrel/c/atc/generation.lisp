@@ -619,6 +619,11 @@
     (ullong (type-ullong))
     (t nil))
   ///
+
+  (defret type-integerp-of-atc-integer-fixtype-to-type
+    (implies type
+             (type-integerp type)))
+
   (defret type-arithmeticp-of-atc-integer-fixtype-to-type
     (implies type
              (type-arithmeticp type))))
@@ -754,8 +759,7 @@
    (xdoc::p
     "We also return the input and output C types of the operator.")
    (xdoc::p
-    "If the term does not have that form, we return an indication of failure.
-     The term may represent some other kind of C expression."))
+    "If the term does not have that form, we return an indication of failure."))
   (b* (((acl2::fun (no))
         (mv nil (irr-binop) nil nil (irr-type) (irr-type) (irr-type)))
        ((unless (pseudo-term-case term :fncall)) (no))
@@ -816,7 +820,9 @@
 (define atc-check-conv ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (tyname tynamep)
-               (arg pseudo-termp))
+               (arg pseudo-termp)
+               (in-type typep)
+               (out-type typep))
   :short "Check if a term may represent a conversion."
   :long
   (xdoc::topstring
@@ -826,47 +832,28 @@
      we return the C type name for the destination type
      and the argument term.")
    (xdoc::p
-    "The C type of the conversion can be determined from the returned type name,
-     so there is no need to also return a C type here.")
+    "We also return the input and output C types of the conversion.
+     The output type is redundant,
+     because it can be determined from the returned type name.
+     But we return it for uniformity and simplicity.")
    (xdoc::p
     "If the term does not have the form explained above,
      we return an indication of failure."))
-  (b* (((acl2::fun (no)) (mv nil (irr-tyname) nil))
+  (b* (((acl2::fun (no)) (mv nil (irr-tyname) nil (irr-type) (irr-type)))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((mv okp dtype from stype) (atc-check-symbol-3part term.fn))
        ((unless (and okp
                      (eq from 'from)))
         (no))
-       ((unless (atc-integer-fixtype-to-type stype)) (no))
-       (type (atc-integer-fixtype-to-type dtype))
-       ((when (not type)) (no))
+       (in-type (atc-integer-fixtype-to-type stype))
+       ((when (not in-type)) (no))
+       (out-type (atc-integer-fixtype-to-type dtype))
+       ((when (not out-type)) (no))
        ((unless (list-lenp 1 term.args)) (no))
        (arg (first term.args))
-       (tyname (case (type-kind type)
-                 (:schar (make-tyname :specs (tyspecseq-schar)
-                                      :pointerp nil))
-                 (:uchar (make-tyname :specs (tyspecseq-uchar)
-                                      :pointerp nil))
-                 (:sshort (make-tyname :specs (tyspecseq-sshort)
-                                       :pointerp nil))
-                 (:ushort (make-tyname :specs (tyspecseq-ushort)
-                                       :pointerp nil))
-                 (:sint (make-tyname :specs (tyspecseq-sint)
-                                     :pointerp nil))
-                 (:uint (make-tyname :specs (tyspecseq-uint)
-                                     :pointerp nil))
-                 (:slong (make-tyname :specs (tyspecseq-slong)
-                                      :pointerp nil))
-                 (:ulong (make-tyname :specs (tyspecseq-ulong)
-                                      :pointerp nil))
-                 (:sllong (make-tyname :specs (tyspecseq-sllong)
-                                       :pointerp nil))
-                 (:ullong (make-tyname :specs (tyspecseq-ullong)
-                                       :pointerp nil))
-                 (t (prog2$ (raise "Internal error: type ~x0" type)
-                            (irr-tyname))))))
-    (mv t tyname arg))
+       (tyname (integer-type-to-type-name out-type)))
+    (mv t tyname arg in-type out-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-conv-arg
@@ -1336,7 +1323,8 @@
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
                           op arg type in-type)))
-            (acl2::value (list (make-expr-unary :op op :arg arg-expr)
+            (acl2::value (list (make-expr-unary :op op
+                                                :arg arg-expr)
                                out-type))))
          ((mv okp op arg1 arg2 in-type1 in-type2 out-type)
           (atc-check-binop term))
@@ -1365,16 +1353,24 @@
                                                  :arg1 arg1-expr
                                                  :arg2 arg2-expr)
                                out-type))))
-         ((mv okp tyname arg) (atc-check-conv term))
+         ((mv okp tyname arg in-type out-type) (atc-check-conv term))
          ((when okp)
-          (b* (((er (list arg-expr &)) (atc-gen-expr-cval-pure arg
-                                                               inscope
-                                                               fn
-                                                               ctx
-                                                               state)))
+          (b* (((er (list arg-expr type)) (atc-gen-expr-cval-pure arg
+                                                                  inscope
+                                                                  fn
+                                                                  ctx
+                                                                  state))
+               ((unless (equal type in-type))
+                (er-soft+ ctx t (irr)
+                          "The convertsion from ~x0 to ~x1 ~
+                           is applied to a term ~x2 returning ~x3, ~
+                           but a ~x0 operand is expected. ~
+                           This is indicative of provably dead code, ~
+                           given that the code is guard-verified."
+                          in-type out-type arg type)))
             (acl2::value (list (make-expr-cast :type tyname
                                                :arg arg-expr)
-                               (type-name-to-type tyname)))))
+                               out-type))))
          ((mv okp arr sub type) (atc-check-array-read term))
          ((when okp)
           (b* (((er (list arr-expr &)) (atc-gen-expr-cval-pure arr
