@@ -307,20 +307,55 @@
 
                 (table fetch-new-theory 'a ',current-theory)))))
 
+  (defun sorted-set-difference (set1 set2)
+    (declare (xargs :measure (+ (len set1)
+                                (len set2))))
+    (cond ((atom set1)
+           (mv nil set2))
+          ((atom set2)
+           (mv set1 nil))
+          (t (b* ((c1 (car set1))
+                  (c2 (car set2)))
+               (cond ((equal c1 c2)
+                      (sorted-set-difference (cdr set1)
+                                             (cdr set2)))
+                     ((lexorder c1 c2)
+                      (b* (((mv rest1 rest2)
+                            (sorted-set-difference (cdr set1)
+                                                   set2)))
+                        (mv (cons c1 rest1) rest2)))
+                     (t
+                      (b* (((mv rest1 rest2)
+                            (sorted-set-difference set1 (cdr set2))))
+                        (mv rest1 (cons c2 rest2)))))))))
+        
+  #|(b* ((lst1 '(14 6 3 5 8 7 5 4))
+       (lst2 '(1 55 4 6 7 5 3 2 8))
+       (lst1 (acl2::merge-sort-lexorder lst1))
+       (lst2 (acl2::merge-sort-lexorder lst2)))
+    (sorted-set-difference lst1 lst2))|#
+  
   (defun fetch-new-theory-step2 (macro-name)
     `(make-event
       (b* ((new-current-theory (let ((world (w state))) (current-theory :here)))
            (old-current-theory (cdr (assoc-equal 'a (table-alist
                                                      'fetch-new-theory
                                                      (w state)))))
-           (- (cw "Scanning for newly added event ..."))
+           (new-current-theory (acl2::merge-sort-lexorder new-current-theory))
+           (old-current-theory (acl2::merge-sort-lexorder old-current-theory))
+
+           ((mv added-theory removed-theory)
+            (sorted-set-difference new-current-theory
+                                   old-current-theory))
+           
+           #|(- (cw "Scanning for newly added event ..."))
            (added-theory (set-difference$ new-current-theory
                                           old-current-theory
                                           :test 'equal))
            (- (cw "Scanning for disabled theory ..."))
            (removed-theory (set-difference$ old-current-theory
                                             new-current-theory
-                                            :test 'equal)))
+                                            :test 'equal))|#)
         (if (and (not removed-theory)
                  (not added-theory))
             `(value-triple (cw "~%Event did not change current theory, not ~
@@ -346,6 +381,8 @@
 
 (defmacro fetch-new-events (&rest rst)
   `(fetch-new-theory ,@rst))
+
+
 
 (xdoc::defxdoc
  fetch-new-theory
@@ -390,15 +427,27 @@ disable the library as given.
 
 </p>
 
-<p>
-Note that when current theory contains many items, this utility may work very
-slowly. If you do not wish to generate a macro, you may also use @(see
-rp::preserve-current-theory). This utility will work with current theory of any size.
-</p>
+
+<p> If you wish not to generate a macro, you may want to use @(see
+preserve-current-theory) </p> 
+
 "
  )
 
 
+(xdoc::defxdoc
+ preserve-current-theory
+ :short "A macro that detects the changes in the theory when a book is
+ included, and retains the current theory"
+ :parents (rp-utilities)
+ :long "<p>Same as @(see fetch-new-theory) but does not generate a macro. It
+ simply restores the theory to what it was before the event. Example use:</p>
+
+<p> (preserve-current-theory (include-book \"centaur/svl/top\" :dir :system)) </p>
+
+
+ "
+ )
 
 (encapsulate
   nil
@@ -424,10 +473,4 @@ rp::preserve-current-theory). This utility will work with current theory of any 
          ,(preserve-current-theory-step1 event)
          ,(preserve-current-theory-step2)))))
 
-(xdoc::defxdoc
- preserve-current-theory
- :short "A macro that detects the changes in the theory when a book is
- included, and retains the current theory"
- :parents (rp-utilities)
- :long "See @(see rp::fetch-new-events)"
- )
+
