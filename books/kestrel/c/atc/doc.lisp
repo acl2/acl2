@@ -799,6 +799,14 @@
       represented by the ACL2 function's body
       (which is a statement term).")
 
+    (xdoc::p
+     "The guard verification requirement ensures that
+      the constraints about C types described above holds,
+      for code reachable under guards.
+      Code unreachable under guards is rare but possible.
+      In order to generate C code that is always statically well-formed,
+      ATC independently checks the constraints about C types.")
+
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (xdoc::evmac-subsection
