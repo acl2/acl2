@@ -11,13 +11,12 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/utilities/world" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 ;; (include-book "kestrel/typed-lists-light/cons-listp-dollar" :dir :system)
 ;; (include-book "kestrel/utilities/make-function-calls-on-formals" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
-(include-book "function-renamingp")
+(include-book "becomes-theorem-names")
 
 ;; ;; all the calls of the calls-on-formals should be bound in the function-renaming
 ;; (defun rename-functions-in-calls (calls-on-formals function-renaming)
@@ -58,12 +57,6 @@
   (let ((calls-to-expand (calls-in-top-level-equalities clause target-fns)))
     (prog2$ (cw "(clause is ~x0.~%  calls to expand are: ~x1)~%" clause calls-to-expand)
             `(:expand (,@calls-to-expand)))))
-
-;; Generate the name of the "becomes" theorem that replaces OLD-FN with NEW-FN.
-(defun becomes-theorem-name (old-fn new-fn)
-  (declare (xargs :guard (and (symbolp old-fn)
-                              (symbolp new-fn))))
-  (pack$ old-fn '-becomes- new-fn))
 
 ;; Makes a theorem equating an arbitrary call of FN with a call of NEW-FN on the same arguments.
 ;; REC is either nil (function is non-recursive), :single, or :mutual.
@@ -128,7 +121,7 @@
       (cons (make-becomes-theorem fn (lookup-eq-safe fn function-renaming) :mutual thm-enable nil nil state)
             (make-becomes-theorems (rest fns) function-renaming thm-enable state)))))
 
-;; Adds the hints
+;; Wraps the becomes-theorems in a call of defthm-flag-XXX and adds the hints.
 (defund make-becomes-defthm-flag (flag-function-name
                                   becomes-theorems
                                   fns
