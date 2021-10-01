@@ -918,12 +918,10 @@
                                                       '(:add :sub :mul))
                                            (type-signed-integerp type)))
                                   (pack op-ltype-rtype '-okp)))
-         (hyps `(and ,(atc-syntaxp-hyp-for-expr-pure 'x)
-                     ,(atc-syntaxp-hyp-for-expr-pure 'y)
-                     (,rpred y)
-                     ,@(and op-ltype-rtype-okp
-                            `((,op-ltype-rtype-okp x y)))))
-         (formula `(implies ,hyps
+         (formula `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'y)
+                                 (,rpred y)
+                                 ,@(and op-ltype-rtype-okp
+                                        `((,op-ltype-rtype-okp x y))))
                             (equal
                              (,exec-binary-strict-pure-of-op-and-ltype x y)
                              (,op-ltype-rtype x y))))
@@ -996,7 +994,8 @@
                (,exec-op (,ltype-fix x) y))))
          (thm-event
           `(defruled ,exec-binary-strict-pure-of-op-when-ltype
-             (implies (,lpred x)
+             (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+                           (,lpred x))
                       (equal (,exec-binary-strict-pure-of-op x y)
                              (,exec-binary-strict-pure-of-op-and-ltype x y)))
              :enable (,exec-binary-strict-pure-of-op
@@ -1037,7 +1036,7 @@
                (,exec-op x y))))
          (thm-event
           `(defruled ,exec-binary-strict-pure-when-op
-             (implies (equal op (,(pack 'binop- op-kind)))
+             (implies (and (equal op (,(pack 'binop- op-kind))))
                       (equal (exec-binary-strict-pure op x y)
                              (,exec-binary-strict-pure-of-op x y)))
              :enable (exec-binary-strict-pure
