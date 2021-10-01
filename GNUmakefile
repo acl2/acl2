@@ -606,7 +606,7 @@ doc/home-page.html: doc/home-page.lisp
 # xdoc::save that populates doc/manual/ (not under books/).
 acl2-manual: check-books
 	rm -rf doc/manual books/system/doc/acl2-manual.cert
-	cd books ; make USE_QUICKLISP=1 system/doc/acl2-manual.cert
+	cd books ; $(MAKE) USE_QUICKLISP=1 system/doc/acl2-manual.cert
 	rm -rf doc/manual/download/*
 
 # WARNING: The dependency list just below isn't complete, since it
@@ -636,7 +636,7 @@ update-doc.lisp: books/system/doc/acl2-doc.lisp books/system/doc/rendered-doc.ls
 # been super carefully thought out, so could change.
 books/system/doc/rendered-doc.lsp: check-books
 	rm -f books/system/doc/rendered-doc.lsp
-	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2)
+	cd books ; $(MAKE) USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2)
 
 .PHONY: STATS
 
