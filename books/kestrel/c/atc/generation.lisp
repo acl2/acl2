@@ -973,6 +973,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-boolean-from-type ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (arg pseudo-termp)
+               (in-type typep))
+  :short "Check if a term may represent a conversion
+          from a C integer value to an ACL2 boolean."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We also return the input C type of the conversion.
+     The output type is known (boolean), and it is in fact an ACL2 type."))
+  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless okp) (no))
+       ((mv okp boolean from type) (atc-check-symbol-3part fn))
+       ((unless (and okp
+                     (eq boolean 'boolean)
+                     (eq from 'from)))
+        (no))
+       (in-type (atc-integer-fixtype-to-type type))
+       ((when (not in-type)) (no))
+       ((unless (list-lenp 1 args)) (no)))
+    (mv t (first args) in-type))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-boolean-from-type
+    (implies yes/no
+             (< (pseudo-term-count arg)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-array-write ((var symbolp) (val pseudo-termp))
   :returns (mv (yes/no booleanp)
                (sub pseudo-termp)
@@ -1199,32 +1232,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-boolean-from-type ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (arg pseudo-termp))
-  :short "Check if a term may represent a conversion
-          from a C integer value to an ACL2 boolean."
-  (b* (((acl2::fun (no)) (mv nil nil))
-       ((mv okp fn args) (fty-check-fn-call term))
-       ((unless okp) (no))
-       ((mv okp boolean from type) (atc-check-symbol-3part fn))
-       ((unless (and okp
-                     (eq boolean 'boolean)
-                     (eq from 'from)
-                     (atc-integer-fixtype-to-type type)
-                     (list-lenp 1 args)))
-        (no)))
-    (mv t (first args)))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-boolean-from-type
-    (implies yes/no
-             (< (pseudo-term-count arg)
-                (pseudo-term-count term)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defines atc-gen-expr-pure
   :short "Mutually recursive ACL2 functions to
           generate pure C expressions from ACL2 terms."
@@ -1366,7 +1373,7 @@
                                                                   state))
                ((unless (equal type in-type))
                 (er-soft+ ctx t (irr)
-                          "The convertsion from ~x0 to ~x1 ~
+                          "The conversion from ~x0 to ~x1 ~
                            is applied to a term ~x2 returning ~x3, ~
                            but a ~x0 operand is expected. ~
                            This is indicative of provably dead code, ~
@@ -1518,10 +1525,19 @@
             (acl2::value (make-expr-binary :op (binop-logor)
                                            :arg1 arg1-expr
                                            :arg2 arg2-expr))))
-         ((mv okp arg) (atc-check-boolean-from-type term))
+         ((mv okp arg in-type) (atc-check-boolean-from-type term))
          ((when okp)
-          (b* (((mv erp (list expr &) state)
-                (atc-gen-expr-cval-pure arg inscope fn ctx state)))
+          (b* (((mv erp (list expr type) state)
+                (atc-gen-expr-cval-pure arg inscope fn ctx state))
+               ((when erp) (mv erp expr state))
+               ((unless (equal type in-type))
+                (er-soft+ ctx t (irr-expr)
+                          "The conversion from ~x0 to boolean ~
+                           is applied to a term ~x1 returning ~x2, ~
+                           but a ~x0 operand is expected. ~
+                           This is indicative of provably dead code, ~
+                           given that the code is guard-verified."
+                          in-type arg type)))
             (mv erp expr state))))
       (er-soft+ ctx t (irr-expr)
                 "When generating C code for the function ~x0, ~
