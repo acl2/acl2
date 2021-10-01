@@ -1078,7 +1078,8 @@
   :returns (mv (yes/no booleanp)
                (fn symbolp)
                (args pseudo-term-listp)
-               (type typep)
+               (in-types type-listp)
+               (out-type typep)
                (limit pseudo-termp))
   :short "Check if a term may represent a call to a callable target function."
   :long
@@ -1101,17 +1102,18 @@
     "This is used on expression terms returning C values,
      so the called function must be non-recursive,
      i.e. it must represent a C function, not a C loop."))
-  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) nil))
+  (b* (((acl2::fun (no)) (mv nil nil nil nil (irr-type) nil))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        (fn+info (assoc-eq term.fn (atc-symbol-fninfo-alist-fix prec-fns)))
        ((unless (consp fn+info)) (no))
        (info (cdr fn+info))
-       (type (atc-fn-info->out-type info))
-       ((when (null type)) (no))
+       (in-types (atc-fn-info->in-types info))
+       (out-type (atc-fn-info->out-type info))
+       ((when (null out-type)) (no))
        (limit (atc-fn-info->limit info))
        (limit (fty-fsublis-var var-term-alist limit)))
-    (mv t term.fn term.args type limit))
+    (mv t term.fn term.args in-types out-type limit))
   ///
 
   (defret pseudo-term-count-of-atc-check-callable-fn-args
@@ -1413,8 +1415,8 @@
                              (equal type2 in-type2)))
                 (er-soft+ ctx t (irr)
                           "The reading of a ~x0 array with a ~x1 index ~
-                           is applied to a term ~x2 returning ~x3
-                           and to a term ~x4 returning ~x5,
+                           is applied to a term ~x2 returning ~x3 ~
+                           and to a term ~x4 returning ~x5, ~
                            but a ~x0 and a ~x1 operand is expected. ~
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
@@ -1591,7 +1593,11 @@
                                      (fn symbolp)
                                      (ctx ctxp)
                                      state)
-  :returns (mv erp (exprs expr-listp) state)
+  :returns (mv erp
+               (val (tuple (exprs expr-listp)
+                           (types type-listp)
+                           val))
+               state)
   :short "Generate a list of C expressions from a list of ACL2 terms
           that must be pure expression terms returning C values."
   :long
@@ -1599,19 +1605,26 @@
    (xdoc::p
     "This lifts @(tsee atc-gen-expr-cval-pure) to lists.
      However, we do not return the C types of the expressions."))
-  (b* (((when (endp terms)) (acl2::value nil))
-       ((mv erp (list expr &) state) (atc-gen-expr-cval-pure (car terms)
+  (b* (((when (endp terms)) (acl2::value (list nil nil)))
+       ((mv erp (list expr type) state) (atc-gen-expr-cval-pure (car terms)
+                                                                inscope
+                                                                fn
+                                                                ctx
+                                                                state))
+       ((when erp) (mv erp (list nil nil) state))
+       ((er (list exprs types)) (atc-gen-expr-cval-pure-list (cdr terms)
                                                              inscope
                                                              fn
                                                              ctx
-                                                             state))
-       ((when erp) (mv erp nil state))
-       ((er exprs) (atc-gen-expr-cval-pure-list (cdr terms)
-                                                inscope
-                                                fn
-                                                ctx
-                                                state)))
-    (acl2::value (cons expr exprs))))
+                                                             state)))
+    (acl2::value (list (cons expr exprs)
+                       (cons type types))))
+  ///
+  (more-returns
+   (val (and (consp val)
+             (true-listp val))
+        :name typeset-of-atc-gen-expr-cval-pure-list
+        :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1660,20 +1673,28 @@
      The type is the one returned by that translation.
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
-  (b* (((mv okp called-fn args type limit)
+  (b* (((mv okp called-fn args in-types out-type limit)
         (atc-check-callable-fn term var-term-alist prec-fns))
        ((when okp)
-        (b* (((mv erp arg-exprs state) (atc-gen-expr-cval-pure-list args
-                                                                    inscope
-                                                                    fn
-                                                                    ctx
-                                                                    state))
-             ((when erp) (mv erp (list (irr-expr) (irr-type) nil) state)))
+        (b* (((mv erp (list arg-exprs types) state)
+              (atc-gen-expr-cval-pure-list args
+                                           inscope
+                                           fn
+                                           ctx
+                                           state))
+             ((when erp) (mv erp (list (irr-expr) (irr-type) nil) state))
+             ((unless (equal types in-types))
+              (er-soft+ ctx t (list (irr-expr) (irr-type) nil)
+                        "The function ~x0 with input types ~x1 ~
+                         is applied to terms ~x2 returning ~x3. ~
+                         This is indicative of provably dead code, ~
+                         given that the code is guard-verified."
+                        called-fn in-types args types)))
           (acl2::value (list
                         (make-expr-call :fun (make-ident
                                               :name (symbol-name called-fn))
                                         :args arg-exprs)
-                        type
+                        out-type
                         `(binary-+ '1 ,limit))))))
     (b* (((mv erp (list expr type) state)
           (atc-gen-expr-cval-pure term inscope fn ctx state))
