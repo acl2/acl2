@@ -340,6 +340,8 @@
      an optional C type that is present,
      and represents the function's output type,
      when the function is not recursive;
+     a list of C types representing the function's input types,
+     when the function is not recursive (it is @('nil') otherwise);
      an optional (loop) statement that is present,
      and is represented by the function,
      when the function is recursive;
@@ -380,6 +382,7 @@
     "Note that exactly one of the first two fields is @('nil').
      This is an invariant."))
   ((out-type type-option)
+   (in-types type-list)
    (loop? stmt-option)
    (xforming symbol-list)
    (returns-value-thm symbol)
@@ -3580,6 +3583,7 @@
        ((when erp) (mv erp (list (irr-ext-declon) nil nil nil nil) state))
        (info (make-atc-fn-info
               :out-type type
+              :in-types (strip-cdrs scope)
               :loop? nil
               :xforming nil
               :returns-value-thm fn-returns-value-thm
@@ -4695,6 +4699,7 @@
                              (not (member-eq :array-writes experimental))
                              (append exported-events more-exported-events)))
        (info (make-atc-fn-info :out-type nil
+                               :in-types nil
                                :loop? loop-stmt
                                :xforming loop-xforming
                                :returns-value-thm fn-returns-value-thm
