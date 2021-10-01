@@ -19474,7 +19474,9 @@
 ; accessor call are an arbitrary stobj, as is the second argument of a
 ; stobj-table updater call.  Since those calls are not allowed directly in
 ; code, but only by way of stobj-let (rather implicitly), we do not expect to
-; see erroneous uses of this special stobjs-in value.
+; see erroneous uses of this special stobjs-in value.  Note that the definition
+; of function guard-clauses takes advantage of stobjs-in and stobjs-out values
+; involving *stobj-table-stobj* to recognize stobj-table field accesses.
 
 ;      fn                  stobjs-in          stobjs-out
 ; topmost recognizer       (name)             (nil)
