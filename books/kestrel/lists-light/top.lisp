@@ -92,3 +92,5 @@
 (include-book "append-with-key")
 
 (include-book "union-eql-tail")
+
+(include-book "replace-item")

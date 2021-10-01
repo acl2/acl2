@@ -211,7 +211,7 @@
     (xdoc::seetopic "birational-montgomery-twisted-edwards"
                     "birational equivalence between
                      Montgomery and twisted Edwards curves")
-    ": points with @($x = 0$ or @($y = 0$) on a twisted Edwards curve
+    ": points with @($x = 0$) or @($y = 0$) on a twisted Edwards curve
      are not amenable to the rational mapping,
      because they make a denominator zero;
      thus, they have to be treated specially for the mapping.
@@ -898,7 +898,7 @@
        (implies (and (integerp x)
                      (integerp y)
                      (natp p)
-                     (< 1 p))
+                     (< 2 p))
                 (equal (mul x (expt y (+ -2 p)) p)
                        (mul x (inv y p) p)))
        :do-not '(preprocess)
@@ -1338,7 +1338,22 @@
                      (< x p))
                 (equal (mod x p) x))
        :prep-books
-       ((include-book "kestrel/arithmetic-light/mod" :dir :system))))))
+       ((include-book "kestrel/arithmetic-light/mod" :dir :system)))))
+
+  (defrule twisted-edwards-neg-is-zero-iff-zero
+    (implies (and (pointp point)
+                  (point-on-twisted-edwards-p point curve))
+             (equal (equal (twisted-edwards-neg point curve)
+                           (twisted-edwards-zero))
+                    (equal point (twisted-edwards-zero))))
+    :enable (twisted-edwards-zero
+             pointp
+             point-on-twisted-edwards-p
+             point-finite
+             point-finite->x
+             point-finite->y)
+    :prep-books
+    ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1907,7 +1922,7 @@
 
   (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
-  (defruledl montogomery-mul-nonneg-of-scalar-addition
+  (defruledl twisted-edwards-mul-nonneg-of-scalar-addition
     (implies (and (twisted-edwards-add-associativity)
                   (twisted-edwards-curve-completep curve)
                   (pointp point)
@@ -1933,7 +1948,8 @@
                      (twisted-edwards-mul scalar1 point curve)
                      (twisted-edwards-mul scalar2 point curve)
                      curve)))
-    :enable (twisted-edwards-mul montogomery-mul-nonneg-of-scalar-addition))
+    :enable (twisted-edwards-mul
+             twisted-edwards-mul-nonneg-of-scalar-addition))
 
   (defruledl twisted-edwards-mul-of-scalar-addition-when-nonneg-converse
     (implies (and (twisted-edwards-add-associativity)
@@ -1964,7 +1980,7 @@
                      (twisted-edwards-mul scalar2 point curve)
                      curve)))
     :enable (twisted-edwards-mul
-             montogomery-mul-nonneg-of-scalar-addition))
+             twisted-edwards-mul-nonneg-of-scalar-addition))
 
   (local
    (acl2::defisar
@@ -2295,6 +2311,90 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled twisted-edwards-mul-of-neg
+  :short "Multiplying a negated point is like negating the multiplied point."
+  (implies (and (twisted-edwards-add-associativity)
+                (twisted-edwards-curve-completep curve)
+                (pointp point)
+                (point-on-twisted-edwards-p point curve)
+                (integerp scalar))
+           (equal (twisted-edwards-mul scalar
+                                       (twisted-edwards-neg point curve)
+                                       curve)
+                  (twisted-edwards-neg (twisted-edwards-mul scalar
+                                                            point
+                                                            curve)
+                                       curve)))
+  :prep-lemmas
+  ((acl2::defisar
+    lemma
+    (implies (and (twisted-edwards-add-associativity)
+                  (twisted-edwards-curve-completep curve)
+                  (pointp point)
+                  (point-on-twisted-edwards-p point curve)
+                  (integerp scalar))
+             (equal (twisted-edwards-mul scalar
+                                         (twisted-edwards-neg point curve)
+                                         curve)
+                    (twisted-edwards-neg (twisted-edwards-mul scalar
+                                                              point
+                                                              curve)
+                                         curve)))
+    :proof
+    ((:assume (:associative (twisted-edwards-add-associativity)))
+     (:assume (:complete (twisted-edwards-curve-completep curve)))
+     (:assume (:point (pointp point)))
+     (:assume (:on-curve (point-on-twisted-edwards-p point curve)))
+     (:assume (:scalar (integerp scalar)))
+     (:derive (:neg-to-mul-by-m1
+               (equal (twisted-edwards-mul scalar
+                                           (twisted-edwards-neg point curve)
+                                           curve)
+                      (twisted-edwards-mul scalar
+                                           (twisted-edwards-mul -1
+                                                                point
+                                                                curve)
+                                           curve)))
+      :from (:on-curve))
+     (:derive (:swap-scalar-and-m1
+               (equal (twisted-edwards-mul scalar
+                                           (twisted-edwards-mul -1
+                                                                point
+                                                                curve)
+                                           curve)
+                      (twisted-edwards-mul -1
+                                           (twisted-edwards-mul scalar
+                                                                point
+                                                                curve)
+                                           curve)))
+      :from (:associative :complete :point :on-curve :scalar)
+      :disable twisted-edwards-mul-of-minus1)
+     (:derive (:mul-by-m1-to-neg
+               (equal (twisted-edwards-mul -1
+                                           (twisted-edwards-mul scalar
+                                                                point
+                                                                curve)
+                                           curve)
+                      (twisted-edwards-neg (twisted-edwards-mul scalar
+                                                                point
+                                                                curve)
+                                           curve)))
+      :from (:complete :point :on-curve))
+     (:derive (:conclusion
+               (equal (twisted-edwards-mul scalar
+                                           (twisted-edwards-neg point curve)
+                                           curve)
+                      (twisted-edwards-neg (twisted-edwards-mul scalar
+                                                                point
+                                                                curve)
+                                           curve)))
+      :from (:neg-to-mul-by-m1 :swap-scalar-and-m1 :mul-by-m1-to-neg
+             :associative :complete :point :on-curve :scalar)
+      :in-theory nil)
+     (:qed)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define twisted-edwards-compress ((point pointp) (curve twisted-edwards-curvep))
   :guard (point-on-twisted-edwards-p point curve)
   :returns (mv (p bitp) (y natp))
@@ -2459,3 +2559,46 @@
                       (twisted-edwards-mul scalar point curve)))
       :from (:decompose-scalar :reduce-to-mod))
      (:qed)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled twisted-edwards-point-orderp-of-neg
+  :short "If a point has a certain order, its negation has the same order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The key property used here is that
+     the multiplication of a negated point
+     is the same as the negation of the multiplied point."))
+  (implies (and (twisted-edwards-add-associativity)
+                (twisted-edwards-curve-completep curve)
+                (pointp point)
+                (point-on-twisted-edwards-p point curve)
+                (natp order)
+                (twisted-edwards-point-orderp point order curve))
+           (twisted-edwards-point-orderp (twisted-edwards-neg point
+                                                              curve)
+                                         order
+                                         curve))
+  :enable (twisted-edwards-point-orderp
+           twisted-edwards-mul-of-neg)
+
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (twisted-edwards-add-associativity)
+                   (twisted-edwards-curve-completep curve)
+                   (pointp point)
+                   (point-on-twisted-edwards-p point curve)
+                   (natp order)
+                   (twisted-edwards-point-order-leastp point order curve))
+              (twisted-edwards-point-order-leastp (twisted-edwards-neg point
+                                                                       curve)
+                                                  order
+                                                  curve))
+     :expand (twisted-edwards-point-order-leastp (twisted-edwards-neg point
+                                                                      curve)
+                                                 order
+                                                 curve)
+     :enable (twisted-edwards-mul-of-neg
+              twisted-edwards-point-order-leastp-necc)
+     :disable twisted-edwards-neg-of-mul)))

@@ -68,7 +68,9 @@
        that satisfies the conditions discussed in the section
        `Representation of C Code in ACL2'.")
      (xdoc::p
-      "These function names must be all distinct."))
+      "These function names must be all distinct.")
+     (xdoc::p
+      "There must be at least one target function."))
 
     (xdoc::desc
      "@(':output-file') &mdash; no default"
@@ -246,7 +248,7 @@
       "@('(ullong-arrayp x)'), representing @('unsigned long long *')."))
     (xdoc::p
      "The conjuncts may be at any level of nesting,
-      but must be easily extractable by flattening
+      but must be extractable by flattening
       the @(tsee and) structure of the (translated) guard term.
       The rest of the guard (i.e. other than the conjuncts above)
       is not explicitly represented in the C code.")
@@ -265,7 +267,9 @@
      " of each @('fni') must be:")
     (xdoc::ul
      (xdoc::li
-      "A statement term for @('fni') transforming variables @('nil'),
+      "A statement term for @('fni')
+       returning a result
+       and transforming no variables,
        when @('fni') is non-recursive.")
      (xdoc::li
       "A loop term for @('fni') transforming
@@ -273,40 +277,46 @@
        when @('fni') is recursive."))
     (xdoc::p
      "The notions of
-      statement term for @('fni') transforming variables @('vars') and
-      loop term for @('fni') transforming variables @('vars')
+      (i) statement term for @('fni')
+      returning an optional result
+      and transforming variables @('vars') and
+      (ii) loop term for @('fni') transforming variables @('vars')
       are defined below, along with the notions of
-      C-valued term for @('fni'),
-      pure C-valued term for @('fni'),
-      boolean term for @('fni'),
-      and assignable variable.")
+      (iii) expression term returning a C value for @('fni'),
+      (iv) pure expression term returning a C value for @('fni'),
+      (v) expression term returning a boolean for @('fni'), and
+      (vi) assignable variable.")
 
     (xdoc::p
      "A <i>statement term for</i> @('fni')
+      <i>returning an optional result</i> and
       <i>transforming variables</i> @('vars'),
       where @('fni') is a target function
-      and  @('vars') is a list of distinct symbols,
+      and @('vars') is a list of distinct symbols,
       is inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "A C-valued term for @('fni'),
+      "An expression term returning a C value for @('fni'),
        when @('vars') is @('nil')
-       and when @('fni') is not recursive.
-       That is, a C-valued term is also
-       a statement term transforming variables @('nil').
+       and @('fni') is not recursive.
+       That is, an expression term returning a C value is also
+       a statement term returning that that C value as result
+       and transforming no variables.
        This represents a C @('return') statement
        whose expression is represented by the same term,
-       viewed as a C-valued term.")
+       viewed as an expression term returning a C value.")
      (xdoc::li
       "A call of @('fni') on variables identical to its formal parameters,
        when @('fni') is recursive.
+       This statement term returns no result.
        This represents no actual C code,
        because it just serves to conclude
        the computation in the body of the loop.")
      (xdoc::li
       "A term @('var'),
        when @('vars') is the singleton list @('(var)')
-       and when @('fni') is not recursive.
+       and @('fni') is not recursive.
+       This statement term returns no result.
        This represents no actual C code,
        because it just serves to conclude
        preceding statements that may modify @('var'),
@@ -315,7 +325,8 @@
      (xdoc::li
       "A term @('(mv var1 ... varn)'),
        when @('vars') is the list @('(var1 ... varn)') with @('n') &gt; 1
-       and when @('fni') is not recursive.
+       and @('fni') is not recursive.
+       This statement term returns no result.
        This represents no actual C code,
        because it just serves to conclude
        preceding statements that may modify @('var1'), ..., @('varn'),
@@ -327,9 +338,10 @@
        this is the pattern that ATC looks for.")
      (xdoc::li
       "A call of @(tsee if) on
-       (i) a test that is a boolean term for @('fni') and
+       (i) a test that is an expression term returning a boolean for @('fni') and
        (ii) branches that are statement terms for @('fni')
-       transforming variables @('vars').
+       both returning either a result or no result,
+       and both transforming variables @('vars').
        This represents a C @('if') conditional statement
        whose test expression is represented by the test term
        and whose branch blocks are represented by the branch terms.")
@@ -337,7 +349,8 @@
       "A call of @(tsee if) on
        (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
        (ii) a `then' branch that is
-       a statement term for @('fni') transforming variables @('vars'), and
+       a statement term for @('fni')
+       returning an optional result and transforming variables @('vars'), and
        (iii) an `else' branch that may be any ACL2 term.
        This represents the same C code represented by the `then' branch.
        Both the test and the `else' branch are ignored;
@@ -355,10 +368,11 @@
        the symbol name of @('var') is distinct from
        the symbol names of all the other ACL2 variables in scope
        (function parameters and variables bound in enclosing @(tsee let)s),
-       @('term') is a C-valued term for @('fni')
+       @('term') is an expression term returning a C value for @('fni')
        whose C type is not a pointer type, and
        @('body') is a statement term for @('fni')
-       transforming variables @('vars').
+       returning an optional result
+       and transforming variables @('vars').
        This represents, as indicated by the wrapper @(tsee declar),
        a declaration of a C local variable represented by @('var'),
        initialized with the C expression represented by @('term'),
@@ -371,11 +385,12 @@
      (xdoc::li
       "A term @('(let ((var (assign term))) body)'),
        where @('var') is assignable,
-       @('term') is a C-valued term for @('fni')
+       @('term') is an expression term returning a C value for @('fni')
        whose C type is the same as the C local variable represented by
        the aforementioned ACL2 variable in scope, and
        @('body') is a statement term for @('fni')
-       transforming variables @('vars').
+       returning an optional result
+       and transforming variables @('vars').
        This represents, as indicated by the wrapper @(tsee assign),
        an assignment to
        the C local variable or function parameter represented by @('var'),
@@ -388,13 +403,15 @@
      (xdoc::li
       "A term @('(let ((var term)) body)'),
        where @('var') is assignable,
-       @('term') is a statement term for @('fni') transforming @('var')
+       @('term') is a statement term for @('fni')
+       returning no result and transforming @('var')
        that is
        either a call of a recursive target function @('fnj') with @('j < i')
-       or an @(tsee if) whose test is a boolean term
+       or an @(tsee if) whose test is an expression term returning a boolean
        (not a @('(mbt ...)') or @('(mbt$ ...)')), and
        @('body') is a statement term for @('fni')
-       transforming variables @('vars').
+       returning an optional result
+       and transforming variables @('vars').
        This represents the C code represented by @('term'),
        which may modify the variable represented by @('var'),
        followed by the C code represented by @('body').
@@ -407,13 +424,14 @@
        where @('n') &gt; 1,
        each @('vari') is assignable,
        @('term') is a statement term for @('fni')
-       transforming @('(var1 ... varn)')
+       returning no result and transforming @('(var1 ... varn)')
        that is
        either a call of a recursive target function @('fnj') with @('j < i')
-       or an @(tsee if) whose test is a boolean term
+       or an @(tsee if) whose test is an expression term returning a boolean
        (not a @('(mbt ...)') or @('(mbt$ ...)')), and
        @('body') is a statement term for @('fni')
-       transforming variables @('vars').
+       returning an optional result
+       and transforming variables @('vars').
        This represents the C code represented by @('term'),
        which may modify the variables represented by @('var1'), ..., @('varn'),
        followed by the C code represented by @('body').
@@ -432,6 +450,7 @@
        when @('vars') is not @('nil')
        and the body of @('fnj') is
        a loop term for @('fnj') transforming @('vars').
+       This statement term returns no result.
        This represents the C @('while') statement
        represented by the body of @('fnj'), as explained below."))
 
@@ -459,9 +478,10 @@
        these are the patterns that ATC looks for.")
      (xdoc::li
       "A call of @(tsee if) on
-       (i) a test that is a boolean term for @('fni'),
+       (i) a test that is an expression term returning a boolean for @('fni'),
        (ii) a `then' branch that is
-       a statement term for @('fni') transforming variables @('vars'), and
+       a statement term for @('fni')
+       returning no result and transforming variables @('vars'), and
        (iii) an `else' branch that is
        either the variable @('var') when @('vars') is the singleton @('(var)'),
        or the term @('(mv var1 ... varn)')
@@ -475,14 +495,14 @@
        because it just serves to complete the @(tsee if)."))
 
     (xdoc::p
-     "A <i>C-valued term for</i> @('fni') is
+     "An <i>expression term returning a C value for</i> @('fni') is
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "A pure C-valued term for @('fni').")
+      "A pure expression term returning a C value for @('fni').")
      (xdoc::li
       "A call of a non-recursive target function @('fnj') with @('j < i'),
-       on pure C-valued terms for @('fni').
+       on pure expression terms returning C values for @('fni').
        The restriction @('j < i') means that
        no (direct or indirect) recursion is allowed in the C code
        and the target functions must be specified
@@ -490,7 +510,7 @@
        This represents a call of the corresponding C function."))
 
     (xdoc::p
-     "A <i>pure C-valued term for</i> @('fni') is
+     "A <i>pure expression term returning a C value for</i> @('fni') is
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
@@ -523,7 +543,7 @@
        the quoted integer is non-negative and within the range of the type.")
      (xdoc::li
       "A call of a function @('<op>-<type>') on
-       a pure C-valued term for @('fni'),
+       a pure expression term returning a C value for @('fni'),
        where @('<op>') is among"
       (xdoc::ul
        (xdoc::li "@('plus')")
@@ -551,7 +571,7 @@
        (using the nomenclature in [C]).")
      (xdoc::li
       "A call of a function @('<op>-<type1>-<type2>')
-       on pure C-valued terms for @('fni'),
+       on pure expression terms returning C values for @('fni'),
        where @('<op>') is among"
       (xdoc::ul
        (xdoc::li "@('add')")
@@ -594,7 +614,7 @@
        are represented differently.")
      (xdoc::li
       "A call of a function @('<type1>-from-<type2>')
-       on a pure C-valued term for @('fni'),
+       on a pure expression term returning a C value for @('fni'),
        where @('<type1>') and @('<type2>') are among"
       (xdoc::ul
        (xdoc::li "@('schar')")
@@ -621,7 +641,7 @@
        e.g. via the function for a unary operator that promoteds the operand.")
      (xdoc::li
       "A call of @('<type1>-array-read-<type2>')
-       on C-valued terms for @('fni'),
+       on expression terms returning C values for @('fni'),
        where @('<type1>') and @('<type2>') are among"
       (xdoc::ul
        (xdoc::li "@('schar')")
@@ -636,25 +656,28 @@
        (xdoc::li "@('ullong')"))
       "This represents an array subscripting expression.")
      (xdoc::li
-      "A call of @(tsee sint-from-boolean) on a boolean term for @('fni').
-       This converts a boolean term
-       to a pure C-valued term.")
+      "A call of @(tsee sint-from-boolean) on
+       an expression term returning a boolean for @('fni').
+       This converts an expression term returning a boolean
+       to a pure expression term returning a C value.")
      (xdoc::li
       "A call of @(tsee condexpr) on
        a call of @(tsee if) on
-       (i) a test that is a boolean term for @('fni') and
-       (ii) branches that are pure C-valued terms for @('fni').
+       (i) a test that is an expression term returning a boolean for @('fni')
+       and
+       (ii) branches that are
+       pure expression terms returning C values for @('fni').
        This represents a C @('?:') conditional expression
        whose test expression is represented by the test term
        and whose branch expressions are represented by the branch terms."))
 
     (xdoc::p
-     "A <i>boolean term for</i> @('fni') is
+     "An <i>expression term returning a boolean for</i> @('fni') is
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
       "A call of a function @('boolean-from-<type>')
-       on a pure C-valued term for @('fni'),
+       on a pure expression term returning a C value for @('fni'),
        where @('<type>') is among"
       (xdoc::ul
        (xdoc::li "@('schar')")
@@ -667,11 +690,11 @@
        (xdoc::li "@('ulong')")
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
-      "This converts a pure C-valued term
-       to a boolean term.")
+      "This converts a pure expression term returning a C value
+       to an expression term returning a boolean.")
      (xdoc::li
       "A call of one of the following functions and macros
-       on boolean terms for @('fni'):"
+       on expression terms returning booleans for @('fni'):"
       (xdoc::ul
        (xdoc::li "@(tsee not)")
        (xdoc::li "@(tsee and)")
@@ -695,7 +718,8 @@
       represented by the ACL2 terms that
       the @(tsee let) or @(tsee mv-let) is part of:
       a function body is a C scope,
-      and each @(tsee if) branch whose test is a boolean term
+      and each @(tsee if) branch whose test is
+      an expression term returning a boolean
       (i.e. whose test is not @(tsee mbt) or @(tsee mbt$))
       forms a new C scope.
       The conditions are the following:")
@@ -722,10 +746,11 @@
 
     (xdoc::p
      "Statement terms represent C statements,
-      while C-valued and boolean terms represent C expressions.
-      The boolean terms return ACL2 boolean values,
-      while the statement (including C-valued) terms return
-      ACL2 values that represent C values:
+      while expression terms represent C expressions.
+      The expression terms returning booleans return ACL2 boolean values,
+      while the statement terms
+      (including expression terms returning C values)
+      return ACL2 values that represent C values:
       the distinction between these two kinds of terms
       stems from the need to represent C's non-strictness in ACL2:
       C's non-strict constructs are
@@ -735,15 +760,16 @@
       @('||') expressions;
       ACL2's only non-strict construct is @(tsee if)
       (which the macros @(tsee and) and @(tsee or) expand to, see above).
-      Pure C-valued terms
+      Pure expression terms returning C values
       represent C expressions without side effects;
       C function calls may be side-effect-free,
       but in general we do not consider them pure,
-      so they are represented by C-valued terms
-      that are not pure C-valued terms.
-      Boolean terms are always pure;
+      so they are represented by expression terms returning C values
+      that are not pure expression terms returning C values.
+      Expression terms returning booleans are always pure;
       so they do not need the explicit designation `pure'
-      because they are the only boolean terms handled by ATC.
+      because they are the only expression terms returning booleans
+      handled by ATC.
       Recursive ACL2 functions represent C loops,
       where those recursive functions are called.")
 

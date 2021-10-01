@@ -90,7 +90,7 @@ as follows.
             :clear)
 
      (defun acl2s-property-table (wrld)
-       "api to get the alist representing property table"
+       "API to get the alist representing property table"
        (declare (xargs :guard (plist-worldp wrld)))
        (table-alist 'acl2s-property-table wrld))
 
@@ -135,10 +135,14 @@ as follows.
 #|
 
 :trans1 (gen-property-table
-         ((:proofs? . t)
-          (:proof-timeout . 5)
+         ((:debug? . nil)
+          (:proofs? . t)
+          (:proof-timeout . 40)
           (:testing? . t)
-          (:testing-timeout . 5)))
+          (:testing-timeout . 20)
+          (:check-contracts? . t)
+          (:complete-contracts? . t)))
+
 
 
 (table-alist 'acl2s-property-table (w state))
@@ -440,38 +444,40 @@ I don't need this?
             (guard-obligation gprop nil nil t ctx state)
           (guard-obligation t nil nil t ctx state)))
        ((when erp)
-        (ecw "~|**ERROR During Contract Completion.** ~
+        (ecw "~|**ERROR Determining Contract Checking Proof Obligation.** ~
               ~%**val is: ~x0"
              val
              parsed))
        ((list* & CL &) val)
        (guards (acl2::prettyify-clause-set CL nil wrld))
-       (- (cw? debug? "~|**The Contract Completion Proof Obligation is: ~x0~%" guards))
+       (- (cw? debug? "~|**The Contract Checking Proof Obligation is: ~x0~%" guards))
        (proof-timeout (defdata::get1 :proof-timeout kwd-alist))
        (testing-timeout (defdata::get1 :testing-timeout kwd-alist))
-       (- (cw? check-contracts? "~%Form:  ( CONTRACT-CHECKING PROPERTY ...)~%"))
+       (- (cw? check-contracts? "~%Form:  ( CONTRACT-CHECKING PROPERTY ...)"))
+       (- (cw "~%"))
        ((mv te-thm-erp val state)
         (with-time-limit
          proof-timeout
          (trans-eval
           `(with-output
             ,@(if debug?
-                  '(:on :all :off (proof-builder proof-tree) :gag-mode nil)
-                '(:off :all :on (summary comment) :summary-off (:other-than time) :gag-mode nil ))
-            (encapsulate
-             nil
-             (with-output
-              ,@(if debug?
-                    '(:on :all :off (proof-builder proof-tree) :gag-mode nil)
-                  '(:off :all :on comment))
-              (thm-no-test ,guards))))
+                  '(:on :all :summary-on :all :gag-mode nil
+                        :off (proof-builder proof-tree))
+                (if check-contracts?
+                    '(:off :all :on (summary comment)
+                           :summary-on :all
+                           :summary-off (:other-than time))
+                  '(:off :all :summary-off :all :on comment)))
+            (thm-no-test ,guards))
           ctx state t)))
        ((list* & thm-erp &) val)
        (- (cw? debug? "~|**te-thm-erp is: ~x0~%" te-thm-erp))
        (- (cw? debug? "~|**val is: ~x0~%" val))
        (- (cw? debug? "~|**thm-erp is: ~x0~%" thm-erp))
        ((when thm-erp)
-        (ecw "~|**ERROR During Contract Checking.**"
+        (ecw "~|**ERROR During Contract Checking.** ~
+              ~|**The Contract Checking Proof Obligation is: ~x0"
+             guards
              parsed))
        (- (cw? thm-erp "~|Form:  ( TESTING PROPERTY CONTRACTS ...)"))
        ((mv te-test-erp val state)
@@ -535,7 +541,9 @@ I don't need this?
          timeout
          (trans-eval `(with-output
                        ;;:on :all :off (proof-builder proof-tree) :gag-mode nil
-                       :off :all :on (summary comment) :summary-off (:other-than time) :gag-mode nil
+                       :off :all :on (summary comment)
+                       :summary-off (:other-than time)
+                       :gag-mode nil
                        (encapsulate
                         nil
                         (with-output
@@ -604,7 +612,15 @@ I don't need this?
        (debug? (defdata::get1 :debug? kwd-alist))
        (proof-timeout (defdata::get1 :proof-timeout kwd-alist))
        (testing-timeout (defdata::get1 :testing-timeout kwd-alist))
-       (prove (if name? 'defthm-no-test 'thm-no-test))
+       (prove (cond ((and name? testing?) 'defthm)
+                    (name? 'defthm-no-test)
+                    (testing? 'thm)
+                    (t 'thm-no-test)))
+       ;; Used to have the following
+       ;; (prove (if name? 'defthm-no-test 'thm-no-test))
+       ;; but testing can be useful, eg, it can find counterexamples
+       ;; to inductive proofs, so now, if testing is enabled, then we
+       ;; also test.
        (other-kwds
         (defdata::remove1-assoc-eq-lst
           (append (if name? nil *property-just-defthm-keywords*)
@@ -618,57 +634,79 @@ I don't need this?
        (args (if name?
                  (list* name prop flat-kwds)
                (list* prop flat-kwds)))
-       ((when (and proofs? testing?))
-        `(with-output
-          :off :all :on comment
-          (encapsulate
-           ()
-           (value-triple (cw "~|Form:  ( TESTING PROPERTY )~%"))
-           (with-time-limit ,testing-timeout
-                            (with-output :stack :pop (test? ,prop)))
-           (value-triple (cw "~|Form:  ( PROVING PROPERTY )~%"))
-           (with-time-limit ,proof-timeout
-                            (with-output :stack :pop (,prove ,@args)))
-           (value-triple (cw "~|Form:  ( ACCEPTED PROPERTY AS THEOREM )~%")))))
        ((when proofs?)
         `(with-output
-          :off :all :on comment
+          :off :all :on (comment summary) 
+          :summary-on :all :summary-off (:other-than time)
           (encapsulate
            ()
            (value-triple (cw "~|Form:  ( PROVING PROPERTY )~%"))
-           (with-time-limit ,proof-timeout
-                            (with-output :stack :pop (,prove ,@args)))
+           (with-time-limit
+            ,proof-timeout
+            (with-output
+             ,@(if debug?
+                   '(:on :all :off (proof-builder proof-tree)
+                         :summary-on :all :gag-mode nil)
+                 '(:stack :pop :on (error summary comment)
+                          :summary-on :all
+                          :summary-off (:other-than time rules warnings)))
+             (,prove ,@args)))
            (value-triple (cw "~|Form:  ( ACCEPTED PROPERTY AS THEOREM )~%")))))
        ((when (and testing? name?))
         `(with-output
-          :off :all :on comment
+          :off :all :on (comment summary) 
+          :summary-on :all :summary-off (:other-than time)
           (encapsulate
            ()
            (value-triple (cw "~|Form:  ( TESTING PROPERTY )~%"))
-           (with-time-limit ,testing-timeout
-                            (with-output :stack :pop
-                                         (defthm-test-no-proof ,@args)))
+           (with-time-limit
+            ,testing-timeout
+            (with-output
+             ,@(if debug?
+                   '(:on :all :off (proof-builder proof-tree)
+                         :summary-on :all :gag-mode nil)
+                 '(:stack :pop :on (error summary comment)
+                          :summary-on :all
+                          :summary-off (:other-than time rules warnings)))
+             (defthm-test-no-proof ,@args)))
            (value-triple
             (cw "~|Form:  ( ACCEPTED PROPERTY AS A THEOREM WITHOUT PROOF )~%")))))
        ((when testing?)
         `(with-output
-          :off :all :on comment
+          :off :all :on (comment summary) 
+          :summary-on :all :summary-off (:other-than time)
           (encapsulate
            ()
            (value-triple (cw "~|Form:  ( TESTING PROPERTY )~%"))
-           (with-time-limit ,testing-timeout
-                            (with-output :stack :pop (test? ,prop)))
+           (with-time-limit
+            ,testing-timeout
+            (with-output
+             ,@(if debug?
+                   '(:on :all :off (proof-builder proof-tree)
+                         :summary-on :all :gag-mode nil)
+                 '(:off :all :on (error comment)))
+             (test? ,prop)))
+           ;; (with-output :stack :pop (test? ,prop)))
            (value-triple
             (cw "~|Form:  ( PROPERTY PASSED TESTING )~%")))))
        ((when name?)
         `(with-output
-          :off :all :on comment
+          :off :all :on (comment summary) 
+          :summary-on :all :summary-off (:other-than time)
           (encapsulate
            ()
-           (value-triple (cw "~|Form:  ( TESTING PROPERTY )~%"))
-           (with-time-limit ,proof-timeout
-                            (with-output :stack :pop
-                                         (defthmskipall ,@args)))
+           (value-triple (cw "~|Form:  ( ANALYZING PROPERTY )~%"))
+           (with-time-limit
+            ,proof-timeout
+            (with-output
+             ,@(if debug?
+                   '(:on :all :off (proof-builder proof-tree)
+                         :summary-on :all :gag-mode nil)
+                 '(:stack :pop :on (error summary comment)
+                          :summary-on :all
+                          :summary-off (:other-than time warnings)))
+             (defthmskipall ,@args)))
+           ;; (with-output :stack :pop (defthmskipall ,@args)))
            (value-triple
             (cw "~|Form:  ( ACCEPTED PROPERTY AS A THEOREM WITHOUT PROOF )~%"))))))
     `(value-triple :passed)))
@@ -691,9 +729,8 @@ I don't need this?
   (b* ((debug? (let ((lst (member :debug? args)))
                  (and lst (cadr lst)))))
     `(with-output
-      ;; ,@(and (not debug?) '(:off :all))
-      ;;  We take are of debug? later
-      :off :all :on (summary comment) :summary-off (:other-than time)
+      :off :all :on (summary comment)
+      :summary-off (:other-than time)
       :gag-mode ,(not debug?)
       :stack :push
       (encapsulate
@@ -736,6 +773,7 @@ Properties are just tested with a short timeout.
      (set-defunc-skip-admissibilityp t)
      (set-defunc-skip-function-contractp t)
      (set-defunc-skip-body-contractsp t)
+     (set-acl2s-property-table-check-contracts? nil)
      (set-acl2s-property-table-proofs? nil)
      (set-acl2s-property-table-testing? t)
      (modeling-set-parms ,cgen ,cgen-local ,defunc ,proof ,testing)))
@@ -751,6 +789,7 @@ Properties are just tested with a short timeout.
      (set-defunc-termination-strictp nil)
      (set-defunc-function-contract-strictp nil)
      (set-defunc-body-contracts-strictp nil)
+     (set-acl2s-property-table-check-contracts? nil)
      (set-acl2s-property-table-proofs? nil)
      (set-acl2s-property-table-testing? t)
      (modeling-set-parms ,cgen ,cgen-local ,defunc ,proof ,testing)))
@@ -765,6 +804,7 @@ Properties are just tested with a short timeout.
      (set-defunc-termination-strictp t)
      (set-defunc-function-contract-strictp t)
      (set-defunc-body-contracts-strictp t)
+     (set-acl2s-property-table-check-contracts? t)
      (set-acl2s-property-table-proofs? nil)
      (set-acl2s-property-table-testing? t)
      (modeling-set-parms ,cgen ,cgen-local ,defunc ,proof ,testing)))
@@ -779,6 +819,7 @@ Properties are just tested with a short timeout.
      (set-defunc-termination-strictp t)
      (set-defunc-function-contract-strictp t)
      (set-defunc-body-contracts-strictp t)
+     (set-acl2s-property-table-check-contracts? t)
      (set-acl2s-property-table-proofs? t)
      (set-acl2s-property-table-testing? t)
      (modeling-set-parms ,cgen ,cgen-local ,defunc ,proof ,testing)))

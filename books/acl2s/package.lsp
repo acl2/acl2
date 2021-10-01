@@ -237,10 +237,33 @@
 
       _  ;range
 
-      d<
+      d< ; ordinals, orderings
       l<
       <<
       lexp
+      o-p
+      o^
+      o+
+      o<
+      o*
+      o+
+      o-infp
+      e0-ord-<
+      e0-ordinalp
+      llist
+      llist-macro
+      omega-term
+      omega
+      o-max
+      natpart
+      limitp
+      olen
+      ob+
+      o-
+      count1
+      count2
+      ob*
+      ob^ 
 
       tshell-ensure
       tshell-call
@@ -280,6 +303,14 @@
       begin-book
       rev ;why do we need to add this??
       with-time-limit
+      rules
+      warnings
+      errors
+      hint-events
+      redundant
+      splitter-rules
+      system-attachments
+      steps
       
 ;community books
       u::defloop def-ruleset

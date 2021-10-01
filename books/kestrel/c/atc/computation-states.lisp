@@ -58,6 +58,11 @@
 
 (defresult scope "scopes")
 
+(defruled not-errorp-when-scopep
+  (implies (scopep x)
+           (not (errorp x)))
+  :enable errorp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defresult scope-list "lists of scopes")

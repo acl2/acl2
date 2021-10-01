@@ -66,7 +66,7 @@
    @('alpha$'),
    @('beta$'),
    @('beta-of-alpha-thm$'),
-   @('alpha-of-beta-thm$),
+   @('alpha-of-beta-thm$'),
    @('guard-thms$'),
    @('unconditional$'),
    @('thm-name$'),

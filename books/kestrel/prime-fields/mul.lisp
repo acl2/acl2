@@ -14,8 +14,10 @@
 (include-book "../utilities/smaller-termp")
 (include-book "fep")
 (local (include-book "../arithmetic-light/mod"))
+(local (include-book "../arithmetic-light/mod-and-expt"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/plus"))
+(local (include-book "../arithmetic-light/expt"))
 
 ;; Compute the product of x and y modulo the prime.
 (defund mul (x y p)
@@ -165,3 +167,29 @@
   (equal (mul x (ifix y) p)
          (mul x y p))
   :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-when-equal-of-mod-subst-arg1
+  (implies (and (syntaxp (not (quotep x)))
+                (equal (mod x p) k)
+                (syntaxp (quotep k)))
+           (equal (mul x y p)
+                  (mul k y p)))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-when-equal-of-mod-subst-arg2
+  (implies (and (syntaxp (not (quotep y)))
+                (equal (mod y p) k)
+                (syntaxp (quotep k)))
+           (equal (mul x y p)
+                  (mul x k p)))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-of-expt-subst-constant-arg2
+  (implies (and (syntaxp (not (quotep y)))
+                (equal (mod y p) k)
+                (syntaxp (quotep k))
+                (integerp y)
+                (natp i))
+           (equal (mul x (expt y i) p)
+                  (mul x (expt k i) p)))
+  :hints (("Goal" :in-theory (enable mul acl2::pos-fix))))

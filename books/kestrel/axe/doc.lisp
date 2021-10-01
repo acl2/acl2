@@ -51,7 +51,7 @@ The application of a function symbol (almost always a defined ACL2 function) to 
  (0 . x))
 }).
 
-The variables in this DAG are @('x') and @('y'), and the functions it calls are @('foo), @('bar'), and @('binary-+').  Node 4 represents a call of the function @('foo') whose two arguments are nodes 1 and 3.  Node 3 represents a call of the function @('bar') whose two arguments are the constant 2 and node 2.  The term represented by this DAG is:
+The variables in this DAG are @('x') and @('y'), and the functions it calls are @('foo'), @('bar'), and @('binary-+').  Node 4 represents a call of the function @('foo') whose two arguments are nodes 1 and 3.  Node 3 represents a call of the function @('bar') whose two arguments are the constant 2 and node 2.  The term represented by this DAG is:
 
 @({(foo (binary-* '2 x) (bar '2 y))}).
 

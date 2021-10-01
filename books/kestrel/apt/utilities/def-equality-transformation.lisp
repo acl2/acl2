@@ -32,7 +32,7 @@
 (include-book "kestrel/utilities/world" :dir :system)
 (include-book "kestrel/untranslated-terms/rename-functions" :dir :system)
 (include-book "kestrel/utilities/ruler-extenders" :dir :system)
-(include-book "kestrel/utilities/defun-forms" :dir :system) ;for get-body-from-event
+(include-book "kestrel/utilities/defining-forms" :dir :system) ;for get-body-from-event
 (include-book "kestrel/apt/utilities/function-renamingp" :dir :system)
 (include-book "kestrel/apt/utilities/set-stobjs-in-declares-to-match" :dir :system)
 (include-book "kestrel/apt/utilities/transformation-prologue" :dir :system)
@@ -40,7 +40,6 @@
 (include-book "kestrel/utilities/my-get-event" :dir :system)
 (include-book "kestrel/apt/utilities/verify-guards-for-defun" :dir :system)
 (include-book "kestrel/utilities/system/world-queries" :dir :system)
-(include-book "misc/install-not-normalized" :dir :system)
 (include-book "kestrel/utilities/defmacroq" :dir :system)
 (include-book "kestrel/utilities/maybe-unquote" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
@@ -275,8 +274,8 @@
                       (enables (append (list (install-not-normalized-name fn)
                                              (install-not-normalized-name new-fn))
                                        ',enables))
-                      ;; TODO: Can we often avoid adding the :verify-guards t?
-                      (new-defun-to-export (if verify-guards (add-verify-guards-t-to-defun new-defun) new-defun))
+                      ;; Drop the :verify-guards nil if needed, and add :verify-guards t if appropriate:
+                      (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
                       (becomes-theorem (,make-becomes-theorem-name fn new-fn nil (not theorem-disabled) enables '(theory 'minimal-theory) ,@make-becomes-theorem-extra-args state))
                       ;; Remove :hints from the theorem before exporting it (:guard-hints have already been removed since the verify-guards is now separate):
                       (becomes-theorem-to-export (clean-up-defthm becomes-theorem)))
@@ -307,7 +306,7 @@
                         (enables (append (list (install-not-normalized-name fn)
                                                (install-not-normalized-name new-fn))
                                          ',enables))
-                        (new-defun-to-export (if verify-guards (add-verify-guards-t-to-defun new-defun) new-defun))
+                        (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
                         (new-defun-to-export (remove-hints-from-defun new-defun-to-export))
                         (becomes-theorem (,make-becomes-theorem-name fn new-fn :single (not theorem-disabled) enables '(theory 'minimal-theory)
                                                                       ,@make-becomes-theorem-extra-args state))
@@ -346,13 +345,16 @@
                                                        measure-hints
                                                        t ; first function in the clique
                                                        state))
-                    (mut-rec `(mutual-recursion ,@new-defuns))
+                    (mutual-recursion `(mutual-recursion ,@new-defuns))
+                    ;; TODO: Clean up measure :hints in this:
+                    (mutual-recursion-to-export (if verify-guards ;todo: call a variant of ensure-defun-demands-guard-verification here:
+                                                    (replace-xarg-in-mutual-recursion :verify-guards t mutual-recursion) ; todo: or just set the verify-guards eagerness and ensure there is a guard?
+                                                  mutual-recursion))
                     (fn-and-not-normalized-fn-doublets (make-doublets fns (add-not-normalized-suffixes fns)))
                     (flag-function-name (pack$ 'flag- fn '-for- ',name)) ;todo: avoid clashes better
                     ;; Use as a ruler-extender for the flag function anything used as a ruler-extender for any of the FNS:
                     (ruler-extenders (union-ruler-extenders-of-fns fns wrld))
                     (ruler-extenders (union-ruler-extenders ruler-extenders '(return-last))) ;make-flag can fail without this (see email to MK)
-                    ;;(mut-rec (maybe-skip-proofs mut-rec skip-terminationp))
                     ;; TODO: Can my-make-flag-with-name be much slower than make-flag
                     ;; TODO: Why doesn't this work?:
                     ;; (make-flag-form `(my-make-flag-with-name ,flag-function-name
@@ -362,36 +364,34 @@
                                                    :ruler-extenders ,ruler-extenders
                                                    :flag-function-name ,flag-function-name
                                                    :body ,fn-and-not-normalized-fn-doublets))
-                    (equivalence-theorems (,make-becomes-theorems-name fns
-                                                                 (repeat (len fns) ',enables) ; enables for each function's proof
-                                                                 function-renaming
-                                                                 t ;todo: try (not theorem-disabled) here
-                                                                 ;;TODO: Add the $not-normalized rules for all functions?
-                                                                 (list (pack$ flag-function-name '-equivalences)) ;;gross that make-flag doesn't put in this hint for you? (todo: what is this?)
-                                                                 '(theory 'minimal-theory)
-                                                                  ,@make-becomes-theorem-extra-args
-                                                                 state))
-                    ;; TODO: Clean up measure :hints in this:
-                    (mutual-recursion-to-export (if verify-guards
-                                                    (replace-xarg-in-mutual-recursion :verify-guards t mut-rec) ; todo: or just set the verify-guards eagerness and ensure there is a guard?
-                                                  mut-rec))
-                    (equivalence-theorems-to-export (clean-up-defthms equivalence-theorems)))
+                    (becomes-theorems (,make-becomes-theorems-name fns
+                                                                   function-renaming
+                                                                   (not theorem-disabled)
+                                                                   ,@make-becomes-theorem-extra-args
+                                                                   state))
+                    (becomes-defthm-flag (make-becomes-defthm-flag flag-function-name
+                                                                   becomes-theorems
+                                                                   fns
+                                                                   function-renaming
+                                                                   ;;TODO: Add the $not-normalized rules for all functions?
+                                                                   ',enables
+                                                                   '(theory 'minimal-theory)
+                                                                   wrld))
+                    (becomes-theorems-to-export (clean-up-defthms becomes-theorems)))
                  (mv nil
                      `(encapsulate ()
                         ,@prologue         ;; contains only local stuff
-                        (local ,mut-rec)
+                        (local ,mutual-recursion)
                         (local (install-not-normalized ,(lookup-eq-safe fn function-renaming))) ;TODO: Is there any interaction between this and make-flag?
                         ;; make-flag helps with the proof about mutually recursive functions:
                         (local ,make-flag-form)
-                        ;;TODO: Respect theorem-disabled (can I put a defthmd in a defthm-flag-... ?)
-                        (local (,(pack$ 'defthm- flag-function-name) ;; this is a custom kind of defthm generated by the make-flag
-                                ,@equivalence-theorems))
+                        (local ,becomes-defthm-flag)
                         ,@(and verify-guards
                                `((local ,(verify-guards-for-defun fn function-renaming guard-hints))))
                         ;; Export the new mutual-recursion:
                         ,mutual-recursion-to-export
                         ;; Export the 'becomes' theorems:
-                        ,@equivalence-theorems-to-export)
+                        ,@becomes-theorems-to-export)
                      state))))))
        ;; To see what this expands to, see copy-function-expansion.lisp:
        (deftransformation ,name
@@ -419,7 +419,7 @@
                                        transform-specific-required-args
                                        transform-specific-optional-args-ands-defaults ; a list of doublets containing arg names and quoted default values
                                        &key
-                                       (enables 'nil) ; enabled to used in all equivalence proofs
+                                       (enables 'nil) ; enables to use in all equivalence proofs
                                        (make-becomes-theorem-name 'make-becomes-theorem)
                                        (make-becomes-theorems-name 'make-becomes-theorems)
                                        (make-becomes-theorem-extra-args 'nil))
@@ -430,14 +430,14 @@
                  )))
 
 ;; The core function for copy-function (does nothing).
-;; Core functions always take: fn, body, wrld, and transformation-specific args (none for copy-function).
+;; Core functions always take: fn, untranslated-body, wrld, and then transformation-specific args (none for copy-function).
 (defun copy-function-core-function (fn
-                                    body ;untranslated
+                                    untranslated-body
                                     wrld)
   (declare (xargs :guard (and (symbolp fn)
                               (plist-worldp wrld)))
            (ignore fn wrld))
-  body)
+  untranslated-body)
 
 ;; Copy-function is needed by most other tranformations, because they call
 ;; copy-function-in-defun for clique functions they do not intend to change.

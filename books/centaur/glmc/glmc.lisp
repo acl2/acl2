@@ -504,7 +504,7 @@ property was proved, then this produces an ACL2 theorem.</p>
 state (as distinguished from the inputs).</li>
 
 <li>@(':body-bindings') is a list of @(see b*) bindings under which to evaluate
-the @(':nextstate), @(':initstatep') @(':prop'), and @(':constraint') terms.
+the @(':nextstate'), @(':initstatep') @(':prop'), and @(':constraint') terms.
 It should only use the state variable and frame inputs.</li>
 
 <li>@(':initstatep') is a term that must be true for valid initial states,
@@ -591,7 +591,7 @@ each separately satisfiable, since any of these being unsatisfiable likely
 indicates something unexpected.  Setting this to @('NIL') skips these
 checks.</li>
 
-<li>@(':clause-check-hints'), @(':run-check-hints), @(':measure-hints'), and
+<li>@(':clause-check-hints'), @(':run-check-hints'), @(':measure-hints'), and
 @(':state-hyp-inductive-hints') provide computed hints to various side goals
 produced by the clause processor.  Each entry should be a list of hints like
 the usual @(':hints') provided to a defthm event, but all the hints should be

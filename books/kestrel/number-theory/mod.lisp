@@ -19,19 +19,6 @@
 ;; Note that books/kestrel/arithmetic-light/mod.lisp also deals with mod but
 ;; not with primality.
 
-;move
-(defthm mod-of-expt-when-equal-of-mod-subst-constant
-  (implies (and (equal k (mod r n)) ; k is a free var
-                (syntaxp (and (quotep k)
-                              (not (quotep r))))
-                (integerp i)
-                (<= 0 i)
-                (integerp r)
-                (natp n))
-           (equal (mod (expt r i) n)
-                  (mod (expt k i) n)))
-  :hints (("Goal" :in-theory (enable expt))))
-
 (defthm equal-of-0-and-mod-of-*-when-primep
   (implies (and (rtl::primep p)
                 (integerp x)

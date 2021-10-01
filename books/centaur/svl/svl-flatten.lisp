@@ -3562,7 +3562,9 @@ them.
                                                  dont-flatten))
 
        (rp-state (rp::rp-state-new-run rp::rp-state))
-       (rp-state (rp::rp-state-init-rules (svex-simplify-rules-fn) nil nil rp::rp-state state))
+       (rp-state (rp::rp-state-init-rules (svex-simplify-rules-fn) nil nil
+                                          rp::rp-state state))
+       (- (rp::check-if-clause-processor-up-to-date (w state)))
 
        (- (cw "Starting to flatten modules and create SVL design... ~%"))
        ((mv modules rp::rp-state)

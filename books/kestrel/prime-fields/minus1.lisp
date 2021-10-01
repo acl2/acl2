@@ -22,6 +22,18 @@
            (integerp (minus1 p)))
   :hints (("Goal" :in-theory (enable fep minus1))))
 
+(defthm integerp-of-minus1-type
+  (implies (integerp p)
+           (integerp (minus1 p)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable fep minus1))))
+
+(defthm <-of-0--and-minus1-type
+  (implies (< 1 p)
+           (< 0 (minus1 p)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable fep minus1))))
+
 ;; -1 is in the field
 (defthm fep-of-minus1
   (implies (posp p)

@@ -613,9 +613,9 @@ ACL2 !>>(DEFUN FOO-BAD (TOP)
 
 
 ACL2 Error in ( DEFUN FOO-BAD ...):  The stobj-let binding expressions
-((SUB0 TOP) (SUB0-AGAIN TOP)) ultimately access the same field SUB0$C
-of concrete stobj TOP$C.  Since variables SUB$C and SUB$C-CONG are
-to be updated (i.e., they are among the stobj-let form's producer variables),
+((SUB0 TOP) (SUB0-AGAIN TOP)) both ultimately read concrete stobj TOP$C
+with accessor SUB0$C.  Since variables SUB$C and SUB$C-CONG are to
+be updated (i.e., they are among the stobj-let form's producer variables),
 this aliasing is illegal.  The form 
 (STOBJ-LET ((SUB$C (SUB0 TOP))
             (SUB$C-CONG (SUB0-AGAIN TOP)
@@ -838,10 +838,10 @@ ACL2 !>>(DEFUN FOO2-BAD (TOP2)
 
 
 ACL2 Error in ( DEFUN FOO2-BAD ...):  The stobj-let binding expressions
-((SUB02 TOP2) (SUB02-AGAIN TOP2)) ultimately access the same field
-SUB0$C of concrete stobj TOP$C.  Since variables SUB$C and SUB$C-CONG
-are to be updated (i.e., they are among the stobj-let form's producer
-variables), this aliasing is illegal.  The form 
+((SUB02 TOP2) (SUB02-AGAIN TOP2)) both ultimately read concrete stobj
+TOP$C with accessor SUB0$C.  Since variables SUB$C and SUB$C-CONG are
+to be updated (i.e., they are among the stobj-let form's producer variables),
+this aliasing is illegal.  The form 
 (STOBJ-LET ((SUB$C (SUB02 TOP2))
             (SUB$C-CONG (SUB02-AGAIN TOP2)
                         UPDATE-SUB02))
@@ -1046,7 +1046,7 @@ Goal
    (LET ((OLD (N$VAL N$)))
         (AND (ACL2-NUMBERP OLD)
              (NATP (+ 1 OLD))
-             (LET NIL (NATP OLD))))
+             (NATP OLD)))
    (LET
     ((N$ (LET* ((OLD (N$VAL N$))
                 (N$ (UPDATE-N$VAL (+ 1 OLD) N$)))
@@ -1164,9 +1164,8 @@ Goal
   (AND
    (LET* ((MV (LIST N$2 N$)) (N$2 (MV-NTH 1 MV)))
          (AND (NATP (N$2VAL N$2))
-              (LET NIL
-                   (AND (ACL2-NUMBERP (N$2VAL N$2))
-                        (NATP (+ 1 (N$2VAL N$2)))))))
+              (ACL2-NUMBERP (N$2VAL N$2))
+              (NATP (+ 1 (N$2VAL N$2)))))
    (MV-LET
     (N$ N$2)
     (MV-LET (N$ N$2)

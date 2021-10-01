@@ -874,10 +874,11 @@ Use :simple search strategy to find counterexamples and witnesses.
 ;; PETE: now controlled by the global cgen::cgen-guard-checking
           ((acl2::guard-checking-on (@ cgen-guard-checking))
            (acl2::inhibit-output-lst
-                    ,(if (system-debug-flag vl)
-                         ''(summary)
-                       ;;shut everything except error
-                       (quote #!acl2(remove1-eq 'error *valid-output-names*)))))
+            ,(if (system-debug-flag vl)
+                 ''(summary)
+               ;;shut everything except error
+               (quote #!acl2(remove1-eq 'error *valid-output-names*))))
+           (acl2::inhibited-summary-types acl2::*summary-types*))
                   
           (run-tests-with-timeout ',vars ',test-outcomes% ',gcs% ',vl ',cgen-state state)))
 
@@ -898,7 +899,8 @@ Use :simple search strategy to find counterexamples and witnesses.
 ; But we still dont use make-event, due to which we have to redef.
     (trans-eval
        
-     `(with-output :stack :pop ,@(and (not (debug-flag vl)) '(:off :all))
+     `(with-output :stack :pop
+                   ,@(and (not (debug-flag vl)) '(:off :all :summary-off :all))
         (STATE-GLOBAL-LET*
          ((LD-SKIP-PROOFSP 'ACL2::INCLUDE-BOOK)
           (INSIDE-SKIP-PROOFS T)

@@ -199,7 +199,7 @@
                 (enables (append (list (install-not-normalized-name fn)
                                        (install-not-normalized-name new-fn))
                                  'nil))
-                (new-defun-to-export (if verify-guards (add-verify-guards-t-to-defun new-defun) new-defun))
+                (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
                 (becomes-theorem (make-becomes-theorem fn new-fn nil (not theorem-disabled) enables '(theory 'minimal-theory) state))
                 ;; Remove :hints from the theorem before exporting it:
                 (becomes-theorem-to-export (clean-up-defthm becomes-theorem)))
@@ -229,7 +229,7 @@
                   (enables (append (list (install-not-normalized-name fn)
                                          (install-not-normalized-name new-fn))
                                    'nil))
-                  (new-defun-to-export (if verify-guards (add-verify-guards-t-to-defun new-defun) new-defun))
+                  (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
                   (new-defun-to-export (remove-hints-from-defun new-defun-to-export))
                   (becomes-theorem (make-becomes-theorem fn new-fn :single (not theorem-disabled) enables '(theory 'minimal-theory) state))
                   ;; Remove :hints from the theorem before exporting it:
@@ -267,13 +267,15 @@
                                                    measure-hints
                                                    t ; first function in the clique
                                                    state))
-              (mut-rec `(mutual-recursion ,@new-defuns))
+              (mutual-recursion `(mutual-recursion ,@new-defuns))
+              (mutual-recursion-to-export (if verify-guards
+                                              (replace-xarg-in-mutual-recursion :verify-guards t mutual-recursion) ; todo: or just set the verify-guards eagerness and ensure there is a guard?
+                                            mutual-recursion))
               (fn-and-not-normalized-fn-doublets (make-doublets fns (add-not-normalized-suffixes fns)))
               (flag-function-name (pack$ 'flag- fn '-for- 'copy-function)) ;todo: avoid clashes better
               ;; Use as a ruler-extender for the flag function anything used as a ruler-extender for any of the FNS:
               (ruler-extenders (union-ruler-extenders-of-fns fns wrld))
               (ruler-extenders (union-ruler-extenders ruler-extenders '(return-last))) ;make-flag can fail without this (see email to MK)
-              ;;(mut-rec (maybe-skip-proofs mut-rec skip-terminationp))
               ;; TODO: Can my-make-flag-with-name be much slower than make-flag
               ;; TODO: Why doesn't this work?:
               ;; (make-flag-form `(my-make-flag-with-name ,flag-function-name
@@ -283,36 +285,34 @@
                                              :ruler-extenders ,ruler-extenders
                                              :flag-function-name ,flag-function-name
                                              :body ,fn-and-not-normalized-fn-doublets))
-              (equivalence-theorems (make-becomes-theorems fns
-                                                           (repeat (len fns) 'nil)
-                                                           function-renaming
-                                                           t ;todo: try (not theorem-disabled) here
-                                                           ;;TODO: Add the $not-normalized rules for all functions?
-                                                           (list (pack$ flag-function-name '-equivalences)) ;;gross that make-flag doesn't put in this hint for you? (todo: what is this?)
-                                                           '(theory 'minimal-theory)
-                                                           state))
-              ;; TODO: Clean up measure :hints in this:
-              (mutual-recursion-to-export (if verify-guards
-                                              (replace-xarg-in-mutual-recursion :verify-guards t mut-rec) ; todo: or just set the verify-guards eagerness and ensure there is a guard?
-                                            mut-rec))
-              (equivalence-theorems-to-export (clean-up-defthms equivalence-theorems))
+              (becomes-theorems (make-becomes-theorems fns
+                                                       function-renaming
+                                                       (not theorem-disabled)
+                                                       state))
+              (becomes-defthm-flag (make-becomes-defthm-flag flag-function-name
+                                                             becomes-theorems
+                                                             fns
+                                                             function-renaming
+                                                             ;;TODO: Add the $not-normalized rules for all functions?
+                                                             'nil
+                                                             '(theory 'minimal-theory)
+                                                             wrld))
+              (becomes-theorems-to-export (clean-up-defthms becomes-theorems))
               )
            (mv nil
                `(encapsulate ()
                   ,@prologue ;; contains only local stuff
-                  (local ,mut-rec)
+                  (local ,mutual-recursion)
                   (local (install-not-normalized ,(lookup-eq-safe fn function-renaming))) ;TODO: Is there any interaction between this and make-flag?
                   ;; make-flag helps with the proof about mutually recursive functions:
                   (local ,make-flag-form)
-                  ;;TODO: Respect theorem-disabled (can I put a defthmd in a defthm-flag-... ?)
-                  (local (,(pack$ 'defthm- flag-function-name) ;; this is a custom kind of defthm generated by the make-flag
-                          ,@equivalence-theorems))
+                  (local ,becomes-defthm-flag)
                   ,@(and verify-guards
                          `((local ,(verify-guards-for-defun fn function-renaming guard-hints))))
                   ;; Export the new mutual-recursion:
                   ,mutual-recursion-to-export
                   ;; Export the 'becomes' theorems:
-                  ,@equivalence-theorems-to-export
+                  ,@becomes-theorems-to-export
                   )
                state))))))
 

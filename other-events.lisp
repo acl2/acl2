@@ -19002,10 +19002,6 @@
 ; Wrld is normally a logical world, but it can be nil when calling this
 ; function from raw Lisp.
 
-; Warning: Keep the formals in the definitions below in sync with corresponding
-; formals defstobj-field-fns-raw-defs.  Otherwise trace$ may not work
-; correctly; we saw such a problem in Version_5.0 for a resize function.
-
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
 
 ; We return a list of defs (see defstobj-axiomatic-defs) for all the accessors,
@@ -19050,8 +19046,8 @@
              (v-formal (or stobj-formal 'v))
              (stobj-xargs (and stobj-formal
                                `(:stobjs ,stobj-formal)))
-             (type-term            ; used in guard
-              (and (not arrayp)    ; else type-term is not used
+             (type-term         ; used in guard
+              (and (not arrayp) ; else type-term is not used
                    (not hashp)
                    (not stobj-tablep)
                    (if (null wrld) ; called from raw Lisp, so guard is ignored
@@ -19098,7 +19094,7 @@
                                            `((ignore ,var))))
                            ,(if resizable
                                 `(len (nth ,n ,var))
-                              `,array-length))
+                              array-length))
              (,resize-name
               (i ,var)
               (declare (xargs :guard (,top-recog ,var)
@@ -19168,59 +19164,70 @@
 ; requirement.
 
                                       `(,top-recog ,var)))))
-          (append
-           `((,accessor-name
-              (k ,var)
-              (declare (xargs :guard ,(common-guard hash-test var top-recog)
-                              :verify-guards t))
-              (cdr (hons-assoc-equal k (nth ,n ,var))))
-             (,updater-name
-              (k ,v-formal ,var)
-              (declare (xargs :guard ,(common-guard hash-test var top-recog)
-                              :verify-guards t))
-              (update-nth ,n (cons (cons k ,v-formal) (nth ,n ,var)) ,var))
-             (,boundp-name
-              (k ,var)
-              (declare (xargs :guard ,(common-guard hash-test var top-recog)
-                              :verify-guards t))
-              (consp (hons-assoc-equal k (nth ,n ,var))))
-             ,@(and hashp ; skip this for a stobj-table
-                    `((,accessor?-name
-                       (k ,var)
-                       (declare (xargs :guard
-                                       ,(common-guard hash-test var top-recog)
-                                       :verify-guards t))
-                       (mv (,accessor-name k ,var)
-                           (,boundp-name k ,var)))))
-             (,remove-name
-              (k ,var)
-              (declare (xargs :guard ,(common-guard hash-test var top-recog)
-                              :verify-guards t))
-              (update-nth ,n (hons-remove-assoc k (nth ,n ,var)) ,var))
-             (,count-name
-              (,var)
-              (declare (xargs :guard (,top-recog ,var)))
-              (count-keys (nth ,n ,var)))
-             (,clear-name
-              (,var)
-              (declare (xargs :guard (,top-recog ,var)))
-              (update-nth ,n nil ,var))
-             (,init-name
-              (ht-size rehash-size rehash-threshold ,var)
-              (declare (xargs :guard (and (,top-recog ,var)
-                                          (or (natp ht-size)
-                                              (not ht-size))
-                                          (or (and (rationalp rehash-size)
-                                                   (<= 1 rehash-size))
-                                              (not rehash-size))
-                                          (or (and (rationalp rehash-threshold)
-                                                   (<= 0 rehash-threshold)
-                                                   (<= rehash-threshold 1))
-                                              (not rehash-threshold))))
-                       (ignorable ht-size rehash-size rehash-threshold))
-              (update-nth ,n nil ,var)))
-           (defstobj-field-fns-axiomatic-defs
-             top-recog var (+ n 1) (cdr field-templates) wrld))))
+            (append
+             `(,(cond (hashp ; (not stobj-tablep)
+                       `(,accessor-name
+                         (k ,var)
+                         (declare (xargs :guard
+                                         ,(common-guard hash-test var top-recog)
+                                         :verify-guards t))
+                         (cdr (hons-assoc-equal k (nth ,n ,var)))))
+                      (t
+                       `(,accessor-name
+; We use v for the default, since we know that v is not ,var.
+                         (k ,var v)
+                         (declare (xargs :guard
+                                         ,(common-guard hash-test var top-recog)
+                                         :verify-guards t))
+                         (let ((pair (hons-assoc-equal k (nth ,n ,var))))
+                           (if pair (cdr pair) v)))))
+               (,updater-name
+                (k ,v-formal ,var)
+                (declare (xargs :guard ,(common-guard hash-test var top-recog)
+                                :verify-guards t))
+                (update-nth ,n (cons (cons k ,v-formal) (nth ,n ,var)) ,var))
+               (,boundp-name
+                (k ,var)
+                (declare (xargs :guard ,(common-guard hash-test var top-recog)
+                                :verify-guards t))
+                (consp (hons-assoc-equal k (nth ,n ,var))))
+               ,@(and hashp ; skip this for a stobj-table
+                      `((,accessor?-name
+                         (k ,var)
+                         (declare (xargs :guard
+                                         ,(common-guard hash-test var top-recog)
+                                         :verify-guards t))
+                         (mv (,accessor-name k ,var)
+                             (,boundp-name k ,var)))))
+               (,remove-name
+                (k ,var)
+                (declare (xargs :guard ,(common-guard hash-test var top-recog)
+                                :verify-guards t))
+                (update-nth ,n (hons-remove-assoc k (nth ,n ,var)) ,var))
+               (,count-name
+                (,var)
+                (declare (xargs :guard (,top-recog ,var)))
+                (count-keys (nth ,n ,var)))
+               (,clear-name
+                (,var)
+                (declare (xargs :guard (,top-recog ,var)))
+                (update-nth ,n nil ,var))
+               (,init-name
+                (ht-size rehash-size rehash-threshold ,var)
+                (declare (xargs :guard (and (,top-recog ,var)
+                                            (or (natp ht-size)
+                                                (not ht-size))
+                                            (or (and (rationalp rehash-size)
+                                                     (<= 1 rehash-size))
+                                                (not rehash-size))
+                                            (or (and (rationalp rehash-threshold)
+                                                     (<= 0 rehash-threshold)
+                                                     (<= rehash-threshold 1))
+                                                (not rehash-threshold))))
+                         (ignorable ht-size rehash-size rehash-threshold))
+                (update-nth ,n nil ,var)))
+             (defstobj-field-fns-axiomatic-defs
+               top-recog var (+ n 1) (cdr field-templates) wrld))))
          (t
           (append
            `((,accessor-name (,var)
@@ -19411,16 +19418,17 @@
                    (putprop
 ; Note that 'stobjs-out for acc-fn in the stobj-table case is placed further
 ; below.
-                    acc-fn 'stobjs-in (list nil name)
+                    acc-fn 'stobjs-in (if (eq (car type) 'hash-table)
+                                          (list nil name)
+
+; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
+
+                                        (list nil name *stobj-table-stobj*))
                     (putprop
                      upd-fn 'stobjs-in
                      (if (eq (car type) 'stobj-table)
 
-; We use the special value *stobj-table-stobj* to represent the fact that the
-; second argument of a stobj-table updater is an arbitrary stobj.  Since those
-; updater are not allowed directly in code, but only by way of stobj-let
-; (rather implicitly), we do not expect to see erroneous uses of this special
-; stobjs-in value.
+; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
 
                          (list nil *stobj-table-stobj* name)
                        (list nil nil name))
@@ -19431,11 +19439,7 @@
                            accessor?-fn 'stobjs-in (list nil name)
                            wrld)
 
-; We use the special value stobjs-out = (list *stobj-table-stobj*) for
-; stobj-table accessors.  Since those accessors are not allowed directly in
-; code, but only by way of stobj-let (where we deal with the accessor call in a
-; special way, expecting a fixer around it), we do not expect to see erroneous
-; uses of this special stobjs-out value.
+; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
 
                         (putprop acc-fn 'stobjs-out
                                  (list *stobj-table-stobj*)
@@ -19454,16 +19458,25 @@
 
 (defun put-stobjs-in-and-outs (name template wrld)
 
-; We are processing a (defstobj name . args) event for which template
-; is the template.  Wrld is a world containing the definitions of the
-; accessors, updaters and recognizers of the stobj -- all of which
-; were processed before we declared that name is a stobj.  Wrld now
-; also contains the belated declaration that name is a stobj.  We now
-; put the STOBJS-IN and STOBJS-OUT properties for the appropriate
-; names.
+; We are processing a (defstobj name . args) event for which template is the
+; template.  Wrld is a world containing the definitions of the accessors,
+; updaters and recognizers of the stobj -- all of which were processed before
+; we declared that name is a stobj.  Wrld now also contains the belated
+; declaration that name is a stobj.  We now put the STOBJS-IN and STOBJS-OUT
+; properties for the appropriate names.
 
-; Relevant functions and their settings, where stobj-table is treated the same
-; as hash-table except that there is no accessor? function for stobj-tables.
+; Here are relevant functions and their settings, where we write "table" to
+; cover both the hash-table and stobj-table case.  Note that there is no
+; accessor? for a stobj-table.
+
+; We use the special value *stobj-table-stobj*, abbreviated below as "?", to
+; represent the fact that the third argument and the value of a stobj-table
+; accessor call are an arbitrary stobj, as is the second argument of a
+; stobj-table updater call.  Since those calls are not allowed directly in
+; code, but only by way of stobj-let (rather implicitly), we do not expect to
+; see erroneous uses of this special stobjs-in value.  Note that the definition
+; of function guard-clauses takes advantage of stobjs-in and stobjs-out values
+; involving *stobj-table-stobj* to recognize stobj-table field accesses.
 
 ;      fn                  stobjs-in          stobjs-out
 ; topmost recognizer       (name)             (nil)
@@ -19472,25 +19485,25 @@
 ; field recogs             (nil ...)          (nil)
 ; simple accessor          (name)             (nil)
 ; hash-table accessor      (nil name)         (nil)
+; stobj-table accessor     (nil name ?)       (?)
 ; array accessor           (nil name)         (nil)
 ; simple updater           (nil name)         (name)
 ; hash-table updater       (nil nil name)     (name)
+; stobj-table updater      (nil ? name)       (name)
 ; array updater            (nil nil name)     (name)
-; hash-table boundp        (nil name)         (nil nil)
+; table boundp             (nil name)         (nil)
 ; hash-table accessor?     (nil name)         (nil nil)
-; hash-table remove        (nil name)         (name)
-; hash-table count         (name)             (nil)
-; hash-table clear         (name)             (name)
-; hash-table init          (nil nil nil name) (name)
+; table remove             (nil name)         (name)
+; table count              (name)             (nil)
+; table clear              (name)             (name)
+; table init               (nil nil nil name) (name)
 
-; The entries above not involving name were correctly computed before
-; we knew that name was a stobj and hence are correct in wrld now.
+; The entries above not involving name were correctly computed before we knew
+; that name was a stobj and hence are correct in wrld now.
 
-; It is important to realize, in the case of the topmost recognizer
-; and the accessors -- which do not return stobjs, that the appearance
-; of name in the stobjs-in setting can be interpreted to mean ``the
-; stobj name MAY be supplied here'' as opposed to ``MUST be supplied
-; here.''
+; It is important to realize, in the case of the topmost recognizer, that the
+; appearance of name in the stobjs-in setting can be interpreted to mean ``the
+; stobj name MAY be supplied here'' as opposed to ``MUST be supplied here.''
 
   (let ((recog-name (access defstobj-template template :recognizer))
         (creator-name (access defstobj-template template :creator))

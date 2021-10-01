@@ -4,17 +4,7 @@
 (include-book "make-becomes-theorem")
 (include-book "kestrel/utilities/verify-guards-dollar" :dir :system) ; only needed for verify-guards-for-defun?
 (include-book "kestrel/std/system/guard-verified-p" :dir :system)
-
-;; The names of the "becomes theorems" for each of the functions in FUNCTION-RENAMING.
-(defun names-of-becomes-theorems (function-renaming)
-  (declare (xargs :guard (function-renamingp function-renaming)))
-  (if (endp function-renaming)
-      nil
-    (let* ((pair (first function-renaming))
-           (old-fn (car pair))
-           (new-fn (cdr pair)))
-      (cons (becomes-theorem-name old-fn new-fn)
-            (names-of-becomes-theorems (rest function-renaming))))))
+(include-book "becomes-theorem-names")
 
 ;; Generate a verify-guards form for FN.  Returns an
 ;; event.  The verify-guards form assumes the new function and "becomes"
@@ -34,7 +24,7 @@
                                                                    ))
                             :do-not '(generalize eliminate-destructors) ;;TODO; Turn off more stuff:
                             ;; we use the becomes lemma(s):
-                            :in-theory '(,@(names-of-becomes-theorems function-renaming)
+                            :in-theory '(,@(becomes-theorem-names function-renaming)
                                          ;; because untranslate can
                                          ;; introduce CASE, which will have
                                          ;; EQLABLEP guard obligations that

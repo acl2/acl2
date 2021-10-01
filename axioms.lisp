@@ -7953,11 +7953,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        ((or (and (assoc-eq 'defund rst0)
 
 ; It is of course possible that the default defun-mode is :program and thus no
-; definition expicitly declares :program mode.  In that case, we might generate
-; in-theory events but they would be skipped because the default defun-mode is
-; :program.  Note by the way that all functions introduced by mutual-recursion
-; have the same defun-mode, which allows us to avoid thinking about mixed
-; defun-mode cases.
+; definition explicitly declares :program mode.  In that case, we might
+; generate in-theory events but they would be skipped because the default
+; defun-mode is :program.  Note by the way that all functions introduced by
+; mutual-recursion have the same defun-mode, which allows us to avoid thinking
+; about mixed defun-mode cases.
 
                  (not (some-program-declared-p (strip-cdrs rst0))))
             (assoc-eq 'defun-nx rst0)

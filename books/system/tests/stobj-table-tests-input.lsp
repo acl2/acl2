@@ -12,12 +12,12 @@
 
 (defstobj top (tbl :type (stobj-table)))
 
-; Fails: "ST1 is not the name of a stobj"
+; Fails: "... ST1 is not the name of a stobj"
 ; (but admissible later, after defstobj st1).
 (defun basic-1 (top)
   (declare (xargs :stobjs top :verify-guards nil))
   (stobj-let
-   ((st1 (st1$fix (tbl-get 'st1 top))))
+   ((st1 (tbl-get 'st1 top (create-st1))))
    (val1)
    (fld1 st1)
    val1))
@@ -32,17 +32,17 @@
 (defun basic-1 (top)
   (declare (xargs :stobjs top :verify-guards nil))
   (stobj-let
-   ((st1 (st1$fix (tbl-get 'st1 top))))
+   ((st1 (tbl-get 'st1 top (create-st1))))
    (val1)
    (fld1 st1)
    val1))
 
-; Illegal variant of definition above: missing st1$fix.
+; Illegal variant of definition above: missing creator.
 ; Error: "the stobj fixer for ST1 should be applied to that expression".
 (defun bad (top)
   (declare (xargs :stobjs top :verify-guards nil))
   (stobj-let
-   ((st1 (tbl-get 'st1 top)))
+   ((st1 (tbl-get 'st1 top))) ; missing creator
    (val1)
    (fld1 st1)
    val1))
@@ -52,10 +52,10 @@
 (defun update-1 (top)
   (declare (xargs :stobjs top :verify-guards nil))
   (stobj-let
-   ((st1 (st1$fix (tbl-get 'st1 top)))
-    (st2 (st2$fix (tbl-get 'st2 top)))
-    (st3 (st3$fix (tbl-get 'st3 top)))
-    (st3a (st3a$fix (tbl-get 'st3a top))))
+   ((st1 (tbl-get 'st1 top (create-st1)))
+    (st2 (tbl-get 'st2 top (create-st2)))
+    (st3 (tbl-get 'st3 top (create-st3)))
+    (st3a (tbl-get 'st3a top (create-st3a))))
    (st3 st2 st1 e)
    (let* ((val1 (fld1 st1))
           (val2 (fld2 st2))
@@ -71,10 +71,10 @@
 (defun read-1 (top)
   (declare (xargs :stobjs top :verify-guards nil))
   (stobj-let
-   ((st1 (st1$fix (tbl-get 'st1 top)))
-    (st2 (st2$fix (tbl-get 'st2 top)))
-    (st3 (st3$fix (tbl-get 'st3 top)))
-    (st3a (st3a$fix (tbl-get 'st3a top))))
+   ((st1 (tbl-get 'st1 top (create-st1)))
+    (st2 (tbl-get 'st2 top (create-st2)))
+    (st3 (tbl-get 'st3 top (create-st3)))
+    (st3a (tbl-get 'st3a top (create-st3a))))
    (val1 val2 val3 val3a)
    (mv (fld1 st1) (fld2 st2) (fld3 st3) (fld3a st3a))
    (list val1 val2 val3 val3a)))
@@ -128,6 +128,14 @@
 (oops) ; restore events from ubt above
 
 ; Now do those same tests after guard verificatin of update-1 and read-1.
+; Note: Guard verification of update-1 depends on knowing that tbl-get returns
+; a stobj of the expected stobj type.  The implementation accomplishes this by
+; wrapping a stobj-fixer around each tbl-get call before generating the guard
+; proof obligation.  This is justified because that proof obligation merely
+; needs to be sufficient to justify error-free execution, and it is an
+; invariant that any tbl-get call accepted in the guard or body of a definition
+; is well-formed, such that the call will indeed return a stobj of the expected
+; stobj type during execution.
 (verify-guards update-1)
 (verify-guards read-1)
 (runs 1)
@@ -139,8 +147,8 @@
 (defun update-1a (top)
   (declare (xargs :stobjs top :verify-guards nil))
   (stobj-let
-   ((st3  (st3$fix  (tbl-get 'st3  top)))
-    (st3a (st3a$fix (tbl-get 'st3a top))))
+   ((st3  (tbl-get 'st3  top (create-st3)))
+    (st3a (tbl-get 'st3a top (create-st3a))))
    (st3 st3a val3 val3a)
    (let* ((val3  (fld3  st3a))
           (val3a (fld3  st3a))
@@ -153,8 +161,23 @@
 (defun update-1a-bad (top)
   (declare (xargs :stobjs top :verify-guards nil))
   (stobj-let
-   ((st3  (st3$fix  (tbl-get 'st3  top)))
-    (st3a (st3$fix  (tbl-get 'st3 top))))
+   ((st3  (tbl-get 'st3  top (create-st3)))
+    (st3a (tbl-get 'st3 top (create-st3))))
+   (st3 st3a val3 val3a)
+   (let* ((val3  (fld3  st3a))
+          (val3a (fld3  st3a))
+          (st3  (update-fld3 (+ 3 val3)  st3))
+          (st3a (update-fld3 (+ 3 val3a) st3a)))
+     (mv st3 st3a val3 val3a))
+   (mv val3 val3a top)))
+
+; Error, as above except that this time the complaint is about the creator not
+; matching for the second tbl-get.
+(defun update-1a-bad (top)
+  (declare (xargs :stobjs top :verify-guards nil))
+  (stobj-let
+   ((st3  (tbl-get 'st3  top (create-st3)))
+    (st3a (tbl-get 'st3 top (create-st3a))))
    (st3 st3a val3 val3a)
    (let* ((val3  (fld3  st3a))
           (val3a (fld3  st3a))
@@ -179,7 +202,7 @@
 (defun update-2 (top)
   (declare (xargs :stobjs top :verify-guards nil))
   (stobj-let
-   ((st4 (st4$fix (tbl-get 'st4 top))))
+   ((st4 (tbl-get 'st4 top (create-st4))))
    (st4)
    (let* ((v0 (ar4i 0 st4))
           (v1 (ar4i 1 st4))
@@ -193,7 +216,7 @@
 (defun read-2 (top)
   (declare (xargs :stobjs top :verify-guards nil))
   (stobj-let
-   ((st4 (st4$fix (tbl-get 'st4 top))))
+   ((st4 (tbl-get 'st4 top (create-st4))))
    (v0 v1 v2 v3)
    (mv (ar4i 0 st4) (ar4i 1 st4) (ar4i 2 st4) (ar4i 3 st4))
    (list v0 v1 v2 v3)))
@@ -224,10 +247,11 @@
   (declare (xargs :guard t))
   nil)
 
-(defun tbl2$a-get (key x)
+(defun tbl2$a-get (key x default)
   (declare (xargs :guard (and (symbolp key)
                               (top2$ap x))))
-  (cdr (assoc-eq key x)))
+  (let ((pair (assoc-eq key x)))
+    (if pair (cdr pair) default)))
 
 (defun tbl2$a-put (key val x)
   (declare (xargs :guard (and (symbolp key)
@@ -279,8 +303,8 @@
         (IMPLIES (AND (TOP2$CORR TOP TOP2)
                       (SYMBOLP K)
                       (TOP2$AP TOP2))
-                 (EQUAL (TBL-GET K TOP)
-                        (TBL2$A-GET K TOP2)))
+                 (EQUAL (TBL-GET K TOP V)
+                        (TBL2$A-GET K TOP2 V)))
         :RULE-CLASSES NIL)
 
 (DEFTHM TBL2-PUT{CORRESPONDENCE}
@@ -361,10 +385,10 @@
 (defun update-3 (top2)
   (declare (xargs :stobjs top2 :verify-guards nil))
   (stobj-let
-   ((st1 (st1$fix (tbl2-get 'st1 top2)))
-    (st2 (st2$fix (tbl2-get 'st2 top2)))
-    (st3 (st3$fix (tbl2-get 'st3 top2)))
-    (st3a (st3a$fix (tbl2-get 'st3a top2))))
+   ((st1 (tbl2-get 'st1 top2 (create-st1)))
+    (st2 (tbl2-get 'st2 top2 (create-st2)))
+    (st3 (tbl2-get 'st3 top2 (create-st3)))
+    (st3a (tbl2-get 'st3a top2 (create-st3a))))
    (st3 st2 st1 e)
    (let* ((val1 (fld1 st1))
           (val2 (fld2 st2))
@@ -380,10 +404,10 @@
 (defun read-3 (top2)
   (declare (xargs :stobjs top2 :verify-guards nil))
   (stobj-let
-   ((st1 (st1$fix (tbl2-get 'st1 top2)))
-    (st2 (st2$fix (tbl2-get 'st2 top2)))
-    (st3 (st3$fix (tbl2-get 'st3 top2)))
-    (st3a (st3a$fix (tbl2-get 'st3a top2))))
+   ((st1 (tbl2-get 'st1 top2 (create-st1)))
+    (st2 (tbl2-get 'st2 top2 (create-st2)))
+    (st3 (tbl2-get 'st3 top2 (create-st3)))
+    (st3a (tbl2-get 'st3a top2 (create-st3a))))
    (val1 val2 val3 val3a)
    (mv (fld1 st1) (fld2 st2) (fld3 st3) (fld3a st3a))
    (list val1 val2 val3 val3a)))
@@ -416,7 +440,7 @@
              (declare (ignore e))
              top0))
    (t (stobj-let
-       ((top (top$fix (tbl-get 'top top0))))
+       ((top (tbl-get 'top top0 (create-top))))
        (top)
        (update-1-rec top (1- n))
        top0))))
@@ -428,7 +452,7 @@
   (cond
    ((zp n) (read-1 top0))
    (t (stobj-let
-       ((top (top$fix (tbl-get 'top top0))))
+       ((top (tbl-get 'top top0 (create-top))))
        (val)
        (read-1-rec top (1- n))
        val))))
@@ -501,40 +525,18 @@
 ;;; Additional, miscellaneous errors
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; We submitted the same function as this much earlier in the file, except this
-; time we try to trick the system by using tbl0-get in place of tbl-get to hide
-; the aliasing a bit.  It's still an error, because the accessor for a stobj
-; (in this case st3) must truly be an accessor for that stobj, not merely for
-; one congruent to it.
-(defun update-1a-bad (top)
+; The accessor for a parent stobj (in this case, accessor tbl0-get for top0) is
+; ok when the corresponding accessor is expected for a congruent stobj (in this
+; case, tbl-get for top).
+(defun update-1b (top)
   (declare (xargs :stobjs top :verify-guards nil))
   (stobj-let
-   ((st3  (st3$fix  (tbl-get 'st3  top)))
-    (st3a (st3$fix  (tbl0-get 'st3 top))))
-   (st3 st3a val3 val3a)
-   (let* ((val3  (fld3  st3a))
-          (val3a (fld3  st3a))
-          (st3  (update-fld3 (+ 3 val3)  st3))
-          (st3a (update-fld3 (+ 3 val3a) st3a)))
-     (mv st3 st3a val3 val3a))
-   (mv val3 val3a top)))
+   ((st1 (tbl0-get 'st1 top (create-st1))))
+   (st1)
+   st1
+   top))
 
-; This time we change the fixer instead of the accessor, and happily we still
-; get a suitable error (fixer mismatch).
-(defun update-1a-bad (top)
-  (declare (xargs :stobjs top :verify-guards nil))
-  (stobj-let
-   ((st3  (st3$fix  (tbl-get 'st3  top)))
-    (st3a (st3a$fix  (tbl-get 'st3 top))))
-   (st3 st3a val3 val3a)
-   (let* ((val3  (fld3  st3a))
-          (val3a (fld3  st3a))
-          (st3  (update-fld3 (+ 3 val3)  st3))
-          (st3a (update-fld3 (+ 3 val3a) st3a)))
-     (mv st3 st3a val3 val3a))
-   (mv val3 val3a top)))
-
-; The :type should be (stobj-table), not stobj-table.
+; Error: The :type should be (stobj-table), not stobj-table.
 (defstobj top-bad (tbl :type stobj-table))
 
 ; Disallow stobj fixer calls at the top level.
@@ -571,7 +573,7 @@
 
   (defun set-st-in-stobj-table (fld-val top)
     (declare (xargs :stobjs top))
-    (stobj-let ((st5 (st5$fix (tbl-get 'st5 top))))
+    (stobj-let ((st5 (tbl-get 'st5 top (create-st5))))
                (st5)
                (update-fld5 fld-val st5)
                top))
@@ -593,7 +595,7 @@
 
   (defun set-st-in-stobj-table (fld-val top)
     (declare (xargs :stobjs top))
-    (stobj-let ((st5 (st5$fix (tbl-get 'st5 top))))
+    (stobj-let ((st5 (tbl-get 'st5 top (create-st5))))
                (st5)
                (update-fld5 fld-val st5)
                top))
@@ -606,3 +608,272 @@
 ; As Sol points out, if this succeeded then we could prove nil by
 ; defining st so that fld is a symbol, and then using tricks with mbe and
 ; clause-processors to prove nil.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Test :renaming
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(ubt 2) ; back to just after portcullis commands
+
+(defstobj top (tbl :type (stobj-table))
+  :renaming ((tbl-get top-tbl-get)))
+
+(defstobj st1 (fld1 :type integer :initially 0)
+  :renaming ((create-st1 new-st1)))
+
+; Here is a simplified version of update-1 (defined at the top of this file).
+; It fails because the creater is new-st1, not create-st1.
+(defun update-1-1 (top)
+  (declare (xargs :stobjs top :verify-guards nil))
+  (stobj-let
+   ((st1 (top-tbl-get 'st1 top (create-st1))))
+   (st1 e)
+   (let* ((val1 (fld1 st1))
+          (st1 (update-fld1 (+ 1 val1) st1)))
+     (mv st1 (equal val1 3)))
+   (mv e top)))
+
+; Here is a simplified version of update-1 (defined at the top of this file).
+; It fails because the accessor is top-tbl-get, not tbl-get.
+(defun update-1-2 (top)
+  (declare (xargs :stobjs top :verify-guards nil))
+  (stobj-let
+   ((st1 (tbl-get 'st1 top (new-st1))))
+   (st1 e)
+   (let* ((val1 (fld1 st1))
+          (st1 (update-fld1 (+ 1 val1) st1)))
+     (mv st1 (equal val1 3)))
+   (mv e top)))
+
+; This one comes closer than the two above, but the guess for the updater
+; corresponding to top-tbl-get is top-tbl-put, which is wrong.
+(defun update-1-3 (top)
+  (declare (xargs :stobjs top :verify-guards nil))
+  (stobj-let
+   ((st1 (top-tbl-get 'st1 top (new-st1))))
+   (st1 e)
+   (let* ((val1 (fld1 st1))
+          (st1 (update-fld1 (+ 1 val1) st1)))
+     (mv st1 (equal val1 3)))
+   (mv e top)))
+
+; This one is finally right.
+(defun update-1-4 (top)
+  (declare (xargs :stobjs top :verify-guards nil))
+  (stobj-let
+   ((st1 (top-tbl-get 'st1 top (new-st1)) tbl-put))
+   (st1 e)
+   (let* ((val1 (fld1 st1))
+          (st1 (update-fld1 (+ 1 val1) st1)))
+     (mv st1 (equal val1 3)))
+   (mv e top)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Read-over-write issue
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Thanks to Sol Swords for raising this issue and providing the following
+; example.
+
+; In an earlier implementation of stobj-tables, in which a stobj-let accessor
+; for a stobj-table field was of the form (st-fix (tbl-get 'st stobj-table)),
+; the theorem test1-of-do-something-complicated below failed because the
+; formula (foop (do-something-complicated-with-foo in foo)) isn't provable in
+; the necessary context.
+
+(ubt 2) ; back to just after portcullis commands
+
+(include-book "std/stobjs/stobj-table" :dir :system)
+
+(in-theory (disable nth update-nth))
+
+(defstobj foo (foo-fld))
+
+(defthm foo-fld-of-update-foo-fld
+  (equal (foo-fld (update-foo-fld val foo))
+         val))
+
+(in-theory (disable foop foo-fld update-foo-fld))
+
+(defund do-something-complicated-with-foo (in foo)
+  (declare (xargs :stobjs foo))
+  (update-foo-fld in foo))
+
+(defthm foo-fld-of-do-something-complicated
+  (equal (foo-fld (do-something-complicated-with-foo in foo)) in)
+  :hints(("Goal" :in-theory (enable do-something-complicated-with-foo))))
+
+(defun test1 (stobj-table)
+  (declare (xargs :stobjs (stobj-table)))
+  (stobj-let ((foo (tbl-get 'foo stobj-table (create-foo))))
+             (fld)
+             (foo-fld foo)
+             fld))
+
+(defthm test1-of-do-something-complicated
+  (let* ((foo1 (do-something-complicated-with-foo in foo))
+         (stobj-table (tbl-put 'foo foo1 stobj-table)))
+    (equal (test1 stobj-table)
+           in)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Reasoning about stobj recognizers
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(ubt 2) ; back to just after portcullis commands
+
+(include-book "std/stobjs/stobj-table" :dir :system)
+
+(defstobj st (fld :type integer :initially 0))
+
+(defun read-fld-from-stobj-table-try1 (stobj-table)
+  (declare (xargs :stobjs (stobj-table)))
+  (stobj-let ((st (tbl-get 'st stobj-table (create-st))))
+             (val)
+             (fld st)
+             val))
+
+; FAILS because the tbl-get call above provides a value for st that doesn't
+; provably satisfy the recognizer for st (i.e., stp), even though that's an
+; invariant that holds during execution.
+(thm (implies (stobj-tablep stobj-table)
+              (integerp (read-fld-from-stobj-table-try1 stobj-table))))
+
+(defun read-fld-from-stobj-table (stobj-table)
+  (declare (xargs :stobjs (stobj-table)))
+  (stobj-let ((st (tbl-get 'st stobj-table (create-st))))
+             (val)
+             (mbe :logic (non-exec (let ((st (st$fix st)))
+                                     (fld st)))
+                  :exec (fld st))
+             val))
+
+; SUCCEEDS because the stobj accessed by fld is produced from the coercion of
+; st to satisfy its stobj recognizer (i.e., stp).  By using mbe together with
+; the way guard obligations are generated -- by putting a stobj fixer around
+; each call of stobj-let; see ACL2 source function fix-stobj-table-get-calls --
+; we avoid runtime overhead of the fixer call.
+(thm (implies (stobj-tablep stobj-table)
+              (integerp (read-fld-from-stobj-table stobj-table))))
+
+; Here is a macro that may serve some day as a replacement for stobj-fixers,
+; followed by another version of the function defined just above but this time
+; using the new macro below.
+
+(defmacro stobj-fix (st &key recognizer creator)
+  (declare (xargs :guard (and (symbolp st)
+                              (symbolp recognizer)
+                              (symbolp creator))))
+  (let ((recognizer (or recognizer
+                        (defstobj-fnname st :recognizer nil nil)))
+        (creator (or creator
+                     (defstobj-fnname st :creator nil nil))))
+    `(if (,recognizer ,st) ,st (,creator))))
+
+(defun read-fld-from-stobj-table-2 (stobj-table)
+  (declare (xargs :stobjs (stobj-table)))
+  (stobj-let ((st (tbl-get 'st stobj-table (create-st))))
+             (val)
+             (mbe :logic (non-exec (fld (stobj-fix st)))
+                  :exec (fld st))
+             val))
+
+(thm (implies (stobj-tablep stobj-table)
+              (integerp (read-fld-from-stobj-table-2 stobj-table))))
+
+; And here is a test adapted from an email from Sol Swords, which exposed a bug
+; in the initial implementation of the use of stobj-fixers in generating guard
+; proof obligations (ACL2 source function fix-stobj-table-get-calls).
+
+(defun foo (sum stobj-table)
+  (declare (xargs :stobjs (stobj-table)
+                  :guard (acl2-numberp sum)))
+  (stobj-let ((st (tbl-get 'st stobj-table (create-st))))
+	     (sum)
+	     (+ sum (fld st))
+	     sum))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Avoiding stobj fixers in guard verification: #1
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This example is due to Sol Swords.  See the comment just above
+; fld-of-stobjtab-st.
+
+(ubt 2) ; back to just after portcullis commands
+
+(include-book "std/stobjs/stobjtab" :dir :system)
+
+(defstobj st (fld :type integer :initially 0))
+
+(defthm mbe-sides-are-equal
+  (implies (stbl-boundp 'st stobjtab)
+           (equal (non-exec (nth 0 (cdr (hons-assoc-equal 'st stobjtab)))) ;; logic
+                  (stobj-let ((st (stbl-get 'st stobjtab (create-st))))    ;; exec
+                             (fld)
+                             (fld st)
+                             fld)))
+  :rule-classes nil)
+
+; This didn't guard verify when the guard conjecture was created by applying
+; the stobj fixer, st$fix, to the stbl-get call below (and more generally, by
+; applying a suitable stobj fixer to each stobj-table accessor call).
+; Specifically, the guard obligation from the mbe call was failing to prove.
+; But now ACL2 adds hypothesis (stp (stbl-get 'st stobjtab (create-st))) in the
+; guard conjecture, which allows this to guard verify.
+(defun fld-of-stobjtab-st (stobjtab)
+  (declare (xargs :stobjs stobjtab
+                  :guard (stbl-boundp 'st stobjtab)))
+  (mbe :logic (non-exec (nth 0 (cdr (hons-assoc-equal 'st stobjtab))))
+       :exec (stobj-let ((st (stbl-get 'st stobjtab (create-st))))
+                        (fld)
+                        (fld st)
+                        fld)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Avoiding stobj fixers in guard verification: #2
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This example is from Rob Sumners.  See the comment above do-tbl, below.
+
+(ubt 2) ; back to just after portcullis commands
+
+(include-book "std/top" :dir :system)
+(include-book "std/stobjs/stobj-table" :dir :system)
+
+(defstobj st fld)
+
+(define good-st-p (st)
+  ;; some "good" predicate on state which isn't true of (create-st)
+  (natp (fld st)))
+
+(define good-tbl-p (stobj-table)
+  ;; this is a lift of good-st-p to a stobj-table with st
+  (and (tbl-boundp 'st stobj-table)
+       (stobj-let ((st (tbl-get 'st stobj-table (create-st))))
+                  (chk)
+                  (good-st-p st)
+                  chk)))
+
+(defthm good-tbl-p-implies-good-st-p
+  (implies (good-tbl-p x)
+           (and (hons-assoc-equal 'st (car x))
+                (good-st-p (cdr (hons-assoc-equal 'st (car x))))))
+  :hints (("Goal" :in-theory (enable good-tbl-p))))
+
+(define do-st (st)
+  :guard (good-st-p st)
+  ;;;; something that needs good-st-p to be true but we just return st here as placeholder
+  st)
+
+; The following function failed to guard verify when the guard conjecture was
+; created by applying the stobj fixer, st$fix, to the tbl-get call below (and
+; more generally, by applying a suitable stobj fixer to each stobj-table
+; accessor call).  But now ACL2 adds hypothesis (stp (tbl-get 'st stobj-table
+; (create-st))) in the guard conjecture, which allows this to guard verify.
+(define do-tbl (stobj-table)
+  :guard (good-tbl-p stobj-table)
+  (stobj-let ((st (tbl-get 'st stobj-table (create-st))))
+             (st)
+             (do-st st)
+             stobj-table))

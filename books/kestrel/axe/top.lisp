@@ -71,6 +71,7 @@
 (include-book "dag-to-term-with-lets")
 (include-book "dag-variable-alist")
 (include-book "dags")
+(include-book "dags2")
 (include-book "dargp-less-than")
 (include-book "dargp")
 (include-book "def-dag-builder-theorems")

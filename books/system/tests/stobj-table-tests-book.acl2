@@ -9,4 +9,7 @@
 #||
 (depends-on "stobj-table-tests-input.lsp")
 (depends-on "stobj-table-tests-log.txt")
+(include-book "std/stobjs/stobj-table" :dir :system)
+(include-book "std/stobjs/stobjtab" :dir :system)
+(include-book "std/top" :dir :system)
 ||#
