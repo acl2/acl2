@@ -221,6 +221,7 @@
       (innermostp booleanp))
      :returns (mv (type? type-optionp)
                   (innermostp booleanp :hyp (booleanp innermostp)))
+     :parents nil
      (b* (((when (endp inscope)) (mv nil nil))
           (scope (atc-symbol-type-alist-fix (car inscope)))
           (type? (cdr (assoc-eq var scope)))
@@ -378,7 +379,7 @@
    (xdoc::p
     "Note that exactly one of the first two fields is @('nil').
      This is an invariant."))
-  ((type? type-option)
+  ((out-type type-option)
    (loop? stmt-option)
    (xforming symbol-list)
    (returns-value-thm symbol)
@@ -1103,7 +1104,7 @@
        (fn+info (assoc-eq term.fn (atc-symbol-fninfo-alist-fix prec-fns)))
        ((unless (consp fn+info)) (no))
        (info (cdr fn+info))
-       (type (atc-fn-info->type? info))
+       (type (atc-fn-info->out-type info))
        ((when (null type)) (no))
        (limit (atc-fn-info->limit info))
        (limit (fty-fsublis-var var-term-alist limit)))
@@ -3578,7 +3579,7 @@
                          limit experimental names-to-avoid ctx state))
        ((when erp) (mv erp (list (irr-ext-declon) nil nil nil nil) state))
        (info (make-atc-fn-info
-              :type? type
+              :out-type type
               :loop? nil
               :xforming nil
               :returns-value-thm fn-returns-value-thm
@@ -4578,7 +4579,6 @@
         (atc-gen-loop-stmt body (list scope) fn measure-of-fn measure-formals
                            prec-fns experimental ctx state))
        ((when erp) (mv erp (list nil nil nil nil) state))
-       (type? nil)
        ((mv erp
             (list local-events
                   exported-events
@@ -4587,7 +4587,7 @@
                   &
                   names-to-avoid)
             state)
-        (atc-gen-fn-thms fn pointers type? loop-xforming scope prec-fns
+        (atc-gen-fn-thms fn pointers nil loop-xforming scope prec-fns
                          proofs prog-const nil nil fn-thms
                          print loop-limit experimental
                          names-to-avoid ctx state))
@@ -4694,7 +4694,7 @@
        (exported-events (and proofs
                              (not (member-eq :array-writes experimental))
                              (append exported-events more-exported-events)))
-       (info (make-atc-fn-info :type? type?
+       (info (make-atc-fn-info :out-type nil
                                :loop? loop-stmt
                                :xforming loop-xforming
                                :returns-value-thm fn-returns-value-thm
