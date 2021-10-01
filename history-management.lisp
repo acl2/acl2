@@ -13618,6 +13618,72 @@
               ttree)))))
    (t (mv nil ttree))))
 
+(defun make-lambda-application+ (formals body actuals)
+  (let ((term (make-lambda-application formals body actuals)))
+    (cond ((and (lambda-applicationp term)
+                (equal (lambda-formals (ffn-symb term))
+                       (fargs term)))
+           (lambda-body (ffn-symb term)))
+          (t term))))
+
+(defun make-lambda-application+-lst (formals termlist args)
+  (cond ((endp termlist) nil)
+        (t (cons (make-lambda-application+ formals (car termlist) args)
+                 (make-lambda-application+-lst formals (cdr termlist) args)))))
+
+(defun split-env (env clause)
+
+; Env is a list of terms of the form (stp (tbl-get 'st ...)) as constructed in
+; (guard-clauses term ...) when term is such a stobj-let call, as recognized by
+; parse-stobj-let-actual.  We return (mv env1 clause'), where -- viewed as a
+; set -- env is partitioned into env1 and env2, where env2 contains each such
+; tbl-get call that either occurs in another member of env or in clause, and
+; clause' is the extension of clause by negating members of env2.  Informally,
+; we are moving members of the input env into clause when they appear to be
+; sufficiently relevant, a very informal heuristic notion that doesn't affect
+; soundness, where the meaning of an (env clause) pair is the conjunction of
+; the union of env with the set of negations of members of clause.
+
+  (cond ((endp env)
+         (mv nil clause))
+        ((lambda-applicationp (car env))
+
+; We could be more restrictive here in the lambda-application case, by moving
+; (car env) into clause only if there is some call (tbl-get 'st ...) in (car
+; env) for which some (possibly other) (tbl-get 'st ...) call, with the same
+; st, occurs in clause.  But we'll go ahead an move every lambda application
+; from env to clause.
+
+         (mv-let (env1 clause1)
+           (split-env (cdr env) clause)
+           (mv (cons (car env1) env1)
+               clause1)))
+        (t (cond ((let ((accessor-call (fargn (car env) 1)))
+                    (or (dumb-occur-lst accessor-call (cdr env))
+                        (dumb-occur-lst accessor-call clause)))
+                  (split-env (cdr env)
+                             (add-literal (fcons-term* 'not (car env))
+                                          clause
+                                          nil)))
+                 (t (mv-let (env1 clause1)
+                      (split-env (cdr env) clause)
+                      (mv (cons (car env1) env1)
+                          clause1)))))))
+
+(defun add-env-to-clause-set-1 (env cl-set)
+  (cond ((endp cl-set) nil)
+        (t (mv-let (tags-rev cl0)
+             (split-initial-extra-info-lits (car cl-set) nil)
+             (mv-let (env2 cl)
+               (split-env env cl0)
+               (declare (ignore env2))
+               (cons (revappend tags-rev cl)
+                     (add-env-to-clause-set-1 env (cdr cl-set))))))))
+
+(defun add-env-to-clause-set (env cl-set)
+  (cond ((null env) cl-set) ; optimization for common case
+        (t (add-env-to-clause-set-1 env cl-set))))
+
 (mutual-recursion
 
 (defun guard-clauses (term debug-info stobj-optp clause wrld ttree newvar)
@@ -13625,14 +13691,41 @@
 ; See also guard-clauses+, which is a wrapper for guard-clauses that eliminates
 ; ground subexpressions.
 
-; We return two results.  The first is a set of clauses whose conjunction
-; establishes that all of the guards in term are satisfied.  The second result
-; is a ttree justifying the simplification we do and extending ttree.
-; Stobj-optp indicates whether we are to optimize away stobj recognizers.  Call
-; this with stobj-optp = t only when it is known that the term in question has
-; been translated with full enforcement of the stobj rules.  Clause is the list
-; of accumulated, negated tests passed so far on this branch.  It is maintained
-; in reverse order, but reversed before we return it.
+; We return three results.  The first is a set of clauses whose conjunction
+; establishes that all of the guards in term are satisfied.  We discuss the
+; second result in the next paragraph.  The third result is a ttree justifying
+; the simplification we do and extending ttree.  Stobj-optp indicates whether
+; we are to optimize away stobj recognizers.  Call this with stobj-optp = t
+; only when it is known that the term in question has been translated with full
+; enforcement of the stobj rules.  Clause is the list of accumulated, negated
+; tests passed so far on this branch, possibly enhanced by facts known about
+; evaluation as discussed in the next paragraph.  Clause is maintained in
+; reverse order, but reversed before we return it.
+
+; The second result is a list of terms, which we think of as an "environment"
+; or "env" for short.  To understand the environment result, consider what we
+; are trying to do here.  A key goal is to guarantee that evaluation avoids
+; Common Lisp errors.  To that end, when computing (guard-clauses term0
+; ... clause0 ...), we permit each clause in the first result (which, again, is
+; a set of clauses -- these are the guard proof obligations) to incorporate
+; facts that are known to be true when evaluating term0 in a context where the
+; negations of terms in clause0 are assumed true.  As of this writing, the
+; facts that make it into an environment are generated for each stobj-table
+; field accessor, say, (tbl-get 'st parent (create-st)): in each such case, the
+; stobj recognizer is assumed to hold of that term, e.g., (stp (tbl-get 'st
+; parent (create-st))) is returned in the environment.  This recognizer call
+; indeed holds where evaluation occurs for term0 (under clause0), because of
+; restrictions in translate on stobj-table field accessors and the invariant
+; maintained on stobj-table fields, that each key 'st of the table is mapped to
+; a stobj satisfying the recognizer of st.  It is thus sound to incorporate the
+; environment into each clause in the clause-set returned as the first result,
+; though we heurstically limit which parts of the environment; see
+; add-env-to-clause-set and its subroutine, split-env.  It would be silly, for
+; example, to add the hypothesis (stp (tbl-get 'st parent (create-st))) to the
+; goal (i.e., the negation of that as a literal in the returned clause-set)
+; when the guard proof obligation has nothing to do with that stobj-field
+; access -- for example, when the goal is (implies (and (integer-listp x)
+; (consp x)) (rationalp (car x))).
 
 ; We do not add the definition rune for *extra-info-fn* in ttree.  The caller
 ; should be content with failing to report that rune.  Prove-guard-clauses is
@@ -13647,79 +13740,121 @@
 ; was understood to be generating the guards for term/alist.  Alist was used to
 ; carry the guard generation process into lambdas.
 
-  (cond ((variablep term) (mv nil ttree))
-        ((fquotep term) (mv nil ttree))
-        ((flambda-applicationp term)
-         (mv-let
-          (cl-set1 ttree)
-          (guard-clauses-lst (fargs term) debug-info stobj-optp clause wrld
-                             ttree newvar)
-          (mv-let
-           (cl-set2 ttree)
-           (guard-clauses (lambda-body (ffn-symb term))
-                          debug-info
-                          stobj-optp
+  (cond
+   ((variablep term) (mv nil nil ttree))
+   ((fquotep term) (mv nil nil ttree))
+   ((flambda-applicationp term)
+    (mv-let
+      (cl-set1 env1 ttree)
+      (guard-clauses-lst (fargs term) debug-info stobj-optp clause wrld
+                         ttree newvar)
+      (mv-let
+        (cl-set2 env2 ttree)
+        (guard-clauses (lambda-body (ffn-symb term))
+                       debug-info
+                       stobj-optp
 
 ; We pass in the empty clause here, because we do not want it involved in
 ; wrapping up the lambda term that we are about to create.
 
-                          nil
-                          wrld ttree newvar)
-           (let* ((term1 (make-lambda-application
-                          (lambda-formals (ffn-symb term))
-                          (termify-clause-set cl-set2)
-                          (remove-guard-holders-lst (fargs term) wrld)))
-                  (cl (reverse (add-literal-smart term1 clause nil)))
-                  (cl-set3 (if (equal cl *true-clause*)
-                               cl-set1
-                             (conjoin-clause-sets+
-                              debug-info
-                              cl-set1
+                       nil
+                       wrld ttree newvar)
+        (let* ((formals (lambda-formals (ffn-symb term)))
+               (args (remove-guard-holders-lst (fargs term) wrld))
+               (term1 (make-lambda-application+
+                       formals
+                       (termify-clause-set cl-set2)
+                       args))
+               (cl (if (and (null (cdr cl-set2)) ; at most one clause
+                            (ffn-symb-p term1 'if))
 
-; Instead of cl below, we could use (maybe-add-extra-info-lit debug-info term
-; cl wrld).  But that can cause a large number of lambda (let) terms in the
-; output that are probably more unhelpful (as noise) than helpful.
+; In this case we prefer that the clause in cl-set2 remain flat.  This can help
+; to avoid clutter.  See for example "The non-trivial part of the guard
+; conjecture for DO-TBL" generated in the DO-TBL example in
+; books/system/tests/stobj-table-tests-input.lsp.
 
-                              (list cl)))))
-             (mv cl-set3 ttree)))))
-        ((eq (ffn-symb term) 'if)
-         (let ((test (remove-guard-holders (fargn term 1) wrld)))
-           (mv-let
-            (cl-set1 ttree)
+                       (reverse (disjoin-clauses
+                                 (make-lambda-application+-lst formals
+                                                               (car cl-set2)
+                                                               args)
+                                 clause))
+                     (reverse (add-literal-smart term1 clause nil))))
+               (cl-set3 (if (equal cl *true-clause*)
+                            cl-set1
+                          (conjoin-clause-sets+
+                           debug-info
+                           cl-set1
+                           (list cl))))
+               (env3 (make-lambda-application+-lst formals env2 args))
+               (env (union-equal env3 env1)))
+
+; Maybe we shouldn't put all of env3 into the clause, instead making the lambda
+; case of split-env more restrictive, as noted in a comment there.  But for
+; now, at least, we'll add env3 as a hypothesis, in its entirety.  If later we
+; decide to use of subset of env3 and a regression test fails, we'll learn
+; something useful!
+
+          (mv (add-env-to-clause-set env cl-set3)
+              env
+              ttree)))))
+   ((eq (ffn-symb term) 'if)
+    (let ((test (remove-guard-holders (fargn term 1) wrld)))
+      (mv-let
+        (cl-set1 env1 ttree)
 
 ; Note:  We generate guards from the original test, not the one with guard
 ; holders removed!
 
-            (guard-clauses (fargn term 1) debug-info stobj-optp clause wrld
-                           ttree newvar)
-            (mv-let
-             (cl-set2 ttree)
-             (guard-clauses (fargn term 2)
-                            debug-info
-                            stobj-optp
+        (guard-clauses (fargn term 1) debug-info stobj-optp clause wrld
+                       ttree newvar)
+        (mv-let
+          (cl-set2 env2 ttree)
+          (guard-clauses (fargn term 2)
+                         debug-info
+                         stobj-optp
 
 ; But the additions we make to the two branches is based on the simplified
 ; test.
 
-                            (add-literal-smart (dumb-negate-lit test)
-                                               clause
-                                               nil)
-                            wrld ttree newvar)
-             (mv-let
-              (cl-set3 ttree)
-              (guard-clauses (fargn term 3)
-                             debug-info
-                             stobj-optp
-                             (add-literal-smart test
-                                                clause
-                                                nil)
-                             wrld ttree newvar)
-              (mv (conjoin-clause-sets+
-                   debug-info
-                   cl-set1
-                   (conjoin-clause-sets+ debug-info cl-set2 cl-set3))
-                  ttree))))))
-        ((eq (ffn-symb term) 'wormhole-eval)
+                         (add-literal-smart (dumb-negate-lit test)
+                                            clause
+                                            nil)
+                         wrld ttree newvar)
+          (mv-let
+            (cl-set3 env3 ttree)
+            (guard-clauses (fargn term 3)
+                           debug-info
+                           stobj-optp
+                           (add-literal-smart test clause nil)
+                           wrld ttree newvar)
+            (mv (conjoin-clause-sets+
+                 debug-info
+                 cl-set1
+                 (conjoin-clause-sets+ debug-info cl-set2 cl-set3))
+                (cond
+                 ((or env2 env3)
+                  (let* ((env23 (intersection-equal env2 env3))
+                         (env2a (if env23 ; optimization: perhaps uncommon case
+                                    (set-difference-equal env2 env23)
+                                  env2))
+                         (env3a (if env23 ; optimization: perhaps uncommon case
+                                    (set-difference-equal env3 env23)
+                                  env3)))
+                    (cond
+                     ((or env2a env3a)
+                      (add-to-set-equal
+                       (fcons-term* 'if
+                                    (fargn term 1)
+                                    (conjoin env2a)
+                                    (conjoin env3a))
+                       (if env23
+                           (union$ env1 env23 :test 'equal)
+                         env1)))
+                     (t ; as sets, env2 = env3 = env23 != {}
+                      (union$ env1 env23 :test 'equal)))))
+                 (t env1))
+                ttree))))))
+   ((eq (ffn-symb term) 'wormhole-eval)
 
 ; Because of translate, term is necessarily of the form
 
@@ -13731,7 +13866,7 @@
 ; <body> of the lambda has been translated despite its occurrence inside a
 ; quoted lambda.  The <name-dropper-term> is always of the form 'NIL or a
 ; variable symbol or a PROG2$ nest of variable symbols and thus has a guard of
-; T.  Furthermore, translate insures that the free variables of the lambda are
+; T.  Furthermore, translate ensures that the free variables of the lambda are
 ; those of the <name-dropper-term>.  Thus, all the variables we encounter in
 ; <body> are variables known in the current context, except <whs>.  By the way,
 ; ``whs'' stands for ``wormhole status'' and if it is the lambda formal we know
@@ -13755,21 +13890,38 @@
 ; generate a fresh variable symbol to use in place of <whs> in our guard
 ; clauses.
 
-         (let* ((whs (car (lambda-formals (cadr (fargn term 2)))))
-                (body (lambda-body (cadr (fargn term 2))))
-                (name-dropper-term (fargn term 3))
-                (new-var (if whs
-                             (genvar whs (symbol-name whs) nil
-                                     (all-vars1-lst
-                                      clause
-                                      (all-vars name-dropper-term)))
-                           nil))
-                (new-body (if (eq whs new-var)
-                              body
-                            (subst-var new-var whs body))))
-           (guard-clauses new-body debug-info stobj-optp clause
-                          wrld ttree newvar)))
-        ((throw-nonexec-error-p term :non-exec nil)
+    (let* ((whs (car (lambda-formals (cadr (fargn term 2)))))
+           (body (lambda-body (cadr (fargn term 2))))
+           (name-dropper-term (fargn term 3))
+           (new-var (if whs
+                        (genvar whs (symbol-name whs) nil
+                                (all-vars1-lst
+                                 clause
+                                 (all-vars name-dropper-term)))
+                      nil))
+           (new-body (if (eq whs new-var)
+                         body
+                       (subst-var new-var whs body))))
+      (cond (new-var (mv-let (cl-set env ttree)
+
+; In this case we discard env if new-var occurs in it.  To see why, imagine
+; that we have an expression (foo (wormhole-eval ...) (wormhole-eval ...)).
+; The calls of guard-clauses on the two wormhole-eval could generate env values
+; about the same new-var whose conjunction could even be inconsistent!  We
+; could keep members of env that don't mention new-var, but it seems a bit
+; unlikely that we will encounter stobj-table field accessor expressions inside
+; a wormhole-eval for which we need stobj recognizer hypotheses elsewhere in
+; the parent term.
+
+                       (guard-clauses new-body debug-info stobj-optp clause
+                                      wrld ttree newvar)
+                       (mv cl-set
+                           (cond ((dumb-occur-var-lst new-var env) nil)
+                                 (t env))
+                           ttree)))
+            (t (guard-clauses new-body debug-info stobj-optp clause
+                              wrld ttree newvar)))))
+   ((throw-nonexec-error-p term :non-exec nil)
 
 ; It would be sound to replace the test above by (throw-nonexec-error-p term
 ; nil nil).  However, through Version_4.3 we have always generated guard proof
@@ -13781,8 +13933,8 @@
 ; only the throw-non-exec-error call needs to be considered for guard
 ; generation, not targ3.
 
-         (guard-clauses (fargn term 2) debug-info stobj-optp clause
-                        wrld ttree newvar))
+    (guard-clauses (fargn term 2) debug-info stobj-optp clause
+                   wrld ttree newvar))
 
 ; At one time we optimized away the guards on (nth 'n MV) if n is an integerp
 ; and MV is bound in (former parameter) alist to a call of a multi-valued
@@ -13793,7 +13945,7 @@
 ; alist when we started generating lambda terms as guards, we choose for
 ; simplicity's sake to eliminate this special optimization for mv-nth.
 
-        (t
+   (t
 
 ; Here we generate the conclusion clauses we must prove.  These clauses
 ; establish that the guard of the function being called is satisfied.  We first
@@ -13803,97 +13955,129 @@
 ; We optimize stobj recognizer calls to true here.  That is, if the function
 ; traffics in stobjs (and is not non-executablep!), then it was so translated
 ; (except in cases handled by the throw-nonexec-error-p case above), and we
-; know that all those stobj recognizer calls are true.
+; know that all those stobj recognizer calls are true.  We similarly know that
+; stobje-table field accesses return appropriate stobjs, and that knowledge is
+; reflected in the env returned.
 
 ; Once upon a time, we normalized the 'guard first.  Is that important?
 
 ; We also generate the special loop$ conjectures as necessary.
 
-         (let ((guard-concl-segments (clausify
-                                      (guard (ffn-symb term)
-                                             stobj-optp
-                                             wrld)
+    (let ((env-term (mv-let (tbl-get parent st st-creator)
+                      (parse-stobj-let-actual term)
+                      (declare (ignore st-creator))
+                      (cond
+                       ((and tbl-get
+; Then check that this really is a stobj-table field access.
+                             (not (member-eq tbl-get *stobjs-out-invalid*))
+                             (equal (stobjs-out tbl-get wrld)
+                                    (list *stobj-table-stobj*))
+                             (equal (stobjs-in tbl-get wrld)
+                                    (list nil parent *stobj-table-stobj*)))
+                        (fcons-term* (get-stobj-recognizer st wrld)
+                                     term))
+                       (t nil))))
+          (guard-concl-segments (clausify (guard (ffn-symb term)
+                                                 stobj-optp
+                                                 wrld)
 
 ; Warning: It might be tempting to pass in the assumptions of clause into the
 ; second argument of clausify.  That would be wrong!  The guard has not yet
 ; been instantiated and so the variables it mentions are not the same ones in
 ; clause!
 
-                                      nil
+                                          nil
 
 ; Should we expand lambdas here?  I say ``yes,'' but only to be conservative
 ; with old code.  Perhaps we should change the t to nil?
 
-                                      t
+                                          t
 
 ; We use the sr-limit from the world, because we are above the level at which
 ; :hints or :guard-hints would apply.
 
-                                      (sr-limit wrld))))
-           (mv-let
-            (cl-set1 ttree)
-            (guard-clauses-lst
-             (cond
-              ((and (eq (ffn-symb term) 'return-last)
-                    (quotep (fargn term 1)))
-               (case (unquote (fargn term 1))
-                 (mbe1-raw
+                                          (sr-limit wrld))))
+      (mv-let
+        (cl-set1 env1 ttree)
+        (guard-clauses-lst
+         (cond
+          ((and (eq (ffn-symb term) 'return-last)
+                (quotep (fargn term 1)))
+           (case (unquote (fargn term 1))
+             (mbe1-raw
 
-; Since (return-last 'mbe1-raw exec logic) macroexpands to exec in raw Common
-; Lisp, we need only verify guards for the :exec part of an mbe call.
+; Consider a call (mbe :logic logic :exec exec), which in translated form looks
+; like (return-last 'mbe1-raw exec logic).  This macroexpands to exec in raw
+; Common Lisp, so we treat this expression as just the :exec part for purposes
+; of computing guard-clauses.
 
-                  (list (fargn term 2)))
-                 (ec-call1-raw
+              (list (fargn term 2)))
+             (ec-call1-raw
 
 ; Since (return-last 'ec-call1-raw ign (fn arg1 ... argk)) leads to the call
 ; (*1*fn arg1 ... argk) or perhaps (*1*fn$inline arg1 ... argk) in raw Common
-; Lisp, we need only verify guards for the argi.
+; Lisp, we need only verify guards for the argi.  This omits producing the
+; environment (second return value of guard-clauses) for (ec-call (tbl-get 'st
+; ...)) where tbl-get is a stobj-table field accessor; but such terms would be
+; rejected by translate so we don't expect to see them (and it's sound to miss
+; this opportunity to generate environment terms).
 
-                  (fargs (fargn term 3)))
-                 (otherwise
+              (fargs (fargn term 3)))
+             (otherwise
 
 ; Consider the case that (fargn term 1) is not syntactically equal to 'mbe1-raw
 ; or 'ec-call1-raw but reduces to one of these.  Even then, return-last is a
 ; macro in Common Lisp, so we shouldn't produce the reduced obligations for
 ; either of the two cases above.  But this is a minor issue anyhow, because
 ; it's certainly safe to avoid those reductions, so in the worst case we would
-; still be sound, even if producing excessively strong guard obligations.
+; still be sound, even if producing excessively strong guard obligations.  (And
+; because translate has accepted these terms, the environments produced are
+; sound, i.e., stobj-field accesses produce the expected stobjs).
 
-                  (fargs term))))
-              (t (fargs term)))
-             debug-info stobj-optp clause wrld ttree newvar)
-            (mv-let (cl-set2 ttree)
-              (special-loop$-guard-clauses
-               clause term wrld newvar ttree)
-              (mv (conjoin-clause-sets+
-                   debug-info
-                   (conjoin-clause-sets+
-                    debug-info
-                    cl-set1
-                    (add-segments-to-clause
-                     (maybe-add-extra-info-lit debug-info term (reverse clause)
-                                               wrld)
-                     (add-each-literal-lst
-                      (and guard-concl-segments ; optimization (nil for ec-call)
-                           (sublis-var-lst-lst
-                            (pairlis$
-                             (formals (ffn-symb term) wrld)
-                             (remove-guard-holders-lst (fargs term) wrld))
-                            guard-concl-segments)))))
-                   cl-set2)
-                  ttree)))))))
+              (fargs term))))
+          (t (fargs term)))
+         debug-info stobj-optp clause wrld ttree newvar)
+        (mv-let (cl-set2 ttree)
+          (special-loop$-guard-clauses clause term wrld newvar ttree)
+          (let ((env2 (if env-term
+                          (add-to-set-equal env-term env1)
+                        env1)))
+            (let* ((guard-concl-segments-1
+                    (add-each-literal-lst
+                     (and guard-concl-segments ; optimization (nil for ec-call)
+                          (sublis-var-lst-lst
+                           (pairlis$
+                            (formals (ffn-symb term) wrld)
+                            (remove-guard-holders-lst (fargs term) wrld))
+                           guard-concl-segments))))
+                   (cl-set
+                    (conjoin-clause-sets+
+                     debug-info
+                     (conjoin-clause-sets+
+                      debug-info
+                      cl-set1
+                      (add-env-to-clause-set
+                       env2
+                       (add-segments-to-clause
+                        (maybe-add-extra-info-lit debug-info term
+                                                  (reverse clause) wrld)
+                        guard-concl-segments-1)))
+                     (add-env-to-clause-set env2 cl-set2))))
+              (mv cl-set env2 ttree)))))))))
 
 (defun guard-clauses-lst (lst debug-info stobj-optp clause wrld ttree newvar)
-  (cond ((null lst) (mv nil ttree))
+  (cond ((null lst) (mv nil nil ttree))
         (t (mv-let
-            (cl-set1 ttree)
-            (guard-clauses (car lst) debug-info stobj-optp clause
-                           wrld ttree newvar)
-            (mv-let
-             (cl-set2 ttree)
-             (guard-clauses-lst (cdr lst) debug-info stobj-optp clause
-                                wrld ttree newvar)
-             (mv (conjoin-clause-sets+ debug-info cl-set1 cl-set2) ttree))))))
+             (cl-set1 env1 ttree)
+             (guard-clauses (car lst) debug-info stobj-optp clause
+                            wrld ttree newvar)
+             (mv-let
+               (cl-set2 env2 ttree)
+               (guard-clauses-lst (cdr lst) debug-info stobj-optp clause
+                                  wrld ttree newvar)
+               (mv (conjoin-clause-sets+ debug-info cl-set1 cl-set2)
+                   (union-equal env1 env2)
+                   ttree))))))
 
 )
 
@@ -13903,17 +14087,18 @@
 ; Ens may have the special value :do-not-simplify, in which case no
 ; simplification will take place in producing the guard clauses.
 
-  (mv-let (clause-lst0 ttree)
-          (guard-clauses term debug-info stobj-optp clause wrld ttree newvar)
-          (cond ((eq ens :DO-NOT-SIMPLIFY)
-                 (mv clause-lst0 ttree))
-                (t (mv-let (flg clause-lst ttree memo)
-                     (eval-ground-subexpressions1-lst-lst
-                      clause-lst0 ens wrld safe-mode gc-off ttree
-                      *loop$-special-function-symbols*
-                      nil)
-                     (declare (ignore flg memo))
-                     (mv clause-lst ttree))))))
+  (mv-let (clause-lst0 env0 ttree)
+    (guard-clauses term debug-info stobj-optp clause wrld ttree newvar)
+    (declare (ignore env0))
+    (cond ((eq ens :DO-NOT-SIMPLIFY)
+           (mv clause-lst0 ttree))
+          (t (mv-let (flg clause-lst ttree memo)
+               (eval-ground-subexpressions1-lst-lst
+                clause-lst0 ens wrld safe-mode gc-off ttree
+                *loop$-special-function-symbols*
+                nil)
+               (declare (ignore flg memo))
+               (mv clause-lst ttree))))))
 
 (defun guard-clauses-for-body (hyp-segments body debug-info stobj-optp ens
                                             wrld safe-mode gc-off ttree newvar)
@@ -13986,68 +14171,6 @@
         0
       1)))
 
-(mutual-recursion
-
-(defun fix-stobj-table-get-calls-1 (term wrld)
-  (cond ((or (variablep term)
-             (fquotep term))
-         (mv nil term))
-        ((lambda-applicationp term)
-         (mv-let (changedp1 body)
-           (fix-stobj-table-get-calls-1 (lambda-body (ffn-symb term)) wrld)
-           (mv-let (changedp2 args)
-             (fix-stobj-table-get-calls-1-lst (fargs term) wrld)
-             (cond ((or changedp1 changedp2)
-                    (mv t (fcons-term (make-lambda (lambda-formals
-                                                    (ffn-symb term))
-                                                   body)
-                                      args)))
-                   (t (mv nil term))))))
-        ((throw-nonexec-error-p term :non-exec nil)
-
-; We are doing this simplification assuming stobj-opt is t (in the superior
-; call of fix-stobj-table-get-calls).  Thus, we don't want this help for guard
-; verification under (non-exec ...), where stobj tracking isn't being done.
-
-         (mv nil term))
-        (t (let ((st (case-match term
-                       ((tbl-get ('quote st) parent &)
-                        (and (not (member-eq tbl-get *stobjs-out-invalid*))
-                             (equal (stobjs-out tbl-get wrld)
-                                    (list *stobj-table-stobj*))
-                             (equal (stobjs-in tbl-get wrld)
-                                    (list nil parent *stobj-table-stobj*))
-                             st))
-                       (& nil))))
-             (cond (st (let* ((prop (getpropc st 'stobj nil wrld))
-                              (fixer
-                               (assert$ prop
-                                        (access stobj-property prop :fixer))))
-                         (mv t (fcons-term* fixer term))))
-                   (t (mv-let (changedp args)
-                        (fix-stobj-table-get-calls-1-lst (fargs term) wrld)
-                        (cond (changedp (mv t (fcons-term (ffn-symb term)
-                                                          args)))
-                              (t (mv nil term))))))))))
-
-(defun fix-stobj-table-get-calls-1-lst (lst wrld)
-  (cond ((endp lst) (mv nil nil))
-        (t (mv-let (changedp1 x)
-             (fix-stobj-table-get-calls-1 (car lst) wrld)
-             (mv-let (changedp2 cdr-lst)
-               (fix-stobj-table-get-calls-1-lst (cdr lst) wrld)
-               (cond ((or changedp1 changedp2)
-                      (mv t (cons x cdr-lst)))
-                     (t (mv nil lst))))))))
-)
-
-(defun fix-stobj-table-get-calls (term stobj-optp wrld)
-  (cond (stobj-optp (mv-let (changedp x)
-                      (fix-stobj-table-get-calls-1 term wrld)
-                      (declare (ignore changedp))
-                      x))
-        (t term)))
-
 (defun guard-clauses-for-fn1 (name debug-p ens wrld safe-mode gc-off ttree)
 
 ; Warning: name must be either the name of a function defined in wrld or a
@@ -14093,7 +14216,7 @@
                                   t)))))
     (mv-let
       (cl-set1 ttree)
-      (guard-clauses+ (fix-stobj-table-get-calls guard stobj-optp wrld)
+      (guard-clauses+ guard
                       (and debug-p `(:guard (:guard ,name)))
 
 ; Observe that when we generate the guard clauses for the guard we optimize
@@ -14140,10 +14263,7 @@
             (mv-let
               (cl-set2 ttree)
               (guard-clauses-for-body hyp-segments
-                                      (fix-stobj-table-get-calls
-                                       unnormalized-body
-                                       stobj-optp
-                                       wrld)
+                                      unnormalized-body
                                       (and debug-p `(:guard (:body ,name)))
 
 ; Observe that when we generate the guard clauses for the body we optimize

@@ -11534,7 +11534,7 @@
                                              :otf-flg otf-flg)
                                   hints ens wrld ctx state)))
             (value nil)))))))
-   (pprogn (io? summary nil state
+   (pprogn (io? prove nil state
                 nil
                 (fms (if (ld-skip-proofsp state)
                          "Proof skipped.~%"

@@ -11,25 +11,13 @@
 (in-package "ACL2")
 
 (include-book "pack") ; reduce?
+(include-book "make-function-calls-on-formals")
 
 ;; A nicer interface to defevaluator.  Improvements include:
 ;; 1. looks up the arities of the functions in the world.
 ;; 2. auto-generates the name of the -list function that will be mutually recursive with the term evaluator.
 ;; 3. always uses the :namedp t option to defevaluator
 ;; 4. automatically generates various theorems
-
-(defun make-function-call-on-formals (fn wrld)
-  (declare (xargs :guard (and (symbolp fn)
-                              (plist-worldp wrld))))
-  `(,fn ,@(formals fn wrld)))
-
-(defun make-function-calls-on-formals (fns wrld)
-  (declare (xargs :guard (and (symbol-listp fns)
-                              (plist-worldp wrld))))
-  (if (endp fns)
-      nil
-    (cons (make-function-call-on-formals (first fns) wrld)
-          (make-function-calls-on-formals (rest fns) wrld))))
 
 (defun defevaluator+-fn (name fns state)
   (declare (xargs :guard (and (symbolp name)
