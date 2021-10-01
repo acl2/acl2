@@ -3263,6 +3263,12 @@
      We found at least one instance in which ACL2's heuristics
      were preventing a lambda expansion that was preventing a proof.")
    (xdoc::p
+    "Given that we pass correctness theorems for the called functions,
+     we expect that the opener rule for @(tsee exec-fun)
+     only applies to the call of the function that this theorem refers to,
+     because the correctness theorems come later in the ACL2 history
+     and thus are tried first.")
+   (xdoc::p
     "Because @(tsee exec-fun) is disabled as explained above,
      but we still need to open its top-level call for @('fn'),
      we generate a hint to expand calls of @(tsee exec-fun) on @('fn')
@@ -3324,10 +3330,7 @@
                                ,fn-fun-env-thm))
                  :use (:instance (:guard-theorem ,fn)
                        :extra-bindings-ok ,@instantiation)
-                 :expand (:lambdas
-                          (:free (args ,compst-var ,fenv-var limit)
-                           (exec-fun (ident ,(symbol-name fn))
-                                     args ,compst-var ,fenv-var limit))))))
+                 :expand (:lambdas))))
        ((mv local-event exported-event)
         (evmac-generate-defthm name
                                :formula `(implies ,hyps ,concl)
