@@ -1302,7 +1302,17 @@
       "In all other cases, we fail with an error.
        The term is not a pure expression term returning a C value.
        We could extend this code to provide
-       more information to the user at some point."))
+       more information to the user at some point.")
+     (xdoc::p
+      "As we generate the code, we ensure that the ACL2 terms
+       are well-typed according to the C types.
+       This is subsumed by guard verification for all the code,
+       except for any code that is dead (i.e. unreachable) under the guard:
+       the dead code passes guard verification
+       (under a hypothesis of @('nil'), i.e. false, essentially),
+       but the resulting C code may not compile.
+       The additional type checking we do here should ensure that
+       all the code satisfies the C static semantics."))
     (b* (((acl2::fun (irr)) (list (irr-expr) (irr-type)))
          ((when (pseudo-term-case term :var))
           (b* ((var (pseudo-term-var->name term))
@@ -1485,7 +1495,11 @@
       "In all other cases, we fail with an error.
        The term is not an expression term returning a C value.
        We could extend this code to provide
-       more information to the user at some point."))
+       more information to the user at some point.")
+     (xdoc::p
+      "As in @(tsee atc-gen-expr-cval-pure),
+       we perform C type checks on the ACL2 terms.
+       See  @(tsee atc-gen-expr-cval-pure) for an explanation."))
     (b* (((mv okp arg) (fty-check-not-call term))
          ((when okp)
           (b* (((er arg-expr) (atc-gen-expr-bool arg
