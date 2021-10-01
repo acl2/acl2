@@ -121,7 +121,7 @@
       (cons (make-becomes-theorem fn (lookup-eq-safe fn function-renaming) :mutual thm-enable nil nil state)
             (make-becomes-theorems (rest fns) function-renaming thm-enable state)))))
 
-;; Adds the hints
+;; Wraps the becomes-theorems in a call of defthm-flag-XXX and adds the hints.
 (defund make-becomes-defthm-flag (flag-function-name
                                   becomes-theorems
                                   fns
