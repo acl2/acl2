@@ -60,13 +60,25 @@
                                   pass-print ;whether to pass the print arg to the -event function (will come after the optional args)
                                   pass-context ;whether to pass the context arg to the -event function (will come just before state)
                                   revert-world
+                                  suppress-xdoc
                                   )
-  (declare (xargs :mode :program))
+  (declare (xargs :mode :program
+                  :guard (booleanp suppress-xdoc)))
   (if (not (consp required-args))
       (er hard 'deftransformation "A transformation must have at least one required argument.") ;seems sensible, for printing the context
     (if (not (booleanp revert-world))
         (er hard 'deftransformation "The :revert-world argument must be a boolean, but it is ~x0." revert-world)
-      (let ((event-generator-name (add-suffix name "-EVENT")))
+      (let ((event-generator-name (add-suffix name "-EVENT"))
+            (xdoc-forms
+             (and (not suppress-xdoc)
+                  `( ;; TODO: Actually use this in a defxdoc form
+                    (defconst ,(add-prefix "*" (add-suffix name "-GENERAL-FORM-XDOC*"))
+                      ',(xdoc-for-macro-general-form name
+                                                     (append required-args
+                                                             '(&key)
+                                                             '((show-only 'nil) (print ':result)) ; optional args that are always present
+                                                             optional-args-and-values)
+                                                     (symbol-package-name name)))))))
         `(progn
            ;; This is the boilerplate wrapper function.  It wraps a call of EVENT-GENERATOR-NAME:
            (defun ,(add-suffix name "-FN") (,@required-args
@@ -275,14 +287,7 @@
                    (append args
                            (cons ':show-only (cons 't 'nil)))))
 
-           ;; TODO: Actually use this in a defxdoc form
-           (defconst ,(add-prefix "*" (add-suffix name "-GENERAL-FORM-XDOC*"))
-             ',(xdoc-for-macro-general-form name
-                                            (append required-args
-                                                    '(&key)
-                                                    '((show-only 'nil) (print ':result)) ; optional args that are always present
-                                                    optional-args-and-values)
-                                            (symbol-package-name name))))))))
+           ,@xdoc-forms)))))
 
 ;; Expects there to be a function called <name>-event.  It's params should be:
 ;; ...required-args...
@@ -297,9 +302,10 @@
                              (pass-print 'nil) ;whether to pass the print arg to the -event function (will come after the optional args)
                              (pass-context 'nil) ;whether to pass the context arg to the -event function (will come just before state)
                              (revert-world 'nil) ;whether the programmatic function should revert the world (used by simplify)
+                             (suppress-xdoc 'nil) ;whether to suppress automatic xdoc generation
                              )
   ;; This previously used make-event to avoid a problem with calling FLPR in safe mode via fmt1-to-string.
-  (deftransformation-fn name required-args optional-args-and-values pass-print pass-context revert-world))
+  (deftransformation-fn name required-args optional-args-and-values pass-print pass-context revert-world suppress-xdoc))
 
 ;; TODO: Update this:
 ;; TODO: Add this to the xdoc: If the :print option is t, all non-local events
