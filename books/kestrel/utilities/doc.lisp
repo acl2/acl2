@@ -234,63 +234,63 @@
 
 ;; Recognize a list of symbols and strings, where there is first a symbol, then 0
 ;; or more strings, and then that pattern repeats.
-(defun macro-input-descriptionsp (input-descriptions)
+(defun macro-arg-descriptionsp (arg-descriptions)
   (declare (xargs :guard t
-                  :measure (len input-descriptions)))
-  (if (atom input-descriptions)
-      (null input-descriptions)
-    (and (symbolp (first input-descriptions))
-         (macro-input-descriptionsp (skip-strings (rest input-descriptions))))))
+                  :measure (len arg-descriptions)))
+  (if (atom arg-descriptions)
+      (null arg-descriptions)
+    (and (symbolp (first arg-descriptions))
+         (macro-arg-descriptionsp (skip-strings (rest arg-descriptions))))))
 
-(defthm macro-input-descriptionsp-forward-to-true-listp
-  (implies (macro-input-descriptionsp input-descriptions)
-           (true-listp input-descriptions))
+(defthm macro-arg-descriptionsp-forward-to-true-listp
+  (implies (macro-arg-descriptionsp arg-descriptions)
+           (true-listp arg-descriptions))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable macro-input-descriptionsp))))
+  :hints (("Goal" :in-theory (enable macro-arg-descriptionsp))))
 
 
-(defun strings-before-next-symbol (input-descriptions)
-  (declare (xargs :guard (true-listp input-descriptions)))
-  (if (endp input-descriptions)
+(defun strings-before-next-symbol (arg-descriptions)
+  (declare (xargs :guard (true-listp arg-descriptions)))
+  (if (endp arg-descriptions)
       nil
-    (let ((item (first input-descriptions)))
+    (let ((item (first arg-descriptions)))
       (if (symbolp item)
           nil
         (if (stringp item)
-            (cons item (strings-before-next-symbol (rest input-descriptions)))
+            (cons item (strings-before-next-symbol (rest arg-descriptions)))
           (er hard? 'strings-before-next-symbol "Unexpected thing, ~x0, in macro input description." item))))))
 
 (defthm strings-listp-of-strings-before-next-symbol
-  (string-listp (strings-before-next-symbol input-descriptions))
+  (string-listp (strings-before-next-symbol arg-descriptions))
   :hints (("Goal" :in-theory (enable strings-before-next-symbol))))
 
 ;; Returns a list of strings
-(defun get-descrpition-strings (symbol input-descriptions)
+(defun get-description-strings (symbol arg-descriptions)
   (declare (xargs :guard (and (symbolp symbol)
-                              (macro-input-descriptionsp input-descriptions))
-                  :measure (len input-descriptions)))
-  (if (endp input-descriptions)
-      (er hard? 'get-descrpition-strings "No description found for macro arg ~x0." symbol)
-    (if (not (symbolp (first input-descriptions)))
-        (er hard? 'get-descrpition-strings "Unexpected thing in input descriptions: ~x0 (expected a symbol)." (first input-descriptions))
-      (if (eq symbol (first input-descriptions))
-          (strings-before-next-symbol (rest input-descriptions))
-        (get-descrpition-strings symbol (skip-strings (rest input-descriptions)))))))
+                              (macro-arg-descriptionsp arg-descriptions))
+                  :measure (len arg-descriptions)))
+  (if (endp arg-descriptions)
+      (er hard? 'get-description-strings "No description found for macro arg ~x0." symbol)
+    (if (not (symbolp (first arg-descriptions)))
+        (er hard? 'get-description-strings "Unexpected thing in input descriptions: ~x0 (expected a symbol)." (first arg-descriptions))
+      (if (eq symbol (first arg-descriptions))
+          (strings-before-next-symbol (rest arg-descriptions))
+        (get-description-strings symbol (skip-strings (rest arg-descriptions)))))))
 
-(defthm string-listp-of-get-descrpition-strings
+(defthm string-listp-of-get-description-strings
   (implies (and (symbolp symbol)
-                (macro-input-descriptionsp input-descriptions))
-           (string-listp (get-descrpition-strings symbol input-descriptions)))
-  :hints (("Goal" :in-theory (enable get-descrpition-strings))))
+                (macro-arg-descriptionsp arg-descriptions))
+           (string-listp (get-description-strings symbol arg-descriptions)))
+  :hints (("Goal" :in-theory (enable get-description-strings))))
 
 ;; Returns a string
-(defun xdoc-for-macro-required-input (macro-arg input-descriptions)
+(defun xdoc-for-macro-required-input (macro-arg arg-descriptions)
   (declare (xargs :guard (and (symbolp macro-arg)
-                              (macro-input-descriptionsp input-descriptions))))
+                              (macro-arg-descriptionsp arg-descriptions))))
   (if (not (symbolp macro-arg))
       (er hard 'xdoc-for-macro-required-input "Required macro arg ~x0 is not a symbol." macro-arg)
     (let ((name (string-downcase-gen (symbol-name macro-arg)))
-          (description-strings (get-descrpition-strings macro-arg input-descriptions)))
+          (description-strings (get-description-strings macro-arg arg-descriptions)))
       (n-string-append "<p>@('" name "')</p>" (newline-string)
                        (newline-string)
                        "<blockquote>" (newline-string)
@@ -299,25 +299,25 @@
                        (newline-string)))))
 
 ;; Returns a string
-(defun xdoc-for-macro-required-inputs (macro-args input-descriptions)
+(defun xdoc-for-macro-required-inputs (macro-args arg-descriptions)
   (declare (xargs :guard (and (symbol-listp macro-args)
-                              (macro-input-descriptionsp input-descriptions))))
+                              (macro-arg-descriptionsp arg-descriptions))))
   (if (endp macro-args)
       ""
-    (string-append (xdoc-for-macro-required-input (first macro-args) input-descriptions)
-                   (xdoc-for-macro-required-inputs (rest macro-args) input-descriptions))))
+    (string-append (xdoc-for-macro-required-input (first macro-args) arg-descriptions)
+                   (xdoc-for-macro-required-inputs (rest macro-args) arg-descriptions))))
 
 ;; Returns a string
-(defun xdoc-for-macro-keyword-input (macro-arg input-descriptions package)
+(defun xdoc-for-macro-keyword-input (macro-arg arg-descriptions package)
   (declare (xargs :guard (and (stringp package)
-                              (macro-input-descriptionsp input-descriptions)
+                              (macro-arg-descriptionsp arg-descriptions)
                               (macro-argp macro-arg))
                   :mode :program))
   (let* ((name (if (symbolp macro-arg)  ;note that name will not be a keyword here
                    macro-arg
                  (first macro-arg)))
          (name-to-lookup (intern (symbol-name name) "KEYWORD")) ;since this is a keyword arg
-         (description-strings (get-descrpition-strings name-to-lookup input-descriptions))
+         (description-strings (get-description-strings name-to-lookup arg-descriptions))
          (name (string-append ":" (string-downcase (symbol-name name))))
          (default (if (symbolp macro-arg)
                       nil
@@ -334,20 +334,20 @@
                      (newline-string))))
 
 ;; Returns a string
-(defun xdoc-for-macro-keyword-inputs (macro-args input-descriptions package)
+(defun xdoc-for-macro-keyword-inputs (macro-args arg-descriptions package)
   (declare (xargs :guard (and (macro-arg-listp macro-args)
-                              (macro-input-descriptionsp input-descriptions)
+                              (macro-arg-descriptionsp arg-descriptions)
                               (stringp package))
                   :mode :program))
   (if (endp macro-args)
       ""
-    (string-append (xdoc-for-macro-keyword-input (first macro-args) input-descriptions package)
-                   (xdoc-for-macro-keyword-inputs (rest macro-args) input-descriptions package))))
+    (string-append (xdoc-for-macro-keyword-input (first macro-args) arg-descriptions package)
+                   (xdoc-for-macro-keyword-inputs (rest macro-args) arg-descriptions package))))
 
 ;; Returns a string
-(defun xdoc-for-macro-inputs (macro-args input-descriptions package)
+(defun xdoc-for-macro-inputs (macro-args arg-descriptions package)
   (declare (xargs :guard (and (macro-arg-listp macro-args)
-                              (macro-input-descriptionsp input-descriptions)
+                              (macro-arg-descriptionsp arg-descriptions)
                               (stringp package))
                   :mode :program))
   (b* ((macro-args (maybe-skip-whole-arg macro-args)) ;skip &whole
@@ -357,18 +357,18 @@
                  *xdoc-inputs-header*
                  (newline-string)
                  (newline-string)
-                 (xdoc-for-macro-required-inputs required-args input-descriptions)
-                 (xdoc-for-macro-keyword-inputs keyword-args input-descriptions package))))
+                 (xdoc-for-macro-required-inputs required-args arg-descriptions)
+                 (xdoc-for-macro-keyword-inputs keyword-args arg-descriptions package))))
 
 ;; Returns a defxdoc form.
-(defund defxdoc-for-macro (name macro-args package parents short input-descriptions description)
+(defund defxdoc-for-macro (name macro-args package parents short arg-descriptions description)
   (declare (xargs :guard (and (symbolp name)
                               (macro-arg-listp macro-args)
                               (stringp package)
                               (symbol-listp parents)
                               (or (stringp short)
                                   (null short))
-                              (macro-input-descriptionsp input-descriptions)
+                              (macro-arg-descriptionsp arg-descriptions)
                               ;; (or (stringp description) ;todo: gen?
                               ;;     (null description))
                               )
@@ -381,7 +381,7 @@
             ,(xdoc-for-macro-general-form name macro-args package)
             ;;(newline-string)
             ;; Document each input (todo: call these "args"):
-            ,(xdoc-for-macro-inputs macro-args input-descriptions package)
+            ,(xdoc-for-macro-inputs macro-args arg-descriptions package)
             ;; Include the description section, if supplied:
             ,(if description
                  `(n-string-append (newline-string)
@@ -404,16 +404,16 @@
        (parents (lookup-keyword :parents xdoc-stuff))
        (short (lookup-keyword :short xdoc-stuff))
        (description (lookup-keyword :description xdoc-stuff))
-       (input-descriptions (lookup-keyword :inputs xdoc-stuff)) ;; repetitions of the pattern: symbol followed by 1 or more strings describing it
+       (arg-descriptions (lookup-keyword :inputs xdoc-stuff)) ;; repetitions of the pattern: symbol followed by 1 or more strings describing it
        ((when (not short))
         (er hard 'defmacrodoc "No :short supplied for ~x0" name))
        ((when (and macro-args
-                   (not input-descriptions)))
+                   (not arg-descriptions)))
         (er hard 'defmacrodoc "No :input supplied for ~x0" name))
        ;; The xdoc seems to be created in this package:
        (package (symbol-package-name name)))
     `(progn (defmacro ,name ,macro-args ,@declares ,body)
-            ,(defxdoc-for-macro name macro-args package parents short input-descriptions description))))
+            ,(defxdoc-for-macro name macro-args package parents short arg-descriptions description))))
 
 ;; This is like defmacro, except it allows (after the macro's body), the
 ;; inclusion of :short and :parents (for generating xdoc) as well as the
