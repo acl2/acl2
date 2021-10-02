@@ -20,6 +20,7 @@
 
 ;;Returns a string
 (defun xdoc-make-paragraphs (strings)
+  (declare (xargs :guard (string-listp strings)))
   (if (endp strings)
       ""
     (n-string-append "<p>" (first strings) "</p>" (newline-string)
@@ -213,7 +214,43 @@
                                    indent-space
                                    ")"))))
 
+(defund skip-strings (items)
+  (declare (xargs :guard t))
+  (if (atom items)
+      items
+    (if (stringp (first items))
+        (skip-strings (rest items))
+      items)))
+
+(defthm true-listp-of-skip-strings
+  (equal (true-listp (skip-strings items))
+         (true-listp items))
+  :hints (("Goal" :in-theory (enable skip-strings))))
+
+(defthm len-of-skip-strings-bound
+  (<= (len (skip-strings items)) (len items))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable skip-strings))))
+
+;; Recognize a list of symbols and strings, where there is first a symbol, then 0
+;; or more strings, and then that pattern repeats.
+(defun macro-input-descriptionsp (input-descriptions)
+  (declare (xargs :guard t
+                  :measure (len input-descriptions)))
+  (if (atom input-descriptions)
+      (null input-descriptions)
+    (and (symbolp (first input-descriptions))
+         (macro-input-descriptionsp (skip-strings (rest input-descriptions))))))
+
+(defthm macro-input-descriptionsp-forward-to-true-listp
+  (implies (macro-input-descriptionsp input-descriptions)
+           (true-listp input-descriptions))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable macro-input-descriptionsp))))
+
+
 (defun strings-before-next-symbol (input-descriptions)
+  (declare (xargs :guard (true-listp input-descriptions)))
   (if (endp input-descriptions)
       nil
     (let ((item (first input-descriptions)))
@@ -221,30 +258,39 @@
           nil
         (if (stringp item)
             (cons item (strings-before-next-symbol (rest input-descriptions)))
-          (er hard 'strings-before-next-symbol "Unexpected thing, ~x0, in macro input description." item))))))
+          (er hard? 'strings-before-next-symbol "Unexpected thing, ~x0, in macro input description." item))))))
 
-(defun skip-strings (items)
-  (if (endp items)
-      nil
-    (if (stringp (first items))
-        (skip-strings (rest items))
-      items)))
+(defthm strings-listp-of-strings-before-next-symbol
+  (string-listp (strings-before-next-symbol input-descriptions))
+  :hints (("Goal" :in-theory (enable strings-before-next-symbol))))
 
-(defun get-descrption-strings (symbol input-descriptions)
+;; Returns a list of strings
+(defun get-descrpition-strings (symbol input-descriptions)
+  (declare (xargs :guard (and (symbolp symbol)
+                              (macro-input-descriptionsp input-descriptions))
+                  :measure (len input-descriptions)))
   (if (endp input-descriptions)
-      (er hard 'get-descrption-strings "No description found for macro arg ~x0." symbol)
+      (er hard? 'get-descrpition-strings "No description found for macro arg ~x0." symbol)
     (if (not (symbolp (first input-descriptions)))
-        (er hard 'get-descrption-strings "Unexpected thing in input descriptions: ~x0 (expected a symbol)." (first input-descriptions))
+        (er hard? 'get-descrpition-strings "Unexpected thing in input descriptions: ~x0 (expected a symbol)." (first input-descriptions))
       (if (eq symbol (first input-descriptions))
           (strings-before-next-symbol (rest input-descriptions))
-        (get-descrption-strings symbol (skip-strings (rest input-descriptions)))))))
+        (get-descrpition-strings symbol (skip-strings (rest input-descriptions)))))))
+
+(defthm string-listp-of-get-descrpition-strings
+  (implies (and (symbolp symbol)
+                (macro-input-descriptionsp input-descriptions))
+           (string-listp (get-descrpition-strings symbol input-descriptions)))
+  :hints (("Goal" :in-theory (enable get-descrpition-strings))))
 
 ;; Returns a string
 (defun xdoc-for-macro-required-input (macro-arg input-descriptions)
+  (declare (xargs :guard (and (symbolp macro-arg)
+                              (macro-input-descriptionsp input-descriptions))))
   (if (not (symbolp macro-arg))
       (er hard 'xdoc-for-macro-required-input "Required macro arg ~x0 is not a symbol." macro-arg)
-    (let ((name (string-downcase (symbol-name macro-arg)))
-          (description-strings (get-descrption-strings macro-arg input-descriptions)))
+    (let ((name (string-downcase-gen (symbol-name macro-arg)))
+          (description-strings (get-descrpition-strings macro-arg input-descriptions)))
       (n-string-append "<p>@('" name "')</p>" (newline-string)
                        (newline-string)
                        "<blockquote>" (newline-string)
@@ -254,6 +300,8 @@
 
 ;; Returns a string
 (defun xdoc-for-macro-required-inputs (macro-args input-descriptions)
+  (declare (xargs :guard (and (symbol-listp macro-args)
+                              (macro-input-descriptionsp input-descriptions))))
   (if (endp macro-args)
       ""
     (string-append (xdoc-for-macro-required-input (first macro-args) input-descriptions)
@@ -261,13 +309,15 @@
 
 ;; Returns a string
 (defun xdoc-for-macro-keyword-input (macro-arg input-descriptions package)
-  (declare (xargs :mode :program
-                  :guard (stringp package)))
+  (declare (xargs :guard (and (stringp package)
+                              (macro-input-descriptionsp input-descriptions)
+                              (macro-argp macro-arg))
+                  :mode :program))
   (let* ((name (if (symbolp macro-arg)  ;note that name will not be a keyword here
                    macro-arg
                  (first macro-arg)))
          (name-to-lookup (intern (symbol-name name) "KEYWORD")) ;since this is a keyword arg
-         (description-strings (get-descrption-strings name-to-lookup input-descriptions))
+         (description-strings (get-descrpition-strings name-to-lookup input-descriptions))
          (name (string-append ":" (string-downcase (symbol-name name))))
          (default (if (symbolp macro-arg)
                       nil
@@ -285,8 +335,10 @@
 
 ;; Returns a string
 (defun xdoc-for-macro-keyword-inputs (macro-args input-descriptions package)
-  (declare (xargs :mode :program
-                  :guard (stringp package)))
+  (declare (xargs :guard (and (macro-arg-listp macro-args)
+                              (macro-input-descriptionsp input-descriptions)
+                              (stringp package))
+                  :mode :program))
   (if (endp macro-args)
       ""
     (string-append (xdoc-for-macro-keyword-input (first macro-args) input-descriptions package)
@@ -294,8 +346,10 @@
 
 ;; Returns a string
 (defun xdoc-for-macro-inputs (macro-args input-descriptions package)
-  (declare (xargs :mode :program
-                  :guard (stringp package)))
+  (declare (xargs :guard (and (macro-arg-listp macro-args)
+                              (macro-input-descriptionsp input-descriptions)
+                              (stringp package))
+                  :mode :program))
   (b* ((macro-args (maybe-skip-whole-arg macro-args)) ;skip &whole
        ((mv required-args keyword-args) ;todo: handle optional args?  &rest? what else?
         (split-macro-args macro-args)))
@@ -305,6 +359,38 @@
                  (newline-string)
                  (xdoc-for-macro-required-inputs required-args input-descriptions)
                  (xdoc-for-macro-keyword-inputs keyword-args input-descriptions package))))
+
+;; Returns a defxdoc form.
+(defund defxdoc-for-macro (name macro-args package parents short input-descriptions description)
+  (declare (xargs :guard (and (symbolp name)
+                              (macro-arg-listp macro-args)
+                              (stringp package)
+                              (symbol-listp parents)
+                              (or (stringp short)
+                                  (null short))
+                              (macro-input-descriptionsp input-descriptions)
+                              ;; (or (stringp description) ;todo: gen?
+                              ;;     (null description))
+                              )
+                  :mode :program))
+  `(defxdoc ,name
+     ,@(and short `(:short ,short))
+     ,@(and parents `(:parents ,parents))
+     :long (n-string-append
+            ;; Document the general form (args and defaults):
+            ,(xdoc-for-macro-general-form name macro-args package)
+            ;;(newline-string)
+            ;; Document each input (todo: call these "args"):
+            ,(xdoc-for-macro-inputs macro-args input-descriptions package)
+            ;; Include the description section, if supplied:
+            ,(if description
+                 `(n-string-append (newline-string)
+                                   (newline-string)
+                                   *xdoc-description-header*
+                                   (newline-string)
+                                   (newline-string)
+                                   ,description)
+               ""))))
 
 ;; Returns a progn including the original defmacro and a defxdoc form
 (defun defmacrodoc-fn (name macro-args rest)
@@ -327,24 +413,7 @@
        ;; The xdoc seems to be created in this package:
        (package (symbol-package-name name)))
     `(progn (defmacro ,name ,macro-args ,@declares ,body)
-            (defxdoc ,name
-              ,@(and short `(:short ,short))
-              ,@(and parents `(:parents ,parents))
-              :long (n-string-append
-                     ;; Document the general form (args and defaults):
-                     ,(xdoc-for-macro-general-form name macro-args package)
-                     ;;(newline-string)
-                     ;; Document each input (todo: call these "args"):
-                     ,(xdoc-for-macro-inputs macro-args input-descriptions package)
-                     ;; Include the description section, if supplied:
-                     ,(if description
-                          `(n-string-append (newline-string)
-                                            (newline-string)
-                                            *xdoc-description-header*
-                                            (newline-string)
-                                            (newline-string)
-                                            ,description)
-                        ""))))))
+            ,(defxdoc-for-macro name macro-args package parents short input-descriptions description))))
 
 ;; This is like defmacro, except it allows (after the macro's body), the
 ;; inclusion of :short and :parents (for generating xdoc) as well as the
