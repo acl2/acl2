@@ -221,6 +221,7 @@
       (innermostp booleanp))
      :returns (mv (type? type-optionp)
                   (innermostp booleanp :hyp (booleanp innermostp)))
+     :parents nil
      (b* (((when (endp inscope)) (mv nil nil))
           (scope (atc-symbol-type-alist-fix (car inscope)))
           (type? (cdr (assoc-eq var scope)))
@@ -339,6 +340,8 @@
      an optional C type that is present,
      and represents the function's output type,
      when the function is not recursive;
+     a list of C types representing the function's input types,
+     when the function is not recursive (it is @('nil') otherwise);
      an optional (loop) statement that is present,
      and is represented by the function,
      when the function is recursive;
@@ -378,7 +381,8 @@
    (xdoc::p
     "Note that exactly one of the first two fields is @('nil').
      This is an invariant."))
-  ((type? type-option)
+  ((out-type type-option)
+   (in-types type-list)
    (loop? stmt-option)
    (xforming symbol-list)
    (returns-value-thm symbol)
@@ -619,16 +623,24 @@
     (ullong (type-ullong))
     (t nil))
   ///
+
+  (defret type-integerp-of-atc-integer-fixtype-to-type
+    (implies type
+             (type-integerp type)))
+
   (defret type-arithmeticp-of-atc-integer-fixtype-to-type
     (implies type
              (type-arithmeticp type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-iconst ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (const iconstp)
-               (out-type typep))
+(define atc-check-iconst ((term pseudo-termp) ctx state)
+  :returns (mv erp
+               (val (tuple (yes/no booleanp)
+                           (const iconstp)
+                           (out-type typep)
+                           val))
+               state)
   :short "Check if a term represents an integer constant."
   :long
   (xdoc::topstring
@@ -637,20 +649,48 @@
      on a quoted integer constant,
      we return the C integer constant represented by this call.
      We also return the C integer type of the constant."))
-  (b* (((acl2::fun (no)) (mv nil (irr-iconst) (irr-type)))
-       ((unless (pseudo-term-case term :fncall)) (no))
+  (b* (((acl2::fun (no)) (list nil (irr-iconst) (irr-type)))
+       ((unless (pseudo-term-case term :fncall)) (acl2::value (no)))
        ((pseudo-term-fncall term) term)
        ((mv okp type base const) (atc-check-symbol-3part term.fn))
        ((unless (and okp
                      (member-eq type '(sint uint slong ulong sllong ullong))
                      (member-eq base '(dec oct hex))
                      (eq const 'const)))
-        (no))
-       ((unless (list-lenp 1 term.args)) (no))
+        (acl2::value (no)))
+       ((unless (list-lenp 1 term.args))
+        (raise "Internal error: ~x0 not applied to 1 argument." term)
+        (acl2::value (no)))
        (arg (first term.args))
-       ((unless (pseudo-term-case arg :quote)) (no))
+       ((unless (pseudo-term-case arg :quote))
+        (er-soft+ ctx t (no)
+                  "The function ~x0 must be applied to a quoted constant, ~
+                   but it is applied to ~x1 instead."
+                  term.fn arg))
        (val (pseudo-term-quote->val arg))
-       ((unless (natp val)) (no))
+       ((unless (natp val))
+        (er-soft+ ctx t (no)
+                  "The function ~x0 ~
+                   must be applied to a quoted natural number, ~
+                   but it is applied to ~x1 instead. ~
+                   Since this is required by the guard of ~x0, ~
+                   this call is unreachable under the guard."
+                  term.fn val))
+       (inrangep (case type
+                   (sint (sint-integerp val))
+                   (uint (uint-integerp val))
+                   (slong (slong-integerp val))
+                   (ulong (ulong-integerp val))
+                   (sllong (sllong-integerp val))
+                   (ullong (ullong-integerp val))
+                   (t (impossible))))
+       ((unless inrangep)
+        (er-soft+ ctx t (no)
+                  "The function ~x0
+                   must be applied to a quoted natural number ~
+                   representable in the C type corresponding to ~x1, ~
+                   but it is applied to ~x2 instead."
+                  term.fn type val))
        (base (case base
                (dec (iconst-base-dec))
                (oct (iconst-base-oct))
@@ -689,7 +729,13 @@
                                    :type (iconst-tysuffix-llong))
                       (type-ullong)))
           (t (mv (impossible) (impossible))))))
-    (mv t const type)))
+    (acl2::value (list t const type)))
+  ///
+  (more-returns
+   (val (and (consp val)
+             (true-listp val))
+        :name typeset-of-atc-check-iconst
+        :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -754,8 +800,7 @@
    (xdoc::p
     "We also return the input and output C types of the operator.")
    (xdoc::p
-    "If the term does not have that form, we return an indication of failure.
-     The term may represent some other kind of C expression."))
+    "If the term does not have that form, we return an indication of failure."))
   (b* (((acl2::fun (no))
         (mv nil (irr-binop) nil nil (irr-type) (irr-type) (irr-type)))
        ((unless (pseudo-term-case term :fncall)) (no))
@@ -816,7 +861,9 @@
 (define atc-check-conv ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (tyname tynamep)
-               (arg pseudo-termp))
+               (arg pseudo-termp)
+               (in-type typep)
+               (out-type typep))
   :short "Check if a term may represent a conversion."
   :long
   (xdoc::topstring
@@ -826,47 +873,28 @@
      we return the C type name for the destination type
      and the argument term.")
    (xdoc::p
-    "The C type of the conversion can be determined from the returned type name,
-     so there is no need to also return a C type here.")
+    "We also return the input and output C types of the conversion.
+     The output type is redundant,
+     because it can be determined from the returned type name.
+     But we return it for uniformity and simplicity.")
    (xdoc::p
     "If the term does not have the form explained above,
      we return an indication of failure."))
-  (b* (((acl2::fun (no)) (mv nil (irr-tyname) nil))
+  (b* (((acl2::fun (no)) (mv nil (irr-tyname) nil (irr-type) (irr-type)))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((mv okp dtype from stype) (atc-check-symbol-3part term.fn))
        ((unless (and okp
                      (eq from 'from)))
         (no))
-       ((unless (atc-integer-fixtype-to-type stype)) (no))
-       (type (atc-integer-fixtype-to-type dtype))
-       ((when (not type)) (no))
+       (in-type (atc-integer-fixtype-to-type stype))
+       ((when (not in-type)) (no))
+       (out-type (atc-integer-fixtype-to-type dtype))
+       ((when (not out-type)) (no))
        ((unless (list-lenp 1 term.args)) (no))
        (arg (first term.args))
-       (tyname (case (type-kind type)
-                 (:schar (make-tyname :specs (tyspecseq-schar)
-                                      :pointerp nil))
-                 (:uchar (make-tyname :specs (tyspecseq-uchar)
-                                      :pointerp nil))
-                 (:sshort (make-tyname :specs (tyspecseq-sshort)
-                                       :pointerp nil))
-                 (:ushort (make-tyname :specs (tyspecseq-ushort)
-                                       :pointerp nil))
-                 (:sint (make-tyname :specs (tyspecseq-sint)
-                                     :pointerp nil))
-                 (:uint (make-tyname :specs (tyspecseq-uint)
-                                     :pointerp nil))
-                 (:slong (make-tyname :specs (tyspecseq-slong)
-                                      :pointerp nil))
-                 (:ulong (make-tyname :specs (tyspecseq-ulong)
-                                      :pointerp nil))
-                 (:sllong (make-tyname :specs (tyspecseq-sllong)
-                                       :pointerp nil))
-                 (:ullong (make-tyname :specs (tyspecseq-ullong)
-                                       :pointerp nil))
-                 (t (prog2$ (raise "Internal error: type ~x0" type)
-                            (irr-tyname))))))
-    (mv t tyname arg))
+       (tyname (integer-type-to-type-name out-type)))
+    (mv t tyname arg in-type out-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-conv-arg
@@ -881,7 +909,9 @@
   :returns (mv (yes/no booleanp)
                (arr pseudo-termp)
                (sub pseudo-termp)
-               (type typep))
+               (in-type1 typep)
+               (in-type2 typep)
+               (out-type typep))
   :short "Check if a term may represent an array read."
   :long
   (xdoc::topstring
@@ -890,11 +920,11 @@
      that represent C array read operations,
      we return the two argument terms.")
    (xdoc::p
-    "We also return the result C type of the operator.")
+    "We also return the input and output C types of the array read.")
    (xdoc::p
     "If the term does not have the form explained above,
      we return an indication of failure."))
-  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type)))
+  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) (irr-type) (irr-type)))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((mv okp etype array read itype) (atc-check-symbol-4part term.fn))
@@ -902,13 +932,15 @@
                      (eq array 'array)
                      (eq read 'read)))
         (no))
-       ((unless (atc-integer-fixtype-to-type itype)) (no))
-       (type (atc-integer-fixtype-to-type etype))
-       ((when (not type)) (no))
+       (out-type (atc-integer-fixtype-to-type etype))
+       ((when (not out-type)) (no))
+       (in-type1 (type-pointer out-type))
+       (in-type2 (atc-integer-fixtype-to-type itype))
+       ((when (not in-type2)) (no))
        ((unless (list-lenp 2 term.args)) (no))
        (arr (first term.args))
        (sub (second term.args)))
-    (mv t arr sub type))
+    (mv t arr sub in-type1 in-type2 out-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-array-read-arr
@@ -920,6 +952,96 @@
   (defret pseudo-term-count-of-atc-check-array-read-sub
     (implies yes/no
              (< (pseudo-term-count sub)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-sint-from-boolean ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (arg pseudo-termp))
+  :short "Check if a term may represent a conversion
+          from an ACL2 boolean to a C @('int') value."
+  (b* (((acl2::fun (no)) (mv nil nil))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless (and okp
+                     (eq fn 'c::sint-from-boolean)
+                     (list-lenp 1 args)))
+        (no)))
+    (mv t (first args)))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-sint-from-boolean
+    (implies yes/no
+             (< (pseudo-term-count arg)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-condexpr ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (test pseudo-termp)
+               (then pseudo-termp)
+               (else pseudo-termp))
+  :short "Check if a term may represent a C conditional expression."
+  (b* (((acl2::fun (no)) (mv nil nil nil nil))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless (and okp
+                     (eq fn 'c::condexpr)
+                     (list-lenp 1 args)))
+        (no)))
+    (fty-check-if-call (first args)))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-condexpr.test
+    (implies yes/no
+             (< (pseudo-term-count test)
+                (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-condexpr.then
+    (implies yes/no
+             (< (pseudo-term-count then)
+                (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-condexpr.else
+    (implies yes/no
+             (< (pseudo-term-count else)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-boolean-from-type ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (arg pseudo-termp)
+               (in-type typep))
+  :short "Check if a term may represent a conversion
+          from a C integer value to an ACL2 boolean."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We also return the input C type of the conversion.
+     The output type is known (boolean), and it is in fact an ACL2 type."))
+  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless okp) (no))
+       ((mv okp boolean from type) (atc-check-symbol-3part fn))
+       ((unless (and okp
+                     (eq boolean 'boolean)
+                     (eq from 'from)))
+        (no))
+       (in-type (atc-integer-fixtype-to-type type))
+       ((when (not in-type)) (no))
+       ((unless (list-lenp 1 args)) (no)))
+    (mv t (first args) in-type))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-boolean-from-type
+    (implies yes/no
+             (< (pseudo-term-count arg)
                 (pseudo-term-count term)))
     :rule-classes :linear))
 
@@ -993,7 +1115,8 @@
   :returns (mv (yes/no booleanp)
                (fn symbolp)
                (args pseudo-term-listp)
-               (type typep)
+               (in-types type-listp)
+               (out-type typep)
                (limit pseudo-termp))
   :short "Check if a term may represent a call to a callable target function."
   :long
@@ -1016,17 +1139,18 @@
     "This is used on expression terms returning C values,
      so the called function must be non-recursive,
      i.e. it must represent a C function, not a C loop."))
-  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) nil))
+  (b* (((acl2::fun (no)) (mv nil nil nil nil (irr-type) nil))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        (fn+info (assoc-eq term.fn (atc-symbol-fninfo-alist-fix prec-fns)))
        ((unless (consp fn+info)) (no))
        (info (cdr fn+info))
-       (type (atc-fn-info->type? info))
-       ((when (null type)) (no))
+       (in-types (atc-fn-info->in-types info))
+       (out-type (atc-fn-info->out-type info))
+       ((when (null out-type)) (no))
        (limit (atc-fn-info->limit info))
        (limit (fty-fsublis-var var-term-alist limit)))
-    (mv t term.fn term.args type limit))
+    (mv t term.fn term.args in-types out-type limit))
   ///
 
   (defret pseudo-term-count-of-atc-check-callable-fn-args
@@ -1151,89 +1275,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-sint-from-boolean ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (arg pseudo-termp))
-  :short "Check if a term may represent a conversion
-          from an ACL2 boolean to a C @('int') value."
-  (b* (((acl2::fun (no)) (mv nil nil))
-       ((mv okp fn args) (fty-check-fn-call term))
-       ((unless (and okp
-                     (eq fn 'c::sint-from-boolean)
-                     (list-lenp 1 args)))
-        (no)))
-    (mv t (first args)))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-sint-from-boolean
-    (implies yes/no
-             (< (pseudo-term-count arg)
-                (pseudo-term-count term)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-condexpr ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (test pseudo-termp)
-               (then pseudo-termp)
-               (else pseudo-termp))
-  :short "Check if a term may represent a C conditional expression."
-  (b* (((acl2::fun (no)) (mv nil nil nil nil))
-       ((mv okp fn args) (fty-check-fn-call term))
-       ((unless (and okp
-                     (eq fn 'c::condexpr)
-                     (list-lenp 1 args)))
-        (no)))
-    (fty-check-if-call (first args)))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-condexpr.test
-    (implies yes/no
-             (< (pseudo-term-count test)
-                (pseudo-term-count term)))
-    :rule-classes :linear)
-
-  (defret pseudo-term-count-of-atc-check-condexpr.then
-    (implies yes/no
-             (< (pseudo-term-count then)
-                (pseudo-term-count term)))
-    :rule-classes :linear)
-
-  (defret pseudo-term-count-of-atc-check-condexpr.else
-    (implies yes/no
-             (< (pseudo-term-count else)
-                (pseudo-term-count term)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-boolean-from-type ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (arg pseudo-termp))
-  :short "Check if a term may represent a conversion
-          from a C integer value to an ACL2 boolean."
-  (b* (((acl2::fun (no)) (mv nil nil))
-       ((mv okp fn args) (fty-check-fn-call term))
-       ((unless okp) (no))
-       ((mv okp boolean from type) (atc-check-symbol-3part fn))
-       ((unless (and okp
-                     (eq boolean 'boolean)
-                     (eq from 'from)
-                     (atc-integer-fixtype-to-type type)
-                     (list-lenp 1 args)))
-        (no)))
-    (mv t (first args)))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-boolean-from-type
-    (implies yes/no
-             (< (pseudo-term-count arg)
-                (pseudo-term-count term)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defines atc-gen-expr-pure
   :short "Mutually recursive ACL2 functions to
           generate pure C expressions from ACL2 terms."
@@ -1304,7 +1345,17 @@
       "In all other cases, we fail with an error.
        The term is not a pure expression term returning a C value.
        We could extend this code to provide
-       more information to the user at some point."))
+       more information to the user at some point.")
+     (xdoc::p
+      "As we generate the code, we ensure that the ACL2 terms
+       are well-typed according to the C types.
+       This is subsumed by guard verification for all the code,
+       except for any code that is dead (i.e. unreachable) under the guard:
+       the dead code passes guard verification
+       (under a hypothesis of @('nil'), i.e. false, essentially),
+       but the resulting C code may not compile.
+       The additional type checking we do here should ensure that
+       all the code satisfies the C static semantics."))
     (b* (((acl2::fun (irr)) (list (irr-expr) (irr-type)))
          ((when (pseudo-term-case term :var))
           (b* ((var (pseudo-term-var->name term))
@@ -1316,7 +1367,9 @@
             (acl2::value
              (list (expr-ident (make-ident :name (symbol-name var)))
                    (type-fix type)))))
-         ((mv okp const out-type) (atc-check-iconst term))
+         ((mv erp (list okp const out-type) state)
+          (atc-check-iconst term ctx state))
+         ((when erp) (mv erp (irr) state))
          ((when okp)
           (acl2::value
            (list (expr-const (const-int const))
@@ -1336,7 +1389,8 @@
                            This is indicative of provably dead code, ~
                            given that the code is guard-verified."
                           op arg type in-type)))
-            (acl2::value (list (make-expr-unary :op op :arg arg-expr)
+            (acl2::value (list (make-expr-unary :op op
+                                                :arg arg-expr)
                                out-type))))
          ((mv okp op arg1 arg2 in-type1 in-type2 out-type)
           (atc-check-binop term))
@@ -1365,31 +1419,50 @@
                                                  :arg1 arg1-expr
                                                  :arg2 arg2-expr)
                                out-type))))
-         ((mv okp tyname arg) (atc-check-conv term))
+         ((mv okp tyname arg in-type out-type) (atc-check-conv term))
          ((when okp)
-          (b* (((er (list arg-expr &)) (atc-gen-expr-cval-pure arg
-                                                               inscope
-                                                               fn
-                                                               ctx
-                                                               state)))
+          (b* (((er (list arg-expr type)) (atc-gen-expr-cval-pure arg
+                                                                  inscope
+                                                                  fn
+                                                                  ctx
+                                                                  state))
+               ((unless (equal type in-type))
+                (er-soft+ ctx t (irr)
+                          "The conversion from ~x0 to ~x1 ~
+                           is applied to a term ~x2 returning ~x3, ~
+                           but a ~x0 operand is expected. ~
+                           This is indicative of provably dead code, ~
+                           given that the code is guard-verified."
+                          in-type out-type arg type)))
             (acl2::value (list (make-expr-cast :type tyname
                                                :arg arg-expr)
-                               (type-name-to-type tyname)))))
-         ((mv okp arr sub type) (atc-check-array-read term))
+                               out-type))))
+         ((mv okp arr sub in-type1 in-type2 out-type)
+          (atc-check-array-read term))
          ((when okp)
-          (b* (((er (list arr-expr &)) (atc-gen-expr-cval-pure arr
-                                                               inscope
-                                                               fn
-                                                               ctx
-                                                               state))
-               ((er (list sub-expr &)) (atc-gen-expr-cval-pure sub
-                                                               inscope
-                                                               fn
-                                                               ctx
-                                                               state)))
+          (b* (((er (list arr-expr type1)) (atc-gen-expr-cval-pure arr
+                                                                   inscope
+                                                                   fn
+                                                                   ctx
+                                                                   state))
+               ((er (list sub-expr type2)) (atc-gen-expr-cval-pure sub
+                                                                   inscope
+                                                                   fn
+                                                                   ctx
+                                                                   state))
+               ((unless (and (equal type1 in-type1)
+                             (equal type2 in-type2)))
+                (er-soft+ ctx t (irr)
+                          "The reading of a ~x0 array with a ~x1 index ~
+                           is applied to a term ~x2 returning ~x3 ~
+                           and to a term ~x4 returning ~x5, ~
+                           but a ~x0 and a ~x1 operand is expected. ~
+                           This is indicative of provably dead code, ~
+                           given that the code is guard-verified."
+                          in-type1 in-type2 arg1 type1 arg2 type2)))
             (acl2::value (list (make-expr-arrsub :arr arr-expr
                                                  :sub sub-expr)
-                               type))))
+                               out-type))))
          ((mv okp arg) (atc-check-sint-from-boolean term))
          ((when okp)
           (b* (((mv erp expr state)
@@ -1467,7 +1540,11 @@
       "In all other cases, we fail with an error.
        The term is not an expression term returning a C value.
        We could extend this code to provide
-       more information to the user at some point."))
+       more information to the user at some point.")
+     (xdoc::p
+      "As in @(tsee atc-gen-expr-cval-pure),
+       we perform C type checks on the ACL2 terms.
+       See  @(tsee atc-gen-expr-cval-pure) for an explanation."))
     (b* (((mv okp arg) (fty-check-not-call term))
          ((when okp)
           (b* (((er arg-expr) (atc-gen-expr-bool arg
@@ -1507,10 +1584,19 @@
             (acl2::value (make-expr-binary :op (binop-logor)
                                            :arg1 arg1-expr
                                            :arg2 arg2-expr))))
-         ((mv okp arg) (atc-check-boolean-from-type term))
+         ((mv okp arg in-type) (atc-check-boolean-from-type term))
          ((when okp)
-          (b* (((mv erp (list expr &) state)
-                (atc-gen-expr-cval-pure arg inscope fn ctx state)))
+          (b* (((mv erp (list expr type) state)
+                (atc-gen-expr-cval-pure arg inscope fn ctx state))
+               ((when erp) (mv erp expr state))
+               ((unless (equal type in-type))
+                (er-soft+ ctx t (irr-expr)
+                          "The conversion from ~x0 to boolean ~
+                           is applied to a term ~x1 returning ~x2, ~
+                           but a ~x0 operand is expected. ~
+                           This is indicative of provably dead code, ~
+                           given that the code is guard-verified."
+                          in-type arg type)))
             (mv erp expr state))))
       (er-soft+ ctx t (irr-expr)
                 "When generating C code for the function ~x0, ~
@@ -1546,7 +1632,11 @@
                                      (fn symbolp)
                                      (ctx ctxp)
                                      state)
-  :returns (mv erp (exprs expr-listp) state)
+  :returns (mv erp
+               (val (tuple (exprs expr-listp)
+                           (types type-listp)
+                           val))
+               state)
   :short "Generate a list of C expressions from a list of ACL2 terms
           that must be pure expression terms returning C values."
   :long
@@ -1554,19 +1644,26 @@
    (xdoc::p
     "This lifts @(tsee atc-gen-expr-cval-pure) to lists.
      However, we do not return the C types of the expressions."))
-  (b* (((when (endp terms)) (acl2::value nil))
-       ((mv erp (list expr &) state) (atc-gen-expr-cval-pure (car terms)
+  (b* (((when (endp terms)) (acl2::value (list nil nil)))
+       ((mv erp (list expr type) state) (atc-gen-expr-cval-pure (car terms)
+                                                                inscope
+                                                                fn
+                                                                ctx
+                                                                state))
+       ((when erp) (mv erp (list nil nil) state))
+       ((er (list exprs types)) (atc-gen-expr-cval-pure-list (cdr terms)
                                                              inscope
                                                              fn
                                                              ctx
-                                                             state))
-       ((when erp) (mv erp nil state))
-       ((er exprs) (atc-gen-expr-cval-pure-list (cdr terms)
-                                                inscope
-                                                fn
-                                                ctx
-                                                state)))
-    (acl2::value (cons expr exprs))))
+                                                             state)))
+    (acl2::value (list (cons expr exprs)
+                       (cons type types))))
+  ///
+  (more-returns
+   (val (and (consp val)
+             (true-listp val))
+        :name typeset-of-atc-gen-expr-cval-pure-list
+        :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1615,20 +1712,28 @@
      The type is the one returned by that translation.
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
-  (b* (((mv okp called-fn args type limit)
+  (b* (((mv okp called-fn args in-types out-type limit)
         (atc-check-callable-fn term var-term-alist prec-fns))
        ((when okp)
-        (b* (((mv erp arg-exprs state) (atc-gen-expr-cval-pure-list args
-                                                                    inscope
-                                                                    fn
-                                                                    ctx
-                                                                    state))
-             ((when erp) (mv erp (list (irr-expr) (irr-type) nil) state)))
+        (b* (((mv erp (list arg-exprs types) state)
+              (atc-gen-expr-cval-pure-list args
+                                           inscope
+                                           fn
+                                           ctx
+                                           state))
+             ((when erp) (mv erp (list (irr-expr) (irr-type) nil) state))
+             ((unless (equal types in-types))
+              (er-soft+ ctx t (list (irr-expr) (irr-type) nil)
+                        "The function ~x0 with input types ~x1 ~
+                         is applied to terms ~x2 returning ~x3. ~
+                         This is indicative of provably dead code, ~
+                         given that the code is guard-verified."
+                        called-fn in-types args types)))
           (acl2::value (list
                         (make-expr-call :fun (make-ident
                                               :name (symbol-name called-fn))
                                         :args arg-exprs)
-                        type
+                        out-type
                         `(binary-+ '1 ,limit))))))
     (b* (((mv erp (list expr type) state)
           (atc-gen-expr-cval-pure term inscope fn ctx state))
@@ -3540,7 +3645,8 @@
                          limit experimental names-to-avoid ctx state))
        ((when erp) (mv erp (list (irr-ext-declon) nil nil nil nil) state))
        (info (make-atc-fn-info
-              :type? type
+              :out-type type
+              :in-types (strip-cdrs scope)
               :loop? nil
               :xforming nil
               :returns-value-thm fn-returns-value-thm
@@ -4540,7 +4646,6 @@
         (atc-gen-loop-stmt body (list scope) fn measure-of-fn measure-formals
                            prec-fns experimental ctx state))
        ((when erp) (mv erp (list nil nil nil nil) state))
-       (type? nil)
        ((mv erp
             (list local-events
                   exported-events
@@ -4549,7 +4654,7 @@
                   &
                   names-to-avoid)
             state)
-        (atc-gen-fn-thms fn pointers type? loop-xforming scope prec-fns
+        (atc-gen-fn-thms fn pointers nil loop-xforming scope prec-fns
                          proofs prog-const nil nil fn-thms
                          print loop-limit experimental
                          names-to-avoid ctx state))
@@ -4656,7 +4761,8 @@
        (exported-events (and proofs
                              (not (member-eq :array-writes experimental))
                              (append exported-events more-exported-events)))
-       (info (make-atc-fn-info :type? type?
+       (info (make-atc-fn-info :out-type nil
+                               :in-types nil
                                :loop? loop-stmt
                                :xforming loop-xforming
                                :returns-value-thm fn-returns-value-thm
