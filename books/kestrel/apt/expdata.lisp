@@ -2477,7 +2477,7 @@
                (:nice-expanded
                 (directed-untranslate-no-lets
                  (ibody old$ wrld) (ubody old$ wrld) body nil nil wrld))
-               (nil body)
+               ((nil) body)
                (t (untranslate body nil wrld))))
        (guard (expdata-gen-new-fn-guard old$ arg-surjmaps predicate$ wrld))
        (guard (conjoin (flatten-ands-in-lit guard)))
