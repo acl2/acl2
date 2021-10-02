@@ -30,17 +30,17 @@
 
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system)
-(include-book "map-symbol-name")
-(include-book "legal-variable-listp")
-(include-book "quote")
-(include-book "lets")
-(include-book "lambdas")
-(include-book "doublets2")
-(include-book "pack")
+(include-book "kestrel/utilities/map-symbol-name" :dir :system)
+(include-book "kestrel/utilities/legal-variable-listp" :dir :system)
+(include-book "kestrel/utilities/quote" :dir :system)
+(include-book "kestrel/utilities/lets" :dir :system)
+(include-book "kestrel/utilities/lambdas" :dir :system)
+(include-book "kestrel/utilities/doublets2" :dir :system)
+(include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 ;(include-book "../sequences/defforall") ;drop (after replacing the defforall-simple below)?
 ;(include-book "../sequences/generics-utilities") ;for make-pairs (TODO: move that and rename to mention doublets)
-(include-book "legal-variablep") ;for legal-variable-name-in-acl2-packagep
+(include-book "kestrel/utilities/legal-variablep" :dir :system) ;for legal-variable-name-in-acl2-packagep
 (include-book "std/alists/remove-assocs" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
