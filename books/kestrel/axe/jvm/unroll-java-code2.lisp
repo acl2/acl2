@@ -781,7 +781,7 @@
               :param-names "Names to use for the parameters (e.g., if no debugging information is available)."
               :steps "A number of steps to run.  A natural number (for debugging only), or :auto, meaning run until the method returns."
               )
-  :long "<p>This uses lifting theorems for subroutine calls that have already been lifted.  Otherwise, it effectively inlines the subroutine call.</p>
+  :description "<p>This uses lifting theorems for subroutine calls that have already been lifted.  Otherwise, it effectively inlines the subroutine call.</p>
   <p>To inspect the resulting form, you can use @('print-list') on the generated defconst.</p>"
   )
 

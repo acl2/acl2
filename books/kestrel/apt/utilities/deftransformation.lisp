@@ -68,7 +68,7 @@
         (er hard 'deftransformation "The :revert-world argument must be a boolean, but it is ~x0." revert-world)
       (let ((event-generator-name (add-suffix name "-EVENT")))
         `(progn
-           ;; This is the boilerplate wrapper function:
+           ;; This is the boilerplate wrapper function.  It wraps a call of EVENT-GENERATOR-NAME:
            (defun ,(add-suffix name "-FN") (,@required-args
                                             ,@(strip-cars optional-args-and-values)
                                             show-only
@@ -171,7 +171,7 @@
                              (value-triple :invisible))
                      state))))
 
-           ;; This is the main macro:
+           ;; This is the main macro for the transformation called NAME:
            (defmacroq ,name (&whole whole-form
                                     ,@required-args
                                     &key
@@ -268,7 +268,6 @@
                                              ''state)))))
 
            ;; This is the "show-" macro:
-
            ;; Show what the transformation would generate but do not submit it to ACL2:
            (defmacro ,(add-prefix "SHOW-" name) (&rest args)
              ;; We set the :show-only option and then call the main macro:
@@ -276,6 +275,7 @@
                    (append args
                            (cons ':show-only (cons 't 'nil)))))
 
+           ;; TODO: Actually use this in a defxdoc form
            (defconst ,(add-prefix "*" (add-suffix name "-GENERAL-FORM-XDOC*"))
              ',(xdoc-for-macro-general-form name
                                             (append required-args

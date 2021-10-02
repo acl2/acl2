@@ -556,7 +556,7 @@
            :produce-function "Whether to produce a defun in addition to a DAG (default t)."
            :chunkedp "whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code)"
            )
-  :long "<p>To inspect the resulting form, you can use @('print-list') on the generated defconst.</p>"
+  :description "<p>To inspect the resulting form, you can use @('print-list') on the generated defconst.</p>"
   )
 
 ;; Ensure all the rules needed by the unroller are included:

@@ -86,7 +86,7 @@
                   print)
   :parents (r1cs-verification-with-axe)
   :short "A tool to verify an R1CS"
-  :long "See @(tsee r1cs-verification-with-axe)."
+  :description "See @(tsee r1cs-verification-with-axe)."
   :inputs (lifted-r1cs "A DAG representing the lifted R1CS"
                        spec-term "A term over the input and output vars (this input is not evaluated)"
                        prime "The prime for the R1CS"
