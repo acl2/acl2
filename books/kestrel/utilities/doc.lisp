@@ -18,6 +18,63 @@
 (include-book "kestrel/utilities/keyword-value-lists2" :dir :system) ;for lookup-keyword
 (include-book "kestrel/strings-light/downcase" :dir :system)
 
+;;;
+;;; handling macro args
+;;;
+
+;; Skip an initial use of &whole, if present.
+(defund maybe-skip-whole-arg (macro-args)
+  (declare (xargs :guard (macro-arg-listp macro-args)))
+  (if (and (consp macro-args)
+           (eq '&whole (first macro-args)))
+      (cddr macro-args)
+    macro-args))
+
+(defthm macro-arg-listp-of-maybe-skip-whole-arg
+  (implies (macro-arg-listp macro-args)
+           (macro-arg-listp (maybe-skip-whole-arg macro-args)))
+  :hints (("Goal" :in-theory (enable maybe-skip-whole-arg))))
+
+;; Returns (mv required-args keyword-args)
+(defun split-macro-args (macro-args)
+  (declare (xargs :guard (macro-arg-listp macro-args)))
+  (if (endp macro-args)
+      (mv nil nil)
+      (if (eq '&key (first macro-args))
+          (mv nil (rest macro-args))
+        (mv-let (required-args keyword-args)
+          (split-macro-args (rest macro-args))
+          (mv (cons (first macro-args) required-args)
+              keyword-args)))))
+
+;; test: (SPLIT-MACRO-ARGS '(foo bar &key baz (baz2 'nil)))
+
+;; Returns (mv required-args keyword-args).
+ ;todo: handle optional args?  &rest? what else?
+(defund extract-required-and-keyword-args (macro-args)
+  (declare (xargs :guard (macro-arg-listp macro-args)))
+  (let ((macro-args (maybe-skip-whole-arg macro-args))) ;skips &whole
+    (split-macro-args macro-args)))
+
+;; Skips all strings at the front of the list ITEMS.
+(defund skip-leading-strings (items)
+  (declare (xargs :guard t))
+  (if (atom items)
+      items
+    (if (stringp (first items))
+        (skip-leading-strings (rest items))
+      items)))
+
+(defthm true-listp-of-skip-leading-strings
+  (equal (true-listp (skip-leading-strings items))
+         (true-listp items))
+  :hints (("Goal" :in-theory (enable skip-leading-strings))))
+
+(defthm len-of-skip-leading-strings-bound
+  (<= (len (skip-leading-strings items)) (len items))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable skip-leading-strings))))
+
 ;;Returns a string
 (defun xdoc-make-paragraphs (strings)
   (declare (xargs :guard (string-listp strings)))
@@ -65,19 +122,6 @@
               rest))
       (mv nil forms))))
 
-;; Returns (mv required-args keyword-args)
-(defun split-macro-args (macro-args)
-  (if (endp macro-args)
-      (mv nil nil)
-      (if (eq '&key (first macro-args))
-          (mv nil (rest macro-args))
-        (mv-let (required-args keyword-args)
-          (split-macro-args (rest macro-args))
-          (mv (cons (first macro-args) required-args)
-              keyword-args)))))
-
-;; test: (SPLIT-MACRO-ARGS '(foo bar &key baz (baz2 'nil)))
-
 (defun len-of-longest-macro-formal (macro-args longest)
   (if (endp macro-args)
       longest
@@ -88,7 +132,17 @@
       (len-of-longest-macro-formal (rest macro-args) (max longest len)))))
 
 (defconst *xdoc-general-form-header* "<h3>General Form:</h3>")
+(defconst *xdoc-general-form-header-with-spacing*
+  (n-string-append *xdoc-general-form-header*
+                   (newline-string)
+                   (newline-string)))
+
 (defconst *xdoc-inputs-header* "<h3>Inputs:</h3>")
+(defconst *xdoc-inputs-header-with-spacing*
+  (n-string-append *xdoc-inputs-header*
+                   (newline-string)
+                   (newline-string)))
+
 (defconst *xdoc-description-header* "<h3>Description:</h3>")
 (defconst *xdoc-description-header-with-spacing*
   (n-string-append (newline-string)
@@ -97,22 +151,16 @@
                    (newline-string)
                    (newline-string)))
 
-;; Returns a string representing the given STRINGS within @({...}) to make then be printed as code.
+;; Returns a string representing the given STRINGS within @({...}) to make them be printed as code.
 (defun xdoc-within-code-fn (strings)
   (declare (xargs :guard (string-listp strings)))
   (string-append-lst (cons "@({"
                            (append strings
                                    (list "})")))))
 
-;; Returns a string representing the given STRINGS within @({...}) to make then be printed as code.
+;; Returns a string representing the given STRINGS within @({...}) to make them be printed as code.
 (defmacro xdoc-within-code (&rest strings)
   `(xdoc-within-code-fn (list ,@strings)))
-
-(defun maybe-skip-whole-arg (macro-args)
-  (if (and (consp macro-args)
-           (eq '&whole (first macro-args)))
-      (cddr macro-args)
-    macro-args))
 
 ;; Returns a string
 (defund xdoc-for-macro-required-arg-general-form (macro-arg indent-space firstp)
@@ -182,16 +230,14 @@
     (string-append (xdoc-for-macro-keyword-arg-general-form (first macro-args) indent-space firstp max-len package)
                    (xdoc-for-macro-keyword-args-general-form (rest macro-args) indent-space nil max-len package))))
 
-
 ;; Returns a string
 (defun xdoc-for-macro-args-general-form (macro-args indent-space package)
   (declare (xargs :guard (and (macro-arg-listp macro-args)
                               (stringp indent-space)
                               (stringp package))
                   :mode :program))
-  (b* ((macro-args (maybe-skip-whole-arg macro-args)) ;skip &whole
-       ((mv required-args keyword-args) ;todo: handle optional args?  &rest? what else?
-        (split-macro-args macro-args))
+  (b* (((mv required-args keyword-args)
+        (extract-required-and-keyword-args macro-args))
        (max-len (max (len-of-longest-macro-formal required-args 0)
                      (+ 1 (len-of-longest-macro-formal keyword-args 0))))) ;plus 1 for the :
     (n-string-append (xdoc-for-macro-required-args-general-form required-args indent-space t)
@@ -202,7 +248,6 @@
                        "")
                      (xdoc-for-macro-keyword-args-general-form keyword-args indent-space (not required-args) max-len package))))
 
-
 ;; Returns a string
 (defun xdoc-for-macro-general-form (name macro-args package)
   (declare (xargs :mode :program
@@ -212,31 +257,11 @@
          (name-len (length name-string))
          (indent-space (string-append-lst (make-list (+ 2 name-len) :initial-element " "))))
     (concatenate 'string
-                 *xdoc-general-form-header*
-                 (newline-string)
-                 (newline-string)
+                 *xdoc-general-form-header-with-spacing*
                  (xdoc-within-code "(" name-string " "
                                    (xdoc-for-macro-args-general-form macro-args indent-space package)
                                    indent-space
                                    ")"))))
-
-(defund skip-strings (items)
-  (declare (xargs :guard t))
-  (if (atom items)
-      items
-    (if (stringp (first items))
-        (skip-strings (rest items))
-      items)))
-
-(defthm true-listp-of-skip-strings
-  (equal (true-listp (skip-strings items))
-         (true-listp items))
-  :hints (("Goal" :in-theory (enable skip-strings))))
-
-(defthm len-of-skip-strings-bound
-  (<= (len (skip-strings items)) (len items))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable skip-strings))))
 
 ;; Recognize a list of symbols and strings, where there is first a symbol, then 0
 ;; or more strings, and then that pattern repeats.
@@ -246,7 +271,7 @@
   (if (atom arg-descriptions)
       (null arg-descriptions)
     (and (symbolp (first arg-descriptions))
-         (macro-arg-descriptionsp (skip-strings (rest arg-descriptions))))))
+         (macro-arg-descriptionsp (skip-leading-strings (rest arg-descriptions))))))
 
 (defthm macro-arg-descriptionsp-forward-to-true-listp
   (implies (macro-arg-descriptionsp arg-descriptions)
@@ -280,7 +305,7 @@
         (er hard? 'get-description-strings "Unexpected thing in input descriptions: ~x0 (expected a symbol)." (first arg-descriptions))
       (if (eq symbol (first arg-descriptions))
           (strings-before-next-symbol (rest arg-descriptions))
-        (get-description-strings symbol (skip-strings (rest arg-descriptions)))))))
+        (get-description-strings symbol (skip-leading-strings (rest arg-descriptions)))))))
 
 (defthm string-listp-of-get-description-strings
   (implies (and (symbolp symbol)
@@ -359,9 +384,7 @@
        ((mv required-args keyword-args) ;todo: handle optional args?  &rest? what else?
         (split-macro-args macro-args)))
     (concatenate 'string
-                 *xdoc-inputs-header*
-                 (newline-string)
-                 (newline-string)
+                 *xdoc-inputs-header-with-spacing*
                  (xdoc-for-macro-required-inputs required-args arg-descriptions)
                  (xdoc-for-macro-keyword-inputs keyword-args arg-descriptions package))))
 
