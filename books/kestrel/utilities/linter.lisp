@@ -72,6 +72,9 @@
 ;; TODO When trying to strengthen a theorem (e.g., by weakening its hyps), try
 ;; to use the original hints (but they may be illegal out of context).
 
+;; TODO: Look for (nil ...) in CASE, which is an unreachable case (empty list
+;; of keys).  Will need to look at the untranslated terms.
+
 (include-book "format-strings")
 (include-book "quote")
 (include-book "my-get-event")
@@ -581,7 +584,7 @@
                         (if relevant-subst
                             (cw "  Relevant substitutions ~X01)~%~%" relevant-subst *subst-evisc-tuple*)
                           (cw ")~%~%")))))
-             (nil nil))))
+             ((nil) nil))))
     ;; Check the test recursively:
     (lint-term (farg1 term) subst type-alist
                 nil ; we use nil here because we handle the test above
@@ -636,7 +639,7 @@
                         (if relevant-subst
                             (cw "  Relevant substitutions ~X01)~%~%" relevant-subst *subst-evisc-tuple*)
                           (cw ")~%~%")))))
-             (nil nil))))
+             ((nil) nil))))
     (if (variablep term)
         nil
       (let ((fn (ffn-symb term)))
