@@ -1,6 +1,6 @@
 ; Utilities for generating xdoc documentation
 ;
-; Copyright (C) 2017-2020 Kestrel Institute
+; Copyright (C) 2017-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,8 +13,17 @@
 ;; STATUS: IN-PROGRESS
 
 (include-book "std/util/bstar" :dir :system)
+(include-book "macro-args")
 (include-book "strings") ; for n-string-append and newline-string
 (include-book "kestrel/utilities/keyword-value-lists2" :dir :system) ;for lookup-keyword
+(include-book "kestrel/strings-light/downcase" :dir :system)
+
+;;Returns a string
+(defun xdoc-make-paragraphs (strings)
+  (if (endp strings)
+      ""
+    (n-string-append "<p>" (first strings) "</p>" (newline-string)
+                     (xdoc-make-paragraphs (rest strings)))))
 
 (defun object-to-string (obj package)
   (declare (xargs :guard (stringp package)
@@ -76,18 +85,19 @@
                     (length (symbol-name arg))
                   (length (symbol-name (car arg))))))
       (len-of-longest-macro-formal (rest macro-args) (max longest len)))))
+
 (defconst *xdoc-general-form-header* "<h3>General Form:</h3>")
 (defconst *xdoc-inputs-header* "<h3>Inputs:</h3>")
 (defconst *xdoc-description-header* "<h3>Description:</h3>")
 
-;; Returns a string representing the given STINGS within @({...}) to make then be printed as code.
+;; Returns a string representing the given STRINGS within @({...}) to make then be printed as code.
 (defun xdoc-within-code-fn (strings)
   (declare (xargs :guard (string-listp strings)))
   (string-append-lst (cons "@({"
                            (append strings
                                    (list "})")))))
 
-;; Returns a string representing the given STINGS within @({...}) to make then be printed as code.
+;; Returns a string representing the given STRINGS within @({...}) to make then be printed as code.
 (defmacro xdoc-within-code (&rest strings)
   `(xdoc-within-code-fn (list ,@strings)))
 
@@ -98,15 +108,22 @@
     macro-args))
 
 ;; Returns a string
-(defun xdoc-for-macro-required-arg-general-form (macro-arg indent-space firstp)
+(defund xdoc-for-macro-required-arg-general-form (macro-arg indent-space firstp)
+  (declare (xargs :guard (and (macro-argp macro-arg)
+                              (stringp indent-space)
+                              (booleanp firstp))))
   (if (not (symbolp macro-arg))
-      (er hard 'xdoc-for-macro-required-arg-general-form "Required macro arg ~x0 is not a symbol." macro-arg)
+      (prog2$ (er hard? 'xdoc-for-macro-required-arg-general-form "Required macro arg ~x0 is not a symbol." macro-arg)
+              "")
     (n-string-append (if firstp "" indent-space)
-                     (string-downcase (symbol-name macro-arg))
+                     (string-downcase-gen (symbol-name macro-arg))
                      (newline-string))))
 
 ;; Returns a string
 (defun xdoc-for-macro-required-args-general-form (macro-args indent-space firstp)
+  (declare (xargs :guard (and (macro-arg-listp macro-args)
+                              (stringp indent-space)
+                              (booleanp firstp))))
   (if (endp macro-args)
       ""
     (string-append (xdoc-for-macro-required-arg-general-form (first macro-args) indent-space firstp)
@@ -114,8 +131,12 @@
 
 ;; Returns a string
 (defun xdoc-for-macro-keyword-arg-general-form (macro-arg indent-space firstp max-len package)
-  (declare (xargs :mode :program
-                  :guard (stringp package)))
+  (declare (xargs :guard (and (macro-argp macro-arg)
+                              (stringp indent-space)
+                              (booleanp firstp)
+                              (natp max-len)
+                              (stringp package))
+                  :mode :program))
   (if (symbolp macro-arg)
       (let* ((name (string-downcase (symbol-name macro-arg)))
              (name (n-string-append ":" name)))
@@ -143,8 +164,12 @@
 
 ;; Returns a string
 (defun xdoc-for-macro-keyword-args-general-form (macro-args indent-space firstp max-len package)
-  (declare (xargs :mode :program
-                  :guard (stringp package)))
+  (declare (xargs :guard (and (macro-arg-listp macro-args)
+                              (stringp indent-space)
+                              (booleanp firstp)
+                              (natp max-len)
+                              (stringp package))
+                  :mode :program))
   (if (endp macro-args)
       ""
     (string-append (xdoc-for-macro-keyword-arg-general-form (first macro-args) indent-space firstp max-len package)
@@ -153,8 +178,10 @@
 
 ;; Returns a string
 (defun xdoc-for-macro-args-general-form (macro-args indent-space package)
-  (declare (xargs :mode :program
-                  :guard (stringp package)))
+  (declare (xargs :guard (and (macro-arg-listp macro-args)
+                              (stringp indent-space)
+                              (stringp package))
+                  :mode :program))
   (b* ((macro-args (maybe-skip-whole-arg macro-args)) ;skip &whole
        ((mv required-args keyword-args) ;todo: handle optional args?  &rest? what else?
         (split-macro-args macro-args))
@@ -172,15 +199,16 @@
 ;; Returns a string
 (defun xdoc-for-macro-general-form (name macro-args package)
   (declare (xargs :mode :program
-                  :guard (stringp package)))
-  (let* ((name (string-downcase (symbol-name name)))
-         (name-len (length name))
+                  :guard (and (symbolp name)
+                              (stringp package))))
+  (let* ((name-string (string-downcase (symbol-name name)))
+         (name-len (length name-string))
          (indent-space (string-append-lst (make-list (+ 2 name-len) :initial-element " "))))
     (concatenate 'string
                  *xdoc-general-form-header*
                  (newline-string)
                  (newline-string)
-                 (xdoc-within-code "(" name " "
+                 (xdoc-within-code "(" name-string " "
                                    (xdoc-for-macro-args-general-form macro-args indent-space package)
                                    indent-space
                                    ")"))))
@@ -210,13 +238,6 @@
       (if (eq symbol (first input-descriptions))
           (strings-before-next-symbol (rest input-descriptions))
         (get-descrption-strings symbol (skip-strings (rest input-descriptions)))))))
-
-;;Returns a string
-(defun xdoc-make-paragraphs (strings)
-  (if (endp strings)
-      ""
-    (n-string-append "<p>" (first strings) "</p>" (newline-string)
-                     (xdoc-make-paragraphs (rest strings)))))
 
 ;; Returns a string
 (defun xdoc-for-macro-required-input (macro-arg input-descriptions)
@@ -310,18 +331,25 @@
               ,@(and short `(:short ,short))
               ,@(and parents `(:parents ,parents))
               :long (n-string-append
+                     ;; Document the general form (args and defaults):
                      ,(xdoc-for-macro-general-form name macro-args package)
                      ;;(newline-string)
+                     ;; Document each input (todo: call these "args"):
                      ,(xdoc-for-macro-inputs macro-args input-descriptions package)
-                     (newline-string)
-                     (newline-string)
+                     ;; Include the :long section, if supplied (todo: rename this "description" since the :long also includes other stuff:
                      ,(if long
-                          `(n-string-append *xdoc-description-header*
-                                           (newline-string)
-                                           (newline-string)
-                                           ,long)
+                          `(n-string-append (newline-string)
+                                            (newline-string)
+                                            *xdoc-description-header*
+                                            (newline-string)
+                                            (newline-string)
+                                            ,long)
                         ""))))))
 
+;; This is like defmacro, except it allows (after the macro's body), the
+;; inclusion of :short, :long, and :parents (all for xdoc) as well as the
+;; special keyword option :inputs, which describes the inputs of the macro and
+;; is used to generate xdoc).
 (defmacro defmacrodoc (name macro-args &rest rest)
   ;; This previously used make-event to avoid a problem with calling FLPR in safe mode via fmt1-to-string.
   (defmacrodoc-fn name macro-args rest))
