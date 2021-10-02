@@ -296,7 +296,7 @@
                              &key
                              (pass-print 'nil) ;whether to pass the print arg to the -event function (will come after the optional args)
                              (pass-context 'nil) ;whether to pass the context arg to the -event function (will come just before state)
-                             (revert-world 'nil)
+                             (revert-world 'nil) ;whether the programmatic function should revert the world (used by simplify)
                              )
   ;; This previously used make-event to avoid a problem with calling FLPR in safe mode via fmt1-to-string.
   (deftransformation-fn name required-args optional-args-and-values pass-print pass-context revert-world))
