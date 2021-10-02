@@ -90,6 +90,12 @@
 (defconst *xdoc-general-form-header* "<h3>General Form:</h3>")
 (defconst *xdoc-inputs-header* "<h3>Inputs:</h3>")
 (defconst *xdoc-description-header* "<h3>Description:</h3>")
+(defconst *xdoc-description-header-with-spacing*
+  (n-string-append (newline-string)
+                   (newline-string)
+                   *xdoc-description-header*
+                   (newline-string)
+                   (newline-string)))
 
 ;; Returns a string representing the given STRINGS within @({...}) to make then be printed as code.
 (defun xdoc-within-code-fn (strings)
@@ -248,7 +254,6 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable macro-arg-descriptionsp))))
 
-
 (defun strings-before-next-symbol (arg-descriptions)
   (declare (xargs :guard (true-listp arg-descriptions)))
   (if (endp arg-descriptions)
@@ -361,17 +366,21 @@
                  (xdoc-for-macro-keyword-inputs keyword-args arg-descriptions package))))
 
 ;; Returns a defxdoc form.
-(defund defxdoc-for-macro (name macro-args package parents short arg-descriptions description)
+;; TODO: Check that there are no args in ARG-DESCRIPTIONS that are not among the MACRO-ARGS.
+;; TODO: Think about all the & things that can occur in the macro-args
+(defund defxdoc-for-macro (name       ; the name of the macro being documented
+                           macro-args ; the formals of the macro
+                           package
+                           parents
+                           short ; a form that evaluates to a string or to nil
+                           arg-descriptions ; todo: can we allow these to contain forms to be evaluated?
+                           description ; a form that evaluates to a string or to nil
+                           )
   (declare (xargs :guard (and (symbolp name)
                               (macro-arg-listp macro-args)
                               (stringp package)
                               (symbol-listp parents)
-                              (or (stringp short)
-                                  (null short))
-                              (macro-arg-descriptionsp arg-descriptions)
-                              ;; (or (stringp description) ;todo: gen?
-                              ;;     (null description))
-                              )
+                              (macro-arg-descriptionsp arg-descriptions))
                   :mode :program))
   `(defxdoc ,name
      ,@(and short `(:short ,short))
@@ -383,14 +392,9 @@
             ;; Document each input (todo: call these "args"):
             ,(xdoc-for-macro-inputs macro-args arg-descriptions package)
             ;; Include the description section, if supplied:
-            ,(if description
-                 `(n-string-append (newline-string)
-                                   (newline-string)
-                                   *xdoc-description-header*
-                                   (newline-string)
-                                   (newline-string)
-                                   ,description)
-               ""))))
+            ,@(and description
+                   (list *xdoc-description-header-with-spacing*
+                         description)))))
 
 ;; Returns a progn including the original defmacro and a defxdoc form
 (defun defmacrodoc-fn (name macro-args rest)

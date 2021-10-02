@@ -30,8 +30,8 @@
   ;; TODO: Make an version of :description that puts in the P tags for you:
   ;; This test makes sure that the :description can be computed:
   :description (concatenate 'string
-                            "<p>The contents of the long section go here.  This text comes after the Usage and Inputs sections.</p>"
-                            "<p>Second paragraph of :long section.</p>")
+                            "<p>The description of the macro goes here.  This text comes after the General Form and Inputs sections.</p>"
+                            "<p>Second paragraph of the description.</p>")
   ;; now an alternating list of param names and strings (or lists of strings):
   :inputs (req1
            "This is the first required param."
