@@ -27,10 +27,11 @@
   ;; xdoc args:
   :parents (top)
   :short "Short text goes here."
-  ;; TODO: Make an version of :long that puts in the P tags for you:
-  ;; This test makes sure that the :long can be computed:
-  :long (concatenate 'string "<p>The contents of the long section go here.  This text comes after the Usage and Inputs sections.</p>"
-                     "<p>Second paragraph of :long section.</p>")
+  ;; TODO: Make an version of :description that puts in the P tags for you:
+  ;; This test makes sure that the :description can be computed:
+  :description (concatenate 'string
+                            "<p>The contents of the long section go here.  This text comes after the Usage and Inputs sections.</p>"
+                            "<p>Second paragraph of :long section.</p>")
   ;; now an alternating list of param names and strings (or lists of strings):
   :inputs (req1
            "This is the first required param."

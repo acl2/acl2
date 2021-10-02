@@ -317,7 +317,7 @@
        (xdoc-stuff (rest rest)) ;then xdoc stuff, as keys alternating with values
        (parents (lookup-keyword :parents xdoc-stuff))
        (short (lookup-keyword :short xdoc-stuff))
-       (long (lookup-keyword :long xdoc-stuff))
+       (description (lookup-keyword :description xdoc-stuff))
        (input-descriptions (lookup-keyword :inputs xdoc-stuff)) ;; repetitions of the pattern: symbol followed by 1 or more strings describing it
        ((when (not short))
         (er hard 'defmacrodoc "No :short supplied for ~x0" name))
@@ -336,20 +336,21 @@
                      ;;(newline-string)
                      ;; Document each input (todo: call these "args"):
                      ,(xdoc-for-macro-inputs macro-args input-descriptions package)
-                     ;; Include the :long section, if supplied (todo: rename this "description" since the :long also includes other stuff:
-                     ,(if long
+                     ;; Include the description section, if supplied:
+                     ,(if description
                           `(n-string-append (newline-string)
                                             (newline-string)
                                             *xdoc-description-header*
                                             (newline-string)
                                             (newline-string)
-                                            ,long)
+                                            ,description)
                         ""))))))
 
 ;; This is like defmacro, except it allows (after the macro's body), the
-;; inclusion of :short, :long, and :parents (all for xdoc) as well as the
-;; special keyword option :inputs, which describes the inputs of the macro and
-;; is used to generate xdoc).
+;; inclusion of :short and :parents (for generating xdoc) as well as the
+;; special keyword options :inputs, which describes the inputs of the macro and
+;; is used to generate xdoc, and :description, which describes what the macro
+;; does and is included in the :long xdoc section.
 (defmacro defmacrodoc (name macro-args &rest rest)
   ;; This previously used make-event to avoid a problem with calling FLPR in safe mode via fmt1-to-string.
   (defmacrodoc-fn name macro-args rest))
