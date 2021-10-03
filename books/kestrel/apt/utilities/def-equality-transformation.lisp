@@ -426,14 +426,14 @@
          :parents ,parents
          :short ,short
          :description ,description
-         :arg-descriptions ,(append '(fn  "The name of the new function to transform."
-                                          :new-name "The name of the new function to be created."
-                                          :theorem-disabled "Whether to disable the 'becomes theorem'."
-                                          :function-disabled "Whether to disable the new function."
-                                          :verify-guards "Whether to verify the guards of the new function"
-                                          :guard-hints "Hints to use for the guard proof."
-                                          :measure "Measure to use for the new function." ;todo: what about mut-rec?
-                                          :measure-hints "Hints to use for the measure/termination proof.")
+         :arg-descriptions ,(append '((fn "The name of the new function to transform.")
+                                      (new-name "The name of the new function to be created.")
+                                      (theorem-disabled "Whether to disable the 'becomes theorem'.")
+                                      (function-disabled "Whether to disable the new function.")
+                                      (verify-guards "Whether to verify the guards of the new function")
+                                      (guard-hints "Hints to use for the guard proof.")
+                                      (measure "Measure to use for the new function.") ;todo: what about mut-rec?
+                                      (measure-hints "Hints to use for the measure/termination proof."))
                                     transform-specific-arg-descriptions))
        ) ; end progn
     ))

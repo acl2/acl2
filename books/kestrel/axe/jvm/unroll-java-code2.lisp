@@ -759,28 +759,28 @@
   :short "Given a Java method, define a function that represents
   the (unrolled) effect of the given method on the JVM state (under the given
   assumptions).  This uses symbolic execution including unrolling all loops."
-  :args (fn "The name of the function to create"
-              method-designator-string "The method designator of the method (a string like \"java.lang.Object.foo(IB)V\")"
-              :array-length-alist "An alist pairing array parameters with their sizes"
-              :classes-to-assume-initialized "Classes to assume the JVM has already initialized, or :all"
-              :classes-to-assume-uninitialized "Classes to assume the JVM has not already initialized, or :all"
-              :ignore-exceptions       "Whether to assume exceptions do not happen (e.g., out-of-bounds array accesses)"
-              :ignore-errors           "Whether to assume JVM errors do not happen"
-              :extra-rules             "Rules to add to the usual set of rules"
-              :remove-rules            "Rules to remove from the usual set of rules"
-              :rule-alists               "If non-nil, rule-sets to use to completely replace the usual rule sets"
-              :monitor                 "Rules to monitor (to help debug failures)"
-              :prove-with-acl2         "Attempt to sanity check the result by proving it with ACL2"
-              :assumptions             "Assumptions about the initial state, S."
-              :print                   "Verbosity level (passed to the Axe rewriter)"
-              :abstract-state-components "Whether to define functions abstracting how the state components are updated"
-              :prune-branches "whether to aggressively prune unreachable branches in the result"
-              :call-stp                 "whether to call STP when pruning (t, nil, or a number of conflicts before timeout)"
-              :extra-proof-rules "Extra rules to support proving the result with ACL2"
-              :print-interval "Number of DAG nodes to create before printing intermediate results (or nil for no limit)."
-              :param-names "Names to use for the parameters (e.g., if no debugging information is available)."
-              :steps "A number of steps to run.  A natural number (for debugging only), or :auto, meaning run until the method returns."
-              )
+  :args ((fn "The name of the function to create")
+         (method-designator-string "The method designator of the method (a string like \"java.lang.Object.foo(IB)V\")")
+         (array-length-alist "An alist pairing array parameters with their sizes")
+         (classes-to-assume-initialized "Classes to assume the JVM has already initialized, or :all")
+         (classes-to-assume-uninitialized "Classes to assume the JVM has not already initialized, or :all")
+         (ignore-exceptions       "Whether to assume exceptions do not happen (e.g., out-of-bounds array accesses)")
+         (ignore-errors           "Whether to assume JVM errors do not happen")
+         (extra-rules             "Rules to add to the usual set of rules")
+         (remove-rules            "Rules to remove from the usual set of rules")
+         (rule-alists               "If non-nil, rule-sets to use to completely replace the usual rule sets")
+         (monitor                 "Rules to monitor (to help debug failures)")
+         (prove-with-acl2         "Attempt to sanity check the result by proving it with ACL2")
+         (assumptions             "Assumptions about the initial state, S.")
+         (print                   "Verbosity level (passed to the Axe rewriter)")
+         (abstract-state-components "Whether to define functions abstracting how the state components are updated")
+         (prune-branches "whether to aggressively prune unreachable branches in the result")
+         (call-stp                 "whether to call STP when pruning (t, nil, or a number of conflicts before timeout)")
+         (extra-proof-rules "Extra rules to support proving the result with ACL2")
+         (print-interval "Number of DAG nodes to create before printing intermediate results (or nil for no limit).")
+         (param-names "Names to use for the parameters (e.g., if no debugging information is available).")
+         (steps "A number of steps to run.  A natural number (for debugging only), or :auto, meaning run until the method returns.")
+         )
   :description "<p>This uses lifting theorems for subroutine calls that have already been lifted.  Otherwise, it effectively inlines the subroutine call.</p>
   <p>To inspect the resulting form, you can use @('print-list') on the generated defconst.</p>"
   )

@@ -17,6 +17,9 @@
 (include-book "strings") ; for n-string-append and newline-string
 (include-book "kestrel/utilities/keyword-value-lists2" :dir :system) ;for lookup-keyword
 (include-book "kestrel/strings-light/downcase" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq" :dir :system)
+
+(local (in-theory (disable mv-nth)))
 
 ;;;
 ;;; handling macro args
@@ -35,19 +38,44 @@
            (macro-arg-listp (maybe-skip-whole-arg macro-args)))
   :hints (("Goal" :in-theory (enable maybe-skip-whole-arg))))
 
-;; Returns (mv required-args keyword-args)
+;; Returns (mv required-args keyword-args).
+;; Splits the stuff before &key from the stuff after &key.
 (defun split-macro-args (macro-args)
   (declare (xargs :guard (macro-arg-listp macro-args)))
   (if (endp macro-args)
       (mv nil nil)
-      (if (eq '&key (first macro-args))
-          (mv nil (rest macro-args))
-        (mv-let (required-args keyword-args)
-          (split-macro-args (rest macro-args))
-          (mv (cons (first macro-args) required-args)
-              keyword-args)))))
+    (if (eq '&key (first macro-args))
+        (mv nil (rest macro-args))
+      (mv-let (required-args keyword-args)
+        (split-macro-args (rest macro-args))
+        (let ((arg (first macro-args)))
+          (if (not (symbolp arg))
+              (prog2$ (er hard? 'split-macro-args "Found a non-symbol required arg: ~x0." arg)
+                      (mv nil nil))
+            (mv (cons arg required-args)
+                keyword-args)))))))
+
+(defthm symbol-listp-of-mv-nth-0-of-split-macro-args
+  (implies (macro-arg-listp macro-args)
+           (symbol-listp (mv-nth 0 (split-macro-args macro-args))))
+  :hints (("Goal" :in-theory (enable split-macro-args))))
+
+(defthm macro-arg-listp-of-mv-nth-1-of-split-macro-args
+  (implies (macro-arg-listp macro-args)
+           (macro-arg-listp (mv-nth 1 (split-macro-args macro-args))))
+  :hints (("Goal" :in-theory (enable split-macro-args))))
 
 ;; test: (SPLIT-MACRO-ARGS '(foo bar &key baz (baz2 'nil)))
+
+(defun keyword-arg-names (keyword-args ; symbols or doublets with default values
+                          )
+  (declare (xargs :guard (macro-arg-listp keyword-args)
+                  :guard-hints (("Goal" :in-theory (enable macro-arg-listp MACRO-ARGP)))))
+  (if (atom keyword-args)
+      nil
+    (let ((arg (first keyword-args)))
+      (cons (if (symbolp arg) arg (car arg))
+            (keyword-arg-names (rest keyword-args))))))
 
 ;; Returns (mv required-args keyword-args).
  ;todo: handle optional args?  &rest? what else?
@@ -56,24 +84,42 @@
   (let ((macro-args (maybe-skip-whole-arg macro-args))) ;skips &whole
     (split-macro-args macro-args)))
 
-;; Skips all strings at the front of the list ITEMS.
-(defund skip-leading-strings (items)
-  (declare (xargs :guard t))
-  (if (atom items)
-      items
-    (if (stringp (first items))
-        (skip-leading-strings (rest items))
-      items)))
+(defthm macro-arg-listp-of-mv-nth-1-of-extract-required-and-keyword-args
+  (implies (macro-arg-listp macro-args)
+           (macro-arg-listp (mv-nth 1 (extract-required-and-keyword-args macro-args))))
+  :hints (("Goal" :in-theory (enable extract-required-and-keyword-args))))
 
-(defthm true-listp-of-skip-leading-strings
-  (equal (true-listp (skip-leading-strings items))
-         (true-listp items))
-  :hints (("Goal" :in-theory (enable skip-leading-strings))))
+(defthm symbol-listp-of-mv-nth-0-of-extract-required-and-keyword-args
+  (implies (macro-arg-listp macro-args)
+           (symbol-listp (mv-nth 0 (extract-required-and-keyword-args macro-args))))
+  :hints (("Goal" :in-theory (enable extract-required-and-keyword-args))))
 
-(defthm len-of-skip-leading-strings-bound
-  (<= (len (skip-leading-strings items)) (len items))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable skip-leading-strings))))
+;; gets rid of things like &key and &whole
+;; todo: handle the rest of the & things
+(defund macro-arg-names (macro-args)
+  (declare (xargs :guard (macro-arg-listp macro-args)))
+  (mv-let (required-args keyword-args)
+    (extract-required-and-keyword-args macro-args)
+    (append required-args (keyword-arg-names keyword-args))))
+
+;; ;; Skips all strings at the front of the list ITEMS.
+;; (defund skip-leading-strings (items)
+;;   (declare (xargs :guard t))
+;;   (if (atom items)
+;;       items
+;;     (if (stringp (first items))
+;;         (skip-leading-strings (rest items))
+;;       items)))
+
+;; (defthm true-listp-of-skip-leading-strings
+;;   (equal (true-listp (skip-leading-strings items))
+;;          (true-listp items))
+;;   :hints (("Goal" :in-theory (enable skip-leading-strings))))
+
+;; (defthm len-of-skip-leading-strings-bound
+;;   (<= (len (skip-leading-strings items)) (len items))
+;;   :rule-classes :linear
+;;   :hints (("Goal" :in-theory (enable skip-leading-strings))))
 
 ;;Returns a string
 (defun xdoc-make-paragraphs (strings)
@@ -263,55 +309,61 @@
                                    indent-space
                                    ")"))))
 
-;; Recognize a list of symbols and strings, where there is first a symbol, then 0
-;; or more strings, and then that pattern repeats.
+;; Recognize an alist from arg names to non-empty lists of strings (description paragraphs).
+;; Example:
+;; ((arg1 "string")
+;;  (arg2 "stringa" "stringb"))
 (defun macro-arg-descriptionsp (arg-descriptions)
   (declare (xargs :guard t
                   :measure (len arg-descriptions)))
   (if (atom arg-descriptions)
       (null arg-descriptions)
-    (and (symbolp (first arg-descriptions))
-         (macro-arg-descriptionsp (skip-leading-strings (rest arg-descriptions))))))
+    (let ((item (first arg-descriptions)))
+      (and (true-listp item)
+           (<= 2 (len item)) ; must have an arg name and at least one string description
+           (symbolp (first item))
+           (string-listp (cdr item))
+           (macro-arg-descriptionsp (rest arg-descriptions))))))
 
-(defthm macro-arg-descriptionsp-forward-to-true-listp
+(defthm macro-arg-descriptionsp-forward-to-symbol-alistp
   (implies (macro-arg-descriptionsp arg-descriptions)
-           (true-listp arg-descriptions))
+           (symbol-alistp arg-descriptions))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable macro-arg-descriptionsp))))
 
-(defun strings-before-next-symbol (arg-descriptions)
-  (declare (xargs :guard (true-listp arg-descriptions)))
-  (if (endp arg-descriptions)
-      nil
-    (let ((item (first arg-descriptions)))
-      (if (symbolp item)
-          nil
-        (if (stringp item)
-            (cons item (strings-before-next-symbol (rest arg-descriptions)))
-          (er hard? 'strings-before-next-symbol "Unexpected thing, ~x0, in macro input description." item))))))
+;; (defun strings-before-next-symbol (arg-descriptions)
+;;   (declare (xargs :guard (true-listp arg-descriptions)))
+;;   (if (endp arg-descriptions)
+;;       nil
+;;     (let ((item (first arg-descriptions)))
+;;       (if (symbolp item)
+;;           nil
+;;         (if (stringp item)
+;;             (cons item (strings-before-next-symbol (rest arg-descriptions)))
+;;           (er hard? 'strings-before-next-symbol "Unexpected thing, ~x0, in macro input description." item))))))
 
-(defthm strings-listp-of-strings-before-next-symbol
-  (string-listp (strings-before-next-symbol arg-descriptions))
-  :hints (("Goal" :in-theory (enable strings-before-next-symbol))))
+;; (defthm strings-listp-of-strings-before-next-symbol
+;;   (string-listp (strings-before-next-symbol arg-descriptions))
+;;   :hints (("Goal" :in-theory (enable strings-before-next-symbol))))
 
-;; Returns a list of strings
-(defun get-description-strings (symbol arg-descriptions)
-  (declare (xargs :guard (and (symbolp symbol)
-                              (macro-arg-descriptionsp arg-descriptions))
-                  :measure (len arg-descriptions)))
-  (if (endp arg-descriptions)
-      (er hard? 'get-description-strings "No description found for macro arg ~x0." symbol)
-    (if (not (symbolp (first arg-descriptions)))
-        (er hard? 'get-description-strings "Unexpected thing in input descriptions: ~x0 (expected a symbol)." (first arg-descriptions))
-      (if (eq symbol (first arg-descriptions))
-          (strings-before-next-symbol (rest arg-descriptions))
-        (get-description-strings symbol (skip-leading-strings (rest arg-descriptions)))))))
+;; ;; Returns a list of strings
+;; (defun get-description-strings (symbol arg-descriptions)
+;;   (declare (xargs :guard (and (symbolp symbol)
+;;                               (macro-arg-descriptionsp arg-descriptions))
+;;                   :measure (len arg-descriptions)))
+;;   (if (endp arg-descriptions)
+;;       (er hard? 'get-description-strings "No description found for macro arg ~x0." symbol)
+;;     (if (not (symbolp (first arg-descriptions)))
+;;         (er hard? 'get-description-strings "Unexpected thing in input descriptions: ~x0 (expected a symbol)." (first arg-descriptions))
+;;       (if (eq symbol (first arg-descriptions))
+;;           (strings-before-next-symbol (rest arg-descriptions))
+;;         (get-description-strings symbol (skip-leading-strings (rest arg-descriptions)))))))
 
-(defthm string-listp-of-get-description-strings
-  (implies (and (symbolp symbol)
-                (macro-arg-descriptionsp arg-descriptions))
-           (string-listp (get-description-strings symbol arg-descriptions)))
-  :hints (("Goal" :in-theory (enable get-description-strings))))
+;; (defthm string-listp-of-get-description-strings
+;;   (implies (and (symbolp symbol)
+;;                 (macro-arg-descriptionsp arg-descriptions))
+;;            (string-listp (get-description-strings symbol arg-descriptions)))
+;;   :hints (("Goal" :in-theory (enable get-description-strings))))
 
 ;; Returns a string
 (defun xdoc-for-macro-required-input (macro-arg arg-descriptions)
@@ -320,7 +372,7 @@
   (if (not (symbolp macro-arg))
       (er hard 'xdoc-for-macro-required-input "Required macro arg ~x0 is not a symbol." macro-arg)
     (let ((name (string-downcase-gen (symbol-name macro-arg)))
-          (description-strings (get-description-strings macro-arg arg-descriptions)))
+          (description-strings (lookup-eq macro-arg arg-descriptions)))
       (n-string-append "<p>@('" name "')</p>" (newline-string)
                        (newline-string)
                        "<blockquote>" (newline-string)
@@ -346,8 +398,9 @@
   (let* ((name (if (symbolp macro-arg)  ;note that name will not be a keyword here
                    macro-arg
                  (first macro-arg)))
-         (name-to-lookup (intern (symbol-name name) "KEYWORD")) ;since this is a keyword arg
-         (description-strings (get-description-strings name-to-lookup arg-descriptions))
+         (name-to-lookup name) ;(intern (symbol-name name) "KEYWORD") ;since this is a keyword arg
+         (description-strings (lookup-eq name-to-lookup arg-descriptions))
+         ;; add the colon, since this is a keyword arg:
          (name (string-append ":" (string-downcase (symbol-name name))))
          (default (if (symbolp macro-arg)
                       nil
@@ -403,8 +456,13 @@
                               (symbol-listp parents)
                               (macro-arg-descriptionsp arg-descriptions))
                   :mode :program))
-  (let* ( ;; The xdoc seems to be created in this package:
-         (package (symbol-package-name name)))
+  (b* (((when (not (subsetp-eq (strip-cars arg-descriptions)
+                               (macro-arg-names macro-args))))
+        (er hard? 'defxdoc-for-macro-fn "Descriptions given for names, ~x0, that are not among the macro args."
+            (set-difference-eq (strip-cars arg-descriptions)
+                               (macro-arg-names macro-args))))
+       ;; The xdoc seems to be created in this package:
+       (package (symbol-package-name name)))
     `(defxdoc ,name
        ,@(and short `(:short ,short))
        ,@(and parents `(:parents ,parents))

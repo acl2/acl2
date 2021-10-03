@@ -12,7 +12,7 @@
 
 (include-book "doc")
 
-(defxdoc-for-macro foo (bar) (myparent) "Short" (bar "the arg") (concatenate 'string "Description " "Description2"))
+(defxdoc-for-macro foo (bar) (myparent) "Short" ((bar "the arg")) (concatenate 'string "Description " "Description2"))
 
 ;; A simple test. We define a macro called FOO and add xdoc to it, including
 ;; describing its inputs.
@@ -35,12 +35,8 @@
                             "<p>The description of the macro goes here.  This text comes after the General Form and Inputs sections.</p>"
                             "<p>Second paragraph of the description.</p>")
   ;; now an alternating list of param names and strings (or lists of strings):
-  :args (req1
-           "This is the first required param."
-           req2
-           "Second required param."
-           :key1
-           "First paragraph of text about key1."
-           "Second paragraph of text about key1."
-           :key2
-           "Blah Blah."))
+  :args ((req1 "This is the first required param.")
+         (req2 "Second required param.")
+         (key1 "First paragraph of text about key1."
+                "Second paragraph of text about key1.")
+         (key2 "Blah Blah.")))
