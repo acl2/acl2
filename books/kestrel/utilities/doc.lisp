@@ -437,6 +437,11 @@
         (get-declares rest))
        (body (first rest))      ;then the body
        (xdoc-stuff (rest rest)) ;then xdoc stuff, as keys alternating with values
+       ((when (not (keyword-value-listp xdoc-stuff)))
+        (er hard 'defmacrodoc "Ill-formed xdoc args (should be a keyword-value-list): ~x0" xdoc-stuff))
+       (allowed-keys '(:parents :short :description :args))
+       ((when (not (subsetp-eq (keyword-value-list-keys xdoc-stuff) allowed-keys)))
+        (er hard 'defmacrodoc "Bad keys in ~x0 (allowed keys are ~x1)" xdoc-stuff allowed-keys))
        (parents (lookup-keyword :parents xdoc-stuff))
        (short (lookup-keyword :short xdoc-stuff))
        (description (lookup-keyword :description xdoc-stuff))
