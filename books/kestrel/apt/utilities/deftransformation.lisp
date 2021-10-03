@@ -15,7 +15,7 @@
 ;; For a transformation called XXX, deftransformation expects a function to
 ;; exist called XXX-event, which takes the following arguments:
 ;; - the transformation's required args (in the order given in the call to deftransformation)
-;; - and transformation's optional args (in the order given in the call to deftransformation)
+;; - and transformation's keyword args (in the order given in the call to deftransformation)
 ;; - a verbose arg, if deftransformation is called with :pass-print t)
 ;; - a ctx, if deftransformation is called with :pass-context t
 ;;
@@ -56,8 +56,8 @@
     form))
 
 ;; Returns a progn.
-(defun deftransformation-fn (name required-args optional-args-and-values
-                                  pass-print ;whether to pass the print arg to the -event function (will come after the optional args)
+(defun deftransformation-fn (name required-args keyword-args-and-defaults
+                                  pass-print ;whether to pass the print arg to the -event function (will come after the keyword args)
                                   pass-context ;whether to pass the context arg to the -event function (will come just before state)
                                   revert-world
                                   suppress-xdoc
@@ -76,13 +76,13 @@
                       ',(xdoc-for-macro-general-form name
                                                      (append required-args
                                                              '(&key)
-                                                             '((show-only 'nil) (print ':result)) ; optional args that are always present
-                                                             optional-args-and-values)
+                                                             '((show-only 'nil) (print ':result)) ; keyword args that are always present
+                                                             keyword-args-and-defaults)
                                                      (symbol-package-name name)))))))
         `(progn
            ;; This is the boilerplate wrapper function.  It wraps a call of EVENT-GENERATOR-NAME:
            (defun ,(add-suffix name "-FN") (,@required-args
-                                            ,@(strip-cars optional-args-and-values)
+                                            ,@(strip-cars keyword-args-and-defaults)
                                             show-only
                                             print
                                             num-required-args
@@ -116,7 +116,7 @@
                   (form-for-redundancy-checking ;(form-for-redundancy-checking whole-form num-required-args)
                    (list ',name
                          ,@required-args
-                         ,@(strip-cars optional-args-and-values)
+                         ,@(strip-cars keyword-args-and-defaults)
                          ))
                   ;;todo: rename previous-transformation-expansion to previous-transformation-result?
                   (previous-transformation-expansion (previous-transformation-expansion2 form-for-redundancy-checking whole-form state))
@@ -138,14 +138,14 @@
                        (with-output! :stack :pop
                          (,event-generator-name
                           ,@required-args
-                          ,@(strip-cars optional-args-and-values)
+                          ,@(strip-cars keyword-args-and-defaults)
                           ,@(and pass-print '((if (member-eq print '(:info :all)) t nil)))
                           ,@(and pass-context '(ctx))
                           state))
                      ;; Printing (of proofs, etc.) remains suppressed during expansion:
                      (,event-generator-name
                       ,@required-args
-                      ,@(strip-cars optional-args-and-values)
+                      ,@(strip-cars keyword-args-and-defaults)
                       ,@(and pass-print '((if (member-eq print '(:info :all)) t nil)))
                       ,@(and pass-context '(ctx))
                       state)))
@@ -187,13 +187,13 @@
            (defmacroq ,name (&whole whole-form
                                     ,@required-args
                                     &key
-                                    ,@optional-args-and-values
+                                    ,@keyword-args-and-defaults
                                     (show-only 'nil)
                                     (print ':result) ;;This argument doesn't get evaluated?
                                     )
              (let ((form (cons ',(add-suffix name "-FN")
                                ,(make-cons-nest (append required-args
-                                                        (strip-cars optional-args-and-values)
+                                                        (strip-cars keyword-args-and-defaults)
                                                         (list 'show-only 'print (list 'quote (len required-args)) 'whole-form
                                                               `'',name
                                                               ''state))))))
@@ -214,7 +214,7 @@
                     ))))
 
            (defun ,(add-suffix name "-PROGRAMMATIC-FN") (,@required-args
-                                                         ,@(strip-cars optional-args-and-values)
+                                                         ,@(strip-cars keyword-args-and-defaults)
                                                          show-only
                                                          print
                                                          num-required-args
@@ -239,7 +239,7 @@
                        revert-world
                        `(,(add-suffix name "-FN")
                          ,@required-args
-                         ,@(strip-cars optional-args-and-values)
+                         ,@(strip-cars keyword-args-and-defaults)
                          show-only
                          print
                          num-required-args
@@ -252,7 +252,7 @@
                        revert-world
                        `(,(add-suffix name "-FN")
                          ,@required-args
-                         ,@(strip-cars optional-args-and-values)
+                         ,@(strip-cars keyword-args-and-defaults)
                          show-only
                          print
                          num-required-args
@@ -267,14 +267,14 @@
            (defmacro ,(add-suffix name "-PROGRAMMATIC") (&whole whole-form
                                                                 ,@required-args
                                                                 &key
-                                                                ,@optional-args-and-values
+                                                                ,@keyword-args-and-defaults
                                                                 (show-only 'nil)
                                                                 (print 'nil)
                                                                 )
              (cons
               ',(add-suffix name "-PROGRAMMATIC-FN")
               ,(make-cons-nest (append required-args
-                                       (strip-cars optional-args-and-values)
+                                       (strip-cars keyword-args-and-defaults)
                                        (list 'show-only 'print `',(len required-args) '(list 'quote whole-form)
                                              `'',(add-suffix name "-PROGRAMMATIC")
                                              ''state)))))
@@ -291,21 +291,21 @@
 
 ;; Expects there to be a function called <name>-event.  It's params should be:
 ;; ...required-args...
-;; ...optional-args...
+;; ...keyword-args...
 ;; verbose (if :pass-print is true)
 ;; ctx (if :pass-context is true)
 ;; state
 (defmacro deftransformation (name ; name of the transformation (e.g., expand-lets)
                              required-args ; a list of symbols, usually contains at least FN for the name of the function being transformed
-                             optional-args-and-values ; a list of doublets (optional arg names and their quoted default values)
+                             keyword-args-and-defaults ; a list of doublets (keyword arg names and their quoted default values)
                              &key
-                             (pass-print 'nil) ;whether to pass the print arg to the -event function (will come after the optional args)
+                             (pass-print 'nil) ;whether to pass the print arg to the -event function (will come after the keyword args)
                              (pass-context 'nil) ;whether to pass the context arg to the -event function (will come just before state)
                              (revert-world 'nil) ;whether the programmatic function should revert the world (used by simplify)
                              (suppress-xdoc 'nil) ;whether to suppress automatic xdoc generation
                              )
   ;; This previously used make-event to avoid a problem with calling FLPR in safe mode via fmt1-to-string.
-  (deftransformation-fn name required-args optional-args-and-values pass-print pass-context revert-world suppress-xdoc))
+  (deftransformation-fn name required-args keyword-args-and-defaults pass-print pass-context revert-world suppress-xdoc))
 
 ;; TODO: Update this:
 ;; TODO: Add this to the xdoc: If the :print option is t, all non-local events

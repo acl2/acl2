@@ -54,7 +54,7 @@
 (defun def-equality-transformation-fn (name
                                        core-fn ; args should be the function name, its untranslated body, wrld, and then the transform-specific-args
                                        transform-specific-required-args ;arguments to core-fn
-                                       transform-specific-optional-args-ands-defaults ;arguments to core-fn
+                                       transform-specific-keyword-args-ands-defaults ;arguments to core-fn
                                        enables ; used for each function (currently)
                                        make-becomes-theorem-name
                                        make-becomes-theorems-name
@@ -62,10 +62,10 @@
   (declare (xargs :guard (and (symbolp name)
                               (symbolp core-fn)
                               (symbol-listp transform-specific-required-args)
-                              (doublet-listp transform-specific-optional-args-ands-defaults)
-                              (symbol-listp (strip-cars transform-specific-optional-args-ands-defaults))
+                              (doublet-listp transform-specific-keyword-args-ands-defaults)
+                              (symbol-listp (strip-cars transform-specific-keyword-args-ands-defaults))
                               ;; defaults are all quoted
-                              (quote-listp (strip-cadrs transform-specific-optional-args-ands-defaults))
+                              (quote-listp (strip-cadrs transform-specific-keyword-args-ands-defaults))
                               (symbolp make-becomes-theorem-name)
                               (symbolp make-becomes-theorems-name)
                               (symbol-listp make-becomes-theorem-extra-args)
@@ -74,7 +74,7 @@
        (apply-to-defuns-name (pack$ name '-in-defuns))
        (event-generator-name (pack$ name '-event))
        (transform-specific-arg-names (append transform-specific-required-args
-                                             (strip-cars transform-specific-optional-args-ands-defaults)))
+                                             (strip-cars transform-specific-keyword-args-ands-defaults)))
        ((when (not (subsetp-eq make-becomes-theorem-extra-args transform-specific-arg-names)))
         (er hard? 'def-equality-transformation-fn "make-becomes-theorem-extra-args, ~x0, are not a subset of the transform-specific-arg-names, ~x1."
             make-becomes-theorem-extra-args
@@ -231,7 +231,7 @@
                                      guard-hints
                                      measure ; may be a call of :map if mut-rec
                                      measure-hints
-                                     ,@(strip-cars transform-specific-optional-args-ands-defaults)
+                                     ,@(strip-cars transform-specific-keyword-args-ands-defaults)
                                      verbose ;for now, this is a boolean (corresponding to whether the :print option was :info or higher), but we could support passing in richer information
                                      ctx
                                      state)
@@ -399,7 +399,7 @@
          (fn ;;the name of a defined function (TODO: :logic mode only?)
           ,@transform-specific-required-args
           )
-         ;; optional args, *not* including :show-only or :verbose (deftransformation puts those in):
+         ;; keyword args, *not* including :show-only or :verbose (deftransformation puts those in):
          ((new-name ':auto)
           (theorem-disabled 'nil) ;;TODO:  Call this :disable-theorem?
           (function-disabled ':auto) ;;TODO:  Call this :disable-function?
@@ -408,7 +408,7 @@
           (guard-hints ':auto)
           (measure ':auto)
           (measure-hints ':auto)
-          ,@transform-specific-optional-args-ands-defaults)
+          ,@transform-specific-keyword-args-ands-defaults)
          :pass-print t
          :pass-context t)
        ) ; end progn
@@ -417,13 +417,13 @@
 (defmacro def-equality-transformation (name ; name of the transformation to create
                                        core-fn ; core function (args should be: function name, untranslated body, wrld, and then the transform-specific-args)
                                        transform-specific-required-args
-                                       transform-specific-optional-args-ands-defaults ; a list of doublets containing arg names and quoted default values
+                                       transform-specific-keyword-args-ands-defaults ; a list of doublets containing arg names and quoted default values
                                        &key
                                        (enables 'nil) ; enables to use in all equivalence proofs
                                        (make-becomes-theorem-name 'make-becomes-theorem)
                                        (make-becomes-theorems-name 'make-becomes-theorems)
                                        (make-becomes-theorem-extra-args 'nil))
-  `(make-event (def-equality-transformation-fn ',name ',core-fn ',transform-specific-required-args ',transform-specific-optional-args-ands-defaults ,enables
+  `(make-event (def-equality-transformation-fn ',name ',core-fn ',transform-specific-required-args ',transform-specific-keyword-args-ands-defaults ,enables
                  ',make-becomes-theorem-name
                  ',make-becomes-theorems-name
                  ',make-becomes-theorem-extra-args
@@ -445,5 +445,5 @@
   copy-function ; name of the transformation to create
   copy-function-core-function ; core function to transform a function body (a no-op for copy function)
   nil ; required args
-  nil ; optional args and defaults, a list of doublets containing arg names and quoted default values
+  nil ; keyword args and defaults, a list of doublets containing arg names and quoted default values
   )
