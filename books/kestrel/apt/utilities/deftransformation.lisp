@@ -91,20 +91,15 @@
                               (booleanp pass-context)
                               (booleanp revert-world)
                               (booleanp suppress-xdoc)
-                              (or (eq :auto parents)
-                                  (symbol-listp parents))
+                              (symbol-listp parents)
                               (macro-arg-descriptionsp arg-descriptions))
                   :mode :program))
   (b* (((when (not (consp required-args))) ;seems sensible, for printing the context
         (er hard? 'deftransformation "A transformation must have at least one required argument."))
        (event-generator-name (add-suffix name "-EVENT"))
-       (some-xdoc-arg-given (or (not (eq :auto parents))
-                                (not (eq :auto short))
+       (some-xdoc-arg-given (or (not (eq :auto short))
                                 description
                                 arg-descriptions))
-       (parents (if (eq :auto parents)
-                    '(apt::apt)
-                  parents))
        (short (if (eq :auto short)
                   "A transformation in the APT toolkit."
                 short))
@@ -361,7 +356,7 @@
                              (pass-context 'nil) ;whether to pass the context arg to the -event function (will come just before state)
                              (revert-world 'nil) ;whether the programmatic function should revert the world (used by simplify)
                              (suppress-xdoc 'nil) ;whether to suppress automatic xdoc generation
-                             (parents ':auto)
+                             (parents '(apt::apt))
                              (short ':auto)
                              (arg-descriptions 'nil)
                              (description 'nil))
