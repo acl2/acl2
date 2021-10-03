@@ -450,7 +450,7 @@
         (er hard 'defmacrodoc "No :short supplied for ~x0" name))
        ((when (and macro-args
                    (not arg-descriptions)))
-        (er hard 'defmacrodoc "No :input supplied for ~x0" name)))
+        (er hard 'defmacrodoc "No :args supplied for ~x0 (should contain descriptions of the macro args)" name)))
     `(progn (defmacro ,name ,macro-args ,@declares ,body)
             ,(defxdoc-for-macro-fn name macro-args parents short arg-descriptions description))))
 
