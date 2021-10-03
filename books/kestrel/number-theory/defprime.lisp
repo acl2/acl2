@@ -189,7 +189,7 @@
                  (w state)))
   :parents (acl2::number-theory)
   :short "Introduce a prime and related machinery."
-  :inputs (name "Name of the prime to introduce, a symbol."
+  :args (name "Name of the prime to introduce, a symbol."
            number "Numeric value of the prime, a natural number."
            pratt-cert "Pratt certificate for the prime."
            :evisc "Whether to print occurrences of the prime using its symbolic name."
@@ -224,7 +224,7 @@
                  (w state)))
   :parents (acl2::number-theory)
   :short "Introduce an alias of an existing prime introduced with defprime."
-  :inputs (name "Name of the prime to introduce, a symbol."
+  :args (name "Name of the prime to introduce, a symbol."
            existing-prime-name "Name of the existing prime, a symbol."
            :evisc "Whether to print occurrences of the prime using its symbolic name."
            :doc "Whether to generate xdoc for the prime."

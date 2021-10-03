@@ -440,7 +440,7 @@
        (parents (lookup-keyword :parents xdoc-stuff))
        (short (lookup-keyword :short xdoc-stuff))
        (description (lookup-keyword :description xdoc-stuff))
-       (arg-descriptions (lookup-keyword :inputs xdoc-stuff)) ;; repetitions of the pattern: symbol followed by 1 or more strings describing it
+       (arg-descriptions (lookup-keyword :args xdoc-stuff)) ;; repetitions of the pattern: symbol followed by 1 or more strings describing it
        ((when (not short))
         (er hard 'defmacrodoc "No :short supplied for ~x0" name))
        ((when (and macro-args
@@ -451,7 +451,7 @@
 
 ;; This is like defmacro, except it allows (after the macro's body), the
 ;; inclusion of :short and :parents (for generating xdoc) as well as the
-;; special keyword options :inputs, which describes the inputs of the macro and
+;; special keyword options :args, which describes the arguments of the macro and
 ;; is used to generate xdoc, and :description, which describes what the macro
 ;; does and is included in the :long xdoc section.
 (defmacro defmacrodoc (name macro-args &rest rest)

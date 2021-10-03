@@ -759,7 +759,7 @@
   :short "Given a Java method, define a function that represents
   the (unrolled) effect of the given method on the JVM state (under the given
   assumptions).  This uses symbolic execution including unrolling all loops."
-  :inputs (fn "The name of the function to create"
+  :args (fn "The name of the function to create"
               method-designator-string "The method designator of the method (a string like \"java.lang.Object.foo(IB)V\")"
               :array-length-alist "An alist pairing array parameters with their sizes"
               :classes-to-assume-initialized "Classes to assume the JVM has already initialized, or :all"

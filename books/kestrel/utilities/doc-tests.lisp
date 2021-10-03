@@ -35,7 +35,7 @@
                             "<p>The description of the macro goes here.  This text comes after the General Form and Inputs sections.</p>"
                             "<p>Second paragraph of the description.</p>")
   ;; now an alternating list of param names and strings (or lists of strings):
-  :inputs (req1
+  :args (req1
            "This is the first required param."
            req2
            "Second required param."

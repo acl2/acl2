@@ -525,7 +525,7 @@
          :gag-mode nil (make-event ,form))))
   :parents (lifter)
   :short "Given a Java method, extract an equivalent term in DAG form, by symbolic execution including unrolling all loops."
-  :inputs (
+  :args (
            defconst-name
            "The name of the constant to create.  This constant will represent the computation in DAG form.  A function is also created (it's name is obtained by stripping the stars from the defconst name)."
 
