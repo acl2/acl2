@@ -391,33 +391,42 @@
 ;; Returns a defxdoc form.
 ;; TODO: Check that there are no args in ARG-DESCRIPTIONS that are not among the MACRO-ARGS.
 ;; TODO: Think about all the & things that can occur in the macro-args
-(defund defxdoc-for-macro (name       ; the name of the macro being documented
-                           macro-args ; the formals of the macro
-                           package
-                           parents
-                           short ; a form that evaluates to a string or to nil
-                           arg-descriptions ; todo: can we allow these to contain forms to be evaluated?
-                           description ; a form that evaluates to a string or to nil
-                           )
+(defund defxdoc-for-macro-fn (name    ; the name of the macro being documented
+                              macro-args ; the formals of the macro
+                              parents
+                              short ; a form that evaluates to a string or to nil
+                              arg-descriptions ; todo: can we allow these to contain forms to be evaluated?
+                              description ; a form that evaluates to a string or to nil
+                              )
   (declare (xargs :guard (and (symbolp name)
                               (macro-arg-listp macro-args)
-                              (stringp package)
                               (symbol-listp parents)
                               (macro-arg-descriptionsp arg-descriptions))
                   :mode :program))
-  `(defxdoc ,name
-     ,@(and short `(:short ,short))
-     ,@(and parents `(:parents ,parents))
-     :long (n-string-append
-            ;; Document the general form (args and defaults):
-            ,(xdoc-for-macro-general-form name macro-args package)
-            ;;(newline-string)
-            ;; Document each input (todo: call these "args"):
-            ,(xdoc-for-macro-inputs macro-args arg-descriptions package)
-            ;; Include the description section, if supplied:
-            ,@(and description
-                   (list *xdoc-description-header-with-spacing*
-                         description)))))
+  (let* ( ;; The xdoc seems to be created in this package:
+         (package (symbol-package-name name)))
+    `(defxdoc ,name
+       ,@(and short `(:short ,short))
+       ,@(and parents `(:parents ,parents))
+       :long (n-string-append
+              ;; Document the general form (args and defaults):
+              ,(xdoc-for-macro-general-form name macro-args package)
+              ;;(newline-string)
+              ;; Document each input (todo: call these "args"):
+              ,(xdoc-for-macro-inputs macro-args arg-descriptions package)
+              ;; Include the description section, if supplied:
+              ,@(and description
+                     (list *xdoc-description-header-with-spacing*
+                           description))))))
+
+(defmacro defxdoc-for-macro (name ; the name of the macro being documented
+                             macro-args ; the formals of the macro
+                             parents
+                             short ; a form that evaluates to a string or to nil
+                             arg-descriptions ; todo: can we allow these to contain forms to be evaluated?
+                             description ; a form that evaluates to a string or to nil
+                             )
+  (defxdoc-for-macro-fn name macro-args parents short arg-descriptions description))
 
 ;; Returns a progn including the original defmacro and a defxdoc form
 (defun defmacrodoc-fn (name macro-args rest)
@@ -436,11 +445,9 @@
         (er hard 'defmacrodoc "No :short supplied for ~x0" name))
        ((when (and macro-args
                    (not arg-descriptions)))
-        (er hard 'defmacrodoc "No :input supplied for ~x0" name))
-       ;; The xdoc seems to be created in this package:
-       (package (symbol-package-name name)))
+        (er hard 'defmacrodoc "No :input supplied for ~x0" name)))
     `(progn (defmacro ,name ,macro-args ,@declares ,body)
-            ,(defxdoc-for-macro name macro-args package parents short arg-descriptions description))))
+            ,(defxdoc-for-macro-fn name macro-args parents short arg-descriptions description))))
 
 ;; This is like defmacro, except it allows (after the macro's body), the
 ;; inclusion of :short and :parents (for generating xdoc) as well as the

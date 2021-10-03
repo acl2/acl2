@@ -12,6 +12,8 @@
 
 (include-book "doc")
 
+(defxdoc-for-macro foo (bar) (myparent) "Short" (bar "the arg") (concatenate 'string "Description " "Description2"))
+
 ;; A simple test. We define a macro called FOO and add xdoc to it, including
 ;; describing its inputs.
 (defmacrodoc foo (&whole
