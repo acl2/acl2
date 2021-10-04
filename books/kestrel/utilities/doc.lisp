@@ -38,6 +38,36 @@
            (macro-arg-listp (maybe-skip-whole-arg macro-args)))
   :hints (("Goal" :in-theory (enable maybe-skip-whole-arg))))
 
+(defund remove-rest-and-body-from-macro-args (macro-args)
+  (declare (xargs :guard (macro-arg-listp macro-args)))
+  (if (endp macro-args)
+      nil
+    (let ((arg (first macro-args)))
+      (if (or (eq '&rest arg)
+              (eq '&body arg))
+          (remove-rest-and-body-from-macro-args (rest (rest macro-args))) ;skip the &rest/&body and its var
+        (cons arg (remove-rest-and-body-from-macro-args (rest macro-args)))))))
+
+(defthm macro-arg-listp-of-remove-rest-and-body-from-macro-args
+  (implies (macro-arg-listp macro-args)
+           (macro-arg-listp (remove-rest-and-body-from-macro-args macro-args)))
+  :hints (("Goal" :in-theory (enable remove-rest-and-body-from-macro-args))))
+
+;; This remove &allow-other-keys anywhere it appears, though it actually can only appear at the end.
+(defund remove-allow-other-keys-from-macro-args (macro-args)
+  (declare (xargs :guard (macro-arg-listp macro-args)))
+  (if (endp macro-args)
+      nil
+    (let ((arg (first macro-args)))
+      (if (eq '&allow-other-keys arg)
+          (remove-allow-other-keys-from-macro-args (rest macro-args))
+        (cons arg (remove-allow-other-keys-from-macro-args (rest macro-args)))))))
+
+(defthm macro-arg-listp-of-remove-allow-other-keys-from-macro-args
+  (implies (macro-arg-listp macro-args)
+           (macro-arg-listp (remove-allow-other-keys-from-macro-args macro-args)))
+  :hints (("Goal" :in-theory (enable remove-allow-other-keys-from-macro-args))))
+
 ;; Returns (mv required-args keyword-args).
 ;; Splits the stuff before &key from the stuff after &key.
 (defun split-macro-args (macro-args)
@@ -78,10 +108,13 @@
             (keyword-arg-names (rest keyword-args))))))
 
 ;; Returns (mv required-args keyword-args).
- ;todo: handle optional args?  &rest? what else?
+;; todo: handle optional args?
+;; TODO: Should we do something better with whole, rest, body, etc?
 (defund extract-required-and-keyword-args (macro-args)
   (declare (xargs :guard (macro-arg-listp macro-args)))
-  (let ((macro-args (maybe-skip-whole-arg macro-args))) ;skips &whole
+  (let* ((macro-args (maybe-skip-whole-arg macro-args)) ;skips &whole
+         (macro-args (remove-rest-and-body-from-macro-args macro-args)) ; gets rid of &rest and &body
+         (macro-args (remove-allow-other-keys-from-macro-args macro-args)))
     (split-macro-args macro-args)))
 
 (defthm macro-arg-listp-of-mv-nth-1-of-extract-required-and-keyword-args
@@ -277,6 +310,7 @@
                    (xdoc-for-macro-keyword-args-general-form (rest macro-args) indent-space nil max-len package))))
 
 ;; Returns a string
+;; TODO: Consider leaving in the &items here...
 (defun xdoc-for-macro-args-general-form (macro-args indent-space package)
   (declare (xargs :guard (and (macro-arg-listp macro-args)
                               (stringp indent-space)
