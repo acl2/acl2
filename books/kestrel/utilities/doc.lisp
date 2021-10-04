@@ -365,40 +365,6 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable macro-arg-descriptionsp))))
 
-;; (defun strings-before-next-symbol (arg-descriptions)
-;;   (declare (xargs :guard (true-listp arg-descriptions)))
-;;   (if (endp arg-descriptions)
-;;       nil
-;;     (let ((item (first arg-descriptions)))
-;;       (if (symbolp item)
-;;           nil
-;;         (if (stringp item)
-;;             (cons item (strings-before-next-symbol (rest arg-descriptions)))
-;;           (er hard? 'strings-before-next-symbol "Unexpected thing, ~x0, in macro input description." item))))))
-
-;; (defthm strings-listp-of-strings-before-next-symbol
-;;   (string-listp (strings-before-next-symbol arg-descriptions))
-;;   :hints (("Goal" :in-theory (enable strings-before-next-symbol))))
-
-;; ;; Returns a list of strings
-;; (defun get-description-strings (symbol arg-descriptions)
-;;   (declare (xargs :guard (and (symbolp symbol)
-;;                               (macro-arg-descriptionsp arg-descriptions))
-;;                   :measure (len arg-descriptions)))
-;;   (if (endp arg-descriptions)
-;;       (er hard? 'get-description-strings "No description found for macro arg ~x0." symbol)
-;;     (if (not (symbolp (first arg-descriptions)))
-;;         (er hard? 'get-description-strings "Unexpected thing in input descriptions: ~x0 (expected a symbol)." (first arg-descriptions))
-;;       (if (eq symbol (first arg-descriptions))
-;;           (strings-before-next-symbol (rest arg-descriptions))
-;;         (get-description-strings symbol (skip-leading-strings (rest arg-descriptions)))))))
-
-;; (defthm string-listp-of-get-description-strings
-;;   (implies (and (symbolp symbol)
-;;                 (macro-arg-descriptionsp arg-descriptions))
-;;            (string-listp (get-description-strings symbol arg-descriptions)))
-;;   :hints (("Goal" :in-theory (enable get-description-strings))))
-
 ;; Returns a string
 (defun xdoc-for-macro-required-arg (macro-arg arg-descriptions)
   (declare (xargs :guard (and (symbolp macro-arg)
