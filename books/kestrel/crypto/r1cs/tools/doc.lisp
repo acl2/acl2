@@ -10,7 +10,7 @@
 
 (in-package "R1CS")
 
-(include-book "xdoc/topics" :dir :system)
+(include-book "xdoc/top" :dir :system)
 (include-book "kestrel/utilities/xdoc-paras" :dir :system)
 
 (include-book "verify-r1cs")

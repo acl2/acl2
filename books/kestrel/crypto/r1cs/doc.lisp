@@ -10,7 +10,7 @@
 
 (in-package "R1CS")
 
-(include-book "xdoc/topics" :dir :system)
+(include-book "xdoc/top" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 (include-book "tools/doc")
 
