@@ -50,12 +50,12 @@
 
 ;; FORMS should be a true-list of string-valued forms.
 ;; Returns a list of string-values forms.
-(defund xdoc-make-paragraphs2 (forms)
+(defund xdoc-make-paragraphs (forms)
   (declare (xargs :guard (true-listp forms)))
   (if (endp forms)
       nil
     (append (list "<p>" (first forms) "</p>" (newline-string))
-            (xdoc-make-paragraphs2 (rest forms)))))
+            (xdoc-make-paragraphs (rest forms)))))
 
 (defund object-to-string (obj package)
   (declare (xargs :guard (stringp package)
@@ -322,7 +322,7 @@
       `("<p>@('" ,name "') &mdash; (required)</p>" (newline-string)
         (newline-string)
         ,*open-blockquote-and-newline*
-        ,@(xdoc-make-paragraphs2 description-forms)
+        ,@(xdoc-make-paragraphs description-forms)
         ,*close-blockquote-and-newline*
         (newline-string)))))
 
@@ -350,7 +350,7 @@
     `("<p>@('" ,name "') &mdash; default @('" ,default-form "')</p>" (newline-string)
       (newline-string)
       ,*open-blockquote-and-newline*
-      ,@(xdoc-make-paragraphs2 description-strings)
+      ,@(xdoc-make-paragraphs description-strings)
       ,*close-blockquote-and-newline*
       (newline-string))))
 
@@ -379,7 +379,7 @@
     `("<p>@('" ,name "') &mdash; default @('" ,default-form "')</p>" (newline-string)
       (newline-string)
       ,*open-blockquote-and-newline*
-      ,@(xdoc-make-paragraphs2 description-strings)
+      ,@(xdoc-make-paragraphs description-strings)
       ,*close-blockquote-and-newline*
       (newline-string))))
 
@@ -400,7 +400,7 @@
                               parents
                               short ; a form that evaluates to a string or to nil
                               arg-descriptions
-                              description ; either nil or a form that evaluates to a string
+                              description ; either nil, or a form that evaluates to a string, or a list of such forms
                               )
   (declare (xargs :guard (and (symbolp name)
                               (macro-arg-listp macro-args)
@@ -420,7 +420,18 @@
        ;; The xdoc seems to be created in this package:
        (package (symbol-package-name name))
        ((mv required-args optional-args keyword-args)
-        (extract-required-and-optional-and-keyword-args macro-args)))
+        (extract-required-and-optional-and-keyword-args macro-args))
+       (description-forms (if (null description)
+                              nil ; no description given
+                            (if (atom description) ; must be a string (no other atom is string-valued)
+                                (list description)
+                              (if (symbolp (car description))
+                                  ;; must be a single call of a function or macro
+                                  ;; (can't be a list of string-valued forms
+                                  ;; since a symbol is not string-valued)
+                                  (list description)
+                                ;; must be a list of string-valued forms:
+                                description)))))
     `(defxdoc ,name
        ,@(and short `(:short ,short))
        ,@(and parents `(:parents ,parents))
@@ -433,9 +444,9 @@
               ,@(xdoc-for-macro-optional-args optional-args arg-descriptions package)
               ,@(xdoc-for-macro-keyword-args keyword-args arg-descriptions package)
               ;; Include the description section, if supplied:
-              ,@(and description
-                     (list *xdoc-description-header-with-spacing*
-                           description))))))
+              ,@(and description-forms
+                     (cons *xdoc-description-header-with-spacing*
+                           (xdoc-make-paragraphs description-forms)))))))
 
 (defmacro defxdoc-for-macro (name ; the name of the macro being documented
                              macro-args ; the formals of the macro, todo: allow extracting these from the world?
