@@ -269,6 +269,7 @@
                    (newline-string)
                    (newline-string)))
 
+;; todo: or call these Arguments?  But other xdoc uses "Inputs".
 (defconst *xdoc-inputs-header* "<h3>Inputs:</h3>")
 (defconst *xdoc-inputs-header-with-spacing*
   (n-string-append *xdoc-inputs-header*
@@ -295,26 +296,26 @@
   `(xdoc-within-code-fn (list ,@strings)))
 
 ;; Returns a string
-(defund xdoc-for-macro-required-arg-general-form (macro-arg indent-space firstp)
+(defund xdoc-for-macro-general-form-required-arg (macro-arg indent-space firstp)
   (declare (xargs :guard (and (macro-argp macro-arg)
                               (stringp indent-space)
                               (booleanp firstp))))
   (if (not (symbolp macro-arg))
-      (prog2$ (er hard? 'xdoc-for-macro-required-arg-general-form "Required macro arg ~x0 is not a symbol." macro-arg)
+      (prog2$ (er hard? 'xdoc-for-macro-general-form-required-arg "Required macro arg ~x0 is not a symbol." macro-arg)
               "")
     (n-string-append (if firstp "" indent-space)
                      (string-downcase-gen (symbol-name macro-arg))
                      (newline-string))))
 
 ;; Returns a string
-(defun xdoc-for-macro-required-args-general-form (macro-args indent-space firstp)
+(defun xdoc-for-macro-general-form-required-args (macro-args indent-space firstp)
   (declare (xargs :guard (and (macro-arg-listp macro-args)
                               (stringp indent-space)
                               (booleanp firstp))))
   (if (endp macro-args)
       ""
-    (string-append (xdoc-for-macro-required-arg-general-form (first macro-args) indent-space firstp)
-                   (xdoc-for-macro-required-args-general-form (rest macro-args) indent-space nil))))
+    (string-append (xdoc-for-macro-general-form-required-arg (first macro-args) indent-space firstp)
+                   (xdoc-for-macro-general-form-required-args (rest macro-args) indent-space nil))))
 
 ;; Returns (mv name default).
 ;; TODO: Would we ever want the optional third thing, suppliedp?
@@ -328,7 +329,7 @@
       (mv (first macro-arg) (unquote (second macro-arg))))))
 
 ;; Returns a string
-(defun xdoc-for-macro-optional-arg-general-form (macro-arg indent-space firstp max-len package)
+(defun xdoc-for-macro-general-form-optional-arg (macro-arg indent-space firstp max-len package)
   (declare (xargs :guard (and (macro-argp macro-arg)
                               (stringp indent-space)
                               (booleanp firstp)
@@ -350,7 +351,7 @@
                        (newline-string)))))
 
 ;; Returns a string
-(defun xdoc-for-macro-optional-args-general-form (macro-args indent-space firstp max-len package)
+(defun xdoc-for-macro-general-form-optional-args (macro-args indent-space firstp max-len package)
   (declare (xargs :guard (and (macro-arg-listp macro-args)
                               (stringp indent-space)
                               (booleanp firstp)
@@ -359,11 +360,11 @@
                   :mode :program))
   (if (endp macro-args)
       ""
-    (string-append (xdoc-for-macro-optional-arg-general-form (first macro-args) indent-space firstp max-len package)
-                   (xdoc-for-macro-optional-args-general-form (rest macro-args) indent-space nil max-len package))))
+    (string-append (xdoc-for-macro-general-form-optional-arg (first macro-args) indent-space firstp max-len package)
+                   (xdoc-for-macro-general-form-optional-args (rest macro-args) indent-space nil max-len package))))
 
 ;; Returns a string
-(defun xdoc-for-macro-keyword-arg-general-form (macro-arg indent-space firstp max-len package)
+(defun xdoc-for-macro-general-form-keyword-arg (macro-arg indent-space firstp max-len package)
   (declare (xargs :guard (and (macro-argp macro-arg)
                               (stringp indent-space)
                               (booleanp firstp)
@@ -385,7 +386,7 @@
                        (newline-string)))))
 
 ;; Returns a string
-(defun xdoc-for-macro-keyword-args-general-form (macro-args indent-space firstp max-len package)
+(defun xdoc-for-macro-general-form-keyword-args (macro-args indent-space firstp max-len package)
   (declare (xargs :guard (and (macro-arg-listp macro-args)
                               (stringp indent-space)
                               (booleanp firstp)
@@ -394,12 +395,12 @@
                   :mode :program))
   (if (endp macro-args)
       ""
-    (string-append (xdoc-for-macro-keyword-arg-general-form (first macro-args) indent-space firstp max-len package)
-                   (xdoc-for-macro-keyword-args-general-form (rest macro-args) indent-space nil max-len package))))
+    (string-append (xdoc-for-macro-general-form-keyword-arg (first macro-args) indent-space firstp max-len package)
+                   (xdoc-for-macro-general-form-keyword-args (rest macro-args) indent-space nil max-len package))))
 
 ;; Returns a string
 ;; TODO: Consider leaving in the &items here...
-(defun xdoc-for-macro-args-general-form (macro-args indent-space package)
+(defun xdoc-for-macro-general-form-args (macro-args indent-space package)
   (declare (xargs :guard (and (macro-arg-listp macro-args)
                               (stringp indent-space)
                               (stringp package))
@@ -410,19 +411,19 @@
                      (max (+ 1 (len-of-longest-macro-formal keyword-args 0)) ; plus 1 for the :
                           (+ 2 (len-of-longest-macro-formal keyword-args 0)) ; plus 2 for the []
                           ))))
-    (n-string-append (xdoc-for-macro-required-args-general-form required-args indent-space t)
+    (n-string-append (xdoc-for-macro-general-form-required-args required-args indent-space t)
                      (if optional-args
                          (n-string-append indent-space
                                           "&optional"
                                           (newline-string))
                        "")
-                     (xdoc-for-macro-optional-args-general-form optional-args indent-space (not required-args) max-len package)
+                     (xdoc-for-macro-general-form-optional-args optional-args indent-space (not required-args) max-len package)
                      (if keyword-args
                          (n-string-append indent-space
                                           "&key"
                                           (newline-string))
                        "")
-                     (xdoc-for-macro-keyword-args-general-form keyword-args indent-space
+                     (xdoc-for-macro-general-form-keyword-args keyword-args indent-space
                                                                (and (not required-args)
                                                                     (not optional-args))
                                                                max-len package))))
@@ -438,7 +439,7 @@
     (concatenate 'string
                  *xdoc-general-form-header-with-spacing*
                  (xdoc-within-code "(" name-string " "
-                                   (xdoc-for-macro-args-general-form macro-args indent-space package)
+                                   (xdoc-for-macro-general-form-args macro-args indent-space package)
                                    indent-space
                                    ")"))))
 
