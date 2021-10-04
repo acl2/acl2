@@ -119,17 +119,7 @@
                       ,(append arg-descriptions
                                '((show-only "Whether to simply show the result, not create it.")
                                  (print "How much detail to print.")))
-                      ,description))))
-       ;; TODO: Deprecate this:
-       (xdoc-forms2
-        (and (not suppress-xdoc)
-             (list `(defconst ,(add-prefix "*" (add-suffix name "-GENERAL-FORM-XDOC*"))
-                      ',(xdoc-for-macro-general-form name
-                                                     (append required-args
-                                                             '(&key)
-                                                             '((show-only 'nil) (print ':result)) ; keyword args that are always present
-                                                             keyword-args-and-defaults)
-                                                     (symbol-package-name name)))))))
+                      ,description)))))
 
     `(progn
        ;; This is the boilerplate wrapper function.  It wraps a call of EVENT-GENERATOR-NAME:
@@ -339,8 +329,7 @@
                (append args
                        (cons ':show-only (cons 't 'nil)))))
 
-       ,@xdoc-forms
-       ,@xdoc-forms2)))
+       ,@xdoc-forms)))
 
 ;; Expects there to be a function called <name>-event.  It's params should be:
 ;; ...required-args...
