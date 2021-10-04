@@ -400,14 +400,14 @@
 ;;   :hints (("Goal" :in-theory (enable get-description-strings))))
 
 ;; Returns a string
-(defun xdoc-for-macro-required-input (macro-arg arg-descriptions)
+(defun xdoc-for-macro-required-arg (macro-arg arg-descriptions)
   (declare (xargs :guard (and (symbolp macro-arg)
                               (macro-arg-descriptionsp arg-descriptions))))
   (if (not (symbolp macro-arg))
-      (er hard 'xdoc-for-macro-required-input "Required macro arg ~x0 is not a symbol." macro-arg)
+      (er hard 'xdoc-for-macro-required-arg "Required macro arg ~x0 is not a symbol." macro-arg)
     (let ((name (string-downcase-gen (symbol-name macro-arg)))
           (description-strings (lookup-eq macro-arg arg-descriptions)))
-      (n-string-append "<p>@('" name "')</p>" (newline-string)
+      (n-string-append "<p>@('" name "') &mdash; (required)</p>" (newline-string)
                        (newline-string)
                        "<blockquote>" (newline-string)
                        (xdoc-make-paragraphs description-strings)
@@ -415,16 +415,16 @@
                        (newline-string)))))
 
 ;; Returns a string
-(defun xdoc-for-macro-required-inputs (macro-args arg-descriptions)
+(defun xdoc-for-macro-required-args (macro-args arg-descriptions)
   (declare (xargs :guard (and (symbol-listp macro-args)
                               (macro-arg-descriptionsp arg-descriptions))))
   (if (endp macro-args)
       ""
-    (string-append (xdoc-for-macro-required-input (first macro-args) arg-descriptions)
-                   (xdoc-for-macro-required-inputs (rest macro-args) arg-descriptions))))
+    (string-append (xdoc-for-macro-required-arg (first macro-args) arg-descriptions)
+                   (xdoc-for-macro-required-args (rest macro-args) arg-descriptions))))
 
 ;; Returns a string
-(defun xdoc-for-macro-keyword-input (macro-arg arg-descriptions package)
+(defun xdoc-for-macro-keyword-arg (macro-arg arg-descriptions package)
   (declare (xargs :guard (and (stringp package)
                               (macro-arg-descriptionsp arg-descriptions)
                               (macro-argp macro-arg))
@@ -443,7 +443,7 @@
                       ;;todo: ensure it's quoted?:
                       (unquote (second macro-arg)))))
          (default (string-downcase (object-to-string default package))))
-    (n-string-append "<p>@('" name "')  &mdash; default @('" default "')</p>" (newline-string)
+    (n-string-append "<p>@('" name "') &mdash; default @('" default "')</p>" (newline-string)
                      (newline-string)
                      "<blockquote>" (newline-string)
                      (xdoc-make-paragraphs description-strings)
@@ -451,18 +451,18 @@
                      (newline-string))))
 
 ;; Returns a string
-(defun xdoc-for-macro-keyword-inputs (macro-args arg-descriptions package)
+(defun xdoc-for-macro-keyword-args (macro-args arg-descriptions package)
   (declare (xargs :guard (and (macro-arg-listp macro-args)
                               (macro-arg-descriptionsp arg-descriptions)
                               (stringp package))
                   :mode :program))
   (if (endp macro-args)
       ""
-    (string-append (xdoc-for-macro-keyword-input (first macro-args) arg-descriptions package)
-                   (xdoc-for-macro-keyword-inputs (rest macro-args) arg-descriptions package))))
+    (string-append (xdoc-for-macro-keyword-arg (first macro-args) arg-descriptions package)
+                   (xdoc-for-macro-keyword-args (rest macro-args) arg-descriptions package))))
 
 ;; Returns a string
-(defun xdoc-for-macro-inputs (macro-args arg-descriptions package)
+(defun xdoc-for-macro-args (macro-args arg-descriptions package)
   (declare (xargs :guard (and (macro-arg-listp macro-args)
                               (macro-arg-descriptionsp arg-descriptions)
                               (stringp package))
@@ -472,8 +472,8 @@
         (split-macro-args macro-args)))
     (concatenate 'string
                  *xdoc-inputs-header-with-spacing*
-                 (xdoc-for-macro-required-inputs required-args arg-descriptions)
-                 (xdoc-for-macro-keyword-inputs keyword-args arg-descriptions package))))
+                 (xdoc-for-macro-required-args required-args arg-descriptions)
+                 (xdoc-for-macro-keyword-args keyword-args arg-descriptions package))))
 
 ;; Returns a defxdoc form.
 ;; TODO: Check that there are no args in ARG-DESCRIPTIONS that are not among the MACRO-ARGS.
@@ -505,8 +505,7 @@
               ;; Document the general form (args and defaults):
               ,(xdoc-for-macro-general-form name macro-args package)
               ;;(newline-string)
-              ;; Document each input (todo: call these "args"):
-              ,(xdoc-for-macro-inputs macro-args arg-descriptions package)
+              ,(xdoc-for-macro-args macro-args arg-descriptions package)
               ;; Include the description section, if supplied:
               ,@(and description
                      (list *xdoc-description-header-with-spacing*
