@@ -40,15 +40,24 @@
 ;;   :rule-classes :linear
 ;;   :hints (("Goal" :in-theory (enable skip-leading-strings))))
 
-;;Returns a string
-(defun xdoc-make-paragraphs (strings)
-  (declare (xargs :guard (string-listp strings)))
-  (if (endp strings)
-      ""
-    (n-string-append "<p>" (first strings) "</p>" (newline-string)
-                     (xdoc-make-paragraphs (rest strings)))))
+;; ;;Returns a string
+;; (defun xdoc-make-paragraphs (strings)
+;;   (declare (xargs :guard (string-listp strings)))
+;;   (if (endp strings)
+;;       ""
+;;     (n-string-append "<p>" (first strings) "</p>" (newline-string)
+;;                      (xdoc-make-paragraphs (rest strings)))))
 
-(defun object-to-string (obj package)
+;; FORMS should be a true-list of string-valued forms.
+;; Returns a list of string-values forms.
+(defund xdoc-make-paragraphs2 (forms)
+  (declare (xargs :guard (true-listp forms)))
+  (if (endp forms)
+      nil
+    (append (list "<p>" (first forms) "</p>" (newline-string))
+            (xdoc-make-paragraphs2 (rest forms)))))
+
+(defund object-to-string (obj package)
   (declare (xargs :guard (stringp package)
                   :mode :program))
   (mv-let (col string)
@@ -161,7 +170,7 @@
                   ))
   (mv-let (name default)
     (keyword-or-optional-arg-name-and-default macro-arg)
-    (let* ((name (string-downcase (symbol-name name)))
+    (let* ((name (string-downcase-gen (symbol-name name)))
            (name (n-string-append "[" name "]"))
            (num-spaces-before-comment (+ 1 (- max-len (length name))))
            (space-before-comment (string-append-lst (make-list num-spaces-before-comment :initial-element " "))))
@@ -169,7 +178,7 @@
                        name
                        space-before-comment
                        "; default "
-                       (string-downcase (object-to-string default package))
+                       (string-downcase-gen (object-to-string default package))
                        (newline-string)))))
 
 ;; Returns a string
@@ -196,7 +205,7 @@
                   ))
   (mv-let (name default)
     (keyword-or-optional-arg-name-and-default macro-arg)
-    (let* ((name (string-downcase (symbol-name name)))
+    (let* ((name (string-downcase-gen (symbol-name name)))
            (name (n-string-append ":" name))
            (num-spaces-before-comment (+ 1 (- max-len (length name))))
            (space-before-comment (string-append-lst (make-list num-spaces-before-comment :initial-element " "))))
@@ -204,7 +213,7 @@
                        name
                        space-before-comment
                        "; default "
-                       (string-downcase (object-to-string default package))
+                       (string-downcase-gen (object-to-string default package))
                        (newline-string)))))
 
 ;; Returns a string
@@ -255,7 +264,7 @@
   (declare (xargs :mode :program
                   :guard (and (symbolp name)
                               (stringp package))))
-  (let* ((name-string (string-downcase (symbol-name name)))
+  (let* ((name-string (string-downcase-gen (symbol-name name)))
          (name-len (length name-string))
          (indent-space (string-append-lst (make-list (+ 2 name-len) :initial-element " "))))
     (concatenate 'string
@@ -265,10 +274,10 @@
                                    indent-space
                                    ")"))))
 
-;; Recognize an alist from arg names to non-empty lists of strings (description paragraphs).
+;; Recognize an alist from arg names to non-empty lists of string-valued forms (representing description paragraphs).
 ;; Example:
 ;; ((arg1 "string")
-;;  (arg2 "stringa" "stringb"))
+;;  (arg2 "stringa" (concatenate 'string "stringb" "stringc")))
 (defun macro-arg-descriptionsp (arg-descriptions)
   (declare (xargs :guard t
                   :measure (len arg-descriptions)))
@@ -276,9 +285,9 @@
       (null arg-descriptions)
     (let ((item (first arg-descriptions)))
       (and (true-listp item)
-           (<= 2 (len item)) ; must have an arg name and at least one string description
+           (<= 2 (len item)) ; must have an arg name and at least one description
            (symbolp (first item))
-           (string-listp (cdr item))
+           (true-listp (cdr item))
            (macro-arg-descriptionsp (rest arg-descriptions))))))
 
 (defthm macro-arg-descriptionsp-forward-to-symbol-alistp
@@ -287,114 +296,110 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable macro-arg-descriptionsp))))
 
-;; Returns a string
+(local
+ (defthm true-listp-of-lookup-equal-when-macro-arg-descriptionsp
+   (implies (macro-arg-descriptionsp arg-descriptions)
+            (true-listp (lookup-equal macro-arg arg-descriptions)))
+   :hints (("Goal" :in-theory (enable macro-arg-descriptionsp lookup-equal)))))
+
+(defconst *open-blockquote-and-newline*
+  (concatenate 'string "<blockquote>" (newline-string)))
+
+(defconst *close-blockquote-and-newline*
+  (concatenate 'string "</blockquote>" (newline-string)))
+
+(defconst *close-p-and-newline*
+  (concatenate 'string "</p>" (newline-string)))
+
+;; Returns a list of string-valued forms.
 (defun xdoc-for-macro-required-arg (macro-arg arg-descriptions)
   (declare (xargs :guard (and (symbolp macro-arg)
                               (macro-arg-descriptionsp arg-descriptions))))
   (if (not (symbolp macro-arg))
       (er hard 'xdoc-for-macro-required-arg "Required macro arg ~x0 is not a symbol." macro-arg)
     (let ((name (string-downcase-gen (symbol-name macro-arg)))
-          (description-strings (lookup-eq macro-arg arg-descriptions)))
-      (n-string-append "<p>@('" name "') &mdash; (required)</p>" (newline-string)
-                       (newline-string)
-                       "<blockquote>" (newline-string)
-                       (xdoc-make-paragraphs description-strings)
-                       "</blockquote>" (newline-string)
-                       (newline-string)))))
+          (description-forms (lookup-eq macro-arg arg-descriptions)))
+      `("<p>@('" ,name "') &mdash; (required)</p>" (newline-string)
+        (newline-string)
+        ,*open-blockquote-and-newline*
+        ,@(xdoc-make-paragraphs2 description-forms)
+        ,*close-blockquote-and-newline*
+        (newline-string)))))
 
-;; Returns a string
+;; Returns a list of string-valued forms.
 (defun xdoc-for-macro-required-args (macro-args arg-descriptions)
   (declare (xargs :guard (and (symbol-listp macro-args)
                               (macro-arg-descriptionsp arg-descriptions))))
   (if (endp macro-args)
-      ""
-    (string-append (xdoc-for-macro-required-arg (first macro-args) arg-descriptions)
-                   (xdoc-for-macro-required-args (rest macro-args) arg-descriptions))))
+      nil
+    (append (xdoc-for-macro-required-arg (first macro-args) arg-descriptions)
+            (xdoc-for-macro-required-args (rest macro-args) arg-descriptions))))
 
-;; Returns a string
+;; Returns a list of string-valued forms.
 (defun xdoc-for-macro-optional-arg (macro-arg arg-descriptions package)
   (declare (xargs :guard (and (stringp package)
                               (macro-arg-descriptionsp arg-descriptions)
-                              (macro-argp macro-arg))
-                  :mode :program))
-  (let* ((name (if (symbolp macro-arg)
-                   macro-arg
-                 (first macro-arg)))
-         (name-to-lookup name)
-         (description-strings (lookup-eq name-to-lookup arg-descriptions))
-         ;; add the brackets, since this is an optional arg:
-         (name (n-string-append "[" (string-downcase (symbol-name name)) "]"))
-         (default (if (symbolp macro-arg)
-                      nil
-                    (if (< 2 (len macro-arg))
-                        nil
-                      ;;todo: ensure it's quoted?:
-                      (unquote (second macro-arg)))))
-         (default (string-downcase (object-to-string default package))))
-    (n-string-append "<p>@('" name "') &mdash; default @('" default "')</p>" (newline-string)
-                     (newline-string)
-                     "<blockquote>" (newline-string)
-                     (xdoc-make-paragraphs description-strings)
-                     "</blockquote>" (newline-string)
-                     (newline-string))))
+                              (macro-argp macro-arg))))
+  (b* (((mv name default)
+        (keyword-or-optional-arg-name-and-default macro-arg))
+       (name-to-lookup name)
+       (description-strings (lookup-eq name-to-lookup arg-descriptions))
+       ;; add the brackets, since this is an optional arg:
+       (name (n-string-append "[" (string-downcase-gen (symbol-name name)) "]"))
+       (default-form `(string-downcase-gen (object-to-string ,default ,package))))
+    `("<p>@('" ,name "') &mdash; default @('" ,default-form "')</p>" (newline-string)
+      (newline-string)
+      ,*open-blockquote-and-newline*
+      ,@(xdoc-make-paragraphs2 description-strings)
+      ,*close-blockquote-and-newline*
+      (newline-string))))
 
-;; Returns a string
+;; Returns a list of string-valued forms.
 (defun xdoc-for-macro-optional-args (macro-args arg-descriptions package)
   (declare (xargs :guard (and (macro-arg-listp macro-args)
                               (macro-arg-descriptionsp arg-descriptions)
-                              (stringp package))
-                  :mode :program))
+                              (stringp package))))
   (if (endp macro-args)
-      ""
-    (string-append (xdoc-for-macro-optional-arg (first macro-args) arg-descriptions package)
-                   (xdoc-for-macro-optional-args (rest macro-args) arg-descriptions package))))
+      nil
+    (append (xdoc-for-macro-optional-arg (first macro-args) arg-descriptions package)
+            (xdoc-for-macro-optional-args (rest macro-args) arg-descriptions package))))
 
-;; Returns a string
+;; Returns a list of string-valued forms.
 (defun xdoc-for-macro-keyword-arg (macro-arg arg-descriptions package)
   (declare (xargs :guard (and (stringp package)
                               (macro-arg-descriptionsp arg-descriptions)
-                              (macro-argp macro-arg))
-                  :mode :program))
-  (let* ((name (if (symbolp macro-arg)  ;note that name will not be a keyword here
-                   macro-arg
-                 (first macro-arg)))
-         (name-to-lookup name) ;(intern (symbol-name name) "KEYWORD") ;since this is a keyword arg
-         (description-strings (lookup-eq name-to-lookup arg-descriptions))
-         ;; add the colon, since this is a keyword arg:
-         (name (string-append ":" (string-downcase (symbol-name name))))
-         (default (if (symbolp macro-arg)
-                      nil
-                    (if (< 2 (len macro-arg))
-                        nil
-                      ;;todo: ensure it's quoted?:
-                      (unquote (second macro-arg)))))
-         (default (string-downcase (object-to-string default package))))
-    (n-string-append "<p>@('" name "') &mdash; default @('" default "')</p>" (newline-string)
-                     (newline-string)
-                     "<blockquote>" (newline-string)
-                     (xdoc-make-paragraphs description-strings)
-                     "</blockquote>" (newline-string)
-                     (newline-string))))
+                              (macro-argp macro-arg))))
+  (b* (((mv name default) ;note that name will not be a keyword here
+        (keyword-or-optional-arg-name-and-default macro-arg))
+       (name-to-lookup name) ;(intern (symbol-name name) "KEYWORD") ;since this is a keyword arg
+       (description-strings (lookup-eq name-to-lookup arg-descriptions))
+       ;; add the colon, since this is a keyword arg:
+       (name (string-append ":" (string-downcase-gen (symbol-name name))))
+       (default-form `(string-downcase-gen (object-to-string ,default ,package))))
+    `("<p>@('" ,name "') &mdash; default @('" ,default-form "')</p>" (newline-string)
+      (newline-string)
+      ,*open-blockquote-and-newline*
+      ,@(xdoc-make-paragraphs2 description-strings)
+      ,*close-blockquote-and-newline*
+      (newline-string))))
 
-;; Returns a string
+;; Returns a list of string-valued forms.
 (defun xdoc-for-macro-keyword-args (macro-args arg-descriptions package)
   (declare (xargs :guard (and (macro-arg-listp macro-args)
                               (macro-arg-descriptionsp arg-descriptions)
-                              (stringp package))
-                  :mode :program))
+                              (stringp package))))
   (if (endp macro-args)
-      ""
-    (string-append (xdoc-for-macro-keyword-arg (first macro-args) arg-descriptions package)
-                   (xdoc-for-macro-keyword-args (rest macro-args) arg-descriptions package))))
+      nil
+    (append (xdoc-for-macro-keyword-arg (first macro-args) arg-descriptions package)
+            (xdoc-for-macro-keyword-args (rest macro-args) arg-descriptions package))))
 
 ;; Returns a defxdoc form.
-;; TODO: Check that there are no args in ARG-DESCRIPTIONS that are not among the MACRO-ARGS.
 ;; TODO: Think about all the & things that can occur in the macro-args
 (defund defxdoc-for-macro-fn (name    ; the name of the macro being documented
                               macro-args ; the formals of the macro
                               parents
                               short ; a form that evaluates to a string or to nil
-                              arg-descriptions ; todo: can we allow these to contain forms to be evaluated?
+                              arg-descriptions
                               description ; either nil or a form that evaluates to a string
                               )
   (declare (xargs :guard (and (symbolp name)
@@ -422,11 +427,11 @@
        :long (n-string-append
               ;; Shows the general form of a call (all args and defaults):
               ,(xdoc-for-macro-general-form name macro-args package)
-              *xdoc-inputs-header-with-spacing*
+              ,*xdoc-inputs-header-with-spacing*
               ;; Gives details on each argument:
-              ,(xdoc-for-macro-required-args required-args arg-descriptions)
-              ,(xdoc-for-macro-optional-args optional-args arg-descriptions package)
-              ,(xdoc-for-macro-keyword-args keyword-args arg-descriptions package)
+              ,@(xdoc-for-macro-required-args required-args arg-descriptions)
+              ,@(xdoc-for-macro-optional-args optional-args arg-descriptions package)
+              ,@(xdoc-for-macro-keyword-args keyword-args arg-descriptions package)
               ;; Include the description section, if supplied:
               ,@(and description
                      (list *xdoc-description-header-with-spacing*
@@ -436,16 +441,18 @@
                              macro-args ; the formals of the macro, todo: allow extracting these from the world?
                              parents
                              short ; a form that evaluates to a string or to nil
-                             arg-descriptions ; todo: can we allow these to contain forms to be evaluated?
+                             arg-descriptions
                              description ; a form that evaluates to a string or to nil
                              )
   (defxdoc-for-macro-fn name macro-args parents short arg-descriptions description))
 
 ;; Returns a progn including the original defmacro and a defxdoc form
-(defun defmacrodoc-fn (name macro-args rest)
+(defun defmacrodoc-fn (name macro-args
+                            rest ; has the declares, the body, and xdoc stuff
+                            )
   (declare (xargs :mode :program
-                  :guard (symbolp name) ; todo: add more guard conjuncts
-                  ))
+                  :guard (and (symbolp name)
+                              (macro-arg-listp macro-args))))
   (b* (((mv declares rest) ;first come optional declares (no legacy doc strings)
         (get-declares rest))
        (body (first rest))      ;then the body

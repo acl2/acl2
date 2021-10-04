@@ -72,6 +72,12 @@
         (mv (first macro-arg) nil) ; no default given, so nil
       (mv (first macro-arg) (unquote (second macro-arg))))))
 
+(defthm symbolp-of-mv-nth-0-of-keyword-or-optional-arg-name-and-default
+  (implies (macro-argp macro-arg)
+           (symbolp (mv-nth 0 (keyword-or-optional-arg-name-and-default macro-arg))))
+  :hints (("Goal" :in-theory (enable keyword-or-optional-arg-name-and-default
+                                     macro-argp))))
+
 ;; Skip an initial use of &whole, if present.
 (defund maybe-skip-whole-arg (macro-args)
   (declare (xargs :guard (macro-arg-listp macro-args)))
