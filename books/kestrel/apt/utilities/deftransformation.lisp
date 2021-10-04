@@ -118,7 +118,7 @@
                       ,short
                       ,(append arg-descriptions
                                '((show-only "Whether to simply show the result, not create it.")
-                                 (print "Now much detail to print.")))
+                                 (print "How much detail to print.")))
                       ,description))))
        ;; TODO: Deprecate this:
        (xdoc-forms2
