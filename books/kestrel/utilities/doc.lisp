@@ -114,7 +114,8 @@
   (declare (xargs :guard (macro-arg-listp macro-args)))
   (let* ((macro-args (maybe-skip-whole-arg macro-args)) ;skips &whole
          (macro-args (remove-rest-and-body-from-macro-args macro-args)) ; gets rid of &rest and &body
-         (macro-args (remove-allow-other-keys-from-macro-args macro-args)))
+         (macro-args (remove-allow-other-keys-from-macro-args macro-args)) ; gets rid of &allow-other-keys
+         )
     (split-macro-args macro-args)))
 
 (defthm macro-arg-listp-of-mv-nth-1-of-extract-required-and-keyword-args
