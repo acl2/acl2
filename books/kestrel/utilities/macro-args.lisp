@@ -190,15 +190,17 @@
 
 ;; test: (SPLIT-MACRO-ARGS '(foo bar &key baz (baz2 'nil)))
 
-(defun keyword-or-optional-arg-names (keyword-args ; symbols or doublets with default values
-                          )
+(defun keyword-or-optional-arg-names (keyword-args)
   (declare (xargs :guard (macro-arg-listp keyword-args)
                   :guard-hints (("Goal" :in-theory (enable macro-arg-listp MACRO-ARGP)))))
   (if (atom keyword-args)
       nil
-    (let ((arg (first keyword-args)))
-      (cons (if (symbolp arg) arg (car arg))
-            (keyword-or-optional-arg-names (rest keyword-args))))))
+    (let ((keyword-arg (first keyword-args)))
+      (mv-let (name default)
+        (keyword-or-optional-arg-name-and-default keyword-arg)
+        (declare (ignore default))
+        (cons name
+              (keyword-or-optional-arg-names (rest keyword-args)))))))
 
 ;; Returns (mv required-args optional-args keyword-args).
 ;; TODO: Should we do something better with whole, rest, body, etc?
