@@ -429,7 +429,7 @@
                                       (new-name "The name of the new function to be created.")
                                       (theorem-disabled "Whether to disable the 'becomes theorem'.")
                                       (function-disabled "Whether to disable the new function.")
-                                      (verify-guards "Whether to verify the guards of the new function")
+                                      (verify-guards "Whether to verify the guards of the new function.")
                                       (guard-hints "Hints to use for the guard proof.")
                                       (measure "Measure to use for the new function.") ;todo: what about mut-rec?
                                       (measure-hints "Hints to use for the measure/termination proof."))
@@ -475,5 +475,9 @@
   copy-function ; name of the transformation to create
   copy-function-core-function ; core function to transform a function body (a no-op for copy function)
   nil ; required args
-  nil ; keyword args and defaults, a list of doublets containing arg names and quoted default values
+  nil ; keyword args and defaults
+  :short "Make a copy of a function, with recursive calls appropriately renamed."
+  ;; todo: put this sort of thing in automatically?:
+  :description "<p>To inspect the resulting forms, call @('show-copy-function') on the same
+arguments.</p>"
   )

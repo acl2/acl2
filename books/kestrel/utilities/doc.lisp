@@ -449,18 +449,19 @@
                               parents
                               short ; a form that evaluates to a string or to nil
                               arg-descriptions ; todo: can we allow these to contain forms to be evaluated?
-                              description ; a form that evaluates to a string or to nil
+                              description ; either nil or a form that evaluates to a string
                               )
   (declare (xargs :guard (and (symbolp name)
                               (macro-arg-listp macro-args)
                               (symbol-listp parents)
                               (macro-arg-descriptionsp arg-descriptions))
                   :mode :program))
-  (b* (((when (not (subsetp-eq (strip-cars arg-descriptions)
-                               (macro-arg-names macro-args))))
-        (er hard? 'defxdoc-for-macro-fn "Descriptions given for names, ~x0, that are not among the macro args."
-            (set-difference-eq (strip-cars arg-descriptions)
-                               (macro-arg-names macro-args))))
+  (b* ((macro-arg-names (macro-arg-names macro-args))
+       (described-arg-names (strip-cars arg-descriptions))
+       ((when (not (subsetp-eq described-arg-names macro-arg-names)))
+        (er hard? 'defxdoc-for-macro-fn "Descriptions given for arguments, ~x0, that are not among the macro args, ~x1."
+            (set-difference-eq described-arg-names macro-arg-names)
+            macro-args))
        ;; The xdoc seems to be created in this package:
        (package (symbol-package-name name)))
     `(defxdoc ,name
@@ -478,7 +479,7 @@
                            description))))))
 
 (defmacro defxdoc-for-macro (name ; the name of the macro being documented
-                             macro-args ; the formals of the macro
+                             macro-args ; the formals of the macro, todo: allow extracting these from the world?
                              parents
                              short ; a form that evaluates to a string or to nil
                              arg-descriptions ; todo: can we allow these to contain forms to be evaluated?
