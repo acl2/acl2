@@ -410,7 +410,7 @@ then restart the ACL2-Doc browser to view that manual."
 ;;; Sanity check:
     (or (equal (substring rendered (- rendered-length suffix-length))
 	       "system/doc/rendered-doc-combined.lsp")
-	(error "Impementation error in acl2-doc: unexpected suffix,\n%s"
+	(error "Implementation error in acl2-doc: unexpected suffix,\n%s"
 	       (substring rendered (- rendered-length suffix-length))))
     (concat
      (substring rendered 0 (- rendered-length suffix-length))
@@ -420,8 +420,8 @@ then restart the ACL2-Doc browser to view that manual."
   (let* ((pathname (acl2-doc-pathname))
 	 (pathname-exists (file-exists-p pathname))
 	 (url (acl2-doc-url))
-	 (pathname-gz (acl2-doc-gzipped-file pathname))
-	 (manual-index-pathname (manual-index-pathname)))
+	 (pathname-gz (and url (acl2-doc-gzipped-file pathname)))
+	 (manual-index-pathname (and url (manual-index-pathname))))
     (cond
      ((and pathname-exists
 	   (or (null url) ;; no download option
