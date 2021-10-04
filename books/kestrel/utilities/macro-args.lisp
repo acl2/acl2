@@ -43,6 +43,12 @@
            (macro-arg-listp (cdr macro-args)))
   :hints (("Goal" :in-theory (enable macro-arg-listp))))
 
+(defthm macro-arg-listp-of-cons
+  (equal (macro-arg-listp (cons macro-arg macro-args))
+         (and (macro-argp macro-arg)
+              (macro-arg-listp macro-args)))
+  :hints (("Goal" :in-theory (enable macro-arg-listp))))
+
 (defthm macro-arg-listp-forward-to-true-listp
   (implies (macro-arg-listp macro-args)
            (true-listp macro-args))
