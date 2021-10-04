@@ -316,6 +316,17 @@
     (string-append (xdoc-for-macro-required-arg-general-form (first macro-args) indent-space firstp)
                    (xdoc-for-macro-required-args-general-form (rest macro-args) indent-space nil))))
 
+;; Returns (mv name default).
+;; TODO: Would we ever want the optional third thing, suppliedp?
+(defun keyword-or-optional-arg-name-and-default (macro-arg)
+  (declare (xargs :guard (macro-argp macro-arg)
+                  :guard-hints (("Goal" :in-theory (enable macro-argp)))))
+  (if (symbolp macro-arg)
+      (mv macro-arg nil)
+    (if (< (len macro-arg) 2)
+        (mv (first macro-arg) nil) ; no default given, so nil
+      (mv (first macro-arg) (unquote (second macro-arg))))))
+
 ;; Returns a string
 (defun xdoc-for-macro-optional-arg-general-form (macro-arg indent-space firstp max-len package)
   (declare (xargs :guard (and (macro-argp macro-arg)
@@ -323,31 +334,20 @@
                               (booleanp firstp)
                               (natp max-len)
                               (stringp package))
-                   :mode :program))
-  (if (symbolp macro-arg)
-      (let* ((name (string-downcase (symbol-name macro-arg)))
-             (name (n-string-append "[" name "]")))
-        ;;todo: think about this case (is nil the default)?
-        (n-string-append (if firstp "" indent-space)
-                         name
-                         (newline-string)))
-    ;; todo: check the form here:
-    (let* ((name (first macro-arg))
-           (name (string-downcase (symbol-name name)))
+                  :mode :program ; because we call object-to-string
+                  ))
+  (mv-let (name default)
+    (keyword-or-optional-arg-name-and-default macro-arg)
+    (let* ((name (string-downcase (symbol-name name)))
            (name (n-string-append "[" name "]"))
-           (default (if (< (len macro-arg) 2)
-                        nil
-                      ;;todo: ensure it's quoted?:
-                      (unquote (second macro-arg))))  ;todo: sometimes an optional arg has a third thing (suppliedp?)?
            (num-spaces-before-comment (+ 1 (- max-len (length name))))
-           (space-before-comment (string-append-lst (make-list num-spaces-before-comment :initial-element " ")))
-           )
+           (space-before-comment (string-append-lst (make-list num-spaces-before-comment :initial-element " "))))
       (n-string-append (if firstp "" indent-space)
                        name
-                       space-before-comment "; default "
+                       space-before-comment
+                       "; default "
                        (string-downcase (object-to-string default package))
-                       (newline-string)
-                       ))))
+                       (newline-string)))))
 
 ;; Returns a string
 (defun xdoc-for-macro-optional-args-general-form (macro-args indent-space firstp max-len package)
@@ -369,31 +369,20 @@
                               (booleanp firstp)
                               (natp max-len)
                               (stringp package))
-                  :mode :program))
-  (if (symbolp macro-arg)
-      (let* ((name (string-downcase (symbol-name macro-arg)))
-             (name (n-string-append ":" name)))
-        ;;todo: think about this case (is nil the default)?
-        (n-string-append (if firstp "" indent-space)
-                         name
-                         (newline-string)))
-    ;; todo: check the form here:
-    (let* ((name (first macro-arg))
-           (name (string-downcase (symbol-name name)))
+                  :mode :program ; because we call object-to-string
+                  ))
+  (mv-let (name default)
+    (keyword-or-optional-arg-name-and-default macro-arg)
+    (let* ((name (string-downcase (symbol-name name)))
            (name (n-string-append ":" name))
-           (default (if (< (len macro-arg) 2)
-                        nil
-                      ;;todo: ensure it's quoted?:
-                      (unquote (second macro-arg))))  ;todo: sometimes a keyword arg has a third thing (suppliedp?)?
            (num-spaces-before-comment (+ 1 (- max-len (length name))))
-           (space-before-comment (string-append-lst (make-list num-spaces-before-comment :initial-element " ")))
-           )
+           (space-before-comment (string-append-lst (make-list num-spaces-before-comment :initial-element " "))))
       (n-string-append (if firstp "" indent-space)
                        name
-                       space-before-comment "; default "
+                       space-before-comment
+                       "; default "
                        (string-downcase (object-to-string default package))
-                       (newline-string)
-                       ))))
+                       (newline-string)))))
 
 ;; Returns a string
 (defun xdoc-for-macro-keyword-args-general-form (macro-args indent-space firstp max-len package)
