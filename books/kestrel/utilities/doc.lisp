@@ -387,20 +387,6 @@
     (string-append (xdoc-for-macro-keyword-arg (first macro-args) arg-descriptions package)
                    (xdoc-for-macro-keyword-args (rest macro-args) arg-descriptions package))))
 
-;; Returns a string
-(defun xdoc-for-macro-args (macro-args arg-descriptions package)
-  (declare (xargs :guard (and (macro-arg-listp macro-args)
-                              (macro-arg-descriptionsp arg-descriptions)
-                              (stringp package))
-                  :mode :program))
-  (b* (((mv required-args optional-args keyword-args) ;todo: handle optional args?
-        (extract-required-and-optional-and-keyword-args macro-args)))
-    (concatenate 'string
-                 *xdoc-inputs-header-with-spacing*
-                 (xdoc-for-macro-required-args required-args arg-descriptions)
-                 (xdoc-for-macro-optional-args optional-args arg-descriptions package)
-                 (xdoc-for-macro-keyword-args keyword-args arg-descriptions package))))
-
 ;; Returns a defxdoc form.
 ;; TODO: Check that there are no args in ARG-DESCRIPTIONS that are not among the MACRO-ARGS.
 ;; TODO: Think about all the & things that can occur in the macro-args
@@ -427,15 +413,20 @@
             (set-difference-eq macro-arg-names described-arg-names)
             macro-args))
        ;; The xdoc seems to be created in this package:
-       (package (symbol-package-name name)))
+       (package (symbol-package-name name))
+       ((mv required-args optional-args keyword-args)
+        (extract-required-and-optional-and-keyword-args macro-args)))
     `(defxdoc ,name
        ,@(and short `(:short ,short))
        ,@(and parents `(:parents ,parents))
        :long (n-string-append
-              ;; Document the general form (args and defaults):
+              ;; Shows the general form of a call (all args and defaults):
               ,(xdoc-for-macro-general-form name macro-args package)
-              ;;(newline-string)
-              ,(xdoc-for-macro-args macro-args arg-descriptions package)
+              *xdoc-inputs-header-with-spacing*
+              ;; Gives details on each argument:
+              ,(xdoc-for-macro-required-args required-args arg-descriptions)
+              ,(xdoc-for-macro-optional-args optional-args arg-descriptions package)
+              ,(xdoc-for-macro-keyword-args keyword-args arg-descriptions package)
               ;; Include the description section, if supplied:
               ,@(and description
                      (list *xdoc-description-header-with-spacing*
