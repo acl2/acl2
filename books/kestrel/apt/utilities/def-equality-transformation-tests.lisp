@@ -269,8 +269,8 @@
                                                    state))
               (mutual-recursion `(mutual-recursion ,@new-defuns))
               (mutual-recursion-to-export (if verify-guards
-                                              (replace-xarg-in-mutual-recursion :verify-guards t mutual-recursion) ; todo: or just set the verify-guards eagerness and ensure there is a guard?
-                                            mutual-recursion))
+                                                    (ensure-mutual-recursion-demands-guard-verification mutual-recursion)
+                                                  mutual-recursion))
               (fn-and-not-normalized-fn-doublets (make-doublets fns (add-not-normalized-suffixes fns)))
               (flag-function-name (pack$ 'flag- fn '-for- 'copy-function)) ;todo: avoid clashes better
               ;; Use as a ruler-extender for the flag function anything used as a ruler-extender for any of the FNS:
