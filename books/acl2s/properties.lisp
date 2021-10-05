@@ -115,7 +115,7 @@ as follows.
              :debug?))
 
 (def-const *property-conjecture-keywords*
-  '(:vars :hyps :body))
+  '(:vars :hyps :h :body :b))
 
 (def-const *property-keywords*
   (append *property-conjecture-keywords*
@@ -370,16 +370,23 @@ I don't need this?
        (- (cw? debug? "~%**vars? is: ~x0~%" vars?))
        (prop-rest (if ivars? (cdr prop-rest) prop-rest))
        (hyps? (assoc :hyps kwd-alist))
+       (hyps? (or hyps? (assoc :h kwd-alist)))
        (body? (assoc :body kwd-alist))
+       (body? (or body? (assoc :b kwd-alist)))
+       ;; I should do something similar to :pre, :ic, etc in
+       ;; definec. Allow multiple hyps, bodys and combine them.
+       ;; Search for :body, :hyps in function.
        (check-contracts? (defdata::get1 :check-contracts? kwd-alist))
 ;       ((when (and hyps? (not body?)))
 ;         (er soft ctx
 ;             "~|**ERROR: If :hyps is provided, then :body must also be provided."))
        (body (if body?
-                 (defdata::get1 :body kwd-alist)
+                 (or (defdata::get1 :body kwd-alist)
+                     (defdata::get1 :b kwd-alist))
                (extract-body (car prop-rest))))
        (hyps-list (cond (hyps? (hyps-list-from-hyps
-                                (defdata::get1 :hyps kwd-alist)))
+                                (or (defdata::get1 :hyps kwd-alist)
+                                    (defdata::get1 :h kwd-alist))))
                         (body? nil)))
        ((mv erp pt-hyps-list)
         (if (or hyps? body?)
