@@ -15,6 +15,8 @@
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/declares0" :dir :system)
 
+;; TODO: Move this file to ../../utilities
+
 ;; Fixup the ignore declarations to ignore exactly those formals not mentioned in the body.
 ;; A fake-wrld is required so we can translate the BODY during the process (though we try to keep the result untranslated).
 ;; Note that irrelevant params may have to be dealt with separately.
@@ -29,10 +31,10 @@
                               (plist-worldp fake-wrld))
                   :mode :program))
   (b* (((mv ctx msg-or-translated-body)
-        (translate-term-with-defaults body 'fixup-ignores2 fake-wrld) ;pass a better context
+        (translate-term-with-defaults body 'fixup-ignores-with-fake-world fake-wrld) ;pass a better context
         )
        ((when ctx) ;; check for translation error
-        (er hard? 'fixup-ignores2 "Failed to translate ~x0. ~@1." body msg-or-translated-body))
+        (er hard? 'fixup-ignores-with-fake-world "Failed to translate ~x0. ~@1." body msg-or-translated-body))
        (translated-body msg-or-translated-body)
        (formals-mentioned (free-vars-in-term translated-body))
        (ignored-formals (set-difference-eq formals formals-mentioned))
@@ -44,6 +46,7 @@
                    declares)))
     declares))
 
+;; This variant takes a function-renaming and uses it to construct a fake world.
 (defun fixup-ignores2 (declares
                        formals
                        body ; untranslated
