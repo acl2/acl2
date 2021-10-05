@@ -269,7 +269,7 @@
        when @('fni') is non-recursive.")
      (xdoc::li
       "A loop term for @('fni') transforming
-       the formal parameters of @('fni') or a non-empty sublist of them,
+       the formal parameters of @('fni') or a non-empty subset of them,
        when @('fni') is recursive."))
     (xdoc::p
      "The notions of
