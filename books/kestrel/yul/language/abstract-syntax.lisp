@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax
-  :parents (yul)
+  :parents (language)
   :short "Abstract syntax of Yul."
   :long
   (xdoc::topstring

@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ concrete-syntax
-  :parents (yul)
+  :parents (language)
   :short "Concrete syntax of Yul."
   :long
   (xdoc::topstring
