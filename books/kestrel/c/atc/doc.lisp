@@ -265,17 +265,17 @@
      (xdoc::li
       "A statement term for @('fni')
        returning a non-@('void') non-pointer C type
-       and transforming no variables,
+       and affecting no variables,
        when @('fni') is non-recursive.")
      (xdoc::li
-      "A loop term for @('fni') transforming
+      "A loop term for @('fni') affecting
        the formal parameters of @('fni') or a non-empty subset of them,
        when @('fni') is recursive."))
     (xdoc::p
      "The notions of
       (i) statement term for @('fni')
-      returning @('T') and transforming @('vars') and
-      (ii) loop term for @('fni') transforming @('vars')
+      returning @('T') and affecting @('vars') and
+      (ii) loop term for @('fni') affecting @('vars')
       are defined below, along with the notions of
       (iii) expression term for @('fni') returning @('T'),
       (iv) pure expression term for @('fni') returning @('T'),
@@ -285,7 +285,7 @@
     (xdoc::p
      "A <i>statement term for</i> @('fni')
       <i>returning</i> @('T') and
-      <i>transforming</i> @('vars'),
+      <i>affecting</i> @('vars'),
       where @('fni') is a target function,
       @('T') is either a C type or `boolean',
       and @('vars') is a list of distinct symbols,
@@ -298,7 +298,7 @@
        and @('fni') is not recursive.
        That is, an expression term returning a C value is also
        a statement term returning that that C value
-       and transforming no variables.
+       and affecting no variables.
        This represents a C @('return') statement
        whose expression is represented by the same term,
        viewed as an expression term returning a C value.")
@@ -337,7 +337,7 @@
       "A call of @(tsee if) on
        (i) a test that is an expression term for @('fni') returning boolean and
        (ii) branches that are statement terms for @('fni')
-       returning @('T') and transforming @('vars').
+       returning @('T') and affecting @('vars').
        This represents a C @('if') conditional statement
        whose test expression is represented by the test term
        and whose branch blocks are represented by the branch terms.")
@@ -346,7 +346,7 @@
        (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
        (ii) a `then' branch that is
        a statement term for @('fni')
-       returning @('T') and transforming @('vars'), and
+       returning @('T') and affecting @('vars'), and
        (iii) an `else' branch that may be any ACL2 term.
        This represents the same C code represented by the `then' branch.
        Both the test and the `else' branch are ignored;
@@ -367,7 +367,7 @@
        @('term') is an expression term for @('fni')
        returning a non-pointer C type, and
        @('body') is a statement term for @('fni')
-       returning @('T') and transforming @('vars').
+       returning @('T') and affecting @('vars').
        This represents, as indicated by the wrapper @(tsee declar),
        a declaration of a C local variable represented by @('var'),
        initialized with the C expression represented by @('term'),
@@ -383,7 +383,7 @@
        @('term') is an expression term for @('fni')
        returning the same C type as the C type of @('var'), and
        @('body') is a statement term for @('fni')
-       returning @('T') and transforming @('vars').
+       returning @('T') and affecting @('vars').
        This represents, as indicated by the wrapper @(tsee assign),
        an assignment to
        the C local variable or function parameter represented by @('var'),
@@ -397,13 +397,13 @@
       "A term @('(let ((var term)) body)'),
        where @('var') is assignable,
        @('term') is a statement term for @('fni')
-       returning @('void') and transforming @('var')
+       returning @('void') and affecting @('var')
        that is
        either a call of a recursive target function @('fnj') with @('j < i')
        or an @(tsee if) whose test is an expression term returning boolean
        (not a test @('(mbt ...)') or @('(mbt$ ...)')), and
        @('body') is a statement term for @('fni')
-       returning @('T') and transforming @('vars').
+       returning @('T') and affecting @('vars').
        This represents the C code represented by @('term'),
        which may modify the variable represented by @('var'),
        followed by the C code represented by @('body').
@@ -416,13 +416,13 @@
        where @('n') &gt; 1,
        each @('vari') is assignable,
        @('term') is a statement term for @('fni')
-       returning @('void') and transforming @('(var1 ... varn)')
+       returning @('void') and affecting @('(var1 ... varn)')
        that is
        either a call of a recursive target function @('fnj') with @('j < i')
        or an @(tsee if) whose test is an expression term returning a boolean
        (not a test @('(mbt ...)') or @('(mbt$ ...)')), and
        @('body') is a statement term for @('fni')
-       returning @('T') and transforming @('vars').
+       returning @('T') and affecting @('vars').
        This represents the C code represented by @('term'),
        which may modify the variables represented by @('var1'), ..., @('varn'),
        followed by the C code represented by @('body').
@@ -443,13 +443,13 @@
        @('T') is @('void'),
        @('vars') is not @('nil'),
        and the body of @('fnj') is
-       a loop term for @('fnj') transforming @('vars').
+       a loop term for @('fnj') affecting @('vars').
        This represents the C @('while') statement
        represented by the body of @('fnj'), as explained below."))
 
     (xdoc::p
      "A <i>loop term for</i> @('fni')
-      <i>transforming</i> @('vars'),
+      <i>affecting</i> @('vars'),
       where @('fni') is a target function
       and  @('vars') is a non-empty list of distinct symbols,
       is inductively defined as one of the following:")
@@ -458,7 +458,7 @@
       "A call of @(tsee if) on
        (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
        (ii) a `then' branch that is
-       a loop term for @('fni') transforming @('vars'), and
+       a loop term for @('fni') affecting @('vars'), and
        (iii) an `else' branch that may be any ACL2 term.
        This represents the same C code represented by the `then' branch.
        Both the test and the `else' branch are ignored;
@@ -474,7 +474,7 @@
        (i) a test that is an expression term for @('fni') returning boolean,
        (ii) a `then' branch that is
        a statement term for @('fni')
-       returning @('void') and transforming @('vars'), and
+       returning @('void') and affecting @('vars'), and
        (iii) an `else' branch that is
        either the variable @('var') when @('vars') is the singleton @('(var)'),
        or the term @('(mv var1 ... varn)')
@@ -748,9 +748,9 @@
        is in the same C scope where @('var') occurs.")
      (xdoc::li
       "The variable @('var') is among @('vars'),
-       i.e. it is being transformed.")
+       i.e. it is being affected.")
      (xdoc::li
-      "No variables are being transformed, i.e. @('vars') is @('nil')."))
+      "No variables are being affected, i.e. @('vars') is @('nil')."))
     (xdoc::p
      "Any of these conditions ensures that, in the ACL2 code,
       the old value of the variable cannot be accessed after the new binding:
@@ -758,9 +758,9 @@
       the new binding hides the old variable;
       (ii) if the second condition holds,
       it means that the outer binding will receive the value
-      at the end of the transformation; and
+      at the end of the changes to the variables; and
       (iii) if the third condition holds,
-      there is no subsequent code because there is no transformation.
+      there is no subsequent code because there is no change to the variables.
       These justify destructively updating the variable in the C code.")
 
     (xdoc::p
