@@ -124,6 +124,15 @@
     (or (defun-demands-guard-verificationp (first defuns))
         (any-defun-demands-guard-verificationp (rest defuns)))))
 
+(defund get-name-arity-list-from-defuns (defuns)
+  (declare (xargs :guard (and (all-defun-formp defuns)
+                              (true-listp defuns))))
+  (if (endp defuns)
+      nil
+    (let ((defun (first defuns)))
+      (acons (get-name-from-defun defun)
+             (get-arity-from-defun defun)
+             (get-name-arity-list-from-defuns (rest defuns))))))
 
 ;;;
 ;;; mutual-recursion forms
@@ -145,6 +154,11 @@
                   'mutual-recursion))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable mutual-recursion-formp))))
+
+(defund get-name-arity-list-from-mutual-recursion (mut-rec)
+  (declare (xargs :guard (mutual-recursion-formp mut-rec)
+                  :guard-hints (("Goal" :in-theory (enable mutual-recursion-formp)))))
+  (get-name-arity-list-from-defuns (cdr mut-rec)))
 
 (defund replace-xarg-in-mutual-recursion (xarg val mutual-recursion)
   (declare (xargs :guard (and (keywordp xarg)
