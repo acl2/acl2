@@ -1364,4 +1364,104 @@ ACL2 !>>(DEFUN
  READ-FLD-FROM-STOBJ-TABLE
 ACL2 !>>(THM (IMPLIES (STOBJ-TABLEP STOBJ-TABLE)
                       (INTEGERP (READ-FLD-FROM-STOBJ-TABLE STOBJ-TABLE))))
+ACL2 !>>(DEFMACRO
+             STOBJ-FIX (ST &KEY RECOGNIZER CREATOR)
+             (DECLARE (XARGS :GUARD (AND (SYMBOLP ST)
+                                         (SYMBOLP RECOGNIZER)
+                                         (SYMBOLP CREATOR))))
+             (LET ((RECOGNIZER (OR RECOGNIZER
+                                   (DEFSTOBJ-FNNAME ST :RECOGNIZER NIL NIL)))
+                   (CREATOR (OR CREATOR
+                                (DEFSTOBJ-FNNAME ST :CREATOR NIL NIL))))
+                  (CONS 'IF
+                        (CONS (CONS RECOGNIZER (CONS ST 'NIL))
+                              (CONS ST (CONS (CONS CREATOR 'NIL) 'NIL))))))
+ STOBJ-FIX
+ACL2 !>>(DEFUN READ-FLD-FROM-STOBJ-TABLE-2
+               (STOBJ-TABLE)
+               (DECLARE (XARGS :STOBJS (STOBJ-TABLE)))
+               (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+                          (VAL)
+                          (MBE :LOGIC (NON-EXEC (FLD (STOBJ-FIX ST)))
+                               :EXEC (FLD ST))
+                          VAL))
+ READ-FLD-FROM-STOBJ-TABLE-2
+ACL2 !>>(THM (IMPLIES (STOBJ-TABLEP STOBJ-TABLE)
+                      (INTEGERP (READ-FLD-FROM-STOBJ-TABLE-2 STOBJ-TABLE))))
+ACL2 !>>(DEFUN FOO (SUM STOBJ-TABLE)
+               (DECLARE (XARGS :STOBJS (STOBJ-TABLE)
+                               :GUARD (ACL2-NUMBERP SUM)))
+               (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+                          (SUM)
+                          (+ SUM (FLD ST))
+                          SUM))
+ FOO
+ACL2 !>>(UBT 2)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(INCLUDE-BOOK "std/stobjs/stobjtab"
+                      :DIR :SYSTEM)
+ "[books]/std/stobjs/stobjtab.lisp"
+ACL2 !>>(DEFSTOBJ ST (FLD :TYPE INTEGER :INITIALLY 0))
+ ST
+ACL2 !>>(DEFTHM
+           MBE-SIDES-ARE-EQUAL
+           (IMPLIES
+                (STBL-BOUNDP 'ST STOBJTAB)
+                (EQUAL (NON-EXEC (NTH 0
+                                      (CDR (HONS-ASSOC-EQUAL 'ST STOBJTAB))))
+                       (STOBJ-LET ((ST (STBL-GET 'ST STOBJTAB (CREATE-ST))))
+                                  (FLD)
+                                  (FLD ST)
+                                  FLD)))
+           :RULE-CLASSES NIL)
+ MBE-SIDES-ARE-EQUAL
+ACL2 !>>(DEFUN
+           FLD-OF-STOBJTAB-ST (STOBJTAB)
+           (DECLARE (XARGS :STOBJS STOBJTAB
+                           :GUARD (STBL-BOUNDP 'ST STOBJTAB)))
+           (MBE :LOGIC (NON-EXEC (NTH 0
+                                      (CDR (HONS-ASSOC-EQUAL 'ST STOBJTAB))))
+                :EXEC (STOBJ-LET ((ST (STBL-GET 'ST STOBJTAB (CREATE-ST))))
+                                 (FLD)
+                                 (FLD ST)
+                                 FLD)))
+ FLD-OF-STOBJTAB-ST
+ACL2 !>>(UBT 2)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(INCLUDE-BOOK "std/top" :DIR :SYSTEM)
+ "[books]/std/top.lisp"
+ACL2 !>>(INCLUDE-BOOK "std/stobjs/stobj-table"
+                      :DIR :SYSTEM)
+ "[books]/std/stobjs/stobj-table.lisp"
+ACL2 !>>(DEFSTOBJ ST FLD)
+ ST
+ACL2 !>>(DEFINE GOOD-ST-P (ST) (NATP (FLD ST)))
+ GOOD-ST-P
+ACL2 !>>(DEFINE GOOD-TBL-P (STOBJ-TABLE)
+                (AND (TBL-BOUNDP 'ST STOBJ-TABLE)
+                     (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+                                (CHK)
+                                (GOOD-ST-P ST)
+                                CHK)))
+ GOOD-TBL-P
+ACL2 !>>(DEFTHM
+             GOOD-TBL-P-IMPLIES-GOOD-ST-P
+             (IMPLIES (GOOD-TBL-P X)
+                      (AND (HONS-ASSOC-EQUAL 'ST (CAR X))
+                           (GOOD-ST-P (CDR (HONS-ASSOC-EQUAL 'ST (CAR X))))))
+             :HINTS (("Goal" :IN-THEORY (ENABLE GOOD-TBL-P))))
+ GOOD-TBL-P-IMPLIES-GOOD-ST-P
+ACL2 !>>(DEFINE DO-ST (ST)
+                :GUARD (GOOD-ST-P ST)
+                ST)
+ DO-ST
+ACL2 !>>(DEFINE DO-TBL (STOBJ-TABLE)
+                :GUARD (GOOD-TBL-P STOBJ-TABLE)
+                (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+                           (ST)
+                           (DO-ST ST)
+                           STOBJ-TABLE))
+ DO-TBL
 ACL2 !>>Bye.

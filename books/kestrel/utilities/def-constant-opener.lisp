@@ -33,7 +33,7 @@
 (include-book "kestrel/utilities/user-interface" :dir :system) ;; for control-screen-output
 (include-book "pack")
 (include-book "my-get-event")
-(include-book "defun-forms") ;for get-body-from-event
+(include-book "defining-forms") ;for get-body-from-event
 (include-book "misc/install-not-normalized" :dir :system)
 
 (defun make-quotep-hyps-aux (vars)

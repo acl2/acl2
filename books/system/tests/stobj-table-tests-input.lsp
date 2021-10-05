@@ -755,3 +755,125 @@
 ; we avoid runtime overhead of the fixer call.
 (thm (implies (stobj-tablep stobj-table)
               (integerp (read-fld-from-stobj-table stobj-table))))
+
+; Here is a macro that may serve some day as a replacement for stobj-fixers,
+; followed by another version of the function defined just above but this time
+; using the new macro below.
+
+(defmacro stobj-fix (st &key recognizer creator)
+  (declare (xargs :guard (and (symbolp st)
+                              (symbolp recognizer)
+                              (symbolp creator))))
+  (let ((recognizer (or recognizer
+                        (defstobj-fnname st :recognizer nil nil)))
+        (creator (or creator
+                     (defstobj-fnname st :creator nil nil))))
+    `(if (,recognizer ,st) ,st (,creator))))
+
+(defun read-fld-from-stobj-table-2 (stobj-table)
+  (declare (xargs :stobjs (stobj-table)))
+  (stobj-let ((st (tbl-get 'st stobj-table (create-st))))
+             (val)
+             (mbe :logic (non-exec (fld (stobj-fix st)))
+                  :exec (fld st))
+             val))
+
+(thm (implies (stobj-tablep stobj-table)
+              (integerp (read-fld-from-stobj-table-2 stobj-table))))
+
+; And here is a test adapted from an email from Sol Swords, which exposed a bug
+; in the initial implementation of the use of stobj-fixers in generating guard
+; proof obligations (ACL2 source function fix-stobj-table-get-calls).
+
+(defun foo (sum stobj-table)
+  (declare (xargs :stobjs (stobj-table)
+                  :guard (acl2-numberp sum)))
+  (stobj-let ((st (tbl-get 'st stobj-table (create-st))))
+	     (sum)
+	     (+ sum (fld st))
+	     sum))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Avoiding stobj fixers in guard verification: #1
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This example is due to Sol Swords.  See the comment just above
+; fld-of-stobjtab-st.
+
+(ubt 2) ; back to just after portcullis commands
+
+(include-book "std/stobjs/stobjtab" :dir :system)
+
+(defstobj st (fld :type integer :initially 0))
+
+(defthm mbe-sides-are-equal
+  (implies (stbl-boundp 'st stobjtab)
+           (equal (non-exec (nth 0 (cdr (hons-assoc-equal 'st stobjtab)))) ;; logic
+                  (stobj-let ((st (stbl-get 'st stobjtab (create-st))))    ;; exec
+                             (fld)
+                             (fld st)
+                             fld)))
+  :rule-classes nil)
+
+; This didn't guard verify when the guard conjecture was created by applying
+; the stobj fixer, st$fix, to the stbl-get call below (and more generally, by
+; applying a suitable stobj fixer to each stobj-table accessor call).
+; Specifically, the guard obligation from the mbe call was failing to prove.
+; But now ACL2 adds hypothesis (stp (stbl-get 'st stobjtab (create-st))) in the
+; guard conjecture, which allows this to guard verify.
+(defun fld-of-stobjtab-st (stobjtab)
+  (declare (xargs :stobjs stobjtab
+                  :guard (stbl-boundp 'st stobjtab)))
+  (mbe :logic (non-exec (nth 0 (cdr (hons-assoc-equal 'st stobjtab))))
+       :exec (stobj-let ((st (stbl-get 'st stobjtab (create-st))))
+                        (fld)
+                        (fld st)
+                        fld)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Avoiding stobj fixers in guard verification: #2
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This example is from Rob Sumners.  See the comment above do-tbl, below.
+
+(ubt 2) ; back to just after portcullis commands
+
+(include-book "std/top" :dir :system)
+(include-book "std/stobjs/stobj-table" :dir :system)
+
+(defstobj st fld)
+
+(define good-st-p (st)
+  ;; some "good" predicate on state which isn't true of (create-st)
+  (natp (fld st)))
+
+(define good-tbl-p (stobj-table)
+  ;; this is a lift of good-st-p to a stobj-table with st
+  (and (tbl-boundp 'st stobj-table)
+       (stobj-let ((st (tbl-get 'st stobj-table (create-st))))
+                  (chk)
+                  (good-st-p st)
+                  chk)))
+
+(defthm good-tbl-p-implies-good-st-p
+  (implies (good-tbl-p x)
+           (and (hons-assoc-equal 'st (car x))
+                (good-st-p (cdr (hons-assoc-equal 'st (car x))))))
+  :hints (("Goal" :in-theory (enable good-tbl-p))))
+
+(define do-st (st)
+  :guard (good-st-p st)
+  ;;;; something that needs good-st-p to be true but we just return st here as placeholder
+  st)
+
+; The following function failed to guard verify when the guard conjecture was
+; created by applying the stobj fixer, st$fix, to the tbl-get call below (and
+; more generally, by applying a suitable stobj fixer to each stobj-table
+; accessor call).  But now ACL2 adds hypothesis (stp (tbl-get 'st stobj-table
+; (create-st))) in the guard conjecture, which allows this to guard verify.
+(define do-tbl (stobj-table)
+  :guard (good-tbl-p stobj-table)
+  (stobj-let ((st (tbl-get 'st stobj-table (create-st))))
+             (st)
+             (do-st st)
+             stobj-table))

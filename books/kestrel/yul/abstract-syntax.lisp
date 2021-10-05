@@ -10,7 +10,7 @@
 
 (in-package "YUL")
 
-(include-book "centaur/fty/top" :dir :system)
+(include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/hex-digit-char" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
@@ -76,6 +76,20 @@
   :elt-type identifier
   :elementp-of-nil nil
   :pred identifier-setp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult identifier-result
+  :short "Fixtype of errors and identifiers."
+  :ok identifier
+  :pred identifier-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult identifier-list-result
+  :short "Fixtype of errors and lists of identifiers."
+  :ok identifier-list
+  :pred identifier-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

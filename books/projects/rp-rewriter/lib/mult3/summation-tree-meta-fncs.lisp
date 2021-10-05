@@ -1081,32 +1081,7 @@
 
     (verify-guards decompress-s-c-fn)))
 
-(progn
-  (define negate-lst-aux ((lst rp-term-listp))
-    :returns (negated-lst rp-term-listp :hyp (rp-term-listp lst))
-    (b* (((when (atom lst)) lst)
-         (rest (negate-lst-aux (cdr lst)))
-         (cur-orig (car lst))
-         (cur (ex-from-rp$ cur-orig)))
-      (case-match cur
-        (('-- term)
-         (cons term rest))
-        (& (cons `(-- ,cur-orig)
-                 rest)))))
 
-  (define negate-lst ((lst rp-term-listp)
-                      &optional (enabled 't))
-    :inline t
-    :returns (negated-lst rp-term-listp :hyp (rp-term-listp lst))
-    (if enabled
-        (negate-lst-aux lst)
-      lst))
-
-  (define negate-list-instance ((term rp-termp)
-                                &optional (enabled 't))
-    :returns (res rp-termp :hyp (rp-termp term))
-    :inline t
-    (create-list-instance (negate-lst (list-to-lst term) enabled))))
 
 #|(progn
   (encapsulate
@@ -3631,6 +3606,9 @@
 ;;(include-book "pp-flatten-wrapper")
 
 
+
+
+
 (define new-sum-merge-aux ((sum-lst rp-term-listp))
   :verify-guards nil
   ;;:returns (mv s pp-lst c-lst to-be-coughed-c-lst)
@@ -3705,6 +3683,11 @@
       (b* (;;(abs-term (4vec->pp-term abs-term))
            (pp-lst2 (pp-flatten abs-term-w/-sc negated
                                 :disabled (unpack-booth-later-enabled)))
+
+           ((mv s-lst2 pp-lst2 c-lst2) (ex-from-pp-lst pp-lst2))
+           (s (s-sum-merge s (create-list-instance s-lst2)))
+           (c-lst (s-sum-merge-aux c-lst c-lst2))
+           
            ((mv pp-lst2 recollected-c-lst) (recollect-pp-lst-to-sc-main pp-lst2))
            (c-lst (s-sum-merge-aux recollected-c-lst c-lst))
            (pp-lst (pp-sum-merge-aux pp-lst pp-lst2)))

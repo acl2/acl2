@@ -123,28 +123,12 @@
                                   (y (mod (ifix y) p)))
            :in-theory (disable equal-of-0-and-mul))))
 
-;was called inv-correct
-(defthm mul-of-inv-arg2
-  (implies (primep p)
-           (equal (mul x (inv x p) p)
-                  (if (equal 0 (fep-fix x p))
-                      (if (equal p 2)
-                          (fep-fix x p)
-                        0)
-                    ;; usual case:
-                    1)))
-  :hints (("Goal" :in-theory (e/d (inv minus1) (pow-of-+ my-fermat-little))
-           :expand (pow x (+ -1 p) p)
-           :use (:instance my-fermat-little (a (mod (ifix x) p))))))
-
 ;; commutes the args to MUL in the lhs
 (defthm mul-of-inv-arg1
   (implies (primep p)
            (equal (mul (inv x p) x p)
                   (if (equal 0 (mod (ifix x) p))
-                      (if (equal p 2)
-                          (mod (ifix x) p)
-                        0)
+                      0
                     ;; usual case:
                     1)))
   :hints (("Goal" :use ((:instance mul-of-inv-arg2)
@@ -584,22 +568,11 @@
                                   (p p))
            :in-theory (disable mul-of-inv-mul-of-inv))))
 
-;; a bit odd, but we should not usually be calling inv on 0
-(defthm inv-of-0
-  (implies (primep p)
-           (equal (inv 0 p)
-                  (if (equal p 2)
-                      1
-                    0)))
-  :hints (("Goal" :in-theory (enable inv))))
-
 (defthm inv-of-inv
   (implies (and (fep a p)
                 (rtl::primep p))
            (equal (inv (inv a p) p)
-                  (if (equal p 2)
-                      1
-                    a)))
+                  a))
   :hints (("Goal" :cases ((equal 0 a)))))
 
 ;; a cancellation rule
@@ -701,9 +674,7 @@
   (implies (and (primep p)
                 (integerp x))
            (equal (div x 0 p)
-                  (if (equal p 2)
-                      (mod x p)
-                    0)))
+                  0))
   :hints (("Goal" :in-theory (enable div))))
 
 ;; for all primes other than 2

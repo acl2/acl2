@@ -1046,7 +1046,7 @@ Goal
    (LET ((OLD (N$VAL N$)))
         (AND (ACL2-NUMBERP OLD)
              (NATP (+ 1 OLD))
-             (LET NIL (NATP OLD))))
+             (NATP OLD)))
    (LET
     ((N$ (LET* ((OLD (N$VAL N$))
                 (N$ (UPDATE-N$VAL (+ 1 OLD) N$)))
@@ -1164,9 +1164,8 @@ Goal
   (AND
    (LET* ((MV (LIST N$2 N$)) (N$2 (MV-NTH 1 MV)))
          (AND (NATP (N$2VAL N$2))
-              (LET NIL
-                   (AND (ACL2-NUMBERP (N$2VAL N$2))
-                        (NATP (+ 1 (N$2VAL N$2)))))))
+              (ACL2-NUMBERP (N$2VAL N$2))
+              (NATP (+ 1 (N$2VAL N$2)))))
    (MV-LET
     (N$ N$2)
     (MV-LET (N$ N$2)

@@ -298,6 +298,10 @@
         ;; include it because it is a non-xarg:
         (cons declare-arg (get-non-xargs-from-declare-args (rest declare-args)))))))
 
+(defthm get-non-xargs-from-declare-args-of-append
+  (equal (get-non-xargs-from-declare-args (append x y))
+         (append (get-non-xargs-from-declare-args x)
+                 (get-non-xargs-from-declare-args y))))
 (defthm all-declare-argp-of-get-non-xargs-from-declare-args
   (implies (all-declare-argp declare-args)
            (all-declare-argp (get-non-xargs-from-declare-args declare-args))))
@@ -316,30 +320,39 @@
       (append (get-non-xargs-from-declare declare)
               (get-non-xargs-from-declares (rest declares))))))
 
-(defun declare-arg-has-a-guard-or-type (declare-arg)
+;; Checks whether DECLARE-ARG contributes a guard (or part of a guard) to its
+;; enclosing defun.
+(defun declare-arg-contributes-a-guardp (declare-arg)
   (declare (xargs :guard (declare-argp declare-arg)))
-  (let ((kind (ffn-symb declare-arg)))
+  (let ((kind (car declare-arg)))
     (or (eq 'type kind)
         (and (eq 'xargs kind)
-             (assoc-keyword :guard (fargs declare-arg))))))
+             (or (assoc-keyword :guard (fargs declare-arg))
+                 (assoc-keyword :stobjs (fargs declare-arg)))))))
 
-(defun some-declare-arg-has-a-guard-or-type (declare-args)
+;; Checks whether any of the DECLARE-ARGS contributes a guard (or part of a
+;; guard) to the enclosing defun.
+(defun some-declare-arg-contributes-a-guardp (declare-args)
   (declare (xargs :guard (all-declare-argp declare-args)))
   (if (atom declare-args)
       nil
-    (or (declare-arg-has-a-guard-or-type (first declare-args))
-        (some-declare-arg-has-a-guard-or-type (rest declare-args)))))
+    (or (declare-arg-contributes-a-guardp (first declare-args))
+        (some-declare-arg-contributes-a-guardp (rest declare-args)))))
 
-(defun declare-has-a-guard-or-type (declare)
+;; Checks whether DECLARE contributes a guard (or part of a guard) to its
+;; enclosing defun.
+(defun declare-contributes-a-guardp (declare)
   (declare (xargs :guard (declarep declare)))
-  (some-declare-arg-has-a-guard-or-type (fargs declare)))
+  (some-declare-arg-contributes-a-guardp (fargs declare)))
 
-(defun some-declare-has-a-guard-or-type (declares)
+;; Checks whether any of the DECLARES contributes a guard (or part of a guard)
+;; to its enclosing defun.
+(defun some-declare-contributes-a-guardp (declares)
   (declare (xargs :guard (all-declarep declares)))
   (if (atom declares)
      nil
-    (or (declare-has-a-guard-or-type (first declares))
-        (some-declare-has-a-guard-or-type (rest declares)))))
+    (or (declare-contributes-a-guardp (first declares))
+        (some-declare-contributes-a-guardp (rest declares)))))
 
 ;; not right.  see get-irrelevant-formals-from-declares
 ;; (defun get-types-from-declares (declares)
@@ -570,7 +583,9 @@
                                                                   :measure (acl2-count count)))))
                      '(acl2-count count)))
 
-
+;;;
+;;; removing xargs
+;;;
 
 (defun remove-xarg (xarg xargs)
   (declare (xargs :guard (and (keywordp xarg)
@@ -612,6 +627,23 @@
            (declarep (remove-xarg-in-declare xarg declare)))
   :hints (("Goal" :in-theory (enable declarep remove-xarg-in-declare))))
 
+(defund remove-xarg-in-declares (xarg declares)
+  (declare (xargs :guard (and (keywordp xarg)
+                              (all-declarep declares))))
+  (if (atom declares)
+      nil
+    (cons (remove-xarg-in-declare xarg (first declares))
+          (remove-xarg-in-declares xarg (rest declares)))))
+
+(defthm all-declare-argp-of-remove-xarg-in-declares
+  (implies (all-declarep declares)
+           (all-declarep (remove-xarg-in-declares xarg declares)))
+  :hints (("Goal" :in-theory (enable remove-xarg-in-declares))))
+
+;;;
+;;; adding xargs
+;;;
+
 (defund add-xarg-in-declare (xarg val declare)
   (declare (xargs :guard (and (keywordp xarg)
                               (declarep declare))))
@@ -626,34 +658,6 @@
                 (keywordp xarg))
            (declarep (add-xarg-in-declare xarg val declare)))
   :hints (("Goal" :in-theory (enable add-xarg-in-declare))))
-
-;;  Replace the value of XARG with VAL in DECLARE if it's present.  If it's not
-;;  present, add it with value VAL.
-(defun replace-xarg-in-declare (xarg val declare)
-  (declare (xargs :guard (and (keywordp xarg)
-                              (declarep declare))
-                  :guard-hints (("Goal" :in-theory (disable declarep) ;make global
-                                 ))))
-  (add-xarg-in-declare xarg val (remove-xarg-in-declare xarg declare)))
-
-(defthm declarep-of-replace-xarg-in-declare
-  (implies (and (declarep declare)
-                (keywordp xarg))
-           (declarep (replace-xarg-in-declare xarg val declare)))
-  :hints (("Goal" :in-theory (enable add-xarg-in-declare))))
-
-(defund remove-xarg-in-declares (xarg declares)
-  (declare (xargs :guard (and (keywordp xarg)
-                              (all-declarep declares))))
-  (if (atom declares)
-      nil
-    (cons (remove-xarg-in-declare xarg (first declares))
-          (remove-xarg-in-declares xarg (rest declares)))))
-
-(defthm all-declare-argp-of-remove-xarg-in-declares
-  (implies (all-declarep declares)
-           (all-declarep (remove-xarg-in-declares xarg declares)))
-  :hints (("Goal" :in-theory (enable remove-xarg-in-declares))))
 
 (defund add-xarg-in-declares (xarg val declares)
   (declare (xargs :guard (and (keywordp xarg)
@@ -672,6 +676,25 @@
                 (all-declarep declares))
            (all-declarep (add-xarg-in-declares xarg val declares)))
   :hints (("Goal" :in-theory (enable add-xarg-in-declares))))
+
+;;;
+;;; replacing xargs
+;;;
+
+;;  Replace the value of XARG with VAL in DECLARE if it's present.  If it's not
+;;  present, add it with value VAL.
+(defun replace-xarg-in-declare (xarg val declare)
+  (declare (xargs :guard (and (keywordp xarg)
+                              (declarep declare))
+                  :guard-hints (("Goal" :in-theory (disable declarep) ;make global
+                                 ))))
+  (add-xarg-in-declare xarg val (remove-xarg-in-declare xarg declare)))
+
+(defthm declarep-of-replace-xarg-in-declare
+  (implies (and (declarep declare)
+                (keywordp xarg))
+           (declarep (replace-xarg-in-declare xarg val declare)))
+  :hints (("Goal" :in-theory (enable add-xarg-in-declare))))
 
 ;;  Replace the value of XARG with VAL in DECLARES if it's present.  If it's
 ;;  not present, add it with value VAL.
@@ -693,12 +716,6 @@
                 (all-declarep declares))
            (all-declarep (replace-xarg-in-declares xarg val declares)))
   :hints (("Goal" :in-theory (enable replace-xarg-in-declares))))
-
-
-(defthm get-non-xargs-from-declare-args-of-append
-  (equal (get-non-xargs-from-declare-args (append x y))
-         (append (get-non-xargs-from-declare-args x)
-                 (get-non-xargs-from-declare-args y))))
 
 ;;; Remove entire :measure (if any)
 

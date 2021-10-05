@@ -639,7 +639,8 @@ history s-hist.")
 (defun check-syntax (form logicp state)
   (declare (xargs :mode :program :stobjs (state)))
   (acl2::state-global-let*
-   ((acl2::inhibit-output-lst acl2::*valid-output-names*))
+   ((acl2::inhibit-output-lst acl2::*valid-output-names*)
+    (acl2::inhibited-summary-types acl2::*summary-types*))
    (acl2::translate-ignore-ok form T logicp T "test? check" (w state) state)))
 
 ;; TODO: remove code duplication between this function and prove/cgen
@@ -669,7 +670,8 @@ history s-hist.")
               "~|Cgen/Error: The input form is ill-formed, see below:")
 ; show error to user which was invisble earlier
          (acl2::state-global-let*
-          ((acl2::inhibit-output-lst '(summary)))
+          ((acl2::inhibit-output-lst '(summary))
+           (acl2::inhibited-summary-types acl2::*summary-types*))
           (acl2::translate form  T NIL T "test? check" (w state) state))))
 
 
@@ -755,7 +757,8 @@ history s-hist.")
               "~|Cgen/Error: The input form is ill-formed, see below:")
 ; show error to user which was invisble earlier
          (acl2::state-global-let*
-          ((acl2::inhibit-output-lst '(summary)))
+          ((acl2::inhibit-output-lst '(summary))
+           (acl2::inhibited-summary-types acl2::*summary-types*))
           (acl2::translate form  T NIL T "test? check" (w state) state))))
 
 
@@ -833,7 +836,8 @@ history s-hist.")
             (mv-let 
              (erp trval state)
              (acl2::state-global-let*
-              ((acl2::inhibit-output-lst 
+              ((acl2::inhibited-summary-types acl2::*summary-types*)
+               (acl2::inhibit-output-lst 
                 (cond ((debug-flag vl) '(summary))
                       (t #!acl2(set-difference-eq *valid-output-names* '(error))))))
 ; Pete: replaced the line below to get rid of annoying "Q.E.D."

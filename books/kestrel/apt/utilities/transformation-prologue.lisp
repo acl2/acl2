@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(include-book "misc/install-not-normalized" :dir :system)
+
 ;; Returns a (possibly-empty) list of events, setting the default-defun-mode to
 ;; :logic if needed.  Note that the effect is local to the enclosing book or
 ;; encapsulate.

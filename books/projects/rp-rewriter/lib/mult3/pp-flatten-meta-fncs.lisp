@@ -960,10 +960,63 @@
             term-))
           (t term))))
 
+(defthm rp-term-listp-of-append-wog
+  (implies (and (rp-term-listp lst1)
+                (rp-term-listp lst2))
+           (rp-term-listp (append-wog lst1 lst2)))
+  :hints (("Goal"
+           :induct (append-wog lst1 lst2)
+           :do-not-induct t
+           :in-theory (e/d (append-wog) ()))))
+
+(define ex-from-pp-lst ((pp-lst rp-term-listp))
+  :returns (mv (s-lst rp-term-listp :hyp (rp-term-listp pp-lst))
+               (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
+               (c-lst rp-term-listp :hyp (rp-term-listp pp-lst)))
+  :verify-guards :after-returns
+  (if (atom pp-lst)
+      (mv nil nil nil)
+    (b* ((cur (car pp-lst))
+         (cur-orig cur)
+         ((mv cur signed)
+          (case-match cur
+            (('-- x) (mv x t))
+            (& (mv cur nil))))
+         ((mv s-lst rest-pp-lst c-lst)
+          (ex-from-pp-lst (cdr pp-lst))))
+      (case-match cur
+        (('and-list & ('list x))
+         (b* (((unless (has-bitp-rp x))
+               (mv s-lst
+                   (cons-with-hint cur-orig rest-pp-lst pp-lst)
+                   c-lst))
+              (x-extracted (ex-from-rp x)))
+           (case-match x-extracted
+             (('s & & &)
+              (mv (cons (if signed `(-- ,x) x) s-lst)
+                  rest-pp-lst
+                  c-lst))
+             (('c & & & &)
+              (mv s-lst rest-pp-lst
+                  (cons (if signed `(-- ,x) x) c-lst)))
+             (('s-c-res s pp c)
+              (mv (append-wog (negate-lst (list-to-lst s)  signed) s-lst)
+                  (append-wog (negate-lst (list-to-lst pp) signed) rest-pp-lst)
+                  (append-wog (negate-lst (list-to-lst c)  signed) c-lst)))
+             (& (mv s-lst
+                    (cons-with-hint cur-orig
+                                    rest-pp-lst
+                                    pp-lst)
+                    c-lst)))))
+        (& (mv s-lst
+               (cons-with-hint cur-orig rest-pp-lst pp-lst)
+               c-lst))))))
+
 (define pp-flatten ((term pp-term-p)
                     (sign booleanp)
                     &key
                     (disabled 'nil))
+  :returns pp-lst
   (b* ((term (pp-remove-extraneous-sc term)))
     (cond (disabled
            (list (if sign `(-- ,term) term)))
@@ -1141,7 +1194,6 @@
                (hard-error 'sort-sum-meta "" nil)
                (mv term t))))))
 
-
 (value-triple (hons-clear t))
 
 (local
@@ -1281,9 +1333,10 @@
   :hints (("Goal"
            :in-theory (e/d (pp-remove-extraneous-sc) ()))))
 
-(defthm rp-term-listp-of-pp-flatten
+(defret rp-term-listp-of-pp-flatten
   (implies (rp-termp term)
-           (rp-term-listp (pp-flatten term sign :disabled disabled)))
+           (rp-term-listp pp-lst))
+  :fn pp-flatten
   :hints (("Goal"
            :in-theory (e/d (pp-flatten) ()))))
 
@@ -1339,222 +1392,3 @@
                            ()))))
 
 ;; valid-sc:
-
-(local
- (defun valid-sc-subterms-lst (lst a)
-   (if (atom lst)
-       (eq lst nil)
-     (and (valid-sc-subterms (car lst) a)
-          (valid-sc-subterms-lst (cdr lst) a)))))
-
-(local
- (defthm valid-sc-subterms-cut-list-by-half
-   (implies (and (valid-sc-subterms lst a)
-                 (<= size (len lst)))
-            (and (valid-sc-subterms (mv-nth 0 (cut-list-by-half lst size)) a)
-                 (valid-sc-subterms (mv-nth 1 (cut-list-by-half lst size)) a)))
-   :hints (("Goal"
-            ;;          :do-not-induct t
-            ;;            :induct (cut-list-by-half lst size)
-            :in-theory (e/d (cut-list-by-half
-                             dummy-arith-lemma-2) ())))))
-
-(local
- (defthm valid-sc-subterms-lst-cut-list-by-half
-   (implies (and (valid-sc-subterms-lst lst a)
-                 (<= size (len lst)))
-            (and (valid-sc-subterms-lst (mv-nth 0 (cut-list-by-half lst size)) a)
-                 (valid-sc-subterms-lst (mv-nth 1 (cut-list-by-half lst size)) a)))
-   :hints (("Goal"
-            :do-not-induct t
-            :induct (cut-list-by-half lst size)
-            :in-theory (e/d (cut-list-by-half) ())))))
-
-(local
- (defthm valid-sc-subterms-lst-cut-list-by-half-2
-   (implies (and (valid-sc-subterms-lst (strip-cdrs lst) a)
-                 (<= size (len lst)))
-            (and (valid-sc-subterms-lst
-                  (strip-cdrs (mv-nth 0 (cut-list-by-half lst size)))
-                  a)
-                 (valid-sc-subterms-lst
-                  (strip-cdrs (mv-nth 1 (cut-list-by-half lst size)))
-                  a)))
-   :hints (("Goal"
-            :do-not-induct t
-            :induct (cut-list-by-half lst size)
-            :in-theory (e/d (cut-list-by-half
-                             dummy-arith-lemma-1) ())))))
-
-(local
- (defthm valid-sc-subterms-merge-sorted-and$-lists
-   (implies (and (valid-sc-subterms lst1 a)
-                 (valid-sc-subterms lst2 a))
-            (valid-sc-subterms (merge-sorted-and$-lists lst1 lst2) a))
-   :hints (("Goal"
-            :induct (merge-sorted-and$-lists lst1 lst2)
-            :in-theory (e/d (merge-sorted-and$-lists) ())))))
-
-(local
- (defthm valid-sc-subterms-sort-and$-list
-   (implies (valid-sc-subterms lst a)
-            (valid-sc-subterms (sort-and$-list lst len) a))
-   :hints (("Goal"
-            :in-theory (e/d (sort-and$-list) ())))))
-
-(local
- (defthm valid-sc-subterms-lst-merge-sorted-pp-lists
-   (implies (and (valid-sc-subterms-lst (strip-cdrs lst1) a)
-                 (valid-sc-subterms-lst (strip-cdrs lst2) a))
-            (valid-sc-subterms-lst
-             (strip-cdrs
-              (merge-sorted-pp-lists lst1 lst2))
-             a))
-   :hints (("Goal"
-            :induct (merge-sorted-pp-lists lst1 lst2)
-            :in-theory (e/d (merge-sorted-pp-lists) ())))))
-
-(local
- (defthm valid-sc-subterms-lst-sort-pp-lists
-   (implies (valid-sc-subterms-lst (strip-cdrs lst1) a)
-            (valid-sc-subterms-lst (strip-cdrs
-                                    (sort-pp-lists lst1 len))
-                                   a))
-   :hints (("Goal"
-            ;;:induct (sort-pp-lists lst1 len)
-            ;;:do-not-induct t
-            :in-theory (e/d (sort-pp-lists) ())))))
-
-(local
- (defthm valid-sc-subterms-lst-and$-pp-lists-aux
-   (implies (and (valid-sc-subterms cur a)
-                 (valid-sc-subterms-lst (strip-cdrs lst2) a)
-                 (valid-sc-subterms-lst (strip-cdrs acc) a))
-            (valid-sc-subterms-lst (strip-cdrs (and$-pp-lists-aux cur lst2 acc
-                                                                  sign))
-                                   a))
-   :hints (("Goal"
-            :in-theory (e/d (and$-pp-lists-aux) ())))))
-
-(local
- (defthm valid-sc-subterms-lst-and$-pp-lists
-   (implies (and (valid-sc-subterms-lst (strip-cdrs lst1) a)
-                 (valid-sc-subterms-lst (strip-cdrs lst2) a)
-                 (valid-sc-subterms-lst (strip-cdrs acc) a))
-            (valid-sc-subterms-lst (strip-cdrs (and$-pp-lists lst1 lst2 acc
-                                                              sign))
-                                   a))
-   :hints (("Goal"
-            :in-theory (e/d (and$-pp-lists) ())))))
-
-(Local
- (defthm valid-sc-subterms-lst-pp-term-to-pp-lists
-   (implies (valid-sc term a)
-            (valid-sc-subterms-lst (strip-cdrs (pp-term-to-pp-lists term sign))
-                                   a))
-   :hints (("Goal"
-            :in-theory (e/d (pp-term-to-pp-lists) ())))))
-
-(local
- (defthm valid-sc-pp-lists-to-term-p+
-   (implies (valid-sc-subterms-lst (strip-cdrs lst) a)
-            (valid-sc-subterms (pp-lists-to-term-pp-lst lst) a))
-   :hints (("Goal"
-            :in-theory (e/d (pp-lists-to-term-pp-lst
-                             CREATE-AND-LIST-INSTANCE
-                             is-if
-                             is-rp) ())))))
-
-(defret valid-sc-of-pp-remove-extraneous-sc
-  (implies (force (valid-sc term a))
-           (valid-sc res-term a))
-  :fn pp-remove-extraneous-sc
-  :hints (("Goal"
-           :do-not-induct t
-           :induct (pp-remove-extraneous-sc term)
-           :expand ((:free (x y) (is-rp (cons x y))))
-           :in-theory (e/d (pp-remove-extraneous-sc)
-                           ((:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
-                            (:DEFINITION INCLUDE-FNC)
-                            (:DEFINITION RP-TERMP)
-                            (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
-                            (:REWRITE RP-TERMP-OF-PP-REMOVE-EXTRANEOUS-SC)
-                            (:DEFINITION FALIST-CONSISTENT)
-                            (:DEFINITION FALIST-CONSISTENT-AUX)
-                            rp-termp)))))
-
-(defthm pp-flatten-returns-valid-sc
-  (implies (force (valid-sc term a))
-           (VALID-SC-SUBTERMS (pp-flatten term sign :disabled disabled) a))
-  :hints (("Goal"
-           :in-theory (e/d (pp-flatten
-                            CREATE-AND-LIST-INSTANCE
-                            is-if is-rp) ()))))
-
-(local
- (defret valid-sc-of-<fn>
-   (implies (and (valid-sc cur a)
-                 valid)
-            (VALID-SC-SUBTERMS (cdr pp-list-entry) a))
-   :fn SORT-SUM-META-AUX-AUX
-   :hints (("Goal"
-            :in-theory (e/d (SORT-SUM-META-AUX-AUX)
-                            ((:DEFINITION EVAL-AND-ALL)
-                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
-                             (:DEFINITION INCLUDE-FNC)
-                             (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
-
-                             (:DEFINITION RP-TERMP)
-                             (:DEFINITION FALIST-CONSISTENT)
-                             (:REWRITE DEFAULT-CDR)
-                             (:DEFINITION FALIST-CONSISTENT-AUX)
-                             rp-trans
-                             (:TYPE-PRESCRIPTION O<)
-                             (:TYPE-PRESCRIPTION INCLUDE-FNC)
-                             (:TYPE-PRESCRIPTION VALID-SC-SUBTERMS)
-                             (:REWRITE DEFAULT-CAR)
-                             (:DEFINITION INCLUDE-FNC-SUBTERMS)
-                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC-LST)
-                             (:TYPE-PRESCRIPTION VALID-SC)
-                             (:TYPE-PRESCRIPTION O-P)
-                             (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS)
-                             (:REWRITE VALID-SC-OF-EX-FROM-RP)
-                             (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
-                             (:definition rp-termp)))))))
-
-(local
- (defthm sort-sum-meta-aux-returns-valid-sc
-   (implies (valid-sc term a)
-            (valid-sc-subterms-lst
-             (strip-cdrs (mv-nth 1 (sort-sum-meta-aux term)))
-             a))
-   :hints (("goal"
-            :in-theory (e/d (sort-sum-meta-aux
-                             )
-                            ((:definition valid-sc)
-                             (:DEFINITION EVAL-AND-ALL)
-                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
-                             (:DEFINITION INCLUDE-FNC)
-                             (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
-
-                             (:DEFINITION RP-TERMP)
-                             (:DEFINITION FALIST-CONSISTENT)
-                             (:REWRITE DEFAULT-CDR)
-                             (:DEFINITION FALIST-CONSISTENT-AUX)
-                             rp-trans
-                             (:definition rp-termp)
-                             (:rewrite car-of-ex-from-rp-is-not-rp)
-                             (:definition rp-term-listp)
-                             (:rewrite not-include-rp-means-valid-sc)
-                             (:definition include-fnc)
-                             (:rewrite rp-termp-implies-subterms)
-                             (:definition quotep)))))))
-
-(defthm sort-sum-meta-returns-valid-sc
-  (implies (valid-sc term a)
-           (valid-sc (mv-nth 0 (sort-sum-meta term)) a))
-  :hints (("Goal"
-           :in-theory (e/d (sort-sum-meta
-                            CREATE-LIST-INSTANCE
-                            is-rp
-                            is-if) ()))))

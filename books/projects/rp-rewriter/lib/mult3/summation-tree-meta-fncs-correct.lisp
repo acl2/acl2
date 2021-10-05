@@ -5394,6 +5394,26 @@
   (equal (ifix (sum-list-eval x a))
          (sum-list-eval x a)))
 
+
+
+
+(defret ex-from-pp-lst-correct-with-sum-list-eval
+  (implies (and (mult-formula-checks state)
+                (force (valid-sc-subterms pp-lst a))
+                (rp-evl-meta-extract-global-facts))
+           (equal (sum-list-eval res-pp-lst a)
+                  (sum (sum-list-eval pp-lst a)
+                       (-- (sum-list-eval s-lst a))
+                       (-- (sum-list-eval c-lst a)))))
+  :fn ex-from-pp-lst
+  :hints (("goal"
+           :use ((:instance ex-from-pp-lst-correct))
+           :do-not-induct t
+           :in-theory (e/d* ()
+                            (rp-trans
+                             valid-sc
+                             )))))
+
 (defret new-sum-merge-aux-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)

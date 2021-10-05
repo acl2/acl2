@@ -12,7 +12,7 @@ fi
 export PAGER=cat
 
 # Matt might update this when confident of purity since the indicated date.
-export SINCE=2021-07-30
+export SINCE=2021-10-01
 
 export basecmd="\
 git log \

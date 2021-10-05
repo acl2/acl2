@@ -898,7 +898,7 @@
        (implies (and (integerp x)
                      (integerp y)
                      (natp p)
-                     (< 1 p))
+                     (< 2 p))
                 (equal (mul x (expt y (+ -2 p)) p)
                        (mul x (inv y p) p)))
        :do-not '(preprocess)
