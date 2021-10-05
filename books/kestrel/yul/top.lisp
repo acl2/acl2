@@ -11,6 +11,7 @@
 (in-package "YUL")
 
 (include-book "language/top")
+(include-book "transformations/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
