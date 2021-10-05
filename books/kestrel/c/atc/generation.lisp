@@ -201,6 +201,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-get-vars ((vars symbol-listp) (inscope atc-symbol-type-alist-listp))
+  :returns (type?-list type-option-listp)
+  :short "Lift @(tsee atc-get-var) to lists."
+  (cond ((endp vars) nil)
+        (t (cons (atc-get-var (car vars) inscope)
+                 (atc-get-vars (cdr vars) inscope)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-get-var-check-innermost ((var symbolp)
                                      (inscope atc-symbol-type-alist-listp))
   :returns (mv (type? type-optionp)
@@ -340,8 +349,7 @@
      an optional C type that is present,
      and represents the function's output type,
      when the function is not recursive;
-     a list of C types representing the function's input types,
-     when the function is not recursive (it is @('nil') otherwise);
+     a list of C types representing the function's input types;
      an optional (loop) statement that is present,
      and is represented by the function,
      when the function is recursive;
@@ -1167,6 +1175,7 @@
   :returns (mv (yes/no booleanp)
                (fn symbolp)
                (args pseudo-term-listp)
+               (in-types type-listp)
                (xforming symbol-listp)
                (loop stmtp)
                (limit pseudo-termp))
@@ -1194,7 +1203,7 @@
      in order to obtain the real arguments of the call
      from the point of view of the top level of
      where this call term occurs."))
-  (b* (((acl2::fun (no)) (mv nil nil nil nil (irr-stmt) nil))
+  (b* (((acl2::fun (no)) (mv nil nil nil nil nil (irr-stmt) nil))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        (fn+info (assoc-eq term.fn (atc-symbol-fninfo-alist-fix prec-fns)))
@@ -1202,10 +1211,11 @@
        (info (cdr fn+info))
        (loop (atc-fn-info->loop? info))
        ((unless (stmtp loop)) (no))
+       (in-types (atc-fn-info->in-types info))
        (xforming (atc-fn-info->xforming info))
        (limit (atc-fn-info->limit info))
        (limit (fty-fsublis-var var-term-alist limit)))
-    (mv t term.fn term.args xforming loop limit)))
+    (mv t term.fn term.args in-types xforming loop limit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2411,7 +2421,7 @@
                (list (list (block-item-stmt (make-stmt-return :value expr)))
                      type
                      (pseudo-term-quote 0)))))))
-       ((mv okp loop-fn loop-args loop-xforming loop-stmt loop-limit)
+       ((mv okp loop-fn loop-args in-types loop-xforming loop-stmt loop-limit)
         (atc-check-loop-fn term var-term-alist prec-fns))
        ((when okp)
         (b* ((formals (formals+ loop-fn (w state)))
@@ -2433,6 +2443,18 @@
                          which differs from the variables ~x3 ~
                          being transformed here."
                         fn loop-fn loop-xforming xforming))
+             (types (atc-get-vars formals inscope))
+             ((when (member-eq nil types))
+              (raise "Internal error: not all formals ~x0 have types ~x1."
+                     formals types)
+              (acl2::value (list nil nil nil)))
+             ((unless (equal types in-types))
+              (er-soft+ ctx t (list nil nil nil)
+                        "The loop function ~x0 with input types ~x1 ~
+                         is applied to terms ~x2 returning ~x3. ~
+                         This is indicative of dead code under the guards, ~
+                         given that the code is guard-verified."
+                        loop-fn in-types formals types))
              (limit (pseudo-term-fncall
                      'binary-+
                      (list (pseudo-term-quote 3)
@@ -2452,6 +2474,15 @@
        ((mv erp (list expr type limit) state)
         (atc-gen-expr-cval term var-term-alist inscope fn prec-fns ctx state))
        ((when erp) (mv erp (list nil nil nil) state))
+       ((when (type-case type :void))
+        (raise "Internal error: return term ~x0 has type void." term)
+        (acl2::value (list nil nil nil)))
+       ((when (type-case type :pointer))
+        (er-soft+ ctx t (list nil nil nil)
+                  "When generating a return statement for function ~x0, ~
+                   the term ~x1 that represents th return expression ~
+                   has pointer type ~x2, which is disallowed."
+                  fn term type))
        (limit (pseudo-term-fncall
                'binary-+
                (list (pseudo-term-quote 3)
@@ -4762,7 +4793,7 @@
                              (not (member-eq :array-writes experimental))
                              (append exported-events more-exported-events)))
        (info (make-atc-fn-info :out-type nil
-                               :in-types nil
+                               :in-types (strip-cdrs scope)
                                :loop? loop-stmt
                                :xforming loop-xforming
                                :returns-value-thm fn-returns-value-thm

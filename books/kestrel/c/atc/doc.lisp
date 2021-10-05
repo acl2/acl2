@@ -264,7 +264,7 @@
     (xdoc::ul
      (xdoc::li
       "A statement term for @('fni')
-       returning a non-@('void') C type
+       returning a non-@('void') non-pointer C type
        and transforming no variables,
        when @('fni') is non-recursive.")
      (xdoc::li
@@ -293,7 +293,7 @@
     (xdoc::ul
      (xdoc::li
       "An expression term for @('fni') returning @('T'),
-       when @('T') is a non-@('void') C type,
+       when @('T') is a non-@('void') non-pointer C type,
        @('vars') is @('nil'),
        and @('fni') is not recursive.
        That is, an expression term returning a C value is also
@@ -510,7 +510,7 @@
     (xdoc::ul
      (xdoc::li
       "A formal parameter of @('fni'),
-       the @('T') is the type of the formal parameter.
+       when @('T') is the type of the formal parameter.
        This represents the corresponding C formal parameter,
        as an expression.")
      (xdoc::li
