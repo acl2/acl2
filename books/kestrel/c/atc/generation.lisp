@@ -2474,6 +2474,15 @@
        ((mv erp (list expr type limit) state)
         (atc-gen-expr-cval term var-term-alist inscope fn prec-fns ctx state))
        ((when erp) (mv erp (list nil nil nil) state))
+       ((when (type-case type :void))
+        (raise "Internal error: return term ~x0 has type void." term)
+        (acl2::value (list nil nil nil)))
+       ((when (type-case type :pointer))
+        (er-soft+ ctx t (list nil nil nil)
+                  "When generating a return statement for function ~x0, ~
+                   the term ~x1 that represents th return expression ~
+                   has pointer type ~x2, which is disallowed."
+                  fn term type))
        (limit (pseudo-term-fncall
                'binary-+
                (list (pseudo-term-quote 3)
