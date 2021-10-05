@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ errors
-  :parents (yul)
+  :parents (language)
   :short "Errors used in the formalization of Yul."
   :long
   (xdoc::topstring

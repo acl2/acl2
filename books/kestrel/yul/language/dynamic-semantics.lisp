@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ dynamic-semantics
-  :parents (yul)
+  :parents (language)
   :short "Dynamic semantics of Yul."
   :long
   (xdoc::topstring
