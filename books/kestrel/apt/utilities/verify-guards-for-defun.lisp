@@ -37,7 +37,7 @@
     `(verify-guards$ ,new-fn
                       :hints ,guard-hints
                       :guard-simplify nil ;; matches the nil given to :guard-theorem above
-                      )))
+                      :otf-flg t)))
 
 ;; Maybe generate a verify-guards form for FN.  Returns a (possibly empty) list
 ;; of events.
