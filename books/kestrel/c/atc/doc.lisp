@@ -510,7 +510,7 @@
     (xdoc::ul
      (xdoc::li
       "A formal parameter of @('fni'),
-       the @('T') is the type of the formal parameter.
+       when @('T') is the type of the formal parameter.
        This represents the corresponding C formal parameter,
        as an expression.")
      (xdoc::li
