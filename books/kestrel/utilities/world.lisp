@@ -135,6 +135,20 @@
                               (plist-worldp world))))
   (getprop name 'guard *t* 'current-acl2-world world))
 
+;; Like fn-guard but guaranteed to return a pseudo-term
+(defund fn-guard$ (name world)
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp world))))
+  (let ((guard (fn-guard name world)))
+    (if (pseudo-termp guard)
+        guard
+      (prog2$ (er hard? 'fn-guard$ "The guard of ~x0, ~x1, is not a pseudo-term." name guard)
+              nil))))
+
+(defthm pseudo-termp-of-fn-guard$
+  (pseudo-termp (fn-guard$ name world))
+  :hints (("Goal" :in-theory (enable fn-guard$))))
+
 (defund fn-has-measurep (name state)
 
 ; This function really just checks (as in a previous version) that there is a

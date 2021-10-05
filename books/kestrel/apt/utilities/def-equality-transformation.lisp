@@ -361,10 +361,10 @@
                                                        t ; first function in the clique
                                                        state))
                     (mutual-recursion `(mutual-recursion ,@new-defuns))
-                    ;; TODO: Clean up measure :hints in this:
-                    (mutual-recursion-to-export (if verify-guards ;todo: call a variant of ensure-defun-demands-guard-verification here:
-                                                    (replace-xarg-in-mutual-recursion :verify-guards t mutual-recursion) ; todo: or just set the verify-guards eagerness and ensure there is a guard?
+                    (mutual-recursion-to-export (if verify-guards
+                                                    (ensure-mutual-recursion-demands-guard-verification mutual-recursion)
                                                   mutual-recursion))
+                    (mutual-recursion-to-export (remove-hints-from-mutual-recursion mutual-recursion-to-export))
                     (fn-and-not-normalized-fn-doublets (make-doublets fns (add-not-normalized-suffixes fns)))
                     (flag-function-name (pack$ 'flag- fn '-for- ',name)) ;todo: avoid clashes better
                     ;; Use as a ruler-extender for the flag function anything used as a ruler-extender for any of the FNS:

@@ -105,6 +105,14 @@
     (cons (remove-xarg-in-defun xarg (first defuns))
           (remove-xarg-in-defuns xarg (rest defuns)))))
 
+(defund remove-hints-from-defuns (defuns)
+  (declare (xargs :guard (and (true-listp defuns)
+                              (all-defun-formp defuns))))
+  (if (endp defuns)
+      nil
+    (cons (remove-hints-from-defun (first defuns))
+          (remove-hints-from-defuns (rest defuns)))))
+
 (defthm all-defun-formp-of-remove-xarg-in-defuns
   (implies (and (all-defun-formp defuns)
                 (keywordp xarg))
@@ -199,3 +207,9 @@
       ;; Add :verify-guards t to the first defun:
       `(mutual-recursion ,(add-verify-guards-t-to-defun (first defuns))
                          ,@(rest defuns)))))
+
+(defund remove-hints-from-mutual-recursion (mut-rec)
+  (declare (xargs :guard (mutual-recursion-formp mut-rec)
+                  :guard-hints (("Goal" :in-theory (enable mutual-recursion-formp)))))
+  (let ((defuns (cdr mut-rec)))
+    `(mutual-recursion ,@(remove-hints-from-defuns defuns))))
