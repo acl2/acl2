@@ -178,10 +178,14 @@
                                                                state)))
                 (declares (fixup-ignores2 declares formals body function-renaming wrld))
                 (new-fn (lookup-eq-safe fn function-renaming)) ;new name for this function
+                (defun `(,defun-variant ,new-fn ,formals
+                          ,@declares
+                          ,body))
+                ;; (defun (if (eq rec :mutual)
+                ;;            defun ; irrelevant declares for mutual recursions must be handled at a higher level
+                ;;          (fixup-irrelevants defun)))
                 )
-           `(,defun-variant ,new-fn ,formals
-              ,@declares
-              ,body)))
+           defun))
 
        ;; Go through all the functions in the clique. For each, if it is in
        ;; TARGET-FNS, we both transform it and update rec calls in it (yes, for
