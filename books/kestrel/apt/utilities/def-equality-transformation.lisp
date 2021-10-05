@@ -176,11 +176,13 @@
                         (rename-functions-in-untranslated-term body
                                                                function-renaming
                                                                state)))
-                (declares (fixup-ignores2 declares formals body function-renaming wrld))
                 (new-fn (lookup-eq-safe fn function-renaming)) ;new name for this function
                 (defun `(,defun-variant ,new-fn ,formals
                           ,@declares
                           ,body))
+                (defun (if (eq :mutual rec)
+                           defun ; has to be done at a higher level
+                         (fixup-ignores-in-defun-form defun nil wrld)))
                 ;; (defun (if (eq rec :mutual)
                 ;;            defun ; irrelevant declares for mutual recursions must be handled at a higher level
                 ;;          (fixup-irrelevants defun)))
@@ -361,6 +363,7 @@
                                                        t ; first function in the clique
                                                        state))
                     (mutual-recursion `(mutual-recursion ,@new-defuns))
+                    (mutual-recursion (fixup-ignores-in-mutual-recursion-form mutual-recursion wrld))
                     (mutual-recursion-to-export (if verify-guards
                                                     (ensure-mutual-recursion-demands-guard-verification mutual-recursion)
                                                   mutual-recursion))
