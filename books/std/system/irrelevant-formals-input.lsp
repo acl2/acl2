@@ -144,8 +144,8 @@
    (defun even-natp (x irrelevant1 irrelevant2)
      (if (zp x)
          t
-       (not (odd-natp (+ -1 x) irrelevant irrelevant2))))
-   (defun odd-natp (x irrelevant irrelevant2)
+       (not (odd-natp (+ -1 x) irrelevant1 irrelevant2))))
+   (defun odd-natp (x irrelevant3 irrelevant4)
      (if (zp x)
          nil
-       (not (even-natp (+ -1 x) irrelevant irrelevant2))))))
+       (not (even-natp (+ -1 x) irrelevant3 irrelevant4))))))

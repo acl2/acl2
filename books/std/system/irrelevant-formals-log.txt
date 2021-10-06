@@ -172,12 +172,12 @@ ACL2 !>>(IRRELEVANT-FORMALS-INFO
                           (IF (ZP X)
                               T
                               (NOT (ODD-NATP (+ -1 X)
-                                             IRRELEVANT IRRELEVANT2))))
-                   (DEFUN ODD-NATP (X IRRELEVANT IRRELEVANT2)
+                                             IRRELEVANT1 IRRELEVANT2))))
+                   (DEFUN ODD-NATP (X IRRELEVANT3 IRRELEVANT4)
                           (IF (ZP X)
                               NIL
                               (NOT (EVEN-NATP (+ -1 X)
-                                              IRRELEVANT IRRELEVANT2))))))
+                                              IRRELEVANT3 IRRELEVANT4))))))
 ((EVEN-NATP IRRELEVANT1 IRRELEVANT2)
- (ODD-NATP IRRELEVANT IRRELEVANT2))
+ (ODD-NATP IRRELEVANT3 IRRELEVANT4))
 ACL2 !>>Bye.
