@@ -24,6 +24,7 @@
 (include-book "kestrel/apt/utilities/option-parsing" :dir :system)
 (include-book "kestrel/apt/utilities/defun-variant" :dir :system)
 (include-book "kestrel/utilities/fixup-ignores" :dir :system)
+(include-book "kestrel/utilities/fixup-irrelevants" :dir :system)
 (include-book "kestrel/apt/utilities/make-becomes-theorem" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
@@ -183,10 +184,9 @@
                 (defun (if (eq :mutual rec)
                            defun ; has to be done at a higher level
                          (fixup-ignores-in-defun-form defun nil wrld)))
-                ;; (defun (if (eq rec :mutual)
-                ;;            defun ; irrelevant declares for mutual recursions must be handled at a higher level
-                ;;          (fixup-irrelevants defun)))
-                )
+                (defun (if (eq rec :mutual)
+                            defun ; irrelevant declares for mutual recursions must be handled at a higher level
+                         (fixup-irrelevants-in-defun-form defun state))))
            defun))
 
        ;; Go through all the functions in the clique. For each, if it is in
@@ -364,6 +364,7 @@
                                                        state))
                     (mutual-recursion `(mutual-recursion ,@new-defuns))
                     (mutual-recursion (fixup-ignores-in-mutual-recursion-form mutual-recursion wrld))
+                    (mutual-recursion (fixup-irrelevants-in-mutual-recursion-form mutual-recursion state))
                     (mutual-recursion-to-export (if verify-guards
                                                     (ensure-mutual-recursion-demands-guard-verification mutual-recursion)
                                                   mutual-recursion))
