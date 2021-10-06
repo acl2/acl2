@@ -497,7 +497,9 @@
       "A call of a non-recursive target function @('fnj') with @('j < i'),
        on pure expression terms for @('fni') returning non-@('void') C types,
        where the types of the terms are equal to the
-       the C types of the formal parameters of @('fnj').
+       the C types of the formal parameters of @('fnj')
+       and where the return type of the C function represented by @('fnj')
+       is @('void').
        The restriction @('j < i') means that
        no (direct or indirect) recursion is allowed in the C code
        and the target functions must be specified
