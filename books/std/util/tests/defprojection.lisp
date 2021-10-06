@@ -251,7 +251,10 @@
                           (:compound-recognizer acl2::natp-compound-recognizer)
                           (:type-prescription nfix))))
 
-(defprojection nfix-list ((x nat-listp))
+; Thu Aug 26 13:53:36 2021: Moore changed nfix-list to nfix-list1 to avoid
+; a name clash.
+
+(defprojection nfix-list1 ((x nat-listp))
   (nfix x)
   :returns (new-x nat-listp))
 

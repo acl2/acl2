@@ -234,8 +234,20 @@
   (defwarrant get-hash-code-of-single-s$inline)
 
   (define get-hash-code-of-s-lst ((s-lst true-listp))
-    :returns (mv (hash-code1 integerp)
-                 (hash-code2 integerp))
+; Matt K mod: Added :hints to avoid forcing warrant after warrant-related bug
+; fix.
+    :returns (mv (hash-code1
+                  integerp
+                  :hints
+                  (("Goal"
+                    :in-theory
+                    (disable apply$-get-hash-code-of-single-s$inline))))
+                 (hash-code2
+                  integerp
+                  :hints
+                  (("Goal"
+                    :in-theory
+                    (disable apply$-get-hash-code-of-single-s$inline)))))
     :inline t
     (mv (ifix (loop$ for x in s-lst sum (get-hash-code-of-single-s x)))
         ;;(ifix (loop$ for x in s-lst sum (get-hash-code-of-single-s x)))

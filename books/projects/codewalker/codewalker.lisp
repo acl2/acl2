@@ -3637,6 +3637,7 @@
                               (plist-worldp wrld))))
   (let ((lamp nil)) ; (remove-guard-holders-lamp)
     (cond (wrld (possibly-clean-up-dirty-lambda-objects
+                 nil
                  (remove-guard-holders-weak term lamp)
                  wrld
                  lamp))
@@ -3655,6 +3656,7 @@
                               (plist-worldp wrld))))
   (let ((lamp nil)) ; (remove-guard-holders-lamp)
     (cond (wrld (possibly-clean-up-dirty-lambda-objects-lst
+                 nil
                  (remove-guard-holders-weak-lst lst lamp)
                  wrld
                  lamp))

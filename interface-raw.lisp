@@ -7528,6 +7528,7 @@
            #+ccl ccl:defstatic
            declaim
            def-basic-type-sets
+           defbadge
            defwarrant
            defattach
            defaxiom

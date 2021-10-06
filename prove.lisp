@@ -1097,11 +1097,12 @@
 ; leave any IMPLIES in the hypotheses.  These IMPLIES are thought to
 ; have been introduced by :USE hints.
 
-        (let ((term
-               (possibly-clean-up-dirty-lambda-objects
-                (disjoin (expand-any-final-implies cl wrld))
-                wrld
-                (remove-guard-holders-lamp))))
+; Historical Note: We used to call possibly-clean-up-dirty-lambda-objects here
+; but that was wrong because we don't have hyps to establish warrants and
+; preprocess-clause shouldn't be applying conditional rewrite rules or forcing
+; things anyway.
+
+        (let ((term (disjoin (expand-any-final-implies cl wrld))))
           (sl-let (term ttree)
                   (expand-abbreviations term nil
                                         *geneqv-iff* nil

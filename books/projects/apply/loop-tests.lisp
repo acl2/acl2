@@ -147,9 +147,7 @@
                (w state))
   '(PROG2$ '(LOOP$ FOR X IN '(1 2 3 4) SUM (* X X))
            (SUM$ (LAMBDA$ (LOOP$-IVAR)
-                          (PROG2$ '(LAMBDA$ (LOOP$-IVAR)
-                                            (LET ((X LOOP$-IVAR)) (* X X)))
-                                  (LET ((X LOOP$-IVAR)) (* X X))))
+                          (LET ((X LOOP$-IVAR)) (* X X)))
                  '(1 2 3 4)))))
 
 (defun sum-squares (lst)
@@ -181,6 +179,9 @@
                                 ((LAMBDA (X) (BINARY-* X X))
                                  LOOP$-IVAR)))
           LST))))
+
+; Perhaps we should clean up the normalized body of a defun provided there are
+; no warranted fns in the lambda$s?
 
 (assert-event
  (equal
@@ -311,9 +312,9 @@
    (cadr (cadr (mv-list 2 (guard-obligation 'f2 nil nil t 'top-level state))))
    nil
    (w state))
-  '((IMPLIES (AND (INTEGERP LOWER)
+  '((IMPLIES (AND (APPLY$-WARRANT-SQUARE)
+                  (INTEGERP LOWER)
                   (INTEGERP UPPER)
-                  (APPLY$-WARRANT-SQUARE)
                   (MEMBER-EQUAL NEWV (FROM-TO-BY LOWER UPPER 1)))
              (INTEGERP NEWV)))))
 
@@ -501,3 +502,461 @@
  (thm (implies (and (warrant g2))
                (equal (loop1 'a)
                       '((1 . a) (2 . a) (3 . a))))))
+
+; -----------------------------------------------------------------
+; Now I experiment with do loop$s.
+
+(assert-event
+ (equal (loop$ with temp = '(1 2 3 4 5)
+               with ans = 0
+               do
+               (if (endp temp)
+                   (return ans)
+                   (progn (setq ans (+ (car temp) ans))
+                          (setq temp (cdr temp)))))
+        15))
+
+(assert-event
+ (equal (loop$ with temp = '(1 2 3 NEGATE 4)
+               with ans = 0
+               do
+               (if (endp temp)
+                   (loop-finish)
+                   (progn
+                     (setq ans (if (equal (car temp) 'NEGATE)
+                                   (- ans)
+                                   (+ (car temp) ans)))
+                     (setq temp (cdr temp))))
+               finally
+               (return ans))
+        -2))
+
+; The following function ``loops forever''
+
+(defun infinite-loop ()
+  (declare (xargs :verify-guards nil))
+  (loop$ with temp of-type integer = 0
+         do
+         :measure (acl2-count temp)
+	 (progn (cw "Temp = ~x0~%" temp)
+	 	 (setq temp (+ 1 temp)))))
+
+(must-fail
+ (infinite-loop)
+ :expected :hard)
+
+; The error message explains that the measure went from 0 to 1 and so didn't go
+; down.  Logically the function returns :DO$-MEASURE-DID-NOT-DECREASE.  We
+; can't verify the guards (which includes verifying that the measure
+; decreases):
+
+(must-fail
+ (verify-guards infinite-loop))
+
+; This loop works as expected.
+
+(defun do-loop1 (lst)
+  (loop$ with temp = lst
+         with ans = 0
+         do
+         (if (endp temp)
+             (return ans)
+             (progn (setq ans (+ (car temp) ans))
+                    (setq temp (cdr temp))))))
+
+(assert-event
+ (equal (do-loop1 '(1 2 3 4 5)) 15))
+
+; But we can't verify the guards because, for example, we don't know (car temp)
+; and ans are numbers.
+
+(must-fail
+ (verify-guards do-loop1))
+
+(must-fail
+ (defun do-loop2 (lst)
+   (declare (xargs :guard (nat-listp lst)))
+   (loop$ with temp = lst
+          with ans = 0
+          do
+          (if (endp temp)
+              (return ans)
+              (progn (setq ans (+ (car temp) ans))
+                     (setq temp (cdr temp)))))))
+; Checkpoints
+; Subgoal 1.3
+; (IMPLIES (AND (ALISTP ALIST)
+;               (NOT (CONSP (CDR (ASSOC-EQUAL 'TEMP ALIST)))))
+;          (NOT (CDR (ASSOC-EQUAL 'TEMP ALIST))))
+
+; Subgoal 1.2
+; (IMPLIES (AND (ALISTP ALIST)
+;               (CONSP (CDR (ASSOC-EQUAL 'TEMP ALIST))))
+;          (ACL2-NUMBERP (CDR (ASSOC-EQUAL 'ANS ALIST))))
+
+; Subgoal 1.1
+; (IMPLIES (AND (ALISTP ALIST)
+;               (CONSP (CDR (ASSOC-EQUAL 'TEMP ALIST))))
+;          (ACL2-NUMBERP (CADR (ASSOC-EQUAL 'TEMP ALIST))))
+
+
+; Both of the following show ways we can address the above
+; failures.
+
+(defun do-loop2-alternative1 (lst)
+   (declare (xargs :guard (nat-listp lst)))
+   (loop$ with temp = lst
+          with ans = 0
+          do
+          :guard (and (nat-listp temp)
+                      (integerp ans))
+          (if (endp temp)
+              (return ans)
+              (progn (setq ans (+ (car temp) ans))
+                     (setq temp (cdr temp))))))
+
+(defun do-loop2-alternative2 (lst)
+   (declare (xargs :guard (nat-listp lst)))
+   (loop$ with temp of-type (satisfies nat-listp) = lst
+          with ans of-type integer = 0
+          do
+          (if (endp temp)
+              (return ans)
+              (progn (setq ans (+ (car temp) ans))
+                     (setq temp (cdr temp))))))
+
+; The following shows that the type-spec is enforced on every setq.
+
+(must-fail
+ (loop$ with temp = '(1 2 3 4)
+        with ans of-type (satisfies natp) = 0
+        do
+        (if (endp temp)
+            (return ans)
+            (progn (setq ans (- ans))
+                   (setq ans (+ (- ans) (car temp)))
+                   (setq temp (cdr temp)))))
+ :expected :hard)
+
+; But if we do the evaluation with guard-checking off, we get the
+; right answer, 10.
+
+(make-event
+ (state-global-let*
+  ((guard-checking-on nil))
+  (value-triple
+   `(assert-event
+     (equal ,(loop$ with temp = '(1 2 3 4)
+                    with ans of-type (satisfies natp) = 0
+                    do
+                    (if (endp temp)
+                        (return ans)
+                        (progn (setq ans (- ans))
+                               (setq ans (+ (- ans) (car temp)))
+                               (setq temp (cdr temp)))))
+            10)))))
+
+; Alternativey, if we do not specify a TYPE natp for ans and instead just guard
+; the body with (natp ans), it works even with guard checking on.  The reason
+; it works is that the :guard is checked on every entry to the do body (and ans
+; is a natural every time), but of-type is checked on every setq and the first
+; setq below violates that even though the second one restores ans to be a
+; natp.
+
+(assert-event
+ (equal (loop$ with temp = '(1 2 3 4)
+               with ans = 0
+               do
+               :guard (natp ans)
+               (if (endp temp)
+                   (return ans)
+                   (progn (setq ans (- ans))
+                          (setq ans (+ (- ans) (car temp)))
+                          (setq temp (cdr temp)))))
+        10))
+
+
+
+; Here we show the same thing, except instead of causing the error at runtime
+; we show that we cannot verify the guards of the loop where ans is declared
+; of-type natp but we can verify the guards of the loop with the :guard clause
+; that ans is a natp.
+
+(must-fail
+ (defun do-loop3-type-spec (lst)
+   (declare (xargs :guard (nat-listp lst)))
+   (loop$ with temp of-type (satistfies nat-listp) = lst
+          with ans of-type (satisfies natp) = 0
+          do
+          (if (endp temp)
+              (return ans)
+              (progn (setq ans (- ans))
+                     (setq ans (+ (- ans) (car temp)))
+                     (setq temp (cdr temp)))))))
+
+(defun do-loop3-guard (lst)
+  (declare (xargs :guard (nat-listp lst)))
+  (loop$ with temp of-type (satisfies nat-listp) = lst
+         with ans = 0
+         do
+         :guard (natp ans)
+         (if (endp temp)
+             (return ans)
+             (progn (setq ans (- ans))
+                    (setq ans (+ (- ans) (car temp)))
+                    (setq temp (cdr temp))))))
+
+
+; This defun fails because we can't find a variable that is tested and changed
+; (as a function of its old value) on every branch.  This is confusing to the
+; user because temp appears to be such a variable.  But we don't count temp as
+; always changing below because of the 'xxx branch.
+
+(must-fail
+ (defun do-loop4 (lst)
+   (declare (xargs :guard (true-listp lst)))
+   (loop$ with temp = lst
+	  with ans = 0
+	  do
+	  :guard (and (true-listp temp)
+		      (natp ans))
+	  (if (endp temp)
+              (loop-finish)
+	      (if (eq (car temp) 'stop)
+		  (return 'stopped)
+		  (progn (setq ans (+ 1 ans))
+			 (setq temp (if (eq (car temp) 'skip)
+                                        xxx
+				        (cdr temp))))))
+	  finally
+	  :guard (integerp ans)
+	  (return ans))))
+
+; This is accepted and guard verified.
+(defun do-loop4 (lst)
+  (declare (xargs :guard (true-listp lst)))
+  (loop$ with temp = lst
+	 with ans = 0
+	 do
+	 :guard (and (true-listp temp)
+		     (natp ans))
+	 (if (endp temp)
+             (loop-finish)
+	     (if (eq (car temp) 'stop)
+		 (return 'stopped)
+		 (progn (setq ans (+ 1 ans))
+			(setq temp (if (eq (car temp) 'skip)
+                                       (cddr temp)
+				       (cdr temp))))))
+	 finally
+	 :guard (integerp ans)
+	 (return ans)))
+
+(assert-event
+ (equal (do-loop4 '(1 2 3)) 3))
+
+(assert-event
+ (equal (do-loop4 '(1 2 3 SKIP 5 6)) 5))
+
+(assert-event
+ (equal (do-loop4 '(1 2 3 SKIP XXX 5)) 5))
+
+(assert-event
+ (equal (do-loop4 '(1 2 3 STOP XXX 5)) 'stopped))
+
+(assert-event
+ (equal (do-loop4 '(1 2 3 SKIP STOP 5)) 5))
+
+(defun do-loop-counting-up (i0 max)
+  (declare (xargs :guard (and (natp i0) (natp max))
+                  :verify-guards nil))
+  (loop$ with i of-type (satisfies natp) = i0
+         with cnt of-type integer = 0
+         do
+	 :measure (nfix (- max i))
+	 :guard (natp max)
+         (if (>= i max)
+             (loop-finish)
+	     (progn (setq cnt (+ 1 cnt))
+                    (setq i (+ 1 i))))
+         finally
+         (return (list 'from i0 'to max 'is cnt 'steps))))
+
+; The following experiment shows the effect of guard verification!
+; But this is just commented out because I don't know how to measure
+; times in a certified book!
+
+; (time$ (do-loop-counting-up 1 1000000))
+; 59.72 seconds realtime, 59.72 seconds runtime
+; (4,079,998,496 bytes allocated).
+; (FROM 1 TO 1000000 IS 999999 STEPS)
+
+; (verify-guards do-loop-counting-up)
+; Time:  0.15 seconds (prove: 0.13, print: 0.01, other: 0.01)
+
+; (time$ (do-loop-counting-up 1 1000000))
+; 0.00 seconds realtime, 0.00 seconds runtime
+; (144 bytes allocated).
+; (FROM 1 TO 1000000 IS 999999 STEPS)
+
+; Here is an example of lexicographic do loop$:
+
+(defun do-loop-lex (x0 y0)
+  (loop$ with x = x0
+         with y = y0
+         with ans of-type (satisfies true-listp) = nil
+         do
+         :measure (llist (len x) (len y))
+         (if (atom x)
+             (loop-finish)
+             (if (atom y)
+                 (progn (setq y y0)
+                        (setq x (cdr x)))
+                 (progn (setq ans (cons (cons (car x) (car y)) ans))
+                        (setq y (cdr y)))))
+         finally
+         (return (revappend ans nil))))
+
+(verify-guards do-loop-lex)
+
+(assert-event
+ (equal (do-loop-lex '(0 1 2 3) '(0 1 2 3))
+        '((0 . 0)
+          (0 . 1)
+          (0 . 2)
+          (0 . 3)
+          (1 . 0)
+          (1 . 1)
+          (1 . 2)
+          (1 . 3)
+          (2 . 0)
+          (2 . 1)
+          (2 . 2)
+          (2 . 3)
+          (3 . 0)
+          (3 . 1)
+          (3 . 2)
+          (3 . 3))))
+
+; Here is a simple challenge: prove that a do loop$ implementing rev1 is correct.
+; We keep it simple:  no guards, no type-specs.
+
+(defun do-loop-rev1 (x a)
+  (loop$ with temp-x = x
+         with temp-a = a
+         do
+         (progn (if (atom temp-x) (return temp-a) nil)
+                (setq temp-a (cons (car temp-x) temp-a))
+                (setq temp-x (cdr temp-x)))))
+
+(verify-guards do-loop-rev1)
+
+(defun rev1 (x a)
+  (if (atom x)
+      a
+      (rev1 (cdr x) (cons (car x) a))))
+
+(defthm do-loop-rev1-is-rev1
+  (equal (do-loop-rev1 x a) (rev1 x a))
+  :rule-classes nil)
+
+; Do we need warrants for functions used in guards?
+
+(defun my-natp (x)
+  (natp x))
+
+(defbadge my-natp)
+
+; The thm below cannot be proved without warranting my-natp, even though it is
+; only used in an irrelevant arg of return-last.
+
+(must-fail
+ (defthm my-natp-test0 
+  (implies (and (natp y)
+                (natp z))
+           (equal (ev$ '(return-last 'progn
+                                     (check-dcl-guardian (my-natp x) '(test of my-natp))
+                                     (binary-+ '1 x))
+                       (list (cons 'x (+ y z))))
+                  (+ 1 y z)))))
+
+(defun my-natp-hint (k)
+  (if (zp k)
+      t
+      (my-natp-hint (- k 1))))
+
+(must-fail
+ (defthm my-natp-test1
+  (implies (natp k)
+           (equal (loop$ with temp of-type (satisfies my-natp) = k
+                         do
+                         (if (zp temp)
+                             (return 'done)
+                             (setq temp (- temp 1))))
+                  'done))
+  :hints (("Goal" :induct (my-natp-hint k)))))
+
+(defwarrant my-natp)
+
+(defthm my-natp-test2
+  (implies (and (warrant my-natp)
+                (natp k))
+           (equal (loop$ with temp of-type (satisfies my-natp) = k
+                         do
+                         (if (zp temp)
+                             (return 'done)
+                             (setq temp (- temp 1))))
+                  'done))
+  :hints (("Goal" :induct (my-natp-hint k))))
+
+
+; We need the concept of a (key . val) alist whose vals are all rational.  We
+; will use it as a guard.  We could use a for loop$ to check this but because
+; we have to prove things about it, we'll start simply and define it in the
+; traditional recursive way.  Later will explore using loop$s.
+
+(defun map-to-ratsp (x)
+  (cond
+   ((atom x) (equal x nil))
+   (t (and (consp (car x))
+           (rationalp (cdr (car x)))
+           (map-to-ratsp (cdr x))))))
+
+(defbadge map-to-ratsp)
+
+; To use map-to-ratsp as a guard we need to verify its guards first.
+
+(verify-guards map-to-ratsp)
+
+(defwarrant map-to-ratsp)
+
+; (i-am-here) The defun below succeeds, as I think it should.  But if you fail
+; to warrant map-to-ratsp we try anyway, but without having the warrant for
+; map-to-ratsp as a hyp of the guard conjectures and it fails obscurely.  We
+; ought to print a warning or even refuse to try guard-verification if
+; functions haven't been warranted!
+
+(defun do-loop-max-pair (alist)
+
+; Assuming alist is a (key . val) alist whose vals are rationals, we compute
+; the pair with the largest val.
+
+  (declare (xargs :guard (map-to-ratsp alist)))
+  (loop$ with alist of-type (satisfies map-to-ratsp) = alist
+         with max-pair = nil
+         do
+         :guard (or (null max-pair)
+                    (and (consp max-pair)
+                         (rationalp (cdr max-pair))))
+         (progn
+           (cond
+            ((endp alist) (return max-pair))
+            ((or (null max-pair)
+                 (> (cdr (car alist))
+                    (cdr max-pair)))
+             (setq max-pair (car alist))))
+           (setq alist (cdr alist)))))
+
+(assert-event
+ (equal (do-loop-max-pair '((a . 1)(b . 2)(c . 33) (d . 23) (e . 45) (f . 0)))
+        '(e . 45)))

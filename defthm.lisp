@@ -1768,9 +1768,13 @@
 ; an error.  On successful returns the value is a ttree that justifies the
 ; storage of all the :REWRITE rules.
 
-  (chk-acceptable-rewrite-rule1 qc-flg name match-free loop-stopper
-                                (unprettyify (remove-guard-holders term wrld))
-                                ctx ens wrld state))
+  (chk-acceptable-rewrite-rule1
+   qc-flg name match-free loop-stopper
+   (possibly-clean-up-dirty-lambda-objects-in-pairs
+    (unprettyify (remove-guard-holders term wrld))
+    wrld
+    (remove-guard-holders-lamp))
+   ctx ens wrld state))
 
 ; So now we work on actually generating and adding the rules.
 
@@ -1883,7 +1887,10 @@
 ; convention.  "Consistency is the hobgoblin of small minds."  Emerson?
 
   (add-rewrite-rule1 qc-flg rune nume
-                     (unprettyify (remove-guard-holders term wrld))
+                     (possibly-clean-up-dirty-lambda-objects-in-pairs
+                      (unprettyify (remove-guard-holders term wrld))
+                      wrld
+                      (remove-guard-holders-lamp))
                      loop-stopper-lst backchain-limit-lst match-free ens wrld))
 
 ;---------------------------------------------------------------------------
@@ -2409,9 +2416,13 @@
 ; cause an error or return successfully.  We may print warning
 ; messages without causing an error.
 
-  (chk-acceptable-linear-rule1 name match-free trigger-terms
-                               (unprettyify (remove-guard-holders term wrld))
-                               ctx ens wrld state))
+  (chk-acceptable-linear-rule1
+   name match-free trigger-terms
+   (possibly-clean-up-dirty-lambda-objects-in-pairs
+    (unprettyify (remove-guard-holders term wrld))
+    wrld
+    (remove-guard-holders-lamp))
+   ctx ens wrld state))
 
 ; And now, to adding :LINEAR rules...
 
@@ -2538,7 +2549,10 @@
 ;                (recur-over-break-cons cdr)))))
 
   (add-linear-rule1 rune nume trigger-terms
-                    (unprettyify (remove-guard-holders term wrld))
+                    (possibly-clean-up-dirty-lambda-objects-in-pairs
+                     (unprettyify (remove-guard-holders term wrld))
+                     wrld
+                     (remove-guard-holders-lamp))
                     backchain-limit-lst match-free ens wrld state))
 
 ;---------------------------------------------------------------------------
@@ -8663,8 +8677,11 @@
                            (er-progn
                             (chk-legal-linear-trigger-terms
                              terms
-                             (unprettyify
-                              (remove-guard-holders corollary wrld))
+                             (possibly-clean-up-dirty-lambda-objects-in-pairs
+                              (unprettyify
+                               (remove-guard-holders corollary wrld))
+                              wrld
+                              (remove-guard-holders-lamp))
                              name ctx state)
                             (value terms)))))))
                     ((eq token :FORWARD-CHAINING)
@@ -8829,8 +8846,11 @@
                                (remove-guard-holders corollary wrld))
                               (list (cons hyps concl))))
                             (otherwise
-                             (unprettyify
-                              (remove-guard-holders corollary wrld))))))
+                             (possibly-clean-up-dirty-lambda-objects-in-pairs
+                              (unprettyify
+                               (remove-guard-holders corollary wrld))
+                              wrld
+                              (remove-guard-holders-lamp))))))
                      (cond
                       ((not (member-eq token
                                        '(:REWRITE :META :LINEAR

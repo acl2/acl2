@@ -181,36 +181,41 @@
 ; beta-reduction to give rewrite-lambda-object a chance to rewrite the
 ; (illegal) body.
 
+; This is a translate error:
 (thm (equal (apply$ (lambda$ nil (undefined 'john)) nil)
-            (apply$ 'UNDEFINED '(john)))
-     :hints
-     (("Goal" :in-theory (disable beta-reduction))
-      ("Goal''" :in-theory (enable beta-reduction))))
+            (apply$ 'UNDEFINED '(john))))
+
+; Beta-reduction exposes the undefined expression to ev$ but that
+; fails.
+(thm (equal (apply$ `(lambda nil (undefined 'john)) nil)
+            (apply$ 'UNDEFINED '(john))))
+
+; Disabling beta-reduction preserves the lambda expression and thus exposes it
+; to rewrite-lambda-object, which rejects the attempt to rewrite it (with a
+; sensible warning if such warnings are enabled).
 
 (thm (equal (apply$ `(lambda nil (undefined 'john)) nil)
             (apply$ 'UNDEFINED '(john)))
-     :hints
-     (("Goal" :in-theory (disable beta-reduction))
-      ("Goal''" :in-theory (enable beta-reduction))))
+     :hints (("Goal" :in-theory (disable beta-reduction))))
 
 (defun program-mode-with-no-badge (x)
   (declare (xargs :mode :program))
   (list 'hi x))
 
+; Translate error:
 (thm (equal (apply$ (lambda$ nil (program-mode-with-no-badge 'john)) nil)
-            '(HI JOHN))
-     :hints
-     (("Goal" :in-theory (disable beta-reduction))
-      ("Goal''" :in-theory (enable beta-reduction))))
+            '(HI JOHN)))
 
-(thm (equal (apply$ `(lambda nil (program-mode-with-no-badge 'john)) nil)
-            '(HI JOHN))
-     :hints
-     (("Goal" :in-theory (disable beta-reduction))
-      ("Goal''" :in-theory (enable beta-reduction))))
 
+; Beta-reduction eliminates lambda but then fails in ev$
 (thm (equal (apply$ `(lambda nil (program-mode-with-no-badge 'john)) nil)
             '(HI JOHN)))
+
+; Rewrite-lambda-object gets the lambda but rejects (with warning) rewriting
+; it.
+(thm (equal (apply$ `(lambda nil (program-mode-with-no-badge 'john)) nil)
+            '(HI JOHN))
+     :hints (("Goal" :in-theory (disable beta-reduction))))
 
 (defun program-mode-with-badge-but-no-warrant (x)
   (declare (xargs :mode :program))
@@ -223,15 +228,8 @@
 ; announces that we didn't rewrite the lambda object because it contains a
 ; :program mode function.
 
-(thm (equal (apply$ (lambda$ nil (program-mode-with-badge-but-no-warrant 'john)) nil)
-            '(HI JOHN))
-     :hints
-     (("Goal" :in-theory (disable beta-reduction))
-      ("Goal''" :in-theory (enable beta-reduction))))
-
-; But we can let beta-reduction do its thing and then we get to an EV$ of an
-; illegal form.  The EV$ is a ground term and might evaluate!  That would be
-; bad since it involves a :program mode function.
+; Beta-reduction eliminates the lambda and we fail in ev$.  The ev$ is actually
+; a ground term but we don't evaluate it, dodging another possible bug!
 
 (thm (equal (apply$ (lambda$ nil (program-mode-with-badge-but-no-warrant 'john)) nil)
             '(HI JOHN)))
@@ -253,6 +251,12 @@
 ; mysterious to the user!  Nothing about the proof attempt highlights the fact
 ; that we're dealing with a program mode function!
 
+; Disabling beta-reduction allows rewrite-lambda-object to get the lambda, but
+; it rejects rewriting it.
+(thm (equal (apply$ (lambda$ nil (program-mode-with-badge-but-no-warrant 'john)) nil)
+            '(HI JOHN))
+     :hints (("Goal" :in-theory (disable beta-reduction))))
+
 ; But before we get too bent out of shape about that, let's forget about
 ; :program mode functions and see how we handle the same situation for :logic
 ; mode functions.
@@ -272,8 +276,7 @@
 (thm (equal (apply$ (lambda$ nil (logic-mode-with-badge-but-no-warrant 'john)) nil)
             '(HI JOHN))
      :hints
-     (("Goal" :in-theory (disable beta-reduction))
-      ("Goal''" :in-theory (enable beta-reduction))))
+     (("Goal" :in-theory (disable beta-reduction))))
 
 ; And if we let beta-reduction occur and EV$ do its thing
 
@@ -313,18 +316,12 @@
 
 ; No warrant hyp, so it fails but forces the warrant.
 (thm (equal (apply$ (lambda$ nil (logic-mode-with-badge-and-warrant 'john)) nil)
-            '(HI JOHN))
-     :hints
-     (("Goal" :in-theory (disable beta-reduction))
-      ("Goal''" :in-theory (enable beta-reduction))))
+            '(HI JOHN)))
 
 ; Succeeds
 (thm (implies (warrant logic-mode-with-badge-and-warrant)
               (equal (apply$ (lambda$ nil (logic-mode-with-badge-and-warrant 'john)) nil)
-                     '(HI JOHN)))
-     :hints
-     (("Goal" :in-theory (disable beta-reduction))
-      ("Goal''" :in-theory (enable beta-reduction))))
+                     '(HI JOHN))))
 
 ; If we deny the warrant and allow beta-reduction,
 (thm (implies (not (warrant logic-mode-with-badge-and-warrant))
@@ -342,21 +339,21 @@
 ;          NIL)))
 ;   '(HI JOHN)))
 
-; But if we allow rewrite-lambda-object to mess with that lambda$ it actually opens up 
-; (logic-mode-with-badge-and-warrant 'john) but then rejects the expansion with a
-; sensible warning message.
+; But if we allow rewrite-lambda-object to mess with that lambda$, by disabling
+; beta-reduction so that the lambda survives, it actually opens up
+; (logic-mode-with-badge-and-warrant 'john) but then rejects the expansion with
+; a sensible warning message.
 
 (thm (implies (not (warrant logic-mode-with-badge-and-warrant))
               (equal (apply$ (lambda$ nil (logic-mode-with-badge-and-warrant 'john)) nil)
                      '(HI JOHN)))
      :hints
-     (("Goal" :in-theory (disable beta-reduction))
-      ("Goal''" :in-theory (enable beta-reduction))))
+     (("Goal" :in-theory (disable beta-reduction))))
 
 ; Another way, perhaps, to trick the prover into manipulating a :program mode
 ; function is to define a :logic mode function that calls a :program mode
 ; function, to verify the guards on the function, and then have a ground
-; instance of it occur in a theorem.  
+; instance of it occur in a theorem.  We try that now...
 
 ; This fails because the body of the loop$ is has not yet been guard
 ; verified.
@@ -369,7 +366,9 @@
          :guard (symbolp e)
          (program-mode-with-badge-but-no-warrant e)))
 
-; So we can admit it without verifying guards...
+; So we can admit it without verifying guards...  BTW: We do get a warning
+; that this logic mode fn uses a program mode function in a :fn slot.
+
 (defun run-this-version-1 (x)
   (declare (xargs :mode :logic
                   :guard (symbolp x)
@@ -379,7 +378,7 @@
          :guard (symbolp e)
          (program-mode-with-badge-but-no-warrant e)))
 
-; and then try to verify the guards of the body:
+; Then we try to verify the guards of the body:
 
 (verify-guards program-mode-with-badge-but-no-warrant)
 

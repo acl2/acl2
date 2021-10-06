@@ -14535,6 +14535,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (deferred-ttag-notes . :not-deferred)
     (deferred-ttag-notes-saved . nil)
     (dmrp . nil)
+    (do-expressionp . nil)
     (evisc-hitp-without-iprint . nil)
     (eviscerate-hide-terms . nil)
     (fmt-hard-right-margin . ,*fmt-hard-right-margin-default*)
@@ -21658,6 +21659,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     verify-termination-on-raw-program-okp
     prompt-memo
     system-attachments-cache
+    do-expressionp
     ))
 
 ; There is a variety of state global variables, 'ld-skip-proofsp among them,

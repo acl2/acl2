@@ -6073,10 +6073,9 @@
 
 ; Warning: Keep this in sync with default-state-vars.
 
-  ((safe-mode boot-strap-flg . temp-touchable-vars)
+  (((safe-mode . boot-strap-flg) . (temp-touchable-vars . guard-checking-on))
    .
-   (guard-checking-on ld-skip-proofsp
-                      temp-touchable-fns . parallel-execution-enabled))
+   ((ld-skip-proofsp . temp-touchable-fns) . (parallel-execution-enabled . do-expressionp)))
   nil)
 
 (defmacro default-state-vars
@@ -6087,7 +6086,8 @@
            (guard-checking-on 't guard-checking-on-p)
            (ld-skip-proofsp 'nil ld-skip-proofsp-p)
            (temp-touchable-fns 'nil temp-touchable-fns-p)
-           (parallel-execution-enabled 'nil parallel-execution-enabled-p))
+           (parallel-execution-enabled 'nil parallel-execution-enabled-p)
+           (do-expressionp 'nil do-expressionp-p))
 
 ; Warning: Keep this in sync with defrec state-vars.
 
@@ -6125,7 +6125,11 @@
                 :parallel-execution-enabled
                 ,(if parallel-execution-enabled-p
                      parallel-execution-enabled
-                   '(f-get-global 'parallel-execution-enabled state))))
+                   '(f-get-global 'parallel-execution-enabled state))
+                :do-expressionp
+                ,(if do-expressionp-p
+                     do-expressionp
+                   '(f-get-global 'do-expressionp state))))
         (t ; state-p is not t
          `(make state-vars
                 :safe-mode ,safe-mode

@@ -6774,8 +6774,9 @@
 ; like primitives in the sense that they can be used in terms and they can be
 ; evaluated on explicit constants but no axioms or rules are available about
 ; them.  In particular, we do not store 'def-bodies, type-prescriptions, or any
-; of the recursion/induction properties normally associated with defuns.  The
-; the prover will reject a formula that contains a call of a :program mode
+; of the recursion/induction properties normally associated with defuns.
+
+; The prover will reject a formula that contains a call of a :program mode
 ; function.
 
 ; We do take care of the documentation database.
@@ -7315,12 +7316,14 @@
         nil)
        (old-measures
         (msg "the proposed and existing definitions for ~x0 differ on their ~
-              measures.  The existing measure is ~x1.  The new measure needs ~
-              to be specified explicitly with :measure (see :DOC xargs), ~
-              either to be identical to the existing measure or to be a call ~
-              of :? on the measured subset; for example, ~x2 will serve as ~
-              the new :measure."
+              measures.  The proposed measure is ~x1 but the existing measure ~
+              is ~x2.  The proposed measure needs to be specified explicitly ~
+              in fully translated form with :measure (see :DOC xargs), either ~
+              to be identical to the existing measure or to be a call of :? ~
+              on the measured subset; for example, ~x3 will serve as the ~
+              proposed :measure."
              name
+             (car new-measures)
              (car old-measures)
              (cons :? old-measured-subset)))
        (t
@@ -10022,7 +10025,7 @@
            (eq (car (unquote term)) 'lambda))
       (cond
        ((well-formed-lambda-objectp (unquote term) wrld)
-        (let ((style (loop$-scion-style lambda-flg *loop$-keyword-info*))
+        (let ((style (loop$-scion-style lambda-flg))
               (formals (lambda-object-formals (unquote term)))
               (body (lambda-object-body (unquote term))))
           (cond
@@ -10126,7 +10129,7 @@
        nil
        (fargs term)
        fn-seenp wrld ctx state)))
-   (t (let ((style (loop$-scion-style (ffn-symb term) *loop$-keyword-info*)))
+   (t (let ((style (loop$-scion-style (ffn-symb term))))
 
 ; If style is nil, the function being called is not a loop$ scion and so as we
 ; sweep through the arguments we provide lambda-flg = nil to each argument.  We
@@ -11037,6 +11040,17 @@
                 (value wrld2))))
         (er-progn
          (cond
+          ((eq (car names) 'do$)
+
+; Do$ Wart: We allow do$'s measure, L<, to be used here even though we don't
+; ``know'' it is well-founded on the LEXP domain.  Since L< and LEXP are
+; defined in these sources and proved well-founded (by the ACL2_DEVEL = t
+; process) in ordinals/lexicographic-book.lisp, this is sound.  (L< is
+; well-founded on the LEXP domain!) But we only make this exception for do$ and
+; thus force the user to include the lexicographic-book before allowing L< and
+; LEXP to be used generally.
+
+           (value nil))
           ((not (and (symbolp rel)
                      (assoc-eq
                       rel
@@ -11048,10 +11062,12 @@
                 relation.  ~x0 has not been. See :DOC well-founded-relation."
                rel))
           (t (value nil)))
-         (let ((mp (cadr (assoc-eq
-                          rel
-                          (global-val 'well-founded-relation-alist
-                                      wrld2a)))))
+         (let ((mp (cond
+                    ((eq (car names) 'do$) 'lexp) ; Do$ Wart
+                    (t (cadr (assoc-eq
+                              rel
+                              (global-val 'well-founded-relation-alist
+                                          wrld2a)))))))
            (er-let*
                ((bodies-and-bindings
                  (translate-bodies non-executablep ; t or :program

@@ -1343,54 +1343,61 @@
 ; that fn's measure, if fn is recursive, is not ancestrally dependent on
 ; apply$-userfn, but that fn's body is ancestrally dependent on apply$-userfn.
 ; So fn will become a G2 function if we warrant it.  But that means its
-; justification has to meet certain criteria.  If it fails to meet the
-; criteria, we return (mv msg nil).  If it meets the criteria we return (mv nil
-; lst), where lst is the list of components in a LLIST measure justifying fn.
+; justification is either (1) a natp-valued measure with well-founded relation
+; O< and domain O-P, or (2) a lexp-valued measure with well-founded relation L<
+; and domain LEXP.  We explain why we impose these restrictions below.
 
-; Every G2 function must satisfy one of the following criteria.
+; Here we only do a type-set check of the natp criteria.  Fn's justification
+; may fail our check but still be warrantable if a (natp m) can be proved.
+; Here are the possible answers we return.
 
-; * fn's justification is NIL, meaning fn is not recursive: answer = (mv nil
-;   nil).
+; * (mv t nil)
+;   fn's justification is ok
 
-; * the type-set of fn's measure is *ts-non-negative-integer*, and the relation
-;   and domain are O< and O-P: answer = (mv nil '(m)), where m is fn's measure
-;   term.
+; * (mv t events)
+;   fn's justification is ok if the events in events can be admitted.
+;   However, our caller knows that when events is non-nil it consists
+;   of exactly two events.  The first is just an observation, packaged up
+;   like an event, to explain what we're doing, and the second is a
+;   defthm.
 
-; * fn's measure is (llist m1 ... mk) with relation and domain ACL2::L< and
-;   ACL2::LEXP: answer = (mv nil (m1 ... mk)).
-
-; Note that after suitable checks we treat the simple numeric measure case as
-; though it were (llist m).
+; * (mv nil msg)
+;   fn's justification is not ok, as
 
 ; The reasons we impose restrictions on G2 measures are:
 
-; (1) We don't care about the measures of G1 functions as long as they're not
+; * We don't care about the measures of G1 functions as long as they're not
 ; dependent on apply$.  The model construction can order the G1 definitions
 ; (and any relevant unwarranted definitions) in the user's chronological order
 ; and admit them all.
 
-; (2) We insist that G2 functions have measures independent of apply$ so we
+; * We insist that G2 functions have measures independent of apply$ so we
 ; don't complicate the admission of the mutually recursive clique involving
 ; apply$ and all G2 functions.  To weaken this restriction will require a
 ; meta-level argument that a function in the clique can be used as the measure
 ; of another one -- a reflexive situation we're not sure we can handle and so
 ; don't!
 
-; (3) We limit the acceptable measures to either natural numbers or
-; lexicographic measures.  The model construction's measure for the
-; doppelganger clique is lexicographic and will allocate max slots to
-; accommodate all the userfn measures, where max is the length of the longest
-; lexicographic measure of any userfn.  Simple numeric measures are treated
-; like lexicographic measures of length 1.  We can imagine loosening this
-; restriction and allowing an arbitrary ordinal measure (independent of apply$)
-; but that requires another meta-level proof based on the structured theory
-; paper's universal evaluator to non-constructively define a recursion counter.
-; We haven't worked out the details of this proof.
+; * We limit the acceptable measures to either natural numbers or non-empty
+; lists of naturals, which is what lexp checks.  The model construction's
+; measure for the doppelganger clique is o<-lst, which is a well-founded
+; lexicographic relation on ordinals below omega^omega.  Actually, the clique's
+; measure is of length 5 and the 4th slot is devoted to the ordinal
+; corresponding (via lsttoo) to the measure of each G2 function in the clique.
+; If each G2 function has a lexp measure then its ordinal is less than
+; omega^omega.
+
+; We could clearly allow larger bounded measures for G2 functions but lexp
+; feels good enough for now.  We can imagine allowing an arbitrary ordinal
+; measure (independent of apply$) but that requires another meta-level proof
+; based on the structured theory paper's universal evaluator to
+; non-constructively define a recursion counter.  We haven't worked out the
+; details of this proof.
 
   (declare (xargs :mode :program))
   (cond
    ((not (recursivep fn nil wrld))
-    (mv nil nil))
+    (mv t nil))
    (t (let ((just (getpropc fn 'justification nil wrld)))
         (cond
          ((null just)
@@ -1402,79 +1409,85 @@
          (t (let* ((m (access justification just :measure))
                    (rel (access justification just :rel))
                    (mp (access justification just :mp)))
-              (mv-let (ts ttree)
-                (type-set m
-                          nil ; force-flg
-                          nil ; dwp
-                          nil ; type-alist
-                          ens
-                          wrld
-                          nil ; ttree
-                          nil ; pot-lst
-                          nil ;pt
-                          )
-                (declare (ignore ttree))
-                (cond
-                 ((ts-subsetp ts *ts-non-negative-integer*)
+              (cond
+               ((eq rel 'o<)
+; Then m must satisfy natp and mp must be o-p.
+                (mv-let (ts ttree)
+                  (type-set m
+                            nil ; force-flg
+                            nil ; dwp
+                            nil ; type-alist
+                            ens
+                            wrld
+                            nil ; ttree
+                            nil ; pot-lst
+                            nil ;pt
+                            )
+                  (declare (ignore ttree))
                   (cond
-                   ((not (eq rel 'O<))
-                    (mv (msg "~x0 cannot be warranted because its ~
-                              justification's well-founded relation is ~x1 ~
-                              instead of O< as required for its ~
-                              natural-number measure."
-                             fn
-                             rel)
-                        nil))
-                   ((not (eq mp 'O-P))
-                    (mv (msg "~x0 cannot be warranted because its ~
-                              justification's domain is ~x1 instead of O-P as ~
-                              required for its natural-number measure."
-                             fn
-                             mp)
-                        nil))
-                   (t (mv nil (list m)))))
-                 (t (let ((terms (lex-measure-terms m)))
-                      (cond
-                       ((null terms)
-                        (mv (msg "~x0 cannot be warranted because its ~
-                                  measure, ~x1, is not of the right shape.  ~
-                                  It must be either a simple natural number ~
-                                  measure recognized by primitive type ~
-                                  reasoning or a lexicographic measure ~
-                                  constructed by LLIST.  Your measure was not ~
-                                  constructed by LLIST and its output, V, as ~
-                                  deduced by type reasoning is described by ~
-                                  ~x2.  If you think your measure does in ~
-                                  fact return a natural number, prove it as a ~
-                                  :type-prescription lemma."
-                                 fn
-                                 m
-                                 (untranslate
-                                  (mv-let (tsterm x)
-                                    (acl2::convert-type-set-to-term
-                                     'v ts ens wrld nil)
-                                    (declare (ignore x))
-                                    tsterm)
-                                  t
-                                  wrld))
-                            nil))
-                       ((not (eq rel 'L<))
-                        (mv (msg "~x0 cannot be warranted because its ~
-                                  justification's well-founded relation is ~
-                                  ~x1 rather than L< as required for its ~
-                                  lexicographic measure."
-                                 fn
-                                 rel)
-                            nil))
-                       ((not (eq mp 'ACL2::LEXP))
-                        (mv (msg "~x0 cannot be warranted because its ~
-                                  justification's domain is domain is ~x1 ~
-                                  instead of LEXP as required for its ~
-                                  lexicographic measure."
-                                 fn
-                                 mp)
-                            nil))
-                       (t (mv nil terms))))))))))))))
+                   ((ts-subsetp ts *ts-non-negative-integer*)
+                    (cond
+                     ((not (eq mp 'O-P))
+                      (mv nil
+                          (msg "~x0 cannot be warranted because its ~
+                                justification's domain is ~x1 instead of O-P ~
+                                as required for its natural-number measure."
+                               fn
+                               mp)))
+                     (t (mv t nil))))
+                   (t
+
+; In this case, fn can be warranted if we can prove (natp m).  We return (mv t
+; events), where events is exactly two events: an observation explaining what
+; we're doing and a defthm.
+
+                      (let ((defthm-event
+                              `(defthm
+                                ,(packn-pos (list "NATP-MEASURE-OF-" fn)
+                                            fn)
+                                (natp ,m)
+                                :rule-classes nil)))
+                        (mv t
+                            `((make-event
+                               (pprogn
+                                (observation
+                                 (cons 'defwarrant ',fn)
+                                 "Since ~x0 is justified with O<, defwarrant ~
+                                  insists that ~x0's measure, ~x1, satisfy ~
+                                  NATP.  Syntactic considerations fail to ~
+                                  establish this.  So to warrant ~x0 we must ~
+                                  prove~%~%~X23~%~%"
+                                 ',fn
+                                 ',m
+                                 ',defthm-event
+                                 nil)
+                                (value '(value-triple :invisible))))
+                              ,defthm-event)))))))
+               ((eq rel 'l<)
+                (cond
+                 ((not (eq mp 'ACL2::LEXP))
+                  (mv nil
+                      (msg "~x0 cannot be warranted because its ~
+                            justification's domain is ~x1 but defwarrant ~
+                            requires that when the well-founded relation is ~
+                            l< the domain be lexp."
+                           fn
+                           mp)))
+                 (t
+
+; If rel is L< and mp is LEXP then defun proved (LEXP m) when fn was admitted.
+; So we don't need to prove it now.
+
+                  (mv t nil))))
+               (t (mv nil
+                      (msg "~x0 cannot be warranted because it was justified ~
+                            with well-founded relation ~x1.  Defwarrant ~
+                            requires that the justification use either O< (on ~
+                            domain O-P) or L< (on domain LEXP) and that in ~
+                            the O< case the measure must return a natural ~
+                            number, not a larger ordinal."
+                           fn
+                           rel)))))))))))
 
 ; -----------------------------------------------------------------
 ; REDEF+ HACK: Now I redefine badger properly.  If and when this is all
@@ -2180,126 +2193,126 @@
 
 ; We cause an error if (defwarrant fn) is unacceptable; otherwise, we return
 ; (via an error-triple) either T, meaning fn is already warranted or needs no
-; warrant, or else a badge-pair, (flg . badge), composed of the last two
-; results returned by ok-defbadge, where flg indicates whether a badge for fn
-; is already stored and badge is the badge (either found or inferred) which
-; needs to be stored if flg=nil.
+; warrant, or else a doublet (events badge).  Events is either nil or a list of
+; exactly two events (an observation and a defthm) which must be admitted in
+; order to warrant fn.  In any case badge is the badge (either looked up or
+; inferred).
 
 ; Among other things we guarantee that fn is a defined :logic mode function,
 ; that it is not blacklisted, does not traffic in stobjs, that its
-; justification is independent of apply$, that either (a) the body is
-; independent of apply$, or (b) the body is not independent of apply$ but is
-; singly-recursive (well, at least, not mutually recursive) and that the
-; justification is suitably lexicographic (in the sense that we can insert it
-; into the model's measure of the apply$ clique).
+; justification is independent of apply$ (but see warning below), that either
+; (a) the body is independent of apply$, or (b) the body is not independent of
+; apply$ but is singly-recursive (well, at least, not mutually recursive) and
+; that the justification is suitably lexicographic (in the sense that we can
+; insert it into the model's measure of the apply$ clique).
 
   (declare (xargs :mode :program))
-  (mv-let (msg flg badge)
+  (mv-let (msg storedp badge)
     (ok-defbadge fn wrld)
     (cond
      (msg (er soft ctx "~@0" msg))
-     (t (let ((badge-pair (cons flg badge)))
+     (t
 
-; Note that the flag component of badge-pair tells us whether fn already had a
-; badge, which can answer some of our questions below.  In any case, if
-; ok-defbadge didn't indicate an error we know fn is a defined function symbol
-; with the other properties necessary for defbadge to succeed.
+; If ok-defbadge didn't indicate an error we know fn is a defined function
+; symbol with the other properties necessary for defbadge to succeed.
 
-    (cond
-     ((or (apply$-primp fn)
-          (assoc-eq fn *apply$-boot-fns-badge-alist*)
-          (get-warrantp fn wrld)
-          )
+      (cond
+       ((or (apply$-primp fn)
+            (assoc-eq fn *apply$-boot-fns-badge-alist*)
+            (get-warrantp fn wrld))
 
 ; Fn doesn't need a warrant or else is already warranted, so we return T,
 ; meaning no action is needed.  It is hard to see how the get-warrantp above
 ; could succeed, since the (defwarrant fn) event that got us here would have
 ; been recognized as redundant, but we check just to make sure.
 
-      (value t))
-     ((eq (getpropc fn 'symbol-class nil wrld)
-          :PROGRAM)
-      (er soft ctx
-          "Defwarrant expects a defined, :logic mode function symbol as its ~
+        (value t))
+       ((eq (getpropc fn 'symbol-class nil wrld)
+            :PROGRAM)
+        (er soft ctx
+            "Defwarrant expects a defined, :logic mode function symbol as its ~
            argument and ~x0 is not one."
-          fn))
+            fn))
 
 ; Next, we need to find out if the justification of fn, if any, is dependent on
-; apply$-userfn.  If so, fn can't be warranted.
+; apply$-userfn.  If so, fn can't be warranted UNLESS fn is do$!
 
-     (t (let ((bad-fn
-               (not-pre-apply$-definable
-                nil
-                (nonsensical-justification-term fn wrld)
-                wrld)))
-          (cond
-           (bad-fn
+       (t (let ((bad-fn
+                 (if (eq fn 'do$) ;;; Do$ Wart
+                     nil
+                     (not-pre-apply$-definable
+                      nil
+                      (nonsensical-justification-term fn wrld)
+                      wrld))))
+            (cond
+             (bad-fn
 
 ; A dependence on apply$-userfn was found in the justification of fn.
 
-            (er soft ctx
-                "~x0 cannot be warranted because some part of its ~
-                 justification (i.e., its measure, well-founded relation, or ~
-                 domain predicate) ancestrally calls or is justified in terms ~
-                 of ~x1."
-                fn
-                bad-fn))
-           (t
-            (let ((body (body fn nil wrld)))
+              (er soft ctx
+                  "~x0 cannot be warranted because some part of its ~
+                   justification (i.e., its measure, well-founded relation, ~
+                   or domain predicate) ancestrally calls or is justified in ~
+                   terms of ~x1."
+                  fn
+                  bad-fn))
+             (t
+              (let ((body (body fn nil wrld)))
 
 ; At this point we know fn is a candidate for either G1 or G2.  It can be G1 if
 ; its body doesn't depend on apply$-userfn.  Otherwise, it has to be G2.  But
 ; in both cases we'll have other constraints to check.
 
-              (cond
-               ((null (bad-ancestor
-                       nil ; j-flg (we no longer care about the justification)
-                       body
-                       *apply$-userfn-callers*
-                       wrld))
+                (cond
+                 ((null (bad-ancestor
+                         nil ; j-flg (we no longer care about the justification)
+                         body
+                         *apply$-userfn-callers*
+                         wrld))
 
 ; Fn will be in G1 if we warrant it.  It will necessarily be ``tame'' because
 ; it's independent of apply$.  But it might call a blacklisted function because
 ; we haven't actually checked that every subfunction it calls is badged.
 
-                (cond
-                 ((car badge-pair)
+                  (cond
+                   (storedp
 
 ; Fn already had a badge in the system.  So we know it doesn't have a blacklisted
 ; ancestor.
-                  (value badge-pair))
-                 (t
-                  (let ((bad-fn
-                         (bad-ancestor nil body *blacklisted-apply$-fns* wrld)))
-                    (cond
-                     (bad-fn
-                      (er soft ctx
-                          "~x0 cannot be warranted because its body is ~
-                           ancestrally dependent on ~x1 and we enforce the ~
-                           restriction that no blacklisted function is called ~
-                           by any badged function."
-                          fn
-                          bad-fn))
-                     (t (value badge-pair)))))))
+                    (value (list nil ; no events necessary
+                                 badge)))
+                   (t
+                    (let ((bad-fn
+                           (bad-ancestor nil body *blacklisted-apply$-fns* wrld)))
+                      (cond
+                       (bad-fn
+                        (er soft ctx
+                            "~x0 cannot be warranted because its body is ~
+                             ancestrally dependent on ~x1 and we enforce the ~
+                             restriction that no blacklisted function is ~
+                             called by any badged function."
+                            fn
+                            bad-fn))
+                       (t (value (list nil   ; no events necessary
+                                       badge))))))))
 
-; Fn will be in G2 if we warrant it.  But it's justification must fit within
+; Fn will be in G2 if we warrant it.  But its justification must fit within
 ; the model's justification of the apply clique.
 
-               (t
-                (mv-let
-                  (msg val)
-                  (g2-justification fn ens wrld)
-                  (declare (ignore val))
+                 (t
+                  (mv-let
+                    (flg val)
+                    (g2-justification fn ens wrld)
 
-; We can ignore val, the list of lexicographic components in fn's measure,
-; because we just need to know whether the justification is acceptable or not.
-; The reason we even compute val in g2-justification is so that we can use that
-; same utility in the model constructions of projects/apply-model-2/ex1 and
-; ex2.
+; If flg is t, val is either nil or a list of two events that must be admitted
+; to justify warranting fn.  If flg nil, val is an error msg and we signal a
+; soft error.
 
-                  (cond
-                   (msg (er soft ctx "~@0" msg))
-                   (t (value badge-pair)))))))))))))))))
+                    (cond
+                     (flg
+                      (value (list val      ; two events to admit
+                                   badge)))
+                     (t (er soft ctx "~@0" val))))))))))))))))
 
 (defun confirm-apply-books (state)
   (declare (xargs :mode :program))
@@ -2336,14 +2349,18 @@
   (let ((wrld (w state)))
     (er-progn
      (confirm-apply-books state)
-     (er-let* ((badge-pair-or-t
+     (er-let* ((doublet-or-t
                 (chk-acceptable-defwarrant fn
                                            (cons 'defwarrant fn)
                                            (ens state)
                                            wrld
                                            state)))
+; Doublet-or-t is either t meaning fn is already warranted (or doesn't
+; need a warrant) or else it's ((observation defthm) badge), i.e., a list of
+; two events and fn's badge.
+
        (cond
-        ((eq badge-pair-or-t t)
+        ((eq doublet-or-t t)
          (pprogn
 
 ; Some functions are warranted in boot-strap-pass-2-b.lisp and without this
@@ -2363,7 +2380,13 @@
                     :stack :pop
                     (value-triple nil)))))
         (t
+         (let ((events (car doublet-or-t))
+               (badge (cadr doublet-or-t)))
          (value
+
+; We know that events is either nil or a list of exactly two events: an
+; observation explaining why we're about to prove a theorem and a defthm for
+; that theorem.  We use two events so we can control the output below.
 
 ; WARNING: Be sure no event under this (encapsulate () ...) is local!  At one
 ; time we used (progn ...) instead.  However, we found that defwarrant events
@@ -2371,12 +2394,21 @@
 
           `(encapsulate ; Read the warning above before changing to progn.
              ()
-             ,@(defwarrant-events fn (formals fn wrld) (cdr badge-pair-or-t))
+             ,@(if (eq events nil)
+                   nil
+                   `((with-output    ; First we lay down the observation
+                       :stack :pop   ; explaining that we're about to
+                       :off summary  ; prove a defthm that fn's measure
+                       ,(car events)); is a natp.
+
+                     (with-output    ; Then we lay down the defthm.
+                       :stack :pop ,(cadr events))))
+             ,@(defwarrant-events fn (formals fn wrld) badge)
              (table badge-table
                     :badge-userfn-structure
                     (put-badge-userfn-structure-tuple-in-alist
                      (make-badge-userfn-structure-tuple
-                      ',fn T ',(cdr badge-pair-or-t))
+                      ',fn T ',badge)
                      (cdr (assoc :badge-userfn-structure
                                  (table-alist 'badge-table world))))
                     :put)
@@ -2385,12 +2417,12 @@
                                true-apply$-warrant)
                      :system-ok t)
                   `(defattach ,(warrant-name fn) true-apply$-warrant))
-             ,@(if (eq (access apply$-badge (cdr badge-pair-or-t) :ilks) t)
+             ,@(if (eq (access apply$-badge badge :ilks) t)
                    nil
                    (defcong-fn-equal-equal-events
                      (cons fn (formals fn wrld))
                      1
-                     (access apply$-badge (cdr badge-pair-or-t) :ilks)))
+                     (access apply$-badge badge :ilks)))
              (progn ,(if (global-val 'boot-strap-flg wrld)
                          `(with-output
                             :stack :pop
@@ -2399,7 +2431,7 @@
                               (cw "~%~x0 is now warranted by ~x1, with badge ~x2.~%~%"
                                   ',fn
                                   ',(warrant-name fn)
-                                  ',(cdr badge-pair-or-t))
+                                  ',badge)
                               :warranted)))
                          `(side-effect-event
                            (if (or (eq (ld-skip-proofsp state) 'include-book)
@@ -2409,11 +2441,11 @@
                                (fms "~%~x0 is now warranted by ~x1, with badge ~x2.~%~%"
                                     (list (cons #\0 ',fn)
                                           (cons #\1 ',(warrant-name fn))
-                                          (cons #\2 ',(cdr badge-pair-or-t)))
+                                          (cons #\2 ',badge))
                                     (standard-co state) state nil))))
                     (with-output
                       :stack :pop
-                      (value-triple :warranted)))))))))))
+                      (value-triple :warranted))))))))))))
 
 (defun defwarrant-fn (fn)
   (declare (xargs :mode :logic :guard t)) ; for execution speed in safe-mode
@@ -2756,6 +2788,10 @@
 ; (from-to-by 1 1000000 1)), in our standard timing tests to see whether our
 ; tail-recursive definitions and guard verification help.
 
+;-----------------------------------------------------------------
+; Note: See *system-verify-guards-alist* to make scions be in :logic mode.  See
+; boot-strap-pass-2-b.lisp for where these functions are warranted during a
+; standard build.
 ; -----------------------------------------------------------------
 ; Until$, Until$+, and Their Tail Recursive Counterparts
 
@@ -3119,4 +3155,115 @@
             (append$+ fn globals (cdr lst))))
        :exec (append$+-ac fn globals lst nil)))
 
+; lexp, d<, and l< are from books/ordinals/lexicographic-book.lisp.  They are
+; needed in the body of do$ below.  Don't change the formals or anything
+; else about these defuns since that will break the lexicographic-book.
+
+(defun nfix-list (list)
+  (declare (xargs :guard t))
+  (if (consp list)
+      (cons (nfix (car list))
+            (nfix-list (cdr list)))
+      nil))
+
+(defun lexp (x)
+  (declare (xargs :guard t))
+  (or (natp x)
+      (and (consp x) (nat-listp x))))
+
+(defun lex-fix (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (nfix x))
+        (t (nfix-list x))))
+
+(defun d< (x y)
+  (declare (xargs :guard (and (nat-listp x) (nat-listp y))))
+  (and (consp x)
+       (consp y)
+       (or (< (car x) (car y))
+           (and (= (car x) (car y))
+                (d< (cdr x) (cdr y))))))
+
+(defun l< (x y)
+  (declare (xargs :guard (and (lexp x) (lexp y))))
+  (or (< (len x) (len y))
+      (and (= (len x) (len y))
+           (if (atom x) (< x y) (d< x y)))))
+
+; WARNING: Like the other loop$ scions above, do$ is admitted in :program mode
+; and converted to :logic mode during the normal build.  In
+; boot-strap-pass-2-b.lisp, where we convert all the loop$ scions to
+; guard-verified :logic mode and warrant them.  But do$ is exceptional because
+; its measure depends on apply$, its well-founded relation, L<, is not known
+; during the build to be well-founded, and the domain of L<, LEXP, is not given
+; in a well-founded-relation rule because there's no such rule.  So there are
+; several ``Do$ Warts'' sprinkled in the code to permit the entire build to
+; treat do$ more or less like the other loop$ scions.
+
+(defun do$ (measure-fn alist do-fn finally-fn
+                       untrans-measure untrans-do-loop$)
+  (declare (xargs :guard (and (apply$-guard measure-fn '(nil))
+
+; I don't actually need to know that alist is an alist.  If I insert it as
+; part of the guard, I have to prove it when I recur on the new-alist.
+;                             (alistp alist)
+
+                              (apply$-guard do-fn '(nil))
+                              (apply$-guard finally-fn '(nil)))
+                  :mode :program
+                  :measure (lex-fix (apply$ measure-fn (cons alist 'nil)))
+;                 :well-founded-relation l< ; <--- Do$ Wart
+                  ))
+
+; I don't know that the do-fn or finally-fn actually return well-formed
+; triples!  So I coerce their answers to true-lists, which allows me
+; to car and cdr them.
+
+  (let* ((triple (true-list-fix (apply$ do-fn (list alist))))
+         (exit-token (car triple))
+         (val (cadr triple))
+         (new-alist (caddr triple)))
+    (cond
+     ((eq exit-token :return)
+      val)
+     ((eq exit-token :loop-finish)
+; Evaluate the finally body.  If it executes a :return, return the given value;
+; else, return nil.
+      (let* ((triple (true-list-fix (apply$ finally-fn (list new-alist))))
+             (exit-token (car triple))
+             (val (cadr triple)))
+        (if (eq exit-token :return)
+            val
+            nil)))
+     ((l< (lex-fix (apply$ measure-fn (list new-alist)))
+          (lex-fix (apply$ measure-fn (list alist))))
+      (do$ measure-fn new-alist do-fn finally-fn
+           untrans-measure untrans-do-loop$))
+     (t
+      (prog2$
+       (er hard? 'do$
+           "The measure, ~x0, used in the do loop$ statement~%~Y12~%failed to ~
+            decrease!  In particular, when the incoming alist (an alist of ~
+            dotted pairs specifying the values of all the variables) ~
+            was~%~Y32the alist produced by the do body was~%~Y42and the ~
+            measure went from~%~x5~%to~%~x6.~%Logically, do$ returns ~x7 ~
+            in this situation."
+           untrans-measure
+           untrans-do-loop$
+           nil
+           alist
+           new-alist
+           (apply$ measure-fn (list alist))
+           (apply$ measure-fn (list new-alist))
+           :do$-measure-did-not-decrease)
+       :do$-measure-did-not-decrease)))))
+
 )
+
+;-----------------------------------------------------------------
+; Note: See *system-verify-guards-alist* to make scions be in :logic mode.  See
+; boot-strap-pass-2-b.lisp for where these functions are warranted during a
+; standard build.
+;-----------------------------------------------------------------
+
+
