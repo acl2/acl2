@@ -165,7 +165,11 @@
   (defrule typep-of-cdr-of-assoc-equal
     (implies (and (atc-symbol-type-alistp x)
                   (assoc-equal k x))
-             (typep (cdr (assoc-equal k x))))))
+             (typep (cdr (assoc-equal k x)))))
+
+  (defruled symbol-listp-of-strip-cars-when-atc-symbol-type-alistp
+    (implies (atc-symbol-type-alistp x)
+             (symbol-listp (strip-cars x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3582,6 +3586,92 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-find-affected ((fn symbolp)
+                           (term pseudo-termp)
+                           (pointers atc-symbol-type-alistp)
+                           (ctx ctxp)
+                           state)
+  :returns (mv erp
+               (affected symbol-listp :hyp (atc-symbol-type-alistp pointers))
+               state)
+  :short "Find the variables affected by a term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used on the body of each non-recursive target function,
+     in order to determine the variables affected by it,
+     according to the nomenclature in the user documentation.
+     We visit the leaves of the term according to the @(tsee if) structure,
+     and ensure that they all have the same form,
+     which must be one of the following forms:")
+   (xdoc::ul
+    (xdoc::li
+     "A formal parameter @('var') of the function that has pointer type.
+      In this case, @('term') affects the list of variables @('(var)').")
+    (xdoc::li
+     "A term @('ret') that is not a formal parameter of pointer type.
+      In this case, @('term') affects no variables.")
+    (xdoc::li
+     "A term @('(mv var1 ... varn)') where each @('vari') is
+      a formal parameter of the function that has pointer type.
+      In this case, @('term') affects
+      the list of variables @('(var1 ... varn)').")
+    (xdoc::li
+     "A term @('(mv ret var1 ... varn)') where each @('vari') is
+      a formal parameter of the function that has pointer type
+      and @('ret') is not.
+      In this case, @('term') affects
+      the list of variables @('(var1 ... varn)')."))
+   (xdoc::p
+    "In checking that the terms at the leaves have the same form,
+     we allow @('ret') to vary, but the other parts must coincide.")
+   (xdoc::p
+    "The list of formal parameters that have pointer type
+     are passed to this ACL2 function as the @('pointers') parameter."))
+  (b* (((mv okp & then else) (fty-check-if-call term))
+       ((when okp)
+        (b* (((er then-affected) (atc-find-affected fn then pointers
+                                                    ctx state))
+             ((er else-affected) (atc-find-affected fn else pointers
+                                                    ctx state)))
+          (if (equal then-affected else-affected)
+              (acl2::value then-affected)
+            (er-soft+ ctx t nil
+                      "When generating code for function ~x0, ~
+                       an IF branch affects variables ~x1, ~
+                       while the other branch affects variables ~x2: ~
+                       this is disallowed."
+                      fn then-affected else-affected))))
+       ((when (pseudo-term-case term :var))
+        (b* ((var (pseudo-term-var->name term)))
+          (if (assoc-eq var pointers)
+              (acl2::value (list var))
+            (acl2::value nil))))
+       ((mv okp terms) (fty-check-list-call term))
+       ((when okp)
+        (cond ((subsetp-eq terms
+                           (strip-cars pointers))
+               (acl2::value terms))
+              ((subsetp-eq (cdr terms)
+                           (strip-cars pointers))
+               (acl2::value (cdr terms)))
+              (t (er-soft+ ctx t nil
+                           "When generating code for function ~x0, ~
+                            a term ~x1 was encountered that ~
+                            returns multiple values but they, ~
+                            or at least all of them except the first one, ~
+                            are not all formal parameters of ~x0 ~
+                            of pointer type."
+                           fn term)))))
+    (acl2::value nil))
+  :measure (pseudo-term-count term)
+  :prepwork
+  ((local (in-theory
+           (enable symbol-listp-of-strip-cars-when-atc-symbol-type-alistp)))
+   (local (include-book "std/typed-lists/symbol-listp" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-ext-declon ((fn symbolp)
                             (prec-fns atc-symbol-fninfo-alistp)
                             (proofs booleanp)
@@ -3640,6 +3730,12 @@
        ((er (list params scope pointers))
         (atc-gen-param-declon-list formals fn guard-conjuncts guard ctx state))
        (body (ubody+ fn wrld))
+       ((er affected) (atc-find-affected fn body pointers ctx state))
+       ((when (consp affected))
+        (er-soft+ ctx t nil
+                  "The non-recursive target function ~x0 ~
+                   affects the variable ~x1: ~
+                   this is currently not allowed."))
        ((er (list items type limit)) (atc-gen-stmt body
                                                    nil
                                                    (list scope)
