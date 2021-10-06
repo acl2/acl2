@@ -769,10 +769,10 @@
      "Statement terms represent C statements,
       while expression terms represent C expressions.
       The expression terms returning booleans return ACL2 boolean values,
-      while the statement terms
-      (including expression terms returning C values)
+      while the statement terms,
+      including expression terms returning C values,
       return ACL2 values that represent C values:
-      the distinction between these two kinds of terms
+      the distinction between boolean terms and other kinds of terms
       stems from the need to represent C's non-strictness in ACL2:
       C's non-strict constructs are
       @('if') statements,
