@@ -38,13 +38,13 @@ ACL2 !>>(IRRELEVANT-FORMALS-INFO
                       (IF (CONSP X) (F2 (CDR X) Y) T))
                (DEFUN F2 (X Y)
                       (IF (CONSP X) (F1 (CDR X) Y) NIL))))
-((F1 . Y) (F2 . Y))
+((F1 Y) (F2 Y))
 ACL2 !>>(IRRELEVANT-FORMALS-INFO
              '(MUTUAL-RECURSION (DEFUN F1 (X Y)
                                        (IF (CONSP X) (F2 (CDR X) Y) T))
                                 (DEFUN F2 (X Y)
                                        (IF (CONSP X) (F1 (CDR X) Y) NIL))))
-((F1 . Y) (F2 . Y))
+((F1 Y) (F2 Y))
 ACL2 !>>(IRRELEVANT-FORMALS-INFO
              '(MUTUAL-RECURSION (DEFUN F1 (X Y)
                                        (IF (CONSP X) (F2 (CDR X)) T))
@@ -166,4 +166,18 @@ ACL2 Error in CHK-IRRELEVANT-FORMALS-OK:  The second formal of F1,
 Y, and the second formal of F2, Y, are irrelevant but not declared
 to be irrelevant.  See :DOC irrelevant-formals.
 
+ACL2 !>>(IRRELEVANT-FORMALS-INFO
+             '(MUTUAL-RECURSION
+                   (DEFUN EVEN-NATP (X IRRELEVANT1 IRRELEVANT2)
+                          (IF (ZP X)
+                              T
+                              (NOT (ODD-NATP (+ -1 X)
+                                             IRRELEVANT IRRELEVANT2))))
+                   (DEFUN ODD-NATP (X IRRELEVANT IRRELEVANT2)
+                          (IF (ZP X)
+                              NIL
+                              (NOT (EVEN-NATP (+ -1 X)
+                                              IRRELEVANT IRRELEVANT2))))))
+((EVEN-NATP IRRELEVANT1 IRRELEVANT2)
+ (ODD-NATP IRRELEVANT IRRELEVANT2))
 ACL2 !>>Bye.

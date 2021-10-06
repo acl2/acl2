@@ -35,7 +35,7 @@
      (if (consp x0) (f (cdr x0) x1 x2 x5 x4 x3) nil)))
  :dcls nil)
 
-; This returns ((F1 . Y) (F2 . Y)) because y is an irrelevant formal
+; This returns ((F1 Y) (F2 Y)) because y is an irrelevant formal
 ; for both f1 and f2.
 (irrelevant-formals-info
  '((defun f1 (x y)
@@ -137,3 +137,15 @@
      (if (consp x) (f2 (cdr x) y) t))
    (defun f2 (x y)
      (if (consp x) (f1 (cdr x) y) nil))))
+
+;; Mutual-recursion example with more than one irrelevant formal
+(irrelevant-formals-info
+ '(mutual-recursion
+   (defun even-natp (x irrelevant1 irrelevant2)
+     (if (zp x)
+         t
+       (not (odd-natp (+ -1 x) irrelevant irrelevant2))))
+   (defun odd-natp (x irrelevant irrelevant2)
+     (if (zp x)
+         nil
+       (not (even-natp (+ -1 x) irrelevant irrelevant2))))))
