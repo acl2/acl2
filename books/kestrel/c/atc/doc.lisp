@@ -496,7 +496,7 @@
      (xdoc::li
       "A call of a non-recursive target function @('fnj') with @('j < i'),
        on pure expression terms for @('fni') returning non-@('void') C types,
-       where the types are equal to the
+       where the types of the terms are equal to the
        the C types of the formal parameters of @('fnj').
        The restriction @('j < i') means that
        no (direct or indirect) recursion is allowed in the C code
