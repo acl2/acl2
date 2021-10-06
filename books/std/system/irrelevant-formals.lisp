@@ -59,7 +59,10 @@
         (t (irrelevant-slots-to-alist-1
             (cdr slots)
             (let ((slot (car slots)))
-              (put-assoc-eq (car slot) (cddr slot) alist))))))
+              (put-assoc-eq (car slot)
+                            (append (cdr (assoc-eq (car slot) alist))
+                                    (list (cddr slot)))
+                            alist))))))
 
 (defun irrelevant-slots-to-alist (names slots)
   (irrelevant-slots-to-alist-1 slots (pairlis$ names nil)))
@@ -248,7 +251,7 @@
 (defxdoc irrelevant-formals-info
   :parents (std/system system-utilities-non-built-in irrelevant-formals)
   :short "Determine whether @(see irrelevant-formals) are OK in definitions."
-  :long "<p>This utility returns a Boolean.  For a related utility that can
+  :long "<p>For a related utility that can
  cause an error, see @(see chk-irrelevant-formals-ok).</p>
 
  @({
@@ -353,7 +356,7 @@
       (if (consp x0) (f (cdr x0) x1 x2 x5 x4 x3) nil)))
   :dcls nil)
 
- ; This returns ((F1 . Y) (F2 . Y)) because y is an irrelevant formal
+ ; This returns ((F1 Y) (F2 Y)) because y is an irrelevant formal
  ; for both f1 and f2.
  (irrelevant-formals-info
   '((defun f1 (x y)
