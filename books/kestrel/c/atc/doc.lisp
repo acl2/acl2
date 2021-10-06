@@ -310,7 +310,7 @@
        and @('fni') is recursive.
        This represents no actual C code:
        it just serves to conclude
-       the computation in the body of the loop.")
+       the computation in the body of the loop represented by @('fni').")
      (xdoc::li
       "A term @('var'),
        when @('T') is @('void')
