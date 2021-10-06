@@ -320,6 +320,10 @@
       (append (get-non-xargs-from-declare declare)
               (get-non-xargs-from-declares (rest declares))))))
 
+(defthm all-declare-argp-of-get-non-xargs-from-declares
+  (implies (all-declarep declares)
+           (all-declare-argp (get-non-xargs-from-declares declares))))
+
 ;; Checks whether DECLARE-ARG contributes a guard (or part of a guard) to its
 ;; enclosing defun.
 (defun declare-arg-contributes-a-guardp (declare-arg)
@@ -524,7 +528,7 @@
 (assert-event (equal (remove-declares 'ignore '((declare (xargs :guard (all-declarep declares))) (declare (ignore x))))
                      '((DECLARE (XARGS :GUARD (ALL-DECLAREP DECLARES))))))
 
-(defun add-declare-arg (declare-arg declares)
+(defund add-declare-arg (declare-arg declares)
   (declare (xargs :guard (and (declare-argp declare-arg)
                               (all-declarep declares))))
   (if (atom declares)
@@ -534,9 +538,16 @@
            (first-declare `(declare ,declare-arg ,@declare-args)))
       (cons first-declare (rest declares)))))
 
-(defthm all-declare-argp-of-get-non-xargs-from-declares
-  (implies (all-declarep declares)
-           (all-declare-argp (get-non-xargs-from-declares declares))))
+(defthm all-declare-argp-of-add-declare-arg
+  (implies (and (declare-argp declare-arg)
+                (all-declarep declares))
+           (all-declarep (add-declare-arg declare-arg declares)))
+  :hints (("Goal" :in-theory (enable add-declare-arg))))
+
+(defthm true-listp-of-add-declare-arg
+  (implies (true-listp declares)
+           (true-listp (add-declare-arg declare-arg declares)))
+  :hints (("Goal" :in-theory (enable add-declare-arg))))
 
 
 
@@ -964,3 +975,14 @@
 
 ;; This was wrong before (gave two copies of :program:
 ;; (replace-mode-with-program-in-declares '((declare (xargs :guard t) (xargs :guard (natp x)))))
+
+;; Returns the new declares.
+(defun set-irrelevant-declare-in-declares (irrelevant-formals declares)
+  (declare (xargs :guard (and (symbol-listp irrelevant-formals)
+                              (all-declarep declares)
+                              (true-listp declares))))
+  (let* ((declares (remove-declares 'irrelevant declares))
+         (declares (if irrelevant-formals
+                       (add-declare-arg `(irrelevant ,@irrelevant-formals) declares)
+                     declares)))
+    declares))

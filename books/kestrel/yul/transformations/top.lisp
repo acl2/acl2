@@ -10,19 +10,18 @@
 
 (in-package "YUL")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "dead-code-eliminator")
+(include-book "for-loop-init-rewriter")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ errors
+(defxdoc+ transformations
   :parents (yul)
-  :short "Errors used in the formalization of Yul."
+  :short "Yul transformations in ACL2."
   :long
   (xdoc::topstring
    (xdoc::p
-    "When we formalize static and dynamic semantics of Yul,
-     our ACL2 functions return error values in certain circumstances.
-     An example is when a variable is referenced that is not accessible.")
-   (xdoc::p
-    "We use @(tsee fty::defresult) and companion utilities
-     to handle errors in our Yul formalization.")))
+    "We formalize some of the Yul transformations
+     used in the Solidity compiler,
+     documented at [Yul: Yul Optimizer]."))
+  :order-subtopics t)

@@ -17,7 +17,6 @@
 (include-book "def-equality-transformation")
 (include-book "drop-corresponding-items")
 (include-book "extract-non-local-events")
-(include-book "fixup-ignores")
 (include-book "function-renamingp")
 (include-book "generate-print-events")
 (include-book "hints-specifiers")

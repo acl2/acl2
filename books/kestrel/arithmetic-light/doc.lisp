@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/topics" :dir :system)
+(include-book "xdoc/top" :dir :system)
 
 (defxdoc arithmetic-light
   :short "An arithmetic library developed using a lightweight approach"

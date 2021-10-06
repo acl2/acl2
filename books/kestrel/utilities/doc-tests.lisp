@@ -15,11 +15,11 @@
 (defxdoc-for-macro bar
   (bar &optional o1 &key (key1 'nil) (key2 ':auto))
   (myparent)
-  "Short"
+  "Short desc"
   ((bar "the arg")
    (o1 "the optional arg")
    (key1 "the first keyword arg")
-   (key2 "the second keyword arg"))
+   (key2 (concatenate 'string "the second" " keyword arg")))
   (concatenate 'string "Description " "Description2"))
 
 ;; A simple test. We define a macro called FOO and add xdoc to it, including

@@ -289,6 +289,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption resulterr-option
+  resulterr
+  :short "Fixtype of optional error results."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This can be used for results that
+     either are errors or carry no information otherwise.
+     That is, @('nil') is the good result."))
+  :pred resulterr-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (acl2::defmacro+
  err (x)
  :short "Return an error result with a singleton stack."

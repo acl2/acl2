@@ -62,10 +62,24 @@
            (keyword-value-listp (get-xargs-from-defun defun)))
   :hints (("Goal" :in-theory (enable defun-formp get-xargs-from-defun))))
 
+(defund get-name-from-defun (defun)
+  (declare (xargs :guard (defun-formp defun)
+                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
+  (second defun))
+
 (defund get-body-from-defun (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))))
   (car (last defun)))
+
+(defund get-formals-from-defun (defun)
+  (declare (xargs :guard (defun-formp defun)
+                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
+  (third defun))
+
+(defund get-arity-from-defun (defun)
+  (declare (xargs :guard (defun-formp defun)))
+  (len (get-formals-from-defun defun)))
 
 
 ;; DEFUN is of the form (defun <name> <formals> <declare> ... <declare> <body>)

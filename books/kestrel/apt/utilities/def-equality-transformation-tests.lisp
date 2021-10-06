@@ -98,12 +98,14 @@
                   (rename-functions-in-untranslated-term body
                                                          function-renaming
                                                          state)))
-          (declares (fixup-ignores2 declares formals body function-renaming wrld))
           (new-fn (lookup-eq-safe fn function-renaming)) ;new name for this function
-          )
-     `(,defun-variant ,new-fn ,formals
-        ,@declares
-        ,body)))
+          (defun `(,defun-variant ,new-fn ,formals
+                    ,@declares
+                    ,body))
+          (defun (if (eq :mutual rec)
+                     defun ; has to be done at a higher level
+                   (fixup-ignores-in-defun-form defun nil wrld))))
+     defun))
 
  ;; Go through all the functions in the clique. For each, if it is in
  ;; TARGET-FNS, we both transform it and update rec calls in it (yes, for
@@ -268,9 +270,11 @@
                                                    t ; first function in the clique
                                                    state))
               (mutual-recursion `(mutual-recursion ,@new-defuns))
+              (mutual-recursion (fixup-ignores-in-mutual-recursion-form mutual-recursion wrld))
               (mutual-recursion-to-export (if verify-guards
-                                              (replace-xarg-in-mutual-recursion :verify-guards t mutual-recursion) ; todo: or just set the verify-guards eagerness and ensure there is a guard?
+                                              (ensure-mutual-recursion-demands-guard-verification mutual-recursion)
                                             mutual-recursion))
+              (mutual-recursion-to-export (remove-hints-from-mutual-recursion mutual-recursion-to-export))
               (fn-and-not-normalized-fn-doublets (make-doublets fns (add-not-normalized-suffixes fns)))
               (flag-function-name (pack$ 'flag- fn '-for- 'copy-function)) ;todo: avoid clashes better
               ;; Use as a ruler-extender for the flag function anything used as a ruler-extender for any of the FNS:
