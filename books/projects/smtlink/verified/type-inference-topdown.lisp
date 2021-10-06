@@ -294,14 +294,6 @@
            :in-theory (e/d (unify-if-top)
                            ()))))
 
-(local
- (defthm crock
-   (implies (good-typed-term-p x)
-            (good-typed-term-list-p (list x)))
-   :hints (("Goal"
-            :in-theory (enable good-typed-term-list-p))))
- )
-
 (defines unify-type
   :well-founded-relation l<
   :flag-local nil
@@ -484,60 +476,6 @@
            :in-theory (enable make-typed-fncall-guard
                               typed-term-list->path-cond
                               typed-term-fncall->actuals))))
-
-(defthm crock2
-  (implies (and (good-typed-term-list-p tterm-lst)
-                (consp tterm-lst)
-                (consp (cdr tterm-lst)))
-           (equal (typed-term->path-cond (car tterm-lst))
-                  (typed-term->path-cond (cadr tterm-lst))))
-  :hints (("Goal"
-           :in-theory (enable good-typed-term-list-p
-                              typed-term-list->path-cond))))
-
-(defthm destruct-correct-typed-term-list
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (consp tterm-lst)
-                (good-typed-term-list-p tterm-lst)
-                (alistp a)
-                (ev-smtcp (correct-typed-term-list tterm-lst) a))
-           (and (ev-smtcp (correct-typed-term (car tterm-lst)) a)
-                (ev-smtcp (correct-typed-term-list (cdr tterm-lst)) a)))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (enable correct-typed-term
-                              correct-typed-term-list
-                              typed-term-list->path-cond
-                              typed-term-list->judgements))))
-
-(defthm construct-correct-typed-term-list
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (good-typed-term-p x)
-                (good-typed-term-list-p xl)
-                (alistp a)
-                (ev-smtcp (correct-typed-term x) a)
-                (ev-smtcp (correct-typed-term-list xl) a)
-                (equal (typed-term->path-cond x)
-                       (typed-term-list->path-cond xl)))
-           (ev-smtcp (correct-typed-term-list (cons x xl)) a))
-  :hints (("Goal"
-           :in-theory (enable correct-typed-term
-                              correct-typed-term-list
-                              typed-term-list->path-cond
-                              typed-term-list->judgements))))
-
-(defthm single-correct-typed-term-list
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (good-typed-term-p x)
-                (good-typed-term-list-p xl)
-                (alistp a)
-                (ev-smtcp (correct-typed-term x) a))
-           (ev-smtcp (correct-typed-term-list (list x)) a))
-  :hints (("Goal"
-           :in-theory (enable correct-typed-term
-                              correct-typed-term-list
-                              typed-term-list->path-cond
-                              typed-term-list->judgements))))
 
 (defthm-unify-type-flag
   (defthm correctness-of-unify-if
@@ -741,44 +679,6 @@
                               pseudo-term-listp-of-symbol-listp
                               acl2::pseudo-termp-opener))))
 
-(encapsulate nil ; A brutal proof of the obvious
-  (local (defthm lemma-1
-	   (implies (and (pseudo-termp x) (consp x))
-		    (true-listp x))
-           :hints(("Goal" :expand ((pseudo-termp x))))))
-
-  (local (defthm lemma-2
-	   (implies (good-typed-if-p tterm)
-		    (equal (car (typed-term->term tterm)) 'if))
-           :hints(("Goal" :in-theory (enable good-typed-if-p)))))
-
-  (local (defthm lemma-3
-	   (implies (good-typed-if-p tterm)
-		    (equal (len (cdr (typed-term->term tterm))) 3))
-           :hints(("Goal" :in-theory (enable good-typed-if-p)))))
-
-  (local (defthm lemma-4
-	   (implies (and (true-listp x) (equal (len (cdr x)) 3))
-		    (and (consp (cdddr x))
-			 (equal (cddddr x) nil)))
-	   :hints (("Goal"
-		    :expand ((len (cdr x)) (len (cddr x)) (len (cdddr x)) (len (cddddr x)))))))
-
-  (local (defthm lemma-5
-	   (implies (and (equal (car x) 'if)
-			 (consp (cdddr x))
-			 (equal (cddddr x) nil))
-		    (equal (list 'if (cadr x) (caddr x) (cadddr x))
-			   x))))
-
-  (defthm if-constructor-of-destructors
-    (implies (good-typed-if-p tterm)
-	           (equal (list 'if
-			                    (cadr (typed-term->term tterm))
-		                      (caddr (typed-term->term tterm))
-			                    (cadddr (typed-term->term tterm)))
-		                (typed-term->term tterm)))))
-
 (defthm-unify-type-flag
   (defthm unify-if-maintains-term
     (implies (and (pseudo-termp expected)
@@ -829,9 +729,7 @@
                    ((unify-type-list tterm-lst expected-lst options state)
                     (unify-type-list nil expected-lst options state)
                     (unify-type-list tterm-lst nil options state)
-                    (unify-type-list nil nil options state))))))
-  :hints(("Goal"
-          :in-theory (disable ))))
+                    (unify-type-list nil nil options state)))))))
 
 (define type-judge-topdown-cp ((cl pseudo-term-listp)
                                (smtlink-hint t)

@@ -56,6 +56,14 @@
                 (rationalp y))
            (booleanp (< x y))))
 
+(defthm replace-of-ifix
+  (implies (integerp x)
+           (equal (ifix x) x)))
+
+(defthm replace-of-rfix
+  (implies (rationalp x)
+           (equal (rfix x) x)))
+
 (defun smt-fun ()
   `(,(make-smt-function
       :name 'integerp
@@ -111,8 +119,16 @@
                     :supertypes `(,(make-smt-sub/supertype
                                     :type 'rationalp
                                     :formals '(x)
-                                    :thm 'integerp-implies-rationalp)))
-    ,(make-smt-type :recognizer 'rationalp)))
+                                    :thm 'integerp-implies-rationalp))
+                    :fixer (make-smt-function
+                            :name 'ifix
+                            :formals '(x)
+                            :replace-thm 'replace-of-ifix))
+    ,(make-smt-type :recognizer 'rationalp
+                    :fixer (make-smt-function
+                            :name 'rfix
+                            :formals '(x)
+                            :replace-thm 'replace-of-rfix))))
 
 (defun my-hint ()
   (make-smtlink-hint
