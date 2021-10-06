@@ -23,7 +23,7 @@
 (include-book "kestrel/apt/utilities/deftransformation" :dir :system)
 (include-book "kestrel/apt/utilities/option-parsing" :dir :system)
 (include-book "kestrel/apt/utilities/defun-variant" :dir :system)
-(include-book "kestrel/apt/utilities/fixup-ignores" :dir :system)
+(include-book "kestrel/utilities/fixup-ignores" :dir :system)
 (include-book "kestrel/apt/utilities/make-becomes-theorem" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
@@ -176,12 +176,18 @@
                         (rename-functions-in-untranslated-term body
                                                                function-renaming
                                                                state)))
-                (declares (fixup-ignores2 declares formals body function-renaming wrld))
                 (new-fn (lookup-eq-safe fn function-renaming)) ;new name for this function
+                (defun `(,defun-variant ,new-fn ,formals
+                          ,@declares
+                          ,body))
+                (defun (if (eq :mutual rec)
+                           defun ; has to be done at a higher level
+                         (fixup-ignores-in-defun-form defun nil wrld)))
+                ;; (defun (if (eq rec :mutual)
+                ;;            defun ; irrelevant declares for mutual recursions must be handled at a higher level
+                ;;          (fixup-irrelevants defun)))
                 )
-           `(,defun-variant ,new-fn ,formals
-              ,@declares
-              ,body)))
+           defun))
 
        ;; Go through all the functions in the clique. For each, if it is in
        ;; TARGET-FNS, we both transform it and update rec calls in it (yes, for
@@ -357,6 +363,7 @@
                                                        t ; first function in the clique
                                                        state))
                     (mutual-recursion `(mutual-recursion ,@new-defuns))
+                    (mutual-recursion (fixup-ignores-in-mutual-recursion-form mutual-recursion wrld))
                     (mutual-recursion-to-export (if verify-guards
                                                     (ensure-mutual-recursion-demands-guard-verification mutual-recursion)
                                                   mutual-recursion))
