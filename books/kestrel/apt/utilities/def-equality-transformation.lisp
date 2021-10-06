@@ -411,7 +411,8 @@
                         ;; Export the 'becomes' theorems:
                         ,@becomes-theorems-to-export)
                      state))))))
-       ;; To see what this expands to, see copy-function-expansion.lisp:
+
+       ;; To see what this expands to, see, e.g., copy-function-expansion.lisp:
        (deftransformation ,name
          ;;required args:
          (fn ;;the name of a defined function (TODO: :logic mode only?)
@@ -465,6 +466,10 @@
                  ,short
                  ',transform-specific-arg-descriptions
                  ,description)))
+
+;;;
+;;; copy-function (defined here because copy-function-in-defun is used above)
+;;;
 
 ;; The core function for copy-function (does nothing).
 ;; Core functions always take: fn, untranslated-body, wrld, and then transformation-specific args (none for copy-function).
