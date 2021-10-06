@@ -1119,7 +1119,8 @@
 
 (define atc-check-callable-fn ((term pseudo-termp)
                                (var-term-alist symbol-pseudoterm-alistp)
-                               (prec-fns atc-symbol-fninfo-alistp))
+                               (prec-fns atc-symbol-fninfo-alistp)
+                               (wrld plist-worldp))
   :returns (mv (yes/no booleanp)
                (fn symbolp)
                (args pseudo-term-listp)
@@ -1150,6 +1151,7 @@
   (b* (((acl2::fun (no)) (mv nil nil nil nil (irr-type) nil))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
+       ((when (irecursivep+ term.fn wrld)) (no))
        (fn+info (assoc-eq term.fn (atc-symbol-fninfo-alist-fix prec-fns)))
        ((unless (consp fn+info)) (no))
        (info (cdr fn+info))
@@ -1723,7 +1725,7 @@
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
   (b* (((mv okp called-fn args in-types out-type limit)
-        (atc-check-callable-fn term var-term-alist prec-fns))
+        (atc-check-callable-fn term var-term-alist prec-fns (w state)))
        ((when okp)
         (b* (((mv erp (list arg-exprs types) state)
               (atc-gen-expr-cval-pure-list args
