@@ -335,14 +335,6 @@
        the computation in the body of the loop represented by @('fni').")
      (xdoc::li
       "A call of @(tsee if) on
-       (i) a test that is an expression term for @('fni') returning boolean and
-       (ii) branches that are statement terms for @('fni')
-       returning @('T') and affecting @('vars').
-       This represents a C @('if') conditional statement
-       whose test expression is represented by the test term
-       and whose branch blocks are represented by the branch terms.")
-     (xdoc::li
-      "A call of @(tsee if) on
        (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
        (ii) a `then' branch that is
        a statement term for @('fni')
@@ -357,6 +349,14 @@
        @('(mbt$ x)') is
        @('(return-last \'acl2::mbe1-raw \'t (if x \'t \'nil))');
        these are the patterns that ATC looks for.")
+     (xdoc::li
+      "A call of @(tsee if) on
+       (i) a test that is an expression term for @('fni') returning boolean and
+       (ii) branches that are statement terms for @('fni')
+       returning @('T') and affecting @('vars').
+       This represents a C @('if') conditional statement
+       whose test expression is represented by the test term
+       and whose branch blocks are represented by the branch terms.")
      (xdoc::li
       "A term @('(let ((var (declar term))) body)'),
        where the symbol name of @('var') is a portable ASCII C identifier
