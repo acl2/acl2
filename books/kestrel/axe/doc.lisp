@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/topics" :dir :system)
+(include-book "xdoc/top" :dir :system)
 (include-book "kestrel/utilities/xdoc-paras" :dir :system)
 
 (defxdoc axe

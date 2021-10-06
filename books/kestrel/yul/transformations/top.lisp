@@ -11,6 +11,7 @@
 (in-package "YUL")
 
 (include-book "dead-code-eliminator")
+(include-book "for-loop-init-rewriter")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
