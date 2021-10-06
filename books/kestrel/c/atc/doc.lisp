@@ -303,15 +303,6 @@
        whose expression is represented by the same term,
        viewed as an expression term returning a C value.")
      (xdoc::li
-      "A call of @('fni') on variables identical to its formal parameters,
-       when the C types or the variables are
-       the same as the C types of the formal parameters,
-       @('T') is @('void'),
-       and @('fni') is recursive.
-       This represents no actual C code:
-       it just serves to conclude
-       the computation in the body of the loop represented by @('fni').")
-     (xdoc::li
       "A term @('var'),
        when @('T') is @('void')
        and @('vars') is the singleton list @('(var)').
@@ -333,6 +324,15 @@
        @('(mv var1 ... varn)') is
        @('(cons var1 (cons ... (cons varn \' nil)...))');
        this is the pattern that ATC looks for.")
+     (xdoc::li
+      "A call of @('fni') on variables identical to its formal parameters,
+       when the C types or the variables are
+       the same as the C types of the formal parameters,
+       @('T') is @('void'),
+       and @('fni') is recursive.
+       This represents no actual C code:
+       it just serves to conclude
+       the computation in the body of the loop represented by @('fni').")
      (xdoc::li
       "A call of @(tsee if) on
        (i) a test that is an expression term for @('fni') returning boolean and
