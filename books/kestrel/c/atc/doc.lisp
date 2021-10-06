@@ -260,17 +260,19 @@
 
     (xdoc::p
      "The " (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
-     " of each @('fni') must be:")
+     " of each @('fni') must be as follows:")
     (xdoc::ul
      (xdoc::li
-      "A statement term for @('fni')
-       returning a non-@('void') non-pointer C type
-       and affecting no variables,
-       when @('fni') is non-recursive.")
+      "If @('fni') is non-recursive, the unnormalized body must be
+       a statement term for @('fni')
+       returning a non-@('void') non-pointer C type @('T')
+       and affecting no variables.
+       The return type of the C function represented by @('fni') is @('T').")
      (xdoc::li
-      "A loop term for @('fni') affecting
-       the formal parameters of @('fni') or a non-empty subset of them,
-       when @('fni') is recursive."))
+      "If @('fni') is recursive, the unnormalized body must be
+       a loop term for @('fni') affecting variables @('vars'),
+       where each variable in @('vars')
+       is a formal parameter of @('fni')."))
     (xdoc::p
      "The notions of
       (i) statement term for @('fni')
