@@ -357,8 +357,7 @@
      an optional (loop) statement that is present,
      and is represented by the function,
      when the function is recursive;
-     a list of variables affected by the function,
-     which is non-@('nil') when the function is recursive;
+     a list of variables affected by the function;
      the name of the locally generated theorem that asserts
      that the function returns a C value;
      the name of the locally generated theorem that asserts
@@ -3730,12 +3729,7 @@
        ((er (list params scope pointers))
         (atc-gen-param-declon-list formals fn guard-conjuncts guard ctx state))
        (body (ubody+ fn wrld))
-       ((er affected) (atc-find-affected fn body pointers ctx state))
-       ((when (consp affected))
-        (er-soft+ ctx t nil
-                  "The non-recursive target function ~x0 ~
-                   affects the variable ~x1: ~
-                   this is currently not allowed."))
+       ((er affect) (atc-find-affected fn body pointers ctx state))
        ((er (list items type limit)) (atc-gen-stmt body
                                                    nil
                                                    (list scope)
@@ -3777,7 +3771,7 @@
               :out-type type
               :in-types (strip-cdrs scope)
               :loop? nil
-              :affect nil
+              :affect affect
               :returns-value-thm fn-returns-value-thm
               :correct-thm fn-correct-thm
               :measure-nat-thm nil
