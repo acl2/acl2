@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; For the complete check, see ACL2 source function chk-macro-arglist-msg.
+
 (include-book "quote")
 
 (local (in-theory (disable mv-nth)))
