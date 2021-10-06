@@ -1132,7 +1132,7 @@
    (xdoc::p
     "If the check is successful, we return
      the called function along with the arguments.
-     We also return the result type of the function
+     We also return the input and output types of the function
      and the limit sufficient to execute the function.")
    (xdoc::p
     "The limit retrieved from the function table
