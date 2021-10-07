@@ -18,7 +18,8 @@
        :name norm-positive-definite-1)
   (ret (implies (real-listp vec)
         	(<= (norm^2 (cdr vec)) ret))
-       :hints (("GOAL" :expand (ret)))
+; Commented out by Matt K.; see GitHub Issue #1320
+;      :hints (("GOAL" :expand (ret)))
        :rule-classes ((:linear))
        :name norm-monotonicity-1)))
 
