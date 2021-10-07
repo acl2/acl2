@@ -3863,12 +3863,6 @@
                   "The function ~x0 returns void and affects no variables. ~
                    This is disallowed."
                   fn))
-       ((when (and (type-case type :pointer)
-                   (not (member-eq :array-writes experimental))))
-        (acl2::value
-         (raise "Internal error: ~
-                 the return type ~x0 of function ~x1 cannot be a pointer."
-                type fn)))
        (fundef (make-fundef :result (atc-gen-tyspecseq type)
                             :name (make-ident :name name)
                             :params params
