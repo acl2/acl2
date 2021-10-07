@@ -23,29 +23,29 @@
            (and (consp (assoc-equal x alst))
                 (smt-sub/supertype-list-p (cdr (assoc-equal x alst))))))
 
-(defprod return-spec
+(defprod thm-spec
   ((formals symbol-listp)
    (thm symbolp)))
 
-(deflist return-spec-list
-  :elt-type return-spec-p
+(deflist thm-spec-list
+  :elt-type thm-spec-p
   :true-listp t)
 
-(defalist symbol-return-spec-list-alist
+(defalist symbol-thm-spec-list-alist
   :key-type symbolp
-  :val-type return-spec-list-p
+  :val-type thm-spec-list-p
   :true-listp t)
 
-(defthm assoc-equal-of-symbol-return-spec-list-alist
-  (implies (and (symbol-return-spec-list-alist-p alst)
+(defthm assoc-equal-of-symbol-thm-spec-list-alist
+  (implies (and (symbol-thm-spec-list-alist-p alst)
                 (assoc-equal x alst))
            (and (consp (assoc-equal x alst))
-                (return-spec-list-p (cdr (assoc-equal x alst))))))
+                (thm-spec-list-p (cdr (assoc-equal x alst))))))
 
 (defprod type-options
   ((supertype type-to-types-alist-p)
    (subtype type-to-types-alist-p)
-   (functions symbol-return-spec-list-alist-p)
+   (functions symbol-thm-spec-list-alist-p)
    (names symbol-listp)))
 
 (define is-type? ((type symbolp)
@@ -70,17 +70,17 @@
 
 (define construct-return-spec ((formals symbol-listp)
                                (return-lst symbol-listp))
-  :returns (return-spec-lst return-spec-list-p)
+  :returns (return-spec-lst thm-spec-list-p)
   :measure (len return-lst)
   (b* ((formals (symbol-list-fix formals))
        (return-lst (symbol-list-fix return-lst))
        ((unless (consp return-lst)) nil)
        ((cons return-hd return-tl) return-lst))
-    (cons (make-return-spec :formals formals :thm return-hd)
+    (cons (make-thm-spec :formals formals :thm return-hd)
           (construct-return-spec formals return-tl))))
 
 (define construct-function-alist ((funcs smt-function-list-p))
-  :returns (func-alst symbol-return-spec-list-alist-p)
+  :returns (func-alst symbol-thm-spec-list-alist-p)
   :measure (len funcs)
   (b* ((funcs (smt-function-list-fix funcs))
        ((unless (consp funcs)) nil)

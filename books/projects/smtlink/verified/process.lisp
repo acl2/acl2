@@ -362,6 +362,7 @@
          (first-ok
           (case first
             (:functions (function-list-syntax-p second))
+            (:fixer (function-syntax-p second))
             (:subtypes (sub/supertype-list-syntax-p second))
             (:supertypes (sub/supertype-list-syntax-p second))
             (t (er hard? 'process=>type-option-syntax-p-helper
@@ -376,6 +377,8 @@
                   (and (consp (cdr term))
                        (implies (equal (car term) :functions)
                                 (function-list-syntax-p (cadr term)))
+                       (implies (equal (car term) :fixer)
+                                (function-syntax-p (cadr term)))
                        (implies (equal (car term) :subtypes)
                                 (sub/supertype-list-syntax-p (cadr term)))
                        (implies (equal (car term) :supertypes)
@@ -385,6 +388,7 @@
          :name definition-of-type-option-syntax-p-helper)
      (ok (implies (and (and ok (consp term) (symbol-listp used))
                        (not (equal (car term) :functions))
+                       (not (equal (car term) :fixer))
                        (not (equal (car term) :subtypes)))
                   (equal (car term) :supertypes))
          :hints (("Goal"
@@ -414,6 +418,8 @@
                   (and (consp (cdr term))
                        (implies (equal (car term) :functions)
                                 (function-list-syntax-p (cadr term)))
+                       (implies (equal (car term) :fixer)
+                                (function-syntax-p (cadr term)))
                        (implies (equal (car term) :subtypes)
                                 (sub/supertype-list-syntax-p (cadr term)))
                        (implies (equal (car term) :supertypes)
@@ -421,6 +427,7 @@
          :name definition-of-type-option-syntax-p)
      (ok (implies (and (and ok (consp term))
                        (not (equal (car term) :functions))
+                       (not (equal (car term) :fixer))
                        (not (equal (car term) :subtypes)))
                   (equal (car term) :supertypes))
          :name option-of-type-option-syntax-p)
@@ -728,6 +735,9 @@
             (:functions
              (change-smt-type smt-type
                               :functions (construct-type-functions content)))
+            (:fixer
+             (change-smt-type smt-type
+                              :fixer (construct-function content)))
             (:subtypes
              (change-smt-type smt-type
                               :subtypes (construct-sub/supertype-list content)))

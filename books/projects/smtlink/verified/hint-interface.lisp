@@ -65,6 +65,7 @@
 
 (defprod smt-type
   ((recognizer symbolp)
+   (fixer smt-function-p :default (make-smt-function))
    (functions smt-function-list-p)
    (subtypes smt-sub/supertype-list-p)
    (supertypes smt-sub/supertype-list-p)))

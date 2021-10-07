@@ -20,6 +20,10 @@
 
 (set-state-ok t)
 
+(local
+ (defthm symbol-is-pseudo-term
+   (implies (symbolp x) (pseudo-termp x))))
+
 (local (in-theory (disable pseudo-termp pseudo-term-listp)))
 
 ;;-------------------------------------------------------
@@ -121,7 +125,7 @@
 
 (define substitute-term-in-type-predicate ((single-judge pseudo-termp)
                                            (term pseudo-termp)
-                                           (new-var symbolp)
+                                           (new-var pseudo-termp)
                                            (supertype-alst type-to-types-alist-p))
   :returns (new-judge pseudo-termp)
   :guard (type-predicate-of-term single-judge term supertype-alst)
@@ -132,7 +136,7 @@
          (er hard? 'judgement-fns=>substitute-term-in-type-predicate
              "Type predicate judgement is malformed: ~q0" single-judge)
          single-judge))
-       (new-var (symbol-fix new-var))
+       (new-var (pseudo-term-fix new-var))
        ((mv okp type)
         (case-match single-judge
           ((type &) (mv (and (symbolp type)
@@ -143,7 +147,7 @@
     `(,type ,new-var)))
 
 (defthm correctness-of-substitute-term-in-type-predicate
-  (implies (and (symbolp new-var)
+  (implies (and (pseudo-termp new-var)
                 (pseudo-termp term)
                 (pseudo-termp single-judge)
                 (alistp a)
@@ -159,19 +163,19 @@
 
 (define substitute-term-in-args ((args pseudo-term-listp)
                                  (term pseudo-termp)
-                                 (new-var symbolp))
+                                 (new-var pseudo-termp))
   :returns (new-args pseudo-term-listp
                      :hints (("Goal" :in-theory (enable pseudo-termp
                                                         pseudo-term-listp))))
   (b* ((args (pseudo-term-list-fix args))
-       (new-var (symbol-fix new-var))
+       (new-var (pseudo-term-fix new-var))
        ((unless (consp args)) nil)
        ((cons first-arg rest-args) args)
        ((if (equal first-arg term)) (cons new-var rest-args)))
     (cons first-arg (substitute-term-in-args rest-args term new-var))))
 
 (defthm correctness-of-substitute-term-in-args
-  (implies (and (symbolp new-var)
+  (implies (and (pseudo-termp new-var)
                 (pseudo-termp term)
                 (pseudo-term-listp args)
                 (alistp a)
@@ -183,7 +187,7 @@
 
 (define substitute-term-in-single-var-fncall ((single-judge pseudo-termp)
                                               (term pseudo-termp)
-                                              (new-var symbolp))
+                                              (new-var pseudo-termp))
   :returns (new-judge pseudo-termp)
   :guard (single-var-fncall-of-term single-judge term)
   (b* ((single-judge (pseudo-term-fix single-judge))
@@ -200,7 +204,7 @@
     `(,fn ,@(substitute-term-in-args args term new-var))))
 
 (defthm correctness-of-substitute-term-in-single-var-fncall
-  (implies (and (symbolp new-var)
+  (implies (and (pseudo-termp new-var)
                 (pseudo-termp term)
                 (pseudo-termp single-judge)
                 (alistp a)
@@ -216,13 +220,13 @@
 
 (define substitute-term-in-judge ((single-judge pseudo-termp)
                                   (term pseudo-termp)
-                                  (new-var symbolp)
+                                  (new-var pseudo-termp)
                                   (supertype-alst type-to-types-alist-p))
   :returns (new-judge pseudo-termp
                       :hints (("Goal" :in-theory (enable pseudo-termp))))
   :guard (judgement-of-term single-judge term supertype-alst)
   (b* ((single-judge (pseudo-term-fix single-judge))
-       (new-var (symbol-fix new-var)))
+       (new-var (pseudo-term-fix new-var)))
     (cond ((equal single-judge term) new-var)
           ((type-predicate-of-term single-judge term supertype-alst)
            (substitute-term-in-type-predicate single-judge term new-var supertype-alst))
@@ -231,7 +235,7 @@
           (t single-judge))))
 
 (defthm correctness-of-substitute-term-in-judge
-  (implies (and (symbolp new-var)
+  (implies (and (pseudo-termp new-var)
                 (pseudo-termp term)
                 (pseudo-termp single-judge)
                 (alistp a)
@@ -247,17 +251,17 @@
 (substitute-term-in-judge '(rationalp (foo x))
                           '(foo x)
                           'x0
-                          `((rationalp . (,(make-type-tuple)))))
+                          `((rationalp . nil)))
 
 (substitute-term-in-judge '(< (foo x) '0)
                           '(foo x)
                           'x0
-                          `((rationalp . (,(make-type-tuple)))))
+                          `((rationalp . nil)))
 
 (substitute-term-in-judge '(foo x)
                           '(foo x)
                           'x0
-                          `((rationalp . (,(make-type-tuple)))))
+                          `((rationalp . nil)))
 |#
 
 (define make-fast-judgements ((judge pseudo-termp)
@@ -299,8 +303,8 @@
                          'nil)
                       '(foo x)
                       'x0
-                      `((rationalp . (,(make-type-tuple)))
-                        (integerp . (,(make-type-tuple))))
+                      `((rationalp . nil)
+                        (integerp . nil))
                       nil
                       0)
 |#
@@ -352,9 +356,9 @@
                    'nil)
                 '(bar x)
                 'x0
-                `((rationalp . (,(make-type-tuple)))
-                  (integerp . (,(make-type-tuple)))
-                  (acl2-numberp . (,(make-type-tuple))))
+                `((rationalp . nil)
+                  (integerp . nil)
+                  (acl2-numberp . nil))
                 '(((rationalp x0) . 1)
                   ((integerp x0) . 0)))
 |#
@@ -402,9 +406,9 @@
                                 'nil)
                             'nil)
                          '(bar x)
-                         `((rationalp . (,(make-type-tuple)))
-                           (integerp . (,(make-type-tuple)))
-                           (acl2-numberp . (,(make-type-tuple))))
+                         `((rationalp . nil)
+                           (integerp . nil)
+                           (acl2-numberp . nil))
                          '(0 nil 1)
                          ''t)
 |#
@@ -481,18 +485,18 @@
                      (rationalp (foo x))
                    'nil)
                 '(foo x)
-                `((rationalp . (,(make-type-tuple)))
-                  (integerp . (,(make-type-tuple)))
-                  (acl2-numberp . (,(make-type-tuple))))
+                `((rationalp . nil)
+                  (integerp . nil)
+                  (acl2-numberp . nil))
                 1)
 
 (find-nth-judge '(if (integerp (foo x))
                      (rationalp (foo x))
                    'nil)
                 '(foo x)
-                `((rationalp . (,(make-type-tuple)))
-                  (integerp . (,(make-type-tuple)))
-                  (acl2-numberp . (,(make-type-tuple))))
+                `((rationalp . nil)
+                  (integerp . nil)
+                  (acl2-numberp . nil))
                 2)
 |#
 
@@ -538,9 +542,9 @@
                               (rationalp (foo x))
                             'nil)
                          '(foo x)
-                         `((rationalp . (,(make-type-tuple)))
-                           (integerp . (,(make-type-tuple)))
-                           (acl2-numberp . (,(make-type-tuple))))
+                         `((rationalp . nil)
+                           (integerp . nil)
+                           (acl2-numberp . nil))
                          '(0 nil 1)
                          ''t)
 |#
@@ -734,9 +738,9 @@
                (rationalp (bar x)))
             '(foo x)
             '(bar x)
-            `((rationalp . (,(make-type-tuple)))
-              (integerp . (,(make-type-tuple)))
-              (acl2-numberp . (,(make-type-tuple)))))
+            `((rationalp . nil)
+              (integerp . nil)
+              (acl2-numberp . nil)))
 |#
 
 (defthm correctness-of-commute-if
@@ -788,9 +792,9 @@
                         'nil)
                      '(foo x)
                      '(bar x)
-                     `((rationalp . (,(make-type-tuple)))
-                       (integerp . (,(make-type-tuple)))
-                       (acl2-numberp . (,(make-type-tuple)))))
+                     `((rationalp . nil)
+                       (integerp . nil)
+                       (acl2-numberp . nil)))
 |#
 
 (defthm correctness-of-merge-if-judgements
@@ -1432,3 +1436,87 @@ state)
            (ev-smtcp (type-judgement-top-list judgements-lst term-lst options) a))
   :hints (("Goal"
            :in-theory (enable type-judgement-top-list))))
+
+;; ------------------------------------------------------------
+;; Substitute term in judgements
+
+(define generate-judge-from-equality-acc ((lhs pseudo-termp)
+                                          (rhs pseudo-termp)
+                                          (judge pseudo-termp)
+                                          (supertype-alst
+                                           type-to-types-alist-p)
+                                          (acc pseudo-termp))
+  :returns (new-judge pseudo-termp)
+  :measure (acl2-count (pseudo-term-fix judge))
+  :verify-guards nil
+  (b* ((lhs (pseudo-term-fix lhs))
+       (rhs (pseudo-term-fix rhs))
+       (judge (pseudo-term-fix judge))
+       (acc (pseudo-term-fix acc))
+       ((if (equal judge ''t)) acc)
+       ((if (judgement-of-term judge rhs supertype-alst))
+        `(if ,(substitute-term-in-judge judge rhs lhs supertype-alst) ,acc 'nil))
+       ((unless (is-conjunct? judge)) acc)
+       ((list* & judge-hd judge-tl &) judge)
+       (new-acc (generate-judge-from-equality-acc lhs rhs judge-hd
+                                                  supertype-alst acc)))
+    (generate-judge-from-equality-acc lhs rhs judge-tl supertype-alst
+                                      new-acc)))
+
+(verify-guards generate-judge-from-equality-acc
+  :hints (("Goal" :in-theory (enable pseudo-termp))))
+
+(defthm correctness-of-generate-judge-from-equality-acc
+  (implies (and (pseudo-termp lhs)
+                (pseudo-termp rhs)
+                (pseudo-termp judge)
+                (pseudo-termp acc)
+                (alistp a)
+                (ev-smtcp judge a)
+                (ev-smtcp acc a)
+                (equal (ev-smtcp lhs a) (ev-smtcp rhs a)))
+           (ev-smtcp (generate-judge-from-equality-acc
+                      lhs rhs judge supertype-alst acc)
+                     a))
+  :hints (("Goal"
+           :induct (generate-judge-from-equality-acc
+                    lhs rhs judge supertype-alst acc)
+           :in-theory (e/d (generate-judge-from-equality-acc
+                            is-conjunct?
+                            pseudo-termp
+                            pseudo-term-listp)
+                           (correctness-of-path-test-list
+                            correctness-of-path-test
+                            symbol-listp
+                            implies-of-is-conjunct?
+                            consp-of-is-conjunct?
+                            pseudo-term-listp-of-symbol-listp
+                            symbolp-of-fn-call-of-pseudo-termp
+                            correctness-of-is-judgements?
+                            acl2::symbolp-of-car-when-symbol-listp
+                            pseudo-term-listp-of-cdr-of-pseudo-termp
+                            lambda-of-pseudo-lambdap
+                            default-car
+                            default-cdr
+                            length
+                            consp-of-pseudo-lambdap)))))
+
+(define generate-judge-from-equality ((lhs pseudo-termp)
+                                      (rhs pseudo-termp)
+                                      (judge pseudo-termp)
+                                      (supertype-alst type-to-types-alist-p))
+  :returns (new-judge pseudo-termp)
+  (generate-judge-from-equality-acc lhs rhs judge supertype-alst ''t))
+
+(defthm correctness-of-generate-judge-from-equality
+  (implies (and (pseudo-termp lhs)
+                (pseudo-termp rhs)
+                (pseudo-termp judge)
+                (alistp a)
+                (ev-smtcp judge a)
+                (equal (ev-smtcp lhs a) (ev-smtcp rhs a)))
+           (ev-smtcp (generate-judge-from-equality lhs rhs judge
+                                                   supertype-alst)
+                     a))
+  :hints (("Goal"
+           :in-theory (e/d (generate-judge-from-equality) ()))))
