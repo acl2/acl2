@@ -265,8 +265,10 @@
      (xdoc::li
       "If @('fni') is non-recursive, the unnormalized body must be
        a statement term for @('fni') with loop flag @('nil')
-       returning a non-@('void') non-pointer C type @('T')
-       and affecting no variables.
+       returning type @('T') and affecting variables @('vars'),
+       where each variable in @('vars')
+       is a formal parameter of @('fni') with pointer type
+       and where @('T') is not @('void') if @('vars') is @('nil').
        The return type of the C function represented by @('fni') is @('T').")
      (xdoc::li
       "If @('fni') is recursive, the unnormalized body must be

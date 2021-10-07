@@ -3836,11 +3836,18 @@
         (atc-gen-param-declon-list formals fn guard-conjuncts guard ctx state))
        (body (ubody+ fn wrld))
        ((er affect) (atc-find-affected fn body pointers ctx state))
+       ((unless (subsetp-eq affect (strip-cars pointers)))
+        (er-soft+ ctx t nil
+                  "The variables ~x0 affected by the body of ~x1 ~
+                   must all have pointer types, ~
+                   but some of them are not among ~
+                   the formals ~x2 with pointer types."
+                  affect fn (strip-cars pointers)))
        ((er (list items type limit)) (atc-gen-stmt body
                                                    nil
                                                    (list scope)
                                                    nil
-                                                   nil
+                                                   affect
                                                    fn
                                                    prec-fns
                                                    experimental
