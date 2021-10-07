@@ -492,7 +492,6 @@
        either the variable @('var') when @('vars') is the singleton @('(var)'),
        or the term @('(mv var1 ... varn)')
        when @('vars') is the list @('(var1 ... varn)') with @('n') &gt; 1.
-       All the variables in @('vars') must have C integer types.
        This represents the C @('while') statement
        whose controlling expression is represented by the test
        and whose body is represented by the `then' branch,
