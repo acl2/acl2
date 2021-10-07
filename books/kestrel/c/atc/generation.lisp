@@ -1129,6 +1129,7 @@
                (args pseudo-term-listp)
                (in-types type-listp)
                (out-type typep)
+               (affect symbol-listp)
                (limit pseudo-termp))
   :short "Check if a term may represent a call to a callable target function."
   :long
@@ -1136,7 +1137,8 @@
    (xdoc::p
     "If the check is successful, we return
      the called function along with the arguments.
-     We also return the input and output types of the function
+     We also return the input and output types of the function,
+     the variables affected by the function,
      and the limit sufficient to execute the function.")
    (xdoc::p
     "The limit retrieved from the function table
@@ -1151,7 +1153,7 @@
     "This is used on expression terms returning C values,
      so the called function must be non-recursive,
      i.e. it must represent a C function, not a C loop."))
-  (b* (((acl2::fun (no)) (mv nil nil nil nil (irr-type) nil))
+  (b* (((acl2::fun (no)) (mv nil nil nil nil (irr-type) nil nil))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((when (irecursivep+ term.fn wrld)) (no))
@@ -1160,10 +1162,11 @@
        (info (cdr fn+info))
        (in-types (atc-fn-info->in-types info))
        (out-type (atc-fn-info->out-type info))
+       (affect (atc-fn-info->affect info))
        ((when (null out-type)) (no))
        (limit (atc-fn-info->limit info))
        (limit (fty-fsublis-var var-term-alist limit)))
-    (mv t term.fn term.args in-types out-type limit))
+    (mv t term.fn term.args in-types out-type affect limit))
   ///
 
   (defret pseudo-term-count-of-atc-check-callable-fn-args
@@ -1692,6 +1695,7 @@
   :returns (mv erp
                (val (tuple (expr exprp)
                            (type typep)
+                           (affect symbol-listp)
                            (limit pseudo-termp)
                            val))
                state)
@@ -1704,7 +1708,8 @@
      we check that the term is an expression term returning a C value,
      as described in the user documentation.")
    (xdoc::p
-    "We also return the C type of the expression.")
+    "We also return the C type of the expression,
+     and the affected variables.")
    (xdoc::p
     "We also return a limit that suffices for @(tsee exec-expr-call-or-pure)
      to execute the expression completely.
@@ -1727,7 +1732,7 @@
      The type is the one returned by that translation.
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
-  (b* (((mv okp called-fn args in-types out-type limit)
+  (b* (((mv okp called-fn args in-types out-type affect limit)
         (atc-check-callable-fn term var-term-alist prec-fns (w state)))
        ((when okp)
         (b* (((mv erp (list arg-exprs types) state)
@@ -1736,9 +1741,9 @@
                                            fn
                                            ctx
                                            state))
-             ((when erp) (mv erp (list (irr-expr) (irr-type) nil) state))
+             ((when erp) (mv erp (list (irr-expr) (irr-type) nil nil) state))
              ((unless (equal types in-types))
-              (er-soft+ ctx t (list (irr-expr) (irr-type) nil)
+              (er-soft+ ctx t (list (irr-expr) (irr-type) nil nil)
                         "The function ~x0 with input types ~x1 ~
                          is applied to terms ~x2 returning ~x3. ~
                          This is indicative of provably dead code, ~
@@ -1749,11 +1754,12 @@
                                               :name (symbol-name called-fn))
                                         :args arg-exprs)
                         out-type
+                        affect
                         `(binary-+ '1 ,limit))))))
     (b* (((mv erp (list expr type) state)
           (atc-gen-expr-cval-pure term inscope fn ctx state))
-         ((when erp) (mv erp (list (irr-expr) (irr-type) nil) state)))
-      (acl2::value (list expr type '(quote 1)))))
+         ((when erp) (mv erp (list (irr-expr) (irr-type) nil nil) state)))
+      (acl2::value (list expr type affect '(quote 1)))))
   ///
   (more-returns
    (val (and (consp val)
@@ -2287,15 +2293,24 @@
                                must be a portable ASCII C identifier, ~
                                but it is not."
                               (symbol-name var) var fn))
-                   ((mv erp (list init-expr init-type init-limit) state)
+                   ((mv erp
+                        (list init-expr init-type init-affect init-limit)
+                        state)
                     (atc-gen-expr-cval val var-term-alist inscope
                                        fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil nil nil) state))
+                   ((when (consp init-affect))
+                    (er-soft+ ctx t (list nil nil nil)
+                              "The term ~x0 to which the variable ~x1 is bound ~
+                               must not affect any variables, ~
+                               but it affects ~x2 instead."
+                              val var init-affect))
                    ((when (type-case init-type :pointer))
                     (er-soft+ ctx t (list nil nil nil)
                               "The term ~x0 to which the variable ~x1 is bound ~
-                               must not have a C pointer type, but it does."
-                              val var))
+                               must not have a C pointer type, ~
+                               but it has type ~x2 instead."
+                              val var init-type))
                    (declon (make-declon :type (atc-gen-tyspecseq init-type)
                                         :declor (make-declor
                                                  :ident
@@ -2326,7 +2341,9 @@
                         fn var))
              ((when (eq wrapper? 'assign))
               (b* ((prev-type type?)
-                   ((mv erp (list rhs-expr rhs-type rhs-limit) state)
+                   ((mv erp
+                        (list rhs-expr rhs-type rhs-affect rhs-limit)
+                        state)
                     (atc-gen-expr-cval val var-term-alist inscope
                                        fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil nil nil) state))
@@ -2338,6 +2355,12 @@
                                differs from the type ~x4 ~
                                of a variable with the same symbol in scope."
                               rhs-type val var fn prev-type))
+                   ((when (consp rhs-affect))
+                    (er-soft+ ctx t (list nil nil nil)
+                              "The term ~x0 to which the variable ~x1 is bound ~
+                               must not affect any variables, ~
+                               but it affects ~x2 instead."
+                              val var rhs-affect))
                    (asg (make-expr-binary
                          :op (binop-asg)
                          :arg1 (expr-ident (make-ident :name (symbol-name var)))
@@ -2470,15 +2493,21 @@
        ((when (and (irecursivep+ fn (w state))
                    (equal term `(,fn ,@(formals+ fn (w state))))))
         (acl2::value (list nil nil (pseudo-term-quote 0))))
-       ((unless (null affect))
+       ((when (irecursivep+ fn (w state)))
         (er-soft+ ctx t (list nil nil nil)
-                  "A statement term affecting ~x0 in the function ~x1 ~
-                   does not end with the affected variables, ~
-                   but with the term ~x2 instead."
-                  affect fn term))
-       ((mv erp (list expr type limit) state)
+                  "When generating code for the recursive function ~x0, ~
+                   a term ~x1 was encountered at the end of the computation, ~
+                   which is disallowed."))
+       ((mv erp (list expr type eaffect limit) state)
         (atc-gen-expr-cval term var-term-alist inscope fn prec-fns ctx state))
        ((when erp) (mv erp (list nil nil nil) state))
+       ((unless (equal affect eaffect))
+        (er-soft+ ctx t (list nil nil nil)
+                  "When generating code for the non-recursive function ~x0, ~
+                   a term ~x1 was encountered at the end of the computation, ~
+                   that affects the variables ~x2, ~
+                   but ~x0 affects the variables ~x3 instead."
+                  fn term eaffect affect))
        ((when (type-case type :void))
         (raise "Internal error: return term ~x0 has type void." term)
         (acl2::value (list nil nil nil)))

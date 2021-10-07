@@ -274,13 +274,15 @@
        where each variable in @('vars')
        is a formal parameter of @('fni')."))
     (xdoc::p
-     "The notions of
+     "The above-mentioned notions of
       (i) statement term for @('fni')
       returning @('T') and affecting @('vars') and
       (ii) loop term for @('fni') affecting @('vars')
       are defined below, along with the notions of
-      (iii) expression term for @('fni') returning @('T'),
-      (iv) pure expression term for @('fni') returning @('T'),
+      (iii) expression term for @('fni')
+      returning @('T') and affecting @('vars'),
+      (iv) pure expression term for @('fni')
+      returning @('T'),
       (v) C type of a variable, and
       (vi) assignable variable.")
 
@@ -294,13 +296,14 @@
       is inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "An expression term for @('fni') returning @('T'),
+      "An expression term for @('fni')
+       returning @('T') and affecting @('vars'),
        when @('T') is a non-@('void') non-pointer C type,
        @('vars') is @('nil'),
        and @('fni') is not recursive.
        That is, an expression term returning a C value is also
-       a statement term returning that that C value
-       and affecting no variables.
+       a statement term returning that that C value,
+       affecting the same variables.
        This represents a C @('return') statement
        whose expression is represented by the same term,
        viewed as an expression term returning a C value.")
@@ -367,7 +370,7 @@
        the symbol names of all the other ACL2 variables in scope
        (function parameters and variables bound in enclosing @(tsee let)s),
        @('term') is an expression term for @('fni')
-       returning a non-pointer C type, and
+       returning a non-pointer C type and affecting no variables, and
        @('body') is a statement term for @('fni')
        returning @('T') and affecting @('vars').
        This represents, as indicated by the wrapper @(tsee declar),
@@ -383,7 +386,8 @@
       "A term @('(let ((var (assign term))) body)'),
        where @('var') is assignable,
        @('term') is an expression term for @('fni')
-       returning the same C type as the C type of @('var'), and
+       returning the same C type as the C type of @('var')
+       and affecting no variables, and
        @('body') is a statement term for @('fni')
        returning @('T') and affecting @('vars').
        This represents, as indicated by the wrapper @(tsee assign),
@@ -490,18 +494,25 @@
        because it just serves to complete the @(tsee if)."))
 
     (xdoc::p
-     "An <i>expression term for</i> @('fni') <i>returning</i> @('T') is
-      inductively defined as one of the following:")
+     "An <i>expression term for</i> @('fni')
+      <i>returning</i> @('T') and
+      <i>affecting</i> @('vars'),
+      where @('fni') is a target function,
+      @('T') is either a C type or `boolean',
+      and @('vars') is a list of distinct symbols,
+      is inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "A pure expression term for @('fni') returning @('T').")
+      "A pure expression term for @('fni') returning @('T'),
+       when @('vars') is @('nil').")
      (xdoc::li
       "A call of a non-recursive target function @('fnj') with @('j < i'),
        on pure expression terms for @('fni') returning non-@('void') C types,
        where the types of the terms are equal to the
        the C types of the formal parameters of @('fnj')
-       and where the return type of the C function represented by @('fnj')
-       is @('T').
+       and where the body of @('fnj') is
+       a statement term for @('fnj')
+       returning @('T') and affeting @('vars').
        The restriction @('j < i') means that
        no (direct or indirect) recursion is allowed in the C code
        and the target functions must be specified
