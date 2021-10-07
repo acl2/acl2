@@ -149,7 +149,7 @@
 
 ;; Builds an alist from function names in the clique to their values of the
 ;; option. Returns (mv nil alist) or (mv error-context msg).
-(defund elaborate-mut-rec-option (option-value option-name clique-members ctx)
+(defund elaborate-mut-rec-option-cmp (option-value option-name clique-members ctx)
   (declare (xargs :guard (and (symbol-listp clique-members)
                               ;; no guard about option-value because this function checks it:
                               (keywordp option-name)
@@ -161,14 +161,13 @@
     ;; No :map was used, so all functions get the same value (possibly the default):
     (value-cmp (pairlis$ clique-members (repeat (len clique-members) option-value)))))
 
-(defthm msgp-of-mv-nth-1-of-elaborate-mut-rec-option
-  (implies (mv-nth 0 (elaborate-mut-rec-option option-value option-name clique-members ctx))
-           (msgp (mv-nth 1 (elaborate-mut-rec-option option-value option-name clique-members ctx))))
-  :hints (("Goal" :in-theory (enable elaborate-mut-rec-option))))
+(defthm msgp-of-mv-nth-1-of-elaborate-mut-rec-option-cmp
+  (implies (mv-nth 0 (elaborate-mut-rec-option-cmp option-value option-name clique-members ctx))
+           (msgp (mv-nth 1 (elaborate-mut-rec-option-cmp option-value option-name clique-members ctx))))
+  :hints (("Goal" :in-theory (enable elaborate-mut-rec-option-cmp))))
 
 ;; Builds an alist from function names in the clique to their values of the
 ;; option.  Throws an error if there is a problem with the option.
-;; TODO: deprecate the other version?
 (defund elaborate-mut-rec-option2 (option-value option-name clique-members ctx)
   (declare (xargs :guard (and ;; no guard about option-value because it might be anything in the non-:map case
                           (keywordp option-name)
@@ -177,7 +176,7 @@
                           ctx ; why?
                           )))
   (b* (((mv erp alist-or-msg)
-        (elaborate-mut-rec-option option-value option-name clique-members ctx))
+        (elaborate-mut-rec-option-cmp option-value option-name clique-members ctx))
        ((when erp)
         ;; alist-or-msg is a msgp:
         (er hard? ctx (message-string alist-or-msg) (message-alist alist-or-msg))
@@ -191,4 +190,4 @@
                               (keywordp option-name))
                   :mode :program ; error1 and silent-error
                   :stobjs state))
-  (cmp-to-error-triple (elaborate-mut-rec-option option-value option-name clique-members ctx)))
+  (cmp-to-error-triple (elaborate-mut-rec-option-cmp option-value option-name clique-members ctx)))
