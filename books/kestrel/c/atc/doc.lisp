@@ -335,6 +335,16 @@
        @('(cons var1 (cons ... (cons varn \' nil)...))');
        this is the pattern that ATC looks for.")
      (xdoc::li
+      "A term @('(mv ret var1 ... varn)'),
+       when @('ret') is an expression term for @('fni') returning @('T'),
+       @('L') is @('nil'),
+       @('T') is a non-@('void') non-pointer type,
+       @('vars') is the list @('(var1 ... varn)') with @('n') &gt; 1.
+       This represents a C @('return') statement
+       whose expression is represented by @('ret');
+       the @(tsee mv) and the variables represent no actual C code:
+       they just represent variables that may have been modified.")
+     (xdoc::li
       "A call of @('fni') on variables identical to its formal parameters,
        when the C types or the variables are
        the same as the C types of the formal parameters,

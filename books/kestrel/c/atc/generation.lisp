@@ -2060,12 +2060,16 @@
      otherwise, we return nothing, because
      this is the end of a list of block items that affects that variable.")
    (xdoc::p
-    "If the term is an @(tsee mv)
-     and its arguments are the @('affect') variables,
-     there are two cases:
-     if the loop flag is @('t'), it is an error;
-     otherwise, we return nothing, because
-     this is the end of a list of block items that affects that variable.")
+    "If the term is an @(tsee mv), there are three cases.
+     If the loop flag is @('t'), it is an error.
+     Otherwise, if the arguments of @(tsee mv) are the @('affect') variables,
+     we return nothing, because
+     this is the end of a list of block items that affects that variable.
+     Otherwise, if the @(tsee cdr) of the arguments of @(tsee mv)
+     are the @('affect') variables,
+     we treat the @(tsee car) of the arguments of @(tsee mv)
+     as an expression term that must affect no variables,
+     and generate a return statement for it.")
    (xdoc::p
     "If the term is a call of a recursive target function on its formals,
      different from the current function @('fn'),
@@ -2487,16 +2491,45 @@
                           (type-case type? :pointer)))))
         (acl2::value (list nil (type-void) (pseudo-term-quote 0))))
        ((mv okp terms) (fty-check-list-call term))
-       ((when (and okp
-                   (>= (len terms) 2)
-                   (equal terms affect)))
-        (if loop-flag
-            (er-soft+ ctx t irr
-                      "A loop body must end with ~
-                       a recursive call on every path, ~
-                       but in the fucntion ~x0 it ends with ~x1 instead."
-                      fn term)
-          (acl2::value (list nil (type-void) (pseudo-term-quote 0)))))
+       ((when okp)
+        (b* (((unless (>= (len terms) 2))
+              (raise "Internal error: MV applied to ~x0." terms)
+              (acl2::value irr))
+             ((when loop-flag)
+              (er-soft+ ctx t irr
+                        "A loop body must end with ~
+                         a recursive call on every path, ~
+                         but in the fucntion ~x0 ~
+                         it ends with ~x1 instead."
+                        fn term)))
+          (cond
+           ((equal terms affect)
+            (acl2::value (list nil (type-void) (pseudo-term-quote 0))))
+           ((equal (cdr terms) affect)
+            (b* (((mv erp (list expr type eaffect limit) state)
+                  (atc-gen-expr-cval
+                   (car terms) var-term-alist inscope fn prec-fns ctx state))
+                 ((when erp) (mv erp irr state))
+                 ((when (consp eaffect))
+                  (er-soft+ ctx t irr
+                            "The first argument ~x0 of the term ~x1 ~
+                             in the function ~x2 ~
+                             affects the variables ~x3, which is disallowed."
+                            (car terms) term fn eaffect))
+                 (limit (pseudo-term-fncall
+                         'binary-+
+                         (list (pseudo-term-quote 3)
+                               limit))))
+              (acl2::value (list
+                            (list
+                             (block-item-stmt (make-stmt-return :value expr)))
+                            type
+                            limit))))
+           (t (er-soft+ ctx t irr
+                        "When generating C code for the function ~x0, ~
+                         a term ~x0 has been encountered, ~
+                         which is disallowed."
+                        fn term)))))
        ((when (and okp
                    (member-eq :array-writes experimental)
                    (consp terms)))
