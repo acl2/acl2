@@ -3771,10 +3771,18 @@
      we allow @('ret') to vary, but the other parts must coincide.")
    (xdoc::p
     "The list of formal parameters that have pointer type
-     are passed to this ACL2 function as the @('pointers') parameter."))
-  (b* (((mv okp & then else) (fty-check-if-call term))
+     are passed to this ACL2 function as the @('pointers') parameter.")
+   (xdoc::p
+    "When we encounter @(tsee if)s with @(tsee mbt) or @(tsee mbt$) tests,
+     we recursively process the `then' branch, skipping the `else' branch.
+     This is because only the `then' branch represents C code."))
+  (b* (((mv okp test then else) (fty-check-if-call term))
        ((when okp)
-        (b* (((er then-affected) (atc-find-affected fn then pointers
+        (b* (((mv mbtp &) (check-mbt-call test))
+             ((when mbtp) (atc-find-affected fn then pointers ctx state))
+             ((mv mbt$p &) (check-mbt$-call test))
+             ((when mbt$p) (atc-find-affected fn then pointers ctx state))
+             ((er then-affected) (atc-find-affected fn then pointers
                                                     ctx state))
              ((er else-affected) (atc-find-affected fn else pointers
                                                     ctx state)))
