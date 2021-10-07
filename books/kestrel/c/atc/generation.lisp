@@ -1846,28 +1846,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-loop-fn-p ((fn symbolp) (prec-fns atc-symbol-fninfo-alistp))
-  :returns (yes/no booleanp)
-  :short "Check if an ACL2 function represents a C loop."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the case when the function is in @('prec-fns'),
-     i.e. it has already been translated to C
-     as we go through the target functions,
-     and the function is recursive,
-     which is indicated by the presence of a C (loop) statement
-     in the alist of function information."))
-  (b* ((fn+info (assoc-eq fn prec-fns))
-       ((unless (consp fn+info)) nil)
-       (info (cdr fn+info))
-       (loop? (atc-fn-info->loop? info)))
-    (and loop? t)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-affecting-term-for-let ((term pseudo-termp)
-                                    (prec-fns atc-symbol-fninfo-alistp))
+                                    (prec-fns atc-symbol-fninfo-alistp)
+                                    (wrld plist-worldp))
   :returns (yes/no booleanp)
   :short "Check if a term @('term') has the basic structure
           required for representing code affecting variables
@@ -1888,7 +1869,8 @@
                            ((fn . &) (not (member-eq fn '(mbt mbt$))))
                            (& t))))
     ((fn . &) (and (symbolp fn)
-                   (atc-loop-fn-p fn prec-fns)))
+                   (assoc-eq fn prec-fns)
+                   (consp (irecursivep+ fn wrld))))
     (& nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2205,7 +2187,7 @@
                          an attempt is made to modify the variables ~x1, ~
                          not all of which are assignable."
                         fn vars))
-             ((unless (atc-affecting-term-for-let val prec-fns))
+             ((unless (atc-affecting-term-for-let val prec-fns (w state)))
               (er-soft+ ctx t irr
                         "When generating C code for the function ~x0, ~
                          an MV-LET has been encountered ~
@@ -2386,7 +2368,7 @@
              ((unless (eq wrapper? nil))
               (prog2$ (raise "Internal error: LET wrapper is ~x0." wrapper?)
                       (acl2::value irr)))
-             ((unless (atc-affecting-term-for-let val prec-fns))
+             ((unless (atc-affecting-term-for-let val prec-fns (w state)))
               (er-soft+ ctx t irr
                         "When generating C code for the function ~x0, ~
                          we encountered an unwrapped term ~x1 ~
