@@ -58,9 +58,9 @@
 
 ;; Returns an event
 (defun def-equality-transformation-fn (name
-                                       core-fn ; args should be the function name, its untranslated body, wrld, and then the transform-specific-args
-                                       transform-specific-required-args ;arguments to core-fn
-                                       transform-specific-keyword-args-and-defaults ;arguments to core-fn
+                                       function-body-transformer ; args should be the function name, its untranslated body, wrld, and then the transform-specific-args
+                                       transform-specific-required-args ;arguments to function-body-transformer
+                                       transform-specific-keyword-args-and-defaults ;arguments to function-body-transformer
                                        enables ; used for each function (currently)
                                        make-becomes-theorem-name
                                        make-becomes-theorems-name
@@ -71,7 +71,7 @@
                                        description ; a form that evaluates to a string or to nil?
                                        )
   (declare (xargs :guard (and (symbolp name)
-                              (symbolp core-fn)
+                              (symbolp function-body-transformer)
                               (symbol-listp transform-specific-required-args)
                               (no-duplicatesp transform-specific-required-args)
                               (keyword-args-and-defaultsp transform-specific-keyword-args-and-defaults)
@@ -93,7 +93,7 @@
             transform-specific-arg-names)))
     `(progn
        ;; Returns a new defun.
-       ;; When core-fn is an identify, this generates a function that just copies FN and fixes up recursive calls as appropriate.
+       ;; When function-body-transformer is an identity, this generates a function that just copies FN and fixes up recursive calls as appropriate.
        ;; TODO: What if more than simple renaming is needed to fix up recursive calls (e.g., re-ordering params)?
        (defun ,apply-to-defun-name (fn ;the old function (possibly in a mut-rec) to handle
                                     ,@transform-specific-arg-names
@@ -164,7 +164,7 @@
                 ;; TODO: What about irrelevant declares?  They need to be handled at a higher level, since they may depend on mut-rec partners.
                 ;; We should clear them out here and set them if needed in ,event-generator-name
                 ;; Here we actually make the change to the body:
-                (body (,core-fn fn body wrld ,@transform-specific-arg-names))
+                (body (,function-body-transformer fn body wrld ,@transform-specific-arg-names))
                 ;; (new-fns-arity-alist (pairlis$ (strip-cdrs function-renaming)
                 ;;                                (fn-arities (strip-cars function-renaming) wrld)))
                 ;; ;; New fns from the renaming may appear as recursive calls, but they are not yet in the world:
@@ -412,7 +412,8 @@
                         ;; Export the 'becomes' theorems:
                         ,@becomes-theorems-to-export)
                      state))))))
-       ;; To see what this expands to, see copy-function-expansion.lisp:
+
+       ;; To see what this expands to, see, e.g., copy-function-expansion.lisp:
        (deftransformation ,name
          ;;required args:
          (fn ;;the name of a defined function (TODO: :logic mode only?)
@@ -446,7 +447,7 @@
     ))
 
 (defmacro def-equality-transformation (name ; name of the transformation to create
-                                       core-fn ; core function (args should be: function name, untranslated body, wrld, and then the transform-specific-args)
+                                       function-body-transformer ; args should be: function name, untranslated body, wrld, and then the transform-specific-args
                                        transform-specific-required-args
                                        transform-specific-keyword-args-and-defaults ; a list of doublets containing arg names and quoted default values
                                        &key
@@ -458,7 +459,7 @@
                                        (short ':auto)
                                        (transform-specific-arg-descriptions 'nil)
                                        (description 'nil))
-  `(make-event (def-equality-transformation-fn ',name ',core-fn ',transform-specific-required-args ',transform-specific-keyword-args-and-defaults ,enables
+  `(make-event (def-equality-transformation-fn ',name ',function-body-transformer ',transform-specific-required-args ',transform-specific-keyword-args-and-defaults ,enables
                  ',make-becomes-theorem-name
                  ',make-becomes-theorems-name
                  ',make-becomes-theorem-extra-args
@@ -467,9 +468,13 @@
                  ',transform-specific-arg-descriptions
                  ,description)))
 
+;;;
+;;; copy-function (defined here because copy-function-in-defun is used above)
+;;;
+
 ;; The core function for copy-function (does nothing).
-;; Core functions always take: fn, untranslated-body, wrld, and then transformation-specific args (none for copy-function).
-(defun copy-function-core-function (fn
+;; Such functions always take: fn, untranslated-body, wrld, and then transformation-specific args (none for copy-function).
+(defun copy-function-function-body-transformer (fn
                                     untranslated-body
                                     wrld)
   (declare (xargs :guard (and (symbolp fn)
@@ -481,7 +486,7 @@
 ;; copy-function-in-defun for clique functions they do not intend to change.
 (def-equality-transformation
   copy-function ; name of the transformation to create
-  copy-function-core-function ; core function to transform a function body (a no-op for copy function)
+  copy-function-function-body-transformer ; core function to transform a function body (a no-op for copy function)
   nil ; required args
   nil ; keyword args and defaults
   :short "Make a copy of a function, with recursive calls appropriately renamed."
