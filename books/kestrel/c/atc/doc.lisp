@@ -414,7 +414,7 @@
        either a call of a recursive target function @('fnj') with @('j < i')
        or an @(tsee if) whose test is an expression term returning boolean
        (not a test @('(mbt ...)') or @('(mbt$ ...)')), and
-       @('body') is a statement term for @('fni')
+       @('body') is a statement term for @('fni') with loop flag @('L')
        returning @('T') and affecting @('vars').
        This represents the C code represented by @('term'),
        which may modify the variable represented by @('var'),
