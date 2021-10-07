@@ -2490,14 +2490,14 @@
           (acl2::value (list (list (block-item-stmt loop-stmt))
                              nil
                              limit))))
-       ((when (and (irecursivep+ fn (w state))
-                   (equal term `(,fn ,@(formals+ fn (w state))))))
-        (acl2::value (list nil nil (pseudo-term-quote 0))))
        ((when (irecursivep+ fn (w state)))
-        (er-soft+ ctx t (list nil nil nil)
-                  "When generating code for the recursive function ~x0, ~
-                   a term ~x1 was encountered at the end of the computation, ~
-                   which is disallowed."))
+        (if (equal term `(,fn ,@(formals+ fn (w state))))
+            (acl2::value (list nil nil (pseudo-term-quote 0)))
+          (er-soft+ ctx t (list nil nil nil)
+                    "When generating code for the recursive function ~x0, ~
+                     a term ~x1 was encountered at the end of the computation, ~
+                     which is disallowed."
+                    fn term)))
        ((mv erp (list expr type eaffect limit) state)
         (atc-gen-expr-cval term var-term-alist inscope fn prec-fns ctx state))
        ((when erp) (mv erp (list nil nil nil) state))
