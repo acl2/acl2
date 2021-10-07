@@ -70,6 +70,4 @@
           (maybe-clear-default-hints wrld)
           (maybe-clear-override-hints wrld)
           ;; todo: what else?
-          ;; we could consider (set-ignore-ok t) and (set-irrelevant-formals-ok t), but i think it may be better to do the analysis and put them only where needed?
-          '((set-irrelevant-formals-ok t)) ; for now, since we don't yet know how to do the analysis
           ))
