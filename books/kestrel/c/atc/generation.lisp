@@ -2823,7 +2823,7 @@
                    does not have the required form. ~
                    See the user documentation."
                   else fn))
-       ((mv erp (list body-items & body-limit) state)
+       ((mv erp (list body-items body-type body-limit) state)
         (atc-gen-stmt then
                       nil
                       (cons nil inscope)
@@ -2835,19 +2835,24 @@
                       ctx
                       state))
        ((when erp) (mv erp (irr) state))
+       ((unless (type-case body-type :void))
+        (raise "Internal error: ~
+                the loop body ~x0 of ~x1 ~ returns type ~x2."
+               then fn body-type)
+        (acl2::value (irr)))
        (body-stmt (make-stmt-compound :items body-items))
        (stmt (make-stmt-while :test test-expr :body body-stmt))
        ((unless (symbol-listp affect))
-        (prog2$ (raise "Internal error: ~x0 is not a list of symbols." affect)
-                (acl2::value (irr))))
+        (raise "Internal error: ~x0 is not a list of symbols." affect)
+        (acl2::value (irr)))
        (wrld (w state))
        ((unless (plist-worldp wrld))
-        (prog2$ (raise "Internal error: malformed world.")
-                (acl2::value (irr))))
+        (raise "Internal error: malformed world.")
+        (acl2::value (irr)))
        (measure-call `(,measure-for-fn ,@measure-formals))
        ((unless (pseudo-termp measure-call))
-        (prog2$ (raise "Internal error.")
-                (acl2::value (irr))))
+        (raise "Internal error.")
+        (acl2::value (irr)))
        (limit `(binary-+ '1 (binary-+ ,body-limit ,measure-call))))
     (acl2::value (list stmt test then affect body-limit limit)))
   :measure (pseudo-term-count term)
