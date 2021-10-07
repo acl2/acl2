@@ -85,7 +85,7 @@
           ;; TODO: What about irrelevant declares?  They need to be handled at a higher level, since they may depend on mut-rec partners.
           ;; We should clear them out here and set them if needed in copy-function-event.
           ;; Here we would change the body if fn is in target-fns, but we are just copying it so there is nothing do:
-          (body (copy-function-core-function fn body wrld))
+          (body (copy-function-function-body-transformer fn body wrld))
           ;; (new-fns-arity-alist (pairlis$ (strip-cdrs function-renaming)
           ;;                                (fn-arities (strip-cars function-renaming) wrld)))
           ;; ;; New fns from the renaming may appear as recursive calls, but they are not yet in the world:
