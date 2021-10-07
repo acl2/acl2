@@ -2152,7 +2152,7 @@
 ; arith-term-order worse than term.
 
 ; Historical Note: Once upon a time, in Version_2.5 and earlier, this
-; function actually insured that term wasn't in lst, i.e., that term was
+; function actually ensured that term wasn't in lst, i.e., that term was
 ; "new".  But in Version_2.6, we changed the meaning of the function without
 ; changing its name.  The word "new" in the name is now a mere artifact.
 

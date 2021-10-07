@@ -5002,8 +5002,7 @@
 ; about how not all names have been defined in wrld.
 
   (cond ((null names) (value-cmp nil))
-        (t (let ((bad (collect-non-common-lisp-compliants
-                       (set-difference-eq
+        (t (let* ((fns (set-difference-eq
                         (all-fnnames1-exec
                          t ; list of terms (all-fnnames-exec (car terms))
                          (cons (car terms)
@@ -5020,17 +5019,35 @@
                              (all-fnnames! nil :inside nil
                                            (car terms)
                                            nil wrld nil)))
-                        names0)
-                       wrld)))
+                        names0))
+                  (bad (collect-non-common-lisp-compliants fns wrld)))
              (cond
               (bad
                (er-cmp ctx "The ~@0 for ~x1 calls the function~#2~[ ~&2~/s ~
                             ~&2~], the guards of which have not yet been ~
                             verified.  See :DOC verify-guards."
                        str (car names) bad))
-              (t (chk-common-lisp-compliant-subfunctions-cmp
-                  names0 (cdr names) (cdr terms)
-                  wrld str ctx)))))))
+              (t (mv-let (warrants unwarranteds)
+                   (if (global-val 'boot-strap-flg wrld)
+                       (mv nil nil)
+                       (warrants-for-tamep-lambdap-lst
+                        (collect-certain-lambda-objects :well-formed
+                                                        (car terms)
+                                                        wrld nil)
+                        wrld nil nil))
+                   (declare (ignore warrants))
+                   (cond
+                    (unwarranteds
+                     (er-cmp ctx "The ~@0 for ~x1 applies the function~#2~[ ~
+                                  ~&2~/s ~&2~] which ~#2~[is~/are~] not yet ~
+                                  warranted.  Lambda objects containing ~
+                                  unwarranted function symbols are not ~
+                                  provably tame and can't be applied.  See ~
+                                  :DOC verify-guards."
+                             str (car names) unwarranteds))
+                    (t (chk-common-lisp-compliant-subfunctions-cmp
+                        names0 (cdr names) (cdr terms)
+                        wrld str ctx))))))))))
 
 (defun chk-common-lisp-compliant-subfunctions (names0 names terms wrld str ctx
                                                       state)
@@ -5044,6 +5061,12 @@
 ; cause an error.  (During boot-strapping, this function does not look for
 ; well-formed lambda objects because we can't identify them prior to setting up
 ; badges for all primitives.)
+
+; Also, contrary to its name, this function also checks that all user-defined
+; functions occurring in well-formed lambda objects in the bodies are
+; warranted.  If a lambda object contains a badged but unwarranted function
+; symbol then it can be well-formed but not provably tame and thus guard
+; verification will fail.
 
 ; Str is a string used in our error message and is "guard", "split-types
 ; expression", "body" or "auxiliary function".  Note that this function is used

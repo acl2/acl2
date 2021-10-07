@@ -1848,47 +1848,52 @@ ACL2 !>>(LD *TESTS*
 ACL2 !>>>(TRACE$ HELLO)
  ((HELLO))
 ACL2 !>>>(APPLY$ 'HELLO '(JOHN))
-1> (ACL2_*1*_ACL2::HELLO JOHN)
-<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
-(HI JOHN)
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been warranted.
+
 ACL2 !>>>(EV$ '(HELLO E) '((E . JOHN)))
-1> (ACL2_*1*_ACL2::HELLO JOHN)
-<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
-(HI JOHN)
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been warranted.
+
 ACL2 !>>>(APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
-1> (ACL2_*1*_ACL2::HELLO JOHN)
-<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
-(HI JOHN)
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been warranted.
+
 ACL2 !>>>(APPLY$ (CONS 'LAMBDA
                        (CONS (CONS 'E 'NIL)
                              (CONS (CONS 'HELLO (CONS 'E 'NIL))
                                    'NIL)))
                  '(JOHN))
-1> (ACL2_*1*_ACL2::HELLO JOHN)
-<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
-(HI JOHN)
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been warranted.
+
 ACL2 !>>>(APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
-1> (ACL2_*1*_ACL2::HELLO JOHN)
-<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
-(HI JOHN)
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been warranted.
+
 ACL2 !>>>(LOOP$ FOR E IN '(JOHN MARY)
                 COLLECT (HELLO E))
-1> (ACL2_*1*_ACL2::HELLO JOHN)
-<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
-1> (ACL2_*1*_ACL2::HELLO MARY)
-<1 (ACL2_*1*_ACL2::HELLO (HI MARY))
-((HI JOHN) (HI MARY))
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been warranted.
+
 ACL2 !>>>(LOOP$ FOR E IN '("John" "Mary")
                 COLLECT (HELLO E))
-1> (ACL2_*1*_ACL2::HELLO "John")
 
 
-ACL2 Error in TOP-LEVEL:  The guard for the function call (HELLO X),
-which is (SYMBOLP X), is violated by the arguments in the call 
-(HELLO "John").
-See :DOC set-guard-checking for information about suppressing this
-check with (set-guard-checking :none), as recommended for new users.
-To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been warranted.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
 
@@ -1898,11 +1903,11 @@ recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
 
 ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
                COLLECT (HELLO E))
-1> (ACL2_*1*_ACL2::HELLO "John")
-<1 (ACL2_*1*_ACL2::HELLO (HI "John"))
-1> (ACL2_*1*_ACL2::HELLO "Mary")
-<1 (ACL2_*1*_ACL2::HELLO (HI "Mary"))
-((HI "John") (HI "Mary"))
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been warranted.
+
 ACL2 >>>(SET-GUARD-CHECKING T)
 
 Turning guard checking on, value T.
@@ -1945,21 +1950,17 @@ ACL2 !>>>(TRACE$ CALLER1)
  ((CALLER1))
 ACL2 !>>>(CALLER1 'JOHN)
 1> (ACL2_*1*_ACL2::CALLER1 JOHN)
-  2> (ACL2_*1*_ACL2::HELLO JOHN)
-  <2 (ACL2_*1*_ACL2::HELLO (HI JOHN))
-<1 (ACL2_*1*_ACL2::CALLER1 (HI JOHN))
-(HI JOHN)
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been warranted.
+
 ACL2 !>>>(CALLER1 "Mary and Tom")
 1> (ACL2_*1*_ACL2::CALLER1 "Mary and Tom")
-  2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
 
 
-ACL2 Error in TOP-LEVEL:  The guard for the function call (HELLO X),
-which is (SYMBOLP X), is violated by the arguments in the call 
-(HELLO "Mary and Tom").
-See :DOC set-guard-checking for information about suppressing this
-check with (set-guard-checking :none), as recommended for new users.
-To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been warranted.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
 
@@ -1969,10 +1970,11 @@ recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
 
 ACL2 >>>(CALLER1 "Mary and Tom")
 1> (ACL2_*1*_ACL2::CALLER1 "Mary and Tom")
-  2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
-  <2 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
-<1 (ACL2_*1*_ACL2::CALLER1 (HI "Mary and Tom"))
-(HI "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been warranted.
+
 ACL2 >>>(SET-GUARD-CHECKING T)
 
 Turning guard checking on, value T.
@@ -2019,10 +2021,11 @@ ACL2 !>>>(TRACE$ CALLER2)
  ((CALLER2))
 ACL2 !>>>(CALLER2 'JOHN)
 1> (ACL2_*1*_ACL2::CALLER2 JOHN)
-  2> (ACL2_*1*_ACL2::HELLO JOHN)
-  <2 (ACL2_*1*_ACL2::HELLO (HI JOHN))
-<1 (ACL2_*1*_ACL2::CALLER2 (HI JOHN))
-(HI JOHN)
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been warranted.
+
 ACL2 !>>>(CALLER2 "Mary and Tom")
 1> (ACL2_*1*_ACL2::CALLER2 "Mary and Tom")
 
@@ -2042,10 +2045,11 @@ recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
 
 ACL2 >>>(CALLER2 "Mary and Tom")
 1> (ACL2_*1*_ACL2::CALLER2 "Mary and Tom")
-  2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
-  <2 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
-<1 (ACL2_*1*_ACL2::CALLER2 (HI "Mary and Tom"))
-(HI "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been warranted.
+
 ACL2 >>>(SET-GUARD-CHECKING T)
 
 Turning guard checking on, value T.
@@ -2330,19 +2334,16 @@ Rules: ((:DEFINITION APPLY$-GUARD)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  CALLER3
 ACL2 !>>>(CALLER3 'JOHN)
-1> (ACL2_*1*_ACL2::HELLO JOHN)
-<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
-(HI JOHN)
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been warranted.
+
 ACL2 !>>>(CALLER3 "Mary and Tom")
-1> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
 
 
-ACL2 Error in TOP-LEVEL:  The guard for the function call (HELLO X),
-which is (SYMBOLP X), is violated by the arguments in the call 
-(HELLO "Mary and Tom").
-See :DOC set-guard-checking for information about suppressing this
-check with (set-guard-checking :none), as recommended for new users.
-To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been warranted.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
 
@@ -2351,9 +2352,11 @@ recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
 :NONE.  See :DOC set-guard-checking.
 
 ACL2 >>>(CALLER3 "Mary and Tom")
-1> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
-<1 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
-(HI "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been warranted.
+
 ACL2 >>>(SET-GUARD-CHECKING T)
 
 Turning guard checking on, value T.
@@ -4778,36 +4781,21 @@ Rules: NIL
  LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT
 ACL2 !>>(VERIFY-GUARDS RUN-THIS-VERSION-2)
 
-Computing the guard conjecture for RUN-THIS-VERSION-2....
 
-The non-trivial part of the guard conjecture for RUN-THIS-VERSION-2,
-given the :executable-counterpart of APPLY$-GUARD and primitive type
-reasoning, is
+ACL2 Error in ( VERIFY-GUARDS RUN-THIS-VERSION-2):  The body for 
+RUN-THIS-VERSION-2 applies the function LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT
+which is not yet warranted.  Lambda objects containing unwarranted
+function symbols are not provably tame and can't be applied.  See :DOC
+verify-guards.
 
-Goal
-(IMPLIES (AND (SYMBOLP X)
-              (MEMBER-EQUAL NEWV (LIST X)))
-         (LET ((E NEWV)) (SYMBOLP E))).
-Goal'
-
-Q.E.D.
-
-That completes the proof of the guard theorem for RUN-THIS-VERSION-2.
-RUN-THIS-VERSION-2 is compliant with Common Lisp.
 
 Summary
 Form:  ( VERIFY-GUARDS RUN-THIS-VERSION-2)
-Rules: ((:DEFINITION NOT)
-        (:DEFINITION SYNP)
-        (:EXECUTABLE-COUNTERPART APPLY$-GUARD)
-        (:EXECUTABLE-COUNTERPART APPLY$-PRIMP)
-        (:FAKE-RUNE-FOR-TYPE-SET NIL)
-        (:META APPLY$-PRIM-META-FN-CORRECT)
-        (:REWRITE ALWAYS$-SINGLETON)
-        (:REWRITE APPLY$-PRIMITIVE)
-        (:REWRITE CAR-CONS)
-        (:REWRITE PLAIN-UQI-SYMBOL-LISTP))
- RUN-THIS-VERSION-2
+Rules: NIL
+
+ACL2 Error in ( VERIFY-GUARDS RUN-THIS-VERSION-2):  See :DOC failure.
+
+******** FAILED ********
 ACL2 !>>(THM (EQUAL (RUN-THIS-VERSION-2 'JOHN)
                     '((HI JOHN))))
 Goal'

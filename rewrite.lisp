@@ -18336,8 +18336,8 @@
 ; But deal-with-factors and deal-with-products will not have a poly
 ; ``about'' a to multiply p3 by, because a is not the heaviest term in
 ; any poly.  Rather, what we want to do is multiply p3 and p2 since
-; b/b = 1.  (Note that before we invoke deal-with-division, we insure
-; that we have good bounds for b in the pot.  This insures that b/b
+; b/b = 1.  (Note that before we invoke deal-with-division, we ensure
+; that we have good bounds for b in the pot.  This ensures that b/b
 ; disappears without a case split.)
 
 ; Another example is that

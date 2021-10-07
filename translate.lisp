@@ -4455,6 +4455,20 @@
                                            unwarranteds1)))))
 )
 
+(defun warrants-for-tamep-lambdap-lst (lst wrld warrants unwarranteds)
+
+; This function does not correspond to one in the ``executable-tamep'' family.
+; Lst is a list of well-formed lambda objects and we run warrants-for-tamep
+; over each of the bodies and return the cumulative (mv warrants unwarranteds).
+
+  (cond
+   ((endp lst) (mv warrants unwarranteds))
+   (t (mv-let (warrants1 unwarranteds1)
+        (warrants-for-tamep (lambda-object-body (car lst))
+                            wrld warrants unwarranteds)
+        (warrants-for-tamep-lambdap-lst (cdr lst)
+                                        wrld warrants1 unwarranteds1)))))
+
 ; Here is a sequence of tests illustrating the behavior.  The definitions of
 ; the user-defined functions below are irrelevant, except that they're all
 ; warrantable and one, my-fn2, has a :FN arg.  Ignore the bodies.  They didn't
@@ -7323,19 +7337,19 @@
 
 (defun untranslate-do-body (x wrld)
 
-; See the Essay on the Translation and Evaluation of DO and FINALLY Bodies.
-; This function takes a fully-translated do-body term and untranslates it wrt
-; to the world wrld.  Basically we just replace all the ersatz functions by
-; their CLTL counterparts and merge PROG2s into PROGNs, and then untranslate
-; that conventionally.  This works because untranslate can tolerate
-; non-function symbols in its input.  However, the ersatz-locally-scoped form
-; must be dealt with rather curiously.  The problem is that when untranslate
-; sees a lambda expression with formal g applied to the identical actual, g, it
-; drops that formal because translation will add it back.  But dropping the
-; formal is incorrect if the formal was supposed to be locally bound.  To force
-; untranslate to include a binding of g to g we replace the actual g by
-; (IDENTITY g) in the special case that g is being bound to itself and the
-; ersatz-locally-scoped form specifies that g is locally-scoped.
+; See Section 11 of the Essay on Loop$.  This function takes a fully-translated
+; do-body term and untranslates it wrt to the world wrld.  Basically we just
+; replace all the ersatz functions by their CLTL counterparts and merge PROG2s
+; into PROGNs, and then untranslate that conventionally.  This works because
+; untranslate can tolerate non-function symbols in its input.  However, the
+; ersatz-locally-scoped form must be dealt with rather curiously.  The problem
+; is that when untranslate sees a lambda expression with formal g applied to
+; the identical actual, g, it drops that formal because translation will add it
+; back.  But dropping the formal is incorrect if the formal was supposed to be
+; locally bound.  To force untranslate to include a binding of g to g we
+; replace the actual g by (IDENTITY g) in the special case that g is being
+; bound to itself and the ersatz-locally-scoped form specifies that g is
+; locally-scoped.
 
   (untranslate (replace-ersatz-functions x)
                nil
@@ -7690,17 +7704,6 @@
 ; the type-spec for X was (RATIONAL 0 100), then the type-predicate is the
 ; translated form of (AND (RATIONALP X) (<= 0 X) (<= X 100)).
 
-; Note on Fully Translated: We repeatedly go out of our way to say that certain
-; functions return ``fully translated'' terms.  The reason we produce
-; translated terms is because the compilation process involves applying
-; substitutions and we want to make sure no abbreviations are present that
-; might confuse substitution.  It could well happen that this can't happen --
-; that substitution works just fine over pseudo-terms liks (list a b c) and
-; unquoted constants like nil and 23.  And it might be the case that we produce
-; fully translated terms even after we are done applying substitutions.  So (a)
-; don't get too wound up about the fully translated rules but (b) relax them
-; only after making sure we're really not depending on them.
-
 (defun guess-do-body-measure (if-tree twvts)
 
 ; If-tree is an if-tree with do-body-tuples at the tips.  We guess a measure to
@@ -7931,19 +7934,19 @@
 ; X is a well-formed do-body with respect to the settable variables of the
 ; containing loop$ (the cars of the twvts tuples).  Twvts is a list of tuples
 ; of the form (var type-spec type-pred init-val), where type-pred and init-val
-; are fully translated.  (See the Note on Fully Translated above.)  Vars is the
-; list of all vars whose values should be tracked.  This generally includes all
-; the vars in x and all the vars (cars) of twvts but may also include vars from
-; other parts of the loop, e.g., the measure or finally body.  We compile x
-; into a term free of ersatz symbols, suitable for embedding in a lambda$ (with
-; appropriate interfacing).  If guess-measurep is t we attempt to guess a
-; measure for x.  We return (mv measure term), where measure is as described
-; below and term is the compiled form of x.  Measure is nil if either we were
-; not asked to guess a measure or we were asked but found no suitable guess,
-; othersie measure is our fully translated guess at a measure.  In fact, it is
-; either '0 because every branch through x has a non-nil :exit-flg so no
-; measure is necessary or else it is (acl2-count var) for the first var in
-; twvts that is both tested and changed on every branch with a nil :exit-flg.
+; are fully translated.  Vars is the list of all vars whose values should be
+; tracked.  This generally includes all the vars in x and all the vars (cars)
+; of twvts but may also include vars from other parts of the loop, e.g., the
+; measure or finally body.  We compile x into a term free of ersatz symbols,
+; suitable for embedding in a lambda$ (with appropriate interfacing).  If
+; guess-measurep is t we attempt to guess a measure for x.  We return (mv
+; measure term), where measure is as described below and term is the compiled
+; form of x.  Measure is nil if either we were not asked to guess a measure or
+; we were asked but found no suitable guess, othersie measure is our fully
+; translated guess at a measure.  In fact, it is either '0 because every branch
+; through x has a non-nil :exit-flg so no measure is necessary or else it is
+; (acl2-count var) for the first var in twvts that is both tested and changed
+; on every branch with a nil :exit-flg.
 
 ; Note: the alist provided to pass1 below binds all variables in x to
 ; themselves, regardless of whether the vars are settable (declared in the
@@ -9648,7 +9651,7 @@
 
 ; End of Essay on Lambda Objects and Lambda$
 
-; Essay on LOOP$
+; Essay on Loop$
 ; Added 23 January, 2019 (and ammended ever since)
 
 ; [Timeline: This essay started as a design document a year ago, January, 2018.
@@ -10038,7 +10041,7 @@
 ; (loop for v of type type-spec on lst collect ...)
 
 ; The semantics of this will be (collect$ (lambda$ ...) (tails lst)) where
-; tails collects the non-empty tails of lst.  The guard of collect$ will insure
+; tails collects the non-empty tails of lst.  The guard of collect$ will ensure
 ; that lst is a true-listp.  But if you run this in Common Lisp you will find
 ; that the type-spec is checked on EVERY tail of lst, including NIL, not just
 ; the non-empty ones.  Here is an example, to be tried in raw CCL:
@@ -11310,7 +11313,7 @@
 ; the loop$ in raw Lisp as a loop and deliver the same answer do$ delivers in
 ; the logic it is necessary to prove the measure conjecture.  This situation is
 ; no different than the other guard conjectures generated: guard conjectures
-; insure that raw Lisp computes in accordance with the axioms.
+; ensure that raw Lisp computes in accordance with the axioms.
 
 ; Finally, the guard conjectures generated for a do loop$ are the normal guard
 ; conditions for the arguments (which thus includes the guard conditions for
@@ -17639,7 +17642,7 @@
                                     state-vars)
 
 ; The three arguments of wormhole-eval are x y and z.  Here, z has been
-; translated but x and y have not been.  We want to insure that x and y are
+; translated but x and y have not been.  We want to ensure that x and y are
 ; well-formed quoted forms of a certain shape.  We don't actually care about z
 ; and ignore it!  We translated it just for sanity's sake: no point in allowing
 ; the user ever to write an ill-formed term in a well-formed term.
@@ -18444,7 +18447,7 @@
 ; We return a list of ``translated with-var-tuples which are also 4-tuples but
 ; with different components: (var spec guard-term init-term), where guard-term
 ; is the fully translated guard expression expressing the type spec relative to
-; var.  (See the Note on Fully Translated above.)
+; var.
 
 ; For example, suppose if this is one of the input tuples:
 

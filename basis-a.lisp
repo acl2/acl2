@@ -214,7 +214,7 @@
 ; The status of a wormhole is supposed to be a cons whose car is either :ENTER
 ; or :SKIP.  However, in the absence of verifying the guards on the code inside
 ; wormholes and in light of the fact that users can set the status by
-; manipulating wormhole-status in the wormhole it is hard to insure that the
+; manipulating wormhole-status in the wormhole it is hard to ensure that the
 ; status is always as supposed.  So we code rather defensively.
 
 ; When the ``function'' wormhole is called it may or may not actually enter a
@@ -256,7 +256,7 @@
 ; comment in push-accp.  Here is a proposal for how to do that.  First, insist
 ; that wormhole names are symbols.  Indeed, they must be one argument,
 ; guard-verified Boolean functions.  The guard for a call of wormhole-eval on a
-; wormhole named foo should include the conjunct (foo nil) to insure that the
+; wormhole named foo should include the conjunct (foo nil) to ensure that the
 ; initial value of the status is acceptable.  The guard on the body of (lambda
 ; (whs) body) should be extended to include the hypothesis that (foo whs) is
 ; true and that (foo whs) --> (foo body) is true.  We should then change
@@ -2005,8 +2005,8 @@
                     (cdr column)))
 
 ; Otherwise, we put x on a newline and leave the column as it was.  Note that
-; we convert x from a FLAT to a MATCHED-KEYWORD, so insure that it stays on a
-; line by itself and to keyword/value pairs encountered above us in the
+; we convert x from a FLAT to a MATCHED-KEYWORD, to ensure that it stays on a
+; line by itself and to ensure keyword/value pairs encountered above us in the
 ; bottom-up processing to be paired with KEYPAIR.
 
                   (t (cons (cons 'MATCHED-KEYWORD (cdr x))
@@ -6073,6 +6073,10 @@
 
 ; Warning: Keep this in sync with default-state-vars.
 
+; Note that do-expressionp is not actually a state global, even though most
+; fields do name a state global.  That's OK, as we are careful about this in
+; default-state-vars.
+
   (((safe-mode . boot-strap-flg) . (temp-touchable-vars . guard-checking-on))
    .
    ((ld-skip-proofsp . temp-touchable-fns) . (parallel-execution-enabled . do-expressionp)))
@@ -6087,7 +6091,8 @@
            (ld-skip-proofsp 'nil ld-skip-proofsp-p)
            (temp-touchable-fns 'nil temp-touchable-fns-p)
            (parallel-execution-enabled 'nil parallel-execution-enabled-p)
-           (do-expressionp 'nil do-expressionp-p))
+           (do-expressionp ; not a state global, so avoid f-get-global below
+            'nil))
 
 ; Warning: Keep this in sync with defrec state-vars.
 
@@ -6127,9 +6132,7 @@
                      parallel-execution-enabled
                    '(f-get-global 'parallel-execution-enabled state))
                 :do-expressionp
-                ,(if do-expressionp-p
-                     do-expressionp
-                   '(f-get-global 'do-expressionp state))))
+                ,do-expressionp))
         (t ; state-p is not t
          `(make state-vars
                 :safe-mode ,safe-mode

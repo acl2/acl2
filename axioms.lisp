@@ -14535,7 +14535,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (deferred-ttag-notes . :not-deferred)
     (deferred-ttag-notes-saved . nil)
     (dmrp . nil)
-    (do-expressionp . nil)
     (evisc-hitp-without-iprint . nil)
     (eviscerate-hide-terms . nil)
     (fmt-hard-right-margin . ,*fmt-hard-right-margin-default*)
@@ -21659,7 +21658,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     verify-termination-on-raw-program-okp
     prompt-memo
     system-attachments-cache
-    do-expressionp
     ))
 
 ; There is a variety of state global variables, 'ld-skip-proofsp among them,
@@ -26126,7 +26124,7 @@ Lisp definition."
 ; involve any of the dynamically determined variables, like CLAUSE.)
 
 ; Note that gtermi is free to add as many :NO-OP T entries as it wants to
-; insure the result is non-empty, if that's a problem.
+; ensure the result is non-empty, if that's a problem.
 
 (defconst *top-hint-keywords*
 

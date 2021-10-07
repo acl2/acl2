@@ -7847,7 +7847,7 @@
 ; If hyp-fn is nil, it means the hyp didn't parse.  If hyp-fn is t it means the
 ; hyp parsed but there is no hyp-fn.
 
-; Note that to insure that fn, for example, is a function symbol of the correct
+; Note that to ensure that fn, for example, is a function symbol of the correct
 ; signature, we only need to check that it is a symbol, since term is a
 ; translated term.
 
@@ -8235,7 +8235,7 @@
 ; that the output of fn is either a triple or a single value as specified by
 ; triple-flg in both theorems.)
 
-; We claim the tests above insure that thm1 guarantees that fn always returns a
+; We claim the tests above ensure that thm1 guarantees that fn always returns a
 ; LOGIC-TERMP or LOGIC-TERM-LIST-LISTP provided the arity alist, alist1, is
 ; valid in the current world.  Now we check the same things for the hyp-fn, if
 ; any.

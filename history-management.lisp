@@ -13537,7 +13537,7 @@
 
 ; It's perhaps a bit inefficient to add to the end every time, but that seems
 ; the most natural way to get the desired functionality (see the discussion
-; about Special Conjecture (b) in the Essay on LOOP$).
+; about Special Conjecture (b) in the Essay on Loop$).
 
                          t)))))
 
@@ -17157,7 +17157,7 @@
 
 ; We implement this abbreviation below.  But we have to know that the
 ; value supplied to the :OR is a list of non-empty true-lists of even
-; lengths to insure that we can append the other hints to it and still
+; lengths to ensure that we can append the other hints to it and still
 ; get reasonable translation errors in the presence of ill-formed
 ; hints.  If not, we cause an error now.  We check the rest of the
 ; restrictions on :OR after the transformation.

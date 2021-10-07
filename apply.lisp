@@ -101,7 +101,7 @@
 ;     proofs.)
 
 ; 12. Loop$ Scions
-;     Define the loop$ scions.  See the Essay on LOOP$ in translate.lisp.
+;     Define the loop$ scions.  See the Essay on Loop$ in translate.lisp.
 ;     (This is not done in the model, just the sources.)
 
 ; Note: With the exception of the events immediately below (which are needed by
@@ -1362,7 +1362,7 @@
 ;   defthm.
 
 ; * (mv nil msg)
-;   fn's justification is not ok, as
+;   fn's justification is not ok, as explained by msg
 
 ; The reasons we impose restrictions on G2 measures are:
 
@@ -2741,7 +2741,7 @@
 
 ; -----------------------------------------------------------------
 ; 12. Loop$ Scions
-;     Define the loop$ scions.  See the Essay on LOOP$ in translate.lisp.
+;     Define the loop$ scions.  See the Essay on Loop$ in translate.lisp.
 
 ; The definitions below are in :program mode.  See community book
 ; books/system/apply/loop.lisp for termination and guard verification, which

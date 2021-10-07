@@ -396,9 +396,18 @@
    (t (mv-let (bad-fn-msg badge warrantp)
         (query-badge-userfn-structure fn (w *the-live-state*))
         (cond
-         ((or bad-fn-msg ; no badge for fn, or there is a badge but we're in
-              (and (null *aokp*) ; prover (so warrants are required) but fn
-                   (not warrantp))) ; has no warrant
+         ((or bad-fn-msg ; no badge for fn, or there is a badge but
+
+; There's a badge, but either
+; (a) we're in the prover, or any setting where attachments are not allowed,
+;     and there's no warrant; or
+; (b) attachments are allowed (as in the top-level loop), but fn is in logic
+;     mode yet fn has no warrant.
+
+              (if (null *aokp*)
+                  (not warrantp)                        ; (a)
+                (and (logicp fn (w *the-live-state*))   ; (b)
+                     (not warrantp))))
           (throw-raw-ev-fncall
            (list* 'ev-fncall-null-body-er
                   nil
@@ -1335,9 +1344,17 @@
                     t
                     (collect-from-extracts :body extracts nil)
                     nil)
-                   w))))
+                   w)))
+             (bad-fns
+              (or non-compliant-fns2
+                  (mv-let (warrants unwarranteds)
+                    (warrants-for-tamep-lambdap
+                     (collect-from-extracts :body extracts nil)
+                     w nil nil)
+                    (declare (ignore warrants))
+                    unwarranteds))))
         (cond
-         ((null non-compliant-fns2)
+         ((null bad-fns)
           (mv-let (cl-set ttree)
 
 ; In general, we now generate guard clauses and try to prove them with tau.
@@ -1408,8 +1425,9 @@
                 (cond
                  (non-compliant-fns1
                   (cons 'guard-uses-non-compliant-fns non-compliant-fns1))
-                 (t
-                  (cons 'body-uses-non-compliant-fns non-compliant-fns2))))
+                 (non-compliant-fns2
+                  (cons 'body-uses-non-compliant-fns non-compliant-fns2))
+                 (t (cons 'body-uses-unwarranted-fns bad-fns))))
           (setf (access-cl-cache-line line :status) :BAD)
           line))))
      (t

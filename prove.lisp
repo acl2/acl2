@@ -935,7 +935,7 @@
 ; Given a clause cl, we build a type-alist and linear pot-lst with all of the
 ; literals in cl assumed false.  The pot-lst is built with the cheap-linearp
 ; flag on, which means we do not rewrite terms before turning them into polys
-; and we add no linear lemmas.  We insure that the type-alist has no
+; and we add no linear lemmas.  We ensure that the type-alist has no
 ; assumptions or forced hypotheses.  FYI: Just to be doubly sure that we are
 ; not ignoring assumptions and forced hypotheses, you will note that in
 ; relieve-dependent-hyps, after calling type-set, we check that no such entries

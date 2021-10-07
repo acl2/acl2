@@ -930,12 +930,6 @@
 
 (defwarrant map-to-ratsp)
 
-; (i-am-here) The defun below succeeds, as I think it should.  But if you fail
-; to warrant map-to-ratsp we try anyway, but without having the warrant for
-; map-to-ratsp as a hyp of the guard conjectures and it fails obscurely.  We
-; ought to print a warning or even refuse to try guard-verification if
-; functions haven't been warranted!
-
 (defun do-loop-max-pair (alist)
 
 ; Assuming alist is a (key . val) alist whose vals are rationals, we compute
