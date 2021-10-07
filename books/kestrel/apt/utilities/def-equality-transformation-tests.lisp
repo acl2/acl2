@@ -104,7 +104,10 @@
                     ,body))
           (defun (if (eq :mutual rec)
                      defun ; has to be done at a higher level
-                   (fixup-ignores-in-defun-form defun nil wrld))))
+                   (fixup-ignores-in-defun-form defun nil wrld)))
+          (defun (if (eq rec :mutual)
+                     defun ; irrelevant declares for mutual recursions must be handled at a higher level
+                   (fixup-irrelevants-in-defun-form defun state))))
      defun))
 
  ;; Go through all the functions in the clique. For each, if it is in
@@ -271,6 +274,7 @@
                                                    state))
               (mutual-recursion `(mutual-recursion ,@new-defuns))
               (mutual-recursion (fixup-ignores-in-mutual-recursion-form mutual-recursion wrld))
+              (mutual-recursion (fixup-irrelevants-in-mutual-recursion-form mutual-recursion state))
               (mutual-recursion-to-export (if verify-guards
                                               (ensure-mutual-recursion-demands-guard-verification mutual-recursion)
                                             mutual-recursion))
