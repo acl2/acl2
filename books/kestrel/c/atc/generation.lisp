@@ -3706,7 +3706,8 @@
     "This is used on the body of each non-recursive target function,
      in order to determine the variables affected by it,
      according to the nomenclature in the user documentation.
-     We visit the leaves of the term according to the @(tsee if) structure,
+     We visit the leaves of the term
+     according to the @(tsee if) and @(tsee let) structure,
      and ensure that they all have the same form,
      which must be one of the following forms:")
    (xdoc::ul
@@ -3747,6 +3748,12 @@
                        while the other branch affects variables ~x2: ~
                        this is disallowed."
                       fn then-affected else-affected))))
+       ((mv okp & body &) (fty-check-lambda-call term))
+       ((when okp)
+        (atc-find-affected fn body pointers ctx state))
+       ((mv okp & & & & & body) (fty-check-mv-let-call term))
+       ((when okp)
+        (atc-find-affected fn body pointers ctx state))
        ((when (pseudo-term-case term :var))
         (b* ((var (pseudo-term-var->name term)))
           (if (assoc-eq var pointers)
@@ -3853,9 +3860,12 @@
                                                    experimental
                                                    ctx
                                                    state))
-       ((unless (typep type))
-        (acl2::value
-         (raise "Internal error: the function ~x0 has no return type." fn)))
+       ((when (and (type-case type :void)
+                   (not affect)))
+        (er-soft+ ctx t nil
+                  "The function ~x0 returns void and affects no variables. ~
+                   This is disallowed."
+                  fn))
        ((when (and (type-case type :pointer)
                    (not (member-eq :array-writes experimental))))
         (acl2::value
