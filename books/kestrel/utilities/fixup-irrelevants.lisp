@@ -1,12 +1,19 @@
+; Utilities to fix up irrelevant declares
+;
+; Copyright (C) 2021 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
 (include-book "std/system/irrelevant-formals" :dir :system)
 (include-book "declares0")
 (include-book "defun-forms")
 (include-book "mutual-recursion-forms")
-
-;; TODO: Doesn't currently work right for mutual-recursion, due to bug in
-;; irrelevant-formals-info.
 
 ;; Returns the new defun-form.
 (defund set-irrelevant-declare-in-defun-form (defun-form irrelevant-formals)
@@ -41,11 +48,11 @@
            (defun-form (set-irrelevant-declare-in-defun-form defun-form irrelevant-formals)))
       (cons defun-form (set-irrelevant-declares-in-defun-forms (rest defun-forms) name-to-irrelevant-formals-alist)))))
 
-(defun fixup-irrelevants-in-mutual-recursion (mut-rec
-                                              state ;todo: reduce to just world?
-                                              )
+(defun fixup-irrelevants-in-mutual-recursion-form (mut-rec
+                                                   state ;todo: reduce to just world?
+                                                   )
   (declare (xargs :guard (mutual-recursion-formp mut-rec)
                   :mode :program
                   :stobjs state))
   (let* ((name-to-irrelevant-formals-alist (irrelevant-formals-info mut-rec)))
-    (set-irrelevant-declares-in-defun-forms (cdr mut-rec) name-to-irrelevant-formals-alist)))
+    `(mutual-recursion ,@(set-irrelevant-declares-in-defun-forms (cdr mut-rec) name-to-irrelevant-formals-alist))))

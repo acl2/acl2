@@ -62,8 +62,8 @@
               (expt 2 19)
               :with-output-off nil)
 ; (EV-REC *RETURN-LAST-ARG3* ...) took
-; 2.37 seconds realtime, 2.37 seconds runtime
-; (151,011,360 bytes allocated).
+; 2.44 seconds realtime, 2.44 seconds runtime
+; (335,544,928 bytes allocated).
 
 (verify-guards 2^n-1)
 

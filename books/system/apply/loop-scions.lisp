@@ -167,6 +167,8 @@
 #+acl2-devel
 (encapsulate
   nil
+; The following readtime conditional is redundant with the one above from a
+; Lisp reader standpoint, but seems useful for the build system.
   #+acl2-devel
   (local (include-book "arithmetic-5/top" :dir :system))
 
@@ -711,3 +713,81 @@
          (revappend ac (append$+ fn globals lst))))
 
 (verify-guards append$+)
+
+; The following were defined in support of do$ and need to be warranted in
+; order to let us eventually warrant do$.
+
+#+acl2-devel ; else not redundant
+(defwarrant d<)
+#+acl2-devel ; else not redundant
+(defwarrant l<)
+#+acl2-devel ; else not redundant
+(defwarrant nfix-list)
+#+acl2-devel ; else not redundant
+(defwarrant lex-fix)
+#+acl2-devel ; else not redundant
+(defwarrant lexp)
+
+(defthm consp-nfix-list
+  (equal (consp (nfix-list x))
+         (consp x)))
+
+(defthm nat-listp-nfix-list
+   (nat-listp (nfix-list x)))
+
+(defun do$ (measure-fn alist do-fn finally-fn
+                       untrans-measure untrans-do-loop$)
+  (declare (xargs :guard (and (apply$-guard measure-fn '(nil))
+
+; I don't actually need to know that alist is an alist.  If I insert it as
+; part of the guard, I have to prove it when I recur on the new-alist.
+;                             (alistp alist)
+
+                              (apply$-guard do-fn '(nil))
+                              (apply$-guard finally-fn '(nil)))
+                  :measure (lex-fix (apply$ measure-fn (cons alist 'nil)))
+                  :well-founded-relation l<
+                  ))
+
+; I don't know that the do-fn or finally-fn actually return well-formed
+; triples!  So I coerce their answers to true-lists, which allows me
+; to car and cdr them.
+
+  (let* ((triple (true-list-fix (apply$ do-fn (list alist))))
+         (exit-token (car triple))
+         (val (cadr triple))
+         (new-alist (caddr triple)))
+    (cond
+     ((eq exit-token :return)
+      val)
+     ((eq exit-token :loop-finish)
+; Evaluate the finally body.  If it executes a :return, return the given value;
+; else, return nil.
+      (let* ((triple (true-list-fix (apply$ finally-fn (list new-alist))))
+             (exit-token (car triple))
+             (val (cadr triple)))
+        (if (eq exit-token :return)
+            val
+            nil)))
+     ((l< (lex-fix (apply$ measure-fn (list new-alist)))
+          (lex-fix (apply$ measure-fn (list alist))))
+      (do$ measure-fn new-alist do-fn finally-fn
+           untrans-measure untrans-do-loop$))
+     (t
+      (prog2$
+       (er hard? 'do$
+           "The measure, ~x0, used in the do loop$ statement~%~Y12~%failed to ~
+            decrease!  In particular, when the incoming alist (an alist of ~
+            dotted pairs specifying the values of all the variables) ~
+            was~%~Y32the alist produced by the do body was~%~Y42and the ~
+            measure went from~%~x5~%to~%~x6.~%Logically, do$ returns ~x7 ~
+            in this situation."
+           untrans-measure
+           untrans-do-loop$
+           nil
+           alist
+           new-alist
+           (apply$ measure-fn (list alist))
+           (apply$ measure-fn (list new-alist))
+           :do$-measure-did-not-decrease)
+       :do$-measure-did-not-decrease)))))

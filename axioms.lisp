@@ -26124,7 +26124,7 @@ Lisp definition."
 ; involve any of the dynamically determined variables, like CLAUSE.)
 
 ; Note that gtermi is free to add as many :NO-OP T entries as it wants to
-; insure the result is non-empty, if that's a problem.
+; ensure the result is non-empty, if that's a problem.
 
 (defconst *top-hint-keywords*
 

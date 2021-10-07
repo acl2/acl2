@@ -935,7 +935,7 @@
 ; Given a clause cl, we build a type-alist and linear pot-lst with all of the
 ; literals in cl assumed false.  The pot-lst is built with the cheap-linearp
 ; flag on, which means we do not rewrite terms before turning them into polys
-; and we add no linear lemmas.  We insure that the type-alist has no
+; and we add no linear lemmas.  We ensure that the type-alist has no
 ; assumptions or forced hypotheses.  FYI: Just to be doubly sure that we are
 ; not ignoring assumptions and forced hypotheses, you will note that in
 ; relieve-dependent-hyps, after calling type-set, we check that no such entries
@@ -1097,11 +1097,12 @@
 ; leave any IMPLIES in the hypotheses.  These IMPLIES are thought to
 ; have been introduced by :USE hints.
 
-        (let ((term
-               (possibly-clean-up-dirty-lambda-objects
-                (disjoin (expand-any-final-implies cl wrld))
-                wrld
-                (remove-guard-holders-lamp))))
+; Historical Note: We used to call possibly-clean-up-dirty-lambda-objects here
+; but that was wrong because we don't have hyps to establish warrants and
+; preprocess-clause shouldn't be applying conditional rewrite rules or forcing
+; things anyway.
+
+        (let ((term (disjoin (expand-any-final-implies cl wrld))))
           (sl-let (term ttree)
                   (expand-abbreviations term nil
                                         *geneqv-iff* nil

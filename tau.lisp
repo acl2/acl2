@@ -1156,7 +1156,7 @@
 ; the pair (7 . SYMBOLP), or whatever the index for symbolp is.
 
 ; Note: When constants in this code refer to the indices of specific functions,
-; we have a check in check-built-in-constants that insures that the index is
+; we have a check in check-built-in-constants that ensures that the index is
 ; still correct, since they may shift as Boolean functions are added.
 
 ; As noted, we use the notation sign/r to denote a signed tau recognizer, where
@@ -9413,7 +9413,7 @@
 ; One might wonder what gives us the right, subsequently, to remove the
 ; ancestor lit of pair2 from the next pair encountered, even though we just
 ; check that those hyps, which may be missing lit', are a subset of the next
-; pair.  The invariant insures we can.  But if this conundrum bothers you,
+; pair.  The invariant ensures we can.  But if this conundrum bothers you,
 ; just add lit' as a hyp to pair2: it is never unsound to add a hypothesis to a
 ; theorem!  [The key part of the invariant is that, except for lit, the hyps of
 ; pair' are members of the hyps of pair2.]
@@ -10212,7 +10212,7 @@
 
 ; A more problematic issue is whether the new domain is derivable from the
 ; :pos-pairs of the tau into which we put this interval.  Our computation of
-; the :pos-pairs of the new tau will insure that it is because we will
+; the :pos-pairs of the new tau will ensure that it is because we will
 ; explicitly include INTEGERP, RATIONALP, or ACL2-NUMBERP as needed.  But it
 ; was not recognized at first that this would be necessary.  In particular, it
 ; was thought naively that since the domain was derivable from the :pos-pairs
@@ -10306,7 +10306,7 @@
 
 ; A more problematic issue is whether the new domain is derivable from the
 ; :pos-pairs of the tau into which we put this interval.  Our computation of
-; the :pos-pairs of the new tau will insure that it is because we will
+; the :pos-pairs of the new tau will ensure that it is because we will
 ; explicitly include INTEGERP, RATIONALP, or ACL2-NUMBERP as needed.
 
 ; If the intervals have an empty intersection, we return *tau-empty-interval*.

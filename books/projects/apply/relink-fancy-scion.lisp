@@ -422,7 +422,7 @@
 ;                (CAR LOOP$-GVARS))
 
 (defconst *fancy-loop$-scions*
-  (strip-caddrs *loop$-keyword-info*))
+  (strip-caddrs *for-loop$-keyword-info*))
 
 (defun make-true-cons-nest (terms)
   (declare (xargs :guard (true-listp terms)))
