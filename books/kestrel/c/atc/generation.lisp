@@ -2218,9 +2218,18 @@
                          whose term ~x1 to which the variables are bound ~
                          does not have the required form."
                         fn val))
-             ((er (list xform-items & xform-limit))
+             ((er (list xform-items xform-type xform-limit))
               (atc-gen-stmt val var-term-alist inscope vars fn prec-fns
                             experimental ctx state))
+             ((unless (or (not xform-type)
+                          (type-case xform-type :void)))
+              (er-soft+ ctx t (list nil nil nil)
+                        "When generating C code for the function ~x0, ~
+                         an MV-LET has been encountered ~
+                         whose term ~x1 to which the variables are bound ~
+                         has the non-void type ~x2, ~
+                         which is disallowed."
+                        fn val xform-type))
              (val-instance (fty-fsublis-var var-term-alist val))
              (vals (atc-make-mv-nth-terms indices val-instance))
              (var-term-alist-body
@@ -2392,10 +2401,20 @@
                          that is neither an IF or a loop function call. ~
                          This is disallowed."
                         fn val))
-             ((er (list xform-items & xform-limit))
+             ((er (list xform-items xform-type xform-limit))
               (atc-gen-stmt val var-term-alist inscope (list var)
                             fn prec-fns
                             experimental ctx state))
+             ((unless (or (not xform-type)
+                          (type-case xform-type :void)))
+              (er-soft+ ctx t (list nil nil nil)
+                        "When generating C code for the function ~x0, ~
+                         a LET has been encountered ~
+                         whose unwrapped term ~x1 ~
+                         to which the variable is bound ~
+                         has the non-void type ~x2, ~
+                         which is disallowed."
+                        fn val xform-type))
              ((er (list body-items body-type body-limit))
               (atc-gen-stmt body var-term-alist-body inscope affect
                             fn prec-fns
