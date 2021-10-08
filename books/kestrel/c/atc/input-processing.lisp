@@ -284,16 +284,10 @@
 
 (defval *atc-allowed-options*
   :short "Keyword options accepted by @(tsee atc)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These include an undocumented @(':experimental') option
-     to more easily test experimental features."))
   (list :output-file
         :proofs
         :const-name
-        :print
-        :experimental)
+        :print)
   ///
   (assert-event (symbol-listp *atc-allowed-options*))
   (assert-event (no-duplicatesp-eq *atc-allowed-options*)))
@@ -309,7 +303,6 @@
                                  (wf-thm symbolp)
                                  (fn-thms symbol-symbol-alistp)
                                  (print evmac-input-print-p)
-                                 (experimental acl2::keyword-listp)
                                  val)').")
                state)
   :mode :program
@@ -355,23 +348,11 @@
        (print (if print-option
                   (cdr print-option)
                 :result))
-       ((er &) (evmac-process-input-print print ctx state))
-       (experimental-option (assoc-eq :experimental options))
-       (experimental (if experimental-option
-                         (cdr experimental-option)
-                       nil))
-       ((unless (subsetp-eq experimental '(:array-writes)))
-        (er-soft+ ctx t nil
-                  "The :EXPERIMENTAL option must be ~
-                   a list of keywords among ~x0, ~
-                   but it is ~x1 instead."
-                  (list :array-writes)
-                  experimental)))
+       ((er &) (evmac-process-input-print print ctx state)))
     (acl2::value (list fn1...fnp
                        output-file
                        proofs
                        prog-const
                        wf-thm
                        fn-thms
-                       print
-                       experimental))))
+                       print))))
