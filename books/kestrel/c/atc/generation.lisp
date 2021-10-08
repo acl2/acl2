@@ -1906,7 +1906,7 @@
                       (affect symbol-listp)
                       (fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
-                      (experimental keyword-listp)
+                      (proofs booleanp)
                       (ctx ctxp)
                       state)
   :returns (mv erp
@@ -2109,7 +2109,7 @@
                             affect
                             fn
                             prec-fns
-                            experimental
+                            proofs
                             ctx
                             state))
              ((mv mbt$p &) (check-mbt$-call test))
@@ -2121,7 +2121,7 @@
                             affect
                             fn
                             prec-fns
-                            experimental
+                            proofs
                             ctx
                             state))
              ((mv erp test-expr state) (atc-gen-expr-bool test
@@ -2138,7 +2138,7 @@
                             affect
                             fn
                             prec-fns
-                            experimental
+                            proofs
                             ctx
                             state))
              ((er (list else-items else-type else-limit))
@@ -2149,7 +2149,7 @@
                             affect
                             fn
                             prec-fns
-                            experimental
+                            proofs
                             ctx
                             state))
              ((unless (equal then-type else-type))
@@ -2213,7 +2213,7 @@
                             vars
                             fn
                             prec-fns
-                            experimental
+                            proofs
                             ctx
                             state))
              ((unless (type-case xform-type :void))
@@ -2236,7 +2236,7 @@
                             affect
                             fn
                             prec-fns
-                            experimental
+                            proofs
                             ctx
                             state))
              (items (append xform-items body-items))
@@ -2312,7 +2312,7 @@
                                   affect
                                   fn
                                   prec-fns
-                                  experimental
+                                  proofs
                                   ctx
                                   state))
                    (limit (pseudo-term-fncall 'binary-+
@@ -2383,7 +2383,7 @@
                                   affect
                                   fn
                                   prec-fns
-                                  experimental
+                                  proofs
                                   ctx
                                   state))
                    (type body-type)
@@ -2449,7 +2449,7 @@
                                   affect
                                   fn
                                   prec-fns
-                                  experimental
+                                  proofs
                                   ctx
                                   state))
                    (type body-type)
@@ -2481,7 +2481,7 @@
                             (list var)
                             fn
                             prec-fns
-                            experimental
+                            proofs
                             ctx
                             state))
              ((unless (type-case xform-type :void))
@@ -2501,7 +2501,7 @@
                             affect
                             fn
                             prec-fns
-                            experimental
+                            proofs
                             ctx
                             state))
              (items (append xform-items body-items))
@@ -2747,7 +2747,7 @@
                            (measure-for-fn symbolp)
                            (measure-formals symbol-listp)
                            (prec-fns atc-symbol-fninfo-alistp)
-                           (experimental keyword-listp)
+                           (proofs booleanp)
                            (ctx ctxp)
                            state)
   :returns (mv erp
@@ -2831,7 +2831,7 @@
                            measure-for-fn
                            measure-formals
                            prec-fns
-                           experimental
+                           proofs
                            ctx
                            state))
        ((mv mbt$p &) (check-mbt$-call test))
@@ -2842,7 +2842,7 @@
                            measure-for-fn
                            measure-formals
                            prec-fns
-                           experimental
+                           proofs
                            ctx
                            state))
        ((mv erp test-expr state) (atc-gen-expr-bool test
@@ -2877,7 +2877,7 @@
                       affect
                       fn
                       prec-fns
-                      experimental
+                      proofs
                       ctx
                       state))
        ((when erp) (mv erp (irr) state))
@@ -3913,7 +3913,7 @@
                                                    affect
                                                    fn
                                                    prec-fns
-                                                   experimental
+                                                   proofs
                                                    ctx
                                                    state))
        ((when (and (type-case type :void)
@@ -4941,7 +4941,7 @@
                       loop-limit)
             state)
         (atc-gen-loop-stmt body (list scope) fn measure-of-fn measure-formals
-                           prec-fns experimental ctx state))
+                           prec-fns proofs ctx state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        ((mv erp
             (list local-events
