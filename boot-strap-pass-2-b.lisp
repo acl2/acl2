@@ -170,7 +170,13 @@
                       ,@(let ((measure (cdr entry)))
                           (and measure
                                `((declare (xargs :measure
-                                                 ,measure))))))))
+                                                 ,measure
+
+; Do$ Wart: In the case of do$ we magically insist the :well-founded-relation
+; is l<.
+                                                 ,@(if (eq (car entry) 'do$)
+                                                       '(:well-founded-relation l<)
+                                                       nil)))))))))
          (same-num-p (and fns-alist
                           (eql num old-num)))
          (acc (if (or (null acc1) ; true at the top-level
@@ -414,6 +420,8 @@
 #-acl2-devel
 (when-pass-2
 
+; We now warrant the loop$ scions.
+
 ; The following function symbols must be in :logic mode, and they are, from the
 ; system-verify-guards calls above.  Moreover, we must restrict to pass 2 since
 ; defwarrant is defined within when-pass-2.  Of course, this source file
@@ -466,6 +474,13 @@
  (defwarrant append$+-ac)
  (defwarrant append$+)
  (defwarrant mempos)
+ (defwarrant d<)
+ (defwarrant l<)
+ (defwarrant nfix-list)
+ (defwarrant lex-fix)
+ (defwarrant lexp)
+ (defwarrant do$)
+
  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
