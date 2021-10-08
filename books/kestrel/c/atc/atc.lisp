@@ -95,8 +95,7 @@
                   prog-const
                   wf-thm
                   fn-thms
-                  print
-                  experimental))
+                  print))
         (atc-process-inputs args ctx state)))
     (atc-gen-everything fn1...fnp
                         output-file
@@ -105,7 +104,6 @@
                         wf-thm
                         fn-thms
                         print
-                        experimental
                         call
                         ctx
                         state)))

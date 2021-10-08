@@ -3153,7 +3153,6 @@
                                       (scope atc-symbol-type-alistp)
                                       (prec-fns atc-symbol-fninfo-alistp)
                                       (proofs booleanp)
-                                      (experimental keyword-listp)
                                       (names-to-avoid symbol-listp)
                                       (ctx ctxp)
                                       state)
@@ -3256,8 +3255,7 @@
      the subgoals that arise without them have the form
      @('(<recognizer> nil)')."))
   (b* ((wrld (w state))
-       ((when (or (not proofs)
-                  (member-eq :array-writes experimental)))
+       ((when (not proofs))
         (acl2::value (list nil nil names-to-avoid)))
        (types1 (and type? (list type?)))
        (types2 (atc-gen-fn-returns-value-thm-aux1 affect scope))
@@ -3471,7 +3469,6 @@
                                 (fn-thms symbol-symbol-alistp)
                                 (fn-fun-env-thm symbolp)
                                 (limit pseudo-termp)
-                                (experimental keyword-listp)
                                 (wrld plist-worldp))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                (exported-events "A @(tsee pseudo-event-form-listp).")
@@ -3582,8 +3579,7 @@
    (xdoc::p
     "This theorem is not generated if @(':proofs') is @('nil')."))
   (b* (((when (or (not proofs)
-                  (irecursivep+ fn wrld) ; generated elsewhere
-                  (member-eq :array-writes experimental)))
+                  (irecursivep+ fn wrld))) ; generated elsewhere
         (mv nil nil nil))
        (name (cdr (assoc-eq fn fn-thms)))
        (formals (formals+ fn wrld))
@@ -3656,7 +3652,6 @@
                          (fn-thms symbol-symbol-alistp)
                          (print evmac-input-print-p)
                          (limit pseudo-termp)
-                         (experimental keyword-listp)
                          (names-to-avoid symbol-listp)
                          (ctx ctxp)
                          state)
@@ -3683,15 +3678,14 @@
                   names-to-avoid)
             state)
         (atc-gen-fn-returns-value-thm fn type? affect scope prec-fns
-                                      proofs experimental
-                                      names-to-avoid ctx state))
+                                      proofs names-to-avoid ctx state))
        ((when erp) (mv erp (list nil nil nil nil nil nil) state))
        ((mv fn-correct-local-events
             fn-correct-exported-events
             fn-correct-thm)
         (atc-gen-fn-correct-thm fn pointers prec-fns proofs
                                 prog-const fn-thms fn-fun-env-thm
-                                limit experimental wrld))
+                                limit wrld))
        (progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the theorem ~x0..."
@@ -3852,7 +3846,6 @@
                             (init-fun-env-thm symbolp)
                             (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
-                            (experimental keyword-listp)
                             (names-to-avoid symbol-listp)
                             (ctx ctxp)
                             state)
@@ -3944,7 +3937,7 @@
             state)
         (atc-gen-fn-thms fn pointers type nil scope prec-fns
                          proofs prog-const finfo init-fun-env-thm fn-thms print
-                         limit experimental names-to-avoid ctx state))
+                         limit names-to-avoid ctx state))
        ((when erp) (mv erp (list (irr-ext-declon) nil nil nil nil) state))
        (info (make-atc-fn-info
               :out-type type
@@ -4900,7 +4893,6 @@
                       (fn-appconds symbol-symbol-alistp)
                       (appcond-thms keyword-symbol-alistp)
                       (print evmac-input-print-p)
-                      (experimental keyword-listp)
                       (names-to-avoid symbol-listp)
                       (ctx ctxp)
                       state)
@@ -4958,7 +4950,7 @@
             state)
         (atc-gen-fn-thms fn pointers nil loop-affect scope prec-fns
                          proofs prog-const nil nil fn-thms
-                         print loop-limit experimental
+                         print loop-limit
                          names-to-avoid ctx state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        (loop-test (stmt-while->test loop-stmt))
@@ -5051,7 +5043,6 @@
                                   names-to-avoid state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        (local-events (and proofs
-                          (not (member-eq :array-writes experimental))
                           (append (list measure-of-fn-event)
                                   local-events
                                   exec-stmt-while-events
@@ -5061,7 +5052,6 @@
                                   body-local-events
                                   more-local-events)))
        (exported-events (and proofs
-                             (not (member-eq :array-writes experimental))
                              (append exported-events more-exported-events)))
        (info (make-atc-fn-info :out-type nil
                                :in-types (strip-cdrs scope)
@@ -5088,7 +5078,6 @@
                                  (fn-appconds symbol-symbol-alistp)
                                  (appcond-thms keyword-symbol-alistp)
                                  (print evmac-input-print-p)
-                                 (experimental keyword-listp)
                                  (names-to-avoid symbol-listp)
                                  (ctx ctxp)
                                  state)
@@ -5120,7 +5109,7 @@
                       state)
                   (atc-gen-loop fn prec-fns proofs prog-const
                                 fn-thms fn-appconds appcond-thms
-                                print experimental names-to-avoid ctx state))
+                                print names-to-avoid ctx state))
                  ((when erp) (mv erp (list nil nil nil nil) state)))
               (acl2::value (list nil
                                  local-events
@@ -5133,8 +5122,7 @@
                     state)
                 (atc-gen-ext-declon fn prec-fns proofs
                                     prog-const init-fun-env-thm fn-thms
-                                    print experimental
-                                    names-to-avoid ctx state))
+                                    print names-to-avoid ctx state))
                ((when erp) (mv erp (list nil nil nil nil) state)))
             (acl2::value (list (list ext)
                                local-events
@@ -5146,7 +5134,7 @@
         (atc-gen-ext-declon-list rest-fns prec-fns proofs
                                  prog-const init-fun-env-thm fn-thms
                                  fn-appconds appcond-thms
-                                 print experimental names-to-avoid ctx state)))
+                                 print names-to-avoid ctx state)))
     (acl2::value (list (append exts more-exts)
                        (append local-events more-local-events)
                        (append exported-events more-exported-events)
@@ -5251,7 +5239,6 @@
                            (wf-thm symbolp)
                            (fn-thms symbol-symbol-alistp)
                            (print evmac-input-print-p)
-                           (experimental keyword-listp)
                            (names-to-avoid symbol-listp)
                            (ctx ctxp)
                            state)
@@ -5307,7 +5294,7 @@
         (atc-gen-ext-declon-list fn1...fnp nil proofs
                                  prog-const init-fun-env-thm
                                  fn-thms fn-appconds appcond-thms
-                                 print experimental names-to-avoid ctx state))
+                                 print names-to-avoid ctx state))
        (tunit (make-transunit :declons exts))
        (local-init-fun-env-events (atc-gen-init-fun-env-thm init-fun-env-thm
                                                             proofs
@@ -5423,7 +5410,6 @@
                             (wf-thm symbolp)
                             (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
-                            (experimental keyword-listp)
                             (call pseudo-event-formp)
                             (ctx ctxp)
                             state)
@@ -5451,7 +5437,7 @@
   (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
        ((er (list tunit local-events exported-events &))
         (atc-gen-transunit fn1...fnp proofs prog-const wf-thm fn-thms
-                           print experimental names-to-avoid ctx state))
+                           print names-to-avoid ctx state))
        ((er file-gen-event) (atc-gen-file-event tunit output-file print state))
        (print-events (and (evmac-input-print->= print :result)
                           (atc-gen-print-result exported-events output-file)))
