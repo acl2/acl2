@@ -1711,7 +1711,7 @@
          ((mv new-goal &) (expand-cp-fn cl hints state))
          (next-cp (cdr (assoc-equal 'expand *SMT-architecture*)))
          ((if (null next-cp)) (value (list cl)))
-         (the-hint `(:clause-processor (,next-cp clause ',hints state))))
+         (the-hint `(:clause-processor (,next-cp clause ',hints))))
       (value (list `((hint-please ',the-hint) ,new-goal)))))
 
   (defthm disjoin-of-singleton

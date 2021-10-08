@@ -521,13 +521,13 @@
        (goal (disjoin cl))
        ((type-options h) (construct-type-options smtlink-hint goal))
        (judges (type-judgement goal ''t h h.names state))
-       (new-cl `((implies ,judges ,goal)))
-       (next-cp (cdr (assoc-equal 'type-inference-bottomup
-                                  *SMT-architecture*)))
+       (new-cl `(implies ,judges ,goal))
+       (next-cp (cdr (assoc-equal 'type-judge-bottomup *SMT-architecture*)))
        ((if (null next-cp)) (value (list cl)))
        (the-hint
-        `(:clause-processor (,next-cp clause ',h state)))
-       (hinted-goal `((hint-please ',the-hint) ,@new-cl)))
+        `(:clause-processor (,next-cp clause ',smtlink-hint state)))
+       (hinted-goal `((hint-please ',the-hint) ,new-cl))
+       (- (cw "type-judge-bottomup-cp: ~q0" hinted-goal)))
     (value (list hinted-goal))))
 
 (defthm correctness-of-type-judge-bottomup-cp

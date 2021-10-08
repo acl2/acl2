@@ -503,12 +503,13 @@
             (:smt-fname (stringp second))
             (:rm-file (booleanp second))
             (:global-hint (symbolp second))
+            (:wrld-fn-len (natp second))
             (:customp (booleanp second))
             (t (er hard? 'process=>smtlink-hint-syntax-p-helper
                    "Smtlink-hint option doesn't include: ~p0. ~
                        They are :functions, :hypotheses, :types, :int-to-ratp, ~
                        :under-inductionp, :smt-dir, :smt-fname, :rm-file, ~
-                       :smt-solver-params, :customp.~%" first)))))
+                       :global-hint, :wrld-fn-len :customp.~%" first)))))
       (and first-ok
            (smtlink-hint-syntax-p-helper rest (cons first used))))
     ///
@@ -533,6 +534,8 @@
                                 (booleanp (cadr term)))
                        (implies (equal (car term) :global-hint)
                                 (symbolp (cadr term)))
+                       (implies (equal (car term) :wrld-fn-len)
+                                (natp (cadr term)))
                        (implies (equal (car term) :customp)
                                 (booleanp (cadr term)))))
          :hints (("Goal"
@@ -547,7 +550,8 @@
                        (not (equal (car term) :smt-dir))
                        (not (equal (car term) :smt-fname))
                        (not (equal (car term) :rm-file))
-                       (not (equal (car term) :global-hint)))
+                       (not (equal (car term) :global-hint))
+                       (not (equal (car term) :wrld-fn-len)))
                   (equal (car term) :customp))
          :hints (("Goal"
                   :expand (smtlink-hint-syntax-p-helper term used)))
@@ -592,6 +596,8 @@
                                 (booleanp (cadr term)))
                        (implies (equal (car term) :global-hint)
                                 (symbolp (cadr term)))
+                       (implies (equal (car term) :wrld-fn-len)
+                                (natp (cadr term)))
                        (implies (equal (car term) :customp)
                                 (booleanp (cadr term)))))
          :name definition-of-smtlink-hint-syntax-p)
@@ -604,7 +610,8 @@
                        (not (equal (car term) :smt-dir))
                        (not (equal (car term) :smt-fname))
                        (not (equal (car term) :rm-file))
-                       (not (equal (car term) :global-hint)))
+                       (not (equal (car term) :global-hint))
+                       (not (equal (car term) :wrld-fn-len)))
                   (equal (car term) :customp))
          :name option-of-smtlink-hint-syntax-p)
      (ok (implies (and ok (consp term))
@@ -866,6 +873,14 @@
          (new-hint (change-smtlink-hint hint :global-hint content)))
       new-hint))
 
+(define set-wrld-fn-len ((content natp)
+                         (hint smtlink-hint-p))
+  :returns (new-hint smtlink-hint-p)
+  :short "Set :wrld-fn-len"
+  (b* ((hint (smtlink-hint-fix hint))
+       (new-hint (change-smtlink-hint hint :wrld-fn-len content)))
+    new-hint))
+
   (define combine-hints ((user-hint smtlink-hint-syntax-p)
                          (hint smtlink-hint-p))
     :returns (combined-hint smtlink-hint-p)
@@ -886,6 +901,7 @@
                      (:rm-file (set-rm-file second hint))
                      (:smt-dir (set-smt-dir second hint))
                      (:global-hint (set-global-hint second hint))
+                     (:wrld-fn-len (set-wrld-fn-len second hint))
                      (:customp (set-smt-cnf second hint)))))
       (combine-hints rest new-hint)))
 
@@ -943,10 +959,12 @@
     ~p1~%Therefore proceed without Smtlink...~%" the-hint user-hint)
                   (list cl)))
          (combined-hint (combine-hints user-hint the-hint))
-         ;; (- (cw "combined-hint: ~q0" combined-hint))
+         (- (cw "user-hint: ~q0" user-hint))
+         (- (cw "the-hint: ~q0" the-hint))
+         (- (cw "combined-hint: ~q0" combined-hint))
          (next-cp (cdr (assoc-equal 'process-hint *SMT-architecture*)))
          ((if (null next-cp)) (list cl))
-         (cp-hint `(:clause-processor (,next-cp clause ',combined-hint)))
+         (cp-hint `(:clause-processor (,next-cp clause ',combined-hint state)))
          (subgoal-lst (cons `(hint-please ',cp-hint) cl)))
       (list subgoal-lst)))
 
@@ -993,16 +1011,15 @@
   ;; A computed hint will be waiting to take the clause and hint for clause
   ;;   expansion and transformation.
   (defmacro smtlink (clause hint)
-    `(b* ((len (wrld-fn-len clause state)))
-       (process-hint-cp ,clause
-                        (append ,hint `(:wrld-fn-len ,len))
-                        state)))
+    `(process-hint-cp ,clause
+                      (append ',hint `(:wrld-fn-len ,(wrld-fn-len clause state)))
+                      state))
 
   (defmacro smtlink-custom (clause hint)
-    `(b* ((len (wrld-fn-len clause state)))
-       (process-hint-cp ,clause
-                        (append ,hint `(:wrld-fn-len ,len :customp t))
-                        state)))
+    `(process-hint-cp ,clause
+                      (append ',hint `(:wrld-fn-len ,(wrld-fn-len clause state)
+                                      :customp t))
+                      state))
 
   ;; Adding :smtlink as a custom :hints option
   (add-custom-keyword-hint :smtlink

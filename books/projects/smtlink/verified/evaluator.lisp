@@ -12,6 +12,7 @@
 (include-book "clause-processors/meta-extract-user" :dir :system)
 
 (include-book "hint-please")
+(include-book "type-hyp")
 
 ;; -----------------------------------------------------------------
 ;;       Define evaluators
@@ -28,7 +29,8 @@
                           (integerp x)
                           (rationalp x)
                           (symbolp x)
-                          (booleanp x))
+                          (booleanp x)
+                          (type-hyp xlist tag))
                          :namedp t)
 
 (acl2::def-ev-theoremp ev-smtcp)

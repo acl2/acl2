@@ -736,6 +736,7 @@
                                state)
   (b* (((unless (pseudo-term-listp cl)) (value nil))
        ((unless (smtlink-hint-p smtlink-hint)) (value (list cl)))
+       (- (cw "cl: ~q0" cl))
        (goal (disjoin cl))
        (h (construct-type-options smtlink-hint goal))
        ((mv okp tterm)
@@ -758,11 +759,12 @@
        (unified-judgements (typed-term->judgements unified-tterm))
        (unified-term (typed-term->term unified-tterm))
        (new-cl `((implies ,unified-judgements ,unified-term)))
-       (next-cp (cdr (assoc-equal 'type-inference-topdown *SMT-architecture*)))
+       (next-cp (cdr (assoc-equal 'type-judge-topdown *SMT-architecture*)))
        ((if (null next-cp)) (value (list cl)))
        (the-hint
-        `(:clause-processor (,next-cp clause ',h state)))
-       (hinted-goal `((hint-please ',the-hint) ,@new-cl)))
+        `(:clause-processor (,next-cp clause ',smtlink-hint state)))
+       (hinted-goal `((hint-please ',the-hint) ,@new-cl))
+       (- (cw "type-judge-topdown-cp: ~q0" hinted-goal)))
     (value (list hinted-goal))))
 
 (defthm correctness-of-type-judge-topdown-cp
