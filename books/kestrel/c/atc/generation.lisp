@@ -1847,8 +1847,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-affecting-term-for-let-p ((term pseudo-termp)
-                                      (prec-fns atc-symbol-fninfo-alistp)
-                                      (wrld plist-worldp))
+                                      (prec-fns atc-symbol-fninfo-alistp))
   :returns (yes/no booleanp)
   :short "Check if a term @('term') has the basic structure
           required for representing code affecting variables
@@ -1863,14 +1862,13 @@
      when recursively generating C code from it.
      In essence, here we check that the term is either
      (i) an @(tsee if) whose test is not @(tsee mbt) or @(tsee mbt$) or
-     (ii) a call of a (preceding) recursive target function."))
+     (ii) a call of a (preceding) target function."))
   (case-match term
     (('if test . &) (and (case-match test
                            ((fn . &) (not (member-eq fn '(mbt mbt$))))
                            (& t))))
     ((fn . &) (and (symbolp fn)
-                   (assoc-eq fn prec-fns)
-                   (consp (irecursivep+ fn wrld))))
+                   (consp (assoc-eq fn prec-fns))))
     (& nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2202,7 +2200,7 @@
                          an attempt is made to modify the variables ~x1, ~
                          not all of which are assignable."
                         fn vars))
-             ((unless (atc-affecting-term-for-let-p val prec-fns (w state)))
+             ((unless (atc-affecting-term-for-let-p val prec-fns))
               (er-soft+ ctx t irr
                         "When generating C code for the function ~x0, ~
                          an MV-LET has been encountered ~
@@ -2429,7 +2427,7 @@
              ((unless (eq wrapper? nil))
               (prog2$ (raise "Internal error: LET wrapper is ~x0." wrapper?)
                       (acl2::value irr)))
-             ((unless (atc-affecting-term-for-let-p val prec-fns (w state)))
+             ((unless (atc-affecting-term-for-let-p val prec-fns))
               (er-soft+ ctx t irr
                         "When generating C code for the function ~x0, ~
                          we encountered an unwrapped term ~x1 ~

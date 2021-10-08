@@ -421,7 +421,8 @@
        @('term') is a statement term for @('fni') with loop flag @('nil')
        returning @('void') and affecting @('var')
        that is
-       either a call of a recursive target function @('fnj') with @('j < i')
+       either a call of a target function @('fnj') with @('j < i')
+       whose body term returns @('void') and affects @('var')
        or an @(tsee if) whose test is an expression term returning boolean
        (not a test @('(mbt ...)') or @('(mbt$ ...)')), and
        @('body') is a statement term for @('fni') with loop flag @('L')
@@ -441,6 +442,7 @@
        returning @('void') and affecting @('(var1 ... varn)')
        that is
        either a call of a recursive target function @('fnj') with @('j < i')
+       whose body term returns @('void') and affects @('(var1 ... varn)')
        or an @(tsee if) whose test is an expression term returning a boolean
        (not a test @('(mbt ...)') or @('(mbt$ ...)')), and
        @('body') is a statement term for @('fni') with loop flag @('L')
