@@ -15,16 +15,19 @@
 (include-book "verified/add-hypo-cp")
 (include-book "verified/expand-cp")
 (include-book "verified/reorder-hypotheses")
-(include-book "verified/type-inference")
+(include-book "verified/type-inference-bottomup")
+(include-book "verified/type-inference-topdown")
 (include-book "verified/term-replacement")
+(include-book "verified/type-extract")
 
-;; ;; trusted
-;; (include-book "trusted/prove")
-;; (include-book "trusted/run")
-;; (include-book "trusted/trusted-cp")
-;; (include-book "trusted/write")
+;; trusted
+(include-book "trusted/prove")
+(include-book "trusted/run")
+(include-book "trusted/trusted-cp")
+(include-book "trusted/write")
 
-;; ;; trusted/z3-py
-;; (include-book "trusted/z3-py/header")
-;; (include-book "trusted/z3-py/names")
-;; (include-book "trusted/z3-py/translator")
+;; trusted/z3-py
+(include-book "trusted/z3-py/header")
+(include-book "trusted/z3-py/names")
+(include-book "trusted/z3-py/translator")
+

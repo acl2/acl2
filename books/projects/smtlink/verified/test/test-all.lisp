@@ -3,6 +3,7 @@
 (include-book "../type-inference")
 (include-book "../reorder-hypotheses")
 (include-book "../term-replacement")
+(include-book "../type-extract")
 (ld "test-smtlink-hint.lisp")
 
 (define test ((cl pseudo-term-listp)
@@ -20,12 +21,15 @@
         (type-judge-bottomup-cp (cdar reordered-term) hints state))
        (- (cw "after bottomup: ~q0" (cdar typed-goal-1)))
        ((mv & typed-goal-2 state)
-        (type-judge-cp (cdar reordered-term) hints state))
-       (- (cw "after type-judge-cp: ~q0" (cdar typed-goal-2)))
+        (type-judge-topdown-cp (cdar typed-goal-1) hints state))
+       (- (cw "after topdown: ~q0" (cdar typed-goal-2)))
        ((mv & term-after-replacement state)
         (term-replacement-cp (cdar typed-goal-2) hints state))
        (- (cw "after term-replacement-cp: ~q0" (cdar term-after-replacement)))
-       (final (cadr term-after-replacement)))
+       (term-after-extract
+        (type-extract-cp (cdar term-after-replacement) hints))
+       (- (cw "after type-extract-cp: ~q0" (cdar term-after-extract)))
+       (final (cadr term-after-extract)))
   (value final)))
 
 ;; (defun term1 ()

@@ -166,7 +166,9 @@ allowing the user to use Smtlink inside of a Smtlink proof.</p>
     @('SMT::hint-please') disjunct, apply the @('SMT::remove-hint-please')
     clause-processor, and install the @(tsee SMT::SMT-delayed-hint) for
     applying the actual hints."
-    (b* (((mv & kwd-alist) (extract-hint-wrapper cl)))
+    (b* (((mv & kwd-alist) (extract-hint-wrapper cl))
+         (- (cw "cl: ~q0" cl))
+         (- (cw "kwd-alist: ~q0" kwd-alist)))
       `(:computed-hint-replacement ((SMT-delayed-hint clause ',kwd-alist))
         :clause-processor (remove-hint-please clause))))
 

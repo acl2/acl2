@@ -57,15 +57,13 @@
 (defval *SMT-architecture*
   '((process-hint              . add-hypo-cp)
     (add-hypo                  . expand-cp)
-    (expand                    . reorder-cp)
-    (reorder                   . type-inference)
-    ;; (reorder                   . type-inference-bottomup-cp)
-    (type-inference-bottomup   . type-inference-topdown-cp)
-    ;; (type-inference-topdown    . type-replacement-cp)
-    (type-inference            . term-replacement-cp)
-    (term-replacement          . term-simplify-cp)
-    (term-simplify             . smt-trusted-cp)
-    (term-simplify-custom      . smt-trusted-cp-custom)))
+    (expand                    . reorder-hypotheses-cp)
+    (reorder                   . type-judge-bottomup-cp)
+    (type-judge-bottomup       . type-judge-topdown-cp)
+    (type-judge-topdown        . term-replacement-cp)
+    (term-replacement          . type-extract-cp)
+    (type-extract              . smt-trusted-cp)
+    (type-extract-custom       . smt-trusted-cp-custom)))
 
 ;;----------------------------------------------------------------
 

@@ -142,13 +142,18 @@
   :guard (not (equal fn 'quote))
   (b* ((fn (symbol-fix fn))
        (acc (pseudo-term-fix acc))
+       (- (cw "return-spec: ~q0" return-spec))
+       (- (cw "actuals: ~q0" actuals))
        (returns-thm-substed
         (get-substed-theorem return-spec actuals state))
        ((mv ok hypo return-judge)
         (get-hypotheses-and-conclusion returns-thm-substed fn actuals))
        ((unless ok)
         (prog2$ (er hard? 'returns-judgement=>construct-returns-judgement
-                    "Malformed returns theorem ~p0.~%" returns-thm-substed)
+                    "Malformed returns theorem ~p0 for ~p1. Path-cond: ~p2~%"
+                    returns-thm-substed
+                    `(,fn ,@actuals)
+                    path-cond)
                 ''t))
        (hypo-implied
         (path-test-list `(if ,actuals-judgements ,path-cond 'nil) hypo))

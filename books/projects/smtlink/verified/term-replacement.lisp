@@ -558,10 +558,11 @@
        (replaced-judgements (typed-term->judgements replaced-tterm))
        (replaced-term (typed-term->term replaced-tterm))
        (new-cl `((implies ,replaced-judgements ,replaced-term)))
+       (- (cw "replaced-term: ~q0" new-cl))
        (next-cp (cdr (assoc-equal 'term-replacement *SMT-architecture*)))
        ((if (null next-cp)) (list cl))
        (the-hint
-        `(:clause-processor (,next-cp clause ',smtlink-hint state)))
+        `(:clause-processor (,next-cp clause ',smtlink-hint)))
        (hinted-goal `((hint-please ',the-hint) ,@new-cl)))
     (list hinted-goal)))
 
