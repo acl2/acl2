@@ -2556,22 +2556,6 @@
                          a term ~x0 has been encountered, ~
                          which is disallowed."
                         fn term)))))
-       ((when (and okp
-                   (member-eq :array-writes experimental)
-                   (consp terms)))
-        (b* ((first (car terms)))
-          (if (and (symbolp first)
-                   (b* ((type? (atc-get-var first inscope)))
-                     (and type?
-                          (type-case type? :pointer))))
-              (acl2::value (list nil (type-void) ''0))
-            (b* (((mv erp (list expr type) state)
-                  (atc-gen-expr-cval-pure first inscope fn ctx state))
-                 ((when erp) (mv erp irr state)))
-              (acl2::value
-               (list (list (block-item-stmt (make-stmt-return :value expr)))
-                     type
-                     (pseudo-term-quote 0)))))))
        ((mv okp loop-fn loop-args in-types loop-affect loop-stmt loop-limit)
         (atc-check-loop-fn term var-term-alist prec-fns))
        ((when okp)
