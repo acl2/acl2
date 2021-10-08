@@ -5214,9 +5214,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-init-fun-env-thm ((init-fun-env-thm symbolp)
+                                  (proofs booleanp)
                                   (prog-const symbolp)
                                   (tunit transunitp))
-  :returns (event pseudo-event-formp)
+  :returns (local-events pseudo-event-form-listp)
   :short "Generate the theorem asserting that
           applying @(tsee init-fun-env) to the translation unit
           gives the corresponding function environment."
@@ -5225,7 +5226,8 @@
    (xdoc::p
     "The rationale for generating this theorem
      is explained in @(tsee atc-gen-transunit)."))
-  (b* ((fenv (init-fun-env tunit))
+  (b* (((unless proofs) nil)
+       (fenv (init-fun-env tunit))
        (formula `(equal (init-fun-env ,prog-const)
                         ',fenv))
        (hints '(("Goal" :in-theory '((:e init-fun-env)))))
@@ -5234,7 +5236,7 @@
                                :formula formula
                                :hints hints
                                :enable nil)))
-    event))
+    (list event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5302,9 +5304,10 @@
                                  fn-thms fn-appconds appcond-thms
                                  print experimental names-to-avoid ctx state))
        (tunit (make-transunit :declons exts))
-       (local-init-fun-env-event (atc-gen-init-fun-env-thm init-fun-env-thm
-                                                           prog-const
-                                                           tunit))
+       (local-init-fun-env-events (atc-gen-init-fun-env-thm init-fun-env-thm
+                                                            proofs
+                                                            prog-const
+                                                            tunit))
        ((mv local-const-event exported-const-event)
         (if proofs
             (atc-gen-prog-const prog-const tunit print)
@@ -5312,7 +5315,7 @@
        (local-events (append appcond-local-events
                              (and proofs (list local-const-event))
                              wf-thm-local-events
-                             (list local-init-fun-env-event)
+                             local-init-fun-env-events
                              fn-thm-local-events))
        (exported-events (append (and proofs (list exported-const-event))
                                 wf-thm-exported-events
