@@ -444,7 +444,9 @@
        an element of the array represented by @('var')
        with the subscript expression represented by @('term1')
        with the new element expression represented by @('term2'),
-       followed by the C code represented by @('body').")
+       followed by the C code represented by @('body').
+       If array writes are used, the @(':proofs') input must be @('nil'):
+       the generation of proofs is not supported for array writes yet.")
      (xdoc::li
       "A term @('(let ((var term)) body)'),
        where @('var') is assignable,
