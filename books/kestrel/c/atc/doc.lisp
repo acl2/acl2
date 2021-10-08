@@ -402,7 +402,7 @@
       "A term @('(let ((var (assign term))) body)'),
        where @('var') is assignable,
        @('term') is an expression term for @('fni')
-       returning the same C type as the C type of @('var')
+       returning the same non-pointer C type as the C type of @('var')
        and affecting no variables, and
        @('body') is a statement term for @('fni') with loop flag @('L')
        returning @('T') and affecting @('vars').

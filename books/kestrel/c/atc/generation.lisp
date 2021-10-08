@@ -1997,10 +1997,7 @@
    (xdoc::p
     "If the term is a @(tsee let), there are four cases.
      If the binding has the form of an array write,
-     and if the @(':experimental') input to ATC allows array writes,
-     we generate an array assignment;
-     before this feature can be turned from experimental to fully supported,
-     we may need to perform some additional checks here.
+     we generate an array assignment.
      Otherwise, if the term involves the @(tsee declar) wrapper,
      we ensure that a variable with the same symbol name is not already in scope
      (i.e. in the symbol table)
@@ -2432,6 +2429,12 @@
                                must not affect any variables, ~
                                but it affects ~x2 instead."
                               val var rhs-affect))
+                   ((when (type-case rhs-type :pointer))
+                    (er-soft+ ctx t irr
+                              "The term ~x0 to which the variable ~x1 is bound ~
+                               must not have a C pointer type, ~
+                               but it has type ~x2 instead."
+                              val var rhs-type))
                    (asg (make-expr-binary
                          :op (binop-asg)
                          :arg1 (expr-ident (make-ident :name (symbol-name var)))
