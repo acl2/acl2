@@ -2516,13 +2516,6 @@
                        but in the fucntion ~x0 it ends with ~x1 instead."
                       fn term)
           (acl2::value (list nil (type-void) (pseudo-term-quote 0)))))
-       ((when (and (pseudo-term-case term :var)
-                   (member-eq :array-writes experimental)
-                   (b* ((var (pseudo-term-var->name term))
-                        (type? (atc-get-var var inscope)))
-                     (and type?
-                          (type-case type? :pointer)))))
-        (acl2::value (list nil (type-void) (pseudo-term-quote 0))))
        ((mv okp terms) (fty-check-list-call term))
        ((when okp)
         (b* (((unless (>= (len terms) 2))
