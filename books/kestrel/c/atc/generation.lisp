@@ -1058,68 +1058,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-array-write ((var symbolp) (val pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (sub pseudo-termp)
-               (elem pseudo-termp))
-  :short "Check if a @(tsee let) binding may represent an array write."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "An array write, i.e. an assignment to an array element,
-     is represented by a @(tsee let) binding of the form")
-   (xdoc::codeblock
-    "(let ((<arr> (<type1>-array-write-<type2> <arr> <sub> <elem>))) ...)")
-   (xdoc::p
-    "where @('array') is a variable of array type,
-     which must occur identically as
-     both the @(tsee let) variable
-     and as the first argument of @('<type1>-array-write-<type2>'),
-     @('<sub>') is an expression that yields the index of the element to write,
-     @('<elem>') is an expression that yields the element to write,
-     and @('...') represents the code that follows the array assignment.
-     This function takes as arguments
-     the variable and value of a @(tsee let) binder,
-     and checks if they have the form described above.
-     If they do, the components are returned for further processing.")
-   (xdoc::p
-    "This is part of our initial experimental support for array writes.
-     Before that becomes fully supported and no longer experimental,
-     we may need to extend this function with additional checks."))
-  (b* (((acl2::fun (no)) (mv nil nil nil))
-       ((unless (pseudo-term-case val :fncall)) (no))
-       ((pseudo-term-fncall val) val)
-       ((mv okp etype array write itype) (atc-check-symbol-4part val.fn))
-       ((unless (and okp
-                     (eq array 'array)
-                     (eq write 'write)))
-        (no))
-       ((unless (atc-integer-fixtype-to-type itype)) (no))
-       (type (atc-integer-fixtype-to-type etype))
-       ((when (not type)) (no))
-       ((unless (list-lenp 3 val.args)) (no))
-       (arr (first val.args))
-       (sub (second val.args))
-       (elem (third val.args)))
-    (if (eq arr var)
-        (mv t sub elem)
-      (no)))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-array-write-sub
-    (implies yes/no
-             (< (pseudo-term-count sub)
-                (pseudo-term-count val)))
-    :rule-classes :linear)
-
-  (defret pseudo-term-count-of-atc-check-array-write-elem
-    (implies yes/no
-             (< (pseudo-term-count elem)
-                (pseudo-term-count val)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-check-callable-fn ((term pseudo-termp)
                                (var-term-alist symbol-pseudoterm-alistp)
                                (prec-fns atc-symbol-fninfo-alistp)
@@ -1224,6 +1162,69 @@
        (limit (atc-fn-info->limit info))
        (limit (fty-fsublis-var var-term-alist limit)))
     (mv t term.fn term.args in-types affect loop limit)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-array-write ((var symbolp) (val pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (sub pseudo-termp)
+               (elem pseudo-termp)
+               (sub-type typep)
+               (elem-type typep))
+  :short "Check if a @(tsee let) binding may represent an array write."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An array write, i.e. an assignment to an array element,
+     is represented by a @(tsee let) binding of the form")
+   (xdoc::codeblock
+    "(let ((<arr> (<type1>-array-write-<type2> <arr> <sub> <elem>))) ...)")
+   (xdoc::p
+    "where @('<arr>') is a variable of pointer type,
+     which must occur identically as
+     both the @(tsee let) variable
+     and as the first argument of @('<type1>-array-write-<type2>'),
+     @('<sub>') is an expression that yields the index of the element to write,
+     @('<elem>') is an expression that yields the element to write,
+     and @('...') represents the code that follows the array assignment.
+     This function takes as arguments
+     the variable and value of a @(tsee let) binder,
+     and checks if they have the form described above.
+     If they do, the components are returned for further processing.
+     We also return the types of the index and element
+     as gathered from the name of the array write function."))
+  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) (irr-type)))
+       ((unless (pseudo-term-case val :fncall)) (no))
+       ((pseudo-term-fncall val) val)
+       ((mv okp etype array write itype) (atc-check-symbol-4part val.fn))
+       ((unless (and okp
+                     (eq array 'array)
+                     (eq write 'write)))
+        (no))
+       (sub-type (atc-integer-fixtype-to-type itype))
+       ((unless sub-type) (no))
+       (elem-type (atc-integer-fixtype-to-type etype))
+       ((when (not elem-type)) (no))
+       ((unless (list-lenp 3 val.args)) (no))
+       (arr (first val.args))
+       (sub (second val.args))
+       (elem (third val.args)))
+    (if (eq arr var)
+        (mv t sub elem sub-type elem-type)
+      (no)))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-array-write-sub
+    (implies yes/no
+             (< (pseudo-term-count sub)
+                (pseudo-term-count val)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-array-write-elem
+    (implies yes/no
+             (< (pseudo-term-count elem)
+                (pseudo-term-count val)))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2253,18 +2254,52 @@
               (atc-update-var-term-alist (list var)
                                          (list val-instance)
                                          var-term-alist))
-             ((mv okp sub elem) (atc-check-array-write var val))
-             ((when (and okp
-                         (member-eq :array-writes experimental)))
-              (b* (((mv erp (list arr-expr &) state)
+             ((mv okp sub elem sub-type elem-type)
+              (atc-check-array-write var val))
+             ((when okp)
+              (b* (((unless (member-eq var affect))
+                    (er-soft+ ctx t irr
+                              "The array ~x0 is being written to, ~
+                               but it is not among the variables ~x1 ~
+                               currently affected."
+                              var affect))
+                   ((mv erp (list arr-expr type1) state)
                     (atc-gen-expr-cval-pure var inscope fn ctx state))
                    ((when erp) (mv erp irr state))
-                   ((mv erp (list sub-expr &) state)
+                   ((mv erp (list sub-expr type2) state)
                     (atc-gen-expr-cval-pure sub inscope fn ctx state))
                    ((when erp) (mv erp irr state))
-                   ((mv erp (list elem-expr &) state)
+                   ((mv erp (list elem-expr type3) state)
                     (atc-gen-expr-cval-pure elem inscope fn ctx state))
                    ((when erp) (mv erp irr state))
+                   ((unless (equal type1 (type-pointer elem-type)))
+                    (er-soft+ ctx t irr
+                              "The array ~x0 of type ~x1 ~
+                               does not have the expected type ~x2. ~
+                               This is indicative of ~
+                               unreachable code under the guards, ~
+                               given that the code is guard-verified."
+                              var type1 (type-pointer elem-type)))
+                   ((unless (equal type2 sub-type))
+                    (er-soft+ ctx t irr
+                              "The array ~x0 of type ~x1 ~
+                               is being indexed with
+                               a subscript ~x2 of type x3, ~
+                               instead of type ~x4 as expected.
+                               This is indicative of ~
+                               unreachable code under the guards, ~
+                               given that the code is guard-verified."
+                              var type1 sub type2 sub-type))
+                   ((unless (equal type3 elem-type))
+                    (er-soft+ ctx t irr
+                              "The array ~x0 of type ~x1 ~
+                               is being written to with ~
+                               an element ~x2 of type x3, ~
+                               instead of type ~x4 as expected.
+                               This is indicative of ~
+                               unreachable code under the guards, ~
+                               given that the code is guard-verified."
+                              var type1 elem type3 elem-type))
                    (asg (make-expr-binary
                          :op (binop-asg)
                          :arg1 (make-expr-arrsub :arr arr-expr

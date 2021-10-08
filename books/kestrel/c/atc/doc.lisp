@@ -416,6 +416,36 @@
        @('((lambda (var) body) (assign term))');
        this is the pattern that ATC looks for.")
      (xdoc::li
+      "A term
+       @('(let ((var (<type1>-array-write<type2> var term1 term2))) body)'),
+       where @('<type1>') and @('<type2>') are among"
+      (xdoc::ul
+       (xdoc::li "@('schar')")
+       (xdoc::li "@('uchar')")
+       (xdoc::li "@('sshort')")
+       (xdoc::li "@('ushort')")
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
+      "@('var') is in scope,
+       @('var') has a pointer type whose referenced type is
+       the C integer type corresponding to @('<type1>'),
+       @('var') is one of the variables in @('vars'),
+       @('term1') is a pure expression term for @('fni')
+       returning the C type corresponding to @('<type2>'),
+       @('term2') is a pure expression term for @('fni')
+       returning the C type corresponding to @('<type1>'),
+       @('body') is a statement term for @('fni') with loop flag @('L')
+       returning @('T') and affecting @('vars').
+       This represents a C assignment to
+       an element of the array represented by @('var')
+       with the subscript expression represented by @('term1')
+       with the new element expression represented by @('term2'),
+       followed by the C code represented by @('body').")
+     (xdoc::li
       "A term @('(let ((var term)) body)'),
        where @('var') is assignable,
        @('term') is a statement term for @('fni') with loop flag @('nil')
