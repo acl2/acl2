@@ -13,6 +13,13 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "kestrel/utilities/xdoc-paras" :dir :system)
 
+(defxdoc stp
+  :short "An SMT solver used by the Axe toolkit"
+  :parents (axe)
+  :long "STP is an SMT solver available <a href='https://github.com/stp/stp'>here</a>.
+  It is used by several tools in the @(see axe) toolkit.  See @(see build::cert_param) for
+information on suppressing attempts to use STP during builds.")
+
 (defxdoc axe
   :short "The Axe toolkit"
   :parents (software-verification kestrel-books)
