@@ -20,7 +20,7 @@
   (xdoc::topparas
    "The Axe toolkit provides a variety of tools for software verification, including lifters-into-logic, rewriters, theorem provers, and equivalence checkers.
 
-We are currently open sourcing Axe to the ACL2 Community books.
+Most of Axe is now available in the ACL2 Community books, under @('[books]/kestrel/axe/'), though much work remains to document it.
 
 See <a href=\"https://www.kestrel.edu/research/axe/\">the Axe webpage</a> for more information."))
 
