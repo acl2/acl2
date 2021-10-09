@@ -181,9 +181,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deref ((ptr pointerp) (heap heapp))
+(define get-array ((ptr pointerp) (heap heapp))
   :returns (array array-resultp)
-  :short "Dereference a pointer."
+  :short "Retrieve the array referenced by a pointer."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -647,3 +647,11 @@
                                        compustate-scopes-numbers
                                        compustate-scopes-numbers-aux
                                        errorp-when-scope-list-resultp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deref ((ptr pointerp) (compst compustatep))
+  :returns (array array-resultp)
+  :short "Dereference a pointer."
+  (get-array ptr (compustate->heap compst))
+  :hooks (:fix))

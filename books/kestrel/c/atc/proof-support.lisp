@@ -699,34 +699,37 @@
              push-frame
              pop-frame))
 
-  ;; rules about DEREF of COMPUSTATE->HEAP:
+  ;; rules about DEREF:
 
-  (defruled deref-of-heap-of-add-frame
-    (equal (deref ptr (compustate->heap (add-frame fun compst)))
-           (deref ptr (compustate->heap compst)))
-    :enable (add-frame push-frame))
+  (defruled deref-of-add-frame
+    (equal (deref ptr (add-frame fun compst))
+           (deref ptr compst))
+    :enable (add-frame push-frame deref))
 
-  (defruled deref-of-heap-of-add-scope
-    (equal (deref ptr (compustate->heap (add-scope compst)))
-           (deref ptr (compustate->heap compst)))
+  (defruled deref-of-add-scope
+    (equal (deref ptr (add-scope compst))
+           (deref ptr compst))
     :enable (add-scope
              push-frame
-             pop-frame))
+             pop-frame
+             deref))
 
-  (defruled deref-of-heap-of-add-var
-    (equal (deref ptr (compustate->heap (add-var var val compst)))
-           (deref ptr (compustate->heap compst)))
+  (defruled deref-of-add-var
+    (equal (deref ptr (add-var var val compst))
+           (deref ptr compst))
     :enable (add-var
              push-frame
-             pop-frame))
+             pop-frame
+             deref))
 
-  (defruled deref-of-heap-of-write-var
+  (defruled deref-of-write-var
     (implies (not (errorp (write-var var val compst)))
-             (equal (deref ptr (compustate->heap (write-var var val compst)))
-                    (deref ptr (compustate->heap compst))))
+             (equal (deref ptr (write-var var val compst))
+                    (deref ptr compst)))
     :enable (write-var
              push-frame
-             pop-frame))
+             pop-frame
+             deref))
 
   ;; rules about WRITE-VAR being an error:
 
@@ -781,10 +784,10 @@
     compustate-frames-number-of-add-scope
     compustate-frames-number-of-add-var
     compustate-frames-number-of-write-var-when-not-errorp
-    deref-of-heap-of-add-frame
-    deref-of-heap-of-add-scope
-    deref-of-heap-of-add-var
-    deref-of-heap-of-write-var
+    deref-of-add-frame
+    deref-of-add-scope
+    deref-of-add-var
+    deref-of-write-var
     errorp-of-write-var-when-not-errorp-of-read-var))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

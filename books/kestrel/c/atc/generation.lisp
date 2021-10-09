@@ -3401,8 +3401,7 @@
      this must be the same used
      in the formulation of the correctness theorems."))
   (b* ((derefs (loop$ for pointer in pointers
-                      collect `(deref ,(car pointer)
-                                      (compustate->heap ,compst-var))))
+                      collect `(deref ,(car pointer) ,compst-var)))
        (guard-subst (fsubcor-var (strip-cars pointers) derefs guard))
        (pointer-hyps (atc-gen-fn-guard-deref-compustate-aux pointers)))
     (conjoin (append pointer-hyps (list guard-subst))))
@@ -3439,7 +3438,7 @@
   (cond ((endp args) nil)
         (t (cons (if (assoc-eq (car args) pointers)
                      `(deref ,(symbol-fix (car args))
-                             (compustate->heap ,(symbol-fix compst-var)))
+                             ,(symbol-fix compst-var))
                    (symbol-fix (car args)))
                  (atc-gen-fn-args-deref-compustate (cdr args)
                                                    pointers
@@ -3456,8 +3455,7 @@
           where pointer arguments are replaced with dereferenced arrays."
   (loop$ for pointer in pointers
          collect (list (car pointer)
-                       `(deref ,(car pointer)
-                               (compustate->heap ,compst-var)))))
+                       `(deref ,(car pointer) ,compst-var))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4060,7 +4058,7 @@
        (formal (car formals))
        (inst (if (assoc-eq formal pointers)
                  (atc-gen-term-with-read-var-compustate
-                  `(deref ,formal (compustate->heap ,compst-var))
+                  `(deref ,formal ,compst-var)
                   compst-var)
                (atc-gen-term-with-read-var-compustate
                 formal
@@ -4539,7 +4537,7 @@
        (formal (car formals))
        (term `(read-var (ident ,(symbol-name formal)) ,compst-var))
        ((mv term hyp?) (if (assoc-eq formal pointers)
-                           (mv `(deref ,term (compustate->heap ,compst-var))
+                           (mv `(deref ,term ,compst-var)
                                (list `(pointerp ,term)))
                          (mv term nil)))
        (binding (list formal term))

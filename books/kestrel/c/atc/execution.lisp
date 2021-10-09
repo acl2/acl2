@@ -1293,7 +1293,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-arrsub ((arr value-resultp) (sub value-resultp) (heap heapp))
+(define exec-arrsub ((arr value-resultp)
+                     (sub value-resultp)
+                     (compst compustatep))
   :returns (result value-resultp)
   :short "Execute an array subscripting expression."
   :long
@@ -1317,9 +1319,9 @@
                                        (list :mistype-array :index
                                              :required (type-sint)
                                              :supplied (type-of-value sub))))
-       (array (deref arr heap))
+       (array (deref arr compst))
        ((when (errorp array))
-        (error (list :array-not-found arr (heap-fix heap))))
+        (error (list :array-not-found arr (compustate-fix compst))))
        (index (exec-integer sub))
        (err (error (list :array-index-out-of-range
                          :pointer arr
@@ -1405,7 +1407,7 @@
      :const (exec-const e.get)
      :arrsub (exec-arrsub (exec-expr-pure e.arr compst)
                           (exec-expr-pure e.sub compst)
-                          (compustate->heap compst))
+                          compst)
      :call (error (list :non-pure-expr e))
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))
