@@ -87,8 +87,8 @@ utilities to construct well-formed XDOC strings in a modular way.  See <see
 topic='@(url xdoc::constructors)'>the documentation</see> for more details.</p>
 
 <p>Once you have documented your books, you may wish to create a manual that
-can be viewed from a web browser or from the acl2-doc Emacs-based browser (see
-acl2::acl2-doc).  You can do this quite easily with XDOC's @(see save) command.
+can be viewed from a web browser or from the @(see acl2::acl2-doc) Emacs-based
+browser.  You can do this quite easily with XDOC's @(see save) command.
 This command can be embedded in an ordinary ACL2 book, so that your manual is
 automatically regenerated when you build your project.</p>
 
