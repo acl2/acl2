@@ -10,14 +10,17 @@
 
 (in-package "ACL2")
 
-(include-book "pack") ; reduce?
-(include-book "make-function-calls-on-formals")
+;; See tests in defevaluator-plus-tests.lisp
+
+(include-book "kestrel/utilities/pack" :dir :system) ; reduce?
+(include-book "kestrel/utilities/make-function-calls-on-formals" :dir :system)
 
 ;; A nicer interface to defevaluator.  Improvements include:
 ;; 1. looks up the arities of the functions in the world.
 ;; 2. auto-generates the name of the -list function that will be mutually recursive with the term evaluator.
-;; 3. always uses the :namedp t option to defevaluator
+;; 3. always uses the :namedp t option to defevaluator, for nicer constraint names
 ;; 4. automatically generates various theorems
+;; 5. generates improved versions of some constraints (currently, just one)
 
 (defun defevaluator+-fn (name fns state)
   (declare (xargs :guard (and (symbolp name)
@@ -48,7 +51,7 @@
                 (,list-name terms a))
          :hints (("Goal" :in-theory (enable append (:I len)))))
 
-       ;; Improved constraint(s);
+       ;; Improved constraint(s):
 
        (defthm ,(pack$ name '-of-lambda-better)
          (implies (consp (car x)) ;; no need to assume (consp x) since it's implied by this
@@ -59,8 +62,10 @@
 
        ;; Ours is better:
        (in-theory (disable ,(pack$ name '-of-lambda)))
-
        )))
 
+;; Example call (defevaluator+ math-and-if-ev binary-+ binary-* if).
+;; Takes the name of the evaluator to create, followed by the names of all the
+;; functions it should "know" about.
 (defmacro defevaluator+ (name &rest fns)
   `(make-event (defevaluator+-fn ',name ',fns state)))
