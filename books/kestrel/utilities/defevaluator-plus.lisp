@@ -16,8 +16,9 @@
 ;; A nicer interface to defevaluator.  Improvements include:
 ;; 1. looks up the arities of the functions in the world.
 ;; 2. auto-generates the name of the -list function that will be mutually recursive with the term evaluator.
-;; 3. always uses the :namedp t option to defevaluator
+;; 3. always uses the :namedp t option to defevaluator, for nicer constraint names
 ;; 4. automatically generates various theorems
+;; 5. generates improved versions of some constraints (currently, just one)
 
 (defun defevaluator+-fn (name fns state)
   (declare (xargs :guard (and (symbolp name)
@@ -48,7 +49,7 @@
                 (,list-name terms a))
          :hints (("Goal" :in-theory (enable append (:I len)))))
 
-       ;; Improved constraint(s);
+       ;; Improved constraint(s):
 
        (defthm ,(pack$ name '-of-lambda-better)
          (implies (consp (car x)) ;; no need to assume (consp x) since it's implied by this
@@ -59,7 +60,6 @@
 
        ;; Ours is better:
        (in-theory (disable ,(pack$ name '-of-lambda)))
-
        )))
 
 (defmacro defevaluator+ (name &rest fns)
