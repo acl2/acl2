@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; See tests in defevaluator-plus-tests.lisp
+
 (include-book "pack") ; reduce?
 (include-book "make-function-calls-on-formals")
 
@@ -62,5 +64,8 @@
        (in-theory (disable ,(pack$ name '-of-lambda)))
        )))
 
+;; Example call (defevaluator+ math-and-if-ev binary-+ binary-* if).
+;; Takes the name of the evaluator to create, followed by the names of all the
+;; functions it should "know" about.
 (defmacro defevaluator+ (name &rest fns)
   `(make-event (defevaluator+-fn ',name ',fns state)))

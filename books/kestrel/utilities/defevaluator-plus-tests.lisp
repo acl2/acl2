@@ -46,3 +46,6 @@
 
   ;; additional check:
   (defthm test (equal (myev '(binary-* '2 x) '((x . 3))) 6)))
+
+(deftest
+  (defevaluator+ math-and-if-ev binary-+ binary-* if))
