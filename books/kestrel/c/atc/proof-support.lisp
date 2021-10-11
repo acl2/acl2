@@ -86,7 +86,7 @@
      namely @(tsee push-frame), @tsee enter-scope), @(tsee create-var), etc.,
      go into the frame stack component of the computation state,
      via the @(tsee compustate->frames) accessor.
-     That leads to a complex symbolic term for the computation state.")
+     That would lead to a complex symbolic term for the computation state.")
    (xdoc::p
     "Instead, we pull the ``additions'' to the computation state,
      i.e. the added frames, scopes, and variables,
@@ -257,7 +257,7 @@
     "We provide a single theorem about @(tsee enter-scope),
      which just turns that into @(tsee add-scope) in all cases.
      If the computation state starts with @(tsee add-frame),
-     the hypothesis  that the stack frame is not empty is not needed;
+     the hypothesis that the stack frame is not empty is not needed;
      but we still prefer to have just one theorem for all cases here.")
    (xdoc::p
     "The theorems below about @(tsee exit-scope)
