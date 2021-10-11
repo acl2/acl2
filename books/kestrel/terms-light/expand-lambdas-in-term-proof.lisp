@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "expand-lambdas-in-term")
-(include-book "kestrel/evaluators/defevaluator-plus" :dir :system)
+(include-book "kestrel/evaluators/empty-eval" :dir :system)
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
@@ -29,8 +29,6 @@
 (local (in-theory (disable member-equal symbol-listp set-difference-equal PSEUDO-TERM-LISTP len
                            STRIP-CADRS
                            STRIP-CDRS)))
-
-(defevaluator+ empty-eval) ; an evaluator with no built-in functions
 
 ;todo: automate some of this?
 
