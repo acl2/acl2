@@ -7915,6 +7915,14 @@
                     (fn-rune-nume 'tau-system t t (w state)))))
     (cond
      ((not
+       (equal *rewrite-lambda-modep-xnume*
+              (fn-rune-nume 'rewrite-lambda-modep t t (w state))))
+      (interface-er str
+                    '*rewrite-lambda-modep-xnume*
+                    *rewrite-lambda-modep-xnume*
+                    (fn-rune-nume 'rewrite-lambda-modep t t (w state)))))
+    (cond
+     ((not
        (equal *tau-acl2-numberp-pair*
               (getpropc 'acl2-numberp 'tau-pair)))
       (interface-er str

@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "expand-lambdas-in-term")
-(include-book "kestrel/utilities/defevaluator-plus" :dir :system)
+(include-book "kestrel/evaluators/empty-eval" :dir :system)
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
@@ -29,8 +29,6 @@
 (local (in-theory (disable member-equal symbol-listp set-difference-equal PSEUDO-TERM-LISTP len
                            STRIP-CADRS
                            STRIP-CDRS)))
-
-(defevaluator+ lambda-eval) ; an evaluator with no built-in functions
 
 ;todo: automate some of this?
 
@@ -61,31 +59,31 @@
            (pseudo-termp (wrap-term-in-lambda body lambda-formals args)))
   :hints (("Goal" :in-theory (enable wrap-term-in-lambda))))
 
-(defthm LAMBDA-EVAL-of-cdr-of-assoc-equal
+(defthm EMPTY-EVAL-of-cdr-of-assoc-equal
   (IMPLIES (AND (SYMBOLP TERM)
                 ;(MEMBER-EQUAL TERM LAMBDA-FORMALS)
         ;        (SYMBOL-LISTP LAMBDA-FORMALS)
                 ;(PSEUDO-TERM-LISTP ARGS)
        ;         (EQUAL (LEN LAMBDA-FORMALS) (LEN ARGS))
                 TERM)
-           (EQUAL (LAMBDA-EVAL (CDR (ASSOC-EQUAL TERM alist)) A)
+           (EQUAL (EMPTY-EVAL (CDR (ASSOC-EQUAL TERM alist)) A)
                   (CDR (ASSOC-EQUAL TERM (PAIRLIS$ (strip-cars alist)
-                                                   (LAMBDA-EVAL-LIST (strip-cdrs alist)
+                                                   (EMPTY-EVAL-LIST (strip-cdrs alist)
                                                                      A))))))
   :hints (("Goal" :in-theory (enable PAIRLIS$ assoc-equal))))
 
-(defthm lambda-eval-of-wrap-term-in-lambda-when-symbolp
+(defthm empty-eval-of-wrap-term-in-lambda-when-symbolp
   (implies (and (symbolp term)
 ;                (symbol-listp lambda-formals)
 ;                (pseudo-term-listp args)
                 (equal (len lambda-formals) (len args)))
-           (equal (lambda-eval (wrap-term-in-lambda term lambda-formals args) a)
+           (equal (empty-eval (wrap-term-in-lambda term lambda-formals args) a)
                   (if (equal term nil) ; gross exception in defevaluator
                       nil
                     (if (member-equal term lambda-formals)
-                        (lambda-eval (cdr (assoc-equal term (pairlis$ lambda-formals args)))
+                        (empty-eval (cdr (assoc-equal term (pairlis$ lambda-formals args)))
                                      a)
-                      (lambda-eval term a)))))
+                      (empty-eval term a)))))
   :hints (("Goal" :in-theory (enable wrap-term-in-lambda
                                      ;assoc-equal-iff
                                      ))))
@@ -93,12 +91,12 @@
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-lst" :dir :system)
 
-(defthm lambda-eval-list-when-symbol-listp
+(defthm empty-eval-list-when-symbol-listp
   (implies (and (symbol-listp vars)
                 (not (member-equal nil vars)))
-           (equal (lambda-eval-list vars a)
+           (equal (empty-eval-list vars a)
                   (lookup-equal-lst vars a)))
-  :hints (("Goal" :in-theory (enable ;lambda-eval-list
+  :hints (("Goal" :in-theory (enable ;empty-eval-list
                               (:i len)
                               LOOKUP-EQUAL)
            :induct (len vars))))
@@ -118,25 +116,25 @@
          (and (alists-equiv-on keys1 alist1 alist2)
               (alists-equiv-on keys2 alist1 alist2))))
 
-;; lambda-eval gives the same result if the alist is changed to one that equivalent for the free vars of the term
+;; empty-eval gives the same result if the alist is changed to one that equivalent for the free vars of the term
 (defthm-flag-free-vars-in-term
-  (defthm equal-of-lambda-eval-and-lambda-eval-when-alists-equiv-on
+  (defthm equal-of-empty-eval-and-empty-eval-when-alists-equiv-on
     (implies (and (alists-equiv-on (free-vars-in-term term) alist1 alist2)
                   (pseudo-termp term))
-             (equal (equal (lambda-eval term alist1)
-                           (lambda-eval term alist2))
+             (equal (equal (empty-eval term alist1)
+                           (empty-eval term alist2))
                     t))
     :flag free-vars-in-term)
-  (defthm equal-of-lambda-eval-list-and-lambda-eval-list-when-alists-equiv-on
+  (defthm equal-of-empty-eval-list-and-empty-eval-list-when-alists-equiv-on
     (implies (and (alists-equiv-on (free-vars-in-terms terms) alist1 alist2)
                   (pseudo-term-listp terms))
-             (equal (equal (lambda-eval-list terms alist1)
-                           (lambda-eval-list terms alist2))
+             (equal (equal (empty-eval-list terms alist1)
+                           (empty-eval-list terms alist2))
                     t))
     :flag free-vars-in-terms)
   :hints (("Goal" :expand (PSEUDO-TERMP TERM)
            :in-theory (enable free-vars-in-terms
-                              LAMBDA-EVAL-OF-FNCALL-ARGS))))
+                              EMPTY-EVAL-OF-FNCALL-ARGS))))
 
 (defthm ALISTS-EQUIV-ON-of-cons-and-cons-same
   (implies (ALISTS-EQUIV-ON KEYS alist1 alist2)
@@ -223,13 +221,13 @@
                               (:I len)))))
 
 ;; term may have free vars not among the lambda formals
-(defthm lambda-eval-of-wrap-term-in-lambda
+(defthm empty-eval-of-wrap-term-in-lambda
   (implies (and (pseudo-termp term)
                 (not (member-equal nil (free-vars-in-term term))) ;drop? may need the notion of alists agreeing on a set of keys not involving nil
                 (equal (len lambda-formals) (len args)))
-           (equal (lambda-eval (wrap-term-in-lambda term lambda-formals args) a)
-                  (lambda-eval term
-                               (append (pairlis$ lambda-formals (lambda-eval-list args a)) ; these pairs may shadow pairs in a
+           (equal (empty-eval (wrap-term-in-lambda term lambda-formals args) a)
+                  (empty-eval term
+                               (append (pairlis$ lambda-formals (empty-eval-list args a)) ; these pairs may shadow pairs in a
                                        a))))
   :hints (("Goal" :in-theory (enable wrap-term-in-lambda))))
 
@@ -242,12 +240,12 @@
 ;;                (pseudo-term-listp (cdr term))
 ;;                (equal (len lambda-formals) (len args))
 ;;                )
-;;           (equal (lambda-eval (wrap-term-in-lambda term lambda-formals args) a)
-;;                  (lambda-eval (cons
-;;                                (car term) (KWOTE-LST (lambda-eval-list (WRAP-TERMS-IN-LAMBDAS (cdr term) lambda-formals args) a)))
+;;           (equal (empty-eval (wrap-term-in-lambda term lambda-formals args) a)
+;;                  (empty-eval (cons
+;;                                (car term) (KWOTE-LST (empty-eval-list (WRAP-TERMS-IN-LAMBDAS (cdr term) lambda-formals args) a)))
 ;;                               nil)))
 ;;  :hints (("Goal" :in-theory (enable wrap-term-in-lambda
-;;                                     LAMBDA-EVAL-OF-FNCALL-ARGS))))
+;;                                     EMPTY-EVAL-OF-FNCALL-ARGS))))
 
 (defund wrap-terms-in-lambdas (terms lambda-formals args)
   (if (endp terms)
@@ -260,13 +258,13 @@
          nil)
   :hints (("Goal" :in-theory (enable wrap-terms-in-lambdas))))
 
-(defthm lambda-eval-list-of-wrap-terms-in-lambdas
+(defthm empty-eval-list-of-wrap-terms-in-lambdas
   (implies (and (pseudo-term-listp terms)
                 (not (member-equal nil (free-vars-in-terms terms))) ;drop?
                 (equal (len lambda-formals) (len args)))
-           (equal (lambda-eval-list (wrap-terms-in-lambdas terms lambda-formals args) a)
-                  (lambda-eval-list terms
-                                    (append (pairlis$ lambda-formals (lambda-eval-list args a)) ; these pairs may shadow pairs in a
+           (equal (empty-eval-list (wrap-terms-in-lambdas terms lambda-formals args) a)
+                  (empty-eval-list terms
+                                    (append (pairlis$ lambda-formals (empty-eval-list args a)) ; these pairs may shadow pairs in a
                                             a))))
   :hints (("Goal" :in-theory (enable wrap-terms-in-lambdas))))
 
@@ -278,16 +276,16 @@
                   (pseudo-term-listp (strip-cdrs alist))
                   (pseudo-termp term)
                   (not (member-equal nil (free-vars-in-term term))))
-             (equal (lambda-eval (sublis-var-simple alist term) a)
-                    (lambda-eval (wrap-term-in-lambda term (strip-cars alist) (strip-cdrs alist)) a)))
+             (equal (empty-eval (sublis-var-simple alist term) a)
+                    (empty-eval (wrap-term-in-lambda term (strip-cars alist) (strip-cdrs alist)) a)))
     :flag sublis-var-simple)
   (defthm sublis-var-simple-lst-correct
     (implies (and (symbol-alistp alist) ; usually a symbol-term-alistp
                   (pseudo-term-listp (strip-cdrs alist))
                   (pseudo-term-listp terms)
                   (not (member-equal nil (free-vars-in-terms terms))))
-             (equal (lambda-eval-list (sublis-var-simple-lst alist terms) a)
-                    (lambda-eval-list (wrap-terms-in-lambdas terms (strip-cars alist) (strip-cdrs alist)) a)))
+             (equal (empty-eval-list (sublis-var-simple-lst alist terms) a)
+                    (empty-eval-list (wrap-terms-in-lambdas terms (strip-cars alist) (strip-cdrs alist)) a)))
     :flag sublis-var-simple-lst)
   :hints (("Goal" :expand (PSEUDO-TERMP TERM)
            :in-theory (e/d (sublis-var-simple
@@ -295,7 +293,7 @@
                             MEMBER-EQUAL-OF-STRIP-CARS-IFF
                             wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
-                            LAMBDA-EVAL-OF-FNCALL-ARGS
+                            EMPTY-EVAL-OF-FNCALL-ARGS
                             )
                            (pairlis$
                             SET-DIFFERENCE-EQUAL)))))
@@ -308,9 +306,9 @@
                   (not (member-equal nil (free-vars-in-term term)))
                   (subsetp-equal (free-vars-in-term term) (strip-cars alist))
                   )
-             (equal (lambda-eval (sublis-var-simple alist term) a)
-                    (lambda-eval term (pairlis$ (strip-cars alist)
-                                                (lambda-eval-list (strip-cdrs alist) a)))))
+             (equal (empty-eval (sublis-var-simple alist term) a)
+                    (empty-eval term (pairlis$ (strip-cars alist)
+                                                (empty-eval-list (strip-cdrs alist) a)))))
     :flag sublis-var-simple)
   (defthm sublis-var-simple-lst-correct2
     (implies (and (symbol-alistp alist) ; usually a symbol-term-alistp
@@ -318,10 +316,10 @@
                   (pseudo-term-listp terms)
                   (not (member-equal nil (free-vars-in-terms terms)))
                   (subsetp-equal (free-vars-in-terms terms) (strip-cars alist)))
-             (equal (lambda-eval-list (sublis-var-simple-lst alist terms) a)
-                    (lambda-eval-list terms
+             (equal (empty-eval-list (sublis-var-simple-lst alist terms) a)
+                    (empty-eval-list terms
                                       (pairlis$ (strip-cars alist)
-                                                (lambda-eval-list (strip-cdrs alist) a)))))
+                                                (empty-eval-list (strip-cdrs alist) a)))))
     :flag sublis-var-simple-lst)
   :hints (("Goal" :expand (PSEUDO-TERMP TERM)
            :in-theory (e/d (sublis-var-simple
@@ -329,7 +327,7 @@
                             MEMBER-EQUAL-OF-STRIP-CARS-IFF
                             wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
-                            LAMBDA-EVAL-OF-FNCALL-ARGS
+                            EMPTY-EVAL-OF-FNCALL-ARGS
                             )
                            (pairlis$
                             SET-DIFFERENCE-EQUAL)))))
@@ -366,7 +364,7 @@
                            (FREE-VARS-IN-TERM TERM))
            :do-not '(generalize eliminate-destructors)
            :in-theory (enable expand-lambdas-in-term
-                              LAMBDA-EVAL-OF-FNCALL-ARGS
+                              EMPTY-EVAL-OF-FNCALL-ARGS
                               FREE-VARS-IN-TERMS
                               LAMBDAS-CLOSED-IN-TERMP))))
 
@@ -423,7 +421,7 @@
                            (FREE-VARS-IN-TERM TERM))
            :do-not '(generalize eliminate-destructors)
            :in-theory (enable expand-lambdas-in-term
-                              LAMBDA-EVAL-OF-FNCALL-ARGS
+                              EMPTY-EVAL-OF-FNCALL-ARGS
                               FREE-VARS-IN-TERMS
                               LAMBDAS-CLOSED-IN-TERMP))))
 
@@ -441,7 +439,7 @@
              (fn (ffn-symb term)))
         (if (flambdap fn)
             (let* ((lambda-body (expand-lambdas-in-term-induct (lambda-body fn)
-                                                               (pairlis$ (lambda-formals fn) (lambda-eval-list args a)) ;note this!
+                                                               (pairlis$ (lambda-formals fn) (empty-eval-list args a)) ;note this!
                                                                )))
               (sublis-var-simple (pairlis$ (lambda-formals fn) args) lambda-body))
           `(,fn ,@args)))))
@@ -479,20 +477,20 @@
     (implies (and (pseudo-termp term)
                   (no-nils-in-termp term)
                   (lambdas-closed-in-termp term))
-             (equal (lambda-eval (expand-lambdas-in-term term) a)
-                    (lambda-eval term a)))
+             (equal (empty-eval (expand-lambdas-in-term term) a)
+                    (empty-eval term a)))
     :flag expand-lambdas-in-term-induct)
   (defthm expand-lambdas-in-terms-correct
     (implies (and (pseudo-term-listp terms)
                   (no-nils-in-termsp terms)
                   (lambdas-closed-in-termsp terms))
-             (equal (lambda-eval-list (expand-lambdas-in-terms terms) a)
-                    (lambda-eval-list terms a)))
+             (equal (empty-eval-list (expand-lambdas-in-terms terms) a)
+                    (empty-eval-list terms a)))
     :flag expand-lambdas-in-terms-induct)
   :hints (("Goal" :expand ((expand-lambdas-in-term terms)
                            (free-vars-in-term term)
                            (lambdas-closed-in-termp term))
            :do-not '(generalize eliminate-destructors)
            :in-theory (enable expand-lambdas-in-term
-                              lambda-eval-of-fncall-args
+                              empty-eval-of-fncall-args
                               free-vars-in-terms))))
