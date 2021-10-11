@@ -33,6 +33,18 @@
          ,(make-function-calls-on-formals fns (w state))
          :namedp t)
 
+       ;; Improved constraint(s):
+
+       (defthm ,(pack$ name '-of-lambda-better)
+         (implies (consp (car x)) ;; no need to assume (consp x) since it's implied by this
+                  (equal (,name x a)
+                         (,name (caddr (car x))
+                                (pairlis$ (cadr (car x))
+                                          (,list-name (cdr x) a))))))
+
+       ;; Ours is better:
+       (in-theory (disable ,(pack$ name '-of-lambda)))
+
        ;; Extra theorems:
 
        (defthm ,(add-suffix-to-fn list-name "-OF-APPEND")
@@ -51,17 +63,6 @@
                 (,list-name terms a))
          :hints (("Goal" :in-theory (enable append (:I len)))))
 
-       ;; Improved constraint(s):
-
-       (defthm ,(pack$ name '-of-lambda-better)
-         (implies (consp (car x)) ;; no need to assume (consp x) since it's implied by this
-                  (equal (,name x a)
-                         (,name (caddr (car x))
-                                (pairlis$ (cadr (car x))
-                                          (,list-name (cdr x) a))))))
-
-       ;; Ours is better:
-       (in-theory (disable ,(pack$ name '-of-lambda)))
        )))
 
 ;; Example call (defevaluator+ math-and-if-ev binary-+ binary-* if).
