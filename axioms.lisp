@@ -4252,6 +4252,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cons (+ 14 (car *tau-natp-pair*))
         'MINUSP))
 
+(defun rewrite-lambda-modep (x)
+  (declare (xargs :mode :logic :guard t))
+  x)
+
+(defconst *rewrite-lambda-modep-xnume*
+  (+ *tau-system-xnume* 3))
+
 ; Note: The constants declared above are checked for accuracy after bootstrap
 ; by check-built-in-constants in interface-raw.lisp.
 
