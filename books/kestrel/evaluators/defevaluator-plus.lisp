@@ -12,8 +12,8 @@
 
 ;; See tests in defevaluator-plus-tests.lisp
 
-(include-book "pack") ; reduce?
-(include-book "make-function-calls-on-formals")
+(include-book "kestrel/utilities/pack" :dir :system) ; reduce?
+(include-book "kestrel/utilities/make-function-calls-on-formals" :dir :system)
 
 ;; A nicer interface to defevaluator.  Improvements include:
 ;; 1. looks up the arities of the functions in the world.

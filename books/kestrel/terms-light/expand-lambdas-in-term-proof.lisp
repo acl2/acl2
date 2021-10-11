@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "expand-lambdas-in-term")
-(include-book "kestrel/utilities/defevaluator-plus" :dir :system)
+(include-book "kestrel/evaluators/defevaluator-plus" :dir :system)
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
