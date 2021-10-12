@@ -91,6 +91,7 @@
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-lst" :dir :system)
 
+;this holds for any evaluator?
 (defthm empty-eval-list-when-symbol-listp
   (implies (and (symbol-listp vars)
                 (not (member-equal nil vars)))
