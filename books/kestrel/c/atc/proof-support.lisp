@@ -558,10 +558,10 @@
   (defruled write-var-of-add-var-diff
     (implies (and (not (equal (ident-fix var)
                               (ident-fix var2)))
-                  ;; the following hyp may be inefficient:
-                  (not (errorp (write-var var val compst))))
+                  (equal compst1 (write-var var val compst))
+                  (not (errorp compst1)))
              (equal (write-var var val (add-var var2 val2 compst))
-                    (add-var var2 val2 (write-var var val compst))))
+                    (add-var var2 val2 compst1)))
     :enable (write-var
              write-var-aux
              add-var
