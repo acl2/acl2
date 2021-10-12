@@ -84,15 +84,15 @@
        because we still need to keep the function definitions."))
     (b* (((when (endp stmts)) nil)
          (stmt (car stmts))
-         (afterp (or afterp
-                     (statement-case stmt :leave)
-                     (statement-case stmt :break)
-                     (statement-case stmt :continue))))
+         (next-afterp (or afterp
+                          (statement-case stmt :leave)
+                          (statement-case stmt :break)
+                          (statement-case stmt :continue))))
       (if (or (not afterp)
               (statement-case stmt :fundef))
           (cons (statement-dead stmt)
-                (statement-list-dead (cdr stmts) afterp))
-        (statement-list-dead (cdr stmts) afterp)))
+                (statement-list-dead (cdr stmts) next-afterp))
+        (statement-list-dead (cdr stmts) next-afterp)))
     :measure (statement-list-count stmts))
 
   (define block-dead ((block blockp))
@@ -132,6 +132,8 @@
                  :outputs (fundef->outputs fdef)
                  :body (block-dead (fundef->body fdef)))
     :measure (fundef-count fdef))
+
+  :flag-local nil
 
   :verify-guards nil ; done below
   ///
