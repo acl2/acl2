@@ -466,10 +466,10 @@
     (implies (and (not (equal (compustate-frames-number compst) 0))
                   (not (equal (ident-fix var)
                               (ident-fix var2)))
-                  ;; the following hyp may be inefficient:
-                  (not (errorp (create-var var val compst))))
+                  (equal compst1 (create-var var val compst))
+                  (not (errorp compst1)))
              (equal (create-var var val (add-var var2 val2 compst))
-                    (add-var var2 val2 (create-var var val compst))))
+                    (add-var var2 val2 compst1)))
     :enable (create-var add-var))
 
   ;; rules about READ-VAR:
