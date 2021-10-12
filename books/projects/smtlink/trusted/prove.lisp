@@ -17,7 +17,7 @@
 (include-book "./run")
 (include-book "./write")
 (include-book "./z3-py/names")
-(include-book "./z3-py/translator")
+(include-book "./z3-py/translate")
 (include-book "./z3-py/header")
 
 (defttag :tshell)

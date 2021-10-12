@@ -8,7 +8,7 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
 
-(include-book "translator")
+(include-book "translate")
 
 (defsection SMT-header
   :parents (z3-py)

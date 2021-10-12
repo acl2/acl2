@@ -8,7 +8,7 @@
 (include-book "std/io/top" :dir :system)
 (include-book "centaur/misc/tshell" :dir :system)
 
-(include-book "z3-py/translator")
+(include-book "z3-py/translate")
 
 (defttag :tshell)
 (value-triple (tshell-ensure))
