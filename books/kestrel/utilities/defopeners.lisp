@@ -718,6 +718,8 @@
                                (symbolp suffix))
                    :stobjs state))
   (mv-let (event names)
+    ;; Would like to call get-clique instead of fn-recursive-partners, but it's
+    ;; in :program mode (but see kestrel-acl2/community/verify-termination.lisp):
     (make-unroll-and-base-theorems fn (fn-recursive-partners fn state) hyps disable suffix verbose (w state))
     (declare (ignore names))
     event))

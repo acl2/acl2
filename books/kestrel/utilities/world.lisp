@@ -218,7 +218,7 @@
 
 ;; Return a list of all recursive / mutually-recursive partners of NAME (including NAME itself).
 ;; If NAME is non-recursive, return nil.
-;; TODO: Use get-clique instead?
+;; TODO: Use get-clique instead?  But it needs to be fully lifted to :logic mode.
 ;; TODO: Is the order here guaranteed to be the order of functions in the clique?
 (defund fn-recursive-partners (name state)
   (declare (xargs :stobjs (state)
