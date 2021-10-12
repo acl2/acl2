@@ -599,10 +599,11 @@
                   (<< (ident-fix var2)
                       (ident-fix var))
                   (not (equal (compustate-frames-number compst) 0))
-                  (not (errorp (write-var var val compst)))
+                  (equal compst1 (write-var var val compst))
+                  (not (errorp compst1))
                   (not (errorp (write-var var2 val2 compst))))
              (equal (write-var var val (write-var var2 val2 compst))
-                    (write-var var2 val2 (write-var var val compst))))
+                    (write-var var2 val2 compst1)))
     :enable (write-var
              push-frame
              pop-frame
