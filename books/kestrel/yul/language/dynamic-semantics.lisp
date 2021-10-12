@@ -995,6 +995,8 @@
       (exec-switch-rest (cdr cases) default target cstate (1- limit)))
     :measure (nfix limit))
 
+  :flag-local nil
+
   :verify-guards nil ; done below
   ///
   (verify-guards exec-expression)
