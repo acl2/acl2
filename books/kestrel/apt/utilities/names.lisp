@@ -1,6 +1,6 @@
 ; Utilities for generating new function names with incremented suffixes
 ;
-; Copyright (C) 2016-2020 Kestrel Institute
+; Copyright (C) 2016-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -182,7 +182,7 @@
   (if (zp tries-left)
       (hard-error 'increment-name-suffix-safe-aux  "Could not find a fresh name." nil)
     (let ((name (pack$ sym "$" num-to-try)))
-      (if (symbol-has-propsp name state)
+      (if (symbol-has-propsp name (w state))
           ;; there is a clash, so keep looking:
           (increment-name-suffix-safe-aux sym (+ 1 num-to-try) state (+ -1 tries-left))
         name))))
