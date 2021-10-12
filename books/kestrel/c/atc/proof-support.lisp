@@ -405,8 +405,9 @@
   ;; rules about POP-FRAME:
 
   (defruled pop-frame-of-add-frame
-    (equal (pop-frame (add-frame fun compst))
-           (compustate-fix compst))
+    (implies (compustatep compst)
+             (equal (pop-frame (add-frame fun compst))
+                    compst))
     :enable (pop-frame add-frame))
 
   (defruled pop-frame-of-add-scope
@@ -434,9 +435,10 @@
   ;; rules about EXIT-SCOPE:
 
   (defruled exit-scope-of-add-scope
-    (implies (not (equal (compustate-frames-number compst) 0))
+    (implies (and (compustatep compst)
+                  (not (equal (compustate-frames-number compst) 0)))
              (equal (exit-scope (add-scope compst))
-                    (compustate-fix compst)))
+                    compst))
     :enable (add-scope
              exit-scope
              push-frame
@@ -652,11 +654,12 @@
                    (not (equal a b))))))))
 
   (defruled write-var-of-read-var-same
-    (implies (and (not (errorp (read-var var compst)))
+    (implies (and (compustatep compst1)
+                  (not (errorp (read-var var compst)))
                   (equal (read-var var compst)
                          (read-var var compst1)))
              (equal (write-var var (read-var var compst) compst1)
-                    (compustate-fix compst1)))
+                    compst1))
     :use (:instance write-var-of-read-var-same-lemma (compst compst1))
     :prep-lemmas
     ((defrule not-errorp-when-scope-listp
@@ -678,9 +681,10 @@
           :induct (omap::in k m)
           :enable omap::in)))
      (defrule write-var-of-read-var-same-lemma
-       (implies (not (errorp (read-var var compst)))
+       (implies (and (compustatep compst)
+                     (not (errorp (read-var var compst))))
                 (equal (write-var var (read-var var compst) compst)
-                       (compustate-fix compst)))
+                       compst))
        :enable (read-var
                 write-var
                 write-var-aux-of-read-var-aux-same
