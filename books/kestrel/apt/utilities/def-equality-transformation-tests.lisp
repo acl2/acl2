@@ -53,6 +53,13 @@
           (declares (remove-xarg-in-declares :guard-hints declares)) ;we never use the old guard-hints
           (declares (remove-xarg-in-declares :guard-debug declares)) ; verify-guards is done separately
           (declares (remove-xarg-in-declares :guard-simplify declares)) ; verify-guards is done separately
+          (declares (remove-xarg-in-declares :well-founded-relation declares))
+          (declares (if (not rec)
+                        declares ; no well-founded-relation if non-recursive
+                      (let ((well-founded-relation (well-founded-relation fn wrld)))
+                        (if (eq 'o< well-founded-relation)
+                            declares ; it's the default, so omit
+                          (replace-xarg-in-declares :well-founded-relation well-founded-relation declares)))))
           ;; Handle the :measure xarg:
           (declares (if (not rec)
                         declares ;no :measure needed and one should not already be present
