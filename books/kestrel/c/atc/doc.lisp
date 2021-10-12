@@ -20,7 +20,7 @@
   :parents (c)
 
   :short "ATC (<b>A</b>CL2 <b>T</b>o <b>C</b>),
-          a C code generator for ACL2."
+          a proof-generating C code generator for ACL2."
 
   :long
 
