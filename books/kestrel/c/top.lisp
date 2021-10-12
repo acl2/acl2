@@ -27,7 +27,7 @@
     (xdoc::li
      "A formalization of (some aspects of) the C language.")
     (xdoc::li
-     "A C code generator for ACL2."))
+     "A proof-generating C code generator for ACL2."))
    (xdoc::p
     "The library may also extended with
      more C-related formalizations and tools.")
