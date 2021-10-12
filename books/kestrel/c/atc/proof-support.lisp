@@ -99,7 +99,7 @@
      a sequence of applications of the three functions below
      to an initial symbolic computation state @('<compst>'):")
    (xdoc::codeblock
-    "(add-var ... (add-var ... (add-scope (add-frame ... <compst>)...)")
+    "(add-var ... (add-scope (add-var ... (add-frame ... <compst>)...)")
    (xdoc::p
     "We then prove theorems that describe
      the effect of @(tsee push-frame) and other functions
