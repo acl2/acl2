@@ -163,7 +163,21 @@
      serves to represent side effects performed by the loop
      on the initial computation state.
      The same approach will be used to generate proofs for
-     more general side effects, e.g. on global variables or the heap."))
+     more general side effects, e.g. on global variables or the heap.")
+   (xdoc::p
+    "A notable aspect of @(tsee add-var) and the other functions
+     is that they always return a computation state, never an error.
+     This is important because it lets us readily discharge,
+     during symbolic execution, hypothesis about these being computation states
+     (these hypotheses arise in the openers for expressions, statements, etc.).
+     In contrast, functions like @(tsee create-var) may return errors,
+     necessitating more laborious discharging of hypotheses.
+     When @(tsee create-var) is encountered during symbolic execution,
+     the fact that it returns a computation state and not an error gets proved
+     (by the symbolic execution),
+     so that it is replaced with @(tsee add-var),
+     which then ``caches'' the fact that this is a computation state,
+     obviating the need to re-prove it again during symbolic execution."))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
