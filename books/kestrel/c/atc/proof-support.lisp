@@ -734,19 +734,21 @@
   ;; rules about WRITE-VAR being an error:
 
   (defruled errorp-of-write-var-when-not-errorp-of-read-var
-    (implies (not (errorp (read-var var compst)))
+    (implies (and (equal val0 (read-var var compst))
+                  (not (errorp val0)))
              (equal (errorp (write-var var val compst))
                     (not (equal (type-of-value val)
-                                (type-of-value (read-var var compst))))))
+                                (type-of-value val0)))))
     :enable (read-var
              write-var
              errorp-of-write-var-aux-when-not-errorp-of-read-var-aux)
     :prep-lemmas
     ((defruled errorp-of-write-var-aux-when-not-errorp-of-read-var-aux
-       (implies (not (errorp (read-var-aux var scopes)))
+       (implies (and (equal val0 (read-var-aux var scopes))
+                     (not (errorp val0)))
                 (equal (errorp (write-var-aux var val scopes))
                        (not (equal (type-of-value val)
-                                   (type-of-value (read-var-aux var scopes))))))
+                                   (type-of-value val0)))))
        :enable (read-var-aux
                 write-var-aux
                 scope-listp-when-scope-list-resultp-and-not-errorp)
