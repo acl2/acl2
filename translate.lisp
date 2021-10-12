@@ -18439,17 +18439,16 @@
 ;       with c = (length b)
 ;       do (return (list a b c)))
 
-; is ((1 2 3) (3 2 1) 3).  However, those init-formas may also include
-; variables from the surrounding scope.  So there's no simple check that there
-; are no free variables.  Only top-level translation/evaluation can determine
-; that.
+; is ((1 2 3) (3 2 1) 3).  However, those init-forms may also include variables
+; from the surrounding scope.  So there's no simple check that there are no
+; free variables.  Only top-level translation/evaluation can determine that.
 
 ; We return a list of ``translated with-var-tuples which are also 4-tuples but
 ; with different components: (var spec guard-term init-term), where guard-term
 ; is the fully translated guard expression expressing the type spec relative to
 ; var.
 
-; For example, suppose if this is one of the input tuples:
+; For example, if this is one of the input tuples
 
 ;  (J (INTEGER 0 255) T (+ X I))
 
@@ -18819,9 +18818,9 @@
              ((twvts (translate-with-var-tuples wvts stobjs-out-simple
                                                 nil cform ctx wrld state-vars))
 
-; The nil above in the call of translate-vsts is a value for bindings which is
-; passed in only so that the signature of that function is the same as that for
-; the translate11 calls below.
+; The nil above in the call of translate-with-var-tuples is a value for
+; bindings which is passed in only so that the signature of that function is
+; the same as that for the translate11 calls below.
 
               (translated-mform
                (translate11 mform
@@ -19303,8 +19302,8 @@
                (t (cons ersatz-fn (cdr x))))
          ilk stobjs-out bindings known-stobjs flet-alist
          cform ctx wrld state-vars))
-       (t (trans-er x ctx
-                    "~x0, in the context of DO or FINALLY clause of a loop$ ~
+       (t (trans-er ctx
+                    "~x0, in the context of a DO or FINALLY clause of a loop$ ~
                      statement, takes ~#1~[no arguments~/1 argument~/~x2 ~
                      arguments~] but in the call ~x3 it is given ~#4~[no ~
                      argument~/1 argument~/~x5 arguments~].  The formal ~
