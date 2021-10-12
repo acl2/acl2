@@ -177,7 +177,10 @@
      (by the symbolic execution),
      so that it is replaced with @(tsee add-var),
      which then ``caches'' the fact that this is a computation state,
-     obviating the need to re-prove it again during symbolic execution."))
+     obviating the need to re-prove it again during symbolic execution.
+     The non-error-returning functions like @(tsee add-var)
+     only need to be equal to the semantic functions like @(tsee create-var)
+     on non-errors, because the replacement happens only for non-errors. "))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
