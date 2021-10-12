@@ -63,7 +63,20 @@
                 (,list-name terms a))
          :hints (("Goal" :in-theory (enable append (:I len)))))
 
-       )))
+       ;; These help with clause-processors.  We only generate them if the
+       ;; evaluator knows about IF:
+       ,@(and (member-eq 'if fns)
+              `((defthm ,(add-suffix-to-fn list-name "-OF-DISJOIN2-IFF")
+                  (iff (,name (disjoin2 term1 term2) a)
+                       (or (,name term1 a)
+                           (,name term2 a)))
+                  :hints (("Goal" :in-theory (enable disjoin2))))
+
+                (defthm ,(add-suffix-to-fn list-name "-OF-DISJOIN-OF-CONS-IFF")
+                  (iff (,name (disjoin (cons term terms)) a)
+                       (or (,name term a)
+                           (,name (disjoin terms) a)))
+                  :hints (("Goal" :in-theory (enable disjoin)))))))))
 
 ;; Example call (defevaluator+ math-and-if-ev binary-+ binary-* if).
 ;; Takes the name of the evaluator to create, followed by the names of all the
