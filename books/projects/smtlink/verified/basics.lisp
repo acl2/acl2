@@ -46,12 +46,12 @@
   :parents (SMT-basics)
   :short "ACL2 type functions and their corresponding Z3 type declarations."
   ;;(ACL2 type      .  SMT type)
-  `((real          . "_SMT_.RealSort()")
-    (rational      . "_SMT_.RealSort()")
-    (real/rational . "_SMT_.RealSort()")
-    (integer       . "_SMT_.IntSort()")
-    (boolean       . "_SMT_.BoolSort()")
-    (symbol        . "Symbol_z3.z3Sym")))
+  `((realp          . "_SMT_.RealSort()")
+    (rationalp      . "_SMT_.RealSort()")
+    (real/rationalp . "_SMT_.RealSort()")
+    (integerp       . "_SMT_.IntSort()")
+    (booleanp       . "_SMT_.BoolSort()")
+    (symbolp        . "Symbol_z3.z3Sym")))
 
 ;; current tag . next computed-hint
 (defval *SMT-architecture*

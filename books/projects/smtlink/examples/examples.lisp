@@ -74,7 +74,7 @@
  (defthm test5
    (implies (and (integerp x) (rationalp y))
             (>= (binary-+ (binary-* (ifix x) y) (binary-* x y))
-                (binary-* '2 (binary-* x (rfix y)))))
+                (binary-* 2 (binary-* x (rfix y)))))
   :hints(("Goal"
           :smtlink
           (:types ((integerp

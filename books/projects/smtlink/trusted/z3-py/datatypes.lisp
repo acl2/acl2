@@ -38,7 +38,7 @@
     :true-listp t)
 
   (define paragraph-p ((par))
-    :parents (SMT-translator)
+    :parents (SMT-translate)
     (declare (xargs :guard t))
     :returns (paragraph? booleanp)
     :short "A paragraph is made up of lists of words. Notice a single word is also counted as a paragraphp."

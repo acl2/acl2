@@ -29,5 +29,5 @@
 ;; trusted/z3-py
 (include-book "trusted/z3-py/header")
 (include-book "trusted/z3-py/names")
-(include-book "trusted/z3-py/translator")
+(include-book "trusted/z3-py/translate")
 
