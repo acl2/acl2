@@ -86,7 +86,7 @@
      namely @(tsee push-frame), @tsee enter-scope), @(tsee create-var), etc.,
      go into the frame stack component of the computation state,
      via the @(tsee compustate->frames) accessor.
-     That leads to a complex symbolic term for the computation state.")
+     That would lead to a complex symbolic term for the computation state.")
    (xdoc::p
     "Instead, we pull the ``additions'' to the computation state,
      i.e. the added frames, scopes, and variables,
@@ -99,7 +99,7 @@
      a sequence of applications of the three functions below
      to an initial symbolic computation state @('<compst>'):")
    (xdoc::codeblock
-    "(add-var ... (add-var ... (add-scope (add-frame ... <compst>)...)")
+    "(add-var ... (add-scope (add-var ... (add-frame ... <compst>)...)")
    (xdoc::p
     "We then prove theorems that describe
      the effect of @(tsee push-frame) and other functions
@@ -163,7 +163,21 @@
      serves to represent side effects performed by the loop
      on the initial computation state.
      The same approach will be used to generate proofs for
-     more general side effects, e.g. on global variables or the heap."))
+     more general side effects, e.g. on global variables or the heap.")
+   (xdoc::p
+    "A notable aspect of @(tsee add-var) and the other functions
+     is that they always return a computation state, never an error.
+     This is important because it lets us readily discharge,
+     during symbolic execution, hypothesis about these being computation states
+     (these hypotheses arise in the openers for expressions, statements, etc.).
+     In contrast, functions like @(tsee create-var) may return errors,
+     necessitating more laborious discharging of hypotheses.
+     When @(tsee create-var) is encountered during symbolic execution,
+     the fact that it returns a computation state and not an error gets proved
+     (by the symbolic execution),
+     so that it is replaced with @(tsee add-var),
+     which then ``caches'' the fact that this is a computation state,
+     obviating the need to re-prove it again during symbolic execution."))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -257,7 +271,7 @@
     "We provide a single theorem about @(tsee enter-scope),
      which just turns that into @(tsee add-scope) in all cases.
      If the computation state starts with @(tsee add-frame),
-     the hypothesis  that the stack frame is not empty is not needed;
+     the hypothesis that the stack frame is not empty is not needed;
      but we still prefer to have just one theorem for all cases here.")
    (xdoc::p
     "The theorems below about @(tsee exit-scope)
@@ -391,8 +405,9 @@
   ;; rules about POP-FRAME:
 
   (defruled pop-frame-of-add-frame
-    (equal (pop-frame (add-frame fun compst))
-           (compustate-fix compst))
+    (implies (compustatep compst)
+             (equal (pop-frame (add-frame fun compst))
+                    compst))
     :enable (pop-frame add-frame))
 
   (defruled pop-frame-of-add-scope
@@ -420,9 +435,10 @@
   ;; rules about EXIT-SCOPE:
 
   (defruled exit-scope-of-add-scope
-    (implies (not (equal (compustate-frames-number compst) 0))
+    (implies (and (compustatep compst)
+                  (not (equal (compustate-frames-number compst) 0)))
              (equal (exit-scope (add-scope compst))
-                    (compustate-fix compst)))
+                    compst))
     :enable (add-scope
              exit-scope
              push-frame
@@ -452,10 +468,10 @@
     (implies (and (not (equal (compustate-frames-number compst) 0))
                   (not (equal (ident-fix var)
                               (ident-fix var2)))
-                  ;; the following hyp may be inefficient:
-                  (not (errorp (create-var var val compst))))
+                  (equal compst1 (create-var var val compst))
+                  (not (errorp compst1)))
              (equal (create-var var val (add-var var2 val2 compst))
-                    (add-var var2 val2 (create-var var val compst))))
+                    (add-var var2 val2 compst1)))
     :enable (create-var add-var))
 
   ;; rules about READ-VAR:
@@ -511,10 +527,10 @@
 
   (defruled write-var-of-add-scope
     (implies (and (not (equal (compustate-frames-number compst) 0))
-                  ;; the following hyp may be inefficient:
-                  (not (errorp (write-var var val compst))))
+                  (equal compst1 (write-var var val compst))
+                  (not (errorp compst1)))
              (equal (write-var var val (add-scope compst))
-                    (add-scope (write-var var val compst))))
+                    (add-scope compst1)))
     :enable (write-var
              write-var-aux
              add-scope
@@ -544,10 +560,10 @@
   (defruled write-var-of-add-var-diff
     (implies (and (not (equal (ident-fix var)
                               (ident-fix var2)))
-                  ;; the following hyp may be inefficient:
-                  (not (errorp (write-var var val compst))))
+                  (equal compst1 (write-var var val compst))
+                  (not (errorp compst1)))
              (equal (write-var var val (add-var var2 val2 compst))
-                    (add-var var2 val2 (write-var var val compst))))
+                    (add-var var2 val2 compst1)))
     :enable (write-var
              write-var-aux
              add-var
@@ -585,10 +601,11 @@
                   (<< (ident-fix var2)
                       (ident-fix var))
                   (not (equal (compustate-frames-number compst) 0))
-                  (not (errorp (write-var var val compst)))
+                  (equal compst1 (write-var var val compst))
+                  (not (errorp compst1))
                   (not (errorp (write-var var2 val2 compst))))
              (equal (write-var var val (write-var var2 val2 compst))
-                    (write-var var2 val2 (write-var var val compst))))
+                    (write-var var2 val2 compst1)))
     :enable (write-var
              push-frame
              pop-frame
@@ -637,11 +654,12 @@
                    (not (equal a b))))))))
 
   (defruled write-var-of-read-var-same
-    (implies (and (not (errorp (read-var var compst)))
+    (implies (and (compustatep compst1)
+                  (not (errorp (read-var var compst)))
                   (equal (read-var var compst)
                          (read-var var compst1)))
              (equal (write-var var (read-var var compst) compst1)
-                    (compustate-fix compst1)))
+                    compst1))
     :use (:instance write-var-of-read-var-same-lemma (compst compst1))
     :prep-lemmas
     ((defrule not-errorp-when-scope-listp
@@ -663,9 +681,10 @@
           :induct (omap::in k m)
           :enable omap::in)))
      (defrule write-var-of-read-var-same-lemma
-       (implies (not (errorp (read-var var compst)))
+       (implies (and (compustatep compst)
+                     (not (errorp (read-var var compst))))
                 (equal (write-var var (read-var var compst) compst)
-                       (compustate-fix compst)))
+                       compst))
        :enable (read-var
                 write-var
                 write-var-aux-of-read-var-aux-same
@@ -699,51 +718,56 @@
              push-frame
              pop-frame))
 
-  ;; rules about DEREF of COMPUSTATE->HEAP:
+  ;; rules about DEREF:
 
-  (defruled deref-of-heap-of-add-frame
-    (equal (deref ptr (compustate->heap (add-frame fun compst)))
-           (deref ptr (compustate->heap compst)))
-    :enable (add-frame push-frame))
+  (defruled deref-of-add-frame
+    (equal (deref ptr (add-frame fun compst))
+           (deref ptr compst))
+    :enable (add-frame push-frame deref))
 
-  (defruled deref-of-heap-of-add-scope
-    (equal (deref ptr (compustate->heap (add-scope compst)))
-           (deref ptr (compustate->heap compst)))
+  (defruled deref-of-add-scope
+    (equal (deref ptr (add-scope compst))
+           (deref ptr compst))
     :enable (add-scope
              push-frame
-             pop-frame))
+             pop-frame
+             deref))
 
-  (defruled deref-of-heap-of-add-var
-    (equal (deref ptr (compustate->heap (add-var var val compst)))
-           (deref ptr (compustate->heap compst)))
+  (defruled deref-of-add-var
+    (equal (deref ptr (add-var var val compst))
+           (deref ptr compst))
     :enable (add-var
              push-frame
-             pop-frame))
+             pop-frame
+             deref))
 
-  (defruled deref-of-heap-of-write-var
+  (defruled deref-of-write-var
     (implies (not (errorp (write-var var val compst)))
-             (equal (deref ptr (compustate->heap (write-var var val compst)))
-                    (deref ptr (compustate->heap compst))))
+             (equal (deref ptr (write-var var val compst))
+                    (deref ptr compst)))
     :enable (write-var
              push-frame
-             pop-frame))
+             pop-frame
+             deref))
 
   ;; rules about WRITE-VAR being an error:
 
   (defruled errorp-of-write-var-when-not-errorp-of-read-var
-    (implies (not (errorp (read-var var compst)))
+    (implies (and (equal val0 (read-var var compst))
+                  (not (errorp val0)))
              (equal (errorp (write-var var val compst))
                     (not (equal (type-of-value val)
-                                (type-of-value (read-var var compst))))))
+                                (type-of-value val0)))))
     :enable (read-var
              write-var
              errorp-of-write-var-aux-when-not-errorp-of-read-var-aux)
     :prep-lemmas
     ((defruled errorp-of-write-var-aux-when-not-errorp-of-read-var-aux
-       (implies (not (errorp (read-var-aux var scopes)))
+       (implies (and (equal val0 (read-var-aux var scopes))
+                     (not (errorp val0)))
                 (equal (errorp (write-var-aux var val scopes))
                        (not (equal (type-of-value val)
-                                   (type-of-value (read-var-aux var scopes))))))
+                                   (type-of-value val0)))))
        :enable (read-var-aux
                 write-var-aux
                 scope-listp-when-scope-list-resultp-and-not-errorp)
@@ -781,10 +805,10 @@
     compustate-frames-number-of-add-scope
     compustate-frames-number-of-add-var
     compustate-frames-number-of-write-var-when-not-errorp
-    deref-of-heap-of-add-frame
-    deref-of-heap-of-add-scope
-    deref-of-heap-of-add-var
-    deref-of-heap-of-write-var
+    deref-of-add-frame
+    deref-of-add-scope
+    deref-of-add-var
+    deref-of-write-var
     errorp-of-write-var-when-not-errorp-of-read-var))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

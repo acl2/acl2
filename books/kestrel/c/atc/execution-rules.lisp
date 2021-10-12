@@ -647,11 +647,13 @@
          (formula `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                                  ,(atc-syntaxp-hyp-for-expr-pure 'y)
                                  (pointerp x)
-                                 (,apred (deref x heap))
+                                 (,apred (deref x compst))
                                  (,ipred y)
-                                 (,atype-array-itype-index-okp (deref x heap) y))
-                            (equal (exec-arrsub x y heap)
-                                   (,atype-array-read-itype (deref x heap) y))))
+                                 (,atype-array-itype-index-okp (deref x compst)
+                                                               y))
+                            (equal (exec-arrsub x y compst)
+                                   (,atype-array-read-itype (deref x compst)
+                                                            y))))
          (event `(defruled ,name
                    ,formula
                    :enable (exec-arrsub
@@ -1283,7 +1285,7 @@
              (equal (exec-expr-pure e compst)
                     (exec-arrsub (exec-expr-pure (expr-arrsub->arr e) compst)
                                  (exec-expr-pure (expr-arrsub->sub e) compst)
-                                 (compustate->heap compst))))
+                                 compst)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-unary
