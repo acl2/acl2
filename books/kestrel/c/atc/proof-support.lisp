@@ -525,10 +525,10 @@
 
   (defruled write-var-of-add-scope
     (implies (and (not (equal (compustate-frames-number compst) 0))
-                  ;; the following hyp may be inefficient:
-                  (not (errorp (write-var var val compst))))
+                  (equal compst1 (write-var var val compst))
+                  (not (errorp compst1)))
              (equal (write-var var val (add-scope compst))
-                    (add-scope (write-var var val compst))))
+                    (add-scope compst1)))
     :enable (write-var
              write-var-aux
              add-scope
