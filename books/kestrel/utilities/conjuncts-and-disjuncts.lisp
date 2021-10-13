@@ -13,17 +13,19 @@
 
 ;; TODO: Should we be able to get conjuncts from (NOT (IF X X Y)) which is "not (x or y)" ?
 
-;; TODO: Reduce dependencies?
 (include-book "tools/flag" :dir :system)
 (include-book "kestrel/utilities/wrap-all" :dir :system)
-;(include-book "kestrel/utilities/terms" :dir :system) ;for negate-term
+(include-book "kestrel/booleans/booland" :dir :system) ; do not remove, since this tool depends on this definition of booland
+(include-book "kestrel/booleans/boolor" :dir :system) ; do not remove, since this tool depends on this definition of boolor
+(include-book "kestrel/booleans/boolif" :dir :system) ; do not remove, since this tool depends on this definition of boolif
+(include-book "myif") ; do not remove, since this tool depends on this definition of myif
 (include-book "negate-term")
 (local (include-book "pseudo-termp"))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 (local (in-theory (disable ;len-of-cdr-better member-of-cons ;CONSP-CDR
-                   DEFAULT-CAR))) ;for speed
+                   default-car))) ;for speed
 
 ;; A single conjunct of "false"
 (defconst *false-conjunction* (list *nil*))
