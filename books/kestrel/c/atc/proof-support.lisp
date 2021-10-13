@@ -188,6 +188,10 @@
           (xdoc::seetopic "atc-symbolic-computation-states"
                           "canonical representation of computation states")
           ".")
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This adds a frame with an empty scope."))
   (push-frame (make-frame :function fun :scopes (list nil))
               compst)
   :hooks (:fix))
@@ -195,6 +199,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define add-var ((var identp) (val valuep) (compst compustatep))
+  :guard (> (compustate-frames-number compst) 0)
   :returns (new-compst compustatep)
   :parents (atc-symbolic-computation-states)
   :short (xdoc::topstring
@@ -202,8 +207,14 @@
           (xdoc::seetopic "atc-symbolic-computation-states"
                           "canonical representation of computation states")
           ".")
-  (b* (((when (= (compustate-frames-number compst) 0)) (compustate-fix compst))
-       (frame (top-frame compst))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee create-var), but it does not return an error:
+     it always adds the variable to the current scope.
+     If the variable does not already exist in the current scope,
+     this is equivalent to @(tsee create-var, as proved later."))
+  (b* ((frame (top-frame compst))
        (scopes (frame->scopes frame))
        (scope (car scopes))
        (new-scope (omap::update (ident-fix var) (value-fix val) scope))
@@ -262,20 +273,14 @@
      turn that into @(tsee add-var)
      when @(tsee add-frame) or @(tsee enter-scope) is reached,
      because a variable is only created in the current scope.
-     The third theorem skips over @(tsee add-var)
-     when the two variables have different names
-     (they should never have the same name during the symbolic execution),
-     but note that @(tsee create-var) may return an error,
-     and so we have a hypothesis about it not returning an error.
-     But this may be inefficient, because it means that
-     we are pushing @(tsee create-var)
-     into the layers of the computation state repeatedly.
-     We will look into making this more efficient.
-     The reason for skipping over @(tsee add-var)s with different names
-     is to exclude the case of a variable redefinition:
-     attempting to prove a theorem
-     that simply replaces @(tsee create-var) with @(tsee add-var)
-     fails because of the possibility of a redefined variable.
+     The third theorem also turns @(tsee create-var) into @(tsee add-var)
+     when it encounters an @(tsee add-var),
+     but we need to check, via @('create-var-okp') introduced below,
+     that the variable can be created,
+     i.e. it does not already exist in the current scope.
+     Additional theorems about @('create-var-okp')
+     go through the layers of the computation states
+     to check this condition.
      There is no rule for @(tsee create-var) applied to @(tsee write-var),
      because @(tsee write-var)s are always pushed past @(tsee enter-scope).")
    (xdoc::p
@@ -358,6 +363,17 @@
      to the non-equality of the types of the values,
      which will always be equal during symbolic execution by construction."))
 
+  ;; auxiliary function:
+
+  (define create-var-okp ((var identp) (compst compustatep))
+    :guard (> (compustate-frames-number compst) 0)
+    :returns (yes/no booleanp)
+    (b* ((frame (top-frame compst))
+         (scopes (frame->scopes frame))
+         (scope (car scopes)))
+      (not (consp (omap::in (ident-fix var) scope))))
+    :hooks (:fix))
+
   ;; rules about PUSH-FRAME:
 
   (defruled push-frame-of-one-empty-scope
@@ -429,20 +445,32 @@
     :enable (create-var add-var add-frame))
 
   (defruled create-var-of-enter-scope
-    (implies (not (equal (compustate-frames-number compst) 0))
-             (equal (create-var var val (enter-scope compst))
-                    (add-var var val (enter-scope compst))))
+    (equal (create-var var val (enter-scope compst))
+           (add-var var val (enter-scope compst)))
     :enable (create-var add-var enter-scope))
 
   (defruled create-var-of-add-var
-    (implies (and (not (equal (compustate-frames-number compst) 0))
-                  (not (equal (ident-fix var)
-                              (ident-fix var2)))
-                  (equal compst1 (create-var var val compst))
-                  (not (errorp compst1)))
-             (equal (create-var var val (add-var var2 val2 compst))
-                    (add-var var2 val2 compst1)))
-    :enable (create-var add-var))
+    (implies (create-var-okp var compst)
+             (equal (create-var var val compst)
+                    (add-var var val compst)))
+    :enable (create-var add-var create-var-okp))
+
+  ;; rules about CREATE-VAR-OKP:
+
+  (defruled create-var-okp-of-add-frame
+    (create-var-okp var (add-frame fun compst))
+    :enable (create-var-okp add-frame))
+
+  (defruled create-var-okp-of-enter-scope
+    (create-var-okp var (enter-scope compst))
+    :enable (create-var-okp enter-scope))
+
+  (defruled create-var-okp-of-add-var
+    (equal (create-var-okp var (add-var var2 val compst))
+           (and (not (equal (ident-fix var)
+                            (ident-fix var2)))
+                (create-var-okp var compst)))
+    :enable (create-var-okp add-var))
 
   ;; rules about READ-VAR:
 
@@ -674,9 +702,8 @@
     (not (equal (compustate-frames-number (enter-scope compst)) 0))
     :enable enter-scope)
 
-  (defruled compustate-frames-number-of-add-var
-    (equal (compustate-frames-number (add-var var val compst))
-           (compustate-frames-number compst))
+  (defruled compustate-frames-number-of-add-var-not-zero
+    (not (equal (compustate-frames-number (add-var var val compst)) 0))
     :enable add-var)
 
   (defruled compustate-frames-number-of-write-var-when-not-errorp
@@ -761,6 +788,9 @@
     create-var-of-add-frame
     create-var-of-enter-scope
     create-var-of-add-var
+    create-var-okp-of-add-frame
+    create-var-okp-of-enter-scope
+    create-var-okp-of-add-var
     read-var-of-enter-scope
     read-var-of-add-var
     read-var-of-write-var
@@ -772,7 +802,7 @@
     write-var-of-read-var-same
     compustate-frames-number-of-add-frame-not-zero
     compustate-frames-number-of-enter-scope-not-zero
-    compustate-frames-number-of-add-var
+    compustate-frames-number-of-add-var-not-zero
     compustate-frames-number-of-write-var-when-not-errorp
     deref-of-add-frame
     deref-of-enter-scope
