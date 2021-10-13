@@ -20,6 +20,7 @@
   (b* ((cl (pseudo-term-list-fix cl))
        ((unless (smtlink-hint-p smtlink-hint)) (list cl))
        (goal (disjoin cl))
+       (- (cw "goal: ~q0" goal))
        (options (construct-reorder-options smtlink-hint))
        ((mv hypo-lst new-term) (extractor goal options))
        (- (cw "hypo-lst: ~q0" hypo-lst))

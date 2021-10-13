@@ -20,7 +20,7 @@
   :parents (SMT-basics)
   :short "Basic ACL2 functions supported in Smtlink."
   (append
-   '(real/rationalp rationalp realp booleanp integerp symbolp)
+   '(rationalp booleanp integerp symbolp)
    '(binary-+ binary-* unary-/ unary-- equal < if not implies)))
 
 (in-theory (disable (:executable-counterpart smt-basics)))
@@ -46,9 +46,7 @@
   :parents (SMT-basics)
   :short "ACL2 type functions and their corresponding Z3 type declarations."
   ;;(ACL2 type      .  SMT type)
-  `((realp          . "_SMT_.RealSort()")
-    (rationalp      . "_SMT_.RealSort()")
-    (real/rationalp . "_SMT_.RealSort()")
+  `((rationalp      . "_SMT_.RealSort()")
     (integerp       . "_SMT_.IntSort()")
     (booleanp       . "_SMT_.BoolSort()")
     (symbolp        . "Symbol_z3.z3Sym")))

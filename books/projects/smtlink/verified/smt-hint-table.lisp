@@ -10,7 +10,7 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
 
-(include-book "hint-interface")
+(include-book "basic-hints")
 
 ;; initializing the smt-hint-table table
 (table smt-hint-table)
@@ -32,10 +32,7 @@
 
 ;; When certifying this book, a default hint is put into the smt-hint-table
 ;; table
-(add-smtlink-hint :default
-                  (make-smtlink-hint
-                   :configurations
-                   (make-smt-config :smt-cnf (default-smt-cnf))))
+(add-smtlink-hint :default (make-basic-hints))
 
 ;; ------------------------------------------------------
 ;; Functions for updating the smt-hint-table table

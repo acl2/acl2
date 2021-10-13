@@ -18,125 +18,13 @@
 (value-triple (tshell-ensure))
 (add-default-hints '((SMT::SMT-computed-hint clause)))
 
-(defthm replace-of-ifix
-  (implies (integerp x) (equal (ifix x) x))
-  :rule-classes nil)
-
-(defthm replace-of-rfix
-  (implies (rationalp x) (equal (rfix x) x))
-  :rule-classes nil)
-
-(defthm return-of-integerp
-  (booleanp (integerp x)))
-
-(defthm return-of-rationalp
-  (booleanp (rationalp x)))
-
-(defthm return-of-not
-  (booleanp (not x)))
-
-(defthm return-of-ifix
-  (integerp (ifix x)))
-
-(defthm return-of-rfix
-  (rationalp (rfix x)))
-
-(defthm return-of-equal
-  (booleanp (equal x y)))
-
-(defthm return-of-<
-  (implies (and (rationalp x)
-                (rationalp y))
-           (booleanp (< x y))))
-
-(defthm return-of-binary-*-rationalp
-  (implies (and (rationalp x)
-                (rationalp y))
-           (rationalp (binary-* x y))))
-
-(defthm return-of-binary-+-rationalp
-  (implies (and (rationalp x)
-                (rationalp y))
-           (rationalp (binary-+ x y))))
-
-(defthm return-of-unary---rationalp
-  (implies (rationalp x)
-           (rationalp (unary-- x))))
-
-(defthm return-of-unary-/-rationalp
-  (implies (rationalp x)
-           (rationalp (unary-/ x))))
-
-(defthm integerp-implies-rationalp
-  (implies (integerp x) (rationalp x)))
-
 (defthm test
   (implies (and (integerp x) (rationalp y))
            (>= (binary-+ (binary-* (ifix x) y) (binary-* x y))
                (binary-* 2 (binary-* x (rfix y)))))
-  :hints(("Goal"
-          :smtlink
-          (:types ((integerp
-                    :supertypes ((rationalp :formals (x)
-                                            :thm integerp-implies-rationalp))
-                    :fixer (ifix :formals (x)
-                                 :replace replace-of-ifix))
-                   (rationalp
-                    :fixer (rfix :formals (x)
-                                 :replace replace-of-rfix)))
-                  :functions ((not
-                               :formals (x)
-                               :return (return-of-not)
-                               :depth 0)
-                              (equal
-                               :formals (x y)
-                               :return (return-of-equal)
-                               :depth 0)
-                              (rfix
-                               :formals (x)
-                               :return (return-of-rfix)
-                               :depth 0)
-                              (ifix
-                               :formals (x)
-                               :return (return-of-ifix)
-                               :depth 0)
-                              (binary-+
-                               :formals (x y)
-                               :return (return-of-binary-+-rationalp)
-                               :depth 0)
-                              (binary-*
-                               :formals (x y)
-                               :return (return-of-binary-*-rationalp)
-                               :depth 0)
-                              (unary--
-                               :formals (x)
-                               :return (return-of-unary---rationalp)
-                               :depth 0)
-                              (unary-/
-                               :formals (x)
-                               :return (return-of-unary-/-rationalp)
-                               :depth 0)
-                              (<
-                               :formals (x y)
-                               :return (return-of-<)
-                               :depth 0)
-                              (integerp
-                               :formals (x)
-                               :return (return-of-integerp)
-                               :depth 0)
-                              (rationalp
-                               :formals (x)
-                               :return (return-of-rationalp)
-                               :depth 0)))
-          )))
+  :hints(("Goal" :smtlink nil)))
 
-(defthm return-of-symbolp
-  (booleanp (symbolp x)))
-
-(defthm return-of-or
-  (implies (and (booleanp x) (booleanp y))
-           (booleanp (or x y))))
-
+(acl2::must-fail
 (defthm test2
   (implies (and (symbolp symx) (symbolp symy))
            (or (equal symx 'symx) (equal symx 'sym2)
@@ -144,22 +32,8 @@
                (equal symy 'symx) (equal symy 'sym2)
                (equal symy 'sym3)
                (equal symx symy)))
-  :hints(("Goal"
-          :smtlink
-          (:types ((symbolp))
-                  :functions
-                  ((or
-                    :formals (x y)
-                    :return (return-of-or)
-                    :depth 0)
-                   (equal
-                    :formals (x y)
-                    :return (return-of-equal)
-                    :depth 0)
-                   (symbolp
-                    :formals (x)
-                    :return (return-of-symbolp)
-                    :depth 0))))))
+  :hints(("Goal" :smtlink nil)))
+)
 
 ;; Example 1
 ;; (def-saved-event x^2-y^2
