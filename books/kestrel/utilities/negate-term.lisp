@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;; See proof of correctness in negate-term-proof.lisp
+
 (include-book "kestrel/utilities/forms" :dir :system)
 
 ;; Negate TERM by adding or removing a call of not (avoids double negation)
