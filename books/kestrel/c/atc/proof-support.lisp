@@ -269,20 +269,11 @@
      No rule is needed for computation states that start with @(tsee write-var)
      because @(tsee write-var) is always pushed past @(tsee enter-scope).")
    (xdoc::p
-    "The theorems below about @(tsee create-var)
-     turn that into @(tsee add-var)
-     when @(tsee add-frame) or @(tsee enter-scope) is reached,
-     because a variable is only created in the current scope.
-     The third theorem also turns @(tsee create-var) into @(tsee add-var)
-     when it encounters an @(tsee add-var),
-     but we need to check, via @('create-var-okp') introduced below,
-     that the variable can be created,
-     i.e. it does not already exist in the current scope.
+    "The theorem below about @(tsee create-var) turns that into @(tsee add-var),
+     provided that the variable can be created,
+     which we check via @('create-var-okp') introduced below.
      Additional theorems about @('create-var-okp')
-     go through the layers of the computation states
-     to check this condition.
-     There is no rule for @(tsee create-var) applied to @(tsee write-var),
-     because @(tsee write-var)s are always pushed past @(tsee enter-scope).")
+     go through the layers of the computation states to check this condition.")
    (xdoc::p
     "The theorems below about @(tsee read-var) are a bit different
      because @(tsee read-var) does not return a state, but a value instead.
@@ -439,17 +430,7 @@
 
   ;; rules about CREATE-VAR:
 
-  (defruled create-var-of-add-frame
-    (equal (create-var var val (add-frame fun compst))
-           (add-var var val (add-frame fun compst)))
-    :enable (create-var add-var add-frame))
-
-  (defruled create-var-of-enter-scope
-    (equal (create-var var val (enter-scope compst))
-           (add-var var val (enter-scope compst)))
-    :enable (create-var add-var enter-scope))
-
-  (defruled create-var-of-add-var
+  (defruled create-var-to-add-var
     (implies (create-var-okp var compst)
              (equal (create-var var val compst)
                     (add-var var val compst)))
@@ -785,9 +766,7 @@
     pop-frame-of-add-var
     exit-scope-of-enter-scope
     exit-scope-of-add-var
-    create-var-of-add-frame
-    create-var-of-enter-scope
-    create-var-of-add-var
+    create-var-to-add-var
     create-var-okp-of-add-frame
     create-var-okp-of-enter-scope
     create-var-okp-of-add-var
