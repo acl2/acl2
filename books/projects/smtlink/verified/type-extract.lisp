@@ -20,11 +20,8 @@
   (b* ((cl (pseudo-term-list-fix cl))
        ((unless (smtlink-hint-p smtlink-hint)) (list cl))
        (goal (disjoin cl))
-       (- (cw "goal: ~q0" goal))
        (options (construct-reorder-options smtlink-hint))
        ((mv hypo-lst new-term) (extractor goal options))
-       (- (cw "hypo-lst: ~q0" hypo-lst))
-       (- (cw "new-term: ~q0" new-term))
        ((mv okp & term-body)
         (case-match new-term
           (('if judges term-body ''t)
@@ -38,7 +35,6 @@
                 (list cl)))
        (type-hyp-list `(type-hyp ,(conjoin hypo-lst) ':type))
        (new-goal `(if ,type-hyp-list ,term-body 't))
-       (- (cw "new-goal: ~q0" new-goal))
        (next-cp (cdr (assoc-equal 'type-extract *SMT-architecture*)))
        ((if (null next-cp)) (list cl))
        (the-hint
@@ -46,7 +42,18 @@
        (hinted-goal `((hint-please ',the-hint) ,new-goal)))
     (list hinted-goal)))
 
-(skip-proofs
+(defthm correctness-of-type-extract-cp-lemma
+  (implies (and (pseudo-termp term)
+                (symbol-symbol-alistp type-info)
+                (alistp a))
+           (b* (((mv hypo-lst new-term) (extractor term type-info)))
+             (iff (ev-smtcp `(if (type-hyp ,(conjoin hypo-lst) ':type) ,new-term 't) a)
+                  (ev-smtcp term a))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (type-hyp) (correctness-of-extractor))
+           :use ((:instance correctness-of-extractor)))))
+
 (defthm correctness-of-type-extract-cp
   (implies (and (ev-smtcp-meta-extract-global-facts)
                 (pseudo-term-listp cl)
@@ -58,9 +65,8 @@
            (ev-smtcp (disjoin cl) a))
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (e/d (type-extract-cp) (correctness-of-extractor))
-           :use ((:instance correctness-of-extractor
+           :in-theory (e/d (type-extract-cp) (correctness-of-type-extract-cp-lemma))
+           :use ((:instance correctness-of-type-extract-cp-lemma
                             (term (disjoin cl))
                             (type-info (construct-reorder-options hint))))))
   :rule-classes :clause-processor)
-)
