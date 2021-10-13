@@ -15,6 +15,7 @@
 ;; each literal.
 
 (include-book "kestrel/evaluators/defevaluator-plus" :dir :system)
+(local (include-book "kestrel/utilities/logic-termp" :dir :system))
 
 (local (in-theory (disable alistp disjoin disjoin2)))
 
@@ -25,6 +26,11 @@
   (declare (xargs :guard (pseudo-termp lit)))
   (progn$ (cw "Literal: ~x0~%" lit)
           lit))
+
+(defthm logic-termp-of-do-nothing-to-literal
+  (implies (logic-termp lit w)
+           (logic-termp (do-nothing-to-literal lit) w))
+  :hints (("Goal" :in-theory (enable do-nothing-to-literal))))
 
 ;; in general, we can strengthen the literal because that just makes the new clause harder to prove
 ;; todo: consider using a constrained function with just this constraint
@@ -42,13 +48,6 @@
     (cons (do-nothing-to-literal (first clause))
           (do-nothing-to-literals (rest clause)))))
 
-;; Return a list of one clause (a copy of the one we started with)
-(defund do-nothing-to-literals-clause-processor (clause)
-  (declare (xargs :guard (pseudo-term-listp clause)))
-  (progn$ (cw "Len of clause is ~x0.~%" (len clause))
-          (cw "Literals are ~x0.~%" clause)
-          (list (do-nothing-to-literals clause))))
-
 (defthm do-nothing-to-literals-correct
   (implies (and (if-eval (disjoin (do-nothing-to-literals clause)) a)
                 (alistp a)
@@ -56,11 +55,29 @@
            (if-eval (disjoin clause) a))
   :hints (("Goal" :in-theory (enable do-nothing-to-literals))))
 
-;todo: add :well-formedness proof
+(defthm logic-term-listp-of-do-nothing-to-literals
+  (implies (logic-term-listp clause w)
+           (logic-term-listp (do-nothing-to-literals clause)
+                             w))
+  :hints (("Goal" :in-theory (enable do-nothing-to-literals))))
+
+;; Return a list of one clause (a copy of the one we started with)
+(defund do-nothing-to-literals-clause-processor (clause)
+  (declare (xargs :guard (pseudo-term-listp clause)))
+  (progn$ (cw "Len of clause is ~x0.~%" (len clause))
+          (cw "Literals are ~x0.~%" clause)
+          (list (do-nothing-to-literals clause))))
+
+(defthm logic-term-list-listp-of-do-nothing-to-literals-clause-processor
+  (implies (logic-term-listp clause w)
+           (logic-term-list-listp (do-nothing-to-literals-clause-processor clause) w))
+  :hints (("Goal" :in-theory (enable do-nothing-to-literals-clause-processor))))
+
 (defthm do-nothing-to-literals-clause-processor-correct
   (implies (and (pseudo-term-listp clause)
                 (alistp a)
                 (if-eval (conjoin-clauses (do-nothing-to-literals-clause-processor clause)) a))
            (if-eval (disjoin clause) a))
-  :rule-classes :clause-processor
+  :rule-classes ((:clause-processor
+                  :well-formedness-guarantee logic-term-list-listp-of-do-nothing-to-literals-clause-processor))
   :hints (("Goal" :in-theory (enable do-nothing-to-literals-clause-processor))))

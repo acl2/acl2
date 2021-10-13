@@ -12,8 +12,10 @@
 
 (include-book "kestrel/utilities/conjuncts-and-disjuncts" :dir :system) ; todo: include something simpler!!
 (include-book "kestrel/utilities/conjuncts-and-disjuncts-proof" :dir :system)
+(local (include-book "kestrel/utilities/logic-termp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 ;; Handles a disjunct of the form (not (and x1 ... xn)) by turing it into the
 ;; set of new top-level literals (not x1) ... (not xn).
@@ -67,6 +69,19 @@
            (pseudo-term-listp (flatten-disjuncts clause)))
   :hints (("Goal" :in-theory (enable flatten-disjuncts))))
 
+(defthm logic-term-listp-of-flatten-disjuncts
+  (implies (and (logic-term-listp clause w)
+                (arities-okp '((not . 1)
+                               (if . 3)
+                               (boolif . 3)
+                               (booland . 2)
+                               (boolor . 2)
+                               (myif . 3))
+                             w))
+           (logic-term-listp (flatten-disjuncts clause)
+                             w))
+  :hints (("Goal" :in-theory (enable flatten-disjuncts))))
+
 (defthm all-eval-to-false-with-con-and-dis-eval-when-equal-of-disjoin-and-false
   (implies (equal (disjoin clause) ''nil)
            (all-eval-to-false-with-con-and-dis-eval clause a))
@@ -92,11 +107,24 @@
   (declare (xargs :guard (pseudo-term-listp clause)))
   (list (flatten-disjuncts clause)))
 
+(defthm logic-term-list-listp-of-flatten-literals-clause-processor
+  (implies (and (logic-term-listp clause w)
+                (arities-okp '((not . 1)
+                               (if . 3)
+                               (boolif . 3)
+                               (booland . 2)
+                               (boolor . 2)
+                               (myif . 3))
+                             w))
+           (logic-term-list-listp (flatten-literals-clause-processor clause) w))
+  :hints (("Goal" :in-theory (enable flatten-literals-clause-processor))))
+
 ;todo: add :well-formedness proof
 (defthm flatten-literals-clause-processor-correct
   (implies (and (pseudo-term-listp clause)
                 (alistp a)
                 (con-and-dis-eval (conjoin-clauses (flatten-literals-clause-processor clause)) a))
            (con-and-dis-eval (disjoin clause) a))
-  :rule-classes :clause-processor
+  :rule-classes ((:clause-processor
+                  :well-formedness-guarantee logic-term-list-listp-of-flatten-literals-clause-processor))
   :hints (("Goal" :in-theory (enable flatten-literals-clause-processor))))

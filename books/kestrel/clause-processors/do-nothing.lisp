@@ -19,12 +19,17 @@
           (cw "Literals are ~x0.~%" clause)
           (list clause)))
 
-;todo: add :well-formedness proof
+(defthm logic-term-list-listp-of-do-nothing-clause-processor
+  (implies (logic-term-listp clause w)
+           (logic-term-list-listp (do-nothing-clause-processor clause) w))
+  :hints (("Goal" :in-theory (enable do-nothing-clause-processor))))
+
 (defthm do-nothing-clause-processor-correct
   (implies (and (pseudo-term-listp clause)
                 (alistp a)
                 (empty-eval (conjoin-clauses (do-nothing-clause-processor clause)) a)
                 )
            (empty-eval (disjoin clause) a))
-  :rule-classes :clause-processor
+  :rule-classes ((:clause-processor
+                  :well-formedness-guarantee logic-term-list-listp-of-do-nothing-clause-processor))
   :hints (("Goal" :in-theory (enable do-nothing-clause-processor))))
