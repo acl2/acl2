@@ -52,36 +52,48 @@
                                   ())))
 
   (define translate-term ((term pseudo-termp)
-                          (hint smtlink-hint-p))
-    :returns (translated paragraph-p)
+                          (hint smtlink-hint-p)
+                          (sym-keeper symbol-keeper-p))
+    :returns (mv (translated paragraph-p)
+                 (new-sym-keeper symbol-keeper-p))
     :measure (acl2-count (pseudo-term-fix term))
     (b* ((term (pseudo-term-fix term))
          ((smtlink-hint h) (smtlink-hint-fix hint))
+         (sym-keeper (symbol-keeper-fix sym-keeper))
          ((if (acl2::variablep term))
-          (translate-variable term))
+          (mv (translate-variable term) sym-keeper))
          ((if (acl2::quotep term))
-          (translate-quote term))
+          (translate-quote term sym-keeper))
          ((cons fn actuals) term)
          ((if (pseudo-lambdap fn))
-          (er hard? 'translate=>translate-term
-              "Found lambda in term ~p0~%" term))
+          (mv (er hard? 'translate=>translate-term
+                  "Found lambda in term ~p0~%" term)
+              sym-keeper))
          (translated-fn (translate-function-name fn))
-         (translated-actuals (translate-term-list actuals hint)))
-      `(,translated-fn
-        #\(
-        ,(map-translated-actuals translated-actuals)
-        #\))))
+         ((mv translated-actuals actuals-keeper)
+          (translate-term-list actuals hint sym-keeper)))
+      (mv `(,translated-fn
+            #\(
+            ,(map-translated-actuals translated-actuals)
+            #\))
+          actuals-keeper)))
 
   (define translate-term-list ((term-lst pseudo-term-listp)
-                               (hint smtlink-hint-p))
-    :returns (translated paragraph-p)
+                               (hint smtlink-hint-p)
+                               (sym-keeper symbol-keeper-p))
+    :returns (mv (translated paragraph-p)
+                 (new-sym-keeper symbol-keeper-p))
     :measure (acl2-count (pseudo-term-list-fix term-lst))
     (b* ((term-lst (pseudo-term-list-fix term-lst))
          ((smtlink-hint h) (smtlink-hint-fix hint))
-         ((unless (consp term-lst)) nil)
-         ((cons term-hd term-tl) term-lst))
-      (cons (translate-term term-hd hint)
-            (translate-term-list term-tl hint))))
+         (sym-keeper (symbol-keeper-fix sym-keeper))
+         ((unless (consp term-lst)) (mv nil sym-keeper))
+         ((cons term-hd term-tl) term-lst)
+         ((mv trans-hd keeper-hd)
+          (translate-term term-hd hint sym-keeper))
+         ((mv trans-tl keeper-tl)
+          (translate-term-list term-tl hint keeper-hd)))
+      (mv (cons trans-hd trans-tl) keeper-tl)))
   )
 
 (verify-guards translate-term)
@@ -94,13 +106,16 @@
 |#
 
 (define translate-theorem ((term pseudo-termp)
-                           (hints smtlink-hint-p))
-  :returns (translated paragraph-p)
+                           (hints smtlink-hint-p)
+                           (sym-keeper symbol-keeper-p))
+  :returns (mv (translated paragraph-p)
+               (new-keeper symbol-keeper-p))
   (b* ((term (pseudo-term-fix term))
-       (new-term (translate-term term hints))
+       ((mv new-term new-keeper) (translate-term term hints sym-keeper))
        (theorem `("theorem = " ,new-term #\Newline))
        (prove-theorem `("_SMT_.prove(theorem)" #\Newline)))
-    `(,theorem ,prove-theorem)))
+    (mv `(,theorem ,prove-theorem)
+        new-keeper)))
 
 (local (in-theory (disable consp-of-is-conjunct?
                            acl2::true-listp-of-car-when-true-list-listp
@@ -114,6 +129,7 @@
   :ignore-ok t
   (b* ((term (pseudo-term-fix term))
        (- (cw "SMT-translation: ~q0" term))
+       (avoid-syms (acl2::simple-term-vars term))
        ((mv okp decl-list theorem-body)
         (case-match term
           (('if ('type-hyp decl-list &) theorem-body ''t)
@@ -126,11 +142,18 @@
              term)
          (mv nil nil)))
        ((smtlink-hint h) (smtlink-hint-fix smtlink-hint))
-       (- (cw "decl-list: ~q0" decl-list))
-       (translated-decl (translate-declarations decl-list))
-       (- (cw "translated-decl: ~q0" translated-decl))
        (- (cw "theorem-body: ~q0" theorem-body))
-       (translated-body (translate-theorem theorem-body h))
+       (- (cw "avoid-syms: ~q0" avoid-syms))
+       ((mv translated-body sym-keeper)
+        (translate-theorem theorem-body
+                           h
+                           (make-symbol-keeper :symbol-map nil
+                                               :index 0
+                                               :avoid-list avoid-syms)))
+       (- (cw "decl-list: ~q0" decl-list))
+       ((symbol-keeper s) sym-keeper)
+       (translated-decl (translate-declarations decl-list (strip-cdrs s.symbol-map)))
+       (- (cw "translated-decl: ~q0" translated-decl))
        (pretty-translated-body (pretty-print-theorem translated-body 80))
        (translation `(,translated-decl ,pretty-translated-body)))
     (mv translation nil)))

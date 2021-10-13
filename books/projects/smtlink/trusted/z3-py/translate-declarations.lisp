@@ -89,6 +89,30 @@
 (translate-declaration-list '((rationalp y) (integerp x)))
 |#
 
+(local
+ (defthm paragraph-of-car-of-string-list-fix
+   (paragraph-p (car (str::string-list-fix syms)))
+   :hints (("Goal" :in-theory (enable str::string-list-fix))))
+ )
+
+(define translate-symbol-declare ((syms string-listp))
+  :returns (translated paragraph-p)
+  :measure (len (str::string-list-fix syms))
+  (b* ((syms (str::string-list-fix syms))
+       ((unless (consp syms)) nil)
+       ((cons first rest) syms))
+    (cons `(,first " = Symbol_z3.intern('" ,first "')" #\Newline)
+          (translate-symbol-declare rest))))
+
+;; (translate-symbol-declare '("sym1" "sym2"))
+
+(define translate-symbol-enumeration ((symbols string-listp))
+  :returns (translated paragraph-p)
+  (b* ((datatype-line '("Symbol_z3 = _SMT_.Symbol()" #\Newline))
+       (declarations (translate-symbol-declare symbols)))
+    `(,datatype-line
+      ,@declarations)))
+
 (local 
  (defthm pseudo-term-list-of-reverse
    (implies (pseudo-term-listp x)
@@ -97,11 +121,18 @@
             :in-theory (enable pseudo-term-listp acl2::rev))))
  )
 
-(define translate-declarations ((decl-term pseudo-termp))
+(define translate-declarations ((decl-term pseudo-termp)
+                                (syms string-listp))
   :returns (translated paragraph-p)
+  :guard-debug t
   (b* ((decl-term (pseudo-term-fix decl-term))
-       (decl-list (conjunction-to-list decl-term nil)))
-    (translate-declaration-list (reverse decl-list))))
+       (syms (str::string-list-fix syms))
+       (decl-list (conjunction-to-list decl-term nil))
+       (translated-declaration-list
+        (translate-declaration-list (reverse decl-list)))
+       (translated-syms (translate-symbol-enumeration syms)))
+    `(,@translated-syms
+      ,@translated-declaration-list)))
 
 #|
 (translate-declarations '(if (integerp x) (rationalp y) 'nil))

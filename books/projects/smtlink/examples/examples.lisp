@@ -70,11 +70,10 @@
 (defthm integerp-implies-rationalp
   (implies (integerp x) (rationalp x)))
 
-(without-evisc
- (defthm test5
-   (implies (and (integerp x) (rationalp y))
-            (>= (binary-+ (binary-* (ifix x) y) (binary-* x y))
-                (binary-* 2 (binary-* x (rfix y)))))
+(defthm test
+  (implies (and (integerp x) (rationalp y))
+           (>= (binary-+ (binary-* (ifix x) y) (binary-* x y))
+               (binary-* 2 (binary-* x (rfix y)))))
   :hints(("Goal"
           :smtlink
           (:types ((integerp
@@ -130,7 +129,37 @@
                                :return (return-of-rationalp)
                                :depth 0)))
           )))
-)
+
+(defthm return-of-symbolp
+  (booleanp (symbolp x)))
+
+(defthm return-of-or
+  (implies (and (booleanp x) (booleanp y))
+           (booleanp (or x y))))
+
+(defthm test2
+  (implies (and (symbolp symx) (symbolp symy))
+           (or (equal symx 'symx) (equal symx 'sym2)
+               (equal symx 'sym3)
+               (equal symy 'symx) (equal symy 'sym2)
+               (equal symy 'sym3)
+               (equal symx symy)))
+  :hints(("Goal"
+          :smtlink
+          (:types ((symbolp))
+                  :functions
+                  ((or
+                    :formals (x y)
+                    :return (return-of-or)
+                    :depth 0)
+                   (equal
+                    :formals (x y)
+                    :return (return-of-equal)
+                    :depth 0)
+                   (symbolp
+                    :formals (x)
+                    :return (return-of-symbolp)
+                    :depth 0))))))
 
 ;; Example 1
 ;; (def-saved-event x^2-y^2
