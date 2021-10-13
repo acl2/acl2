@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;; See proof of correctness in conjuncts-and-disjuncts-proof.lisp.
+
 ;; TODO: Should we be able to get conjuncts from (NOT (IF X X Y)) which is "not (x or y)" ?
 
 (include-book "tools/flag" :dir :system)
@@ -86,8 +88,6 @@
                 (true-listp y))
            (true-listp (combine-disjuncts x y)))
   :hints (("Goal" :in-theory (enable combine-disjuncts))))
-
-; todo: use this to prove correctness of the functions in this file: (defevaluator simple-eval simple-eval-list ())
 
 ;todo: handle (equal x 'nil) like (not 'x)
 ;todo: handle (if/myif/boolif x 'nil 't) like (not 'x)
