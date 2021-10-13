@@ -487,9 +487,10 @@
 ;; Return a single, simplified clause
 (defund sublis-var-and-simplify-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
-  (progn$ (cw "Len of clause is ~x0.~%" (len clause))
-          (cw "Literals are ~x0.~%" clause)
-          (list (sublis-var-and-simplify-lst nil clause nil nil))))
+  (progn$ (cw "(Original clause (~x0 literals):~% ~x1.)~%" (len clause) clause)
+          (let ((new-clause (sublis-var-and-simplify-lst nil clause nil nil)))
+            (progn$ (cw "(One New clause (~x0 literals):~% ~x1.)~%" (len new-clause) new-clause)
+                    (list new-clause)))))
 
 ;todo: add :well-formedness proof
 (defthm sublis-var-and-simplify-clause-processor-correct
