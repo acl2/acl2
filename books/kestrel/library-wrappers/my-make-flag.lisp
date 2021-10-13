@@ -12,6 +12,7 @@
 
 (include-book "tools/flag" :dir :system)
 (include-book "misc/install-not-normalized" :dir :system)
+;(include-book "kestrel/clause-processors/subst-flag" :dir :system)
 
 ;; TODO: Have my-make-flag (or make-flag) put in the :ruler-extenders of the old function by default.
 
@@ -93,7 +94,12 @@
                 :hints (("Goal" :use (:instance (:termination-theorem ,fn ,termination-theorem-subst))
                          ;; :in-theory nil ;;too restrictive
                          :in-theory (theory 'minimal-theory) ;;still too restrictive?
-                         ))))))
+                         )
+                        ;todo: combine these:
+                        ;("goal'" :clause-processor (sublis-var-and-simplify-clause-processor clause))
+                        ;("goal''" :clause-processor (flatten-literals-clause-processor clause))
+                        ;("goal'''" :clause-processor (simple-subsumption-clause-processor clause))
+                        )))))
 
 ;; This is a wrapper around make-flag that attempts to be more robust.  It uses
 ;; the :termination-theorem of the given function in the :hints supplied to
