@@ -1,6 +1,6 @@
 ; Utilities for generating new function names with incremented suffixes
 ;
-; Copyright (C) 2016-2020 Kestrel Institute
+; Copyright (C) 2016-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,7 +18,44 @@
 (include-book "std/strings/coerce" :dir :system) ;for explode
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+
+;; TODO: Move some of this material:
+
+(local
+ (defthmd different-when-symbol-names-differ
+   (implies (not (equal (symbol-name s1) (symbol-name s2)))
+            (not (equal s1 s2)))))
+
+(local
+ (defthmd different-when-disagree-on-dollar
+  (implies (not (equal (member-equal #\$ (explode s1))
+                       (member-equal #\$ (explode s2))))
+           (not (equal s1 s2)))))
+
+(local
+ (defthm explode-of-binary-pack
+   (equal (explode (binary-pack x y))
+          (append (explode (to-string x)) (explode (to-string y))))
+   :hints (("Goal" :in-theory (enable binary-pack)))))
+
+(local
+ (defthm not-equal-of-quote-and-BINARY-PACK-lemma
+   (NOT (EQUAL '"QUOTE" (BINARY-PACK SYM (BINARY-PACK '"$" NUM-TO-TRY))))
+   :otf-flg t
+   :hints (("Goal" :use (:instance different-when-disagree-on-dollar (s1 "QUOTE") (s2 (BINARY-PACK SYM (BINARY-PACK '"$" NUM-TO-TRY))))))
+   ))
+
+
+(local
+ (defthm not-equal-of-quote-and-INTERN-IN-PACKAGE-OF-SYMBOL-lemma
+   (NOT (EQUAL 'QUOTE
+               (INTERN-IN-PACKAGE-OF-SYMBOL (BINARY-PACK SYM (BINARY-PACK "$" NUM-TO-TRY))
+                                            'REWRITE)))
+   :hints (("Goal" :in-theory (enable different-when-symbol-names-differ; BINARY-PACK
+                                      different-when-disagree-on-dollar
+                                      )))))
 
 (defun numeric-charp (char)
   (declare (xargs :guard (characterp char)))
@@ -65,7 +102,8 @@
 ;TODO: Does something like this exist somewhere else?
 (defun parse-int-chars (chars-rev)
   (declare (xargs :guard (and (character-listp chars-rev)
-                              (all-numeric-charp chars-rev))))
+                              (all-numeric-charp chars-rev))
+                  :guard-hints (("Goal" :in-theory (enable member-equal)))))
   (if (endp chars-rev)
       0
     (+ (parse-int-char (first chars-rev))
@@ -182,10 +220,14 @@
   (if (zp tries-left)
       (hard-error 'increment-name-suffix-safe-aux  "Could not find a fresh name." nil)
     (let ((name (pack$ sym "$" num-to-try)))
-      (if (symbol-has-propsp name state)
+      (if (symbol-has-propsp name (w state))
           ;; there is a clash, so keep looking:
           (increment-name-suffix-safe-aux sym (+ 1 num-to-try) state (+ -1 tries-left))
         name))))
+
+(defthm not-equal-of-quote-and-increment-name-suffix-safe-aux
+  (not (equal 'quote (increment-name-suffix-safe-aux sym num-to-try state tries-left)))
+  :hints (("Goal" :in-theory (enable increment-name-suffix-safe-aux different-when-symbol-names-differ))))
 
 ;avoids clashes with existing names
 (defun increment-name-suffix-safe (sym state)
@@ -201,6 +243,10 @@
     (increment-name-suffix-safe-aux base-sym num-to-try state 10000)))
 
 ;(increment-name-suffix-safe 'foo state)
+
+(defthm not-equal-of-quote-and-increment-name-suffix-safe
+  (not (equal 'quote (increment-name-suffix-safe fn state)))
+  :hints (("Goal" :in-theory (enable increment-name-suffix-safe))))
 
 ;TODO: Maybe keep the suffixes in sync (if one has a clash, increment them all past the clashing number and keep looking)?
 (defun increment-name-suffixes-safe (syms state)
