@@ -195,7 +195,7 @@
   (declare (xargs :guard (and (pseudo-termp conj)
                               (pseudo-term-listp true-terms))))
   (if (not (term-is-conjunctionp conj))
-      (if (member-equal conj true-terms)
+      (if (clearly-implied-by-some-disjunctionp conj true-terms)
           *t*
         conj)
     ;; conj is a conjunction:
@@ -221,6 +221,7 @@
            (new-lit (remove-true-conjuncts lit true-terms)))
       (cons new-lit
             (remove-true-conjuncts-in-clause (rest clause)
+                                             ;; todo: what about things that are not calls of not?  track false-terms too?
                                              (if (and (call-of 'not lit)
                                                       (= 1 (len (fargs lit))))
                                                  ;; if the clause is (or (not A) ...)
