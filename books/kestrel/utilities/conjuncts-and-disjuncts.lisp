@@ -114,13 +114,6 @@
 ;todo: handle (equal x 'nil) like (not 'x)
 ;todo: handle (if/myif/boolif x 'nil 't) like (not 'x)
 
-;;items should be nodenums (if they are terms, we can do better by calling negate-terms)
-(defun negate-all (items)
-  (declare (xargs :guard (true-listp items)))
-;;  (cons-onto-all 'not (enlist-all items))
-  (wrap-all 'not items)
-  )
-
 (defund negate-terms (terms)
   (declare (xargs :guard (true-listp terms)))
   (if (endp terms)
@@ -351,9 +344,9 @@
     :flag get-disjuncts-of-term)
   :hints (("Goal" :in-theory (enable get-disjuncts-of-term get-conjuncts-of-term))))
 
-(defun acl2::get-conjuncts-of-terms (terms)
+(defun get-conjuncts-of-terms (terms)
   (declare (xargs :guard (pseudo-term-listp terms)))
   (if (endp terms)
       nil
-    (union-equal (acl2::get-conjuncts-of-term (first terms))
-                 (acl2::get-conjuncts-of-terms (rest terms)))))
+    (union-equal (get-conjuncts-of-term (first terms))
+                 (get-conjuncts-of-terms (rest terms)))))
