@@ -74,7 +74,7 @@
 ;should this upcase the string? i guess not?
 ;takes a symbol, string, or natp
 ;TODO: call explode-atom (or object-to-string) for unknown things?
-(defun to-string (item)
+(defund to-string (item)
   (declare (type t item))
   (if (symbolp item)
       (symbol-name item)
@@ -87,6 +87,20 @@
           (prog2$ (hard-error 'to-string "Found ~x0, which is not a symbol, string, character, or natural number.~%"
                               (acons #\0 item nil))
                   ""))))))
+
+(defthm to-string-when-stringp
+  (implies (stringp x)
+           (equal (to-string x)
+                  x))
+  :hints (("Goal" :in-theory (enable to-string))))
+
+;todo: gen
+(defthm equal-of-to-string-and-to-string-when-natps
+  (implies (and (natp item1)
+                (natp item2))
+           (equal (equal (to-string item1) (to-string item2))
+                  (equal item1 item2)))
+  :hints (("Goal" :in-theory (enable to-string))))
 
 ;returns a string
 (defund binary-pack (x y)

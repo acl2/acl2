@@ -80,6 +80,11 @@
            (unsigned-byte-listp width (nthcdr n x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp nthcdr))))
 
+(defthm unsigned-byte-listp-of-butlast
+  (implies (unsigned-byte-listp width x)
+           (unsigned-byte-listp width (butlast x n)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp nthcdr))))
+
 (defthm integerp-of-nth-when-unsigned-byte-listp
   (implies (unsigned-byte-listp size x)
            (equal (integerp (nth n x))

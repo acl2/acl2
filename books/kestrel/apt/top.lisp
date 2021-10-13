@@ -16,6 +16,8 @@
 (include-book "common-concepts")
 (include-book "common-options")
 
+(include-book "copy-function")
+
 (include-book "casesplit")
 
 (include-book "expdata")

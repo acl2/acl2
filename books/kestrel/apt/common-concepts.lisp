@@ -152,7 +152,8 @@
    (xdoc::p
     "The @('-aux') in the new function name in the last case above
      means `auxiliary', which is a common naming convention
-     for the ``loop'' of a function (in this case, the wrapper function).")))
+     for the ``loop'' of a function (in this case, the non-wrapper
+     function).")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
