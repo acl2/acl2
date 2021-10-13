@@ -1,4 +1,4 @@
-; Top book for evaluators library
+; A simple evaluator that knows only about NOT
 ;
 ; Copyright (C) 2021 Kestrel Institute
 ;
@@ -11,5 +11,5 @@
 (in-package "ACL2")
 
 (include-book "defevaluator-plus")
-(include-book "empty-eval")
-(include-book "not-eval")
+
+(defevaluator+ not-eval not) ; an evaluator with no built-in functions
