@@ -99,7 +99,7 @@
      a sequence of applications of the three functions below
      to an initial symbolic computation state @('<compst>'):")
    (xdoc::codeblock
-    "(add-var ... (add-scope (add-var ... (add-frame ... <compst>)...)")
+    "(add-var ... (enter-scope (add-var ... (add-frame ... <compst>)...)")
    (xdoc::p
     "We then prove theorems that describe
      the effect of @(tsee push-frame) and other functions
@@ -107,11 +107,6 @@
      where the effect is another state in that form.
      These theorems are enabled during symbolic execution,
      and manipulate the computation state.")
-   (xdoc::p
-    "Note that @(tsee add-scope) and @(tsee add-var)
-     return the computation state unchanged if the frame stack is empty.
-     This is intentional, as it seems to make some theorems simpler,
-     but this decision may be revisited.")
    (xdoc::p
     "In the presence of C loops,
      which are represented by ACL2 recursive functions,
@@ -124,17 +119,17 @@
      the execution of the loop may add new scopes and variables,
      so in this case the symbolic computtion state looks like")
    (xdoc::codeblock
-    "(add-var ... (add-var ... (add-scope <compst>)...)")
+    "(add-var ... (add-var ... (enter-scope <compst>)...)")
    (xdoc::p
     "In fact, the innermost function there
-     must be @(tsee add-scope) (it cannot be @(tsee add-var)),
+     must be @(tsee enter-scope) (it cannot be @(tsee add-var)),
      because the loops we generate have compound statements as bodies,
      which create new scopes.")
    (xdoc::p
     "The initial symbolic computation state @('<compst>')
      contains the initial part of the frame
      of the function that contains the loop;
-     the loop extends the frame with @(tsee add-scope) and @(tsee add-var)
+     the loop extends the frame with @(tsee enter-scope) and @(tsee add-var)
      as shown above.
      But the structure of the initial part of the frame
      is not known in the symbolic execution for the loop itself:
@@ -148,12 +143,12 @@
      arising during symbolic execution match those hypotheses.
      A loop may write to those variables:
      in this case, the @(tsee write-var) will go through
-     all the @(tsee add-var) and @(tsee add-scope) layers shown above,
+     all the @(tsee add-var) and @(tsee enter-scope) layers shown above,
      and reach @('<compst>'), where it is not further reducible.
      This may happen for several different variables,
      so the general form of our symbolic computation states is")
    (xdoc::codeblock
-    "(add-var ... (add-scope (write-var ... (write-var ... <compst>)...)")
+    "(add-var ... (enter-scope (write-var ... (write-var ... <compst>)...)")
    (xdoc::p
     "Below we introduce rules to order these @(tsee write-var)s
      according to the variables,
@@ -195,25 +190,6 @@
           ".")
   (push-frame (make-frame :function fun :scopes (list nil))
               compst)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define add-scope ((compst compustatep))
-  :returns (new-compst compustatep)
-  :parents (atc-symbolic-computation-states)
-  :short (xdoc::topstring
-          "Add a scope to a "
-          (xdoc::seetopic "atc-symbolic-computation-states"
-                          "canonical representation of computation states")
-          ".")
-  (b* (((when (= (compustate-frames-number compst) 0)) (compustate-fix compst))
-       (frame (top-frame compst))
-       (scopes (frame->scopes frame))
-       (new-scopes (cons nil scopes))
-       (new-frame (change-frame frame :scopes new-scopes))
-       (new-compst (push-frame new-frame (pop-frame compst))))
-    new-compst)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -263,7 +239,7 @@
      and finally turn @(tsee push-frame) into @(tsee add-frame).")
    (xdoc::p
     "The theorems below about @(tsee pop-frame)
-     remove all the @(tsee add-var) and @(tsee add-scope) calls
+     remove all the @(tsee add-var) and @(tsee enter-scope) calls
      until they reach @(tsee add-frame),
      with which @(tsee pop-frame) neutralizes.
      No rules are needed for
@@ -271,23 +247,20 @@
      because these only occur when executing loops,
      which do not pop frames.")
    (xdoc::p
-    "We provide a single theorem about @(tsee enter-scope),
-     which just turns that into @(tsee add-scope) in all cases.
-     If the computation state starts with @(tsee add-frame),
-     the hypothesis that the stack frame is not empty is not needed;
-     but we still prefer to have just one theorem for all cases here.")
+    "We do not provide any theorem about @(tsee enter-scope),
+     as it is part of the canonical representation of computation states.")
    (xdoc::p
     "The theorems below about @(tsee exit-scope)
-     cancel it with @(tsee add-scope)
+     cancel it with @(tsee enter-scope)
      and move it past @(tsee add-var).
      No rule for @(tsee add-frame) is needed
      because that case should never happen in the symbolic execution.
      No rule is needed for computation states that start with @(tsee write-var)
-     because @(tsee write-var) is always pushed past @(tsee add-scope).")
+     because @(tsee write-var) is always pushed past @(tsee enter-scope).")
    (xdoc::p
     "The theorems below about @(tsee create-var)
      turn that into @(tsee add-var)
-     when @(tsee add-frame) or @(tsee add-scope) is reached,
+     when @(tsee add-frame) or @(tsee enter-scope) is reached,
      because a variable is only created in the current scope.
      The third theorem skips over @(tsee add-var)
      when the two variables have different names
@@ -301,16 +274,14 @@
      The reason for skipping over @(tsee add-var)s with different names
      is to exclude the case of a variable redefinition:
      attempting to prove a theorem
-     that simply replaces @(tsee create-var) with @(tsee add-var),
-     similarly to the theorem that
-     turns @(tsee enter-scope) into @(tsee add-scope),
+     that simply replaces @(tsee create-var) with @(tsee add-var)
      fails because of the possibility of a redefined variable.
      There is no rule for @(tsee create-var) applied to @(tsee write-var),
-     because @(tsee write-var)s are always pushed past @(tsee add-scope).")
+     because @(tsee write-var)s are always pushed past @(tsee enter-scope).")
    (xdoc::p
     "The theorems below about @(tsee read-var) are a bit different
      because @(tsee read-var) does not return a state, but a value instead.
-     The first theorem skips over @(tsee add-scope).
+     The first theorem skips over @(tsee enter-scope).
      The second theorem
      either returns the value of the encountered variable or skips over it,
      based on whether the names coincide or not.
@@ -326,7 +297,7 @@
     "The theorems below about @(tsee write-var)
      have some analogies to the ones for @(tsee create-var),
      because @(tsee write-var) may also return an error.
-     The first theorem skips over @(tsee add-scope),
+     The first theorem skips over @(tsee enter-scope),
      but has the same kind of possibly inefficient hypothesis
      discussed above for @(tsee create-var).
      There is no rule for @(tsee add-frame) because that should not happen.
@@ -364,8 +335,12 @@
     "The theorems below about @(tsee compustate-frames-number)
      serve to discharge the hypotheses about it being not 0
      in some of the other theorems below.
-     We simply consume @(tsee add-scope) and @(tsee add-var),
-     and stop at @(tsee add-frame) because that one adds a frame.
+     We simply consume @(tsee add-var),
+     and stop at @(tsee add-frame) or @(tsee enter-scope)
+     because those always return computation states with at least one frame
+     (this is obvious for @(tsee add-frame),
+     but it also happens to be the case for @(tsee enter-scope),
+     even though its addition of a frame takes place outside the guard).
      For @(tsee write-var), i.e. for side-effected variables,
      we need the hypothesis that @(tsee write-var) is not an error.")
    (xdoc::p
@@ -413,11 +388,11 @@
                     compst))
     :enable (pop-frame add-frame))
 
-  (defruled pop-frame-of-add-scope
-    (equal (pop-frame (add-scope compst))
+  (defruled pop-frame-of-enter-scope
+    (equal (pop-frame (enter-scope compst))
            (pop-frame compst))
     :enable (pop-frame
-             add-scope
+             enter-scope
              push-frame))
 
   (defruled pop-frame-of-add-var
@@ -427,22 +402,14 @@
              add-var
              push-frame))
 
-  ;; rules about ENTER-SCOPE:
-
-  (defruled enter-scope-of-compustate
-    (implies (not (equal (compustate-frames-number compst) 0))
-             (equal (enter-scope compst)
-                    (add-scope compst)))
-    :enable (enter-scope add-scope))
-
   ;; rules about EXIT-SCOPE:
 
-  (defruled exit-scope-of-add-scope
+  (defruled exit-scope-of-enter-scope
     (implies (and (compustatep compst)
                   (not (equal (compustate-frames-number compst) 0)))
-             (equal (exit-scope (add-scope compst))
+             (equal (exit-scope (enter-scope compst))
                     compst))
-    :enable (add-scope
+    :enable (enter-scope
              exit-scope
              push-frame
              top-frame
@@ -461,11 +428,11 @@
            (add-var var val (add-frame fun compst)))
     :enable (create-var add-var add-frame))
 
-  (defruled create-var-of-add-scope
+  (defruled create-var-of-enter-scope
     (implies (not (equal (compustate-frames-number compst) 0))
-             (equal (create-var var val (add-scope compst))
-                    (add-var var val (add-scope compst))))
-    :enable (create-var add-var add-scope))
+             (equal (create-var var val (enter-scope compst))
+                    (add-var var val (enter-scope compst))))
+    :enable (create-var add-var enter-scope))
 
   (defruled create-var-of-add-var
     (implies (and (not (equal (compustate-frames-number compst) 0))
@@ -479,12 +446,13 @@
 
   ;; rules about READ-VAR:
 
-  (defruled read-var-of-add-scope
-    (equal (read-var var (add-scope compst))
-           (read-var var compst))
+  (defruled read-var-of-enter-scope
+    (implies (not (equal (compustate-frames-number compst) 0))
+             (equal (read-var var (enter-scope compst))
+                    (read-var var compst)))
     :enable (read-var
              read-var-aux
-             add-scope))
+             enter-scope))
 
   (defruled read-var-of-add-var
     (implies (not (equal (compustate-frames-number compst) 0))
@@ -528,15 +496,15 @@
 
   ;; rules about WRITE-VAR:
 
-  (defruled write-var-of-add-scope
+  (defruled write-var-of-enter-scope
     (implies (and (not (equal (compustate-frames-number compst) 0))
                   (equal compst1 (write-var var val compst))
                   (not (errorp compst1)))
-             (equal (write-var var val (add-scope compst))
-                    (add-scope compst1)))
+             (equal (write-var var val (enter-scope compst))
+                    (enter-scope compst1)))
     :enable (write-var
              write-var-aux
-             add-scope
+             enter-scope
              push-frame
              pop-frame
              top-frame
@@ -702,10 +670,9 @@
     (not (equal (compustate-frames-number (add-frame fun compst)) 0))
     :enable add-frame)
 
-  (defruled compustate-frames-number-of-add-scope
-    (equal (compustate-frames-number (add-scope compst))
-           (compustate-frames-number compst))
-    :enable add-scope)
+  (defruled compustate-frames-number-of-enter-scope-not-zero
+    (not (equal (compustate-frames-number (enter-scope compst)) 0))
+    :enable enter-scope)
 
   (defruled compustate-frames-number-of-add-var
     (equal (compustate-frames-number (add-var var val compst))
@@ -728,10 +695,10 @@
            (deref ptr compst))
     :enable (add-frame push-frame deref))
 
-  (defruled deref-of-add-scope
-    (equal (deref ptr (add-scope compst))
+  (defruled deref-of-enter-scope
+    (equal (deref ptr (enter-scope compst))
            (deref ptr compst))
-    :enable (add-scope
+    :enable (enter-scope
              push-frame
              pop-frame
              deref))
@@ -787,29 +754,28 @@
   '(push-frame-of-one-empty-scope
     push-frame-of-one-nonempty-scope
     pop-frame-of-add-frame
-    pop-frame-of-add-scope
+    pop-frame-of-enter-scope
     pop-frame-of-add-var
-    enter-scope-of-compustate
-    exit-scope-of-add-scope
+    exit-scope-of-enter-scope
     exit-scope-of-add-var
     create-var-of-add-frame
-    create-var-of-add-scope
+    create-var-of-enter-scope
     create-var-of-add-var
-    read-var-of-add-scope
+    read-var-of-enter-scope
     read-var-of-add-var
     read-var-of-write-var
-    write-var-of-add-scope
+    write-var-of-enter-scope
     write-var-of-add-var-same
     write-var-of-add-var-diff
     write-var-of-write-var-same
     write-var-of-write-var-less
     write-var-of-read-var-same
     compustate-frames-number-of-add-frame-not-zero
-    compustate-frames-number-of-add-scope
+    compustate-frames-number-of-enter-scope-not-zero
     compustate-frames-number-of-add-var
     compustate-frames-number-of-write-var-when-not-errorp
     deref-of-add-frame
-    deref-of-add-scope
+    deref-of-enter-scope
     deref-of-add-var
     deref-of-write-var
     errorp-of-write-var-when-not-errorp-of-read-var))
@@ -1769,7 +1735,7 @@
     cdr-cons
     compustate-fix-when-compustatep
     compustatep-of-add-frame
-    compustatep-of-add-scope
+    compustatep-of-enter-scope
     compustatep-of-add-var
     compustatep-when-compustate-resultp-and-not-errorp
     compustate-resultp-of-write-var
