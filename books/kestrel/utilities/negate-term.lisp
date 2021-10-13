@@ -30,3 +30,9 @@
   (implies (pseudo-termp term)
            (pseudo-termp (negate-term term)))
   :hints (("Goal" :in-theory (enable negate-term))))
+
+(defthm logic-termp-of-negate-term
+  (implies (and (logic-termp term w)
+                (arities-okp '((not . 1)) w))
+           (logic-termp (negate-term term) w))
+  :hints (("Goal" :in-theory (enable negate-term))))
