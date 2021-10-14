@@ -1,4 +1,4 @@
-; Top book for evaluators library
+; A book about the built-in function disjoin
 ;
 ; Copyright (C) 2021 Kestrel Institute
 ;
@@ -10,8 +10,10 @@
 
 (in-package "ACL2")
 
-(include-book "defevaluator-plus")
-(include-book "empty-eval")
-(include-book "not-eval")
-(include-book "if-eval")
-(include-book "equality-eval")
+(in-theory (disable disjoin))
+
+(defthm disjoin-when-not-consp
+  (implies (not (consp clause))
+           (equal (disjoin clause)
+                  *nil*))
+  :hints (("Goal" :in-theory (enable disjoin))))

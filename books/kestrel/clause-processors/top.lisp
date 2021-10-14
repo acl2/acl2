@@ -13,6 +13,7 @@
 (include-book "do-nothing")
 (include-book "do-nothing-to-literals")
 (include-book "subst-flag")
+(include-book "handle-constant-literals")
 (include-book "flatten-literals")
 (include-book "simple-subsumption")
 (include-book "push-unary-functions")

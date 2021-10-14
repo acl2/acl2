@@ -105,7 +105,7 @@
        (con-and-dis-eval (disjoin clause) a))
   :hints (("Goal" :in-theory (enable flatten-disjuncts))))
 
-(defun flatten-literals-clause-processor (clause)
+(defund flatten-literals-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
   (list (flatten-disjuncts clause)))
 
@@ -119,6 +119,11 @@
                                (myif . 3))
                              w))
            (logic-term-list-listp (flatten-literals-clause-processor clause) w))
+  :hints (("Goal" :in-theory (enable flatten-literals-clause-processor))))
+
+(defthm pseudo-term-list-listp-of-flatten-literals-clause-processor
+  (implies (pseudo-term-listp clause)
+           (pseudo-term-list-listp (flatten-literals-clause-processor clause)))
   :hints (("Goal" :in-theory (enable flatten-literals-clause-processor))))
 
 ;todo: add :well-formedness proof
