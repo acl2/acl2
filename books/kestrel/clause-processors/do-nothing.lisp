@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(defevaluator empty-eval empty-eval-list nil)
+(include-book "kestrel/evaluators/empty-eval" :dir :system)
 
 ;; Return a list of one clause (the same one we started with)
 (defund do-nothing-clause-processor (clause)
