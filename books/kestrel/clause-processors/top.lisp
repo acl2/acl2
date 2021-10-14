@@ -15,3 +15,4 @@
 (include-book "subst-flag")
 (include-book "flatten-literals")
 (include-book "simple-subsumption")
+(include-book "push-unary-functions")
