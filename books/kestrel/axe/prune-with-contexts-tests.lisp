@@ -22,9 +22,7 @@
 
 (defun prunes-to (term expected-result-term)
   (declare (xargs :guard (pseudo-termp term)
-                  :guard-hints (("Goal" :in-theory (disable myquotep)))
-                  :guard-debug t
-                  ))
+                  :guard-hints (("Goal" :in-theory (disable myquotep)))))
   (b* (((mv erp dag-or-quotep) (make-term-into-dag-simple term)) ;todo: use a version that doesn't simplify/eval!
        ((when erp)
         (er hard? 'prunes-to "Error making term into dag.")
