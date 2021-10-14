@@ -43,57 +43,58 @@
            (pseudo-termp (cdr (assoc-equal term alist))))
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
-(defevaluator+ simple-eval if equal eql eq not)
+;; An evaluator that knows about various equality tests (as well as IF and NOT).
+(defevaluator+ equality-eval if equal eql eq not)
 
-(defund all-eval-to-true-with-simple-eval (terms a)
+(defund all-eval-to-true-with-equality-eval (terms a)
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (alistp a))))
   (if (endp terms)
       t
-    (and (simple-eval (first terms) a)
-         (all-eval-to-true-with-simple-eval (rest terms) a))))
+    (and (equality-eval (first terms) a)
+         (all-eval-to-true-with-equality-eval (rest terms) a))))
 
-(defthm all-eval-to-true-with-simple-eval-when-not-consp
+(defthm all-eval-to-true-with-equality-eval-when-not-consp
   (implies (not (consp terms))
-           (all-eval-to-true-with-simple-eval terms a))
-  :hints (("Goal" :in-theory (enable all-eval-to-true-with-simple-eval))))
+           (all-eval-to-true-with-equality-eval terms a))
+  :hints (("Goal" :in-theory (enable all-eval-to-true-with-equality-eval))))
 
-(defthm all-eval-to-true-with-simple-eval-of-cons
-  (equal (all-eval-to-true-with-simple-eval (cons term terms) a)
-         (and (simple-eval term a)
-              (all-eval-to-true-with-simple-eval terms a)))
-  :hints (("Goal" :in-theory (enable all-eval-to-true-with-simple-eval))))
+(defthm all-eval-to-true-with-equality-eval-of-cons
+  (equal (all-eval-to-true-with-equality-eval (cons term terms) a)
+         (and (equality-eval term a)
+              (all-eval-to-true-with-equality-eval terms a)))
+  :hints (("Goal" :in-theory (enable all-eval-to-true-with-equality-eval))))
 
-(defthm simple-eval-when-all-eval-to-true-with-simple-eval-and-member-equal
-  (implies (and (all-eval-to-true-with-simple-eval terms a)
+(defthm equality-eval-when-all-eval-to-true-with-equality-eval-and-member-equal
+  (implies (and (all-eval-to-true-with-equality-eval terms a)
                 (member-equal term terms))
-           (simple-eval term a))
-  :hints (("Goal" :in-theory (enable all-eval-to-true-with-simple-eval))))
+           (equality-eval term a))
+  :hints (("Goal" :in-theory (enable all-eval-to-true-with-equality-eval))))
 
-(defund all-eval-to-false-with-simple-eval (terms a)
+(defund all-eval-to-false-with-equality-eval (terms a)
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (alistp a))))
   (if (endp terms)
       t
-    (and (not (simple-eval (first terms) a))
-         (all-eval-to-false-with-simple-eval (rest terms) a))))
+    (and (not (equality-eval (first terms) a))
+         (all-eval-to-false-with-equality-eval (rest terms) a))))
 
-(defthm all-eval-to-false-with-simple-eval-when-not-consp
+(defthm all-eval-to-false-with-equality-eval-when-not-consp
   (implies (not (consp terms))
-           (all-eval-to-false-with-simple-eval terms a))
-  :hints (("Goal" :in-theory (enable all-eval-to-false-with-simple-eval))))
+           (all-eval-to-false-with-equality-eval terms a))
+  :hints (("Goal" :in-theory (enable all-eval-to-false-with-equality-eval))))
 
-(defthm all-eval-to-false-with-simple-eval-of-cons
-  (equal (all-eval-to-false-with-simple-eval (cons term terms) a)
-         (and (not (simple-eval term a))
-              (all-eval-to-false-with-simple-eval terms a)))
-  :hints (("Goal" :in-theory (enable all-eval-to-false-with-simple-eval))))
+(defthm all-eval-to-false-with-equality-eval-of-cons
+  (equal (all-eval-to-false-with-equality-eval (cons term terms) a)
+         (and (not (equality-eval term a))
+              (all-eval-to-false-with-equality-eval terms a)))
+  :hints (("Goal" :in-theory (enable all-eval-to-false-with-equality-eval))))
 
-(defthm not-simple-eval-when-all-eval-to-false-with-simple-eval-and-member-equal
-  (implies (and (all-eval-to-false-with-simple-eval terms a)
+(defthm not-equality-eval-when-all-eval-to-false-with-equality-eval-and-member-equal
+  (implies (and (all-eval-to-false-with-equality-eval terms a)
                 (member-equal term terms))
-           (not (simple-eval term a)))
-  :hints (("Goal" :in-theory (enable all-eval-to-false-with-simple-eval))))
+           (not (equality-eval term a)))
+  :hints (("Goal" :in-theory (enable all-eval-to-false-with-equality-eval))))
 
 ;;Returns (mv var const) or (mv nil nil)
 (defund equality-items-from-term (term)
@@ -121,9 +122,9 @@
   :hints (("Goal" :in-theory (enable equality-items-from-term))))
 
 (defthm equality-items-from-term-helper
-  (implies (simple-eval term a)
-           (equal (simple-eval (mv-nth 0 (equality-items-from-term term)) a)
-                  (simple-eval (mv-nth 1 (equality-items-from-term term)) a)))
+  (implies (equality-eval term a)
+           (equal (equality-eval (mv-nth 0 (equality-items-from-term term)) a)
+                  (equality-eval (mv-nth 1 (equality-items-from-term term)) a)))
   :hints (("Goal" :in-theory (enable equality-items-from-term))))
 
 ;;Returns (mv var const) or (mv nil nil)
@@ -144,9 +145,9 @@
   :hints (("Goal" :in-theory (enable equality-items-from-negation-of-term))))
 
 (defthm equality-items-from-negation-of-term-helper
-  (implies (not (simple-eval term a))
-           (equal (simple-eval (mv-nth 0 (equality-items-from-negation-of-term term)) a)
-                  (simple-eval (mv-nth 1 (equality-items-from-negation-of-term term)) a)))
+  (implies (not (equality-eval term a))
+           (equal (equality-eval (mv-nth 0 (equality-items-from-negation-of-term term)) a)
+                  (equality-eval (mv-nth 1 (equality-items-from-negation-of-term term)) a)))
   :hints (("Goal" :in-theory (enable equality-items-from-negation-of-term))))
 
 (mutual-recursion
@@ -205,18 +206,18 @@
 
 (defthm-flag-add-true-and-false-implications-of-term
   (defthm add-true-and-false-implications-of-term-correct
-    (implies (and (all-eval-to-true-with-simple-eval true-terms a)
-                  (all-eval-to-false-with-simple-eval false-terms a)
-                  (simple-eval term a))
-             (and (all-eval-to-true-with-simple-eval (mv-nth 0 (add-true-and-false-implications-of-term term true-terms false-terms)) a)
-                  (all-eval-to-false-with-simple-eval (mv-nth 1 (add-true-and-false-implications-of-term term true-terms false-terms)) a)))
+    (implies (and (all-eval-to-true-with-equality-eval true-terms a)
+                  (all-eval-to-false-with-equality-eval false-terms a)
+                  (equality-eval term a))
+             (and (all-eval-to-true-with-equality-eval (mv-nth 0 (add-true-and-false-implications-of-term term true-terms false-terms)) a)
+                  (all-eval-to-false-with-equality-eval (mv-nth 1 (add-true-and-false-implications-of-term term true-terms false-terms)) a)))
     :flag add-true-and-false-implications-of-term)
   (defthm add-true-and-false-implications-of-negation-of-term-correct
-    (implies (and (all-eval-to-true-with-simple-eval true-terms a)
-                  (all-eval-to-false-with-simple-eval false-terms a)
-                  (not (simple-eval term a)))
-             (and (all-eval-to-true-with-simple-eval (mv-nth 0 (add-true-and-false-implications-of-negation-of-term term true-terms false-terms)) a)
-                  (all-eval-to-false-with-simple-eval (mv-nth 1 (add-true-and-false-implications-of-negation-of-term term true-terms false-terms)) a)))
+    (implies (and (all-eval-to-true-with-equality-eval true-terms a)
+                  (all-eval-to-false-with-equality-eval false-terms a)
+                  (not (equality-eval term a)))
+             (and (all-eval-to-true-with-equality-eval (mv-nth 0 (add-true-and-false-implications-of-negation-of-term term true-terms false-terms)) a)
+                  (all-eval-to-false-with-equality-eval (mv-nth 1 (add-true-and-false-implications-of-negation-of-term term true-terms false-terms)) a)))
     :flag add-true-and-false-implications-of-negation-of-term)
   :hints (("Goal" :in-theory (enable add-true-and-false-implications-of-term
                                      add-true-and-false-implications-of-negation-of-term))))
@@ -239,25 +240,25 @@
         (equality-among-termsp x y (rest terms))))))
 
 
-(defthm not-equal-of-simple-eval-and-simple-eval-when-EQUALITY-AMONG-TERMSP-1
-  (IMPLIES (AND (ALL-EVAL-TO-FALSE-WITH-SIMPLE-EVAL FALSE-TERMS A)
+(defthm not-equal-of-equality-eval-and-equality-eval-when-EQUALITY-AMONG-TERMSP-1
+  (IMPLIES (AND (ALL-EVAL-TO-FALSE-WITH-EQUALITY-EVAL FALSE-TERMS A)
                 (EQUALITY-AMONG-TERMSP x y FALSE-TERMS)
                 (PSEUDO-TERMP x)
                 (PSEUDO-TERMp y))
-           (NOT (EQUAL (SIMPLE-EVAL x A)
-                       (SIMPLE-EVAL y A))))
-  :hints (("Goal" :in-theory (enable EQUALITY-AMONG-TERMSP ALL-EVAL-TO-FALSE-WITH-SIMPLE-EVAL))))
+           (NOT (EQUAL (EQUALITY-EVAL x A)
+                       (EQUALITY-EVAL y A))))
+  :hints (("Goal" :in-theory (enable EQUALITY-AMONG-TERMSP ALL-EVAL-TO-FALSE-WITH-EQUALITY-EVAL))))
 
-(defthm equal-of-simple-eval-and-simple-eval-when-equality-among-termsp-2
-  (implies (and (all-eval-to-true-with-simple-eval true-terms a)
+(defthm equal-of-equality-eval-and-equality-eval-when-equality-among-termsp-2
+  (implies (and (all-eval-to-true-with-equality-eval true-terms a)
                 (equality-among-termsp x y true-terms)
                 ;(pseudo-termp x)
                 ;(pseudo-termp y)
                 )
-           (equal (equal (simple-eval x a)
-                         (simple-eval y a))
+           (equal (equal (equality-eval x a)
+                         (equality-eval y a))
                   t))
-  :hints (("Goal" :in-theory (enable equality-among-termsp all-eval-to-true-with-simple-eval))))
+  :hints (("Goal" :in-theory (enable equality-among-termsp all-eval-to-true-with-equality-eval))))
 
 ;; Returns :true, :false, or :unknown
 (defund resolve-test (term true-terms false-terms)
@@ -282,19 +283,19 @@
           :unknown)))))
 
 (defthm resolve-test-correct-1
-  (implies (and (all-eval-to-true-with-simple-eval true-terms a)
-                (all-eval-to-false-with-simple-eval false-terms a)
+  (implies (and (all-eval-to-true-with-equality-eval true-terms a)
+                (all-eval-to-false-with-equality-eval false-terms a)
                 (equal :false (resolve-test term true-terms false-terms))
                 (pseudo-termp term))
-           (not (simple-eval term a)))
-  :hints (("Goal" :in-theory (e/d (resolve-test) (simple-eval-of-variable)))))
+           (not (equality-eval term a)))
+  :hints (("Goal" :in-theory (e/d (resolve-test) (equality-eval-of-variable)))))
 
 (defthm resolve-test-correct-2
-  (implies (and (all-eval-to-true-with-simple-eval true-terms a)
-                (all-eval-to-false-with-simple-eval false-terms a)
+  (implies (and (all-eval-to-true-with-equality-eval true-terms a)
+                (all-eval-to-false-with-equality-eval false-terms a)
                 (equal :true (resolve-test term true-terms false-terms)))
-           (simple-eval term a))
-  :hints (("Goal" :in-theory (e/d (resolve-test) (simple-eval-of-variable)))))
+           (equality-eval term a))
+  :hints (("Goal" :in-theory (e/d (resolve-test) (equality-eval-of-variable)))))
 
 (mutual-recursion
  ;; Subst variables according to ALIST and also simplify certain calls of equal, eql, eq, and if.
@@ -421,12 +422,12 @@
 
 (verify-guards sublis-var-and-simplify :hints (("Goal" :in-theory (enable SYMBOLP-WHEN-PSEUDO-TERMP))))
 
-(defthm simple-eval-of-cdr-of-assoc-equal-when-alists-agree
-  (implies (and (equal (simple-eval-list (strip-cars alist) a)
-                       (simple-eval-list (strip-cdrs alist) a))
+(defthm equality-eval-of-cdr-of-assoc-equal-when-alists-agree
+  (implies (and (equal (equality-eval-list (strip-cars alist) a)
+                       (equality-eval-list (strip-cdrs alist) a))
                 (assoc-equal key alist))
-           (equal (simple-eval (cdr (assoc-equal key alist)) a)
-                  (simple-eval key a)))
+           (equal (equality-eval (cdr (assoc-equal key alist)) a)
+                  (equality-eval key a)))
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
 (defthm car-of-sublis-var-and-simplify-lst
@@ -439,29 +440,29 @@
 (defthm-flag-sublis-var-and-simplify
   (defthm sublis-var-and-simplify-correct
     (implies (and (alistp alist) ; usually a symbol-term-alistp
-                  (equal (simple-eval-list (strip-cars alist) a)
-                         (simple-eval-list (strip-cdrs alist) a))
+                  (equal (equality-eval-list (strip-cars alist) a)
+                         (equality-eval-list (strip-cdrs alist) a))
                   (pseudo-term-listp (strip-cars alist))
                   (pseudo-term-listp (strip-cdrs alist))
                   (pseudo-termp term)
                   ;;(not (member-equal nil (free-vars-in-term term))) ;needed?
-                  (all-eval-to-true-with-simple-eval true-terms a)
-                  (all-eval-to-false-with-simple-eval false-terms a))
-             (equal (simple-eval (sublis-var-and-simplify alist term true-terms false-terms) a)
-                    (simple-eval term a)))
+                  (all-eval-to-true-with-equality-eval true-terms a)
+                  (all-eval-to-false-with-equality-eval false-terms a))
+             (equal (equality-eval (sublis-var-and-simplify alist term true-terms false-terms) a)
+                    (equality-eval term a)))
     :flag sublis-var-and-simplify)
   (defthm sublis-var-and-simplify-lst-correct
     (implies (and (alistp alist) ; usually a symbol-term-alistp
-                  (equal (simple-eval-list (strip-cars alist) a)
-                         (simple-eval-list (strip-cdrs alist) a))
+                  (equal (equality-eval-list (strip-cars alist) a)
+                         (equality-eval-list (strip-cdrs alist) a))
                   (pseudo-term-listp (strip-cars alist))
                   (pseudo-term-listp (strip-cdrs alist))
                   (pseudo-term-listp terms)
                   ;;(not (member-equal nil (free-vars-in-terms terms)))
-                  (all-eval-to-true-with-simple-eval true-terms a)
-                  (all-eval-to-false-with-simple-eval false-terms a))
-             (equal (simple-eval-list (sublis-var-and-simplify-lst alist terms true-terms false-terms) a)
-                    (simple-eval-list terms a)))
+                  (all-eval-to-true-with-equality-eval true-terms a)
+                  (all-eval-to-false-with-equality-eval false-terms a))
+             (equal (equality-eval-list (sublis-var-and-simplify-lst alist terms true-terms false-terms) a)
+                    (equality-eval-list terms a)))
     :flag sublis-var-and-simplify-lst)
   :hints (("Goal" :expand ((PSEUDO-TERMP TERM)
                            (FREE-VARS-IN-TERMS TERMS)
@@ -472,20 +473,20 @@
                             ;;MEMBER-EQUAL-OF-STRIP-CARS-IFF
                             ;;wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
-                            SIMPLE-EVAL-OF-FNCALL-ARGS
+                            EQUALITY-EVAL-OF-FNCALL-ARGS
                             )
                            (pairlis$
-                            SIMPLE-EVAL-OF-variable
+                            EQUALITY-EVAL-OF-variable
                             SET-DIFFERENCE-EQUAL)))))
 
 ;;; now map the term processor over every literal of the clause
 
-(defthm simple-eval-of-disjoin-of-sublis-var-and-simplify-lst-special
+(defthm equality-eval-of-disjoin-of-sublis-var-and-simplify-lst-special
   (implies (and (alistp a)
                 (pseudo-term-listp clause)
                 )
-           (iff (simple-eval (disjoin (sublis-var-and-simplify-lst nil clause nil nil)) a)
-                (simple-eval (disjoin clause) a)))
+           (iff (equality-eval (disjoin (sublis-var-and-simplify-lst nil clause nil nil)) a)
+                (equality-eval (disjoin clause) a)))
   :hints (("Goal" :induct (len clause)
            :in-theory (enable (:i len) sublis-var-and-simplify-lst))))
 
@@ -507,7 +508,7 @@
 (defthm sublis-var-and-simplify-clause-processor-correct
   (implies (and (pseudo-term-listp clause)
                 (alistp a)
-                (simple-eval (conjoin-clauses (sublis-var-and-simplify-clause-processor clause)) a))
-           (simple-eval (disjoin clause) a))
+                (equality-eval (conjoin-clauses (sublis-var-and-simplify-clause-processor clause)) a))
+           (equality-eval (disjoin clause) a))
   :rule-classes :clause-processor
   :hints (("Goal" :in-theory (enable sublis-var-and-simplify-clause-processor))))
