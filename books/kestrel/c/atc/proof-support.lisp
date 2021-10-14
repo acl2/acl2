@@ -406,7 +406,12 @@
      @('(update-var var (read-var var compst) <other-compst>)'),
      where @('<other-compst>') is a term
      that is not just the @('compst') variable:
-     the rule binds @('compst1') to that.")
+     the rule binds @('compst1') to that.
+     This fifth theorem has a @(tsee syntaxp) hypothesis
+     requiring the computation state argument of @(tsee read-var)
+     to be a variable;
+     this may not be actually necessary,
+     but for now we include it just to make sure.")
    (xdoc::p
     "The theorems below about @(tsee compustate-frames-number)
      serve to discharge the hypotheses about it being not 0
@@ -722,7 +727,8 @@
        :enable update-var-aux)))
 
   (defruled update-var-of-read-var-same
-    (implies (and (compustatep compst1)
+    (implies (and (syntaxp (symbolp compst))
+                  (compustatep compst1)
                   (valuep (read-var var compst))
                   (equal (read-var var compst)
                          (read-var var compst1)))
