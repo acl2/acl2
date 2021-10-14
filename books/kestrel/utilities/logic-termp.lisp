@@ -33,24 +33,28 @@
            (logic-term-listp (cdr terms) w))
   :hints (("Goal" :in-theory (enable logic-term-listp))))
 
-(defthm logic-termp-when-regular-function-call
-  (implies (and (symbolp (car term))
-                (car term)
-                ;(consp term)
-                (not (eq 'quote (car term))))
+(defthm logic-termp-when-consp
+  (implies (and (not (consp (car term))) ;exclude lambda (for now)
+                (consp term))
            (equal (logic-termp term w)
-                  (and (LOGICP (CAR TERM) W)
-                       (equal (ARITY (CAR TERM) W)
-                              (len (cdr term)))
-                       (logic-term-listp (cdr term) w))))
-  :hints (("Goal" :in-theory (enable logic-termp
-                                     logic-term-listp))))
+                  (if (eq 'quote (car term))
+                      (and (eq 'quote (car term))
+                           (consp (cdr term))
+                           (null (cddr term)))
+                    (and (symbolp (car term))
+                         (logicp (car term) w)
+                         (equal (arity (car term) w)
+                                (len (cdr term)))
+                         (logic-term-listp (cdr term) w)))))
+  :hints (("Goal" :expand (termp term w)
+           :in-theory (enable logic-termp
+                              logic-term-listp))))
 
 ;move
 (defthm LOGIC-TERMP-of-cadr-when-LOGIC-TERMP
   (IMPLIES (AND (LOGIC-TERMP TERM W)
                 (symbolp (car term))
-                (car term) ; implies (consp term)
+                (consp term)
                 (not (eq 'quote (car term)))
                 (< 0 (ARITY (CAR TERM) W))
                 )
