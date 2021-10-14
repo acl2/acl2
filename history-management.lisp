@@ -3632,14 +3632,20 @@
 (defvar *defattach-fns*) ; see the Essay on Memoization with Attachments
 
 #+acl2-loop-only
-(partial-encapsulate
+(state-global-let*
+ ((ld-skip-proofsp
+; Without this use of ld-skip-proofsp, "make proofs" fails.  With it, we skip
+; the first pass of the following encapsulate and avoid that error.
+   'initialize-acl2))
+ (partial-encapsulate
 ; See discussion in the #-acl2-loop-only definition of retract-stobj-tables.
- (((retract-stobj-tables * state) => state))
- () ; supporters
- (local (defun retract-stobj-tables (wrld state)
-          (declare (xargs :stobjs state)
-                   (ignore wrld))
-          state)))
+  (((retract-stobj-tables * state) => state))
+  () ; supporters
+  (local (defun retract-stobj-tables (wrld state)
+           (declare (xargs :stobjs state)
+                    (ignore wrld))
+           state)))
+ )
 
 #-acl2-loop-only
 (defun retract-stobj-tables (wrld state)
