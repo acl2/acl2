@@ -10,10 +10,11 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/evaluators/defevaluator-plus" :dir :system)
+(include-book "kestrel/evaluators/if-eval" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (local (include-book "kestrel/utilities/logic-termp" :dir :system))
+(local (include-book "kestrel/utilities/arities-okp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
@@ -31,37 +32,12 @@
   :hints (("Goal" :in-theory (enable pairlis$ repeat assoc-equal))))
 
 ;move
-(defthm ARITIES-OKP-of-append
-  (equal (ARITIES-OKP (append x y) w)
-         (and (ARITIES-OKP x w)
-              (ARITIES-OKP y w)))
-  :hints (("Goal" :in-theory (enable ARITIES-OKP))))
-
-(defthm arities-okp-of-cons
-  (equal (arities-okp (cons pair alist) w)
-         (and (equal (arity (car pair) w) (cdr pair))
-              (logicp (car pair) w)
-              (arities-okp alist w)))
-  :hints (("Goal" :in-theory (enable ARITIES-OKP))))
-
-;move
 (local
  (defthm symbolp-when-member-equal-and-symbol-listp
    (implies (and (member-equal a l)
                  (symbol-listp l))
             (symbolp a))
    :hints (("Goal" :in-theory (enable symbol-listp member-equal)))))
-
-
-(defthm arity-when-arities-okp
-  (implies (and (arities-okp alist w)
-                (assoc-eq fn alist))
-           (equal (arity fn w)
-                  (cdr (assoc-eq fn alist))))
-  :hints (("Goal" :in-theory (enable arities-okp))))
-
-;todo: dup
-(defevaluator+ if-eval if)
 
 ;; TODO: Handle additional calls of UNARY-FN in TERM?
 (defund apply-unary-fn-to-if-branches (unary-fn term)

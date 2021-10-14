@@ -3132,7 +3132,7 @@
                                          rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth result-array-name known-booleans options)
                ;; Rewriting changed the literal.  Harvest the disjuncts, raising them to top level, and add them to the done-list:
                (b* (((mv erp provedp extended-done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                     (get-disjuncts new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                     (get-darg-disjuncts new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                     done-list ; will be extended with the disjuncts
                                     nil       ;negated-flg
                                     print))
@@ -4251,7 +4251,7 @@
                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
             (b* ( ;; Harvest disjuncts from the new literal:
                  ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                  (get-disjuncts nodenum
+                  (get-darg-disjuncts nodenum
                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                  literal-nodenums ; will be extended
                                  t ;negated-flag=t, since nodenum is the negation of the new literal.
@@ -4308,7 +4308,7 @@
                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
             (b* ( ;; Harvest disjuncts from the new literal:
                  ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                  (get-disjuncts nodenum ;the new literal
+                  (get-darg-disjuncts nodenum ;the new literal
                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                  literal-nodenums ; will be extended
                                  nil ;negated-flag=nil, since nodenum itself is the new literal.

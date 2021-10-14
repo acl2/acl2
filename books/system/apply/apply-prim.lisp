@@ -340,7 +340,16 @@
                                        (current-theory :here)
                                        (executable-counterpart-theory :here))))
                      )
-        (:repeat :prove)))
+
+; Matt K. mod, 10/13/2021: The command (:repeat :prove) was just below, and was
+; failing with a #+acl2-devel build.  The use of :orelse below fixes that, but
+; perhaps there is a more fundamental issue worth addressing, since (:repeat
+; :prove) probably worked at one point with #+acl2-devel builds.
+
+        (:repeat (:orelse :prove
+                          (:prove :hints
+                                  (("Goal"
+                                    :in-theory (current-theory :here))))))))
       :rule-classes ((:meta :trigger-fns (apply$-prim))))
 
     (defthm apply$-primp-implies-symbolp

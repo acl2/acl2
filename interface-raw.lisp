@@ -7521,6 +7521,8 @@
          (defrec ; pick just one function introduced
            (our-update-ht (record-changer-function-name (cadr form)) form ht
                           when-pass-2-p))
+         (state-global-let* ; (state-global-let* (... (fn val [fn2]) ...) form)
+          (note-fns-in-form (caddr form) ht when-pass-2-p))
          ((add-custom-keyword-hint
            add-macro-alias
            add-macro-fn

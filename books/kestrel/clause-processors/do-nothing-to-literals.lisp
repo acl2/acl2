@@ -14,12 +14,10 @@
 ;; do-nothing.lisp.  We rebuild the clause by applying an identify function to
 ;; each literal.
 
-(include-book "kestrel/evaluators/defevaluator-plus" :dir :system)
+(include-book "kestrel/evaluators/if-eval" :dir :system)
 (local (include-book "kestrel/utilities/logic-termp" :dir :system))
 
 (local (in-theory (disable alistp disjoin disjoin2)))
-
-(defevaluator+ if-eval if)
 
 ;; Returns the literal unchanged
 (defund do-nothing-to-literal (lit)

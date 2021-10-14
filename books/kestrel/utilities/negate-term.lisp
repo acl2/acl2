@@ -13,13 +13,14 @@
 
 ;; See proof of correctness in negate-term-proof.lisp
 
+;; See also negate-form, for a variant of this with no pseudo-termp guard.
+
 (include-book "kestrel/utilities/forms" :dir :system)
 
 ;; Negate TERM by adding or removing a call of not (avoids double negation)
 ;; See also dumb-negate-lit.
 (defund negate-term (term)
-  (declare (xargs :guard t ;(pseudo-termp term)
-                  ))
+  (declare (xargs :guard (pseudo-termp term)))
   (if (and (call-of 'not term)
            (consp (cdr term)) ;for guards
            )

@@ -26,7 +26,7 @@
             & ; dag-len
             & & & ;dag-parent-array dag-constant-alist dag-variable-alist
             )
-        (get-disjuncts nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+        (get-darg-disjuncts nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                        nil ;acc
                        nil ;negated-flg
                        t ;print

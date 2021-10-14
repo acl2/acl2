@@ -12,7 +12,9 @@
 
 (include-book "kestrel/utilities/conjuncts-and-disjuncts" :dir :system) ; todo: include something simpler!!
 (include-book "kestrel/utilities/conjuncts-and-disjuncts-proof" :dir :system)
+(include-book "kestrel/utilities/negate-terms" :dir :system)
 (local (include-book "kestrel/utilities/logic-termp" :dir :system))
+(local (include-book "kestrel/utilities/arities-okp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))

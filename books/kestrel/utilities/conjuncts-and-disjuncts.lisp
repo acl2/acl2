@@ -27,17 +27,11 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "logic-termp"))
+(local (include-book "arities-okp"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (disable ;len-of-cdr-better member-of-cons ;CONSP-CDR
                    default-car))) ;for speed
-
-(defthm arities-okp-when-arities-okp-and-subsetp-equal
-  (implies (and (arities-okp arities+ w)
-                (subsetp-equal arities arities+))
-           (arities-okp arities w))
-  :hints (("Goal" :in-theory (enable arities-okp
-                                     subsetp-equal))))
 
 ;; A single conjunct of "false"
 (defconst *false-conjunction* (list *nil*))
@@ -113,27 +107,6 @@
 
 ;todo: handle (equal x 'nil) like (not 'x)
 ;todo: handle (if/myif/boolif x 'nil 't) like (not 'x)
-
-(defund negate-terms (terms)
-  (declare (xargs :guard (true-listp terms)))
-  (if (endp terms)
-      nil
-    (let ((term (first terms)))
-      (cons (negate-term term)
-            (negate-terms (rest terms))))))
-
-(defthm pseudo-term-listp-of-negate-terms
-  (implies (pseudo-term-listp terms)
-           (pseudo-term-listp (negate-terms terms)))
-  :hints (("Goal" :in-theory (enable negate-terms))))
-
-(defthm logic-term-listp-of-negate-terms
-  (implies (and (logic-term-listp terms w)
-                (arities-okp '((not . 1)) w))
-           (logic-term-listp (negate-terms terms) w))
-  :hints (("Goal" :in-theory (enable negate-terms))))
-
-;(local (in-theory (enable pseudo-termp)))
 
 ;; also pushes not through branches of IFs
 (defund negate-term2 (term)
