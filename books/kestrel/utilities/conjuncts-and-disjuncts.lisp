@@ -109,7 +109,7 @@
 ;todo: handle (if/myif/boolif x 'nil 't) like (not 'x)
 
 (defund negate-terms (terms)
-  (declare (xargs :guard (true-listp terms)))
+  (declare (xargs :guard (pseudo-term-listp terms)))
   (if (endp terms)
       nil
     (let ((term (first terms)))
