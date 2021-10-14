@@ -27,17 +27,11 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "logic-termp"))
+(local (include-book "arities-okp"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (disable ;len-of-cdr-better member-of-cons ;CONSP-CDR
                    default-car))) ;for speed
-
-(defthm arities-okp-when-arities-okp-and-subsetp-equal
-  (implies (and (arities-okp arities+ w)
-                (subsetp-equal arities arities+))
-           (arities-okp arities w))
-  :hints (("Goal" :in-theory (enable arities-okp
-                                     subsetp-equal))))
 
 ;; A single conjunct of "false"
 (defconst *false-conjunction* (list *nil*))
