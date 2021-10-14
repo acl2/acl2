@@ -90,8 +90,11 @@
    (xdoc::p
     "Instead, we pull the ``additions'' to the computation state,
      i.e. the added frames, scopes, and variables,
-     out of the computation state via the three functions defined below.
-     Their definition is of course to
+     out of the computation state via the functions
+     @(tsee add-frame), @(tsee enter-scope), and @(tsee add-var):
+     the first and third one are defined below,
+     while the second one is from the dynamic semantics of C.
+     These three functions are defined to
      push the frames, scopes, and variables into the computation state,
      but we leave these functions disabled during symbolic execution,
      so that the symbolic computation states has these additions explicit.
@@ -101,7 +104,33 @@
    (xdoc::codeblock
     "(add-var ... (enter-scope (add-var ... (add-frame ... <compst>)...)")
    (xdoc::p
-    "We then prove theorems that describe
+    "The reason for introducing a new function @(tsee add-var),
+     instead of just using @(tsee create-var) (leaving it disabled),
+     is that @(tsee add-var) unconditionally satisfies certain properties
+     that @(tsee create-var) satisfies when it does not return an error:
+     @(tsee add-var) unconditionally returns a computation state,
+     and always ensured that the added variable is in the computation state.
+     During symbolic execution,
+     @(tsee create-var) is replaced with @(tsee add-var)
+     via a rule that requires @(tsee create-var) to not return an error:
+     in a way, @(tsee add-var) ``caches'' the aforementioned properties.
+     This leads to simpler rules on this kind of computation states:
+     for example, when @(tsee read-var) appears applied to @(tsee add-var)
+     during symbolic execution,
+     if the two variables are equal,
+     we can readily rewrite this term to the value in @(tsee add-var),
+     because that function guarantees the variable to exist with that value.
+     In contrast, if we @(tsee read-var) appeared applied to @(tsee create-var),
+     additional hypotheses would be needed (and would have to be discharged)
+     saying that @(tsee create-var) succeeds.")
+   (xdoc::p
+    "For a similar reason, we introduce a function @(tsee update-var)
+     that replaces @(tsee write-var) when the latter succeeds,
+     and that is easier and more efficient to manipulate
+     during symbolic execution.")
+   (xdoc::p
+    "Given these canonical representations of computation states,
+     we prove theorems that describe
      the effect of @(tsee push-frame) and other functions
      on computation states of this form,
      where the effect is another state in that form.
@@ -142,15 +171,17 @@
      this way, any of these @(tsee read-var) calls
      arising during symbolic execution match those hypotheses.
      A loop may write to those variables:
-     in this case, the @(tsee write-var) will go through
+     in this case, after replacing @(tsee write-var) with @(tsee update-var)
+     right away as explained earlier,
+     the @(tsee update-var) will go through
      all the @(tsee add-var) and @(tsee enter-scope) layers shown above,
      and reach @('<compst>'), where it is not further reducible.
      This may happen for several different variables,
      so the general form of our symbolic computation states is")
    (xdoc::codeblock
-    "(add-var ... (enter-scope (write-var ... (write-var ... <compst>)...)")
+    "(add-var ... (enter-scope (update-var ... (update-var ... <compst>)...)")
    (xdoc::p
-    "Below we introduce rules to order these @(tsee write-var)s
+    "Below we introduce rules to order these @(tsee update-var)s
      according to the variables,
      maintaining a canonical form.")
    (xdoc::p
@@ -158,24 +189,7 @@
      serves to represent side effects performed by the loop
      on the initial computation state.
      The same approach will be used to generate proofs for
-     more general side effects, e.g. on global variables or the heap.")
-   (xdoc::p
-    "A notable aspect of @(tsee add-var) and the other functions
-     is that they always return a computation state, never an error.
-     This is important because it lets us readily discharge,
-     during symbolic execution, hypothesis about these being computation states
-     (these hypotheses arise in the openers for expressions, statements, etc.).
-     In contrast, functions like @(tsee create-var) may return errors,
-     necessitating more laborious discharging of hypotheses.
-     When @(tsee create-var) is encountered during symbolic execution,
-     the fact that it returns a computation state and not an error gets proved
-     (by the symbolic execution),
-     so that it is replaced with @(tsee add-var),
-     which then ``caches'' the fact that this is a computation state,
-     obviating the need to re-prove it again during symbolic execution.
-     The non-error-returning functions like @(tsee add-var)
-     only need to be equal to the semantic functions like @(tsee create-var)
-     on non-errors, because the replacement happens only for non-errors. "))
+     more general side effects, e.g. on global variables or the heap."))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -308,7 +322,7 @@
      until they reach @(tsee add-frame),
      with which @(tsee pop-frame) neutralizes.
      No rules are needed for
-     computation states that start with @(tsee write-var)
+     computation states that start with @(tsee update-var)
      because these only occur when executing loops,
      which do not pop frames.")
    (xdoc::p
@@ -320,14 +334,31 @@
      and move it past @(tsee add-var).
      No rule for @(tsee add-frame) is needed
      because that case should never happen in the symbolic execution.
-     No rule is needed for computation states that start with @(tsee write-var)
-     because @(tsee write-var) is always pushed past @(tsee enter-scope).")
+     No rule is needed for computation states that start with @(tsee update-var)
+     because @(tsee update-var) is always pushed past @(tsee enter-scope).")
    (xdoc::p
     "The theorem below about @(tsee create-var) turns that into @(tsee add-var),
      provided that the variable can be created,
-     which we check via @('create-var-okp') introduced below.
+     which we check via the function @('create-var-okp') introduced below.
      Additional theorems about @('create-var-okp')
-     go through the layers of the computation states to check this condition.")
+     go through the layers of the computation states to check this condition.
+     No rule is needed for @('create-var-ok') on @(tsee update-var),
+     because @(tsee update-var) is pushed past the first @(see enter-scope).")
+   (xdoc::p
+    "The rule below about @(tsee write-var) turns it into @(tsee update-var),
+     similarly to @(tsee create-var) being turned into @(tsee add-var).
+     The condition for the replacemenet is captured by @('write-var-okp'),
+     for which we supply rules to go through the computation state layers.
+     Here we need to include a rule for @(tsee update-var),
+     because @('write-var-okp') may need to go through all the layers.
+     When the computation state (meta) variable is reached,
+     it must be the case that there are hypotheses available
+     saying that reading the variable yields the value:
+     this happens for loop proofs, for variables created outside the loop,
+     which are therefore not visible as @(tsee add-var)s.
+     The rule is used as last resort,
+     and only if the computation state is an ACL2 variable
+     (as enforced by the @(tsee syntaxp) hypothesis).")
    (xdoc::p
     "The theorems below about @(tsee read-var) are a bit different
      because @(tsee read-var) does not return a state, but a value instead.
@@ -336,31 +367,26 @@
      either returns the value of the encountered variable or skips over it,
      based on whether the names coincide or not.
      There is no theorem for @(tsee add-frame) because this situation
-     should never happen during the symbolic execution.
+     never happens during the symbolic execution.
      The third theorem serves for variables read in loops
      that are declared outside the scope of the loop,
-     i.e. that are represented as @(tsee write-var)s:
+     i.e. that are represented as @(tsee update-var)s:
      if the two variables are the same, the value is returned;
-     otherwise, we skip over the @(tsee write-var)
+     otherwise, we skip over the @(tsee update--var)
      in search for the variable.")
    (xdoc::p
-    "The theorems below about @(tsee write-var)
-     have some analogies to the ones for @(tsee create-var),
-     because @(tsee write-var) may also return an error.
-     The first theorem skips over @(tsee enter-scope),
-     but has the same kind of possibly inefficient hypothesis
-     discussed above for @(tsee create-var).
-     There is no rule for @(tsee add-frame) because that should not happen.
-     The second and third theorems are for @(tsee add-var),
-     when the variable names are the same or are different:
-     when they are the same, the value in the @(tsee add-var) is replaced;
-     when the names differ, we skip over the @(tsee add-var),
-     but again we have the potentially inefficient hypothesis discussed.
-     The fourth theorem overwrites a @(tsee write-var)
-     with a @(tsee write-var) for the same variable.
-     The fifth theorem is used to arrange a nest of @(tsee write-var)s
+    "The theorems below about @(tsee update-var)
+     push them into the states,
+     sometimes combining them into @(tsee add-var)s.
+     The first theorem pushes @(tsee update-var) into @(tsee enter-scope).
+     The second theorem combines @(tsee update-var) with @(tsee add-var)
+     if the variable is the same, otherwise it pushes @(tsee update-var) in.
+     There is no rule for @(tsee add-frame) because that does not happen.
+     The third theorem overwrites an @(tsee update-var)
+     with an @(tsee update-var) for the same variable.
+     The fourth theorem is used to arrange a nest of @(tsee update-var)s
      in alphabetical order of the variable names:
-     it swaps two @(tsee write-var)s when the outer one
+     it swaps two @(tsee update-var)s when the outer one
      has an larger variable than the inner one.
      Note that we need to disable loop stoppers for this rule,
      otherwise ACL2 may not apply it based on the written value terms,
@@ -369,15 +395,15 @@
      Note the @(tsee syntaxp) hypotheses
      that require the identifiers (i.e. variable names)
      to have the form described in @(see atc-identifier-rules).
-     Finally, the sixth theorem serves to simplify the case in which
+     Finally, the fifth theorem serves to simplify the case in which
      a variable is written with its current value;
      this case may occur when proving the base case of a loop.
      This theorem is phrased perhaps more generally than expected,
      with two different computation state variables,
-     instead of the simpler form in @('write-var-of-read-var-same-lemma'):
+     instead of the simpler form in @('update-var-of-read-var-same-lemma'):
      the reason is that sometimes during symbolic execution
      a pattern arises of the form
-     @('(write-var var (read-var var compst) <other-compst>)'),
+     @('(update-var var (read-var var compst) <other-compst>)'),
      where @('<other-compst>') is a term
      that is not just the @('compst') variable:
      the rule binds @('compst1') to that.")
@@ -385,661 +411,400 @@
     "The theorems below about @(tsee compustate-frames-number)
      serve to discharge the hypotheses about it being not 0
      in some of the other theorems below.
-     We simply consume @(tsee add-var),
-     and stop at @(tsee add-frame) or @(tsee enter-scope)
-     because those always return computation states with at least one frame
-     (this is obvious for @(tsee add-frame),
-     but it also happens to be the case for @(tsee enter-scope),
-     even though its addition of a frame takes place outside the guard).
-     For @(tsee write-var), i.e. for side-effected variables,
-     we need the hypothesis that @(tsee write-var) is not an error.")
+     These are all immediately discharged,
+     because the functions used to represent the symbolic execution states
+     satisfy that condition
+     (by design, for @(tsee add-var) and @(tsee update-var)).")
    (xdoc::p
     "The theorems below about @(tsee deref)
      applied to the heap component of the computation state
-     skip over all the added frames, scopes, and variables.
-     We also skip over the side-effected @(tsee write-var) variables.")
-   (xdoc::p
-    "The theorem about @(tsee errorp) applied to @(tsee write-var)
-     serves to discharge the hypotheses about that in some of the other rules.
-     During symbolic execution, there will be hypotheses saying that
-     reading the variable in question does not return an error:
-     so we have that hypothesis in the rule.
-     The rule reduces the fact that @(tsee write-var) is an error
-     to the non-equality of the types of the values,
-     which will always be equal during symbolic execution by construction."))
+     skip over all the functions that represent the computation states."))
 
-  )
+  ;; rules about PUSH-FRAME:
 
-;; auxiliary functions:
+  (defruled push-frame-of-one-empty-scope
+    (equal (push-frame (frame fun (list nil)) compst)
+           (add-frame fun compst))
+    :enable add-frame)
 
-(define create-var-okp ((var identp) (compst compustatep))
-  :guard (> (compustate-frames-number compst) 0)
-  :returns (yes/no booleanp)
-  (b* ((frame (top-frame compst))
-       (scopes (frame->scopes frame))
-       (scope (car scopes)))
-    (not (consp (omap::in (ident-fix var) scope))))
-  :hooks (:fix))
+  (defruled push-frame-of-one-nonempty-scope
+    (implies (and (identp var)
+                  (valuep val)
+                  (scopep scope))
+             (equal (push-frame (frame fun (list (omap::update var val scope)))
+                                compst)
+                    (add-var var
+                             val
+                             (push-frame (frame fun (list scope)) compst))))
+    :enable (push-frame
+             top-frame
+             pop-frame
+             add-var
+             compustate-frames-number))
 
-(define write-var-okp ((var identp) (type typep) (compst compustatep))
-  :guard (> (compustate-frames-number compst) 0)
-  :returns (yes/no booleanp)
-  (write-var-aux-okp var type (frame->scopes (top-frame compst)))
-  :hooks (:fix)
-  :prepwork
-  ((define write-var-aux-okp ((var identp) (type typep) (scopes scope-listp))
-     :returns (yes/no booleanp)
-     (b* (((when (endp scopes)) nil)
-          (scope (scope-fix (car scopes)))
-          (pair (omap::in (ident-fix var) scope))
-          ((when (consp pair))
-           (equal (type-of-value (cdr pair))
-                  (type-fix type))))
-       (write-var-aux-okp var type (cdr scopes)))
-     :hooks (:fix))))
+  ;; rules about POP-FRAME:
 
-;; rules about PUSH-FRAME:
+  (defruled pop-frame-of-add-frame
+    (implies (compustatep compst)
+             (equal (pop-frame (add-frame fun compst))
+                    compst))
+    :enable (pop-frame add-frame))
 
-(defruled push-frame-of-one-empty-scope
-  (equal (push-frame (frame fun (list nil)) compst)
-         (add-frame fun compst))
-  :enable add-frame)
+  (defruled pop-frame-of-enter-scope
+    (equal (pop-frame (enter-scope compst))
+           (pop-frame compst))
+    :enable (pop-frame
+             enter-scope
+             push-frame))
 
-(defruled push-frame-of-one-nonempty-scope
-  (implies (and (identp var)
-                (valuep val)
-                (scopep scope))
-           (equal (push-frame (frame fun (list (omap::update var val scope)))
-                              compst)
-                  (add-var var
-                           val
-                           (push-frame (frame fun (list scope)) compst))))
-  :enable (push-frame
-           top-frame
-           pop-frame
-           add-var
-           compustate-frames-number))
+  (defruled pop-frame-of-add-var
+    (equal (pop-frame (add-var var val compst))
+           (pop-frame compst))
+    :enable (pop-frame
+             add-var
+             push-frame))
 
-;; rules about POP-FRAME:
+  ;; rules about EXIT-SCOPE:
 
-(defruled pop-frame-of-add-frame
-  (implies (compustatep compst)
-           (equal (pop-frame (add-frame fun compst))
-                  compst))
-  :enable (pop-frame add-frame))
+  (defruled exit-scope-of-enter-scope
+    (implies (and (compustatep compst)
+                  (not (equal (compustate-frames-number compst) 0)))
+             (equal (exit-scope (enter-scope compst))
+                    compst))
+    :enable (enter-scope
+             exit-scope
+             push-frame
+             top-frame
+             pop-frame
+             compustate-frames-number))
 
-(defruled pop-frame-of-enter-scope
-  (equal (pop-frame (enter-scope compst))
-         (pop-frame compst))
-  :enable (pop-frame
-           enter-scope
-           push-frame))
+  (defruled exit-scope-of-add-var
+    (equal (exit-scope (add-var var val compst))
+           (exit-scope compst))
+    :enable (exit-scope add-var))
 
-(defruled pop-frame-of-add-var
-  (equal (pop-frame (add-var var val compst))
-         (pop-frame compst))
-  :enable (pop-frame
-           add-var
-           push-frame))
+  ;; function CREATE-VAR-OKP and rules about it:
 
-;; rules about EXIT-SCOPE:
+  (define create-var-okp ((var identp) (compst compustatep))
+    :guard (> (compustate-frames-number compst) 0)
+    :returns (yes/no booleanp)
+    (b* ((frame (top-frame compst))
+         (scopes (frame->scopes frame))
+         (scope (car scopes)))
+      (not (consp (omap::in (ident-fix var) scope))))
+    :hooks (:fix))
 
-(defruled exit-scope-of-enter-scope
-  (implies (and (compustatep compst)
-                (not (equal (compustate-frames-number compst) 0)))
-           (equal (exit-scope (enter-scope compst))
-                  compst))
-  :enable (enter-scope
-           exit-scope
-           push-frame
-           top-frame
-           pop-frame
-           compustate-frames-number))
+  (defruled create-var-okp-of-add-frame
+    (create-var-okp var (add-frame fun compst))
+    :enable (create-var-okp add-frame))
 
-(defruled exit-scope-of-add-var
-  (equal (exit-scope (add-var var val compst))
-         (exit-scope compst))
-  :enable (exit-scope add-var))
+  (defruled create-var-okp-of-enter-scope
+    (create-var-okp var (enter-scope compst))
+    :enable (create-var-okp enter-scope))
 
-;; rules about CREATE-VAR:
+  (defruled create-var-okp-of-add-var
+    (equal (create-var-okp var (add-var var2 val compst))
+           (and (not (equal (ident-fix var)
+                            (ident-fix var2)))
+                (create-var-okp var compst)))
+    :enable (create-var-okp add-var))
 
-(defruled create-var-to-add-var
-  (implies (create-var-okp var compst)
-           (equal (create-var var val compst)
-                  (add-var var val compst)))
-  :enable (create-var add-var create-var-okp))
+  ;; rules about CREATE-VAR:
 
-;; rules about CREATE-VAR-OKP:
+  (defruled create-var-to-add-var
+    (implies (create-var-okp var compst)
+             (equal (create-var var val compst)
+                    (add-var var val compst)))
+    :enable (create-var add-var create-var-okp))
 
-(defruled create-var-okp-of-add-frame
-  (create-var-okp var (add-frame fun compst))
-  :enable (create-var-okp add-frame))
+  ;; rules about WRITE-VAR-OKP:
 
-(defruled create-var-okp-of-enter-scope
-  (create-var-okp var (enter-scope compst))
-  :enable (create-var-okp enter-scope))
+  (define write-var-okp ((var identp) (type typep) (compst compustatep))
+    :guard (> (compustate-frames-number compst) 0)
+    :returns (yes/no booleanp)
+    (write-var-aux-okp var type (frame->scopes (top-frame compst)))
+    :hooks (:fix)
+    :prepwork
+    ((define write-var-aux-okp ((var identp) (type typep) (scopes scope-listp))
+       :returns (yes/no booleanp)
+       (b* (((when (endp scopes)) nil)
+            (scope (scope-fix (car scopes)))
+            (pair (omap::in (ident-fix var) scope))
+            ((when (consp pair))
+             (equal (type-of-value (cdr pair))
+                    (type-fix type))))
+         (write-var-aux-okp var type (cdr scopes)))
+       :hooks (:fix))))
 
-(defruled create-var-okp-of-add-var
-  (equal (create-var-okp var (add-var var2 val compst))
-         (and (not (equal (ident-fix var)
-                          (ident-fix var2)))
-              (create-var-okp var compst)))
-  :enable (create-var-okp add-var))
+  (defruled write-var-okp-of-enter-scope
+    (equal (write-var-okp var type (enter-scope compst))
+           (write-var-okp var type compst))
+    :enable (write-var-okp
+             write-var-aux-okp
+             enter-scope))
 
-;; rules about WRITE-VAR:
+  (defruled write-var-okp-of-add-var
+    (implies (typep type)
+             (equal (write-var-okp var type (add-var var2 val2 compst))
+                    (if (equal (ident-fix var)
+                               (ident-fix var2))
+                        (equal (type-of-value val2)
+                               type)
+                      (write-var-okp var type compst))))
+    :enable (write-var-okp
+             write-var-aux-okp
+             add-var))
 
-(defruled write-var-to-update-var
-  (implies (and (not (equal (compustate-frames-number compst) 0))
-                (write-var-okp var (type-of-value val) compst))
-           (equal (write-var var val compst)
-                  (update-var var val compst)))
-  :enable (write-var-okp
-           write-var
-           update-var
-           errorp)
-  :prep-lemmas
-  ((defrule lemma
-     (implies (write-var-aux-okp var (type-of-value val) scopes)
-              (equal (write-var-aux var val scopes)
-                     (update-var-aux var val scopes)))
-     :enable (write-var-aux-okp
-              write-var-aux
-              update-var-aux
-              errorp))))
+  (defruled write-var-okp-of-update-var
+    (implies (typep type)
+             (equal (write-var-okp var type (update-var var2 val2 compst))
+                    (if (equal (ident-fix var)
+                               (ident-fix var2))
+                        (equal (type-of-value val2)
+                               type)
+                      (write-var-okp var type compst))))
+    :enable (write-var-okp
+             update-var)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (and (typep type)
+                     (consp scopes))
+                (equal (write-var-aux-okp var
+                                          type
+                                          (update-var-aux var2
+                                                          val2
+                                                          scopes))
+                       (if (equal (ident-fix var)
+                                  (ident-fix var2))
+                           (equal (type-of-value val2)
+                                  type)
+                         (write-var-aux-okp var type scopes))))
+       :enable (write-var-aux-okp
+                update-var-aux))))
 
-;; rules about WRITE-VAR-OKP:
+  (defruled write-var-okp-when-valuep-of-read-var
+    (implies (and (syntaxp (symbolp compst))
+                  (equal val (read-var var compst))
+                  (valuep val)
+                  (typep type))
+             (equal (write-var-okp var type compst)
+                    (equal (type-of-value val)
+                           type)))
+    :enable (write-var-okp
+             read-var)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (and (equal val (read-var-aux var scopes))
+                     (valuep val)
+                     (typep type))
+                (equal (write-var-aux-okp var type scopes)
+                       (equal (type-of-value val)
+                              type)))
+       :enable (write-var-aux-okp
+                read-var-aux))))
 
-;; (defruled write-var-okp-of-add-frame
-;;   (not (write-var-okp var val (add-frame fun compst)))
-;;   :enable (write-var-okp
-;;            write-var-aux-okp
-;;            add-frame))
+  ;; rules about WRITE-VAR:
 
-(defruled write-var-okp-of-enter-scope
-  (equal (write-var-okp var type (enter-scope compst))
-         (write-var-okp var type compst))
-  :enable (write-var-okp
-           write-var-aux-okp
-           enter-scope))
+  (defruled write-var-to-update-var
+    (implies (and (not (equal (compustate-frames-number compst) 0))
+                  (write-var-okp var (type-of-value val) compst))
+             (equal (write-var var val compst)
+                    (update-var var val compst)))
+    :enable (write-var-okp
+             write-var
+             update-var
+             errorp)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (write-var-aux-okp var (type-of-value val) scopes)
+                (equal (write-var-aux var val scopes)
+                       (update-var-aux var val scopes)))
+       :enable (write-var-aux-okp
+                write-var-aux
+                update-var-aux
+                errorp))))
 
-(defruled write-var-okp-of-add-var
-  (implies (typep type)
-           (equal (write-var-okp var type (add-var var2 val2 compst))
-                  (if (equal (ident-fix var)
-                             (ident-fix var2))
-                      (equal (type-of-value val2)
-                             type)
-                    (write-var-okp var type compst))))
-  :enable (write-var-okp
-           write-var-aux-okp
-           add-var))
+  ;; rules about READ-VAR:
 
-(defruled write-var-okp-of-update-var
-  (implies (typep type)
-           (equal (write-var-okp var type (update-var var2 val2 compst))
-                  (if (equal (ident-fix var)
-                             (ident-fix var2))
-                      (equal (type-of-value val2)
-                             type)
-                    (write-var-okp var type compst))))
-  :enable (write-var-okp
-           update-var)
-  :prep-lemmas
-  ((defrule lemma
-     (implies (and (typep type)
-                   (consp scopes))
-              (equal (write-var-aux-okp var type (update-var-aux var2 val2 scopes))
-                     (if (equal (ident-fix var)
-                                (ident-fix var2))
-                         (equal (type-of-value val2)
-                                type)
-                       (write-var-aux-okp var type scopes))))
-     :enable (write-var-aux-okp
-              update-var-aux))))
+  (defruled read-var-of-enter-scope
+    (implies (not (equal (compustate-frames-number compst) 0))
+             (equal (read-var var (enter-scope compst))
+                    (read-var var compst)))
+    :enable (read-var
+             read-var-aux
+             enter-scope))
 
-; last resort
-(defruled write-var-okp-when-valuep-of-read-var
-  (implies (and (syntaxp (symbolp compst))
-                (equal val (read-var var compst))
-                (valuep val)
-                (typep type))
-           (equal (write-var-okp var type compst)
-                  (equal (type-of-value val)
-                         type)))
-  :enable (write-var-okp
-           read-var)
-  :prep-lemmas
-  ((defrule lemma
-     (implies (and (equal val (read-var-aux var scopes))
-                   (valuep val)
-                   (typep type))
-              (equal (write-var-aux-okp var type scopes)
-                     (equal (type-of-value val)
-                            type)))
-     :enable (write-var-aux-okp
-              read-var-aux))))
+  (defruled read-var-of-add-var
+    (implies (not (equal (compustate-frames-number compst) 0))
+             (equal (read-var var (add-var var2 val compst))
+                    (if (equal (ident-fix var)
+                               (ident-fix var2))
+                        (value-fix val)
+                      (read-var var compst))))
+    :enable (read-var
+             read-var-aux
+             add-var
+             compustate-frames-number
+             push-frame
+             top-frame))
 
-;; rules about READ-VAR:
+  (defruled read-var-of-update-var
+    (implies (not (equal (compustate-frames-number compst) 0))
+             (equal (read-var var (update-var var2 val2 compst))
+                    (if (equal (ident-fix var)
+                               (ident-fix var2))
+                        (value-fix val2)
+                      (read-var var compst))))
+    :enable (read-var
+             update-var)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (consp scopes)
+                (equal (read-var-aux var (update-var-aux var2 val2 scopes))
+                       (if (equal (ident-fix var)
+                                  (ident-fix var2))
+                           (value-fix val2)
+                         (read-var-aux var scopes))))
+       :enable (read-var-aux
+                update-var-aux))))
 
-(defruled read-var-of-enter-scope
-  (implies (not (equal (compustate-frames-number compst) 0))
-           (equal (read-var var (enter-scope compst))
-                  (read-var var compst)))
-  :enable (read-var
-           read-var-aux
-           enter-scope))
+  ;; rules about UPDATE-VAR:
 
-(defruled read-var-of-add-var
-  (implies (not (equal (compustate-frames-number compst) 0))
-           (equal (read-var var (add-var var2 val compst))
-                  (if (equal (ident-fix var)
-                             (ident-fix var2))
-                      (value-fix val)
-                    (read-var var compst))))
-  :enable (read-var
-           read-var-aux
-           add-var
-           compustate-frames-number
-           push-frame
-           top-frame))
+  (defruled update-var-of-enter-scope
+    (equal (update-var var val (enter-scope compst))
+           (enter-scope (update-var var val compst)))
+    :enable (update-var
+             update-var-aux
+             enter-scope))
 
-(defruled read-var-of-update-var
-  (implies (not (equal (compustate-frames-number compst) 0))
-           (equal (read-var var (update-var var2 val2 compst))
-                  (if (equal (ident-fix var)
-                             (ident-fix var2))
-                      (value-fix val2)
-                    (read-var var compst))))
-  :enable (read-var
-           update-var)
-  :prep-lemmas
-  ((defrule lemma
-     (implies (consp scopes)
-              (equal (read-var-aux var (update-var-aux var2 val2 scopes))
-                     (if (equal (ident-fix var)
-                                (ident-fix var2))
-                         (value-fix val2)
-                       (read-var-aux var scopes))))
-     :enable (read-var-aux
-              update-var-aux))))
+  (defruled update-var-of-add-var
+    (equal (update-var var val (add-var var2 val2 compst))
+           (if (equal (ident-fix var)
+                      (ident-fix var2))
+               (add-var var2 val compst)
+             (add-var var2 val2 (update-var var val compst))))
+    :enable (update-var
+             update-var-aux
+             add-var))
 
-;; (defruled read-var-of-write-var
-;;   (implies (not (errorp (write-var var2 val compst)))
-;;            (equal (read-var var (write-var var2 val compst))
-;;                   (if (equal (ident-fix var)
-;;                              (ident-fix var2))
-;;                       (value-fix val)
-;;                     (read-var var compst))))
-;;   :enable (read-var
-;;            write-var
-;;            push-frame
-;;            top-frame
-;;            compustate-frames-number
-;;            read-var-aux-of-write-var-aux)
-;;   :prep-lemmas
-;;   ((defruled read-var-aux-of-write-var-aux
-;;      (implies (not (errorp (write-var-aux var2 val scopes)))
-;;               (equal (read-var-aux var (write-var-aux var2 val scopes))
-;;                      (if (equal (ident-fix var)
-;;                                 (ident-fix var2))
-;;                          (value-fix val)
-;;                        (read-var-aux var scopes))))
-;;      :enable (read-var-aux
-;;               write-var-aux)
-;;      :disable omap::in-when-in-tail)))
+  (defruled update-var-of-update-var-same
+    (equal (update-var var val (update-var var val2 compst))
+           (update-var var val compst))
+    :enable (update-var
+             update-var-aux)
+    :prep-lemmas
+    ((defrule lemma
+       (equal (update-var-aux var val (update-var-aux var val2 scopes))
+              (update-var-aux var val scopes))
+       :enable update-var-aux)))
 
-;; rules about UPDATE-VAR:
+  (defruled update-var-of-update-var-less
+    (implies (and (syntaxp (and (consp var2)
+                                (eq (car var2) 'ident)
+                                (quotep (cadr var2))))
+                  (syntaxp (and (consp var)
+                                (eq (car var) 'ident)
+                                (quotep (cadr var))))
+                  (<< (ident-fix var2)
+                      (ident-fix var))
+                  (not (equal (compustate-frames-number compst) 0)))
+             (equal (update-var var val (update-var var2 val2 compst))
+                    (update-var var2 val2 (update-var var val compst))))
+    :rule-classes ((:rewrite :loop-stopper nil))
+    :enable (update-var
+             <<)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (not (equal (ident-fix var)
+                            (ident-fix var2)))
+                (equal (update-var-aux var val (update-var-aux var2 val2 scopes))
+                       (update-var-aux var2 val2 (update-var-aux var val scopes))))
+       :enable update-var-aux)))
 
-(defruled update-var-of-enter-scope
-  (equal (update-var var val (enter-scope compst))
-         (enter-scope (update-var var val compst)))
-  :enable (update-var
-           update-var-aux
-           enter-scope))
+  (defruled update-var-of-read-var-same
+    (implies (and (compustatep compst1)
+                  (valuep (read-var var compst))
+                  (equal (read-var var compst)
+                         (read-var var compst1)))
+             (equal (update-var var (read-var var compst) compst1)
+                    compst1))
+    :use (:instance update-var-of-read-var-same-lemma (compst compst1))
+    :prep-lemmas
+    ((defruled update-var-aux-of-read-var-aux-same
+       (implies (valuep (read-var-aux var scopes))
+                (equal (update-var-aux var (read-var-aux var scopes) scopes)
+                       (scope-list-fix scopes)))
+       :enable (read-var-aux
+                update-var-aux
+                omap::update-of-cdr-of-in-when-in)
+       :prep-lemmas
+       ((defruled omap::update-of-cdr-of-in-when-in
+          (implies (consp (omap::in k m))
+                   (equal (omap::update k (cdr (omap::in k m)) m)
+                          m))
+          :induct (omap::in k m)
+          :enable omap::in)))
+     (defruled update-var-of-read-var-same-lemma
+       (implies (and (compustatep compst)
+                     (valuep (read-var var compst)))
+                (equal (update-var var (read-var var compst) compst)
+                       compst))
+       :enable (read-var
+                update-var
+                update-var-aux-of-read-var-aux-same
+                top-frame
+                push-frame
+                pop-frame
+                compustate-frames-number))))
 
-(defruled update-var-of-add-var
-  (equal (update-var var val (add-var var2 val2 compst))
-         (if (equal (ident-fix var)
-                    (ident-fix var2))
-             (add-var var2 val compst)
-           (add-var var2 val2 (update-var var val compst))))
-  :enable (update-var
-           update-var-aux
-           add-var))
+  ;; rules about COMPUSTATE-FRAMES-NUMBER:
 
-(defruled update-var-of-update-var-same
-  (equal (update-var var val (update-var var val2 compst))
-         (update-var var val compst))
-  :enable (update-var
-           update-var-aux)
-  :prep-lemmas
-  ((defrule lemma
-     (equal (update-var-aux var val (update-var-aux var val2 scopes))
-            (update-var-aux var val scopes))
-     :enable update-var-aux)))
+  (defruled compustate-frames-number-of-add-frame-not-zero
+    (not (equal (compustate-frames-number (add-frame fun compst)) 0))
+    :enable add-frame)
 
-(defruled update-var-of-update-var-less
-  (implies (and (syntaxp (and (consp var2)
-                              (eq (car var2) 'ident)
-                              (quotep (cadr var2))))
-                (syntaxp (and (consp var)
-                              (eq (car var) 'ident)
-                              (quotep (cadr var))))
-                (<< (ident-fix var2)
-                    (ident-fix var))
-                (not (equal (compustate-frames-number compst) 0)))
-           (equal (update-var var val (update-var var2 val2 compst))
-                  (update-var var2 val2 (update-var var val compst))))
-  :rule-classes ((:rewrite :loop-stopper nil))
-  :enable (update-var
-           <<)
-  :prep-lemmas
-  ((defrule lemma
-     (implies (not (equal (ident-fix var)
-                          (ident-fix var2)))
-              (equal (update-var-aux var val (update-var-aux var2 val2 scopes))
-                     (update-var-aux var2 val2 (update-var-aux var val scopes))))
-     :enable update-var-aux)))
+  (defruled compustate-frames-number-of-enter-scope-not-zero
+    (not (equal (compustate-frames-number (enter-scope compst)) 0))
+    :enable enter-scope)
 
-(defruled update-var-of-read-var-same
-  (implies (and (compustatep compst1)
-                (valuep (read-var var compst))
-                (equal (read-var var compst)
-                       (read-var var compst1)))
-           (equal (update-var var (read-var var compst) compst1)
-                  compst1))
-  :use (:instance update-var-of-read-var-same-lemma (compst compst1))
-  :prep-lemmas
-  ((defruled update-var-aux-of-read-var-aux-same
-     (implies (valuep (read-var-aux var scopes))
-              (equal (update-var-aux var (read-var-aux var scopes) scopes)
-                     (scope-list-fix scopes)))
-     :enable (read-var-aux
-              update-var-aux
-              omap::update-of-cdr-of-in-when-in)
-     :prep-lemmas
-     ((defruled omap::update-of-cdr-of-in-when-in
-        (implies (consp (omap::in k m))
-                 (equal (omap::update k (cdr (omap::in k m)) m)
-                        m))
-        :induct (omap::in k m)
-        :enable omap::in)))
-   (defruled update-var-of-read-var-same-lemma
-     (implies (and (compustatep compst)
-                   (valuep (read-var var compst)))
-              (equal (update-var var (read-var var compst) compst)
-                     compst))
-     :enable (read-var
-              update-var
-              update-var-aux-of-read-var-aux-same
-              top-frame
-              push-frame
-              pop-frame
-              compustate-frames-number))))
+  (defruled compustate-frames-number-of-add-var-not-zero
+    (not (equal (compustate-frames-number (add-var var val compst)) 0))
+    :enable add-var)
 
-;; rules about COMPUSTATE-FRAMES-NUMBER:
+  (defruled compustate-frames-number-of-update-var-not-zero
+    (not (equal (compustate-frames-number (update-var var val compst)) 0))
+    :enable update-var)
 
-(defruled compustate-frames-number-of-add-frame-not-zero
-  (not (equal (compustate-frames-number (add-frame fun compst)) 0))
-  :enable add-frame)
+  ;; rules about DEREF:
 
-(defruled compustate-frames-number-of-enter-scope-not-zero
-  (not (equal (compustate-frames-number (enter-scope compst)) 0))
-  :enable enter-scope)
+  (defruled deref-of-add-frame
+    (equal (deref ptr (add-frame fun compst))
+           (deref ptr compst))
+    :enable (add-frame push-frame deref))
 
-(defruled compustate-frames-number-of-add-var-not-zero
-  (not (equal (compustate-frames-number (add-var var val compst)) 0))
-  :enable add-var)
+  (defruled deref-of-enter-scope
+    (equal (deref ptr (enter-scope compst))
+           (deref ptr compst))
+    :enable (enter-scope
+             push-frame
+             pop-frame
+             deref))
 
-(defruled compustate-frames-number-of-update-var-not-zero
-  (not (equal (compustate-frames-number (update-var var val compst)) 0))
-  :enable update-var)
+  (defruled deref-of-add-var
+    (equal (deref ptr (add-var var val compst))
+           (deref ptr compst))
+    :enable (add-var
+             push-frame
+             pop-frame
+             deref))
 
-;; (defruled compustate-frames-number-of-write-var-when-not-errorp
-;;   (implies (not (errorp (write-var var val compst)))
-;;            (equal (compustate-frames-number (write-var var val compst))
-;;                   (compustate-frames-number compst)))
-;;   :enable (compustate-frames-number
-;;            write-var
-;;            push-frame
-;;            pop-frame))
-
-;; rules about DEREF:
-
-(defruled deref-of-add-frame
-  (equal (deref ptr (add-frame fun compst))
-         (deref ptr compst))
-  :enable (add-frame push-frame deref))
-
-(defruled deref-of-enter-scope
-  (equal (deref ptr (enter-scope compst))
-         (deref ptr compst))
-  :enable (enter-scope
-           push-frame
-           pop-frame
-           deref))
-
-(defruled deref-of-add-var
-  (equal (deref ptr (add-var var val compst))
-         (deref ptr compst))
-  :enable (add-var
-           push-frame
-           pop-frame
-           deref))
-
-(defruled deref-of-update-var
-  (equal (deref ptr (update-var var val compst))
-         (deref ptr compst))
-  :enable (update-var
-           push-frame
-           pop-frame
-           deref))
-
-;; (defruled deref-of-write-var
-;;   (implies (not (errorp (write-var var val compst)))
-;;            (equal (deref ptr (write-var var val compst))
-;;                   (deref ptr compst)))
-;;   :enable (write-var
-;;            push-frame
-;;            pop-frame
-;;            deref))
-
-;; rules about WRITE-VAR:
-
-;; (defruled write-var-of-enter-scope
-;;   (implies (and (not (equal (compustate-frames-number compst) 0))
-;;                 (equal compst1 (write-var var val compst))
-;;                 (not (errorp compst1)))
-;;            (equal (write-var var val (enter-scope compst))
-;;                   (enter-scope compst1)))
-;;   :enable (write-var
-;;            write-var-aux
-;;            enter-scope
-;;            push-frame
-;;            pop-frame
-;;            top-frame
-;;            compustate-frames-number
-;;            errorp))
-
-;; (defruled write-var-of-add-var-same
-;;   (implies (and (not (equal (compustate-frames-number compst) 0))
-;;                 (equal (ident-fix var)
-;;                        (ident-fix var2))
-;;                 (equal (type-of-value val)
-;;                        (type-of-value val2)))
-;;            (equal (write-var var val (add-var var2 val2 compst))
-;;                   (add-var var val compst)))
-;;   :enable (write-var
-;;            write-var-aux
-;;            add-var
-;;            push-frame
-;;            top-frame
-;;            pop-frame
-;;            compustate-frames-number
-;;            errorp))
-
-;; (defruled write-var-of-add-var-diff
-;;   (implies (and (not (equal (ident-fix var)
-;;                             (ident-fix var2)))
-;;                 (equal compst1 (write-var var val compst))
-;;                 (not (errorp compst1)))
-;;            (equal (write-var var val (add-var var2 val2 compst))
-;;                   (add-var var2 val2 compst1)))
-;;   :enable (write-var
-;;            write-var-aux
-;;            add-var
-;;            push-frame
-;;            top-frame
-;;            pop-frame
-;;            compustate-frames-number
-;;            errorp
-;;            error))
-
-;; (defruled write-var-of-write-var-same
-;;   (implies (not (errorp (write-var var val2 compst)))
-;;            (equal (write-var var val (write-var var val2 compst))
-;;                   (write-var var val compst)))
-;;   :enable (write-var
-;;            write-var-aux-of-write-var-aux-same
-;;            push-frame
-;;            pop-frame
-;;            top-frame
-;;            compustate-frames-number)
-;;   :prep-lemmas
-;;   ((defruled write-var-aux-of-write-var-aux-same
-;;      (implies (not (errorp (write-var-aux var val2 scopes)))
-;;               (equal (write-var-aux var val (write-var-aux var val2 scopes))
-;;                      (write-var-aux var val scopes)))
-;;      :enable write-var-aux)))
-
-;; (defruled write-var-of-write-var-less
-;;   (implies (and (syntaxp (and (consp var2)
-;;                               (eq (car var2) 'ident)
-;;                               (quotep (cadr var2))))
-;;                 (syntaxp (and (consp var)
-;;                               (eq (car var) 'ident)
-;;                               (quotep (cadr var))))
-;;                 (<< (ident-fix var2)
-;;                     (ident-fix var))
-;;                 (not (equal (compustate-frames-number compst) 0))
-;;                 (equal compst1 (write-var var val compst))
-;;                 (not (errorp compst1))
-;;                 (not (errorp (write-var var2 val2 compst))))
-;;            (equal (write-var var val (write-var var2 val2 compst))
-;;                   (write-var var2 val2 compst1)))
-;;   :enable (write-var
-;;            push-frame
-;;            pop-frame
-;;            top-frame
-;;            compustate-frames-number)
-;;   :use (:instance write-var-aux-of-write-var-aux-less
-;;         (scopes (frame->scopes (top-frame compst))))
-;;   :rule-classes ((:rewrite :loop-stopper nil))
-;;   :prep-lemmas
-;;   ((defruled write-var-aux-of-write-var-aux-less
-;;      (implies (and (not (errorp (write-var-aux var val scopes)))
-;;                    (not (errorp (write-var-aux var2 val2 scopes)))
-;;                    (<< (ident-fix var2)
-;;                        (ident-fix var)))
-;;               (equal (write-var-aux var
-;;                                     val
-;;                                     (write-var-aux var2
-;;                                                    val2
-;;                                                    scopes))
-;;                      (write-var-aux var2
-;;                                     val2
-;;                                     (write-var-aux var
-;;                                                    val
-;;                                                    scopes))))
-;;      :use (:instance lemma (a (ident-fix var2)) (b (ident-fix var)))
-;;      :prep-lemmas
-;;      ((defrule write-var-aux-of-write-var-aux-diff
-;;         (implies (and (not (errorp (write-var-aux var val scopes)))
-;;                       (not (errorp (write-var-aux var2 val2 scopes)))
-;;                       (not (equal (ident-fix var2)
-;;                                   (ident-fix var))))
-;;                  (equal (write-var-aux var
-;;                                        val
-;;                                        (write-var-aux var2
-;;                                                       val2
-;;                                                       scopes))
-;;                         (write-var-aux var2
-;;                                        val2
-;;                                        (write-var-aux var
-;;                                                       val
-;;                                                       scopes))))
-;;         :enable (write-var-aux
-;;                  scope-listp-when-scope-list-resultp-and-not-errorp))
-;;       (defruled lemma
-;;         (implies (<< a b)
-;;                  (not (equal a b))))))))
-
-;; (defruled write-var-of-read-var-same
-;;   (implies (and (compustatep compst1)
-;;                 (not (errorp (read-var var compst)))
-;;                 (equal (read-var var compst)
-;;                        (read-var var compst1)))
-;;            (equal (write-var var (read-var var compst) compst1)
-;;                   compst1))
-;;   :use (:instance write-var-of-read-var-same-lemma (compst compst1))
-;;   :prep-lemmas
-;;   ((defrule not-errorp-when-scope-listp
-;;      (implies (scope-listp x)
-;;               (not (errorp x)))
-;;      :enable errorp)
-;;    (defruled write-var-aux-of-read-var-aux-same
-;;      (implies (not (errorp (read-var-aux var scopes)))
-;;               (equal (write-var-aux var (read-var-aux var scopes) scopes)
-;;                      (scope-list-fix scopes)))
-;;      :enable (read-var-aux
-;;               write-var-aux
-;;               omap::update-of-cdr-of-in-when-in)
-;;      :prep-lemmas
-;;      ((defruled omap::update-of-cdr-of-in-when-in
-;;         (implies (consp (omap::in k m))
-;;                  (equal (omap::update k (cdr (omap::in k m)) m)
-;;                         m))
-;;         :induct (omap::in k m)
-;;         :enable omap::in)))
-;;    (defrule write-var-of-read-var-same-lemma
-;;      (implies (and (compustatep compst)
-;;                    (not (errorp (read-var var compst))))
-;;               (equal (write-var var (read-var var compst) compst)
-;;                      compst))
-;;      :enable (read-var
-;;               write-var
-;;               write-var-aux-of-read-var-aux-same
-;;               top-frame
-;;               push-frame
-;;               pop-frame
-;;               compustate-frames-number))))
-
-;; rules about WRITE-VAR being an error:
-
-;; (defruled errorp-of-write-var-when-not-errorp-of-read-var
-;;   (implies (and (equal val0 (read-var var compst))
-;;                 (not (errorp val0)))
-;;            (equal (errorp (write-var var val compst))
-;;                   (not (equal (type-of-value val)
-;;                               (type-of-value val0)))))
-;;   :enable (read-var
-;;            write-var
-;;            errorp-of-write-var-aux-when-not-errorp-of-read-var-aux)
-;;   :prep-lemmas
-;;   ((defruled errorp-of-write-var-aux-when-not-errorp-of-read-var-aux
-;;      (implies (and (equal val0 (read-var-aux var scopes))
-;;                    (not (errorp val0)))
-;;               (equal (errorp (write-var-aux var val scopes))
-;;                      (not (equal (type-of-value val)
-;;                                  (type-of-value val0)))))
-;;      :enable (read-var-aux
-;;               write-var-aux
-;;               scope-listp-when-scope-list-resultp-and-not-errorp)
-;;      :prep-lemmas
-;;      ((defrule lemma
-;;         (implies (scope-listp x)
-;;                  (not (errorp x)))
-;;         :enable errorp))))))
+  (defruled deref-of-update-var
+    (equal (deref ptr (update-var var val compst))
+           (deref ptr compst))
+    :enable (update-var
+             push-frame
+             pop-frame
+             deref)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
