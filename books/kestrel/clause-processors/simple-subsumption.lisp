@@ -19,6 +19,7 @@
 ;; same order, but may have additional disjuncts).  (The extra disjuncts may
 ;; often mention the flag variable in a defthm-flag proof.)
 
+(include-book "handle-constant-literals")
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/evaluators/equality-eval" :dir :system)
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
@@ -286,45 +287,6 @@
   (implies (pseudo-term-listp clause)
            (pseudo-term-listp (resolve-ifs-in-clause clause true-terms)))
   :hints (("Goal" :in-theory (enable resolve-ifs-in-clause))))
-
-;; Returns a new, equivalent clause.
-(defun handle-constant-literals (clause)
-  (declare (xargs :guard (pseudo-term-listp clause)))
-  (if (endp clause)
-      nil
-    (let ((lit (first clause)))
-      (if (quotep lit)
-          (if (unquote lit)
-              (list *t*) ; a non-nil constant literal proves the clause
-            ;; drop this, lit, which must be *nil*:
-            (handle-constant-literals (rest clause)))
-        (let ((rest-res (handle-constant-literals (rest clause))))
-          (if (equal '('t) rest-res)
-              rest-res
-            (cons lit rest-res)))))))
-
-(defthm equality-eval-of-disjoin-of-handle-constant-literals
-  (iff (equality-eval (disjoin (handle-constant-literals clause)) a)
-       (equality-eval (disjoin clause) a))
-  :hints (("Goal" :in-theory (enable disjoin))))
-
-(defthm pseudo-term-listp-of-handle-constant-literals
-  (implies (pseudo-term-listp clause)
-           (pseudo-term-listp (handle-constant-literals clause)))
-  :hints (("Goal" :in-theory (enable handle-constant-literals))))
-
-;move
-(defund clause-to-clause-list (clause)
-  (declare (xargs :guard (pseudo-term-listp clause)))
-  (if (equal clause '('t))
-      nil ; no more clauses to prove
-    (list (resolve-ifs-in-clause clause nil))))
-
-;move
-(defthm equality-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
-  (iff (equality-eval (conjoin (disjoin-lst (clause-to-clause-list clause))) a)
-       (equality-eval (disjoin clause) a))
-  :hints (("Goal" :in-theory (enable clause-to-clause-list))))
 
 (defund simple-subsumption-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
