@@ -557,6 +557,7 @@
   :prepwork
   ((define read-var-aux ((var identp) (scopes scope-listp))
      :returns (result value-resultp)
+     :parents nil
      (b* (((when (endp scopes))
            (error (list :read-var-not-found (ident-fix var))))
           (scope (car scopes))
@@ -597,6 +598,7 @@
                         :in-theory
                         (enable
                          scope-listp-when-scope-list-resultp-and-not-errorp))))
+     :parents nil
      (b* (((when (endp scopes))
            (error (list :write-var-not-found (ident-fix var))))
           (scope (scope-fix (car scopes)))
