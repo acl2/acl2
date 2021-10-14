@@ -21,7 +21,7 @@
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
-(include-book "kestrel/utilities/conjuncts-and-disjuncts" :dir :system) ; for negate-terms
+(include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/bv/bvif" :dir :system) ; since the prover knows about BVIF
 (include-book "kestrel/bv/bool-to-bit" :dir :system) ; since the prover knows about BOOL-TO-BIT
 (include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system)
