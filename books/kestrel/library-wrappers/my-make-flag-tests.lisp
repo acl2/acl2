@@ -40,5 +40,5 @@
               (occur-cnt-bounded-lst occur-cnt-bounded-lst$not-normalized))))
 
 (deftest
-  ;; slow (> 40 seconds):
+  ;; without the clause-processor, this took > 40 seconds:
   (my-make-flag tamep))
