@@ -45,6 +45,24 @@
                   *nil*))
   :hints (("Goal" :in-theory (enable disjoin))))
 
+;; just changes the evaluator
+(defthm equality-eval-of-disjoin-of-handle-constant-literals
+  (iff (equality-eval (disjoin (handle-constant-literals clause)) a)
+       (equality-eval (disjoin clause) a))
+  :hints (("Goal" :use (:functional-instance if-eval-of-disjoin-of-handle-constant-literals
+                                             (if-eval equality-eval)
+                                             (if-eval-list equality-eval-list)))))
+
+;; just changes the evaluator
+(defthm equality-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
+  (iff (equality-eval (conjoin (disjoin-lst (clause-to-clause-list clause))) a)
+       (equality-eval (disjoin clause) a))
+  :hints (("Goal" :use (:functional-instance if-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
+                                             (if-eval equality-eval)
+                                             (if-eval-list equality-eval-list))
+           :in-theory (enable EQUALITY-EVAL-OF-FNCALL-ARGS))))
+
+
 ;todo: use more
 (defund term-is-disjunctionp (term)
   (declare (xargs :guard (pseudo-termp term)))

@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/evaluators/equality-eval" :dir :system)
+(include-book "kestrel/evaluators/if-eval" :dir :system)
 
 ;move
 (defund clause-to-clause-list (clause)
@@ -20,9 +21,9 @@
     (list clause)))
 
 ;move
-(defthm equality-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
-  (iff (equality-eval (conjoin (disjoin-lst (clause-to-clause-list clause))) a)
-       (equality-eval (disjoin clause) a))
+(defthm if-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
+  (iff (if-eval (conjoin (disjoin-lst (clause-to-clause-list clause))) a)
+       (if-eval (disjoin clause) a))
   :hints (("Goal" :in-theory (enable clause-to-clause-list))))
 
 ;; Returns a new, equivalent clause.
@@ -41,9 +42,9 @@
               rest-res
             (cons lit rest-res)))))))
 
-(defthm equality-eval-of-disjoin-of-handle-constant-literals
-  (iff (equality-eval (disjoin (handle-constant-literals clause)) a)
-       (equality-eval (disjoin clause) a))
+(defthm if-eval-of-disjoin-of-handle-constant-literals
+  (iff (if-eval (disjoin (handle-constant-literals clause)) a)
+       (if-eval (disjoin clause) a))
   :hints (("Goal" :in-theory (enable disjoin))))
 
 (defthm pseudo-term-listp-of-handle-constant-literals
@@ -58,7 +59,7 @@
 
 ;todo: add :well-formedness proof
 (defthm handle-constant-literals-clause-processor-correct
-  (implies (equality-eval (conjoin-clauses (handle-constant-literals-clause-processor clause)) a)
-           (equality-eval (disjoin clause) a))
+  (implies (if-eval (conjoin-clauses (handle-constant-literals-clause-processor clause)) a)
+           (if-eval (disjoin clause) a))
   :rule-classes :clause-processor
   :hints (("Goal" :in-theory (enable handle-constant-literals-clause-processor))))
