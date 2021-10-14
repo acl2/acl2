@@ -41,4 +41,10 @@
 
 (deftest
   ;; without the clause-processor, this took > 40 seconds:
+  ;; The clause-processor doesn't prove the whole measure conjecture, because
+  ;; ACL2's simplification makes it harder to prove.
   (my-make-flag tamep))
+
+(deftest
+  ;; In this call, the clause-processor finishes the whole proof of the measure conjecture:
+  (my-make-flag pseudo-termp))
