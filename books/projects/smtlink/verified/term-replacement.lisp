@@ -447,10 +447,7 @@
                     (ev-smtcp-lst (typed-term-list->term-lst tterm-lst) a)))
     :flag replace-term-list
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (e/d (typed-term-list->path-cond
-                                    typed-term-list->term-lst
-                                    typed-term-list->judgements)
-                                   ())
+                 '(:in-theory (e/d () ())
                    :expand
                    ((replace-term-list tterm-lst replace-options type-options
                                        clock state)
@@ -787,10 +784,14 @@
            (ev-smtcp (disjoin cl) a))
   :hints (("Goal"
            :do-not-induct t
+           :case-split-limitations (0 1)
            :in-theory (e/d (term-replacement-cp
                             term-replacement-fn
                             correct-typed-term)
-                           ())
+                           (ev-smtcp-of-if-call
+                            correctness-of-path-test-list-corollary
+                            symbol-listp
+                            correctness-of-path-test-list))
            :use ((:instance correctness-of-replace-term
                             (tterm (typed-term (caddr (disjoin cl))
                                                ''t
