@@ -299,66 +299,58 @@
 
 (verify-guards replace-term)
 
-(skip-proofs
 (defthm-replace-term-flag
   (defthm replace-if-maintains-path-cond
     (implies (and (replace-options-p replace-options)
                   (type-options-p type-options)
                   (equal (typed-term->kind tterm) 'ifp)
-                  (good-typed-term-p tterm))
+                  (good-typed-term-p tterm)
+                  (natp clock))
              (equal (typed-term->path-cond
                      (replace-if tterm replace-options type-options clock state))
                     (typed-term->path-cond tterm)))
     :flag replace-if
     :hints ((and stable-under-simplificationp
                  '(:in-theory (e/d ()
-                                   (pseudo-termp
-                                    symbol-listp
-                                    acl2::symbol-listp-when-not-consp
-                                    consp-of-is-conjunct?
-                                    acl2::pseudo-termp-cadr-from-pseudo-term-listp
-                                    acl2::symbolp-of-car-when-symbol-listp
-                                    pseudo-term-listp-of-symbol-listp
-                                    acl2::pseudo-termp-opener))
+                                   (pseudo-termp symbol-listp))
                               :expand (replace-if tterm replace-options
                                                   type-options clock state)))))
   (defthm replace-fncall-maintains-path-cond
     (implies (and (replace-options-p replace-options)
                   (type-options-p type-options)
                   (equal (typed-term->kind tterm) 'fncallp)
-                  (good-typed-term-p tterm))
+                  (good-typed-term-p tterm)
+                  (natp clock))
              (equal (typed-term->path-cond
                      (replace-fncall tterm replace-options type-options clock state))
                     (typed-term->path-cond tterm)))
     :flag replace-fncall
     :hints ((and stable-under-simplificationp
                  '(:in-theory (e/d ()
-                                   (pseudo-termp
-                                    symbol-listp
-                                    acl2::symbol-listp-when-not-consp
-                                    consp-of-is-conjunct?
-                                    acl2::pseudo-termp-cadr-from-pseudo-term-listp
-                                    acl2::symbolp-of-car-when-symbol-listp
-                                    pseudo-term-listp-of-symbol-listp
-                                    acl2::pseudo-termp-opener))
-                   :expand (replace-fncall tterm replace-options type-options
-                                           clock state)))))
+                                   (pseudo-termp symbol-listp))
+                   :expand ((replace-fncall tterm replace-options type-options
+                                            clock state)
+                            (replace-fncall tterm replace-options type-options
+                                            0 state))))))
   (defthm replace-term-maintains-path-cond
-    (implies (and (replace-options-p options)
+    (implies (and (replace-options-p replace-options)
                   (type-options-p type-options)
-                  (good-typed-term-p tterm))
+                  (good-typed-term-p tterm)
+                  (natp clock))
              (equal (typed-term->path-cond
                      (replace-term tterm replace-options type-options clock state))
                     (typed-term->path-cond tterm)))
     :flag replace-term
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (e/d () ())
+                 '(:in-theory (e/d ()
+                                   (pseudo-termp symbol-listp))
                    :expand (replace-term tterm replace-options type-options
                                          clock state)))))
   (defthm replace-term-list-maintains-path-cond
-    (implies (and (replace-options-p options)
+    (implies (and (replace-options-p replace-options)
                   (type-options-p type-options)
-                  (good-typed-term-list-p tterm-lst))
+                  (good-typed-term-list-p tterm-lst)
+                  (natp clock))
              (equal (typed-term-list->path-cond
                      (replace-term-list tterm-lst replace-options type-options
                                         clock state))
@@ -366,82 +358,99 @@
     :flag replace-term-list
     :hints ((and stable-under-simplificationp
                  '(:in-theory (e/d (typed-term-list->path-cond)
-                                   (pseudo-termp
-                                    acl2::symbol-listp-when-not-consp
-                                    consp-of-is-conjunct?
-                                    acl2::pseudo-termp-cadr-from-pseudo-term-listp
-                                    acl2::symbolp-of-car-when-symbol-listp
-                                    pseudo-term-listp-of-symbol-listp
-                                    acl2::pseudo-termp-opener
-                                    pseudo-term-listp-of-symbol-listp))
+                                   (pseudo-termp symbol-listp))
                    :expand
                    ((replace-term-list tterm-lst replace-options type-options
                                        clock state)
                     (replace-term-list nil replace-options type-options clock
                                        state))))))
   :hints(("Goal"
-          :in-theory (disable pseudo-termp
-                              correctness-of-path-test-list
-                              symbol-listp
-                              correctness-of-path-test
-                              acl2::symbol-listp-when-not-consp
-                              consp-of-is-conjunct?
-                              acl2::pseudo-termp-cadr-from-pseudo-term-listp
-                              acl2::symbolp-of-car-when-symbol-listp
-                              pseudo-term-listp-of-symbol-listp
-                              acl2::pseudo-termp-opener))))
-)
+          :in-theory (disable pseudo-termp symbol-listp))))
 
 (skip-proofs
 (defthm-replace-term-flag
   (defthm replace-if-maintains-term
-    (implies (and (replace-options-p replace-options)
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (replace-options-p replace-options)
                   (type-options-p type-options)
                   (equal (typed-term->kind tterm) 'ifp)
-                  (good-typed-term-p tterm))
-             (equal (typed-term->term
-                     (replace-if tterm replace-options type-options clock state))
-                    (typed-term->term tterm)))
+                  (good-typed-term-p tterm)
+                  (natp clock)
+                  (alistp a)
+                  (ev-smtcp (typed-term->path-cond tterm) a)
+                  (ev-smtcp (typed-term->judgements tterm) a))
+             (equal (ev-smtcp (typed-term->term
+                               (replace-if tterm replace-options type-options
+                                           clock state))
+                               a)
+                    (ev-smtcp (typed-term->term tterm) a)))
     :flag replace-if
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (e/d () ())
+                 '(:in-theory (e/d (make-typed-if) ())
                               :expand (replace-if tterm replace-options
                                                   type-options clock state)))))
   (defthm replace-fncall-maintains-term
-    (implies (and (replace-options-p replace-options)
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (replace-options-p replace-options)
                   (type-options-p type-options)
                   (equal (typed-term->kind tterm) 'fncallp)
-                  (good-typed-term-p tterm))
-             (equal (typed-term->term
-                     (replace-fncall tterm replace-options type-options clock state))
-                    (typed-term->term tterm)))
+                  (good-typed-term-p tterm)
+                  (natp clock)
+                  (alistp a)
+                  (ev-smtcp (typed-term->path-cond tterm) a)
+                  (ev-smtcp (typed-term->judgements tterm) a))
+             (equal (ev-smtcp (typed-term->term
+                               (replace-fncall tterm replace-options
+                                               type-options clock state))
+                              a)
+                    (ev-smtcp (typed-term->term tterm) a)))
     :flag replace-fncall
     :hints ((and stable-under-simplificationp
                  '(:in-theory (e/d () ())
-                   :expand (replace-fncall tterm replace-options type-options
-                                           clock state)))))
+                   :expand ((replace-fncall tterm replace-options type-options
+                                            clock state)
+                            (replace-fncall tterm replace-options type-options
+                                            0 state))))))
   (defthm replace-term-maintains-term
-    (implies (and (replace-options-p replace-options)
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (replace-options-p replace-options)
                   (type-options-p type-options)
-                  (good-typed-term-p tterm))
-             (equal (typed-term->term
-                     (replace-term tterm replace-options type-options clock state))
-                    (typed-term->term tterm)))
+                  (good-typed-term-p tterm)
+                  (natp clock)
+                  (alistp a)
+                  (ev-smtcp (typed-term->path-cond tterm) a)
+                  (ev-smtcp (typed-term->judgements tterm) a))
+             (equal (ev-smtcp (typed-term->term
+                               (replace-term tterm replace-options type-options
+                                             clock state))
+                              a)
+                    (ev-smtcp (typed-term->term tterm) a)))
     :flag replace-term
     :hints ((and stable-under-simplificationp
                  '(:in-theory (e/d () ())
                    :expand (replace-term tterm replace-options type-options
                                          clock state)))))
   (defthm replace-term-list-maintains-term-lst
-    (implies (and (replace-options-p replace-options)
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (replace-options-p replace-options)
                   (type-options-p type-options)
-                  (good-typed-term-list-p tterm-lst))
-             (equal (typed-term-list->term-lst
-                     (replace-term-list tterm-lst replace-options type-options clock state))
-                    (typed-term-list->term-lst tterm-lst)))
+                  (good-typed-term-list-p tterm-lst)
+                  (natp clock)
+                  (alistp a)
+                  (ev-smtcp (typed-term-list->path-cond tterm-lst) a)
+                  (ev-smtcp (typed-term-list->judgements tterm-lst) a))
+             (equal (ev-smtcp-lst (typed-term-list->term-lst
+                                   (replace-term-list tterm-lst replace-options
+                                                      type-options clock
+                                                      state))
+                                  a)
+                    (ev-smtcp-lst (typed-term-list->term-lst tterm-lst) a)))
     :flag replace-term-list
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (e/d () ())
+                 '(:in-theory (e/d (typed-term-list->path-cond
+                                    typed-term-list->term-lst
+                                    typed-term-list->judgements)
+                                   ())
                    :expand
                    ((replace-term-list tterm-lst replace-options type-options
                                        clock state)
@@ -450,6 +459,193 @@
 )
 
 (skip-proofs
+(defthm crock3
+  (implies (and (not (ev-smtcp (cadr (typed-term->term tterm))
+                               a))
+                (ev-smtcp (typed-term->judgements (replace-term (typed-term-if->else tterm)
+                                                                replace-options
+                                                                type-options clock state))
+                          a)
+                (ev-smtcp (typed-term->judgements tterm)
+                          a))
+           (ev-smtcp
+            (generate-judge-from-equality
+             (typed-term->term tterm)
+             (list 'if
+                   (cadr (typed-term->term tterm))
+                   (typed-term->term (replace-term (typed-term-if->then tterm)
+                                                   replace-options
+                                                   type-options clock state))
+                   (typed-term->term (replace-term (typed-term-if->else tterm)
+                                                   replace-options
+                                                   type-options clock state)))
+             (typed-term->judgements (typed-term->top tterm))
+             (replace-options->supertype replace-options))
+            a)))
+)
+
+(skip-proofs
+(defthm crock4
+  (implies (and (ev-smtcp (cadr (typed-term->term tterm))
+                          a)
+                (ev-smtcp (typed-term->judgements (replace-term (typed-term-if->then tterm)
+                                                                replace-options
+                                                                type-options clock state))
+                          a)
+                (ev-smtcp (typed-term->judgements tterm)
+                          a))
+           (ev-smtcp
+            (generate-judge-from-equality
+             (typed-term->term tterm)
+             (list 'if
+                   (cadr (typed-term->term tterm))
+                   (typed-term->term (replace-term (typed-term-if->then tterm)
+                                                   replace-options
+                                                   type-options clock state))
+                   (typed-term->term (replace-term (typed-term-if->else tterm)
+                                                   replace-options
+                                                   type-options clock state)))
+             (typed-term->judgements (typed-term->top tterm))
+             (replace-options->supertype replace-options))
+            a)))
+)
+
+(skip-proofs
+(defthm crock5
+  (implies (and (ev-smtcp (typed-term->judgements (replace-term (typed-term-if->then tterm)
+                                                                replace-options
+                                                                type-options clock state))
+                          a)
+                (ev-smtcp (typed-term->judgements (replace-term (typed-term-if->else tterm)
+                                                                replace-options
+                                                                type-options clock state))
+                          a)
+                (ev-smtcp (typed-term->judgements tterm)
+                          a))
+           (ev-smtcp
+            (generate-judge-from-equality
+             (typed-term->term tterm)
+             (list 'if
+                   (cadr (typed-term->term tterm))
+                   (typed-term->term (replace-term (typed-term-if->then tterm)
+                                                   replace-options
+                                                   type-options clock state))
+                   (typed-term->term (replace-term (typed-term-if->else tterm)
+                                                   replace-options
+                                                   type-options clock state)))
+             (typed-term->judgements (typed-term->top tterm))
+             (replace-options->supertype replace-options))
+            a)))
+)
+
+(skip-proofs
+(defthm crock6
+  (implies (and (ev-smtcp (typed-term->judgements tterm)
+                          a)
+                (ev-smtcp (correct-typed-term-list
+                           (replace-term-list (typed-term-fncall->actuals tterm)
+                                              replace-options
+                                              type-options clock state))
+                          a))
+           (ev-smtcp
+            (generate-judge-from-equality
+             (typed-term->term tterm)
+             (cons (car (typed-term->term tterm))
+                   (typed-term-list->term-lst
+                    (replace-term-list (typed-term-fncall->actuals tterm)
+                                       replace-options
+                                       type-options clock state)))
+             (typed-term->judgements (typed-term->top tterm))
+             (replace-options->supertype replace-options))
+            a)))
+)
+
+(defthm crock7
+  (implies (and (good-typed-term-p tterm)
+                (equal (typed-term->kind tterm) 'fncallp)
+                (replace-options-p replace-options)
+                (type-options-p type-options)
+                (natp clock)
+                (alistp a)
+                (ev-smtcp (correct-typed-term-list
+                           (replace-term-list (typed-term-fncall->actuals tterm)
+                                              replace-options
+                                              type-options clock state))
+                          a)
+                (ev-smtcp (typed-term->path-cond tterm)
+                          a))
+           (ev-smtcp (typed-term-list->judgements
+                      (replace-term-list (typed-term-fncall->actuals tterm)
+                                         replace-options
+                                         type-options clock state))
+                     a))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (enable correct-typed-term-list
+                              typed-term-fncall->actuals))))
+
+(defthm crock8
+  (implies (and (good-typed-term-p tterm)
+                (equal (typed-term->kind tterm) 'ifp)
+                (alistp a)
+                (ev-smtcp (typed-term->judgements tterm) a))
+           (ev-smtcp (typed-term->judgements (typed-term-if->cond tterm))
+                     a))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (typed-term-if->cond good-typed-if-p)
+                           (acl2::pseudo-termp-opener
+                            ev-smtcp-of-type-hyp-call
+                            acl2::symbolp-of-car-when-symbol-listp
+                            acl2::symbol-listp-of-cdr-when-symbol-listp
+                            symbol-listp))
+           :expand (typed-term-if->cond tterm))))
+
+(skip-proofs
+(defthm crock9
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (replace-options-p replace-options)
+                (type-options-p type-options)
+                (good-typed-fncall-p tterm)
+                (alistp a)
+                (ev-smtcp (typed-term->judgements tterm) a)
+                (ev-smtcp (typed-term->path-cond tterm) a))
+           (ev-smtcp
+            (typed-term->judgements
+             (unify-type
+              (typed-term
+               (replace-fixer
+                (typed-term->term tterm)
+                (typed-term-list->judgements (typed-term-fncall->actuals tterm))
+                (typed-term->path-cond tterm)
+                (replace-options->fixers replace-options)
+                state)
+               (typed-term->path-cond tterm)
+               (type-judgement
+                (replace-fixer
+                 (typed-term->term tterm)
+                 (typed-term-list->judgements (typed-term-fncall->actuals tterm))
+                 (typed-term->path-cond tterm)
+                 (replace-options->fixers replace-options)
+                 state)
+                (typed-term->path-cond tterm)
+                type-options
+                (type-options->names type-options)
+                state))
+              (generate-judge-from-equality
+               (typed-term->term tterm)
+               (replace-fixer
+                (typed-term->term tterm)
+                (typed-term-list->judgements (typed-term-fncall->actuals tterm))
+                (typed-term->path-cond tterm)
+                (replace-options->fixers replace-options)
+                state)
+               (typed-term->judgements (typed-term->top tterm))
+               (replace-options->supertype replace-options))
+              type-options state))
+            a)))
+)
+
 (defthm-replace-term-flag
   (defthm correctness-of-replace-if
     (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -457,6 +653,7 @@
                   (type-options-p type-options)
                   (equal (typed-term->kind tterm) 'ifp)
                   (good-typed-term-p tterm)
+                  (natp clock)
                   (alistp a)
                   (ev-smtcp (correct-typed-term tterm) a))
              (ev-smtcp (correct-typed-term
@@ -464,7 +661,8 @@
                        a))
     :flag replace-if
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (e/d ()
+                 '(:in-theory (e/d (correct-typed-term
+                                    make-typed-if)
                                    (pseudo-termp symbol-listp))
                               :expand (replace-if tterm replace-options
                                                   type-options clock state)))))
@@ -474,6 +672,7 @@
                   (type-options-p type-options)
                   (equal (typed-term->kind tterm) 'fncallp)
                   (good-typed-term-p tterm)
+                  (natp clock)
                   (alistp a)
                   (ev-smtcp (correct-typed-term tterm) a))
              (ev-smtcp (correct-typed-term
@@ -482,16 +681,21 @@
                        a))
     :flag replace-fncall
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (e/d ()
+                 '(:in-theory (e/d (correct-typed-term make-typed-fncall)
                                    (pseudo-termp
                                     symbol-listp))
-                              :expand (replace-fncall tterm replace-options
-                                                      type-options clock state)))))
+                              :expand ((replace-fncall tterm replace-options
+                                                       type-options clock
+                                                       state)
+                                       (replace-fncall tterm replace-options
+                                                       type-options 0
+                                                       state))))))
   (defthm correctness-of-replace-term
     (implies (and (ev-smtcp-meta-extract-global-facts)
                   (replace-options-p replace-options)
                   (type-options-p type-options)
                   (good-typed-term-p tterm)
+                  (natp clock)
                   (alistp a)
                   (ev-smtcp (correct-typed-term tterm) a))
              (ev-smtcp (correct-typed-term
@@ -507,6 +711,7 @@
                   (replace-options-p replace-options)
                   (type-options-p type-options)
                   (good-typed-term-list-p tterm-lst)
+                  (natp clock)
                   (alistp a)
                   (ev-smtcp (correct-typed-term-list tterm-lst) a))
              (ev-smtcp
@@ -525,7 +730,6 @@
   :hints(("Goal"
           :in-theory (disable pseudo-termp
                               symbol-listp))))
-)
 
 (define term-replacement-fn ((cl pseudo-term-listp)
                              (smtlink-hint t)
@@ -558,7 +762,6 @@
        (replaced-judgements (typed-term->judgements replaced-tterm))
        (replaced-term (typed-term->term replaced-tterm))
        (new-cl `((implies ,replaced-judgements ,replaced-term)))
-       (- (cw "replaced-term: ~q0" new-cl))
        (next-cp (cdr (assoc-equal 'term-replacement *SMT-architecture*)))
        ((if (null next-cp)) (list cl))
        (the-hint
@@ -572,8 +775,7 @@
   (b* ((new-clause (term-replacement-fn cl hints state)))
     (value new-clause)))
 
-(skip-proofs
-(defthm correctness-of-type-replacement-cp
+(defthm correctness-of-term-replacement-cp
   (implies (and (ev-smtcp-meta-extract-global-facts)
                 (pseudo-term-listp cl)
                 (alistp a)
@@ -585,20 +787,16 @@
            (ev-smtcp (disjoin cl) a))
   :hints (("Goal"
            :do-not-induct t
-           ;; :case-split-limitations (0 1)
            :in-theory (e/d (term-replacement-cp
                             term-replacement-fn
-                            ;; correct-typed-term
-                            )
+                            correct-typed-term)
                            ())
-           ;; :use ((:instance correctness-of-replace-term
-           ;;                  (tterm (typed-term (caddr (disjoin cl))
-           ;;                                     ''t
-           ;;                                     (cadr (disjoin cl))))
-           ;;                  (replace-options (construct-replace-options hint))
-           ;;                  (type-options (construct-type-options hint (disjoin cl)))
-           ;;                  (a a)
-           ;;                  (state state)))
-           ))
+           :use ((:instance correctness-of-replace-term
+                            (tterm (typed-term (caddr (disjoin cl))
+                                               ''t
+                                               (cadr (disjoin cl))))
+                            (replace-options (construct-replace-options hint))
+                            (type-options
+                             (construct-type-options hint (disjoin cl)))
+                            (clock (smtlink-hint->wrld-fn-len hint))))))
   :rule-classes :clause-processor)
-)
