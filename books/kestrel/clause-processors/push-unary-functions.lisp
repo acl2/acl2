@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/evaluators/defevaluator-plus" :dir :system)
+(include-book "kestrel/evaluators/if-eval" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (local (include-book "kestrel/utilities/logic-termp" :dir :system))
@@ -38,9 +38,6 @@
                  (symbol-listp l))
             (symbolp a))
    :hints (("Goal" :in-theory (enable symbol-listp member-equal)))))
-
-;todo: dup
-(defevaluator+ if-eval if)
 
 ;; TODO: Handle additional calls of UNARY-FN in TERM?
 (defund apply-unary-fn-to-if-branches (unary-fn term)

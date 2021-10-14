@@ -1,4 +1,4 @@
-; Top book for evaluators library
+; An evaluator that knows about IF
 ;
 ; Copyright (C) 2021 Kestrel Institute
 ;
@@ -11,6 +11,5 @@
 (in-package "ACL2")
 
 (include-book "defevaluator-plus")
-(include-book "empty-eval")
-(include-book "not-eval")
-(include-book "if-eval")
+
+(defevaluator+ if-eval if)
