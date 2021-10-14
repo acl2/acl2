@@ -10,6 +10,9 @@
 
 (in-package "ACL2")
 
+;; TODO: Rename this to resolve-ifs??  it's more than just subsumption
+;; we use earlier facts to resolve later facts
+
 ;; Handles goal like (implies (and a_1 a_2 ...) (and b_1 b_2 ...)) where the as
 ;; and bs are, in general, disjunctions and the a_i obviously imply some of the
 ;; b_i (in the sense that som b_i has the all the disjuncts of some a_i, in the
@@ -25,6 +28,7 @@
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 
 (local (in-theory (enable pseudo-termp-when-symbolp)))
 
@@ -32,6 +36,12 @@
                            symbol-alistp
                            strip-cdrs
                            assoc-equal)))
+
+(defthm disjoin-when-not-consp
+  (IMPLIES (NOT (CONSP CLAUSE))
+           (equal (DISJOIN CLAUSE)
+                  *nil*))
+  :hints (("Goal" :in-theory (enable disjoin))))
 
 ;todo: use more
 (defund term-is-disjunctionp (term)
@@ -190,65 +200,136 @@
            (simple-eval term a))
   :hints (("Goal" :in-theory (enable clearly-implied-by-some-disjunctionp))))
 
-;; In general, the conjuncts of CONJ and the TRUE-TERMS are disjunctions.
-(defun remove-true-conjuncts (conj true-terms)
-  (declare (xargs :guard (and (pseudo-termp conj)
-                              (pseudo-term-listp true-terms))))
-  (if (not (term-is-conjunctionp conj))
-      (if (clearly-implied-by-some-disjunctionp conj true-terms)
-          *t*
-        conj)
-    ;; conj is a conjunction:
-    (let ((c (farg1 conj)))
-      (if (clearly-implied-by-some-disjunctionp c true-terms)
-          (remove-true-conjuncts (farg2 conj) true-terms)
-        `(if ,c ,(remove-true-conjuncts (farg2 conj) true-terms) 'nil)))))
+(defun make-if-term (test then else)
+  (declare (xargs :guard (and (pseudo-termp test)
+                              (pseudo-termp then)
+                              (pseudo-termp else))))
+  (if (equal then else)
+      then
+    `(if ,test ,then ,else)))
 
-(defthm remove-true-conjuncts-correct
+;; In general, the conjuncts of CONJ and the TRUE-TERMS are disjunctions.
+(defun resolve-ifs-in-term (term true-terms)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (pseudo-term-listp true-terms))
+                  :verify-guards nil ; done below
+                  ))
+  (if (quotep term)
+      term
+    (if (clearly-implied-by-some-disjunctionp term true-terms) ;or should we do this on new-if below?
+        *t*
+      (if (and (call-of 'if term)
+               (= 3 (len (fargs term))))
+          (let ((new-test (resolve-ifs-in-term (farg1 term) true-terms)))
+            (if (quotep new-test)
+                (if (unquote new-test)
+                    (resolve-ifs-in-term (farg2 term) true-terms)
+                  (resolve-ifs-in-term (farg3 term) true-terms))
+              (if (clearly-implied-by-some-disjunctionp new-test true-terms)
+                  (resolve-ifs-in-term (farg2 term) true-terms)
+                ;; todo: what if we can resolve the test to false?
+                ;;todo: clean up this if:
+                (let ((new-if (make-if-term new-test
+                                            (resolve-ifs-in-term (farg2 term) true-terms)
+                                            (resolve-ifs-in-term (farg3 term) true-terms))))
+                  new-if))))
+        (if (clearly-implied-by-some-disjunctionp term true-terms)
+            *t*
+          term)))))
+
+(defthm pseudo-termp-of-resolve-ifs-in-term
+  (implies (pseudo-termp term)
+           (pseudo-termp (resolve-ifs-in-term term true-terms)))
+  :hints (("Goal" :in-theory (enable resolve-ifs-in-term))))
+
+(verify-guards resolve-ifs-in-term :hints (("Goal" :in-theory (enable len-when-pseudo-termp-and-quotep))))
+
+(defthm resolve-ifs-in-term-correct
   (implies (all-eval-to-true-with-simple-eval true-terms a)
-           (iff (simple-eval (remove-true-conjuncts conj true-terms) a)
-                (simple-eval conj a)))
-  :hints (("Goal" :in-theory (enable remove-true-conjuncts))))
+           (iff (simple-eval (resolve-ifs-in-term term true-terms) a)
+                (simple-eval term a)))
+  :hints (("Goal" :in-theory (enable resolve-ifs-in-term))))
 
 ;; In general, the TRUE-TERMS are disjunctions.
-(defund remove-true-conjuncts-in-clause (clause true-terms)
+;; Returns a new clause
+;; TODO: Stop if any literal becomes *t*
+(defund resolve-ifs-in-clause (clause true-terms)
   (declare (xargs :guard (and (pseudo-term-listp clause)
                               (pseudo-term-listp true-terms))))
 
   (if (endp clause)
       nil
-    (let* ((lit (first clause))
-           (new-lit (remove-true-conjuncts lit true-terms)))
-      (cons new-lit
-            (remove-true-conjuncts-in-clause (rest clause)
-                                             ;; todo: what about things that are not calls of not?  track false-terms too?
-                                             (if (and (call-of 'not lit)
-                                                      (= 1 (len (fargs lit))))
-                                                 ;; if the clause is (or (not A) ...)
-                                                 ;; we can assume A when processing ...
-                                                 (cons (farg1 lit) true-terms)
-                                               true-terms))))))
+    (let* ((lit (first clause)))
+      (cons (resolve-ifs-in-term lit true-terms)
+            (resolve-ifs-in-clause (rest clause)
+                                   ;; todo: what about things that are not calls of not?  track false-terms too?
+                                   (if (and (call-of 'not lit)
+                                            (= 1 (len (fargs lit))))
+                                       ;; if the clause is (or (not A) ...)
+                                       ;; we can assume A when processing ...
+                                       (cons (farg1 lit) true-terms)
+                                     true-terms))))))
 
-(defthm disjoin-when-not-consp
-  (IMPLIES (NOT (CONSP CLAUSE))
-           (equal (DISJOIN CLAUSE)
-                  *nil*))
+(defthm resolve-ifs-in-clause-correct
+  (implies (all-eval-to-true-with-simple-eval true-terms a)
+           (iff (simple-eval (disjoin (resolve-ifs-in-clause clause true-terms)) a)
+                (simple-eval (disjoin clause) a)))
+  :hints (("Goal" :in-theory (enable resolve-ifs-in-term
+                                     resolve-ifs-in-clause))))
+
+(defthm resolve-ifs-in-clause-correct-special
+  (iff (simple-eval (disjoin (resolve-ifs-in-clause clause nil)) a)
+       (simple-eval (disjoin clause) a)))
+
+(defthm pseudo-term-listp-of-resolve-ifs-in-clause
+  (implies (pseudo-term-listp clause)
+           (pseudo-term-listp (resolve-ifs-in-clause clause true-terms)))
+  :hints (("Goal" :in-theory (enable resolve-ifs-in-clause))))
+
+;; Returns a new, equivalent clause.
+(defun handle-constant-literals (clause)
+  (declare (xargs :guard (pseudo-term-listp clause)))
+  (if (endp clause)
+      nil
+    (let ((lit (first clause)))
+      (if (quotep lit)
+          (if (unquote lit)
+              (list *t*) ; a non-nil constant literal proves the clause
+            ;; drop this, lit, which must be *nil*:
+            (handle-constant-literals (rest clause)))
+        (let ((rest-res (handle-constant-literals (rest clause))))
+          (if (equal '('t) rest-res)
+              rest-res
+            (cons lit rest-res)))))))
+
+(defthm simple-eval-of-disjoin-of-handle-constant-literals
+  (iff (simple-eval (disjoin (handle-constant-literals clause)) a)
+       (simple-eval (disjoin clause) a))
   :hints (("Goal" :in-theory (enable disjoin))))
 
-(defthm remove-true-conjuncts-in-clause-correct
-  (implies (all-eval-to-true-with-simple-eval true-terms a)
-           (iff (simple-eval (disjoin (remove-true-conjuncts-in-clause clause true-terms)) a)
-                (simple-eval (disjoin clause) a)))
-  :hints (("Goal" :in-theory (enable remove-true-conjuncts
-                                     remove-true-conjuncts-in-clause))))
+(defthm pseudo-term-listp-of-handle-constant-literals
+  (implies (pseudo-term-listp clause)
+           (pseudo-term-listp (handle-constant-literals clause)))
+  :hints (("Goal" :in-theory (enable handle-constant-literals))))
 
-(defthm remove-true-conjuncts-in-clause-correct-special
-  (iff (simple-eval (disjoin (remove-true-conjuncts-in-clause clause nil)) a)
-       (simple-eval (disjoin clause) a)))
+;move
+(defund clause-to-clause-list (clause)
+  (declare (xargs :guard (pseudo-term-listp clause)))
+  (if (equal clause '('t))
+      nil ; no more clauses to prove
+    (list (resolve-ifs-in-clause clause nil))))
+
+;move
+(defthm simple-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
+  (iff (simple-eval (conjoin (disjoin-lst (clause-to-clause-list clause))) a)
+       (simple-eval (disjoin clause) a))
+  :hints (("Goal" :in-theory (enable clause-to-clause-list))))
 
 (defund simple-subsumption-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
-  (list (remove-true-conjuncts-in-clause clause nil)))
+  (let* ((clause (resolve-ifs-in-clause clause nil))
+         (clause (handle-constant-literals clause)))
+    (clause-to-clause-list clause)))
 
 ;todo: add :well-formedness proof
 (defthm simple-subsumption-clause-processor-correct
