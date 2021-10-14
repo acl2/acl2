@@ -19,7 +19,8 @@
 ;; same order, but may have additional disjuncts).  (The extra disjuncts may
 ;; often mention the flag variable in a defthm-flag proof.)
 
-(include-book "subst-flag") ; todo: reduce
+(include-book "kestrel/utilities/forms" :dir :system)
+(include-book "kestrel/evaluators/equality-eval" :dir :system)
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))

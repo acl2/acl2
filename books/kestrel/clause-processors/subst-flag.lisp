@@ -12,12 +12,11 @@
 
 ;; STATUS: INCOMPLETE
 
-;(include-book "flatten-literals")
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "tools/flag" :dir :system)
-(include-book "kestrel/evaluators/defevaluator-plus" :dir :system)
+(include-book "kestrel/evaluators/equality-eval" :dir :system)
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 ;(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -42,59 +41,6 @@
   (implies (pseudo-term-listp (strip-cdrs alist))
            (pseudo-termp (cdr (assoc-equal term alist))))
   :hints (("Goal" :in-theory (enable assoc-equal))))
-
-;; An evaluator that knows about various equality tests (as well as IF and NOT).
-(defevaluator+ equality-eval if equal eql eq not)
-
-(defund all-eval-to-true-with-equality-eval (terms a)
-  (declare (xargs :guard (and (pseudo-term-listp terms)
-                              (alistp a))))
-  (if (endp terms)
-      t
-    (and (equality-eval (first terms) a)
-         (all-eval-to-true-with-equality-eval (rest terms) a))))
-
-(defthm all-eval-to-true-with-equality-eval-when-not-consp
-  (implies (not (consp terms))
-           (all-eval-to-true-with-equality-eval terms a))
-  :hints (("Goal" :in-theory (enable all-eval-to-true-with-equality-eval))))
-
-(defthm all-eval-to-true-with-equality-eval-of-cons
-  (equal (all-eval-to-true-with-equality-eval (cons term terms) a)
-         (and (equality-eval term a)
-              (all-eval-to-true-with-equality-eval terms a)))
-  :hints (("Goal" :in-theory (enable all-eval-to-true-with-equality-eval))))
-
-(defthm equality-eval-when-all-eval-to-true-with-equality-eval-and-member-equal
-  (implies (and (all-eval-to-true-with-equality-eval terms a)
-                (member-equal term terms))
-           (equality-eval term a))
-  :hints (("Goal" :in-theory (enable all-eval-to-true-with-equality-eval))))
-
-(defund all-eval-to-false-with-equality-eval (terms a)
-  (declare (xargs :guard (and (pseudo-term-listp terms)
-                              (alistp a))))
-  (if (endp terms)
-      t
-    (and (not (equality-eval (first terms) a))
-         (all-eval-to-false-with-equality-eval (rest terms) a))))
-
-(defthm all-eval-to-false-with-equality-eval-when-not-consp
-  (implies (not (consp terms))
-           (all-eval-to-false-with-equality-eval terms a))
-  :hints (("Goal" :in-theory (enable all-eval-to-false-with-equality-eval))))
-
-(defthm all-eval-to-false-with-equality-eval-of-cons
-  (equal (all-eval-to-false-with-equality-eval (cons term terms) a)
-         (and (not (equality-eval term a))
-              (all-eval-to-false-with-equality-eval terms a)))
-  :hints (("Goal" :in-theory (enable all-eval-to-false-with-equality-eval))))
-
-(defthm not-equality-eval-when-all-eval-to-false-with-equality-eval-and-member-equal
-  (implies (and (all-eval-to-false-with-equality-eval terms a)
-                (member-equal term terms))
-           (not (equality-eval term a)))
-  :hints (("Goal" :in-theory (enable all-eval-to-false-with-equality-eval))))
 
 ;;Returns (mv var const) or (mv nil nil)
 (defund equality-items-from-term (term)
@@ -239,15 +185,14 @@
                 (equality-among-termsp x y (rest terms))))
         (equality-among-termsp x y (rest terms))))))
 
-
-(defthm not-equal-of-equality-eval-and-equality-eval-when-EQUALITY-AMONG-TERMSP-1
-  (IMPLIES (AND (ALL-EVAL-TO-FALSE-WITH-EQUALITY-EVAL FALSE-TERMS A)
-                (EQUALITY-AMONG-TERMSP x y FALSE-TERMS)
-                (PSEUDO-TERMP x)
-                (PSEUDO-TERMp y))
-           (NOT (EQUAL (EQUALITY-EVAL x A)
-                       (EQUALITY-EVAL y A))))
-  :hints (("Goal" :in-theory (enable EQUALITY-AMONG-TERMSP ALL-EVAL-TO-FALSE-WITH-EQUALITY-EVAL))))
+(defthm not-equal-of-equality-eval-and-equality-eval-when-equality-among-termsp-1
+  (implies (and (all-eval-to-false-with-equality-eval false-terms a)
+                (equality-among-termsp x y false-terms)
+                (pseudo-termp x)
+                (pseudo-termp y))
+           (not (equal (equality-eval x a)
+                       (equality-eval y a))))
+  :hints (("Goal" :in-theory (enable equality-among-termsp all-eval-to-false-with-equality-eval))))
 
 (defthm equal-of-equality-eval-and-equality-eval-when-equality-among-termsp-2
   (implies (and (all-eval-to-true-with-equality-eval true-terms a)
@@ -464,27 +409,25 @@
              (equal (equality-eval-list (sublis-var-and-simplify-lst alist terms true-terms false-terms) a)
                     (equality-eval-list terms a)))
     :flag sublis-var-and-simplify-lst)
-  :hints (("Goal" :expand ((PSEUDO-TERMP TERM)
-                           (FREE-VARS-IN-TERMS TERMS)
-                           ;;(SUBLIS-VAR-AND-SIMPLIFY-LST ALIST (CDDR TERM))
+  :hints (("Goal" :expand ((pseudo-termp term)
+                           (free-vars-in-terms terms)
+                           ;;(sublis-var-and-simplify-lst alist (cddr term))
                            )
            :in-theory (e/d (sublis-var-and-simplify
                             sublis-var-and-simplify-lst
-                            ;;MEMBER-EQUAL-OF-STRIP-CARS-IFF
+                            ;;member-equal-of-strip-cars-iff
                             ;;wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
-                            EQUALITY-EVAL-OF-FNCALL-ARGS
-                            )
+                            equality-eval-of-fncall-args)
                            (pairlis$
-                            EQUALITY-EVAL-OF-variable
-                            SET-DIFFERENCE-EQUAL)))))
+                            equality-eval-of-variable
+                            set-difference-equal)))))
 
 ;;; now map the term processor over every literal of the clause
 
 (defthm equality-eval-of-disjoin-of-sublis-var-and-simplify-lst-special
   (implies (and (alistp a)
-                (pseudo-term-listp clause)
-                )
+                (pseudo-term-listp clause))
            (iff (equality-eval (disjoin (sublis-var-and-simplify-lst nil clause nil nil)) a)
                 (equality-eval (disjoin clause) a)))
   :hints (("Goal" :induct (len clause)
