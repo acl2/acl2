@@ -108,27 +108,6 @@
 ;todo: handle (equal x 'nil) like (not 'x)
 ;todo: handle (if/myif/boolif x 'nil 't) like (not 'x)
 
-(defund negate-terms (terms)
-  (declare (xargs :guard (pseudo-term-listp terms)))
-  (if (endp terms)
-      nil
-    (let ((term (first terms)))
-      (cons (negate-term term)
-            (negate-terms (rest terms))))))
-
-(defthm pseudo-term-listp-of-negate-terms
-  (implies (pseudo-term-listp terms)
-           (pseudo-term-listp (negate-terms terms)))
-  :hints (("Goal" :in-theory (enable negate-terms))))
-
-(defthm logic-term-listp-of-negate-terms
-  (implies (and (logic-term-listp terms w)
-                (arities-okp '((not . 1)) w))
-           (logic-term-listp (negate-terms terms) w))
-  :hints (("Goal" :in-theory (enable negate-terms))))
-
-;(local (in-theory (enable pseudo-termp)))
-
 ;; also pushes not through branches of IFs
 (defund negate-term2 (term)
   (declare (xargs :guard (pseudo-termp term)))
