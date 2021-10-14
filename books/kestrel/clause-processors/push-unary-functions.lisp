@@ -61,6 +61,14 @@
            (logic-termp (apply-unary-fn-to-if-branches unary-fn term) w))
   :hints (("Goal" :in-theory (enable apply-unary-fn-to-if-branches))))
 
+(defthm pseudo-termp-of-apply-unary-fn-to-if-branches
+  (implies (and (pseudo-termp term)
+                (symbolp unary-fn)
+                ;(not (equal 'quote unary-fn))
+                )
+           (pseudo-termp (apply-unary-fn-to-if-branches unary-fn term)))
+  :hints (("Goal" :in-theory (enable apply-unary-fn-to-if-branches))))
+
 (defthm if-eval-of-apply-unary-fn-to-if-branches
   (implies (not (equal 'quote unary-fn))
            (equal (if-eval (apply-unary-fn-to-if-branches unary-fn term) a)
@@ -80,13 +88,13 @@
           term
         (if (and (eq 'if fn)
                  (= 3 (len (fargs term))))
-            `(if ,(farg1 term)
+            `(if ,(push-unary-functions-in-term (farg1 term) unary-fns)
                  ,(push-unary-functions-in-term (farg2 term) unary-fns)
                ,(push-unary-functions-in-term (farg3 term) unary-fns))
           (if (and (member-eq fn unary-fns)
                    (= 1 (len (fargs term))))
               (apply-unary-fn-to-if-branches fn (farg1 term))
-            ;; todo: do more here?  we currently only handle unary calls in top-level if branches
+            ;; todo: do more here?  we currently only handle unary calls in top-level ifs
             term))))))
 
 (defthm logic-termp-of-push-unary-functions-in-term
@@ -98,6 +106,15 @@
                              w))
            (logic-termp (push-unary-functions-in-term term unary-fns) w))
   :hints (("Goal" :in-theory (enable push-unary-functions-in-term))))
+
+(defthm pseudo-termp-of-push-unary-functions-in-term
+  (implies (and (pseudo-termp term)
+                (symbol-listp unary-fns))
+           (pseudo-termp (push-unary-functions-in-term term unary-fns)))
+  :hints (("Goal" :expand (PSEUDO-TERMP TERM)
+           :in-theory (enable push-unary-functions-in-term))))
+
+
 
 (defthm push-unary-functions-in-term-correct
   (implies (and (alistp a)
@@ -115,8 +132,14 @@
     (cons (push-unary-functions-in-term (first clause) unary-fns)
           (push-unary-functions-in-literals (rest clause) unary-fns))))
 
+(defthm pseudo-term-list-listp-of-push-unary-functions-in-literals
+  (implies (and (pseudo-term-listp clause)
+                (symbol-listp unary-fns))
+           (pseudo-term-listp (push-unary-functions-in-literals clause unary-fns)))
+  :hints (("Goal" :in-theory (enable push-unary-functions-in-literals))))
+
 ;strengthen to equal?
-(defthm push-unary-functions-in-literals-correct
+(defthm if-eval-of-disjoin-of-push-unary-functions-in-literals
   (implies (and (symbol-listp unary-fns)
                 (alistp a)
                 (pseudo-term-listp clause))
@@ -137,25 +160,30 @@
   :hints (("Goal" :in-theory (enable push-unary-functions-in-literals))))
 
 ;; Return a list of one clause (a copy of the one we started with)
-(defund push-o-p (clause)
+(defund push-o-p-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
   (progn$ ;(cw "Len of clause is ~x0.~%" (len clause))
           ;(cw "Literals are ~x0.~%" clause)
           (list (push-unary-functions-in-literals clause '(o-p)))))
 
-(defthm logic-term-list-listp-of-push-o-p
+(defthm logic-term-list-listp-of-push-o-p-clause-processor
   (implies (and (logic-term-listp clause w)
                 (ARITIES-OKP '((o-p . 1)
                                (IF . 3))
                              W))
-           (logic-term-list-listp (push-o-p clause) w))
-  :hints (("Goal" :in-theory (enable push-o-p))))
+           (logic-term-list-listp (push-o-p-clause-processor clause) w))
+  :hints (("Goal" :in-theory (enable push-o-p-clause-processor))))
 
-(defthm push-o-p-correct
+(defthm pseudo-term-list-listp-of-push-o-p-clause-processor
+  (implies (pseudo-term-listp clause)
+           (pseudo-term-list-listp (push-o-p-clause-processor clause)))
+  :hints (("Goal" :in-theory (enable push-o-p-clause-processor))))
+
+(defthm push-o-p-clause-processor-correct
   (implies (and (pseudo-term-listp clause)
                 (alistp a)
-                (if-eval (conjoin-clauses (push-o-p clause)) a))
+                (if-eval (conjoin-clauses (push-o-p-clause-processor clause)) a))
            (if-eval (disjoin clause) a))
   :rule-classes ((:clause-processor
-                  :well-formedness-guarantee logic-term-list-listp-of-push-o-p))
-  :hints (("Goal" :in-theory (enable push-o-p))))
+                  :well-formedness-guarantee logic-term-list-listp-of-push-o-p-clause-processor))
+  :hints (("Goal" :in-theory (enable push-o-p-clause-processor))))

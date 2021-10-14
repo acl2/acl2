@@ -469,8 +469,8 @@
                            )
            :in-theory (e/d (sublis-var-and-simplify
                             sublis-var-and-simplify-lst
-                            ;MEMBER-EQUAL-OF-STRIP-CARS-IFF
-                            ;wrap-terms-in-lambdas
+                            ;;MEMBER-EQUAL-OF-STRIP-CARS-IFF
+                            ;;wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
                             SIMPLE-EVAL-OF-FNCALL-ARGS
                             )
@@ -480,9 +480,10 @@
 
 ;;; now map the term processor over every literal of the clause
 
-(defthm sublis-var-and-simplify-lst-correct-special
+(defthm simple-eval-of-disjoin-of-sublis-var-and-simplify-lst-special
   (implies (and (alistp a)
-                (pseudo-term-listp clause))
+                (pseudo-term-listp clause)
+                )
            (iff (simple-eval (disjoin (sublis-var-and-simplify-lst nil clause nil nil)) a)
                 (simple-eval (disjoin clause) a)))
   :hints (("Goal" :induct (len clause)
@@ -495,7 +496,12 @@
           (let* ( ;(clause (flatten-disjuncts clause))
                  (clause (sublis-var-and-simplify-lst nil clause nil nil)))
             (progn$ ;(cw "(One New clause (~x0 literals):~% ~x1.)~%" (len clause) clause)
-                    (list clause)))))
+             (list clause)))))
+
+(defthm pseudo-term-list-listp-of-sublis-var-and-simplify-clause-processor
+  (implies (pseudo-term-listp clause)
+           (pseudo-term-list-listp (sublis-var-and-simplify-clause-processor clause)))
+  :hints (("Goal" :in-theory (enable sublis-var-and-simplify-clause-processor))))
 
 ;todo: add :well-formedness proof
 (defthm sublis-var-and-simplify-clause-processor-correct

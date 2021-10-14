@@ -240,19 +240,19 @@
            (iff (simple-eval (disjoin (remove-true-conjuncts-in-clause clause true-terms)) a)
                 (simple-eval (disjoin clause) a)))
   :hints (("Goal" :in-theory (enable remove-true-conjuncts
-                                     remove-true-conjuncts-in-clause
-                                     ;disjoin
-                                     ))))
+                                     remove-true-conjuncts-in-clause))))
 
-(defun simple-subsumption-clause-processor (clause)
+(defthm remove-true-conjuncts-in-clause-correct-special
+  (iff (simple-eval (disjoin (remove-true-conjuncts-in-clause clause nil)) a)
+       (simple-eval (disjoin clause) a)))
+
+(defund simple-subsumption-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
   (list (remove-true-conjuncts-in-clause clause nil)))
 
 ;todo: add :well-formedness proof
 (defthm simple-subsumption-clause-processor-correct
-  (implies (and; (pseudo-term-listp clause)
-                ;(alistp a)
-                (simple-eval (conjoin-clauses (simple-subsumption-clause-processor clause)) a))
+  (implies (simple-eval (conjoin-clauses (simple-subsumption-clause-processor clause)) a)
            (simple-eval (disjoin clause) a))
   :rule-classes :clause-processor
-  :hints (("Goal" :in-theory (enable sublis-var-and-simplify-clause-processor))))
+  :hints (("Goal" :in-theory (enable simple-subsumption-clause-processor))))
