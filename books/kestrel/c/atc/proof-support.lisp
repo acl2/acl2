@@ -227,7 +227,7 @@
     "This is like @(tsee create-var), but it does not return an error:
      it always adds the variable to the current scope.
      If the variable does not already exist in the current scope,
-     this is equivalent to @(tsee create-var, as proved later."))
+     this is equivalent to @(tsee create-var), as proved later."))
   (b* ((frame (top-frame compst))
        (scopes (frame->scopes frame))
        (scope (car scopes))
@@ -372,7 +372,7 @@
      that are declared outside the scope of the loop,
      i.e. that are represented as @(tsee update-var)s:
      if the two variables are the same, the value is returned;
-     otherwise, we skip over the @(tsee update--var)
+     otherwise, we skip over the @(tsee update-var)
      in search for the variable.")
    (xdoc::p
     "The theorems below about @(tsee update-var)
