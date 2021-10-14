@@ -1451,6 +1451,11 @@
            (list 'well-founded-relation-alist
                  (list (cons 'o<
                              (cons 'o-p
+                                   *fake-rune-for-anonymous-enabled-rule*))
+; The following is justified by the theorem WELL-FOUNDED-L<, which is quoted in
+; check-system-events and thus checked by "make devel-check".
+                       (cons 'l<
+                             (cons 'lexp
                                    *fake-rune-for-anonymous-enabled-rule*))))
            (list 'built-in-clauses
                  (classify-and-store-built-in-clause-rules

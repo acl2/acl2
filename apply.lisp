@@ -3190,15 +3190,18 @@
       (and (= (len x) (len y))
            (if (atom x) (< x y) (d< x y)))))
 
-; WARNING: Like the other loop$ scions above, do$ is admitted in :program mode
-; and converted to :logic mode during the normal build.  In
+; WARNING: Much like the other loop$ scions above, do$ is admitted in :program
+; mode and converted to :logic mode during the normal build in
 ; boot-strap-pass-2-b.lisp, where we convert all the loop$ scions to
-; guard-verified :logic mode and warrant them.  But do$ is exceptional because
-; its measure depends on apply$, its well-founded relation, L<, is not known
-; during the build to be well-founded, and the domain of L<, LEXP, is not given
-; in a well-founded-relation rule because there's no such rule.  So there are
-; several ``Do$ Warts'' sprinkled in the code to permit the entire build to
-; treat do$ more or less like the other loop$ scions.
+; guard-verified :logic mode and warrant them.  However, DO$ is exceptional in
+; a couple of ways.  (1) Its measure depends on apply$, and we work around this
+; explicitly in chk-acceptable-defwarrant (see the Do$ Wart there).  (2) Its
+; well-founded relation is L< with domain LEXP, whose necessary proof of
+; well-foundedness seems much more appropriate for a book, where it has existed
+; well before the addition of DO$, than in the build.  We get around that issue
+; by "cheating" in primordial-world-globals, where we add the combination of L<
+; and LEXP to the well-founded-relation-alist; but we verify that "cheat" in
+; check-system-events, as noted in comments in the definitions of both of them.
 
 (defun do$ (measure-fn alist do-fn finally-fn
                        untrans-measure untrans-do-loop$)
@@ -3212,7 +3215,7 @@
                               (apply$-guard finally-fn '(nil)))
                   :mode :program
                   :measure (lex-fix (apply$ measure-fn (cons alist 'nil)))
-;                 :well-founded-relation l< ; <--- Do$ Wart
+                  :well-founded-relation l<
                   ))
 
 ; I don't know that the do-fn or finally-fn actually return well-formed
@@ -3257,7 +3260,6 @@
            (apply$ measure-fn (list new-alist))
            :do$-measure-did-not-decrease)
        :do$-measure-did-not-decrease)))))
-
 )
 
 ;-----------------------------------------------------------------

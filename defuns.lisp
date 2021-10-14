@@ -11063,17 +11063,6 @@
                 (value wrld2))))
         (er-progn
          (cond
-          ((eq (car names) 'do$)
-
-; Do$ Wart: We allow do$'s measure, L<, to be used here even though we don't
-; ``know'' it is well-founded on the LEXP domain.  Since L< and LEXP are
-; defined in these sources and proved well-founded (by the ACL2_DEVEL = t
-; process) in ordinals/lexicographic-book.lisp, this is sound.  (L< is
-; well-founded on the LEXP domain!) But we only make this exception for do$ and
-; thus force the user to include the lexicographic-book before allowing L< and
-; LEXP to be used generally.
-
-           (value nil))
           ((not (and (symbolp rel)
                      (assoc-eq
                       rel
@@ -11085,12 +11074,10 @@
                 relation.  ~x0 has not been. See :DOC well-founded-relation."
                rel))
           (t (value nil)))
-         (let ((mp (cond
-                    ((eq (car names) 'do$) 'lexp) ; Do$ Wart
-                    (t (cadr (assoc-eq
-                              rel
-                              (global-val 'well-founded-relation-alist
-                                          wrld2a)))))))
+         (let ((mp (cadr (assoc-eq
+                          rel
+                          (global-val 'well-founded-relation-alist
+                                      wrld2a)))))
            (er-let*
                ((bodies-and-bindings
                  (translate-bodies non-executablep ; t or :program
