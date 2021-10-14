@@ -18,7 +18,7 @@
 ;; Negate TERM by adding or removing a call of not (avoids double negation)
 ;; See also dumb-negate-lit.
 (defund negate-term (term)
-  (declare (xargs :guard t ;(pseudo-termp term)
+  (declare (xargs :guard t ;(pseudo-termp term) ; todo: put this back but fix propagate-iso
                   ))
   (if (and (call-of 'not term)
            (consp (cdr term)) ;for guards
