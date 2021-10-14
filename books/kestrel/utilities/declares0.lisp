@@ -418,7 +418,7 @@
 ;If there is already a "verify-guards t", we remove it from the declares.
 ;; TODO: Preserve more of the original order of things?
 ;; TODO: Generalize to any xarg
-(defun set-verify-guards-in-declares (declares verify-guards)
+(defun set-verify-guards-in-declares (verify-guards declares)
   (declare (xargs :guard (and (true-listp declares)
                               (all-declarep declares)
                               (member-eq verify-guards '(t nil)))))
@@ -433,7 +433,7 @@
 (defund add-verify-guards-nil (declares)
   (declare (xargs :guard (and (true-listp declares)
                               (all-declarep declares))))
-  (set-verify-guards-in-declares declares nil))
+  (set-verify-guards-in-declares nil declares))
 
 (defthm all-declarep-of-add-verify-guards-nil
   (implies (all-declarep declares)
@@ -444,7 +444,7 @@
 (defund add-verify-guards-t (declares)
   (declare (xargs :guard (and (true-listp declares)
                               (all-declarep declares))))
-  (set-verify-guards-in-declares declares t))
+  (set-verify-guards-in-declares t declares))
 
 (defthm all-declarep-of-add-verify-guards-t
   (implies (all-declarep declares)

@@ -1,4 +1,4 @@
-; Top book for evaluators library
+; Top file for clause-processors library
 ;
 ; Copyright (C) 2021 Kestrel Institute
 ;
@@ -10,6 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "defevaluator-plus")
-(include-book "empty-eval")
-(include-book "not-eval")
+(include-book "do-nothing")
+(include-book "do-nothing-to-literals")
+(include-book "subst-flag")
+(include-book "flatten-literals")
+(include-book "simple-subsumption")
+(include-book "push-unary-functions")

@@ -75,8 +75,6 @@
                            all-dargp-when-not-consp
                            )))
 
-
-
 (local (in-theory (enable natp-of-+-of-1-alt)))
 
 ;(in-theory (disable bag::count-of-cons)) ;why is this getting introduced?
@@ -111,6 +109,13 @@
 (local (in-theory (disable SYMBOL-ALISTP))) ;move
 (local (in-theory (disable dag-function-call-exprp-redef
                            axe-treep)))
+
+;;items should be nodenums (if they are terms, we can do better by calling negate-terms)
+(defun negate-all (items)
+  (declare (xargs :guard (true-listp items)))
+;;  (cons-onto-all 'not (enlist-all items))
+  (wrap-all 'not items)
+  )
 
 (defund axe-prover-optionsp (options)
   (declare (xargs :guard t))

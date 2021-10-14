@@ -12,6 +12,7 @@
 
 ;; STATUS: INCOMPLETE
 
+;(include-book "flatten-literals")
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
@@ -19,8 +20,10 @@
 (include-book "kestrel/evaluators/defevaluator-plus" :dir :system)
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+;(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
+;(local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
@@ -411,6 +414,7 @@
                             ;MEMBER-EQUAL-OF-STRIP-CARS-IFF
                             ;wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
+                            alistp ;why?
                             )
                            (pairlis$
                             SET-DIFFERENCE-EQUAL)))))
@@ -477,19 +481,21 @@
 ;;; now map the term processor over every literal of the clause
 
 (defthm sublis-var-and-simplify-lst-correct-special
-  (implies (and (simple-eval (disjoin (sublis-var-and-simplify-lst nil clause nil nil)) a)
-                (alistp a)
+  (implies (and (alistp a)
                 (pseudo-term-listp clause))
-           (simple-eval (disjoin clause) a))
+           (iff (simple-eval (disjoin (sublis-var-and-simplify-lst nil clause nil nil)) a)
+                (simple-eval (disjoin clause) a)))
   :hints (("Goal" :induct (len clause)
            :in-theory (enable (:i len) sublis-var-and-simplify-lst))))
 
 ;; Return a single, simplified clause
 (defund sublis-var-and-simplify-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
-  (progn$ (cw "Len of clause is ~x0.~%" (len clause))
-          (cw "Literals are ~x0.~%" clause)
-          (list (sublis-var-and-simplify-lst nil clause nil nil))))
+  (progn$ ;(cw "(Original clause (~x0 literals):~% ~x1.)~%" (len clause) clause)
+          (let* ( ;(clause (flatten-disjuncts clause))
+                 (clause (sublis-var-and-simplify-lst nil clause nil nil)))
+            (progn$ ;(cw "(One New clause (~x0 literals):~% ~x1.)~%" (len clause) clause)
+                    (list clause)))))
 
 ;todo: add :well-formedness proof
 (defthm sublis-var-and-simplify-clause-processor-correct
