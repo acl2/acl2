@@ -13,6 +13,8 @@
 ;; TODO: Rename this to resolve-ifs??  it's more than just subsumption
 ;; we use earlier facts to resolve later facts
 
+;; TODO: Use a simple evaluator (one with IF and NOT)?
+
 ;; Handles goal like (implies (and a_1 a_2 ...) (and b_1 b_2 ...)) where the as
 ;; and bs are, in general, disjunctions and the a_i obviously imply some of the
 ;; b_i (in the sense that som b_i has the all the disjuncts of some a_i, in the
@@ -30,20 +32,13 @@
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-(local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
+(local (include-book "kestrel/utilities/disjoin" :dir :system))
 
 (local (in-theory (enable pseudo-termp-when-symbolp)))
 
-(local (in-theory (disable disjoin
-                           symbol-alistp
+(local (in-theory (disable symbol-alistp
                            strip-cdrs
                            assoc-equal)))
-
-(defthm disjoin-when-not-consp
-  (IMPLIES (NOT (CONSP CLAUSE))
-           (equal (DISJOIN CLAUSE)
-                  *nil*))
-  :hints (("Goal" :in-theory (enable disjoin))))
 
 ;; just changes the evaluator
 (defthm equality-eval-of-disjoin-of-handle-constant-literals
