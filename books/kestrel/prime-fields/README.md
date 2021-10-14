@@ -1,13 +1,3 @@
-; Prime fields README file
-;
-; Copyright (C) 2020 Kestrel Institute
-;
-; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
-;
-; Author: Eric Smith (eric.smith@kestrel.edu)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 This directory formalizes the idea of a finite field consisting of the
 integers modulo some prime p.
 
