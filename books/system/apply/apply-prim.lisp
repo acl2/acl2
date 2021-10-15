@@ -83,7 +83,9 @@
 
 (include-book "apply-prim-support")
 
-;; Supports an optimization for the proof of APPLY$-PRIM-META-FN-CORRECT.
+; Sol Swords supplied an optimization for the proof of
+; APPLY$-PRIM-META-FN-CORRECT that relies on the following local include-book.
+; For more on that see "explanation from Sol" below.
 (local (include-book "centaur/misc/evaluator-metatheorems" :dir :system))
 
 ; We locally re-enable runes that were disabled during the build.
@@ -300,9 +302,52 @@
       `(defthm open-apply$-prim-of-quote
          (implies (syntaxp (quotep fn))
                   (equal (apply$-prim fn args)
-                         ,(body 'apply$-prim t (w state))))
-         :hints (("goal" :expand ((apply$-prim fn args))
-                  :in-theory nil)))))
+                         ,(body 'apply$-prim nil (w state))))
+
+; At one time we called body above with a second argument of t, which returns
+; the normalized body.  But the proof for #+acl2-devel builds, using (:repeat
+; :prove) further below, stopped working sometime before mid-October, 2021.  A
+; workaround was to replace :prove there by (:orelse :prove (:prove :hints
+; (("Goal" :in-theory (current-theory :here))))).  But Sol Swords suggested the
+; use of nil above (to obtain the unnormalized body) together with the
+; following :instructions to complete this proof quickly.  Here is a relevant
+; explanation from Sol, referring to the :bash instruction further below.
+
+#|
+ After the bash instruction each goal is of the following form
+ 1. (CONSP TERM)
+ 2. (EQUAL (CAR TERM) 'APPLY$-PRIM)
+ 3. (CONSP (CADR TERM))
+ 4. (EQUAL (CAR (CADR TERM)) 'QUOTE)
+ 5. (EQUAL (CADR (CADR TERM)) 'ACL2-NUMBERP)
+
+ The current subterm is:
+ (EQUAL (APPLY$-PRIM-META-FN-EV TERM ALIST)
+        (APPLY$-PRIM-META-FN-EV (CONS 'ACL2-NUMBERP
+                                      (N-CAR-CADR-CADDR-ETC 1 (CADDR TERM)))
+                                ALIST))
+
+ The LHS is supposed to reduce to e.g. 
+ (APPLY$-PRIM 'ACL2-NUMBERP
+              (APPLY$-PRIM-META-FN-EV (CADDR TERM)
+                                      ALIST))
+ and then (using open-apply$-prim-of-quote)
+ (ACL2-NUMBERP (CAR (APPLY$-PRIM-META-FN-EV (CADDR TERM)
+                                            ALIST)))
+ and the RHS is supposed to reduce to that same thing using
+ APPLY$-PRIM-META-FN-EV-EXPANDER-CORRECT.
+
+ However, the OPEN-APPLY$-PRIM-OF-QUOTE rule had several cases for
+ which instead of expanding to a call of the given function, it
+ expanded to a constant due to normalization. There are a bunch of
+ these, e.g. insist, member-eq-exec$guard-check, hard-error, etc. I
+ don't know why this wasn't a problem before.  It seems it's not a
+ problem in non-devel acl2 because tau solves it.
+|#
+
+         :instructions (:promote
+                        (:drop 1)
+                        (:prove :hints (("goal" :by apply$-prim)))))))
 
     (defthm apply$-prim-meta-fn-correct
       (equal (apply$-prim-meta-fn-ev term alist)
@@ -340,16 +385,7 @@
                                        (current-theory :here)
                                        (executable-counterpart-theory :here))))
                      )
-
-; Matt K. mod, 10/13/2021: The command (:repeat :prove) was just below, and was
-; failing with a #+acl2-devel build.  The use of :orelse below fixes that, but
-; perhaps there is a more fundamental issue worth addressing, since (:repeat
-; :prove) probably worked at one point with #+acl2-devel builds.
-
-        (:repeat (:orelse :prove
-                          (:prove :hints
-                                  (("Goal"
-                                    :in-theory (current-theory :here))))))))
+        (:repeat :prove)))
       :rule-classes ((:meta :trigger-fns (apply$-prim))))
 
     (defthm apply$-primp-implies-symbolp
