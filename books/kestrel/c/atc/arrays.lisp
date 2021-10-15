@@ -217,7 +217,7 @@
                                     (element ,<type>p))
          :guard (,<type>-array-index-okp array index)
          :returns (new-array ,<type>-arrayp)
-         :short ,(str::cat "Write an element to an array of"
+         :short ,(str::cat "Write an element to an array of "
                            type-string
                            ", using an integer index.")
          (b* ((array (,<type>-array-fix array))

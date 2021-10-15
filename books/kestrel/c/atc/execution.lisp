@@ -1301,10 +1301,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The first operand must be a pointer that can be derefenced
-     (this means that it must be a non-null pointer to @('unsigned char');
-     see @(tsee deref)),
-     obtaining an array.
+    "The first operand must be a pointer to an array.
      The second operand must be an integer value (of any integer type).
      The resulting index must be in range for the array,
      and the indexed element is returned as result."))
@@ -1319,7 +1316,7 @@
                                        (list :mistype-array :index
                                              :required (type-sint)
                                              :supplied (type-of-value sub))))
-       (array (deref arr compst))
+       (array (read-array arr compst))
        ((when (errorp array))
         (error (list :array-not-found arr (compustate-fix compst))))
        (index (exec-integer sub))
@@ -1369,10 +1366,10 @@
              err))
           (t (error (impossible)))))
   :guard-hints (("Goal"
-                 :use (:instance array-resultp-of-deref (ptr arr))
+                 :use (:instance array-resultp-of-read-array (ptr arr))
                  :in-theory (e/d (arrayp
                                   array-resultp)
-                                 (array-resultp-of-deref))))
+                                 (array-resultp-of-read-array))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1575,10 +1572,15 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is only used for expressions that must be assignments,
-       whose left subexpression is a variable
-       and whose right subexpression is a function call or pure;
-       this is what we support for now.")
+      "This is only used for expressions that must be assignments.
+       For now we only support simple assignment expressions, with:")
+     (xdoc::ul
+      (xdoc::li
+       "A left-hand side consisting of
+        either a variable
+        or an array subscripting expression where the array is a variable.")
+      (xdoc::li
+       "A right-hand side consisting of a function call or a pure expression."))
      (xdoc::p
       "We allow these assignment expressions
        as the expressions of expression statements.
@@ -1593,13 +1595,103 @@
          (right (expr-binary->arg2 e))
          ((unless (binop-case op :asg))
           (error (list :expr-asg-not-asg op)))
-         ((unless (expr-case left :ident))
-          (error (list :expr-asg-left-not-var left)))
-         (var (expr-ident->get left))
          ((mv val compst)
           (exec-expr-call-or-pure right compst fenv (1- limit)))
          ((when (errorp val)) val))
-      (write-var var val compst))
+      (case (expr-kind left)
+        (:ident
+         (b* ((var (expr-ident->get left)))
+           (write-var var val compst)))
+        (:arrsub
+         (b* ((arr (expr-arrsub->arr left))
+              (sub (expr-arrsub->sub left))
+              ((unless (expr-case arr :ident))
+               (error (list :expr-asg-arrsub-not-var left)))
+              (var (expr-ident->get arr))
+              (ptr (read-var var compst))
+              ((when (errorp ptr)) ptr)
+              ((unless (pointerp ptr))
+               (error (list :mistype-array :array
+                            :required :pointer
+                            :supplied (type-of-value ptr))))
+              (array (read-array ptr compst))
+              ((when (errorp array)) array)
+              (idx (exec-expr-pure sub compst))
+              ((when (errorp idx)) idx)
+              ((unless (value-integerp idx))
+               (error (list :mistype-array-index
+                            :required :integer
+                            :found idx)))
+              (index (exec-integer idx))
+              (err-elem (error (list :mistype-array-write
+                                     :required (type-of-value ptr)
+                                     :found val)))
+              (err-idx (error (list :array-index-out-of-range
+                                    :pointer ptr
+                                    :array array
+                                    :index idx))))
+           (cond ((uchar-arrayp array)
+                  (b* (((unless (ucharp val)) err-elem)
+                       ((unless (uchar-array-index-okp array index)) err-idx))
+                    (write-array ptr
+                                 (uchar-array-write array index val)
+                                 compst)))
+                 ((schar-arrayp array)
+                  (b* (((unless (scharp val)) err-elem)
+                       ((unless (schar-array-index-okp array index)) err-idx))
+                    (write-array ptr
+                                 (schar-array-write array index val)
+                                 compst)))
+                 ((ushort-arrayp array)
+                  (b* (((unless (ushortp val)) err-elem)
+                       ((unless (ushort-array-index-okp array index)) err-idx))
+                    (write-array ptr
+                                 (ushort-array-write array index val)
+                                 compst)))
+                 ((sshort-arrayp array)
+                  (b* (((unless (sshortp val)) err-elem)
+                       ((unless (sshort-array-index-okp array index)) err-idx))
+                    (write-array ptr
+                                 (sshort-array-write array index val)
+                                 compst)))
+                 ((uint-arrayp array)
+                  (b* (((unless (uintp val)) err-elem)
+                       ((unless (uint-array-index-okp array index)) err-idx))
+                    (write-array ptr
+                                 (uint-array-write array index val)
+                                 compst)))
+                 ((sint-arrayp array)
+                  (b* (((unless (sintp val)) err-elem)
+                       ((unless (sint-array-index-okp array index)) err-idx))
+                    (write-array ptr
+                                 (sint-array-write array index val)
+                                 compst)))
+                 ((ulong-arrayp array)
+                  (b* (((unless (ulongp val)) err-elem)
+                       ((unless (ulong-array-index-okp array index)) err-idx))
+                    (write-array ptr
+                                 (ulong-array-write array index val)
+                                 compst)))
+                 ((slong-arrayp array)
+                  (b* (((unless (slongp val)) err-elem)
+                       ((unless (slong-array-index-okp array index)) err-idx))
+                    (write-array ptr
+                                 (slong-array-write array index val)
+                                 compst)))
+                 ((ullong-arrayp array)
+                  (b* (((unless (ullongp val)) err-elem)
+                       ((unless (ullong-array-index-okp array index)) err-idx))
+                    (write-array ptr
+                                 (ullong-array-write array index val)
+                                 compst)))
+                 ((sllong-arrayp array)
+                  (b* (((unless (sllongp val)) err-elem)
+                       ((unless (sllong-array-index-okp array index)) err-idx))
+                    (write-array ptr
+                                 (sllong-array-write array index val)
+                                 compst)))
+                 (t (error :impossible)))))
+        (t (error (list :expr-asg-left-not-var-or-array-var-subscript left)))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
