@@ -3387,7 +3387,7 @@
      will be understood as C parameters instead, i.e. as pointers:
      therefore, we need to substitute, in the guard,
      each parameter @('x') with the array obtained by dereferencing it,
-     namely @('(deref x ...)').
+     namely @('(read-array x ...)').
      We also need to extend the guard with conjuncts
      saying that each parameter @('x') is a pointer value of appropriate type;
      currently, this must always be the @('unsigned char') type,
@@ -3401,7 +3401,7 @@
      this must be the same used
      in the formulation of the correctness theorems."))
   (b* ((derefs (loop$ for pointer in pointers
-                      collect `(deref ,(car pointer) ,compst-var)))
+                      collect `(read-array ,(car pointer) ,compst-var)))
        (guard-subst (fsubcor-var (strip-cars pointers) derefs guard))
        (pointer-hyps (atc-gen-fn-guard-deref-compustate-aux pointers)))
     (conjoin (append pointer-hyps (list guard-subst))))
@@ -3437,8 +3437,8 @@
      replacing them with the dereferenced arrays."))
   (cond ((endp args) nil)
         (t (cons (if (assoc-eq (car args) pointers)
-                     `(deref ,(symbol-fix (car args))
-                             ,(symbol-fix compst-var))
+                     `(read-array ,(symbol-fix (car args))
+                                  ,(symbol-fix compst-var))
                    (symbol-fix (car args)))
                  (atc-gen-fn-args-deref-compustate (cdr args)
                                                    pointers
@@ -3455,7 +3455,7 @@
           where pointer arguments are replaced with dereferenced arrays."
   (loop$ for pointer in pointers
          collect (list (car pointer)
-                       `(deref ,(car pointer) ,compst-var))))
+                       `(read-array ,(car pointer) ,compst-var))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4058,7 +4058,7 @@
        (formal (car formals))
        (inst (if (assoc-eq formal pointers)
                  (atc-gen-term-with-read-var-compustate
-                  `(deref ,formal ,compst-var)
+                  `(read-array ,formal ,compst-var)
                   compst-var)
                (atc-gen-term-with-read-var-compustate
                 formal
@@ -4530,14 +4530,14 @@
      for each formal that is a pointer.
      These are used as assumptions in the generated theorems,
      because otherwise just the guard, after substituting the bindings,
-     would refer to @('(deref (read-var <name> <compst>) ...)'),
+     would refer to @('(read-array (read-var <name> <compst>) ...)'),
      but we also need to say that
      @('(read-var <name> <compst>)') is a pointer."))
   (b* (((when (endp formals)) (mv nil nil))
        (formal (car formals))
        (term `(read-var (ident ,(symbol-name formal)) ,compst-var))
        ((mv term hyp?) (if (assoc-eq formal pointers)
-                           (mv `(deref ,term ,compst-var)
+                           (mv `(read-array ,term ,compst-var)
                                (list `(pointerp ,term)))
                          (mv term nil)))
        (binding (list formal term))

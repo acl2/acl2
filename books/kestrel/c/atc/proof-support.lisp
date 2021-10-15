@@ -421,7 +421,7 @@
      satisfy that condition
      (by design, for @(tsee add-var) and @(tsee update-var)).")
    (xdoc::p
-    "The theorems below about @(tsee deref)
+    "The theorems below about @(tsee read-array)
      applied to the heap component of the computation state
      skip over all the functions that represent the computation states."))
 
@@ -781,36 +781,36 @@
     (not (equal (compustate-frames-number (update-var var val compst)) 0))
     :enable update-var)
 
-  ;; rules about DEREF:
+  ;; rules about READ-ARRAY:
 
-  (defruled deref-of-add-frame
-    (equal (deref ptr (add-frame fun compst))
-           (deref ptr compst))
-    :enable (add-frame push-frame deref))
+  (defruled read-array-of-add-frame
+    (equal (read-array ptr (add-frame fun compst))
+           (read-array ptr compst))
+    :enable (add-frame push-frame read-array))
 
-  (defruled deref-of-enter-scope
-    (equal (deref ptr (enter-scope compst))
-           (deref ptr compst))
+  (defruled read-array-of-enter-scope
+    (equal (read-array ptr (enter-scope compst))
+           (read-array ptr compst))
     :enable (enter-scope
              push-frame
              pop-frame
-             deref))
+             read-array))
 
-  (defruled deref-of-add-var
-    (equal (deref ptr (add-var var val compst))
-           (deref ptr compst))
+  (defruled read-array-of-add-var
+    (equal (read-array ptr (add-var var val compst))
+           (read-array ptr compst))
     :enable (add-var
              push-frame
              pop-frame
-             deref))
+             read-array))
 
-  (defruled deref-of-update-var
-    (equal (deref ptr (update-var var val compst))
-           (deref ptr compst))
+  (defruled read-array-of-update-var
+    (equal (read-array ptr (update-var var val compst))
+           (read-array ptr compst))
     :enable (update-var
              push-frame
              pop-frame
-             deref)))
+             read-array)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -844,10 +844,10 @@
     compustate-frames-number-of-enter-scope-not-zero
     compustate-frames-number-of-add-var-not-zero
     compustate-frames-number-of-update-var-not-zero
-    deref-of-add-frame
-    deref-of-enter-scope
-    deref-of-add-var
-    deref-of-update-var
+    read-array-of-add-frame
+    read-array-of-enter-scope
+    read-array-of-add-var
+    read-array-of-update-var
     (:e typep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
