@@ -30,7 +30,7 @@
 
 (in-package "SV")
 (include-book "argmasks")
-(include-book "rewrite")
+(include-book "mask-compose-correct")
 (include-book "misc/hons-help" :dir :system)
 (include-book "std/strings/hexify" :dir :system)
 (include-book "centaur/misc/fast-alist-pop" :dir :system)
@@ -313,17 +313,7 @@ b = (a << 1) | (b << 1)
                                     svexlist-filter
                                     alist-keys))))
 
-(define svex-mask-alist-expand ((x svex-mask-alist-p))
-  :returns (mask-al svex-mask-alist-p)
-  (b* (((mv toposort al) (cwtime (svexlist-toposort (svex-mask-alist-keys x) nil nil)))
-       (- (fast-alist-free al)))
-    (cwtime (svexlist-compute-masks toposort (make-fast-alist x))))
-  ///
 
-  (fty::deffixequiv svex-mask-alist-expand)
-
-  (defthm svex-mask-alist-expand-complete
-    (svex-mask-alist-complete (svex-mask-alist-expand x))))
 
 ;; this is the same as svex-alist-reduce
 ;; (define svars-extract-updates ((vars svarlist-p)
@@ -340,40 +330,6 @@ b = (a << 1) | (b << 1)
 ;;     :hints(("Goal" :in-theory (enable svarlist-fix)))))
 
 
-(define svar-updates-pair-masks ((vars svarlist-p)
-                                 (masks svex-mask-alist-p)
-                                 (updates svex-alist-p))
-  :returns (newmasks svex-mask-alist-p
-                     :hints(("Goal" :in-theory (enable svex-mask-alist-p))))
-  :guard-hints (("goal" :in-theory (enable svarlist-p)))
-  (b* (((when (atom vars)) nil)
-       (var (car vars))
-       (svex (svex-var var))
-       (update (svex-fastlookup var updates))
-       ((unless update)
-        (svar-updates-pair-masks (cdr vars) masks updates))
-       (mask (svex-mask-lookup svex masks)))
-    (cons (cons update mask)
-          (svar-updates-pair-masks (cdr vars) masks updates)))
-  ///
-  (deffixequiv svar-updates-pair-masks
-    :hints(("Goal" :in-theory (enable svarlist-fix)))))
-
-(define svex-updates-pair-masks ((updates svex-alist-p)
-                                 (masks svex-mask-alist-p))
-  :returns (newmasks svex-mask-alist-p
-                     :hints(("Goal" :in-theory (enable svex-mask-alist-p))))
-  :guard-hints (("goal" :in-theory (enable svarlist-p)))
-  :measure (len (svex-alist-fix updates))
-  (b* ((updates (svex-alist-fix updates))
-       ((when (atom updates)) nil)
-       ((cons var svex) (car updates))
-       (mask (svex-mask-lookup (svex-var var) masks)))
-    (cons (cons svex mask)
-          (svex-updates-pair-masks (cdr updates) masks)))
-  ///
-  (deffixequiv svex-updates-pair-masks
-    :hints(("Goal" :in-theory (enable svarlist-fix)))))
 
 ;; (defalist svar-mask-alist :key-type svar :val-type 4vmask)
 (define svex-vars-detect-loops ((vars svarlist-p)
@@ -600,180 +556,212 @@ substitution are left in place."
                                    (svex-alist-p))))))
 
 
-(define svexlist-compose-to-fix-rec2
-  ((masks svex-mask-alist-p "Masks -- initially those of the updates, then those
-                             for successive iterations of applying
-                             loop-updates.")
-   (loop-updates svex-alist-p
-                 "Subset of update including only the bindings of the variables
-                  that also appear as inputs.") ;; original dfs-composed assignments
-   (count (or (natp count) (not count)) "Current count of the masks"))
-  :prepwork ((local (defthm svarlist-p-of-instersection
-                      (implies (svarlist-p a)
-                               (svarlist-p (intersection-equal a b)))
-                      :hints(("Goal" :in-theory (enable svarlist-p)))))
-             (local (include-book "std/lists/take" :dir :system))
-             (local (defthm svarlist-p-of-take
-                      (implies (and (svarlist-p x)
-                                    (<= (nfix n) (len x)))
-                               (svarlist-p (take n x)))
-                      :hints(("Goal" :in-theory (enable svarlist-p))))))
-  :ruler-extenders :lambdas
-  :hints(("Goal" :in-theory (enable o<)))
-  :verify-guards nil
-  :measure (if count
-               (nfix count)
-             (make-ord 1 1 0))
-  :returns (mv (final-masks svex-mask-alist-p)
-               (xx svex-alist-p))
-  :short "Recompose the update functions together as long as it will decrease the
-          care mask of some input variables that are also output variables."
-  :long "
-<p>Consider the SystemVerilog fragment:</p>
-@({
- logic [2:0] a;
- assign a = ~{a[1:0], 1'b0};
- })
+;; (define svexlist-compose-to-fix-rec2
+;;   ((masks svex-mask-alist-p "Masks -- initially those of the updates, then those
+;;                              for successive iterations of applying
+;;                              loop-updates.")
+;;    (loop-updates svex-alist-p
+;;                  "Subset of update including only the bindings of the variables
+;;                   that also appear as inputs.") ;; original dfs-composed assignments
+;;    (count (or (natp count) (not count)) "Current count of the masks"))
+;;   :prepwork ((local (defthm svarlist-p-of-instersection
+;;                       (implies (svarlist-p a)
+;;                                (svarlist-p (intersection-equal a b)))
+;;                       :hints(("Goal" :in-theory (enable svarlist-p)))))
+;;              (local (include-book "std/lists/take" :dir :system))
+;;              (local (defthm svarlist-p-of-take
+;;                       (implies (and (svarlist-p x)
+;;                                     (<= (nfix n) (len x)))
+;;                                (svarlist-p (take n x)))
+;;                       :hints(("Goal" :in-theory (enable svarlist-p))))))
+;;   :ruler-extenders :lambdas
+;;   :hints(("Goal" :in-theory (enable o<)))
+;;   :verify-guards nil
+;;   :measure (if count
+;;                (nfix count)
+;;              (make-ord 1 1 0))
+;;   :returns (mv (final-masks svex-mask-alist-p)
+;;                (xx svex-alist-p))
+;;   :short "Recompose the update functions together as long as it will decrease the
+;;           care mask of some input variables that are also output variables."
+;;   :long "
+;; <p>Consider the SystemVerilog fragment:</p>
+;; @({
+;;  logic [2:0] a;
+;;  assign a = ~{a[1:0], 1'b0};
+;;  })
 
-<p>At first glance this looks like a combinational loop: @('a') is used in its
-own update function.  But at the bit level, this unwinds in a way that avoids
-the combinational looping:</p>
-@({
- assign a[2] = ~a[1];
- assign a[1] = ~a[0];
- assign a[0] = ~1'b0;
- })
+;; <p>At first glance this looks like a combinational loop: @('a') is used in its
+;; own update function.  But at the bit level, this unwinds in a way that avoids
+;; the combinational looping:</p>
+;; @({
+;;  assign a[2] = ~a[1];
+;;  assign a[1] = ~a[0];
+;;  assign a[0] = ~1'b0;
+;;  })
 
-<p>In SV, we don't bitblast; instead we look at the care masks of the variables
-involved.  We start with the update function above.  The representation of the
-RHS in svex is something like:</p>
+;; <p>In SV, we don't bitblast; instead we look at the care masks of the variables
+;; involved.  We start with the update function above.  The representation of the
+;; RHS in svex is something like:</p>
 
-@({
- (bitnot (concat 1 0 (zerox 2 a)))
- })
+;; @({
+;;  (bitnot (concat 1 0 (zerox 2 a)))
+;;  })
 
-<p>First we compute the care masks for this, starting from the full mask (-1) (we show the masks in binary):</p>
+;; <p>First we compute the care masks for this, starting from the full mask (-1) (we show the masks in binary):</p>
 
-@({
- (bitnot (concat 1 0 (zerox 2 a)))   --> -1
- (concat 1 0 (zerox 2 a))            --> -1
- (zerox 2 a)                         --> -1
- a                                   --> 11
-})
+;; @({
+;;  (bitnot (concat 1 0 (zerox 2 a)))   --> -1
+;;  (concat 1 0 (zerox 2 a))            --> -1
+;;  (zerox 2 a)                         --> -1
+;;  a                                   --> 11
+;; })
 
-<p>This means that we only care about the lower two bits of the input variable
-@('a') in the update function given.</p>
+;; <p>This means that we only care about the lower two bits of the input variable
+;; @('a') in the update function given.</p>
 
-<p>If we compose the update function with itself once, to begin unwinding the
-loop, we'll get a new set of masks; these start with the mask @('11') for
-the outermost expression:</p>
+;; <p>If we compose the update function with itself once, to begin unwinding the
+;; loop, we'll get a new set of masks; these start with the mask @('11') for
+;; the outermost expression:</p>
 
-@({
- (bitnot (concat 1 0 (zerox 2 a)))   --> 11
- (concat 1 0 (zerox 2 a))            --> 11
- (zerox 2 a)                         -->  1
- a                                   -->  1
-})
+;; @({
+;;  (bitnot (concat 1 0 (zerox 2 a)))   --> 11
+;;  (concat 1 0 (zerox 2 a))            --> 11
+;;  (zerox 2 a)                         -->  1
+;;  a                                   -->  1
+;; })
 
-<p>Therefore, once we've composed the update function with itself once (so that
-we have two nestings of it), we then only care about the LSB of the input
-variable @('a').</p>
+;; <p>Therefore, once we've composed the update function with itself once (so that
+;; we have two nestings of it), we then only care about the LSB of the input
+;; variable @('a').</p>
 
-<p>Composing it on once more repeats the process:</p>
+;; <p>Composing it on once more repeats the process:</p>
 
-@({
- (bitnot (concat 1 0 (zerox 2 a)))   -->  1
- (concat 1 0 (zerox 2 a))            -->  1
- (zerox 2 a)                         -->  0
- a                                   -->  0
-})
+;; @({
+;;  (bitnot (concat 1 0 (zerox 2 a)))   -->  1
+;;  (concat 1 0 (zerox 2 a))            -->  1
+;;  (zerox 2 a)                         -->  0
+;;  a                                   -->  0
+;; })
 
-<p>This means if we've layered three copies of the update function, then we no
-longer care about the input variable @('a'), so we can stop composing them.</p>
+;; <p>This means if we've layered three copies of the update function, then we no
+;; longer care about the input variable @('a'), so we can stop composing them.</p>
 
-<p>For a less nice example:</p>
+;; <p>For a less nice example:</p>
 
-@({
- logic [3:0] a;
- assign a = ~{a[2:1], 1'b0, a[0]};
- })
+;; @({
+;;  logic [3:0] a;
+;;  assign a = ~{a[2:1], 1'b0, a[0]};
+;;  })
 
-<p>This does contain a combinational loop, but it also has a component that is
-a false combinational loop.  If we do the same exercise with the masks, we find
-the mask for @('a') with one copy of the update function is @('111'), with two
-copies is @('11'), and with three or more is @('1').  So we still want to
-compose the update function three times; more than that doesn't gain us
-anything.</p>
+;; <p>This does contain a combinational loop, but it also has a component that is
+;; a false combinational loop.  If we do the same exercise with the masks, we find
+;; the mask for @('a') with one copy of the update function is @('111'), with two
+;; copies is @('11'), and with three or more is @('1').  So we still want to
+;; compose the update function three times; more than that doesn't gain us
+;; anything.</p>
 
-<p>It is a bit confusing what happens when in this function; we annotate with
-comments following this last example.</p>
+;; <p>It is a bit confusing what happens when in this function; we annotate with
+;; comments following this last example.</p>
 
-"
-  (b* (
-       (- (cw "Loop variable count: ~x0~%" (len loop-updates)))
-       (- (cw "Mask bits count: ~x0~%" count))
+;; "
 
-       ;; Initially, the masks are those of updates, i.e. those induced by
-       ;; saying all bits of the update functions of named wires are cares.
-       ;;  In the last example in the documentation, the mask for a is initially
-       ;; 111, on second iteration, 11, on third and beyond 1.
+;; ;; We are imagining here that the caremasks decrease monotonically.  (We can
+;; ;; try to prove that they do, but this means an additional proof for every svex
+;; ;; function's mask computation.  It doesn't follow from the mere correctness of
+;; ;; the mask computation.  For now we'll just check and do something suboptimal
+;; ;; if we find them nonmonotonic.)
 
-       ;; This makes an (incomplete) mask alist mapping the update functions
-       ;; for each of the variables to the mask for that variable as bound in
-       ;; masks.  So in the first iteration, if a variable is used in the
-       ;; updates, then its update function gets mapped to the mask for that
-       ;; variable's occurrence in updates, which is (hopefully) less than the
-       ;; full mask.  This maps (bitnot (concat 1 a (concat 1 0 (zerox 2 a))))
-       ;; to 111 on the first iteration, then 11, then 1.
-       (masks-start (svex-updates-pair-masks loop-updates masks))
-       ;; Now expand those masks.  In the first iteration, this gives us the
-       ;; masks for variables after composing together two copies of the
-       ;; updates.  I.e. the mask for a is 11 in the first iteration and 1 in
-       ;; the second and beyond.
-       (masks-exp1 (cwtime (svex-mask-alist-expand masks-start) :mintime 0))
+;; ;; The difficult part here is what to do when a variable's mask does not
+;; ;; decrease.  Do we still need to compose it in?
 
-       ;; Now rewrite the loop-updates under those masks
-       (updates-rw
-        (cwtime (svexlist-rewrite-under-masks (svex-alist-vals loop-updates) masks-exp1)))
-       (- (cw "Masked updates count: ~x0~%" (cwtime (svexlist-opcount updates-rw))))
-       (- (fast-alist-free masks-exp1))
-       (masks-exp (cwtime (svex-mask-alist-expand
-                           (svex-updates-pair-masks (pairlis$ (svex-alist-keys loop-updates)
-                                                              updates-rw)
-                                                    masks))))
+;; ;; Let prop(msks) signify the function from mask alist to mask alist (for a
+;; ;; given set of assignments) that computes the input caremasks for the given
+;; ;; output caremasks.  We assume it's monotonic and that msks are
+;; ;; prop^n(fullmsks) so that prop(msks) [= msks.  Suppose for some signal a,
+;; ;; msks(a) = prop(msks)(a) > prop(prop(msks))(a). A basic fact about the mask
+;; ;; algorithm is that the input mask of a variable is the OR of contributions
+;; ;; from the output masks of all variables.  Let's use the notation
+;; ;; prop(msks(b)) to denote the contribution of output variable b to all input
+;; ;; masks, and in particular prop(msks(b))(a) its contribution to the input mask
+;; ;; of variable a.  Given msks(a) = prop(msks)(a) > prop(prop(msks))(a), there
+;; ;; must be some variable (or several) b such that msks(b) > prop(msks)(b) and
+;; ;; prop(msks(b))(a) > prop(prop(msks)(b))(a).  That is, the eventual decrease
+;; ;; in the masks of a was due to a prior decrease in the masks of some other
+;; ;; variable(s). 
 
-       (loop-vars (svex-alist-keys loop-updates))
-       (new-count (cwtime (svexlist-masks-measure
-                           loop-vars masks-exp) :mintime 0))
-       ;; note: final-masks is a fast alist b/c svex-mask-alist-expand returns
-       ;; a fast alist
-       ((mv final-masks rest-alist)
-        (b* (((when (eql 0 new-count))
-              (cw "mask count reached 0~%")
-              (mv masks-exp nil))
-             ((when (and count (>= new-count (lnfix count))))
-              (cw "Mask bits count didn't decrease~%")
-              (mv masks-exp nil))
-             (next-loop-updates (svex-compose-keep-nonzero-mask-updates loop-updates masks-exp)))
-          (svexlist-compose-to-fix-rec2 masks-exp next-loop-updates new-count)))
+;; ;; The basic correctness of this algorithm is compose-theory correctness,
+;; ;; i.e. we aren't composing in something wrong. However, because of the use of
+;; ;; rewriting with masks, proving this depends on the other form of correctness,
+;; ;; which is that the caremasks we compute are accurate.
 
-       (changed-var-updates (with-fast-alist masks
-                              (svex-compose-extract-nonstable-vars loop-updates
-                                                                   masks
-                                                                   final-masks)))
-       (res (if rest-alist
-                (with-fast-alist rest-alist
-                  (svex-alist-compose* changed-var-updates rest-alist))
-              changed-var-updates)))
-    (clear-memoize-table 'svex-compose*)
-    (mv final-masks res))
-  ///
-  (verify-guards svexlist-compose-to-fix-rec2
-    :guard-debug t)
-  (fty::deffixequiv svexlist-compose-to-fix-rec2
-    :hints ((and stable-under-simplificationp
-                 `(:expand (,(second (car (last clause)))
-                            ,(third (car (last clause)))))))))
+
+
+;;   (b* (
+;;        (- (cw "Loop variable count: ~x0~%" (len loop-updates)))
+;;        (- (cw "Mask bits count: ~x0~%" count))
+
+;;        ;; Initially, the masks are those of updates, i.e. those induced by
+;;        ;; saying all bits of the update functions of named wires are cares.
+;;        ;;  In the last example in the documentation, the mask for a is initially
+;;        ;; 111, on second iteration, 11, on third and beyond 1.
+
+;;        ;; This makes an (incomplete) mask alist mapping the update functions
+;;        ;; for each of the variables to the mask for that variable as bound in
+;;        ;; masks.  So in the first iteration, if a variable is used in the
+;;        ;; updates, then its update function gets mapped to the mask for that
+;;        ;; variable's occurrence in updates, which is (hopefully) less than the
+;;        ;; full mask.  This maps (bitnot (concat 1 a (concat 1 0 (zerox 2 a))))
+;;        ;; to 111 on the first iteration, then 11, then 1.
+;;        (masks-start (svex-updates-pair-masks loop-updates masks))
+;;        ;; Now expand those masks.  In the first iteration, this gives us the
+;;        ;; masks for variables after composing together two copies of the
+;;        ;; updates.  I.e. the mask for a is 11 in the first iteration and 1 in
+;;        ;; the second and beyond.
+;;        (masks-exp1 (cwtime (svex-mask-alist-expand masks-start) :mintime 0))
+
+;;        ;; Now rewrite the loop-updates under those masks
+;;        (updates-rw
+;;         (cwtime (svexlist-rewrite-under-masks (svex-alist-vals loop-updates) masks-exp1)))
+;;        (- (cw "Masked updates count: ~x0~%" (cwtime (svexlist-opcount updates-rw))))
+;;        (- (fast-alist-free masks-exp1))
+;;        (masks-exp (cwtime (svex-mask-alist-expand
+;;                            (svex-updates-pair-masks (pairlis$ (svex-alist-keys loop-updates)
+;;                                                               updates-rw)
+;;                                                     masks))))
+
+;;        (loop-vars (svex-alist-keys loop-updates))
+;;        (new-count (cwtime (svexlist-masks-measure
+;;                            loop-vars masks-exp) :mintime 0))
+;;        ;; note: final-masks is a fast alist b/c svex-mask-alist-expand returns
+;;        ;; a fast alist
+;;        ((mv final-masks rest-alist)
+;;         (b* (((when (eql 0 new-count))
+;;               (cw "mask count reached 0~%")
+;;               (mv masks-exp nil))
+;;              ((when (and count (>= new-count (lnfix count))))
+;;               (cw "Mask bits count didn't decrease~%")
+;;               (mv masks-exp nil))
+;;              (next-loop-updates (svex-compose-keep-nonzero-mask-updates loop-updates masks-exp)))
+;;           (svexlist-compose-to-fix-rec2 masks-exp next-loop-updates new-count)))
+
+;;        (changed-var-updates (with-fast-alist masks
+;;                               (svex-compose-extract-nonstable-vars loop-updates
+;;                                                                    masks
+;;                                                                    final-masks)))
+;;        (res (if rest-alist
+;;                 (with-fast-alist rest-alist
+;;                   (svex-alist-compose* changed-var-updates rest-alist))
+;;               changed-var-updates)))
+;;     (clear-memoize-table 'svex-compose*)
+;;     (mv final-masks res))
+;;   ///
+;;   (verify-guards svexlist-compose-to-fix-rec2
+;;     :guard-debug t)
+;;   (fty::deffixequiv svexlist-compose-to-fix-rec2
+;;     :hints ((and stable-under-simplificationp
+;;                  `(:expand (,(second (car (last clause)))
+;;                             ,(third (car (last clause)))))))))
 
 
 
@@ -1258,6 +1246,8 @@ comments following this last example.</p>
 
 ||#
 
+
+
 (progn
   (with-output :off (event prove)
     (defines svex-compose-bit-sccs
@@ -1362,22 +1352,22 @@ negative -- the lognot is the number of bits to shift).</p>"
                          !return))
                       ;; Before continuing, make sure we're in the final-masks.
                       (mask-look (svex-mask-lookup x.expr params.final-masks))
+                      ((unless (eql 1 (sparseint-bit x.idx mask-look)))
+                       ;; This bit isn't set in the masks so this isn't one of the looping bits.
+                       !return)
+                      (update (svex-fastlookup x.expr.name params.updates))
+
+                      ((unless update)
+                       ;; Combinational input... should we warn?
+                       !return)
                       ((when (sparseint-< mask-look 0))
-                       (b* ((err (msg "Encountered a variable ~x0 that had negative
-                                   final-masks.  ~ Debugging info saved in
-                                   ~x1."
+                       (b* ((err (msg "Encountered a variable ~x0 that had ~
+                                       negative final-masks.  Debugging info ~
+                                       saved in ~x1."
                                       x.expr.name :svex-scc-debug-info))
                             (- (sneaky-save :svex-scc-debug-info
                                             (list x . !args))))
                          !return))
-                      ((unless (eql 1 (sparseint-bit x.idx mask-look)))
-                       ;; This bit isn't set in the masks so this isn't one of the looping bits.
-                       !return)
-
-                      (update (svex-fastlookup x.expr.name params.updates))
-                      ((unless update)
-                       ;; Combinational input... should we warn?
-                       !return)
                       
                       (index trav-index)
                       (stack (hons-acons x index stack))
@@ -1931,6 +1921,62 @@ we've seen before with a mask that overlaps with that one.</p>"
             (svar-key-alist-p (fast-alist-clean x)))
    :hints(("Goal" :in-theory (enable acl2::fast-alist-clean-by-remove-assoc)))))
 
+
+
+;; Notes on composition strategy.
+
+;; For a long time our network composition strategy has had three phases:
+;;  1. Simple DFS-based composition using only syntactic dependency info, no use of masks.
+;;  2. Iterative recomposition with narrowing caremasks, resolving intravariable dependencies
+;;  3. SCC-based recomposition to resolve bit-level apparent combinational loops.
+
+;; This is quite efficient and works well in practice, especially if there are
+;; very few bit-level apparent combinational loops.
+
+;; A couple problems:
+
+;;  - Step 2 is confusing and hard to verify. A simple version of it might not
+;;    be too bad but might also not perform well.
+;;  - Step 3 really makes more sense at the bit level.  It is probably not too
+;;    hard to verify (with respect to the spec, which only concerns
+;;    correctness, not completeness), but there is a problem that might cause
+;;    incompleteness if different bits of a variable are in different SCCs.
+
+;; The Step 3 problem can be fixed by splitting variables into bits.  If there
+;; aren't too many bit-level loops and we still eliminate other intravariable
+;; dependencies in step 2, then this should be OK.
+
+;; We tried to fix the Step 2 problem by splitting into bits any variables on
+;; which we still have a dependency after step 1 and replacing step 2 with
+;; another simple DFS-based composition.  Unfortunately, this didn't work well:
+;; the DFS-based composition for step 2 didn't resolve many of the
+;; intravariable dependencies, so these had to be dealt with in step 3's
+;; SCC-based composition, which is fine in principle but fairly slow.
+
+;; It worked somewhat better once we added the rewrite rule
+;; bit?!-distrib-into-concat (commented out in rewrite-rules.lisp).  This
+;; allowed more (but not most) of the intravariable dependencies to be
+;; eliminated in step 2 and sped up step 3 considerably.  However, this was
+;; still slower than the original strategy and bit?!-distrib-into-concat is
+;; really not a good rule in general.
+
+
+
+
+(define svex-alist-pair-initial-masks ((x svex-alist-p))
+  :enabled t
+  :guard-hints (("goal" :in-theory (enable svex-alist-keys
+                                           svexlist-mask-acons
+                                           svarlist->svexes
+                                           svex-mask-acons
+                                           svex-alist-pair-initial-masks)))
+  (mbe :logic (svexlist-mask-acons (svarlist->svexes (svex-alist-keys x)) -1 nil)
+       :exec (if (atom x)
+                 nil
+               (cons (cons (svex-var (caar x)) -1)
+                     (svex-alist-pair-initial-masks (cdr x))))))
+
+
 (define svex-assigns-compose ((x svex-alist-p)
                               &key (rewrite 't))
   :parents (svex-composition)
@@ -1954,7 +2000,7 @@ we've seen before with a mask that overlaps with that one.</p>"
         ;; svexlist-compose-to-fix-rec2 takes a very long time.
         (cwtime (svexlist-rewrite-top updates-vals :verbosep t) :mintime 0))
        (- (cw "Updates count after rewrite: ~x0~%" (svexlist-opcount updates-vals)))
-       (masks (svexlist-mask-alist updates-vals))
+       ;; (masks (svexlist-mask-alist updates-vals))
        ;; (updates-vals (cwtime (svexlist-rewrite updates-vals masks) :mintime 1))
        ;; (- (cw "Updates count after rewrite: ~x0~%" (svexlist-opcount updates-vals)))
        ;; (updates (pairlis$ (svex-alist-keys updates) updates-vals))
@@ -1963,10 +2009,14 @@ we've seen before with a mask that overlaps with that one.</p>"
        (upd-subset (with-fast-alist updates (svex-alist-reduce vars updates)))
        ;; (- (acl2::sneaky-save 'simple-updates updates))
        (- (cw "Looping subset count: ~x0~%" (cwtime (svexlist-opcount (svex-alist-vals upd-subset)))))
-       (- (cw "Mask bits count (starting): ~x0~%" (svexlist-masks-measure vars masks)))
-       ((acl2::with-fast updates))
+       ;; (- (cw "Mask bits count (starting): ~x0~%" (svexlist-masks-measure vars masks)))
+       (initial-masks (svex-alist-pair-initial-masks upd-subset))
+       ((acl2::with-fast initial-masks))
        ((mv final-masks rest)
-        (cwtime (svexlist-compose-to-fix-rec2 masks upd-subset nil) :mintime 1))
+        (cwtime (svex-alist-maskcompose-iter initial-masks upd-subset
+                                             ;; svex-simpconfig -- try setting to number
+                                             ;; or make configurable
+                                             t) :mintime 1))
        ;; (- (sneaky-save 'assigns x)
        ;;    (sneaky-save 'updates updates)
        ;;    (sneaky-save 'final-masks final-masks)
@@ -2041,7 +2091,7 @@ we've seen before with a mask that overlaps with that one.</p>"
        (updates-vals
         (if rewrite (cwtime (svexlist-rewrite-top updates-vals :verbosep t) :mintime 0) updates-vals))
        (- (cw "Updates count after rewrite: ~x0~%" (svexlist-opcount updates-vals)))
-       (masks (svexlist-mask-alist updates-vals))
+       ;; (masks (svexlist-mask-alist updates-vals))
        ;; (updates-vals (cwtime (svexlist-rewrite updates-vals masks) :mintime 1))
        ;; (- (cw "Updates count after rewrite: ~x0~%" (svexlist-opcount updates-vals)))
        ;; (updates (pairlis$ (svex-alist-keys updates) updates-vals))
@@ -2050,10 +2100,14 @@ we've seen before with a mask that overlaps with that one.</p>"
        (upd-subset (with-fast-alist updates (svex-alist-reduce vars updates)))
        ;; (- (acl2::sneaky-save 'simple-updates updates))
        (- (cw "Looping subset count: ~x0~%" (cwtime (svexlist-opcount (svex-alist-vals upd-subset)))))
-       (- (cw "Mask bits count (starting): ~x0~%" (svexlist-masks-measure vars masks)))
-       ((acl2::with-fast updates))
+       ;; (- (cw "Mask bits count (starting): ~x0~%" (svexlist-masks-measure vars masks)))
+       (initial-masks (svex-alist-pair-initial-masks upd-subset))
+       ((acl2::with-fast initial-masks))
        ((mv final-masks rest)
-        (cwtime (svexlist-compose-to-fix-rec2 masks upd-subset nil) :mintime 1))
+        (cwtime (svex-alist-maskcompose-iter initial-masks upd-subset
+                                             ;; svex-simpconfig -- try setting to number
+                                             ;; or make configurable
+                                             t) :mintime 1))
        ;; (- (sneaky-save 'assigns x)
        ;;    (sneaky-save 'updates updates)
        ;;    (sneaky-save 'final-masks final-masks)
@@ -2123,6 +2177,18 @@ we've seen before with a mask that overlaps with that one.</p>"
        (- (cw "Updates count: ~x0~%" (svexlist-opcount (svex-alist-vals updates)))))
     updates))
 
+
+
+
+(define svex-assigns-compose-with-split-phase2 ((x svex-alist-p)
+                                                &key (simpconf svex-simpconfig-p))
+  :returns (mv (masks svex-mask-alist-p)
+               (new-x svex-alist-p))
+  (b* ((init-masks (svex-alist-pair-initial-masks x)))
+    (with-fast-alist init-masks
+      (svex-alist-maskcompose-iter init-masks x simpconf))))
+  
+
 ;; Need to experiment to see if it's best to split variables directly into bits
 ;; or use bigger chunks (e.g. by looking at the structure of the current
 ;; updates, either how the variables are built from bits or else how they are
@@ -2191,13 +2257,30 @@ we've seen before with a mask that overlaps with that one.</p>"
         (svex-compose-splittab (cdr x) masks))
        (var (caar x))
        (mask (svex-mask-lookup (svex-var var) masks))
-       ((when (eql mask 0))
+       ((when (sparseint-equal mask 0))
         (svex-compose-splittab (cdr x) masks))
        ((mv split count1) (svar-mask-to-split var 0 mask (sparseint-length mask)))
        ((mv rest count2) (svex-compose-splittab (cdr x) masks)))
     (mv (cons (cons var split)
               rest)
-        (+ count1 count2))))
+        (+ count1 count2)))
+  ///
+  (defret hons-assoc-equal-under-iff-of-<fn>
+    (iff (hons-assoc-equal var splittab)
+         (and (svar-p var)
+              (svex-lookup var x)
+              (not (sparseint-equal 0 (svex-mask-lookup (svex-var var) masks)))))
+    :hints(("Goal" :in-theory (enable svex-lookup))))
+
+  (defret <fn>-splittab-keys-subset
+    (subsetp-equal (alist-keys splittab)
+                   (svex-alist-keys x))
+    :hints(("Goal" :in-theory (enable svex-alist-keys))))
+
+  (defret <fn>-splittab-keys-no-dups
+    (implies (no-duplicatesp-equal (svex-alist-keys x))
+             (no-duplicatesp-equal (alist-keys splittab)))
+    :hints(("Goal" :in-theory (e/d (svex-alist-keys))))))
 
 
        
@@ -2207,10 +2290,10 @@ we've seen before with a mask that overlaps with that one.</p>"
             (svarlist-p (alist-keys x)))
    :hints(("Goal" :in-theory (enable svar-splittab-p alist-keys)))))
 
-(define svex-assigns-compose-with-split-phase2 ((x svex-alist-p))
+(define svex-assigns-compose-with-split-phase3 ((x svex-alist-p)
+                                                (masks svex-mask-alist-p))
   :returns (mv err (new-x svex-alist-p) (splittab svar-splittab-p))
   (b* ((x-vals (svex-alist-vals x))
-       (masks (svexlist-mask-alist x-vals))
        (vars (svexlist-collect-vars x-vals))
        ((mv splittab bitcount) (cwtime (svex-compose-splittab x masks) :mintime 0))
        (- (cw "Care bits remaining: ~x0~%" bitcount))
@@ -2219,21 +2302,43 @@ we've seen before with a mask that overlaps with that one.</p>"
        (bad-vars (acl2::hons-intersection vars splittab-vars))
        ((when bad-vars)
         (mv (msg "Splittab had variables that already existed: ~x0~%" bad-vars) nil splittab))
-       (dupsp (hons-dups-p bad-vars))
+       (dupsp (hons-dups-p splittab-vars))
        ((when dupsp)
         (mv (msg "Splittab had duplicate variables such as ~x0~%" (car dupsp)) nil splittab))
+       (dupsp (hons-dups-p (alist-keys splittab)))
+       ((when dupsp)
+        (mv (msg "Splittab had duplicate keys such as ~x0~%" (car dupsp)) nil splittab))
        (x-split-part (svex-alist-reduce (alist-keys splittab) x))
-       (split-updates1 (with-fast-alist x (cwtime (svex-alist-to-split x-split-part splittab) :mintime 0)))
+       (split-updates1 (with-fast-alist x-split-part
+                         (cwtime (svex-alist-to-split-exec x-split-part splittab) :mintime 0)))
        (split-updates (cwtime (svex-alist-rewrite-top split-updates1 :verbosep t) :mintime 0))
-       (compose-vars (acl2::hons-intersection (svexlist-collect-vars (svex-alist-vals split-updates))
-                                              (svex-alist-keys split-updates)))
-       (- (cw "Split update variables: ~x0~%" (len compose-vars)))
-       (new-updates (cwtime (svex-compose-assigns split-updates) :mintime 0)))
-    (mv nil new-updates splittab)))
+       (- (cw "Split update variables: ~x0~%" (len split-updates))))
+    (mv nil split-updates splittab)))
 
-(define svex-assigns-compose-with-split-phase3 ((x svex-alist-p))
+(local (in-theory (disable fast-alist-clean)))
+
+(local (defthm svex-mask-alist-p-of-hons-remove-assoc
+         (implies (svex-mask-alist-p x)
+                  (svex-mask-alist-p (acl2::hons-remove-assoc k x)))
+         :hints(("Goal" :in-theory (enable acl2::hons-remove-assoc)))))
+
+(local (defthm cdr-last-when-svex-mask-alist-p
+         (implies (svex-mask-alist-p x)
+                  (not (cdr (last x))))
+         :rule-classes :forward-chaining))
+                  
+
+(local (defthm svex-mask-alist-p-of-fast-alist-clean
+         (implies (svex-mask-alist-p x)
+                  (svex-mask-alist-p (fast-alist-clean x)))
+         :hints(("Goal" :induct (fast-alist-clean x)
+                 :expand ((fast-alist-clean x)
+                          (svex-mask-alist-p x))))))
+
+
+(define svex-assigns-compose-with-split-phase4 ((x svex-alist-p))
   :returns (mv err (new-x svex-alist-p))
-  (b* ((final-masks (svexlist-mask-alist (svex-alist-vals x)))
+  (b* ((final-masks (fast-alist-clean (svexlist-mask-alist (svex-alist-vals x))))
        ;; (- (with-fast-alist x
        ;;      (svex-masks-summarize-loops vars final-masks x)))
        (loop-var-alist (fast-alist-clean (svex-compose-extract-loop-var-alist-from-final-masks final-masks)))
@@ -2265,7 +2370,7 @@ we've seen before with a mask that overlaps with that one.</p>"
         (mv err nil)))
     (mv err (with-fast-alist looped-updates (svex-alist-compose* x looped-updates)))))
 
-(define svex-assigns-compose-with-split-phase4 ((unsplit svex-alist-p)
+(define svex-assigns-compose-with-split-phase5 ((unsplit svex-alist-p)
                                                 (split svex-alist-p)
                                                 (splittab svar-splittab-p))
   :returns (new-x svex-alist-p)
@@ -2280,11 +2385,12 @@ we've seen before with a mask that overlaps with that one.</p>"
   :short "Given an alist mapping variables to assigned expressions, compose them together into full update functions."
   :returns (mv err (xx svex-alist-p))
   (b* ((phase1 (svex-assigns-compose-with-split-phase1 x :rewrite rewrite))
-       ((mv err phase2 splittab) (svex-assigns-compose-with-split-phase2 phase1))
+       ((mv masks phase2) (svex-assigns-compose-with-split-phase2 phase1 :simpconf (if rewrite 20 t)))
+       ((mv err phase3 splittab) (svex-assigns-compose-with-split-phase3 phase2 masks))
        ((when err) (mv err nil))
-       ((mv err phase3) (svex-assigns-compose-with-split-phase3 phase2))
+       ((mv err phase4) (svex-assigns-compose-with-split-phase4 phase3))
        ((when err) (mv err nil)))
-    (mv nil (svex-assigns-compose-with-split-phase4 phase1 phase3 splittab))))
+    (mv nil (svex-assigns-compose-with-split-phase5 phase2 phase4 splittab))))
 
 (define svex-assigns-compose-split ((x svex-alist-p)
                               &key (rewrite 't))

@@ -197,6 +197,7 @@
   (local (in-theory (enable svex-alist-fix))))
 
 
+
 (local (defthm svex-lookup-of-cons
          (equal (svex-lookup key (cons (cons var val) rest))
                 (if (and (svar-p var)
@@ -354,7 +355,7 @@
        (full-mask (sparseint-bitor mask rest-mask))
        ((when (sparseint-equal full-mask rest-mask))
         rest))
-    (cons (cons svex full-mask) rest))
+    (svex-mask-acons svex full-mask rest))
   ///
   (deffixequiv svex-updates-pair-masks
     :hints(("Goal" :in-theory (enable svarlist-fix))))
@@ -1105,9 +1106,11 @@
        (status (check-masks-decreasing loop-updates masks next-masks))
        ((unless status)
         (cw "Masks stopped shrinking~%")
+        (fast-alist-free next-masks)
         (mv next-masks (svex-alist-fix loop-updates)))
        ((unless (eq status t))
         (cw "Monotonicity violation: ~x0~%" status)
+        (fast-alist-free next-masks)
         (mv next-masks (svex-alist-fix loop-updates)))
        ((mv final-masks rest-composed)
         (svex-alist-maskcompose-iter
@@ -1117,6 +1120,7 @@
                   masks next-masks
                   (make-svex-substconfig :simp simpconf
                                          :alist rest-composed))))
+    (fast-alist-free next-masks)
     (mv final-masks composed))
   ///
 
