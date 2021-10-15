@@ -162,6 +162,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define array-length ((array arrayp))
+  :returns (length natp)
+  :short "Length of an array."
+  (array-case array
+              :uchar (uchar-array-length array.get)
+              :schar (schar-array-length array.get)
+              :ushort (ushort-array-length array.get)
+              :sshort (sshort-array-length array.get)
+              :uint (uint-array-length array.get)
+              :sint (sint-array-length array.get)
+              :ulong (ulong-array-length array.get)
+              :slong (slong-array-length array.get)
+              :ullong (ullong-array-length array.get)
+              :sllong (sllong-array-length array.get))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-of-array-element ((array arrayp))
+  :returns (type typep)
+  :short "Element type of an array."
+  (array-case array
+              :uchar (type-uchar)
+              :schar (type-schar)
+              :ushort (type-ushort)
+              :sshort (type-sshort)
+              :uint (type-uint)
+              :sint (type-sint)
+              :ulong (type-ulong)
+              :slong (type-slong)
+              :ullong (type-ullong)
+              :sllong (type-sllong))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defomap heap
   :short "Fixtype of heaps."
   :long
@@ -636,11 +672,10 @@
      (We should expand this check to ensure that
      it matches the type of the array in the heap.)")
    (xdoc::p
-    "Note that this function returns the array as a whole:
-     it does not read an array element; it reads the whole array.
-     Given the array that is read as a whole,
-     functions like @(tsee uchar-array-read-sint)
-     can be used to read elements of the array."))
+    "Note that this function reads the array as a whole;
+     it does not read an array element.
+     Functions like @(tsee uchar-array-read-sint)
+     can be used to read individual array elements."))
   (b* ((reftype (pointer->reftype ptr))
        ((unless (or (type-signed-integerp reftype)
                     (type-unsigned-integerp reftype)))
@@ -657,3 +692,55 @@
                          :heap heap))))
       (error :null-pointer-read)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-array ((ptr pointerp) (array arrayp) (compst compustatep))
+  :returns (new-compst compustate-resultp)
+  :short "Write an array in the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the pointer is null, we return an error.
+     Otherwise, we check whether the heap has an array at the pointer's adress,
+     of the same type and size as the array passed as argument.
+     If these checks succeed, we overwrite the array in the heap.")
+   (xdoc::p
+    "Note that this function writes the array as a whole;
+     it does not write an array element.
+     Functions like @(tsee uchar-array-write-sint)
+     can be used to write individual array elements."))
+  (b* ((heap (compustate->heap compst))
+       (address (pointer->address? ptr))
+       ((when (not address)) (error :null-pointer-write))
+       (pair (omap::in address heap))
+       ((unless (consp pair)) (error (list :address-not-found address
+                                           :heap heap)))
+       (old-array (cdr pair))
+       ((unless (equal (pointer->reftype ptr)
+                       (type-of-array-element old-array)))
+        (error (list :pointer-mistype
+                     :pointer (pointer->reftype ptr)
+                     :array (type-of-array-element old-array))))
+       ((unless (equal (array-length array)
+                       (array-length old-array)))
+        (error (list :array-length-mismatch
+                     :old (array-length old-array)
+                     :new (array-length array))))
+       (new-heap (omap::update address (array-fix array) heap))
+       (new-compst (change-compustate compst :heap new-heap)))
+    new-compst)
+  :hooks (:fix)
+  ///
+
+  (defret compustate-frames-number-of-write-array
+    (implies (compustatep new-compst)
+             (equal (compustate-frames-number new-compst)
+                    (compustate-frames-number compst)))
+    :hints (("Goal" :in-theory (enable compustate-frames-number))))
+
+  (defret compustate-scopes-numbers-of-write-array
+    (implies (compustatep new-compst)
+             (equal (compustate-scopes-numbers new-compst)
+                    (compustate-scopes-numbers compst)))
+    :hints (("Goal" :in-theory (enable compustate-scopes-numbers)))))
