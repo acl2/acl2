@@ -571,7 +571,7 @@ ACl2-Doc buffer, all ACl2-Doc buffers except the current one will
 be killed.  If invoked in any other buffer, all ACL2-Doc buffers
 will be killed.  With prefix argument, avoid a query that asks
 for confirmation."
-  
+
   (interactive)
   (when (or do-not-ask (y-or-n-p "Kill all other acl2-doc-buffers? "))
 
@@ -814,12 +814,12 @@ the current manual (as for `/', but without a minibuffer query)."
   (acl2-doc-go!-aux nil))
 
 (defun acl2-doc-go!-new-buffer ()
-  
+
   "Go to the topic occurring at the cursor position in a new
 buffer.  In the case of <NAME>, instead go to the source code
 definition of NAME for the current manual (as for `/', but
 without a minibuffer query)."
-  
+
   (interactive)
   (acl2-doc-go!-aux t))
 
@@ -1711,5 +1711,4 @@ with, for example, meta-3 control-t /."
 (define-key acl2-doc-mode-map "u" 'acl2-doc-up)
 (define-key acl2-doc-mode-map "w" 'acl2-doc-where)
 (define-key acl2-doc-mode-map "W" 'acl2-doc-where-definition)
-(define-key acl2-doc-mode-map (kbd "C-<tab>") 'acl2-doc-tab-back)
 (define-key acl2-doc-mode-map (kbd "<backtab>") 'acl2-doc-tab-back)
