@@ -39,7 +39,7 @@
 (include-book "centaur/misc/hons-extra" :dir :system) ;; with-fast
 (include-book "tools/symlet" :dir :system)
 (include-book "centaur/misc/sneaky-load" :dir :system)
-
+(include-book "compose-theory-split")
 (local (include-book "centaur/misc/dfs-measure" :dir :system))
 (local (include-book "std/osets/under-set-equiv" :dir :system))
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
@@ -325,18 +325,19 @@ b = (a << 1) | (b << 1)
   (defthm svex-mask-alist-expand-complete
     (svex-mask-alist-complete (svex-mask-alist-expand x))))
 
-(define svars-extract-updates ((vars svarlist-p)
-                               (updates svex-alist-p))
-  :returns (upds svex-alist-p)
-  :guard-hints (("goal" :in-theory (enable svarlist-p)))
-  (b* (((when (atom vars)) nil)
-       (upd (svex-fastlookup (car vars) updates))
-       ((unless upd) (svars-extract-updates (cdr vars) updates)))
-    (cons (cons (svar-fix (car vars)) upd)
-          (svars-extract-updates (cdr vars) updates)))
-  ///
-  (deffixequiv svars-extract-updates
-    :hints(("Goal" :in-theory (enable svarlist-fix)))))
+;; this is the same as svex-alist-reduce
+;; (define svars-extract-updates ((vars svarlist-p)
+;;                                (updates svex-alist-p))
+;;   :returns (upds svex-alist-p)
+;;   :guard-hints (("goal" :in-theory (enable svarlist-p)))
+;;   (b* (((when (atom vars)) nil)
+;;        (upd (svex-fastlookup (car vars) updates))
+;;        ((unless upd) (svars-extract-updates (cdr vars) updates)))
+;;     (cons (cons (svar-fix (car vars)) upd)
+;;           (svars-extract-updates (cdr vars) updates)))
+;;   ///
+;;   (deffixequiv svars-extract-updates
+;;     :hints(("Goal" :in-theory (enable svarlist-fix)))))
 
 
 (define svar-updates-pair-masks ((vars svarlist-p)
@@ -1775,7 +1776,9 @@ negative -- the lognot is the number of bits to shift).</p>"
         (svex-mask-alist-compose-bit-sccs (cdr x) trav-index stack trav-indices finalized-updates params))
        ((cons key mask) (car x))
        ((unless (and (svex-case key :var)
-                     (not (sparseint-equal 0 (4vmask-fix mask)))))
+                     (not (sparseint-equal 0 (4vmask-fix mask)))
+                     (svex-fastlookup (svex-var->name key)
+                                      (svex-scc-consts->updates params))))
         (svex-mask-alist-compose-bit-sccs (cdr x) trav-index stack trav-indices finalized-updates params))
        ((mv err ?min-lowlink trav-index stack trav-indices finalized-updates)
         (prog2$ (cw "svex-mask-compose-bit-sccs, key: ~x0, mask: ~x1~%" key mask)
@@ -1957,7 +1960,7 @@ we've seen before with a mask that overlaps with that one.</p>"
        ;; (updates (pairlis$ (svex-alist-keys updates) updates-vals))
        (vars (svexlist-collect-vars updates-vals))
        (updates (pairlis$ (svex-alist-keys updates) updates-vals))
-       (upd-subset (with-fast-alist updates (svars-extract-updates vars updates)))
+       (upd-subset (with-fast-alist updates (svex-alist-reduce vars updates)))
        ;; (- (acl2::sneaky-save 'simple-updates updates))
        (- (cw "Looping subset count: ~x0~%" (cwtime (svexlist-opcount (svex-alist-vals upd-subset)))))
        (- (cw "Mask bits count (starting): ~x0~%" (svexlist-masks-measure vars masks)))
@@ -2044,7 +2047,7 @@ we've seen before with a mask that overlaps with that one.</p>"
        ;; (updates (pairlis$ (svex-alist-keys updates) updates-vals))
        (vars (svexlist-collect-vars updates-vals))
        (updates (pairlis$ (svex-alist-keys updates) updates-vals))
-       (upd-subset (with-fast-alist updates (svars-extract-updates vars updates)))
+       (upd-subset (with-fast-alist updates (svex-alist-reduce vars updates)))
        ;; (- (acl2::sneaky-save 'simple-updates updates))
        (- (cw "Looping subset count: ~x0~%" (cwtime (svexlist-opcount (svex-alist-vals upd-subset)))))
        (- (cw "Mask bits count (starting): ~x0~%" (svexlist-masks-measure vars masks)))
@@ -2102,6 +2105,195 @@ we've seen before with a mask that overlaps with that one.</p>"
     res-updates2)
   ///
   (deffixequiv svex-assigns-compose))
+
+(define svex-assigns-compose-with-split-phase1 ((x svex-alist-p)
+                                                &key (rewrite 't))
+  :returns (new-x svex-alist-p)
+  (b* ((xvals (svex-alist-vals x))
+       (- (cw "Initial count: ~x0~%" (svexlist-opcount xvals)))
+       ;;; Rewriting here at first presumably won't disrupt decompositions
+       ;;; because the expressions should be relatively small and independent,
+       ;;; to first approximation.
+       ;; (- (sneaky-save 'orig-assigns x))
+       (xvals (if rewrite (cwtime (svexlist-rewrite-top xvals :verbosep t) :mintime 0) xvals))
+       (x (pairlis$ (svex-alist-keys x) xvals))
+       (- (cw "Count after initial rewrite: ~x0~%" (svexlist-opcount xvals)))
+       (updates (cwtime (svex-compose-assigns x) :mintime 0))
+       (updates (cwtime (svex-alist-rewrite-top updates :verbosep t) :mintime 0))
+       (- (cw "Updates count: ~x0~%" (svexlist-opcount (svex-alist-vals updates)))))
+    updates))
+
+;; Need to experiment to see if it's best to split variables directly into bits
+;; or use bigger chunks (e.g. by looking at the structure of the current
+;; updates, either how the variables are built from bits or else how they are
+;; used).  For now we just go with bits because it's simpler and we hope that
+;; performance will be OK.
+
+(define svar-split-variable ((orig svar-p)
+                             (base-idx natp)
+                             (width acl2::maybe-natp))
+  :returns (new svar-p)
+  :hooks ((:fix :hints (("goal" :in-theory (enable acl2::maybe-natp-fix)))))
+  (b* (((svar orig)))
+    (change-svar orig :name (hons :splitrange
+                                  (if width
+                                      (hons orig.name (hons (lnfix base-idx) (lnfix width)))
+                                    (hons orig.name (lnfix base-idx)))))))
+
+(define svar-mask-to-split ((orig svar-p)
+                            (position natp)
+                            (mask 4vmask-p)
+                            (masklen (equal masklen (sparseint-length mask))))
+  :measure (nfix (- (sparseint-length (4vmask-fix mask)) (nfix position)))
+  :returns (mv (split svar-split-p)
+               (bitcount natp :rule-classes :type-prescription))
+  :prepwork ((local (defthm trailing-0-count-nonzero
+                      (implies (and (not (logbitp n x))
+                                    (< (nfix n) (integer-length x)))
+                               (not (equal (bitops::trailing-0-count (logtail n x)) 0)))
+                      :hints(("Goal" :in-theory (enable* bitops::trailing-0-count
+                                                         bitops::ihsext-inductions
+                                                         bitops::logtail**
+                                                         bitops::logbitp**
+                                                         bitops::integer-length**))))))
+  :verify-guards :after-returns
+  (b* ((mask (4vmask-fix mask))
+       (masklen (mbe :logic (sparseint-length mask) :exec masklen))
+       ((when (<= (the unsigned-byte masklen) (lnfix position)))
+        (mv (svar-split-remainder (svar-split-variable orig position nil)) 0))
+       ((when (eql (sparseint-bit position mask) 1))
+        (b* (((mv rest rest-count) (svar-mask-to-split orig (+ 1 (lnfix position)) mask masklen)))
+          (mv (make-svar-split-segment
+               :var (svar-split-variable orig position 1)
+               :width 1
+               :rest rest)
+              (+ 1 rest-count))))
+       (zeros (sparseint-trailing-0-count-from mask position))
+       ((mv rest rest-count) (svar-mask-to-split orig (+ zeros (lnfix position)) mask masklen)))
+    (mv (make-svar-split-segment
+         :var (svar-split-variable orig position zeros)
+         :width zeros
+         :rest rest)
+        rest-count)))
+
+(define svex-compose-splittab ((x svex-alist-p)
+                               (masks svex-mask-alist-p))
+  :returns (mv (splittab svar-splittab-p)
+               (bitcount natp :rule-classes :type-prescription))
+  :hooks ((:fix :hints (("goal" :induct (svex-compose-splittab x masks)
+                         :expand ((svex-compose-splittab x masks)))
+                        (and stable-under-simplificationp
+                             '(:expand ((svex-alist-fix x)
+                                        (svex-compose-splittab (svex-alist-fix (cdr x)) masks)))))))
+  (b* (((when (atom x)) (mv nil 0))
+       ((unless (mbt (and (consp (car x))
+                          (svar-p (caar x)))))
+        (svex-compose-splittab (cdr x) masks))
+       (var (caar x))
+       (mask (svex-mask-lookup (svex-var var) masks))
+       ((when (eql mask 0))
+        (svex-compose-splittab (cdr x) masks))
+       ((mv split count1) (svar-mask-to-split var 0 mask (sparseint-length mask)))
+       ((mv rest count2) (svex-compose-splittab (cdr x) masks)))
+    (mv (cons (cons var split)
+              rest)
+        (+ count1 count2))))
+
+
+       
+(local
+ (defthm svarlist-p-alist-keys-when-svar-splittab-p
+   (implies (svar-splittab-p x)
+            (svarlist-p (alist-keys x)))
+   :hints(("Goal" :in-theory (enable svar-splittab-p alist-keys)))))
+
+(define svex-assigns-compose-with-split-phase2 ((x svex-alist-p))
+  :returns (mv err (new-x svex-alist-p) (splittab svar-splittab-p))
+  (b* ((x-vals (svex-alist-vals x))
+       (masks (svexlist-mask-alist x-vals))
+       (vars (svexlist-collect-vars x-vals))
+       ((mv splittab bitcount) (cwtime (svex-compose-splittab x masks) :mintime 0))
+       (- (cw "Care bits remaining: ~x0~%" bitcount))
+       (splittab-vars (svar-splittab-vars splittab))
+       (- (cw "Total split variables: ~x0~%" (len splittab-vars)))
+       (bad-vars (acl2::hons-intersection vars splittab-vars))
+       ((when bad-vars)
+        (mv (msg "Splittab had variables that already existed: ~x0~%" bad-vars) nil splittab))
+       (dupsp (hons-dups-p bad-vars))
+       ((when dupsp)
+        (mv (msg "Splittab had duplicate variables such as ~x0~%" (car dupsp)) nil splittab))
+       (x-split-part (svex-alist-reduce (alist-keys splittab) x))
+       (split-updates1 (with-fast-alist x (cwtime (svex-alist-to-split x-split-part splittab) :mintime 0)))
+       (split-updates (cwtime (svex-alist-rewrite-top split-updates1 :verbosep t) :mintime 0))
+       (compose-vars (acl2::hons-intersection (svexlist-collect-vars (svex-alist-vals split-updates))
+                                              (svex-alist-keys split-updates)))
+       (- (cw "Split update variables: ~x0~%" (len compose-vars)))
+       (new-updates (cwtime (svex-compose-assigns split-updates) :mintime 0)))
+    (mv nil new-updates splittab)))
+
+(define svex-assigns-compose-with-split-phase3 ((x svex-alist-p))
+  :returns (mv err (new-x svex-alist-p))
+  (b* ((final-masks (svexlist-mask-alist (svex-alist-vals x)))
+       ;; (- (with-fast-alist x
+       ;;      (svex-masks-summarize-loops vars final-masks x)))
+       (loop-var-alist (fast-alist-clean (svex-compose-extract-loop-var-alist-from-final-masks final-masks)))
+       ;; (next-updates (with-fast-alist new-updates
+       ;;                 (svex-alist-compose* split-updates new-updates)))
+
+       
+       ;; (- (acl2::sneaky-save 'next-updates next-updates))
+
+       (- (cw "~x0 loop vars~%" (len loop-var-alist))
+          ;; (cw "rest: ~x0~%keys: ~x1~%"
+          ;;     (len rest) (alist-keys (take (min 20 (len rest)) rest)))
+          )
+       ((mv err looped-updates)
+        (with-fast-alist loop-var-alist
+          (with-fast-alist x
+            (with-fast-alist final-masks
+              (cwtime
+               (svex-mask-alist-compose-bit-sccs
+                final-masks 0 nil nil nil
+                (make-svex-scc-consts :final-masks final-masks
+                                      :updates x
+                                      :loop-vars loop-var-alist)))))))
+       ;; (- (acl2::sneaky-save 'looped-updates looped-updates))
+       (- (fast-alist-free loop-var-alist))
+       (- (fast-alist-free final-masks))
+       ((when err)
+        (fast-alist-free looped-updates)
+        (mv err nil)))
+    (mv err (with-fast-alist looped-updates (svex-alist-compose* x looped-updates)))))
+
+(define svex-assigns-compose-with-split-phase4 ((unsplit svex-alist-p)
+                                                (split svex-alist-p)
+                                                (splittab svar-splittab-p))
+  :returns (new-x svex-alist-p)
+  (b* ((re-unsplit (svex-alist-from-split split splittab)))
+    (with-fast-alist re-unsplit
+      (svex-alist-compose* unsplit re-unsplit))))
+
+
+(define svex-assigns-compose-with-split ((x svex-alist-p)
+                              &key (rewrite 't))
+  :parents (svex-composition)
+  :short "Given an alist mapping variables to assigned expressions, compose them together into full update functions."
+  :returns (mv err (xx svex-alist-p))
+  (b* ((phase1 (svex-assigns-compose-with-split-phase1 x :rewrite rewrite))
+       ((mv err phase2 splittab) (svex-assigns-compose-with-split-phase2 phase1))
+       ((when err) (mv err nil))
+       ((mv err phase3) (svex-assigns-compose-with-split-phase3 phase2))
+       ((when err) (mv err nil)))
+    (mv nil (svex-assigns-compose-with-split-phase4 phase1 phase3 splittab))))
+
+(define svex-assigns-compose-split ((x svex-alist-p)
+                              &key (rewrite 't))
+  :parents (svex-composition)
+  :short "Given an alist mapping variables to assigned expressions, compose them together into full update functions."
+  :returns (xx svex-alist-p)
+  (b* (((mv err ans) (svex-assigns-compose-with-split x :rewrite rewrite))
+       (- (and err (raise "~@0" err))))
+    ans))
 
 
 

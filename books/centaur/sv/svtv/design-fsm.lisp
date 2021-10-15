@@ -193,7 +193,7 @@
                              (svex-alist-compose flatnorm.assigns override-alist)))
        (updates1 (make-fast-alist
                   (with-fast-alist overridden-assigns
-                    (svex-assigns-compose overridden-assigns :rewrite t))))
+                    (svex-assigns-compose-split overridden-assigns :rewrite t))))
        (updates2 (svex-alist-compose override-alist updates1))
        (masks (svexlist-mask-alist (svex-alist-vals updates2)))
        (nextstates (with-fast-alist updates2 (svex-compose-delays flatnorm.delays updates2 masks))))
@@ -260,7 +260,7 @@
                              (svex-alist-compose assigns override-alist)))
        (updates1 (make-fast-alist
                   (with-fast-alist overridden-assigns
-                    (svex-assigns-compose overridden-assigns :rewrite rewrite))))
+                    (svex-assigns-compose-split overridden-assigns :rewrite rewrite))))
        (updates2 (svex-alist-compose override-alist updates1))
        (masks (svexlist-mask-alist (svex-alist-vals updates2)))
        (nextstates (with-fast-alist updates2 (svex-compose-delays delays updates2 masks))))

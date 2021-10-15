@@ -2350,12 +2350,12 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                                (iff (cdr (hons-assoc-equal x a))
                                     (hons-assoc-equal x a)))
                       :hints(("Goal" :in-theory (enable sv::svex-alist-p)))))
-             #!sv
-             (local (Defthm svex-lookup-of-append
-                      (iff (svex-lookup x (append a b))
-                           (or (svex-lookup x a)
-                               (svex-lookup x b)))
-                      :hints(("Goal" :in-theory (enable svex-lookup)))))
+             ;; #!sv
+             ;; (local (Defthm svex-lookup-of-append
+             ;;          (iff (svex-lookup x (append a b))
+             ;;               (or (svex-lookup x a)
+             ;;                   (svex-lookup x b)))
+             ;;          :hints(("Goal" :in-theory (enable svex-lookup)))))
              (local (in-theory (disable sv::member-of-svarlist-add-delay))))
   :guard-debug t
   (b* ((warnings nil)

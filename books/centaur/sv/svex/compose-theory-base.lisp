@@ -1783,7 +1783,14 @@
                     (comp (append x y)) (decomp network)
                     (ordering (append (netcomp-p-eval-equiv-witness x network)
                                       (netcomp-p-eval-equiv-witness y network)))))
-             :do-not-induct t))))
+             :do-not-induct t)))
+
+  (defthm netcomp-p-of-nil
+    (netcomp-p nil network)
+    :hints (("goal" :use ((:instance netcomp-p-suff
+                           (comp nil) (decomp network)
+                           (ordering nil)))
+             :expand ((neteval-ordering-compile nil network))))))
 
 
 
@@ -1793,6 +1800,189 @@
 
 (defcong set-equiv svex-envs-equivalent (svex-env-removekeys keys env) 1
   :hints ((and stable-under-simplificationp `(:expand (,(car (last clause)))))))
+
+
+
+(defsection  netcomp-p-of-svex-alist-reduce-implies
+  (local (defthm svex-rsh-of-0
+           (svex-eval-equiv (svex-rsh 0 x) x)
+           :hints(("Goal" :in-theory (enable svex-eval-equiv svex-apply)))))
+
+  (local
+   (defines neteval-ordering-reduce-rec
+     (define neteval-ordering-reduce-rec ((vars svarlist-p)
+                                          (x neteval-ordering-p))
+       :measure (neteval-ordering-count x)
+       :returns (new-x neteval-ordering-p)
+       :verify-guards nil
+       (b* ((x (neteval-ordering-fix x))
+            ((when (atom x)) nil)
+            ((cons signal sigordering) (car x))
+            ((unless (member-equal signal (svarlist-fix vars)))
+             (neteval-ordering-reduce-rec vars (cdr x)))
+            (new-sigord (neteval-sigordering-reduce-rec vars sigordering)))
+         (cons (cons signal new-sigord)
+               (neteval-ordering-reduce-rec vars (cdr x)))))
+
+     (define neteval-sigordering-reduce-rec ((vars svarlist-p)
+                                             (x neteval-sigordering-p))
+       :measure (neteval-sigordering-count x)
+       :returns (new-x neteval-sigordering-p)
+       (neteval-sigordering-case x
+         :segment (make-neteval-sigordering-segment
+                   :width x.width
+                   :ord (neteval-ordering-or-null-reduce-rec vars x.ord)
+                   :rest (neteval-sigordering-reduce-rec vars x.rest))
+         :remainder (neteval-sigordering-remainder
+                     (neteval-ordering-or-null-reduce-rec vars x.ord))))
+
+     (define neteval-ordering-or-null-reduce-rec ((vars svarlist-p)
+                                                  (x neteval-ordering-or-null-p))
+       :measure (neteval-ordering-or-null-count x)
+       :returns (new-x neteval-ordering-or-null-p)
+       (neteval-ordering-or-null-case x
+         :null (neteval-ordering-or-null-fix x)
+         :ordering (neteval-ordering-or-null-ordering
+                    (neteval-ordering-reduce-rec vars x.ord))))
+     ///
+
+     (local (defthmd svex-lookup-redef
+              (equal (svex-lookup key alist)
+                     (cond ((atom alist) nil)
+                           ((and (consp (car alist))
+                                 (equal (caar alist) (svar-fix key)))
+                            (svex-fix (cdar alist)))
+                           (t (svex-lookup key (cdr alist)))))
+              :hints(("Goal" :in-theory (enable svex-lookup)))
+              :rule-classes :definition))
+
+     (local (defthm compose-lookup-of-neteval-ordering-compile-when-not-in-network
+              (implies (not (svex-lookup var network))
+                       (svex-eval-equiv
+                        (svex-lookup var (neteval-ordering-compile x network))
+                        (and (hons-assoc-equal (svar-fix var) (neteval-ordering-fix x))
+                             (svex-var var))))
+              :hints(("Goal" :in-theory (enable svex-lookup-redef
+                                                neteval-sigordering-compile-when-signal-not-in-network)))))
+
+     (local (defthm car-of-neteval-ordering-fix
+              (implies (consp (neteval-ordering-fix x))
+                       (car (neteval-ordering-fix x)))
+              :hints (("goal" :induct (len x)
+                       :expand ((neteval-ordering-fix x))))))
+
+     (std::defret-mutual lookup-in-neteval-ordering-reduce-rec
+       (defret lookup-in-neteval-ordering-reduce-rec
+         (iff (hons-assoc-equal var new-x)
+              (and (svar-p var)
+                   (member-equal var (svarlist-fix vars))
+                   (hons-assoc-equal var (neteval-ordering-fix x))))
+         :hints ('(:expand (<call>
+                            (hons-assoc-equal var (neteval-ordering-fix x)))
+                   :in-theory (disable hons-assoc-equal-of-neteval-ordering-fix)))
+         :fn neteval-ordering-reduce-rec)
+       :skip-others t)
+
+     (local (defthm cons-under-iff
+              (iff (cons a b) t)))
+
+     (local (defthm svex-lookup-under-iff-of-neteval-ordering-compile
+              (iff (svex-lookup var (neteval-ordering-compile x network))
+                   (hons-assoc-equal (svar-fix var) (neteval-ordering-fix x)))))
+
+
+     (local (defthm add-identity-pair-under-svex-alist-compose-equiv
+              (implies (svex-eval-equiv (svex-compose-lookup var rest) (svex-var var))
+                       ;; (or (not (svex-lookup var rest))
+                       ;;     (equal (svex-lookup var rest) (svex-var var))))
+                       (svex-alist-compose-equiv
+                        (cons (cons var (svex-var var)) rest)
+                        rest))
+              :hints(("Goal" :in-theory (e/d (svex-alist-compose-equiv
+                                              svex-compose-lookup)
+                                             (equal-of-svex-var))))))
+
+     (local (defthm add-pairs-under-svex-alist-compose-equiv
+              (implies (svex-alist-compose-equiv rest1 rest2)
+                       (equal (svex-alist-compose-equiv (cons a rest1)
+                                                        (cons a rest2))
+                              t))
+              :hints (("goal" :expand ((svex-alist-compose-equiv (cons a rest1)
+                                                                 (cons a rest2)))
+                       :in-theory (enable svex-compose-lookup)
+                       :use ((:instance svex-alist-compose-equiv-necc
+                              (x rest1) (y rest2)
+                              (var (svex-alist-compose-equiv-witness (cons a rest1) (cons a rest2)))))))))
+
+     (local (in-theory (disable svex-lookup-of-neteval-ordering-compile)))
+     (defthm-neteval-ordering-compile-flag neteval-ordering-reduce-rec-correct
+       (defthm neteval-ordering-reduce-rec-correct
+         (svex-alist-compose-equiv (neteval-ordering-compile
+                                    (neteval-ordering-reduce-rec vars x) network)
+                                   (neteval-ordering-compile x (svex-alist-reduce vars network)))
+         :hints ('(:expand ((neteval-ordering-reduce-rec vars x)
+                            (:free (network) (neteval-ordering-compile x network))
+                            (:free (a b network) (neteval-ordering-compile (cons a b) network))
+                            (:free (network) (neteval-ordering-compile nil network)))
+                   :in-theory (e/d (neteval-sigordering-compile-when-signal-not-in-network
+                                    svex-compose-lookup)
+                                   (equal-of-svex-var)))
+                 ;; (and stable-under-simplificationp
+                 ;;      `(:expand (,(car (last clause)))
+                 ;;        :in-theory (enable svex-compose-lookup
+                 ;;                           neteval-sigordering-compile-when-signal-not-in-network)))
+                 ;; (and stable-under-simplificationp
+                 ;;      (let ((var (acl2::find-call-lst 'svex-alist-compose-equiv-witness clause)))
+                 ;;        `(:clause-processor (acl2::generalize-with-alist-cp clause '((,var . var))))))
+                 ;; (and stable-under-simplificationp
+                 ;;      '(:in-theory (enable svex-lookup-of-neteval-ordering-compile)))
+                 )
+         :flag neteval-ordering-compile)
+       (defthm neteval-sigordering-reduce-rec-correct
+         (implies (member-equal (svar-fix signal) (svarlist-fix vars))
+                  (svex-eval-equiv (neteval-sigordering-compile
+                                    (neteval-sigordering-reduce-rec vars x)
+                                    signal offset network)
+                                   (neteval-sigordering-compile x signal offset (svex-alist-reduce vars network))))
+         :hints ('(:expand ((neteval-sigordering-reduce-rec vars x)
+                            (:free (network) (neteval-sigordering-compile x signal offset network))
+                            (:free (width ord rest network)
+                             (neteval-sigordering-compile (neteval-sigordering-segment width ord rest)
+                                                          signal offset network))
+                            (:free ( ord network)
+                             (neteval-sigordering-compile (neteval-sigordering-remainder ord)
+                                                          signal offset network)))))
+         :flag neteval-sigordering-compile)
+       (defthm neteval-ordering-or-null-reduce-rec-correct
+         (implies (member-equal (svar-fix signal) (svarlist-fix vars))
+                  (svex-eval-equiv (neteval-ordering-or-null-compile
+                                    (neteval-ordering-or-null-reduce-rec vars x)
+                                    signal network)
+                                   (neteval-ordering-or-null-compile x signal (svex-alist-reduce vars network))))
+         :hints ('(:expand ((neteval-ordering-or-null-reduce-rec vars x)
+                            (:free (network) (neteval-ordering-or-null-compile x signal network))
+                            (:free (network) (neteval-ordering-or-null-compile
+                                              '(:null) signal network))
+                            (:free (ord network) (neteval-ordering-or-null-compile
+                                                  (neteval-ordering-or-null-ordering ord) signal network)))
+                   :in-theory (enable svex-compose-lookup)))
+         :flag neteval-ordering-or-null-compile))))
+
+  (defthm netcomp-p-of-svex-alist-reduce-orig
+    (implies (not (netcomp-p x y))
+             (not (netcomp-p x (svex-alist-reduce vars y))))
+    :hints (("goal" :expand ((netcomp-p x (svex-alist-reduce vars y)))
+             :use ((:instance netcomp-p-suff
+                    (comp x) (decomp y)
+                    (ordering (neteval-ordering-reduce-rec
+                               vars
+                               (netcomp-p-eval-equiv-witness x (svex-alist-reduce vars y))))))
+             :in-theory (disable netcomp-p-suff))))
+
+  (defthm netcomp-p-of-svex-alist-reduce-orig-fwd
+    (implies (netcomp-p x (svex-alist-reduce vars y))
+             (netcomp-p x y))
+    :rule-classes :forward-chaining))
 
 
 (defsection neteval-p

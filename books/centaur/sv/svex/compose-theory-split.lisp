@@ -1090,7 +1090,7 @@
        ((unless (mbt (and (consp (car x)) (svar-p (caar x)))))
         (svex-alist-splittab-split-keys-exec (cdr x) splittab))
        ((cons var val) (car x))
-       (look (hons-assoc-equal var (svar-splittab-fix splittab)))
+       (look (hons-get var (svar-splittab-fix splittab)))
        ((unless look)
         (cons (cons var (svex-fix val))
               (svex-alist-splittab-split-keys-exec (cdr x) splittab))))
@@ -1187,7 +1187,7 @@
            (svex-alist-keys x))
     :hints(("Goal" :in-theory (enable svex-alist-keys svex-alist-eval alist-keys))))
 
-  (defret <fn>-in-terms-of-svar-splittab->inverse
+  (defret <fn>-in-terms-of-svex-alist-splittab-split-keys
     (implies (and (not (intersectp-equal (svex-alist-keys x)
                                          (svar-splittab-vars splittab)))
                   (no-duplicatesp-equal (svar-splittab-vars splittab))
@@ -1200,7 +1200,6 @@
                                       svex-eval-equiv)
             :do-not-induct t)))
 
-
   (local (in-theory (enable svex-alist-fix))))
 
 
@@ -1211,10 +1210,31 @@
 (define svex-alist-to-split ((x svex-alist-p)
                              (splittab svar-splittab-p))
   :returns (new-x svex-alist-p)
-  (svex-alist-compose (svex-alist-splittab-split-keys x splittab)
-                      (svar-splittab->subst splittab))
+  (b* ((subst (svar-splittab->subst splittab)))
+    (with-fast-alist subst
+      (svex-alist-compose (with-fast-alist splittab (svex-alist-splittab-split-keys x splittab))
+                          subst)))
   ///
   (defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-to-split x splittab) 1))
+
+(define svex-alist-to-split-exec ((x svex-alist-p)
+                             (splittab svar-splittab-p))
+  :returns (new-x svex-alist-p)
+  (b* ((subst (svar-splittab->subst splittab)))
+    (with-fast-alist subst
+      (svex-alist-compose (with-fast-alist splittab (svex-alist-splittab-split-keys-exec x splittab))
+                          subst)))
+  ///
+  (defret <fn>-in-terms-of-svex-alist-to-split
+    (implies (and (not (intersectp-equal (svex-alist-keys x)
+                                         (svar-splittab-vars splittab)))
+                  (no-duplicatesp-equal (svar-splittab-vars splittab))
+                  (no-duplicatesp-equal (alist-keys (svar-splittab-fix splittab)))
+                  (subsetp-equal (alist-keys (svar-splittab-fix splittab))
+                                 (svex-alist-keys x)))
+             (svex-alist-eval-equiv new-x
+                                    (svex-alist-to-split x splittab)))
+    :hints(("Goal" :in-theory (enable svex-alist-to-split)))))
 
 
 (local
@@ -1237,8 +1257,9 @@
 (define svex-alist-splittab-unsplit-keys ((x svex-alist-p)
                                             (splittab svar-splittab-p))
   :returns (new-x svex-alist-p)
-  (append (svex-alist-compose (svar-splittab->subst splittab) x)
-          (svex-alist-removekeys (svar-splittab-vars splittab) x))
+  (with-fast-alist x
+    (append (svex-alist-compose (svar-splittab->subst splittab) x)
+            (svex-alist-removekeys (svar-splittab-vars splittab) x)))
   ///
   (defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-splittab-unsplit-keys x splittab) 1)
   (defthm svex-alist-splittab-unsplit-keys-of-nil
@@ -1253,8 +1274,10 @@
 (define svex-alist-from-split ((x svex-alist-p)
                                (splittab svar-splittab-p))
   :returns (new-x svex-alist-p)
-  (svex-alist-compose (svex-alist-splittab-unsplit-keys x splittab)
-                      (svar-splittab->inverse splittab))
+  (b* ((inverse (svar-splittab->inverse splittab)))
+    (with-fast-alist inverse
+      (svex-alist-compose (svex-alist-splittab-unsplit-keys x splittab)
+                          inverse)))
   ///
   (defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-from-split x splittab) 1))
 
