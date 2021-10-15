@@ -74,6 +74,16 @@
   :elt-type smt-type-p
   :true-listp t)
 
+(defprod uninterpreted
+  ((formals symbol-listp)
+   (formal-types symbol-listp)
+   (return-type symbolp)))
+
+(defalist symbol-uninterpreted-alist
+  :key-type symbolp
+  :val-type uninterpreted-p
+  :true-listp t)
+
 (local (in-theory (disable symbol-listp)))
 
 (defprod smtlink-hint
@@ -86,7 +96,8 @@
    (under-inductionp symbolp :default nil)
    (global-hint symbolp :default nil)
    (wrld-fn-len natp :default 0)
-   (customp booleanp :default nil)))
+   (customp booleanp :default nil)
+   (uninterpreted symbol-uninterpreted-alist-p :default nil)))
 
 (defalist smtlink-hint-alist
   :key-type symbolp

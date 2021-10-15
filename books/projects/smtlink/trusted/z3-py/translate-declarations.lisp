@@ -64,7 +64,11 @@
         (prog2$ (er hard? 'translate-declarations=>translate-type
                     "Not a basic type, not supported. ~q0" type)
                 "")))
-    (cdr item)))
+    (cdr item))
+  ///
+  (more-returns
+   (translated (paragraph-p translated)
+               :name paragraph-of-translate-type)))
 
 (define translate-one-decl ((decl pseudo-termp))
   :returns (translated paragraph-p)

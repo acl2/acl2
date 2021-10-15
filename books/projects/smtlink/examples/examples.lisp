@@ -18,7 +18,7 @@
 (value-triple (tshell-ensure))
 (add-default-hints '((SMT::SMT-computed-hint clause)))
 
-(defthm test
+(defthm test1
   (implies (and (integerp x) (rationalp y))
            (>= (binary-+ (binary-* (ifix x) y) (binary-* x y))
                (binary-* 2 (binary-* x (rfix y)))))
@@ -34,6 +34,35 @@
                (equal symx symy)))
   :hints(("Goal" :smtlink nil)))
 )
+
+(define foo ((a rationalp)
+             (b rationalp))
+  :returns (r rationalp)
+  (b* ((a (rfix a))
+       (b (rfix b)))
+    (+ (* a a) (* b b)))
+  ///
+  (more-returns
+   (r (>= r 0)
+      :name foo->=-0)))
+
+(set-uninterpreted `((foo . ,(make-uninterpreted :formals '(a b)
+                                                 :formal-types '(rationalp rationalp)
+                                                 :return-type 'rationalp)))
+                   :default
+                   (w state))
+
+(defthm test3
+  (implies (and (integerp x)
+                (integerp y))
+           (> (1+ (foo x y)) 0))
+  :hints (("Goal"
+           :smtlink
+           (:functions ((foo :formals (a b)
+                             :return (rationalp-of-foo)
+                             :depth 0))
+            :hypotheses ((:instance foo->=-0
+                                    ((a x) (b y))))))))
 
 ;; Example 1
 ;; (def-saved-event x^2-y^2

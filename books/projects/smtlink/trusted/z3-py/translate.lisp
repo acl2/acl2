@@ -14,6 +14,7 @@
 (include-book "../../verified/hint-interface")
 (include-book "pretty-printer")
 (include-book "translate-declarations")
+(include-book "translate-uninterpreted")
 
 ;; (defsection SMT-translate
 ;;   :parents (z3-py)
@@ -23,15 +24,18 @@
                        (symbol-listp
                         pseudo-term-listp-of-symbol-listp))))
 
-(define translate-function-name ((fn symbolp))
+(define translate-function-name ((fn symbolp)
+                                 (uninterpreted symbol-uninterpreted-alist-p))
   :returns (translated paragraph-p)
   (b* ((fn (symbol-fix fn))
-       (item (assoc-equal fn *SMT-functions*))
-       ((unless item)
+       (basic? (assoc-equal fn *SMT-functions*))
+       (uninterpreted? (assoc-equal fn uninterpreted))
+       ((unless (or basic? uninterpreted?))
         (prog2$ (er hard? 'translate=>translate-function-name
-                    "Not a basic function, not supported. ~q0" fn)
-                "")))
-    (cadr item)))
+                    "Function translation not supported. ~q0" fn)
+                ""))
+       ((if uninterpreted?) (translate-variable fn)))
+    (cadr basic?)))
 
 (define map-translated-actuals ((actuals paragraph-p))
   :returns (mapped paragraph-p)
@@ -69,7 +73,7 @@
           (mv (er hard? 'translate=>translate-term
                   "Found lambda in term ~p0~%" term)
               sym-keeper))
-         (translated-fn (translate-function-name fn))
+         (translated-fn (translate-function-name fn h.uninterpreted))
          ((mv translated-actuals actuals-keeper)
           (translate-term-list actuals hint sym-keeper)))
       (mv `(,translated-fn
@@ -125,7 +129,7 @@
                          (smtlink-hint smtlink-hint-p)
                          state)
   :returns (mv (py-term paragraph-p)
-               (smt-precond pseudo-termp))
+               (smt-precond pseudo-term-listp))
   :ignore-ok t
   (b* ((term (pseudo-term-fix term))
        (- (cw "SMT-translation: ~q0" term))
@@ -154,8 +158,13 @@
        ((symbol-keeper s) sym-keeper)
        (translated-decl (translate-declarations decl-list (strip-cdrs s.symbol-map)))
        (- (cw "translated-decl: ~q0" translated-decl))
+       ((mv translated-uninterpreted uninterpreted-properties)
+        (translate-uninterpreted h.uninterpreted))
        (pretty-translated-body (pretty-print-theorem translated-body 80))
-       (translation `(,translated-decl ,pretty-translated-body)))
-    (mv translation nil)))
+       (translation `(,translated-decl
+                      ,translated-uninterpreted
+                      ,pretty-translated-body))
+       (properties `(,@uninterpreted-properties)))
+    (mv translation properties)))
 
 ;;  )

@@ -72,3 +72,11 @@
                      table using (get-smt-hint-table world)~%" hintname)
                 (make-smtlink-hint))))
     (change-smtlink-hint (cdr the-hint-cons) :types nil)))
+
+(defmacro set-uninterpreted (uninterpreted hintname w)
+  `(make-event
+    (b* ((new-hint (change-smtlink-hint
+                    (get-smtlink-hint ',hintname ,w)
+                    :uninterpreted ,uninterpreted))
+         (- (cw "~q0" new-hint)))
+      (value `(table smt-hint-table ',,hintname ',new-hint)))))
