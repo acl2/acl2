@@ -367,6 +367,82 @@
   :hints(("Goal"
           :in-theory (disable pseudo-termp symbol-listp))))
 
+(defthm crock1
+  (implies (and (good-typed-term-list-p tterm-lst)
+                (consp tterm-lst)
+                (ev-smtcp (typed-term-list->path-cond tterm-lst) a))
+           (ev-smtcp (typed-term->path-cond (car tterm-lst)) a))
+  :hints (("Goal"
+           :in-theory (enable typed-term-list->path-cond))))
+
+(defthm crock2
+  (implies (and (good-typed-term-list-p tterm-lst)
+                (consp tterm-lst)
+                (ev-smtcp (typed-term-list->judgements tterm-lst) a))
+           (and (ev-smtcp (typed-term->judgements (car tterm-lst)) a)
+                (ev-smtcp (typed-term-list->judgements (cdr tterm-lst)) a)))
+  :hints (("Goal"
+           :in-theory (enable typed-term-list->judgements))))
+
+(defthm crock3
+  (implies (and (good-typed-term-list-p tterm-lst)
+                (consp tterm-lst)
+                (ev-smtcp-lst (typed-term-list->term-lst (cdr tterm-lst)) a)
+                (ev-smtcp (typed-term-list->path-cond tterm-lst) a))
+           (ev-smtcp (typed-term-list->path-cond (cdr tterm-lst)) a))
+  :hints (("Goal"
+           :in-theory (enable typed-term-list->term-lst
+                              typed-term-list->path-cond))))
+
+(defthm crock4
+  (implies (and (good-typed-term-p tterm)
+                (ev-smtcp (typed-term->judgements tterm) a)
+                (not (ev-smtcp (cadr (typed-term->term tterm)) a)))
+           (ev-smtcp (typed-term->judgements (typed-term-if->else tterm)) a))
+  :hints (("Goal"
+           :in-theory (enable typed-term-if->else good-typed-if-p))))
+
+(defthm crock5
+  (implies (and (good-typed-term-p tterm)
+                (ev-smtcp (typed-term->judgements tterm) a)
+                (ev-smtcp (cadr (typed-term->term tterm)) a))
+           (ev-smtcp (typed-term->judgements (typed-term-if->then tterm)) a))
+  :hints (("Goal"
+           :in-theory (enable typed-term-if->then good-typed-if-p))))
+
+(defthm crock6
+  (implies (and (good-typed-term-p tterm)
+                (ev-smtcp (typed-term->path-cond tterm) a))
+           (ev-smtcp (typed-term-list->path-cond
+                      (typed-term-fncall->actuals tterm))
+                     a))
+  :hints (("Goal"
+           :in-theory (enable typed-term-list->path-cond
+                              typed-term-fncall->actuals))))
+
+(defthm crock7
+  (implies (and (good-typed-fncall-p tterm)
+                (ev-smtcp (typed-term->judgements tterm) a))
+           (ev-smtcp (typed-term-list->judgements
+                      (typed-term-fncall->actuals tterm))
+                     a))
+  :hints (("Goal"
+           :in-theory (enable typed-term-list->judgements
+                              typed-term-fncall->actuals
+                              make-typed-fncall-guard
+                              good-typed-fncall-p))))
+
+(defthm crock8-lemma
+  (implies (good-typed-fncall-p tterm)
+           (equal (typed-term-list->term-lst
+                   (typed-term-fncall->actuals tterm))
+                  (cdr (typed-term->term tterm))))
+  :hints (("Goal"
+           :in-theory (enable typed-term-fncall->actuals
+                              typed-term-list->term-lst
+                              make-typed-fncall-guard
+                              good-typed-fncall-p))))
+
 (skip-proofs
 (defthm-replace-term-flag
   (defthm replace-if-maintains-term
@@ -447,7 +523,7 @@
                     (ev-smtcp-lst (typed-term-list->term-lst tterm-lst) a)))
     :flag replace-term-list
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (e/d () ())
+                 '(:in-theory (e/d (typed-term-list->term-lst) ())
                    :expand
                    ((replace-term-list tterm-lst replace-options type-options
                                        clock state)
@@ -456,7 +532,7 @@
 )
 
 (skip-proofs
-(defthm crock3
+(defthm crock9
   (implies (and (not (ev-smtcp (cadr (typed-term->term tterm))
                                a))
                 (ev-smtcp (typed-term->judgements (replace-term (typed-term-if->else tterm)
@@ -482,7 +558,7 @@
 )
 
 (skip-proofs
-(defthm crock4
+(defthm crock10
   (implies (and (ev-smtcp (cadr (typed-term->term tterm))
                           a)
                 (ev-smtcp (typed-term->judgements (replace-term (typed-term-if->then tterm)
@@ -508,7 +584,7 @@
 )
 
 (skip-proofs
-(defthm crock5
+(defthm crock11
   (implies (and (ev-smtcp (typed-term->judgements (replace-term (typed-term-if->then tterm)
                                                                 replace-options
                                                                 type-options clock state))
@@ -536,7 +612,7 @@
 )
 
 (skip-proofs
-(defthm crock6
+(defthm crock12
   (implies (and (ev-smtcp (typed-term->judgements tterm)
                           a)
                 (ev-smtcp (correct-typed-term-list
@@ -557,7 +633,7 @@
             a)))
 )
 
-(defthm crock7
+(defthm crock13
   (implies (and (good-typed-term-p tterm)
                 (equal (typed-term->kind tterm) 'fncallp)
                 (replace-options-p replace-options)
@@ -581,7 +657,7 @@
            :in-theory (enable correct-typed-term-list
                               typed-term-fncall->actuals))))
 
-(defthm crock8
+(defthm crock14
   (implies (and (good-typed-term-p tterm)
                 (equal (typed-term->kind tterm) 'ifp)
                 (alistp a)
@@ -599,7 +675,7 @@
            :expand (typed-term-if->cond tterm))))
 
 (skip-proofs
-(defthm crock9
+(defthm crock15
   (implies (and (ev-smtcp-meta-extract-global-facts)
                 (replace-options-p replace-options)
                 (type-options-p type-options)
