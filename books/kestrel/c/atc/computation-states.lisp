@@ -144,6 +144,22 @@
                ullong-arrayp
                sllong-arrayp)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult array "arrays"
+  :enable (errorp
+           arrayp
+           uchar-arrayp
+           schar-arrayp
+           ushort-arrayp
+           sshort-arrayp
+           uint-arrayp
+           sint-arrayp
+           ulong-arrayp
+           slong-arrayp
+           ullong-arrayp
+           sllong-arrayp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap heap
@@ -162,51 +178,6 @@
   :key-type address
   :val-type array
   :pred heapp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defresult array "arrays"
-  :enable (errorp
-           arrayp
-           uchar-arrayp
-           schar-arrayp
-           ushort-arrayp
-           sshort-arrayp
-           uint-arrayp
-           sint-arrayp
-           ulong-arrayp
-           slong-arrayp
-           ullong-arrayp
-           sllong-arrayp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define get-array ((ptr pointerp) (heap heapp))
-  :returns (array array-resultp)
-  :short "Retrieve the array referenced by a pointer."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the pointer is null, we return an error:
-     a null pointer cannot be dereferenced.
-     Otherwise, we check whether the heap has an array at the pointer's address,
-     which we return if it does (otherwise we return an error).
-     We also ensure that the pointer's type matches the array."))
-  (b* ((reftype (pointer->reftype ptr))
-       ((unless (or (type-signed-integerp reftype)
-                    (type-unsigned-integerp reftype)))
-        (error (list :mistype-pointer-dereference
-                     :required :array
-                     :supplied reftype)))
-       (address (pointer->address? ptr)))
-    (if address
-        (b* ((pair (omap::in address (heap-fix heap))))
-          (if pair
-              (cdr pair)
-            (error (list :address-not-found address
-                         :heap (heap-fix heap)))))
-      (error :null-pointer-dereference)))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -649,6 +620,35 @@
                                        compustate-scopes-numbers
                                        compustate-scopes-numbers-aux
                                        errorp-when-scope-list-resultp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-array ((ptr pointerp) (heap heapp))
+  :returns (array array-resultp)
+  :short "Retrieve the array referenced by a pointer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the pointer is null, we return an error:
+     a null pointer cannot be dereferenced.
+     Otherwise, we check whether the heap has an array at the pointer's address,
+     which we return if it does (otherwise we return an error).
+     We also ensure that the pointer's type matches the array."))
+  (b* ((reftype (pointer->reftype ptr))
+       ((unless (or (type-signed-integerp reftype)
+                    (type-unsigned-integerp reftype)))
+        (error (list :mistype-pointer-dereference
+                     :required :array
+                     :supplied reftype)))
+       (address (pointer->address? ptr)))
+    (if address
+        (b* ((pair (omap::in address (heap-fix heap))))
+          (if pair
+              (cdr pair)
+            (error (list :address-not-found address
+                         :heap (heap-fix heap)))))
+      (error :null-pointer-dereference)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
