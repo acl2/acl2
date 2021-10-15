@@ -160,6 +160,7 @@
              (and (all-eval-to-true-with-equality-eval (mv-nth 0 (add-true-and-false-implications-of-term term true-terms false-terms)) a)
                   (all-eval-to-false-with-equality-eval (mv-nth 1 (add-true-and-false-implications-of-term term true-terms false-terms)) a)))
     :flag add-true-and-false-implications-of-term)
+  ;; If the term is false, the new facts extracted by add-true-and-false-implications-of-negation-of-term are (appropriately) true or false.
   (defthm add-true-and-false-implications-of-negation-of-term-correct
     (implies (and (all-eval-to-true-with-equality-eval true-terms a)
                   (all-eval-to-false-with-equality-eval false-terms a)
