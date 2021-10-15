@@ -51,14 +51,15 @@
   (if (endp clause)
       nil
     (let ((lit (first clause)))
-      (if (not (and (call-of 'not lit)
-                    (= 1 (len (fargs lit)))))
-          (cons lit (flatten-disjuncts (rest clause))) ; todo: should we extract disjuncts in this case?
-        (let* ((negated-lit (farg1 lit))
-               (disjuncts (get-conjuncts-of-term negated-lit)))
-          (if (< 1 (len disjuncts))
-              (union-equal (negate-terms disjuncts) (flatten-disjuncts (rest clause)))
-            (cons lit (flatten-disjuncts (rest clause)))))))))
+      (if (and (call-of 'not lit)
+               (= 1 (len (fargs lit))))
+          (let* ((negated-lit (farg1 lit))
+                 (negated-disjuncts (get-conjuncts-of-term negated-lit))) ; todo: this can push NOTs into IFs (bad here?)
+            (if (< 1 (len negated-disjuncts))
+                (union-equal (negate-terms negated-disjuncts) (flatten-disjuncts (rest clause)))
+              (cons lit (flatten-disjuncts (rest clause)))))
+        (cons lit (flatten-disjuncts (rest clause))) ; todo: should we extract disjuncts in this case?
+        ))))
 
 (defthm true-listp-of-flatten-disjuncts
   (true-listp (flatten-disjuncts clause))
