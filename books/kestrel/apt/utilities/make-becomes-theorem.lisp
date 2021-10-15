@@ -93,7 +93,7 @@
                                                ,new-fn
                                                ,@enables)
                                              ,base-theory))
-                         (and stable-under-simplificationp
+                         (and stable-under-simplificationp ;; TODO: Don't wait until stable (do on every inductive subgoal)?
                                (expand-calls-in-conclusion-equalities clause '(,fn ,new-fn)))))
              ;; non-recursive case:
              `(:hints (("Goal" :in-theory (append '(,fn ,new-fn ,@enables) ,base-theory)
