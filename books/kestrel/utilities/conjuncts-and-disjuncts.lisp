@@ -108,7 +108,7 @@
 ;todo: handle (equal x 'nil) like (not 'x)
 ;todo: handle (if/myif/boolif x 'nil 't) like (not 'x)
 
-;; also pushes not through branches of IFs
+;; also pushes NOT through branches of IFs (do I want that?)
 (defund negate-term2 (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (variablep term)
