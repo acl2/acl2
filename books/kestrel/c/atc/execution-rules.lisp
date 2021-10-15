@@ -644,16 +644,15 @@
          (atype-array-read-itype
           (pack afixtype '-array-read- ifixtype))
          (name (pack 'exec-arrsub-when- apred '-and- ipred))
-         (formula `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
-                                 ,(atc-syntaxp-hyp-for-expr-pure 'y)
-                                 (pointerp x)
-                                 (,apred (deref x compst))
-                                 (,ipred y)
-                                 (,atype-array-itype-index-okp (deref x compst)
-                                                               y))
-                            (equal (exec-arrsub x y compst)
-                                   (,atype-array-read-itype (deref x compst)
-                                                            y))))
+         (formula `(implies
+                    (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+                         ,(atc-syntaxp-hyp-for-expr-pure 'y)
+                         (pointerp x)
+                         (,apred (read-array x compst))
+                         (,ipred y)
+                         (,atype-array-itype-index-okp (read-array x compst) y))
+                    (equal (exec-arrsub x y compst)
+                           (,atype-array-read-itype (read-array x compst) y))))
          (event `(defruled ,name
                    ,formula
                    :enable (exec-arrsub

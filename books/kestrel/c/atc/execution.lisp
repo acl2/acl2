@@ -1301,10 +1301,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The first operand must be a pointer that can be derefenced
-     (this means that it must be a non-null pointer to @('unsigned char');
-     see @(tsee deref)),
-     obtaining an array.
+    "The first operand must be a pointer to an array.
      The second operand must be an integer value (of any integer type).
      The resulting index must be in range for the array,
      and the indexed element is returned as result."))
@@ -1319,7 +1316,7 @@
                                        (list :mistype-array :index
                                              :required (type-sint)
                                              :supplied (type-of-value sub))))
-       (array (deref arr compst))
+       (array (read-array arr compst))
        ((when (errorp array))
         (error (list :array-not-found arr (compustate-fix compst))))
        (index (exec-integer sub))
@@ -1369,10 +1366,10 @@
              err))
           (t (error (impossible)))))
   :guard-hints (("Goal"
-                 :use (:instance array-resultp-of-deref (ptr arr))
+                 :use (:instance array-resultp-of-read-array (ptr arr))
                  :in-theory (e/d (arrayp
                                   array-resultp)
-                                 (array-resultp-of-deref))))
+                                 (array-resultp-of-read-array))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

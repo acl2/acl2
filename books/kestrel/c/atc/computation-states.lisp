@@ -623,37 +623,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define get-array ((ptr pointerp) (heap heapp))
+(define read-array ((ptr pointerp) (compst compustatep))
   :returns (array array-resultp)
-  :short "Retrieve the array referenced by a pointer."
+  :short "Read an array in the computation state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the pointer is null, we return an error:
-     a null pointer cannot be dereferenced.
+    "If the pointer is null, we return an error.
      Otherwise, we check whether the heap has an array at the pointer's address,
      which we return if it does (otherwise we return an error).
-     We also ensure that the pointer's type matches the array."))
+     We also ensure that the pointer's type references an integer type.
+     (We should expand this check to ensure that
+     it matches the type of the array in the heap.)")
+   (xdoc::p
+    "Note that this function returns the array as a whole:
+     it does not read an array element; it reads the whole array.
+     Given the array that is read as a whole,
+     functions like @(tsee uchar-array-read-sint)
+     can be used to read elements of the array."))
   (b* ((reftype (pointer->reftype ptr))
        ((unless (or (type-signed-integerp reftype)
                     (type-unsigned-integerp reftype)))
-        (error (list :mistype-pointer-dereference
-                     :required :array
-                     :supplied reftype)))
-       (address (pointer->address? ptr)))
+        (error (list :mistype-pointer-array-read
+                     :required :array-of-integers
+                     :supplied :array-of reftype)))
+       (address (pointer->address? ptr))
+       (heap (compustate->heap compst)))
     (if address
-        (b* ((pair (omap::in address (heap-fix heap))))
+        (b* ((pair (omap::in address heap)))
           (if pair
               (cdr pair)
             (error (list :address-not-found address
-                         :heap (heap-fix heap)))))
-      (error :null-pointer-dereference)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define deref ((ptr pointerp) (compst compustatep))
-  :returns (array array-resultp)
-  :short "Dereference a pointer."
-  (get-array ptr (compustate->heap compst))
+                         :heap heap))))
+      (error :null-pointer-read)))
   :hooks (:fix))
