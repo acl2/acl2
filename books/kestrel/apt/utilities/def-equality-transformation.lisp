@@ -133,9 +133,8 @@
                 (declares (remove-xarg-in-declares :guard-hints declares)) ; verify-guards is done separately
                 (declares (remove-xarg-in-declares :guard-debug declares)) ; verify-guards is done separately
                 (declares (remove-xarg-in-declares :guard-simplify declares)) ; verify-guards is done separately
-                ;; Handle the :well-founded-relation xarg (TODO: Can the
-                ;; original :well-founded-relation be only locally known to be
-                ;; a well-founded-relation?):
+                ;; Handle the :well-founded-relation xarg (it should always be the case that fn's :well-founded-relation is already among
+                ;; the known well-founded relations).
                 (declares (remove-xarg-in-declares :well-founded-relation declares))
                 (declares (if (not rec)
                               declares ; no well-founded-relation if non-recursive

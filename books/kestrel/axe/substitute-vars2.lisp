@@ -1083,7 +1083,6 @@
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (nat-listp literal-nodenums)
                               (all-< literal-nodenums dag-len))
-;                  :guard-debug t
                   ;; clean up:
                   :guard-hints (("Goal" :in-theory (e/d (;car-becomes-nth-of-0
                                                          <-of-nth-when-all-<
