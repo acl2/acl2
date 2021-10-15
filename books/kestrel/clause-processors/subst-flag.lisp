@@ -43,7 +43,7 @@
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
 ;;Returns (mv var const) or (mv nil nil)
-(defund equality-items-from-term (term)
+(defund equated-var-and-const-from-term (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (call-of 'equal term)
       (let ((farg1 (farg1 term))
@@ -57,44 +57,44 @@
             (mv nil nil))))
     (mv nil nil)))
 
-(defthm symbolp-of-mv-nth-0-of-equality-items-from-term
+(defthm symbolp-of-mv-nth-0-of-equated-var-and-const-from-term
   (implies (pseudo-termp term)
-           (symbolp (mv-nth 0 (equality-items-from-term term))))
-  :hints (("Goal" :in-theory (enable equality-items-from-term))))
+           (symbolp (mv-nth 0 (equated-var-and-const-from-term term))))
+  :hints (("Goal" :in-theory (enable equated-var-and-const-from-term))))
 
-(defthm pseudo-termp-of-mv-nth-1-of-equality-items-from-term
+(defthm pseudo-termp-of-mv-nth-1-of-equated-var-and-const-from-term
   (implies (pseudo-termp term)
-           (pseudo-termp (mv-nth 1 (equality-items-from-term term))))
-  :hints (("Goal" :in-theory (enable equality-items-from-term))))
+           (pseudo-termp (mv-nth 1 (equated-var-and-const-from-term term))))
+  :hints (("Goal" :in-theory (enable equated-var-and-const-from-term))))
 
-(defthm equality-items-from-term-helper
+(defthm equated-var-and-const-from-term-helper
   (implies (equality-eval term a)
-           (equal (equality-eval (mv-nth 0 (equality-items-from-term term)) a)
-                  (equality-eval (mv-nth 1 (equality-items-from-term term)) a)))
-  :hints (("Goal" :in-theory (enable equality-items-from-term))))
+           (equal (equality-eval (mv-nth 0 (equated-var-and-const-from-term term)) a)
+                  (equality-eval (mv-nth 1 (equated-var-and-const-from-term term)) a)))
+  :hints (("Goal" :in-theory (enable equated-var-and-const-from-term))))
 
 ;;Returns (mv var const) or (mv nil nil)
-(defund equality-items-from-negation-of-term (term)
+(defund equated-var-and-const-from-negation-of-term (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (call-of 'not term)
-      (equality-items-from-term (farg1 term))
+      (equated-var-and-const-from-term (farg1 term))
     (mv nil nil)))
 
-(defthm symbolp-of-mv-nth-0-of-equality-items-from-negation-of-term
+(defthm symbolp-of-mv-nth-0-of-equated-var-and-const-from-negation-of-term
   (implies (pseudo-termp term)
-           (symbolp (mv-nth 0 (equality-items-from-negation-of-term term))))
-  :hints (("Goal" :in-theory (enable equality-items-from-negation-of-term))))
+           (symbolp (mv-nth 0 (equated-var-and-const-from-negation-of-term term))))
+  :hints (("Goal" :in-theory (enable equated-var-and-const-from-negation-of-term))))
 
-(defthm pseudo-termp-of-mv-nth-1-of-equality-items-from-negation-of-term
+(defthm pseudo-termp-of-mv-nth-1-of-equated-var-and-const-from-negation-of-term
   (implies (pseudo-termp term)
-           (pseudo-termp (mv-nth 1 (equality-items-from-negation-of-term term))))
-  :hints (("Goal" :in-theory (enable equality-items-from-negation-of-term))))
+           (pseudo-termp (mv-nth 1 (equated-var-and-const-from-negation-of-term term))))
+  :hints (("Goal" :in-theory (enable equated-var-and-const-from-negation-of-term))))
 
-(defthm equality-items-from-negation-of-term-helper
+(defthm equated-var-and-const-from-negation-of-term-helper
   (implies (not (equality-eval term a))
-           (equal (equality-eval (mv-nth 0 (equality-items-from-negation-of-term term)) a)
-                  (equality-eval (mv-nth 1 (equality-items-from-negation-of-term term)) a)))
-  :hints (("Goal" :in-theory (enable equality-items-from-negation-of-term))))
+           (equal (equality-eval (mv-nth 0 (equated-var-and-const-from-negation-of-term term)) a)
+                  (equality-eval (mv-nth 1 (equated-var-and-const-from-negation-of-term term)) a)))
+  :hints (("Goal" :in-theory (enable equated-var-and-const-from-negation-of-term))))
 
 (mutual-recursion
 
@@ -280,7 +280,7 @@
                             ;; If the test is (equal <var> <const>) we can
                             ;; replace <var> with <const> in the then branch:
                             (mv-let (var const)
-                              (equality-items-from-term new-test)
+                              (equated-var-and-const-from-term new-test)
                               (if var
                                   (acons var const alist)
                                 alist))
@@ -293,7 +293,7 @@
                           ;; If the test is (not (equal <var> <const>)) we can
                           ;; replace <var> with <const> in the else branch:
                           (mv-let (var const)
-                            (equality-items-from-negation-of-term new-test)
+                            (equated-var-and-const-from-negation-of-term new-test)
                             (if var
                                 (acons var const alist)
                               alist))
