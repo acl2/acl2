@@ -3982,10 +3982,16 @@
                                                    state))
        ((when (and (type-case type :void)
                    (not affect)))
-        (er-soft+ ctx t nil
-                  "The function ~x0 returns void and affects no variables. ~
-                   This is disallowed."
-                  fn))
+        (raise "Internal error: ~
+                the function ~x0 returns void and affects no variables."
+               fn)
+        (acl2::value nil))
+       ((unless (or (type-integerp type)
+                    (type-case type :void)))
+        (raise "Internal error: ~
+                the function ~x0 has return type ~x1."
+               fn type)
+        (acl2::value nil))
        (fundef (make-fundef :result (atc-gen-tyspecseq type)
                             :name (make-ident :name name)
                             :params params
