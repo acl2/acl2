@@ -4110,35 +4110,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-instantiation-for-loop-gthm ((formals symbol-listp)
-                                             (pointers atc-symbol-type-alistp)
-                                             (compst-var symbolp))
-  :returns (instantiation doublet-listp)
-  :short "Generate the instantiation for the lemma instance
-          of the guard theorem of a loop function."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is an extension of @(tsee atc-gen-instantiation-deref-compustate)
-     that, after dereferencing any pointers,
-     also replaces variables with @(tsee read-var) calls."))
-  (b* (((when (endp formals)) nil)
-       (formal (car formals))
-       (inst (if (assoc-eq formal pointers)
-                 (atc-gen-term-with-read-var-compustate
-                  `(read-array ,formal ,compst-var)
-                  compst-var)
-               (atc-gen-term-with-read-var-compustate
-                formal
-                compst-var)))
-       (first (list formal inst))
-       (rest (atc-gen-instantiation-for-loop-gthm (cdr formals)
-                                                  pointers
-                                                  compst-var)))
-    (cons first rest)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-gen-measure-of-fn ((fn symbolp)
                                (names-to-avoid symbol-listp)
                                (wrld plist-worldp))
