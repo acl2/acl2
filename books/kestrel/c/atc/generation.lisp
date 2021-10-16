@@ -3854,13 +3854,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-formal-pointerp ((formal symbolp)
+                             (typed-formals atc-symbol-type-alistp))
+  :returns (yes/no booleanp)
+  :short "Check if a formal parameter has a C pointer type."
+  (b* ((pair (assoc-eq (symbol-fix formal)
+                       (atc-symbol-type-alist-fix typed-formals))))
+    (and (consp pair)
+         (type-case (cdr pair) :pointer)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist atc-formal-pointer-listp (x typed-formals)
+  :guard (and (symbol-listp x)
+              (atc-symbol-type-alistp typed-formals))
+  (atc-formal-pointerp x typed-formals)
+  :true-listp t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-find-affected ((fn symbolp)
                            (term pseudo-termp)
-                           (pointers atc-symbol-type-alistp)
+                           (typed-formals atc-symbol-type-alistp)
                            (ctx ctxp)
                            state)
   :returns (mv erp
-               (affected symbol-listp :hyp (atc-symbol-type-alistp pointers))
+               (affected symbol-listp
+                         :hyp (atc-symbol-type-alistp typed-formals))
                state)
   :short "Find the variables affected by a term."
   :long
@@ -3895,21 +3916,18 @@
     "In checking that the terms at the leaves have the same form,
      we allow @('ret') to vary, but the other parts must coincide.")
    (xdoc::p
-    "The list of formal parameters that have pointer type
-     are passed to this ACL2 function as the @('pointers') parameter.")
-   (xdoc::p
     "When we encounter @(tsee if)s with @(tsee mbt) or @(tsee mbt$) tests,
      we recursively process the `then' branch, skipping the `else' branch.
      This is because only the `then' branch represents C code."))
   (b* (((mv okp test then else) (fty-check-if-call term))
        ((when okp)
         (b* (((mv mbtp &) (check-mbt-call test))
-             ((when mbtp) (atc-find-affected fn then pointers ctx state))
+             ((when mbtp) (atc-find-affected fn then typed-formals ctx state))
              ((mv mbt$p &) (check-mbt$-call test))
-             ((when mbt$p) (atc-find-affected fn then pointers ctx state))
-             ((er then-affected) (atc-find-affected fn then pointers
+             ((when mbt$p) (atc-find-affected fn then typed-formals ctx state))
+             ((er then-affected) (atc-find-affected fn then typed-formals
                                                     ctx state))
-             ((er else-affected) (atc-find-affected fn else pointers
+             ((er else-affected) (atc-find-affected fn else typed-formals
                                                     ctx state)))
           (if (equal then-affected else-affected)
               (acl2::value then-affected)
@@ -3921,19 +3939,19 @@
                       fn then-affected else-affected))))
        ((mv okp & body &) (fty-check-lambda-call term))
        ((when okp)
-        (atc-find-affected fn body pointers ctx state))
+        (atc-find-affected fn body typed-formals ctx state))
        ((when (pseudo-term-case term :var))
         (b* ((var (pseudo-term-var->name term)))
-          (if (assoc-eq var pointers)
+          (if (atc-formal-pointerp var typed-formals)
               (acl2::value (list var))
             (acl2::value nil))))
        ((mv okp terms) (fty-check-list-call term))
        ((when okp)
-        (cond ((subsetp-eq terms
-                           (strip-cars pointers))
+        (cond ((and (symbol-listp terms)
+                    (atc-formal-pointer-listp terms typed-formals))
                (acl2::value terms))
-              ((subsetp-eq (cdr terms)
-                           (strip-cars pointers))
+              ((and (symbol-listp (cdr terms))
+                    (atc-formal-pointer-listp (cdr terms) typed-formals))
                (acl2::value (cdr terms)))
               (t (er-soft+ ctx t nil
                            "When generating code for function ~x0, ~
@@ -4008,7 +4026,7 @@
        ((er (list params pointers))
         (atc-gen-param-declon-list typed-formals fn ctx state))
        (body (ubody+ fn wrld))
-       ((er affect) (atc-find-affected fn body pointers ctx state))
+       ((er affect) (atc-find-affected fn body typed-formals ctx state))
        ((unless (subsetp-eq affect (strip-cars pointers)))
         (er-soft+ ctx t nil
                   "The variables ~x0 affected by the body of ~x1 ~
