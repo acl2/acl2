@@ -75,6 +75,11 @@
    to the names of the generated respective correctness theorems.
    This is @('nil') if @('proofs') is @('nil')."
 
+  "@('typed-formals') is an alist
+   from the formal parameters of one of @('fn1'), ..., @('fnp')
+   to their C types.
+   The keys are unique and in the same order as the formal parameters."
+
   xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
