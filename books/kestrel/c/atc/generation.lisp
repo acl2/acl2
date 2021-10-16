@@ -3216,6 +3216,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-type-predicate ((type typep))
+  :returns (pred symbolp)
+  :short "ACL2 predicate corresponding to a C type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For a supported integer type,
+     the predicate is the recognizer of values of that type.
+     For a pointer to integer type,
+     the predicate is the recognizer of arrays with that element type.
+     (So for a pointer type it is not a recognizer of pointer values.)
+     We return @('nil') for other types."))
+  (type-case
+   type
+   :void nil
+   :char nil
+   :schar 'scharp
+   :uchar 'ucharp
+   :sshort 'sshortp
+   :ushort 'ushortp
+   :sint 'sintp
+   :uint 'uintp
+   :slong 'slongp
+   :ulong 'ulongp
+   :sllong 'sllongp
+   :ullong 'ullongp
+   :pointer (type-case
+             type.referenced
+             :void nil
+             :char nil
+             :schar 'schar-arrayp
+             :uchar 'uchar-arrayp
+             :sshort 'sshort-arrayp
+             :ushort 'ushort-arrayp
+             :sint 'sint-arrayp
+             :uint 'uint-arrayp
+             :slong 'slong-arrayp
+             :ulong 'ulong-arrayp
+             :sllong 'sllong-arrayp
+             :ullong 'ullong-arrayp
+             :pointer nil))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-fn-returns-value-thm ((fn symbolp)
                                       (type? type-optionp)
                                       (affect symbol-listp)
@@ -3223,14 +3268,10 @@
                                       (prec-fns atc-symbol-fninfo-alistp)
                                       (proofs booleanp)
                                       (names-to-avoid symbol-listp)
-                                      (ctx ctxp)
-                                      state)
-  :returns (mv erp
-               (val "A @('(tuple (events pseudo-event-form-listp)
-                                 (name symbolp)
-                                 (updated-names-to-avoid symbol-listp)
-                                 val)').")
-               state)
+                                      (wrld plist-worldp))
+  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
+               (name "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the theorem saying that
           @('fn') returns one or more C values,
@@ -3254,13 +3295,21 @@
      "A @(tsee let) or @(tsee mv-let) variable is equal to a term that,
       recursively, always returns a value.")
     (xdoc::li
-     "A call of a preceding function returns a value,
+     "A call of a preceding function returns (a) C value(s),
       as proved by the same theorems for the preceding functions.")
     (xdoc::li
-     "An @(tsee if) return value reduces to the branches' return values.")
+     "An @(tsee if) returns the same as its branches,
+      when the test is not @(tsee mbt) or @(tsee mbt$).")
     (xdoc::li
-     "An @(tsee mv) returns variables that have C types,
-      because either they are parameters or bound variables."))
+     "An @(tsee if) return the same as its `then' branch,
+      when the test is @(tsee mbt) or @(tsee mbt$),
+      because the guard excludes the `else' branch from consideration.")
+    (xdoc::li
+     "An @(tsee mv) returns C values,
+      because either they are parameters or bound variables,
+      or terms that recursively return C values
+      (the latter case is for non-recursive functions
+      that return a non-@('void') result and also affect arrays)."))
    (xdoc::p
     "This suggests a coarse but adequate proof strategy:
      We use the theory consisting of
@@ -3269,19 +3318,29 @@
      and the theorems about the preceding functions;
      we also add a @(':use') hint for the guard theorem of @('fn').")
    (xdoc::p
-    "If the function is not recursive,
-     its body returns a single result,
-     whose type is passed as the parameter @('type?').
-     If the function is recursive, @('type?') is @('nil'),
-     but the function returns as many results as the affected variables
-     (passed as the @('affect') parameter),
-     whose types are retrieved from @('typed-formals').")
+    "In the absence of @(tsee mbt) or @(tsee mbt$),
+     we would not need all of the guard as hypothesis,
+     but only the part that constrains the formal parameters to be C values.
+     These hypotheses are needed when the function returns them;
+     when instead the function returns a representation of some operation,
+     e.g. a call of @(tsee sint-dec-const) or @(tsee add-sint-sint),
+     these return C values unconditionally, so no hypotheses are needed.
+     This is because ATC, when generating C code,
+     ensures that the ACL2 terms follow the C typing rules,
+     whether the terms are reachable under the guards or not.
+     However, in the presence of @(tsee mbt) or @(tsee mbt$),
+     we need the guard to exclude the `else' branches,
+     which are otherwise unconstrained.")
    (xdoc::p
-    "In anticipation for future situations in which
-     also non-recursive target functions may return multiple results,
-     namely the C return result plus other results representing side effects,
-     the code below is already general.
-     It concatenates zero or one type from @('type?')
+    "As explained in the user documentation,
+     an ACL2 function may return a combination of
+     an optional C result and zero or more affected variables or arrays.
+     We collect all of them.
+     The C result is determined from the optional C type of the function,
+     which is @('nil') for recursive functions,
+     and may or may not be @('void') for non-recursive functions.
+     The affected variables are also considered as results.
+     We concatenate zero or one type from @('type?')
      with zero or more types from @('affect') and @('typed-formals').
      Then we operate on the resulting list,
      which forms all the results of the function:
@@ -3299,8 +3358,7 @@
      we make the @(':use') hint a computed hint;
      we do that whether @('fn') is recursive or not, for simplicity.")
    (xdoc::p
-    "When @('fn') returns multiple results or contains @(tsee mv-let)s,
-     terms appear during the proof in which
+    "Terms may appear during the proof of this theorem, where
      @(tsee mv-nth)s are applied to @(tsee list)s (i.e. @(tsee cons) nests).
      So we add the rule" (xdoc::@def "mv-nth-of-cons") " to the theory,
      in order to simplify those terms.
@@ -3322,28 +3380,21 @@
      the executable counterparts of the integer value recognizers;
      the subgoals that arise without them have the form
      @('(<recognizer> nil)')."))
-  (b* ((wrld (w state))
-       ((when (not proofs))
-        (acl2::value (list nil nil names-to-avoid)))
-       (types1 (and type? (list type?)))
+  (b* (((when (not proofs)) (mv nil nil names-to-avoid))
+       (types1 (and type?
+                    (not (type-case type? :void))
+                    (list type?)))
        (types2 (atc-gen-fn-returns-value-thm-aux1 affect typed-formals))
        (types (append types1 types2))
        ((unless (consp types))
-        (prog2$
-         (raise "Internal error: the function ~x0 has no return types." fn)
-         (acl2::value (list nil nil names-to-avoid))))
-       ((unless (type-integer-listp types))
-        (er-soft+ ctx t (list nil nil names-to-avoid)
-                  "The function ~x0 returns results of types ~x1, ~
-                   not all of which are integer types. ~
-                   This is currently disallowed."
-                  fn types))
+        (raise "Internal error: the function ~x0 has no return types." fn)
+        (mv nil nil names-to-avoid))
        (formals (formals+ fn wrld))
        (fn-call `(,fn ,@formals))
        (conclusion
         (if (consp (cdr types))
             `(and ,@(atc-gen-fn-returns-value-thm-aux2 types 0 fn-call))
-          `(,(pack (atc-integer-type-fixtype (car types)) 'p) ,fn-call)))
+          `(,(atc-type-predicate (car types)) ,fn-call)))
        (name (add-suffix fn "-RETURNS-VALUE"))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
@@ -3399,7 +3450,7 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (acl2::value (list (list event) name names-to-avoid)))
+    (mv (list event) name names-to-avoid))
 
   :prepwork
 
@@ -3410,8 +3461,8 @@
      :parents nil
      (cond ((endp affect) nil)
            (t (b* ((type (cdr (assoc-eq (car affect)
-                                        (atc-symbol-type-alist-fix typed-formals)))))
-                (if type
+                                        typed-formals))))
+                (if (typep type)
                     (cons type
                           (atc-gen-fn-returns-value-thm-aux1 (cdr affect)
                                                              typed-formals))
@@ -3421,16 +3472,15 @@
    (define atc-gen-fn-returns-value-thm-aux2 ((types type-listp)
                                               (index natp)
                                               (fn-call pseudo-termp))
-     :guard (type-integer-listp types)
      :returns conjuncts
      :parents nil
      (cond ((endp types) nil)
-           (t (list* `(,(pack (atc-integer-type-fixtype (car types)) 'p)
-                       (mv-nth ',index ,fn-call))
-                     `(mv-nth ',index ,fn-call)
-                     (atc-gen-fn-returns-value-thm-aux2 (cdr types)
-                                                        (1+ index)
-                                                        fn-call)))))))
+           (t (list*
+               `(,(atc-type-predicate (car types)) (mv-nth ',index ,fn-call))
+               `(mv-nth ',index ,fn-call)
+               (atc-gen-fn-returns-value-thm-aux2 (cdr types)
+                                                  (1+ index)
+                                                  fn-call)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3720,7 +3770,6 @@
                          (print evmac-input-print-p)
                          (limit pseudo-termp)
                          (names-to-avoid symbol-listp)
-                         (ctx ctxp)
                          state)
   :returns (mv erp
                (val "A @('(tuple (local-events pseudo-event-form-listp)
@@ -3739,14 +3788,11 @@
             names-to-avoid)
         (atc-gen-fn-fun-env-thm
          fn proofs prog-const finfo? init-fun-env-thm names-to-avoid wrld))
-       ((mv erp
-            (list fn-returns-value-events
-                  fn-returns-value-thm
-                  names-to-avoid)
-            state)
+       ((mv fn-returns-value-events
+            fn-returns-value-thm
+            names-to-avoid)
         (atc-gen-fn-returns-value-thm fn type? affect typed-formals prec-fns
-                                      proofs names-to-avoid ctx state))
-       ((when erp) (mv erp (list nil nil nil nil nil nil) state))
+                                      proofs names-to-avoid wrld))
        ((mv fn-correct-local-events
             fn-correct-exported-events
             fn-correct-thm)
@@ -4007,9 +4053,9 @@
                   fn-correct-thm
                   names-to-avoid)
             state)
-        (atc-gen-fn-thms fn pointers type nil typed-formals prec-fns
+        (atc-gen-fn-thms fn pointers type affect typed-formals prec-fns
                          proofs prog-const finfo init-fun-env-thm fn-thms print
-                         limit names-to-avoid ctx state))
+                         limit names-to-avoid state))
        ((when erp) (mv erp (list (irr-ext-declon) nil nil nil nil) state))
        (info (make-atc-fn-info
               :out-type type
@@ -4998,7 +5044,7 @@
         (atc-gen-fn-thms fn pointers nil loop-affect typed-formals prec-fns
                          proofs prog-const nil nil fn-thms
                          print loop-limit
-                         names-to-avoid ctx state))
+                         names-to-avoid state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        (loop-test (stmt-while->test loop-stmt))
        (loop-body (stmt-while->body loop-stmt))
