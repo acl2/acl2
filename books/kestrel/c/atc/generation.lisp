@@ -3087,68 +3087,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-param-declon ((formal symbolp)
-                              (fn symbolp)
-                              (typed-formals atc-symbol-type-alistp)
-                              (ctx ctxp)
-                              state)
-  :returns (mv erp
-               (val (tuple (param param-declonp)
-                           (type typep)
-                           (pointerp booleanp)
-                           val))
-               state)
-  :short "Generate a C parameter declaration from an ACL2 formal parameter."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We check that the name of the parameter is adequate.")
-   (xdoc::p
-    "If the type is a pointer type,
-     we put the pointer indication into the declarator.
-     Only pointers to non-pointer types are allowed
-     (i.e. not pointers to pointers),
-     so we stop with an internal error if we encounter a pointer to pointer.")
-   (xdoc::p
-    "If the type is a pointer type, we also return a flag indicating that.
-     This is used, in @(tsee atc-gen-param-declon-list),
-     to collect the function parameters that are pointers,
-     because they get a special treatment
-     in the formulation of the generated correctness theorems."))
-  (b* ((name (symbol-name formal))
-       ((unless (atc-ident-stringp name))
-        (er-soft+ ctx t (list (irr-param-declon) (irr-type) nil)
-                  "The symbol name ~s0 of ~
-                   the formal parameter ~x1 of the function ~x2 ~
-                   must be a portable ASCII C identifier, but it is not."
-                  name formal fn))
-       (type (cdr (assoc-eq formal (atc-symbol-type-alist-fix typed-formals))))
-       ((when (not type))
-        (raise "Internal error: formal ~x0 of ~x1 has no type in ~x2."
-               formal fn typed-formals)
-        (acl2::value (list (irr-param-declon) (irr-type) nil)))
-       ((mv pointerp ref-type)
-        (if (type-case type :pointer)
-            (mv t (type-pointer->referenced type))
-          (mv nil type)))
-       ((when (type-case ref-type :pointer))
-        (raise "Internal error: pointer type to pointer type ~x0." ref-type)
-        (acl2::value (list (irr-param-declon) (irr-type) nil))))
-    (acl2::value (list (make-param-declon
-                        :declor (make-declor :ident (make-ident :name name)
-                                             :pointerp pointerp)
-                        :type (atc-gen-tyspecseq ref-type))
-                       type
-                       pointerp)))
-  ///
-  (more-returns
-   (val true-listp :rule-classes :type-prescription)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-gen-param-declon-list ((formals symbol-listp)
+(define atc-gen-param-declon-list ((typed-formals atc-symbol-type-alistp)
                                    (fn symbolp)
-                                   (typed-formals atc-symbol-type-alistp)
                                    (ctx ctxp)
                                    state)
   :returns (mv erp
@@ -3161,30 +3101,60 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "The ACL2 formal parameters are actually passed as an alist,
+     from the formals to their C types,
+     as calculated by @(tsee atc-typed-formals).")
+   (xdoc::p
     "We also return an alist whose keys are
      the formal parameters that are pointers in C
      and whose values are the types referenced by the pointers.
      These get a special treatment
-     in the formulation of the generated correctness theorems."))
-  (b* (((when (endp formals)) (acl2::value (list nil nil)))
-       (formal (mbe :logic (symbol-fix (car formals))
-                    :exec (car formals)))
-       ((when (member-equal (symbol-name formal)
-                            (symbol-name-lst (cdr formals))))
+     in the formulation of the generated correctness theorems.
+     This is a sub-alist of @('typed-formals');
+     we may actually abolish it in the future,
+     suitably using @('typed-formals') instead.")
+   (xdoc::p
+    "We check that the name of the parameter is a portable C identifier,
+     and distinct from the names of the other parameters.")
+   (xdoc::p
+    "If the type is a pointer type,
+     we put the pointer indication into the declarator.
+     Only pointers to non-pointer types are allowed
+     (i.e. not pointers to pointers),
+     so we stop with an internal error if we encounter a pointer to pointer."))
+  (b* (((when (endp typed-formals)) (acl2::value (list nil nil)))
+       ((cons formal type) (car typed-formals))
+       (name (symbol-name formal))
+       ((unless (atc-ident-stringp name))
+        (er-soft+ ctx t (list nil nil)
+                  "The symbol name ~s0 of ~
+                   the formal parameter ~x1 of the function ~x2 ~
+                   must be a portable ASCII C identifier, but it is not."
+                  name formal fn))
+       (cdr-formals (strip-cars (cdr typed-formals)))
+       ((when (member-equal name (symbol-name-lst cdr-formals)))
         (er-soft+ ctx t (list nil nil)
                   "The formal parameter ~x0 of the function ~x1 ~
                    has the same symbol name as ~
                    another formal parameter among ~x2; ~
                    this is disallowed, even if the package names differ."
-                  formal fn (cdr formals)))
-       ((mv erp (list param type pointerp) state)
-        (atc-gen-param-declon formal fn typed-formals ctx state))
-       ((when erp) (mv erp (list nil nil) state))
+                  formal fn cdr-formals))
+       ((mv pointerp ref-type)
+        (if (type-case type :pointer)
+            (mv t (type-pointer->referenced type))
+          (mv nil type)))
+       ((when (type-case ref-type :pointer))
+        (raise "Internal error: pointer type to pointer type ~x0." ref-type)
+        (acl2::value (list nil nil)))
+       (param (make-param-declon
+               :declor (make-declor :ident (make-ident :name name)
+                                    :pointerp pointerp)
+               :type (atc-gen-tyspecseq ref-type)))
        ((er (list params pointers))
-        (atc-gen-param-declon-list (cdr formals) fn typed-formals ctx state)))
+        (atc-gen-param-declon-list (cdr typed-formals) fn ctx state)))
     (acl2::value (list (cons param params)
                        (if pointerp
-                           (acons formal type pointers)
+                           (acons formal (type-fix type) pointers)
                          pointers))))
 
   :verify-guards nil ; done below
@@ -3192,11 +3162,13 @@
   ///
 
   (more-returns
-   (val true-listp :rule-classes :type-prescription)) ; speeds up guard proofs
+   (val true-listp :rule-classes :type-prescription)) ; for guard proofs
 
   (verify-guards atc-gen-param-declon-list
     :hints
-    (("Goal" :in-theory (enable alistp-when-atc-symbol-type-alistp-rewrite)))))
+    (("Goal" :in-theory (enable
+                         symbol-listp-of-strip-cars-when-atc-symbol-type-alistp
+                         alistp-when-atc-symbol-type-alistp-rewrite)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3492,7 +3464,7 @@
    (xdoc::p
     "Here we compute the modified guard as just explained.
      The list of parameters that are pointers is passed as @('pointers'),
-     which is calculated by @(tsee atc-gen-param-declon).
+     which is calculated by @(tsee atc-gen-param-declon-list).
      The @('compst-var') input is the variable symbol
      to use for the computation state;
      this must be the same used
@@ -3985,11 +3957,10 @@
                    but the function ~x2 has the same symbol name."
                   name fn conflicting-fn))
        (wrld (w state))
-       (formals (formals+ fn wrld))
        ((mv erp typed-formals state) (atc-typed-formals fn ctx state))
        ((when erp) (mv erp nil state))
        ((er (list params pointers))
-        (atc-gen-param-declon-list formals fn typed-formals ctx state))
+        (atc-gen-param-declon-list typed-formals fn ctx state))
        (body (ubody+ fn wrld))
        ((er affect) (atc-find-affected fn body pointers ctx state))
        ((unless (subsetp-eq affect (strip-cars pointers)))
@@ -5016,11 +4987,10 @@
   (b* ((wrld (w state))
        ((mv measure-of-fn-event measure-of-fn measure-formals names-to-avoid)
         (atc-gen-measure-of-fn fn names-to-avoid wrld))
-       (formals (formals+ fn wrld))
        ((mv erp typed-formals state) (atc-typed-formals fn ctx state))
        ((when erp) (mv erp nil state))
        ((er (list & pointers))
-        (atc-gen-param-declon-list formals fn typed-formals ctx state))
+        (atc-gen-param-declon-list typed-formals fn ctx state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        (body (ubody+ fn wrld))
        ((mv erp (list loop-stmt
