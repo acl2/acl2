@@ -30,3 +30,7 @@
 (include-book "count-ifs-in-then-and-else-branches")
 (include-book "combine-ifs-in-then-and-else-branches")
 (include-book "restore-mv-in-branches")
+(include-book "logic-termp")
+(include-book "negate-term")
+(include-book "negate-term-proof")
+(include-book "negate-terms")

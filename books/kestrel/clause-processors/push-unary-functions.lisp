@@ -13,7 +13,7 @@
 (include-book "kestrel/evaluators/if-eval" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
-(local (include-book "kestrel/utilities/logic-termp" :dir :system))
+(local (include-book "kestrel/terms-light/logic-termp" :dir :system))
 (local (include-book "kestrel/utilities/arities-okp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))

@@ -13,7 +13,7 @@
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "tools/flag" :dir :system)
-(include-book "kestrel/utilities/negate-term" :dir :system)
+(include-book "negate-term")
 ;(include-book "count-ifs-in-term")
 ;(include-book "count-ifs-in-then-and-else-branches")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))

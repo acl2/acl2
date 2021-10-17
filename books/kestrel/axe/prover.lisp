@@ -43,7 +43,7 @@
 (include-book "tries")
 (include-book "replace-using-assumptions")
 (include-book "fixup-context")
-(include-book "kestrel/utilities/negate-terms" :dir :system)
+(include-book "kestrel/terms-light/negate-terms" :dir :system)
 ;(local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
