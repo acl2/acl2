@@ -93,10 +93,8 @@
                                                ,new-fn
                                                ,@enables)
                                              ,base-theory))
-                         ;; todo: want to use this, but it breaks extract-subfunction:
-                         ;; (and stable-under-simplificationp
-                         ;;      (expand-calls-in-conclusion-equalities clause '(,fn ,new-fn)))
-                         ))
+                         (and stable-under-simplificationp ;; TODO: Don't wait until stable (do on every inductive subgoal)?
+                               (expand-calls-in-conclusion-equalities clause '(,fn ,new-fn)))))
              ;; non-recursive case:
              `(:hints (("Goal" :in-theory (append '(,fn ,new-fn ,@enables) ,base-theory)
                         :do-not '(generalize eliminate-destructors)

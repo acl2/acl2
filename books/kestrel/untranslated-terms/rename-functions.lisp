@@ -96,6 +96,16 @@
         (cons (list (first case) (second case) (first new-terms-from-cases))
               (recreate-case-match-cases (rest cases) (rest new-terms-from-cases)))))))
 
+;; Throws an error is macroexpansion fails.  Returns the term with one macro now expanded.
+(defund magic-macroexpand1$$ (term ctx wrld state)
+  (declare (xargs :mode :program
+                  :stobjs state))
+  (b* ((- (cw "NOTE: Macroexpanding non-supported call ~x0.~%" term))
+       ((mv erp term-expanded-one-step) (magic-macroexpand1$ term ctx wrld state))
+       ;; Can this ever happen, given that we translated the term above?
+       ((when erp) (er hard? 'rename-functions-in-untranslated-term-aux "Failed to macroexpand term: ~x0." term)))
+    term-expanded-one-step))
+
 (mutual-recursion
  ;; Renames all function calls in TERM according to ALIST.  WRLD must contain real or fake info (at least 'formals
  ;; properties) for the cdrs of ALIST, so we can translate terms mentioning them.
@@ -206,11 +216,8 @@
                                 ;; The term with processed args translates to the right thing, so use it (will be more readable than if we expand the macro call):
                                 term-with-translated-args
                               ;; None of the above worked, so macroexpand one step and try again:
-                              (b* ((- (cw "NOTE: Macroexpanding non-supported call ~x0.~%" term))
-                                   ((mv erp term-expanded-one-step) (magic-macroexpand1$ term 'rename-functions-in-untranslated-term-aux wrld state))
-                                   ;; Can this ever happen, given that we translated the term above?
-                                   ((when erp) (er hard? 'rename-functions-in-untranslated-term-aux "Failed to macroexpand term: ~x0." term)))
-                                (rename-functions-in-untranslated-term-aux term-expanded-one-step alist permissivep (+ -1 count) wrld state)))))))
+                              (rename-functions-in-untranslated-term-aux (magic-macroexpand1$$ term 'rename-functions-in-untranslated-term-aux wrld state)
+                                                                         alist permissivep (+ -1 count) wrld state))))))
                   ;; It's a function or lambda application:
                   (let* ((args (fargs term))
                          (args (rename-functions-in-untranslated-terms-aux args alist permissivep (+ -1 count) wrld state))
