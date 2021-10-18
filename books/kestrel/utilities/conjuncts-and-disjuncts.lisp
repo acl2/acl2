@@ -94,9 +94,10 @@
 
 ;; Negate all the disjuncts, forming a conjunction of the results
 (defund negate-disjuncts (disjuncts)
-   (declare (xargs :guard (pseudo-term-listp disjuncts)))
-   (if (equal disjuncts *true-disjunction*)
+  (declare (xargs :guard (pseudo-term-listp disjuncts)))
+  (if (equal disjuncts *true-disjunction*)
       *false-conjunction*
+    ;; todo: just call negate-terms?:
     (negate-terms2 disjuncts)))
 
 (defthm pseudo-term-listp-of-negate-disjuncts
@@ -118,6 +119,7 @@
    (declare (xargs :guard (pseudo-term-listp conjuncts)))
   (if (equal conjuncts *false-conjunction*)
       *true-disjunction*
+    ;; todo: just call negate-terms?:
     (negate-terms2 conjuncts)))
 
 (defthm pseudo-term-listp-of-negate-conjuncts
