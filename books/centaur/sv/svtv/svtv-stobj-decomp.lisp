@@ -211,6 +211,8 @@
           (cw "Diagnostic info sneaky-pushed onto :svtv-decomp-overridetriple-errors.~%")
           (acl2::sneaky-push :svtv-decomp-overridetriple-errors (list check trips))))
 
+(local (in-theory (disable SVEX-ENV-REMOVEKEYS-UNDER-SVEX-ENVS-SIMILAR)))
+
 (defthmd svtv-decomp-remove-override-vars-from-svex-alist-eval-when-svexlist-check-overridetriples
   (implies (and (syntaxp (cmr::term-variable-free-p al))
                 (equal testvars (svex-env-override-test-vars env))

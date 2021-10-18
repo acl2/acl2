@@ -2186,7 +2186,7 @@ we've seen before with a mask that overlaps with that one.</p>"
                (new-x svex-alist-p))
   (b* ((init-masks (svex-alist-pair-initial-masks x)))
     (with-fast-alist init-masks
-      (svex-alist-maskcompose-iter init-masks x simpconf))))
+      (cwtime (svex-alist-maskcompose-iter init-masks x simpconf)))))
   
 
 ;; Need to experiment to see if it's best to split variables directly into bits

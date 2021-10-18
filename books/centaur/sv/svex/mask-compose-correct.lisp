@@ -1102,7 +1102,7 @@
                (new-updates svex-alist-p))
 
   :well-founded-relation acl2::nat-list-<
-  (b* ((next-masks (svex-assigns-propagate-masks masks loop-updates))
+  (b* ((next-masks (cwtime (svex-assigns-propagate-masks masks loop-updates)))
        (status (check-masks-decreasing loop-updates masks next-masks))
        ((unless status)
         (cw "Masks stopped shrinking~%")
@@ -1115,11 +1115,13 @@
        ((mv final-masks rest-composed)
         (svex-alist-maskcompose-iter
          next-masks loop-updates simpconf))
-       (composed (svex-maskcompose-step-alist-rw
-                  (svex-alist-rewrite-under-masks loop-updates next-masks)
-                  masks next-masks
-                  (make-svex-substconfig :simp simpconf
-                                         :alist rest-composed))))
+       (composed (with-fast-alist rest-composed
+                   (cwtime
+                    (svex-maskcompose-step-alist-rw
+                     (cwtime (svex-alist-rewrite-under-masks loop-updates next-masks))
+                     masks next-masks
+                     (make-svex-substconfig :simp simpconf
+                                            :alist rest-composed))))))
     (fast-alist-free next-masks)
     (mv final-masks composed))
   ///
