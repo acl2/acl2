@@ -43,7 +43,7 @@
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
 ;;Returns (mv var const) or (mv nil nil)
-(defund equality-items-from-term (term)
+(defund equated-var-and-const-from-term (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (call-of 'equal term)
       (let ((farg1 (farg1 term))
@@ -57,58 +57,59 @@
             (mv nil nil))))
     (mv nil nil)))
 
-(defthm symbolp-of-mv-nth-0-of-equality-items-from-term
+(defthm symbolp-of-mv-nth-0-of-equated-var-and-const-from-term
   (implies (pseudo-termp term)
-           (symbolp (mv-nth 0 (equality-items-from-term term))))
-  :hints (("Goal" :in-theory (enable equality-items-from-term))))
+           (symbolp (mv-nth 0 (equated-var-and-const-from-term term))))
+  :hints (("Goal" :in-theory (enable equated-var-and-const-from-term))))
 
-(defthm pseudo-termp-of-mv-nth-1-of-equality-items-from-term
+(defthm pseudo-termp-of-mv-nth-1-of-equated-var-and-const-from-term
   (implies (pseudo-termp term)
-           (pseudo-termp (mv-nth 1 (equality-items-from-term term))))
-  :hints (("Goal" :in-theory (enable equality-items-from-term))))
+           (pseudo-termp (mv-nth 1 (equated-var-and-const-from-term term))))
+  :hints (("Goal" :in-theory (enable equated-var-and-const-from-term))))
 
-(defthm equality-items-from-term-helper
+(defthm equated-var-and-const-from-term-helper
   (implies (equality-eval term a)
-           (equal (equality-eval (mv-nth 0 (equality-items-from-term term)) a)
-                  (equality-eval (mv-nth 1 (equality-items-from-term term)) a)))
-  :hints (("Goal" :in-theory (enable equality-items-from-term))))
+           (equal (equality-eval (mv-nth 0 (equated-var-and-const-from-term term)) a)
+                  (equality-eval (mv-nth 1 (equated-var-and-const-from-term term)) a)))
+  :hints (("Goal" :in-theory (enable equated-var-and-const-from-term))))
 
 ;;Returns (mv var const) or (mv nil nil)
-(defund equality-items-from-negation-of-term (term)
+(defund equated-var-and-const-from-negation-of-term (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (call-of 'not term)
-      (equality-items-from-term (farg1 term))
+      (equated-var-and-const-from-term (farg1 term))
     (mv nil nil)))
 
-(defthm symbolp-of-mv-nth-0-of-equality-items-from-negation-of-term
+(defthm symbolp-of-mv-nth-0-of-equated-var-and-const-from-negation-of-term
   (implies (pseudo-termp term)
-           (symbolp (mv-nth 0 (equality-items-from-negation-of-term term))))
-  :hints (("Goal" :in-theory (enable equality-items-from-negation-of-term))))
+           (symbolp (mv-nth 0 (equated-var-and-const-from-negation-of-term term))))
+  :hints (("Goal" :in-theory (enable equated-var-and-const-from-negation-of-term))))
 
-(defthm pseudo-termp-of-mv-nth-1-of-equality-items-from-negation-of-term
+(defthm pseudo-termp-of-mv-nth-1-of-equated-var-and-const-from-negation-of-term
   (implies (pseudo-termp term)
-           (pseudo-termp (mv-nth 1 (equality-items-from-negation-of-term term))))
-  :hints (("Goal" :in-theory (enable equality-items-from-negation-of-term))))
+           (pseudo-termp (mv-nth 1 (equated-var-and-const-from-negation-of-term term))))
+  :hints (("Goal" :in-theory (enable equated-var-and-const-from-negation-of-term))))
 
-(defthm equality-items-from-negation-of-term-helper
+(defthm equated-var-and-const-from-negation-of-term-helper
   (implies (not (equality-eval term a))
-           (equal (equality-eval (mv-nth 0 (equality-items-from-negation-of-term term)) a)
-                  (equality-eval (mv-nth 1 (equality-items-from-negation-of-term term)) a)))
-  :hints (("Goal" :in-theory (enable equality-items-from-negation-of-term))))
+           (equal (equality-eval (mv-nth 0 (equated-var-and-const-from-negation-of-term term)) a)
+                  (equality-eval (mv-nth 1 (equated-var-and-const-from-negation-of-term term)) a)))
+  :hints (("Goal" :in-theory (enable equated-var-and-const-from-negation-of-term))))
 
 (mutual-recursion
 
- ;; Extend the lists of true-terms and false-terms by assuming that TERM is true.
+ ;; Extends the lists of TRUE-TERMS and FALSE-TERMS with facts implied by TERM.
  ;; Returns (mv true-terms false-terms).
  (defund add-true-and-false-implications-of-term (term true-terms false-terms)
    (declare (xargs :guard (and (pseudo-termp term)
                                (pseudo-term-listp true-terms)
                                (pseudo-term-listp false-terms))))
-   (if (and (call-of 'equal term)
-            (= 2 (len (fargs term))))
+   (if nil ; todo
+       ;; (and (call-of 'equal term)
+       ;;      (= 2 (len (fargs term))))
        (let ((farg1 (farg1 term))
              (farg2 (farg2 term)))
-         (mv (cons `(equal ,farg1 ,farg2) ; include both orientations of the equal
+         (mv (cons `(equal ,farg1 ,farg2) ; include both orientations of the equal (TODO: Avoid this)
                    (cons `(equal ,farg2 ,farg1)
                          true-terms))
              false-terms))
@@ -118,7 +119,7 @@
        ;; todo: extract conjuncts if possible?
        (mv (cons term true-terms) false-terms))))
 
- ;; Extend the lists of true-terms and false-terms by assuming that TERM is false.
+ ;; Extends the lists of TRUE-TERMS and FALSE-TERMS with facts implied by (not TERM).
  ;; Returns (mv true-terms false-terms).
  (defund add-true-and-false-implications-of-negation-of-term (term true-terms false-terms)
    (declare (xargs :guard (and (pseudo-termp term)
@@ -151,6 +152,7 @@
                                      add-true-and-false-implications-of-negation-of-term))))
 
 (defthm-flag-add-true-and-false-implications-of-term
+  ;; If the term is true, the new facts extracted by add-true-and-false-implications-of-term are (appropriately) true or false.
   (defthm add-true-and-false-implications-of-term-correct
     (implies (and (all-eval-to-true-with-equality-eval true-terms a)
                   (all-eval-to-false-with-equality-eval false-terms a)
@@ -158,6 +160,7 @@
              (and (all-eval-to-true-with-equality-eval (mv-nth 0 (add-true-and-false-implications-of-term term true-terms false-terms)) a)
                   (all-eval-to-false-with-equality-eval (mv-nth 1 (add-true-and-false-implications-of-term term true-terms false-terms)) a)))
     :flag add-true-and-false-implications-of-term)
+  ;; If the term is false, the new facts extracted by add-true-and-false-implications-of-negation-of-term are (appropriately) true or false.
   (defthm add-true-and-false-implications-of-negation-of-term-correct
     (implies (and (all-eval-to-true-with-equality-eval true-terms a)
                   (all-eval-to-false-with-equality-eval false-terms a)
@@ -168,7 +171,7 @@
   :hints (("Goal" :in-theory (enable add-true-and-false-implications-of-term
                                      add-true-and-false-implications-of-negation-of-term))))
 
-;; Check whether (equal x y) or (equal y x) is among the TERMS.
+;; Check whether (equal X Y) or (equal Y X) is among the TERMS.
 (defund equality-among-termsp (x y terms)
   (declare (xargs :guard (and (pseudo-termp x)
                               (pseudo-termp y)
@@ -185,6 +188,7 @@
                 (equality-among-termsp x y (rest terms))))
         (equality-among-termsp x y (rest terms))))))
 
+;; When the equality of X and Y is among the FALSE-TERMS, then the evaluations of X and Y differ.
 (defthm not-equal-of-equality-eval-and-equality-eval-when-equality-among-termsp-1
   (implies (and (all-eval-to-false-with-equality-eval false-terms a)
                 (equality-among-termsp x y false-terms)
@@ -194,6 +198,7 @@
                        (equality-eval y a))))
   :hints (("Goal" :in-theory (enable equality-among-termsp all-eval-to-false-with-equality-eval))))
 
+;; When the equality of X and Y is among the TRUE-TERMS, then the evaluations of X and Y are equal.
 (defthm equal-of-equality-eval-and-equality-eval-when-equality-among-termsp-2
   (implies (and (all-eval-to-true-with-equality-eval true-terms a)
                 (equality-among-termsp x y true-terms)
@@ -276,7 +281,7 @@
                             ;; If the test is (equal <var> <const>) we can
                             ;; replace <var> with <const> in the then branch:
                             (mv-let (var const)
-                              (equality-items-from-term new-test)
+                              (equated-var-and-const-from-term new-test)
                               (if var
                                   (acons var const alist)
                                 alist))
@@ -289,7 +294,7 @@
                           ;; If the test is (not (equal <var> <const>)) we can
                           ;; replace <var> with <const> in the else branch:
                           (mv-let (var const)
-                            (equality-items-from-negation-of-term new-test)
+                            (equated-var-and-const-from-negation-of-term new-test)
                             (if var
                                 (acons var const alist)
                               alist))

@@ -55,7 +55,7 @@
   (declare (xargs :guard (and (pseudo-term-listp clause)
                               (symbol-listp target-fns))))
   (let ((calls-to-expand (calls-in-top-level-equalities clause target-fns)))
-    (prog2$ (cw "(clause is ~x0.~%  calls to expand are: ~x1)~%" clause calls-to-expand)
+    (progn$ ;; (cw "(clause is ~x0.~%  calls to expand are: ~x1)~%" clause calls-to-expand)
             `(:expand (,@calls-to-expand)))))
 
 ;; Makes a theorem equating an arbitrary call of FN with a call of NEW-FN on the same arguments.

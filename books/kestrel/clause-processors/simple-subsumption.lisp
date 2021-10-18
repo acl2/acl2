@@ -40,6 +40,15 @@
                            strip-cdrs
                            assoc-equal)))
 
+;; Currently, we know the test won't be constant, but clearly this can do better if it is.
+(defun make-if-term (test then else)
+  (declare (xargs :guard (and (pseudo-termp test)
+                              (pseudo-termp then)
+                              (pseudo-termp else))))
+  (if (equal then else)
+      then
+    `(if ,test ,then ,else)))
+
 ;; just changes the evaluator
 (defthm equality-eval-of-disjoin-of-handle-constant-literals
   (iff (equality-eval (disjoin (handle-constant-literals clause)) a)
@@ -215,14 +224,6 @@
            (equality-eval term a))
   :hints (("Goal" :in-theory (enable clearly-implied-by-some-disjunctionp))))
 
-(defun make-if-term (test then else)
-  (declare (xargs :guard (and (pseudo-termp test)
-                              (pseudo-termp then)
-                              (pseudo-termp else))))
-  (if (equal then else)
-      then
-    `(if ,test ,then ,else)))
-
 ;; In general, the conjuncts of CONJ and the TRUE-TERMS are disjunctions.
 (defun resolve-ifs-in-term (term true-terms)
   (declare (xargs :guard (and (pseudo-termp term)
@@ -274,10 +275,12 @@
 
   (if (endp clause)
       nil
-    (let* ((lit (first clause)))
-      (cons (resolve-ifs-in-term lit true-terms)
+    (let* ((lit (first clause))
+           (new-lit (resolve-ifs-in-term lit true-terms)))
+      (cons new-lit
             (resolve-ifs-in-clause (rest clause)
                                    ;; todo: what about things that are not calls of not?  track false-terms too?
+                                   ;; TODO: Use new-lit here:
                                    (if (and (call-of 'not lit)
                                             (= 1 (len (fargs lit))))
                                        ;; if the clause is (or (not A) ...)

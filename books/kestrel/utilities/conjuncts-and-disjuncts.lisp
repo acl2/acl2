@@ -15,18 +15,18 @@
 
 ;; TODO: Should we be able to get conjuncts from (NOT (IF X X Y)) which is "not (x or y)" ?
 
+(include-book "forms")
 (include-book "tools/flag" :dir :system)
 (include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/booleans/booland" :dir :system) ; do not remove, since this tool depends on this definition of booland
 (include-book "kestrel/booleans/boolor" :dir :system) ; do not remove, since this tool depends on this definition of boolor
 (include-book "kestrel/booleans/boolif" :dir :system) ; do not remove, since this tool depends on this definition of boolif
 (include-book "myif") ; do not remove, since this tool depends on this definition of myif
-(include-book "negate-term")
 (local (include-book "pseudo-termp"))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
-(local (include-book "logic-termp"))
+(local (include-book "kestrel/terms-light/logic-termp" :dir :system))
 (local (include-book "arities-okp"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
@@ -108,7 +108,7 @@
 ;todo: handle (equal x 'nil) like (not 'x)
 ;todo: handle (if/myif/boolif x 'nil 't) like (not 'x)
 
-;; also pushes not through branches of IFs
+;; also pushes NOT through branches of IFs (do I want that?)
 (defund negate-term2 (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (variablep term)
