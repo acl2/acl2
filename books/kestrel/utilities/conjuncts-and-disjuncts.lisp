@@ -45,7 +45,7 @@
 ;; A single disjunct of "true"
 (defconst *true-disjunction* (list *t*))
 
-;; We expect each of x and y to be either 1) the false-conjunction, or 2) a list of non-constant terms.
+;; We expect each of x and y to be either 1) *false-conjunction*, or 2) a list of non-constant terms.
 (defund combine-conjuncts (x y)
   (declare (xargs :guard (and (pseudo-term-listp x)
                               (pseudo-term-listp y))))
@@ -54,13 +54,24 @@
       *false-conjunction*
     (union-equal x y)))
 
+(defthm pseudo-term-listp-of-combine-conjuncts
+  (implies (and (pseudo-term-listp x)
+                (pseudo-term-listp y))
+           (pseudo-term-listp (combine-conjuncts x y)))
+  :hints (("Goal" :in-theory (enable combine-conjuncts))))
+
 (defthm logic-term-listp-of-combine-conjuncts
   (implies (and (logic-term-listp x w)
                 (logic-term-listp y w))
            (logic-term-listp (combine-conjuncts x y) w))
   :hints (("Goal" :in-theory (enable combine-conjuncts))))
 
-;; We expect each of x and y to be either 1) the true-disjunction, or 2) a list of non-constant terms.
+(defthm true-listp-of-combine-conjuncts
+  (implies (true-listp y)
+           (true-listp (combine-conjuncts x y)))
+  :hints (("Goal" :in-theory (enable combine-conjuncts))))
+
+;; We expect each of x and y to be either 1) the *true-disjunction*, or 2) a list of non-constant terms.
 (defund combine-disjuncts (x y)
   (declare (xargs :guard (and (pseudo-term-listp x)
                               (pseudo-term-listp y))))
@@ -69,39 +80,20 @@
       *true-disjunction*
     (union-equal x y)))
 
-(defthm logic-term-listp-of-combine-disjuncts
-  (implies (and (logic-term-listp x w)
-                (logic-term-listp y w))
-           (logic-term-listp (combine-disjuncts x y) w))
-  :hints (("Goal" :in-theory (enable combine-disjuncts))))
-
-;; (defthm pseudo-term-listp-of-union-equal
-;;   (implies (and (pseudo-term-listp x)
-;;                 (pseudo-term-listp y))
-;;            (pseudo-term-listp (union-equal x y)))
-;;   :hints (("Goal" :in-theory (enable union-equal))))
-
-(defthm pseudo-term-listp-of-combine-conjuncts
-  (implies (and (pseudo-term-listp x)
-                (pseudo-term-listp y))
-           (pseudo-term-listp (combine-conjuncts x y)))
-  :hints (("Goal" :in-theory (enable combine-conjuncts))))
-
 (defthm pseudo-term-listp-of-combine-disjuncts
   (implies (and (pseudo-term-listp x)
                 (pseudo-term-listp y))
            (pseudo-term-listp (combine-disjuncts x y)))
   :hints (("Goal" :in-theory (enable combine-disjuncts))))
 
-(defthm true-listp-of-combine-conjuncts
-  (implies (and ;(true-listp x)
-                (true-listp y))
-           (true-listp (combine-conjuncts x y)))
-  :hints (("Goal" :in-theory (enable combine-conjuncts))))
+(defthm logic-term-listp-of-combine-disjuncts
+  (implies (and (logic-term-listp x w)
+                (logic-term-listp y w))
+           (logic-term-listp (combine-disjuncts x y) w))
+  :hints (("Goal" :in-theory (enable combine-disjuncts))))
 
 (defthm true-listp-of-combine-disjuncts
-  (implies (and ;(true-listp x)
-                (true-listp y))
+  (implies (true-listp y)
            (true-listp (combine-disjuncts x y)))
   :hints (("Goal" :in-theory (enable combine-disjuncts))))
 
@@ -109,6 +101,7 @@
 ;todo: handle (if/myif/boolif x 'nil 't) like (not 'x)
 
 ;; also pushes NOT through branches of IFs (do I want that?)
+;; See also negate-term.
 (defund negate-term2 (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (variablep term)
