@@ -15,7 +15,7 @@
 ;; each literal.
 
 (include-book "kestrel/evaluators/if-eval" :dir :system)
-(local (include-book "kestrel/utilities/logic-termp" :dir :system))
+(local (include-book "kestrel/terms-light/logic-termp" :dir :system))
 
 (local (in-theory (disable alistp disjoin disjoin2)))
 
