@@ -109,18 +109,15 @@
          :rule-classes :definition))
 
 
-(define check-masks-decreasing ((assigns svex-alist-p)
+(define check-masks-decreasing ((vars svarlist-p)
                                 (masks svex-mask-alist-p)
                                 (new-masks svex-mask-alist-p))
   :returns (status)
   ;; t for decreasing
   ;; nil for nonincreasing
   ;; svar key for increasing
-  (b* (((when (atom assigns)) nil)
-       ((unless (mbt (and (consp (car assigns))
-                          (svar-p (caar assigns)))))
-        (check-masks-decreasing (cdr assigns) masks new-masks))
-       (key (caar assigns))
+  (b* (((when (atom vars)) nil)
+       (key (svar-fix (car vars)))
        (svex-key (svex-var key))
        (mask1 (svex-mask-lookup svex-key masks))
        (mask2 (svex-mask-lookup svex-key new-masks))
@@ -128,12 +125,11 @@
         ;; violation
         key)
        ((when (or (sparseint-equal mask1 mask2)
-                  (and (sparseint-< mask1 0)
-                       (sparseint-< mask2 0))))
+                  (sparseint-< mask2 0)))
         ;; nonincreasing
-        (check-masks-decreasing (cdr assigns) masks new-masks))
+        (check-masks-decreasing (cdr vars) masks new-masks))
        ;; otherwise decreasing, as long as rest is nonincreasing
-       (rest (check-masks-decreasing (cdr assigns) masks new-masks)))
+       (rest (check-masks-decreasing (cdr vars) masks new-masks)))
     (or rest t))
   ///
   (local (defthm 4vmask-subsumes-false-by-sign
@@ -143,26 +139,144 @@
            :hints(("Goal" :in-theory (enable 4vmask-subsumes)) )))
 
   (defret svex-mask-alist-measure-decreasing-by-<fn>
-    (let* ((keys (svex-alist-keys assigns))
-           (new-meas (svex-mask-alist-measure keys new-masks))
-           (old-meas (svex-mask-alist-measure keys masks)))
+    (let* ((new-meas (svex-mask-alist-measure vars new-masks))
+           (old-meas (svex-mask-alist-measure vars masks)))
       (and (implies (not status)
                     (equal new-meas old-meas))
            (implies (equal status t)
                     (acl2::nat-list-< new-meas old-meas))))
     :hints(("Goal" :in-theory (enable svex-mask-alist-measure
-                                      svex-alist-keys
                                       svex-mask-alist-negcount
                                       svex-mask-alist-nonnegcount))))
 
-  (defretd 4vmask-subsumes-by-check-masks-decreasing
-    (implies (and (booleanp (check-masks-decreasing assigns masks new-masks))
-                  (svex-lookup var assigns))
+  (defretd 4vmask-subsumes-by-<fn>
+    (implies (and (booleanp status)
+                  (member-equal (svar-fix var) (svarlist-fix vars)))
              (4vmask-subsumes (svex-mask-lookup (svex-var var) masks)
                               (svex-mask-lookup (svex-var var) new-masks)))
     :hints(("Goal" :in-theory (enable svex-lookup-redef))))
 
   (local (in-theory (enable svex-alist-fix))))
+
+
+(defstobj maskcompose-stats
+  (maskcompose-status)
+  (maskcompose-neg-varcount :type (integer 0 *) :initially 0)
+  (maskcompose-nonneg-bitcount :type (integer 0 *) :initially 0)
+  (maskcompose-nonneg-varcount :type (integer 0 *) :initially 0)
+  (maskcompose-neg-decr-varcount :type (integer 0 *) :initially 0)
+  (maskcompose-nonneg-decr-varcount :type (integer 0 *) :initially 0))
+
+(local (in-theory (disable nth update-nth)))
+
+(define update-maskcompose-stats ((key svar-p)
+                                  (mask1 4vmask-p)
+                                  (mask2 4vmask-p)
+                                  (maskcompose-stats))
+  :returns (mv violationp
+               (new-maskcompose-stats))
+  (b* ((mask1 (4vmask-fix mask1))
+       (mask2 (4vmask-fix mask2))
+       ((unless (4vmask-subsumes mask1 mask2))
+        (b* ((maskcompose-stats (update-maskcompose-status (svar-fix key) maskcompose-stats)))
+          (mv t maskcompose-stats)))
+       (negp (sparseint-< mask2 0))
+       (zerop (sparseint-equal mask2 0))
+       (maskcompose-stats (if negp
+                              (update-maskcompose-neg-varcount
+                               (+ 1 (maskcompose-neg-varcount maskcompose-stats))
+                               maskcompose-stats)
+                            (b* ((maskcompose-stats
+                                  (if zerop
+                                      maskcompose-stats
+                                    (update-maskcompose-nonneg-varcount
+                                     (+ 1 (maskcompose-nonneg-varcount maskcompose-stats))
+                                     maskcompose-stats))))
+                              (update-maskcompose-nonneg-bitcount
+                               (+ (sparseint-bitcount mask2)
+                                  (maskcompose-nonneg-bitcount maskcompose-stats))
+                               maskcompose-stats))))
+       (equal (sparseint-equal mask1 mask2))
+       (maskcompose-stats (if equal
+                              maskcompose-stats
+                            (if negp
+                                (update-maskcompose-neg-decr-varcount
+                                 (+ 1 (maskcompose-neg-decr-varcount maskcompose-stats))
+                                 maskcompose-stats)
+                              (update-maskcompose-nonneg-decr-varcount
+                               (+ 1 (maskcompose-nonneg-decr-varcount maskcompose-stats))
+                               maskcompose-stats))))
+       (maskcompose-stats (if (or negp equal)
+                              maskcompose-stats
+                            (update-maskcompose-status t maskcompose-stats))))
+    (mv nil maskcompose-stats))
+  ///
+  (defret violationp-of-<fn>
+    (iff violationp
+         (not (4vmask-subsumes mask1 mask2))))
+
+  (defret maskcompose-status-of-<fn>
+    (equal (nth *maskcompose-status* new-maskcompose-stats)
+           (cond ((not (4vmask-subsumes mask1 mask2))
+                  (svar-fix key))
+                 ((or (4vmask-equal mask1 mask2)
+                      (sparseint-< (4vmask-fix mask2) 0))
+                  (maskcompose-status maskcompose-stats))
+                 (t t)))))
+
+(define check-masks-stats-aux ((assigns svex-alist-p)
+                               (masks svex-mask-alist-p)
+                               (new-masks svex-mask-alist-p)
+                               maskcompose-stats)
+  :returns new-maskcompose-stats
+  ;; t for decreasing
+  ;; nil for nonincreasing
+  ;; svar key for increasing
+  (b* (((when (atom assigns)) maskcompose-stats)
+       ((unless (mbt (and (consp (car assigns))
+                          (svar-p (caar assigns)))))
+        (check-masks-stats-aux (cdr assigns) masks new-masks maskcompose-stats))
+       (key (caar assigns))
+       (svex-key (svex-var key))
+       (mask1 (svex-mask-lookup svex-key masks))
+       (mask2 (svex-mask-lookup svex-key new-masks))
+       ((mv violationp maskcompose-stats)
+        (update-maskcompose-stats key mask1 mask2 maskcompose-stats))
+       ((when violationp)
+        maskcompose-stats))
+    (check-masks-stats-aux (cdr assigns) masks new-masks maskcompose-stats))
+  ///
+  (defret status-of-<fn>
+    (implies (booleanp (maskcompose-status maskcompose-stats))
+             (equal (nth *maskcompose-status* new-maskcompose-stats)
+                    (let ((spec (check-masks-decreasing (svex-alist-keys assigns) masks new-masks)))
+                      (or spec (maskcompose-status maskcompose-stats)))))
+    :hints(("Goal" :in-theory (enable svex-alist-keys
+                                      check-masks-decreasing))))
+
+  (local (in-theory (enable svex-alist-fix))))
+
+(define check-masks-stats ((assigns svex-alist-p)
+                           (masks svex-mask-alist-p)
+                           (new-masks svex-mask-alist-p)
+                           ;; verboseness?
+                           )
+  :returns (status
+            (equal status (check-masks-decreasing (svex-alist-keys assigns) masks new-masks)))
+  (b* (((acl2::local-stobjs maskcompose-stats)
+        (mv status maskcompose-stats))
+       (maskcompose-stats (check-masks-stats-aux assigns masks new-masks maskcompose-stats))
+       (status (maskcompose-status maskcompose-stats)))
+    (cw "Mask bits: ~x0  Nonneg-mask vars: ~x1  Neg-mask vars: ~x2  Decr nonneg: ~x3  Decr neg: ~x4~%" 
+        (maskcompose-nonneg-bitcount maskcompose-stats)
+        (maskcompose-nonneg-varcount maskcompose-stats)
+        (maskcompose-neg-varcount maskcompose-stats)
+        (maskcompose-nonneg-decr-varcount maskcompose-stats)
+        (maskcompose-neg-decr-varcount maskcompose-stats))
+    (mv status maskcompose-stats)))
+
+                           
+
 
 (define svex-maskcompose-decreasing-vars ((vars svarlist-p)
                                 (masks svex-mask-alist-p)
@@ -189,7 +303,7 @@
 
   (defretd mask-lookup-when-not-member-<fn>
     :pre-bind ((vars (svex-alist-keys assigns)))
-    (implies (and (booleanp (check-masks-decreasing assigns masks new-masks))
+    (implies (and (booleanp (check-masks-decreasing (svex-alist-keys assigns) masks new-masks))
                   (not (member-equal (svar-fix v) decr))
                   (member-equal (svar-fix v) (svarlist-fix vars)))
              (4vmask-equal (svex-mask-lookup (svex-var v) new-masks)
@@ -594,68 +708,68 @@
 
 
 
-(define svex-alist-clean ((x svex-alist-p))
-  :prepwork ((local (defthm svex-alist-p-of-hons-remove-assoc
-                      (implies (svex-alist-p x)
-                               (svex-alist-p (acl2::hons-remove-assoc k x))))))
-  :guard (no-duplicatesp-equal (svex-alist-keys x))
-  :returns (new-x svex-alist-p)
-  :verify-guards nil
-  :inline t
-  (mbe :logic
-       (b* (((when (atom x)) nil)
-            ((unless (mbt (and (consp (car x))
-                               (svar-p (caar x)))))
-             (svex-alist-clean (cdr x))))
-         (cons (cons (caar x) (svex-fix (cdar x)))
-               (acl2::hons-remove-assoc (caar x)
-                                        (svex-alist-clean (cdr x)))))
-       :exec x)
-  ///
-  (defret svex-lookup-of-<fn>
-    (equal (svex-lookup k new-x)
-           (svex-lookup k x))
-    :hints(("Goal" :in-theory (enable svex-lookup-redef))))
+;; (define svex-alist-clean ((x svex-alist-p))
+;;   :prepwork ((local (defthm svex-alist-p-of-hons-remove-assoc
+;;                       (implies (svex-alist-p x)
+;;                                (svex-alist-p (acl2::hons-remove-assoc k x))))))
+;;   :guard (no-duplicatesp-equal (svex-alist-keys x))
+;;   :returns (new-x svex-alist-p)
+;;   :verify-guards nil
+;;   :inline t
+;;   (mbe :logic
+;;        (b* (((when (atom x)) nil)
+;;             ((unless (mbt (and (consp (car x))
+;;                                (svar-p (caar x)))))
+;;              (svex-alist-clean (cdr x))))
+;;          (cons (cons (caar x) (svex-fix (cdar x)))
+;;                (acl2::hons-remove-assoc (caar x)
+;;                                         (svex-alist-clean (cdr x)))))
+;;        :exec x)
+;;   ///
+;;   (defret svex-lookup-of-<fn>
+;;     (equal (svex-lookup k new-x)
+;;            (svex-lookup k x))
+;;     :hints(("Goal" :in-theory (enable svex-lookup-redef))))
 
-  (local (defthm hons-remove-assoc-when-not-svex-lookup
-           (implies (and (not (svex-lookup var x))
-                         (svar-p var)
-                         (svex-alist-p x))
-                    (equal (acl2::hons-remove-assoc var x)
-                           x))
-           :hints(("Goal" :in-theory (enable svex-lookup-redef
-                                             svex-alist-fix)))))
+;;   (local (defthm hons-remove-assoc-when-not-svex-lookup
+;;            (implies (and (not (svex-lookup var x))
+;;                          (svar-p var)
+;;                          (svex-alist-p x))
+;;                     (equal (acl2::hons-remove-assoc var x)
+;;                            x))
+;;            :hints(("Goal" :in-theory (enable svex-lookup-redef
+;;                                              svex-alist-fix)))))
 
-  (defret <fn>-when-no-duplicates
-    (implies (no-duplicatesp-equal (svex-alist-keys x))
-             (equal new-x (svex-alist-fix x)))
-    :hints(("Goal" :in-theory (enable svex-alist-keys
-                                      svex-alist-fix))))
+;;   (defret <fn>-when-no-duplicates
+;;     (implies (no-duplicatesp-equal (svex-alist-keys x))
+;;              (equal new-x (svex-alist-fix x)))
+;;     :hints(("Goal" :in-theory (enable svex-alist-keys
+;;                                       svex-alist-fix))))
 
-  (verify-guards svex-alist-clean$inline
-    :hints ((and stable-under-simplificationp
-                 '(:expand ((svex-alist-keys x))))))
+;;   (verify-guards svex-alist-clean$inline
+;;     :hints ((and stable-under-simplificationp
+;;                  '(:expand ((svex-alist-keys x))))))
 
-  (defret <fn>-under-svex-alist-equiv
-    (svex-alist-eval-equiv new-x x)
-    :hints(("Goal" :in-theory (enable svex-alist-eval-equiv))))
+;;   (defret <fn>-under-svex-alist-equiv
+;;     (svex-alist-eval-equiv new-x x)
+;;     :hints(("Goal" :in-theory (enable svex-alist-eval-equiv))))
 
-  (local (defthm svex-alist-keys-of-hons-remove-assoc
-           (implies (and (svex-alist-p x)
-                         (svar-p var))
-                    (equal (svex-alist-keys (acl2::hons-remove-assoc var x))
-                           (remove-equal var (svex-alist-keys x))))
-           :hints(("Goal" :in-theory (enable svex-alist-keys)))))
+;;   (local (defthm svex-alist-keys-of-hons-remove-assoc
+;;            (implies (and (svex-alist-p x)
+;;                          (svar-p var))
+;;                     (equal (svex-alist-keys (acl2::hons-remove-assoc var x))
+;;                            (remove-equal var (svex-alist-keys x))))
+;;            :hints(("Goal" :in-theory (enable svex-alist-keys)))))
 
-  (local (defthm no-dups-of-remove
-           (implies (no-duplicatesp-equal x)
-                    (no-duplicatesp-equal (remove-equal k x)))))
+;;   (local (defthm no-dups-of-remove
+;;            (implies (no-duplicatesp-equal x)
+;;                     (no-duplicatesp-equal (remove-equal k x)))))
 
-  (defret no-duplicate-keys-of-<fn>
-    (no-duplicatesp-equal (svex-alist-keys new-x))
-    :hints(("Goal" :in-theory (enable svex-alist-keys))))
+;;   (defret no-duplicate-keys-of-<fn>
+;;     (no-duplicatesp-equal (svex-alist-keys new-x))
+;;     :hints(("Goal" :in-theory (enable svex-alist-keys))))
 
-  (local (in-theory (enable svex-alist-fix))))
+;;   (local (in-theory (enable svex-alist-fix))))
             
 
 
@@ -976,7 +1090,7 @@
                     (equal (svex-env-lookup var (pairlis$ keys vals))
                            (4vec-fix (nth (acl2::index-of (svar-fix var) keys)
                                           vals))))
-           :hints(("Goal" :in-theory (enable svex-env-lookup svex-env-fix index-of)))))
+           :hints(("Goal" :in-theory (enable nth svex-env-lookup svex-env-fix index-of)))))
 
   (local (defthm svex-alist-eval-of-pairlis$
            (implies (and (svarlist-p keys)
@@ -1186,7 +1300,7 @@
    :well-founded-relation acl2::nat-list-<
    :returns (new-updates svex-alist-p)
    (b* ((next-masks (cwtime (svex-assigns-propagate-masks masks loop-updates)))
-        (status (check-masks-decreasing loop-updates masks next-masks))
+        (status (check-masks-decreasing (svex-alist-keys loop-updates) masks next-masks))
         ((unless status)
          (cw "Masks stopped shrinking~%")
          (fast-alist-free next-masks)
@@ -1294,7 +1408,7 @@
        ;; NOTE: One reason we can't eliminate bindings from loop updates is because
        ;; we only check monotonicity on keys of loop-updates.  If we want to eliminate bindings,
        ;; even on variables whose masks are 0, then we have to ensure that those masks stay 0.
-       (status (check-masks-decreasing loop-updates masks next-masks))
+       (status (cwtime (check-masks-stats loop-updates masks next-masks)))
        (next-updates (cwtime (svex-alist-rewrite-under-masks loop-updates next-masks)))
        ((unless status)
         (cw "Masks stopped shrinking~%")
@@ -1379,7 +1493,7 @@
   (local
    (defthm check-masks-decreasing-implies-envs-agree-on-masks
      (let ((new-masks (svex-assigns-propagate-masks masks loop-updates)))
-       (implies (and (booleanp (check-masks-decreasing loop-updates masks new-masks))
+       (implies (and (booleanp (check-masks-decreasing (svex-alist-keys loop-updates) masks new-masks))
                      (set-equiv (svex-alist-keys loop-updates) (alist-keys (svex-env-fix orig-eval)))
                      (svex-envs-agree-on-masks
                       masks
@@ -1402,7 +1516,7 @@
                            (env2 orig-eval)
                            (env1 (svex-alist-eval loop-updates env)))
                           (:instance 4vmask-subsumes-by-check-masks-decreasing
-                           (assigns loop-updates)
+                           (vars (svex-alist-keys loop-updates))
                            (new-masks (svex-assigns-propagate-masks masks loop-updates)))
                           (:instance lookup-of-svex-alist-rewrite-under-masks
                            (x loop-updates)
@@ -1444,7 +1558,7 @@
   (local
    (defthm check-masks-decreasing-implies-alists-agree-on-masks
      (let ((new-masks (svex-assigns-propagate-masks masks loop-updates)))
-       (implies (and (booleanp (check-masks-decreasing loop-updates masks new-masks))
+       (implies (and (booleanp (check-masks-decreasing (svex-alist-keys loop-updates) masks new-masks))
                      (set-equiv (svex-alist-keys loop-updates) (svex-alist-keys orig-updates))
                      (svex-alists-agree-on-masks
                       masks loop-updates orig-updates))
@@ -1571,7 +1685,7 @@
        (IMPLIES
         (AND
          (EQUAL
-          (CHECK-MASKS-DECREASING LOOP-UPDATES MASKS
+          (CHECK-MASKS-DECREASING (svex-alist-keys LOOP-UPDATES) MASKS
                                   new-masks)
           T)
          (SVEX-ENVS-AGREE-ON-MASKS new-masks
@@ -1797,4 +1911,6 @@
   (defret netcomp-p-of-<fn>
     :pre-bind ((masks (svexlist-mask-acons (svarlist->svexes (svex-alist-keys loop-updates)) -1 nil)))
     (implies (no-duplicatesp-equal (svex-alist-keys loop-updates))
-             (netcomp-p new-updates loop-updates))))
+             (netcomp-p new-updates loop-updates)))
+
+  (verify-guards svex-alist-maskcompose-iter))

@@ -2173,7 +2173,7 @@ we've seen before with a mask that overlaps with that one.</p>"
        (x (pairlis$ (svex-alist-keys x) xvals))
        (- (cw "Count after initial rewrite: ~x0~%" (svexlist-opcount xvals)))
        (updates (cwtime (svex-compose-assigns x) :mintime 0))
-       (updates (cwtime (svex-alist-rewrite-top updates :verbosep t) :mintime 0))
+       ;; (updates (cwtime (svex-alist-rewrite-top updates :verbosep t) :mintime 0))
        (- (cw "Updates count: ~x0~%" (svexlist-opcount (svex-alist-vals updates)))))
     updates))
 
@@ -2184,9 +2184,24 @@ we've seen before with a mask that overlaps with that one.</p>"
                                                 &key (simpconf svex-simpconfig-p))
   :returns (mv (masks svex-mask-alist-p)
                (new-x svex-alist-p))
-  (b* ((init-masks (svex-alist-pair-initial-masks x)))
-    (with-fast-alist init-masks
-      (cwtime (svex-alist-maskcompose-iter init-masks x simpconf)))))
+  (b* ((dep-vars (cwtime (svexlist-collect-vars (svex-alist-vals x))))
+       ((acl2::with-fast x))
+       (reduced-updates (svex-alist-reduce dep-vars x))
+       (rest-updates (svex-alist-reduce (hons-set-diff (svex-alist-keys x) dep-vars) x))
+       (init-masks (svex-alist-pair-initial-masks reduced-updates))
+       ((mv masks reduced-looped)
+        (with-fast-alist init-masks
+          (cwtime (svex-alist-maskcompose-iter init-masks reduced-updates simpconf)))))
+    (mv masks (append reduced-looped
+                      (with-fast-alist reduced-looped
+                        (cwtime (svex-alist-compose-rw rest-updates
+                                                       (make-svex-substconfig
+                                                        :alist reduced-looped
+                                                        :simp simpconf))))))))
+    ;;    (ans (fast-alist-fork
+    ;;          x
+    ;;          (make-fast-alist reduced-looped))))
+    ;; (mv masks (fast-alist-free ans))))
   
 
 ;; Need to experiment to see if it's best to split variables directly into bits
@@ -2297,6 +2312,8 @@ we've seen before with a mask that overlaps with that one.</p>"
        (vars (svexlist-collect-vars x-vals))
        ((mv splittab bitcount) (cwtime (svex-compose-splittab x masks) :mintime 0))
        (- (cw "Care bits remaining: ~x0~%" bitcount))
+       ((when (atom splittab))
+        (mv nil (svex-alist-fix x) splittab))
        (splittab-vars (svar-splittab-vars splittab))
        (- (cw "Total split variables: ~x0~%" (len splittab-vars)))
        (bad-vars (acl2::hons-intersection vars splittab-vars))
@@ -2388,6 +2405,8 @@ we've seen before with a mask that overlaps with that one.</p>"
        ((mv masks phase2) (svex-assigns-compose-with-split-phase2 phase1 :simpconf (if rewrite 20 t)))
        ((mv err phase3 splittab) (svex-assigns-compose-with-split-phase3 phase2 masks))
        ((when err) (mv err nil))
+       ((unless splittab)
+        (mv nil phase2))
        ((mv err phase4) (svex-assigns-compose-with-split-phase4 phase3))
        ((when err) (mv err nil)))
     (mv nil (svex-assigns-compose-with-split-phase5 phase2 phase4 splittab))))
