@@ -93,10 +93,10 @@
   :returns (yes/no booleanp)
   :short "Less-than ordering on print levels."
   (case x
-    (nil (or (eq y :error)
-             (eq y :result)
-             (eq y :info)
-             (eq y :all)))
+    ((nil) (or (eq y :error)
+               (eq y :result)
+               (eq y :info)
+               (eq y :all)))
     (:error (or (eq y :result)
                 (eq y :info)
                 (eq y :all)))

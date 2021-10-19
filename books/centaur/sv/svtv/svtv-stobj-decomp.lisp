@@ -154,7 +154,7 @@
                           (svex-lookup (change-svar var :override-val nil) al)))
                     (t nil))))
     :hints(("Goal" :in-theory (enable svex-override-triplelist-vars))))
-                     
+
   (local (defthm svar-when-equal-x
            (implies (and (equal test (svar->override-test x))
                          (equal val (svar->override-val x)))
@@ -171,7 +171,7 @@
 (define override-tests-to-svex-override-triplelist-exec ((x svarlist-p) (al svex-alist-p))
   :enabled t
   (hons-copy (override-tests-to-svex-override-triplelist x (make-fast-alist al))))
- 
+
 
 (define svarlist-update-override-tests ((val booleanp)
                                         (x svarlist-p))
@@ -330,6 +330,8 @@
 (encapsulate nil
   (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
   (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
+; Matt K.: Avoid ACL2(p) errors caused by the use of LOGBITP-REASONING.
+  (local (set-waterfall-parallelism nil))
   (defthm 4vec-concat-of-rsh
     (implies (and (syntaxp (and (quotep w)
                                 (quotep w1)))
@@ -406,7 +408,7 @@
 
 
 
-         
+
 
 (defcong svex-envs-similar equal (svex-env-extract keys x) 2
   :hints(("Goal" :in-theory (enable svex-env-extract))))
@@ -417,7 +419,7 @@
 
 
 
-                                    
+
 
 
 

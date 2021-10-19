@@ -7521,6 +7521,8 @@
          (defrec ; pick just one function introduced
            (our-update-ht (record-changer-function-name (cadr form)) form ht
                           when-pass-2-p))
+         (state-global-let* ; (state-global-let* (... (fn val [fn2]) ...) form)
+          (note-fns-in-form (caddr form) ht when-pass-2-p))
          ((add-custom-keyword-hint
            add-macro-alias
            add-macro-fn
@@ -7528,6 +7530,7 @@
            #+ccl ccl:defstatic
            declaim
            def-basic-type-sets
+           defbadge
            defwarrant
            defattach
            defaxiom
@@ -7912,6 +7915,14 @@
                     '*tau-system-xnume*
                     *tau-system-xnume*
                     (fn-rune-nume 'tau-system t t (w state)))))
+    (cond
+     ((not
+       (equal *rewrite-lambda-modep-xnume*
+              (fn-rune-nume 'rewrite-lambda-modep t t (w state))))
+      (interface-er str
+                    '*rewrite-lambda-modep-xnume*
+                    *rewrite-lambda-modep-xnume*
+                    (fn-rune-nume 'rewrite-lambda-modep t t (w state)))))
     (cond
      ((not
        (equal *tau-acl2-numberp-pair*

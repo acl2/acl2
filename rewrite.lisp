@@ -12985,7 +12985,7 @@
       (warning$-cw1 'rewrite-lambda-object
                     "rewrite-lambda-object"
                     "We refused to try to rewrite the quoted lambda-like ~
-                     object~%~Y01 because ~#2~[it is not well-formed (e.g., ~
+                     object~%~Y01because ~#2~[it is not well-formed (e.g., ~
                      contains free variables, has a body that is not a term, ~
                      or that contains unbadged function symbols)~/it contains ~
                      the :program mode function symbol~#3~[~/s~] ~&3~/it ~
@@ -13044,9 +13044,10 @@
                      tame~/it contains the variable ~&4 not listed among the ~
                      formals~/it is not tame~/it contains the function ~
                      symbol~#5~[ ~&5 for which no warrant has~/s ~&5 for ~
-                     which no warrants have~] been issued~/some warrant is assumed false ~
-                     in the current prover environment~].  The following runes were ~
-                     used to produce this rejected object: ~X61.  See :DOC ~
+                     which no warrants have~] been issued~/some necessary ~
+                     warrant is not assumed true in the current prover ~
+                     environment~].  The following runes were used to produce ~
+                     this rejected object: ~X61.  See :DOC ~
                      rewrite-lambda-object."
                     evg            ; lambda object
                     nil            ; evisc tuple -- print everything
@@ -13225,6 +13226,9 @@
 ;                    '(LAMBDA (X) (BAR X))))
 ; This illustrates how the equivalence of two quoted constants might
 ; require a hypothesis.
+
+(defconst *rewrite-lambda-modep-xrune*
+  '(:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP))
 
 (mutual-recursion
 
@@ -18336,8 +18340,8 @@
 ; But deal-with-factors and deal-with-products will not have a poly
 ; ``about'' a to multiply p3 by, because a is not the heaviest term in
 ; any poly.  Rather, what we want to do is multiply p3 and p2 since
-; b/b = 1.  (Note that before we invoke deal-with-division, we insure
-; that we have good bounds for b in the pot.  This insures that b/b
+; b/b = 1.  (Note that before we invoke deal-with-division, we ensure
+; that we have good bounds for b in the pot.  This ensures that b/b
 ; disappears without a case split.)
 
 ; Another example is that
@@ -19828,13 +19832,17 @@
   (the-mv
    3
    (signed-byte 30)
-   (cond ((symbolp evg)
+   (cond ((or (symbolp evg)
 
 ; We don't mess with evg if it is a symbol.  If we did, it would fail the first
 ; test below and report that the symbol was an ill-formed lambda object.  If
 ; the user wants to rewrite a quoted symbol occurring in a :FN position that is
 ; possible but he or she should prove a :rewrite-quoted-constant rule.
 
+              (not (enabled-numep *rewrite-lambda-modep-xnume*
+                                  (access rewrite-constant
+                                          rcnst
+                                          :current-enabled-structure))))
           (mv step-limit evg ttree))
          ((well-formed-lambda-objectp evg wrld)
           (let* ((formals (lambda-object-formals evg))
@@ -19964,12 +19972,16 @@
                                   ttree)))
                             (t (mv step-limit
                                    `(lambda ,formals ,rewritten-body1)
-                                   (cons-tag-trees ttree2 ttree)))))))))))))
+                                   (push-lemma
+                                    *rewrite-lambda-modep-xrune*
+                                    (cons-tag-trees ttree2 ttree))))))))))))))
                (t (prog2$
                    (rewrite-lambda-object-pre-warning
                     evg nil progs pre-have-no-warrants wrld)
                    (mv step-limit evg ttree)))))))
          (t (prog2$
-             (rewrite-lambda-object-pre-warning evg t nil nil wrld)
+             (and (consp evg)
+                  (eq (car evg) 'lambda) ; else skip warning
+                  (rewrite-lambda-object-pre-warning evg t nil nil wrld))
              (mv step-limit evg ttree))))))
 )

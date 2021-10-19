@@ -23,7 +23,8 @@
 (include-book "kestrel/apt/utilities/deftransformation" :dir :system)
 (include-book "kestrel/apt/utilities/option-parsing" :dir :system)
 (include-book "kestrel/apt/utilities/defun-variant" :dir :system)
-(include-book "kestrel/apt/utilities/fixup-ignores" :dir :system)
+(include-book "kestrel/utilities/fixup-ignores" :dir :system)
+(include-book "kestrel/utilities/fixup-irrelevants" :dir :system)
 (include-book "kestrel/apt/utilities/make-becomes-theorem" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
@@ -50,38 +51,49 @@
 (include-book "kestrel/utilities/messages2" :dir :system) ;for message-string
 (include-book "kestrel/utilities/add-not-normalized-suffixes" :dir :system)
 
+(local
+ (defthm eqlable-listp-when-symbol-listp
+   (implies (symbol-listp syms)
+            (eqlable-listp syms))))
+
 ;; Returns an event
 (defun def-equality-transformation-fn (name
-                                       core-fn ; args should be the function name, its untranslated body, wrld, and then the transform-specific-args
-                                       transform-specific-required-args ;arguments to core-fn
-                                       transform-specific-optional-args-ands-defaults ;arguments to core-fn
+                                       function-body-transformer ; args should be the function name, its untranslated body, wrld, and then the transform-specific-args
+                                       transform-specific-required-args ;arguments to function-body-transformer
+                                       transform-specific-keyword-args-and-defaults ;arguments to function-body-transformer
                                        enables ; used for each function (currently)
                                        make-becomes-theorem-name
                                        make-becomes-theorems-name
-                                       make-becomes-theorem-extra-args)
+                                       make-becomes-theorem-extra-args
+                                       parents
+                                       short ; a form that evaluates to a string or to nil?
+                                       transform-specific-arg-descriptions
+                                       description ; a form that evaluates to a string or to nil?
+                                       )
   (declare (xargs :guard (and (symbolp name)
-                              (symbolp core-fn)
+                              (symbolp function-body-transformer)
                               (symbol-listp transform-specific-required-args)
-                              (doublet-listp transform-specific-optional-args-ands-defaults)
-                              (symbol-listp (strip-cars transform-specific-optional-args-ands-defaults))
-                              ;; defaults are all quoted
-                              (quote-listp (strip-cadrs transform-specific-optional-args-ands-defaults))
+                              (no-duplicatesp transform-specific-required-args)
+                              (keyword-args-and-defaultsp transform-specific-keyword-args-and-defaults)
+                              (true-listp enables) ; symbols and runes?
                               (symbolp make-becomes-theorem-name)
                               (symbolp make-becomes-theorems-name)
                               (symbol-listp make-becomes-theorem-extra-args)
-                              (no-duplicatesp make-becomes-theorem-extra-args))))
+                              (no-duplicatesp make-becomes-theorem-extra-args)
+                              (symbol-listp parents)
+                              (macro-arg-descriptionsp transform-specific-arg-descriptions))))
   (b* ((apply-to-defun-name (pack$ name '-in-defun))
        (apply-to-defuns-name (pack$ name '-in-defuns))
        (event-generator-name (pack$ name '-event))
        (transform-specific-arg-names (append transform-specific-required-args
-                                             (strip-cars transform-specific-optional-args-ands-defaults)))
+                                             (strip-cars transform-specific-keyword-args-and-defaults)))
        ((when (not (subsetp-eq make-becomes-theorem-extra-args transform-specific-arg-names)))
         (er hard? 'def-equality-transformation-fn "make-becomes-theorem-extra-args, ~x0, are not a subset of the transform-specific-arg-names, ~x1."
             make-becomes-theorem-extra-args
             transform-specific-arg-names)))
     `(progn
        ;; Returns a new defun.
-       ;; When core-fn is an identify, this generates a function that just copies FN and fixes up recursive calls as appropriate.
+       ;; When function-body-transformer is an identity, this generates a function that just copies FN and fixes up recursive calls as appropriate.
        ;; TODO: What if more than simple renaming is needed to fix up recursive calls (e.g., re-ordering params)?
        (defun ,apply-to-defun-name (fn ;the old function (possibly in a mut-rec) to handle
                                     ,@transform-specific-arg-names
@@ -117,10 +129,19 @@
                 (declares (remove-xarg-in-declares :mode declares)) ;todo: handle this better.  this is needed because the event might have :mode :program even if the function was later lifted to logic.  Obviously we shouldn't do this once we support transforming :program mode functions.
                 ;; Deal with the :verify-guards xarg.  We always do :verify-guards nil and then
                 ;; do verify-guards later, in case the function appears in its own guard-theorem (todo: is that still necessary?):
-                (declares (set-verify-guards-in-declares declares nil))
+                (declares (set-verify-guards-in-declares nil declares))
                 (declares (remove-xarg-in-declares :guard-hints declares)) ; verify-guards is done separately
                 (declares (remove-xarg-in-declares :guard-debug declares)) ; verify-guards is done separately
                 (declares (remove-xarg-in-declares :guard-simplify declares)) ; verify-guards is done separately
+                ;; Handle the :well-founded-relation xarg (it should always be the case that fn's :well-founded-relation is already among
+                ;; the known well-founded relations).
+                (declares (remove-xarg-in-declares :well-founded-relation declares))
+                (declares (if (not rec)
+                              declares ; no well-founded-relation if non-recursive
+                            (let ((well-founded-relation (well-founded-relation fn wrld)))
+                              (if (eq 'o< well-founded-relation)
+                                  declares ; it's the default, so omit
+                                (replace-xarg-in-declares :well-founded-relation well-founded-relation declares)))))
                 ;; Handle the :measure xarg:
                 (declares (if (not rec)
                               declares ;no :measure needed and one should not already be present
@@ -152,7 +173,7 @@
                 ;; TODO: What about irrelevant declares?  They need to be handled at a higher level, since they may depend on mut-rec partners.
                 ;; We should clear them out here and set them if needed in ,event-generator-name
                 ;; Here we actually make the change to the body:
-                (body (,core-fn fn body wrld ,@transform-specific-arg-names))
+                (body (,function-body-transformer fn body wrld ,@transform-specific-arg-names))
                 ;; (new-fns-arity-alist (pairlis$ (strip-cdrs function-renaming)
                 ;;                                (fn-arities (strip-cars function-renaming) wrld)))
                 ;; ;; New fns from the renaming may appear as recursive calls, but they are not yet in the world:
@@ -165,12 +186,17 @@
                         (rename-functions-in-untranslated-term body
                                                                function-renaming
                                                                state)))
-                (declares (fixup-ignores2 declares formals body function-renaming wrld))
                 (new-fn (lookup-eq-safe fn function-renaming)) ;new name for this function
-                )
-           `(,defun-variant ,new-fn ,formals
-              ,@declares
-              ,body)))
+                (defun `(,defun-variant ,new-fn ,formals
+                          ,@declares
+                          ,body))
+                (defun (if (eq :mutual rec)
+                           defun ; has to be done at a higher level
+                         (fixup-ignores-in-defun-form defun nil wrld)))
+                (defun (if (eq rec :mutual)
+                            defun ; irrelevant declares for mutual recursions must be handled at a higher level
+                         (fixup-irrelevants-in-defun-form defun state))))
+           defun))
 
        ;; Go through all the functions in the clique. For each, if it is in
        ;; TARGET-FNS, we both transform it and update rec calls in it (yes, for
@@ -231,7 +257,7 @@
                                      guard-hints
                                      measure ; may be a call of :map if mut-rec
                                      measure-hints
-                                     ,@(strip-cars transform-specific-optional-args-ands-defaults)
+                                     ,@(strip-cars transform-specific-keyword-args-and-defaults)
                                      verbose ;for now, this is a boolean (corresponding to whether the :print option was :info or higher), but we could support passing in richer information
                                      ctx
                                      state)
@@ -346,10 +372,12 @@
                                                        t ; first function in the clique
                                                        state))
                     (mutual-recursion `(mutual-recursion ,@new-defuns))
-                    ;; TODO: Clean up measure :hints in this:
-                    (mutual-recursion-to-export (if verify-guards ;todo: call a variant of ensure-defun-demands-guard-verification here:
-                                                    (replace-xarg-in-mutual-recursion :verify-guards t mutual-recursion) ; todo: or just set the verify-guards eagerness and ensure there is a guard?
+                    (mutual-recursion (fixup-ignores-in-mutual-recursion-form mutual-recursion wrld))
+                    (mutual-recursion (fixup-irrelevants-in-mutual-recursion-form mutual-recursion state))
+                    (mutual-recursion-to-export (if verify-guards
+                                                    (ensure-mutual-recursion-demands-guard-verification mutual-recursion)
                                                   mutual-recursion))
+                    (mutual-recursion-to-export (remove-hints-from-mutual-recursion mutual-recursion-to-export))
                     (fn-and-not-normalized-fn-doublets (make-doublets fns (add-not-normalized-suffixes fns)))
                     (flag-function-name (pack$ 'flag- fn '-for- ',name)) ;todo: avoid clashes better
                     ;; Use as a ruler-extender for the flag function anything used as a ruler-extender for any of the FNS:
@@ -393,13 +421,14 @@
                         ;; Export the 'becomes' theorems:
                         ,@becomes-theorems-to-export)
                      state))))))
-       ;; To see what this expands to, see copy-function-expansion.lisp:
+
+       ;; To see what this expands to, see, e.g., copy-function-expansion.lisp:
        (deftransformation ,name
          ;;required args:
          (fn ;;the name of a defined function (TODO: :logic mode only?)
           ,@transform-specific-required-args
           )
-         ;; optional args, *not* including :show-only or :verbose (deftransformation puts those in):
+         ;; keyword args, *not* including :show-only or :verbose (deftransformation puts those in):
          ((new-name ':auto)
           (theorem-disabled 'nil) ;;TODO:  Call this :disable-theorem?
           (function-disabled ':auto) ;;TODO:  Call this :disable-function?
@@ -408,30 +437,53 @@
           (guard-hints ':auto)
           (measure ':auto)
           (measure-hints ':auto)
-          ,@transform-specific-optional-args-ands-defaults)
+          ,@transform-specific-keyword-args-and-defaults)
          :pass-print t
-         :pass-context t)
+         :pass-context t
+         :parents ,parents
+         :short ,short
+         :description ,description
+         :arg-descriptions ,(append '((fn "The name of the new function to transform.")
+                                      (new-name "The name of the new function to be created.")
+                                      (theorem-disabled "Whether to disable the 'becomes theorem'.")
+                                      (function-disabled "Whether to disable the new function.")
+                                      (verify-guards "Whether to verify the guards of the new function.")
+                                      (guard-hints "Hints to use for the guard proof.")
+                                      (measure "Measure to use for the new function.") ;todo: what about mut-rec?
+                                      (measure-hints "Hints to use for the measure/termination proof."))
+                                    transform-specific-arg-descriptions))
        ) ; end progn
     ))
 
 (defmacro def-equality-transformation (name ; name of the transformation to create
-                                       core-fn ; core function (args should be: function name, untranslated body, wrld, and then the transform-specific-args)
+                                       function-body-transformer ; args should be: function name, untranslated body, wrld, and then the transform-specific-args
                                        transform-specific-required-args
-                                       transform-specific-optional-args-ands-defaults ; a list of doublets containing arg names and quoted default values
+                                       transform-specific-keyword-args-and-defaults ; a list of doublets containing arg names and quoted default values
                                        &key
                                        (enables 'nil) ; enables to use in all equivalence proofs
                                        (make-becomes-theorem-name 'make-becomes-theorem)
                                        (make-becomes-theorems-name 'make-becomes-theorems)
-                                       (make-becomes-theorem-extra-args 'nil))
-  `(make-event (def-equality-transformation-fn ',name ',core-fn ',transform-specific-required-args ',transform-specific-optional-args-ands-defaults ,enables
+                                       (make-becomes-theorem-extra-args 'nil)
+                                       (parents '(apt::apt))
+                                       (short ':auto)
+                                       (transform-specific-arg-descriptions 'nil)
+                                       (description 'nil))
+  `(make-event (def-equality-transformation-fn ',name ',function-body-transformer ',transform-specific-required-args ',transform-specific-keyword-args-and-defaults ,enables
                  ',make-becomes-theorem-name
                  ',make-becomes-theorems-name
                  ',make-becomes-theorem-extra-args
-                 )))
+                 ',parents
+                 ,short
+                 ',transform-specific-arg-descriptions
+                 ,description)))
+
+;;;
+;;; copy-function (defined here because copy-function-in-defun is used above)
+;;;
 
 ;; The core function for copy-function (does nothing).
-;; Core functions always take: fn, untranslated-body, wrld, and then transformation-specific args (none for copy-function).
-(defun copy-function-core-function (fn
+;; Such functions always take: fn, untranslated-body, wrld, and then transformation-specific args (none for copy-function).
+(defun copy-function-function-body-transformer (fn
                                     untranslated-body
                                     wrld)
   (declare (xargs :guard (and (symbolp fn)
@@ -443,7 +495,11 @@
 ;; copy-function-in-defun for clique functions they do not intend to change.
 (def-equality-transformation
   copy-function ; name of the transformation to create
-  copy-function-core-function ; core function to transform a function body (a no-op for copy function)
+  copy-function-function-body-transformer ; core function to transform a function body (a no-op for copy function)
   nil ; required args
-  nil ; optional args and defaults, a list of doublets containing arg names and quoted default values
+  nil ; keyword args and defaults
+  :short "Make a copy of a function, with recursive calls appropriately renamed."
+  ;; todo: put this sort of thing in automatically?:
+  :description "<p>To inspect the resulting forms, call @('show-copy-function') on the same
+arguments.</p>"
   )

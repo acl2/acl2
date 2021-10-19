@@ -47,26 +47,6 @@
 (defmacro ts-integerp (ts)
   `(ts-subsetp ,ts *ts-integer*))
 
-(mutual-recursion
-
-(defun dumb-occur (x y)
-
-; This function determines if term x occurs free in term y, but does not look
-; for x inside of quotes.  It is thus equivalent to occur if you know that x is
-; not a quotep.
-
-  (cond ((equal x y) t)
-        ((variablep y) nil)
-        ((fquotep y) nil)
-        (t (dumb-occur-lst x (fargs y)))))
-
-(defun dumb-occur-lst (x lst)
-  (cond ((null lst) nil)
-        (t (or (dumb-occur x (car lst))
-               (dumb-occur-lst x (cdr lst))))))
-
-)
-
 ;=================================================================
 
 ; Clause Histories
@@ -2172,7 +2152,7 @@
 ; arith-term-order worse than term.
 
 ; Historical Note: Once upon a time, in Version_2.5 and earlier, this
-; function actually insured that term wasn't in lst, i.e., that term was
+; function actually ensured that term wasn't in lst, i.e., that term was
 ; "new".  But in Version_2.6, we changed the meaning of the function without
 ; changing its name.  The word "new" in the name is now a mere artifact.
 

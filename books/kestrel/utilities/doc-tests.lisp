@@ -12,6 +12,16 @@
 
 (include-book "doc")
 
+(defxdoc-for-macro bar
+  (bar &optional o1 &key (key1 'nil) (key2 ':auto))
+  (myparent)
+  "Short desc"
+  ((bar "the arg")
+   (o1 "the optional arg")
+   (key1 "the first keyword arg")
+   (key2 (concatenate 'string "the second" " keyword arg")))
+  (concatenate 'string "Description " "Description2"))
+
 ;; A simple test. We define a macro called FOO and add xdoc to it, including
 ;; describing its inputs.
 (defmacrodoc foo (&whole
@@ -27,17 +37,14 @@
   ;; xdoc args:
   :parents (top)
   :short "Short text goes here."
-  ;; TODO: Make an version of :long that puts in the P tags for you:
-  ;; This test makes sure that the :long can be computed:
-  :long (concatenate 'string "<p>The contents of the long section go here.  This text comes after the Usage and Inputs sections.</p>"
-                     "<p>Second paragraph of :long section.</p>")
+  ;; TODO: Make an version of :description that puts in the P tags for you:
+  ;; This test makes sure that the :description can be computed:
+  :description (concatenate 'string
+                            "<p>The description of the macro goes here.  This text comes after the General Form and Inputs sections.</p>"
+                            "<p>Second paragraph of the description.</p>")
   ;; now an alternating list of param names and strings (or lists of strings):
-  :inputs (req1
-           "This is the first required param."
-           req2
-           "Second required param."
-           :key1
-           "First paragraph of text about key1."
-           "Second paragraph of text about key1."
-           :key2
-           "Blah Blah."))
+  :args ((req1 "This is the first required param.")
+         (req2 "Second required param.")
+         (key1 "First paragraph of text about key1."
+                "Second paragraph of text about key1.")
+         (key2 "Blah Blah.")))

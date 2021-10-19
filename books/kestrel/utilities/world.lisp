@@ -135,6 +135,20 @@
                               (plist-worldp world))))
   (getprop name 'guard *t* 'current-acl2-world world))
 
+;; Like fn-guard but guaranteed to return a pseudo-term
+(defund fn-guard$ (name world)
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp world))))
+  (let ((guard (fn-guard name world)))
+    (if (pseudo-termp guard)
+        guard
+      (prog2$ (er hard? 'fn-guard$ "The guard of ~x0, ~x1, is not a pseudo-term." name guard)
+              nil))))
+
+(defthm pseudo-termp-of-fn-guard$
+  (pseudo-termp (fn-guard$ name world))
+  :hints (("Goal" :in-theory (enable fn-guard$))))
+
 (defund fn-has-measurep (name state)
 
 ; This function really just checks (as in a previous version) that there is a
@@ -204,7 +218,7 @@
 
 ;; Return a list of all recursive / mutually-recursive partners of NAME (including NAME itself).
 ;; If NAME is non-recursive, return nil.
-;; TODO: Use get-clique instead?
+;; TODO: Use get-clique instead?  But it needs to be fully lifted to :logic mode.
 ;; TODO: Is the order here guaranteed to be the order of functions in the clique?
 (defund fn-recursive-partners (name state)
   (declare (xargs :stobjs (state)

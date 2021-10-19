@@ -86,16 +86,16 @@
                   print)
   :parents (r1cs-verification-with-axe)
   :short "A tool to verify an R1CS"
-  :long "See @(tsee r1cs-verification-with-axe)."
-  :inputs (lifted-r1cs "A DAG representing the lifted R1CS"
-                       spec-term "A term over the input and output vars (this input is not evaluated)"
-                       prime "The prime for the R1CS"
-                       :bit-inputs "Variables for which to generate BITP assumptions"
-                       :tactic "The Axe tactic to use"
-                       :rule-lists "A sequence of Axe rule sets, each of which is a list of rule names and/or calls of 0-ary functions that return lists of rule names.  These are applied one after the other."
-                       :global-rules "Rules to add to every rule-list in the sequence"
-                       :interpreted-function-alist "An interpreted-function-alist to evaluate ground terms" ;todo: document
-                       :no-splitp "Whether to split into cases" ;todo: switch it to :splitp? or :allow-splitting?  why is splitting not a tactic?!
-                       :monitor "Rules to monitor during rewriting"
-                       :print "Axe print argument" ;todo: document
-                       ))
+  :description "See @(tsee r1cs-verification-with-axe)."
+  :args ((lifted-r1cs "A DAG representing the lifted R1CS")
+         (spec-term "A term over the input and output vars (this input is not evaluated)")
+         (prime "The prime for the R1CS")
+         (bit-inputs "Variables for which to generate BITP assumptions")
+         (tactic "The Axe tactic to use")
+         (rule-lists "A sequence of Axe rule sets, each of which is a list of rule names and/or calls of 0-ary functions that return lists of rule names.  These are applied one after the other.")
+         (global-rules "Rules to add to every rule-list in the sequence")
+         (interpreted-function-alist "An interpreted-function-alist to evaluate ground terms") ;todo: document
+         (no-splitp "Whether to split into cases") ;todo: switch it to :splitp? or :allow-splitting?  why is splitting not a tactic?!
+         (monitor "Rules to monitor during rewriting")
+         (print "Axe print argument") ;todo: document
+         ))

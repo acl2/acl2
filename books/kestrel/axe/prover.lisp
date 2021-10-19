@@ -15,7 +15,7 @@
 ;todo: move all utility functions out to a book that does not use the trust tag
 ;todo: remove any mentions of sha1, md5, rc4, etc. in the file and other files in this dir.
 ;todo: implement backchain limits, polarities, improve handling of equivs
-;fixme axe prover requires some rules (like boolor of t, etc.) to be always enabled (without that one, we can get an error in get-disjuncts).  Improve get-disjuncts?
+;fixme axe prover requires some rules (like boolor of t, etc.) to be always enabled (without that one, we can get an error in get-darg-disjuncts).  Improve get-darg-disjuncts?
 ;fixme use faster tests than equal in some places below?
 
 (include-book "prover-common")
@@ -43,6 +43,7 @@
 (include-book "tries")
 (include-book "replace-using-assumptions")
 (include-book "fixup-context")
+(include-book "kestrel/terms-light/negate-terms" :dir :system)
 ;(local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -74,8 +75,6 @@
                            all-<-when-not-consp
                            all-dargp-when-not-consp
                            )))
-
-
 
 (local (in-theory (enable natp-of-+-of-1-alt)))
 
@@ -111,6 +110,13 @@
 (local (in-theory (disable SYMBOL-ALISTP))) ;move
 (local (in-theory (disable dag-function-call-exprp-redef
                            axe-treep)))
+
+;;items should be nodenums (if they are terms, we can do better by calling negate-terms)
+(defun negate-all (items)
+  (declare (xargs :guard (true-listp items)))
+;;  (cons-onto-all 'not (enlist-all items))
+  (wrap-all 'not items)
+  )
 
 (defund axe-prover-optionsp (options)
   (declare (xargs :guard t))
@@ -1343,7 +1349,7 @@
                                               rule-alist interpreted-function-alist monitored-symbols print case-designator work-hard-when-instructedp info tries prover-depth options (+ -1 count) state)
            ;; Rewriting changed the literal.  Harvest the disjuncts, raising them to top level, and add them to the done-list:
            (b* (((mv erp provedp extended-done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                 (get-disjuncts new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                 (get-darg-disjuncts new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                 done-list ; will be extended with the disjuncts
                                 nil       ;negated-flg
                                 nil       ; print, todo

@@ -1,30 +1,16 @@
-; Copyright (C) 2018 Centaur Technology
+; Cert params and portcullis commands for top-doc.lisp
 ;
-; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
+; Copyright (C) 2008-2011 Eric Smith and Stanford University
+; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
-; License: (An MIT/X11-style license)
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
-;   Permission is hereby granted, free of charge, to any person obtaining a
-;   copy of this software and associated documentation files (the "Software"),
-;   to deal in the Software without restriction, including without limitation
-;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-;   and/or sell copies of the Software, and to permit persons to whom the
-;   Software is furnished to do so, subject to the following conditions:
-;
-;   The above copyright notice and this permission notice shall be included in
-;   all copies or substantial portions of the Software.
-;
-;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-;   DEALINGS IN THE SOFTWARE.
-;
-; Original author (this file): Sol Swords <sswords@centtech.com>
+; Author: Eric Smith (eric.smith@kestrel.edu)
 
-; cert-flags: ? t :ttags :all
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; we archive a topic that links to a topic in this package:
+(include-book "build/portcullis" :dir :system)
+
+; cert-flags: ? T :TTAGS :ALL :SKIP-PROOFS-OKP T

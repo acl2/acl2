@@ -49,10 +49,17 @@
           (declares (remove-xarg-in-declares :mode declares)) ;todo: handle this better.  this is needed because the event might have :mode :program even if the function was later lifted to logic.  Obviously we shouldn't do this once we support transforming :program mode functions.
           ;; Deal with the :verify-guards xarg.  We always do :verify-guards nil and then
           ;; do verify-guards later, in case the function appears in its own guard-theorem (todo: is that still necessary?):
-          (declares (set-verify-guards-in-declares declares nil))
+          (declares (set-verify-guards-in-declares nil declares))
           (declares (remove-xarg-in-declares :guard-hints declares)) ;we never use the old guard-hints
           (declares (remove-xarg-in-declares :guard-debug declares)) ; verify-guards is done separately
           (declares (remove-xarg-in-declares :guard-simplify declares)) ; verify-guards is done separately
+          (declares (remove-xarg-in-declares :well-founded-relation declares))
+          (declares (if (not rec)
+                        declares ; no well-founded-relation if non-recursive
+                      (let ((well-founded-relation (well-founded-relation fn wrld)))
+                        (if (eq 'o< well-founded-relation)
+                            declares ; it's the default, so omit
+                          (replace-xarg-in-declares :well-founded-relation well-founded-relation declares)))))
           ;; Handle the :measure xarg:
           (declares (if (not rec)
                         declares ;no :measure needed and one should not already be present
@@ -85,7 +92,7 @@
           ;; TODO: What about irrelevant declares?  They need to be handled at a higher level, since they may depend on mut-rec partners.
           ;; We should clear them out here and set them if needed in copy-function-event.
           ;; Here we would change the body if fn is in target-fns, but we are just copying it so there is nothing do:
-          (body (copy-function-core-function fn body wrld))
+          (body (copy-function-function-body-transformer fn body wrld))
           ;; (new-fns-arity-alist (pairlis$ (strip-cdrs function-renaming)
           ;;                                (fn-arities (strip-cars function-renaming) wrld)))
           ;; ;; New fns from the renaming may appear as recursive calls, but they are not yet in the world:
@@ -98,12 +105,17 @@
                   (rename-functions-in-untranslated-term body
                                                          function-renaming
                                                          state)))
-          (declares (fixup-ignores2 declares formals body function-renaming wrld))
           (new-fn (lookup-eq-safe fn function-renaming)) ;new name for this function
-          )
-     `(,defun-variant ,new-fn ,formals
-        ,@declares
-        ,body)))
+          (defun `(,defun-variant ,new-fn ,formals
+                    ,@declares
+                    ,body))
+          (defun (if (eq :mutual rec)
+                     defun ; has to be done at a higher level
+                   (fixup-ignores-in-defun-form defun nil wrld)))
+          (defun (if (eq rec :mutual)
+                     defun ; irrelevant declares for mutual recursions must be handled at a higher level
+                   (fixup-irrelevants-in-defun-form defun state))))
+     defun))
 
  ;; Go through all the functions in the clique. For each, if it is in
  ;; TARGET-FNS, we both transform it and update rec calls in it (yes, for
@@ -268,9 +280,12 @@
                                                    t ; first function in the clique
                                                    state))
               (mutual-recursion `(mutual-recursion ,@new-defuns))
+              (mutual-recursion (fixup-ignores-in-mutual-recursion-form mutual-recursion wrld))
+              (mutual-recursion (fixup-irrelevants-in-mutual-recursion-form mutual-recursion state))
               (mutual-recursion-to-export (if verify-guards
-                                              (replace-xarg-in-mutual-recursion :verify-guards t mutual-recursion) ; todo: or just set the verify-guards eagerness and ensure there is a guard?
+                                              (ensure-mutual-recursion-demands-guard-verification mutual-recursion)
                                             mutual-recursion))
+              (mutual-recursion-to-export (remove-hints-from-mutual-recursion mutual-recursion-to-export))
               (fn-and-not-normalized-fn-doublets (make-doublets fns (add-not-normalized-suffixes fns)))
               (flag-function-name (pack$ 'flag- fn '-for- 'copy-function)) ;todo: avoid clashes better
               ;; Use as a ruler-extender for the flag function anything used as a ruler-extender for any of the FNS:

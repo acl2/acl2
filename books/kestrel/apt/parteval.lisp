@@ -555,7 +555,7 @@
                (:nice-expanded
                 (directed-untranslate-no-lets
                  (ibody old$ wrld) (ubody old$ wrld) body nil nil wrld))
-               (nil body)
+               ((nil) body)
                (t (untranslate body nil wrld))))
        (wfrel? (and (= case 2)
                     (well-founded-relation old$ wrld)))

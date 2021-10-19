@@ -11,19 +11,27 @@
 
 (in-package "ACL2")
 
+;; See proof of correctness in conjuncts-and-disjuncts-proof.lisp.
+
 ;; TODO: Should we be able to get conjuncts from (NOT (IF X X Y)) which is "not (x or y)" ?
 
-;; TODO: Reduce dependencies?
+(include-book "forms")
 (include-book "tools/flag" :dir :system)
 (include-book "kestrel/utilities/wrap-all" :dir :system)
-;(include-book "kestrel/utilities/terms" :dir :system) ;for negate-term
-(include-book "negate-term")
+(include-book "kestrel/booleans/booland" :dir :system) ; do not remove, since this tool depends on this definition of booland
+(include-book "kestrel/booleans/boolor" :dir :system) ; do not remove, since this tool depends on this definition of boolor
+(include-book "kestrel/booleans/boolif" :dir :system) ; do not remove, since this tool depends on this definition of boolif
+(include-book "myif") ; do not remove, since this tool depends on this definition of myif
 (local (include-book "pseudo-termp"))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/terms-light/logic-termp" :dir :system))
+(local (include-book "arities-okp"))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (disable ;len-of-cdr-better member-of-cons ;CONSP-CDR
-                   DEFAULT-CAR))) ;for speed
+                   default-car))) ;for speed
 
 ;; A single conjunct of "false"
 (defconst *false-conjunction* (list *nil*))
@@ -46,6 +54,12 @@
       *false-conjunction*
     (union-equal x y)))
 
+(defthm logic-term-listp-of-combine-conjuncts
+  (implies (and (logic-term-listp x w)
+                (logic-term-listp y w))
+           (logic-term-listp (combine-conjuncts x y) w))
+  :hints (("Goal" :in-theory (enable combine-conjuncts))))
+
 ;; We expect each of x and y to be either 1) the true-disjunction, or 2) a list of non-constant terms.
 (defund combine-disjuncts (x y)
   (declare (xargs :guard (and (pseudo-term-listp x)
@@ -54,6 +68,12 @@
           (equal *true-disjunction* y))
       *true-disjunction*
     (union-equal x y)))
+
+(defthm logic-term-listp-of-combine-disjuncts
+  (implies (and (logic-term-listp x w)
+                (logic-term-listp y w))
+           (logic-term-listp (combine-disjuncts x y) w))
+  :hints (("Goal" :in-theory (enable combine-disjuncts))))
 
 ;; (defthm pseudo-term-listp-of-union-equal
 ;;   (implies (and (pseudo-term-listp x)
@@ -85,34 +105,10 @@
            (true-listp (combine-disjuncts x y)))
   :hints (("Goal" :in-theory (enable combine-disjuncts))))
 
-; todo: use this to prove correctness of the functions in this file: (defevaluator simple-eval simple-eval-list ())
-
 ;todo: handle (equal x 'nil) like (not 'x)
 ;todo: handle (if/myif/boolif x 'nil 't) like (not 'x)
 
-;;items should be nodenums (if they are terms, we can do better by calling negate-terms)
-(defun negate-all (items)
-  (declare (xargs :guard (true-listp items)))
-;;  (cons-onto-all 'not (enlist-all items))
-  (wrap-all 'not items)
-  )
-
-(defund negate-terms (terms)
-  (declare (xargs :guard (true-listp terms)))
-  (if (endp terms)
-      nil
-    (let ((term (first terms)))
-      (cons (negate-term term)
-            (negate-terms (rest terms))))))
-
-(defthm pseudo-term-listp-of-negate-terms
-  (implies (pseudo-term-listp terms)
-           (pseudo-term-listp (negate-terms terms)))
-  :hints (("Goal" :in-theory (enable negate-terms))))
-
-;(local (in-theory (enable pseudo-termp)))
-
-;; also pushes not through branches of IFs
+;; also pushes NOT through branches of IFs (do I want that?)
 (defund negate-term2 (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (variablep term)
@@ -135,6 +131,15 @@
            (pseudo-termp (negate-term2 term)))
   :hints (("Goal" :in-theory (enable negate-term2))))
 
+(defthm logic-term-listp-of-negate-term2
+  (implies (and (logic-termp term w)
+                (arities-okp '((not . 1)
+                               (if . 3)
+                               (myif . 3))
+                             w))
+           (logic-termp (negate-term2 term) w))
+  :hints (("Goal" :in-theory (enable negate-term2))))
+
 (defund negate-terms2 (terms)
   (declare (xargs :guard (pseudo-term-listp terms)))
   (if (endp terms)
@@ -142,6 +147,15 @@
     (let ((term (first terms)))
       (cons (negate-term2 term)
             (negate-terms2 (rest terms))))))
+
+(defthm logic-term-listp-of-negate-terms2
+  (implies (and (logic-term-listp terms w)
+                (arities-okp '((not . 1)
+                               (if . 3)
+                               (myif . 3))
+                             w))
+           (logic-term-listp (negate-terms2 terms) w))
+  :hints (("Goal" :in-theory (enable negate-terms2))))
 
 (defthm pseudo-term-listp-of-negate-terms2
   (implies (pseudo-term-listp terms)
@@ -160,6 +174,15 @@
            (pseudo-term-listp (negate-disjuncts terms)))
   :hints (("Goal" :in-theory (enable negate-disjuncts))))
 
+(defthm logic-term-listp-of-negate-disjuncts
+  (implies (and (logic-term-listp terms w)
+                (arities-okp '((not . 1)
+                               (if . 3)
+                               (myif . 3))
+                             w))
+           (logic-term-listp (negate-disjuncts terms) w))
+  :hints (("Goal" :in-theory (enable negate-disjuncts))))
+
 ;; Negate all the conjuncts, forming a disjunction of the results
 (defund negate-conjuncts (conjuncts)
    (declare (xargs :guard (pseudo-term-listp conjuncts)))
@@ -170,6 +193,15 @@
 (defthm pseudo-term-listp-of-negate-conjuncts
   (implies (pseudo-term-listp terms)
            (pseudo-term-listp (negate-conjuncts terms)))
+  :hints (("Goal" :in-theory (enable negate-conjuncts))))
+
+(defthm logic-term-listp-of-negate-conjuncts
+  (implies (and (logic-term-listp terms w)
+                (arities-okp '((not . 1)
+                               (if . 3)
+                               (myif . 3))
+                             w))
+           (logic-term-listp (negate-conjuncts terms) w))
   :hints (("Goal" :in-theory (enable negate-conjuncts))))
 
 ;TODO: replace various more specialized routines to get conjuncts (e.g., for if nests) with these?
@@ -260,9 +292,34 @@
 
 (verify-guards get-conjuncts-of-term)
 
-(defun acl2::get-conjuncts-of-terms (terms)
+(defthm-flag-get-conjuncts-of-term
+  (defthm logic-term-listp-of-get-conjuncts-of-term
+    (implies (and (logic-termp term w)
+                  (arities-okp '((not . 1)
+                                 (if . 3)
+                                 (boolif . 3)
+                                 (booland . 2)
+                                 (boolor . 2)
+                                 (myif . 3))
+                               w))
+             (logic-term-listp (get-conjuncts-of-term term) w))
+    :flag get-conjuncts-of-term)
+  (defthm logic-term-listp-of-get-disjuncts-of-term
+    (implies (and (logic-termp term w)
+                  (arities-okp '((not . 1)
+                                 (if . 3)
+                                 (boolif . 3)
+                                 (booland . 2)
+                                 (boolor . 2)
+                                 (myif . 3))
+                               w))
+             (logic-term-listp (get-disjuncts-of-term term) w))
+    :flag get-disjuncts-of-term)
+  :hints (("Goal" :in-theory (enable get-disjuncts-of-term get-conjuncts-of-term))))
+
+(defun get-conjuncts-of-terms (terms)
   (declare (xargs :guard (pseudo-term-listp terms)))
   (if (endp terms)
       nil
-    (union-equal (acl2::get-conjuncts-of-term (first terms))
-                 (acl2::get-conjuncts-of-terms (rest terms)))))
+    (union-equal (get-conjuncts-of-term (first terms))
+                 (get-conjuncts-of-terms (rest terms)))))

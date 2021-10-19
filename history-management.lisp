@@ -3632,14 +3632,20 @@
 (defvar *defattach-fns*) ; see the Essay on Memoization with Attachments
 
 #+acl2-loop-only
-(partial-encapsulate
+(state-global-let*
+ ((ld-skip-proofsp
+; Without this use of ld-skip-proofsp, "make proofs" fails.  With it, we skip
+; the first pass of the following encapsulate and avoid that error.
+   'initialize-acl2))
+ (partial-encapsulate
 ; See discussion in the #-acl2-loop-only definition of retract-stobj-tables.
- (((retract-stobj-tables * state) => state))
- () ; supporters
- (local (defun retract-stobj-tables (wrld state)
-          (declare (xargs :stobjs state)
-                   (ignore wrld))
-          state)))
+  (((retract-stobj-tables * state) => state))
+  () ; supporters
+  (local (defun retract-stobj-tables (wrld state)
+           (declare (xargs :stobjs state)
+                    (ignore wrld))
+           state)))
+ )
 
 #-acl2-loop-only
 (defun retract-stobj-tables (wrld state)
@@ -11855,7 +11861,7 @@
    ((flambdap (ffn-symb term))
     (or (choke-on-loop$-recursion1 fn (lambda-body (ffn-symb term)) sysfn)
         (choke-on-loop$-recursion1-lst fn (fargs term) sysfn)))
-   ((and (loop$-scion-style (ffn-symb term) *loop$-keyword-info*)
+   ((and (loop$-scion-style (ffn-symb term))
          (quotep (fargn term 1))
          (consp (unquote (fargn term 1))))
 ; This is a loop$ scion call on a quoted cons.  So this might be a loop$ scion
@@ -12095,7 +12101,7 @@
       (pairlis$ (lambda-formals (ffn-symb term))
                 (sublis-var-lst alist
                                  (fargs term))))))
-   ((and (loop$-scion-style (ffn-symb term) *loop$-keyword-info*)
+   ((and (loop$-scion-style (ffn-symb term))
          (quotep (fargn term 1))
          (consp (unquote (fargn term 1)))
          (eq (car (unquote (fargn term 1))) 'lambda))
@@ -12289,8 +12295,8 @@
                       :call (sublis-var alist body))
                 rec-call)
           rec-call)))
-   ((loop$-scion-style (ffn-symb body) *loop$-keyword-info*)
-    (let ((style (loop$-scion-style (ffn-symb body) *loop$-keyword-info*))
+   ((loop$-scion-style (ffn-symb body))
+    (let ((style (loop$-scion-style (ffn-symb body)))
 
 ; Before we get too carried away with the possibility of loop$ recursion here,
 ; we need to remember to deal with normal recursion in this term!  This
@@ -13022,9 +13028,9 @@
         (lambda-object-formals fn))))))
 
 ; The following block of code culminates in the definition of
-; special-loop-guard-clauses, which generates Special Conjectures (a), (b), and
-; (c) described in the Essay on Loop$.  Most of the development work below is
-; on Special Conjectures (c).
+; special-conjectures, which generates Special Conjectures (a), (b), (c), (d),
+; (e), (f), and (g) described in the Essay on Loop$.  Most of the development
+; work below is on Special Conjectures (c).
 
 (defun recover-type-spec-exprs1 (term)
 
@@ -13077,8 +13083,7 @@
 
   (let ((style (and (nvariablep term)
                     (not (fquotep term))
-                    (loop$-scion-style (ffn-symb term)
-                                       *loop$-keyword-info*))))
+                    (loop$-scion-style (ffn-symb term)))))
     (cond
      ((null style)
       (cond ((and (nvariablep term)
@@ -13173,7 +13178,8 @@
 ; corresponding to such loop$s.
 
   (cond
-   ((and (loop$-operator-scionp (ffn-symb scion-term) *loop$-keyword-info*)
+   ((and (for-loop$-operator-scionp (ffn-symb scion-term)
+                                    *for-loop$-keyword-info*)
          (quotep (fargn scion-term 1))
          (well-formed-lambda-objectp
           (unquote (fargn scion-term 1))
@@ -13328,8 +13334,8 @@
 ;                         (Z (IF (RATIONALP Z) (POSP Z) 'NIL)
 ;                            ZLST))))))
 
-(defun special-loop$-guard-clauses-c2 (clause var type-expr target)
-; See special-loop$-guard-clauses-c.
+(defun special-conjectures-c2 (clause var type-expr target)
+; See special-conjectures-c.
   (cond
    ((equal type-expr *t*) nil)
    (t (case-match target
@@ -13371,20 +13377,20 @@
              nil)))))
         (& nil)))))
 
-(defun special-loop$-guard-clauses-c1 (clause vars-specs-and-targets)
-; See special-loop$-guard-clauses-c.
+(defun special-conjectures-c1 (clause vars-specs-and-targets)
+; See special-conjectures-c.
   (cond
    ((null vars-specs-and-targets) nil)
    (t (conjoin-clause-sets
-       (special-loop$-guard-clauses-c2
+       (special-conjectures-c2
         clause
         (car (car vars-specs-and-targets))
         (cadr (car vars-specs-and-targets))
         (caddr (car vars-specs-and-targets)))
-       (special-loop$-guard-clauses-c1 clause
-                                       (cdr vars-specs-and-targets))))))
+       (special-conjectures-c1 clause
+                               (cdr vars-specs-and-targets))))))
 
-(defun special-loop$-guard-clauses-c (clause term wrld)
+(defun special-conjectures-c (clause term wrld)
 
 ; If term is a loop$ scion term corresponding to the operator of a loop$
 ; statement, e.g., a call of sum$ or perhaps collect$+ but not a call of when$,
@@ -13400,15 +13406,20 @@
 
 ; No other targets generate Special Conjectures (c).
 
-  (special-loop$-guard-clauses-c1
+  (special-conjectures-c1
    clause
    (vars-specs-and-targets term wrld)))
 
 (defun special-loop$-scion-callp (term wrld)
 
-; We recognize calls of *loop$-keyword-info* scions on quoted LAMBDA objects,
-; e.g., (sum$ (quote (LAMBDA ...)) lst) or (when$+ (quote (LAMBDA ...)) globals
-; lst) that might have come from translations of loop$ statements.
+; We recognize calls of loop$ scions on quoted LAMBDA objects that might have
+; come from translations of loop$ statements, e.g.,
+; (sum$ (quote (LAMBDA ...)) lst), or
+; (when$+ (quote (LAMBDA ...)) globals lst), or
+; (do$ measure-fn alist
+;      (quote (lambda ...))
+;      (quote (lambda ...))
+;      xtr1 xtr2)
 
 ; Motivation: We generate special guard conjectures for each such a call,
 ; presuming that it WAS generated by a loop$ and that the loop$ is lying in
@@ -13420,12 +13431,18 @@
 ; protective here: there may be no loop$ in the raw Lisp.  C'est la vie.
 
 ; We do not build in much about what such calls look like except that we know
-; the function argument is a quoted well-formed LAMBDA object of the right
+; certain function arguments are a quoted well-formed LAMBDA object of the right
 ; arity for the style of the loop$ scion.
 
   (case-match term
+    (('do$ & & ('quote obj1) ('quote obj2) & &)
+     (and (well-formed-lambda-objectp obj1 wrld)
+          (well-formed-lambda-objectp obj2 wrld)
+          (equal (length (lambda-object-formals obj1)) 1)
+          (equal (length (lambda-object-formals obj2)) 1)))
     ((loop-scion ('quote obj) . &)
-     (let ((style (loop$-scion-style loop-scion *loop$-keyword-info*)))
+     (let ((style (loop$-scion-style loop-scion)))
+; Style can't be :DO because we handled that above.
        (and style ; a :plain  or :fancy loop$ scion
             (and (well-formed-lambda-objectp obj wrld)
                  (equal (length (lambda-object-formals obj))
@@ -13480,6 +13497,13 @@
           (collect-warranted-fns (lambda-body (ffn-symb term)) nil collect-p
                                  wrld)
           (collect-warranted-fns-lst (fargs term) nil collect-p wrld)))
+        ((member-eq (ffn-symb term) '(apply$ ev$))
+         (collect-warranted-fns-lst
+          (fargs term)
+          (access apply$-badge
+                  (executable-badge (ffn-symb term) wrld)
+                  :ilks)
+          collect-p wrld))
         (t (mv-let (badge warrantp)
              (get-badge-and-warrantp (ffn-symb term) wrld)
 ; If warrantp is t, there is a badge, not not vice versa.
@@ -13519,7 +13543,7 @@
 
 ; It's perhaps a bit inefficient to add to the end every time, but that seems
 ; the most natural way to get the desired functionality (see the discussion
-; about Special Conjecture (b) in the Essay on LOOP$).
+; about Special Conjecture (b) in the Essay on Loop$).
 
                          t)))))
 
@@ -13527,13 +13551,24 @@
   (collect-negated-warrants1 (collect-warranted-fns term nil nil wrld)
                              clause))
 
-(defun special-loop$-guard-clauses (clause term wrld newvar ttree)
+(defun add-literals (cl1 cl2)
+
+; Add each literal of cl1 to cl2, maintaining order but dropping redundancies
+; and detecting tautologies.  We assume there are no redundancies or
+; contradictions in cl1 or cl2 individually.
+
+  (cond ((endp cl1) cl2)
+        (t (add-literal (car cl1)
+                        (add-literals (cdr cl1) cl2)
+                        nil))))
+
+(defun special-conjectures (clause term wrld newvar ttree)
 
 ; Clause is an evolving clause governing an occurrence of term with derivation
 ; ttree.  Term may or may not be a call of a special loop$ scionp.  If it is
 ; and newvar is non-nil, we generate and return the list of special loop$ guard
 ; clauses appropriate for term, together with ttree, (mv clauses ttree').  Else
-; we return (mv nil ttree).  Newvar is the new variable used in the special
+; we return (mv nil ttree).  Newvar is the new variable used in the special for
 ; loop$ guard clauses.  Newvar is only non-nil when this function is called on
 ; functions or lambdas being defined.  Newvar is nil when we're generating
 ; guards for theorems and ordinary terms.
@@ -13541,54 +13576,185 @@
 ; Note: As of this writing, ttree is just passed through and returned; it is
 ; not used or modified.
 
-; See the Essay on Loop$ for an explanation of Special Conjectures (a) (b) and
-; (c).
+; See the Essay on Loop$ for an explanation of Special Conjectures (a), (b),
+; (c) for FOR loop$s and (d), (e), (f), and (g) for DO loop$s.
 
   (cond
    ((null newvar) (mv nil ttree))
    ((special-loop$-scion-callp term wrld)
-    (let* ((style (loop$-scion-style (ffn-symb term) *loop$-keyword-info*))
-           (test-b (loop$-scion-restriction (ffn-symb term)
-                                            *loop$-keyword-info*))
+    (let* ((style (loop$-scion-style (ffn-symb term)))
+; We need both the warrants hypotheses as a clause by itself and we need its
+; union with the incoming clause.
+           (warrant-hyps (collect-negated-warrants term wrld nil))
+           (warranted-clause (add-literals warrant-hyps clause)))
+      (cond
+       ((eq style :do)
+        (let* ((m-fn (unquote (fargn term 1)))
+               (initial-alist (fargn term 2))
+               (do-fn (unquote (fargn term 3)))
+               (do-fn-var (car (lambda-object-formals do-fn)))
+               (do-fn-guard (lambda-object-guard do-fn))
+               (fin-fn (unquote (fargn term 4)))
+               (fin-fn-var (car (lambda-object-formals fin-fn)))
+               (fin-fn-guard (lambda-object-guard fin-fn))
+
+; Typically, do-fn-var and fin-fn-var, which are the names of formal parameter
+; of the do fn lambda and the finally fn lambda, are the same, namely the
+; symbol ALIST.  Furthermore, the guards of the two functions are terms in that
+; formal.  
+
+; (d) the initial alist satisfies the guard on do-fn.
+
+               (special-conjecture-d
+                (if (equal do-fn-guard *t*)
+                    *true-clause*
+                    (add-literal-smart
+                     (subst-var initial-alist do-fn-var do-fn-guard)
+                     warranted-clause
+                     t)))
+; The nested lambda expressions used in conjectures (e), (f), and (g) below are
+; the fully translated form of
+
+;  (let ((triple (true-list-fix (apply$ ',do-fn (list alist)))))
+;    (let ((exit-flg (car triple))
+;          (new-alist (caddr triple)))
+;      (implies ... ...)))
+
+; Note also that since there are no free variables in the conjecture other than
+; alist, there is no point in including hypotheses from the surrounding
+; context.  We do, however, include the warrant hypotheses.  Also note that
+; there is always a guard on the do-fn and the fin-fn, namely, at least,
+; (alistp alist), so we don't try to avoid generating the special conjectures
+; involving trivial guards.
+
+; (e) if the guard on do-fn is satisfied by some alist and running do-fn
+;     produces an exit-flg of nil (and some new alist) then the guard on do-fn
+;     is satisfied by that new alist.
+
+               (special-conjecture-e
+                (add-literal-smart
+                 `((lambda (triple alist)
+                     ((lambda (exit-flg new-alist alist)
+                        (implies (if ,(subst-var 'alist
+                                                 do-fn-var
+                                                 do-fn-guard)
+                                     (equal exit-flg 'nil)
+                                     'nil)
+                                 ,(subst-var 'new-alist
+                                             do-fn-var
+                                             do-fn-guard)))
+                      (car triple)
+                      (car (cdr (cdr triple)))
+                      alist))
+                   (true-list-fix (apply$ ',do-fn (cons alist 'nil)))
+                   alist)
+                 warrant-hyps
+                 t))
+
+; (f) if the guard on do-fn is satisfied on some alist and running do-fn
+;     produces an exit-flg of :loop-finish (and some new alist) then the guard
+;     on the finally-fn is satisfied by that new alist.  This conjecture can be
+;     redundant if there is no finally clause.  But we don't detect that.  As
+;     do loop$ translation stands now, there is always a non-trivial finally
+;     lambda that is guarded at least by (alistp alist) and any type-specs from
+;     the WITH clauses.  That lambda returns the nil value but a non-trivial
+;     (but identity) alist on all the variables with type-specs.  The proof of
+;     special conjecture (f) in this case is just a trivial but we think it is
+;     easier to suffer the proof than to detect the triviality of the
+;     non-trivial lambda we generate!  To fix this, change translate11-loop$!
+
+               (special-conjecture-f
+                (add-literal-smart
+                 `((lambda (triple alist)
+                     ((lambda (exit-flg new-alist alist)
+                        (implies (if ,(subst-var 'alist
+                                                 do-fn-var
+                                                 do-fn-guard)
+                                     (equal exit-flg ':loop-finish)
+                                     'nil)
+                                 ,(subst-var 'new-alist
+                                             fin-fn-var
+                                             fin-fn-guard)))
+                      (car triple)
+                      (car (cdr (cdr triple)))
+                      alist))
+                   (true-list-fix (apply$ ',do-fn (cons alist 'nil)))
+                   alist)
+                 warrant-hyps
+                 t))
+
+; (g) if the guard on do-fn is satisfied by alist and running do-fn produces an
+;     exit flg of nil and (a some new alist) then the measure of the new alist
+;     is smaller than that of alist.
+
+               (special-conjecture-g
+                (add-literal-smart
+                 `((lambda (triple alist)
+                     ((lambda (exit-flg new-alist alist)
+                        (implies (if ,(subst-var 'alist
+                                                 do-fn-var
+                                                 do-fn-guard)
+                                     (equal exit-flg 'nil)
+                                     'nil)
+                                 (l< (lex-fix (apply$ ',m-fn (cons new-alist 'nil)))
+                                     (lex-fix (apply$ ',m-fn (cons alist 'nil))))))
+                      (car triple)
+                      (car (cdr (cdr triple)))
+                      alist))
+                   (true-list-fix (apply$ ',do-fn (cons alist 'nil)))
+                   alist)
+                 warrant-hyps
+                 t)))
+          (mv (append (if (equal special-conjecture-d *true-clause*)
+                          nil
+                          (list special-conjecture-d))
+                      (if (equal special-conjecture-e *true-clause*)
+                          nil
+                          (list special-conjecture-e))
+                      (if (equal special-conjecture-f *true-clause*)
+                          nil
+                          (list special-conjecture-f))
+                      (if (equal special-conjecture-g *true-clause*)
+                          nil
+                          (list special-conjecture-g)))
+              ttree)))
+       (t ; style = :plain or :fancy
+        (let* ((test-b (loop$-scion-restriction (ffn-symb term)))
 
 ; Test-b is either NIL or a monadic predicate like ACL2-NUMBERP that the
 ; output of the apply$ must satisfy.
 
-           (fn (unquote (fargn term 1)))
-           (globals (if (eq style :plain)
-                        nil
-                      (fargn term 2)))
-           (lst (if (eq style :plain)
-                    (fargn term 2)
-                  (fargn term 3))))
-      (mv-let (var1 var2 fngp body)
-        (cond
-         ((symbolp fn)
-          (mv (car (formals fn wrld))
-              (cadr (formals fn wrld)) ; nil if fn of arity 1
-              (guard fn nil wrld)
-              (cons fn (formals fn wrld))))
-         (t (mv (car (lambda-object-formals fn))
-                (cadr (lambda-object-formals fn))
-                (lambda-object-guard fn)
-                (lambda-object-body fn))))
-        (declare (ignore body))
-        (let* ((subst (if (eq style :plain)
+               (fn (unquote (fargn term 1)))
+               (globals (if (eq style :plain)
+                            nil
+                            (fargn term 2)))
+               (lst (if (eq style :plain)
+                        (fargn term 2)
+                        (fargn term 3)))
+               (var1 (car (lambda-object-formals fn)))
+               (var2 (cadr (lambda-object-formals fn)))
+               (fngp (lambda-object-guard fn))
+               (subst (if (eq style :plain)
                           `((,var1 . ,newvar))
-                        `((,var1 . ,globals)
-                          (,var2 . ,newvar))))
-               (warranted-clause
-                (collect-negated-warrants term wrld clause))
+                          `((,var1 . ,globals)
+                            (,var2 . ,newvar))))
+
+; (a) every element of the target satisfies the guard of the body
+
                (special-conjecture-a
                 (if (equal fngp *t*)
                     *true-clause*
-                  (add-literal-smart
-                   (sublis-var subst fngp)
-                   (add-literal-smart
-                    `(NOT (MEMBER-EQUAL ,newvar ,lst))
-                    warranted-clause
-                    t)
-                   t)))
+                    (add-literal-smart
+                     (sublis-var subst fngp)
+                     (add-literal-smart
+                      `(NOT (MEMBER-EQUAL ,newvar ,lst))
+                      warranted-clause
+                      t)
+                     t)))
+
+; (b) every element of the target satisfies the output restriction
+;     of the operator
+
                (special-conjecture-b
                 (if test-b
                     (add-literal-smart
@@ -13596,26 +13762,30 @@
                        (APPLY$ ',fn
                                ,(if (eq style :plain)
                                     `(CONS ,newvar 'NIL)
-                                  `(CONS ,globals
-                                         (CONS ,newvar
-                                               'NIL)))))
+                                    `(CONS ,globals
+                                           (CONS ,newvar
+                                                 'NIL)))))
                      (add-literal-smart
                       `(NOT (MEMBER-EQUAL ,newvar ,lst))
                       warranted-clause
                       t)
                      t)
-                  *true-clause*))
+                    *true-clause*))
+
+; (c) the type-spec of each iteration var continues to hold at the
+;     step BEYOND the last step!
+
                (special-conjectures-c
-                (special-loop$-guard-clauses-c clause term wrld)))
+                (special-conjectures-c clause term wrld)))
           (mv (append (if (equal special-conjecture-a *true-clause*)
                           nil
-                        (list special-conjecture-a))
+                          (list special-conjecture-a))
                       (if (equal special-conjecture-b *true-clause*)
                           nil
-                        (list special-conjecture-b))
+                          (list special-conjecture-b))
                       special-conjectures-c
                       )
-              ttree)))))
+              ttree))))))
    (t (mv nil ttree))))
 
 (defun make-lambda-application+ (formals body actuals)
@@ -14038,7 +14208,7 @@
           (t (fargs term)))
          debug-info stobj-optp clause wrld ttree newvar)
         (mv-let (cl-set2 ttree)
-          (special-loop$-guard-clauses clause term wrld newvar ttree)
+          (special-conjectures clause term wrld newvar ttree)
           (let ((env2 (if env-term
                           (add-to-set-equal env-term env1)
                         env1)))
@@ -16993,7 +17163,7 @@
 
 ; We implement this abbreviation below.  But we have to know that the
 ; value supplied to the :OR is a list of non-empty true-lists of even
-; lengths to insure that we can append the other hints to it and still
+; lengths to ensure that we can append the other hints to it and still
 ; get reasonable translation errors in the presence of ill-formed
 ; hints.  If not, we cause an error now.  We check the rest of the
 ; restrictions on :OR after the transformation.

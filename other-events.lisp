@@ -1451,6 +1451,11 @@
            (list 'well-founded-relation-alist
                  (list (cons 'o<
                              (cons 'o-p
+                                   *fake-rune-for-anonymous-enabled-rule*))
+; The following is justified by the theorem WELL-FOUNDED-L<, which is quoted in
+; check-system-events and thus checked by "make devel-check".
+                       (cons 'l<
+                             (cons 'lexp
                                    *fake-rune-for-anonymous-enabled-rule*))))
            (list 'built-in-clauses
                  (classify-and-store-built-in-clause-rules
@@ -26011,7 +26016,7 @@
 ; We translate uterm1 and uterm2 to check the syntactic requirements and we
 ; cause errors if we don't like what we see.  BUT we store the untranslated
 ; uterm1 and uterm2 in the custom-keywords-table!  The reason is that the
-; invariant on the table cannot insure that the terms there meet the
+; invariant on the table cannot ensure that the terms there meet the
 ; requirements -- translated, single-threaded, error-triple signatured terms.
 ; So when we use the terms we find in the table we have to use trans-eval to
 ; (re-)translate and evaluate them.  Thus, we might as well store the pretty

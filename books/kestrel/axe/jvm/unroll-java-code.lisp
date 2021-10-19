@@ -525,38 +525,35 @@
          :gag-mode nil (make-event ,form))))
   :parents (lifter)
   :short "Given a Java method, extract an equivalent term in DAG form, by symbolic execution including unrolling all loops."
-  :inputs (
-           defconst-name
-           "The name of the constant to create.  This constant will represent the computation in DAG form.  A function is also created (it's name is obtained by stripping the stars from the defconst name)."
-
-           method-designator-string
-           "The method designator of the Java method to unroll (a string like \"java.lang.Object.foo(IB)V\")."
-
-           :output                  "An indication of which state component to extract"
-           :array-length-alist      "An alist pairing array parameter names (symbols) with their lengths."
-           :assumptions             "Terms to assume true when unrolling"
-           :simplify-xors           "Whether to normalize xor nests (t or nil)"
-           :classes-to-assume-initialized "Classes to assume the JVM has already initialized (or :all)"
-           :ignore-exceptions       "Whether to assume exceptions do not happen (e.g., out-of-bounds array accesses)"
-           :ignore-errors           "Whether to assume JVM errors do not happen"
-           :extra-rules             "Rules to add to the usual set of rules"
-           :remove-rules            "Rules to remove from the usual set of rules"
-           :monitor                 "Rules to monitor (to help debug failures)"
-           :rule-alists             "If non-nil, rule-alists to use (these completely replace the usual rule sets)"
-           :print                   "How much to print (t or nil of :brief, etc.; default nil)"
-           :vars-for-array-elements "whether to introduce vars for individual array elements (nil, t, or :bits)"
-           :prune-branches          "whether to aggressively prune unreachable branches in the result"
-           :call-stp                "whether to call STP when pruning (t, nil, or a number of conflicts before timeout)"
-           :print-interval "How often to print (number of nodes)"
-           :memoizep "Whether to memoize rewrites during unrolling (boolean, default t)."
-           :steps "A number of steps to run, or :auto, meaning run until the method returns. (Consider using :output :all when using :steps, especially if the computation may not complete after that many steps.)"
-           :branches "How to handle branches in the execution. Either :smart (try to merge at join points) or :split (split the execution and don't re-merge)."
-           :param-names "Names to use for the parameters (e.g., if no debugging information is available)."
-           :produce-theorem "Whether to produce a theorem about the result of the lifting (currently has to be trusted)."
-           :produce-function "Whether to produce a defun in addition to a DAG (default t)."
-           :chunkedp "whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code)"
-           )
-  :long "<p>To inspect the resulting form, you can use @('print-list') on the generated defconst.</p>"
+  :args ((defconst-name
+           "The name of the constant to create.  This constant will represent the computation in DAG form.  A function is also created (it's name is obtained by stripping the stars from the defconst name).")
+         (method-designator-string
+          "The method designator of the Java method to unroll (a string like \"java.lang.Object.foo(IB)V\").")
+         (output                  "An indication of which state component to extract")
+         (array-length-alist      "An alist pairing array parameter names (symbols) with their lengths.")
+         (assumptions             "Terms to assume true when unrolling")
+         (simplify-xors           "Whether to normalize xor nests (t or nil)")
+         (classes-to-assume-initialized "Classes to assume the JVM has already initialized (or :all)")
+         (ignore-exceptions       "Whether to assume exceptions do not happen (e.g., out-of-bounds array accesses)")
+         (ignore-errors           "Whether to assume JVM errors do not happen")
+         (extra-rules             "Rules to add to the usual set of rules")
+         (remove-rules            "Rules to remove from the usual set of rules")
+         (monitor                 "Rules to monitor (to help debug failures)")
+         (rule-alists             "If non-nil, rule-alists to use (these completely replace the usual rule sets)")
+         (print                   "How much to print (t or nil of :brief, etc.; default nil)")
+         (vars-for-array-elements "whether to introduce vars for individual array elements (nil, t, or :bits)")
+         (prune-branches          "whether to aggressively prune unreachable branches in the result")
+         (call-stp                "whether to call STP when pruning (t, nil, or a number of conflicts before timeout)")
+         (print-interval "How often to print (number of nodes)")
+         (memoizep "Whether to memoize rewrites during unrolling (boolean, default t).")
+         (steps "A number of steps to run, or :auto, meaning run until the method returns. (Consider using :output :all when using :steps, especially if the computation may not complete after that many steps.)")
+         (branches "How to handle branches in the execution. Either :smart (try to merge at join points) or :split (split the execution and don't re-merge).")
+         (param-names "Names to use for the parameters (e.g., if no debugging information is available).")
+         (produce-theorem "Whether to produce a theorem about the result of the lifting (currently has to be trusted).")
+         (produce-function "Whether to produce a defun in addition to a DAG (default t).")
+         (chunkedp "whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code)")
+         )
+  :description "<p>To inspect the resulting form, you can use @('print-list') on the generated defconst.</p>"
   )
 
 ;; Ensure all the rules needed by the unroller are included:

@@ -75,6 +75,11 @@
    to the names of the generated respective correctness theorems.
    This is @('nil') if @('proofs') is @('nil')."
 
+  "@('typed-formals') is an alist
+   from the formal parameters of one of @('fn1'), ..., @('fnp')
+   to their C types.
+   The keys are unique and in the same order as the formal parameters."
+
   xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -95,8 +100,7 @@
                   prog-const
                   wf-thm
                   fn-thms
-                  print
-                  experimental))
+                  print))
         (atc-process-inputs args ctx state)))
     (atc-gen-everything fn1...fnp
                         output-file
@@ -105,7 +109,6 @@
                         wf-thm
                         fn-thms
                         print
-                        experimental
                         call
                         ctx
                         state)))

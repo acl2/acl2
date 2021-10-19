@@ -320,6 +320,10 @@
       (append (get-non-xargs-from-declare declare)
               (get-non-xargs-from-declares (rest declares))))))
 
+(defthm all-declare-argp-of-get-non-xargs-from-declares
+  (implies (all-declarep declares)
+           (all-declare-argp (get-non-xargs-from-declares declares))))
+
 ;; Checks whether DECLARE-ARG contributes a guard (or part of a guard) to its
 ;; enclosing defun.
 (defun declare-arg-contributes-a-guardp (declare-arg)
@@ -414,7 +418,7 @@
 ;If there is already a "verify-guards t", we remove it from the declares.
 ;; TODO: Preserve more of the original order of things?
 ;; TODO: Generalize to any xarg
-(defun set-verify-guards-in-declares (declares verify-guards)
+(defun set-verify-guards-in-declares (verify-guards declares)
   (declare (xargs :guard (and (true-listp declares)
                               (all-declarep declares)
                               (member-eq verify-guards '(t nil)))))
@@ -429,7 +433,7 @@
 (defund add-verify-guards-nil (declares)
   (declare (xargs :guard (and (true-listp declares)
                               (all-declarep declares))))
-  (set-verify-guards-in-declares declares nil))
+  (set-verify-guards-in-declares nil declares))
 
 (defthm all-declarep-of-add-verify-guards-nil
   (implies (all-declarep declares)
@@ -440,7 +444,7 @@
 (defund add-verify-guards-t (declares)
   (declare (xargs :guard (and (true-listp declares)
                               (all-declarep declares))))
-  (set-verify-guards-in-declares declares t))
+  (set-verify-guards-in-declares t declares))
 
 (defthm all-declarep-of-add-verify-guards-t
   (implies (all-declarep declares)
@@ -524,7 +528,7 @@
 (assert-event (equal (remove-declares 'ignore '((declare (xargs :guard (all-declarep declares))) (declare (ignore x))))
                      '((DECLARE (XARGS :GUARD (ALL-DECLAREP DECLARES))))))
 
-(defun add-declare-arg (declare-arg declares)
+(defund add-declare-arg (declare-arg declares)
   (declare (xargs :guard (and (declare-argp declare-arg)
                               (all-declarep declares))))
   (if (atom declares)
@@ -534,9 +538,16 @@
            (first-declare `(declare ,declare-arg ,@declare-args)))
       (cons first-declare (rest declares)))))
 
-(defthm all-declare-argp-of-get-non-xargs-from-declares
-  (implies (all-declarep declares)
-           (all-declare-argp (get-non-xargs-from-declares declares))))
+(defthm all-declare-argp-of-add-declare-arg
+  (implies (and (declare-argp declare-arg)
+                (all-declarep declares))
+           (all-declarep (add-declare-arg declare-arg declares)))
+  :hints (("Goal" :in-theory (enable add-declare-arg))))
+
+(defthm true-listp-of-add-declare-arg
+  (implies (true-listp declares)
+           (true-listp (add-declare-arg declare-arg declares)))
+  :hints (("Goal" :in-theory (enable add-declare-arg))))
 
 
 
@@ -964,3 +975,14 @@
 
 ;; This was wrong before (gave two copies of :program:
 ;; (replace-mode-with-program-in-declares '((declare (xargs :guard t) (xargs :guard (natp x)))))
+
+;; Returns the new declares.
+(defun set-irrelevant-declare-in-declares (irrelevant-formals declares)
+  (declare (xargs :guard (and (symbol-listp irrelevant-formals)
+                              (all-declarep declares)
+                              (true-listp declares))))
+  (let* ((declares (remove-declares 'irrelevant declares))
+         (declares (if irrelevant-formals
+                       (add-declare-arg `(irrelevant ,@irrelevant-formals) declares)
+                     declares)))
+    declares))

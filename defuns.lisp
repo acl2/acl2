@@ -5002,8 +5002,7 @@
 ; about how not all names have been defined in wrld.
 
   (cond ((null names) (value-cmp nil))
-        (t (let ((bad (collect-non-common-lisp-compliants
-                       (set-difference-eq
+        (t (let* ((fns (set-difference-eq
                         (all-fnnames1-exec
                          t ; list of terms (all-fnnames-exec (car terms))
                          (cons (car terms)
@@ -5020,17 +5019,35 @@
                              (all-fnnames! nil :inside nil
                                            (car terms)
                                            nil wrld nil)))
-                        names0)
-                       wrld)))
+                        names0))
+                  (bad (collect-non-common-lisp-compliants fns wrld)))
              (cond
               (bad
                (er-cmp ctx "The ~@0 for ~x1 calls the function~#2~[ ~&2~/s ~
                             ~&2~], the guards of which have not yet been ~
                             verified.  See :DOC verify-guards."
                        str (car names) bad))
-              (t (chk-common-lisp-compliant-subfunctions-cmp
-                  names0 (cdr names) (cdr terms)
-                  wrld str ctx)))))))
+              (t (mv-let (warrants unwarranteds)
+                   (if (global-val 'boot-strap-flg wrld)
+                       (mv nil nil)
+                       (warrants-for-tamep-lambdap-lst
+                        (collect-certain-lambda-objects :well-formed
+                                                        (car terms)
+                                                        wrld nil)
+                        wrld nil nil))
+                   (declare (ignore warrants))
+                   (cond
+                    (unwarranteds
+                     (er-cmp ctx "The ~@0 for ~x1 applies the function~#2~[ ~
+                                  ~&2~/s ~&2~] which ~#2~[is~/are~] not yet ~
+                                  warranted.  Lambda objects containing ~
+                                  unwarranted function symbols are not ~
+                                  provably tame and can't be applied.  See ~
+                                  :DOC verify-guards."
+                             str (car names) unwarranteds))
+                    (t (chk-common-lisp-compliant-subfunctions-cmp
+                        names0 (cdr names) (cdr terms)
+                        wrld str ctx))))))))))
 
 (defun chk-common-lisp-compliant-subfunctions (names0 names terms wrld str ctx
                                                       state)
@@ -5044,6 +5061,12 @@
 ; cause an error.  (During boot-strapping, this function does not look for
 ; well-formed lambda objects because we can't identify them prior to setting up
 ; badges for all primitives.)
+
+; Also, contrary to its name, this function also checks that all user-defined
+; functions occurring in well-formed lambda objects in the bodies are
+; warranted.  If a lambda object contains a badged but unwarranted function
+; symbol then it can be well-formed but not provably tame and thus guard
+; verification will fail.
 
 ; Str is a string used in our error message and is "guard", "split-types
 ; expression", "body" or "auxiliary function".  Note that this function is used
@@ -6774,8 +6797,9 @@
 ; like primitives in the sense that they can be used in terms and they can be
 ; evaluated on explicit constants but no axioms or rules are available about
 ; them.  In particular, we do not store 'def-bodies, type-prescriptions, or any
-; of the recursion/induction properties normally associated with defuns.  The
-; the prover will reject a formula that contains a call of a :program mode
+; of the recursion/induction properties normally associated with defuns.
+
+; The prover will reject a formula that contains a call of a :program mode
 ; function.
 
 ; We do take care of the documentation database.
@@ -7315,12 +7339,14 @@
         nil)
        (old-measures
         (msg "the proposed and existing definitions for ~x0 differ on their ~
-              measures.  The existing measure is ~x1.  The new measure needs ~
-              to be specified explicitly with :measure (see :DOC xargs), ~
-              either to be identical to the existing measure or to be a call ~
-              of :? on the measured subset; for example, ~x2 will serve as ~
-              the new :measure."
+              measures.  The proposed measure is ~x1 but the existing measure ~
+              is ~x2.  The proposed measure needs to be specified explicitly ~
+              in fully translated form with :measure (see :DOC xargs), either ~
+              to be identical to the existing measure or to be a call of :? ~
+              on the measured subset; for example, ~x3 will serve as the ~
+              proposed :measure."
              name
+             (car new-measures)
              (car old-measures)
              (cons :? old-measured-subset)))
        (t
@@ -10022,10 +10048,23 @@
            (eq (car (unquote term)) 'lambda))
       (cond
        ((well-formed-lambda-objectp (unquote term) wrld)
-        (let ((style (loop$-scion-style lambda-flg *loop$-keyword-info*))
+        (let ((style (loop$-scion-style lambda-flg))
               (formals (lambda-object-formals (unquote term)))
               (body (lambda-object-body (unquote term))))
           (cond
+           ((eq style :do)
+            (assert$
+             (eq lambda-flg 'do$)
+             (er soft ctx
+                 "It is illegal to use :loop$-recursion t in the defun of ~x0 ~
+                  because there is a call of the loop$ scion, ~x1: calls of ~
+                  ~x1 are typically generated by expressions of the form ~
+                  (LOOP$ ... DO ...), and we do not (yet) support recursion ~
+                  inside such expressions.  The offending lambda object is ~
+                  ~x2."
+                 fn
+                 lambda-flg
+                 (unquote term))))
            ((eql (length formals) (if (eq style :plain) 1 2))
             (chk-lambdas-for-loop$-recursion1
              fn
@@ -10042,7 +10081,8 @@
                   fn
                   lambda-flg
                   (length formals)
-                  (if (eql style :plain) 1 2))))))
+                  (if (eql style :plain) 1 2)
+                  (unquote term))))))
        (t
 
 ; This error cannot arise!  If lambda-flg is set, it means we're in the :FN
@@ -10126,7 +10166,7 @@
        nil
        (fargs term)
        fn-seenp wrld ctx state)))
-   (t (let ((style (loop$-scion-style (ffn-symb term) *loop$-keyword-info*)))
+   (t (let ((style (loop$-scion-style (ffn-symb term))))
 
 ; If style is nil, the function being called is not a loop$ scion and so as we
 ; sweep through the arguments we provide lambda-flg = nil to each argument.  We

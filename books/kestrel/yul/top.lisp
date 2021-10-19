@@ -10,10 +10,8 @@
 
 (in-package "YUL")
 
-(include-book "concrete-syntax")
-(include-book "abstract-syntax")
-(include-book "static-semantics")
-(include-book "dynamic-semantics")
+(include-book "language/top")
+(include-book "transformations/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -52,5 +50,11 @@
      by appending their titles separated by colons,  e.g.
      `[Yul: Specification of Yul: Scoping Rules]`.
      These square-bracketed references may be used
-     as nouns or parenthetically."))
+     as nouns or parenthetically.")
+   (xdoc::p
+    "Since some aspects of Yul are described
+     in part of the Solidity documentation that is not [Yul],
+     we also reference (the rest of) the Solidity documentation,
+     which we do as `[Solidity]' and `[Solidity: ...]',
+     similarly to how we reference the Yul documentation proper."))
   :order-subtopics t)

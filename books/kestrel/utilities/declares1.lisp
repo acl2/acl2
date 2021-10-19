@@ -16,7 +16,7 @@
 
 (include-book "declares0")
 (include-book "translate")
-(include-book "untranslated-terms")
+(include-book "kestrel/untranslated-terms-old/untranslated-terms" :dir :system)
 (include-book "terms") ;for replace-in-term
 (include-book "make-and-nice")
 

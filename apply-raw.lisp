@@ -396,9 +396,18 @@
    (t (mv-let (bad-fn-msg badge warrantp)
         (query-badge-userfn-structure fn (w *the-live-state*))
         (cond
-         ((or bad-fn-msg ; no badge for fn, or there is a badge but we're in
-              (and (null *aokp*) ; prover (so warrants are required) but fn
-                   (not warrantp))) ; has no warrant
+         ((or bad-fn-msg ; no badge for fn, or there is a badge but
+
+; There's a badge, but either
+; (a) we're in the prover, or any setting where attachments are not allowed,
+;     and there's no warrant; or
+; (b) attachments are allowed (as in the top-level loop), but fn is in logic
+;     mode yet fn has no warrant.
+
+              (if (null *aokp*)
+                  (not warrantp)                        ; (a)
+                (and (logicp fn (w *the-live-state*))   ; (b)
+                     (not warrantp))))
           (throw-raw-ev-fncall
            (list* 'ev-fncall-null-body-er
                   nil
@@ -1335,9 +1344,17 @@
                     t
                     (collect-from-extracts :body extracts nil)
                     nil)
-                   w))))
+                   w)))
+             (bad-fns
+              (or non-compliant-fns2
+                  (mv-let (warrants unwarranteds)
+                    (warrants-for-tamep-lambdap
+                     (collect-from-extracts :body extracts nil)
+                     w nil nil)
+                    (declare (ignore warrants))
+                    unwarranteds))))
         (cond
-         ((null non-compliant-fns2)
+         ((null bad-fns)
           (mv-let (cl-set ttree)
 
 ; In general, we now generate guard clauses and try to prove them with tau.
@@ -1408,8 +1425,9 @@
                 (cond
                  (non-compliant-fns1
                   (cons 'guard-uses-non-compliant-fns non-compliant-fns1))
-                 (t
-                  (cons 'body-uses-non-compliant-fns non-compliant-fns2))))
+                 (non-compliant-fns2
+                  (cons 'body-uses-non-compliant-fns non-compliant-fns2))
+                 (t (cons 'body-uses-unwarranted-fns bad-fns))))
           (setf (access-cl-cache-line line :status) :BAD)
           line))))
      (t
@@ -4146,32 +4164,95 @@
 ; fn formal above -- which might be an untranslated lambda$ marked with
 ; *lambda$-marker* -- but its logical translation obtained from lambda$-alist.
 
-    (when (and line
-               (eq (access cl-cache-line line :status) :GOOD)
-               (not (eq (f-get-global 'guard-checking-on
-                                      *the-live-state*)
-                        :NONE)))
+; The cond below either executes a non-local exit like return-from or throw,
+; or else it falls through to the logical version of apply$-lambda.
+ 
+    (cond
+     ((and line
+           (not (eq (f-get-global 'guard-checking-on
+                                  *the-live-state*)
+                    :NONE)))
       (cond
-       ((apply (access cl-cache-line line :guard-code) args)
-        (return-from apply$-lambda
-          (apply (access cl-cache-line line :lambda-code) args)))
-       ((f-get-global 'guard-checking-on
-                      *the-live-state*)
-        (throw-raw-ev-fncall
-         (list 'ev-fncall-guard-er
-               fn
-               args
-               (untranslate ; guard of first splo-extracts-tuple
-                (access splo-extracts-tuple
-                        (car (access cl-cache-line line :extracts))
-                        :guard)
-                t
-                (w *the-live-state*))
-               (make-list ; stobjs-in = (nil ... nil)
-                (length (lambda-formals fn)))
-               nil ; stobjs-out
-               )))))
+       ((eq (access cl-cache-line line :status) :GOOD)
+        (cond
+         ((apply (access cl-cache-line line :guard-code) args)
+          (return-from apply$-lambda
+                       (apply (access cl-cache-line line :lambda-code) args)))
+; If the guard of a :GOOD lambda fails to hold, we either throw an error or
+; default to the logical meaning of apply$-lambda, depending on the value of
+; guard-checking-on.
+         ((f-get-global 'guard-checking-on
+                        *the-live-state*)
+          (throw-raw-ev-fncall
+           (list 'ev-fncall-guard-er
+                 fn
+                 args
+                 (untranslate ; guard of first splo-extracts-tuple
+                  (access splo-extracts-tuple
+                          (car (access cl-cache-line line :extracts))
+                          :guard)
+                  t
+                  (w *the-live-state*))
+                 (make-list ; stobjs-in = (nil ... nil)
+                  (length (lambda-formals fn)))
+                 nil ; stobjs-out
+                 )))))
+       ((eq (access cl-cache-line line :status) :BAD)
+        (let ((guard (access splo-extracts-tuple
+                             (car (access cl-cache-line line :extracts))
+                             :guard))
+              (wrld (w *the-live-state*)))
+
+; If the guard of a :BAD lambda is a term but fails to hold, we either throw an
+; error or default to the logical meaning of apply$-lambda, depending on the
+; value of guard-checking-on.  But what if the guard is not even a term?  We
+; act exactly like it was a term and failed (i.e., throwing an error or
+; defaulting to the logical meaning depending on guard-checking-on) EXCEPT the
+; error we cause is different.
+
+          (cond
+           ((termp guard wrld)
+            (mv-let (erp val)
+              (ev-w guard
+                    (pairlis$ (lambda-formals fn) args)
+                    wrld
+                    nil ; (user-stobj-alist state)
+                    t   ; safe-mode
+                    nil ; gc-off
+                    nil ; hard-error-returns-nilp
+                    nil ; aok
+                    )
+              (cond
+               ((and (null erp) val)
+                (return-from apply$-lambda
+                             (apply$-lambda-logical fn args)))
+               ((f-get-global 'guard-checking-on
+                              *the-live-state*)
+                (throw-raw-ev-fncall
+                 (list 'ev-fncall-guard-er
+                       fn
+                       args
+                       (untranslate guard t wrld)
+                       (make-list ; stobjs-in = (nil ... nil)
+                        (length (lambda-formals fn)))
+                       nil ; stobjs-out
+                       ))))))
+           ((f-get-global 'guard-checking-on
+                          *the-live-state*)
+            (throw-raw-ev-fncall
+             (list 'ev-fncall-guard-er
+                   fn
+                   args
+                   (cons :not-a-term guard)
+                   (make-list ; stobjs-in = (nil ... nil)
+                    (length (lambda-formals fn)))
+                   nil ; stobjs-out
+                   ))
+            )))))))
+
 
 ; We fall through to the slow, logical way to apply$ a lambda expression.
 
     (apply$-lambda-logical fn args)))
+
+

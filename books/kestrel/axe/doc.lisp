@@ -10,8 +10,15 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/topics" :dir :system)
+(include-book "xdoc/top" :dir :system)
 (include-book "kestrel/utilities/xdoc-paras" :dir :system)
+
+(defxdoc stp
+  :short "An SMT solver used by the Axe toolkit"
+  :parents (axe)
+  :long "STP is an SMT solver available <a href='https://github.com/stp/stp'>here</a>.
+  It is used by several tools in the @(see axe) toolkit.  See @(see build::cert_param) for
+information on suppressing attempts to use STP during builds.")
 
 (defxdoc axe
   :short "The Axe toolkit"
@@ -20,7 +27,7 @@
   (xdoc::topparas
    "The Axe toolkit provides a variety of tools for software verification, including lifters-into-logic, rewriters, theorem provers, and equivalence checkers.
 
-We are currently open sourcing Axe to the ACL2 Community books.
+Most of Axe is now available in the ACL2 Community books, under @('[books]/kestrel/axe/'), though much work remains to document it.
 
 See <a href=\"https://www.kestrel.edu/research/axe/\">the Axe webpage</a> for more information."))
 

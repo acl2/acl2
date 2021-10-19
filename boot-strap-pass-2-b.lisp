@@ -110,6 +110,15 @@
           nil))
         ((and (eq (cadar wrld) 'symbol-class)
               (eq (cddar wrld) :COMMON-LISP-COMPLIANT)
+
+; We do guard verification for do$ further below (in a
+; verify-termination-boot-strap call) in normal (#-acl2-devel) builds, albeit
+; with the assumption that "make devel-check" can verify (with a #+acl2-devel
+; build) the necessary precursors, in particular that l< is well-founded as
+; assumed by primordial-world-globals (and commented on in the definition of
+; that function).
+
+              (not (eq (caar wrld) 'do$))
               (getpropc (caar wrld) 'predefined nil installed-wrld))
          (new-verify-guards-fns1 (cdr wrld)
                                  installed-wrld
@@ -169,8 +178,7 @@
                     `(,(car entry)
                       ,@(let ((measure (cdr entry)))
                           (and measure
-                               `((declare (xargs :measure
-                                                 ,measure))))))))
+                               `((declare (xargs :measure ,measure))))))))
          (same-num-p (and fns-alist
                           (eql num old-num)))
          (acc (if (or (null acc1) ; true at the top-level
@@ -298,6 +306,12 @@
     (let ((event-book-alist (table-alist 'system-event-table (w state))))
       `(progn (include-book ,*devel-check-book* :dir :system)
               (set-enforce-redundancy t)
+              (DEFTHM WELL-FOUNDED-L< ; "ordinals/lexicographic-book.lisp" Thi
+; event justifies a comment about it in primordial-world-globals.
+                (AND (IMPLIES (LEXP X) (O-P (LTOO X)))
+                     (IMPLIES (AND (LEXP X) (LEXP Y) (L< X Y))
+                              (O< (LTOO X) (LTOO Y))))
+                :RULE-CLASSES :WELL-FOUNDED-RELATION)
               ,@(strip-cars event-book-alist)
               (value-triple :CHECK-SYSTEM-EVENTS-SUCCESS)))))
 
@@ -412,7 +426,19 @@
         (t (+ 1 (mempos e (cdr lst))))))
 
 #-acl2-devel
+(encapsulate
+  ()
+  (local (defthm nfix-list-preserves-consp
+           (implies (consp x)
+                    (consp (nfix-list x)))))
+  (local (defthm nat-listp-nfix-list
+           (nat-listp (nfix-list x))))
+  (verify-termination-boot-strap do$)) ; and guards
+
+#-acl2-devel
 (when-pass-2
+
+; We now warrant the loop$ scions.
 
 ; The following function symbols must be in :logic mode, and they are, from the
 ; system-verify-guards calls above.  Moreover, we must restrict to pass 2 since
@@ -466,6 +492,13 @@
  (defwarrant append$+-ac)
  (defwarrant append$+)
  (defwarrant mempos)
+ (defwarrant d<)
+ (defwarrant l<)
+ (defwarrant nfix-list)
+ (defwarrant lex-fix)
+ (defwarrant lexp)
+ (defwarrant do$)
+
  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

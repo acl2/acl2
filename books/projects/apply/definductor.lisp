@@ -200,7 +200,8 @@
 ; conditions on its target.  When erp is non-nil it is a message that completes
 ; the sentence ``No inductor for fn can be generated because ''.
 
-  (let ((style (loop$-scion-style (ffn-symb term) *loop$-keyword-info*)))
+  (let ((style (loop$-scion-style (ffn-symb term))))
+; Style is :plain, :fancy, :do, or nil.
     (cond
      ((eq style :plain)
       (case-match term
@@ -416,6 +417,7 @@
  )
 
 (defun get-loop$-scion-default-quoted-lambda-object (scion alist)
+; Alist is a cdr of *for-loop$-keyword-info*.
   (cond
    ((endp alist) *nil*)
    ((eq scion (cadr (car alist)))
@@ -456,25 +458,26 @@
 
 (mutual-recursion
 
-(defun rename-fn-and-replace-loop$-lambda-objs (new-fn old-fn term)
+(defun rename-fn-and-replace-for-loop$-lambda-objs (new-fn old-fn term)
   (cond
    ((variablep term) term)
    ((fquotep term) term)
    ((lambda-applicationp term)
     (cons-term (make-lambda (lambda-formals (ffn-symb term))
-                            (rename-fn-and-replace-loop$-lambda-objs
+                            (rename-fn-and-replace-for-loop$-lambda-objs
                              new-fn
                              old-fn
                              (lambda-body (ffn-symb term))))
-               (rename-fn-and-replace-loop$-lambda-objs-list
+               (rename-fn-and-replace-for-loop$-lambda-objs-list
                 new-fn old-fn
                 (fargs term))))
    ((eq (ffn-symb term) old-fn)
     (cons-term new-fn
-               (rename-fn-and-replace-loop$-lambda-objs-list
+               (rename-fn-and-replace-for-loop$-lambda-objs-list
                 new-fn old-fn
                 (fargs term))))
-   ((and (loop$-scion-style (ffn-symb term) *loop$-keyword-info*)
+   ((and (member-eq (loop$-scion-style (ffn-symb term))
+                    '(:plain :fancy))
          (quotep (fargn term 1))
          (consp (unquote (fargn term 1)))
          (eq (car (unquote (fargn term 1))) 'lambda))
@@ -491,22 +494,22 @@
     (cons-term (ffn-symb term)
                (cons (get-loop$-scion-default-quoted-lambda-object
                       (ffn-symb term)
-                      *loop$-keyword-info*)
-                     (rename-fn-and-replace-loop$-lambda-objs-list
+                      *for-loop$-keyword-info*)
+                     (rename-fn-and-replace-for-loop$-lambda-objs-list
                       new-fn old-fn
                       (cdr (fargs term))))))
    (t (cons-term (ffn-symb term)
-                 (rename-fn-and-replace-loop$-lambda-objs-list
+                 (rename-fn-and-replace-for-loop$-lambda-objs-list
                   new-fn old-fn
                   (fargs term))))))
 
-(defun rename-fn-and-replace-loop$-lambda-objs-list (new-fn old-fn terms)
+(defun rename-fn-and-replace-for-loop$-lambda-objs-list (new-fn old-fn terms)
   (cond
    ((endp terms) nil)
-   (t (cons (rename-fn-and-replace-loop$-lambda-objs new-fn old-fn
-                                                     (car terms))
-            (rename-fn-and-replace-loop$-lambda-objs-list new-fn old-fn
-                                                          (cdr terms))))))
+   (t (cons (rename-fn-and-replace-for-loop$-lambda-objs new-fn old-fn
+                                                         (car terms))
+            (rename-fn-and-replace-for-loop$-lambda-objs-list new-fn old-fn
+                                                              (cdr terms))))))
 
 )
 
@@ -528,7 +531,11 @@
   (let* ((inductor-fn1 (or inductor-fn
                            (packn (list fn '-inductor))))
          (formals (formals fn wrld))
-         (body (remove-guard-holders (body fn nil wrld) wrld))
+         (body (possibly-clean-up-dirty-lambda-objects
+                :ALL
+                (remove-guard-holders (body fn nil wrld) wrld)
+                wrld
+                (remove-guard-holders-lamp)))
          (jst (getpropc fn 'justification nil wrld))
          (measure1 (or measure
                        (access justification jst :measure)))
@@ -543,7 +550,7 @@
        (erp (mv erp nil))
        (t (let* ((body1
                   (if nuggets
-                      (rename-fn-and-replace-loop$-lambda-objs-list
+                      (rename-fn-and-replace-for-loop$-lambda-objs-list
                        inductor-fn1 fn
                        (glue-terms nuggets body))
                       *nil*))
@@ -635,3 +642,4 @@
       :on-behalf-of :quiet!
 ; See note below.
       :check-expansion t)))
+

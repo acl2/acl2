@@ -395,9 +395,10 @@
 (defconst *system-verify-guards-alist*
 
 ; Each member of this alist is of the form (fn . nil), for non-recursive fn, or
-; else (fn . measure).
+; else (fn . measure).  It is assumed that the well-founded-relation is O< and
+; the domain is O-P.
 
-; It can be produced by evaluating
+; This list can be produced by evaluating
 
 ; (new-verify-guards-fns state)
 

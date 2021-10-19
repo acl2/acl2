@@ -31,6 +31,7 @@
  rtl::primep
  (include-book "crypto/top"))
 (include-book "error-checking/top")
+(include-book "evaluators/top")
 (include-book "event-macros/top")
 (include-book "hdwallet/top")
 (include-book "ethereum/top")

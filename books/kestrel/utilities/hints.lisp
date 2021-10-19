@@ -16,7 +16,7 @@
 
 ;; STATUS: Working but needs to be generalized to support more kinds of hints.
 
-(include-book "untranslated-terms")
+(include-book "kestrel/untranslated-terms-old/untranslated-terms" :dir :system)
 ;(include-book "kestrel/utilities/keyword-value-lists2" :dir :system)
 
 (defun apply-renaming-to-symbol (sym renaming-alist)

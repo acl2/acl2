@@ -115,7 +115,7 @@ as follows.
              :debug?))
 
 (def-const *property-conjecture-keywords*
-  '(:vars :hyps :body))
+  '(:vars :hyps :h :body :b))
 
 (def-const *property-keywords*
   (append *property-conjecture-keywords*
@@ -362,24 +362,32 @@ I don't need this?
        ((mv kwd-alist prop-rest)
         (defdata::extract-keywords ctx *property-keywords* args PT nil))
        (debug? (defdata::get1 :debug? kwd-alist))
+       (debug-all? (== debug? :all))
        (vars? (assoc :vars kwd-alist))
        (ivars? (and (! vars?)
                     (property-varsp (car prop-rest))
                     (cons :vars (car prop-rest))))
        (vars? (or vars? ivars?))
-       (- (cw? debug? "~%**vars? is: ~x0~%" vars?))
+       (- (cw? debug-all? "~%**vars? is: ~x0~%" vars?))
        (prop-rest (if ivars? (cdr prop-rest) prop-rest))
        (hyps? (assoc :hyps kwd-alist))
+       (hyps? (or hyps? (assoc :h kwd-alist)))
        (body? (assoc :body kwd-alist))
+       (body? (or body? (assoc :b kwd-alist)))
+       ;; I should do something similar to :pre, :ic, etc in
+       ;; definec. Allow multiple hyps, bodys and combine them.
+       ;; Search for :body, :hyps in function.
        (check-contracts? (defdata::get1 :check-contracts? kwd-alist))
 ;       ((when (and hyps? (not body?)))
 ;         (er soft ctx
 ;             "~|**ERROR: If :hyps is provided, then :body must also be provided."))
        (body (if body?
-                 (defdata::get1 :body kwd-alist)
+                 (or (defdata::get1 :body kwd-alist)
+                     (defdata::get1 :b kwd-alist))
                (extract-body (car prop-rest))))
        (hyps-list (cond (hyps? (hyps-list-from-hyps
-                                (defdata::get1 :hyps kwd-alist)))
+                                (or (defdata::get1 :hyps kwd-alist)
+                                    (defdata::get1 :h kwd-alist))))
                         (body? nil)))
        ((mv erp pt-hyps-list)
         (if (or hyps? body?)
@@ -402,13 +410,13 @@ I don't need this?
        (user-vars (evens user-var-list))
        (user-types (odds user-var-list))
        (user-types (map-intern-types user-types pkg))
-       (- (cw? debug? "~%**user-types is: ~x0~%" user-types))
+       (- (cw? debug-all? "~%**user-types is: ~x0~%" user-types))
        (user-preds (map-preds user-types tbl atbl))
-       (- (cw? debug? "~%**user-preds is: ~x0~%" user-preds))
+       (- (cw? debug-all? "~%**user-preds is: ~x0~%" user-preds))
        (type-list1 (make-input-contract user-vars user-preds))
        (type-list (hyps-list-from-hyps type-list1))
        (type-hyps-list (append type-list hyps-list))
-       (- (cw? debug? "~%**type-hyps-list is: ~x0~%" type-hyps-list))
+       (- (cw? debug-all? "~%**type-hyps-list is: ~x0~%" type-hyps-list))
        (prop (cond ((endp type-hyps-list) body)
                    ((endp (cdr type-hyps-list))
                     `(implies ,(car type-hyps-list) ,body))
@@ -417,11 +425,11 @@ I don't need this?
         (acl2::pseudo-translate prop nil wrld))
        (all-vars (acl2::all-vars trans-prop))
        (vars (if vars? user-vars all-vars))
-       (- (cw? debug? "~%**vars is: ~x0~%" vars))
-       (- (cw? debug? "~%**all-vars is: ~x0~%" all-vars))
+       (- (cw? debug-all? "~%**vars is: ~x0~%" vars))
+       (- (cw? debug-all? "~%**all-vars is: ~x0~%" all-vars))
        (var-diff (sym-diff vars all-vars))
-       (- (cw? debug? "~%**prop is: ~x0~%" prop))
-       (- (cw? debug? "~%**trans-prop is: ~x0~%" trans-prop))
+       (- (cw? debug-all? "~%**prop is: ~x0~%" prop))
+       (- (cw? debug-all? "~%**trans-prop is: ~x0~%" trans-prop))
        (parsed (list name? name prop kwd-alist))
        ((when erp)
         (ecw "~|**ERROR: The translation of prop: ~
@@ -438,7 +446,7 @@ I don't need this?
              (car var-diff)
              parsed))
        (gprop (sublis-fn-simple '((implies . impliez)) trans-prop))
-       (- (cw? debug? "~%**gprop is: ~x0~%" gprop))
+       (- (cw? debug-all? "~%**gprop is: ~x0~%" gprop))
        ((mv erp val)
         (if check-contracts?
             (guard-obligation gprop nil nil t ctx state)
@@ -471,9 +479,9 @@ I don't need this?
             (thm-no-test ,guards))
           ctx state t)))
        ((list* & thm-erp &) val)
-       (- (cw? debug? "~|**te-thm-erp is: ~x0~%" te-thm-erp))
-       (- (cw? debug? "~|**val is: ~x0~%" val))
-       (- (cw? debug? "~|**thm-erp is: ~x0~%" thm-erp))
+       (- (cw? debug-all? "~|**te-thm-erp is: ~x0~%" te-thm-erp))
+       (- (cw? debug-all? "~|**val is: ~x0~%" val))
+       (- (cw? debug-all? "~|**thm-erp is: ~x0~%" thm-erp))
        ((when thm-erp)
         (ecw "~|**ERROR During Contract Checking.** ~
               ~|**The Contract Checking Proof Obligation is: ~x0"
@@ -495,9 +503,9 @@ I don't need this?
                          ctx state t))
           (mv nil nil state)))
        ((list* & test-erp &) val)
-       (- (cw? debug? "~|**te-test-erp is: ~x0~%" te-test-erp))
-       (- (cw? debug? "~|**val is: ~x0~%" val))
-       (- (cw? debug? "~|**test-erp is: ~x0~%" test-erp))
+       (- (cw? debug-all? "~|**te-test-erp is: ~x0~%" te-test-erp))
+       (- (cw? debug-all? "~|**val is: ~x0~%" val))
+       (- (cw? debug-all? "~|**test-erp is: ~x0~%" test-erp))
        ((when test-erp)
         (ecw "~|**Contract Completion Error. The hypotheses of your property must imply:~
 ~%  ~x0.~
@@ -610,6 +618,7 @@ I don't need this?
        (proofs? (defdata::get1 :proofs? kwd-alist))
        (testing? (defdata::get1 :testing? kwd-alist))
        (debug? (defdata::get1 :debug? kwd-alist))
+       (debug-all? (== debug? :all))
        (proof-timeout (defdata::get1 :proof-timeout kwd-alist))
        (testing-timeout (defdata::get1 :testing-timeout kwd-alist))
        (prove (cond ((and name? testing?) 'defthm)
@@ -627,10 +636,10 @@ I don't need this?
                   *property-core-keywords*
                   *property-conjecture-keywords*)
           kwd-alist))
-       (- (cw? debug? "~|Kwd-alist: ~x0~%" kwd-alist))
-       (- (cw? debug? "~|Other-kwds: ~x0~%" other-kwds))
+       (- (cw? debug-all? "~|Kwd-alist: ~x0~%" kwd-alist))
+       (- (cw? debug-all? "~|Other-kwds: ~x0~%" other-kwds))
        (flat-kwds (gen-other-keywords other-kwds))
-       (- (cw? debug? "~|Flat-kwds: ~x0~%" flat-kwds))
+       (- (cw? debug-all? "~|Flat-kwds: ~x0~%" flat-kwds))
        (args (if name?
                  (list* name prop flat-kwds)
                (list* prop flat-kwds)))
