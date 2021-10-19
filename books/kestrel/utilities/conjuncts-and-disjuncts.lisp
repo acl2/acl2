@@ -61,7 +61,7 @@
            (pseudo-termp (negate-term2 term)))
   :hints (("Goal" :in-theory (enable negate-term2))))
 
-(defthm logic-term-listp-of-negate-term2
+(defthm logic-termp-of-negate-term2
   (implies (and (logic-termp term w)
                 (arities-okp '((not . 1)
                                (if . 3)
@@ -69,6 +69,13 @@
                              w))
            (logic-termp (negate-term2 term) w))
   :hints (("Goal" :in-theory (enable negate-term2))))
+
+(defthm non-trivial-logical-termp-of-negate-term2
+  (implies (non-trivial-logical-termp term)
+           (non-trivial-logical-termp (negate-term2 term)))
+  :hints (("Goal" :expand (negate-term2 term)
+           :in-theory (enable non-trivial-logical-termp
+                              negate-term2))))
 
 (defund negate-terms2 (terms)
   (declare (xargs :guard (pseudo-term-listp terms)))
@@ -92,6 +99,14 @@
            (pseudo-term-listp (negate-terms2 terms)))
   :hints (("Goal" :in-theory (enable negate-terms2))))
 
+(defthm non-trivial-logical-term-listp-of-negate-terms2
+  (implies (non-trivial-logical-term-listp conjuncts)
+           (non-trivial-logical-term-listp (negate-terms2 conjuncts)))
+  :hints (("Goal" :expand (negate-term2 (car conjuncts))
+           :in-theory (enable non-trivial-logical-term-listp
+                              negate-terms2
+                              negate-term2))))
+
 ;; Negate all the disjuncts, forming a conjunction of the results
 (defund negate-disjuncts (disjuncts)
   (declare (xargs :guard (pseudo-term-listp disjuncts)))
@@ -114,6 +129,11 @@
            (logic-term-listp (negate-disjuncts terms) w))
   :hints (("Goal" :in-theory (enable negate-disjuncts))))
 
+(defthm conjunct-listp-of-negate-disjuncts
+  (implies (disjunct-listp disjuncts)
+           (conjunct-listp (negate-disjuncts disjuncts)))
+  :hints (("Goal" :in-theory (enable negate-disjuncts disjunct-listp conjunct-listp))))
+
 ;; Negate all the conjuncts, forming a disjunction of the results
 (defund negate-conjuncts (conjuncts)
    (declare (xargs :guard (pseudo-term-listp conjuncts)))
@@ -121,6 +141,11 @@
       *true-disjunction*
     ;; todo: just call negate-terms?:
     (negate-terms2 conjuncts)))
+
+(defthm disjunct-listp-of-negate-conjuncts
+  (implies (conjunct-listp conjuncts)
+           (disjunct-listp (negate-conjuncts conjuncts)))
+  :hints (("Goal" :in-theory (enable negate-conjuncts disjunct-listp conjunct-listp))))
 
 (defthm pseudo-term-listp-of-negate-conjuncts
   (implies (pseudo-term-listp terms)
@@ -212,6 +237,18 @@
              (pseudo-term-listp (get-disjuncts-of-term term)))
     :flag get-disjuncts-of-term)
   :hints (("Goal" :in-theory (enable get-disjuncts-of-term get-conjuncts-of-term))))
+
+(defthm-flag-get-conjuncts-of-term
+  (defthm conjunct-listp-of-get-conjuncts-of-term
+    (implies (pseudo-termp term)
+             (conjunct-listp (get-conjuncts-of-term term)))
+    :flag get-conjuncts-of-term)
+  (defthm disjunct-listp-of-get-disjuncts-of-term
+    (implies (pseudo-termp term)
+             (disjunct-listp (get-disjuncts-of-term term)))
+    :flag get-disjuncts-of-term)
+  :hints (("Goal" :in-theory (enable get-disjuncts-of-term
+                                     get-conjuncts-of-term))))
 
 (defthm-flag-get-conjuncts-of-term
   (defthm true-listp-of-get-conjuncts-of-term
