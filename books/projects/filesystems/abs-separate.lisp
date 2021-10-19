@@ -2711,6 +2711,14 @@
   (declare (xargs :guard (and (frame-p frame) (consp (assoc-equal 0 frame)))))
   (frame-val->dir (cdr (assoc-equal 0 frame))))
 
+(defthm frame->root-normalisation
+  (equal (frame-val->dir (cdr (assoc-equal 0 frame)))
+         (frame->root frame))
+  :hints (("goal" :in-theory (enable frame->root))))
+
+(theory-invariant (not (and (active-runep '(:rewrite frame->root-normalisation))
+                            (active-runep '(:definition frame->root)))))
+
 (defund frame->frame (frame)
   (declare (xargs :guard (frame-p frame)))
   (remove-assoc-equal 0 frame))
@@ -2718,7 +2726,9 @@
 (defthmd frame->root-of-true-list-fix
   (equal (frame->root (true-list-fix frame))
          (frame->root frame))
-  :hints (("goal" :in-theory (enable frame->root))))
+  :hints (("goal" :in-theory (e/d
+                              (frame->root)
+                              (frame->root-normalisation)))))
 
 (defcong
   list-equiv equal (frame->root frame)
@@ -2742,7 +2752,9 @@
 (defthm frame->root-of-frame-with-root
   (equal (frame->root (frame-with-root root frame))
          (abs-fs-fix root))
-  :hints (("Goal" :in-theory (enable frame-with-root frame->root)) ))
+  :hints (("goal" :in-theory (e/d
+                              (frame-with-root frame->root)
+                              (frame->root-normalisation)))))
 
 (defthm frame->frame-of-frame-with-root
   (equal (frame->frame (frame-with-root root frame))
@@ -2756,7 +2768,9 @@
 
 (defthm abs-fs-p-of-frame->root
   (abs-fs-p (frame->root frame))
-  :hints (("goal" :in-theory (enable frame->root))))
+  :hints (("goal" :in-theory (e/d
+                              (frame->root)
+                              (frame->root-normalisation)))))
 
 (defthm frame-with-root-correctness-1
   (consp (assoc-equal 0 (frame-with-root root frame)))
@@ -2807,17 +2821,21 @@
          (if (equal 0 key)
              (frame-val->dir val)
              (frame->root frame)))
-  :hints (("goal" :in-theory (enable frame->root))))
+  :hints (("goal" :in-theory (e/d
+                              (frame->root)
+                              (frame->root-normalisation)))))
 
 (defthm abs-file-alist-p-of-frame->root
   (abs-file-alist-p (frame->root frame))
-  :hints (("goal" :do-not-induct t
-           :in-theory (enable frame->root))))
+  :hints (("goal" :in-theory (e/d
+                              (frame->root)
+                              (frame->root-normalisation)))))
 
 (defthm abs-no-dups-p-of-frame->root
   (abs-no-dups-p (frame->root frame))
-  :hints (("goal" :do-not-induct t
-           :in-theory (enable frame->root))))
+  :hints (("goal" :in-theory (e/d
+                              (frame->root)
+                              (frame->root-normalisation)))))
 
 (defund
   collapse-this (frame x)
@@ -5034,7 +5052,8 @@
                 (abs-separate frame))
            (dist-names (frame->root frame)
                        nil (frame->frame frame)))
-  :hints (("goal" :in-theory (e/d (abs-separate frame->root frame->frame)))))
+  :hints (("goal" :in-theory (e/d (abs-separate frame->root frame->frame)
+                                  (frame->root-normalisation)))))
 
 (defthm abs-separate-of-frame->frame
   (implies (abs-separate frame)
@@ -5220,7 +5239,8 @@
   abs-separate-of-collapse-this-lemma-6
   (implies (abs-separate frame)
            (no-duplicatesp-equal (abs-addrs (frame->root frame))))
-  :hints (("goal" :in-theory (enable frame->root))))
+  :hints (("goal" :in-theory (e/d (frame->root)
+                                  (frame->root-normalisation)))))
 
 (defthm
   abs-separate-of-collapse-this-1
@@ -5420,22 +5440,20 @@
    (ctx-app-ok
     (frame-val->dir
      (cdr
-      (assoc-equal (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
-                   (frame->frame frame))))
+      (assoc-equal (frame-val->src (cdr (assoc-equal x frame)))
+                   frame)))
     x
     (nthcdr
      (len
       (frame-val->path
        (cdr (assoc-equal
-             (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
-             (frame->frame frame)))))
-     (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))
+             (frame-val->src (cdr (assoc-equal x frame)))
+             frame))))
+     (frame-val->path (cdr (assoc-equal x frame)))))
    (consp
     (assoc-equal
-     (frame-val->src$inline (cdr (assoc-equal x (frame->frame frame))))
-     (frame->frame frame))))
-  :hints (("goal" :do-not-induct t
-           :in-theory (enable collapse-this))))
+     (frame-val->src$inline (cdr (assoc-equal x frame)))
+     frame))))
 
 (defthm
   frame-addrs-root-of-frame->frame-of-collapse-this-2
@@ -5461,7 +5479,8 @@
    (equal (frame-addrs-root (frame->frame (collapse-this frame x)))
           (frame-addrs-root (frame->frame frame))))
   :hints (("goal" :do-not-induct t
-           :in-theory (enable collapse-this))))
+           :in-theory (e/d (collapse-this)
+                           (frame->root-normalisation)))))
 
 (defthm
   frame-addrs-root-of-frame->frame-of-collapse-this-1
@@ -5745,7 +5764,7 @@
                                   (abs-separate-of-collapse-this-lemma-5)))))
 
 (defthm
-  abs-separate-correctness-1-lemma-38
+  abs-separate-correctness-lemma-11
   (implies
    (and
     (< 0 x)
@@ -5775,8 +5794,11 @@
        (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))))))
    (subsetp-equal (abs-addrs (frame->root frame))
                   (frame-addrs-root (frame->frame (collapse-this frame x)))))
-  :hints (("goal" :in-theory (enable collapse-this
-                                     abs-addrs-of-ctx-app-lemma-2))))
+  :hints (("goal" :in-theory (e/d
+                              (collapse-this
+                               abs-addrs-of-ctx-app-lemma-2
+                               frame->root)
+                              (frame->root-normalisation)))))
 
 (defthm
   abs-separate-correctness-lemma-1
