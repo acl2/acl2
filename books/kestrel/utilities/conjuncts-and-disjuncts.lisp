@@ -56,7 +56,7 @@
             ;; no special handling:
             `(not ,term)))))))
 
-(defthm pseudo-term-listp-of-negate-term2
+(defthm pseudo-termp-of-negate-term2
   (implies (pseudo-termp term)
            (pseudo-termp (negate-term2 term)))
   :hints (("Goal" :in-theory (enable negate-term2))))
