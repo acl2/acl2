@@ -363,7 +363,7 @@
      when the function is recursive;
      a list of variables affected by the function;
      the name of the locally generated theorem that asserts
-     that the function returns a C value;
+     that the function (one or more) results have certain C types;
      the name of the locally generated theorem that asserts
      that the execution of the function is functionally correct;
      the name of the locally generated theorem that asserts
@@ -400,7 +400,7 @@
    (in-types type-list)
    (loop? stmt-option)
    (affect symbol-list)
-   (returns-value-thm symbol)
+   (result-thm symbol)
    (correct-thm symbol)
    (measure-nat-thm symbol)
    (fun-env-thm symbol)
@@ -434,10 +434,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-symbol-fninfo-alist-to-returns-value-thms
+(define atc-symbol-fninfo-alist-to-result-thms
   ((prec-fns atc-symbol-fninfo-alistp) (among symbol-listp))
   :returns (thms symbol-listp)
-  :short "Project the returns-value theorems
+  :short "Project the result theorems
           out of a function information alist,
           for the functions among a given list."
   :long
@@ -457,11 +457,9 @@
      So this function is correct."))
   (cond ((endp prec-fns) nil)
         ((member-eq (caar prec-fns) among)
-         (cons (atc-fn-info->returns-value-thm (cdr (car prec-fns)))
-               (atc-symbol-fninfo-alist-to-returns-value-thms (cdr prec-fns)
-                                                              among)))
-        (t (atc-symbol-fninfo-alist-to-returns-value-thms (cdr prec-fns)
-                                                          among))))
+         (cons (atc-fn-info->result-thm (cdr (car prec-fns)))
+               (atc-symbol-fninfo-alist-to-result-thms (cdr prec-fns) among)))
+        (t (atc-symbol-fninfo-alist-to-result-thms (cdr prec-fns) among))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -474,7 +472,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is similar to @(tsee atc-symbol-fninfo-alist-to-returns-value-thms).
+    "This is similar to @(tsee atc-symbol-fninfo-alist-to-result-thms).
      See that function's documentation for more details."))
   (cond ((endp prec-fns) nil)
         ((member-eq (caar prec-fns) among)
@@ -495,7 +493,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is similar to @(tsee atc-symbol-fninfo-alist-to-returns-value-thms).
+    "This is similar to @(tsee atc-symbol-fninfo-alist-to-result-thms).
      See that function's documentation for more details.")
    (xdoc::p
     "We skip over non-recursive functions,
@@ -523,7 +521,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is similar to @(tsee atc-symbol-fninfo-alist-to-returns-value-thms).
+    "This is similar to @(tsee atc-symbol-fninfo-alist-to-result-thms).
      See that function's documentation for more details.")
    (xdoc::p
     "We skip over recursive functions,
@@ -2373,8 +2371,8 @@
                    (declon (make-declon-var :type (atc-gen-tyspecseq init-type)
                                             :declor (make-declor
                                                      :ident
-                                                      (make-ident
-                                                       :name (symbol-name var)))
+                                                     (make-ident
+                                                      :name (symbol-name var)))
                                             :init init-expr))
                    (item (block-item-declon declon))
                    (inscope (atc-add-var var init-type inscope))
@@ -3255,20 +3253,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-fn-returns-value-thm ((fn symbolp)
-                                      (type? type-optionp)
-                                      (affect symbol-listp)
-                                      (typed-formals atc-symbol-type-alistp)
-                                      (prec-fns atc-symbol-fninfo-alistp)
-                                      (proofs booleanp)
-                                      (names-to-avoid symbol-listp)
-                                      (wrld plist-worldp))
+(define atc-gen-fn-result-thm ((fn symbolp)
+                               (type? type-optionp)
+                               (affect symbol-listp)
+                               (typed-formals atc-symbol-type-alistp)
+                               (prec-fns atc-symbol-fninfo-alistp)
+                               (proofs booleanp)
+                               (names-to-avoid symbol-listp)
+                               (wrld plist-worldp))
   :returns (mv (events "A @(tsee pseudo-event-form-listp).")
                (name "A @(tsee symbolp).")
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the theorem saying that
-          @('fn') returns one or more C values,
+          @('fn') returns one or more results of certain C types,
           under the guard."
   :long
   (xdoc::topstring
@@ -3378,7 +3376,7 @@
        (types1 (and type?
                     (not (type-case type? :void))
                     (list type?)))
-       (types2 (atc-gen-fn-returns-value-thm-aux1 affect typed-formals))
+       (types2 (atc-gen-fn-result-thm-aux1 affect typed-formals))
        (types (append types1 types2))
        ((unless (consp types))
         (raise "Internal error: the function ~x0 has no return types." fn)
@@ -3387,9 +3385,12 @@
        (fn-call `(,fn ,@formals))
        (conclusion
         (if (consp (cdr types))
-            `(and ,@(atc-gen-fn-returns-value-thm-aux2 types 0 fn-call))
+            `(and ,@(atc-gen-fn-result-thm-aux2 types 0 fn-call))
           `(,(atc-type-predicate (car types)) ,fn-call)))
-       (name (add-suffix fn "-RETURNS-VALUE"))
+       (name (add-suffix fn
+                         (if (consp (cdr types))
+                             "-RESULTS"
+                           "-RESULT")))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (guard (untranslate (uguard+ fn wrld) t wrld))
@@ -3404,7 +3405,7 @@
                   *atc-integer-convs-return-rewrite-rules*
                   *atc-array-read-return-rewrite-rules*
                   '(,fn
-                    ,@(atc-symbol-fninfo-alist-to-returns-value-thms
+                    ,@(atc-symbol-fninfo-alist-to-result-thms
                        prec-fns (acl2::all-fnnames (ubody+ fn wrld)))
                     sintp-of-sint-dec-const
                     sintp-of-sint-oct-const
@@ -3448,7 +3449,7 @@
 
   :prepwork
 
-  ((define atc-gen-fn-returns-value-thm-aux1
+  ((define atc-gen-fn-result-thm-aux1
      ((affect symbol-listp)
       (typed-formals atc-symbol-type-alistp))
      :returns (types type-listp)
@@ -3458,23 +3459,23 @@
                                         typed-formals))))
                 (if (typep type)
                     (cons type
-                          (atc-gen-fn-returns-value-thm-aux1 (cdr affect)
-                                                             typed-formals))
+                          (atc-gen-fn-result-thm-aux1 (cdr affect)
+                                                      typed-formals))
                   (raise "Internal error: variable ~x0 not found in ~x1."
                          (car affect) typed-formals))))))
 
-   (define atc-gen-fn-returns-value-thm-aux2 ((types type-listp)
-                                              (index natp)
-                                              (fn-call pseudo-termp))
+   (define atc-gen-fn-result-thm-aux2 ((types type-listp)
+                                       (index natp)
+                                       (fn-call pseudo-termp))
      :returns conjuncts
      :parents nil
      (cond ((endp types) nil)
            (t (list*
                `(,(atc-type-predicate (car types)) (mv-nth ',index ,fn-call))
                `(mv-nth ',index ,fn-call)
-               (atc-gen-fn-returns-value-thm-aux2 (cdr types)
-                                                  (1+ index)
-                                                  fn-call)))))))
+               (atc-gen-fn-result-thm-aux2 (cdr types)
+                                           (1+ index)
+                                           fn-call)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3719,8 +3720,8 @@
                 (mv (,fn ,@args)
                     ,compst-var)))
        (called-fns (acl2::all-fnnames (ubody+ fn wrld)))
-       (returns-value-thms
-        (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns called-fns))
+       (result-thms
+        (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
        (correct-thms
         (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
@@ -3734,7 +3735,7 @@
                              '(not
                                ,fn
                                ,@type-prescriptions
-                               ,@returns-value-thms
+                               ,@result-thms
                                ,@correct-thms
                                ,@measure-thms
                                ,fn-fun-env-thm))
@@ -3769,7 +3770,7 @@
                (val "A @('(tuple (local-events pseudo-event-form-listp)
                                  (exported-events pseudo-event-form-listp)
                                  (fn-fun-env-thm symbolp)
-                                 (fn-returns-value-thm symbolp)
+                                 (fn-result-thm symbolp)
                                  (fn-correct-thm symbolp)
                                  (updated-names-to-avoid symbol-listp)
                                  val)').")
@@ -3782,11 +3783,11 @@
             names-to-avoid)
         (atc-gen-fn-fun-env-thm
          fn proofs prog-const finfo? init-fun-env-thm names-to-avoid wrld))
-       ((mv fn-returns-value-events
-            fn-returns-value-thm
+       ((mv fn-result-events
+            fn-result-thm
             names-to-avoid)
-        (atc-gen-fn-returns-value-thm fn type? affect typed-formals prec-fns
-                                      proofs names-to-avoid wrld))
+        (atc-gen-fn-result-thm fn type? affect typed-formals prec-fns
+                               proofs names-to-avoid wrld))
        ((mv fn-correct-local-events
             fn-correct-exported-events
             fn-correct-thm)
@@ -3801,14 +3802,14 @@
                            `((cw-event " done.~%"))))
        (local-events (append progress-start?
                              fn-fun-env-events
-                             fn-returns-value-events
+                             fn-result-events
                              fn-correct-local-events
                              progress-end?))
        (exported-events fn-correct-exported-events))
     (acl2::value (list local-events
                        exported-events
                        fn-fun-env-thm
-                       fn-returns-value-thm
+                       fn-result-thm
                        fn-correct-thm
                        names-to-avoid))))
 
@@ -4061,7 +4062,7 @@
             (list local-events
                   exported-events
                   fn-fun-env-thm
-                  fn-returns-value-thm
+                  fn-result-thm
                   fn-correct-thm
                   names-to-avoid)
             state)
@@ -4074,7 +4075,7 @@
               :in-types (strip-cdrs typed-formals)
               :loop? nil
               :affect affect
-              :returns-value-thm fn-returns-value-thm
+              :result-thm fn-result-thm
               :correct-thm fn-correct-thm
               :measure-nat-thm nil
               :fun-env-thm fn-fun-env-thm
@@ -4774,8 +4775,8 @@
                         (mv nil ,final-compst))))
        (formula `(b* (,@formals-binding) (implies ,hyps ,concl)))
        (called-fns (acl2::all-fnnames (ubody+ fn wrld)))
-       (returns-value-thms
-        (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns called-fns))
+       (result-thms
+        (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
        (correct-thms
         (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
@@ -4789,7 +4790,7 @@
                              (theory 'atc-all-rules)
                              '(not
                                ,@type-prescriptions
-                               ,@returns-value-thms
+                               ,@result-thms
                                ,@correct-thms
                                ,@measure-thms))
                  :use ((:instance (:guard-theorem ,fn)
@@ -4814,7 +4815,7 @@
                                   (prec-fns atc-symbol-fninfo-alistp)
                                   (prog-const symbolp)
                                   (fn-thms symbol-symbol-alistp)
-                                  (fn-returns-value-thm symbolp)
+                                  (fn-result-thm symbolp)
                                   (exec-stmt-while-for-fn symbolp)
                                   (exec-stmt-while-for-fn-thm symbolp)
                                   (termination-of-fn-thm symbolp)
@@ -4926,9 +4927,9 @@
        (formula-lemma `(b* (,@formals-binding) (implies ,hyps ,concl-lemma)))
        (formula-thm `(b* (,@formals-binding) (implies ,hyps ,concl-thm)))
        (called-fns (acl2::all-fnnames (ubody+ fn wrld)))
-       (returns-value-thms
-        (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns called-fns))
-       (returns-value-thms (cons fn-returns-value-thm returns-value-thms))
+       (result-thms
+        (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
+       (result-thms (cons fn-result-thm result-thms))
        (correct-thms
         (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
@@ -4943,7 +4944,7 @@
                                    '(not
                                      ,exec-stmt-while-for-fn
                                      ,@type-prescriptions
-                                     ,@returns-value-thms
+                                     ,@result-thms
                                      ,@correct-thms
                                      ,@measure-thms
                                      ,natp-of-measure-of-fn-thm
@@ -5049,7 +5050,7 @@
             (list local-events
                   exported-events
                   &
-                  fn-returns-value-thm
+                  fn-result-thm
                   &
                   names-to-avoid)
             state)
@@ -5137,7 +5138,7 @@
                                   prec-fns
                                   prog-const
                                   fn-thms
-                                  fn-returns-value-thm
+                                  fn-result-thm
                                   exec-stmt-while-for-fn
                                   exec-stmt-while-for-fn-thm
                                   termination-of-fn-thm
@@ -5162,7 +5163,7 @@
                                :in-types (strip-cdrs typed-formals)
                                :loop? loop-stmt
                                :affect loop-affect
-                               :returns-value-thm fn-returns-value-thm
+                               :result-thm fn-result-thm
                                :correct-thm fn-correct-thm
                                :measure-nat-thm natp-of-measure-of-fn-thm
                                :fun-env-thm nil
