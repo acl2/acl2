@@ -134,13 +134,15 @@
   (("goal"
     :do-not-induct t
     :in-theory (e/d (abs-pwrit1 hifat-find-file hifat-place-file)
-                    ((:rewrite-quoted-constant true-fix-under-true-equiv))))
+                    ((:rewrite-quoted-constant true-fix-under-true-equiv)
+                     (:rewrite partial-collapse-when-atom))))
    (if (not stable-under-simplificationp)
        nil
-       '(:in-theory
-         (e/d (abs-pwrite abs-pwrit1
-                          hifat-find-file hifat-place-file)
-              ((:rewrite-quoted-constant true-fix-under-true-equiv))))))
+     '(:in-theory
+       (e/d (abs-pwrite abs-pwrit1
+                        hifat-find-file hifat-place-file)
+            ((:rewrite-quoted-constant true-fix-under-true-equiv)
+             (:rewrite partial-collapse-when-atom))))))
   :otf-flg t)
 
 (defund cp-spec-4 (frame dirname)
@@ -235,7 +237,11 @@
                  buf offset frame fd-table file-table))))
   :hints
   (("goal" :do-not-induct t
-    :in-theory (enable abs-pwrit1)
+    :in-theory (e/d
+                (abs-pwrit1)
+                ((:definition atom)
+                 (:rewrite collapse-hifat-place-file-lemma-91)
+                 (:rewrite partial-collapse-when-atom)))
     :use good-frame-p-of-abs-pwrite)))
 
 (fty::defprod fat-st
