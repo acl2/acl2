@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; June 2021
+;; October 2021
 
 (in-package "RTL")
 
@@ -24,6 +24,10 @@
   (implies (integerp x)
            (integerp (abs x)))
   :rule-classes :type-prescription)
+
+(defthmd abs-of-zero
+  (equal (equal (abs x) 0)
+         (equal x 0)))
 
 (defthmd int+1<=
   (implies (and (< x y)
