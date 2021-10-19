@@ -527,6 +527,8 @@
              :const (expr-grade-primary)
              :arrsub (expr-grade-postfix)
              :call (expr-grade-postfix)
+             :member (expr-grade-postfix)
+             :memberp (expr-grade-postfix)
              :postinc (expr-grade-postfix)
              :postdec (expr-grade-postfix)
              :preinc (expr-grade-unary)
@@ -695,6 +697,12 @@
                            (pprint-ident expr.fun)
                            (pprint-comma-sep
                             (pprint-expr-list expr.args (expr-grade-top))))
+                :member (msg "~@0.~@1"
+                             (pprint-expr expr.target (expr-grade-postfix))
+                             (pprint-ident expr.name))
+                :memberp (msg "~@0->~@1"
+                              (pprint-expr expr.target (expr-grade-postfix))
+                              (pprint-ident expr.name))
                 :postinc (msg "~@0++"
                               (pprint-expr expr.arg (expr-grade-postfix)))
                 :postdec (msg "~@0--"

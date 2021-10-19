@@ -1406,6 +1406,8 @@
                           (exec-expr-pure e.sub compst)
                           compst)
      :call (error (list :non-pure-expr e))
+     :member (error (list :not-supported-yet e))
+     :memberp (error (list :not-supported-yet e))
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))
      :preinc (error (list :non-pure-expr e))

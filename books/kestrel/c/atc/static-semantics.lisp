@@ -763,6 +763,8 @@
                    (error (list :arrsub e sub-type))))
                (check-arrsub e.arr arr-type e.sub sub-type))
      :call (error (list :expr-non-pure e))
+     :member (error (list :not-supported-yet e))
+     :memberp (error (list :not-supported-yet e))
      :postinc (error (list :expr-non-pure e))
      :postdec (error (list :expr-non-pure e))
      :preinc (error (list :expr-non-pure e))

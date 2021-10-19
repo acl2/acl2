@@ -487,11 +487,13 @@
        for now we only cover
        array subscripting,
        function calls (where we require the function to be an identifier),
+       structure and union member access
+       (both forms: @('.') directly on structures and unions,
+       as well as @('->') on pointers to structures and unions),
        and post-increment/decrement.
        Richer expressions for functions in function calls
        (e.g. function pointers)
        will be added if/when needed.
-       Structure and union member accesses will be added later.
        Compound literals will be added as needed.")
      (xdoc::p
       "Of the unary expressions [C:6.5.3],
@@ -535,6 +537,10 @@
     (:arrsub ((arr expr) (sub expr)))
     (:call ((fun ident)
             (args expr-list)))
+    (:member ((target expr)
+              (name ident)))
+    (:memberp ((target expr)
+               (name ident)))
     (:postinc ((arg expr)))
     (:postdec ((arg expr)))
     (:preinc ((arg expr)))
