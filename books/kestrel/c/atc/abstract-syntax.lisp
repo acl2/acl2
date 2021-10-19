@@ -366,9 +366,27 @@
    (xdoc::p
     "For now we only capture type specifier sequences for
      the @('void') type,
-     the plain @('char') type, and
-     the standard signed and unsigned integer types (except @('_Bool')).
-     We only capture one sequence for each, implicitly."))
+     the plain @('char') type,
+     the standard signed and unsigned integer types (except @('_Bool')),
+     and structure types.
+     We only capture structure type specifiers consisting of
+     an identifier, which is the tag of the structure type [C:6.7.2.1].")
+   (xdoc::p
+    "Syntactically, declarations that defines (the members of) structure types
+     are also type specifiers.
+     We capture them elsewhere in our abstract syntax.
+     We use values of this fixtype of sequences of type specifiers
+     only in parts of the code that reference existing types,
+     not that introduce them.
+     Recall that our abstract syntax does not capture
+     all possible forms of C code,
+     only the ones for C code that we want ATC to generate.
+     In that context, there is a distinction between
+     defining a structure type and merely referencing it.")
+   (xdoc::p
+    "We only capture one sequence for type, implicitly,
+     even though some types can be specified
+     via different equivalent sequences."))
   (:void ())
   (:char ())
   (:schar ())
@@ -381,6 +399,7 @@
   (:uint ())
   (:ulong ())
   (:ullong ())
+  (:struct ((tag ident)))
   :pred tyspecseqp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

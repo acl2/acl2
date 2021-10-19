@@ -283,7 +283,9 @@
                   :ushort "unsigned short"
                   :uint "unsigned int"
                   :ulong "unsigned long"
-                  :ullong "unsigned long long")
+                  :ullong "unsigned long long"
+                  :struct (msg "struct ~@0"
+                               (pprint-ident tss.tag)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
