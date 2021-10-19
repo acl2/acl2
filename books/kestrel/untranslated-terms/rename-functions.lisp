@@ -55,17 +55,18 @@
     (append (true-list-fix (first lists))
             (append-all2 (rest lists)))))
 
-;; Replace the stuff in the CLAUSES with the corresponding NEW-ITEMS, which
-;; come in order and correspond to the stuff in the existing clauses.
-(defun recreate-cond-clauses (clauses new-items)
+;; Replace the terms in the CLAUSES with the corresponding NEW-TERMS, which
+;; come in order and correspond to the terms in the existing CLAUSES.  Note
+;; that each element of CLAUSES may have length 1 or 2.
+(defun recreate-cond-clauses (clauses new-terms)
   (if (endp clauses)
       nil
     (let* ((clause (first clauses))
            (clause-len (len clause)) ;can be 1 or 2
            )
-      (cons (take clause-len new-items)
+      (cons (take clause-len new-terms) ; the new clause
             (recreate-cond-clauses (rest clauses)
-                                   (nthcdr clause-len new-items))))))
+                                   (nthcdr clause-len new-terms))))))
 
 ;; Extract the bodies of the items.  These are the untranslated terms that need to be handled.
 ;; TODO: What about a decl of (type (satisfies foo)) where perhaps FOO is a function to replace?
