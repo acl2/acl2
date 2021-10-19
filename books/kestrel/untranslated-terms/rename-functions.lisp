@@ -97,7 +97,7 @@
         (cons (list (first case) (second case) (first new-terms-from-cases))
               (recreate-case-match-cases (rest cases) (rest new-terms-from-cases)))))))
 
-;; Throws an error is macroexpansion fails.  Returns the term with one macro now expanded.
+;; Throws an error if macroexpansion fails.  Returns the term with one macro call now expanded.
 (defund magic-macroexpand1$$ (term ctx wrld state)
   (declare (xargs :mode :program
                   :stobjs state))
