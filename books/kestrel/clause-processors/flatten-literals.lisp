@@ -19,7 +19,7 @@
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
-;; Handles a disjunct of the form (not (and x1 ... xn)) by turing it into the
+;; Handles a disjunct of the form (not (and x1 ... xn)) by turning it into the
 ;; set of new top-level literals (not x1) ... (not xn).
 
 (defthm all-eval-to-false-with-con-and-dis-eval-of-union-equal
