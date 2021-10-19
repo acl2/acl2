@@ -29,16 +29,290 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "compose-theory-compose-steps")
-(include-book "compose")
+(include-book "compose-theory-base")
+(include-book "rewrite")
+(include-book "centaur/misc/fast-alist-pop" :dir :system)
+;; (include-book "compose")
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :system))
-
+(local (include-book "centaur/misc/dfs-measure" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 (std::make-returnspec-config :hints-sub-returnnames t)
+
+
+
+
+(defines svex-compose*
+  :flag-local nil
+  :parents (svex-composition)
+  :short "Compose an svex with a substitution alist.  Variables not in the
+substitution are left in place."
+  (define svex-compose* ((x svex-p) (a svex-alist-p))
+    :verify-guards nil
+    :measure (svex-count x)
+    :returns (xa svex-p "x composed with a, unbound variables preserved")
+    (svex-case x
+      :var (or (svex-fastlookup x.name a)
+               (mbe :logic (svex-fix x) :exec x))
+      :quote (mbe :logic (svex-fix x) :exec x)
+      :call (svex-call* x.fn
+                        (svexlist-compose* x.args a))))
+  (define svexlist-compose* ((x svexlist-p) (a svex-alist-p))
+    :measure (svexlist-count x)
+    :returns (xa svexlist-p)
+    (if (atom x)
+        nil
+      (cons (svex-compose* (car x) a)
+            (svexlist-compose* (cdr x) a))))
+  ///
+  (verify-guards svex-compose*)
+  (fty::deffixequiv-mutual svex-compose*
+    :hints (("goal" :expand ((svexlist-fix x)))))
+
+  (defthm len-of-svexlist-compose*
+    (equal (len (svexlist-compose* x a))
+           (len x)))
+
+  (local (defthm svex-env-lookup-of-append-svex-alist-eval-not-present
+           (equal (svex-env-lookup v (append (svex-alist-eval a e) env))
+                  (if (svex-lookup v a)
+                      (svex-eval (svex-lookup v a) e)
+                    (svex-env-lookup v env)))
+           :hints(("Goal" :in-theory (enable svex-alist-eval svex-env-lookup
+                                             svex-env-fix
+                                             svex-alist-fix
+                                             svex-lookup)))))
+
+  (defthm-svex-compose*-flag
+    (defthm svex-eval-of-svex-compose*
+      (equal (svex-eval (svex-compose* x a) env)
+             (svex-eval x (append (svex-alist-eval a env) env)))
+      :hints ('(:expand ((:free (env) (svex-eval x env)))))
+      :flag svex-compose*)
+    (defthm svexlist-eval-of-svexlist-compose*
+      (equal (svexlist-eval (svexlist-compose* x a) env)
+             (svexlist-eval x (append (svex-alist-eval a env) env)))
+      :flag svexlist-compose*))
+
+  (defthm-svex-compose*-flag
+    (defthm vars-of-svex-compose*
+      (implies (and (not (member v (svex-vars x)))
+                    (not (member v (svex-alist-vars a))))
+               (not (member v (svex-vars (svex-compose* x a)))))
+      :flag svex-compose*)
+    (defthm vars-of-svexlist-compose*
+      (implies (and (not (member v (svexlist-vars x)))
+                    (not (member v (svex-alist-vars a))))
+               (not (member v (svexlist-vars (svexlist-compose* x a)))))
+      :hints('(:in-theory (enable svexlist-vars)))
+      :flag svexlist-compose*))
+
+  (defthm-svex-compose*-flag
+    ;; Note: The order of the disjuncts is important because sometimes you can
+    ;; prove one given not the other but not vice versa.
+    (defthm vars-of-svex-compose*-strong
+      (implies (and (not (member v (svex-alist-vars a)))
+                    (or (member v (svex-alist-keys a))
+                        (not (member v (svex-vars x)))))
+               (not (member v (svex-vars (svex-compose* x a)))))
+      :flag svex-compose*)
+    (defthm vars-of-svexlist-compose*-strong
+      (implies (and (not (member v (svex-alist-vars a)))
+                    (or (member v (svex-alist-keys a))
+                        (not (member v (svexlist-vars x)))))
+               (not (member v (svexlist-vars (svexlist-compose* x a)))))
+      :hints('(:in-theory (enable svexlist-vars)))
+      :flag svexlist-compose*))
+
+  (in-theory (disable vars-of-svex-compose*-strong
+                      vars-of-svexlist-compose*-strong))
+
+  (memoize 'svex-compose* :condition '(eq (svex-kind x) :call)))
+
+(define svex-alist-compose*-nrev ((x svex-alist-p)
+                                 (a svex-alist-p)
+                                 (nrev))
+  :hooks nil
+  (if (atom x)
+      (acl2::nrev-fix nrev)
+    (if (mbt (and (consp (car x)) (svar-p (caar x))))
+        (b* ((nrev (acl2::nrev-push (cons (caar x) (svex-compose* (cdar x) a)) nrev)))
+          (svex-alist-compose*-nrev (cdr x) a nrev))
+      (svex-alist-compose*-nrev (cdr x) a nrev))))
+
+(define svex-alist-compose* ((x svex-alist-p) (a svex-alist-p))
+  :prepwork ((local (in-theory (enable svex-alist-p))))
+  :returns (xx svex-alist-p)
+  :verify-guards nil
+  (if (atom x)
+      nil
+    (mbe :logic
+         (if (mbt (and (consp (car x)) (svar-p (caar x))))
+             (svex-acons (caar x) (svex-compose* (cdar x) a)
+                         (svex-alist-compose* (cdr x) a))
+           (svex-alist-compose* (cdr x) a))
+         :exec
+         (acl2::with-local-nrev
+           (svex-alist-compose*-nrev x a acl2::nrev))))
+  ///
+  (local (defthm svex-alist-compose*-nrev-elim
+           (equal (svex-alist-compose*-nrev x a nrev)
+                  (append nrev (svex-alist-compose* x a)))
+           :hints(("Goal" :in-theory (enable svex-alist-compose*-nrev
+                                             svex-acons)))))
+  (verify-guards svex-alist-compose*)
+
+  (fty::deffixequiv svex-alist-compose*
+    :hints(("Goal" :in-theory (enable svex-alist-fix))))
+
+  (defthm svex-alist-eval-of-svex-compose*
+    (equal (svex-alist-eval (svex-alist-compose* x subst) env)
+           (svex-alist-eval x (append (svex-alist-eval subst env) env)))
+    :hints(("Goal" :in-theory (enable svex-alist-eval svex-acons
+                                      svex-alist-compose*
+                                      svex-env-acons))))
+
+  (defthm vars-of-svex-alist-compose*
+      (implies (and (not (member v (svex-alist-vars x)))
+                    (not (member v (svex-alist-vars a))))
+               (not (member v (svex-alist-vars (svex-alist-compose* x a)))))
+      :hints(("goal" :in-theory (enable svex-alist-vars))))
+
+  (local (defthm svex-compose*-under-iff
+           (svex-compose* x a)
+           :hints (("goal" :use RETURN-TYPE-OF-SVEX-COMPOSE*.XA
+                    :in-theory (disable RETURN-TYPE-OF-SVEX-COMPOSE*.XA)))))
+
+  (local (defthm svex-fix-under-iff
+           (svex-fix x)
+           :hints (("goal" :use RETURN-TYPE-OF-SVEX-FIX.NEW-X
+                    :in-theory (disable RETURN-TYPE-OF-SVEX-FIX.NEW-X)))))
+
+  (defthm svex-lookup-of-svex-alist-compose*
+    (iff (svex-lookup v (svex-alist-compose* x a))
+         (svex-lookup v x))
+    :hints(("Goal" :in-theory (e/d (svex-lookup svex-alist-fix svex-acons)
+                                   (svex-alist-p))))))
+
+;; Note: This isn't memoized to the extent that it might be: it's memoized at
+;; the level of named wires, i.e. subexpressions of assignments may be
+;; traversed multiple times.  That could be ok, if the assigns it is run on are
+;; simply translations of the assignments written in SV sources.  However, if
+;; they somehow become large, repetitive structures, we may need to revisit
+;; this.
+
+(defines svex-compose-dfs
+  :parents (sv)
+  :short "Compose together a network of svex assignments, stopping when a
+variable depends on itself."
+  :flag-local nil
+
+  (define svex-compose-dfs ((x svex-p "svex we're traversing")
+                            (assigns svex-alist-p "alist of assign stmts")
+                            (updates svex-alist-p "alist of composed update fns")
+                            (memo svex-svex-memo-p "memo table for internal nodes")
+                            (stack "alist of seen vars"
+                                   alistp))
+    :guard (no-duplicatesp-equal (strip-cars stack))
+    :verify-guards nil
+    :well-founded-relation acl2::nat-list-<
+    :measure (list (len (set-difference-equal
+                         (svex-alist-keys assigns)
+                         (strip-cars stack)))
+                   (svex-count x))
+    :returns (mv (x1 svex-p "composition of x with other internal wires")
+                 (updates1 svex-alist-p "extended update functions")
+                 (memo1 svex-svex-memo-p "extended memo table"))
+    (b* ((x (mbe :logic (svex-fix x) :exec x))
+         (memo (svex-svex-memo-fix memo))
+         (updates (mbe :logic (svex-alist-fix updates) :exec updates)))
+      (svex-case x
+        :quote (mv x updates memo)
+        :call (b* ((look (hons-get x memo))
+                   ((when look) (mv (cdr look) updates memo))
+                   ((mv args updates memo)
+                    (svexlist-compose-dfs x.args assigns updates memo stack))
+                   (res (svex-call* x.fn args))
+                   (memo (hons-acons x res memo)))
+                (mv res updates memo))
+        :var (b* ((update-fn (svex-fastlookup x.name updates))
+                  ((when update-fn) (mv update-fn updates memo))
+                  (assign (svex-fastlookup x.name assigns))
+                  ((unless (and assign (not (hons-get x.name stack))))
+                   ;; if it has no assignment OR we're already traversing it, leave it
+                   (mv x updates memo))
+                  (stack (hons-acons x.name t stack))
+                  ((mv composed-assign updates memo1)
+                   (svex-compose-dfs assign assigns updates nil stack))
+                  (- (fast-alist-free memo1))
+                  (- (acl2::fast-alist-pop stack))
+                  (updates (svex-fastacons x.name composed-assign updates)))
+               (mv composed-assign updates memo)))))
+
+  (define svexlist-compose-dfs ((x svexlist-p)
+                                (assigns svex-alist-p)
+                                (updates svex-alist-p)
+                                (memo svex-svex-memo-p)
+                                (stack alistp))
+    :guard (no-duplicatesp-equal (strip-cars stack))
+    :measure (list (len (set-difference-equal
+                         (svex-alist-keys assigns)
+                         (strip-cars stack)))
+                   (svexlist-count x))
+    :returns (mv (x1 svexlist-p)
+                 (updates1 svex-alist-p)
+                 (memo1 svex-svex-memo-p))
+    (b* ((updates (mbe :logic (svex-alist-fix updates) :exec updates))
+         (memo (svex-svex-memo-fix memo))
+         ((when (atom x)) (mv nil updates memo))
+         ((mv first updates memo)
+          (svex-compose-dfs (car x) assigns updates memo stack))
+         ((mv rest updates memo)
+          (svexlist-compose-dfs (cdr x) assigns updates memo stack)))
+      (mv (cons first rest) updates memo)))
+  ///
+  (verify-guards svex-compose-dfs)
+
+  (fty::deffixequiv-mutual svex-compose-dfs
+    :hints (("goal" :expand ((svexlist-fix x))))))
+
+
+(define svex-compose-assigns-keys ((keys svarlist-p "List of remaining target variables")
+                                   (assigns svex-alist-p "Original list of assignments")
+                                   (updates svex-alist-p "Accumulator of composed update functions")
+                                   (memo svex-svex-memo-p "accumulated memo table"))
+  :parents (svex-composition)
+  :short "Compose together svex assignments (using svex-compose-dfs) for the
+listed keys."
+  :guard-hints(("Goal" :in-theory (enable svarlist-p)))
+  :returns (mv (updates1 svex-alist-p)
+               (memo1 svex-svex-memo-p))
+  (b* (((when (atom keys)) (mv (mbe :logic (svex-alist-fix updates) :exec updates)
+                               (svex-svex-memo-fix memo)))
+       ((mv & updates memo) (svex-compose-dfs (svex-var (car keys)) assigns updates memo nil)))
+    (svex-compose-assigns-keys (cdr keys) assigns updates memo))
+  ///
+
+  (fty::deffixequiv svex-compose-assigns-keys
+    :hints (("goal" :expand ((svarlist-fix keys))))))
+
+
+(define svex-compose-assigns ((assigns svex-alist-p))
+  :parents (svex-composition)
+  :short "Compose together an alist of svex assignments, with no unrolling when
+variables depend on themselves."
+  :returns (updates svex-alist-p)
+  (b* (((mv updates memo)
+        (with-fast-alist assigns
+          (svex-compose-assigns-keys (svex-alist-keys assigns) assigns nil nil))))
+    (fast-alist-free memo)
+    updates)
+  ///
+
+  (fty::deffixequiv svex-compose-assigns))
 
 
 
@@ -288,6 +562,18 @@
       :hints ('(:expand (<call>)))
       :fn svexlist-compose-dfs)
     :mutual-recursion svex-compose-dfs)
+
+  (std::defret-mutual no-duplicate-keys-of-<fn>
+    (defret no-duplicate-keys-of-<fn>
+      (implies (no-duplicatesp-equal (svex-alist-keys updates))
+               (no-duplicatesp-equal (svex-alist-keys updates1)))
+      :hints ('(:expand (<call>)))
+      :fn svex-compose-dfs)
+    (defret no-duplicate-keys-of-<fn>
+      (implies (no-duplicatesp-equal (svex-alist-keys updates))
+               (no-duplicatesp-equal (svex-alist-keys updates1)))
+      :hints ('(:expand (<call>)))
+      :fn svexlist-compose-dfs))
 
 
 
@@ -775,6 +1061,116 @@
                    (svex-compose x al))
   :hints(("Goal" :in-theory (enable svex-eval-equiv))))
 
+(defsection netcomp-p-of-cons-compose
+
+  (defthm netcomp-p-of-nil
+    (netcomp-p nil network)
+    :hints (("goal" :use ((:instance netcomp-p-suff
+                           (comp nil) (decomp network)
+                           (ordering nil)))
+             :in-theory (enable neteval-ordering-compile))))
+
+  (local (defthm svex-lookup-when-eval-equiv-compile
+           (implies (and (svex-alist-eval-equiv network
+                                                (neteval-ordering-compile order network1))
+                         (svex-lookup var network))
+                    (svex-eval-equiv (svex-lookup var network)
+                                     ;; (svex-compose (svex-lookup var network1)
+                                     (neteval-sigordering-compile
+                                      (cdr (hons-assoc-equal (svar-fix var) order))
+                                      var 0
+                                      network1)))))
+
+  
+
+  (local (defthm svex-compose-of-svex-compose
+           (svex-eval-equiv (svex-compose (svex-compose x al1) al2)
+                            (svex-compose x (append (svex-alist-compose al1 al2) al2)))
+           :hints(("Goal" :in-theory (enable svex-eval-equiv)))))
+
+  (defthm netcomp-p-of-singleton-lookup
+    (implies (and (netcomp-p lookup-network network1)
+                  (svar-p var)
+                  (svex-lookup var lookup-network))
+             (netcomp-p (list (cons var (svex-lookup var lookup-network)))
+                        network1))
+    :hints (("goal" :use ((:instance netcomp-p-of-svex-alist-reduce
+                           (keys (list var))
+                           (x lookup-network)
+                           (y network1)))
+             :expand ((svex-alist-reduce (list var) lookup-network)
+                      (svex-alist-reduce nil lookup-network))
+             :in-theory (disable netcomp-p-of-svex-alist-reduce))))
+
+  (local (defthm netcomp-p-of-singleton-compose
+           (implies (and (netcomp-p compose-network network1)
+                         (netcomp-p lookup-network network1)
+                         (svar-p var)
+                         (svex-lookup var lookup-network))
+                    (netcomp-p (list (cons var (svex-compose (svex-lookup var lookup-network)
+                                                             compose-network)))
+                               network1))
+           :hints (("goal" :use ((:instance netcomp-p-of-singleton-lookup
+                                  (lookup-network (svex-alist-compose lookup-network compose-network))))
+                    :in-theory (disable netcomp-p-of-singleton-lookup)))))
+
+  (local (defthm cons-bad-pair-under-svex-alist-eval-equiv
+           (implies (not (svar-p var))
+                    (svex-alist-eval-equiv (cons (cons var val) rest) rest))
+           :hints(("Goal" :in-theory (enable svex-alist-eval-equiv svex-lookup)))))
+
+  (defthm netcomp-p-of-cons-lookup
+    (implies (and (netcomp-p lookup-network network1)
+                  (netcomp-p rest-network network1)
+                  (svex-lookup var lookup-network)
+                  (svar-equiv var var1))
+             (netcomp-p (cons (cons var (svex-lookup var1 lookup-network))
+                              rest-network)
+                        network1))
+    :hints (("goal" :use ((:instance netcomp-p-of-append
+                           (x (list (cons var (svex-lookup var lookup-network))))
+                           (y rest-network)
+                           (network network1)))
+             :cases ((svar-p var)))))
+
+  (defthm netcomp-p-of-cons-compose
+    (implies (and (netcomp-p compose-network network1)
+                  (netcomp-p lookup-network network1)
+                  (netcomp-p rest-network network1)
+                  (svex-lookup var lookup-network)
+                  (svar-equiv var var1))
+             (netcomp-p (cons (cons var (svex-compose (svex-lookup var1 lookup-network)
+                                                      compose-network))
+                              rest-network)
+                        network1))
+    :hints (("goal" :use ((:instance netcomp-p-of-append
+                           (x (list (cons var (svex-compose (svex-lookup var lookup-network)
+                                                            compose-network))))
+                           (y rest-network)
+                           (network network1)))
+             :cases ((svar-p var)))))
+
+  (defthm netcomp-p-of-svex-acons-lookup
+    (implies (and (netcomp-p lookup-network network1)
+                  (netcomp-p rest-network network1)
+                  (svex-lookup var lookup-network))
+             (netcomp-p (svex-acons var (svex-lookup var lookup-network)
+                                    rest-network)
+                        network1))
+    :hints(("Goal" :in-theory (enable svex-acons))))
+
+  (defthm netcomp-p-of-svex-acons-compose
+    (implies (and (netcomp-p compose-network network1)
+                  (netcomp-p lookup-network network1)
+                  (netcomp-p rest-network network1)
+                  (svex-lookup var lookup-network))
+             (netcomp-p (svex-acons var (svex-compose (svex-lookup var lookup-network)
+                                                      compose-network)
+                                    rest-network)
+                        network1))
+    :hints(("Goal" :in-theory (enable svex-acons)))))
+
+
 (defsection netcomp-p-of-svex-compose-dfs
   ;;   (local (defthm alist-keys-of-cons
   ;;          (equal (alist-keys (cons (cons a b) c))
@@ -849,4 +1245,55 @@
                    '(:in-theory (enable netcomp-p-transitive2))))
       :fn svexlist-compose-dfs)
     :mutual-recursion svex-compose-dfs))
-                    
+
+
+
+(defsection netcomp-p-of-svex-compose-assigns-keys
+  (local (std::set-define-current-function svex-compose-assigns-keys))
+  (local (in-theory (enable (:i svex-compose-assigns-keys))))
+  
+  (defret svex-compose-dfs-memo-vars-okp-of-<fn>
+    (implies (svex-compose-dfs-memo-vars-okp memo assigns updates nil)
+             (svex-compose-dfs-memo-vars-okp memo1 assigns updates1 nil))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (defret <fn>-memo-invar
+    (implies (and (svex-compose-dfs-memo-correct memo updates)
+                  (svex-compose-dfs-memo-vars-okp memo assigns updates nil))
+             (svex-compose-dfs-memo-correct memo1 updates1))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (Defret netcomp-p-of-<fn>
+    (implies (and (svex-compose-dfs-memo-correct memo updates)
+                  (svex-compose-dfs-memo-vars-okp memo assigns updates nil)
+                  (netcomp-p updates network)
+                  (netcomp-p assigns network))
+             (netcomp-p updates1 network))
+    :hints (("goal"
+             :induct <call>
+             :expand (<call>))))
+
+  
+  (defret no-duplicate-keys-of-<fn>
+    (implies (no-duplicatesp-equal (svex-alist-keys updates))
+             (no-duplicatesp-equal (svex-alist-keys updates1)))
+    :hints (("goal" :induct <call> :expand (<call>)))))
+
+
+(defret netcomp-p-of-svex-compose-assigns
+  (netcomp-p updates assigns)
+  :hints(("Goal" :in-theory (enable <fn>)))
+  :fn svex-compose-assigns)
+
+(defret netcomp-p-of-svex-compose-assigns-trans
+  (implies (netcomp-p assigns orig)
+           (netcomp-p updates orig))
+  :hints (("goal" :in-theory (enable netcomp-p-transitive2)))
+  :fn svex-compose-assigns)
+
+
+(defret no-duplicate-keys-of-<fn>
+  (no-duplicatesp-equal (svex-alist-keys updates))
+  :hints(("Goal" :in-theory (enable svex-compose-assigns)))
+  :fn svex-compose-assigns)
+  

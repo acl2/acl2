@@ -32,6 +32,7 @@
 (include-book "4vec")
 (include-book "svex")
 (include-book "std/lists/list-defuns" :dir :system)
+(include-book "misc/hons-help" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (local (include-book "std/lists/nth" :dir :system))
 (local (include-book "std/lists/acl2-count" :dir :system))
@@ -705,7 +706,12 @@ svex-eval).</p>"
     (equal (svex-alist-eval (append a b) env)
            (append (svex-alist-eval a env)
                    (svex-alist-eval b env)))
-    :hints(("Goal" :in-theory (enable svex-alist-eval append)))))
+    :hints(("Goal" :in-theory (enable svex-alist-eval append))))
+
+  (defthm alist-keys-of-svex-alist-eval
+    (equal (alist-keys (svex-alist-eval x env))
+           (svex-alist-keys x))
+    :hints(("Goal" :in-theory (enable svex-alist-keys svex-alist-eval alist-keys)))))
 
 
 
