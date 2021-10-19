@@ -788,14 +788,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-declon ((declon declonp) (level natp))
-  :returns (part msgp)
+  :returns (lines msg-listp)
   :short "Pretty-print a declaration."
   (b* (((declon declon) declon))
-    (pprint-line (msg "~@0 ~@1 = ~@2;"
-                      (pprint-tyspecseq declon.type)
-                      (pprint-declor declon.declor)
-                      (pprint-expr declon.init (expr-grade-top)))
-                 (lnfix level)))
+    (list (pprint-line (msg "~@0 ~@1 = ~@2;"
+                            (pprint-tyspecseq declon.type)
+                            (pprint-declor declon.declor)
+                            (pprint-expr declon.init (expr-grade-top)))
+                       (lnfix level))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -907,7 +907,7 @@
   (define pprint-block-item ((item block-itemp) (level natp))
     :returns (lines msg-listp)
     (block-item-case item
-                     :declon (list (pprint-declon item.get level))
+                     :declon (pprint-declon item.get level)
                      :stmt (pprint-stmt item.get level))
     :measure (block-item-count item))
 
