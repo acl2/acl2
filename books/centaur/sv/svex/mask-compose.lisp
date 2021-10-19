@@ -1618,6 +1618,7 @@
                      masks next-masks
                      (make-svex-substconfig :simp simpconf
                                             :alist rest-composed))))))
+    (clear-memoize-table 'svex-compose-rw-memo)
     (fast-alist-free next-masks)
     (mv final-masks composed))
   ///

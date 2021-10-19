@@ -2077,3 +2077,58 @@
 
 
 
+
+(local
+ (encapsulate nil
+
+   (local (defthm svex-lookup-of-svarlist-x-subst-split
+            (equal (Svex-lookup v (svarlist-x-subst x))
+                   (and (member-equal (svar-fix v) (svarlist-fix x))
+                        (svex-x)))
+            :hints(("Goal" :in-theory (enable svarlist-x-subst)))))
+
+   (defcong set-equiv svex-alist-eval-equiv (svarlist-x-subst x) 1
+         :hints(("Goal" :in-theory (enable svex-alist-eval-equiv))))))
+
+(defsection netevalcomp-p
+  (defun-sk netevalcomp-p (comp network)
+    (exists ordering
+            (svex-alist-eval-equiv comp
+                                   (svex-alist-compose
+                                    (neteval-ordering-compile ordering network)
+                                    (svarlist-x-subst (svex-alist-keys network))))))
+
+  (in-theory (disable netevalcomp-p netevalcomp-p-suff))
+
+  (defcong svex-alist-eval-equiv equal (netevalcomp-p comp network) 1
+    :hints (("goal" :cases ((netevalcomp-p comp network))
+             :in-theory (enable netevalcomp-p)
+             :use ((:instance netevalcomp-p-suff
+                    (comp comp-equiv)
+                    (ordering (netevalcomp-p-witness comp network)))
+                   (:instance netevalcomp-p-suff
+                    (ordering (netevalcomp-p-witness comp-equiv network)))))))
+
+
+
+  (defcong svex-alist-eval-equiv equal (netevalcomp-p comp network) 2
+    :hints (("goal" :cases ((netevalcomp-p comp network))
+             :in-theory (enable netevalcomp-p)
+             :use ((:instance netevalcomp-p-suff
+                    (network network-equiv)
+                    (ordering (netevalcomp-p-witness comp network)))
+                   (:instance netevalcomp-p-suff
+                    (ordering (netevalcomp-p-witness comp network-equiv)))))))
+
+  
+  (defthm netevalcomp-p-of-compose-netcomp
+    (implies (netcomp-p x y)
+             (netevalcomp-p (svex-alist-compose x (svarlist-x-subst (svex-alist-keys y))) y))
+    :hints(("Goal" :expand ((netcomp-p x y))
+            :use ((:instance netevalcomp-p-suff
+                   (comp (svex-alist-compose x (svarlist-x-subst (svex-alist-keys y))))
+                   (network y)
+                   (ordering (netcomp-p-eval-equiv-witness x y))))))))
+
+
+

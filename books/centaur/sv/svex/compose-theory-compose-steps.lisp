@@ -60,6 +60,7 @@
                                             svex-lookup)))
          :rule-classes :congruence))
 
+
 (defsection netcomp-p-of-cons-compose
 
   (defthm netcomp-p-of-nil
@@ -168,7 +169,6 @@
                                     rest-network)
                         network1))
     :hints(("Goal" :in-theory (enable svex-acons)))))
-
 
 
 (define svex-network-compose-step ((var svar-p)

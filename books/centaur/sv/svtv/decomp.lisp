@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "../svex/compose")
+(include-book "../svex/assigns-compose")
 (include-book "../svex/eval")
 (include-book "../svex/env-ops")
 (include-book "tools/match-tree" :dir :system)
