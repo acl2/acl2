@@ -224,7 +224,7 @@
            (equality-eval term a))
   :hints (("Goal" :in-theory (enable clearly-implied-by-some-disjunctionp))))
 
-;; In general, the conjuncts of CONJ and the TRUE-TERMS are disjunctions.
+;; In general, the conjuncts of TERM and the TRUE-TERMS are disjunctions.
 (defun resolve-ifs-in-term (term true-terms)
   (declare (xargs :guard (and (pseudo-termp term)
                               (pseudo-term-listp true-terms))
