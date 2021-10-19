@@ -475,7 +475,7 @@
        that is
        either a call of a recursive target function @('fnj') with @('j < i')
        whose body term returns @('void') and affects @('(var1 ... varn)')
-       or an @(tsee if) whose test is an expression term returning a boolean
+       or an @(tsee if) whose test is an expression term returning boolean
        (not a test @('(mbt ...)') or @('(mbt$ ...)')), and
        @('body') is a statement term for @('fni') with loop flag @('L')
        returning @('T') and affecting @('vars').

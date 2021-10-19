@@ -1672,18 +1672,19 @@
                   (equal (block-item-kind item) :declon)
                   (not (zp limit))
                   (equal declon (block-item-declon->get item))
+                  (declon-case declon :var)
                   (equal val+compst1
-                         (exec-expr-call-or-pure (declon->init declon)
+                         (exec-expr-call-or-pure (declon-var->init declon)
                                                  compst
                                                  fenv
                                                  (1- limit)))
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
-                  (equal declor (declon->declor declon))
+                  (equal declor (declon-var->declor declon))
                   (equal (type-of-value val)
                          (type-name-to-type
-                          (make-tyname :specs (declon->type declon)
+                          (make-tyname :specs (declon-var->type declon)
                                        :pointerp (declor->pointerp declor))))
                   (equal compst2
                          (create-var (declor->ident declor) val compst1))
@@ -1709,9 +1710,10 @@
       (:e block-item-kind)
       (:e block-item-declon->get)
       (:e block-item-stmt->get)
-      (:e declon->type)
-      (:e declon->declor)
-      (:e declon->init)
+      (:e declon-kind)
+      (:e declon-var->type)
+      (:e declon-var->declor)
+      (:e declon-var->init)
       (:e declor->pointerp)
       (:e declor->ident))))
 

@@ -169,7 +169,11 @@
 
   (defruled symbol-listp-of-strip-cars-when-atc-symbol-type-alistp
     (implies (atc-symbol-type-alistp x)
-             (symbol-listp (strip-cars x)))))
+             (symbol-listp (strip-cars x))))
+
+  (defruled symbol-alistp-when-atc-symbol-type-alistp
+    (implies (atc-symbol-type-alistp x)
+             (symbol-alistp x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1777,13 +1781,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As discussed in @(see atc-types),
-     now types and type specifier sequences are isomorphic in our model,
-     but they are not in C.
-     When generating C code,
-     in some cases it is necessary to generate
-     type specifier sequences for types.
-     This ACL2 function does that."))
+    "This is always called on a non-pointer type currently."))
   (type-case type
              :void (tyspecseq-void)
              :char (tyspecseq-char)
@@ -2372,12 +2370,12 @@
                                must not have a C pointer type, ~
                                but it has type ~x2 instead."
                               val var init-type))
-                   (declon (make-declon :type (atc-gen-tyspecseq init-type)
-                                        :declor (make-declor
-                                                 :ident
-                                                 (make-ident
-                                                  :name (symbol-name var)))
-                                        :init init-expr))
+                   (declon (make-declon-var :type (atc-gen-tyspecseq init-type)
+                                            :declor (make-declor
+                                                     :ident
+                                                      (make-ident
+                                                       :name (symbol-name var)))
+                                            :init init-expr))
                    (item (block-item-declon declon))
                    (inscope (atc-add-var var init-type inscope))
                    ((er (list body-items body-type body-limit))
@@ -2920,136 +2918,175 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-find-param-type ((formal symbolp)
-                             (fn symbolp)
-                             (guard-conjuncts pseudo-term-listp)
-                             (guard pseudo-termp)
-                             (ctx ctxp)
-                             state)
-  :returns (mv erp (type typep) state)
-  :short "Find the C type of a function's parameter from the guard."
+(define atc-typed-formals ((fn symbolp) (ctx ctxp) state)
+  :returns (mv erp
+               (typed-formals atc-symbol-type-alistp)
+               state)
+  :short "Calculate the C types of the formal parameters of a target function."
   :long
   (xdoc::topstring
    (xdoc::p
     "We look for a term of the form @('(<type> <formal>)')
      among the conjuncts of the function's guard,
-     where @('<type>') is a predicate corresponding to a C type
-     and @('<formal>') is the formal argument in question.
+     for each formal @('<formal>') of @('fn'),
+     where @('<type>') is a predicate corresponding to a C type.
      For now we only accept certain types,
-     but this will be extended to more C types in the future."))
-  (b* (((when (endp guard-conjuncts))
-        (er-soft+ ctx t (irr-type)
-                  "The guard ~x0 of the ~x1 function does not have ~
-                   a recognizable conjunct that requires ~
-                   the formal parameter ~x2 to be a C value ~
-                   of some C type."
-                  guard fn formal))
-       (conjunct (car guard-conjuncts))
-       ((unless (and (nvariablep conjunct)
-                     (not (fquotep conjunct))
-                     (not (flambda-applicationp conjunct))))
-        (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state))
-       (type-fn (ffn-symb conjunct))
-       (type (case type-fn
-               (scharp (type-schar))
-               (ucharp (type-uchar))
-               (sshortp (type-sshort))
-               (ushortp (type-ushort))
-               (sintp (type-sint))
-               (uintp (type-uint))
-               (slongp (type-slong))
-               (ulongp (type-ulong))
-               (sllongp (type-sllong))
-               (ullongp (type-ullong))
-               (schar-arrayp (type-pointer (type-schar)))
-               (uchar-arrayp (type-pointer (type-uchar)))
-               (sshort-arrayp (type-pointer (type-sshort)))
-               (ushort-arrayp (type-pointer (type-ushort)))
-               (sint-arrayp (type-pointer (type-sint)))
-               (uint-arrayp (type-pointer (type-uint)))
-               (slong-arrayp (type-pointer (type-slong)))
-               (ulong-arrayp (type-pointer (type-ulong)))
-               (sllong-arrayp (type-pointer (type-sllong)))
-               (ullong-arrayp (type-pointer (type-ullong)))
-               (t nil)))
-       ((when (not type))
-        (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state))
-       (arg (fargn conjunct 1))
-       ((unless (eq formal arg))
-        (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state)))
-    (acl2::value type))
-  :guard-hints (("Goal" :in-theory (disable acl2::member-of-cons)))) ; for speed
+     namely the supported integer types and pointer types to them;
+     note that the array predicates correspond to pointer types.")
+   (xdoc::p
+    "We ensure that there is exactly one such term for each formal.
+     If this is successful,
+     we return an alist from the formals to the types.
+     The alist has unique keys, in the order of the formals.")
+   (xdoc::p
+    "We first extract the guard's conjuncts,
+     then we go through the conjuncts, looking for the pattern,
+     and we expand an alist from formals to types as we find patterns;
+     this preliminary alist may not have the keys in order,
+     because it goes according to the order of the guard's conjuncts.
+     As we construct this preliminary alist,
+     we check for multiple terms for the same formal,
+     rejecting them even if they are identical.
+     Then we construct the final alist by going through the formals in order,
+     and looking up their types in the preliminary alist;
+     here we detect when a formal has no corresponding conjunct in the guard."))
+  (b* ((wrld (w state))
+       (formals (formals+ fn wrld))
+       (guard (uguard+ fn wrld))
+       (guard-conjuncts (flatten-ands-in-lit guard))
+       ((er prelim-alist) (atc-typed-formals-prelim-alist fn
+                                                          formals
+                                                          guard
+                                                          guard-conjuncts
+                                                          nil
+                                                          ctx
+                                                          state)))
+    (atc-typed-formals-final-alist fn formals guard prelim-alist ctx state))
+
+  :prepwork
+
+  ((define atc-typed-formals-prelim-alist ((fn symbolp)
+                                           (formals symbol-listp)
+                                           (guard pseudo-termp)
+                                           (guard-conjuncts pseudo-term-listp)
+                                           (prelim-alist atc-symbol-type-alistp)
+                                           (ctx ctxp)
+                                           state)
+     :returns (mv erp
+                  (prelim-alist-final atc-symbol-type-alistp)
+                  state)
+     :parents nil
+     (b* (((when (endp guard-conjuncts))
+           (acl2::value (atc-symbol-type-alist-fix prelim-alist)))
+          (conjunct (car guard-conjuncts))
+          ((unless (and (nvariablep conjunct)
+                        (not (fquotep conjunct))
+                        (not (flambda-applicationp conjunct))))
+           (atc-typed-formals-prelim-alist fn
+                                           formals
+                                           guard
+                                           (cdr guard-conjuncts)
+                                           prelim-alist
+                                           ctx
+                                           state))
+          (type-fn (ffn-symb conjunct))
+          (type (case type-fn
+                  (scharp (type-schar))
+                  (ucharp (type-uchar))
+                  (sshortp (type-sshort))
+                  (ushortp (type-ushort))
+                  (sintp (type-sint))
+                  (uintp (type-uint))
+                  (slongp (type-slong))
+                  (ulongp (type-ulong))
+                  (sllongp (type-sllong))
+                  (ullongp (type-ullong))
+                  (schar-arrayp (type-pointer (type-schar)))
+                  (uchar-arrayp (type-pointer (type-uchar)))
+                  (sshort-arrayp (type-pointer (type-sshort)))
+                  (ushort-arrayp (type-pointer (type-ushort)))
+                  (sint-arrayp (type-pointer (type-sint)))
+                  (uint-arrayp (type-pointer (type-uint)))
+                  (slong-arrayp (type-pointer (type-slong)))
+                  (ulong-arrayp (type-pointer (type-ulong)))
+                  (sllong-arrayp (type-pointer (type-sllong)))
+                  (ullong-arrayp (type-pointer (type-ullong)))
+                  (t nil)))
+          ((when (not type))
+           (atc-typed-formals-prelim-alist fn
+                                           formals
+                                           guard
+                                           (cdr guard-conjuncts)
+                                           prelim-alist
+                                           ctx
+                                           state))
+          (arg (fargn conjunct 1))
+          ((unless (member-eq arg formals))
+           (atc-typed-formals-prelim-alist fn
+                                           formals
+                                           guard
+                                           (cdr guard-conjuncts)
+                                           prelim-alist
+                                           ctx
+                                           state))
+          ((when (consp (assoc-eq arg prelim-alist)))
+           (er-soft+ ctx t nil
+                     "The guard ~x0 of the target function ~x1 ~
+                      includes multiple type predicates ~
+                      for the formal parameter ~x2. ~
+                      This is disallowed: every formal paramter ~
+                      must have exactly one type predicate in the guard, ~
+                      even when the multiple predicates are the same."
+                     guard fn arg))
+          (prelim-alist (acons arg type prelim-alist)))
+       (atc-typed-formals-prelim-alist fn
+                                       formals
+                                       guard
+                                       (cdr guard-conjuncts)
+                                       prelim-alist
+                                       ctx
+                                       state))
+     :prepwork
+     ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))
+
+   (define atc-typed-formals-final-alist ((fn symbolp)
+                                          (formals symbol-listp)
+                                          (guard pseudo-termp)
+                                          (prelim-alist atc-symbol-type-alistp)
+                                          (ctx ctxp)
+                                          state)
+     :returns (mv erp
+                  (typed-formals atc-symbol-type-alistp)
+                  state)
+     :parents nil
+     (b* (((when (endp formals)) (acl2::value nil))
+          (formal (symbol-fix (car formals)))
+          (formal+type (assoc-eq formal
+                                 (atc-symbol-type-alist-fix prelim-alist)))
+          ((when (not (consp formal+type)))
+           (er-soft+ ctx t nil
+                     "The guard ~x0 of the target function ~x1 ~
+                      has no type predicate for the formal parameter ~x2. ~
+                      Every formal parameter must have a type predicate."
+                     guard fn formal))
+          (type (cdr formal+type))
+          ((er typed-formals) (atc-typed-formals-final-alist fn
+                                                             (cdr formals)
+                                                             guard
+                                                             prelim-alist
+                                                             ctx
+                                                             state)))
+       (acl2::value (acons formal type typed-formals)))
+     :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-param-declon ((formal symbolp)
-                              (fn symbolp)
-                              (guard-conjuncts pseudo-term-listp)
-                              (guard pseudo-termp)
-                              (ctx ctxp)
-                              state)
-  :returns (mv erp
-               (val (tuple (param param-declonp)
-                           (type typep)
-                           (pointerp booleanp)
-                           val))
-               state)
-  :short "Generate a C parameter declaration from an ACL2 formal parameter."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Besides checking that the name of the parameter is adequate,
-     we also (try and) retrieve its C type from the guard.")
-   (xdoc::p
-    "If the type is a pointer type,
-     we put the pointer indication into the declarator.
-     Only pointers to non-pointer types are allowed
-     (i.e. not pointers to pointers),
-     so we stop with an internal error if we encounter a pointer to pointer.")
-   (xdoc::p
-    "If the type is a pointer type, we also return a flag indicating that.
-     This is used, in @(tsee atc-gen-param-declon-list),
-     to collect the function parameters that are pointers,
-     because they get a special treatment
-     in the formulation of the generated correctness theorems."))
-  (b* ((name (symbol-name formal))
-       ((unless (atc-ident-stringp name))
-        (er-soft+ ctx t (list (irr-param-declon) (irr-type) nil)
-                  "The symbol name ~s0 of ~
-                   the formal parameter ~x1 of the function ~x2 ~
-                   must be a portable ASCII C identifier, but it is not."
-                  name formal fn))
-       ((mv erp type state)
-        (atc-find-param-type formal fn guard-conjuncts guard ctx state))
-       ((when erp) (mv erp (list (irr-param-declon) (irr-type) nil) state))
-       ((mv pointerp ref-type)
-        (if (type-case type :pointer)
-            (mv t (type-pointer->referenced type))
-          (mv nil type)))
-       ((when (type-case ref-type :pointer))
-        (raise "Internal error: pointer type to pointer type ~x0." ref-type)
-        (acl2::value (list (irr-param-declon) (irr-type) nil))))
-    (acl2::value (list (make-param-declon
-                        :declor (make-declor :ident (make-ident :name name)
-                                             :pointerp pointerp)
-                        :type (atc-gen-tyspecseq ref-type))
-                       type
-                       pointerp)))
-  ///
-  (more-returns
-   (val true-listp :rule-classes :type-prescription)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-gen-param-declon-list ((formals symbol-listp)
+(define atc-gen-param-declon-list ((typed-formals atc-symbol-type-alistp)
                                    (fn symbolp)
-                                   (guard-conjuncts pseudo-term-listp)
-                                   (guard pseudo-termp)
                                    (ctx ctxp)
                                    state)
   :returns (mv erp
                (val (tuple (params param-declon-listp)
-                           (scope atc-symbol-type-alistp)
                            (pointers atc-symbol-type-alistp)
                            val))
                state)
@@ -3058,36 +3095,60 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Also generate an initial scope
-     that maps the formal parameters to their C types.")
+    "The ACL2 formal parameters are actually passed as an alist,
+     from the formals to their C types,
+     as calculated by @(tsee atc-typed-formals).")
    (xdoc::p
-    "Also return a alist whose keys are
+    "We also return an alist whose keys are
      the formal parameters that are pointers in C
      and whose values are the types referenced by the pointers.
      These get a special treatment
-     in the formulation of the generated correctness theorems."))
-  (b* (((when (endp formals)) (acl2::value (list nil nil nil)))
-       (formal (mbe :logic (symbol-fix (car formals))
-                    :exec (car formals)))
-       ((when (member-equal (symbol-name formal)
-                            (symbol-name-lst (cdr formals))))
-        (er-soft+ ctx t (list nil nil nil)
+     in the formulation of the generated correctness theorems.
+     This is a sub-alist of @('typed-formals');
+     we may actually abolish it in the future,
+     suitably using @('typed-formals') instead.")
+   (xdoc::p
+    "We check that the name of the parameter is a portable C identifier,
+     and distinct from the names of the other parameters.")
+   (xdoc::p
+    "If the type is a pointer type,
+     we put the pointer indication into the declarator.
+     Only pointers to non-pointer types are allowed
+     (i.e. not pointers to pointers),
+     so we stop with an internal error if we encounter a pointer to pointer."))
+  (b* (((when (endp typed-formals)) (acl2::value (list nil nil)))
+       ((cons formal type) (car typed-formals))
+       (name (symbol-name formal))
+       ((unless (atc-ident-stringp name))
+        (er-soft+ ctx t (list nil nil)
+                  "The symbol name ~s0 of ~
+                   the formal parameter ~x1 of the function ~x2 ~
+                   must be a portable ASCII C identifier, but it is not."
+                  name formal fn))
+       (cdr-formals (strip-cars (cdr typed-formals)))
+       ((when (member-equal name (symbol-name-lst cdr-formals)))
+        (er-soft+ ctx t (list nil nil)
                   "The formal parameter ~x0 of the function ~x1 ~
                    has the same symbol name as ~
                    another formal parameter among ~x2; ~
                    this is disallowed, even if the package names differ."
-                  formal fn (cdr formals)))
-       ((mv erp (list param type pointerp) state)
-        (atc-gen-param-declon formal fn guard-conjuncts guard ctx state))
-       ((when erp) (mv erp (list nil nil nil) state))
-       ((er (list params scope pointers))
-        (atc-gen-param-declon-list (cdr formals)
-                                   fn guard-conjuncts guard
-                                   ctx state)))
+                  formal fn cdr-formals))
+       ((mv pointerp ref-type)
+        (if (type-case type :pointer)
+            (mv t (type-pointer->referenced type))
+          (mv nil type)))
+       ((when (type-case ref-type :pointer))
+        (raise "Internal error: pointer type to pointer type ~x0." ref-type)
+        (acl2::value (list nil nil)))
+       (param (make-param-declon
+               :declor (make-declor :ident (make-ident :name name)
+                                    :pointerp pointerp)
+               :type (atc-gen-tyspecseq ref-type)))
+       ((er (list params pointers))
+        (atc-gen-param-declon-list (cdr typed-formals) fn ctx state)))
     (acl2::value (list (cons param params)
-                       (acons formal type scope)
                        (if pointerp
-                           (acons formal type pointers)
+                           (acons formal (type-fix type) pointers)
                          pointers))))
 
   :verify-guards nil ; done below
@@ -3095,11 +3156,13 @@
   ///
 
   (more-returns
-   (val true-listp :rule-classes :type-prescription)) ; speeds up guard proofs
+   (val true-listp :rule-classes :type-prescription)) ; for guard proofs
 
   (verify-guards atc-gen-param-declon-list
     :hints
-    (("Goal" :in-theory (enable alistp-when-atc-symbol-type-alistp-rewrite)))))
+    (("Goal" :in-theory (enable
+                         symbol-listp-of-strip-cars-when-atc-symbol-type-alistp
+                         alistp-when-atc-symbol-type-alistp-rewrite)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3147,21 +3210,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-type-predicate ((type typep))
+  :returns (pred symbolp)
+  :short "ACL2 predicate corresponding to a C type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For a supported integer type,
+     the predicate is the recognizer of values of that type.
+     For a pointer to integer type,
+     the predicate is the recognizer of arrays with that element type.
+     (So for a pointer type it is not a recognizer of pointer values.)
+     We return @('nil') for other types."))
+  (type-case
+   type
+   :void nil
+   :char nil
+   :schar 'scharp
+   :uchar 'ucharp
+   :sshort 'sshortp
+   :ushort 'ushortp
+   :sint 'sintp
+   :uint 'uintp
+   :slong 'slongp
+   :ulong 'ulongp
+   :sllong 'sllongp
+   :ullong 'ullongp
+   :pointer (type-case
+             type.referenced
+             :void nil
+             :char nil
+             :schar 'schar-arrayp
+             :uchar 'uchar-arrayp
+             :sshort 'sshort-arrayp
+             :ushort 'ushort-arrayp
+             :sint 'sint-arrayp
+             :uint 'uint-arrayp
+             :slong 'slong-arrayp
+             :ulong 'ulong-arrayp
+             :sllong 'sllong-arrayp
+             :ullong 'ullong-arrayp
+             :pointer nil))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-fn-returns-value-thm ((fn symbolp)
                                       (type? type-optionp)
                                       (affect symbol-listp)
-                                      (scope atc-symbol-type-alistp)
+                                      (typed-formals atc-symbol-type-alistp)
                                       (prec-fns atc-symbol-fninfo-alistp)
                                       (proofs booleanp)
                                       (names-to-avoid symbol-listp)
-                                      (ctx ctxp)
-                                      state)
-  :returns (mv erp
-               (val "A @('(tuple (events pseudo-event-form-listp)
-                                 (name symbolp)
-                                 (updated-names-to-avoid symbol-listp)
-                                 val)').")
-               state)
+                                      (wrld plist-worldp))
+  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
+               (name "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the theorem saying that
           @('fn') returns one or more C values,
@@ -3185,13 +3289,21 @@
      "A @(tsee let) or @(tsee mv-let) variable is equal to a term that,
       recursively, always returns a value.")
     (xdoc::li
-     "A call of a preceding function returns a value,
+     "A call of a preceding function returns (a) C value(s),
       as proved by the same theorems for the preceding functions.")
     (xdoc::li
-     "An @(tsee if) return value reduces to the branches' return values.")
+     "An @(tsee if) returns the same as its branches,
+      when the test is not @(tsee mbt) or @(tsee mbt$).")
     (xdoc::li
-     "An @(tsee mv) returns variables that have C types,
-      because either they are parameters or bound variables."))
+     "An @(tsee if) return the same as its `then' branch,
+      when the test is @(tsee mbt) or @(tsee mbt$),
+      because the guard excludes the `else' branch from consideration.")
+    (xdoc::li
+     "An @(tsee mv) returns C values,
+      because either they are parameters or bound variables,
+      or terms that recursively return C values
+      (the latter case is for non-recursive functions
+      that return a non-@('void') result and also affect arrays)."))
    (xdoc::p
     "This suggests a coarse but adequate proof strategy:
      We use the theory consisting of
@@ -3200,21 +3312,30 @@
      and the theorems about the preceding functions;
      we also add a @(':use') hint for the guard theorem of @('fn').")
    (xdoc::p
-    "If the function is not recursive,
-     its body returns a single result,
-     whose type is passed as the parameter @('type?').
-     If the function is recursive, @('type?') is @('nil'),
-     but the function returns as many results as the affected variables
-     (passed as the @('affect') parameter),
-     whose types are retrieved from the scope passed as the @('scope') parameter
-     (this is the scope consisting of the parameters of @('fn')).")
+    "In the absence of @(tsee mbt) or @(tsee mbt$),
+     we would not need all of the guard as hypothesis,
+     but only the part that constrains the formal parameters to be C values.
+     These hypotheses are needed when the function returns them;
+     when instead the function returns a representation of some operation,
+     e.g. a call of @(tsee sint-dec-const) or @(tsee add-sint-sint),
+     these return C values unconditionally, so no hypotheses are needed.
+     This is because ATC, when generating C code,
+     ensures that the ACL2 terms follow the C typing rules,
+     whether the terms are reachable under the guards or not.
+     However, in the presence of @(tsee mbt) or @(tsee mbt$),
+     we need the guard to exclude the `else' branches,
+     which are otherwise unconstrained.")
    (xdoc::p
-    "In anticipation for future situations in which
-     also non-recursive target functions may return multiple results,
-     namely the C return result plus other results representing side effects,
-     the code below is already general.
-     It concatenates zero or one type from @('type?')
-     with zero or more types from @('affect') and @('scope').
+    "As explained in the user documentation,
+     an ACL2 function may return a combination of
+     an optional C result and zero or more affected variables or arrays.
+     We collect all of them.
+     The C result is determined from the optional C type of the function,
+     which is @('nil') for recursive functions,
+     and may or may not be @('void') for non-recursive functions.
+     The affected variables are also considered as results.
+     We concatenate zero or one type from @('type?')
+     with zero or more types from @('affect') and @('typed-formals').
      Then we operate on the resulting list,
      which forms all the results of the function:
      the list is never empty (and ACL2 function must always return something);
@@ -3231,8 +3352,7 @@
      we make the @(':use') hint a computed hint;
      we do that whether @('fn') is recursive or not, for simplicity.")
    (xdoc::p
-    "When @('fn') returns multiple results or contains @(tsee mv-let)s,
-     terms appear during the proof in which
+    "Terms may appear during the proof of this theorem, where
      @(tsee mv-nth)s are applied to @(tsee list)s (i.e. @(tsee cons) nests).
      So we add the rule" (xdoc::@def "mv-nth-of-cons") " to the theory,
      in order to simplify those terms.
@@ -3254,28 +3374,21 @@
      the executable counterparts of the integer value recognizers;
      the subgoals that arise without them have the form
      @('(<recognizer> nil)')."))
-  (b* ((wrld (w state))
-       ((when (not proofs))
-        (acl2::value (list nil nil names-to-avoid)))
-       (types1 (and type? (list type?)))
-       (types2 (atc-gen-fn-returns-value-thm-aux1 affect scope))
+  (b* (((when (not proofs)) (mv nil nil names-to-avoid))
+       (types1 (and type?
+                    (not (type-case type? :void))
+                    (list type?)))
+       (types2 (atc-gen-fn-returns-value-thm-aux1 affect typed-formals))
        (types (append types1 types2))
        ((unless (consp types))
-        (prog2$
-         (raise "Internal error: the function ~x0 has no return types." fn)
-         (acl2::value (list nil nil names-to-avoid))))
-       ((unless (type-integer-listp types))
-        (er-soft+ ctx t (list nil nil names-to-avoid)
-                  "The function ~x0 returns results of types ~x1, ~
-                   not all of which are integer types. ~
-                   This is currently disallowed."
-                  fn types))
+        (raise "Internal error: the function ~x0 has no return types." fn)
+        (mv nil nil names-to-avoid))
        (formals (formals+ fn wrld))
        (fn-call `(,fn ,@formals))
        (conclusion
         (if (consp (cdr types))
             `(and ,@(atc-gen-fn-returns-value-thm-aux2 types 0 fn-call))
-          `(,(pack (atc-integer-type-fixtype (car types)) 'p) ,fn-call)))
+          `(,(atc-type-predicate (car types)) ,fn-call)))
        (name (add-suffix fn "-RETURNS-VALUE"))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
@@ -3331,37 +3444,37 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (acl2::value (list (list event) name names-to-avoid)))
+    (mv (list event) name names-to-avoid))
 
   :prepwork
 
-  ((define atc-gen-fn-returns-value-thm-aux1 ((affect symbol-listp)
-                                              (scope atc-symbol-type-alistp))
+  ((define atc-gen-fn-returns-value-thm-aux1
+     ((affect symbol-listp)
+      (typed-formals atc-symbol-type-alistp))
      :returns (types type-listp)
      :parents nil
      (cond ((endp affect) nil)
            (t (b* ((type (cdr (assoc-eq (car affect)
-                                        (atc-symbol-type-alist-fix scope)))))
-                (if type
+                                        typed-formals))))
+                (if (typep type)
                     (cons type
                           (atc-gen-fn-returns-value-thm-aux1 (cdr affect)
-                                                             scope))
+                                                             typed-formals))
                   (raise "Internal error: variable ~x0 not found in ~x1."
-                         (car affect) scope))))))
+                         (car affect) typed-formals))))))
 
    (define atc-gen-fn-returns-value-thm-aux2 ((types type-listp)
                                               (index natp)
                                               (fn-call pseudo-termp))
-     :guard (type-integer-listp types)
      :returns conjuncts
      :parents nil
      (cond ((endp types) nil)
-           (t (list* `(,(pack (atc-integer-type-fixtype (car types)) 'p)
-                       (mv-nth ',index ,fn-call))
-                     `(mv-nth ',index ,fn-call)
-                     (atc-gen-fn-returns-value-thm-aux2 (cdr types)
-                                                        (1+ index)
-                                                        fn-call)))))))
+           (t (list*
+               `(,(atc-type-predicate (car types)) (mv-nth ',index ,fn-call))
+               `(mv-nth ',index ,fn-call)
+               (atc-gen-fn-returns-value-thm-aux2 (cdr types)
+                                                  (1+ index)
+                                                  fn-call)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3395,7 +3508,7 @@
    (xdoc::p
     "Here we compute the modified guard as just explained.
      The list of parameters that are pointers is passed as @('pointers'),
-     which is calculated by @(tsee atc-gen-param-declon).
+     which is calculated by @(tsee atc-gen-param-declon-list).
      The @('compst-var') input is the variable symbol
      to use for the computation state;
      this must be the same used
@@ -3641,7 +3754,7 @@
                          (pointers atc-symbol-type-alistp)
                          (type? type-optionp)
                          (affect symbol-listp)
-                         (scope atc-symbol-type-alistp)
+                         (typed-formals atc-symbol-type-alistp)
                          (prec-fns atc-symbol-fninfo-alistp)
                          (proofs booleanp)
                          (prog-const symbolp)
@@ -3651,7 +3764,6 @@
                          (print evmac-input-print-p)
                          (limit pseudo-termp)
                          (names-to-avoid symbol-listp)
-                         (ctx ctxp)
                          state)
   :returns (mv erp
                (val "A @('(tuple (local-events pseudo-event-form-listp)
@@ -3670,14 +3782,11 @@
             names-to-avoid)
         (atc-gen-fn-fun-env-thm
          fn proofs prog-const finfo? init-fun-env-thm names-to-avoid wrld))
-       ((mv erp
-            (list fn-returns-value-events
-                  fn-returns-value-thm
-                  names-to-avoid)
-            state)
-        (atc-gen-fn-returns-value-thm fn type? affect scope prec-fns
-                                      proofs names-to-avoid ctx state))
-       ((when erp) (mv erp (list nil nil nil nil nil nil) state))
+       ((mv fn-returns-value-events
+            fn-returns-value-thm
+            names-to-avoid)
+        (atc-gen-fn-returns-value-thm fn type? affect typed-formals prec-fns
+                                      proofs names-to-avoid wrld))
        ((mv fn-correct-local-events
             fn-correct-exported-events
             fn-correct-thm)
@@ -3739,13 +3848,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-formal-pointerp ((formal symbolp)
+                             (typed-formals atc-symbol-type-alistp))
+  :returns (yes/no booleanp)
+  :short "Check if a formal parameter has a C pointer type."
+  (b* ((pair (assoc-eq (symbol-fix formal)
+                       (atc-symbol-type-alist-fix typed-formals))))
+    (and (consp pair)
+         (type-case (cdr pair) :pointer)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist atc-formal-pointer-listp (x typed-formals)
+  :guard (and (symbol-listp x)
+              (atc-symbol-type-alistp typed-formals))
+  (atc-formal-pointerp x typed-formals)
+  :true-listp t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-find-affected ((fn symbolp)
                            (term pseudo-termp)
-                           (pointers atc-symbol-type-alistp)
+                           (typed-formals atc-symbol-type-alistp)
                            (ctx ctxp)
                            state)
   :returns (mv erp
-               (affected symbol-listp :hyp (atc-symbol-type-alistp pointers))
+               (affected symbol-listp
+                         :hyp (atc-symbol-type-alistp typed-formals))
                state)
   :short "Find the variables affected by a term."
   :long
@@ -3780,21 +3910,18 @@
     "In checking that the terms at the leaves have the same form,
      we allow @('ret') to vary, but the other parts must coincide.")
    (xdoc::p
-    "The list of formal parameters that have pointer type
-     are passed to this ACL2 function as the @('pointers') parameter.")
-   (xdoc::p
     "When we encounter @(tsee if)s with @(tsee mbt) or @(tsee mbt$) tests,
      we recursively process the `then' branch, skipping the `else' branch.
      This is because only the `then' branch represents C code."))
   (b* (((mv okp test then else) (fty-check-if-call term))
        ((when okp)
         (b* (((mv mbtp &) (check-mbt-call test))
-             ((when mbtp) (atc-find-affected fn then pointers ctx state))
+             ((when mbtp) (atc-find-affected fn then typed-formals ctx state))
              ((mv mbt$p &) (check-mbt$-call test))
-             ((when mbt$p) (atc-find-affected fn then pointers ctx state))
-             ((er then-affected) (atc-find-affected fn then pointers
+             ((when mbt$p) (atc-find-affected fn then typed-formals ctx state))
+             ((er then-affected) (atc-find-affected fn then typed-formals
                                                     ctx state))
-             ((er else-affected) (atc-find-affected fn else pointers
+             ((er else-affected) (atc-find-affected fn else typed-formals
                                                     ctx state)))
           (if (equal then-affected else-affected)
               (acl2::value then-affected)
@@ -3806,19 +3933,19 @@
                       fn then-affected else-affected))))
        ((mv okp & body &) (fty-check-lambda-call term))
        ((when okp)
-        (atc-find-affected fn body pointers ctx state))
+        (atc-find-affected fn body typed-formals ctx state))
        ((when (pseudo-term-case term :var))
         (b* ((var (pseudo-term-var->name term)))
-          (if (assoc-eq var pointers)
+          (if (atc-formal-pointerp var typed-formals)
               (acl2::value (list var))
             (acl2::value nil))))
        ((mv okp terms) (fty-check-list-call term))
        ((when okp)
-        (cond ((subsetp-eq terms
-                           (strip-cars pointers))
+        (cond ((and (symbol-listp terms)
+                    (atc-formal-pointer-listp terms typed-formals))
                (acl2::value terms))
-              ((subsetp-eq (cdr terms)
-                           (strip-cars pointers))
+              ((and (symbol-listp (cdr terms))
+                    (atc-formal-pointer-listp (cdr terms) typed-formals))
                (acl2::value (cdr terms)))
               (t (er-soft+ ctx t nil
                            "When generating code for function ~x0, ~
@@ -3888,13 +4015,12 @@
                    but the function ~x2 has the same symbol name."
                   name fn conflicting-fn))
        (wrld (w state))
-       (formals (formals+ fn wrld))
-       (guard (uguard+ fn wrld))
-       (guard-conjuncts (flatten-ands-in-lit guard))
-       ((er (list params scope pointers))
-        (atc-gen-param-declon-list formals fn guard-conjuncts guard ctx state))
+       ((mv erp typed-formals state) (atc-typed-formals fn ctx state))
+       ((when erp) (mv erp nil state))
+       ((er (list params pointers))
+        (atc-gen-param-declon-list typed-formals fn ctx state))
        (body (ubody+ fn wrld))
-       ((er affect) (atc-find-affected fn body pointers ctx state))
+       ((er affect) (atc-find-affected fn body typed-formals ctx state))
        ((unless (subsetp-eq affect (strip-cars pointers)))
         (er-soft+ ctx t nil
                   "The variables ~x0 affected by the body of ~x1 ~
@@ -3904,7 +4030,7 @@
                   affect fn (strip-cars pointers)))
        ((er (list items type limit)) (atc-gen-stmt body
                                                    nil
-                                                   (list scope)
+                                                   (list typed-formals)
                                                    nil
                                                    affect
                                                    fn
@@ -3914,10 +4040,16 @@
                                                    state))
        ((when (and (type-case type :void)
                    (not affect)))
-        (er-soft+ ctx t nil
-                  "The function ~x0 returns void and affects no variables. ~
-                   This is disallowed."
-                  fn))
+        (raise "Internal error: ~
+                the function ~x0 returns void and affects no variables."
+               fn)
+        (acl2::value nil))
+       ((unless (or (type-integerp type)
+                    (type-case type :void)))
+        (raise "Internal error: ~
+                the function ~x0 has return type ~x1."
+               fn type)
+        (acl2::value nil))
        (fundef (make-fundef :result (atc-gen-tyspecseq type)
                             :name (make-ident :name name)
                             :params params
@@ -3933,13 +4065,13 @@
                   fn-correct-thm
                   names-to-avoid)
             state)
-        (atc-gen-fn-thms fn pointers type nil scope prec-fns
+        (atc-gen-fn-thms fn pointers type affect typed-formals prec-fns
                          proofs prog-const finfo init-fun-env-thm fn-thms print
-                         limit names-to-avoid ctx state))
+                         limit names-to-avoid state))
        ((when erp) (mv erp (list (irr-ext-declon) nil nil nil nil) state))
        (info (make-atc-fn-info
               :out-type type
-              :in-types (strip-cdrs scope)
+              :in-types (strip-cdrs typed-formals)
               :loop? nil
               :affect affect
               :returns-value-thm fn-returns-value-thm
@@ -4039,35 +4171,6 @@
                        ,(car mod-vars)
                        ,(atc-gen-loop-final-compustate (cdr mod-vars)
                                                        compst-var)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-gen-instantiation-for-loop-gthm ((formals symbol-listp)
-                                             (pointers atc-symbol-type-alistp)
-                                             (compst-var symbolp))
-  :returns (instantiation doublet-listp)
-  :short "Generate the instantiation for the lemma instance
-          of the guard theorem of a loop function."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is an extension of @(tsee atc-gen-instantiation-deref-compustate)
-     that, after dereferencing any pointers,
-     also replaces variables with @(tsee read-var) calls."))
-  (b* (((when (endp formals)) nil)
-       (formal (car formals))
-       (inst (if (assoc-eq formal pointers)
-                 (atc-gen-term-with-read-var-compustate
-                  `(read-array ,formal ,compst-var)
-                  compst-var)
-               (atc-gen-term-with-read-var-compustate
-                formal
-                compst-var)))
-       (first (list formal inst))
-       (rest (atc-gen-instantiation-for-loop-gthm (cdr formals)
-                                                  pointers
-                                                  compst-var)))
-    (cons first rest)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4908,8 +5011,6 @@
   (xdoc::topstring
    (xdoc::p
     "This is called if @('fn') is a recursive target function.
-     We initialize a scope consisting of the formal parameters,
-     similarly to @(tsee atc-gen-ext-declon).
      We process the function body as a loop term,
      and update the @('prec-fns') alist with information about the function.")
    (xdoc::p
@@ -4921,11 +5022,10 @@
   (b* ((wrld (w state))
        ((mv measure-of-fn-event measure-of-fn measure-formals names-to-avoid)
         (atc-gen-measure-of-fn fn names-to-avoid wrld))
-       (formals (formals+ fn wrld))
-       (guard (uguard+ fn wrld))
-       (guard-conjuncts (flatten-ands-in-lit guard))
-       ((mv erp (list & scope pointers) state)
-        (atc-gen-param-declon-list formals fn guard-conjuncts guard ctx state))
+       ((mv erp typed-formals state) (atc-typed-formals fn ctx state))
+       ((when erp) (mv erp nil state))
+       ((er (list & pointers))
+        (atc-gen-param-declon-list typed-formals fn ctx state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        (body (ubody+ fn wrld))
        ((mv erp (list loop-stmt
@@ -4935,8 +5035,15 @@
                       body-limit
                       loop-limit)
             state)
-        (atc-gen-loop-stmt body (list scope) fn measure-of-fn measure-formals
-                           prec-fns proofs ctx state))
+        (atc-gen-loop-stmt body
+                           (list typed-formals)
+                           fn
+                           measure-of-fn
+                           measure-formals
+                           prec-fns
+                           proofs
+                           ctx
+                           state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        ((mv erp
             (list local-events
@@ -4946,10 +5053,10 @@
                   &
                   names-to-avoid)
             state)
-        (atc-gen-fn-thms fn pointers nil loop-affect scope prec-fns
+        (atc-gen-fn-thms fn pointers nil loop-affect typed-formals prec-fns
                          proofs prog-const nil nil fn-thms
                          print loop-limit
-                         names-to-avoid ctx state))
+                         names-to-avoid state))
        ((when erp) (mv erp (list nil nil nil nil) state))
        (loop-test (stmt-while->test loop-stmt))
        (loop-body (stmt-while->body loop-stmt))
@@ -5052,7 +5159,7 @@
        (exported-events (and proofs
                              (append exported-events more-exported-events)))
        (info (make-atc-fn-info :out-type nil
-                               :in-types (strip-cdrs scope)
+                               :in-types (strip-cdrs typed-formals)
                                :loop? loop-stmt
                                :affect loop-affect
                                :returns-value-thm fn-returns-value-thm
