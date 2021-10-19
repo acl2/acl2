@@ -1781,13 +1781,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As discussed in @(see atc-types),
-     now types and type specifier sequences are isomorphic in our model,
-     but they are not in C.
-     When generating C code,
-     in some cases it is necessary to generate
-     type specifier sequences for types.
-     This ACL2 function does that."))
+    "This is always called on a non-pointer type currently."))
   (type-case type
              :void (tyspecseq-void)
              :char (tyspecseq-char)
