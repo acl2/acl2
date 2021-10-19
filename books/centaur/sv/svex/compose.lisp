@@ -2184,20 +2184,25 @@ we've seen before with a mask that overlaps with that one.</p>"
                                                 &key (simpconf svex-simpconfig-p))
   :returns (mv (masks svex-mask-alist-p)
                (new-x svex-alist-p))
-  (b* ((dep-vars (cwtime (svexlist-collect-vars (svex-alist-vals x))))
+  (b* (;; (dep-vars (cwtime (svexlist-collect-vars (svex-alist-vals x))))
        ((acl2::with-fast x))
-       (reduced-updates (svex-alist-reduce dep-vars x))
-       (rest-updates (svex-alist-reduce (hons-set-diff (svex-alist-keys x) dep-vars) x))
-       (init-masks (svex-alist-pair-initial-masks reduced-updates))
-       ((mv masks reduced-looped)
+       ;; (reduced-updates (svex-alist-reduce dep-vars x))
+       ;; (rest-updates (svex-alist-reduce (hons-set-diff (svex-alist-keys x) dep-vars) x))
+       ;; (init-masks (svex-alist-pair-initial-masks reduced-updates))
+       (init-masks (svex-alist-pair-initial-masks x))
+       ((mv masks phase2-updates)
         (with-fast-alist init-masks
-          (cwtime (svex-alist-maskcompose-iter init-masks reduced-updates simpconf)))))
-    (mv masks (append reduced-looped
-                      (with-fast-alist reduced-looped
-                        (cwtime (svex-alist-compose-rw rest-updates
-                                                       (make-svex-substconfig
-                                                        :alist reduced-looped
-                                                        :simp simpconf))))))))
+          (cwtime (svex-alist-maskcompose-iter init-masks x simpconf)))))
+    (mv masks (fast-alist-free phase2-updates))))
+    ;;    ((mv masks reduced-looped)
+    ;;     (with-fast-alist init-masks
+    ;;       (cwtime (svex-alist-maskcompose-iter init-masks reduced-updates simpconf)))))
+    ;; (mv masks (append reduced-looped
+    ;;                   (with-fast-alist reduced-looped
+    ;;                     (cwtime (svex-alist-compose-rw rest-updates
+    ;;                                                    (make-svex-substconfig
+    ;;                                                     :alist reduced-looped
+    ;;                                                     :simp simpconf))))))))
     ;;    (ans (fast-alist-fork
     ;;          x
     ;;          (make-fast-alist reduced-looped))))
