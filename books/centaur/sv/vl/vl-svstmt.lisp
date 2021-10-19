@@ -2322,6 +2322,14 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
 ||#
 
+(local
+ #!sv
+ (defthm svex-alist-keys-of-append
+   (equal (svex-alist-keys (append a b))
+          (append (svex-alist-keys a)
+                  (svex-alist-keys b)))
+   :hints(("Goal" :in-theory (enable svex-alist-keys)))))
+
 (define vl-always->svex ((x vl-always-p)
                          (ss vl-scopestack-p)
                          (scopes vl-elabscopes-p)

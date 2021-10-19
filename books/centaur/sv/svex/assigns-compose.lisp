@@ -33,7 +33,10 @@
 (include-book "mask-compose")
 (include-book "scc-compose")
 (include-book "compose-theory-split")
-
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "std/lists/sets" :dir :system))
+(local (include-book "std/alists/fast-alist-clean" :dir :system))
+(local (std::add-default-post-define-hook :fix))
 (defxdoc svex-composition
   :parents (svex)
   :short "The process of composing together a netlist of svex assignments into
@@ -209,7 +212,6 @@ the original namespace.</li>
                                       (hons orig.name (hons (lnfix base-idx) (lnfix width)))
                                     (hons orig.name (lnfix base-idx)))))))
 
-(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
 (define svar-mask-to-split ((orig svar-p)
                             (position natp)
@@ -308,7 +310,6 @@ the original namespace.</li>
    (svex-alist-eval-equiv (svex-alist-rewrite-top x :verbosep verbosep) x)
    :hints(("Goal" :in-theory (enable svex-alist-eval-equiv-in-terms-of-envs-equivalent)))))
 
-(local (include-book "std/lists/sets" :dir :system))
 
 (define svex-alist-to-split-split-part ((x svex-alist-p)
                                         (splittab svar-splittab-p))
@@ -434,7 +435,6 @@ the original namespace.</li>
                                  (svex-alist-keys x))))))
              
 
-(local (include-book "std/alists/fast-alist-clean" :dir :system))
 (local (in-theory (disable fast-alist-clean)))
 
 (local (defthm svex-mask-alist-p-of-hons-remove-assoc

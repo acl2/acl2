@@ -1821,7 +1821,10 @@ functions) and that it is being given the right number of arguments.</p>
 
   (defthm keys-of-svex-alist-rewrite-fixpoint
     (iff (svex-lookup v (svex-alist-rewrite-fixpoint x :count count :verbosep verbosep))
-         (svex-lookup v x))))
+         (svex-lookup v x)))
+
+  (defret svex-alist-keys-of-<fn>
+    (equal (svex-alist-keys xx) (svex-alist-keys x))))
 
 
 (define svex-alist-maybe-rewrite-fixpoint ((x svex-alist-p)
@@ -1852,7 +1855,10 @@ functions) and that it is being given the right number of arguments.</p>
 
   (defret keys-of-svex-alist-maybe-rewrite-fixpoint
     (iff (svex-lookup v xx)
-         (svex-lookup v x))))
+         (svex-lookup v x)))
+
+  (defret svex-alist-keys-of-<fn>
+    (equal (svex-alist-keys xx) (svex-alist-keys x))))
 
 
 

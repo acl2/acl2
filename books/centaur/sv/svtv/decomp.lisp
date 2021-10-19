@@ -29,7 +29,9 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "../svex/assigns-compose")
+;; (include-book "../svex/assigns-compose")
+(include-book "centaur/vl/util/cwtime" :dir :system)
+(include-book "../svex/rewrite")
 (include-book "../svex/eval")
 (include-book "../svex/env-ops")
 (include-book "tools/match-tree" :dir :system)
@@ -267,7 +269,11 @@ trigger on any of the following:</p>
   (defthm svar-lookup-of-svex-env-fix
     (iff (svar-lookup k (svex-env-fix x))
          (svar-lookup k x))
-    :hints(("Goal" :in-theory (enable svex-env-fix)))))
+    :hints(("Goal" :in-theory (enable svex-env-fix))))
+
+  (defthm svar-lookup-of-true-list-fix
+    (equal (svar-lookup k (true-list-fix x))
+           (svar-lookup k x))))
 
 (define svdecomp-ev-symenv ((x svdecomp-symenv-p) env)
   :prepwork ((local (in-theory (enable svdecomp-symenv-p
@@ -614,7 +620,11 @@ trigger on any of the following:</p>
     :hints(("Goal" :in-theory (enable svar-alist-keys svex-env-fix))))
 
   (fty::deffixcong svex-alist-equiv equal (svar-alist-keys x) x
-    :hints(("Goal" :in-theory (enable svar-alist-keys svex-alist-fix)))))
+    :hints(("Goal" :in-theory (enable svar-alist-keys svex-alist-fix))))
+
+  (defthm svar-alist-keys-of-true-list-fix
+    (equal (Svar-alist-keys (true-list-fix x))
+           (svar-alist-keys x))))
 
 (define envmap->svex-alist ((envmap envmap-p))
   :prepwork ((local (in-theory (enable svex-alist-alist-fix))))
@@ -1232,6 +1242,7 @@ trigger on any of the following:</p>
                            (svdecomp-ev (cdr (svar-lookup k x)) a))))
          :hints (("Goal" :in-theory (e/d (member-svar-alist-keys))
                   :induct (alist-collect-compositions-aux x base-env envmap)
+                  :do-not-induct t
                   :expand ((svar-alist-keys x)
                            (:with acl2::fast-alist-clean-by-remove-assoc
                             (:free (a b) (fast-alist-clean (cons a b))))
