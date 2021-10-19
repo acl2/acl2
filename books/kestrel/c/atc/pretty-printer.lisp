@@ -998,9 +998,7 @@
   :short "Pretty-print an external declaration."
   (ext-declon-case ext
                    :fundef (pprint-fundef ext.get)
-                   :declon (raise "Internal error: ~
-                                 non-function-definition external declarations ~
-                                 not supported.")))
+                   :declon (pprint-declon ext.get 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

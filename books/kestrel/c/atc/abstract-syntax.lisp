@@ -853,14 +853,8 @@
 
 (fty::deftagsum ext-declon
   :short "Fixtype of external declarations [C:6.9]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now we only allow function definitions at the top level.
-     We add a placeholder for other top-level declarations,
-     which we will flesh out later."))
   (:fundef ((get fundef)))
-  (:declon ())
+  (:declon ((get declon)))
   :pred ext-declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

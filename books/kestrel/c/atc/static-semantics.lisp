@@ -1210,8 +1210,7 @@
      item
      :declon
      (b* (((unless (declon-case item.get :var))
-           (error (list :struct-declaration-not-supported-in-block-item
-                    item.get)))
+           (error (list :struct-declaration-in-block-item item.get)))
           (type (declon-var->type item.get))
           (declor (declon-var->declor item.get))
           (init (declon-var->init item.get))
@@ -1396,9 +1395,10 @@
   (xdoc::topstring
    (xdoc::p
     "For now we only allow function definitions."))
-  (ext-declon-case ext
-                 :fundef (check-fundef ext.get funtab)
-                 :declon (fun-table-fix funtab))
+  (ext-declon-case
+   ext
+   :fundef (check-fundef ext.get funtab)
+   :declon (error (list :top-level-declaraion-not-supported ext.get)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
