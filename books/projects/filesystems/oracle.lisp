@@ -173,8 +173,10 @@
     (abs-complete (frame->root frame))
     (abs-complete (frame-val->dir$inline (cdr (assoc-equal 0 frame))))))
   :hints (("goal" :do-not-induct t
-           :in-theory (enable good-frame-p
-                              collapse frame->root abs-complete))))
+           :in-theory (e/d (good-frame-p
+                            collapse frame->root abs-complete)
+                           (frame->root-normalisation
+                            collapse-hifat-place-file-lemma-27)))))
 
 (defthm
   cp-without-subdirs-helper-correctness-lemma-63
@@ -237,11 +239,8 @@
                  buf offset frame fd-table file-table))))
   :hints
   (("goal" :do-not-induct t
-    :in-theory (e/d
-                (abs-pwrit1)
-                ((:definition atom)
-                 (:rewrite collapse-hifat-place-file-lemma-91)
-                 (:rewrite partial-collapse-when-atom)))
+    :in-theory (e/d (abs-pwrit1)
+                    ((:rewrite partial-collapse-when-atom)))
     :use good-frame-p-of-abs-pwrite)))
 
 (fty::defprod fat-st
@@ -2361,7 +2360,9 @@
   :hints
   (("goal" :do-not-induct t
     :in-theory (e/d (frame->root good-frame-p)
-                    (cp-without-subdirs-helper-correctness-lemma-30))
+                    (cp-without-subdirs-helper-correctness-lemma-30
+                     frame->root-normalisation
+                     collapse-hifat-place-file-lemma-27))
     :use cp-without-subdirs-helper-correctness-lemma-30)))
 
 (defthm

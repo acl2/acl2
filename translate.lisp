@@ -7535,7 +7535,7 @@
           (finallyp
            (mv nil
                (msg "It is illegal to use loop-finish in a finally clause of ~
-                     a do loop$")))
+                     a do loop$.")))
           (t (mv t nil))))
         (ersatz-return
          (let ((bad-fns (ersatz-symbols :rename (fargn x 1))))
