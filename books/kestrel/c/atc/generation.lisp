@@ -2370,12 +2370,12 @@
                                must not have a C pointer type, ~
                                but it has type ~x2 instead."
                               val var init-type))
-                   (declon (make-declon :type (atc-gen-tyspecseq init-type)
-                                        :declor (make-declor
-                                                 :ident
-                                                 (make-ident
-                                                  :name (symbol-name var)))
-                                        :init init-expr))
+                   (declon (make-declon-var :type (atc-gen-tyspecseq init-type)
+                                            :declor (make-declor
+                                                     :ident
+                                                      (make-ident
+                                                       :name (symbol-name var)))
+                                            :init init-expr))
                    (item (block-item-declon declon))
                    (inscope (atc-add-var var init-type inscope))
                    ((er (list body-items body-type body-limit))

@@ -787,15 +787,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define pprint-struct-declon ((member struct-declonp) (level natp))
+  :returns (line msgp)
+  :short "Pretty-print a structure declaration."
+  (b* (((struct-declon member) member))
+    (pprint-line (msg "~@0 ~@1;"
+                      (pprint-tyspecseq member.type)
+                      (pprint-declor member.declor))
+                 (lnfix level)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-struct-declon-list ((members struct-declon-listp) (level natp))
+  :returns (lines msg-listp)
+  :short "Pretty-print a list of stucture declarations."
+  (cond ((endp members) nil)
+        (t (cons (pprint-struct-declon (car members) level)
+                 (pprint-struct-declon-list (cdr members) level))))
+  ///
+  (fty::deffixequiv pprint-struct-declon-list
+    :hints (("Goal" :in-theory (disable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define pprint-declon ((declon declonp) (level natp))
   :returns (lines msg-listp)
   :short "Pretty-print a declaration."
-  (b* (((declon declon) declon))
-    (list (pprint-line (msg "~@0 ~@1 = ~@2;"
-                            (pprint-tyspecseq declon.type)
-                            (pprint-declor declon.declor)
-                            (pprint-expr declon.init (expr-grade-top)))
-                       (lnfix level))))
+  (declon-case
+   declon
+   :var
+   (list (pprint-line (msg "~@0 ~@1 = ~@2;"
+                           (pprint-tyspecseq declon.type)
+                           (pprint-declor declon.declor)
+                           (pprint-expr declon.init (expr-grade-top)))
+                      (lnfix level)))
+   :struct
+   (append (list (pprint-line (msg "struct ~@0 {"
+                                   (pprint-ident declon.tag))
+                              (lnfix level)))
+           (pprint-struct-declon-list declon.members (1+ (lnfix level)))
+           (list (pprint-line "}"
+                              (lnfix level)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -933,7 +966,7 @@
 
 (define pprint-param-declon-list ((params param-declon-listp))
   :returns (parts msg-listp)
-  :short "Pretty-print a list of parameter-declarations."
+  :short "Pretty-print a list of parameter declarations."
   (cond ((endp params) nil)
         (t (cons (pprint-param-declon (car params))
                  (pprint-param-declon-list (cdr params)))))

@@ -603,29 +603,68 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod declon
+(fty::defprod struct-declon
+  :short "Fixtype of structure declarations [C:6.7.2.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used inside structure specifiers:
+     they do not declare structure types, but rather their members.")
+   (xdoc::p
+    "For now we only capture structure declarations that consist of
+     a type specifier sequence from @(tsee tyspecseq),
+     and a structure declarator that is a declarator from @(tsee declor).
+     We do not capture static assertions.
+     We do not capture bit field sizes."))
+  ((type tyspecseq)
+   (declor declor))
+  :tag :struct-declon
+  :pred struct-declonp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist struct-declon-list
+  :short "Fixtype of lists of structure declarations."
+  :elt-type struct-declon
+  :true-listp t
+  :elementp-of-nil nil
+  :pred struct-declon-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum declon
   :short "Fixtype of declarations [C:6.7]."
   :long
   (xdoc::topstring
    (xdoc::p
     "Declarations are perhaps the most complex part of the C syntax.
      For now we capture only a very limited form of declarations,
-     namely the ones consisting of
-     a type specifier sequence from @(tsee tyspecseq),
-     no storage class specifiers,
-     no type qualifiers,
-     no function specifiers,
-     no alignment specifiers,
-     and a single declarator (see @(tsee declor))
-     with an initializer expression.")
+     namely:")
+   (xdoc::ul
+    (xdoc::li
+     "The ones consisting of
+      a type specifier sequence from @(tsee tyspecseq),
+      no storage class specifiers,
+      no type qualifiers,
+      no function specifiers,
+      no alignment specifiers,
+      and a single declarator (see @(tsee declor))
+      with an initializer expression.
+      These declare variables.")
+    (xdoc::li
+     "The ones consisting of
+      a single structure type specifier consisting of the tag identifier
+      and a list of structure declarations from @(tsee struct-declon).
+      These declare structure types."))
    (xdoc::p
     "We will support richer forms of declarations when needed.")
    (xdoc::p
     "We do not support static assertions for now."))
-  ((type tyspecseq)
-   (declor declor)
-   (init expr))
-  :tag :declon
+  (:var ((type tyspecseq)
+         (declor declor)
+         (init expr)))
+  (:struct ((tag ident)
+            (members struct-declon-list)))
   :pred declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

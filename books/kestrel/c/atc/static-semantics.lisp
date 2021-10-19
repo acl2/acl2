@@ -1102,7 +1102,8 @@
      and we return the singleton set with the type of the expression.")
    (xdoc::p
     "For a block item that is a declaration,
-     we ensure that the type is not @('void'),
+     we ensure that it is a variable (not a structure type) declaration.
+     We ensure that the type is not @('void'),
      because the type must be complete [C:6.7/7],
      and @('void') is incomplete [C:6.2.5/19].
      We also ensure that the initializer has the same type as the variable
@@ -1207,27 +1208,33 @@
     :returns (stype stmt-type-resultp)
     (block-item-case
      item
-     :declon (b* (((declon declon) item.get)
-                  ((when (tyspecseq-case declon.type :void))
-                   (error (list :declon-error-type-void declon)))
-                  (pointerp (declor->pointerp declon.declor))
-                  (var (declor->ident declon.declor))
-                  (wf (check-ident var))
-                  ((when (errorp wf)) (error (list :declon-error-var wf)))
-                  (type (type-name-to-type (make-tyname :specs declon.type
-                                                        :pointerp pointerp)))
-                  (init-type (check-expr-call-or-pure declon.init funtab vartab))
-                  ((when (errorp init-type))
-                   (error (list :declon-error-init init-type)))
-                  ((unless (equal init-type type))
-                   (error (list
-                           :declon-mistype declon.type declon.declor declon.init
-                           :required type
-                           :supplied init-type)))
-                  (vartab (var-table-add-var var type vartab))
-                  ((when (errorp vartab)) (error (list :declon-error vartab))))
-               (make-stmt-type :return-types (set::insert (type-void) nil)
-                               :variables vartab))
+     :declon
+     (b* (((unless (declon-case item.get :var))
+           (error (list :struct-declaration-not-supported-in-block-item
+                    item.get)))
+          (type (declon-var->type item.get))
+          (declor (declon-var->declor item.get))
+          (init (declon-var->init item.get))
+          ((when (tyspecseq-case type :void))
+           (error (list :declon-error-type-void item.get)))
+          (pointerp (declor->pointerp declor))
+          (var (declor->ident declor))
+          (wf (check-ident var))
+          ((when (errorp wf)) (error (list :declon-error-var wf)))
+          (type (type-name-to-type (make-tyname :specs type
+                                                :pointerp pointerp)))
+          (init-type (check-expr-call-or-pure init funtab vartab))
+          ((when (errorp init-type))
+           (error (list :declon-error-init init-type)))
+          ((unless (equal init-type type))
+           (error (list
+                   :declon-mistype type declor init
+                   :required type
+                   :supplied init-type)))
+          (vartab (var-table-add-var var type vartab))
+          ((when (errorp vartab)) (error (list :declon-error vartab))))
+       (make-stmt-type :return-types (set::insert (type-void) nil)
+                       :variables vartab))
      :stmt (check-stmt item.get funtab vartab))
     :measure (block-item-count item))
 
