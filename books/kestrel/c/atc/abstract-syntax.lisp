@@ -31,7 +31,7 @@
    (xdoc::p
     "This is not necessarily meant to be a complete abstract syntax of C.
      It only needs to represent the C programs that ATC generates,
-     not necessarily all the possible C programs.")
+     not all the possible C programs.")
    (xdoc::p
     "At the same time, we plan to formalize
      a more comprehensive abstract syntax of C
@@ -47,7 +47,7 @@
      such as @('#include')s, and possibly also some (simple) macros.
      This means that the ATC abstract syntax will have to mix
      preprocessing constructs with the preprocessed constructs:
-     this is something that may not be part, as such,
+     this is something that may not be part, in this mixed form,
      of the language formalization,
      which should presumably differentiate between
      preprocessing translation units and
@@ -184,8 +184,9 @@
      In C, @('0') is always an octal integer constant,
      so our abstract syntax here captures a bit more,
      namely a decimal integer constant 0 that does not exist in C.
-     This is not an issue, because a pretty-printer would turn that
-     into @('0') in the same way as if it were octal.")
+     This is not an issue for now,
+     because our pretty-printer turns that into @('0')
+     in the same way as if it were octal.")
    (xdoc::p
     "In base 8, the value has a unique syntactic representation
      if we assume exactly one leading 0,
@@ -193,7 +194,7 @@
    (xdoc::p
     "In base 16, the value has a unique syntactc representation
      if we assume no leading 0s and either lowercase or uppercase letters
-     (e.g. we do not capture the difference between
+     (i.e. we do not capture the difference between
      the hexadecimal digits @('a') and @('A')).
      This is not a very severe limitation,
      even though sometimes one may like to write
