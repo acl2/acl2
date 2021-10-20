@@ -3994,60 +3994,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines atc-gen-term-with-read-var-compustate
-  :short "Transform a term by replacing each ACL2 variable
-          with a reading of the corresponding C variable
-          from the computation state."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In the generated correctness theorems for loops,
-     the ACL2 variables that are parameters of the loop function
-     correspond to local variables in the computation state
-     that are declared in scopes whose entering precedes the loop.
-     In the formulation of the correctness theorem for the loop,
-     we must replace the ACL2 variables
-     with calls of @(tsee read-var) on the correspoding C variables.
-     This ACL2 code here does that."))
-
-  (define atc-gen-term-with-read-var-compustate ((term pseudo-termp)
-                                                 (compst-var symbolp))
-    :returns (new-term pseudo-termp)
-    (cond ((pseudo-term-case term :null)
-           (raise "Internal error: null term."))
-          ((pseudo-term-case term :var)
-           (if (eq (pseudo-term-var->name term) compst-var)
-               (pseudo-term-fix term)
-             `(read-var (ident ',(symbol-name (pseudo-term-var->name term)))
-                        ,(symbol-fix compst-var))))
-          ((pseudo-term-case term :quote) (pseudo-term-fix term))
-          (t (pseudo-term-call
-              (pseudo-term-call->fn term)
-              (atc-gen-terms-with-read-var-compustate
-               (pseudo-term-call->args term)
-               compst-var))))
-    :measure (pseudo-term-count term))
-
-  (define atc-gen-terms-with-read-var-compustate ((terms pseudo-term-listp)
-                                                  (compst-var symbolp))
-    :returns (new-terms pseudo-term-listp)
-    (cond ((endp terms) nil)
-          (t (cons (atc-gen-term-with-read-var-compustate (car terms)
-                                                          compst-var)
-                   (atc-gen-terms-with-read-var-compustate (cdr terms)
-                                                           compst-var))))
-    :measure (pseudo-term-list-count terms)
-    ///
-    (defret len-of-atc-gen-terms-with-read-var-compustate
-      (equal (len new-terms)
-             (len terms))))
-
-  :verify-guards nil ; done below
-  ///
-  (verify-guards atc-gen-term-with-read-var-compustate))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-gen-loop-final-compustate ((mod-vars symbol-listp)
                                        (compst-var symbolp))
   :returns (term "An untranslated term.")
@@ -4745,9 +4691,7 @@
      the computation state, the function environment, and the limit.
      The hypotheses include the guard of the loop function,
      but we need to replace any pointers with their dereferenced arrays,
-     and in addition,
-     as discussed in @(tsee atc-gen-term-with-read-var-compustate),
-     we need to replace the parameters of the loop function
+     and in addition we need to replace the parameters of the loop function
      with @(tsee read-var) calls that read the corresponding variables.
      The other hypotheses are the same as in @(tsee atc-gen-cfun-correct-thm),
      with the addition of a hypothesis that
