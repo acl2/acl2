@@ -5070,7 +5070,9 @@
                                  val)').")
                state)
   :mode :program
-  :short "Lift @(tsee atc-gen-ext-declon) to lists."
+  :short "Generate a list of C external declarations (function definitions)
+          from non-recursive ACL2 functions,
+          including generating C loops from recursive ACL2 functions."
   :long
   (xdoc::topstring
    (xdoc::p
