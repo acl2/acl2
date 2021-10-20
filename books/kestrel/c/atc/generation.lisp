@@ -647,7 +647,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-iconst ((term pseudo-termp) ctx state)
+(define atc-check-iconst ((term pseudo-termp) (ctx ctxp) state)
   :returns (mv erp
                (val (tuple (yes/no booleanp)
                            (const iconstp)
