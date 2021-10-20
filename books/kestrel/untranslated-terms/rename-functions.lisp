@@ -27,6 +27,16 @@
 
 ;; TODO: Add tests
 
+;; Throws an error if macroexpansion fails.  Returns the term with one macro call now expanded.
+(defund magic-macroexpand1$$ (term ctx wrld state)
+  (declare (xargs :mode :program
+                  :stobjs state))
+  (b* ((- (cw "NOTE: Macroexpanding non-supported call ~x0.~%" term))
+       ((mv erp term-expanded-one-step) (magic-macroexpand1$ term ctx wrld state))
+       ;; Can this ever happen, given that we translated the term above?
+       ((when erp) (er hard? 'rename-functions-in-untranslated-term-aux "Failed to macroexpand term: ~x0." term)))
+    term-expanded-one-step))
+
 ;; Dumb replacement, without trying to determine whether symbols are vars,
 ;; function names, stuff passed to macros, etc.  TODO: Maybe stop if 'QUOTE is
 ;; encountered?
@@ -55,17 +65,18 @@
     (append (true-list-fix (first lists))
             (append-all2 (rest lists)))))
 
-;; Replace the stuff in the CLAUSES with the corresponding NEW-ITEMS, which
-;; come in order and correspond to the stuff in the existing clauses.
-(defun recreate-cond-clauses (clauses new-items)
+;; Replace the terms in the CLAUSES with the corresponding NEW-TERMS, which
+;; come in order and correspond to the terms in the existing CLAUSES.  Note
+;; that each element of CLAUSES may have length 1 or 2.
+(defun recreate-cond-clauses (clauses new-terms)
   (if (endp clauses)
       nil
     (let* ((clause (first clauses))
            (clause-len (len clause)) ;can be 1 or 2
            )
-      (cons (take clause-len new-items)
+      (cons (take clause-len new-terms) ; the new clause
             (recreate-cond-clauses (rest clauses)
-                                   (nthcdr clause-len new-items))))))
+                                   (nthcdr clause-len new-terms))))))
 
 ;; Extract the bodies of the items.  These are the untranslated terms that need to be handled.
 ;; TODO: What about a decl of (type (satisfies foo)) where perhaps FOO is a function to replace?
@@ -96,15 +107,90 @@
         (cons (list (first case) (second case) (first new-terms-from-cases))
               (recreate-case-match-cases (rest cases) (rest new-terms-from-cases)))))))
 
-;; Throws an error is macroexpansion fails.  Returns the term with one macro now expanded.
-(defund magic-macroexpand1$$ (term ctx wrld state)
-  (declare (xargs :mode :program
-                  :stobjs state))
-  (b* ((- (cw "NOTE: Macroexpanding non-supported call ~x0.~%" term))
-       ((mv erp term-expanded-one-step) (magic-macroexpand1$ term ctx wrld state))
-       ;; Can this ever happen, given that we translated the term above?
-       ((when erp) (er hard? 'rename-functions-in-untranslated-term-aux "Failed to macroexpand term: ~x0." term)))
-    term-expanded-one-step))
+(defun supported-b*-bindingp (binding)
+  (declare (xargs :guard t))
+  (and (true-listp binding)
+       (consp binding)
+       (let ((binder (first binding)))
+         (if (atom binder)
+             (or (eq binder '-) ; (- <term> ... <term>) for any number of terms
+                 (and (symbolp binder) ; (<var> <term)
+                      (= 1 (len (fargs binding)))))
+           (case (car binder)
+             ((when if unless) (= 1 (len (fargs binder)))) ; ((when <term>) <term> ... <term>)
+             (mv (and (symbol-listp (fargs binder)) ; ((mv <var> ... <var>) <term>)
+                      (= 1 (len (fargs binding)))))
+             ;; todo: add more kinds of supported binder
+             (otherwise nil))))))
+
+(defun supported-b*-bindingsp (bindings)
+  (declare (xargs :guard t))
+  (if (atom bindings)
+      (null bindings)
+    (and (supported-b*-bindingp (first bindings))
+         (supported-b*-bindingsp (rest bindings)))))
+
+(defund extract-terms-from-b*-binding (binding)
+  (declare (xargs :guard (supported-b*-bindingp binding)))
+  (let ((binder (first binding)))
+    (if (symbolp binder)
+        (if (eq binder '-) ; (- <term> ... <term>) for any number of terms
+            (fargs binding)
+          ;; it's a variable:
+          (list (farg1 binding)))
+      (case (car binder)
+        ((when if unless) (cons (farg1 binder) (fargs binding)))
+        (mv (list (farg1 binding)))
+        ;; Should never happen:
+        (t (er hard 'extract-terms-from-b*-binding "Unsupported b* binder: ~x0." binding))))))
+
+(defthm true-listp-of-extract-terms-from-b*-binding
+  (implies (supported-b*-bindingp binding)
+           (true-listp (extract-terms-from-b*-binding binding)))
+  :hints (("Goal" :in-theory (enable extract-terms-from-b*-binding))))
+
+;; Extracts all the terms in the b* bindings, in order
+(defun extract-terms-from-b*-bindings (bindings)
+  (declare (xargs :guard (supported-b*-bindingsp bindings)))
+  (if (endp bindings)
+      nil
+    (append (extract-terms-from-b*-binding (first bindings))
+            (extract-terms-from-b*-bindings (rest bindings)))))
+
+;; Returns (mv new-binding rest-new-terms).
+(defun recreate-b*-binding (binding new-terms)
+  (declare (xargs :guard (and (supported-b*-bindingp binding)
+                              (true-listp new-terms))))
+  (let* ((binder (first binding)))
+    (if (symbolp binder)
+        (if (eq binder '-) ; (- <term> ... <term>) for any number of terms
+            (let ((num-terms (len (fargs binding))))
+              (mv `(,binder ,@(take num-terms new-terms))
+                  (nthcdr num-terms new-terms)))
+          ;; it's a variable:
+          (mv `(,binder ,(first new-terms)) ; (<var> <term)
+              (rest new-terms)))
+      (case (car binder)
+        ((when if unless) ; ((when <term>) <term> ... <term>)
+         (let ((num-args (len (fargs binding))))
+           (mv `((,(car binder) ,(first new-terms)) ,@(take num-args (rest new-terms)))
+               (nthcdr (+ 1 num-args) new-terms))))
+        (mv ; ((mv <var> ... <var>) <term>)
+         (mv `((mv ,@(fargs binder)) ,(first new-terms))
+             (rest new-terms)))
+        ;; Should never happen:
+        (otherwise (progn$ (er hard 'recreate-b*-binding "Unsupported b* binder: ~x0." binding)
+                           (mv nil nil)))))))
+
+(defun recreate-b*-bindings (bindings new-terms)
+  (declare (xargs :guard (and (supported-b*-bindingsp bindings)
+                              (true-listp new-terms))))
+  (if (endp bindings)
+      nil
+    (mv-let (new-first new-terms)
+      (recreate-b*-binding (first bindings) new-terms)
+      (let ((new-rest (recreate-b*-bindings (rest bindings) new-terms)))
+        (cons new-first new-rest)))))
 
 (mutual-recursion
  ;; Renames all function calls in TERM according to ALIST.  WRLD must contain real or fake info (at least 'formals
@@ -154,14 +240,20 @@
                         ,@declares ;; These can only be IGNORE, IGNORABLE, and TYPE.  TODO: What about (type (satisfies PRED) x) ?
                         ,(rename-functions-in-untranslated-term-aux body alist permissivep (+ -1 count) wrld state))))
                (b* ;; (b* <bindings> ...result-forms...)
-                   (let* ((bindings (farg1 term))
-                          (result-forms (rest (fargs term)))
-                          (binders (strip-cars bindings))
-                          (expressions (strip-cadrs bindings)) ;FIXME: These are not necessarily pairs
-                          )
-                     `(,fn ,(make-doublets binders ;do nothing to these (TODO: might some have function calls?)
-                                           (rename-functions-in-untranslated-terms-aux expressions alist permissivep (+ -1 count) wrld state))
-                           ,@(rename-functions-in-untranslated-terms-aux result-forms alist permissivep (+ -1 count) wrld state))))
+                   (let ((bindings (farg1 term)))
+                     (if (supported-b*-bindingsp bindings)
+                         (let* ((terms (extract-terms-from-b*-bindings bindings))
+                                (new-terms (rename-functions-in-untranslated-terms-aux terms alist permissivep (+ -1 count) wrld state))
+                                (new-bindings (recreate-b*-bindings bindings new-terms))
+                                (result-forms (rest (fargs term))))
+                           `(b*
+                             ,new-bindings
+                             ,@(rename-functions-in-untranslated-terms-aux result-forms alist permissivep (+ -1 count) wrld state)))
+                       ;; Not a supported b*, so macroexpand one step and try again:
+                       (prog2$
+                        (cw "NOTE: Macroexpanding non-supported b* form: ~x0.~%" term)
+                        (rename-functions-in-untranslated-term-aux (magic-macroexpand1$$ term 'rename-functions-in-untranslated-term-aux wrld state)
+                                                                   alist permissivep (+ -1 count) wrld state)))))
                (cond ;; (cond <clauses>)
                 ;; Note that cond clauses can have length 1 or 2.  We flatten the clauses, process the resulting list of untranslated terms, and then recreate the clauses
                 ;; by walking through them and putting in the new items:
