@@ -3702,69 +3702,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-fn-thms ((fn symbolp)
-                         (pointers atc-symbol-type-alistp)
-                         (type? type-optionp)
-                         (affect symbol-listp)
-                         (typed-formals atc-symbol-type-alistp)
-                         (prec-fns atc-symbol-fninfo-alistp)
-                         (proofs booleanp)
-                         (prog-const symbolp)
-                         (finfo? fun-info-optionp)
-                         (init-fun-env-thm symbolp)
-                         (fn-thms symbol-symbol-alistp)
-                         (print evmac-input-print-p)
-                         (limit pseudo-termp)
-                         (names-to-avoid symbol-listp)
-                         state)
-  :returns (mv erp
-               (val "A @('(tuple (local-events pseudo-event-form-listp)
-                                 (exported-events pseudo-event-form-listp)
-                                 (fn-fun-env-thm symbolp)
-                                 (fn-result-thm symbolp)
-                                 (fn-correct-thm symbolp)
-                                 (updated-names-to-avoid symbol-listp)
-                                 val)').")
-               state)
-  :mode :program
-  :short "Generate the theorems associated to the specified ACL2 function."
-  (b* ((wrld (w state))
-       ((mv fn-fun-env-events
-            fn-fun-env-thm
-            names-to-avoid)
-        (atc-gen-fn-fun-env-thm
-         fn proofs prog-const finfo? init-fun-env-thm names-to-avoid wrld))
-       ((mv fn-result-events
-            fn-result-thm
-            names-to-avoid)
-        (atc-gen-fn-result-thm fn type? affect typed-formals prec-fns
-                               proofs names-to-avoid wrld))
-       ((mv fn-correct-local-events
-            fn-correct-exported-events
-            fn-correct-thm)
-        (atc-gen-fn-correct-thm fn pointers prec-fns proofs
-                                prog-const fn-thms fn-fun-env-thm
-                                limit wrld))
-       (progress-start?
-        (and (evmac-input-print->= print :info)
-             `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
-       (progress-end? (and (evmac-input-print->= print :info)
-                           `((cw-event " done.~%"))))
-       (local-events (append progress-start?
-                             fn-fun-env-events
-                             fn-result-events
-                             fn-correct-local-events
-                             progress-end?))
-       (exported-events fn-correct-exported-events))
-    (acl2::value (list local-events
-                       exported-events
-                       fn-fun-env-thm
-                       fn-result-thm
-                       fn-correct-thm
-                       names-to-avoid))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-check-new-function-name ((fn-name stringp)
                                      (prec-fns atc-symbol-fninfo-alistp))
   :returns (mv (okp booleanp)
@@ -4009,15 +3946,33 @@
        (ext (ext-declon-fundef fundef))
        (finfo (fun-info-from-fundef fundef))
        (limit `(binary-+ '2 ,limit))
-       ((er (list local-events
-                  exported-events
-                  fn-fun-env-thm
-                  fn-result-thm
-                  fn-correct-thm
-                  names-to-avoid))
-        (atc-gen-fn-thms fn pointers type affect typed-formals prec-fns
-                         proofs prog-const finfo init-fun-env-thm fn-thms print
-                         limit names-to-avoid state))
+       ((mv fn-fun-env-events
+            fn-fun-env-thm
+            names-to-avoid)
+        (atc-gen-fn-fun-env-thm
+         fn proofs prog-const finfo init-fun-env-thm names-to-avoid wrld))
+       ((mv fn-result-events
+            fn-result-thm
+            names-to-avoid)
+        (atc-gen-fn-result-thm fn type affect typed-formals prec-fns
+                               proofs names-to-avoid wrld))
+       ((mv fn-correct-local-events
+            fn-correct-exported-events
+            fn-correct-thm)
+        (atc-gen-fn-correct-thm fn pointers prec-fns proofs
+                                prog-const fn-thms fn-fun-env-thm
+                                limit wrld))
+       (progress-start?
+        (and (evmac-input-print->= print :info)
+             `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
+       (progress-end? (and (evmac-input-print->= print :info)
+                           `((cw-event " done.~%"))))
+       (local-events (append progress-start?
+                             fn-fun-env-events
+                             fn-result-events
+                             fn-correct-local-events
+                             progress-end?))
+       (exported-events fn-correct-exported-events)
        (info (make-atc-fn-info
               :out-type type
               :in-types (strip-cdrs typed-formals)
