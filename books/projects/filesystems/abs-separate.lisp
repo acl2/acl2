@@ -3879,22 +3879,6 @@
            :induct (put-assoc-equal name val abs-file-alist1))
           ("subgoal *1/2" :expand (abs-no-dups-p abs-file-alist1))))
 
-(defthm
-  abs-mkdir-correctness-lemma-46
-  (implies (abs-fs-p x)
-           (absfat-subsetp (cdr x) x))
-  :hints (("goal" :do-not-induct t
-           :in-theory (e/d (absfat-subsetp abs-file-alist-p abs-fs-p)
-                           (absfat-subsetp-of-append-2))
-           :use (:instance absfat-subsetp-of-append-2 (x (cdr x))
-                           (y (list (car x)))
-                           (z (cdr x)))
-           :expand (abs-file-alist-p x)))
-  :rule-classes ((:rewrite :corollary (implies (and (abs-fs-p x)
-                                                    (absfat-subsetp x y)
-                                                    (abs-file-alist-p y))
-                                               (absfat-subsetp (cdr x) y)))))
-
 (defund
   absfat-equiv
   (abs-file-alist1 abs-file-alist2)

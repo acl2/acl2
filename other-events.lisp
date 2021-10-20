@@ -826,15 +826,29 @@
                          (and (not ctx1)
                               (collect-non-apply$-primps tbody wrld1)))
                         (ancestral-lambda$s-in-guard
-                         (and (not ctx1)
-                              (ancestral-lambda$s-by-caller
-                               "the guard of this event"
-                               tguard wrld1)))
+                         (and
+
+; The ruling out of quoteps is explained in a comment in
+; simple-translate-and-eval.  A translated guard is very unlikely to be a
+; quotep unless it is 't, but it seems harmless to include this criterion, for
+; consistency with other cases (simple-translate-and-eval and the case below).
+
+                          (not (quotep tguard))
+                          (not ctx1)
+                          (ancestral-lambda$s-by-caller
+                           "the guard of this event"
+                           tguard wrld1)))
                         (ancestral-lambda$s-in-body
-                         (and (not ctx1)
-                              (ancestral-lambda$s-by-caller
-                               "the body of this event"
-                               tbody wrld1))))
+                         (and
+
+; The ruling out of quoteps is explained in a comment in
+; simple-translate-and-eval.
+
+                          (not (quotep tbody))
+                          (not ctx1)
+                          (ancestral-lambda$s-by-caller
+                           "the body of this event"
+                           tbody wrld1))))
 
 ; We collect any unsafe apply$ function objects literally in the guard or body
 ; and any ancestral lambda$s in the guard or body, provided we successfully
@@ -27058,7 +27072,7 @@
           :hints (("Goal" :use ,necc-name
                    :expand ((:free (x) (HIDE (badge x))))
                    :in-theory (e/d (badge apply$)
-                                   (,necc-name)))))))
+                                   (,necc-name ,fn)))))))
      (t
       (let* ((hyp-list (tameness-conditions (access apply$-badge bdg :ilks)
                                             'ARGS))
