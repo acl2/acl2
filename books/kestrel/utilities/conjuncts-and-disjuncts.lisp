@@ -18,7 +18,6 @@
 (include-book "forms")
 (include-book "conjunctions-and-disjunctions")
 (include-book "tools/flag" :dir :system)
-(include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/booleans/booland" :dir :system) ; do not remove, since this tool depends on this definition of booland
 (include-book "kestrel/booleans/boolor" :dir :system) ; do not remove, since this tool depends on this definition of boolor
 (include-book "kestrel/booleans/boolif" :dir :system) ; do not remove, since this tool depends on this definition of boolif
