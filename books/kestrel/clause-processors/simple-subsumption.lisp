@@ -224,7 +224,11 @@
            (equality-eval term a))
   :hints (("Goal" :in-theory (enable clearly-implied-by-some-disjunctionp))))
 
-;; In general, the conjuncts of TERM and the TRUE-TERMS are disjunctions.
+;; In general, the TRUE-TERMS may be disjunctions (a true-term that is a
+;; conjunction should have been flattened into multiple true-terms).  This goes
+;; through the top-level IF-nest of TERM, resolving both tests and also then-
+;; or else-branches whenever it can (we only preserve iff on TERM and therefore
+;; on its then- and else-branches).
 (defun resolve-ifs-in-term (term true-terms)
   (declare (xargs :guard (and (pseudo-termp term)
                               (pseudo-term-listp true-terms))
@@ -232,7 +236,7 @@
                   ))
   (if (quotep term)
       term
-    (if (clearly-implied-by-some-disjunctionp term true-terms) ;or should we do this on new-if below?
+    (if (clearly-implied-by-some-disjunctionp term true-terms)
         *t*
       (if (and (call-of 'if term)
                (= 3 (len (fargs term))))
@@ -244,14 +248,13 @@
               (if (clearly-implied-by-some-disjunctionp new-test true-terms)
                   (resolve-ifs-in-term (farg2 term) true-terms)
                 ;; todo: what if we can resolve the test to false?
-                ;;todo: clean up this if:
                 (let ((new-if (make-if-term new-test
                                             (resolve-ifs-in-term (farg2 term) true-terms)
                                             (resolve-ifs-in-term (farg3 term) true-terms))))
+                  ;; TODO: Call clearly-implied-by-some-disjunctionp on this if different?:
                   new-if))))
-        (if (clearly-implied-by-some-disjunctionp term true-terms)
-            *t*
-          term)))))
+        ;; TODO: Consider resolving IF tests inside this:
+        term))))
 
 (defthm pseudo-termp-of-resolve-ifs-in-term
   (implies (pseudo-termp term)
