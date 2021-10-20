@@ -3163,19 +3163,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-fn-fun-env-thm ((fn symbolp)
-                                (proofs booleanp)
-                                (prog-const symbolp)
-                                (finfo? fun-info-optionp)
-                                (init-fun-env-thm symbolp)
-                                (names-to-avoid symbol-listp)
-                                (wrld plist-worldp))
+(define atc-gen-cfun-fun-env-thm ((fn symbolp)
+                                  (proofs booleanp)
+                                  (prog-const symbolp)
+                                  (finfo? fun-info-optionp)
+                                  (init-fun-env-thm symbolp)
+                                  (names-to-avoid symbol-listp)
+                                  (wrld plist-worldp))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                (name "A @(tsee symbolp).")
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the theorem saying that
-          looking up a certain function in the function environment
+          looking up a certain C function in the function environment
           yields the information for that function."
   :long
   (xdoc::topstring
@@ -3478,16 +3478,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-bindings-for-fn-formals ((formals symbol-listp)
-                                         (pointers atc-symbol-type-alistp)
-                                         (compst-var symbolp))
+(define atc-gen-bindings-for-cfun-formals ((formals symbol-listp)
+                                           (pointers atc-symbol-type-alistp)
+                                           (compst-var symbolp))
   :returns (mv (doublets doublet-listp)
                (pointer-hyps true-listp))
-  :short "Generate bindings for the formals of a function correctness theorem."
+  :short "Generate bindings for the formals of an ACL2 function
+          that represents a C function."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A non-recursive ACL2 target function may take arrays as parameters.
+    "These bindings are used in generated theorems about the C function.
+     A non-recursive ACL2 target function may take arrays as parameters.
      However, the corresponding C function takes pointers
      as the corresponding parameters.
      In the correctness theorem for the function,
@@ -3505,7 +3507,7 @@
        (formal (car formals))
        (type (cdr (assoc-eq formal pointers)))
        ((when (not type))
-        (atc-gen-bindings-for-fn-formals (cdr formals) pointers compst-var))
+        (atc-gen-bindings-for-cfun-formals (cdr formals) pointers compst-var))
        ((unless (type-case type :pointer))
         (raise "Internal error: pointer ~x0 has type ~x1." formal type)
         (mv nil nil))
@@ -3515,26 +3517,26 @@
                    `(equal (pointer->reftype ,formal)
                            ',(type-pointer->referenced type))))
        ((mv more-doublets more-hyps)
-        (atc-gen-bindings-for-fn-formals (cdr formals) pointers compst-var)))
+        (atc-gen-bindings-for-cfun-formals (cdr formals) pointers compst-var)))
     (mv (cons doublet more-doublets)
         (append hyps more-hyps))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-fn-correct-thm ((fn symbolp)
-                                (pointers atc-symbol-type-alistp)
-                                (prec-fns atc-symbol-fninfo-alistp)
-                                (proofs booleanp)
-                                (prog-const symbolp)
-                                (fn-thms symbol-symbol-alistp)
-                                (fn-fun-env-thm symbolp)
-                                (limit pseudo-termp)
-                                (wrld plist-worldp))
+(define atc-gen-cfun-correct-thm ((fn symbolp)
+                                  (pointers atc-symbol-type-alistp)
+                                  (prec-fns atc-symbol-fninfo-alistp)
+                                  (proofs booleanp)
+                                  (prog-const symbolp)
+                                  (fn-thms symbol-symbol-alistp)
+                                  (fn-fun-env-thm symbolp)
+                                  (limit pseudo-termp)
+                                  (wrld plist-worldp))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                (exported-events "A @(tsee pseudo-event-form-listp).")
                (name "A @(tsee symbolp)."))
   :mode :program
-  :short "Generate the dynamic correctness theorem for the function @('fn')."
+  :short "Generate the correctness theorem for a C function."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -3573,8 +3575,7 @@
      The reason why we introduce a variable and equate it in the hypothesis,
      as opposed to using @('(init-fun-env <program>)')
      directly as argument of @(tsee exec-fun),
-     is that we want to use this theorem as a rewrite rule
-     in the theorem generated by @(tsee atc-gen-fn-correct-thm),
+     is that we want to use this theorem as a rewrite rule,
      and using a variable makes the rule easier to match with,
      in particular since the @(tsee init-fun-env) call gets rewritten
      via the theorem about @(tsee init-fun-env).")
@@ -3655,7 +3656,7 @@
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
        ((mv formals-binding pointer-hyps)
-        (atc-gen-bindings-for-fn-formals formals pointers compst-var))
+        (atc-gen-bindings-for-cfun-formals formals pointers compst-var))
        (hyps `(and (compustatep ,compst-var)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
@@ -3951,7 +3952,7 @@
        ((mv fn-fun-env-events
             fn-fun-env-thm
             names-to-avoid)
-        (atc-gen-fn-fun-env-thm
+        (atc-gen-cfun-fun-env-thm
          fn proofs prog-const finfo init-fun-env-thm names-to-avoid wrld))
        ((mv fn-result-events
             fn-result-thm
@@ -3961,9 +3962,9 @@
        ((mv fn-correct-local-events
             fn-correct-exported-events
             fn-correct-thm)
-        (atc-gen-fn-correct-thm fn pointers prec-fns proofs
-                                prog-const fn-thms fn-fun-env-thm
-                                limit wrld))
+        (atc-gen-cfun-correct-thm fn pointers prec-fns proofs
+                                  prog-const fn-thms fn-fun-env-thm
+                                  limit wrld))
        (progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
@@ -4517,7 +4518,8 @@
                                            (compst-var symbolp))
   :returns (mv (doublets doublet-listp)
                (pointer-hyps true-listp))
-  :short "Generate bindings for the formals of a loop function."
+  :short "Generate bindings for the formals of an ACL2 function
+          that represents a C loop."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -4723,7 +4725,7 @@
                (fn-correct-thm "A @(tsee symbolp).")
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
-  :short "Generate the correctness theorem for a loop."
+  :short "Generate the correctness theorem for a C loop."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -4739,13 +4741,12 @@
      so we take those into account to generate variables for
      the computation state, the function environment, and the limit.
      The hypotheses include the guard of the loop function,
-     but we need to replace any pointers with their dereferenced arrays
-     (see @(tsee atc-gen-fn-correct-thm)),
+     but we need to replace any pointers with their dereferenced arrays,
      and in addition,
      as discussed in @(tsee atc-gen-term-with-read-var-compustate),
      we need to replace the parameters of the loop function
      with @(tsee read-var) calls that read the corresponding variables.
-     The other hypotheses are the same as in @(tsee atc-gen-fn-correct-thm),
+     The other hypotheses are the same as in @(tsee atc-gen-cfun-correct-thm),
      with the addition of a hypothesis that
      the number of frames in the computation state is not zero;
      this is always the case when executing a loop.
@@ -4758,7 +4759,7 @@
      just the specialized @(tsee exec-stmt-while),
      then we apply induction, which therefore must be on that function.
      The hints for the subgoals are for the symbolic execution,
-     similar to the ones in @(tsee atc-gen-fn-correct-thm),
+     similar to the ones in @(tsee atc-gen-cfun-correct-thm),
      where the @(':expand') hint applies to the loop function,
      for robustness (as ACL2's heuristics sometimes prevent
      the opening of recursive function definitions,
