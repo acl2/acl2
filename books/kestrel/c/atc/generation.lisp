@@ -4562,13 +4562,10 @@
                                        (test-term pseudo-termp)
                                        (fn-thms symbol-symbol-alistp)
                                        (names-to-avoid symbol-listp)
-                                       state)
-  :returns (mv erp
-               (val "A @('(tuple (local-events pseudo-event-form-listp)
-                                 (correct-test-thm symbolp)
-                                 (updated-names-to-avoid symbol-listp)
-                                 val)').")
-               state)
+                                       (wrld plist-worldp))
+  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
+               (correct-test-thm "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the correctness theorem for the test of a loop."
   :long
@@ -4579,8 +4576,7 @@
      as they include rules about statement execution,
      which does not apply here.
      We will make the hints more nuanced later."))
-  (b* ((wrld (w state))
-       (correct-thm (cdr (assoc-eq fn fn-thms)))
+  (b* ((correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-test-thm (add-suffix correct-thm "-TEST"))
        ((mv correct-test-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix correct-test-thm
@@ -4611,9 +4607,9 @@
                                :formula formula
                                :hints hints
                                :enable nil)))
-    (acl2::value (list (list correct-test-thm-event)
-                       correct-test-thm
-                       names-to-avoid))))
+    (mv (list correct-test-thm-event)
+        correct-test-thm
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4628,13 +4624,10 @@
                                        (fn-thms symbol-symbol-alistp)
                                        (limit pseudo-termp)
                                        (names-to-avoid symbol-listp)
-                                       state)
-  :returns (mv erp
-               (val "A @('(tuple (local-events pseudo-event-form-listp)
-                                 (correct-body-thm symbolp)
-                                 (updated-names-to-avoid symbol-listp)
-                                 val)').")
-               state)
+                                       (wrld plist-worldp))
+  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
+               (correct-body-thm "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the correctness theorem for the body of a loop."
   :long
@@ -4646,8 +4639,7 @@
      we plan to change the loop correctness theorem
      to make use of this theorem,
      instead of proving the whole loop, including its body."))
-  (b* ((wrld (w state))
-       (correct-thm (cdr (assoc-eq fn fn-thms)))
+  (b* ((correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-body-thm (add-suffix correct-thm "-BODY"))
        ((mv correct-body-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix correct-body-thm
@@ -4704,9 +4696,9 @@
                                :formula formula
                                :hints hints
                                :enable nil)))
-    (acl2::value (list (list correct-body-thm-event)
-                       correct-body-thm
-                       names-to-avoid))))
+    (mv (list correct-body-thm-event)
+        correct-body-thm
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4727,16 +4719,13 @@
                                   (correct-body-thm symbolp)
                                   (limit pseudo-termp)
                                   (names-to-avoid symbol-listp)
-                                  state)
-  :guard (irecursivep+ fn (w state))
-  :returns (mv erp
-               (val "A @('(tuple (local-events pseudo-event-form-listp)
-                                 (exported-events pseudo-event-form-listp)
-                                 (natp-of-measure-of-fn-thm symbolp)
-                                 (fn-correct-thm symbolp)
-                                 (updated-names-to-avoid symbol-listp)
-                                 val)').")
-               state)
+                                  (wrld plist-worldp))
+  :guard (irecursivep+ fn wrld)
+  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
+               (exported-events "A @(tsee pseudo-event-form-listp).")
+               (natp-of-measure-of-fn-thm "A @(tsee symbolp).")
+               (fn-correct-thm "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the correctness theorem for a loop."
   :long
@@ -4792,8 +4781,7 @@
      Given the correctness lemma, the correctness theorem is easily proved,
      via the lemma and the generate theorem that equates
      the specialized @(tsee exec-stmt-while) to the general one."))
-  (b* ((wrld (w state))
-       (correct-thm (cdr (assoc-eq fn fn-thms)))
+  (b* ((correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-lemma (add-suffix correct-thm "-LEMMA"))
        ((mv correct-lemma names-to-avoid)
         (fresh-logical-name-with-$s-suffix correct-lemma
@@ -4882,11 +4870,11 @@
        (local-events (list correct-lemma-event
                            correct-thm-local-event))
        (exported-events (list correct-thm-exported-event)))
-    (acl2::value (list local-events
-                       exported-events
-                       natp-of-measure-of-fn-thm
-                       correct-thm
-                       names-to-avoid))))
+    (mv local-events
+        exported-events
+        natp-of-measure-of-fn-thm
+        correct-thm
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4983,19 +4971,19 @@
                                             names-to-avoid
                                             ctx
                                             state))
-       ((er (list test-local-events
-                  correct-test-thm
-                  names-to-avoid))
+       ((mv test-local-events
+            correct-test-thm
+            names-to-avoid)
         (atc-gen-loop-test-correct-thm fn
                                        pointers
                                        loop-test
                                        test-term
                                        fn-thms
                                        names-to-avoid
-                                       state))
-       ((er (list body-local-events
-                  correct-body-thm
-                  names-to-avoid))
+                                       wrld))
+       ((mv body-local-events
+            correct-body-thm
+            names-to-avoid)
         (atc-gen-loop-body-correct-thm fn
                                        pointers
                                        loop-affect
@@ -5007,12 +4995,12 @@
                                        fn-thms
                                        body-limit
                                        names-to-avoid
-                                       state))
-       ((er (list correct-local-events
-                  correct-exported-events
-                  natp-of-measure-of-fn-thm
-                  fn-correct-thm
-                  names-to-avoid))
+                                       wrld))
+       ((mv correct-local-events
+            correct-exported-events
+            natp-of-measure-of-fn-thm
+            fn-correct-thm
+            names-to-avoid)
         (atc-gen-loop-correct-thm fn
                                   pointers
                                   loop-affect
@@ -5029,7 +5017,8 @@
                                   correct-test-thm
                                   correct-body-thm
                                   loop-limit
-                                  names-to-avoid state))
+                                  names-to-avoid
+                                  wrld))
        (progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
