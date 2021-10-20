@@ -4005,13 +4005,7 @@
      In the formulation of the correctness theorem for the loop,
      we must replace the ACL2 variables
      with calls of @(tsee read-var) on the correspoding C variables.
-     This ACL2 code here does that.")
-   (xdoc::p
-    "Note that we need to leave the compustation variable unchanged.
-     This variable may not occur in the guard of the loop function,
-     but we may be applying this transformation to
-     the result of @(tsee atc-gen-fn-guard-deref-compustate),
-     which introduces such a variable."))
+     This ACL2 code here does that."))
 
   (define atc-gen-term-with-read-var-compustate ((term pseudo-termp)
                                                  (compst-var symbolp))
