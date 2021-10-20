@@ -48,6 +48,12 @@
       (and (non-trivial-logical-termp term)
            (non-trivial-logical-term-listp (rest terms))))))
 
+(defthm non-trivial-logical-term-listp-forward-to-pseudo-term-listp
+  (implies (non-trivial-logical-term-listp x)
+           (pseudo-term-listp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable non-trivial-logical-term-listp))))
+
 (defthm non-trivial-logical-term-listp-of-cons
   (equal (non-trivial-logical-term-listp (cons term terms))
          (and (non-trivial-logical-termp term)
@@ -58,6 +64,12 @@
   (declare (xargs :guard t))
   (or (equal x *false-conjunction*)
       (non-trivial-logical-term-listp x)))
+
+(defthm conjunct-listp-forward-to-pseudo-term-listp
+  (implies (conjunct-listp x)
+           (pseudo-term-listp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable conjunct-listp))))
 
 (defthm conjunct-listp-of-cons
   (equal (conjunct-listp (cons term terms))
@@ -71,6 +83,12 @@
   (declare (xargs :guard t))
   (or (equal x *true-disjunction*)
       (non-trivial-logical-term-listp x)))
+
+(defthm disjunct-listp-forward-to-pseudo-term-listp
+  (implies (disjunct-listp x)
+           (pseudo-term-listp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable disjunct-listp))))
 
 (defthm disjunct-listp-of-cons
   (equal (disjunct-listp (cons term terms))
