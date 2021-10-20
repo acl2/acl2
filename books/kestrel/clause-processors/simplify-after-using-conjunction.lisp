@@ -26,7 +26,7 @@
 
 ;changes the evaluator
 (defthm resolve-ifs-in-clause-correct-new
-  (iff (my-make-flag-eval (disjoin (resolve-ifs-in-clause clause nil)) a)
+  (iff (my-make-flag-eval (disjoin (resolve-ifs-in-clause clause nil nil)) a)
        (my-make-flag-eval (disjoin clause) a))
   :hints (("Goal" :use (:instance (:functional-instance
                                    resolve-ifs-in-clause-correct-special
