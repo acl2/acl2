@@ -3936,11 +3936,11 @@
                state)
   :mode :program
   :short "Generate a C external declaration (a function definition)
-          from an ACL2 function, with accompanying theorems."
+          from a non-recursive ACL2 function, with accompanying theorems."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We also return local and exported events for the theorems about
+    "We return local and exported events for the theorems about
      the correctness of the C function definition.")
    (xdoc::p
     "We extend the alist @('prec-fns') with information about the function.")
@@ -3951,7 +3951,7 @@
     "For the limit, we need 1 to go from @(tsee exec-fun) to @(tsee exec-stmt),
      another 1 from there to @(tsee exec-block-item-list)
      in the @(':compound') case,
-     and then we use the recursively calculated limit for the block."))
+     and then we use the limit for the block."))
   (b* ((name (symbol-name fn))
        ((unless (atc-ident-stringp name))
         (er-soft+ ctx t nil
@@ -3967,10 +3967,11 @@
                    but the function ~x2 has the same symbol name."
                   name fn conflicting-fn))
        (wrld (w state))
-       ((mv erp typed-formals state) (atc-typed-formals fn ctx state))
-       ((when erp) (mv erp nil state))
-       ((er (list params pointers))
-        (atc-gen-param-declon-list typed-formals fn ctx state))
+       ((er typed-formals) (atc-typed-formals fn ctx state))
+       ((er (list params pointers)) (atc-gen-param-declon-list typed-formals
+                                                               fn
+                                                               ctx
+                                                               state))
        (body (ubody+ fn wrld))
        ((er affect) (atc-find-affected fn body typed-formals ctx state))
        ((unless (subsetp-eq affect (strip-cars pointers)))
@@ -3992,16 +3993,16 @@
                                                    state))
        ((when (and (type-case type :void)
                    (not affect)))
-        (raise "Internal error: ~
-                the function ~x0 returns void and affects no variables."
-               fn)
-        (acl2::value nil))
+        (acl2::value
+         (raise "Internal error: ~
+                 the function ~x0 returns void and affects no variables."
+                fn)))
        ((unless (or (type-integerp type)
                     (type-case type :void)))
-        (raise "Internal error: ~
-                the function ~x0 has return type ~x1."
-               fn type)
-        (acl2::value nil))
+        (acl2::value
+         (raise "Internal error: ~
+                 the function ~x0 has return type ~x1."
+                fn type)))
        (fundef (make-fundef :result (atc-gen-tyspecseq type)
                             :name (make-ident :name name)
                             :params params
@@ -4009,18 +4010,15 @@
        (ext (ext-declon-fundef fundef))
        (finfo (fun-info-from-fundef fundef))
        (limit `(binary-+ '2 ,limit))
-       ((mv erp
-            (list local-events
+       ((er (list local-events
                   exported-events
                   fn-fun-env-thm
                   fn-result-thm
                   fn-correct-thm
-                  names-to-avoid)
-            state)
+                  names-to-avoid))
         (atc-gen-fn-thms fn pointers type affect typed-formals prec-fns
                          proofs prog-const finfo init-fun-env-thm fn-thms print
                          limit names-to-avoid state))
-       ((when erp) (mv erp (list (irr-ext-declon) nil nil nil nil) state))
        (info (make-atc-fn-info
               :out-type type
               :in-types (strip-cdrs typed-formals)
@@ -4958,7 +4956,8 @@
                                  val)').")
                state)
   :mode :program
-  :short "Generate a loop for a recursive target function."
+  :short "Generate a C loop from a recursive ACL2 function,
+          with accompanying theorems."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -4974,19 +4973,18 @@
   (b* ((wrld (w state))
        ((mv measure-of-fn-event measure-of-fn measure-formals names-to-avoid)
         (atc-gen-measure-of-fn fn names-to-avoid wrld))
-       ((mv erp typed-formals state) (atc-typed-formals fn ctx state))
-       ((when erp) (mv erp nil state))
-       ((er (list & pointers))
-        (atc-gen-param-declon-list typed-formals fn ctx state))
-       ((when erp) (mv erp (list nil nil nil nil) state))
+       ((er typed-formals) (atc-typed-formals fn ctx state))
+       ((er (list & pointers)) (atc-gen-param-declon-list typed-formals
+                                                          fn
+                                                          ctx
+                                                          state))
        (body (ubody+ fn wrld))
-       ((mv erp (list loop-stmt
-                      test-term
-                      body-term
-                      loop-affect
-                      body-limit
-                      loop-limit)
-            state)
+       ((er (list loop-stmt
+                  test-term
+                  body-term
+                  loop-affect
+                  body-limit
+                  loop-limit))
         (atc-gen-loop-stmt body
                            (list typed-formals)
                            fn
@@ -4996,20 +4994,11 @@
                            proofs
                            ctx
                            state))
-       ((when erp) (mv erp (list nil nil nil nil) state))
-       ((mv erp
-            (list local-events
-                  exported-events
-                  &
-                  fn-result-thm
-                  &
-                  names-to-avoid)
-            state)
-        (atc-gen-fn-thms fn pointers nil loop-affect typed-formals prec-fns
-                         proofs prog-const nil nil fn-thms
-                         print loop-limit
-                         names-to-avoid state))
-       ((when erp) (mv erp (list nil nil nil nil) state))
+       ((mv fn-result-events
+            fn-result-thm
+            names-to-avoid)
+        (atc-gen-fn-result-thm fn nil loop-affect typed-formals prec-fns
+                               proofs names-to-avoid wrld))
        (loop-test (stmt-while->test loop-stmt))
        (loop-body (stmt-while->body loop-stmt))
        ((mv exec-stmt-while-events
@@ -5031,10 +5020,8 @@
                                        measure-formals
                                        names-to-avoid
                                        wrld))
-       ((mv erp
-            (list termination-of-fn-thm-event
-                  termination-of-fn-thm)
-            state)
+       ((er (list termination-of-fn-thm-event
+                  termination-of-fn-thm))
         (atc-gen-termination-theorem-for-fn fn
                                             measure-of-fn
                                             measure-formals
@@ -5042,12 +5029,9 @@
                                             names-to-avoid
                                             ctx
                                             state))
-       ((when erp) (mv erp (list nil nil nil nil nil) state))
-       ((mv erp
-            (list test-local-events
+       ((er (list test-local-events
                   correct-test-thm
-                  names-to-avoid)
-            state)
+                  names-to-avoid))
         (atc-gen-loop-test-correct-thm fn
                                        pointers
                                        loop-test
@@ -5055,12 +5039,9 @@
                                        fn-thms
                                        names-to-avoid
                                        state))
-       ((when erp) (mv erp (list nil nil nil nil nil) state))
-       ((mv erp
-            (list body-local-events
+       ((er (list body-local-events
                   correct-body-thm
-                  names-to-avoid)
-            state)
+                  names-to-avoid))
         (atc-gen-loop-body-correct-thm fn
                                        pointers
                                        loop-affect
@@ -5073,14 +5054,11 @@
                                        body-limit
                                        names-to-avoid
                                        state))
-       ((when erp) (mv erp (list nil nil nil nil) state))
-       ((mv erp
-            (list more-local-events
-                  more-exported-events
+       ((er (list correct-local-events
+                  correct-exported-events
                   natp-of-measure-of-fn-thm
                   fn-correct-thm
-                  names-to-avoid)
-            state)
+                  names-to-avoid))
         (atc-gen-loop-correct-thm fn
                                   pointers
                                   loop-affect
@@ -5098,18 +5076,24 @@
                                   correct-body-thm
                                   loop-limit
                                   names-to-avoid state))
-       ((when erp) (mv erp (list nil nil nil nil) state))
+       (progress-start?
+        (and (evmac-input-print->= print :info)
+             `((cw-event "~%Proving the theorems for ~x0..." ',fn))))
+       (progress-end? (and (evmac-input-print->= print :info)
+                           `((cw-event " done.~%"))))
        (local-events (and proofs
-                          (append (list measure-of-fn-event)
-                                  local-events
+                          (append progress-start?
+                                  (list measure-of-fn-event)
+                                  fn-result-events
                                   exec-stmt-while-events
                                   (list natp-of-measure-of-fn-thm-event)
                                   (list termination-of-fn-thm-event)
                                   test-local-events
                                   body-local-events
-                                  more-local-events)))
+                                  correct-local-events
+                                  progress-end?)))
        (exported-events (and proofs
-                             (append exported-events more-exported-events)))
+                             (append correct-exported-events)))
        (info (make-atc-fn-info :out-type nil
                                :in-types (strip-cdrs typed-formals)
                                :loop? loop-stmt
