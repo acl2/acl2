@@ -2390,10 +2390,7 @@
                    (type body-type)
                    (limit (pseudo-term-fncall
                            'binary-+
-                           (list
-                            (pseudo-term-fncall
-                             'binary-+
-                             (list init-limit body-limit))))))
+                           (list init-limit body-limit))))
                 (acl2::value (list (cons item body-items)
                                    type
                                    limit))))
@@ -3573,6 +3570,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-bindings-for-fn-formals ((formals symbol-listp)
+                                         (pointers atc-symbol-type-alistp)
+                                         (compst-var symbolp))
+  :returns (mv (doublets doublet-listp)
+               (pointer-hyps true-listp))
+  :short "Generate bindings for the formals of a function correctness theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A non-recursive ACL2 target function may take arrays as parameters.
+     However, the corresponding C function takes pointers
+     as the corresponding parameters.
+     In the correctness theorem for the function,
+     those variables are used as pointers and passed to @(tsee exec-fun).
+     Thus, in order to be passed to the ACL2 function,
+     they need to be turned into the arrays pointed to by the pointers.
+     We do this via bindings in the generated theorem,
+     which we generate via this function.")
+   (xdoc::p
+    "We also generate formulas, used as hypotheses in the generated theorems,
+     about the pointers that appear in the bindings.
+     These hypotheses say that the variables are pointers
+     with the expected types."))
+  (b* (((when (endp formals)) (mv nil nil))
+       (formal (car formals))
+       (type (cdr (assoc-eq formal pointers)))
+       ((when (not type))
+        (atc-gen-bindings-for-fn-formals (cdr formals) pointers compst-var))
+       ((unless (type-case type :pointer))
+        (raise "Internal error: pointer ~x0 has type ~x1." formal type)
+        (mv nil nil))
+       (term `(read-array ,formal ,compst-var))
+       (doublet (list formal term))
+       (hyps (list `(pointerp ,formal)
+                   `(equal (pointer->reftype ,formal)
+                           ',(type-pointer->referenced type))))
+       ((mv more-doublets more-hyps)
+        (atc-gen-bindings-for-fn-formals (cdr formals) pointers compst-var)))
+    (mv (cons doublet more-doublets)
+        (append hyps more-hyps))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-fn-correct-thm ((fn symbolp)
                                 (pointers atc-symbol-type-alistp)
                                 (prec-fns atc-symbol-fninfo-alistp)
@@ -3683,10 +3723,12 @@
      because the correctness theorems come later in the ACL2 history
      and thus are tried first.")
    (xdoc::p
-    "Because @(tsee exec-fun) is disabled as explained above,
-     but we still need to open its top-level call for @('fn'),
-     we generate a hint to expand calls of @(tsee exec-fun) on @('fn')
-     (more precisely, on the name of the C function generated from @('fn')).")
+    "We use @(tsee b*) bindings in parts of the theorem
+     to make certain variable substitution.
+     Using bindings results in more readable formulas, in general,
+     than generating terms with the substitutions applied,
+     particularly if the same substituted variable occurs more than once.
+     With the bindings, we let ACL2 perform the substitution at proof time.")
    (xdoc::p
     "This theorem is not generated if @(':proofs') is @('nil')."))
   (b* (((when (or (not proofs)
@@ -3697,27 +3739,24 @@
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
-       (instantiation
-        (atc-gen-instantiation-deref-compustate pointers compst-var))
-       (limit-inst (fsublis-var (acl2::doublets-to-alist instantiation) limit))
-       (args (atc-gen-fn-args-deref-compustate formals pointers compst-var))
-       (guard (uguard+ fn wrld))
-       (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var))
-       (hyps (conjoin (list `(compustatep ,compst-var)
-                            hyps
-                            `(equal ,fenv-var (init-fun-env ,prog-const))
-                            `(integerp ,limit-var)
-                            `(>= ,limit-var ,limit-inst))))
-       (hyps (flatten-ands-in-lit hyps))
-       (hyps `(and ,@(untranslate-lst hyps t wrld)))
-       (concl `(equal
-                (exec-fun (ident ,(symbol-name fn))
-                          (list ,@formals)
-                          ,compst-var
-                          ,fenv-var
-                          ,limit-var)
-                (mv (,fn ,@args)
-                    ,compst-var)))
+       ((mv formals-binding pointer-hyps)
+        (atc-gen-bindings-for-fn-formals formals pointers compst-var))
+       (hyps `(and (compustatep ,compst-var)
+                   (equal ,fenv-var (init-fun-env ,prog-const))
+                   (integerp ,limit-var)
+                   (>= ,limit-var
+                       (b* (,@formals-binding) ,limit))
+                   (and ,@pointer-hyps)
+                   (b* (,@formals-binding)
+                     ,(untranslate (uguard+ fn wrld) nil wrld))))
+       (concl `(equal (exec-fun (ident ,(symbol-name fn))
+                                (list ,@formals)
+                                ,compst-var
+                                ,fenv-var
+                                ,limit-var)
+                      (b* (,@formals-binding)
+                        (mv (,fn ,@formals)
+                            ,compst-var))))
        (called-fns (acl2::all-fnnames (ubody+ fn wrld)))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
@@ -3726,8 +3765,8 @@
        (measure-thms
         (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns called-fns))
        (type-prescriptions
-        (loop$ for callable in (strip-cars prec-fns)
-               collect `(:t ,callable)))
+        (loop$ for called in (strip-cars prec-fns)
+               collect `(:t ,called)))
        (hints `(("Goal"
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
@@ -3739,7 +3778,7 @@
                                ,@measure-thms
                                ,fn-fun-env-thm))
                  :use (:instance (:guard-theorem ,fn)
-                       :extra-bindings-ok ,@instantiation)
+                       :extra-bindings-ok ,@formals-binding)
                  :expand (:lambdas))))
        ((mv local-event exported-event)
         (evmac-generate-defthm name
