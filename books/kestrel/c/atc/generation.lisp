@@ -4075,9 +4075,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-measure-of-fn ((fn symbolp)
-                               (names-to-avoid symbol-listp)
-                               (wrld plist-worldp))
+(define atc-gen-loop-measure-fn ((fn symbolp)
+                                 (names-to-avoid symbol-listp)
+                                 (wrld plist-worldp))
   :guard (irecursivep+ fn wrld)
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (name "A @(tsee symbolp).")
@@ -4321,13 +4321,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-natp-of-measure-of-fn ((fn symbolp)
-                                       (fn-appconds symbol-symbol-alistp)
-                                       (appcond-thms keyword-symbol-alistp)
-                                       (measure-of-fn symbolp)
-                                       (measure-formals symbol-listp)
-                                       (names-to-avoid symbol-listp)
-                                       (wrld plist-worldp))
+(define atc-gen-loop-measure-thm ((fn symbolp)
+                                  (fn-appconds symbol-symbol-alistp)
+                                  (appcond-thms keyword-symbol-alistp)
+                                  (measure-of-fn symbolp)
+                                  (measure-formals symbol-listp)
+                                  (names-to-avoid symbol-listp)
+                                  (wrld plist-worldp))
   :guard (irecursivep+ fn wrld)
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (name "A @(tsee symbolp).")
@@ -4342,7 +4342,7 @@
     "This is like the applicability condition,
      except that it uses the generated measure function
      (to treat the measure as a black box,
-     as discussed in @(tsee atc-gen-measure-of-fn)),
+     as discussed in @(tsee atc-gen-loop-measure-fn)),
      and that it is a type prescription rule
      (which seems needed, as opposed a rewrite rule,
      based on proof experiments)."))
@@ -4370,13 +4370,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-termination-theorem-for-fn ((fn symbolp)
-                                            (measure-of-fn symbolp)
-                                            (measure-formals symbol-listp)
-                                            (natp-of-measure-of-fn-thm symbolp)
-                                            (names-to-avoid symbol-listp)
-                                            (ctx ctxp)
-                                            state)
+(define atc-gen-loop-termination-thm ((fn symbolp)
+                                      (measure-of-fn symbolp)
+                                      (measure-formals symbol-listp)
+                                      (natp-of-measure-of-fn-thm symbolp)
+                                      (names-to-avoid symbol-listp)
+                                      (ctx ctxp)
+                                      state)
   :guard (irecursivep+ fn (w state))
   :returns (mv erp
                (val "A @('(tuple (event pseudo-event-formp)
@@ -4905,13 +4905,13 @@
      and update the @('prec-fns') alist with information about the function.")
    (xdoc::p
     "We also generate the measure function for @('fn') here.
-     See @(tsee atc-gen-measure-of-fn).")
+     See @(tsee atc-gen-loop-measure-fn).")
    (xdoc::p
     "No C external declaration is generated for this function,
      because this function just represents a loop used in oher functions."))
   (b* ((wrld (w state))
        ((mv measure-of-fn-event measure-of-fn measure-formals names-to-avoid)
-        (atc-gen-measure-of-fn fn names-to-avoid wrld))
+        (atc-gen-loop-measure-fn fn names-to-avoid wrld))
        ((er typed-formals) (atc-typed-formals fn ctx state))
        ((er (list & pointers)) (atc-gen-param-declon-list typed-formals
                                                           fn
@@ -4952,22 +4952,22 @@
        ((mv natp-of-measure-of-fn-thm-event
             natp-of-measure-of-fn-thm
             names-to-avoid)
-        (atc-gen-natp-of-measure-of-fn fn
-                                       fn-appconds
-                                       appcond-thms
-                                       measure-of-fn
-                                       measure-formals
-                                       names-to-avoid
-                                       wrld))
+        (atc-gen-loop-measure-thm fn
+                                  fn-appconds
+                                  appcond-thms
+                                  measure-of-fn
+                                  measure-formals
+                                  names-to-avoid
+                                  wrld))
        ((er (list termination-of-fn-thm-event
                   termination-of-fn-thm))
-        (atc-gen-termination-theorem-for-fn fn
-                                            measure-of-fn
-                                            measure-formals
-                                            natp-of-measure-of-fn-thm
-                                            names-to-avoid
-                                            ctx
-                                            state))
+        (atc-gen-loop-termination-thm fn
+                                      measure-of-fn
+                                      measure-formals
+                                      natp-of-measure-of-fn-thm
+                                      names-to-avoid
+                                      ctx
+                                      state))
        ((mv test-local-events
             correct-test-thm
             names-to-avoid)
