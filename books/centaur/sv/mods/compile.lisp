@@ -31,7 +31,7 @@
 (in-package "SV")
 (include-book "moddb")
 (include-book "alias-norm")
-(include-book "../svex/compose")
+(include-book "../svex/assigns-compose")
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))

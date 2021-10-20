@@ -36,7 +36,7 @@
 (include-book "compose-phases")
 (include-book "../mods/compile")
 (include-book "../svex/4vmask")
-(include-book "../svex/compose")
+(include-book "../svex/assigns-compose") ;; ?
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "centaur/gl/auto-bindings" :dir :system)
 (include-book "std/alists/alist-defuns" :dir :system)
