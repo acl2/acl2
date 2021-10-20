@@ -1060,10 +1060,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-callable-fn ((term pseudo-termp)
-                               (var-term-alist symbol-pseudoterm-alistp)
-                               (prec-fns atc-symbol-fninfo-alistp)
-                               (wrld plist-worldp))
+(define atc-check-cfun-call ((term pseudo-termp)
+                             (var-term-alist symbol-pseudoterm-alistp)
+                             (prec-fns atc-symbol-fninfo-alistp)
+                             (wrld plist-worldp))
   :returns (mv (yes/no booleanp)
                (fn symbolp)
                (args pseudo-term-listp)
@@ -1071,7 +1071,7 @@
                (out-type typep)
                (affect symbol-listp)
                (limit pseudo-termp))
-  :short "Check if a term may represent a call to a callable target function."
+  :short "Check if a term may represent a call to a C function."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1109,7 +1109,7 @@
     (mv t term.fn term.args in-types out-type affect limit))
   ///
 
-  (defret pseudo-term-count-of-atc-check-callable-fn-args
+  (defret pseudo-term-count-of-atc-check-cfun-call-args
     (implies yes/no
              (< (pseudo-term-list-count args)
                 (pseudo-term-count term)))
@@ -1117,9 +1117,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-loop-fn ((term pseudo-termp)
-                           (var-term-alist symbol-pseudoterm-alistp)
-                           (prec-fns atc-symbol-fninfo-alistp))
+(define atc-check-loop-call ((term pseudo-termp)
+                             (var-term-alist symbol-pseudoterm-alistp)
+                             (prec-fns atc-symbol-fninfo-alistp))
   :returns (mv (yes/no booleanp)
                (fn symbolp)
                (args pseudo-term-listp)
@@ -1127,14 +1127,14 @@
                (affect symbol-listp)
                (loop stmtp)
                (limit pseudo-termp))
-  :short "Check if a term may represent a call of a loop function."
+  :short "Check if a term may represent a C loop."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check whether
-     the function has been previously processed
+    "We check whether this is a call of
+     a function that has been previously processed
      (i.e. it is in the @('prec-fns') alist)
-     and it is recursive
+     and is recursive
      (indicated by the presence of the loop statement in its information).
      If the checks succeed, we return
      the function symbol,
@@ -1736,7 +1736,7 @@
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
   (b* (((mv okp called-fn args in-types out-type affect limit)
-        (atc-check-callable-fn term var-term-alist prec-fns (w state)))
+        (atc-check-cfun-call term var-term-alist prec-fns (w state)))
        ((when okp)
         (b* (((mv erp (list arg-exprs types) state)
               (atc-gen-expr-cval-pure-list args
@@ -2558,7 +2558,7 @@
                          which is disallowed."
                         fn term)))))
        ((mv okp loop-fn loop-args in-types loop-affect loop-stmt loop-limit)
-        (atc-check-loop-fn term var-term-alist prec-fns))
+        (atc-check-loop-call term var-term-alist prec-fns))
        ((when okp)
         (b* (((when loop-flag)
               (er-soft+ ctx t irr
