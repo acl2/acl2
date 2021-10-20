@@ -21807,10 +21807,19 @@
                         x
                         (reverse vars)))
                    (t (let ((ancestral-lambda$s
-                             (and (f-get-global 'safe-mode state)
-                                  (ancestral-lambda$s-by-caller
-                                   "this event"
-                                   term wrld))))
+                             (and
+
+; We believe (as of 10/19/2021) that the point of checking for lambdas here is
+; to avoid the need to consult world global 'lambda$-alist or 'loop$-alist when
+; doing an early load of compiled files.  If we are looking at a top-level
+; quotep then there is no such danger, so we only worry about such lambdas in
+; the non-quotep case.
+
+                              (not (quotep term))
+                              (f-get-global 'safe-mode state)
+                              (ancestral-lambda$s-by-caller
+                               "this event"
+                               term wrld))))
                         (cond
                          ((null ancestral-lambda$s)
                           (mv-let (erp val latches)
@@ -21824,7 +21833,10 @@
                             (declare (ignore latches))
 
 ; Parallelism wart: since we ignore latches, we should be able to create a
-; version of simple-translate-and-eval that returns cmp's.
+; version of simple-translate-and-eval that returns cmp's.  We believe this is
+; OK; if not, then we have a deeper problem, since we can avoid this check in
+; various other ways, for example by using backquote, e.g.:
+; (defconst *x* `(lambda (x) (return-last 'progn '(lambda$ (x) x) x))).
 
                             (cond
                              (erp (pprogn
