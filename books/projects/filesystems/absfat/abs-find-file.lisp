@@ -69,7 +69,7 @@
     hifat-equiv-implies-set-equiv-strip-cars-1-lemma-2)
    (:rewrite
     hifat-equiv-implies-set-equiv-strip-cars-1-lemma-1)
-   (:rewrite abs-separate-correctness-1-lemma-38)
+   (:rewrite abs-separate-correctness-lemma-11)
    (:rewrite
     abs-separate-of-frame->frame-of-collapse-this-lemma-14)
    (:rewrite
@@ -1185,19 +1185,18 @@
   (implies (and (equal (mv-nth 1
                                (abs-find-file-helper (frame->root frame)
                                                      path))
-                       2)
+                       *enoent*)
                 (not (consp (frame-val->path (cdr (assoc-equal 0 frame)))))
-                (frame-p (frame->frame frame))
                 (no-duplicatesp-equal (strip-cars frame)))
            (equal (abs-find-file (frame->frame frame)
                                  path)
                   (abs-find-file frame path)))
   :hints (("goal" :do-not-induct t
-           :in-theory (e/d (abs-find-file frame->root frame->frame)
+           :in-theory (e/d (abs-find-file frame->frame)
                            nil))))
 
 (defthm
-  abs-find-file-correctness-1-lemma-30
+  abs-find-file-correctness-lemma-15
   (implies
    (and (fat32-filename-list-p path2)
         (zp (mv-nth 1 (abs-find-file-helper fs path1)))
@@ -3619,7 +3618,7 @@
                        path))
               (mv (abs-file-fix nil) *enoent*))))
   :hints
-  (("goal" :in-theory (e/d (frame->root frame->frame))
+  (("goal" :in-theory (enable frame->frame)
     :use (:instance (:rewrite abs-find-file-of-put-assoc-lemma-6)
                     (x 0)))))
 
@@ -3868,6 +3867,9 @@
       (:REWRITE ABS-COMPLETE-WHEN-M1-FILE-ALIST-P)
       (:REWRITE TRUE-LISTP-OF-PUT-ASSOC)))))
 
+  ;; It's important to note that these hypotheses are not the same as
+  ;; good-frame-p, because they do not stipulate that
+  ;; (frame-val->src (cdr (assoc-equal 0 frame))) should be 0.
   (defthm
     abs-find-file-correctness-2
     (implies

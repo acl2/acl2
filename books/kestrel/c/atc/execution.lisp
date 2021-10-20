@@ -1406,6 +1406,8 @@
                           (exec-expr-pure e.sub compst)
                           compst)
      :call (error (list :non-pure-expr e))
+     :member (error (list :not-supported-yet e))
+     :memberp (error (list :not-supported-yet e))
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))
      :preinc (error (list :non-pure-expr e))
@@ -1854,7 +1856,8 @@
        we also return a possibly updated computation state.")
      (xdoc::p
       "If the block item is a declaration,
-       we first execute the expression,
+       we ensure it is a variable (not a structure type) declaration,
+       then we execute the expression,
        then we add the variable to the top scope of the top frame.
        The initializer value must have the same type as the variable,
        which automatically excludes the case of the variable being @('void'),
@@ -1866,25 +1869,31 @@
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (block-item-case
        item
-       :declon (b* (((declon declon) item.get)
-                    ((mv init compst) (exec-expr-call-or-pure declon.init
-                                                              compst
-                                                              fenv
-                                                              (1- limit)))
-                    ((when (errorp init)) (mv init compst))
-                    (var (declor->ident declon.declor))
-                    (pointerp (declor->pointerp declon.declor))
-                    (type (type-name-to-type
-                           (make-tyname :specs declon.type
-                                        :pointerp pointerp)))
-                    ((unless (equal type (type-of-value init)))
-                     (mv (error (list :decl-var-mistype var
-                                      :required type
-                                      :supplied (type-of-value init)))
-                         compst))
-                    (new-compst (create-var var init compst))
-                    ((when (errorp new-compst)) (mv new-compst compst)))
-                 (mv nil new-compst))
+       :declon
+       (b* (((unless (declon-case item.get :var))
+             (mv (error (list :struct-declaration-in-block-item item.get))
+                 (compustate-fix compst)))
+            (type (declon-var->type item.get))
+            (declor (declon-var->declor item.get))
+            (init (declon-var->init item.get))
+            ((mv init compst) (exec-expr-call-or-pure init
+                                                      compst
+                                                      fenv
+                                                      (1- limit)))
+            ((when (errorp init)) (mv init compst))
+            (var (declor->ident declor))
+            (pointerp (declor->pointerp declor))
+            (type (type-name-to-type
+                   (make-tyname :specs type
+                                :pointerp pointerp)))
+            ((unless (equal type (type-of-value init)))
+             (mv (error (list :decl-var-mistype var
+                              :required type
+                              :supplied (type-of-value init)))
+                 compst))
+            (new-compst (create-var var init compst))
+            ((when (errorp new-compst)) (mv new-compst compst)))
+         (mv nil new-compst))
        :stmt (exec-stmt item.get compst fenv (1- limit))))
     :measure (nfix limit))
 

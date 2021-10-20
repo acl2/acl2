@@ -1,6 +1,6 @@
 ;; Cuong Chau <cuong.chau@arm.com>
 
-;; May 2021
+;; October 2021
 
 (in-package "RTL")
 
@@ -129,39 +129,6 @@
    (equal (fpscr-rc (rin))
           (mode (rmode)))
    :hints (("Goal" :in-theory (enable fpscr-rc mode rmode)))))
-
-(local
- (defthm bitn-set-flag-non-ovl
-   (implies (and (natp m)
-                 (integerp n)
-                 (integerp flags))
-            (equal (bitn (set-flag m flags) n)
-                   (if (equal m n)
-                       1
-                     (bitn flags n))))
-   :hints (("Goal"
-            :cases ((< m n))
-            :use (:instance bitn-shift-up
-                            (x 1)
-                            (k m)
-                            (n (- n m)))
-            :in-theory (enable set-flag bitn-logior bvecp)))))
-
-(local
- (defthm fpscr-rc-set-flag-non-ovl
-   (implies (and (natp b)
-                 (not (member b '(22 23)))
-                 (integerp flags))
-            (equal (fpscr-rc (set-flag b flags))
-                   (fpscr-rc flags)))
-   :hints (("Goal"
-            :cases ((< b 22))
-            :use (:instance bits-plus-bits
-                            (x 1)
-                            (m 0)
-                            (n (- 23 b))
-                            (p (- 22 b)))
-            :in-theory (enable fpscr-rc set-flag bits-logior bits)))))
 
 (local
  (defthmd si13-expq-not-ovf
@@ -435,16 +402,16 @@
 ;; Denormal case
 
 (local
+ (defthm common-mode-p-rmode
+   (common-mode-p (mode (rmode)))
+   :hints (("Goal" :in-theory (enable mode)))))
+
+(local
  (defthm sgnf-data
    (implies (not (specialp))
             (equal (sgnf (data) (f))
                    (sign)))
    :hints (("Goal" :in-theory (enable sgnf data-non-special f final bvecp)))))
-
-(local
- (defthm common-mode-p-rmode
-   (common-mode-p (mode (rmode)))
-   :hints (("Goal" :in-theory (enable mode)))))
 
 (local
  (defthmd drnd-<=-spn
@@ -904,6 +871,10 @@
                              fzp dnp rmode)
                             (arm-binary-spec))))))
 
+(local
+ (defmacro ic ()
+   '(input-constraints opa opb fnum vec rin)))
+
 (defthmd fdivlane-correct
   (implies (input-constraints opa opb fnum vec rin)
            (let* ((f (case fnum (1 (hp)) (2 (sp)) (3 (dp))))
@@ -924,24 +895,9 @@
   :hints (("Goal"
            :use (:functional-instance
                  fdivlane-main-inst
-                 (opa (lambda ()
-                        (if (input-constraints opa opb fnum vec rin)
-                            opa
-                          (opa))))
-                 (opb (lambda ()
-                        (if (input-constraints opa opb fnum vec rin)
-                            opb
-                          (opb))))
-                 (fnum (lambda ()
-                         (if (input-constraints opa opb fnum vec rin)
-                             fnum
-                           (fnum))))
-                 (vec (lambda ()
-                        (if (input-constraints opa opb fnum vec rin)
-                            vec
-                          (vec))))
-                 (rin (lambda ()
-                        (if (input-constraints opa opb fnum vec rin)
-                            rin
-                          (rin)))))
+                 (opa (lambda () (if (ic) opa (opa))))
+                 (opb (lambda () (if (ic) opb (opb))))
+                 (fnum (lambda () (if (ic) fnum (fnum))))
+                 (vec (lambda () (if (ic) vec (vec))))
+                 (rin (lambda () (if (ic) rin (rin)))))
 	   :in-theory (disable arm-binary-spec))))

@@ -211,7 +211,12 @@
                              :ushort (type-ushort)
                              :uint (type-uint)
                              :ulong (type-ulong)
-                             :ullong (type-ullong))))
+                             :ullong (type-ullong)
+                             :struct (prog2$
+                                      (raise "Internal error: ~
+                                              struct ~x0 not supported yet."
+                                             tyspecseq.tag)
+                                      (irr-type)))))
     (if (tyname->pointerp tyname)
         (type-pointer type)
       type))

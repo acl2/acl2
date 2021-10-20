@@ -570,7 +570,11 @@
   :returns (mv (yes/no booleanp)
                (elements pseudo-term-listp))
   :short "FTY version of @(tsee check-list-call)."
-  (check-list-call (pseudo-term-fix term)))
+  (check-list-call (pseudo-term-fix term))
+  ///
+
+  (more-returns
+   (elements true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
