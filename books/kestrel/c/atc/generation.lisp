@@ -44,7 +44,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; this belongs to a more general library
+; move to a more general library:
 
 (defrule pseudo-term-list-count-of-pseudo-term-call->args
   (implies (pseudo-term-case term :call)
@@ -64,7 +64,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; this belongs to a more general library
+; move to a more general library:
 
 (defun list-lenp-fn (n l)
   (if (zp n)
@@ -78,7 +78,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; to speed up some proofs in this file:
+; move to a more general library:
+
+; (these serve to speed up some proofs in this file)
 
 (defrulel tuplep-of-2-of-list
   (std::tuplep 2 (list x1 x2)))
