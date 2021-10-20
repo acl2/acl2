@@ -3606,7 +3606,14 @@
      are needed to exclude, in the proof, the case that
      these functions return errors.
      The type prescriptions of the callable functions
-     are needed to discharge some proof subgoal that arise.")
+     are needed to discharge some proof subgoal that arise.
+     We also enable @(tsee not),
+     because without it we have found at least one case
+     in which some ACL2 heuristic defeats
+     what should be a propositional inference;
+     the issue is related to clausification,
+     and enabling @(tsee not) seems to overcome the issue,
+     at least in that case we found.")
    (xdoc::p
     "Furthermore, we generate a @(':use') hint
      to augment the theorem's formula with the guard theorem of @('fn'),
