@@ -3747,8 +3747,7 @@
                                 limit wrld))
        (progress-start?
         (and (evmac-input-print->= print :info)
-             `((cw-event "~%Generating the theorem ~x0..."
-                         ',fn-correct-thm))))
+             `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
        (local-events (append progress-start?
@@ -5078,7 +5077,7 @@
                                   names-to-avoid state))
        (progress-start?
         (and (evmac-input-print->= print :info)
-             `((cw-event "~%Proving the theorems for ~x0..." ',fn))))
+             `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
        (local-events (and proofs
@@ -5196,7 +5195,7 @@
     "This constant is not generated if @(':proofs') is @('nil')."))
   (b* ((progress-start?
         (and (evmac-input-print->= print :info)
-             `((cw-event "~%Generating the named constant ~x0..." ',prog-const))))
+             `((cw-event "~%Generating the named constant..."))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
        (defconst-event `(defconst ,prog-const ',tunit))
@@ -5236,7 +5235,7 @@
          :enable nil))
        (progress-start?
         (and (evmac-input-print->= print :info)
-             `((cw-event "~%Generating the theorem ~x0..." ',wf-thm))))
+             `((cw-event "~%Generating the well-formedness theorem..."))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
        (local-event `(progn ,@progress-start?
@@ -5412,7 +5411,7 @@
      because our computation returns an error triple."))
   (b* ((progress-start?
         (and (evmac-input-print->= print :info)
-             `((cw-event "~%Generating the file ~s0..." ',output-file))))
+             `((cw-event "~%Generating the file..." ',output-file))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
        (file-gen-event
