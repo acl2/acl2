@@ -40,9 +40,10 @@
                            strip-cdrs
                            assoc-equal)))
 
-;; Currently, we know the test won't be constant, but clearly this can do better if it is.
+;; This requires the TEST to not be constant, because we can do better if it may be.
 (defun make-if-term (test then else)
   (declare (xargs :guard (and (pseudo-termp test)
+                              (not (quotep test))
                               (pseudo-termp then)
                               (pseudo-termp else))))
   (if (equal then else)
