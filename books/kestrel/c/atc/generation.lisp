@@ -4530,27 +4530,30 @@
      The two cases are distinguished by whether
      the formal is a pointer or not.")
    (xdoc::p
-    "We also return a list of (untranslated) terms each of the form
-     @('(pointerp (read-var <name> <compst>))'),
-     for each formal that is a pointer.
-     These are used as assumptions in the generated theorems,
-     because otherwise just the guard, after substituting the bindings,
-     would refer to @('(read-array (read-var <name> <compst>) ...)'),
-     but we also need to say that
-     @('(read-var <name> <compst>)') is a pointer."))
+    "We also generate formulas, used as hypotheses in the generated theorems,
+     about the pointers that appear in the bindings.
+     These hypotheses say that the variables are pointers
+     with the expected types."))
   (b* (((when (endp formals)) (mv nil nil))
        (formal (car formals))
+       (type (cdr (assoc-eq formal pointers)))
+       ((when (and type
+                   (not (type-case type :pointer))))
+        (raise "Internal error: pointer ~x0 has type ~x1." formal type)
+        (mv nil nil))
        (term `(read-var (ident ,(symbol-name formal)) ,compst-var))
-       ((mv term hyp?) (if (assoc-eq formal pointers)
-                           (mv `(read-array ,term ,compst-var)
-                               (list `(pointerp ,term)))
-                         (mv term nil)))
-       (binding (list formal term))
-       ((mv bindings hyps) (atc-gen-bindings-for-loop-formals (cdr formals)
-                                                              pointers
-                                                              compst-var)))
-    (mv (cons binding bindings)
-        (append hyp? hyps))))
+       ((mv term hyps)
+        (if (assoc-eq formal pointers)
+            (mv `(read-array ,term ,compst-var)
+                (list `(pointerp ,term)
+                      `(equal (pointer->reftype ,term)
+                              ',(type-pointer->referenced type))))
+          (mv term nil)))
+       (doublet (list formal term))
+       ((mv more-doublets more-hyps)
+        (atc-gen-bindings-for-loop-formals (cdr formals) pointers compst-var)))
+    (mv (cons doublet more-doublets)
+        (append hyps more-hyps))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
