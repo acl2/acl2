@@ -262,7 +262,6 @@
                        (new-items (rename-functions-in-untranslated-terms-aux items alist permissivep (+ -1 count) wrld state)))
                   `(cond ,@(recreate-cond-clauses clauses new-items))))
                ((case) ;; (case <expr> ...cases...)
-                ;; FIXME: Add support for declares in case-match items.
                 (let* ((expr (farg1 term))
                        (cases (rest (fargs term)))
                        (vals-to-match (strip-cars cases))
