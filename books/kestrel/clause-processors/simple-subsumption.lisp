@@ -403,13 +403,12 @@
            (new-lit (resolve-ifs-in-term lit true-terms false-terms)))
       (cons new-lit
             (resolve-ifs-in-clause (rest clause)
-                                   ;; todo: what about things that are not calls of not?  track false-terms too?
                                    ;; TODO: Use new-lit here:
                                    ;; TODO: Extract all known true/false things from LIT:
                                    (if (and (call-of 'not lit)
                                             (= 1 (len (fargs lit))))
-                                       ;; if the clause is (or (not A) ...)
-                                       ;; we can assume A when processing ...
+                                       ;; if the clause is (or (not A) ...rest...)
+                                       ;; we can assume A when processing rest
                                        (cons (farg1 lit) true-terms)
                                      true-terms)
                                    (if (and (call-of 'not lit)
