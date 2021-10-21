@@ -64,6 +64,7 @@
          :hints (("Goal" :in-theory (enable append (:I len)))))
 
        ;; Helps prove the :function-instance used to switch a theorem to a richer evaluator.
+       ;; TODO: Consider disabling by default and instead providing a tool to lift a rule to a richer evaluator.
        (defthm ,(pack$ name '-of-fncall-args-back)
          (implies (and (consp x)
                        (not (equal (car x) 'quote)))
@@ -72,9 +73,8 @@
          :hints (("Goal" :use (:instance ,(pack$ name '-of-fncall-args))
                   :in-theory nil)))
 
-       (theory-invariant (incompatible (:rewrite  ,(pack$ name '-of-fncall-args))
-                                       (:rewrite  ,(pack$ name '-of-fncall-args-back))))
-
+       (theory-invariant (incompatible (:rewrite ,(pack$ name '-of-fncall-args))
+                                       (:rewrite ,(pack$ name '-of-fncall-args-back))))
 
        ;; These help with clause-processors.  We only generate them if the
        ;; evaluator knows about IF:
