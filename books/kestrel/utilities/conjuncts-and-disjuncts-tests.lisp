@@ -19,6 +19,6 @@
 (assert-equal (get-conjuncts-of-term '(not (if x x y))) '((not x) (not y))) ; a negated or
 (assert-equal (get-conjuncts-of-term '(not (if x 't y))) '((not x) (not y))) ; a negated or
 
-;; test of a negated IF, which is a disjunction.  Should this just return a
+;; test of a negated IF, which is a conjunction.  Should this just return a
 ;; singleton list containing its argument?
 (assert-equal (get-conjuncts-of-term '(not (if x y 'nil))) '((if x (not y) 't)))

@@ -17,3 +17,4 @@
 (include-book "flatten-literals")
 (include-book "simple-subsumption")
 (include-book "push-unary-functions")
+(include-book "simplify-after-using-conjunction")
