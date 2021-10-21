@@ -666,31 +666,27 @@
   (xdoc::topstring
    (xdoc::p
     "If the pointer is null, we return an error.
-     Otherwise, we check whether the heap has an array at the pointer's address,
-     which we return if it does (otherwise we return an error).
-     We also ensure that the pointer's type references an integer type.
-     (We should expand this check to ensure that
-     it matches the type of the array in the heap.)")
+     Otherwise, we check whether the heap has an array at the pointer's address.
+     We ensure that the array type matches the pointer type.")
    (xdoc::p
     "Note that this function reads the array as a whole;
      it does not read an array element.
      Functions like @(tsee uchar-array-read-sint)
      can be used to read individual array elements."))
-  (b* ((reftype (pointer->reftype ptr))
-       ((unless (or (type-signed-integerp reftype)
-                    (type-unsigned-integerp reftype)))
-        (error (list :mistype-pointer-array-read
-                     :required :array-of-integers
-                     :supplied :array-of reftype)))
-       (address (pointer->address? ptr))
-       (heap (compustate->heap compst)))
-    (if address
-        (b* ((pair (omap::in address heap)))
-          (if pair
-              (cdr pair)
-            (error (list :address-not-found address
-                         :heap heap))))
-      (error :null-pointer-read)))
+  (b* ((address (pointer->address? ptr))
+       (reftype (pointer->reftype ptr))
+       (heap (compustate->heap compst))
+       ((when (not address))
+        (error :null-pointer))
+       (address+array (omap::in address heap))
+       ((unless (consp address+array))
+        (error (list :address-not-found address :heap heap)))
+       (array (cdr address+array))
+       ((unless (equal reftype (type-of-array-element array)))
+        (error (list :mistype-array-read
+                     :pointer reftype
+                     :array (type-of-array-element array)))))
+    array)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
