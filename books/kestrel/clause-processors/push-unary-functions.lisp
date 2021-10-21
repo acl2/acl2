@@ -73,8 +73,9 @@
   (implies (not (equal 'quote unary-fn))
            (equal (if-eval (apply-unary-fn-to-if-branches unary-fn term) a)
                   (if-eval `(,unary-fn ,term) a)))
-  :hints (("Goal" :in-theory (enable apply-unary-fn-to-if-branches
-                                     IF-EVAL-OF-FNCALL-ARGS))))
+  :hints (("Goal" :in-theory (e/d (apply-unary-fn-to-if-branches
+                                   if-eval-of-fncall-args)
+                                  (if-eval-of-fncall-args-back)))))
 
 ;; Push calls of any of the unary-fns into IF branches
 ;; todo: dive into lambda bodies?

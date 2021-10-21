@@ -64,9 +64,7 @@
        (equality-eval (disjoin clause) a))
   :hints (("Goal" :use (:functional-instance if-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
                                              (if-eval equality-eval)
-                                             (if-eval-list equality-eval-list))
-           :in-theory (enable EQUALITY-EVAL-OF-FNCALL-ARGS))))
-
+                                             (if-eval-list equality-eval-list)))))
 
 ;todo: use more
 (defund term-is-disjunctionp (term)

@@ -23,8 +23,12 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
+(local (include-book "kestrel/lists-light/cons" :dir :system))
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
+(local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+
 
 (local (in-theory (disable member-equal symbol-listp set-difference-equal PSEUDO-TERM-LISTP len
                            STRIP-CADRS
@@ -134,8 +138,9 @@
                     t))
     :flag free-vars-in-terms)
   :hints (("Goal" :expand (PSEUDO-TERMP TERM)
-           :in-theory (enable free-vars-in-terms
-                              EMPTY-EVAL-OF-FNCALL-ARGS))))
+           :in-theory (e/d (free-vars-in-terms
+                            empty-eval-of-fncall-args)
+                           (empty-eval-of-fncall-args-back)))))
 
 (defthm ALISTS-EQUIV-ON-of-cons-and-cons-same
   (implies (ALISTS-EQUIV-ON KEYS alist1 alist2)
@@ -179,9 +184,6 @@
            :do-not '(generalize eliminate-destructors)
            :in-theory (enable append
                               ))))
-
-(local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
-(local (include-book "kestrel/lists-light/cons" :dir :system))
 
 (defthm equal-of-car-of-assoc-equal-same
   (implies (alistp alist)
@@ -294,10 +296,10 @@
                             MEMBER-EQUAL-OF-STRIP-CARS-IFF
                             wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
-                            EMPTY-EVAL-OF-FNCALL-ARGS
-                            )
+                            empty-eval-of-fncall-args)
                            (pairlis$
-                            SET-DIFFERENCE-EQUAL)))))
+                            set-difference-equal
+                            empty-eval-of-fncall-args-back)))))
 
 (defthm-flag-sublis-var-simple
   (defthm sublis-var-simple-correct2
@@ -328,12 +330,12 @@
                             MEMBER-EQUAL-OF-STRIP-CARS-IFF
                             wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
-                            EMPTY-EVAL-OF-FNCALL-ARGS
-                            )
+                            empty-eval-of-fncall-args)
                            (pairlis$
-                            SET-DIFFERENCE-EQUAL)))))
+                            set-difference-equal
+                            empty-eval-of-fncall-args-back)))))
 
-(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
+
 
 
 (DEFTHM SUBSETP-EQUAL-OF-FREE-VARS-IN-TERM-OF-SUBLIS-VAR-SIMPLE-AND-FREE-VARS-IN-TERMS-OF-STRIP-CDRS-gen
@@ -364,10 +366,11 @@
   :hints (("Goal" :expand ((expand-lambdas-in-term terms)
                            (FREE-VARS-IN-TERM TERM))
            :do-not '(generalize eliminate-destructors)
-           :in-theory (enable expand-lambdas-in-term
-                              EMPTY-EVAL-OF-FNCALL-ARGS
-                              FREE-VARS-IN-TERMS
-                              LAMBDAS-CLOSED-IN-TERMP))))
+           :in-theory (e/d (expand-lambdas-in-term
+                            empty-eval-of-fncall-args
+                            free-vars-in-terms
+                            lambdas-closed-in-termp)
+                           (empty-eval-of-fncall-args-back)))))
 
 (defthm free-vars-in-term-of-expand-lambdas-in-term-gen
   (implies (and (pseudo-termp term)
@@ -421,10 +424,11 @@
   :hints (("Goal" :expand ((expand-lambdas-in-term terms)
                            (FREE-VARS-IN-TERM TERM))
            :do-not '(generalize eliminate-destructors)
-           :in-theory (enable expand-lambdas-in-term
-                              EMPTY-EVAL-OF-FNCALL-ARGS
-                              FREE-VARS-IN-TERMS
-                              LAMBDAS-CLOSED-IN-TERMP))))
+           :in-theory (e/d (expand-lambdas-in-term
+                            empty-eval-of-fncall-args
+                            free-vars-in-terms
+                            lambdas-closed-in-termp)
+                           (empty-eval-of-fncall-args-back)))))
 
 (local
  (mutual-recursion
@@ -492,6 +496,7 @@
                            (free-vars-in-term term)
                            (lambdas-closed-in-termp term))
            :do-not '(generalize eliminate-destructors)
-           :in-theory (enable expand-lambdas-in-term
-                              empty-eval-of-fncall-args
-                              free-vars-in-terms))))
+           :in-theory (e/d (expand-lambdas-in-term
+                            empty-eval-of-fncall-args
+                            free-vars-in-terms)
+                           (empty-eval-of-fncall-args-back)))))

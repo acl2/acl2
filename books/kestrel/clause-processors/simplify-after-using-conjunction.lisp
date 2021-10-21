@@ -28,21 +28,19 @@
 (defthm resolve-ifs-in-clause-correct-new
   (iff (my-make-flag-eval (disjoin (resolve-ifs-in-clause clause nil nil)) a)
        (my-make-flag-eval (disjoin clause) a))
-  :hints (("Goal" :use (:instance (:functional-instance
-                                   resolve-ifs-in-clause-correct-special
-                                   (equality-eval my-make-flag-eval)
-                                   (equality-eval-list my-make-flag-eval-list)))
-           :in-theory (enable MY-MAKE-FLAG-EVAL-OF-FNCALL-ARGS))))
+  :hints (("Goal" :use (:functional-instance
+                        resolve-ifs-in-clause-correct-special
+                        (equality-eval my-make-flag-eval)
+                        (equality-eval-list my-make-flag-eval-list)))))
 
 ;changes the evaluator
 (defthm my-make-flag-eval-of-disjoin-of-flatten-disjuncts
   (iff (my-make-flag-eval (disjoin (flatten-disjuncts clause)) a)
        (my-make-flag-eval (disjoin clause) a))
-  :hints (("Goal" :use (:instance (:functional-instance
-                                   con-and-dis-eval-of-disjoin-of-flatten-disjuncts
-                                   (con-and-dis-eval my-make-flag-eval)
-                                   (con-and-dis-eval-list my-make-flag-eval-list)))
-           :in-theory (enable MY-MAKE-FLAG-EVAL-OF-FNCALL-ARGS))))
+  :hints (("Goal" :use (:functional-instance
+                        con-and-dis-eval-of-disjoin-of-flatten-disjuncts
+                        (con-and-dis-eval my-make-flag-eval)
+                        (con-and-dis-eval-list my-make-flag-eval-list)))))
 
 ;changes the evaluator
 (defthm my-make-flag-eval-of-disjoin-of-sublis-var-and-simplify-lst
@@ -50,11 +48,10 @@
                 (pseudo-term-listp clause))
            (iff (my-make-flag-eval (disjoin (sublis-var-and-simplify-lst nil clause nil nil)) a)
                 (my-make-flag-eval (disjoin clause) a)))
-  :hints (("Goal" :use (:instance (:functional-instance
-                                   equality-eval-of-disjoin-of-sublis-var-and-simplify-lst-special
-                                   (equality-eval my-make-flag-eval)
-                                   (equality-eval-list my-make-flag-eval-list)))
-           :in-theory (enable MY-MAKE-FLAG-EVAL-OF-FNCALL-ARGS))))
+  :hints (("Goal" :use (:functional-instance
+                        equality-eval-of-disjoin-of-sublis-var-and-simplify-lst-special
+                        (equality-eval my-make-flag-eval)
+                        (equality-eval-list my-make-flag-eval-list)))))
 
 ;changes the evaluator
 (defthm my-make-flag-eval-of-disjoin-of-push-unary-functions-in-literals
@@ -63,32 +60,28 @@
                 (pseudo-term-listp clause))
            (iff (my-make-flag-eval (disjoin (push-unary-functions-in-literals clause unary-fns)) a)
                 (my-make-flag-eval (disjoin clause) a)))
-  :hints (("Goal" :use (:instance (:functional-instance
-                                   if-eval-of-disjoin-of-push-unary-functions-in-literals
-                                   (if-eval my-make-flag-eval)
-                                   (if-eval-list my-make-flag-eval-list)))
-           :in-theory (enable MY-MAKE-FLAG-EVAL-OF-FNCALL-ARGS))))
+  :hints (("Goal" :use (:functional-instance
+                        if-eval-of-disjoin-of-push-unary-functions-in-literals
+                        (if-eval my-make-flag-eval)
+                        (if-eval-list my-make-flag-eval-list)))))
 
 ;changes the evaluator
 (defthm my-make-flag-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
   (iff (my-make-flag-eval (conjoin (disjoin-lst (clause-to-clause-list clause))) a)
        (my-make-flag-eval (disjoin clause) a))
-  :hints (("Goal" :use (:instance (:functional-instance
-                                   equality-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
-                                   (equality-eval my-make-flag-eval)
-                                   (equality-eval-list my-make-flag-eval-list)))
-           :in-theory (enable MY-MAKE-FLAG-EVAL-OF-FNCALL-ARGS))))
+  :hints (("Goal" :use (:functional-instance
+                        equality-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
+                        (equality-eval my-make-flag-eval)
+                        (equality-eval-list my-make-flag-eval-list)))))
 
 ;changes the evaluator
 (defthm my-make-flag-eval-of-disjoin-of-handle-constant-literals
   (iff (my-make-flag-eval (disjoin (handle-constant-literals clause)) a)
        (my-make-flag-eval (disjoin clause) a))
-  :hints (("Goal" :use (:instance (:functional-instance
-                                   equality-eval-of-disjoin-of-handle-constant-literals
-                                   (equality-eval my-make-flag-eval)
-                                   (equality-eval-list my-make-flag-eval-list)))
-           :in-theory (enable MY-MAKE-FLAG-EVAL-OF-FNCALL-ARGS))))
-
+  :hints (("Goal" :use (:functional-instance
+                        equality-eval-of-disjoin-of-handle-constant-literals
+                        (equality-eval my-make-flag-eval)
+                        (equality-eval-list my-make-flag-eval-list)))))
 
 (defun simplify-after-using-conjunction-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))

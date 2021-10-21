@@ -21,9 +21,7 @@
        (not (if-and-not-eval term a)))
   :hints (("Goal" :use (:functional-instance negate-term-correct
                                              (not-eval if-and-not-eval)
-                                             (not-eval-list if-and-not-eval-list))
-           ;; todo: improve defevaluator+ to handle this:
-           :in-theory (enable if-and-not-eval-of-fncall-args))))
+                                             (not-eval-list if-and-not-eval-list)))))
 
 (defund all-eval-to-false-with-if-and-not-eval (terms a)
   (declare (xargs :guard (and (pseudo-term-listp terms)
