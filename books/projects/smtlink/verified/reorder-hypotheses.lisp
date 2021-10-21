@@ -15,6 +15,7 @@
 (include-book "extractor")
 (include-book "reorder-options")
 
+(set-induction-depth-limit 1)
 (local (in-theory (disable pseudo-termp pseudo-term-listp)))
 
 (defalist symbol-pseudo-term-list-alist
@@ -39,6 +40,7 @@
                           (type-info symbol-symbol-alistp))
   :returns (mv (root-hypo pseudo-term-listp)
                (rest-hypo pseudo-term-listp))
+  :measure (len hypo-lst)
   (b* ((hypo-lst (pseudo-term-list-fix hypo-lst))
        (type-info (symbol-symbol-alist-fix type-info))
        ((unless (consp hypo-lst)) (mv nil nil))
@@ -95,6 +97,7 @@
 (define make-var-to-terms ((hypo-lst pseudo-term-listp)
                            (alst symbol-pseudo-term-list-alistp))
   :returns (new-alst symbol-pseudo-term-list-alistp)
+  :measure (len hypo-lst)
   (b* ((hypo-lst (pseudo-term-list-fix hypo-lst))
        (alst (symbol-pseudo-term-list-alist-fix alst))
        ((unless (consp hypo-lst)) alst)
@@ -118,6 +121,7 @@
 
 (define make-term-to-vars ((hypo-lst pseudo-term-listp))
   :returns (new-alst pseudo-term-symbol-list-alistp)
+  :measure (len hypo-lst)
   (b* ((hypo-lst (pseudo-term-list-fix hypo-lst))
        ((unless (consp hypo-lst)) nil)
        ((cons hypo-hd hypo-tl) hypo-lst)
@@ -223,28 +227,37 @@
        ((unless vars) (number-of-unresolved term-var-alst term-tl)))
     (1+ (number-of-unresolved term-var-alst term-tl)))
   ///
-  (defthm lemma-1
+  (local (in-theory (enable number-of-unresolved)))
+  (local (defthm lemma-1
     (implies (and (pseudo-termp x)
                   (pseudo-term-listp klst)
                   (pseudo-term-symbol-list-alistp alst)
                   (not (member-equal x klst)))
              (equal (number-of-unresolved (cons (list x) alst) klst)
-                    (number-of-unresolved alst klst)))
-    :hints (("Goal"
-             :in-theory (enable number-of-unresolved))))
+                    (number-of-unresolved alst klst)))))
 
-  (defthm lemma-2
+  (local (defthm lemma-2
     (implies (and (pseudo-termp key)
                   (pseudo-term-listp klst)
                   (pseudo-term-symbol-list-alistp alst)
                   (member-equal key klst)
                   (cdr (assoc-equal key alst)))
              (< (number-of-unresolved (cons (list key) alst) klst)
-                (number-of-unresolved alst klst)))
-    :hints (("Goal"
-             :in-theory (enable number-of-unresolved))))
+                (number-of-unresolved alst klst)))))
 
-  (defthm lemma-3
+  (local (defthm lemma-3-*1/3  ;; because Mark is pedantic and won't (set-induction-depth-limit 2)
+    (IMPLIES (AND (not (member-equal key klst))
+		  (pseudo-termp key)
+		  (pseudo-term-listp klst)
+		  (pseudo-term-symbol-list-alistp alst)
+		  (symbol-listp vars)
+		  (cdr (assoc-equal key alst)))
+	     (<= (number-of-unresolved (cons (cons key vars) alst) klst)
+		 (number-of-unresolved alst klst)))
+    :hints(("Goal" :in-theory (disable symbol-listp)))
+    :rule-classes :linear))
+
+  (local (defthm lemma-3
     (implies (and (pseudo-termp key)
                   (pseudo-term-listp klst)
                   (pseudo-term-symbol-list-alistp alst)
@@ -254,7 +267,7 @@
              (<= (number-of-unresolved (cons (cons key vars) alst) klst)
                  (number-of-unresolved alst klst)))
     :hints (("Goal"
-             :in-theory (e/d (number-of-unresolved) (symbol-listp)))))
+             :in-theory (e/d (number-of-unresolved) (symbol-listp))))))
 
   (defthm assoc-equal-of-subsetp-equal
     (implies (and (pseudo-termp term)
@@ -496,6 +509,7 @@
 (define add-hypotheses ((ordered-hypo pseudo-term-listp)
                         (concl pseudo-termp))
   :returns (new-term pseudo-termp)
+  :measure (len ordered-hypo)
   (b* ((ordered-hypo (pseudo-term-list-fix ordered-hypo))
        (concl (pseudo-term-fix concl))
        ((unless (consp ordered-hypo)) concl)

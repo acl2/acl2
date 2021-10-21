@@ -22,6 +22,7 @@
 
 (set-state-ok t)
 
+(set-induction-depth-limit 1)
 (local (in-theory (disable pseudo-termp pseudo-term-listp)))
 
 ;;-------------------------------------------------------
@@ -344,6 +345,7 @@
                               (actuals pseudo-term-listp)
                               (supertypes type-to-types-alist-p))
   :returns (judge-alst pseudo-term-alistp)
+  :measure (len actuals)
   (b* ((actuals (pseudo-term-list-fix actuals))
        ((unless (consp actuals)) nil)
        ((cons ac-hd ac-tl) actuals))

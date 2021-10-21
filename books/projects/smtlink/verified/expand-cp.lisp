@@ -1029,7 +1029,7 @@
 			                         acl2::subsetp-when-atom-left
 			                         symbol-listp-of-car-when-symbol-list-listp
 			                         member-equal
-			                         null-of-pseudo-term-list-fix
+			                         ;null-of-pseudo-term-list-fix
 			                         pseudo-termp-of-car-when-member-equal-of-pseudo-term-sym-alistp
 			                         acl2::consp-of-symbol-list-fix
 			                         symbol-list-listp-of-cdr-when-symbol-list-listp

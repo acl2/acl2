@@ -17,6 +17,7 @@
 (include-book "translate-quote")
 
 (local (in-theory (enable paragraph-p word-p pseudo-term-fix)))
+(set-induction-depth-limit 1)
 
 (define conjunction-to-list ((decl-term pseudo-termp)
                              (acc pseudo-term-listp))
@@ -83,6 +84,7 @@
 
 (define translate-declaration-list ((decl-list pseudo-term-listp))
   :returns (translated paragraph-p)
+  :measure (len decl-list)
   (b* ((decl-list (pseudo-term-list-fix decl-list))
        ((unless (consp decl-list)) nil)
        ((cons decl-hd decl-tl) decl-list))

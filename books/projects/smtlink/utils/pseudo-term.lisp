@@ -11,6 +11,22 @@
 
 (include-book "pseudo-lambda")
 
+(set-induction-depth-limit 1)
+
+; The worst offenders for useless runes
+(local (in-theory (disable
+  true-list-listp member-equal
+  acl2::symbol-listp-of-cdr-when-symbol-listp
+  acl2::pseudo-lambdap-of-car-when-pseudo-lambda-listp 
+  acl2::pseudo-lambdap-when-member-equal-of-pseudo-lambda-listp
+  ;acl2::pseudo-term-listp-of-cdr-when-pseudo-term-listp
+  acl2::pseudo-lambda-listp-of-cdr-when-pseudo-lambda-listp
+  acl2::true-list-listp-of-cdr-when-true-list-listp
+  acl2::true-list-listp-when-not-consp
+  acl2::subsetp-when-atom-right
+  set::sets-are-true-lists-cheap
+  )))
+
 (define pseudo-term-fix ((x pseudo-termp))
   :returns (fixed pseudo-termp)
   (mbe :logic (if (pseudo-termp x) x nil)
@@ -33,6 +49,11 @@
   :forward t
   :topic pseudo-termp)
 
+(deflist pseudo-term-list
+  :pred pseudo-term-listp
+  :elt-type pseudo-termp
+  :true-listp t)
+
 (defthm pseudo-term-listp-of-symbol-listp
   (implies (symbol-listp x) (pseudo-term-listp x)))
 
@@ -42,7 +63,7 @@
   :hints (("Goal" :in-theory (enable pseudo-termp
                                      pseudo-term-listp))))
 
-(defthm symbolp-of-fn-call-of-pseudo-termp
+(defthmd symbolp-of-fn-call-of-pseudo-termp
   (implies (and (pseudo-termp x)
                 (consp x)
                 (not (acl2::fquotep x))
@@ -58,46 +79,14 @@
            (pseudo-lambdap (car x)))
   :hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
-(define pseudo-term-list-fix ((x pseudo-term-listp))
-  :returns (new-x pseudo-term-listp)
-  (mbe :logic (if (consp x)
-                  (cons (pseudo-term-fix (car x))
-                        (pseudo-term-list-fix (cdr x)))
-                nil)
-       :exec x)
-  ///
-  (more-returns
-   (new-x (<= (acl2-count new-x) (acl2-count x))
-          :name acl2-count-<=-pseudo-term-list-fix
-          :rule-classes :linear
-          :hints (("Goal" :in-theory (enable pseudo-term-fix))))
-   (new-x (implies (pseudo-term-listp x)
-                   (equal new-x x))
-          :name equal-pseudo-term-list-fix)
-   (new-x (implies (pseudo-term-listp x)
-                   (equal (len new-x) (len x)))
-          :name len-equal-pseudo-term-list-fix
-          :rule-classes :linear)))
-
-(defthm pseudo-term-list-fix-idempotent-lemma
-  (equal (pseudo-term-list-fix (pseudo-term-list-fix x))
-         (pseudo-term-list-fix x))
-  :hints (("Goal" :in-theory (enable pseudo-term-list-fix))))
-
-(deffixtype pseudo-term-list
-  :fix pseudo-term-list-fix
-  :pred pseudo-term-listp
-  :equiv pseudo-term-list-equiv
-  :define t)
-
-(defthm pseudo-term-listp-of-cdr-pseudo-termp
+(defthmd pseudo-term-listp-of-cdr-pseudo-termp
   (implies (and (pseudo-termp term)
                 (consp term)
                 (not (equal (car term) 'quote)))
            (pseudo-term-listp (cdr term)))
   :hints (("Goal" :in-theory (enable pseudo-termp))))
 
-(defthm pseudo-term-listp-of-cdr-pseudo-termp-if
+(defthmd pseudo-term-listp-of-cdr-pseudo-termp-if
   (implies (and (pseudo-termp term)
                 (consp term)
                 (equal (car term) 'if))
@@ -116,42 +105,32 @@
            (and (true-listp (cdr term))
                 (pseudo-term-listp (cdr term)))))
 
-(defthm consp-of-pseudo-term-list-fix
-  (implies (consp x)
-           (consp (pseudo-term-list-fix x)))
-  :hints(("Goal" :expand (pseudo-term-list-fix x))))
+;(define pseudo-term-list-list-fix ((x pseudo-term-list-listp))
+;  :returns (fixed pseudo-term-list-listp)
+;  (mbe :logic (if (consp x)
+;                  (cons (pseudo-term-list-fix (car x))
+;                        (pseudo-term-list-list-fix (cdr x)))
+;                nil)
+;       :exec x))
+;
+;(defthm pseudo-term-list-list-fix-idempotent-lemma
+;  (equal (pseudo-term-list-list-fix (pseudo-term-list-list-fix x))
+;         (pseudo-term-list-list-fix x))
+;  :hints (("Goal" :in-theory (enable pseudo-term-list-list-fix))))
 
-(defthm null-of-pseudo-term-list-fix
-  (implies (not (consp x))
-           (equal (pseudo-term-list-fix x) nil))
-  :hints(("Goal" :expand (pseudo-term-list-fix x))))
-
-(define pseudo-term-list-list-fix ((x pseudo-term-list-listp))
-  :returns (fixed pseudo-term-list-listp)
-  (mbe :logic (if (consp x)
-                  (cons (pseudo-term-list-fix (car x))
-                        (pseudo-term-list-list-fix (cdr x)))
-                nil)
-       :exec x))
-
-(defthm pseudo-term-list-list-fix-idempotent-lemma
-  (equal (pseudo-term-list-list-fix (pseudo-term-list-list-fix x))
-         (pseudo-term-list-list-fix x))
-  :hints (("Goal" :in-theory (enable pseudo-term-list-list-fix))))
-
-(deffixtype pseudo-term-list-list
-  :fix pseudo-term-list-list-fix
+(deflist pseudo-term-list-list
   :pred pseudo-term-list-listp
-  :equiv pseudo-term-list-list-equiv
-  :define t
-  :forward t
-  :topic pseudo-term-list-listp)
+  :elt-type pseudo-term-listp)
 
 (defalist pseudo-term-alist
   :key-type pseudo-term
   :val-type pseudo-term
   :pred pseudo-term-alistp
   :true-listp t)
+;(local (in-theory (disable
+;  pseudo-termp-of-caar-when-pseudo-term-alistp
+;  pseudo-termp-of-cdar-when-pseudo-term-alistp
+;  )))
 
 (defthm pseudo-term-alistp-of-pairlis$-of-symbol-listp-and-pseudo-term-listp
   (implies (and (symbol-listp y)
@@ -183,6 +162,7 @@
   :val-type pseudo-termp
   :pred symbol-pseudo-term-alistp
   :true-listp t)
+;(local (in-theory (disable symbolp-of-caar-when-symbol-pseudo-term-alistp)))
 
 (defthm assoc-equal-of-symbol-pseudo-term-alist
   (implies (and (symbol-pseudo-term-alistp alst)

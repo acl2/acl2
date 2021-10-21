@@ -20,6 +20,8 @@
 
 (set-state-ok t)
 
+(set-induction-depth-limit 1)
+
 (local
  (defthm symbol-is-pseudo-term
    (implies (symbolp x) (pseudo-termp x))))
@@ -167,6 +169,7 @@
   :returns (new-args pseudo-term-listp
                      :hints (("Goal" :in-theory (enable pseudo-termp
                                                         pseudo-term-listp))))
+  :measure (len args)
   (b* ((args (pseudo-term-list-fix args))
        (new-var (pseudo-term-fix new-var))
        ((unless (consp args)) nil)
@@ -635,6 +638,7 @@
                              (then-args pseudo-term-listp)
                              (else-args pseudo-term-listp))
   :returns (new-args pseudo-term-listp)
+  :measure (len then-args)
   (b* ((if-cond (pseudo-term-fix if-cond))
        (then-args (pseudo-term-list-fix then-args))
        (else-args (pseudo-term-list-fix else-args))

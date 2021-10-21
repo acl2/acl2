@@ -19,6 +19,7 @@
 (define only-one-var-acc ((term-lst pseudo-term-listp)
                           (term pseudo-termp)
                           (count natp))
+  :measure (len term-lst)
   :returns (ok booleanp)
   (b* ((term-lst (pseudo-term-list-fix term-lst))
        (count (nfix count))

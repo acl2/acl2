@@ -20,7 +20,20 @@
 (include-book "path-cond")
 
 (encapsulate ()
-  (local (in-theory (disable pseudo-termp)))
+  ; the worst offenders for useless runes
+  (local (in-theory (disable
+    pseudo-termp member-equal symbol-listp
+    PSEUDO-TERM-LISTP-OF-CDR-OF-PSEUDO-TERMP
+    ACL2::SUBSETP-WHEN-ATOM-RIGHT
+    ACL2::SUBSETP-IMPLIES-SUBSETP-CDR
+    ACL2::PSEUDO-TERMP-LIST-CDR
+    CONSP-OF-PSEUDO-LAMBDAP
+    LAMBDA-OF-PSEUDO-LAMBDAP
+    PSEUDO-LAMBDAP-OF-FN-CALL-OF-PSEUDO-TERMP
+    ACL2::PSEUDO-TERMP-CAR
+    ACL2::PSEUDO-LAMBDAP-WHEN-MEMBER-EQUAL-OF-PSEUDO-LAMBDA-LISTP
+    IMPLIES-OF-TYPE-PREDICATE-OF-TERM
+    CDDDDR-WHEN-IS-CONJUNCT?)))
 
   (defprod typed-term
     ((term pseudo-termp :default ''nil)
@@ -184,6 +197,7 @@
     :guard (make-typed-term-list-guard term-lst path-cond judges)
     :returns (j-fix pseudo-termp)
     :verify-guards nil
+    :measure (len term-lst)
     (mbe
      :logic
      (b* ((term-lst (pseudo-term-list-fix term-lst))
@@ -206,19 +220,15 @@
       (let ((j-fix (make-typed-term-list-fix-judges tterm-lst path-cond judges)))
         (equal (make-typed-term-list-fix-judges tterm-lst path-cond j-fix) j-fix))
       :hints(("Goal"
-              :in-theory (e/d (make-typed-term-list-fix-judges) (pseudo-termp)))))
+              :in-theory (e/d (make-typed-term-list-fix-judges)
+			      (pseudo-termp pseudo-term-list-fix-under-iff))
+              :use((:instance pseudo-term-list-fix-under-iff (x tterm-lst))))))
     (more-returns
      (j-fix (make-typed-term-list-guard (pseudo-term-list-fix term-lst)
                                         (pseudo-term-fix path-cond)
                                         j-fix)
             :name
             make-typed-term-list-guard-of-make-typed-term-list-fix-judges)
-     ;; make-typed-term-list-judges-fix-when-make-typed-term-list-guard
-     ;; takes about 15 seconds to prove -- even if I give it a shorter name.
-     ;; That's kind of annoying.  Might want to figure out why (i.e. why it
-     ;; takes so long.  I know why waiting for the proof to finish is
-     ;; annoying)
-     ;; Yan: I disabled some rules, not it runs slightly faster
      (j-fix (implies (make-typed-term-list-guard term-lst path-cond judges)
                      (equal j-fix judges))
             :name make-typed-term-list-judges-fix-when-make-typed-term-list-guard
@@ -231,8 +241,7 @@
       :hints(("Goal"
               :in-theory (disable make-typed-term-list-judges-fix-when-make-typed-term-list-guard)
               :use((:instance
-                    make-typed-term-list-judges-fix-when-make-typed-term-list-guard)))))
-    )
+                    make-typed-term-list-judges-fix-when-make-typed-term-list-guard))))))
 
   (define make-typed-term-list ((term-lst pseudo-term-listp)
                                 (path-cond pseudo-termp)
@@ -241,6 +250,7 @@
     :returns (tterm-lst typed-term-list-p)
     :guard-hints(("Goal"
                   :expand ((make-typed-term-list-guard term-lst path-cond judges))))
+    :measure (len term-lst)
     (b* ((term-lst (pseudo-term-list-fix term-lst))
          (path-cond (pseudo-term-fix path-cond))
          (judges (make-typed-term-list-fix-judges term-lst path-cond judges))
@@ -292,21 +302,19 @@
                              (make-typed-term-list-fix-judges (pseudo-term-list-fix term-lst)
                                                               (pseudo-term-fix path-cond)
                                                               judges))))))
+    (local (defthm crock-1
+      (implies (consp x)
+	       (equal (+ 1 (len (cdr (pseudo-term-list-fix x))))
+		      (len x)))))
 
     (more-returns
-     ;; mrg: I changed acl2-count-of-typed-term-list->term-lst into a
-     ;;   more-returns theorem (it had been a defthm) for consistency
-     ;;   Note: we could also prove
-     ;;     (equal (len (make-typed-term-list term-lst path-cond judges))
-     ;;            (len term-lst))
-     ;;   If that would be useful in subsequent measure proofs.
-     (tterm-lst (<= (acl2-count (typed-term-list->term-lst tterm-lst))
-                    (acl2-count term-lst))
-                :name acl2-count-of-typed-term-list->term-lst
-                :hints(("Goal" :in-theory (enable typed-term-list->term-lst)))
+     (tterm-lst (equal (len (typed-term-list->term-lst tterm-lst))
+                       (len term-lst))
+                :name len-of-typed-term-list->term-lst
+                :hints(("Goal" :in-theory (e/d (typed-term-list->term-lst)
+					       (len-of-pseudo-term-list-fix))
+			       :use((:instance len-of-pseudo-term-list-fix (x term-lst)))))
                 :rule-classes :linear)
-     ;; mrg: I added the more-returns theorems from here to the end of
-     ;;      define make-typed-term-list.
      (tterm-lst (implies (consp term-lst) (consp tterm-lst))
                 :name consp-of-make-typed-term-list
                 :hints(("Goal"
