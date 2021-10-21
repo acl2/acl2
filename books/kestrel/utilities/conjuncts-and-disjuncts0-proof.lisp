@@ -11,10 +11,9 @@
 (in-package "ACL2")
 
 (include-book "conjuncts-and-disjuncts0")
-(include-book "kestrel/evaluators/defevaluator-plus" :dir :system)
+(include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
 (local (include-book "kestrel/terms-light/negate-term-proof" :dir :system))
 
-(defevaluator+ if-and-not-eval if not)
 
 ;; just changes the evaluator
 (defthm if-and-not-eval-of-negate-term
