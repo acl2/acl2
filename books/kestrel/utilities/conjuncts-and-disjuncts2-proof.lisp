@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "conjuncts-and-disjuncts")
+(include-book "conjuncts-and-disjuncts2")
 (include-book "kestrel/evaluators/defevaluator-plus" :dir :system)
 
 (defevaluator+ con-and-dis-eval if not booland boolor boolif myif)
@@ -108,13 +108,13 @@
                                      ALL-EVAL-TO-false-WITH-CON-AND-DIS-EVAL))))
 
 ;; The main theorem in this book
-(defthm-flag-get-conjuncts-of-term
-  (defthm get-conjuncts-of-term-correct
-    (iff (con-and-dis-eval (conjoin (get-conjuncts-of-term term)) a)
+(defthm-flag-get-conjuncts-of-term2
+  (defthm get-conjuncts-of-term2-correct
+    (iff (con-and-dis-eval (conjoin (get-conjuncts-of-term2 term)) a)
          (con-and-dis-eval term a))
-    :flag get-conjuncts-of-term)
+    :flag get-conjuncts-of-term2)
   (defthm get-disjuncts-of-term-correct
-    (iff (con-and-dis-eval (disjoin (get-disjuncts-of-term term)) a)
+    (iff (con-and-dis-eval (disjoin (get-disjuncts-of-term2 term)) a)
          (con-and-dis-eval term a))
-    :flag get-disjuncts-of-term)
-  :hints (("Goal" :in-theory (enable get-disjuncts-of-term get-conjuncts-of-term))))
+    :flag get-disjuncts-of-term2)
+  :hints (("Goal" :in-theory (enable get-disjuncts-of-term2 get-conjuncts-of-term2))))

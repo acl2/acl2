@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/conjuncts-and-disjuncts" :dir :system) ; todo: include something simpler!!
-(include-book "kestrel/utilities/conjuncts-and-disjuncts-proof" :dir :system)
+(include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system) ; todo: include something simpler!!
+(include-book "kestrel/utilities/conjuncts-and-disjuncts2-proof" :dir :system) ; todo: make local?
 (include-book "kestrel/terms-light/negate-terms" :dir :system)
 (local (include-book "kestrel/terms-light/logic-termp" :dir :system))
 (local (include-book "kestrel/utilities/arities-okp" :dir :system))
@@ -62,7 +62,7 @@
       (if (and (call-of 'not lit)
                (= 1 (len (fargs lit))))
           (let* ((negated-lit (farg1 lit))
-                 (negated-disjuncts (get-conjuncts-of-term negated-lit))) ; todo: this can push NOTs into IFs (bad here?)
+                 (negated-disjuncts (get-conjuncts-of-term2 negated-lit))) ; todo: this can push NOTs into IFs (bad here?)
             (if (< 1 (len negated-disjuncts))
                 (union-equal (negate-terms negated-disjuncts) (flatten-disjuncts (rest clause)))
               (cons lit (flatten-disjuncts (rest clause)))))
@@ -98,16 +98,16 @@
            (all-eval-to-false-with-con-and-dis-eval clause a))
   :hints (("Goal" :in-theory (enable disjoin all-eval-to-false-with-con-and-dis-eval))))
 
-(defthm-flag-get-conjuncts-of-term
-  (defthm all-eval-to-true-with-con-and-dis-eval-of-get-conjuncts-of-term
-    (iff (all-eval-to-true-with-con-and-dis-eval (get-conjuncts-of-term term) a)
+(defthm-flag-get-conjuncts-of-term2
+  (defthm all-eval-to-true-with-con-and-dis-eval-of-get-conjuncts-of-term2
+    (iff (all-eval-to-true-with-con-and-dis-eval (get-conjuncts-of-term2 term) a)
          (con-and-dis-eval term a))
-    :flag get-conjuncts-of-term)
-  (defthm all-eval-to-false-with-con-and-dis-eval-of-get-disjuncts-of-term
-    (iff (all-eval-to-false-with-con-and-dis-eval (get-disjuncts-of-term term) a)
+    :flag get-conjuncts-of-term2)
+  (defthm all-eval-to-false-with-con-and-dis-eval-of-get-disjuncts-of-term2
+    (iff (all-eval-to-false-with-con-and-dis-eval (get-disjuncts-of-term2 term) a)
          (not (con-and-dis-eval term a)))
-    :flag get-disjuncts-of-term)
-  :hints (("Goal" :in-theory (enable get-disjuncts-of-term get-conjuncts-of-term))))
+    :flag get-disjuncts-of-term2)
+  :hints (("Goal" :in-theory (enable get-disjuncts-of-term2 get-conjuncts-of-term2))))
 
 (defthm con-and-dis-eval-of-disjoin-of-flatten-disjuncts
   (iff (con-and-dis-eval (disjoin (flatten-disjuncts clause)) a)
