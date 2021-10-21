@@ -11,10 +11,9 @@
 (in-package "ACL2")
 
 (include-book "conjuncts-and-disjuncts0")
-(include-book "kestrel/evaluators/defevaluator-plus" :dir :system)
+(include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
 (local (include-book "kestrel/terms-light/negate-term-proof" :dir :system))
 
-(defevaluator+ if-and-not-eval if not)
 
 ;; just changes the evaluator
 (defthm if-and-not-eval-of-negate-term
@@ -22,9 +21,7 @@
        (not (if-and-not-eval term a)))
   :hints (("Goal" :use (:functional-instance negate-term-correct
                                              (not-eval if-and-not-eval)
-                                             (not-eval-list if-and-not-eval-list))
-           ;; todo: improve defevaluator+ to handle this:
-           :in-theory (enable if-and-not-eval-of-fncall-args))))
+                                             (not-eval-list if-and-not-eval-list)))))
 
 (defund all-eval-to-false-with-if-and-not-eval (terms a)
   (declare (xargs :guard (and (pseudo-term-listp terms)
@@ -124,3 +121,15 @@
          (if-and-not-eval term a))
     :flag get-disjuncts-of-term)
   :hints (("Goal" :in-theory (enable get-disjuncts-of-term get-conjuncts-of-term))))
+
+(defthm all-eval-to-true-with-if-and-not-eval-of-get-conjuncts-of-term
+  (iff (all-eval-to-true-with-if-and-not-eval (get-conjuncts-of-term term) a)
+       (if-and-not-eval term a))
+  :hints (("Goal" :use (:instance get-conjuncts-of-term-correct)
+           :in-theory (disable get-conjuncts-of-term-correct))))
+
+(defthm all-eval-to-false-with-if-and-not-eval-of-get-disjuncts-of-term
+  (iff (all-eval-to-false-with-if-and-not-eval (get-disjuncts-of-term term) a)
+       (not (if-and-not-eval term a)))
+  :hints (("Goal" :use (:instance get-disjuncts-of-term-correct)
+           :in-theory (disable get-disjuncts-of-term-correct))))

@@ -34,6 +34,12 @@
               (all-eval-to-true-with-equality-eval terms a)))
   :hints (("Goal" :in-theory (enable all-eval-to-true-with-equality-eval))))
 
+(defthm all-eval-to-true-with-equality-eval-of-append
+  (equal (all-eval-to-true-with-equality-eval (append terms1 terms2) a)
+         (and (all-eval-to-true-with-equality-eval terms1 a)
+              (all-eval-to-true-with-equality-eval terms2 a)))
+  :hints (("Goal" :in-theory (enable all-eval-to-true-with-equality-eval))))
+
 (defthm equality-eval-when-all-eval-to-true-with-equality-eval-and-member-equal
   (implies (and (all-eval-to-true-with-equality-eval terms a)
                 (member-equal term terms))
@@ -63,4 +69,10 @@
   (implies (and (all-eval-to-false-with-equality-eval terms a)
                 (member-equal term terms))
            (not (equality-eval term a)))
+  :hints (("Goal" :in-theory (enable all-eval-to-false-with-equality-eval))))
+
+(defthm all-eval-to-false-with-equality-eval-of-append
+  (equal (all-eval-to-false-with-equality-eval (append terms1 terms2) a)
+         (and (all-eval-to-false-with-equality-eval terms1 a)
+              (all-eval-to-false-with-equality-eval terms2 a)))
   :hints (("Goal" :in-theory (enable all-eval-to-false-with-equality-eval))))

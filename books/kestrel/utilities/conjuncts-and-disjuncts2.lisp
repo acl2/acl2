@@ -160,11 +160,12 @@
            (logic-term-listp (negate-conjuncts terms) w))
   :hints (("Goal" :in-theory (enable negate-conjuncts))))
 
+;; This version knows about booland/boolor/boolif/myif.
 ;TODO: replace various more specialized routines to get conjuncts (e.g., for if nests) with these?
 ;TODO: Compare to the version for DAGs
 (mutual-recursion
  ;; Returns a list of conjuncts whose conjunction is equivalent (using IFF) to TERM.
- (defund get-conjuncts-of-term (term)
+ (defund get-conjuncts-of-term2 (term)
    (declare (xargs :guard (pseudo-termp term)
                    :verify-guards nil ;done below
                    ))
@@ -179,22 +180,22 @@
              *false-conjunction*)
          ;; function call:
          (if (eq 'booland fn)
-             (combine-conjuncts (get-conjuncts-of-term (farg1 term))
-                                (get-conjuncts-of-term (farg2 term)))
+             (combine-conjuncts (get-conjuncts-of-term2 (farg1 term))
+                                (get-conjuncts-of-term2 (farg2 term)))
            (if (eq 'not fn) ;de morgan: (not (or ...)) = (and (not ..) .. (not ..))
-               (negate-disjuncts (get-disjuncts-of-term (farg1 term)))
+               (negate-disjuncts (get-disjuncts-of-term2 (farg1 term)))
              (if (member-eq fn '(myif boolif if))
                  (if (equal *nil* (farg3 term)) ;; (myif <x> <y> nil) is the same as (and <x> <y>) ;;todo: handle (if x y x) as well?
-                     (combine-conjuncts (get-conjuncts-of-term (farg1 term))
-                                        (get-conjuncts-of-term (farg2 term)))
+                     (combine-conjuncts (get-conjuncts-of-term2 (farg1 term))
+                                        (get-conjuncts-of-term2 (farg2 term)))
                    (if (equal *nil* (farg2 term)) ;; (myif x nil y) <=> (and (not x) y)
-                       (combine-conjuncts (negate-disjuncts (get-disjuncts-of-term (farg1 term)))
-                                          (get-conjuncts-of-term (farg3 term)))
+                       (combine-conjuncts (negate-disjuncts (get-disjuncts-of-term2 (farg1 term)))
+                                          (get-conjuncts-of-term2 (farg3 term)))
                      (list term)))
                (list term))))))))
 
  ;; Returns a list of disjuncts whose disjunction is equivalent (using IFF) to TERM.
- (defund get-disjuncts-of-term (term)
+ (defund get-disjuncts-of-term2 (term)
    (declare (xargs :guard (pseudo-termp term)))
    (if (not (consp term)) ;term is a variable
        (list term)
@@ -207,61 +208,61 @@
              *false-disjunction*)
          ;; function call:
          (if (eq 'boolor fn)
-             (combine-disjuncts (get-disjuncts-of-term (farg1 term))
-                                (get-disjuncts-of-term (farg2 term)))
+             (combine-disjuncts (get-disjuncts-of-term2 (farg1 term))
+                                (get-disjuncts-of-term2 (farg2 term)))
            (if (eq 'not fn) ;de morgan: (not (and ...)) = (or (not ..) .. (not ..))
-               (negate-conjuncts (get-conjuncts-of-term (farg1 term)))
+               (negate-conjuncts (get-conjuncts-of-term2 (farg1 term)))
              (if (member-eq fn '(if myif boolif))
                  (if (equal *t* (farg2 term)) ; (if <x> t <y>) is the same as (or <x> <y>)
-                     (combine-disjuncts (get-disjuncts-of-term (farg1 term))
-                                        (get-disjuncts-of-term (farg3 term)))
+                     (combine-disjuncts (get-disjuncts-of-term2 (farg1 term))
+                                        (get-disjuncts-of-term2 (farg3 term)))
                    (if (equal *t* (farg3 term)) ; (if x y t) <=> (or (not x) y)
-                       (combine-disjuncts (negate-conjuncts (get-conjuncts-of-term (farg1 term)))
-                                          (get-disjuncts-of-term (farg2 term)))
+                       (combine-disjuncts (negate-conjuncts (get-conjuncts-of-term2 (farg1 term)))
+                                          (get-disjuncts-of-term2 (farg2 term)))
                      (if (equal (farg1 term) (farg2 term)) ; (if x x y) <=> (or x y)
-                         (combine-disjuncts (get-disjuncts-of-term (farg1 term))
-                                            (get-disjuncts-of-term (farg3 term)))
+                         (combine-disjuncts (get-disjuncts-of-term2 (farg1 term))
+                                            (get-disjuncts-of-term2 (farg3 term)))
                        (list term))))
                (list term)))))))))
 
-(make-flag get-conjuncts-of-term)
+(make-flag get-conjuncts-of-term2)
 
-(defthm-flag-get-conjuncts-of-term
-  (defthm pseudo-term-listp-of-get-conjuncts-of-term
+(defthm-flag-get-conjuncts-of-term2
+  (defthm pseudo-term-listp-of-get-conjuncts-of-term2
     (implies (pseudo-termp term)
-             (pseudo-term-listp (get-conjuncts-of-term term)))
-    :flag get-conjuncts-of-term)
-  (defthm pseudo-term-listp-of-get-disjuncts-of-term
+             (pseudo-term-listp (get-conjuncts-of-term2 term)))
+    :flag get-conjuncts-of-term2)
+  (defthm pseudo-term-listp-of-get-disjuncts-of-term2
     (implies (pseudo-termp term)
-             (pseudo-term-listp (get-disjuncts-of-term term)))
-    :flag get-disjuncts-of-term)
-  :hints (("Goal" :in-theory (enable get-disjuncts-of-term get-conjuncts-of-term))))
+             (pseudo-term-listp (get-disjuncts-of-term2 term)))
+    :flag get-disjuncts-of-term2)
+  :hints (("Goal" :in-theory (enable get-disjuncts-of-term2 get-conjuncts-of-term2))))
 
-(defthm-flag-get-conjuncts-of-term
-  (defthm conjunct-listp-of-get-conjuncts-of-term
+(defthm-flag-get-conjuncts-of-term2
+  (defthm conjunct-listp-of-get-conjuncts-of-term2
     (implies (pseudo-termp term)
-             (conjunct-listp (get-conjuncts-of-term term)))
-    :flag get-conjuncts-of-term)
-  (defthm disjunct-listp-of-get-disjuncts-of-term
+             (conjunct-listp (get-conjuncts-of-term2 term)))
+    :flag get-conjuncts-of-term2)
+  (defthm disjunct-listp-of-get-disjuncts-of-term2
     (implies (pseudo-termp term)
-             (disjunct-listp (get-disjuncts-of-term term)))
-    :flag get-disjuncts-of-term)
-  :hints (("Goal" :in-theory (enable get-disjuncts-of-term
-                                     get-conjuncts-of-term))))
+             (disjunct-listp (get-disjuncts-of-term2 term)))
+    :flag get-disjuncts-of-term2)
+  :hints (("Goal" :in-theory (enable get-disjuncts-of-term2
+                                     get-conjuncts-of-term2))))
 
-(defthm-flag-get-conjuncts-of-term
-  (defthm true-listp-of-get-conjuncts-of-term
-    (true-listp (get-conjuncts-of-term term))
-    :flag get-conjuncts-of-term)
-  (defthm true-listp-of-get-disjuncts-of-term
-    (true-listp (get-disjuncts-of-term term))
-    :flag get-disjuncts-of-term)
-  :hints (("Goal" :in-theory (enable get-disjuncts-of-term get-conjuncts-of-term))))
+(defthm-flag-get-conjuncts-of-term2
+  (defthm true-listp-of-get-conjuncts-of-term2
+    (true-listp (get-conjuncts-of-term2 term))
+    :flag get-conjuncts-of-term2)
+  (defthm true-listp-of-get-disjuncts-of-term2
+    (true-listp (get-disjuncts-of-term2 term))
+    :flag get-disjuncts-of-term2)
+  :hints (("Goal" :in-theory (enable get-disjuncts-of-term2 get-conjuncts-of-term2))))
 
-(verify-guards get-conjuncts-of-term)
+(verify-guards get-conjuncts-of-term2)
 
-(defthm-flag-get-conjuncts-of-term
-  (defthm logic-term-listp-of-get-conjuncts-of-term
+(defthm-flag-get-conjuncts-of-term2
+  (defthm logic-term-listp-of-get-conjuncts-of-term2
     (implies (and (logic-termp term w)
                   (arities-okp '((not . 1)
                                  (if . 3)
@@ -270,9 +271,9 @@
                                  (boolor . 2)
                                  (myif . 3))
                                w))
-             (logic-term-listp (get-conjuncts-of-term term) w))
-    :flag get-conjuncts-of-term)
-  (defthm logic-term-listp-of-get-disjuncts-of-term
+             (logic-term-listp (get-conjuncts-of-term2 term) w))
+    :flag get-conjuncts-of-term2)
+  (defthm logic-term-listp-of-get-disjuncts-of-term2
     (implies (and (logic-termp term w)
                   (arities-okp '((not . 1)
                                  (if . 3)
@@ -281,13 +282,13 @@
                                  (boolor . 2)
                                  (myif . 3))
                                w))
-             (logic-term-listp (get-disjuncts-of-term term) w))
-    :flag get-disjuncts-of-term)
-  :hints (("Goal" :in-theory (enable get-disjuncts-of-term get-conjuncts-of-term))))
+             (logic-term-listp (get-disjuncts-of-term2 term) w))
+    :flag get-disjuncts-of-term2)
+  :hints (("Goal" :in-theory (enable get-disjuncts-of-term2 get-conjuncts-of-term2))))
 
-(defun get-conjuncts-of-terms (terms)
+(defun get-conjuncts-of-terms2 (terms)
   (declare (xargs :guard (pseudo-term-listp terms)))
   (if (endp terms)
       nil
-    (union-equal (get-conjuncts-of-term (first terms))
-                 (get-conjuncts-of-terms (rest terms)))))
+    (union-equal (get-conjuncts-of-term2 (first terms))
+                 (get-conjuncts-of-terms2 (rest terms)))))

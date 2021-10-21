@@ -23,7 +23,9 @@
 
 (include-book "handle-constant-literals")
 (include-book "kestrel/utilities/forms" :dir :system)
+(include-book "kestrel/utilities/conjuncts-and-disjuncts0" :dir :system)
 (include-book "kestrel/evaluators/equality-eval" :dir :system)
+(local (include-book "kestrel/utilities/conjuncts-and-disjuncts0-proof" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -64,8 +66,36 @@
        (equality-eval (disjoin clause) a))
   :hints (("Goal" :use (:functional-instance if-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
                                              (if-eval equality-eval)
-                                             (if-eval-list equality-eval-list))
-           :in-theory (enable EQUALITY-EVAL-OF-FNCALL-ARGS))))
+                                             (if-eval-list equality-eval-list)))))
+
+;; just changes the evaluator
+(defthm all-eval-to-true-with-equality-eval-of-get-conjuncts-of-term
+  (iff (all-eval-to-true-with-equality-eval (get-conjuncts-of-term term) a)
+       (equality-eval term a))
+  :hints (("Goal" :use (:functional-instance all-eval-to-true-with-if-and-not-eval-of-get-conjuncts-of-term
+                                             (if-and-not-eval equality-eval)
+                                             (if-and-not-eval-list equality-eval-list)
+                                             (all-eval-to-true-with-if-and-not-eval all-eval-to-true-with-equality-eval)))))
+
+(defthm all-eval-to-false-with-equality-eval-of-get-disjuncts-of-term
+  (iff (all-eval-to-false-with-equality-eval (get-disjuncts-of-term term) a)
+       (not (equality-eval term a)))
+  :hints (("Goal" :use (:functional-instance all-eval-to-false-with-if-and-not-eval-of-get-disjuncts-of-term
+                                             (if-and-not-eval equality-eval)
+                                             (if-and-not-eval-list equality-eval-list)
+                                             (all-eval-to-false-with-if-and-not-eval all-eval-to-false-with-equality-eval)))))
+
+
+(defthm all-eval-to-false-with-equality-eval-of-negate-terms
+  (iff (all-eval-to-false-with-equality-eval (negate-terms terms) a)
+       (all-eval-to-true-with-equality-eval terms a))
+  :hints (("Goal" :in-theory (enable negate-terms negate-term))))
+
+(defthm all-eval-to-false-with-equality-eval-of-negate-disjunct-list
+  (iff (all-eval-to-false-with-equality-eval (negate-disjunct-list terms) a)
+       (all-eval-to-true-with-equality-eval terms a))
+  :hints (("Goal" :in-theory (enable negate-disjunct-list))))
+
 
 
 ;todo: use more
@@ -396,33 +426,37 @@
   (declare (xargs :guard (and (pseudo-term-listp clause)
                               (pseudo-term-listp true-terms)
                               (pseudo-term-listp false-terms))))
-
   (if (endp clause)
       nil
     (let* ((lit (first clause))
            (new-lit (resolve-ifs-in-term lit true-terms false-terms)))
       (cons new-lit
             (resolve-ifs-in-clause (rest clause)
-                                   ;; todo: what about things that are not calls of not?  track false-terms too?
+                                   ;; TODO: What about constants in these lists?:
                                    ;; TODO: Use new-lit here:
+                                   ;; TODO: Consider union-equal instead of append
+                                   (if (and (call-of 'not lit)
+                                            (= 1 (len (fargs lit))))
+                                       ;; if the clause is (or (not A) ...rest...)
+                                       ;; we can assume A when processing rest
+                                       (append (get-conjuncts-of-term (farg1 lit))
+                                               true-terms)
+                                     true-terms)
                                    ;; TODO: Extract all known true/false things from LIT:
                                    (if (and (call-of 'not lit)
                                             (= 1 (len (fargs lit))))
-                                       ;; if the clause is (or (not A) ...)
-                                       ;; we can assume A when processing ...
-                                       (cons (farg1 lit) true-terms)
-                                     true-terms)
-                                   (if (and (call-of 'not lit)
-                                            (= 1 (len (fargs lit))))
                                        false-terms
-                                     (cons lit false-terms)))))))
+                                     (append (get-disjuncts-of-term lit)
+                                             false-terms)))))))
 
 (defthm resolve-ifs-in-clause-correct
   (implies (and (all-eval-to-true-with-equality-eval true-terms a)
                 (all-eval-to-false-with-equality-eval false-terms a))
            (iff (equality-eval (disjoin (resolve-ifs-in-clause clause true-terms false-terms)) a)
                 (equality-eval (disjoin clause) a)))
-  :hints (("Goal" :in-theory (enable resolve-ifs-in-clause))))
+  :hints (("Goal" :expand (DISJOIN CLAUSE)
+           :do-not '(generalize eliminate-destructors)
+           :in-theory (enable resolve-ifs-in-clause))))
 
 (defthm resolve-ifs-in-clause-correct-special
   (iff (equality-eval (disjoin (resolve-ifs-in-clause clause nil nil)) a)

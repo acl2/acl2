@@ -11,9 +11,9 @@
 (in-package "ACL2")
 
 (include-book "dag-to-term")
-(include-book "kestrel/utilities/conjuncts-and-disjuncts" :dir :system)
+(include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system)
 
 ;; Extracts the conjuncts of DAG, as a list of terms.  May explode if there is
 ;; a lot of shared structure.
 (defun dag-conjuncts (dag)
-  (get-conjuncts-of-term (dag-to-term dag)))
+  (get-conjuncts-of-term2 (dag-to-term dag)))

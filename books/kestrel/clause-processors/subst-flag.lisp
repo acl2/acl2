@@ -424,7 +424,8 @@
                             equality-eval-of-fncall-args)
                            (pairlis$
                             equality-eval-of-variable
-                            set-difference-equal)))))
+                            set-difference-equal
+                            equality-eval-of-fncall-args-back)))))
 
 ;;; now map the term processor over every literal of the clause
 
