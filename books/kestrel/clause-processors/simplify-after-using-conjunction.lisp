@@ -88,13 +88,13 @@
   (let* ( ;(clause (first (sublis-var-and-simplify-clause-processor clause)))
          (new-clause (first (flatten-literals-clause-processor clause)))
          ;;(clause (first (push-o-p-clause-processor clause))) ;this is a bit out of place here
-         (clauses (simple-subsumption-clause-processor new-clause)) ;todo: doesn't yet deal with the o-p claims because they appear not as conjuncts
+         (new-clauses (simple-subsumption-clause-processor new-clause)) ;todo: doesn't yet deal with the o-p claims because they appear not as conjuncts
          ;; (changep (not (equal clauses (list clause)))) ;todo: optimize
          )
     (progn$ ;; (if changep
-            ;;     (cw "(Before: ~X01)%(After: ~X23)~%" clause nil new-clause nil)
+            ;;     (cw "(Before: ~X01)~%(After: ~X23)~%" clause nil new-clauses nil)
             ;;   (cw "No change made by simplify-after-using-conjunction-clause-processor.~%"))
-            clauses)))
+            new-clauses)))
 
 ;todo: add :well-formedness proof
 (defthm simplify-after-using-conjunction-clause-processor-correct
