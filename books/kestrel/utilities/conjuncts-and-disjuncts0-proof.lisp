@@ -121,3 +121,15 @@
          (if-and-not-eval term a))
     :flag get-disjuncts-of-term)
   :hints (("Goal" :in-theory (enable get-disjuncts-of-term get-conjuncts-of-term))))
+
+(defthm all-eval-to-true-with-if-and-not-eval-of-get-conjuncts-of-term
+  (iff (all-eval-to-true-with-if-and-not-eval (get-conjuncts-of-term term) a)
+       (if-and-not-eval term a))
+  :hints (("Goal" :use (:instance get-conjuncts-of-term-correct)
+           :in-theory (disable get-conjuncts-of-term-correct))))
+
+(defthm all-eval-to-false-with-if-and-not-eval-of-get-disjuncts-of-term
+  (iff (all-eval-to-false-with-if-and-not-eval (get-disjuncts-of-term term) a)
+       (not (if-and-not-eval term a)))
+  :hints (("Goal" :use (:instance get-disjuncts-of-term-correct)
+           :in-theory (disable get-disjuncts-of-term-correct))))
