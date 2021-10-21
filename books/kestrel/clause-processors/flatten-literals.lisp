@@ -19,8 +19,16 @@
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
-;; Handles a disjunct of the form (not (and x1 ... xn)) by turing it into the
+;; Handles a disjunct of the form (not (and x1 ... xn)) by turning it into the
 ;; set of new top-level literals (not x1) ... (not xn).
+
+;; Note that a goal may print the same before and after flattening.
+;; For example, the clause:
+;; ((not (and x y z)) w)
+;; and the clause:
+;; ((not x) (not y) (not z) w)
+;; both print as:
+;; (implies (and x y z) w).
 
 (defthm all-eval-to-false-with-con-and-dis-eval-of-union-equal
   (iff (all-eval-to-false-with-con-and-dis-eval (union-equal x y) a)

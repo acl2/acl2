@@ -1,3 +1,13 @@
+; A tool to generate verify-guards forms after transforming a defun
+;
+; Copyright (C) 2013-2021 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
@@ -5,6 +15,7 @@
 (include-book "kestrel/utilities/verify-guards-dollar" :dir :system) ; only needed for verify-guards-for-defun?
 (include-book "kestrel/std/system/guard-verified-p" :dir :system)
 (include-book "becomes-theorem-names")
+(include-book "kestrel/clause-processors/simplify-after-using-conjunction" :dir :system)
 
 ;; Generate a verify-guards form for FN.  Returns an
 ;; event.  The verify-guards form assumes the new function and "becomes"
@@ -32,7 +43,12 @@
                                          ;; function:
                                          (:e eqlablep)
                                          (:e eqlable-listp) ; not sure whether this is needed, depends on what kinds of CASE untranslate can put in
-                                         )))
+                                         ))
+                           ;; This can speed things up greatly.  It may not prove the whole clause, due to
+                           ;; the need to replace recursive calls using the becomes-theorems.
+                           ;; TODO: This breaks a letify call in flex/spec-answer/regex-new/domain-regex-well-formed-terms.lisp:
+                           ;; ("goal'" :clause-processor (simplify-after-using-conjunction-clause-processor clause))
+                           )
                        guard-hints)))
     `(verify-guards$ ,new-fn
                       :hints ,guard-hints

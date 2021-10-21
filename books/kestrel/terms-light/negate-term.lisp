@@ -19,6 +19,7 @@
 
 ;; Negate TERM by adding or removing a call of not (avoids double negation)
 ;; See also dumb-negate-lit.
+;; TODO: Handle constants?
 (defund negate-term (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (and (call-of 'not term)

@@ -10,8 +10,6 @@
 
 (in-package "ACL2")
 
-;; STATUS: INCOMPLETE
-
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)

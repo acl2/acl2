@@ -14,7 +14,6 @@
 (include-book "kestrel/evaluators/not-eval" :dir :system)
 
 (defthm negate-term-correct
-  (implies (pseudo-termp term)
-           (iff (not-eval (negate-term term) a)
-                (not (not-eval term a))))
+  (iff (not-eval (negate-term term) a)
+       (not (not-eval term a)))
   :hints (("Goal" :in-theory (enable negate-term))))

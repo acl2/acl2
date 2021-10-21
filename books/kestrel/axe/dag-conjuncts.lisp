@@ -14,6 +14,6 @@
 (include-book "kestrel/utilities/conjuncts-and-disjuncts" :dir :system)
 
 ;; Extracts the conjuncts of DAG, as a list of terms.  May explode if there is
-;; a lof of shared structure.
+;; a lot of shared structure.
 (defun dag-conjuncts (dag)
   (get-conjuncts-of-term (dag-to-term dag)))

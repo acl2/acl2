@@ -1,7 +1,7 @@
 ; Tools for manipulating conjunctions and disjunctions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,8 +16,8 @@
 ;; TODO: Should we be able to get conjuncts from (NOT (IF X X Y)) which is "not (x or y)" ?
 
 (include-book "forms")
+(include-book "conjunctions-and-disjunctions")
 (include-book "tools/flag" :dir :system)
-(include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/booleans/booland" :dir :system) ; do not remove, since this tool depends on this definition of booland
 (include-book "kestrel/booleans/boolor" :dir :system) ; do not remove, since this tool depends on this definition of boolor
 (include-book "kestrel/booleans/boolif" :dir :system) ; do not remove, since this tool depends on this definition of boolif
@@ -33,82 +33,11 @@
 (local (in-theory (disable ;len-of-cdr-better member-of-cons ;CONSP-CDR
                    default-car))) ;for speed
 
-;; A single conjunct of "false"
-(defconst *false-conjunction* (list *nil*))
-
-;; The empty conjunction is equivalent to true
-(defconst *true-conjunction* nil)
-
-;; The empty disjunction is equivalent to false
-(defconst *false-disjunction* nil)
-
-;; A single disjunct of "true"
-(defconst *true-disjunction* (list *t*))
-
-;; We expect each of x and y to be either 1) the false-conjunction, or 2) a list of non-constant terms.
-(defund combine-conjuncts (x y)
-  (declare (xargs :guard (and (pseudo-term-listp x)
-                              (pseudo-term-listp y))))
-  (if (or (equal *false-conjunction* x)
-          (equal *false-conjunction* y))
-      *false-conjunction*
-    (union-equal x y)))
-
-(defthm logic-term-listp-of-combine-conjuncts
-  (implies (and (logic-term-listp x w)
-                (logic-term-listp y w))
-           (logic-term-listp (combine-conjuncts x y) w))
-  :hints (("Goal" :in-theory (enable combine-conjuncts))))
-
-;; We expect each of x and y to be either 1) the true-disjunction, or 2) a list of non-constant terms.
-(defund combine-disjuncts (x y)
-  (declare (xargs :guard (and (pseudo-term-listp x)
-                              (pseudo-term-listp y))))
-  (if (or (equal *true-disjunction* x)
-          (equal *true-disjunction* y))
-      *true-disjunction*
-    (union-equal x y)))
-
-(defthm logic-term-listp-of-combine-disjuncts
-  (implies (and (logic-term-listp x w)
-                (logic-term-listp y w))
-           (logic-term-listp (combine-disjuncts x y) w))
-  :hints (("Goal" :in-theory (enable combine-disjuncts))))
-
-;; (defthm pseudo-term-listp-of-union-equal
-;;   (implies (and (pseudo-term-listp x)
-;;                 (pseudo-term-listp y))
-;;            (pseudo-term-listp (union-equal x y)))
-;;   :hints (("Goal" :in-theory (enable union-equal))))
-
-(defthm pseudo-term-listp-of-combine-conjuncts
-  (implies (and (pseudo-term-listp x)
-                (pseudo-term-listp y))
-           (pseudo-term-listp (combine-conjuncts x y)))
-  :hints (("Goal" :in-theory (enable combine-conjuncts))))
-
-(defthm pseudo-term-listp-of-combine-disjuncts
-  (implies (and (pseudo-term-listp x)
-                (pseudo-term-listp y))
-           (pseudo-term-listp (combine-disjuncts x y)))
-  :hints (("Goal" :in-theory (enable combine-disjuncts))))
-
-(defthm true-listp-of-combine-conjuncts
-  (implies (and ;(true-listp x)
-                (true-listp y))
-           (true-listp (combine-conjuncts x y)))
-  :hints (("Goal" :in-theory (enable combine-conjuncts))))
-
-(defthm true-listp-of-combine-disjuncts
-  (implies (and ;(true-listp x)
-                (true-listp y))
-           (true-listp (combine-disjuncts x y)))
-  :hints (("Goal" :in-theory (enable combine-disjuncts))))
-
 ;todo: handle (equal x 'nil) like (not 'x)
 ;todo: handle (if/myif/boolif x 'nil 't) like (not 'x)
 
 ;; also pushes NOT through branches of IFs (do I want that?)
+;; See also negate-term.
 (defund negate-term2 (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (variablep term)
@@ -126,12 +55,12 @@
             ;; no special handling:
             `(not ,term)))))))
 
-(defthm pseudo-term-listp-of-negate-term2
+(defthm pseudo-termp-of-negate-term2
   (implies (pseudo-termp term)
            (pseudo-termp (negate-term2 term)))
   :hints (("Goal" :in-theory (enable negate-term2))))
 
-(defthm logic-term-listp-of-negate-term2
+(defthm logic-termp-of-negate-term2
   (implies (and (logic-termp term w)
                 (arities-okp '((not . 1)
                                (if . 3)
@@ -139,6 +68,13 @@
                              w))
            (logic-termp (negate-term2 term) w))
   :hints (("Goal" :in-theory (enable negate-term2))))
+
+(defthm non-trivial-logical-termp-of-negate-term2
+  (implies (non-trivial-logical-termp term)
+           (non-trivial-logical-termp (negate-term2 term)))
+  :hints (("Goal" :expand (negate-term2 term)
+           :in-theory (enable non-trivial-logical-termp
+                              negate-term2))))
 
 (defund negate-terms2 (terms)
   (declare (xargs :guard (pseudo-term-listp terms)))
@@ -162,11 +98,20 @@
            (pseudo-term-listp (negate-terms2 terms)))
   :hints (("Goal" :in-theory (enable negate-terms2))))
 
+(defthm non-trivial-logical-term-listp-of-negate-terms2
+  (implies (non-trivial-logical-term-listp conjuncts)
+           (non-trivial-logical-term-listp (negate-terms2 conjuncts)))
+  :hints (("Goal" :expand (negate-term2 (car conjuncts))
+           :in-theory (enable non-trivial-logical-term-listp
+                              negate-terms2
+                              negate-term2))))
+
 ;; Negate all the disjuncts, forming a conjunction of the results
 (defund negate-disjuncts (disjuncts)
-   (declare (xargs :guard (pseudo-term-listp disjuncts)))
-   (if (equal disjuncts *true-disjunction*)
+  (declare (xargs :guard (pseudo-term-listp disjuncts)))
+  (if (equal disjuncts *true-disjunction*)
       *false-conjunction*
+    ;; todo: just call negate-terms?:
     (negate-terms2 disjuncts)))
 
 (defthm pseudo-term-listp-of-negate-disjuncts
@@ -183,12 +128,23 @@
            (logic-term-listp (negate-disjuncts terms) w))
   :hints (("Goal" :in-theory (enable negate-disjuncts))))
 
+(defthm conjunct-listp-of-negate-disjuncts
+  (implies (disjunct-listp disjuncts)
+           (conjunct-listp (negate-disjuncts disjuncts)))
+  :hints (("Goal" :in-theory (enable negate-disjuncts disjunct-listp conjunct-listp))))
+
 ;; Negate all the conjuncts, forming a disjunction of the results
 (defund negate-conjuncts (conjuncts)
    (declare (xargs :guard (pseudo-term-listp conjuncts)))
   (if (equal conjuncts *false-conjunction*)
       *true-disjunction*
+    ;; todo: just call negate-terms?:
     (negate-terms2 conjuncts)))
+
+(defthm disjunct-listp-of-negate-conjuncts
+  (implies (conjunct-listp conjuncts)
+           (disjunct-listp (negate-conjuncts conjuncts)))
+  :hints (("Goal" :in-theory (enable negate-conjuncts disjunct-listp conjunct-listp))))
 
 (defthm pseudo-term-listp-of-negate-conjuncts
   (implies (pseudo-term-listp terms)
@@ -280,6 +236,18 @@
              (pseudo-term-listp (get-disjuncts-of-term term)))
     :flag get-disjuncts-of-term)
   :hints (("Goal" :in-theory (enable get-disjuncts-of-term get-conjuncts-of-term))))
+
+(defthm-flag-get-conjuncts-of-term
+  (defthm conjunct-listp-of-get-conjuncts-of-term
+    (implies (pseudo-termp term)
+             (conjunct-listp (get-conjuncts-of-term term)))
+    :flag get-conjuncts-of-term)
+  (defthm disjunct-listp-of-get-disjuncts-of-term
+    (implies (pseudo-termp term)
+             (disjunct-listp (get-disjuncts-of-term term)))
+    :flag get-disjuncts-of-term)
+  :hints (("Goal" :in-theory (enable get-disjuncts-of-term
+                                     get-conjuncts-of-term))))
 
 (defthm-flag-get-conjuncts-of-term
   (defthm true-listp-of-get-conjuncts-of-term
