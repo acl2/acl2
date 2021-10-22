@@ -1736,21 +1736,16 @@
          (compst (push-frame frame compst))
          ((mv val? compst) (exec-stmt info.body compst fenv (1- limit)))
          (compst (pop-frame compst))
-         ((when (errorp val?)) (mv val? compst)))
-      (if val?
-          (if (equal (type-of-value val?)
-                     (type-name-to-type
-                      (make-tyname :specs info.result
-                                   :pointerp nil)))
-              (mv val? compst)
-            (mv (error (list :return-value-mistype
-                             :required info.result
-                             :supplied (type-of-value val?)))
-                compst))
-        (if (tyspecseq-case info.result :void)
-            (mv nil compst)
-          (mv (error (list :no-return-value (ident-fix fun)))
-              compst))))
+         ((when (errorp val?)) (mv val? compst))
+         ((unless (equal (type-of-value-option val?)
+                         (type-name-to-type
+                          (make-tyname :specs info.result
+                                       :pointerp nil))))
+          (mv (error (list :return-value-mistype
+                           :required info.result
+                           :supplied (type-of-value-option val?)))
+              compst)))
+      (mv val? compst))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

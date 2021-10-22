@@ -1550,7 +1550,9 @@
                                        :pointerp nil))))
              (equal (exec-fun fun args compst fenv limit)
                     (mv val? (pop-frame compst1))))
-    :enable exec-fun)
+    :enable (exec-fun
+             type-of-value-option
+             value-option-some->val))
 
   (defval *atc-exec-fun-rules*
     '(exec-fun-open
