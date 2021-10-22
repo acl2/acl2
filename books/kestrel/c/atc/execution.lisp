@@ -1706,7 +1706,7 @@
     :returns (mv (result value-resultp)
                  (new-compst compustatep))
     :parents (atc-dynamic-semantics exec)
-    :short "Execution a function on argument values."
+    :short "Execute a function on argument values."
     :long
     (xdoc::topstring
      (xdoc::p
