@@ -1,7 +1,7 @@
 ; A general-purpose Axe Prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -19,11 +19,9 @@
 (include-book "axe-syntaxp-evaluator-basic")
 (include-book "axe-bind-free-evaluator-basic")
 
-;; Create a "basic" prover.  Here, "basic" refers to the set of functions to
-;; evaluate and to the sets of axe-syntaxp and axe-bind-free functions that the
-;; rewriter "knows" about.  To understand what gets generated, see
-;; make-prover-simple-fn.
+;; Create a "basic" prover.  Here, "basic" refers to the functions the prover
+;; knows how to evaluate (including axe-syntaxp and axe-bind-free functions).
 (make-prover-simple basic
-                    axe-evaluator-basic
+                    basic
                     basic
                     basic)
