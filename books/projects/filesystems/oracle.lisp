@@ -10434,74 +10434,66 @@
                         (frame->frame frame))))))
    (:bash ("goal" :in-theory (enable absfat-equiv)))))
 
-(defthm cp-without-subdirs-helper-correctness-2
+(defthm
+  cp-without-subdirs-helper-correctness-2
   (implies
-   (and
-    (cp-spec-3 queues dst)
-    (equal (1st-complete-under-path (frame->frame frame)
-                                    dst)
-           0)
-    (good-frame-p frame))
+   (and (equal (1st-complete-under-path (frame->frame frame)
+                                        dst)
+               0)
+        (good-frame-p frame))
    (collapse-equiv
     (mv-nth
      0
      (absfat-oracle-multi-step
       frame
       (mv-nth 0
-              (schedule-queues
-               (cp-without-subdirs-helper src dst names)
-               o1))
+              (schedule-queues (cp-without-subdirs-helper src dst names)
+                               o1))
       st))
     (mv-nth
      0
      (absfat-oracle-multi-step
       frame
       (mv-nth 0
-              (schedule-queues
-               (cp-without-subdirs-helper src dst names)
-               o2))
+              (schedule-queues (cp-without-subdirs-helper src dst names)
+                               o2))
       st))))
-  :hints (("Goal" :in-theory
-           (e/d
-            (collapse-equiv absfat-equiv put-assoc-of-frame-with-root-1)
-            (collapse-congruence-2
-             (:rewrite cp-without-subdirs-helper-correctness-lemma-64)
-             cp-without-subdirs-helper-correctness-lemma-66))
-           :do-not-induct
-           t
-           :use
-           ((:instance
-             COLLAPSE-CONGRUENCE-2
-             (root (frame->root frame))
-             (frame (frame->frame frame))
-             (x (abs-find-file-src frame dst))
-             (dir1
-              (cp-spec-5 frame st o1
-                         (cp-without-subdirs-helper src dst names)))
-             (dir2
-              (cp-spec-5 frame st o2
-                         (cp-without-subdirs-helper src dst names))))
-            (:instance
-             (:rewrite cp-without-subdirs-helper-correctness-lemma-64)
-             (dst dst)
-             (st st)
-             (o1 o1)
-             (queues (cp-without-subdirs-helper src dst names))
-             (frame frame))
-            (:instance
-             (:rewrite cp-without-subdirs-helper-correctness-lemma-64)
-             (dst dst)
-             (st st)
-             (o1 o2)
-             (queues (cp-without-subdirs-helper src dst names))
-             (frame frame))
-            (:instance
-             cp-without-subdirs-helper-correctness-lemma-66
-             (dst dst)
-             (queues (CP-WITHOUT-SUBDIRS-HELPER SRC DST NAMES)))
-            (:instance
-             cp-without-subdirs-helper-correctness-lemma-66
-             (o1 o2)
-             (o2 o1)
-             (dst dst)
-             (queues (CP-WITHOUT-SUBDIRS-HELPER SRC DST NAMES)))))))
+  :hints
+  (("goal"
+    :in-theory
+    (e/d (collapse-equiv absfat-equiv
+                         put-assoc-of-frame-with-root-1)
+         (collapse-congruence-2
+          (:rewrite cp-without-subdirs-helper-correctness-lemma-64)
+          cp-without-subdirs-helper-correctness-lemma-66
+          (:rewrite frame-p-of-frame->frame)))
+    :do-not-induct t
+    :use
+    ((:instance collapse-congruence-2
+                (root (frame->root frame))
+                (frame (frame->frame frame))
+                (x (abs-find-file-src frame dst))
+                (dir1 (cp-spec-5 frame st o1
+                                 (cp-without-subdirs-helper src dst names)))
+                (dir2 (cp-spec-5 frame st o2
+                                 (cp-without-subdirs-helper src dst names))))
+     (:instance (:rewrite cp-without-subdirs-helper-correctness-lemma-64)
+                (dst dst)
+                (st st)
+                (o1 o1)
+                (queues (cp-without-subdirs-helper src dst names))
+                (frame frame))
+     (:instance (:rewrite cp-without-subdirs-helper-correctness-lemma-64)
+                (dst dst)
+                (st st)
+                (o1 o2)
+                (queues (cp-without-subdirs-helper src dst names))
+                (frame frame))
+     (:instance cp-without-subdirs-helper-correctness-lemma-66
+                (dst dst)
+                (queues (cp-without-subdirs-helper src dst names)))
+     (:instance cp-without-subdirs-helper-correctness-lemma-66
+                (o1 o2)
+                (o2 o1)
+                (dst dst)
+                (queues (cp-without-subdirs-helper src dst names)))))))
