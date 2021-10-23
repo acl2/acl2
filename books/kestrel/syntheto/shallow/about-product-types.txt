@@ -1,0 +1,45 @@
+struct acid
+{
+  id: integer
+}
+
+turns into
+
+(FTY::DEFPROD SYNDEF::|acid|
+   ((SYNDEF::|id| INT))
+   :TAG :|acid|)
+
+let's say we have a function with a parameter ai: acid
+and we want to ask if ai's id is 3.  (*)
+  ...
+  if ai.id == 3
+    then ...
+
+What does the ai.id turn into?
+
+The ACL2 it needs to turn into is
+  (syndef::|acid->id| syndef::ai)
+
+So how can we know it needs to be this?
+We need to link var refs with var defs and we need
+to get the type.  This is more than we can easily do
+with the current macro situation.
+
+(*) To make the struct to begin with, we do:
+    (syndef::|MAKE-acid| :|id| 3)
+
+
+-------------------------------------------------------------------------------
+
+If we think of acid.id as a function, which it is,
+and if we made all the function applications look
+the same in the concrete syntax, then you could write
+  acid.id(ai)
+to access the "id" field of the variable ai.
+
+This could generate a macro
+  (s-prod-field-get "acid" "id" (s-varref "ai"))
+
+which could easily turn into
+  `(,(intern-syndef (concatenate 'string "acid" "->" "id"))
+    ,(intern-syndef "ai"))
