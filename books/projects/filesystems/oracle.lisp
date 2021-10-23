@@ -2006,38 +2006,25 @@
            :use (:instance abs-find-file-src-of-remove-assoc-1
                            (x 0)))))
 
-(defthm
-  cp-without-subdirs-helper-correctness-lemma-19
-  (implies (good-frame-p frame)
-           (and (no-duplicatesp-equal (strip-cars frame))
-                (list-equiv (frame-val->path (cdr (assoc-equal 0 frame)))
-                            nil)
-                (mv-nth '1 (collapse frame))
-                (frame-p frame)
-                (abs-separate frame)))
-  :hints (("goal" :do-not-induct t
-           :in-theory (enable good-frame-p))))
-
-(defthm cp-without-subdirs-helper-correctness-lemma-24
+(defthm cp-without-subdirs-helper-correctness-lemma-19
   (implies (not (consp (frame->frame frame)))
            (equal (abs-find-file-src frame src) 0))
   :hints (("goal" :in-theory (enable abs-find-file-src frame->frame))))
 
-(defthmd cp-without-subdirs-helper-correctness-lemma-25
-  (equal (mv-nth 0
-                 (abs-alloc fs path (true-fix new-index)))
+(defthmd cp-without-subdirs-helper-correctness-lemma-24
+  (equal (mv-nth 0 (abs-alloc fs path (true-fix new-index)))
          (mv-nth 0 (abs-alloc fs path new-index)))
   :hints (("goal" :in-theory (enable abs-alloc))))
 
 ;; This is a congruence, obviously we're not deleting it.
 (defthm
-  cp-without-subdirs-helper-correctness-lemma-26
+  cp-without-subdirs-helper-correctness-lemma-25
   (equal (mv-nth 0 (abs-alloc fs path x))
          (mv-nth 0 (abs-alloc fs path y)))
   :hints
-  (("goal" :use ((:instance cp-without-subdirs-helper-correctness-lemma-25
+  (("goal" :use ((:instance cp-without-subdirs-helper-correctness-lemma-24
                             (new-index x))
-                 (:instance cp-without-subdirs-helper-correctness-lemma-25
+                 (:instance cp-without-subdirs-helper-correctness-lemma-24
                             (new-index y)))))
   :rule-classes
   ((:congruence
