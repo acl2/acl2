@@ -1,0 +1,10 @@
+{
+  "cells": [
+    {
+      "kind": 2,
+      "language": "syntheto",
+      "value": "subtype nat {\n  x:int | x >= 0\n}\n\nfunction add1(x: nat) returns (y: nat) ensures y > 0 {\n  return x + 1;\n}\n\nfunction id(x: nat) returns (y: nat) {\n  return x;\n}\n\nfunction add1_2 =\n  transform add1\n    by isomorphism {parameter = x,\n                    new_parameter_name = xx,\n                    old_type = nat,\n                    new_type = nat,\n                    old_to_new = id,\n                    new_to_old = id,\n                    simplify = true}",
+      "editable": true
+    }
+  ]
+}

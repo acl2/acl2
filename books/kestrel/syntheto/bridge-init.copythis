@@ -1,0 +1,11 @@
+(in-package "ACL2")
+
+;; This file will need to be copied to the parent directory of "syntheto/",
+;; changing its extension from .copythis to .lisp
+
+(include-book "syntheto/top")
+
+;; Protect Syntheto from user undos.
+(reset-prehistory)
+
+(cw "LOADED bridge-init.lisp~%")

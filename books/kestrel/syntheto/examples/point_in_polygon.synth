@@ -1,0 +1,380 @@
+/* Based on kestrel-acl2/derivations/point-in-polygon/ */
+
+struct point {
+  x: int,
+  y: int
+}
+
+struct edge {
+  p1: point,
+  p2: point
+}
+
+function even(i:int) returns (b:bool) {
+  return i % 2 == 0;
+}
+
+function odd(i:int) returns (b:bool) {
+  return !even(i);
+}
+
+theorem odd_of_plus_1
+  forall (i:int)
+    odd(1+i) == !odd(i)
+
+function natp(i:int) returns (b:bool) {
+  return i >= 0;
+}
+
+function max(x: int, y: int) returns (m: int) {
+  if (y > x) {
+    return y;
+  }
+  else {
+  return x;
+  }
+}
+
+function min(x: int, y: int) returns (m: int) {
+  if (y < x) {
+    return y;
+  }
+  else {
+  return x;
+  }
+}
+function max_x(vertices: seq<point>) returns (m: int) ensures m >= 0 {
+  if (is_empty(vertices)) {
+   return 0;
+  }
+  else {
+    let v1: point = first(vertices);
+    return max(v1.x,
+               max_x(rest(vertices)));
+  }
+}
+
+function connected(e1:edge, e2:edge) returns (b:bool) {
+  return e1.p2 == e2.p1;
+}
+
+function path_p(edges:seq<edge>) returns (b:bool) {
+  return length(edges) <= 1
+        || (connected(first(edges), first(rest(edges)))
+             && path_p(rest(edges)));
+}
+
+theorem path_p_rest
+  forall(edges:seq<edge>)
+    !is_empty(edges) && path_p(edges)
+      ==> path_p(rest(edges))
+       
+// Given a list of points, return the list of edges
+// that connect the points in sequence
+function path(vertices:seq<point>) returns (p:seq<edge>) ensures path_p(p) {
+  if (is_empty(vertices) || is_empty(rest(vertices))) {
+    return empty;
+  }
+  else {
+    let e: edge = edge(p1=first(vertices), p2=first(rest(vertices)));
+    return add(e, path(rest(vertices)));
+  }
+}
+
+theorem not_empty_path
+  forall(vertices:seq<point>)
+    !is_empty(vertices) && !is_empty(rest(vertices))
+      ==> !is_empty(path(vertices))
+
+theorem length_path
+  forall(vertices:seq<point>)
+    !is_empty(vertices)
+      ==> length(path(vertices)) == length(vertices) - 1
+
+function points2_p (vertices:seq<point>) returns (b: bool) {
+  return is_empty(vertices) || !is_empty(rest(vertices));
+}
+
+function path_vertices(edges:seq<edge>) returns (vertices:seq<point>) ensures points2_p(vertices) {
+  if (is_empty(edges)) {
+    return empty;
+  }
+  else {
+  let e:edge = first(edges);
+  if (is_empty(rest(edges))) {
+    return add(e.p1, add(e.p2, empty));
+  }
+  else {
+    return add(e.p1, path_vertices(rest(edges)));
+  }
+  }
+}
+
+/* Inversion Theorems  */
+theorem path_vertices_of_path
+  forall(vertices:seq<point>)
+    points2_p(vertices)
+      ==> path_vertices(path(vertices)) == vertices
+
+theorem path_of_path_vertices
+  forall(edges:seq<edge>)
+    path_p(edges)
+      ==> path(path_vertices(edges)) == edges
+
+
+function append_first(vertices:seq<point>) assumes !is_empty(vertices) 
+  returns (s: seq<point>) ensures points2_p(s) {
+  return append(vertices, add(first(vertices), empty));
+}
+
+// Given a list of points, return the list of edges
+// that connect the points in sequence, then connect
+// the last point to the first point.
+function edges(vertices: seq<point>) returns (p: seq<edge>) ensures path_p(p) {
+  if (is_empty(vertices)) {
+    return empty;
+  }
+  else {
+    return path(append_first(vertices));
+  }
+}
+
+theorem path_vertices_of_edges
+  forall(vertices:seq<point>)
+   !is_empty(vertices)
+    ==> path_vertices(edges(vertices)) == append_first(vertices)
+
+// Orientation of an ordered triplet of points in the plane can be
+//   . clockwise
+//   . counterclockwise, or
+//   . colinear
+// It can be computed by the sign of the expression
+//   (p2.y - p1.y) * (p3.x - p2.x) - (p3.y - p2.y) * (p2.y - p1.x)
+// If the expression is positive, the orientation is counterclockwise
+// If the expression is 0, the orientation is collinear
+// If the expression is negative the orientation is counterclockwise
+// (See https://www.geeksforgeeks.org/orientation-3-ordered-points/
+// for some explanations on this concept)
+
+variant orientation {clockwise, counterclockwise, colinear}
+
+function orientation3(p1: point, p2: point, p3: point) returns (o: orientation) {
+  if (p1 == p2 || p2 == p3 || p2 == p3) {
+    return orientation.colinear;
+  }
+  else {
+    let e: int = (p2.y - p1.y) * (p3.x - p2.x) - (p3.y - p2.y) * (p2.y - p1.x);
+    if (e < 0) {
+      return orientation.counterclockwise;
+    }
+    else {if (e == 0) {
+      return orientation.colinear;
+    }
+    else {
+      return orientation.clockwise;
+    }}}
+}
+
+function collinear(p1: point, p2: point, p3: point) returns (b:bool) {
+  return orientation3(p1,p2,p3) == orientation.colinear;
+}
+
+function on_segment(p1: point, p2: point, p3: point) returns (b: bool) {
+  return p3.x >= min(p1.x, p2.x)
+           && p3.x <= max(p1.x, p2.x)
+           && p3.y >= min(p1.y, p2.y)
+           && p3.y <= max(p1.y, p2.y);
+}
+
+// return true when edge1 and edge1 intersect
+// see https://www.geeksforgeeks.org/check-if-two-given-line-segments-intersect/
+function edge_points_intersect(p11:point, p12:point, p21:point, p22:point) returns (b: bool) {
+  let o1: orientation = orientation3(p11, p12, p21);
+  let o2: orientation = orientation3(p11, p12, p22);
+  let o3: orientation = orientation3(p21, p22, p11);
+  let o4: orientation = orientation3(p21, p22, p12);
+  return ((o1 != o2 && o3 != o4)   // Non colinear case
+           // Special cases
+           || (o1 == orientation.colinear && on_segment(p11, p12, p21))
+           || (o2 == orientation.colinear && on_segment(p11, p12, p22))
+           || (o3 == orientation.colinear && on_segment(p21, p22, p11))
+           || (o4 == orientation.colinear && on_segment(p21, p22, p12)));
+}
+
+function edges_intersect(edge1: edge, edge2: edge) returns (b: bool) {
+  return edge_points_intersect(edge1.p1, edge1.p2, edge2.p1, edge2.p2);
+}
+
+// return true when no three adjacent points in a list are collinear
+function adjacent_three_points_not_collinear(vertices: seq<point>) returns (b: bool) {
+  if (is_empty(vertices) || is_empty(rest(vertices)) || is_empty(rest(rest(vertices)))) {
+    return true;
+  }
+  else {
+    return ! collinear(first(vertices),
+                       first(rest(vertices)),
+                       first(rest(rest(vertices))))
+            && (adjacent_three_points_not_collinear(rest(vertices)));
+  }
+}
+
+function edge_does_not_intersect_edges(edge0: edge, edges: seq<edge>) returns (b: bool) {
+  if (is_empty(edges)) {
+    return true;
+  }
+  else {
+    return ! edges_intersect(edge0, first(edges))
+            && edge_does_not_intersect_edges(edge0, rest(edges));
+  }
+}
+
+// return true when no two non-adjacent edges in a list intersect
+function non_adjacent_edges_do_not_intersect(edges: seq<edge>) returns (b: bool) {
+  if (is_empty(edges) || is_empty(rest(edges)) || is_empty(rest(rest(edges)))) {
+    return true;
+  }
+  else {if (edge_does_not_intersect_edges(first(edges), rest(rest(edges)))) {
+    return non_adjacent_edges_do_not_intersect(rest(edges));
+  }
+  else {
+    return false;
+  }}
+}
+
+// A simple polygon is built from a sequence of n (>= 3) distinct vertices
+//   v_1, v_2, ..., v_n
+// by connecting the vertices in order and then connecting the last vertex
+// with the first vertex, forming a closed polygonal chain of n edges
+//   (v_1, v_2), (v_2, v_3), ...., (v_n-1, v_n), (v_n, v_1)
+// Additionally,
+// - adjacent three points must not be collinear, and
+// - non-adjacent edges must not intersect
+function simple_polygon(vertices: seq<point>) returns (b: bool) {
+  return length(vertices) >= 3
+          // Maybe need condition that no two points repeated
+          // with possible exception that the first and last points are the same
+          && adjacent_three_points_not_collinear(vertices)
+          && non_adjacent_edges_do_not_intersect(edges(vertices));
+}
+
+theorem simple_polygon_implies_not_empty
+  forall (vertices: seq<point>)
+    simple_polygon(vertices)
+      ==> !is_empty(vertices)
+
+/* number of times edge0 crosses  edges */
+function crossings_count_aux(edge0: edge, edges: seq<edge>) assumes path_p(edges) 
+  returns (n: int) ensures n >= 0 {
+  if (is_empty(edges)) {
+    return 0;
+  }
+  else {if (edges_intersect(edge0, first(edges))) {
+    return 1 + crossings_count_aux(edge0, rest(edges));
+  }
+  else {
+   return crossings_count_aux(edge0, rest(edges));
+  }}
+}
+
+/* Number of times a ray starting from the given point crosses the edges of a polygon */
+function crossings_count(p: point, polygon: seq<point>) assumes simple_polygon(polygon)
+  returns (n: int) ensures n >=0 {
+  let pm:point = point(x=max_x(polygon) + 1, y=p.y);
+  let e:edge = edge(p1 = p, p2 = pm);
+  return crossings_count_aux(e,edges(polygon));
+}
+
+/* Top-level function */
+function point_in_polygon(p: point, polygon: seq<point>) assumes simple_polygon(polygon)
+  returns (b: bool) {
+  return odd(crossings_count(p,polygon));
+}
+
+
+// Introduced because syntheto doesn't currently have conditional expressions
+function rest1(vertices:seq<point>) assumes !(is_empty(vertices) || is_empty(rest(vertices))) 
+  returns (vs:seq<point>)  ensures points2_p(vs) {
+  if (is_empty(rest(rest(vertices)))) {
+    empty;}
+  else {
+    rest(vertices);
+    }
+}
+
+/* Simplification Rules */
+
+theorem length_rest1_decreases
+  forall(vertices:seq<point>)
+    !(is_empty(vertices) || is_empty(rest(vertices)))
+     ==> length(rest1(vertices)) < length(vertices)
+
+theorem path_vertices_of_rest_of_path_non_empty
+  forall(vertices:seq<point>)
+    !(is_empty(vertices) || is_empty(rest(vertices)))
+     ==> path_vertices(rest(path(vertices))) == rest1(vertices)
+
+theorem length_path_rest1_decreases
+  forall(vertices:seq<point>)
+    !(is_empty(vertices) || is_empty(rest(vertices)))
+     ==> 1 + length(path(rest1(vertices)))< length(vertices)
+
+theorem is_empty_path
+  forall(vertices:seq<point>)
+    is_empty(path(vertices)) == (is_empty(vertices) || is_empty(rest(vertices)))
+
+theorem p1_first_path
+  forall(vertices:seq<point>, path1:edge)
+    !is_empty(vertices) && !is_empty(rest(vertices))
+      && path1 == first(path(vertices))
+     ==> path1.p1 == first(vertices)
+
+theorem p2_first_path
+  forall(vertices:seq<point>, path1:edge)
+    !is_empty(vertices) && !is_empty(rest(vertices))
+      && path1 == first(path(vertices))
+     ==> path1.p2 == first(rest(vertices))
+
+
+/* Derivation */
+
+function crossings_count_aux_1 =
+  transform crossings_count_aux 
+    by tail_recursion {new_parameter_name = count}
+
+function crossings_count_aux_2 =
+  transform crossings_count_aux_1
+    by restrict {predicate = natp(count)}
+
+function crossings_count_aux_3 =
+  transform crossings_count_aux_2
+    by isomorphism {parameter = edges,
+                    new_parameter_name = vertices,
+                    old_type = path_p,
+                    new_type = points2_p,
+                    old_to_new = path_vertices,
+                    new_to_old = path,
+                    simplify = true}
+
+function crossings_count_aux_4 =
+  transform crossings_count_aux_3
+    by wrap_output {wrap_function = odd}
+
+function crossings_count_aux_5 =
+  transform crossings_count_aux_4
+    by finite_difference {expression = odd(count),
+                          new_parameter_name = count_odd,
+                          simplify = true}
+
+function crossings_count_aux_6 =
+  transform crossings_count_aux_5
+    by drop_irrelevant_param {parameter = count}
+
+function crossings_count_1 =
+  transform crossings_count
+    by wrap_output {wrap_function = odd,
+                    simplify = true}
+
+function point_in_polygon_final =
+  transform point_in_polygon
+    by simplify
+
