@@ -1,0 +1,54 @@
+In FTY, recursive DEFTAGSUM types must include at least a non-recursive summand,
+which is an easy syntactic check to make, also at the Syntheto level.
+
+Things are more complicated with mutually recursive DEFTYPES, which may involve
+not only DEFTAGSUMs but also DEFPRODs, DEFLISTs, etc. (Support for DEFSET and
+DEFOMAP needs to be added, but for the purpose of this discussion they should be
+no different from DEFLIST.)
+
+In particular, there may not be an immediately obvious base case in a DEFTAGSUM
+in a mutual recursion, but there may be a less obvious one consisting of a list,
+in which case the empty list serves as the base case. See the discussion of
+:BASE-CASE-OVERRIDE in :DOC DEFTAGSUM. For Syntheto, we need to automatically
+detect the situation and generate the appropriate :BASE-CASE-OVERRIDE.
+
+Another complication arises from mutual recursions involving DEFPRODs, which
+generally require a lexicographic measure. The reason is that the field accessor
+of the DEFPROD must return something smaller than the argument, not just for
+arguments of the product type, but for all possible values (ACL2 is still
+untyped); in particular, for NIL, whose ACL2-COUNT is 0, making it impossible to
+decrease. This is explained in :DOC DEFPROD. For Syntheto, we need to
+automatically detect the situation and generate the appropriate lexicographic
+measure.
+
+All or most higher-order typed theorem provers have facilities to define
+mutually recursive types without proof obligations: they use predictable
+algorithms to determine whether the types are valid or not. We should do
+something like this in Syntheto, i.e. we should have a clear algorithm, with
+clearly stated restrictions for the user, amenable to generating DEFTYPES that
+will never fail.
+
+Syntheto product types must never be singly recursive. Their values would have
+to contain themselves, which is an impossibility for the finite-size values in
+Syntheto and ACL2.
+
+The case for a single recursive sum type is easy, but note that sometimes a
+singly recursive Syntheto type may turn into a DEFTYPES, namely when the
+Syntheto type refers to set, sequence, map, or option types, which are like
+built-in polymorphic types in Syntheto. In this case, we need to generate a
+DEFTYPES with the appropriate monomorphic instances. However, all of these
+polymorphic types have obvious base values, namely the empty set or sequence or
+map and the 'none' option. We need, however, to be cognizant of any invariant:
+if the invariant of that summand requires the list or sequence or map to be
+non-empty, then we do not have a base case. So, in addition to the inevitable
+obligation that the invariant is satisfiable, we have an additional obligation
+that the invariant is satisfies by the empty set or sequence or map. (The case
+of an invariant requiring an option to be 'some' is possible but not something a
+user would write: they would use the argument type instead.)
+
+Syntheto has currenly only three kinds of type definitions: sum types, product
+types, and subtypes. So there are the only possibilities that can appear inside
+a mutual type recursion. For each sum type, we need to find a base case. Each
+product type should be okay, but we need to generate a lexicographic measure.
+The case of a subtype may need a bit more thought, but for now we can disallow
+it inside a mutual recursion.

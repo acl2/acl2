@@ -1,0 +1,25 @@
+This file serves to collect a list of the initial Syntheto built-in
+functions. These are functions that must have ACL2 counterparts. Note that some
+of these functions are polymorphic, because they operate on polymorphic types
+(the Syntheto set, sequence, map, and option types are polymorphic): this means
+that there must one ACL2 function for each monomorphic instance. These may well
+be generated on the fly at the same time as the monomorphic instance of their
+(input and output) types are generated. This also means that the Xtext frontend
+must perform type inference, not just type checking.
+
+operations on sets (polymorphic):
+- empty() -- the empty set (perhaps we could use special syntax {})
+- head(set) -- smallest element of the set (according to total order on values)
+- tail(set) -- remaining set after head is removed
+- is_empty(set) -- test for empty set (or we can just do x == {})
+
+operations on sequences (polymorphic):
+- empty() -- the empty sequence (perhaps we could use special syntax [])
+- head(seq) -- first element of the sequence (according to total order on values)
+- tail(seq) -- remaining sequence after head is removed
+- is_empty(seq) -- test for empty sequence (or we can just do x == [])
+
+operations on option types (polymorphic):
+- some(x) -- present value
+- none() -- absent value
+- x.some -- obtain value when present -- may need syntax extension
