@@ -30,8 +30,8 @@
        (my-make-flag-eval (disjoin clause) a))
   :hints (("Goal" :use (:functional-instance
                         resolve-ifs-in-clause-correct-special
-                        (equality-eval my-make-flag-eval)
-                        (equality-eval-list my-make-flag-eval-list)))))
+                        (if-and-not-eval my-make-flag-eval)
+                        (if-and-not-eval-list my-make-flag-eval-list)))))
 
 ;changes the evaluator
 (defthm my-make-flag-eval-of-disjoin-of-flatten-disjuncts
@@ -70,18 +70,18 @@
   (iff (my-make-flag-eval (conjoin (disjoin-lst (clause-to-clause-list clause))) a)
        (my-make-flag-eval (disjoin clause) a))
   :hints (("Goal" :use (:functional-instance
-                        equality-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
-                        (equality-eval my-make-flag-eval)
-                        (equality-eval-list my-make-flag-eval-list)))))
+                        if-and-not-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
+                        (if-and-not-eval my-make-flag-eval)
+                        (if-and-not-eval-list my-make-flag-eval-list)))))
 
 ;changes the evaluator
 (defthm my-make-flag-eval-of-disjoin-of-handle-constant-literals
   (iff (my-make-flag-eval (disjoin (handle-constant-literals clause)) a)
        (my-make-flag-eval (disjoin clause) a))
   :hints (("Goal" :use (:functional-instance
-                        equality-eval-of-disjoin-of-handle-constant-literals
-                        (equality-eval my-make-flag-eval)
-                        (equality-eval-list my-make-flag-eval-list)))))
+                        if-and-not-eval-of-disjoin-of-handle-constant-literals
+                        (if-and-not-eval my-make-flag-eval)
+                        (if-and-not-eval-list my-make-flag-eval-list)))))
 
 (defun simplify-after-using-conjunction-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))

@@ -24,7 +24,7 @@
 (include-book "handle-constant-literals")
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/conjuncts-and-disjuncts0" :dir :system)
-(include-book "kestrel/evaluators/equality-eval" :dir :system)
+(include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
 (local (include-book "kestrel/utilities/conjuncts-and-disjuncts0-proof" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -53,48 +53,49 @@
     `(if ,test ,then ,else)))
 
 ;; just changes the evaluator
-(defthm equality-eval-of-disjoin-of-handle-constant-literals
-  (iff (equality-eval (disjoin (handle-constant-literals clause)) a)
-       (equality-eval (disjoin clause) a))
+(defthm if-and-not-eval-of-disjoin-of-handle-constant-literals
+  (iff (if-and-not-eval (disjoin (handle-constant-literals clause)) a)
+       (if-and-not-eval (disjoin clause) a))
   :hints (("Goal" :use (:functional-instance if-eval-of-disjoin-of-handle-constant-literals
-                                             (if-eval equality-eval)
-                                             (if-eval-list equality-eval-list)))))
+                                             (if-eval if-and-not-eval)
+                                             (if-eval-list if-and-not-eval-list)))))
 
 ;; just changes the evaluator
-(defthm equality-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
-  (iff (equality-eval (conjoin (disjoin-lst (clause-to-clause-list clause))) a)
-       (equality-eval (disjoin clause) a))
+(defthm if-and-not-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
+  (iff (if-and-not-eval (conjoin (disjoin-lst (clause-to-clause-list clause))) a)
+       (if-and-not-eval (disjoin clause) a))
   :hints (("Goal" :use (:functional-instance if-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
-                                             (if-eval equality-eval)
-                                             (if-eval-list equality-eval-list)))))
+                                             (if-eval if-and-not-eval)
+                                             (if-eval-list if-and-not-eval-list)))))
 
-;; just changes the evaluator
-(defthm all-eval-to-true-with-equality-eval-of-get-conjuncts-of-term
-  (iff (all-eval-to-true-with-equality-eval (get-conjuncts-of-term term) a)
-       (equality-eval term a))
-  :hints (("Goal" :use (:functional-instance all-eval-to-true-with-if-and-not-eval-of-get-conjuncts-of-term
-                                             (if-and-not-eval equality-eval)
-                                             (if-and-not-eval-list equality-eval-list)
-                                             (all-eval-to-true-with-if-and-not-eval all-eval-to-true-with-equality-eval)))))
+;; ;; just changes the evaluator
+;; (defthm all-eval-to-true-with-if-and-not-eval-of-get-conjuncts-of-term
+;;   (iff (all-eval-to-true-with-if-and-not-eval (get-conjuncts-of-term term) a)
+;;        (if-and-not-eval term a))
+;;   :hints (("Goal" :use (:functional-instance all-eval-to-true-with-if-and-not-eval-of-get-conjuncts-of-term
+;;                                              (if-and-not-eval if-and-not-eval)
+;;                                              (if-and-not-eval-list if-and-not-eval-list)
+;;                                              (all-eval-to-true-with-if-and-not-eval all-eval-to-true-with-if-and-not-eval)))))
 
-(defthm all-eval-to-false-with-equality-eval-of-get-disjuncts-of-term
-  (iff (all-eval-to-false-with-equality-eval (get-disjuncts-of-term term) a)
-       (not (equality-eval term a)))
-  :hints (("Goal" :use (:functional-instance all-eval-to-false-with-if-and-not-eval-of-get-disjuncts-of-term
-                                             (if-and-not-eval equality-eval)
-                                             (if-and-not-eval-list equality-eval-list)
-                                             (all-eval-to-false-with-if-and-not-eval all-eval-to-false-with-equality-eval)))))
+;; (defthm all-eval-to-false-with-if-and-not-eval-of-get-disjuncts-of-term
+;;   (iff (all-eval-to-false-with-if-and-not-eval (get-disjuncts-of-term term) a)
+;;        (not (if-and-not-eval term a)))
+;;   :hints (("Goal" :use (:functional-instance all-eval-to-false-with-if-and-not-eval-of-get-disjuncts-of-term
+;;                                              (if-and-not-eval if-and-not-eval)
+;;                                              (if-and-not-eval-list if-and-not-eval-list)
+;;                                              (all-eval-to-false-with-if-and-not-eval all-eval-to-false-with-if-and-not-eval)))))
 
 
-(defthm all-eval-to-false-with-equality-eval-of-negate-terms
-  (iff (all-eval-to-false-with-equality-eval (negate-terms terms) a)
-       (all-eval-to-true-with-equality-eval terms a))
+(defthm all-eval-to-false-with-if-and-not-eval-of-negate-terms
+  (iff (all-eval-to-false-with-if-and-not-eval (negate-terms terms) a)
+       (all-eval-to-true-with-if-and-not-eval terms a))
   :hints (("Goal" :in-theory (enable negate-terms negate-term))))
 
-(defthm all-eval-to-false-with-equality-eval-of-negate-disjunct-list
-  (iff (all-eval-to-false-with-equality-eval (negate-disjunct-list terms) a)
-       (all-eval-to-true-with-equality-eval terms a))
-  :hints (("Goal" :in-theory (enable negate-disjunct-list))))
+(defthm all-eval-to-false-with-if-and-not-eval-of-negate-disjunct-list
+  (iff (all-eval-to-false-with-if-and-not-eval (negate-disjunct-list terms) a)
+       (all-eval-to-true-with-if-and-not-eval terms a))
+  :hints (("Goal" :in-theory (enable negate-disjunct-list
+                                     ALL-EVAL-TO-FALSE-WITH-IF-AND-NOT-EVAL))))
 
 
 
@@ -106,17 +107,17 @@
        (equal *t* (farg2 term)) ; todo: allow (if x x y)
        ))
 
-(defthm equality-eval-when-term-is-disjunctionp
+(defthm if-and-not-eval-when-term-is-disjunctionp
   (implies (term-is-disjunctionp disj)
-           (iff (equality-eval disj a)
-                (or (equality-eval (farg1 disj) a)
-                    (equality-eval (farg3 disj) a))))
+           (iff (if-and-not-eval disj a)
+                (or (if-and-not-eval (farg1 disj) a)
+                    (if-and-not-eval (farg3 disj) a))))
   :hints (("Goal" :in-theory (enable term-is-disjunctionp))))
 
-(defthm equality-eval-of-cadddr-when-term-is-disjunctionp-forward
-  (implies (and (equality-eval (cadddr disj) a)
+(defthm if-and-not-eval-of-cadddr-when-term-is-disjunctionp-forward
+  (implies (and (if-and-not-eval (cadddr disj) a)
                 (term-is-disjunctionp disj))
-           (equality-eval disj a))
+           (if-and-not-eval disj a))
   :rule-classes :forward-chaining)
 
 (defund term-is-conjunctionp (term)
@@ -146,11 +147,11 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable term-is-conjunctionp))))
 
-(defthm equality-eval-when-term-is-conjunctionp
+(defthm if-and-not-eval-when-term-is-conjunctionp
   (implies (term-is-conjunctionp conj)
-           (iff (equality-eval conj a)
-                (and (equality-eval (farg1 conj) a)
-                     (equality-eval (farg2 conj) a))))
+           (iff (if-and-not-eval conj a)
+                (and (if-and-not-eval (farg1 conj) a)
+                     (if-and-not-eval (farg2 conj) a))))
   :hints (("Goal" :in-theory (enable term-is-conjunctionp))))
 
 ;move?
@@ -173,8 +174,8 @@
   :hints (("Goal" :in-theory (enable skip-disjuncts-before))))
 
 (defthm skip-disjuncts-before-correct
-  (implies (equality-eval (skip-disjuncts-before d disj) a)
-           (equality-eval disj a))
+  (implies (if-and-not-eval (skip-disjuncts-before d disj) a)
+           (if-and-not-eval disj a))
   :hints (("Goal" :in-theory (enable skip-disjuncts-before))))
 
 (defthm skip-disjuncts-lemma-helper
@@ -185,9 +186,9 @@
                                      TERM-IS-DISJUNCTIONP))))
 
 (defthm skip-disjuncts-lemma
-  (implies (and (equality-eval d a)
+  (implies (and (if-and-not-eval d a)
                 (term-is-disjunctionp (skip-disjuncts-before d disj)))
-           (equality-eval (skip-disjuncts-before d disj) a))
+           (if-and-not-eval (skip-disjuncts-before d disj) a))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable ;skip-disjuncts-before
                               ;TERM-IS-DISJUNCTIONP
@@ -207,8 +208,8 @@
 
 (defthm among-disjunctsp-before-correct
   (implies (among-disjunctsp d disj)
-           (implies (equality-eval d a)
-                    (equality-eval disj a)))
+           (implies (if-and-not-eval d a)
+                    (if-and-not-eval disj a)))
   :hints (("Goal" :in-theory (enable among-disjunctsp))))
 
 ;move
@@ -236,8 +237,8 @@
 
 (defthm clearly-implies-for-disjunctionsp-correct
   (implies (clearly-implies-for-disjunctionsp disj1 disj2)
-           (implies (equality-eval disj1 a)
-                    (equality-eval disj2 a)))
+           (implies (if-and-not-eval disj1 a)
+                    (if-and-not-eval disj2 a)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable clearly-implies-for-disjunctionsp))))
 
@@ -249,22 +250,22 @@
     (or (clearly-implies-for-disjunctionsp (first disjs) disj)
         (clearly-implied-by-some-disjunctionp disj (rest disjs)))))
 
-(defthm equality-eval-when-clearly-implied-by-some-disjunctionp
+(defthm if-and-not-eval-when-clearly-implied-by-some-disjunctionp
   (implies (and (clearly-implied-by-some-disjunctionp term true-terms)
-                (all-eval-to-true-with-equality-eval true-terms a))
-           (equality-eval term a))
+                (all-eval-to-true-with-if-and-not-eval true-terms a))
+           (if-and-not-eval term a))
   :hints (("Goal" :in-theory (enable clearly-implied-by-some-disjunctionp))))
 
-(defthm equality-eval-of-cadddr-when-term-is-conjunctionp-forward
-  (implies (and (not (equality-eval (caddr conj) a))
+(defthm if-and-not-eval-of-cadddr-when-term-is-conjunctionp-forward
+  (implies (and (not (if-and-not-eval (caddr conj) a))
                 (term-is-conjunctionp conj))
-           (not (equality-eval conj a)))
+           (not (if-and-not-eval conj a)))
   :rule-classes :forward-chaining)
 
-(defthm equality-eval-of-cadddr-when-term-is-conjunctionp
-  (implies (and (equality-eval conj a)
+(defthm if-and-not-eval-of-cadddr-when-term-is-conjunctionp
+  (implies (and (if-and-not-eval conj a)
                 (term-is-conjunctionp conj))
-         (equality-eval (caddr conj) a))
+         (if-and-not-eval (caddr conj) a))
 )
 
 ;move?
@@ -287,8 +288,8 @@
   :hints (("Goal" :in-theory (enable skip-conjuncts-before))))
 
 (defthm skip-conjuncts-before-correct
-  (implies (not (equality-eval (skip-conjuncts-before d conj) a))
-           (not (equality-eval conj a)))
+  (implies (not (if-and-not-eval (skip-conjuncts-before d conj) a))
+           (not (if-and-not-eval conj a)))
   :hints (("Goal" :in-theory (enable skip-conjuncts-before))))
 
 (defthm skip-conjuncts-lemma-helper
@@ -299,9 +300,9 @@
                                      TERM-IS-CONJUNCTIONP))))
 
 (defthm skip-conjuncts-lemma
-  (implies (and (not (equality-eval d a))
+  (implies (and (not (if-and-not-eval d a))
                 (term-is-conjunctionp (skip-conjuncts-before d conj)))
-           (not (equality-eval (skip-conjuncts-before d conj) a)))
+           (not (if-and-not-eval (skip-conjuncts-before d conj) a)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable ;skip-conjuncts-before
                               ;TERM-IS-CONJUNCTIONP
@@ -321,8 +322,8 @@
 
 (defthm among-conjunctsp-before-correct
   (implies (among-conjunctsp d conj)
-           (implies (not (equality-eval d a))
-                    (not (equality-eval conj a))))
+           (implies (not (if-and-not-eval d a))
+                    (not (if-and-not-eval conj a))))
   :hints (("Goal" :in-theory (enable among-conjunctsp))))
 
 ;move
@@ -350,8 +351,8 @@
 
 (defthm clearly-unimplies-for-conjunctionsp-correct
   (implies (clearly-unimplies-for-conjunctionsp conj1 conj2)
-           (implies (not (equality-eval conj1 a))
-                    (not (equality-eval conj2 a))))
+           (implies (not (if-and-not-eval conj1 a))
+                    (not (if-and-not-eval conj2 a))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable clearly-unimplies-for-conjunctionsp))))
 
@@ -363,10 +364,10 @@
     (or (clearly-unimplies-for-conjunctionsp (first conjs) conj)
         (clearly-unimplied-by-some-conjunctionp conj (rest conjs)))))
 
-(defthm equality-eval-when-clearly-unimplied-by-some-conjunctionp
+(defthm if-and-not-eval-when-clearly-unimplied-by-some-conjunctionp
   (implies (and (clearly-unimplied-by-some-conjunctionp term false-terms)
-                (all-eval-to-false-with-equality-eval false-terms a))
-           (not (equality-eval term a)))
+                (all-eval-to-false-with-if-and-not-eval false-terms a))
+           (not (if-and-not-eval term a)))
   :hints (("Goal" :in-theory (enable clearly-unimplied-by-some-conjunctionp))))
 
 ;; In general, the TRUE-TERMS may be disjunctions (a true-term that is a
@@ -413,10 +414,10 @@
 (verify-guards resolve-ifs-in-term :hints (("Goal" :in-theory (enable len-when-pseudo-termp-and-quotep))))
 
 (defthm resolve-ifs-in-term-correct
-  (implies (and (all-eval-to-true-with-equality-eval true-terms a)
-                (all-eval-to-false-with-equality-eval false-terms a))
-           (iff (equality-eval (resolve-ifs-in-term term true-terms false-terms) a)
-                (equality-eval term a)))
+  (implies (and (all-eval-to-true-with-if-and-not-eval true-terms a)
+                (all-eval-to-false-with-if-and-not-eval false-terms a))
+           (iff (if-and-not-eval (resolve-ifs-in-term term true-terms false-terms) a)
+                (if-and-not-eval term a)))
   :hints (("Goal" :in-theory (enable resolve-ifs-in-term))))
 
 ;; In general, the TRUE-TERMS are disjunctions.
@@ -450,17 +451,17 @@
                                              false-terms)))))))
 
 (defthm resolve-ifs-in-clause-correct
-  (implies (and (all-eval-to-true-with-equality-eval true-terms a)
-                (all-eval-to-false-with-equality-eval false-terms a))
-           (iff (equality-eval (disjoin (resolve-ifs-in-clause clause true-terms false-terms)) a)
-                (equality-eval (disjoin clause) a)))
+  (implies (and (all-eval-to-true-with-if-and-not-eval true-terms a)
+                (all-eval-to-false-with-if-and-not-eval false-terms a))
+           (iff (if-and-not-eval (disjoin (resolve-ifs-in-clause clause true-terms false-terms)) a)
+                (if-and-not-eval (disjoin clause) a)))
   :hints (("Goal" :expand (DISJOIN CLAUSE)
            :do-not '(generalize eliminate-destructors)
            :in-theory (enable resolve-ifs-in-clause))))
 
 (defthm resolve-ifs-in-clause-correct-special
-  (iff (equality-eval (disjoin (resolve-ifs-in-clause clause nil nil)) a)
-       (equality-eval (disjoin clause) a)))
+  (iff (if-and-not-eval (disjoin (resolve-ifs-in-clause clause nil nil)) a)
+       (if-and-not-eval (disjoin clause) a)))
 
 (defthm pseudo-term-listp-of-resolve-ifs-in-clause
   (implies (pseudo-term-listp clause)
@@ -475,7 +476,7 @@
 
 ;todo: add :well-formedness proof
 (defthm simple-subsumption-clause-processor-correct
-  (implies (equality-eval (conjoin-clauses (simple-subsumption-clause-processor clause)) a)
-           (equality-eval (disjoin clause) a))
+  (implies (if-and-not-eval (conjoin-clauses (simple-subsumption-clause-processor clause)) a)
+           (if-and-not-eval (disjoin clause) a))
   :rule-classes :clause-processor
   :hints (("Goal" :in-theory (enable simple-subsumption-clause-processor))))
