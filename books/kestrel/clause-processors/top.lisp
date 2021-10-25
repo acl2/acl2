@@ -18,3 +18,4 @@
 (include-book "simple-subsumption")
 (include-book "push-unary-functions")
 (include-book "simplify-after-using-conjunction")
+(include-book "simplify-assumptions")

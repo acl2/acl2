@@ -14,15 +14,26 @@
 (include-book "kestrel/clause-processors/flatten-literals" :dir :system)
 (include-book "kestrel/clause-processors/simple-subsumption" :dir :system)
 (include-book "kestrel/clause-processors/push-unary-functions" :dir :system)
+(include-book "simplify-assumptions")
 (local (include-book "kestrel/typed-lists-light/pseudo-term-list-listp" :dir :system))
 
 (local (in-theory (disable disjoin)))
 
 ;; TODO: Have my-make-flag (or make-flag) put in the :ruler-extenders of the old function by default.
 
+;rename
 (defevaluator+ my-make-flag-eval if equal eql eq not
   booland boolor boolif myif ;todo
   )
+
+;changes the evaluator
+(defthm my-make-flag-eval-of-simplify-assumptions-in-clause
+  (iff (my-make-flag-eval (disjoin (simplify-assumptions-in-clause clause)) a)
+       (my-make-flag-eval (disjoin clause) a))
+  :hints (("Goal" :use (:functional-instance
+                        if-and-not-eval-of-simplify-assumptions-in-clause
+                        (if-and-not-eval my-make-flag-eval)
+                        (if-and-not-eval-list my-make-flag-eval-list)))))
 
 ;changes the evaluator
 (defthm resolve-ifs-in-clause-correct-new
@@ -86,7 +97,8 @@
 (defun simplify-after-using-conjunction-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
   (let* ( ;(clause (first (sublis-var-and-simplify-clause-processor clause)))
-         (new-clause (first (flatten-literals-clause-processor clause)))
+         (new-clause (simplify-assumptions-in-clause clause))
+         ;;(new-clause (first (flatten-literals-clause-processor clause)))
          ;;(clause (first (push-o-p-clause-processor clause))) ;this is a bit out of place here
          (new-clauses (simple-subsumption-clause-processor new-clause)) ;todo: doesn't yet deal with the o-p claims because they appear not as conjuncts
          ;; (changep (not (equal clauses (list clause)))) ;todo: optimize
