@@ -399,6 +399,7 @@
                   (if (clearly-unimplied-by-some-conjunctionp new-test false-terms)
                       (resolve-ifs-in-term (farg3 term) true-terms false-terms)
                     (let ((new-if (make-if-term new-test
+                                                ;; TODO: Consider assuming the test / negated test here:
                                                 (resolve-ifs-in-term (farg2 term) true-terms false-terms)
                                                 (resolve-ifs-in-term (farg3 term) true-terms false-terms))))
                       ;; TODO: Call clearly-implied-by-some-disjunctionp on this if different?:
