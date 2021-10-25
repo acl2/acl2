@@ -10,7 +10,17 @@
 
 (in-package "ACL2")
 
+(include-book "clause-to-clause-list")
 (include-book "kestrel/terms-light/simplify-conjunction" :dir :system)
+
+;dup
+;; just changes the evaluator
+(defthm if-and-not-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
+  (iff (if-and-not-eval (conjoin (disjoin-lst (clause-to-clause-list clause))) a)
+       (if-and-not-eval (disjoin clause) a))
+  :hints (("Goal" :use (:functional-instance if-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
+                                             (if-eval if-and-not-eval)
+                                             (if-eval-list if-and-not-eval-list)))))
 
 ;; Returns a new clause.
 ;; TODO: Use assumptions info from previous literals?

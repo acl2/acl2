@@ -10,21 +10,9 @@
 
 (in-package "ACL2")
 
+(include-book "clause-to-clause-list")
 (include-book "kestrel/evaluators/equality-eval" :dir :system)
 (include-book "kestrel/evaluators/if-eval" :dir :system)
-
-;move
-(defund clause-to-clause-list (clause)
-  (declare (xargs :guard (pseudo-term-listp clause)))
-  (if (equal clause '('t))
-      nil ; no more clauses to prove
-    (list clause)))
-
-;move
-(defthm if-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
-  (iff (if-eval (conjoin (disjoin-lst (clause-to-clause-list clause))) a)
-       (if-eval (disjoin clause) a))
-  :hints (("Goal" :in-theory (enable clause-to-clause-list))))
 
 ;; Returns a new, equivalent clause.
 (defun handle-constant-literals (clause)
