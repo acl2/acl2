@@ -16,8 +16,7 @@
 (include-book "kestrel/clause-processors/push-unary-functions" :dir :system)
 (include-book "simplify-assumptions")
 (local (include-book "kestrel/typed-lists-light/pseudo-term-list-listp" :dir :system))
-
-(local (in-theory (disable disjoin)))
+(local (include-book "kestrel/utilities/disjoin" :dir :system))
 
 ;; TODO: Have my-make-flag (or make-flag) put in the :ruler-extenders of the old function by default.
 
