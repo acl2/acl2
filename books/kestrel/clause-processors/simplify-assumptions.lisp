@@ -12,6 +12,7 @@
 
 (include-book "clause-to-clause-list")
 (include-book "kestrel/terms-light/simplify-conjunction" :dir :system)
+(include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
 
 ;dup
 ;; just changes the evaluator
@@ -19,6 +20,16 @@
   (iff (if-and-not-eval (conjoin (disjoin-lst (clause-to-clause-list clause))) a)
        (if-and-not-eval (disjoin clause) a))
   :hints (("Goal" :use (:functional-instance if-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
+                                             (if-eval if-and-not-eval)
+                                             (if-eval-list if-and-not-eval-list)))))
+
+;; Correctness of drop-clearly-implied-conjuncts.
+(defthm if-and-not-eval-of-drop-clearly-implied-conjuncts
+  (implies (all-eval-to-true-with-if-and-not-eval true-terms a)
+           (iff (if-and-not-eval (drop-clearly-implied-conjuncts term true-terms) a)
+                (if-and-not-eval term a)))
+  :hints (("Goal" :use (:functional-instance if-eval-of-drop-clearly-implied-conjuncts
+                                             (all-eval-to-true-with-if-eval all-eval-to-true-with-if-and-not-eval)
                                              (if-eval if-and-not-eval)
                                              (if-eval-list if-and-not-eval-list)))))
 

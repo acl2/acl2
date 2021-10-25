@@ -45,6 +45,45 @@
                            strip-cdrs
                            assoc-equal)))
 
+(defthm if-and-not-eval-when-clearly-implied-by-some-disjunctionp
+  (implies (and (clearly-implied-by-some-disjunctionp term true-terms)
+                (all-eval-to-true-with-if-and-not-eval true-terms a))
+           (if-and-not-eval term a))
+  :hints (("Goal" :use (:functional-instance if-eval-when-clearly-implied-by-some-disjunctionp
+                                             (all-eval-to-true-with-if-eval all-eval-to-true-with-if-and-not-eval)
+                                             (if-eval if-and-not-eval)
+                                             (if-eval-list if-and-not-eval-list)))))
+
+
+(defthm if-and-not-eval-of-cadddr-when-term-is-conjunctionp-forward
+  (implies (and (not (if-and-not-eval (caddr conj) a))
+                (term-is-conjunctionp conj))
+           (not (if-and-not-eval conj a)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :use (:functional-instance if-eval-of-cadddr-when-term-is-conjunctionp-forward
+                                             (if-eval if-and-not-eval)
+                                             (if-eval-list if-and-not-eval-list)))))
+
+(defthm if-and-not-eval-of-cadddr-when-term-is-conjunctionp
+  (implies (and (if-and-not-eval conj a)
+                (term-is-conjunctionp conj))
+           (if-and-not-eval (caddr conj) a))
+  :hints (("Goal" :use (:functional-instance if-eval-of-cadddr-when-term-is-conjunctionp
+                                             (if-eval if-and-not-eval)
+                                             (if-eval-list if-and-not-eval-list)))))
+
+
+;;changes the evaluator
+(defthm if-and-not-eval-when-term-is-conjunctionp
+  (implies (term-is-conjunctionp conj)
+           (iff (if-and-not-eval conj a)
+                (and (if-and-not-eval (farg1 conj) a)
+                     (if-and-not-eval (farg2 conj) a))))
+  :hints (("Goal" :use (:functional-instance if-eval-when-term-is-conjunctionp
+                                             (if-eval if-and-not-eval)
+                                             (if-eval-list if-and-not-eval-list)))))
+
+
 ;; This requires the TEST to not be constant, because we can do better if it may be.
 (defun make-if-term (test then else)
   (declare (xargs :guard (and (pseudo-termp test)
@@ -54,6 +93,15 @@
   (if (equal then else)
       then
     `(if ,test ,then ,else)))
+
+;; just changes the evaluator
+;drop?
+(defthm all-eval-to-false-with-if-and-not-eval-of-handle-constant-literals
+  (equal (all-eval-to-false-with-if-and-not-eval (handle-constant-literals clause) a)
+         (all-eval-to-false-with-if-and-not-eval clause a))
+  :hints (("Goal" :use (:functional-instance all-eval-to-false-with-if-eval-of-handle-constant-literals
+                                             (if-eval if-and-not-eval)
+                                             (if-eval-list if-and-not-eval-list)))))
 
 ;; just changes the evaluator
 (defthm if-and-not-eval-of-disjoin-of-handle-constant-literals

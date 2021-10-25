@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/forms" :dir :system)
-(include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
+(include-book "kestrel/evaluators/if-eval" :dir :system)
 
 (defund term-is-conjunctionp (term)
   (declare (xargs :guard (pseudo-termp term)))
@@ -40,20 +40,20 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable term-is-conjunctionp))))
 
-(defthm if-and-not-eval-when-term-is-conjunctionp
+(defthm if-eval-when-term-is-conjunctionp
   (implies (term-is-conjunctionp conj)
-           (iff (if-and-not-eval conj a)
-                (and (if-and-not-eval (farg1 conj) a)
-                     (if-and-not-eval (farg2 conj) a))))
+           (iff (if-eval conj a)
+                (and (if-eval (farg1 conj) a)
+                     (if-eval (farg2 conj) a))))
   :hints (("Goal" :in-theory (enable term-is-conjunctionp))))
 
-(defthm if-and-not-eval-of-cadddr-when-term-is-conjunctionp-forward
-  (implies (and (not (if-and-not-eval (caddr conj) a))
+(defthm if-eval-of-cadddr-when-term-is-conjunctionp-forward
+  (implies (and (not (if-eval (caddr conj) a))
                 (term-is-conjunctionp conj))
-           (not (if-and-not-eval conj a)))
+           (not (if-eval conj a)))
   :rule-classes :forward-chaining)
 
-(defthm if-and-not-eval-of-cadddr-when-term-is-conjunctionp
-  (implies (and (if-and-not-eval conj a)
+(defthm if-eval-of-cadddr-when-term-is-conjunctionp
+  (implies (and (if-eval conj a)
                 (term-is-conjunctionp conj))
-         (if-and-not-eval (caddr conj) a)))
+         (if-eval (caddr conj) a)))

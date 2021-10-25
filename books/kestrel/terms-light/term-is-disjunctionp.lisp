@@ -11,9 +11,8 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/forms" :dir :system)
-(include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
+(include-book "kestrel/evaluators/if-eval" :dir :system)
 
-;todo: use more
 (defund term-is-disjunctionp (term)
   (declare (xargs :guard (pseudo-termp term)))
   (and (call-of 'if term)
@@ -34,15 +33,15 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable term-is-disjunctionp))))
 
-(defthm if-and-not-eval-when-term-is-disjunctionp
+(defthm if-eval-when-term-is-disjunctionp
   (implies (term-is-disjunctionp disj)
-           (iff (if-and-not-eval disj a)
-                (or (if-and-not-eval (farg1 disj) a)
-                    (if-and-not-eval (farg3 disj) a))))
+           (iff (if-eval disj a)
+                (or (if-eval (farg1 disj) a)
+                    (if-eval (farg3 disj) a))))
   :hints (("Goal" :in-theory (enable term-is-disjunctionp))))
 
-(defthm if-and-not-eval-of-cadddr-when-term-is-disjunctionp-forward
-  (implies (and (if-and-not-eval (cadddr disj) a)
+(defthm if-eval-of-cadddr-when-term-is-disjunctionp-forward
+  (implies (and (if-eval (cadddr disj) a)
                 (term-is-disjunctionp disj))
-           (if-and-not-eval disj a))
+           (if-eval disj a))
   :rule-classes :forward-chaining)

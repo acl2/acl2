@@ -45,10 +45,9 @@
            (pseudo-termp (drop-clearly-implied-conjuncts term true-terms)))
   :hints (("Goal" :in-theory (enable drop-clearly-implied-conjuncts))))
 
-;;move
 ;; Correctness of drop-clearly-implied-conjuncts.
-(defthm if-and-not-eval-of-drop-clearly-implied-conjuncts
-  (implies (all-eval-to-true-with-if-and-not-eval true-terms a)
-           (iff (if-and-not-eval (drop-clearly-implied-conjuncts term true-terms) a)
-                (if-and-not-eval term a)))
+(defthm if-eval-of-drop-clearly-implied-conjuncts
+  (implies (all-eval-to-true-with-if-eval true-terms a)
+           (iff (if-eval (drop-clearly-implied-conjuncts term true-terms) a)
+                (if-eval term a)))
   :hints (("Goal" :in-theory (enable drop-clearly-implied-conjuncts))))

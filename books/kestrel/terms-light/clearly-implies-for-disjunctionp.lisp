@@ -34,8 +34,8 @@
   :hints (("Goal" :in-theory (enable skip-disjuncts-before))))
 
 (defthm skip-disjuncts-before-correct
-  (implies (if-and-not-eval (skip-disjuncts-before d disj) a)
-           (if-and-not-eval disj a))
+  (implies (if-eval (skip-disjuncts-before d disj) a)
+           (if-eval disj a))
   :hints (("Goal" :in-theory (enable skip-disjuncts-before))))
 
 (defthm skip-disjuncts-lemma-helper
@@ -46,9 +46,9 @@
                                      TERM-IS-DISJUNCTIONP))))
 
 (defthm skip-disjuncts-lemma
-  (implies (and (if-and-not-eval d a)
+  (implies (and (if-eval d a)
                 (term-is-disjunctionp (skip-disjuncts-before d disj)))
-           (if-and-not-eval (skip-disjuncts-before d disj) a))
+           (if-eval (skip-disjuncts-before d disj) a))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable ;skip-disjuncts-before
                               ;TERM-IS-DISJUNCTIONP
@@ -65,8 +65,8 @@
 
 (defthm among-disjunctsp-before-correct
   (implies (among-disjunctsp d disj)
-           (implies (if-and-not-eval d a)
-                    (if-and-not-eval disj a)))
+           (implies (if-eval d a)
+                    (if-eval disj a)))
   :hints (("Goal" :in-theory (enable among-disjunctsp))))
 
 ;move
@@ -94,8 +94,8 @@
 
 (defthm clearly-implies-for-disjunctionsp-correct
   (implies (clearly-implies-for-disjunctionsp disj1 disj2)
-           (implies (if-and-not-eval disj1 a)
-                    (if-and-not-eval disj2 a)))
+           (implies (if-eval disj1 a)
+                    (if-eval disj2 a)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable clearly-implies-for-disjunctionsp))))
 
@@ -107,8 +107,8 @@
     (or (clearly-implies-for-disjunctionsp (first disjs) disj)
         (clearly-implied-by-some-disjunctionp disj (rest disjs)))))
 
-(defthm if-and-not-eval-when-clearly-implied-by-some-disjunctionp
+(defthm if-eval-when-clearly-implied-by-some-disjunctionp
   (implies (and (clearly-implied-by-some-disjunctionp term true-terms)
-                (all-eval-to-true-with-if-and-not-eval true-terms a))
-           (if-and-not-eval term a))
+                (all-eval-to-true-with-if-eval true-terms a))
+           (if-eval term a))
   :hints (("Goal" :in-theory (enable clearly-implied-by-some-disjunctionp))))

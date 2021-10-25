@@ -51,3 +51,8 @@
            (if-eval (disjoin clause) a))
   :rule-classes :clause-processor
   :hints (("Goal" :in-theory (enable handle-constant-literals-clause-processor))))
+
+(defthm all-eval-to-false-with-if-eval-of-handle-constant-literals
+  (equal (all-eval-to-false-with-if-eval (handle-constant-literals clause) a)
+         (all-eval-to-false-with-if-eval clause a))
+  :hints (("Goal" :in-theory (enable handle-constant-literals))))
