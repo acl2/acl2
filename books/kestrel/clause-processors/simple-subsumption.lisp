@@ -288,7 +288,7 @@
                 (all-eval-to-false-with-if-and-not-eval false-terms a))
            (iff (if-and-not-eval (disjoin (resolve-ifs-in-clause clause true-terms false-terms)) a)
                 (if-and-not-eval (disjoin clause) a)))
-  :hints (("Goal" :expand (DISJOIN CLAUSE)
+  :hints (("Goal" :expand (disjoin clause)
            :do-not '(generalize eliminate-destructors)
            :in-theory (enable resolve-ifs-in-clause))))
 
