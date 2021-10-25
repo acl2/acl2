@@ -24,6 +24,8 @@
 (include-book "handle-constant-literals")
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/conjuncts-and-disjuncts0" :dir :system)
+(include-book "kestrel/terms-light/term-is-disjunctionp" :dir :system)
+(include-book "kestrel/terms-light/term-is-conjunctionp" :dir :system)
 (include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
 (local (include-book "kestrel/utilities/conjuncts-and-disjuncts0-proof" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
@@ -96,74 +98,6 @@
        (all-eval-to-true-with-if-and-not-eval terms a))
   :hints (("Goal" :in-theory (enable negate-disjunct-list
                                      ALL-EVAL-TO-FALSE-WITH-IF-AND-NOT-EVAL))))
-
-;todo: use more
-(defund term-is-disjunctionp (term)
-  (declare (xargs :guard (pseudo-termp term)))
-  (and (call-of 'if term)
-       (= 3 (len (fargs term)))
-       (or (equal *t* (farg2 term)) ; (if x t y)
-           (equal (farg1 term) (farg2 term))) ; (if x x y)
-       ))
-
-(defthm term-is-disjunctionp-forward-to-equal-of-len-of-fargs
-  (implies (term-is-disjunctionp term)
-           (equal 3 (len (fargs term))))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable term-is-disjunctionp))))
-
-(defthm term-is-disjunctionp-forward-to-consp
-  (implies (term-is-disjunctionp term)
-           (consp term))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable term-is-disjunctionp))))
-
-(defthm if-and-not-eval-when-term-is-disjunctionp
-  (implies (term-is-disjunctionp disj)
-           (iff (if-and-not-eval disj a)
-                (or (if-and-not-eval (farg1 disj) a)
-                    (if-and-not-eval (farg3 disj) a))))
-  :hints (("Goal" :in-theory (enable term-is-disjunctionp))))
-
-(defthm if-and-not-eval-of-cadddr-when-term-is-disjunctionp-forward
-  (implies (and (if-and-not-eval (cadddr disj) a)
-                (term-is-disjunctionp disj))
-           (if-and-not-eval disj a))
-  :rule-classes :forward-chaining)
-
-(defund term-is-conjunctionp (term)
-  (declare (xargs :guard (pseudo-termp term)))
-  (and (call-of 'if term)
-       (= 3 (len (fargs term)))
-       (equal *nil* (farg3 term)) ; (if x y nil)
-       ))
-
-(defthm term-is-conjunctionp-forward-to-consp
-  (implies (term-is-conjunctionp term)
-           (consp term))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable term-is-conjunctionp))))
-
-(defthm term-is-conjunctionp-forward-to-pseudo-termp-of-cadr
-  (implies (and (term-is-conjunctionp term)
-                (pseudo-termp term))
-           (pseudo-termp (cadr term)))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable term-is-conjunctionp))))
-
-(defthm term-is-conjunctionp-forward-to-pseudo-termp-of-caddr
-  (implies (and (term-is-conjunctionp term)
-                (pseudo-termp term))
-           (pseudo-termp (caddr term)))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable term-is-conjunctionp))))
-
-(defthm if-and-not-eval-when-term-is-conjunctionp
-  (implies (term-is-conjunctionp conj)
-           (iff (if-and-not-eval conj a)
-                (and (if-and-not-eval (farg1 conj) a)
-                     (if-and-not-eval (farg2 conj) a))))
-  :hints (("Goal" :in-theory (enable term-is-conjunctionp))))
 
 ;move?
 ;; Skip any leading disjuncts in DISJ that are not D.  DISJ is an IF-nest.
@@ -263,17 +197,6 @@
                 (all-eval-to-true-with-if-and-not-eval true-terms a))
            (if-and-not-eval term a))
   :hints (("Goal" :in-theory (enable clearly-implied-by-some-disjunctionp))))
-
-(defthm if-and-not-eval-of-cadddr-when-term-is-conjunctionp-forward
-  (implies (and (not (if-and-not-eval (caddr conj) a))
-                (term-is-conjunctionp conj))
-           (not (if-and-not-eval conj a)))
-  :rule-classes :forward-chaining)
-
-(defthm if-and-not-eval-of-cadddr-when-term-is-conjunctionp
-  (implies (and (if-and-not-eval conj a)
-                (term-is-conjunctionp conj))
-         (if-and-not-eval (caddr conj) a)))
 
 ;move?
 ;; Skip any leading conjuncts in CONJ that are not D.  CONJ is an IF-nest.

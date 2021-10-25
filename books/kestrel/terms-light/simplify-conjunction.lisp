@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "term-is-conjunctionp")
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "../clause-processors/simple-subsumption") ;todo: move that stuff to this dir
 
