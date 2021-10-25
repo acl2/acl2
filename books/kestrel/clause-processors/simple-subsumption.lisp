@@ -97,15 +97,26 @@
   :hints (("Goal" :in-theory (enable negate-disjunct-list
                                      ALL-EVAL-TO-FALSE-WITH-IF-AND-NOT-EVAL))))
 
-
-
 ;todo: use more
 (defund term-is-disjunctionp (term)
   (declare (xargs :guard (pseudo-termp term)))
   (and (call-of 'if term)
        (= 3 (len (fargs term)))
-       (equal *t* (farg2 term)) ; todo: allow (if x x y)
+       (or (equal *t* (farg2 term)) ; (if x t y)
+           (equal (farg1 term) (farg2 term))) ; (if x x y)
        ))
+
+(defthm term-is-disjunctionp-forward-to-equal-of-len-of-fargs
+  (implies (term-is-disjunctionp term)
+           (equal 3 (len (fargs term))))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable term-is-disjunctionp))))
+
+(defthm term-is-disjunctionp-forward-to-consp
+  (implies (term-is-disjunctionp term)
+           (consp term))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable term-is-disjunctionp))))
 
 (defthm if-and-not-eval-when-term-is-disjunctionp
   (implies (term-is-disjunctionp disj)
@@ -124,7 +135,7 @@
   (declare (xargs :guard (pseudo-termp term)))
   (and (call-of 'if term)
        (= 3 (len (fargs term)))
-       (equal *nil* (farg3 term)) ; todo: allow (if x y nil)
+       (equal *nil* (farg3 term)) ; (if x y nil)
        ))
 
 (defthm term-is-conjunctionp-forward-to-consp
@@ -197,14 +208,11 @@
 (defund among-disjunctsp (d disj)
   (declare (xargs :guard (and (pseudo-termp d)
                               (pseudo-termp disj))))
-  (if (not (and (call-of 'if disj)
-                (= 3 (len (fargs disj)))))
+  (if (not (term-is-disjunctionp disj))
       (equal d disj) ; no more disjuncts
-    ;; look for (if d 't y), which is "d or y" ; todo: the 't could instead be d
-    (if (equal *t* (farg2 disj))
-        (or (equal d (farg1 disj))
-            (among-disjunctsp d (farg3 disj)))
-      nil)))
+    ;; look for (if d 't y) or (if d d y), which both mean "d or y"
+    (or (equal d (farg1 disj))
+        (among-disjunctsp d (farg3 disj)))))
 
 (defthm among-disjunctsp-before-correct
   (implies (among-disjunctsp d disj)
@@ -265,8 +273,7 @@
 (defthm if-and-not-eval-of-cadddr-when-term-is-conjunctionp
   (implies (and (if-and-not-eval conj a)
                 (term-is-conjunctionp conj))
-         (if-and-not-eval (caddr conj) a))
-)
+         (if-and-not-eval (caddr conj) a)))
 
 ;move?
 ;; Skip any leading conjuncts in CONJ that are not D.  CONJ is an IF-nest.
