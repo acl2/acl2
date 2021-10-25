@@ -34,3 +34,4 @@
 (include-book "negate-term")
 (include-book "negate-term-proof")
 (include-book "negate-terms")
+(include-book "simplify-conjunction")
