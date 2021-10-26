@@ -23,3 +23,19 @@
              (equal else *nil*))
         test ; avoids (if <test> t nil)
       `(if ,test ,then ,else))))
+
+(defun make-if-term-gen (test then else)
+  (declare (xargs :guard (and (pseudo-termp test)
+                              ;; (not (quotep test))
+                              (pseudo-termp then)
+                              (pseudo-termp else))))
+  (if (quotep test)
+      (if (unquote test)
+          then
+        else)
+    (if (equal then else)
+        then
+      (if (and (equal then *t*)
+               (equal else *nil*))
+          test ; avoids (if <test> t nil)
+        `(if ,test ,then ,else)))))
