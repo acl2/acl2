@@ -1,0 +1,179 @@
+/* Some Syntheto top-level constructs are followed by
+   a comment that contains the equivalent S-expression
+   that should be sent to the ACL2 bridge.
+   We call that S-expression the "shallow acl2 definition".
+
+   Some general guidelines:
+   * Syntheto identifiers are case-sensitive.  We try to hide the lisp symbols
+     in the shallow ACL2 definition, but when you see transactional output,
+     you will see the Lisp symbol syntax.
+     (But not the ACL2 Bridge JSON response, see below).
+     Symbols will usually be bracketed with vertical bars
+     and will usually have a package prefix.  For example, for the definition
+     struct acid {...}, which you submit to the bridge as a shallow acl2 definition
+     like (make-product-type "acid" ...), the bridge will expand into
+     the name SYNDEF::|acid|.  If the Syntheto identifier was all uppercase,
+     the vertical bars are omitted.  If the identifier is in a different package,
+     that package name will replace the word "SYNDEF", or possibly the entire
+     package prefix could be omitted.
+     Now for the ACL2 Bridge JSON responses, currently the to-json.lisp is
+     stripping off the decoration, so you end up with "acid" again.
+     This might be alright, but it might become problematic and it might need
+     to be changed.
+*/
+
+////////////////////////////////////////////////////////////////////////////////
+
+/* Aircraft identification number (i.e. Bureau Number). */
+struct acid
+{
+    id: integer
+}
+
+/*
+(make-product-type "acid"
+  :shortdoc "Aircraft identification number (i.e. Bureau Number)."
+  ("id" (s-type-integer)))
+*/
+
+////////////////////////////////////////////////////////////////////////////////
+
+/* Aircraft types. */
+variant actype
+{
+    a {},
+    b {},
+    c {}
+}
+
+/*
+(make-sum-type "actype"
+  :shortdoc "Aircraft types."
+  ("a" ())
+  ("b" ())
+  ("c" ()))
+*/
+
+////////////////////////////////////////////////////////////////////////////////
+
+/* Information about an aircraft. */
+struct aircraft
+{
+    id: acid,
+    type: actype
+}
+
+/*
+(make-product-type "aircraft"
+  :shortdoc "Information about an aircraft."
+  ("id" (s-type-ref "acid"))
+  ("type" (s-type-ref "actype")))
+*/
+
+////////////////////////////////////////////////////////////////////////////////
+
+/* These next two are not yet supposed to be in the Syntheto language.
+   Do we want to rewrite them or change the language? - EM 2020-10-02
+
+(make-option-type "MAYBE-AIRCRAFT"
+  (s-type-ref "AIRCRAFT")
+  :shortdoc "Union of aircraft information and @('nil').")
+
+(make-set-type "ACROSTER" (s-type-ref "AIRCRAFT")
+  :shortdoc "Aircraft rosters, i.e. set of aircraft."
+  :longdoc
+  (xdoc::topstring-p
+   "Here it is appropriate to use sets because the order does not matter,
+    and no two @(tsee aircraft) values may be equal
+    because their identification numbers must be unique.
+    In fact, below we introduce a predicate, @(tsee acroster-wfp),
+    that says when an aircraft roster is well-formed,
+    in the sense that its elements have unique identifiers."))
+
+*/
+
+////////////////////////////////////////////////////////////////////////////////
+
+function find_aircraft (id: acid, roster: set<aircraft>)
+returns (aircraft opt<aircraft>) {
+    if (empty(roster)) {
+        return none();
+    } else {
+        let ac: aircraft = first(roster);
+        if (ac.id == id) {
+            return some(ac);
+        } else {
+            return find_aircraft(rest(roster));
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+function acroster_is_wf (roster: set<aircraft>)
+returns (yes_no boolean) {
+    return is_empty(roster) ||
+           (find_aircraft(first(roster).id, rest(roster)).none? &&
+            acroster_is_wf(rest(roster)));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct mission {
+    required: actype
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+function is_solution (solution: seq<acid>,
+                      missions: seq<mission>,
+                      roster: set<aircraft>)
+assumes acroster_is_wf(roster)
+returns (yes_no: boolean) {
+    if (is_empty(missions)) {
+        return true;
+    } else {
+        when (is_empty(solution)) { return false; }
+        let ac: opt<aircraft> = find_aircraft(first(solution), roster);
+        return ac.some? &&
+               (ac.some == first(missions).required) &&
+               is_solution(rest(solution), rest(missions), roster);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+function is_solvable (missions: seq<mission>, roster: set<aircraft>)
+assumes acroster_is_wf(roster)
+returns (yes_no: boolean) {
+    exists (solution:seq<acid>) is_solution(solution, missions, roster)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+variant result {
+    solution {get: seq<acid>}
+    nosolution {}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+function in_out (missions: seq<mission>, roster:set<aircraft>, result:result)
+returns (yes_no boolean) {
+    acroster_is_wf(roster) ==>
+    (if (is_solvable (missions, roster)) {
+         result.solution? &&
+         is_solution(result.some, missions, roster);
+     } else {
+         result.nosolution?
+     })
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+specification spec_schedule
+(function schedule (missions: seq<mission>, roster: set<aircraft>)
+ returns (result: result)) {
+     forall (missions: seq<mission>, roster: set<aircraft>)
+         in_out(missions, roster, schedule(missions, roster))
+}
