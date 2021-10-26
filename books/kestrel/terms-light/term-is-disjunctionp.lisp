@@ -33,6 +33,20 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable term-is-disjunctionp))))
 
+(defthm term-is-disjunctionp-forward-to-pseudo-termp-of-cadr
+  (implies (and (term-is-disjunctionp x)
+                (pseudo-termp x))
+           (pseudo-termp (cadr x)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable term-is-disjunctionp))))
+
+(defthm term-is-disjunctionp-forward-to-pseudo-termp-of-caddr
+  (implies (and (term-is-disjunctionp x)
+                (pseudo-termp x))
+           (pseudo-termp (caddr x)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable term-is-disjunctionp))))
+
 (defthm if-eval-when-term-is-disjunctionp
   (implies (term-is-disjunctionp disj)
            (iff (if-eval disj a)
