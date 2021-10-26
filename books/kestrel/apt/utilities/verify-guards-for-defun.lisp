@@ -16,6 +16,7 @@
 (include-book "kestrel/std/system/guard-verified-p" :dir :system)
 (include-book "becomes-theorem-names")
 (include-book "kestrel/clause-processors/simplify-after-using-conjunction" :dir :system)
+(include-book "kestrel/terms-light/simplify-conjunction" :dir :system)
 
 ;; Generate a verify-guards form for FN.  Returns an
 ;; event.  The verify-guards form assumes the new function and "becomes"
@@ -45,10 +46,10 @@
                                          (:e eqlable-listp) ; not sure whether this is needed, depends on what kinds of CASE untranslate can put in
                                          ))
                            ;; This can speed things up greatly.  It may not prove the whole clause, due to
-                           ;; the need to replace recursive calls using the becomes-theorems.
-                           ;; TODO: This breaks a letify call in flex/spec-answer/regex-new/domain-regex-well-formed-terms.lisp:
-                           ;; ("goal'" :clause-processor (simplify-after-using-conjunction-clause-processor clause))
-                           )
+                           ;; the need to replace recursive calls using the becomes-theorem(s).
+                           ;; We tried having this flatten literals, but I think that caused problems with a letify call
+                           ;; in flex/spec-answer/regex-new/domain-regex-well-formed-terms.lisp:
+                           ("goal'" :clause-processor (simplify-after-using-conjunction-clause-processor clause)))
                        guard-hints)))
     `(verify-guards$ ,new-fn
                       :hints ,guard-hints
