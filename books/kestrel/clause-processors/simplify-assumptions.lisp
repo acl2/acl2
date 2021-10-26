@@ -1,4 +1,4 @@
-; A clause processor to simplify assumptions by dropping weaker conjuncts
+; A clause processor to simplify assumptions
 ;
 ; Copyright (C) 2021 Kestrel Institute
 ;
@@ -10,8 +10,14 @@
 
 (in-package "ACL2")
 
+;; This clause processor does the following:
+;; 1. drops conjuncts that are clearly implied by others (because they have more disjuncts)
+;; and
+;; 2. combines conjuncts that are clearly of the form (or ... x ...) and (or ... (not x) ...).
+
 (include-book "clause-to-clause-list")
 (include-book "kestrel/terms-light/simplify-conjunction" :dir :system)
+(include-book "kestrel/terms-light/strengthen-conjuncts" :dir :system)
 (include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
 
 ;dup
@@ -42,7 +48,10 @@
     (let ((new-lit (let ((lit (first clause)))
                      (if (and (call-of 'not lit)
                               (= 1 (len (fargs lit))))
-                         `(not ,(drop-clearly-implied-conjuncts (farg1 lit) nil))
+                         (let* ((core (farg1 lit))
+                                (core (combine-complementary-conjuncts core))
+                                (core (drop-clearly-implied-conjuncts core nil)))
+                           `(not ,core))
                        lit))))
       (cons new-lit
             (simplify-assumptions-in-clause (rest clause))))))
