@@ -10,11 +10,11 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/fake-worlds" :dir :system)
+(include-book "fake-worlds")
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
-(include-book "kestrel/utilities/translate" :dir :system)
-(include-book "kestrel/utilities/declares0" :dir :system)
-(include-book "kestrel/utilities/mutual-recursion-forms" :dir :system)
+(include-book "translate")
+(include-book "declares0")
+(include-book "mutual-recursion-forms")
 
 ;; TODO: Move this file to ../../utilities
 

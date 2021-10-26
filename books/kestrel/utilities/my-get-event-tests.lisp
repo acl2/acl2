@@ -12,7 +12,7 @@
 
 (include-book "my-get-event")
 (include-book "std/testing/assert-equal" :dir :system)
-(include-book "kestrel/utilities/deftest" :dir :system)
+(include-book "deftest")
 
 ;; An example where the built-in utility GET-EVENT returns something not
 ;; useful, namely (VERIFY-TERMINATION-BOOT-STRAP (DEF-BODY)):
