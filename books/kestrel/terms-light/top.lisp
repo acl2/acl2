@@ -38,3 +38,4 @@
 (include-book "term-is-conjunctionp")
 (include-book "clearly-implies-for-disjunctionp")
 (include-book "make-if-term")
+(include-book "strengthen-conjuncts")
