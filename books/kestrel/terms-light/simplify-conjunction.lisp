@@ -36,7 +36,7 @@
                ;; simplified away:
                (simplified-y (drop-clearly-implied-conjuncts y (cons x true-terms))))
           (if (clearly-implied-by-some-disjunctionp x true-terms)
-              (progn$ (cw "Dropping clearly implied conjunct ~X01.~%" x nil)
+              (progn$ ; (cw "Dropping clearly implied conjunct ~X01.~%" x nil)
                       simplified-y)
             `(if ,x ,simplified-y 'nil)))))))
 
