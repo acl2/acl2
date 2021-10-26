@@ -139,7 +139,7 @@
                                      ALL-EVAL-TO-FALSE-WITH-IF-AND-NOT-EVAL))))
 
 ;move?
-;; Skip any leading conjuncts in CONJ that are not D.  CONJ is an IF-nest.
+;; Skip any leading conjuncts in CONJ that are not D.  CONJ is usually an IF-nest.
 (defund skip-conjuncts-before (d conj)
   (declare (xargs :guard (and (pseudo-termp d)
                               (pseudo-termp conj))
@@ -339,6 +339,8 @@
            (pseudo-term-listp (resolve-ifs-in-clause clause true-terms false-terms)))
   :hints (("Goal" :in-theory (enable resolve-ifs-in-clause))))
 
+;; The main clause processor defined in this book:
+;; TODO: Start by calling simplify-assumptions-in-clause?
 (defund simple-subsumption-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
   (let* ((clause (resolve-ifs-in-clause clause nil nil))
