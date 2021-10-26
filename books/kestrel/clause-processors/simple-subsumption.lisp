@@ -27,6 +27,7 @@
 (include-book "kestrel/terms-light/term-is-disjunctionp" :dir :system)
 (include-book "kestrel/terms-light/term-is-conjunctionp" :dir :system)
 (include-book "kestrel/terms-light/clearly-implies-for-disjunctionp" :dir :system)
+(include-book "kestrel/terms-light/make-if-term" :dir :system)
 (include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
 (local (include-book "kestrel/utilities/conjuncts-and-disjuncts0-proof" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
@@ -82,17 +83,6 @@
   :hints (("Goal" :use (:functional-instance if-eval-when-term-is-conjunctionp
                                              (if-eval if-and-not-eval)
                                              (if-eval-list if-and-not-eval-list)))))
-
-
-;; This requires the TEST to not be constant, because we can do better if it may be.
-(defun make-if-term (test then else)
-  (declare (xargs :guard (and (pseudo-termp test)
-                              (not (quotep test))
-                              (pseudo-termp then)
-                              (pseudo-termp else))))
-  (if (equal then else)
-      then
-    `(if ,test ,then ,else)))
 
 ;; just changes the evaluator
 ;drop?
