@@ -19,8 +19,9 @@
 
 (defun my-make-flag-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
-  (let* ((clause (first (sublis-var-and-simplify-clause-processor clause)))
-         (clause (first (flatten-literals-clause-processor clause)))
+  (let* ((clause (first (sublis-var-and-simplify-clause-processor clause))) ; deals with the flag var?
+         (clause (first (flatten-literals-clause-processor clause))) ; is this needed?
+         ;; todo: maybe call simplify-after-using-conjunction-clause-processor here:
          (clause (first (push-o-p-clause-processor clause)))
          (clauses (simple-subsumption-clause-processor clause))  ;todo: doesn't yet deal with the o-p claims because they appear not as conjuncts
          )
