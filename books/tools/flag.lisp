@@ -879,8 +879,8 @@ one such form may affect what you might think of as the proof of another.</p>
 (defun find-first-goal-hint (user-hints)
   (cond ((atom user-hints)
          nil)
-        ((atom (car user-hints))
-         (er hard? 'find-first-goal-hint "Malformed entry in hints: ~x0.~%" (car user-hints)))
+        ((atom (car user-hints)) ; might be the name of a computed hint function
+         (find-first-goal-hint (cdr user-hints)))
         ((and (stringp (caar user-hints))
               (equal (acl2::string-upcase (caar user-hints)) "GOAL"))
          (car user-hints))
