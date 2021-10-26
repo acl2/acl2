@@ -25,15 +25,24 @@
   booland boolor boolif myif ;todo
   )
 
-;changes the evaluator
-(defthm my-make-flag-eval-of-simplify-assumptions-in-clause
-  (iff (my-make-flag-eval (disjoin (simplify-assumptions-in-clause clause)) a)
-       (my-make-flag-eval (disjoin clause) a))
+;; ;changes the evaluator
+;; (defthm my-make-flag-eval-of-simplify-assumptions-in-clause
+;;   (iff (my-make-flag-eval (disjoin (simplify-assumptions-in-clause clause)) a)
+;;        (my-make-flag-eval (disjoin clause) a))
+;;   :hints (("Goal" :use (:functional-instance
+;;                         if-and-not-eval-of-simplify-assumptions-in-clause
+;;                         (if-and-not-eval my-make-flag-eval)
+;;                         (if-and-not-eval-list my-make-flag-eval-list)))))
+
+;; ;changes the evaluator
+(defthm all-eval-to-false-with-my-make-flag-eval-of-simplify-assumptions-in-clause
+  (iff (all-eval-to-false-with-my-make-flag-eval (simplify-assumptions-in-clause clause) a)
+       (all-eval-to-false-with-my-make-flag-eval clause a))
   :hints (("Goal" :use (:functional-instance
-                        if-and-not-eval-of-simplify-assumptions-in-clause
+                        all-eval-to-false-with-if-and-not-eval-of-simplify-assumptions-in-clause
+                        (all-eval-to-false-with-if-and-not-eval all-eval-to-false-with-my-make-flag-eval)
                         (if-and-not-eval my-make-flag-eval)
                         (if-and-not-eval-list my-make-flag-eval-list)))))
-
 ;changes the evaluator
 (defthm resolve-ifs-in-clause-correct-new
   (iff (my-make-flag-eval (disjoin (resolve-ifs-in-clause clause nil nil)) a)

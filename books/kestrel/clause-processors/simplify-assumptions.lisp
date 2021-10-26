@@ -34,8 +34,7 @@
                                              (if-eval-list if-and-not-eval-list)))))
 
 ;; Returns a new clause.
-;; TODO: Use assumptions info from previous literals?
-  ;move
+;; TODO: Use assumption info from previous literals?
 (defund simplify-assumptions-in-clause (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
   (if (endp clause)
@@ -58,13 +57,12 @@
        (all-eval-to-false-with-if-and-not-eval clause a))
   :hints (("Goal" :in-theory (e/d (simplify-assumptions-in-clause) ()))))
 
-;;move
-;; Correctness of simplify-assumptions.
-(defthm if-and-not-eval-of-simplify-assumptions-in-clause
-  (iff (if-and-not-eval (disjoin (simplify-assumptions-in-clause clause)) a)
-       (if-and-not-eval (disjoin clause) a)))
+;; ;;move
+;; ;; Correctness of simplify-assumptions.
+;; (defthm if-and-not-eval-of-simplify-assumptions-in-clause
+;;   (iff (if-and-not-eval (disjoin (simplify-assumptions-in-clause clause)) a)
+;;        (if-and-not-eval (disjoin clause) a)))
 
-;move
 (defund simplify-assumptions-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
   (let* ((clause (simplify-assumptions-in-clause clause))
