@@ -1,0 +1,16 @@
+{
+  "cells": [
+    {
+      "kind": 2,
+      "language": "syntheto",
+      "value": "function factorial (n:int) assumes n >= 0 returns (out:int) ensures out > 0 {\n  if (n == 0) {\n    return 1;\n  }\n  else {\n    return n * factorial(n - 1);\n    }\n}",
+      "editable": true
+    },
+    {
+      "kind": 2,
+      "language": "syntheto",
+      "value": "function factorial_t =\n  transform factorial \n    by tail_recursion {new_parameter_name = r}",
+      "editable": true
+    }
+  ]
+}

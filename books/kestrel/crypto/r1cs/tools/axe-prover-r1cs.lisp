@@ -17,6 +17,6 @@
 (include-book "kestrel/axe/axe-bind-free-evaluator-basic" :dir :system)
 
 (make-prover-simple r1cs
-                    axe-evaluator-r1cs
+                    r1cs
                     r1cs
                     basic)

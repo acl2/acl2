@@ -1,0 +1,28 @@
+{
+  "cells": [
+    {
+      "kind": 2,
+      "language": "syntheto",
+      "value": "function sum_squares(n: int) assumes n >= 0 returns (sum: int) ensures sum >= 0 {\n  if(n == 0) {\n    return 0;\n    }\n  else {\n    return n * n + sum_squares(n - 1);\n  }\n}",
+      "editable": true
+    },
+    {
+      "kind": 2,
+      "language": "syntheto",
+      "value": "function sum_squares_1 =\n  transform sum_squares\n    by tail_recursion {new_parameter_name = result}",
+      "editable": true
+    },
+    {
+      "kind": 2,
+      "language": "syntheto",
+      "value": "function sum_squares_2 =\n  transform sum_squares\n    by finite_difference {expression = n * n,\n                          new_parameter_name = n_sq,\n                          simplify = true}",
+      "editable": true
+    },
+    {
+      "kind": 2,
+      "language": "syntheto",
+      "value": "/* Gives error for some reason\nfunction sum_squares_3 =\n  transform sum_squares_1\n    by finite_difference {expression = n * n,\n                          new_parameter_name = n_sq,\n                          simplify = false} \n*/",
+      "editable": true
+    }
+  ]
+}

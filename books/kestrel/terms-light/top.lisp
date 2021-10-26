@@ -34,3 +34,8 @@
 (include-book "negate-term")
 (include-book "negate-term-proof")
 (include-book "negate-terms")
+(include-book "simplify-conjunction")
+(include-book "term-is-conjunctionp")
+(include-book "clearly-implies-for-disjunctionp")
+(include-book "make-if-term")
+(include-book "strengthen-conjuncts")
