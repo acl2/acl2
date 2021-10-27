@@ -11,9 +11,7 @@
 
 (in-package "ACL2")
 
-;; See proof of correctness in conjuncts-and-disjuncts-proof.lisp.
-
-;; TODO: Should we be able to get conjuncts from (NOT (IF X X Y)) which is "not (x or y)" ?
+;; See proof of correctness in conjuncts-and-disjuncts2-proof.lisp.
 
 (include-book "forms")
 (include-book "conjunctions-and-disjunctions")

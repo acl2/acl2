@@ -26,7 +26,9 @@
   (declare (xargs :guard (and (symbolp name)
                               (symbol-listp fns))
                   :stobjs state))
-  (let* ((list-name (add-suffix-to-fn name "-LIST")))
+  (let* ((list-name (add-suffix-to-fn name "-LIST"))
+         (all-true-name (pack$ 'all-eval-to-true-with- name))
+         (all-false-name (pack$ 'all-eval-to-false-with- name)))
     `(progn
        ;; The main defevaluator call generated:
        (defevaluator ,name ,list-name
@@ -89,7 +91,100 @@
                   (iff (,name (disjoin (cons term terms)) a)
                        (or (,name term a)
                            (,name (disjoin terms) a)))
-                  :hints (("Goal" :in-theory (enable disjoin)))))))))
+                  :hints (("Goal" :in-theory (enable disjoin))))
+
+
+                ;;
+                ;; "all eval to true"
+                ;;
+
+                (defund ,all-true-name (terms a)
+                  (declare (xargs :guard (and (pseudo-term-listp terms)
+                                              (alistp a))))
+                  (if (endp terms)
+                      t
+                    (and (,name (first terms) a)
+                         (,all-true-name (rest terms) a))))
+
+                (defthm ,(pack$ all-true-name '-when-not-consp)
+                  (implies (not (consp terms))
+                           (,all-true-name terms a))
+                  :hints (("Goal" :in-theory (enable ,all-true-name))))
+
+                (defthm ,(pack$ all-true-name '-of-cons)
+                  (equal (,all-true-name (cons term terms) a)
+                         (and (,name term a)
+                              (,all-true-name terms a)))
+                  :hints (("Goal" :in-theory (enable ,all-true-name))))
+
+                (defthm ,(pack$ all-true-name '-of-append)
+                  (equal (,all-true-name (append terms1 terms2) a)
+                         (and (,all-true-name terms1 a)
+                              (,all-true-name terms2 a)))
+                  :hints (("Goal" :in-theory (enable ,all-true-name))))
+
+                (defthm ,(pack$ name '-of-conjoin)
+                  (iff (,name (conjoin terms) a)
+                       (,all-true-name terms a))
+                  :hints (("Goal" :in-theory (enable ,all-true-name))))
+
+                (defthm ,(pack$ name '-when- all-true-name '-and-member-equal)
+                  (implies (and (,all-true-name terms a)
+                                (member-equal term terms))
+                           (,name term a))
+                  :hints (("Goal" :in-theory (enable ,all-true-name))))
+
+                ;;
+                ;; "all eval to false"
+                ;;
+
+                (defund ,all-false-name (terms a)
+                  (declare (xargs :guard (and (pseudo-term-listp terms)
+                                              (alistp a))))
+                  (if (endp terms)
+                      t
+                    (and (not (,name (first terms) a))
+                         (,all-false-name (rest terms) a))))
+
+                (defthm ,(pack$ all-false-name '-when-not-consp)
+                  (implies (not (consp terms))
+                           (,all-false-name terms a))
+                  :hints (("Goal" :in-theory (enable ,all-false-name))))
+
+                (defthm ,(pack$ all-false-name '-of-cons)
+                  (equal (,all-false-name (cons term terms) a)
+                         (and (not (,name term a))
+                              (,all-false-name terms a)))
+                  :hints (("Goal" :in-theory (enable ,all-false-name))))
+
+                (defthm ,(pack$ all-false-name '-of-append)
+                  (equal (,all-false-name (append terms1 terms2) a)
+                         (and (,all-false-name terms1 a)
+                              (,all-false-name terms2 a)))
+                  :hints (("Goal" :in-theory (enable ,all-false-name))))
+
+                (defthm ,(pack$ name '-of-disjoin)
+                  (iff (,name (disjoin terms) a)
+                       (not (,all-false-name terms a)))
+                  :hints (("Goal" :in-theory (enable ,ALL-FALSE-NAME))))
+
+                (defthm ,(pack$ 'not- name '-when- all-false-name '-and-member-equal)
+                  (implies (and (,all-false-name terms a)
+                                (member-equal term terms))
+                           (not (,name term a)))
+                  :hints (("Goal" :in-theory (enable ,all-false-name))))
+
+                (defthm ,(pack$ all-false-name '-when-equal-of-disjoin-and-quote-nil)
+                  (implies (equal (disjoin terms) *nil*)
+                           (,all-false-name terms a))
+                  :hints (("Goal" :in-theory (enable ,all-false-name
+                                                     disjoin))))
+
+                (defthm ,(pack$ 'not- all-false-name '-when-equal-of-disjoin-and-quote-t)
+                  (implies (equal (disjoin terms) *t*)
+                           (not (,all-false-name terms a)))
+                  :hints (("Goal" :in-theory (enable ,all-false-name
+                                                     disjoin)))))))))
 
 ;; Example call (defevaluator+ math-and-if-ev binary-+ binary-* if).
 ;; Takes the name of the evaluator to create, followed by the names of all the
