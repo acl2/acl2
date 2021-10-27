@@ -139,4 +139,30 @@
   ///
   (verify-guards statement-dead)
 
-  (fty::deffixequiv-mutual statements/blocks/cases/fundefs-dead))
+  (fty::deffixequiv-mutual statements/blocks/cases/fundefs-dead)
+
+  (defrule statement-kind-of-statement-dead
+    (equal (statement-kind (statement-dead stmt))
+           (statement-kind stmt))
+    :expand (statement-dead stmt))
+
+  (defrule statement-fundef->get-of-statement-dead
+    (implies (statement-case stmt :fundef)
+             (equal (statement-fundef->get (statement-dead stmt))
+                    (fundef-dead (statement-fundef->get stmt))))
+    :enable statement-dead)
+
+  (defruled block->statements-of-block-dead
+    (equal (block->statements (block-dead block))
+           (statement-list-dead (block->statements block) nil))
+    :enable block-dead)
+
+  (defrule swcase->value-of-swcase-dead
+    (equal (swcase->value (swcase-dead case))
+           (swcase->value case))
+    :expand (swcase-dead case))
+
+  (defrule fundef->name-of-fundef-dead
+    (equal (fundef->name (fundef-dead fdef))
+           (fundef->name fdef))
+    :expand (fundef-dead fdef)))
