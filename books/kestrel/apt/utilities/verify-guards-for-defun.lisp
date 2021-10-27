@@ -16,7 +16,7 @@
 (include-book "kestrel/std/system/guard-verified-p" :dir :system)
 (include-book "becomes-theorem-names")
 (include-book "kestrel/clause-processors/simplify-after-using-conjunction" :dir :system)
-(include-book "kestrel/terms-light/simplify-conjunction" :dir :system)
+(include-book "kestrel/terms-light/drop-clearly-implied-conjuncts" :dir :system)
 
 ;; Generate a verify-guards form for FN.  Returns an
 ;; event.  The verify-guards form assumes the new function and "becomes"

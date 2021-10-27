@@ -11,7 +11,6 @@
 (in-package "ACL2")
 
 (include-book "term-is-conjunctionp")
-(include-book "kestrel/utilities/forms" :dir :system)
 (include-book "clearly-implies-for-disjunctionp")
 
 ;; Treats TERM as a conjunction, dropping conjuncts that are clearly implied by
