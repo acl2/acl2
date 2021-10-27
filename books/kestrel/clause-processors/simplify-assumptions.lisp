@@ -49,7 +49,7 @@
                      (if (and (call-of 'not lit)
                               (= 1 (len (fargs lit))))
                          (let* ((core (farg1 lit))
-                                (core (combine-complementary-conjuncts core))
+                                (core (strengthen-conjuncts-aux core))
                                 (core (drop-clearly-implied-conjuncts core nil)))
                            `(not ,core))
                        lit))))
