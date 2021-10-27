@@ -46,6 +46,14 @@
                            strip-cdrs
                            assoc-equal)))
 
+;;move?
+(defthm if-and-not-eval-of-make-if-term
+  (iff (if-and-not-eval (make-if-term test then else) a)
+       (if (if-and-not-eval test a)
+           (if-and-not-eval then a)
+         (if-and-not-eval else a)))
+  :hints (("Goal" :in-theory (enable make-if-term))))
+
 (defthm if-and-not-eval-when-clearly-implied-by-some-disjunctionp
   (implies (and (clearly-implied-by-some-disjunctionp term true-terms)
                 (all-eval-to-true-with-if-and-not-eval true-terms a))
