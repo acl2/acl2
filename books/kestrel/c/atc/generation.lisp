@@ -3535,51 +3535,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (define atc-gen-bindings-for-cfun-formals ((formals symbol-listp)
-;;                                            (pointers atc-symbol-type-alistp)
-;;                                            (compst-var symbolp))
-;;   :returns (mv (doublets doublet-listp)
-;;                (pointer-hyps true-listp))
-;;   :short "Generate bindings for the formals of an ACL2 function
-;;           that represents a C function."
-;;   :long
-;;   (xdoc::topstring
-;;    (xdoc::p
-;;     "These bindings are used in generated theorems about the C function.
-;;      A non-recursive ACL2 target function may take arrays as parameters.
-;;      However, the corresponding C function takes pointers
-;;      as the corresponding parameters.
-;;      In the correctness theorem for the function,
-;;      those variables are used as pointers and passed to @(tsee exec-fun).
-;;      Thus, in order to be passed to the ACL2 function,
-;;      they need to be turned into the arrays pointed to by the pointers.
-;;      We do this via bindings in the generated theorem,
-;;      which we generate via this function.")
-;;    (xdoc::p
-;;     "We also generate formulas, used as hypotheses in the generated theorems,
-;;      about the pointers that appear in the bindings.
-;;      These hypotheses say that the variables are pointers
-;;      with the expected types."))
-;;   (b* (((when (endp formals)) (mv nil nil))
-;;        (formal (car formals))
-;;        (type (cdr (assoc-eq formal pointers)))
-;;        ((when (not type))
-;;         (atc-gen-bindings-for-cfun-formals (cdr formals) pointers compst-var))
-;;        ((unless (type-case type :pointer))
-;;         (raise "Internal error: pointer ~x0 has type ~x1." formal type)
-;;         (mv nil nil))
-;;        (term `(read-array ,formal ,compst-var))
-;;        (doublet (list formal term))
-;;        (hyps (list `(pointerp ,formal)
-;;                    `(equal (pointer->reftype ,formal)
-;;                            ',(type-pointer->referenced type))))
-;;        ((mv more-doublets more-hyps)
-;;         (atc-gen-bindings-for-cfun-formals (cdr formals) pointers compst-var)))
-;;     (mv (cons doublet more-doublets)
-;;         (append hyps more-hyps))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-gen-cfun-correct-thm ((fn symbolp)
                                   (pointers atc-symbol-type-alistp)
                                   (prec-fns atc-symbol-fninfo-alistp)
