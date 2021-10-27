@@ -18,7 +18,7 @@
 ;(include-book "../utilities/basic")
 (include-book "kestrel/utilities/clean-up-lambdas" :dir :system) ; for drop-unused-lambda-bindings
 (include-book "kestrel/utilities/conjunctions" :dir :system)
-(include-book "kestrel/utilities/conjuncts-and-disjuncts" :dir :system)
+(include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system)
 (include-book "kestrel/utilities/remove-guard-holders" :dir :system)

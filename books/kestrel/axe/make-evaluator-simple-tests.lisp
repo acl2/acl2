@@ -24,7 +24,7 @@
 
 (deftest
 ;todo: what about guards?
-  (make-evaluator-simple len-evaluator
+  (make-evaluator-simple for-len
                          '(len
                            consp
                            cdr
@@ -35,7 +35,7 @@
   (must-be-redundant
    (MUTUAL-RECURSION
     ;; Returns (mv erp result) where erp is nil (no error), :unknown-function, or :count-exceeded.
-    (defund apply-len-evaluator (fn args interpreted-function-alist count)
+    (defund apply-axe-evaluator-for-len (fn args interpreted-function-alist count)
       (declare (type (unsigned-byte 60) count)
                (xargs :measure (make-ord 2 (+ 1 (nfix count)) (make-ord 1 2 0))
                       :verify-guards nil
@@ -48,7 +48,7 @@
           (let* ((formals (second fn))
                  (body (third fn))
                  (alist (pairlis$-fast formals args)))
-            (eval-len-evaluator alist body interpreted-function-alist count))
+            (eval-axe-evaluator-for-len alist body interpreted-function-alist count))
         (let ((args-to-walk-down args))
           (mv-let
             (hit val)
@@ -84,10 +84,10 @@
                          (body (second fn-info))
                          (alist (pairlis$-fast formals args)) ;todo: avoid this consing?
                          )
-                    (eval-len-evaluator alist body interpreted-function-alist count)))))))))
+                    (eval-axe-evaluator-for-len alist body interpreted-function-alist count)))))))))
 
     ;; Returns (mv erp result).
-    (defun eval-len-evaluator (alist form interpreted-function-alist count)
+    (defun eval-axe-evaluator-for-len (alist form interpreted-function-alist count)
       (declare (type (unsigned-byte 60) count)
                (xargs :measure (make-ord 2 (+ 1 (nfix count)) (make-ord 1 1 (acl2-count form)))
                       :guard (and (symbol-alistp alist)
@@ -107,24 +107,24 @@
                           (= 3 (len (fargs form))))
                      (b* ((test-form (second form))
                           ((mv erp test-result)
-                           (eval-len-evaluator alist
+                           (eval-axe-evaluator-for-len alist
                                                test-form interpreted-function-alist
                                                count))
                           ((when erp) (mv erp nil)))
-                       (eval-len-evaluator alist
+                       (eval-axe-evaluator-for-len alist
                                            (if test-result
                                                (third form)
                                              (fourth form))
                                            interpreted-function-alist count))
                    (b* (((mv erp args)
-                         (eval-list-len-evaluator alist (fargs form)
+                         (eval-list-axe-evaluator-for-len alist (fargs form)
                                                   interpreted-function-alist
                                                   count))
                         ((when erp) (mv erp nil)))
-                     (apply-len-evaluator fn args interpreted-function-alist (+ -1 count)))))))))
+                     (apply-axe-evaluator-for-len fn args interpreted-function-alist (+ -1 count)))))))))
 
     ;; returns (mv erp result).
-    (defun eval-list-len-evaluator (alist form-lst interpreted-function-alist count)
+    (defun eval-list-axe-evaluator-for-len (alist form-lst interpreted-function-alist count)
       (declare (type (unsigned-byte 60) count)
                (xargs :measure (make-ord 2 (+ 1 (nfix count)) (make-ord 1 1 (acl2-count form-lst)))
                       :guard (and (symbol-alistp alist)
@@ -134,10 +134,10 @@
       (if (endp form-lst)
           (mv (erp-nil) nil)
         (b* (((mv erp car-res)
-              (eval-len-evaluator alist (car form-lst) interpreted-function-alist count))
+              (eval-axe-evaluator-for-len alist (car form-lst) interpreted-function-alist count))
              ((when erp) (mv erp nil))
              ((mv erp cdr-res)
-              (eval-list-len-evaluator alist (cdr form-lst) interpreted-function-alist count))
+              (eval-list-axe-evaluator-for-len alist (cdr form-lst) interpreted-function-alist count))
              ((when erp) (mv erp nil)))
           (mv (erp-nil) (cons car-res cdr-res)))))
     ) ;end of mut-rec
@@ -145,7 +145,7 @@
 
 
    ;; Returns (mv erp result).
-   (defun apply-len-evaluator-to-quoted-args (fn args interpreted-function-alist)
+   (defun apply-axe-evaluator-for-len-to-quoted-args (fn args interpreted-function-alist)
      (declare (xargs :guard (and (or (symbolp fn) (pseudo-lambdap fn))
                                  (true-listp args)
                                  (all-myquotep args)
@@ -155,7 +155,7 @@
          (let* ((formals (second fn))
                 (body (third fn))
                 (alist (pairlis$-fast formals (unquote-list args))))
-           (eval-len-evaluator alist body interpreted-function-alist *max-fixnum*))
+           (eval-axe-evaluator-for-len alist body interpreted-function-alist *max-fixnum*))
        (let ((args-to-walk-down args))
          (mv-let
            (hit val)
@@ -188,20 +188,20 @@
                         (formals (first fn-info))
                         (body (second fn-info))
                         (alist (pairlis$-fast formals (unquote-list args))))
-                   (eval-len-evaluator alist body interpreted-function-alist *max-fixnum*))))))))))
+                   (eval-axe-evaluator-for-len alist body interpreted-function-alist *max-fixnum*))))))))))
 
   ;; Apply LEN to a single, argument, the list (a b c).  The result is 3 and no
   ;; error is signalled.
-  (defthm len-evaluator-test
-    (equal (apply-len-evaluator 'len '((a b c)) nil *max-fixnum*)
+  (defthm axe-evaluator-for-len-test
+    (equal (apply-axe-evaluator-for-len 'len '((a b c)) nil *max-fixnum*)
            (mv (erp-nil) 3)))
 
   (defun myplus (x y)
     (+ x y))
 
   ;; Make sure we can evaluate an interpreted function:
-  (defthm len-evaluator-test2
-    (equal (eval-len-evaluator (acons 'x 17 nil)
+  (defthm axe-evaluator-for-len-test2
+    (equal (eval-axe-evaluator-for-len (acons 'x 17 nil)
                                '(myplus '2 x)
                                '((MYPLUS (X Y) (BINARY-+ X Y))) ;;(make-interpreted-function-alist '(myplus) (w state))
                                *max-fixnum*)
@@ -212,6 +212,6 @@
 
 (deftest
   (must-fail
-   (make-evaluator-simple len-evaluator
+   (make-evaluator-simple for-len2
                           '((cons car) ;; car is not equivalent to cons!
                             ))))

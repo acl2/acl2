@@ -49,10 +49,17 @@
           (declares (remove-xarg-in-declares :mode declares)) ;todo: handle this better.  this is needed because the event might have :mode :program even if the function was later lifted to logic.  Obviously we shouldn't do this once we support transforming :program mode functions.
           ;; Deal with the :verify-guards xarg.  We always do :verify-guards nil and then
           ;; do verify-guards later, in case the function appears in its own guard-theorem (todo: is that still necessary?):
-          (declares (set-verify-guards-in-declares declares nil))
+          (declares (set-verify-guards-in-declares nil declares))
           (declares (remove-xarg-in-declares :guard-hints declares)) ;we never use the old guard-hints
           (declares (remove-xarg-in-declares :guard-debug declares)) ; verify-guards is done separately
           (declares (remove-xarg-in-declares :guard-simplify declares)) ; verify-guards is done separately
+          (declares (remove-xarg-in-declares :well-founded-relation declares))
+          (declares (if (not rec)
+                        declares ; no well-founded-relation if non-recursive
+                      (let ((well-founded-relation (well-founded-relation fn wrld)))
+                        (if (eq 'o< well-founded-relation)
+                            declares ; it's the default, so omit
+                          (replace-xarg-in-declares :well-founded-relation well-founded-relation declares)))))
           ;; Handle the :measure xarg:
           (declares (if (not rec)
                         declares ;no :measure needed and one should not already be present

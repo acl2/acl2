@@ -55,7 +55,7 @@
   (declare (xargs :guard (and (pseudo-term-listp clause)
                               (symbol-listp target-fns))))
   (let ((calls-to-expand (calls-in-top-level-equalities clause target-fns)))
-    (prog2$ (cw "(clause is ~x0.~%  calls to expand are: ~x1)~%" clause calls-to-expand)
+    (progn$ ;; (cw "(clause is ~x0.~%  calls to expand are: ~x1)~%" clause calls-to-expand)
             `(:expand (,@calls-to-expand)))))
 
 ;; Makes a theorem equating an arbitrary call of FN with a call of NEW-FN on the same arguments.
@@ -93,10 +93,8 @@
                                                ,new-fn
                                                ,@enables)
                                              ,base-theory))
-                         ;; todo: want to use this, but it breaks extract-subfunction:
-                         ;; (and stable-under-simplificationp
-                         ;;      (expand-calls-in-conclusion-equalities clause '(,fn ,new-fn)))
-                         ))
+                         (and stable-under-simplificationp ;; TODO: Don't wait until stable (do on every inductive subgoal)?
+                               (expand-calls-in-conclusion-equalities clause '(,fn ,new-fn)))))
              ;; non-recursive case:
              `(:hints (("Goal" :in-theory (append '(,fn ,new-fn ,@enables) ,base-theory)
                         :do-not '(generalize eliminate-destructors)

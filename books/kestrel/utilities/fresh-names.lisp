@@ -52,7 +52,7 @@
                       (INTERN-IN-PACKAGE-OF-SYMBOL (BINARY-PACK BASE-NAME CURRENT-NUM)
                                                    'REWRITE)
                       SYMS-TO-AVOID))
-            :in-theory (enable FRESH-VAR-NAME)))))
+            :in-theory (enable FRESH-VAR-NAME to-string)))))
 
 
 (local

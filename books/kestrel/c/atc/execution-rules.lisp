@@ -644,14 +644,15 @@
          (atype-array-read-itype
           (pack afixtype '-array-read- ifixtype))
          (name (pack 'exec-arrsub-when- apred '-and- ipred))
-         (formula `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
-                                 ,(atc-syntaxp-hyp-for-expr-pure 'y)
-                                 (pointerp x)
-                                 (,apred (deref x heap))
-                                 (,ipred y)
-                                 (,atype-array-itype-index-okp (deref x heap) y))
-                            (equal (exec-arrsub x y heap)
-                                   (,atype-array-read-itype (deref x heap) y))))
+         (formula `(implies
+                    (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+                         ,(atc-syntaxp-hyp-for-expr-pure 'y)
+                         (pointerp x)
+                         (,apred (read-array x compst))
+                         (,ipred y)
+                         (,atype-array-itype-index-okp (read-array x compst) y))
+                    (equal (exec-arrsub x y compst)
+                           (,atype-array-read-itype (read-array x compst) y))))
          (event `(defruled ,name
                    ,formula
                    :enable (exec-arrsub
@@ -1283,7 +1284,7 @@
              (equal (exec-expr-pure e compst)
                     (exec-arrsub (exec-expr-pure (expr-arrsub->arr e) compst)
                                  (exec-expr-pure (expr-arrsub->sub e) compst)
-                                 (compustate->heap compst))))
+                                 compst)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-unary
@@ -1671,18 +1672,19 @@
                   (equal (block-item-kind item) :declon)
                   (not (zp limit))
                   (equal declon (block-item-declon->get item))
+                  (declon-case declon :var)
                   (equal val+compst1
-                         (exec-expr-call-or-pure (declon->init declon)
+                         (exec-expr-call-or-pure (declon-var->init declon)
                                                  compst
                                                  fenv
                                                  (1- limit)))
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
-                  (equal declor (declon->declor declon))
+                  (equal declor (declon-var->declor declon))
                   (equal (type-of-value val)
                          (type-name-to-type
-                          (make-tyname :specs (declon->type declon)
+                          (make-tyname :specs (declon-var->type declon)
                                        :pointerp (declor->pointerp declor))))
                   (equal compst2
                          (create-var (declor->ident declor) val compst1))
@@ -1708,9 +1710,10 @@
       (:e block-item-kind)
       (:e block-item-declon->get)
       (:e block-item-stmt->get)
-      (:e declon->type)
-      (:e declon->declor)
-      (:e declon->init)
+      (:e declon-kind)
+      (:e declon-var->type)
+      (:e declon-var->declor)
+      (:e declon-var->init)
       (:e declor->pointerp)
       (:e declor->ident))))
 

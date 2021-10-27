@@ -220,7 +220,7 @@
                                                :monitor '()
                                                ))
        ((when erp) (mv erp nil state))
-       (assumptions (acl2::get-conjuncts-of-terms assumptions))
+       (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
        (- (cw "Done simplifying assumptions)~%"))
        (- (and print (cw "(Simplified assumptions: ~x0)~%" assumptions)))
        ;; Do the symbolic simulation:

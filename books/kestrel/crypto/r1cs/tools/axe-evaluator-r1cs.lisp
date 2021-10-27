@@ -37,4 +37,4 @@
             (acl2::mod-expt-fast acl2::mod-expt-fast-unguarded))))
 
 ;; Make the evaluator:
-(acl2::make-evaluator-simple axe-evaluator-r1cs *axe-evaluator-r1cs-fns-and-aliases*)
+(acl2::make-evaluator-simple r1cs *axe-evaluator-r1cs-fns-and-aliases*)

@@ -12,8 +12,36 @@
 
 (include-book "tools/flag" :dir :system)
 (include-book "misc/install-not-normalized" :dir :system)
+(include-book "kestrel/clause-processors/simplify-after-using-conjunction" :dir :system)
+(local (include-book "kestrel/typed-lists-light/pseudo-term-list-listp" :dir :system))
 
-;; TODO: Have my-make-flag (or make-flag) put in the :ruler-extenders of the old function by default.
+(local (in-theory (disable disjoin)))
+
+(defun my-make-flag-clause-processor (clause)
+  (declare (xargs :guard (pseudo-term-listp clause)))
+  (let* ((clause (first (sublis-var-and-simplify-clause-processor clause))) ; deals with the flag var?
+         (clause (first (flatten-literals-clause-processor clause))) ; is this needed?
+         ;; todo: maybe call simplify-after-using-conjunction-clause-processor here:
+         (clause (first (push-o-p-clause-processor clause)))
+         (clauses (simple-subsumption-clause-processor clause))  ;todo: doesn't yet deal with the o-p claims because they appear not as conjuncts
+         )
+    clauses))
+
+;todo: add :well-formedness proof
+(defthm my-make-flag-clause-processor-correct
+  (implies (and (pseudo-term-listp clause)
+                (alistp a)
+                (my-make-flag-eval (conjoin-clauses (my-make-flag-clause-processor clause)) a))
+           (my-make-flag-eval (disjoin clause) a))
+  :rule-classes :clause-processor
+  :hints (("Goal" :in-theory (e/d ( ;sublis-var-and-simplify-clause-processor
+                                   simple-subsumption-clause-processor
+                                   FLATTEN-LITERALS-CLAUSE-PROCESSOR
+                                   SUBLIS-VAR-AND-SIMPLIFY-CLAUSE-PROCESSOR
+                                   PUSH-O-P-CLAUSE-PROCESSOR
+                                   )
+                                  (DISJOIN-LST)))))
+
 
 ;dup
 (defun make-doublets (xs ys)
@@ -93,7 +121,9 @@
                 :hints (("Goal" :use (:instance (:termination-theorem ,fn ,termination-theorem-subst))
                          ;; :in-theory nil ;;too restrictive
                          :in-theory (theory 'minimal-theory) ;;still too restrictive?
-                         ))))))
+                         )
+                        ;; todo: consider also handling o-p of if
+                        ("goal'" :clause-processor (my-make-flag-clause-processor clause)))))))
 
 ;; This is a wrapper around make-flag that attempts to be more robust.  It uses
 ;; the :termination-theorem of the given function in the :hints supplied to

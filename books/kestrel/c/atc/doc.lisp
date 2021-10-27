@@ -20,7 +20,7 @@
   :parents (c)
 
   :short "ATC (<b>A</b>CL2 <b>T</b>o <b>C</b>),
-          a C code generator for ACL2."
+          a proof-generating C code generator for ACL2."
 
   :long
 
@@ -346,7 +346,7 @@
        they just represent variables that may have been modified.")
      (xdoc::li
       "A call of @('fni') on variables identical to its formal parameters,
-       when the C types or the variables are
+       when the C types of the variables are
        the same as the C types of the formal parameters,
        @('L') is @('t'),
        @('T') is @('void'),
@@ -417,7 +417,7 @@
        this is the pattern that ATC looks for.")
      (xdoc::li
       "A term
-       @('(let ((var (<type1>-array-write<type2> var term1 term2))) body)'),
+       @('(let ((var (<type1>-array-write-<type2> var term1 term2))) body)'),
        where @('<type1>') and @('<type2>') are among"
       (xdoc::ul
        (xdoc::li "@('schar')")
@@ -475,7 +475,7 @@
        that is
        either a call of a recursive target function @('fnj') with @('j < i')
        whose body term returns @('void') and affects @('(var1 ... varn)')
-       or an @(tsee if) whose test is an expression term returning a boolean
+       or an @(tsee if) whose test is an expression term returning boolean
        (not a test @('(mbt ...)') or @('(mbt$ ...)')), and
        @('body') is a statement term for @('fni') with loop flag @('L')
        returning @('T') and affecting @('vars').
@@ -494,7 +494,7 @@
      (xdoc::li
       "A call of a recursive target function @('fnj') with @('j < i'),
        on variables identical to its formal parameters,
-       when the C types or the variables are
+       when the C types of the variables are
        the same as the C types of the formal parameters,
        @('L') is @('nil'),
        @('T') is @('void'),
@@ -562,7 +562,7 @@
        the C types of the formal parameters of @('fnj')
        and where the body of @('fnj') is
        a statement term for @('fnj')
-       returning @('T') and affeting @('vars').
+       returning @('T') and affecting @('vars').
        The restriction @('j < i') means that
        no (direct or indirect) recursion is allowed in the C code
        and the target functions must be specified
@@ -601,7 +601,7 @@
        (xdoc::li "@('hex')"))
       "when @('T') is the C type corresponding to @('<type>')
        and the quoted integer is non-negative and in the range of @('T').
-       This represents a C integer constants
+       This represents a C integer constant
        of the C type indicated by the name of the function,
        expressed in decimal, octal, or hexadecimal base.")
      (xdoc::li
@@ -677,7 +677,7 @@
        the operator yields a well-defined result.
        These functions covers all the C strict pure binary operators;
        the non-strict operators @('&&') and @('||'),
-       and the non-pure operatos @('='), @('+='), etc.,
+       and the non-pure operators @('='), @('+='), etc.,
        are represented differently.")
      (xdoc::li
       "A call of a function @('<type1>-from-<type2>')

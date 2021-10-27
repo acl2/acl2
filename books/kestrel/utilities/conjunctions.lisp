@@ -53,8 +53,8 @@
 ;; Return a list of terms equivalent (in the sense of IFF -- or perhaps EQUAL?)
 ;; to the conjunction of TERMS, by flattening (translated) conjunctions (which
 ;; will be calls to IF).  TODO: Also handle (if x 'nil y).  TODO: Look at
-;; get-conjuncts-of-term for an even more aggressive version of this tool (just
-;; use that one?).
+;; get-conjuncts-of-term (or even get-conjuncts-of-term2) for an even more
+;; aggressive version of this tool (just use that one?).
 (defun get-conjuncts-list (terms)
   (declare (xargs :guard (pseudo-term-listp terms)))
   (if (endp terms)

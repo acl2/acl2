@@ -396,8 +396,7 @@
 
 ; Each member of this alist is of the form (fn . nil), for non-recursive fn, or
 ; else (fn . measure).  It is assumed that the well-founded-relation is O< and
-; the domain is O-P.  However, do$ uses L< and LEXP thanks to hacks in the
-; basic checking code, all of which are marked by ``Do$ Wart'' comments.
+; the domain is O-P.
 
 ; This list can be produced by evaluating
 
@@ -469,13 +468,6 @@
     (DEREF-MACRO-NAME)
     (DISABLEDP-FN)
     (DISABLEDP-FN-LST ACL2-COUNT RUNIC-MAPPING-PAIRS)
-
-; Do$ Wart: Well, sort of!  O< over the O-P domain are the well-founded
-; relation and domain assumed for all the other functions in
-; *system-verify-guards-alist*.  But do$ uses L< over LEXP.  We don't say that
-; here but other warts in the code make it so!
-
-    (DO$ LEX-FIX (APPLY$ MEASURE-FN (CONS ALIST 'NIL)))
     (DOUBLET-LISTP ACL2-COUNT X)
     (DUPLICATE-KEYS-ACTION)
     (EMPTY-LOOP$-AS-TUPLEP ACL2-COUNT TUPLE)

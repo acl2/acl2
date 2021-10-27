@@ -2218,13 +2218,18 @@
 
       (cond
        ((or (apply$-primp fn)
-            (assoc-eq fn *apply$-boot-fns-badge-alist*)
-            (get-warrantp fn wrld))
+            (assoc-eq fn *apply$-boot-fns-badge-alist*))
 
-; Fn doesn't need a warrant or else is already warranted, so we return T,
-; meaning no action is needed.  It is hard to see how the get-warrantp above
-; could succeed, since the (defwarrant fn) event that got us here would have
-; been recognized as redundant, but we check just to make sure.
+; We formerly included one more disjunct: (get-warrantp fn wrld).  But in that
+; case we could get an error when including identical certified books in the
+; example shown just below, because for bk2.lisp, the defwarrant event had a
+; different expansion at include-book time (after having included bk1) then at
+; certification time, resulting in a redefinition error.
+
+;   (in-package "ACL2")
+;   (include-book "projects/apply/top" :dir :system)
+;   (defun foo (x) x)
+;   (defwarrant foo)
 
         (value t))
        ((eq (getpropc fn 'symbol-class nil wrld)
@@ -2372,9 +2377,8 @@
               state
               (observation
                (cons 'defwarrant fn)
-               "The function ~x0 is either built-in and doesn't need a ~
-                warrant or it already has a warrant.  This event thus has no ~
-                effect.~|~%"
+               "The function ~x0 is built-in and already has a warrant when ~
+                ACL2 starts up.  This event thus has no effect.~|~%"
                fn))
           (value `(with-output
                     :stack :pop
@@ -3190,15 +3194,18 @@
       (and (= (len x) (len y))
            (if (atom x) (< x y) (d< x y)))))
 
-; WARNING: Like the other loop$ scions above, do$ is admitted in :program mode
-; and converted to :logic mode during the normal build.  In
+; WARNING: Much like the other loop$ scions above, do$ is admitted in :program
+; mode and converted to :logic mode during the normal build in
 ; boot-strap-pass-2-b.lisp, where we convert all the loop$ scions to
-; guard-verified :logic mode and warrant them.  But do$ is exceptional because
-; its measure depends on apply$, its well-founded relation, L<, is not known
-; during the build to be well-founded, and the domain of L<, LEXP, is not given
-; in a well-founded-relation rule because there's no such rule.  So there are
-; several ``Do$ Warts'' sprinkled in the code to permit the entire build to
-; treat do$ more or less like the other loop$ scions.
+; guard-verified :logic mode and warrant them.  However, DO$ is exceptional in
+; a couple of ways.  (1) Its measure depends on apply$, and we work around this
+; explicitly in chk-acceptable-defwarrant (see the Do$ Wart there).  (2) Its
+; well-founded relation is L< with domain LEXP, whose necessary proof of
+; well-foundedness seems much more appropriate for a book, where it has existed
+; well before the addition of DO$, than in the build.  We get around that issue
+; by "cheating" in primordial-world-globals, where we add the combination of L<
+; and LEXP to the well-founded-relation-alist; but we verify that "cheat" in
+; check-system-events, as noted in comments in the definitions of both of them.
 
 (defun do$ (measure-fn alist do-fn finally-fn
                        untrans-measure untrans-do-loop$)
@@ -3212,7 +3219,7 @@
                               (apply$-guard finally-fn '(nil)))
                   :mode :program
                   :measure (lex-fix (apply$ measure-fn (cons alist 'nil)))
-;                 :well-founded-relation l< ; <--- Do$ Wart
+                  :well-founded-relation l<
                   ))
 
 ; I don't know that the do-fn or finally-fn actually return well-formed
@@ -3257,7 +3264,6 @@
            (apply$ measure-fn (list new-alist))
            :do$-measure-did-not-decrease)
        :do$-measure-did-not-decrease)))))
-
 )
 
 ;-----------------------------------------------------------------

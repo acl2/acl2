@@ -31,7 +31,7 @@
 (in-package "SV")
 (include-book "svstmt")
 (include-book "../mods/svmods")
-(include-book "../svex/compose")
+;; (include-book "../svex/compose")
 (include-book "../svex/constraints")
 (include-book "../svex/env-ops")
 (include-book "../svex/rewrite")

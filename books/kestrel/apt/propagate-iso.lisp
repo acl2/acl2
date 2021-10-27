@@ -47,7 +47,7 @@
 (include-book "kestrel/std/util/defiso" :dir :system)
 (include-book "kestrel/utilities/conjunctions" :dir :system)
 (include-book "kestrel/utilities/defining-forms" :dir :system)
-(include-book "kestrel/utilities/negate-term" :dir :system)
+(include-book "kestrel/utilities/negate-form" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "tools/remove-hyps" :dir :system)
 (include-book "kestrel/utilities/make-and-nice" :dir :system)
@@ -1573,7 +1573,7 @@ Example: int10-map-p-->-int20-map-p
                                        thm-name new-to-old-p iso-infos))
     (('IF p t1 t2)
      (append (type-theorems-for-new-iso-fn t2 formal convert-fn-name renaming-pred
-                                           (cons (negate-term p) condns)
+                                           (cons (acl2::negate-form p) condns)
                                            thm-name new-to-old-p iso-infos)
              (type-theorems-for-new-iso-fn t1 formal convert-fn-name renaming-pred (cons p condns)
                                            thm-name new-to-old-p iso-infos)))

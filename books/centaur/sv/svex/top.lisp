@@ -33,7 +33,7 @@
 (include-book "4vmask")
 (include-book "aig-arith")
 ;; Not bits -- it's just lemmas about b-and/b-not/etc., should be local
-(include-book "compose")
+(include-book "assigns-compose")
 (include-book "env-ops")
 (include-book "eval")
 (include-book "lattice")

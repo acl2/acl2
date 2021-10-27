@@ -1442,22 +1442,23 @@
      (prog2$
       x1 ; otherwise we get a "not used" complaint
       (cond ((int= n 1)
-             (mv "an ambiguous dive to first arg of an OR"
+             (mv "of an ambiguity: the first argument of the OR term occurs ~
+                  twice in the IF term that represents the OR term"
                  nil nil nil))
             ((int= n 2)
              (addr-recur 3
                          (or-addr (1- n) x2 iff-flg)))
             (t
-             (mv "an index that is out of range"
+             (mv "of an index that is out of range"
                  nil nil nil)))))
     (('if x1 x2 *t*) ; see untranslate1
      (cond ((int= n 1)
             (cond ((ffn-symb-p x1 'not)
                    (mv '(1) x1 t t))
                   (t
-                   (mv "an unexpected case of diving to first argument: for ~
-                        an if-then-else term with THEN branch of nil, the ~
-                        TEST was expected to be a call of NOT."
+                   (mv "the first argument of the OR term is displayed as a ~
+                        call of NOT, which does not exist in the first ~
+                        argument of the IF term that represents the OR term"
                        nil nil nil))))
            (t
             (addr-recur 2
@@ -1472,9 +1473,9 @@
      (cond ((int= n 1) ; presumably in a recursive call of this function
             (mv nil term iff-flg nil))
            (t
-            (mv "a non-IF term encountered when diving to the first argument ~
-                 (perhaps because your DV argument was greater than the ~
-                 number of disjuncts)."
+            (mv "a non-IF term was encountered when diving to the first ~
+                 argument (perhaps because your DV argument was greater than ~
+                 the number of disjuncts)."
                 nil nil nil))))))
 
 (defun and-addr (n term iff-flg)
@@ -1504,9 +1505,9 @@
             (cond ((ffn-symb-p x1 'not)
                    (mv '(1) x1 t t))
                   (t
-                   (mv "an unexpected case of diving to first argument: for ~
-                        an if-then-else term with THEN branch of nil, the ~
-                        TEST was expected to be a call of NOT"
+                   (mv "of an unexpected case of diving to the first ~
+                        argument: for an if-then-else term with THEN branch ~
+                        of nil, the TEST was expected to be a call of NOT"
                        nil nil nil))))
            (t
             (addr-recur 3
@@ -1515,9 +1516,9 @@
      (cond ((int= n 1) ; presumably in a recursive call of this function
             (mv nil term iff-flg nil))
            (t
-            (mv "a non-IF term encountered when diving to the first argument ~
-                 (perhaps because your DV argument was greater than the ~
-                 number of conjuncts)"
+            (mv "a non-IF term was encountered when diving to the first ~
+                 argument (perhaps because your DV argument was greater than ~
+                 the number of conjuncts)"
                 nil nil nil))))))
 
 (table dive-into-macros-table nil nil
@@ -1592,6 +1593,16 @@
          proof-builder, please contact the ACL2 implementors."
         `(car/cdr^n ,n ,term)))
    (t (car/cdr^n (1- n) (fargn term 1)))))
+
+(defmacro expand-address-msg (str &rest args)
+  `(mv ,str
+       (cons (cons #\0 (if accumulated-addr-r
+                           (msg "The dive via address ~x0 brings us to"
+                                (reverse accumulated-addr-r))
+                         "The current subterm is"))
+             (cons (cons #\f
+                         (if accumulated-addr-r " further" ""))
+                   ,(make-fmt-bindings (cdr *base-10-chars*) args)))))
 
 (defun expand-address (addr raw-term term abbreviations iff-flg
                             accumulated-addr-r wrld)
@@ -1762,18 +1773,14 @@
                                    (abbreviate term abbreviations)
                                    iff-flg))
                         (cond
-                         ((stringp and-or-addr)
-                          (mv "The dive via address ~x0 brings us to the ~x4 ~
-                               term~%~ ~ ~y1,~|~%which translates to~%~ ~ ~
-                               ~y2.~|~%The requested dive into this ~x4 term ~
-                               is problematic, because of ~@3.  Try using ~
-                               DIVE instead (after using PP to find the ~
-                               appropriate address)."
-                              (list (cons #\0 (reverse accumulated-addr-r))
-                                    (cons #\1 raw-term)
-                                    (cons #\2 term)
-                                    (cons #\3 and-or-addr)
-                                    (cons #\4 (car raw-term)))))
+                         ((msgp and-or-addr)
+                          (expand-address-msg
+                           "~@0 the ~x4 term~%~ ~ ~y1,~|~%which translates ~
+                            to~%~ ~ ~y2.~|~%The requested dive into this ~x4 ~
+                            term is problematic, because ~@3.  Try using DIVE ~
+                            instead (you may use PP to find the appropriate ~
+                            address)."
+                           raw-term term and-or-addr (car raw-term)))
                          (finish-not-p
                           (cond
                            ((and (cdr addr)
@@ -1786,16 +1793,16 @@
                              :new-accumulated-addr-r
                              (cons 1 (cons (car addr) accumulated-addr-r))))
                            (t
-                            (mv "The dive via address ~x0 apparently brings ~
-                                 us to the NOT term ~x1, which does not ~
-                                 actually exist in the internal syntax of the ~
-                                 current term, namely:~%~x2.  Try using DIVE ~
-                                 instead (after using PP to find the ~
-                                 appropriate address)."
-                                (list (cons #\0 (reverse (cons (car addr)
-                                                               accumulated-addr-r)))
-                                      (cons #\1 (nth (car addr) raw-term))
-                                      (cons #\2 term))))))
+                            (let ((accumulated-addr-r
+                                   (cons (car addr) accumulated-addr-r)))
+                              (expand-address-msg
+                               "~@0 the NOT term ~x1, which does not actually ~
+                                exist in the internal syntax of the current ~
+                                term, namely:~%~x2.  Try using DIVE instead ~
+                                (you may use PP to find the appropriate ~
+                                address)."
+                               (nth (car addr) raw-term)
+                               term)))))
                          (t
                           (expand-address-recurse
                            :ans (append and-or-addr rest-addr)
@@ -1825,29 +1832,26 @@
 
                  (cond
                   ((= (car addr) 1)
-                   (mv "The dive via address ~x0 brings us to the CASE ~
-                        term~%~ ~ ~x1,~%which corresponds to the translated ~
-                        term~%~ ~ ~x2.~%A further dive to the first argument ~
-                        doesn't really make sense here."
-                       (list (cons #\0 (reverse accumulated-addr-r))
-                             (cons #\1 raw-term)
-                             (cons #\2 term))))
+                   (expand-address-msg
+                    "~@0 the CASE term~%~ ~ ~x1,~%which corresponds to the ~
+                     translated term~%~ ~ ~x2.~%A~@f dive to the first ~
+                     argument doesn't really make sense here."
+                    raw-term
+                    term))
                   ((not (and (consp (cdr addr))
                              (member-equal (cadr addr) '(0 1))))
-                   (mv "The dive via address ~x0 brings us to the CASE ~
-                        term~%~ ~ ~x1,~%A further dive past argument number ~
-                        ~x2 to the zeroth or first ``argument'' is required ~
-                        at this point.~%"
-                       (list (cons #\0 (reverse accumulated-addr-r))
-                             (cons #\1 raw-term)
-                             (cons #\2 (car addr)))))
+                   (expand-address-msg
+                    "~@0 the CASE term~%~ ~ ~x1,~%A~@f dive past argument ~
+                     number ~x2 to the zeroth or first ``argument'' is ~
+                     required at this point.~%"
+                    raw-term
+                    (car addr)))
                   ((and (= (cadr addr) 0)
                         (= (car addr) (1- (length raw-term))))
-                   (mv "The dive via address ~x0 brings us to the CASE ~
-                        term~%~ ~ ~x1,~%A further dive to the ``otherwise'' ~
-                        expression is not allowed."
-                       (list (cons #\0 (reverse accumulated-addr-r))
-                             (cons #\1 raw-term))))
+                   (expand-address-msg
+                    "~@0 the CASE term~%~ ~ ~x1,~%A~@f dive to the ~
+                     ``otherwise'' expression is not allowed."
+                    raw-term))
                   (t
                    (let* ((lst (if (= (cadr addr) 1)
                                    (if (= (car addr) (1- (length raw-term)))
@@ -1871,8 +1875,9 @@
                           :new-accumulated-addr-r (cons (car addr) (cons (cadr addr) accumulated-addr-r)))
                        (mv t
                            (er hard 'expand-address
-                               "Surprise!  Unable to dive into raw-term ~x0, which is term ~x1,
-                           using list ~x2.  So far we have DV-ed using ~x3."
+                               "Surprise!  Unable to dive into raw-term ~x0, ~
+                                which is term ~x1, using list ~x2.  So far we ~
+                                have DV-ed using ~x3."
                                raw-term
                                term
                                lst
@@ -1897,20 +1902,18 @@
                 (cond
                  ((not (and (consp (cdr addr))
                             (member-equal (cadr addr) '(0 1))))
-                  (mv "The dive via address ~x0 brings us to the COND term~%~ ~
-                       ~ ~x1,~%A further dive past argument number ~x2 to the ~
-                       zeroth or first ``argument'' is required at this ~
-                       point.~%"
-                      (list (cons #\0 (reverse accumulated-addr-r))
-                            (cons #\1 raw-term)
-                            (cons #\2 (car addr)))))
+                  (expand-address-msg
+                   "~@0 the COND term~%~ ~ ~x1,~%A~@f dive past argument ~
+                    number ~x2 to the zeroth or first ``argument'' is ~
+                    required at this point.~%"
+                   raw-term
+                   (car addr)))
                  ((and (= (cadr addr) 0)
                        (= (car addr) (1- (length raw-term))))
-                  (mv "The dive via address ~x0 brings us to the COND term~%~ ~
-                       ~ ~x1,~%A further dive to the ``T'' expression is not ~
-                       allowed."
-                      (list (cons #\0 (reverse accumulated-addr-r))
-                            (cons #\1 raw-term))))
+                  (expand-address-msg
+                   "~@0 the COND term~%~ ~ ~x1,~%A~@f dive to the ``T'' ~
+                    expression is not allowed."
+                   raw-term))
                  (t
                   (let* ((lst (if (= (cadr addr) 1)
                                   (if (= (car addr) (1- (length raw-term)))
