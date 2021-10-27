@@ -973,5 +973,4 @@
         (exec-switch-rest cases default target cstate limit)))
       :flag exec-switch-rest)
 
-    :hints (("Goal") ; temporary workaround for DEFTHM-FLAG bug
-            exec-of-dead-hints)))
+    :hints (exec-of-dead-hints)))
