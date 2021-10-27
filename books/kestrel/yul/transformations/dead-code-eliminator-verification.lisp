@@ -54,11 +54,11 @@
     "(exec (xform ast) cstate) = (exec ast cstate)")
    (xdoc::p
     "where @('exec') is one of the execution functions
-     (e.g. @(tsee exec-expression)),
+     (e.g. @(tsee exec-statement)),
      @('ast') is an AST of Yul abstract syntax
-     (e.g. a value of type @(tsee expression)),
+     (e.g. a value of type @(tsee statement)),
      @('xform') is the function that transforms @('ast')
-     (e.g. @(tsee expression-dead)),
+     (e.g. @(tsee statement-dead)),
      and @('cstate') is a computation state.
      But the actual formal assertion we prove is slightly different,
      for two reasons explained below.")
