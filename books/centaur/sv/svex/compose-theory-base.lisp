@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "eval")
+(include-book "svex-lattice")
 (include-book "rewrite-base")
 (include-book "alist-equiv")
 (include-book "rsh-concat")
@@ -2093,10 +2093,10 @@
 (defsection netevalcomp-p
   (defun-sk netevalcomp-p (comp network)
     (exists ordering
-            (svex-alist-eval-equiv comp
-                                   (svex-alist-compose
-                                    (neteval-ordering-compile ordering network)
-                                    (svarlist-x-subst (svex-alist-keys network))))))
+            (svex-alist-[= comp
+                           (svex-alist-compose
+                            (neteval-ordering-compile ordering network)
+                            (svarlist-x-subst (svex-alist-keys network))))))
 
   (in-theory (disable netevalcomp-p netevalcomp-p-suff))
 

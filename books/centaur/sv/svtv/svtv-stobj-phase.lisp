@@ -41,7 +41,8 @@
                      '(:in-theory (enable svtv-data$ap))))
   :returns new-svtv-data
   (b* ((svtv-data (update-svtv-data->phase-fsm (svtv-compose-assigns/delays
-                                                (svtv-data->flatnorm svtv-data))
+                                                (svtv-data->flatnorm svtv-data)
+                                                (svtv-data->phase-fsm-setup svtv-data))
                                                svtv-data)))
     (update-svtv-data->phase-fsm-validp t svtv-data))
   ///

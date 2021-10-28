@@ -465,6 +465,10 @@ acl2::4v-monotonicity).</p>"
     (4veclist-[= nil x)
     :hints ((acl2::witness)))
 
+  (defthm 4veclist-[=-refl
+    (4veclist-[= x x)
+    :hints ((acl2::witness)))
+
   (defthm 4veclist-[=-of-cons
     (iff (4veclist-[= (cons a b) c)
          (and (4vec-[= a (car c))

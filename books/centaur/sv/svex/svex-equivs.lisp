@@ -31,8 +31,6 @@
 (in-package "SV")
 (include-book "eval")
 
-;; NOTE: this currently isn't included anywhere
-
 (defsection svex-eval-equiv
   (def-universal-equiv svex-eval-equiv
     :qvars (env)

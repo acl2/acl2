@@ -152,7 +152,11 @@ the original namespace.</li>
                                    (<fn>)))))
 
   (defret no-duplicate-keys-of-<fn>
-    (no-duplicatesp-equal (svex-alist-keys new-x))))
+    (no-duplicatesp-equal (svex-alist-keys new-x)))
+
+  (defret svex-alist-keys-of-<fn>
+    (set-equiv (svex-alist-keys new-x)
+               (svex-alist-keys x))))
 
 
 (define svex-alist-pair-initial-masks ((x svex-alist-p))
@@ -192,7 +196,11 @@ the original namespace.</li>
                   (netcomp-p x y))
              (netcomp-p new-x y))
     :hints(("Goal" :in-theory (e/d (netcomp-p-transitive2)
-                                   (<fn>))))))
+                                   (<fn>)))))
+
+  (defret svex-alist-keys-of-<fn>
+    (set-equiv (svex-alist-keys new-x)
+               (svex-alist-keys x))))
   
 
 ;; Need to experiment to see if it's best to split variables directly into bits
@@ -311,6 +319,11 @@ the original namespace.</li>
    :hints(("Goal" :in-theory (enable svex-alist-eval-equiv-in-terms-of-envs-equivalent)))))
 
 
+(local (defthm svex-alist-keys-of-svex-alist-compose
+         (Equal (svex-alist-keys (svex-alist-compose x a))
+                (svex-alist-keys x))
+         :hints(("Goal" :in-theory (enable svex-alist-keys svex-alist-compose)))))
+
 (define svex-alist-to-split-split-part ((x svex-alist-p)
                                         (splittab svar-splittab-p))
   :returns (new-x svex-alist-p)
@@ -325,7 +338,17 @@ the original namespace.</li>
                            (svex-alist-reduce (svar-splittab-vars splittab)
                                               (svex-alist-to-split x splittab)))
     :hints(("Goal" :in-theory (enable svex-alist-to-split
-                                      svex-alist-eval-equiv)))))
+                                      svex-alist-eval-equiv))))
+
+  (defret svex-alist-keys-of-<fn>
+    (equal (svex-alist-keys new-x)
+           (svar-splittab-vars splittab))))
+
+(local
+ (defthm svex-alist-keys-of-svex-alist-rewrite-top
+   (equal (svex-alist-keys (svex-alist-rewrite-top x :verbosep verbosep))
+          (svex-alist-keys x))
+   :hints(("Goal" :in-theory (enable svex-alist-rewrite-top)))))
 
 (define svex-assigns-compose-phase3 ((x svex-alist-p)
                                      (masks svex-mask-alist-p))
@@ -432,7 +455,16 @@ the original namespace.</li>
                   (no-duplicatesp-equal (svar-splittab-vars splittab))
                   (no-duplicatesp-equal (alist-keys splittab))
                   (subsetp-equal (alist-keys splittab)
-                                 (svex-alist-keys x))))))
+                                 (svex-alist-keys x)))))
+
+  (defret svex-alist-keys-of-<fn>
+    (implies (and (not err) splittab)
+             (equal (svex-alist-keys new-x)
+                    (svar-splittab-vars splittab))))
+
+  (defret subsetp-splittab-keys-of-<fn>-trans
+    (implies (subsetp-equal (svex-alist-keys x) y)
+             (subsetp-equal (alist-keys splittab) y))))
              
 
 (local (in-theory (disable fast-alist-clean)))
@@ -490,6 +522,11 @@ the original namespace.</li>
                                 (svex-alist-compose x a))
          :hints(("Goal" :in-theory (enable svex-alist-eval-equiv-in-terms-of-envs-equivalent)))))
 
+(local (defthm svex-alist-keys-of-svex-alist-compose*
+         (equal (svex-alist-keys (svex-alist-compose* x a))
+                (svex-alist-keys x))
+         :hints(("Goal" :in-theory (enable svex-alist-keys svex-alist-compose*)))))
+
 (define svex-assigns-compose-phase4 ((x svex-alist-p))
   :returns (mv err (new-x svex-alist-p))
   (b* ((final-masks (fast-alist-clean (svexlist-mask-alist (svex-alist-vals x))))
@@ -532,15 +569,59 @@ the original namespace.</li>
     (implies (netcomp-p x y)
              (netcomp-p new-x y))
     :hints(("Goal" :in-theory (e/d (netcomp-p-transitive2)
-                                   (<fn>))))))
+                                   (<fn>)))))
+
+  (defret svex-alist-keys-of-<fn>
+    (implies (not err)
+             (equal (svex-alist-keys new-x)
+                    (svex-alist-keys x)))))
+
+
+
+(local (defthm svex-alist-keys-of-append
+         (equal (svex-alist-keys (Append a b))
+                (append (svex-alist-keys a)
+                        (svex-alist-keys b)))
+         :hints(("Goal" :in-theory (enable svex-alist-keys)))))
+
+(local (defthm svex-alist-keys-of-removekeys
+         (equal (svex-alist-keys (svex-alist-removekeys keys x))
+                (set-difference-equal (svex-alist-keys x) (svarlist-fix keys)))
+         :hints(("Goal" :in-theory (enable svex-alist-removekeys svex-alist-keys)))))
+
+(local
+ (defret svex-alist-keys-of-svex-alist-splittab-unsplit-keys
+   (set-equiv (svex-alist-keys new-x)
+              (append (alist-keys (svar-splittab-fix splittab))
+                      (set-difference-equal (svex-alist-keys x) (svar-splittab-vars splittab))))
+   :hints(("Goal" :in-theory (enable <fn>)))
+   :fn svex-alist-splittab-unsplit-keys))
+
+(local
+ (defret svex-alist-keys-of-svex-alist-from-split
+   (set-equiv (svex-alist-keys new-x)
+              (append (alist-keys (svar-splittab-fix splittab))
+                      (set-difference-equal (svex-alist-keys x) (svar-splittab-vars splittab))))
+   :hints(("Goal" :in-theory (enable <fn>)))
+   :fn svex-alist-from-split))
+
+
+(local (defthm svex-lookup-of-fast-alist-fork
+         (equal (svex-lookup v (fast-alist-fork x y))
+                (svex-lookup v (append y x)))
+         :hints(("Goal" :in-theory (enable svex-lookup)))))
+
+(local (defthm fast-alist-fork-under-svex-alist-eval-equiv
+         (svex-alist-eval-equiv (fast-alist-fork a b)
+                                (append b a))
+         :hints(("Goal" :in-theory (enable svex-alist-eval-equiv)))))
 
 (define svex-assigns-compose-phase5 ((unsplit svex-alist-p)
                                      (split svex-alist-p)
                                      (splittab svar-splittab-p))
   :returns (new-x svex-alist-p)
   (b* ((re-unsplit (svex-alist-from-split split splittab)))
-    (with-fast-alist re-unsplit
-      (svex-alist-compose* unsplit re-unsplit)))
+    (fast-alist-fork (svex-alist-fix unsplit) (make-fast-alist re-unsplit)))
   ///
   (defret netcomp-p-of-<fn>
     (implies (and (netcomp-p split (svex-alist-to-split unsplit splittab))
@@ -567,7 +648,13 @@ the original namespace.</li>
                                  (svex-alist-keys unsplit)))
              (netcomp-p new-x x))
     :hints(("Goal" :in-theory (e/d (netcomp-p-transitive2)
-                                   (<fn>))))))
+                                   (<fn>)))))
+
+  (defret svex-alist-keys-of-<fn>
+    (set-equiv (svex-alist-keys new-x)
+               (append (alist-keys (svar-splittab-fix splittab))
+                       (set-difference-equal (svex-alist-keys split) (svar-splittab-vars splittab))
+                       (svex-alist-keys unsplit)))))
 
 
 (define svex-assigns-compose1 ((x svex-alist-p)
@@ -588,13 +675,23 @@ the original namespace.</li>
   ///
   (defret netcomp-p-of-<fn>
     (netcomp-p xx x)
-    :hints(("Goal" :in-theory (disable if*))))
+    :hints(("Goal" :in-theory (disable if*
+                                       svex-alist-keys-of-svex-assigns-compose-phase2))))
 
   (defret netcomp-p-of-<fn>-trans
     (implies (netcomp-p x y)
              (netcomp-p xx y))
     :hints(("Goal" :in-theory (e/d (netcomp-p-transitive2)
-                                   (<fn>))))))
+                                   (<fn>)))))
+
+  (local (defthm set-difference-subset
+           (implies (subsetp-equal x y)
+                    (equal (set-difference-equal x y) nil))))
+
+  (defret svex-alist-keys-of-<fn>
+    (implies (not err)
+             (set-equiv (svex-alist-keys xx)
+                        (svex-alist-keys x)))))
 
 (local (defthm svex-alist-compose-rw-under-svex-alist-eval-equiv
          (svex-alist-eval-equiv (svex-alist-compose-rw x a)
@@ -607,7 +704,11 @@ the original namespace.</li>
   :short "Given an alist mapping variables to assigned expressions, compose them together into full update functions."
   :returns (xx svex-alist-p)
   (b* (((mv err ans) (svex-assigns-compose1 x :rewrite rewrite))
-       (- (and err (raise "~@0" err)))
+       ;; hack to get a logically reasonable result when error
+       (ans (if err
+                (prog2$ (raise "~@0" err)
+                        (svex-alist-fix x))
+              ans))
        (final-ans (b* ((vars (svex-alist-keys x))
                        (xes-alist (svarlist-x-subst vars)))
                     (with-fast-alist xes-alist (svex-alist-compose-rw
@@ -618,4 +719,8 @@ the original namespace.</li>
     final-ans)
   ///
   (defret netevalcomp-p-of-<fn>
-    (netevalcomp-p xx x)))
+    (netevalcomp-p xx x))
+
+  (defret svex-alist-keys-of-<fn>
+    (set-equiv (svex-alist-keys xx)
+               (svex-alist-keys x))))
