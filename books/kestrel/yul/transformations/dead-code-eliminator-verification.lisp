@@ -576,11 +576,13 @@
   ((defrule lemma
      (equal (add-vars-values vars
                              vals
-                             (cstate nil (fstate-dead (cstate->functions cstate))))
+                             (cstate nil
+                                     (fstate-dead (cstate->functions cstate))))
             (cstate-result-dead
              (add-vars-values vars
                               vals
-                              (cstate nil (cstate->functions cstate)))))
+                              (cstate nil
+                                      (cstate->functions cstate)))))
      :enable cstate-result-dead
      :disable add-vars-values-of-dead
      :use (:instance add-vars-values-of-dead
