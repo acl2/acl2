@@ -4026,33 +4026,66 @@
        (ext (ext-declon-fundef fundef))
        (finfo (fun-info-from-fundef fundef))
        (limit `(binary-+ '2 ,limit))
-       ((mv fn-fun-env-events
+       ((mv local-events
+            exported-events
             fn-fun-env-thm
-            names-to-avoid)
-        (atc-gen-cfun-fun-env-thm
-         fn proofs prog-const finfo init-fun-env-thm names-to-avoid wrld))
-       ((mv fn-result-events
             fn-result-thm
+            fn-correct-thm
             names-to-avoid)
-        (atc-gen-fn-result-thm fn type affect typed-formals prec-fns
-                               proofs names-to-avoid wrld))
-       ((mv fn-correct-local-events
-            fn-correct-exported-events
-            fn-correct-thm)
-        (atc-gen-cfun-correct-thm fn type pointers affect prec-fns proofs
-                                  prog-const fn-thms fn-fun-env-thm
-                                  limit wrld))
-       (progress-start?
-        (and (evmac-input-print->= print :info)
-             `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
-       (progress-end? (and (evmac-input-print->= print :info)
-                           `((cw-event " done.~%"))))
-       (local-events (append progress-start?
-                             fn-fun-env-events
-                             fn-result-events
-                             fn-correct-local-events
-                             progress-end?))
-       (exported-events fn-correct-exported-events)
+        (if proofs
+            (b* (((mv fn-fun-env-events
+                      fn-fun-env-thm
+                      names-to-avoid)
+                  (atc-gen-cfun-fun-env-thm fn
+                                            proofs
+                                            prog-const
+                                            finfo
+                                            init-fun-env-thm
+                                            names-to-avoid
+                                            wrld))
+                 ((mv fn-result-events
+                      fn-result-thm
+                      names-to-avoid)
+                  (atc-gen-fn-result-thm fn
+                                         type
+                                         affect
+                                         typed-formals
+                                         prec-fns
+                                         proofs
+                                         names-to-avoid
+                                         wrld))
+                 ((mv fn-correct-local-events
+                      fn-correct-exported-events
+                      fn-correct-thm)
+                  (atc-gen-cfun-correct-thm fn
+                                            type
+                                            pointers
+                                            affect
+                                            prec-fns
+                                            proofs
+                                            prog-const
+                                            fn-thms
+                                            fn-fun-env-thm
+                                            limit
+                                            wrld))
+                 (progress-start?
+                  (and (evmac-input-print->= print :info)
+                       `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
+                 (progress-end? (and (evmac-input-print->= print :info)
+                                     `((cw-event " done.~%"))))
+                 (local-events (append progress-start?
+                                       fn-fun-env-events
+                                       fn-result-events
+                                       fn-correct-local-events
+                                       progress-end?))
+                 (exported-events fn-correct-exported-events))
+              (mv local-events
+                  exported-events
+                  fn-fun-env-thm
+                  fn-result-thm
+                  fn-correct-thm
+                  names-to-avoid))
+          (mv nil nil nil nil nil names-to-avoid)))
        (info (make-atc-fn-info
               :out-type type
               :in-types (strip-cdrs typed-formals)
@@ -4934,8 +4967,13 @@
     "No C external declaration is generated for this function,
      because this function just represents a loop used in oher functions."))
   (b* ((wrld (w state))
-       ((mv measure-of-fn-event measure-of-fn measure-formals names-to-avoid)
-        (atc-gen-loop-measure-fn fn names-to-avoid wrld))
+       ((mv measure-of-fn-event
+            measure-of-fn
+            measure-formals
+            names-to-avoid)
+        (if proofs
+            (atc-gen-loop-measure-fn fn names-to-avoid wrld)
+          (mv '(_) nil nil names-to-avoid)))
        ((er typed-formals) (atc-typed-formals fn ctx state))
        ((er (list & pointers)) (atc-gen-param-declon-list typed-formals
                                                           fn
@@ -4957,107 +4995,127 @@
                            proofs
                            ctx
                            state))
-       ((mv fn-result-events
-            fn-result-thm
-            names-to-avoid)
-        (atc-gen-fn-result-thm fn nil loop-affect typed-formals prec-fns
-                               proofs names-to-avoid wrld))
-       (loop-test (stmt-while->test loop-stmt))
-       (loop-body (stmt-while->body loop-stmt))
-       ((mv exec-stmt-while-events
-            exec-stmt-while-for-fn
-            exec-stmt-while-for-fn-thm
-            names-to-avoid)
-        (atc-gen-exec-stmt-while-for-loop fn
-                                          loop-stmt
-                                          prog-const
-                                          names-to-avoid
-                                          wrld))
-       ((mv natp-of-measure-of-fn-thm-event
-            natp-of-measure-of-fn-thm
-            names-to-avoid)
-        (atc-gen-loop-measure-thm fn
-                                  fn-appconds
-                                  appcond-thms
-                                  measure-of-fn
-                                  measure-formals
-                                  names-to-avoid
-                                  wrld))
-       ((er (list termination-of-fn-thm-event
-                  termination-of-fn-thm))
-        (atc-gen-loop-termination-thm fn
-                                      measure-of-fn
-                                      measure-formals
-                                      natp-of-measure-of-fn-thm
-                                      names-to-avoid
-                                      ctx
-                                      state))
-       ((mv test-local-events
-            correct-test-thm
-            names-to-avoid)
-        (atc-gen-loop-test-correct-thm fn
-                                       pointers
-                                       loop-test
-                                       test-term
-                                       fn-thms
-                                       names-to-avoid
-                                       wrld))
-       ((mv body-local-events
-            correct-body-thm
-            names-to-avoid)
-        (atc-gen-loop-body-correct-thm fn
-                                       pointers
-                                       loop-affect
-                                       loop-body
-                                       test-term
-                                       body-term
-                                       prec-fns
-                                       prog-const
-                                       fn-thms
-                                       body-limit
-                                       names-to-avoid
-                                       wrld))
-       ((mv correct-local-events
-            correct-exported-events
-            natp-of-measure-of-fn-thm
-            fn-correct-thm
-            names-to-avoid)
-        (atc-gen-loop-correct-thm fn
-                                  pointers
-                                  loop-affect
-                                  loop-test
-                                  loop-body
-                                  prec-fns
-                                  prog-const
-                                  fn-thms
-                                  fn-result-thm
-                                  exec-stmt-while-for-fn
-                                  exec-stmt-while-for-fn-thm
-                                  termination-of-fn-thm
-                                  natp-of-measure-of-fn-thm
-                                  correct-test-thm
-                                  correct-body-thm
-                                  loop-limit
-                                  names-to-avoid
-                                  wrld))
-       (progress-start?
-        (and (evmac-input-print->= print :info)
-             `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
-       (progress-end? (and (evmac-input-print->= print :info)
+       ((er (list local-events
+                  exported-events
+                  natp-of-measure-of-fn-thm
+                  fn-result-thm
+                  fn-correct-thm
+                  names-to-avoid))
+        (if proofs
+            (b* (((mv fn-result-events
+                      fn-result-thm
+                      names-to-avoid)
+                  (atc-gen-fn-result-thm fn
+                                         nil
+                                         loop-affect
+                                         typed-formals
+                                         prec-fns
+                                         proofs
+                                         names-to-avoid
+                                         wrld))
+                 (loop-test (stmt-while->test loop-stmt))
+                 (loop-body (stmt-while->body loop-stmt))
+                 ((mv exec-stmt-while-events
+                      exec-stmt-while-for-fn
+                      exec-stmt-while-for-fn-thm
+                      names-to-avoid)
+                  (atc-gen-exec-stmt-while-for-loop fn
+                                                    loop-stmt
+                                                    prog-const
+                                                    names-to-avoid
+                                                    wrld))
+                 ((mv natp-of-measure-of-fn-thm-event
+                      natp-of-measure-of-fn-thm
+                      names-to-avoid)
+                  (atc-gen-loop-measure-thm fn
+                                            fn-appconds
+                                            appcond-thms
+                                            measure-of-fn
+                                            measure-formals
+                                            names-to-avoid
+                                            wrld))
+                 ((er (list termination-of-fn-thm-event
+                            termination-of-fn-thm))
+                  (atc-gen-loop-termination-thm fn
+                                                measure-of-fn
+                                                measure-formals
+                                                natp-of-measure-of-fn-thm
+                                                names-to-avoid
+                                                ctx
+                                                state))
+                 ((mv test-local-events
+                      correct-test-thm
+                      names-to-avoid)
+                  (atc-gen-loop-test-correct-thm fn
+                                                 pointers
+                                                 loop-test
+                                                 test-term
+                                                 fn-thms
+                                                 names-to-avoid
+                                                 wrld))
+                 ((mv body-local-events
+                      correct-body-thm
+                      names-to-avoid)
+                  (atc-gen-loop-body-correct-thm fn
+                                                 pointers
+                                                 loop-affect
+                                                 loop-body
+                                                 test-term
+                                                 body-term
+                                                 prec-fns
+                                                 prog-const
+                                                 fn-thms
+                                                 body-limit
+                                                 names-to-avoid
+                                                 wrld))
+                 ((mv correct-local-events
+                      correct-exported-events
+                      natp-of-measure-of-fn-thm
+                      fn-correct-thm
+                      names-to-avoid)
+                  (atc-gen-loop-correct-thm fn
+                                            pointers
+                                            loop-affect
+                                            loop-test
+                                            loop-body
+                                            prec-fns
+                                            prog-const
+                                            fn-thms
+                                            fn-result-thm
+                                            exec-stmt-while-for-fn
+                                            exec-stmt-while-for-fn-thm
+                                            termination-of-fn-thm
+                                            natp-of-measure-of-fn-thm
+                                            correct-test-thm
+                                            correct-body-thm
+                                            loop-limit
+                                            names-to-avoid
+                                            wrld))
+                 (progress-start?
+                  (and (evmac-input-print->= print :info)
+                       `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
+                 (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
-       (local-events (and proofs
-                          (append progress-start?
-                                  (list measure-of-fn-event)
-                                  fn-result-events
-                                  exec-stmt-while-events
-                                  (list natp-of-measure-of-fn-thm-event)
-                                  (list termination-of-fn-thm-event)
-                                  test-local-events
-                                  body-local-events
-                                  correct-local-events
-                                  progress-end?)))
-       (exported-events (and proofs
-                             (append correct-exported-events)))
+                 (local-events (append progress-start?
+                                       (and measure-of-fn
+                                            (list measure-of-fn-event))
+                                       fn-result-events
+                                       exec-stmt-while-events
+                                       (list natp-of-measure-of-fn-thm-event)
+                                       (list termination-of-fn-thm-event)
+                                       test-local-events
+                                       body-local-events
+                                       correct-local-events
+                                       progress-end?))
+                 (exported-events correct-exported-events))
+              (acl2::value
+               (list local-events
+                     exported-events
+                     natp-of-measure-of-fn-thm
+                     fn-result-thm
+                     fn-correct-thm
+                     names-to-avoid)))
+          (acl2::value (list nil nil nil nil nil names-to-avoid))))
        (info (make-atc-fn-info :out-type nil
                                :in-types (strip-cdrs typed-formals)
                                :loop? loop-stmt
