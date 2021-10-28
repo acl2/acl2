@@ -383,9 +383,10 @@
                     (eoutcome-dead outcome)))
     :enable (eoutcomep resulterrp))
 
-  (defrule eoutcome-result-dead-of-resulterr
-    (equal (eoutcome-result-dead (resulterr info stack))
-           (resulterr info stack))))
+  (defrule eoutcome-result-dead-when-resulterrp
+    (implies (resulterrp error)
+             (equal (eoutcome-result-dead error)
+                    error))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
