@@ -4005,33 +4005,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-loop-final-compustate ((mod-vars symbol-listp)
-                                       (compst-var symbolp))
-  :returns (term "An untranslated term.")
-  :short "Generate a term representing the final state
-          after the execution of a loop."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The correctness theorem of a loop says that
-     executing the loop on a generic computation state
-     (satisfying conditions in the hypotheses of the theorem)
-     yields a computation state obtained by modifying
-     one or more variables in the computation state.
-     These are the variables affected by the loop,
-     which the correctness theorem binds to the results of the loop function,
-     and which have corresponding named variables in the computation state.
-     The modified computation state is expressed as
-     a nest of @(tsee write-var) calls.
-     This ACL2 code here generates that nest."))
-  (cond ((endp mod-vars) compst-var)
-        (t `(write-var (ident ,(symbol-name (car mod-vars)))
-                       ,(car mod-vars)
-                       ,(atc-gen-loop-final-compustate (cdr mod-vars)
-                                                       compst-var)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-gen-loop-measure-fn ((fn symbolp)
                                  (names-to-avoid symbol-listp)
                                  (wrld plist-worldp))
@@ -4568,6 +4541,33 @@
     (mv (list correct-test-thm-event)
         correct-test-thm
         names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-loop-final-compustate ((mod-vars symbol-listp)
+                                       (compst-var symbolp))
+  :returns (term "An untranslated term.")
+  :short "Generate a term representing the final state
+          after the execution of a loop."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The correctness theorem of a loop says that
+     executing the loop on a generic computation state
+     (satisfying conditions in the hypotheses of the theorem)
+     yields a computation state obtained by modifying
+     one or more variables in the computation state.
+     These are the variables affected by the loop,
+     which the correctness theorem binds to the results of the loop function,
+     and which have corresponding named variables in the computation state.
+     The modified computation state is expressed as
+     a nest of @(tsee write-var) calls.
+     This ACL2 code here generates that nest."))
+  (cond ((endp mod-vars) compst-var)
+        (t `(write-var (ident ,(symbol-name (car mod-vars)))
+                       ,(car mod-vars)
+                       ,(atc-gen-loop-final-compustate (cdr mod-vars)
+                                                       compst-var)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
