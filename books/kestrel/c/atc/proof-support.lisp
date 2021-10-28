@@ -2118,6 +2118,7 @@
           *atc-valuep-rules*
           *atc-value-listp-rules*
           *atc-value-optionp-rules*
+          *atc-type-of-value-option-rules*
           *atc-exec-ident-rules*
           *atc-exec-const-rules*
           *atc-exec-arrsub-rules*

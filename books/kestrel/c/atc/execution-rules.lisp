@@ -147,6 +147,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-type-of-value-option-rules
+  :short "Rules about @(tsee type-of-value-option)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These rules reduce @(tsee type-of-value-option)
+     to @(tsee type-of-value) when the argument is a value,
+     and to @('void') when the argument is @('nil').
+     During execution, the argument is always either @('nil')
+     or a term that is easily proved to be a value;
+     so these rules suffice to eliminate @(tsee type-of-value-option)."))
+
+  (defruled type-of-value-option-when-valuep
+    (implies (valuep x)
+             (equal (type-of-value-option x)
+                    (type-of-value x)))
+    :enable (type-of-value-option
+             value-option-some->val))
+
+  (defruled type-of-value-option-of-nil
+    (equal (type-of-value-option nil)
+           (type-void)))
+
+  (defval *atc-type-of-value-option-rules*
+    '(type-of-value-option-when-valuep
+      type-of-value-option-of-nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-exec-ident-rules
   :short "Rules for executing identifiers."
   :long
@@ -1522,10 +1551,7 @@
      i.e. the one whose correctness theorem is being proved.
      Note that these theorems are generated only for non-recursive functions;
      the recursive functions represent loops,
-     and their correctness theorems do not involve @(tsee exec-fun).")
-   (xdoc::p
-    "The rule has a form suited to an @(':expand') hint,
-     which requires no free variables in hypotheses or right-hand side."))
+     and their correctness theorems do not involve @(tsee exec-fun)."))
 
   (defruled exec-fun-open
     (implies (and (not (zp limit))
@@ -1543,8 +1569,8 @@
                                     (1- limit)))
                   (equal val? (mv-nth 0 val?+compst1))
                   (equal compst1 (mv-nth 1 val?+compst1))
-                  (valuep val?)
-                  (equal (type-of-value val?)
+                  (value-optionp val?)
+                  (equal (type-of-value-option val?)
                          (type-name-to-type
                           (make-tyname :specs (fun-info->result info)
                                        :pointerp nil))))
