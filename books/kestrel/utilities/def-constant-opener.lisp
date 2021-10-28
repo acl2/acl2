@@ -30,7 +30,7 @@
 ;; TODO: Add support for mutual-recursion.
 
 (include-book "world")
-(include-book "kestrel/utilities/user-interface" :dir :system) ;; for control-screen-output
+(include-book "user-interface") ;; for control-screen-output
 (include-book "pack")
 (include-book "my-get-event")
 (include-book "defining-forms") ;for get-body-from-event

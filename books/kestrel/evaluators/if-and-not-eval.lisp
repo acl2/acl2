@@ -10,6 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/evaluators/defevaluator-plus" :dir :system)
+(include-book "defevaluator-plus")
 
 (defevaluator+ if-and-not-eval if not)

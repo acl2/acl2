@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/axe/supporting-nodes" :dir :system)
+(include-book "supporting-nodes")
 
 ;move the indicated nodes (fixed up as needed) from old-dag-array to new-dag-array
 ;tag-array tells us which nodes to keep

@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "clean-up-lambdas")
-(include-book "kestrel/utilities/deftest" :dir :system)
+(include-book "deftest")
 
 ;; Drop the binding of __function__(not used in the body), and then drop the
 ;; entire resulting lambda since it just binds x to itself.

@@ -23,13 +23,13 @@
 
 (include-book "handle-constant-literals")
 (include-book "kestrel/utilities/forms" :dir :system)
-(include-book "kestrel/utilities/conjuncts-and-disjuncts0" :dir :system)
+(include-book "kestrel/utilities/conjuncts-and-disjuncts" :dir :system)
 (include-book "kestrel/terms-light/term-is-disjunctionp" :dir :system)
 (include-book "kestrel/terms-light/term-is-conjunctionp" :dir :system)
 (include-book "kestrel/terms-light/clearly-implies-for-disjunctionp" :dir :system)
 (include-book "kestrel/terms-light/make-if-term" :dir :system)
 (include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
-(local (include-book "kestrel/utilities/conjuncts-and-disjuncts0-proof" :dir :system))
+(local (include-book "kestrel/utilities/conjuncts-and-disjuncts-proof" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -45,6 +45,14 @@
 (local (in-theory (disable symbol-alistp
                            strip-cdrs
                            assoc-equal)))
+
+;;move?
+(defthm if-and-not-eval-of-make-if-term
+  (iff (if-and-not-eval (make-if-term test then else) a)
+       (if (if-and-not-eval test a)
+           (if-and-not-eval then a)
+         (if-and-not-eval else a)))
+  :hints (("Goal" :in-theory (enable make-if-term))))
 
 (defthm if-and-not-eval-when-clearly-implied-by-some-disjunctionp
   (implies (and (clearly-implied-by-some-disjunctionp term true-terms)

@@ -11,13 +11,12 @@
 (in-package "ACL2")
 
 (include-book "term-is-conjunctionp")
-(include-book "kestrel/utilities/forms" :dir :system)
 (include-book "clearly-implies-for-disjunctionp")
 
 ;; Treats TERM as a conjunction, dropping conjuncts that are clearly implied by
 ;; earlier conjuncts or by terms in TRUE-TERMS.  Treats the conjuncts and the
-;; terms in TRUE-TERMS as disjunctions when checking whether one implies another.
-;l The preserves iff on TERM.
+;; terms in TRUE-TERMS as disjunctions when checking whether one clearly
+;; implies another.  The preserves iff on TERM.
 (defund drop-clearly-implied-conjuncts (term true-terms)
   (declare (xargs :guard (and (pseudo-termp term)
                               (pseudo-term-listp true-terms))))

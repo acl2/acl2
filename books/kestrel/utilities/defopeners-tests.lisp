@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "defopeners")
-(include-book "kestrel/utilities/deftest" :dir :system)
+(include-book "deftest")
 
 ;;example:
 (deftest
