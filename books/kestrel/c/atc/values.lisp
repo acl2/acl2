@@ -341,3 +341,22 @@
              value-signed-integerp
              value-unsigned-integerp
              type-scalarp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-of-value-option ((val? value-optionp))
+  :returns (type typep)
+  :short "Type of an optional value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the value if the value is present,
+     while it is @('void') if the value is absent.
+     This is a handy extension of @(tsee type-of-value),
+     given that, in the dynamic semantics,
+     we model computations that may return @('void') (e.g. function calls)
+     as returning optional values, with @('nil') for no value."))
+  (value-option-case val?
+                     :some (type-of-value val?.val)
+                     :none (type-void))
+  :hooks (:fix))
