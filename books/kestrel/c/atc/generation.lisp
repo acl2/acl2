@@ -3164,7 +3164,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-cfun-fun-env-thm ((fn symbolp)
-                                  (proofs booleanp)
                                   (prog-const symbolp)
                                   (finfo? fun-info-optionp)
                                   (init-fun-env-thm symbolp)
@@ -3186,8 +3185,7 @@
      that were executing function lookups,
      which worked fine for small programs,
      but not for larger programs."))
-  (b* (((when (not proofs)) (mv nil nil names-to-avoid))
-       ((unless (fun-infop finfo?)) (mv nil nil names-to-avoid))
+  (b* (((unless (fun-infop finfo?)) (mv nil nil names-to-avoid))
        (thm-name (add-suffix fn "-FUN-ENV"))
        ((mv thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix thm-name nil names-to-avoid wrld))
@@ -3257,7 +3255,6 @@
                                (affect symbol-listp)
                                (typed-formals atc-symbol-type-alistp)
                                (prec-fns atc-symbol-fninfo-alistp)
-                               (proofs booleanp)
                                (names-to-avoid symbol-listp)
                                (wrld plist-worldp))
   :returns (mv (events "A @(tsee pseudo-event-form-listp).")
@@ -3371,8 +3368,7 @@
      the executable counterparts of the integer value recognizers;
      the subgoals that arise without them have the form
      @('(<recognizer> nil)')."))
-  (b* (((when (not proofs)) (mv nil nil names-to-avoid))
-       (types1 (and type?
+  (b* ((types1 (and type?
                     (not (type-case type? :void))
                     (list type?)))
        (types2 (atc-gen-fn-result-thm-aux1 affect typed-formals))
@@ -3586,7 +3582,6 @@
                                   (pointers atc-symbol-type-alistp)
                                   (affect symbol-listp)
                                   (prec-fns atc-symbol-fninfo-alistp)
-                                  (proofs booleanp)
                                   (prog-const symbolp)
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-fun-env-thm symbolp)
@@ -3715,8 +3710,7 @@
      With the bindings, we let ACL2 perform the substitution at proof time.")
    (xdoc::p
     "This theorem is not generated if @(':proofs') is @('nil')."))
-  (b* (((when (not proofs)) (mv nil nil nil))
-       (name (cdr (assoc-eq fn fn-thms)))
+  (b* ((name (cdr (assoc-eq fn fn-thms)))
        (formals (formals+ fn wrld))
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
@@ -4037,7 +4031,6 @@
                       fn-fun-env-thm
                       names-to-avoid)
                   (atc-gen-cfun-fun-env-thm fn
-                                            proofs
                                             prog-const
                                             finfo
                                             init-fun-env-thm
@@ -4051,7 +4044,6 @@
                                          affect
                                          typed-formals
                                          prec-fns
-                                         proofs
                                          names-to-avoid
                                          wrld))
                  ((mv fn-correct-local-events
@@ -4062,7 +4054,6 @@
                                             pointers
                                             affect
                                             prec-fns
-                                            proofs
                                             prog-const
                                             fn-thms
                                             fn-fun-env-thm
@@ -5010,7 +5001,6 @@
                                          loop-affect
                                          typed-formals
                                          prec-fns
-                                         proofs
                                          names-to-avoid
                                          wrld))
                  (loop-test (stmt-while->test loop-stmt))
