@@ -3715,9 +3715,7 @@
      With the bindings, we let ACL2 perform the substitution at proof time.")
    (xdoc::p
     "This theorem is not generated if @(':proofs') is @('nil')."))
-  (b* (((when (or (not proofs)
-                  (irecursivep+ fn wrld))) ; generated elsewhere
-        (mv nil nil nil))
+  (b* (((when (not proofs)) (mv nil nil nil))
        (name (cdr (assoc-eq fn fn-thms)))
        (formals (formals+ fn wrld))
        (compst-var (genvar 'atc "COMPST" nil formals))
