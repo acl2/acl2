@@ -21,6 +21,7 @@
 (include-book "kestrel/terms-light/expand-lambdas-in-term" :dir :system)
 (include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/add-to-set-equal" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
@@ -370,19 +371,6 @@
                            (nth 2 (car term))
                            (nth 1 (cdr (car term))))
            :in-theory (enable beta-reduce nth))))
-
-
-
-;; Kept disabled for speed
-;; Matches the one in std.
-(defthmd pseudo-term-listp-when-symbol-listp
-  (implies (symbol-listp syms)
-           (pseudo-term-listp syms)))
-
-(defthm pseudo-term-listp-when-symbol-listp-cheap
-  (implies (symbol-listp x)
-           (pseudo-term-listp x))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
 ;see also version in axe/
 
