@@ -229,9 +229,10 @@
                     (funinfo-dead funinfo)))
     :enable (funinfop resulterrp))
 
-  (defrule funinfo-result-dead-of-resulterr
-    (equal (funinfo-result-dead (resulterr info stack))
-           (resulterr info stack))))
+  (defrule funinfo-result-dead-when-resulterrp
+    (implies (resulterrp error)
+             (equal (funinfo-result-dead error)
+                    error))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
