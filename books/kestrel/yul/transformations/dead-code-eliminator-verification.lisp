@@ -864,12 +864,11 @@
                            (+ -1 limit))))
                         (cstate->functions cstate)))))))
      ((exec-of-dead-flag-is exec-for-iterations)
-      '(:in-theory (e/d (exec-for-iterations
-                         eoutcome-result-dead
-                         soutcome-result-dead
-                         eoutcome-result-okeq
-                         soutcome-result-okeq)
-                        ((:e mode-leave)))))
+      '(:in-theory (enable exec-for-iterations
+                           eoutcome-result-dead
+                           soutcome-result-dead
+                           eoutcome-result-okeq
+                           soutcome-result-okeq)))
      ((exec-of-dead-flag-is exec-switch-rest)
       '(:in-theory (enable exec-switch-rest
                            swcase-dead
