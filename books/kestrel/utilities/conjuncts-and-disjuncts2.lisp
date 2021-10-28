@@ -11,6 +11,9 @@
 
 (in-package "ACL2")
 
+;; These tools know about the functions booland, boolor, boolif, and myif.  See
+;; also conjuncts-and-disjuncts.lisp for simpler versions.
+
 ;; See proof of correctness in conjuncts-and-disjuncts2-proof.lisp.
 
 (include-book "forms")

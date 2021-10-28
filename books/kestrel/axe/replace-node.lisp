@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/axe/dag-arrays" :dir :system)
+(include-book "dag-arrays")
 
 ;; ;ffffixme if this makes the parent into a ground term, it should be added to the dag-constant-alist?!
 ;; (defun change-mentions-of-nodenum2 (nodenum new-nodenum-or-quotep parent-nodenums miter-array-name miter-array)

@@ -12,15 +12,15 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/axe/jvm/rule-lists-jvm" :dir :system) ;drop?
-(include-book "kestrel/axe/rules-in-rule-lists" :dir :system)
-(include-book "kestrel/axe/make-axe-rules2" :dir :system)
+(include-book "jvm/rule-lists-jvm") ;drop?
+(include-book "rules-in-rule-lists")
+(include-book "make-axe-rules2")
 (include-book "kestrel/alists-light/assoc-equal" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-lst" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
-(include-book "kestrel/axe/rewriter" :dir :system) ;TODO: brings in JVM stuff...
-(include-book "kestrel/axe/rewriter-alt" :dir :system) ;TODO: brings in JVM stuff...
+(include-book "rewriter") ;TODO: brings in JVM stuff...
+(include-book "rewriter-alt") ;TODO: brings in JVM stuff...
 (include-book "misc/random" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists2" :dir :system)
@@ -36,16 +36,16 @@
 (include-book "kestrel/typed-lists-light/minelem" :dir :system)
 (include-book "kestrel/typed-lists-light/map-strip-cars" :dir :system)
 (include-book "kestrel/lists-light/union-eql-tail" :dir :system)
-(include-book "kestrel/axe/strengthen-facts" :dir :system)
-(include-book "kestrel/axe/tailtohead" :dir :system)
-(include-book "kestrel/axe/unroller" :dir :system)
-(include-book "kestrel/axe/contexts2" :dir :system)
-(include-book "kestrel/axe/concretize-with-contexts" :dir :system)
-(include-book "kestrel/axe/letify-term" :dir :system)
-(include-book "kestrel/axe/subdagp" :dir :system) ; for subdag-of-somep
-(include-book "kestrel/axe/arrays-of-alists" :dir :system)
+(include-book "strengthen-facts")
+(include-book "tailtohead")
+(include-book "unroller")
+(include-book "contexts2")
+(include-book "concretize-with-contexts")
+(include-book "letify-term")
+(include-book "subdagp") ; for subdag-of-somep
+(include-book "arrays-of-alists")
 ;(include-book "generic-head-aux-proof")
-(include-book "kestrel/axe/printing" :dir :system)
+(include-book "printing")
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
 ;; Bring in the necessary rules (TODO: Drop these include-books after removing
 ;; mentions of axe-rules, amazing-rules-spec-and-dag, etc. in this file):
@@ -53,16 +53,16 @@
 (include-book "kestrel/bv-lists/bvplus-list" :dir :system)
 (include-book "kestrel/bv/arith" :dir :system)
 (include-book "kestrel/bv-lists/packing" :dir :system) ;bring in some stuff in axe-runes
-(include-book "kestrel/axe/unify-term-and-dag-with-name" :dir :system)
-(include-book "kestrel/axe/rules2" :dir :system) ;drop?
+(include-book "unify-term-and-dag-with-name")
+(include-book "rules2") ;drop?
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
-(include-book "kestrel/axe/lists-axe" :dir :system)
-(include-book "kestrel/axe/group-axe" :dir :system)
-(include-book "kestrel/axe/dag-to-term-with-lets" :dir :system)
-(include-book "kestrel/axe/dag-size" :dir :system) ; for make-size-array-for-dag-array
-(include-book "kestrel/axe/replace-node" :dir :system)
-(include-book "kestrel/axe/prover2" :dir :system)
-(include-book "kestrel/axe/extract-dag-array" :dir :system)
+(include-book "lists-axe")
+(include-book "group-axe")
+(include-book "dag-to-term-with-lets")
+(include-book "dag-size") ; for make-size-array-for-dag-array
+(include-book "replace-node")
+(include-book "prover2")
+(include-book "extract-dag-array")
 (include-book "kestrel/lists-light/append" :dir :system)
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
 (include-book "kestrel/lists-light/last-elem" :dir :system)

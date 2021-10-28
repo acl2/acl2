@@ -16,7 +16,7 @@
 ;; 2. combines conjuncts that are clearly of the form (or ... x ...) and (or ... (not x) ...).
 
 (include-book "clause-to-clause-list")
-(include-book "kestrel/terms-light/simplify-conjunction" :dir :system)
+(include-book "kestrel/terms-light/drop-clearly-implied-conjuncts" :dir :system)
 (include-book "kestrel/terms-light/strengthen-conjuncts" :dir :system)
 (include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
 
@@ -49,7 +49,7 @@
                      (if (and (call-of 'not lit)
                               (= 1 (len (fargs lit))))
                          (let* ((core (farg1 lit))
-                                (core (combine-complementary-conjuncts core))
+                                (core (strengthen-conjuncts-aux core))
                                 (core (drop-clearly-implied-conjuncts core nil)))
                            `(not ,core))
                        lit))))

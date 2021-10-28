@@ -13,8 +13,6 @@
 
 ;; See proof of correctness in conjuncts-and-disjuncts-proof.lisp.
 
-;; TODO: Should we be able to get conjuncts from (NOT (IF X X Y)) which is "not (x or y)" ?
-
 (include-book "forms")
 (include-book "conjunctions-and-disjunctions")
 (include-book "tools/flag" :dir :system)

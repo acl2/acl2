@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "conjuncts-and-disjuncts0")
+(include-book "conjuncts-and-disjuncts")
 (include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
 (local (include-book "kestrel/terms-light/negate-term-proof" :dir :system))
 

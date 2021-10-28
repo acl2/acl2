@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/axe/merge-dag-into-dag-quick" :dir :system)
+(include-book "merge-dag-into-dag-quick")
 
 ;todo: what should happen if dag1 is a quotep?
 ;this assumes that dag2 is reduced (otherwise irrelevant nodes in it might lead to wrong results here)
