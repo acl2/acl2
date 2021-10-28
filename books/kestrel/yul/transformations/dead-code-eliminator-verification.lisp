@@ -790,9 +790,7 @@
                          soutcome-result-dead
                          cstate-result-okeq
                          eoutcome-result-okeq
-                         soutcome-result-okeq
-                         ,@(and (exec-of-dead-stmt-kind-is :for)
-                                '(block->statements-of-block-dead)))
+                         soutcome-result-okeq)
                         (add-funs-in-statement-list-of-dead
                          restrict-vars-of-dead))
         ,@(and (or (exec-of-dead-stmt-kind-is :if)
