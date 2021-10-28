@@ -436,9 +436,10 @@
                     (soutcome-dead outcome)))
     :enable (soutcomep resulterrp))
 
-  (defrule soutcome-result-dead-of-resulterr
-    (equal (soutcome-result-dead (resulterr info stack))
-           (resulterr info stack))))
+  (defrule soutcome-result-dead-when-resulterrp
+    (implies (resulterrp error)
+             (equal (soutcome-result-dead error)
+                    error))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
