@@ -108,6 +108,13 @@ acl2::4v-monotonicity).</p>"
              (equal (4vec-[= n n1)
                     (4vec-equiv n n1)))
     :hints(("goal" :in-theory (enable 4vec-equiv))
+           (bitops::logbitp-reasoning)))
+
+  (defthmd 4vec-[=-asymm
+    (implies (4vec-[= x y)
+             (iff (4vec-[= y x)
+                  (4vec-equiv y x)))
+    :hints(("Goal" :in-theory (e/d (4vec-[=)))
            (bitops::logbitp-reasoning))))
 
 
@@ -485,6 +492,27 @@ acl2::4v-monotonicity).</p>"
                          (:instance 4veclist-[=-necc
                           (x (cons a b)) (y c) (idx (+ 1 (nfix idx0)))))))))
 
+  (defthm 4veclist-[=-of-cons-2
+    (iff (4veclist-[= c (cons a b))
+         (and (4vec-[= (car c) a)
+              (4veclist-[= (cdr c) b)))
+    :hints ((witness :ruleset 4veclist-[=-witnessing)
+            (and stable-under-simplificationp
+                 '(:in-theory (e/d (4veclist-nth-safe)
+                                   (4veclist-[=-necc))))
+            (and stable-under-simplificationp
+                 '(:use ((:instance 4veclist-[=-necc
+                          (x (cdr c)) (y b) (idx (1- idx0)))
+                         (:instance 4veclist-[=-necc
+                          (x  c) (y (cons a b)) (idx 0))
+                         (:instance 4veclist-[=-necc
+                          (x c) (y (cons a b)) (idx (+ 1 (nfix idx0)))))))))
+  
+  (defthmd 4veclist-[=-of-atom
+    (implies (atom x)
+             (4veclist-[= x y))
+    :hints (("goal" :expand ((4veclist-[= x y)))))
+
   (defthmd 4veclist-[=-transitive-1
     (implies (and (4veclist-[= a b)
                   (4veclist-[= b c))
@@ -496,7 +524,24 @@ acl2::4v-monotonicity).</p>"
     (implies (and (4veclist-[= b c)
                   (4veclist-[= a b))
              (4veclist-[= a c))
-    :hints (("goal" :in-theory (enable 4veclist-[=-transitive-1)))))
+    :hints (("goal" :in-theory (enable 4veclist-[=-transitive-1))))
+
+
+  (local (defun 2-4veclist-ind (x y)
+           (declare (xargs :measure (+ (len x) (len y))))
+           (if (and (atom x) (atom y))
+               (list x y)
+             (2-4veclist-ind (cdr x) (cdr y)))))
+
+  (defthmd 4veclist-[=-asymm
+    (implies (and (4veclist-[= x y)
+                  (equal (len x) (len y)))
+             (iff (4veclist-[= y x)
+                  (4veclist-equiv y x)))
+    :hints (("goal" :induct (2-4veclist-ind x y)
+             :in-theory (enable 4veclist-fix
+                                4veclist-[=-of-atom
+                                4vec-[=-asymm)))))
 
 
 (defsection svex-env-[=
@@ -526,7 +571,6 @@ an approximation of its value in @('y')?"
   (defthm svex-env-[=-empty
     (svex-env-[= nil x)
     :hints ((witness))))
-
 
 (defsection svex-apply-monotonocity
   :parents (svex-apply 4vec-[=)

@@ -88,7 +88,16 @@
 
    (defcong svex-alist-equiv equal (svex-alist-eval-equiv x y) 2
      :hints (("goal" :cases ((svex-alist-eval-equiv x y)))
-             (witness))))
+             (witness)))
+
+   (defthmd svex-alist-eval-equiv-in-terms-of-envs-equivalent
+     (equal (svex-alist-eval-equiv x y)
+            (let ((env (svex-alist-eval-equiv-envs-equivalent-witness x y)))
+             (svex-envs-equivalent (svex-alist-eval x env)
+                                   (svex-alist-eval y env))))
+     :hints (("goal" :cases ((svex-alist-eval-equiv x y))
+              :in-theory (enable SVEX-ENVS-EQUIVALENT-IMPLIES-ALIST-EVAL-EQUIV)))
+     :rule-classes ((:definition :install-body nil))))
 
 
 (defsection svex-alist-eval-equiv!

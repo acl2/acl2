@@ -67,7 +67,40 @@
 
   (defthm svex-[=-refl
     (svex-[= x x)
-    :hints(("Goal" :in-theory (enable svex-[=)))))
+    :hints(("Goal" :in-theory (enable svex-[=))))
+
+  (defthmd svex-[=-transitive-1
+    (implies (and (svex-[= x y)
+                  (svex-[= y z))
+             (svex-[= x z))
+    :hints (("goal" :expand ((svex-[= x z))
+             :in-theory (e/d (4vec-[=-transitive-1)
+                             (svex-[=-necc))
+             :use ((:instance svex-[=-necc
+                    (env (svex-[=-witness x z)))
+                   (:instance svex-[=-necc
+                    (x y) (y z)
+                    (env (svex-[=-witness x z)))))))
+
+  (defthmd svex-[=-transitive-2
+    (implies (and (svex-[= y z)
+                  (svex-[= x y))
+             (svex-[= x z))
+    :hints(("Goal" :in-theory (enable svex-[=-transitive-1))))
+
+  (defthmd svex-[=-asymm
+    (implies (svex-[= x y)
+             (iff (svex-[= y x)
+                  (svex-eval-equiv y x)))
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((svex-eval-equiv y x))
+                   :in-theory (e/d (4vec-[=-asymm)
+                                   (svex-[=-necc))
+                   :use ((:instance svex-[=-necc
+                          (env (svex-eval-equiv-witness y x)))
+                         (:instance svex-[=-necc
+                          (x y) (y x)
+                          (env (svex-eval-equiv-witness y x)))))))))
 
 (local (defthm nth-redef
          (equal (nth n x)
@@ -156,7 +189,41 @@
 
   (defthm svexlist-[=-refl
     (svexlist-[= x x)
-    :hints(("Goal" :in-theory (enable svexlist-[=)))))
+    :hints(("Goal" :in-theory (enable svexlist-[=))))
+
+  (defthmd svexlist-[=-transitive-1
+    (implies (and (svexlist-[= x y)
+                  (svexlist-[= y z))
+             (svexlist-[= x z))
+    :hints (("goal" :expand ((svexlist-[= x z))
+             :in-theory (e/d (4veclist-[=-transitive-1)
+                             (svexlist-[=-necc))
+             :use ((:instance svexlist-[=-necc
+                    (env (svexlist-[=-witness x z)))
+                   (:instance svexlist-[=-necc
+                    (x y) (y z)
+                    (env (svexlist-[=-witness x z)))))))
+
+  (defthmd svexlist-[=-transitive-2
+    (implies (and (svexlist-[= y z)
+                  (svexlist-[= x y))
+             (svexlist-[= x z))
+    :hints(("Goal" :in-theory (enable svexlist-[=-transitive-1))))
+
+  (defthmd svexlist-[=-asymm
+    (implies (and (svexlist-[= x y)
+                  (equal (len x) (len y)))
+             (iff (svexlist-[= y x)
+                  (svexlist-eval-equiv y x)))
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((svexlist-eval-equiv y x))
+                   :in-theory (e/d (4veclist-[=-asymm)
+                                   (svexlist-[=-necc))
+                   :use ((:instance svexlist-[=-necc
+                          (env (svexlist-eval-equiv-witness y x)))
+                         (:instance svexlist-[=-necc
+                          (x y) (y x)
+                          (env (svexlist-eval-equiv-witness y x)))))))))
 
 
 (defsection svex-env-[=
@@ -231,7 +298,40 @@
 
   (defthm svex-env-[=-refl
     (svex-env-[= x x)
-    :hints(("Goal" :in-theory (enable svex-env-[=)))))
+    :hints(("Goal" :in-theory (enable svex-env-[=))))
+
+  (defthmd svex-env-[=-transitive-1
+    (implies (and (svex-env-[= x y)
+                  (svex-env-[= y z))
+             (svex-env-[= x z))
+    :hints (("goal" :expand ((svex-env-[= x z))
+             :in-theory (e/d (4vec-[=-transitive-1)
+                             (svex-env-[=-necc))
+             :use ((:instance svex-env-[=-necc
+                    (var (svex-env-[=-witness x z)))
+                   (:instance svex-env-[=-necc
+                    (x y) (y z)
+                    (var (svex-env-[=-witness x z)))))))
+
+  (defthmd svex-env-[=-transitive-2
+    (implies (and (svex-env-[= y z)
+                  (svex-env-[= x y))
+             (svex-env-[= x z))
+    :hints(("Goal" :in-theory (enable svex-env-[=-transitive-1))))
+
+  (defthmd svex-env-[=-asymm
+    (implies (svex-env-[= x y)
+             (iff (svex-env-[= y x)
+                  (svex-envs-similar x y)))
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((svex-envs-similar x y))
+                   :use ((:instance svex-env-[=-necc
+                          (var (svex-envs-similar-witness x y)))
+                         (:instance svex-env-[=-necc
+                          (x y) (y x)
+                          (var (svex-envs-similar-witness x y))))
+                   :in-theory (e/d (4vec-[=-asymm)
+                                   (svex-env-[=-necc)))))))
 
 (local (defthmd svex-eval-of-svex-lookup
          (equal (svex-eval (svex-lookup k x) env)
@@ -305,7 +405,194 @@
 
   (defthm svex-alist-[=-refl
     (svex-alist-[= x x)
-    :hints(("Goal" :in-theory (enable svex-alist-[=)))))
+    :hints(("Goal" :in-theory (enable svex-alist-[=))))
+
+  (defthmd svex-alist-[=-transitive-1
+    (implies (and (svex-alist-[= x y)
+                  (svex-alist-[= y z))
+             (svex-alist-[= x z))
+    :hints (("goal" :expand ((svex-alist-[= x z))
+             :in-theory (e/d (svex-env-[=-transitive-1)
+                             (svex-alist-[=-necc))
+             :use ((:instance svex-alist-[=-necc
+                    (env (svex-alist-[=-witness x z)))
+                   (:instance svex-alist-[=-necc
+                    (x y) (y z)
+                    (env (svex-alist-[=-witness x z)))))))
+
+  (defthmd svex-alist-[=-transitive-2
+    (implies (and (svex-alist-[= y z)
+                  (svex-alist-[= x y))
+             (svex-alist-[= x z))
+    :hints(("Goal" :in-theory (enable svex-alist-[=-transitive-1))))
+
+  (local (defthmd svex-env-lookup-is-hons-assoc-equal-of-svex-env-fix
+           (equal (svex-env-lookup k env)
+                  (if (svex-env-boundp k env)
+                      (cdr (hons-assoc-equal (svar-fix k) (svex-env-fix env)))
+                    (4vec-x)))
+           :hints(("Goal" :in-theory (enable svex-env-lookup svex-env-boundp )))))
+
+  (local (defthmd svex-env-boundp-is-hons-assoc-equal-of-svex-env-fix
+           (iff (svex-env-boundp k env)
+                (hons-assoc-equal (svar-fix k) (svex-env-fix env)))
+           :hints(("Goal" :in-theory (enable svex-env-boundp)))))
+
+  (local (Defthm hons-assoc-equal-iff-member
+           (iff (hons-assoc-equal k x)
+                (member-equal k (alist-keys x)))
+           :hints(("Goal" :in-theory (enable alist-keys)))))
+
+
+  (local (defthm svex-envs-similar-when-same-keys
+           (implies (set-equiv (alist-keys (svex-env-fix x))
+                               (alist-keys (svex-env-fix y)))
+                    (iff (svex-envs-similar x y)
+                         (svex-envs-equivalent x y)))
+           :hints((and stable-under-simplificationp
+                       '(:in-theory (e/d (svex-envs-equivalent
+                                          svex-env-lookup-is-hons-assoc-equal-of-svex-env-fix
+                                          svex-env-boundp-is-hons-assoc-equal-of-svex-env-fix)
+                                         (hons-assoc-equal-of-svex-env-fix))
+                         :use ((:instance svex-envs-similar-necc
+                                (k (svex-envs-equivalent-witness x y)))))))))
+          
+  (defthmd svex-alist-[=-asymm
+    (implies (and (svex-alist-[= x y)
+                  (set-equiv (svex-alist-keys x) (svex-alist-keys y)))
+             (iff (svex-alist-[= y x)
+                  (svex-alist-eval-equiv y x)))
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((:with svex-alist-eval-equiv-in-terms-of-envs-equivalent
+                             (svex-alist-eval-equiv y x)))
+                   :in-theory (e/d (svex-env-[=-asymm)
+                                   (svex-alist-[=-necc))
+                   :use ((:instance svex-alist-[=-necc
+                          (env (svex-alist-eval-equiv-envs-equivalent-witness y x)))
+                         (:instance svex-alist-[=-necc
+                          (x y) (y x)
+                          (env (svex-alist-eval-equiv-envs-equivalent-witness y x)))))))))
+
+(defsection svex-alist-compose-[=
+  (defun-sk svex-alist-compose-[= (x y)
+    (forall var
+            (svex-[= (svex-compose-lookup var x)
+                     (svex-compose-lookup var y)))
+    :rewrite :direct)
+
+  (in-theory (disable svex-alist-compose-[=))
+
+  (defcong svex-alist-compose-equiv equal (svex-alist-compose-[= x y) 1
+    :hints (("goal" :in-theory (e/d (svex-alist-compose-[=)
+                                    (svex-alist-compose-[=-necc))
+             :use ((:instance svex-alist-compose-[=-necc
+                    (x x-equiv)
+                    (var (svex-alist-compose-[=-witness x y)))
+                   (:instance svex-alist-compose-[=-necc
+                    (var (svex-alist-compose-[=-witness x-equiv y)))))))
+  (defcong svex-alist-compose-equiv equal (svex-alist-compose-[= x y) 2
+    :hints (("goal" :in-theory (e/d (svex-alist-compose-[=)
+                                    (svex-alist-compose-[=-necc))
+             :use ((:instance svex-alist-compose-[=-necc
+                    (y y-equiv)
+                    (var (svex-alist-compose-[=-witness x y)))
+                   (:instance svex-alist-compose-[=-necc
+                    (var (svex-alist-compose-[=-witness x y-equiv)))))))
+
+  (defthm svex-[=-of-svex-lookup-when-svex-alist-compose-[=
+    (implies (and (svex-alist-compose-[= x y)
+                  (svex-lookup k y))
+             (svex-[= (svex-lookup k x) (svex-lookup k y)))
+    :hints (("goal" 
+             :in-theory (e/d (svex-compose-lookup)
+                             (svex-alist-compose-[=-necc
+                              svex-env-lookup-of-svex-alist-eval))
+             :use ((:instance svex-alist-compose-[=-necc
+                    (var k))))))
+
+  (local (defthmd svex-lookup-iff-member-svex-alist-keys
+           (iff (svex-lookup var x)
+                (member-equal (svar-fix var) (svex-alist-keys x)))))
+
+  (defthm svex-alist-compose-[=-refl
+    (svex-alist-compose-[= x x)
+    :hints(("Goal" :in-theory (enable svex-alist-compose-[=))))
+
+  (local (defthmd svex-lookup-when-not-member-svex-alist-keys
+           (implies (not (member-equal (svar-fix var) (svex-alist-keys x)))
+                    (not (svex-lookup var x)))))
+
+  (defthm svex-alist-compose-[=-when-alist-keys-same
+    (implies (set-equiv (svex-alist-keys a) (svex-alist-keys b))
+             (iff (svex-alist-compose-[= a b)
+                  (svex-alist-[= a b)))
+    :hints (("goal" :in-theory (e/d (svex-alist-compose-[= svex-alist-[=-in-terms-of-lookup
+                                                           svex-compose-lookup
+                                                           svex-lookup-iff-member-svex-alist-keys
+                                                           svex-lookup-when-not-member-svex-alist-keys)
+                                    (member-svex-alist-keys
+                                     svex-alist-compose-[=-necc
+                                     svex-[=-of-svex-lookup-when-svex-alist-[=))
+             :use ((:instance svex-alist-compose-[=-necc
+                    (x a) (y b)
+                    (var (svex-alist-[=-lookup-witness a b)))
+                   (:instance svex-[=-of-svex-lookup-when-svex-alist-[=
+                    (x a) (y b)
+                    (k (svex-alist-compose-[=-witness a b)))))))
+
+
+  (defthm svex-env-[=-of-append-eval-when-svex-alist-compose-[=
+    (implies (svex-alist-compose-[= x y)
+             (svex-env-[= (append (svex-alist-eval x env) env)
+                          (append (svex-alist-eval y env) env)))
+    :hints(("Goal" :in-theory (e/d (svex-env-[= svex-compose-lookup)
+                                   (svex-alist-compose-[=-necc
+                                    svex-[=-necc
+                                    svex-[=-of-svex-lookup-when-svex-alist-compose-[=))
+            :expand ((:free (v) (svex-eval (svex-var v) env)))
+            :use ((:instance svex-alist-compose-[=-necc
+                   (var (svex-env-[=-witness (append (svex-alist-eval x env) env)
+                                             (append (svex-alist-eval y env) env) )))
+                  (:instance svex-[=-necc
+                   (x (svex-compose-lookup (svex-env-[=-witness (append (svex-alist-eval x env) env)
+                                                                (append (svex-alist-eval y env) env) ) x))
+                   (y (svex-compose-lookup (svex-env-[=-witness (append (svex-alist-eval x env) env)
+                                                                (append (svex-alist-eval y env) env) ) y))
+                   (env env))))))
+
+  
+  (defthmd svex-alist-compose-[=-transitive-1
+    (implies (and (svex-alist-compose-[= x y)
+                  (svex-alist-compose-[= y z))
+             (svex-alist-compose-[= x z))
+    :hints (("goal" :expand ((svex-alist-compose-[= x z))
+             :in-theory (e/d (svex-[=-transitive-1)
+                             (svex-alist-compose-[=-necc))
+             :use ((:instance svex-alist-compose-[=-necc
+                    (var (svex-alist-compose-[=-witness x z)))
+                   (:instance svex-alist-compose-[=-necc
+                    (x y) (y z)
+                    (var (svex-alist-compose-[=-witness x z)))))))
+
+  (defthmd svex-alist-compose-[=-transitive-2
+    (implies (and (svex-alist-compose-[= y z)
+                  (svex-alist-compose-[= x y))
+             (svex-alist-compose-[= x z))
+    :hints(("Goal" :in-theory (enable svex-alist-compose-[=-transitive-1))))
+
+  (defthmd svex-alist-compose-[=-asymm
+    (implies (and (svex-alist-compose-[= x y))
+             (iff (svex-alist-compose-[= y x)
+                  (svex-alist-compose-equiv y x)))
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((svex-alist-compose-equiv y x))
+                   :in-theory (e/d (svex-[=-asymm)
+                                   (svex-alist-compose-[=-necc))
+                   :use ((:instance svex-alist-compose-[=-necc
+                          (var (svex-alist-compose-equiv-witness y x)))
+                         (:instance svex-alist-compose-[=-necc
+                          (x y) (y x)
+                          (var (svex-alist-compose-equiv-witness y x)))))))))
 
 (defsection svex-monotonic-p
   (defcong svex-eval-equiv equal (svex-monotonic-p x) 1
@@ -446,22 +733,19 @@
 
   (defthm svex-compose-preserves-alist-[=
     (implies (and (svex-monotonic-p x)
-                  (svex-alist-[= a b)
-                  (set-equiv (svex-alist-keys a) (svex-alist-keys b)))
+                  (svex-alist-compose-[= a b))
              (svex-[= (svex-compose x a) (svex-compose x b)))
     :hints (("goal" :in-theory (enable svex-[=))))
 
   (defthm svexlist-compose-preserves-alist-[=
     (implies (and (svexlist-monotonic-p x)
-                  (svex-alist-[= a b)
-                  (set-equiv (svex-alist-keys a) (svex-alist-keys b)))
+                  (svex-alist-compose-[= a b))
              (svexlist-[= (svexlist-compose x a) (svexlist-compose x b)))
-    :hints (("goal" :in-theory (enable svexlist-[=))))
+    :hints(("Goal" :in-theory (enable svexlist-[=))))
 
   (defthm svex-alist-compose-preserves-alist-[=
     (implies (and (svex-alist-monotonic-p x)
-                  (svex-alist-[= a b)
-                  (set-equiv (svex-alist-keys a) (svex-alist-keys b)))
+                  (svex-alist-compose-[= a b))
              (svex-alist-[= (svex-alist-compose x a) (svex-alist-compose x b)))
     :hints (("goal" :expand ((svex-alist-[= (svex-alist-compose x a) (svex-alist-compose x b))))))
 

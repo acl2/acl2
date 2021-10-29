@@ -741,16 +741,6 @@
 
 (local (in-theory (disable acl2::intersectp-equal-commute)))
 
-
-(defthmd svex-alist-eval-equiv-in-terms-of-envs-equivalent
-  (equal (svex-alist-eval-equiv x y)
-         (LET
-          ((ENV (SVEX-ALIST-EVAL-EQUIV-ENVS-EQUIVALENT-WITNESS X Y)))
-          (SVEX-ENVS-EQUIVALENT (SVEX-ALIST-EVAL X ENV)
-                                (SVEX-ALIST-EVAL Y ENV))))
-  :hints (("goal" :cases ((svex-alist-eval-equiv x y))
-           :in-theory (enable SVEX-ENVS-EQUIVALENT-IMPLIES-ALIST-EVAL-EQUIV))))
-
 (defines neteval-ordering-compile
   :flag-local nil
   (define neteval-ordering-compile ((x neteval-ordering-p)
@@ -995,7 +985,17 @@
                                      svex-eval svex-apply)
                                     (<fn>
                                      svex-lookup-of-neteval-ordering-compile))))
-    :fn neteval-ordering-or-null-compile))
+    :fn neteval-ordering-or-null-compile)
+
+  (std::defret-mutual svex-alist-keys-of-<fn>
+    (defret svex-alist-keys-of-<fn>
+      (equal (svex-alist-keys compose)
+             (alist-keys (neteval-ordering-fix x)))
+      :hints ('(:expand (<call>
+                         (:free (a b) (svex-alist-keys (cons a b)))
+                         (alist-keys (neteval-ordering-fix x)))))
+      :fn neteval-ordering-compile)
+    :skip-others t))
 
 
 (defthm svex-lookup-of-append
@@ -1538,7 +1538,12 @@
                            (svex-alist-compextract vars (neteval-ordering-compile x network)))
     :hints(("Goal" :in-theory (e/d (svex-alist-eval-equiv-in-terms-of-envs-equivalent)
                                    (neteval-ordering-extract))
-            :do-not-induct t))))
+            :do-not-induct t)))
+
+  (defret alist-keys-of-<fn>
+    (equal (alist-keys new-ord)
+           (svarlist-fix vars))
+    :hints(("Goal" :in-theory (enable alist-keys)))))
 
                  
 
@@ -1614,7 +1619,10 @@
                               (netcomp-p-witness (svex-alist-fix comp)
                                                  (svex-alist-fix decomp)))
     ///
-    
+
+    (defret alist-keys-of-<fn>
+      (equal (alist-keys ord)
+             (svex-alist-keys comp)))
 
     (defthm svex-alist-compextract-keys-under-compose-equiv
       (svex-alist-eval-equiv (svex-alist-compextract (svex-alist-keys x) x) x)
