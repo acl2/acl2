@@ -2101,7 +2101,7 @@
 (defsection netevalcomp-p
   (defun-sk netevalcomp-p (comp network)
     (exists ordering
-            (svex-alist-[= comp
+            (svex-alist-<<= comp
                            (svex-alist-compose
                             (neteval-ordering-compile ordering network)
                             (svarlist-x-subst (svex-alist-keys network))))))

@@ -694,7 +694,7 @@ about the corresponding bit in @('a').</p>"
                                  3vec-bitnot
                                  4vec-bitxor
                                  4vec-mask
-                                 4vec-[=)
+                                 4vec-<<=)
                                 (svex-eval-gte-xeval))
                 :use ((:instance svex-eval-gte-xeval (x (car args)))
                       (:instance svex-eval-gte-xeval (x (cadr args))))))
@@ -724,7 +724,7 @@ that are known to be @('x').</p>"
                                  3vec-bitnot
                                  4vec-bitxor
                                  4vec-mask
-                                 4vec-[=)
+                                 4vec-<<=)
                                 (svex-eval-gte-xeval))
                 :use ((:instance svex-eval-gte-xeval (x (car args)))
                       (:instance svex-eval-gte-xeval (x (cadr args))))))
@@ -785,7 +785,7 @@ similar to @(see svmask-for-bitand).</p>"
                                    3vec-bitnot
                                    4vec-bitxor
                                    4vec-mask
-                                   4vec-[=)
+                                   4vec-<<=)
                                   (svex-eval-gte-xeval))
                   :use ((:instance svex-eval-gte-xeval (x (car args)))
                         (:instance svex-eval-gte-xeval (x (cadr args))))))
@@ -824,7 +824,7 @@ such bits from the mask for @('weaker').</p>"
          (and stable-under-simplificationp
               '(:in-theory (e/d (4vec-mask
                                  4vec-override
-                                 4vec-[=)
+                                 4vec-<<=)
                                 (svex-eval-gte-xeval))
                 :use ((:instance svex-eval-gte-xeval (x (car args)))
                       (:instance svex-eval-gte-xeval (x (cadr args))))))
@@ -911,7 +911,7 @@ chopping off any bits beyond position @('n').  Otherwise, we don't know how
                '(:in-theory (e/d (4vec-zero-ext
                                   4vmask-all-or-none
                                   4vec-mask
-                                  4vec-[=
+                                  4vec-<<=
                                   )
                                  (svex-eval-gte-xeval))
                  :use ((:instance svex-eval-gte-xeval (x (car args))))))
@@ -967,7 +967,7 @@ chopping off any bits beyond position @('n').  Otherwise, we don't know how
     (equal (4vec-mask mask (4vec-sign-ext n (4vec-mask (mask-for-generic-signx mask) x)))
            (4vec-mask mask (4vec-sign-ext n x)))
     :hints(("Goal" :in-theory (enable mask-for-generic-signx
-                                      4vec-[=
+                                      4vec-<<=
                                       4vec-mask
                                       4vec-sign-ext
                                       negp
@@ -993,7 +993,7 @@ chopping off any bits beyond position @('n').  Otherwise, we don't know how
     (equal (4vec-mask mask (4vec-concat n (4vec-mask (mask-for-generic-signx mask) x) y))
            (4vec-mask mask (4vec-concat n x y)))
     :hints(("Goal" :in-theory (enable mask-for-generic-signx
-                                      4vec-[=
+                                      4vec-<<=
                                       4vec-mask
                                       4vec-concat
                                       negp
@@ -1007,7 +1007,7 @@ chopping off any bits beyond position @('n').  Otherwise, we don't know how
     (equal (4vec-mask mask (4vec-concat n x (4vec-mask (mask-for-generic-signx mask) y)))
            (4vec-mask mask (4vec-concat n x y)))
     :hints(("Goal" :in-theory (enable mask-for-generic-signx
-                                      4vec-[=
+                                      4vec-<<=
                                       4vec-mask
                                       4vec-concat
                                       negp
@@ -1103,7 +1103,7 @@ mask-for-generic-signx) here.</p>"
           (and stable-under-simplificationp
                ;; Don't open up 4vec-mask yet, want
                '(:in-theory (e/d (mask-for-fixed-signx
-                                  4vec-[=
+                                  4vec-<<=
                                   4vec-sign-ext
                                   4vec-mask
                                   2vec-p)
@@ -1430,7 +1430,7 @@ aggressively.</p>"
                                     3vec-fix
                                     3vec-bitand
                                     4vec-bitand
-                                    4vec-[=)
+                                    4vec-<<=)
                                    (svex-eval-gte-xeval))
                    :use ((:instance svex-eval-gte-xeval (x (first args)))
                          (:instance svex-eval-gte-xeval (x (second args))))))
@@ -1454,7 +1454,7 @@ well to @('(resand x y)').</p>"
                                   3vec-fix
                                   4vec-resand
                                   svmask-for-bitand
-                                  4vec-[=)
+                                  4vec-<<=)
                                  (svex-eval-gte-xeval))
                  :use ((:instance svex-eval-gte-xeval (x (first args)))
                        (:instance svex-eval-gte-xeval (x (second args))))))
@@ -1505,7 +1505,7 @@ least one or the other as a care bit.</p>"
                                   3vec-fix
                                   3vec-bitor
                                   4vec-bitor
-                                  4vec-[=)
+                                  4vec-<<=)
                                  (svex-eval-gte-xeval))
                  :use ((:instance svex-eval-gte-xeval (x (first args)))
                        (:instance svex-eval-gte-xeval (x (second args))))))
@@ -1531,7 +1531,7 @@ well to @('(resand x y)').</p>"
                                   3vec-bitor
                                   4vec-bitor
                                   4vec-resor
-                                  4vec-[=)
+                                  4vec-<<=)
                                  (svex-eval-gte-xeval))
                  :use ((:instance svex-eval-gte-xeval (x (first args)))
                        (:instance svex-eval-gte-xeval (x (second args))))))
@@ -1607,7 +1607,7 @@ other.</p>"
                '(:in-theory (e/d (4vec-mask
                                   3vec-fix
                                   4vec-bitxor
-                                  4vec-[=)
+                                  4vec-<<=)
                                  (svex-eval-gte-xeval))
                  :use ((:instance svex-eval-gte-xeval (x (first args)))
                        (:instance svex-eval-gte-xeval (x (second args))))))
@@ -1656,7 +1656,7 @@ false.</p>
                                   3vec-fix
                                   3vec-bit?
                                   4vec-bit?
-                                  4vec-[=)
+                                  4vec-<<=)
                                  (svex-eval-gte-xeval))
                  :use ((:instance svex-eval-gte-xeval (x (first args))))))
           (bitops::logbitp-reasoning)
@@ -1712,7 +1712,7 @@ false.</p>
                '(:in-theory (e/d (4vec-mask
                                   3vec-fix
                                   4vec-bit?!
-                                  4vec-[=
+                                  4vec-<<=
                                    svex-eval-when-quote)
                                  (svex-eval-gte-xeval))
                  :use ((:instance svex-eval-gte-xeval (x (first args))))))
@@ -1836,7 +1836,7 @@ in which case we don't care about @('test') at all."
                                      4vec-?
                                      3vec-?
                                      3vec-fix
-                                     4vec-[=)
+                                     4vec-<<=)
                                     (svex-eval-gte-xeval
                                      ))
              :use ((:instance svex-eval-gte-xeval (x then))
@@ -1877,7 +1877,7 @@ in which case we don't care about @('test') at all."
                                      4vec-?*
                                      3vec-?*
                                      3vec-fix
-                                     4vec-[=)
+                                     4vec-<<=)
                                     (svex-eval-gte-xeval
                                      ))
              :use ((:instance svex-eval-gte-xeval (x then))
@@ -1913,7 +1913,7 @@ in which case we don't care about @('test') at all."
                                      4vec-mask
                                      4vec-?!
                                      3vec-fix
-                                     4vec-[=)
+                                     4vec-<<=)
                                     (svex-eval-gte-xeval
                                      ))
              :use ((:instance svex-eval-gte-xeval (x then))
@@ -2005,7 +2005,7 @@ care @('then').</li>
                                   4vec-?
                                   3vec-?
                                   3vec-fix
-                                  4vec-[=)
+                                  4vec-<<=)
                                  (svex-eval-gte-xeval))
                  :use ((:instance svex-eval-gte-xeval (x (first args))))))))
 
@@ -2090,7 +2090,7 @@ care @('then').</li>
                                   4vec-?*
                                   3vec-?*
                                   3vec-fix
-                                  4vec-[=)
+                                  4vec-<<=)
                                  (svex-eval-gte-xeval))
                  :use ((:instance svex-eval-gte-xeval (x (first args))))))))
 
@@ -2176,7 +2176,7 @@ checking that the xeval is 0, though.</li>
                                   2vec-p
                                   4vec-?!
                                   3vec-fix
-                                  4vec-[=)
+                                  4vec-<<=)
                                  (svex-eval-gte-xeval))
                  :use ((:instance svex-eval-gte-xeval (x (first args))))))))
 
