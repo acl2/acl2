@@ -419,12 +419,23 @@
   (xdoc::topstring
    (xdoc::p
     "[Yul: Specification of Yul: Formal Specification] introduces
-     the notion of mode, which indicates how a statement completes execution."))
+     the notion of mode, which indicates how a statement completes execution.")
+   (xdoc::p
+    "We disable the executable counterparts of the constructors of this type,
+     because we want to treat them abstractly.
+     Their definition is already disabled by default, as it should,
+     but the fact that their executable counterpart is enabled
+     defeats the disabling of their definition, given that they are nullary."))
   (:regular ())
   (:break ())
   (:continue ())
   (:leave ())
-  :pred modep)
+  :pred modep
+  ///
+  (in-theory (disable (:e mode-regular)
+                      (:e mode-break)
+                      (:e mode-continue)
+                      (:e mode-leave))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
