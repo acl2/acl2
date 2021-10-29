@@ -18,7 +18,7 @@
 
 ;; TODO: Need to handle the presence of :default in this kind of context array
 
-(include-book "kestrel/axe/contexts" :dir :system)
+(include-book "contexts")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 ;could make tail rec

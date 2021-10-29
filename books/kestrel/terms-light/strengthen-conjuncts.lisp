@@ -20,7 +20,7 @@
 (include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 
-  ;move
+;; prove from if-eval-of-make-if-term-gen?
 (defthm if-and-not-eval-of-make-if-term-gen
   (iff (if-and-not-eval (make-if-term-gen test then else) a)
        (if (if-and-not-eval test a)
@@ -51,7 +51,7 @@
                         (if-eval if-and-not-eval)
                         (if-eval-list if-and-not-eval-list)))))
 
-
+;; Checks whether one term is the negation of the other
 (defund complementary-termsp (x y)
   (declare (xargs :guard (and (pseudo-termp x)
                               (pseudo-termp y))))
@@ -76,7 +76,7 @@
   :hints (("Goal" :in-theory (enable complementary-termsp))))
 
 ;; Checks that X and Y are identical except for the negation of a single disjunct.
-(defun complementary-disjunctionsp (x y)
+(defun combinable-disjunctionsp (x y)
   (declare (xargs :guard (and (pseudo-termp x)
                               (pseudo-termp y))))
   (if (or (not (term-is-disjunctionp x))
@@ -85,89 +85,89 @@
     (or (and (complementary-termsp (farg1 x) (farg1 y))
              (equal (farg3 x) (farg3 y)))
         (and (equal (farg1 x) (farg1 y))
-             (complementary-disjunctionsp (farg3 x) (farg3 y))))))
+             (combinable-disjunctionsp (farg3 x) (farg3 y))))))
 
 ;; (thm
 ;;  (IMPLIES (COMPLEMENTARY-TERMSP X y)
-;;           (COMPLEMENTARY-DISJUNCTIONSP X y)))
+;;           (COMBINABLE-DISJUNCTIONSP X y)))
 
-(defthm complementary-disjunctionsp-symmetric
-  (equal (complementary-disjunctionsp x y)
-         (complementary-disjunctionsp y x)))
+(defthm combinable-disjunctionsp-symmetric
+  (equal (combinable-disjunctionsp x y)
+         (combinable-disjunctionsp y x)))
 
 ;; Can combine, e.g., the two conjuncts (or a (not b) c) with (or a b c) to create the new, stronger conjunct (or a b).
-;; Assumes that X and Y are complementary disjunctions
+;; Assumes that X and Y are combinable disjunctions
 ;; Returns (mv changep new-conjunct) where if changep is true, then new-conjunct is equivalent to the conjunction of x and y.
-(defund conjoin-complementary-disjunctions (x y)
+(defund conjoin-combinable-disjunctions (x y)
   (declare (xargs :guard (and (pseudo-termp x)
                               (pseudo-termp y)
-                              (complementary-disjunctionsp x y))
-                  :guard-hints (("Goal" :expand (complementary-disjunctionsp x y)))))
+                              (combinable-disjunctionsp x y))
+                  :guard-hints (("Goal" :expand (combinable-disjunctionsp x y)))))
   (if (or (not (term-is-disjunctionp x))
           (not (term-is-disjunctionp y)))
-      ;; x and y must be complementary
+      ;; x and y must be combinable
       *nil*
     ;; x and y must both be disjunctions:
     (if (equal (farg1 x) (farg1 y)) ; (or (not x) ...) and (or x ...)
         `(if ,(farg1 x)
              't
-           ,(conjoin-complementary-disjunctions (farg3 x) (farg3 y)))
-      ;; we've found the complementary disjuncts:
+           ,(conjoin-combinable-disjunctions (farg3 x) (farg3 y)))
+      ;; we've found the combinable disjuncts:
       (farg3 x))))
 
-(defthm pseudo-termp-of-conjoin-complementary-disjunctions
+(defthm pseudo-termp-of-conjoin-combinable-disjunctions
   (implies (and (pseudo-termp x)
                 (pseudo-termp y)
-                (complementary-disjunctionsp x y))
-           (pseudo-termp (conjoin-complementary-disjunctions x y)))
-  :hints (("Goal" :in-theory (enable conjoin-complementary-disjunctions))))
+                (combinable-disjunctionsp x y))
+           (pseudo-termp (conjoin-combinable-disjunctions x y)))
+  :hints (("Goal" :in-theory (enable conjoin-combinable-disjunctions))))
 
-(defthm if-and-not-eval-of-conjoin-complementary-disjunctions
-  (implies (complementary-disjunctionsp x y)
-           (iff (if-and-not-eval (conjoin-complementary-disjunctions x y) a)
+(defthm if-and-not-eval-of-conjoin-combinable-disjunctions
+  (implies (combinable-disjunctionsp x y)
+           (iff (if-and-not-eval (conjoin-combinable-disjunctions x y) a)
                 (and (if-and-not-eval x a)
                      (if-and-not-eval y a))))
   :hints (("Goal" :expand ((complementary-termsp x y)
-                           (conjoin-complementary-disjunctions x y)))))
+                           (conjoin-combinable-disjunctions x y)))))
 
-;; Find a conjunct of C that is complementary to X, or return nil.
+;; Find a conjunct of C that is combinable with X, or return nil.
 ;; Generally, X and the conjuncts of C are all disjunctions.
-(defund find-complementary-conjunct (x c)
+(defund find-combinable-conjunct (x c)
   (declare (xargs :guard (and (pseudo-termp x)
                               (pseudo-termp c))))
   (if (not (term-is-conjunctionp c))
-      (if (complementary-disjunctionsp x c)
+      (if (combinable-disjunctionsp x c)
           c
         nil)
     ;; c is a conjunction, so check the first conjunct:
     (let ((c1 (farg1 c)))
-      (if (complementary-disjunctionsp x c1)
+      (if (combinable-disjunctionsp x c1)
           c1
-        (find-complementary-conjunct x (farg2 c))))))
+        (find-combinable-conjunct x (farg2 c))))))
 
-(defthm pseudo-termp-of-find-complementary-conjunct
+(defthm pseudo-termp-of-find-combinable-conjunct
   (implies (pseudo-termp c)
-           (pseudo-termp (find-complementary-conjunct x c)))
-  :hints (("Goal" :in-theory (enable find-complementary-conjunct))))
+           (pseudo-termp (find-combinable-conjunct x c)))
+  :hints (("Goal" :in-theory (enable find-combinable-conjunct))))
 
-(defthm complementary-disjunctionsp-of-find-complementary-conjunct
-  (implies (find-complementary-conjunct x c)
-           (complementary-disjunctionsp x
-                                        (find-complementary-conjunct x c)))
-  :hints (("Goal" :in-theory (enable find-complementary-conjunct))))
+(defthm combinable-disjunctionsp-of-find-combinable-conjunct
+  (implies (find-combinable-conjunct x c)
+           (combinable-disjunctionsp x
+                                     (find-combinable-conjunct x c)))
+  :hints (("Goal" :in-theory (enable find-combinable-conjunct))))
 
-(defthm complementary-disjunctionsp-of-find-complementary-conjunct-alt
-  (implies (find-complementary-conjunct x c)
-           (complementary-disjunctionsp (find-complementary-conjunct x c)
-                                        x))
-  :hints (("Goal" :in-theory (enable find-complementary-conjunct))))
+(defthm combinable-disjunctionsp-of-find-combinable-conjunct-alt
+  (implies (find-combinable-conjunct x c)
+           (combinable-disjunctionsp (find-combinable-conjunct x c)
+                                     x))
+  :hints (("Goal" :in-theory (enable find-combinable-conjunct))))
 
-(defthm not-if-and-not-eval-when-find-complementary-conjunct-and-false
-  (implies (and (find-complementary-conjunct x c)
-                (not (if-and-not-eval (find-complementary-conjunct x c)
+(defthm not-if-and-not-eval-when-find-combinable-conjunct-and-false
+  (implies (and (find-combinable-conjunct x c)
+                (not (if-and-not-eval (find-combinable-conjunct x c)
                                       a)))
            (not (if-and-not-eval c a)))
-  :hints (("Goal" :in-theory (enable find-complementary-conjunct))))
+  :hints (("Goal" :in-theory (enable find-combinable-conjunct))))
 
 ;; Remove the first occurence of X as a conjunct of C.
 (defund remove-conjunct (x c)
@@ -194,12 +194,11 @@
                (acl2-count c)))
   :rule-classes :linear
   :hints (("Goal" :expand ((remove-conjunct x c)
-                           (ACL2-COUNT (CDR C))
-                           (ACL2-COUNT (CDDR C))
-                           (ACL2-COUNT (CDDDR C)))
+                           (acl2-count (cdr c))
+                           (acl2-count (cddr c))
+                           (acl2-count (cdddr c)))
            :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (remove-conjunct make-if-term-gen term-is-conjunctionp)
-                           ()))))
+           :in-theory (enable remove-conjunct make-if-term-gen term-is-conjunctionp))))
 
 (defthm pseudo-termp-of-remove-conjunct
   (implies (pseudo-termp c)
@@ -226,37 +225,50 @@
            (if-and-not-eval c a))
   :hints (("Goal" :in-theory (enable remove-conjunct make-if-term-gen))))
 
+;; Can combine two weaker conjuncts into a single stronger conjunct.
+;; Makes a single pass through C.
 ;; In general, the conjuncts of C are treated as disjunctions.
-;; TODO: Use better terminology than "complementary" conjuncts -- maybe unifiable?
-(defund combine-complementary-conjuncts (c)
+(defund strengthen-conjuncts-aux (c)
   (declare (xargs :guard (pseudo-termp c)
                   :verify-guards nil ;done below
-                  :ruler-extenders :all
-                  ))
+                  :ruler-extenders :all))
   (if (not (term-is-conjunctionp c))
       c
     (let* ((c1 (farg1 c)) ; c is (and c1 ...)
-           (maybe-complementary-conjunct (find-complementary-conjunct c1 (farg2 c))))
-      (if (not maybe-complementary-conjunct)
-          `(if ,c1 ,(combine-complementary-conjuncts (farg2 c)) 'nil)
-        (progn$ ; (cw "Found complementary conjunct: ~x0~%" maybe-complementary-conjunct)
-                (let ((reduced-arg2 (remove-conjunct maybe-complementary-conjunct (farg2 c))))
-                  (if (equal *t* reduced-arg2) ; it was the only conjunct
-                      (conjoin-complementary-disjunctions maybe-complementary-conjunct c1) ; stronger than maybe-complementary-conjunct or c1 alone
-                    (let ((reduced-arg2 (combine-complementary-conjuncts reduced-arg2)))
-                      (make-if-term-gen (conjoin-complementary-disjunctions maybe-complementary-conjunct c1) ; stronger than maybe-complementary-conjunct or c1 alone
-                                        reduced-arg2
-                                        *nil*)))))))))
+           (maybe-combinable-conjunct (find-combinable-conjunct c1 (farg2 c))))
+      (if (not maybe-combinable-conjunct)
+          ;; Keep c1 and keep going:
+          `(if ,c1 ,(strengthen-conjuncts-aux (farg2 c)) 'nil)
+        (progn$ ; (cw "Found combinable conjunct: ~x0~%" maybe-combinable-conjunct)
+         (let ((reduced-arg2 (remove-conjunct maybe-combinable-conjunct (farg2 c)))
+               ;; stronger than maybe-combinable-conjunct or c1 alone:
+               (stronger-c1 (conjoin-combinable-disjunctions maybe-combinable-conjunct c1)))
+           (if (equal *t* reduced-arg2) ; it was the only conjunct
+               stronger-c1
+             (let ((reduced-arg2 (strengthen-conjuncts-aux reduced-arg2)))
+               (make-if-term-gen stronger-c1
+                                 reduced-arg2
+                                 *nil*)))))))))
 
-(defthm pseudo-termp-of-combine-complementary-conjuncts
+(defthm pseudo-termp-of-strengthen-conjuncts-aux
   (implies (pseudo-termp c)
-           (pseudo-termp (combine-complementary-conjuncts c)))
-  :hints (("Goal" :in-theory (enable combine-complementary-conjuncts))))
+           (pseudo-termp (strengthen-conjuncts-aux c)))
+  :hints (("Goal" :in-theory (enable strengthen-conjuncts-aux))))
 
-(verify-guards combine-complementary-conjuncts)
+(verify-guards strengthen-conjuncts-aux)
 
-;; Correctness theorem for combine-complementary-conjuncts.
-(defthm if-and-not-eval-of-combine-complementary-conjuncts
-  (iff (if-and-not-eval (combine-complementary-conjuncts c) a)
+;; Correctness theorem for strengthen-conjuncts-aux.
+(defthm if-and-not-eval-of-strengthen-conjuncts-aux
+  (iff (if-and-not-eval (strengthen-conjuncts-aux c) a)
        (if-and-not-eval c a))
-  :hints (("Goal" :in-theory (enable combine-complementary-conjuncts))))
+  :hints (("Goal" :in-theory (enable strengthen-conjuncts-aux))))
+
+;; TODO: Make a version that calls strengthen-conjuncts-aux repeatedly.
+
+;; (thm
+;;  (implies (not (equal (strengthen-conjuncts-aux c) c))
+;;           (< (acl2-count (strengthen-conjuncts-aux c))
+;;              (acl2-count c)))
+;;  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+;;           :in-theory (enable STRENGTHEN-CONJUNCTS-AUX
+;;                              make-if-term-gen))))

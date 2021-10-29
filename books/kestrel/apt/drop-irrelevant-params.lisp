@@ -14,20 +14,20 @@
 
 ;; See tests in drop-irrelevant-params-tests.lisp
 
-(include-book "kestrel/apt/utilities/deftransformation" :dir :system)
-(include-book "kestrel/apt/utilities/make-becomes-theorem" :dir :system)
-(include-book "kestrel/apt/utilities/drop-corresponding-items" :dir :system)
-(include-book "kestrel/apt/utilities/transformation-prologue" :dir :system)
-(include-book "kestrel/apt/utilities/verify-guards-for-defun" :dir :system)
-(include-book "kestrel/apt/utilities/names" :dir :system)
-(include-book "kestrel/apt/utilities/option-parsing" :dir :system)
+(include-book "utilities/deftransformation")
+(include-book "utilities/make-becomes-theorem")
+(include-book "utilities/drop-corresponding-items")
+(include-book "utilities/transformation-prologue")
+(include-book "utilities/verify-guards-for-defun")
+(include-book "utilities/names")
+(include-book "utilities/option-parsing")
 (include-book "kestrel/utilities/declares" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate-dollar" :dir :system)
 (include-book "kestrel/utilities/defining-forms" :dir :system)
 (include-book "kestrel/utilities/declares1" :dir :system)
 (include-book "kestrel/utilities/my-get-event" :dir :system)
 (include-book "kestrel/utilities/reconstruct-macros" :dir :system)
-(include-book "kestrel/apt/utilities/defun-variant" :dir :system)
+(include-book "utilities/defun-variant")
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 

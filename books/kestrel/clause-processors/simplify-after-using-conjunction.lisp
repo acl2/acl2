@@ -10,10 +10,10 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/clause-processors/subst-flag" :dir :system)
-(include-book "kestrel/clause-processors/flatten-literals" :dir :system)
-(include-book "kestrel/clause-processors/simple-subsumption" :dir :system)
-(include-book "kestrel/clause-processors/push-unary-functions" :dir :system)
+(include-book "subst-flag")
+(include-book "flatten-literals")
+(include-book "simple-subsumption")
+(include-book "push-unary-functions")
 (include-book "simplify-assumptions")
 (local (include-book "kestrel/typed-lists-light/pseudo-term-list-listp" :dir :system))
 (local (include-book "kestrel/utilities/disjoin" :dir :system))

@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/forms" :dir :system)
+(include-book "forms")
 (local (include-book "kestrel/terms-light/logic-termp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 

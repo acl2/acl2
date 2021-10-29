@@ -13,7 +13,7 @@
 
 ;; See also negate-term, for a variant of this which does have a pseudo-termp guard.
 
-(include-book "kestrel/utilities/forms" :dir :system)
+(include-book "forms")
 
 ;; Negate FORM by adding or removing a call of not (avoids double negation)
 ;; See also dumb-negate-lit.
