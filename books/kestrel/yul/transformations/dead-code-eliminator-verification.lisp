@@ -773,22 +773,14 @@
      ((exec-of-dead-flag-is exec-expression)
       '(:in-theory (enable exec-expression)))
      ((exec-of-dead-flag-is exec-expression-list)
-      '(:in-theory (enable exec-expression-list
-                           eoutcome-result-dead)))
+      '(:in-theory (enable exec-expression-list)))
      ((exec-of-dead-flag-is exec-funcall)
-      '(:in-theory (enable exec-funcall
-                           eoutcome-result-dead)))
+      '(:in-theory (enable exec-funcall)))
      ((exec-of-dead-flag-is exec-function)
-      '(:in-theory (enable exec-function
-                           funinfo-result-dead
-                           cstate-result-dead
-                           soutcome-result-dead)))
+      '(:in-theory (enable exec-function)))
      ((exec-of-dead-flag-is exec-statement)
       `(:in-theory (e/d (exec-statement
-                         statement-dead
-                         cstate-result-dead
-                         eoutcome-result-dead
-                         soutcome-result-dead)
+                         statement-dead)
                         (add-funs-in-statement-list-of-dead
                          restrict-vars-of-dead))
         ,@(and (or (exec-of-dead-stmt-kind-is :if)
@@ -828,8 +820,7 @@
                                         (cstate->functions cstate)))))))))
      ((exec-of-dead-flag-is exec-statement-list)
       '(:in-theory (e/d (exec-statement-list
-                         statement-list-dead
-                         soutcome-result-dead)
+                         statement-list-dead)
                         (statement-kind-when-mode-regular))
         :expand (statement-list-dead stmt nil)
         :use (:instance statement-kind-when-mode-regular
@@ -837,9 +828,7 @@
               (limit (1- limit)))))
      ((exec-of-dead-flag-is exec-block)
       '(:in-theory (e/d (exec-block
-                         block-dead
-                         cstate-result-dead
-                         soutcome-result-dead)
+                         block-dead)
                         (add-funs-in-statement-list-of-dead
                          restrict-vars-of-dead))
         :use ((:instance add-funs-in-statement-list-of-dead
@@ -857,14 +846,11 @@
                            (+ -1 limit))))
                         (cstate->functions cstate)))))))
      ((exec-of-dead-flag-is exec-for-iterations)
-      '(:in-theory (enable exec-for-iterations
-                           eoutcome-result-dead
-                           soutcome-result-dead)))
+      '(:in-theory (enable exec-for-iterations)))
      ((exec-of-dead-flag-is exec-switch-rest)
       '(:in-theory (enable exec-switch-rest
                            swcase-dead
                            swcase-list-dead
-                           soutcome-result-dead
                            block-option-some->val)
         :expand ((block-option-dead default)
                  (exec-switch-rest cases default target cstate limit)))))))
@@ -880,11 +866,19 @@
      since we always want to expand them in the proofs.
      Note that, if we put them into a goal hint,
      they would not apply to computed hints;
-     this is why we locally enable them instead."))
+     this is why we locally enable them instead.")
+   (xdoc::p
+    "We locally enable the @('...-result-dead') functions,
+     since we always want to expand them in the proofs.
+     This way, we expose the two cases, error and non-error."))
 
   (local (in-theory (enable cstate-result-okeq
                             eoutcome-result-okeq
-                            soutcome-result-okeq)))
+                            soutcome-result-okeq
+                            funinfo-result-dead
+                            cstate-result-dead
+                            eoutcome-result-dead
+                            soutcome-result-dead)))
 
   (defthm-exec-flag
 
