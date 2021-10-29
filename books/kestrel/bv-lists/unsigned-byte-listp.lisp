@@ -15,7 +15,7 @@
 ;; all-unsigned-byte-p.  In this book, we provide some rules to connect the two
 ;; functions.
 
-(include-book "all-unsigned-byte-p")
+(include-book "all-unsigned-byte-p") ; todo: separate out?
 (include-book "unsigned-byte-listp-def")
 (local (include-book "../utilities/equal-of-booleans"))
 
