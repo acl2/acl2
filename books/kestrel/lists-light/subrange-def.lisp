@@ -15,6 +15,7 @@
 
 ;; Return a list of the elements of LST from START (inclusive) to END
 ;; (inclusive), where the numbering is 0-based.
+;; TODO: Make this more efficient by doing the nthcdr first.
 (defund subrange (start end lst)
   (declare (type (integer 0 *) start)
            (type (integer 0 *) end)
