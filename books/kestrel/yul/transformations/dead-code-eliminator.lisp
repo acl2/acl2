@@ -152,7 +152,7 @@
                     (fundef-dead (statement-fundef->get stmt))))
     :enable statement-dead)
 
-  (defruled block->statements-of-block-dead
+  (defrule block->statements-of-block-dead
     (equal (block->statements (block-dead block))
            (statement-list-dead (block->statements block) nil))
     :enable block-dead)

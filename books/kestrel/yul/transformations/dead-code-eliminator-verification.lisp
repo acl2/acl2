@@ -229,9 +229,10 @@
                     (funinfo-dead funinfo)))
     :enable (funinfop resulterrp))
 
-  (defrule funinfo-result-dead-of-resulterr
-    (equal (funinfo-result-dead (resulterr info stack))
-           (resulterr info stack))))
+  (defrule funinfo-result-dead-when-resulterrp
+    (implies (resulterrp error)
+             (equal (funinfo-result-dead error)
+                    error))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -382,9 +383,10 @@
                     (eoutcome-dead outcome)))
     :enable (eoutcomep resulterrp))
 
-  (defrule eoutcome-result-dead-of-resulterr
-    (equal (eoutcome-result-dead (resulterr info stack))
-           (resulterr info stack))))
+  (defrule eoutcome-result-dead-when-resulterrp
+    (implies (resulterrp error)
+             (equal (eoutcome-result-dead error)
+                    error))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -434,9 +436,10 @@
                     (soutcome-dead outcome)))
     :enable (soutcomep resulterrp))
 
-  (defrule soutcome-result-dead-of-resulterr
-    (equal (soutcome-result-dead (resulterr info stack))
-           (resulterr info stack))))
+  (defrule soutcome-result-dead-when-resulterrp
+    (implies (resulterrp error)
+             (equal (soutcome-result-dead error)
+                    error))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -576,11 +579,13 @@
   ((defrule lemma
      (equal (add-vars-values vars
                              vals
-                             (cstate nil (fstate-dead (cstate->functions cstate))))
+                             (cstate nil
+                                     (fstate-dead (cstate->functions cstate))))
             (cstate-result-dead
              (add-vars-values vars
                               vals
-                              (cstate nil (cstate->functions cstate)))))
+                              (cstate nil
+                                      (cstate->functions cstate)))))
      :enable cstate-result-dead
      :disable add-vars-values-of-dead
      :use (:instance add-vars-values-of-dead
@@ -768,31 +773,14 @@
      ((exec-of-dead-flag-is exec-expression)
       '(:in-theory (enable exec-expression)))
      ((exec-of-dead-flag-is exec-expression-list)
-      '(:in-theory (enable exec-expression-list
-                           eoutcome-result-dead
-                           eoutcome-result-okeq)))
+      '(:in-theory (enable exec-expression-list)))
      ((exec-of-dead-flag-is exec-funcall)
-      '(:in-theory (enable exec-funcall
-                           eoutcome-result-dead
-                           eoutcome-result-okeq)))
+      '(:in-theory (enable exec-funcall)))
      ((exec-of-dead-flag-is exec-function)
-      '(:in-theory (enable exec-function
-                           funinfo-result-dead
-                           cstate-result-dead
-                           soutcome-result-dead
-                           eoutcome-result-okeq
-                           soutcome-result-okeq)))
+      '(:in-theory (enable exec-function)))
      ((exec-of-dead-flag-is exec-statement)
       `(:in-theory (e/d (exec-statement
-                         statement-dead
-                         cstate-result-dead
-                         eoutcome-result-dead
-                         soutcome-result-dead
-                         cstate-result-okeq
-                         eoutcome-result-okeq
-                         soutcome-result-okeq
-                         ,@(and (exec-of-dead-stmt-kind-is :for)
-                                '(block->statements-of-block-dead)))
+                         statement-dead)
                         (add-funs-in-statement-list-of-dead
                          restrict-vars-of-dead))
         ,@(and (or (exec-of-dead-stmt-kind-is :if)
@@ -832,9 +820,7 @@
                                         (cstate->functions cstate)))))))))
      ((exec-of-dead-flag-is exec-statement-list)
       '(:in-theory (e/d (exec-statement-list
-                         statement-list-dead
-                         soutcome-result-dead
-                         soutcome-result-okeq)
+                         statement-list-dead)
                         (statement-kind-when-mode-regular))
         :expand (statement-list-dead stmt nil)
         :use (:instance statement-kind-when-mode-regular
@@ -842,11 +828,7 @@
               (limit (1- limit)))))
      ((exec-of-dead-flag-is exec-block)
       '(:in-theory (e/d (exec-block
-                         block-dead
-                         cstate-result-dead
-                         soutcome-result-dead
-                         cstate-result-okeq
-                         soutcome-result-okeq)
+                         block-dead)
                         (add-funs-in-statement-list-of-dead
                          restrict-vars-of-dead))
         :use ((:instance add-funs-in-statement-list-of-dead
@@ -864,18 +846,11 @@
                            (+ -1 limit))))
                         (cstate->functions cstate)))))))
      ((exec-of-dead-flag-is exec-for-iterations)
-      '(:in-theory (e/d (exec-for-iterations
-                         eoutcome-result-dead
-                         soutcome-result-dead
-                         eoutcome-result-okeq
-                         soutcome-result-okeq)
-                        ((:e mode-leave)))))
+      '(:in-theory (enable exec-for-iterations)))
      ((exec-of-dead-flag-is exec-switch-rest)
       '(:in-theory (enable exec-switch-rest
                            swcase-dead
                            swcase-list-dead
-                           soutcome-result-dead
-                           soutcome-result-okeq
                            block-option-some->val)
         :expand ((block-option-dead default)
                  (exec-switch-rest cases default target cstate limit)))))))
@@ -884,6 +859,26 @@
 
 (defsection exec-of-dead
   :short "Correctness theorems of the execution functions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We locally enable the equivalence relations,
+     since we always want to expand them in the proofs.
+     Note that, if we put them into a goal hint,
+     they would not apply to computed hints;
+     this is why we locally enable them instead.")
+   (xdoc::p
+    "We locally enable the @('...-result-dead') functions,
+     since we always want to expand them in the proofs.
+     This way, we expose the two cases, error and non-error."))
+
+  (local (in-theory (enable cstate-result-okeq
+                            eoutcome-result-okeq
+                            soutcome-result-okeq
+                            funinfo-result-dead
+                            cstate-result-dead
+                            eoutcome-result-dead
+                            soutcome-result-dead)))
 
   (defthm-exec-flag
 
