@@ -3474,8 +3474,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-bindings-for-cfun-formals ((typed-formals atc-symbol-type-alistp)
-                                           (compst-var symbolp))
+(define atc-gen-bindings-for-cfun-formals
+  ((typed-formals atc-symbol-type-alistp)
+   (compst-var symbolp))
   :returns (mv (doublets doublet-listp)
                (pointer-vars symbol-symbol-alistp
                              :hyp (atc-symbol-type-alistp typed-formals))
@@ -4521,9 +4522,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-bindings-for-loop-formals ((formals symbol-listp)
-                                           (pointers atc-symbol-type-alistp)
-                                           (compst-var symbolp))
+(define atc-gen-bindings-for-loop-formals
+  ((typed-formals atc-symbol-type-alistp)
+   (compst-var symbolp))
   :returns (mv (doublets doublet-listp)
                (pointer-hyps true-listp))
   :short "Generate bindings for the formals of an ACL2 function
@@ -4542,16 +4543,11 @@
      about the pointers that appear in the bindings.
      These hypotheses say that the variables are pointers
      with the expected types."))
-  (b* (((when (endp formals)) (mv nil nil))
-       (formal (car formals))
-       (type (cdr (assoc-eq formal pointers)))
-       ((when (and type
-                   (not (type-case type :pointer))))
-        (raise "Internal error: pointer ~x0 has type ~x1." formal type)
-        (mv nil nil))
+  (b* (((when (endp typed-formals)) (mv nil nil))
+       ((cons formal type) (car typed-formals))
        (term `(read-var (ident ,(symbol-name formal)) ,compst-var))
        ((mv term hyps)
-        (if (assoc-eq formal pointers)
+        (if (type-case type :pointer)
             (mv `(read-array ,term ,compst-var)
                 (list `(pointerp ,term)
                       `(equal (pointer->reftype ,term)
@@ -4559,14 +4555,14 @@
           (mv term nil)))
        (doublet (list formal term))
        ((mv more-doublets more-hyps)
-        (atc-gen-bindings-for-loop-formals (cdr formals) pointers compst-var)))
+        (atc-gen-bindings-for-loop-formals (cdr typed-formals) compst-var)))
     (mv (cons doublet more-doublets)
         (append hyps more-hyps))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-test-correct-thm ((fn symbolp)
-                                       (pointers atc-symbol-type-alistp)
+                                       (typed-formals atc-symbol-type-alistp)
                                        (loop-test exprp)
                                        (test-term pseudo-termp)
                                        (fn-thms symbol-symbol-alistp)
@@ -4592,10 +4588,10 @@
                                            nil
                                            names-to-avoid
                                            wrld))
-       (formals (formals+ fn wrld))
+       (formals (strip-cars typed-formals))
        (compst-var (genvar 'atc "COMPST" nil formals))
        ((mv formals-binding pointer-hyps)
-        (atc-gen-bindings-for-loop-formals formals pointers compst-var))
+        (atc-gen-bindings-for-loop-formals typed-formals compst-var))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
                    (and ,@pointer-hyps)
@@ -4650,7 +4646,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-body-correct-thm ((fn symbolp)
-                                       (pointers atc-symbol-type-alistp)
+                                       (typed-formals atc-symbol-type-alistp)
                                        (affect symbol-listp)
                                        (loop-body stmtp)
                                        (test-term pseudo-termp)
@@ -4687,7 +4683,7 @@
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
        ((mv formals-binding pointer-hyps)
-        (atc-gen-bindings-for-loop-formals formals pointers compst-var))
+        (atc-gen-bindings-for-loop-formals typed-formals compst-var))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
                    (equal ,fenv-var (init-fun-env ,prog-const))
@@ -4739,7 +4735,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-correct-thm ((fn symbolp)
-                                  (pointers atc-symbol-type-alistp)
+                                  (typed-formals atc-symbol-type-alistp)
                                   (affect symbol-listp)
                                   (loop-test exprp)
                                   (loop-body stmtp)
@@ -4826,7 +4822,7 @@
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
        ((mv formals-binding pointer-hyps)
-        (atc-gen-bindings-for-loop-formals formals pointers compst-var))
+        (atc-gen-bindings-for-loop-formals typed-formals compst-var))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
                    (equal ,fenv-var (init-fun-env ,prog-const))
@@ -4954,10 +4950,7 @@
             (atc-gen-loop-measure-fn fn names-to-avoid wrld)
           (mv '(_) nil nil names-to-avoid)))
        ((er typed-formals) (atc-typed-formals fn ctx state))
-       ((er (list & pointers)) (atc-gen-param-declon-list typed-formals
-                                                          fn
-                                                          ctx
-                                                          state))
+       ((er (list & &)) (atc-gen-param-declon-list typed-formals fn ctx state))
        (body (ubody+ fn wrld))
        ((er (list loop-stmt
                   test-term
@@ -5025,7 +5018,7 @@
                       correct-test-thm
                       names-to-avoid)
                   (atc-gen-loop-test-correct-thm fn
-                                                 pointers
+                                                 typed-formals
                                                  loop-test
                                                  test-term
                                                  fn-thms
@@ -5035,7 +5028,7 @@
                       correct-body-thm
                       names-to-avoid)
                   (atc-gen-loop-body-correct-thm fn
-                                                 pointers
+                                                 typed-formals
                                                  loop-affect
                                                  loop-body
                                                  test-term
@@ -5052,7 +5045,7 @@
                       fn-correct-thm
                       names-to-avoid)
                   (atc-gen-loop-correct-thm fn
-                                            pointers
+                                            typed-formals
                                             loop-affect
                                             loop-test
                                             loop-body
