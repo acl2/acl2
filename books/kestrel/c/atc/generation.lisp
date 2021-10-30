@@ -4660,6 +4660,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-final-compustate ((mod-vars symbol-listp)
+                                       (pointer-subst symbol-symbol-alistp)
                                        (compst-var symbolp))
   :returns (term "An untranslated term.")
   :short "Generate a term representing the final computation state
@@ -4671,18 +4672,28 @@
      executing the loop on a generic computation state
      (satisfying conditions in the hypotheses of the theorem)
      yields a computation state obtained by modifying
-     one or more variables in the computation state.
-     These are the variables affected by the loop,
+     one or more variables and zero or more arrays in the computation state.
+     These are the variables and arrays affected by the loop,
      which the correctness theorem binds to the results of the loop function,
-     and which have corresponding named variables in the computation state.
+     and which have corresponding named variables and heap arrays
+     in the computation state.
      The modified computation state is expressed as
-     a nest of @(tsee write-var) calls.
+     a nest of @(tsee write-var) and @(tsee write-array) calls.
      This ACL2 code here generates that nest."))
-  (cond ((endp mod-vars) compst-var)
-        (t `(write-var (ident ,(symbol-name (car mod-vars)))
-                       ,(car mod-vars)
-                       ,(atc-gen-loop-final-compustate (cdr mod-vars)
-                                                       compst-var)))))
+  (b* (((when (endp mod-vars)) compst-var)
+       (mod-var (car mod-vars))
+       (ptr (cdr (assoc-eq mod-var pointer-subst))))
+    (if ptr
+        `(write-array ,ptr
+                      ,mod-var
+                      (atc-gen-loop-final-compustate (cdr mod-vars)
+                                                     pointer-subst
+                                                     compst-var))
+      `(write-var (ident ,(symbol-name (car mod-vars)))
+                  ,(car mod-vars)
+                  ,(atc-gen-loop-final-compustate (cdr mod-vars)
+                                                  pointer-subst
+                                                  compst-var)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4723,7 +4734,7 @@
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
-       ((mv formals-bindings pointer-hyps & instantiation)
+       ((mv formals-bindings pointer-hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
@@ -4736,7 +4747,9 @@
        (affect-binder (if (endp (cdr affect))
                           (car affect)
                         `(mv ,@affect)))
-       (final-compst (atc-gen-loop-final-compustate affect compst-var))
+       (final-compst (atc-gen-loop-final-compustate affect
+                                                    pointer-subst
+                                                    compst-var))
        (body-term (atc-loop-body-term-subst body-term fn affect))
        (concl `(equal (exec-stmt ',loop-body ,compst-var ,fenv-var ,limit-var)
                       (b* ((,affect-binder ,body-term))
@@ -4862,7 +4875,7 @@
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
-       ((mv formals-bindings pointer-hyps & instantiation)
+       ((mv formals-bindings pointer-hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
@@ -4874,7 +4887,9 @@
        (affect-binder (if (endp (cdr affect))
                           (car affect)
                         `(mv ,@affect)))
-       (final-compst (atc-gen-loop-final-compustate affect compst-var))
+       (final-compst (atc-gen-loop-final-compustate affect
+                                                    pointer-subst
+                                                    compst-var))
        (concl-lemma `(equal (,exec-stmt-while-for-fn ,compst-var ,limit-var)
                             (b* ((,affect-binder (,fn ,@formals)))
                               (mv nil ,final-compst))))
