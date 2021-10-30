@@ -142,15 +142,20 @@
      serves to represent side effects performed by the loop
      on the initial computation state.
      The same approach will be used to generate proofs for
-     more general side effects, e.g. on global variables or the heap."))
+     more general side effects, e.g. on global variables or the heap.")
+   (xdoc::p
+    "After introducing the ACL2 functions
+     that represent the canonical symbolic computation states,
+     we provide theorems expressing how
+     functions like @(tsee push-frame) transform those computation states,
+     maintaining their canonical form."))
   :order-subtopics t
   :default-parent t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define add-frame ((fun identp) (compst compustatep))
   :returns (new-compst compustatep)
-  :parents (atc-symbolic-computation-states)
   :short (xdoc::topstring
           "Add a frame to a "
           (xdoc::seetopic "atc-symbolic-computation-states"
@@ -169,7 +174,6 @@
 (define add-var ((var identp) (val valuep) (compst compustatep))
   :guard (> (compustate-frames-number compst) 0)
   :returns (new-compst compustatep)
-  :parents (atc-symbolic-computation-states)
   :short (xdoc::topstring
           "Add a variable to a "
           (xdoc::seetopic "atc-symbolic-computation-states"
@@ -197,7 +201,6 @@
 (define update-var ((var identp) (val valuep) (compst compustatep))
   :guard (> (compustate-frames-number compst) 0)
   :returns (new-compst compustatep)
-  :parents (atc-symbolic-computation-states)
   :short (xdoc::topstring
           "Update a variable in a "
           (xdoc::seetopic "atc-symbolic-computation-states"
@@ -248,19 +251,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-symbolic-computation-state-rules
-  :short "Rewrite rules for symbolic computation states."
+(defsection atc-push-frame-rules
+  :short "Rules about @(tsee push-frame)."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "As explained in @(see atc-symbolic-computation-states),
-     we use a canonical representation of computation states
-     that explicates the frames, scopes, and variables
-     added to a starting computation state,
-     as well as the side-effecting updates to the starting computation state.
-     Here we prove theorems expressing how
-     functions like @(tsee push-frame) transform those computation states,
-     maintaining their canonical form.")
    (xdoc::p
     "In @(tsee exec-fun), a scope is initialized
      and a frame is pushed with that scope.
@@ -269,117 +263,7 @@
      to a nest of @(tsee omap::update) calls
      (as it is, because we use openers for @(tsee init-scope)),
      the two theorems below move the variables into @(tsee add-var) calls,
-     and finally turn @(tsee push-frame) into @(tsee add-frame).")
-   (xdoc::p
-    "The theorems below about @(tsee pop-frame)
-     remove all the @(tsee add-var) and @(tsee enter-scope) calls
-     until they reach @(tsee add-frame),
-     with which @(tsee pop-frame) neutralizes.
-     No rules are needed for
-     computation states that start with @(tsee update-var)
-     because these only occur when executing loops,
-     which do not pop frames.")
-   (xdoc::p
-    "We do not provide any theorem about @(tsee enter-scope),
-     as it is part of the canonical representation of computation states.")
-   (xdoc::p
-    "The theorems below about @(tsee exit-scope)
-     cancel it with @(tsee enter-scope)
-     and move it past @(tsee add-var).
-     No rule for @(tsee add-frame) is needed
-     because that case should never happen in the symbolic execution.
-     No rule is needed for computation states that start with @(tsee update-var)
-     because @(tsee update-var) is always pushed past @(tsee enter-scope).")
-   (xdoc::p
-    "The theorem below about @(tsee create-var) turns that into @(tsee add-var),
-     provided that the variable can be created,
-     which we check via the function @('create-var-okp') introduced below.
-     Additional theorems about @('create-var-okp')
-     go through the layers of the computation states to check this condition.
-     No rule is needed for @('create-var-ok') on @(tsee update-var),
-     because @(tsee update-var) is pushed past the first @(see enter-scope).")
-   (xdoc::p
-    "The rule below about @(tsee write-var) turns it into @(tsee update-var),
-     similarly to @(tsee create-var) being turned into @(tsee add-var).
-     The condition for the replacemenet is captured by @('write-var-okp'),
-     for which we supply rules to go through the computation state layers.
-     Here we need to include a rule for @(tsee update-var),
-     because @('write-var-okp') may need to go through all the layers.
-     When the computation state (meta) variable is reached,
-     it must be the case that there are hypotheses available
-     saying that reading the variable yields the value:
-     this happens for loop proofs, for variables created outside the loop,
-     which are therefore not visible as @(tsee add-var)s.
-     The rule is used as last resort,
-     and only if the computation state is an ACL2 variable
-     (as enforced by the @(tsee syntaxp) hypothesis).")
-   (xdoc::p
-    "The theorems below about @(tsee read-var) are a bit different
-     because @(tsee read-var) does not return a state, but a value instead.
-     The first theorem skips over @(tsee enter-scope).
-     The second theorem
-     either returns the value of the encountered variable or skips over it,
-     based on whether the names coincide or not.
-     There is no theorem for @(tsee add-frame) because this situation
-     never happens during the symbolic execution.
-     The third theorem serves for variables read in loops
-     that are declared outside the scope of the loop,
-     i.e. that are represented as @(tsee update-var)s:
-     if the two variables are the same, the value is returned;
-     otherwise, we skip over the @(tsee update-var)
-     in search for the variable.")
-   (xdoc::p
-    "The theorems below about @(tsee update-var)
-     push them into the states,
-     sometimes combining them into @(tsee add-var)s.
-     The first theorem pushes @(tsee update-var) into @(tsee enter-scope).
-     The second theorem combines @(tsee update-var) with @(tsee add-var)
-     if the variable is the same, otherwise it pushes @(tsee update-var) in.
-     There is no rule for @(tsee add-frame) because that does not happen.
-     The third theorem overwrites an @(tsee update-var)
-     with an @(tsee update-var) for the same variable.
-     The fourth theorem is used to arrange a nest of @(tsee update-var)s
-     in alphabetical order of the variable names:
-     it swaps two @(tsee update-var)s when the outer one
-     has an larger variable than the inner one.
-     Note that we need to disable loop stoppers for this rule,
-     otherwise ACL2 may not apply it based on the written value terms,
-     which are irrelevant to this normalization
-     based on alphabetical order.
-     Note the @(tsee syntaxp) hypotheses
-     that require the identifiers (i.e. variable names)
-     to have the form described in @(see atc-identifier-rules).
-     Finally, the fifth theorem serves to simplify the case in which
-     a variable is written with its current value;
-     this case may occur when proving the base case of a loop.
-     This theorem is phrased perhaps more generally than expected,
-     with two different computation state variables,
-     instead of the simpler form in @('update-var-of-read-var-same-lemma'):
-     the reason is that sometimes during symbolic execution
-     a pattern arises of the form
-     @('(update-var var (read-var var compst) <other-compst>)'),
-     where @('<other-compst>') is a term
-     that is not just the @('compst') variable:
-     the rule binds @('compst1') to that.
-     This fifth theorem has a @(tsee syntaxp) hypothesis
-     requiring the computation state argument of @(tsee read-var)
-     to be a variable;
-     this may not be actually necessary,
-     but for now we include it just to make sure.")
-   (xdoc::p
-    "The theorems below about @(tsee compustate-frames-number)
-     serve to discharge the hypotheses about it being not 0
-     in some of the other theorems below.
-     These are all immediately discharged,
-     because the functions used to represent the symbolic execution states
-     satisfy that condition
-     (by design, for @(tsee add-var) and @(tsee update-var)).")
-   (xdoc::p
-    "The theorems below about @(tsee read-array)
-     applied to the heap component of the computation state
-     skip over all the functions that represent the computation states."))
-
-  ;; rules about PUSH-FRAME:
+     and finally turn @(tsee push-frame) into @(tsee add-frame)."))
 
   (defruled push-frame-of-one-empty-scope
     (equal (push-frame (frame fun (list nil)) compst)
@@ -399,9 +283,23 @@
              top-frame
              pop-frame
              add-var
-             compustate-frames-number))
+             compustate-frames-number)))
 
-  ;; rules about POP-FRAME:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-pop-frame-rules
+  :short "Rules about @(tsee pop-frame)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorems about @(tsee pop-frame)
+     remove all the @(tsee add-var) and @(tsee enter-scope) calls
+     until they reach @(tsee add-frame),
+     with which @(tsee pop-frame) neutralizes.
+     No rules are needed for
+     computation states that start with @(tsee update-var)
+     because these only occur when executing loops,
+     which do not pop frames."))
 
   (defruled pop-frame-of-add-frame
     (implies (compustatep compst)
@@ -421,9 +319,32 @@
            (pop-frame compst))
     :enable (pop-frame
              add-var
-             push-frame))
+             push-frame)))
 
-  ;; rules about EXIT-SCOPE:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-enter-scope-rules
+  :short "Rules about @(tsee enter-scope)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not provide any theorem about @(tsee enter-scope),
+     as it is part of the canonical representation of computation states.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exit-scope-rules
+  :short "Rules about @(tsee exit-scope)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorems about @(tsee exit-scope)
+     cancel it with @(tsee enter-scope)
+     and move it past @(tsee add-var).
+     No rule for @(tsee add-frame) is needed
+     because that case should never happen in the symbolic execution.
+     No rule is needed for computation states that start with @(tsee update-var)
+     because @(tsee update-var) is always pushed past @(tsee enter-scope)."))
 
   (defruled exit-scope-of-enter-scope
     (implies (and (compustatep compst)
@@ -440,9 +361,22 @@
   (defruled exit-scope-of-add-var
     (equal (exit-scope (add-var var val compst))
            (exit-scope compst))
-    :enable (exit-scope add-var))
+    :enable (exit-scope add-var)))
 
-  ;; function CREATE-VAR-OKP and rules about it:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-create-var-rules
+  :short "Rules about @(tsee create-var)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorem about @(tsee create-var) turns that into @(tsee add-var),
+     provided that the variable can be created,
+     which we check via the function @('create-var-okp') introduced below.
+     Additional theorems about @('create-var-okp')
+     go through the layers of the computation states to check this condition.
+     No rule is needed for @('create-var-ok') on @(tsee update-var),
+     because @(tsee update-var) is pushed past the first @(see enter-scope)."))
 
   (define create-var-okp ((var identp) (compst compustatep))
     :guard (> (compustate-frames-number compst) 0)
@@ -468,15 +402,33 @@
                 (create-var-okp var compst)))
     :enable (create-var-okp add-var))
 
-  ;; rules about CREATE-VAR:
-
   (defruled create-var-to-add-var
     (implies (create-var-okp var compst)
              (equal (create-var var val compst)
                     (add-var var val compst)))
-    :enable (create-var add-var create-var-okp))
+    :enable (create-var add-var create-var-okp)))
 
-  ;; rules about WRITE-VAR-OKP:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-write-var-rules
+  :short "Rules about @(tsee write-var)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorem about @(tsee write-var) turns it into @(tsee update-var),
+     similarly to @(tsee create-var) being turned into @(tsee add-var).
+     The condition for the replacemenet is captured by @('write-var-okp'),
+     for which we supply rules to go through the computation state layers.
+     Here we need to include a rule for @(tsee update-var),
+     because @('write-var-okp') may need to go through all the layers.
+     When the computation state (meta) variable is reached,
+     it must be the case that there are hypotheses available
+     saying that reading the variable yields the value:
+     this happens for loop proofs, for variables created outside the loop,
+     which are therefore not visible as @(tsee add-var)s.
+     The rule is used as last resort,
+     and only if the computation state is an ACL2 variable
+     (as enforced by the @(tsee syntaxp) hypothesis)."))
 
   (define write-var-okp ((var identp) (type typep) (compst compustatep))
     :guard (> (compustate-frames-number compst) 0)
@@ -562,8 +514,6 @@
        :enable (write-var-aux-okp
                 read-var-aux))))
 
-  ;; rules about WRITE-VAR:
-
   (defruled write-var-to-update-var
     (implies (and (not (equal (compustate-frames-number compst) 0))
                   (write-var-okp var (type-of-value val) compst))
@@ -581,9 +531,29 @@
        :enable (write-var-aux-okp
                 write-var-aux
                 update-var-aux
-                errorp))))
+                errorp)))))
 
-  ;; rules about READ-VAR:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-read-var-rules
+  :short "Rules about @(tsee read-var)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorems below about @(tsee read-var) are a bit different
+     because @(tsee read-var) does not return a state, but a value instead.
+     The first theorem skips over @(tsee enter-scope).
+     The second theorem
+     either returns the value of the encountered variable or skips over it,
+     based on whether the names coincide or not.
+     There is no theorem for @(tsee add-frame) because this situation
+     never happens during the symbolic execution.
+     The third theorem serves for variables read in loops
+     that are declared outside the scope of the loop,
+     i.e. that are represented as @(tsee update-var)s:
+     if the two variables are the same, the value is returned;
+     otherwise, we skip over the @(tsee update-var)
+     in search for the variable."))
 
   (defruled read-var-of-enter-scope
     (implies (not (equal (compustate-frames-number compst) 0))
@@ -625,9 +595,51 @@
                            (value-fix val2)
                          (read-var-aux var scopes))))
        :enable (read-var-aux
-                update-var-aux))))
+                update-var-aux)))))
 
-  ;; rules about UPDATE-VAR:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-update-var-rules
+  :short "Rules about @(tsee update-var)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorems about @(tsee update-var) push them into the states,
+     sometimes combining them into @(tsee add-var)s.
+     The first theorem pushes @(tsee update-var) into @(tsee enter-scope).
+     The second theorem combines @(tsee update-var) with @(tsee add-var)
+     if the variable is the same, otherwise it pushes @(tsee update-var) in.
+     There is no rule for @(tsee add-frame) because that does not happen.
+     The third theorem overwrites an @(tsee update-var)
+     with an @(tsee update-var) for the same variable.
+     The fourth theorem is used to arrange a nest of @(tsee update-var)s
+     in alphabetical order of the variable names:
+     it swaps two @(tsee update-var)s when the outer one
+     has an larger variable than the inner one.
+     Note that we need to disable loop stoppers for this rule,
+     otherwise ACL2 may not apply it based on the written value terms,
+     which are irrelevant to this normalization
+     based on alphabetical order.
+     Note the @(tsee syntaxp) hypotheses
+     that require the identifiers (i.e. variable names)
+     to have the form described in @(see atc-identifier-rules).
+     Finally, the fifth theorem serves to simplify the case in which
+     a variable is written with its current value;
+     this case may occur when proving the base case of a loop.
+     This theorem is phrased perhaps more generally than expected,
+     with two different computation state variables,
+     instead of the simpler form in @('update-var-of-read-var-same-lemma'):
+     the reason is that sometimes during symbolic execution
+     a pattern arises of the form
+     @('(update-var var (read-var var compst) <other-compst>)'),
+     where @('<other-compst>') is a term
+     that is not just the @('compst') variable:
+     the rule binds @('compst1') to that.
+     This fifth theorem has a @(tsee syntaxp) hypothesis
+     requiring the computation state argument of @(tsee read-var)
+     to be a variable;
+     this may not be actually necessary,
+     but for now we include it just to make sure."))
 
   (defruled update-var-of-enter-scope
     (equal (update-var var val (enter-scope compst))
@@ -715,9 +727,22 @@
                 top-frame
                 push-frame
                 pop-frame
-                compustate-frames-number))))
+                compustate-frames-number)))))
 
-  ;; rules about COMPUSTATE-FRAMES-NUMBER:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-compustate-frames-number-rules
+  :short "Rules about @(tsee compustate-frames-number)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorems about @(tsee compustate-frames-number)
+     serve to discharge the hypotheses about it being not 0
+     in some of the other theorems below.
+     These are all immediately discharged,
+     because the functions used to represent the symbolic execution states
+     satisfy that condition
+     (by design, for @(tsee add-var) and @(tsee update-var))."))
 
   (defruled compustate-frames-number-of-add-frame-not-zero
     (not (equal (compustate-frames-number (add-frame fun compst)) 0))
@@ -733,9 +758,17 @@
 
   (defruled compustate-frames-number-of-update-var-not-zero
     (not (equal (compustate-frames-number (update-var var val compst)) 0))
-    :enable update-var)
+    :enable update-var))
 
-  ;; rules about READ-ARRAY:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-read-array-rules
+  :short "Rules about @(tsee read-array)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorems about @(tsee read-array)
+     skip over all the functions that represent the computation states."))
 
   (defruled read-array-of-add-frame
     (equal (read-array ptr (add-frame fun compst))
@@ -766,10 +799,10 @@
              pop-frame
              read-array)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atc-symbolic-computation-state-rules*
-  :short "List of rewrite rules for symbolic computation states."
+  :short "List of rules for symbolic computation states."
   '(push-frame-of-one-empty-scope
     push-frame-of-one-nonempty-scope
     pop-frame-of-add-frame
