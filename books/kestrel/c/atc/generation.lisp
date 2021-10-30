@@ -3474,12 +3474,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-bindings-for-cfun-formals ((formals symbol-listp)
-                                           (pointers atc-symbol-type-alistp)
+(define atc-gen-bindings-for-cfun-formals ((typed-formals atc-symbol-type-alistp)
                                            (compst-var symbolp))
   :returns (mv (doublets doublet-listp)
                (pointer-vars symbol-symbol-alistp
-                             :hyp (symbol-listp formals))
+                             :hyp (atc-symbol-type-alistp typed-formals))
                (pointer-hyps true-listp))
   :short "Generate bindings for the formals of an ACL2 function
           that represents a C function."
@@ -3509,14 +3508,10 @@
      about the pointer variables.
      These hypotheses say that the variables are pointers
      with the expected types."))
-  (b* (((when (endp formals)) (mv nil nil nil))
-       (formal (car formals))
-       (type (cdr (assoc-eq formal pointers)))
-       ((when (not type))
-        (atc-gen-bindings-for-cfun-formals (cdr formals) pointers compst-var))
+  (b* (((when (endp typed-formals)) (mv nil nil nil))
+       ((cons formal type) (car typed-formals))
        ((unless (type-case type :pointer))
-        (raise "Internal error: formal ~x0 has type ~x1." formal type)
-        (mv nil nil nil))
+        (atc-gen-bindings-for-cfun-formals (cdr typed-formals) compst-var))
        (var (add-suffix formal "-PTR"))
        (term `(read-array ,var ,compst-var))
        (doublet (list formal term))
@@ -3524,7 +3519,7 @@
                    `(equal (pointer->reftype ,var)
                            ',(type-pointer->referenced type))))
        ((mv more-doublets more-vars more-hyps)
-        (atc-gen-bindings-for-cfun-formals (cdr formals) pointers compst-var)))
+        (atc-gen-bindings-for-cfun-formals (cdr typed-formals) compst-var)))
     (mv (cons doublet more-doublets)
         (acons formal var more-vars)
         (append hyps more-hyps))))
@@ -3578,8 +3573,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-cfun-correct-thm ((fn symbolp)
+                                  (typed-formals atc-symbol-type-alistp)
                                   (type typep)
-                                  (pointers atc-symbol-type-alistp)
                                   (affect symbol-listp)
                                   (prec-fns atc-symbol-fninfo-alistp)
                                   (prog-const symbolp)
@@ -3711,7 +3706,7 @@
    (xdoc::p
     "This theorem is not generated if @(':proofs') is @('nil')."))
   (b* ((name (cdr (assoc-eq fn fn-thms)))
-       (formals (formals+ fn wrld))
+       (formals (strip-cars typed-formals))
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
@@ -3719,7 +3714,7 @@
                        nil
                      (genvar 'atc "RESULT" nil formals)))
        ((mv formals-binding pointer-vars pointer-hyps)
-        (atc-gen-bindings-for-cfun-formals formals pointers compst-var))
+        (atc-gen-bindings-for-cfun-formals typed-formals compst-var))
        (hyps `(and (compustatep ,compst-var)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
@@ -3978,7 +3973,7 @@
                   name fn conflicting-fn))
        (wrld (w state))
        ((er typed-formals) (atc-typed-formals fn ctx state))
-       ((er (list params pointers)) (atc-gen-param-declon-list typed-formals
+       ((er (list params &)) (atc-gen-param-declon-list typed-formals
                                                                fn
                                                                ctx
                                                                state))
@@ -4043,8 +4038,8 @@
                       fn-correct-exported-events
                       fn-correct-thm)
                   (atc-gen-cfun-correct-thm fn
+                                            typed-formals
                                             type
-                                            pointers
                                             affect
                                             prec-fns
                                             prog-const
