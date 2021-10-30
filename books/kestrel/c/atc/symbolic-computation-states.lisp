@@ -283,7 +283,11 @@
              top-frame
              pop-frame
              add-var
-             compustate-frames-number)))
+             compustate-frames-number))
+
+  (defval *atc-push-frame-rules*
+    '(push-frame-of-one-empty-scope
+      push-frame-of-one-nonempty-scope)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -319,7 +323,12 @@
            (pop-frame compst))
     :enable (pop-frame
              add-var
-             push-frame)))
+             push-frame))
+
+  (defval *atc-pop-frame-rules*
+    '(pop-frame-of-add-frame
+      pop-frame-of-enter-scope
+      pop-frame-of-add-var)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -361,7 +370,11 @@
   (defruled exit-scope-of-add-var
     (equal (exit-scope (add-var var val compst))
            (exit-scope compst))
-    :enable (exit-scope add-var)))
+    :enable (exit-scope add-var))
+
+  (defval *atc-exit-scope-rules*
+    '(exit-scope-of-enter-scope
+      exit-scope-of-add-var)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -406,7 +419,13 @@
     (implies (create-var-okp var compst)
              (equal (create-var var val compst)
                     (add-var var val compst)))
-    :enable (create-var add-var create-var-okp)))
+    :enable (create-var add-var create-var-okp))
+
+  (defval *atc-create-var-rules*
+    '(create-var-to-add-var
+      create-var-okp-of-add-frame
+      create-var-okp-of-enter-scope
+      create-var-okp-of-add-var)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -428,7 +447,16 @@
      which are therefore not visible as @(tsee add-var)s.
      The rule is used as last resort,
      and only if the computation state is an ACL2 variable
-     (as enforced by the @(tsee syntaxp) hypothesis)."))
+     (as enforced by the @(tsee syntaxp) hypothesis).")
+   (xdoc::p
+    "We also include the executable counterpart of @(tsee typep)
+     in the list of rules related to @(tsee write-var).
+     This is needed to discharge some @(tsee typep) hypotheses
+     that arise during symbolic execution and are applied to quoted constants.
+     We may arrange things in the future so that
+     these quoted constants do not arise
+     and thus there is no need for the executable counterpart of @(tsee typep)
+     to be included in the list of rules here."))
 
   (define write-var-okp ((var identp) (type typep) (compst compustatep))
     :guard (> (compustate-frames-number compst) 0)
@@ -531,7 +559,15 @@
        :enable (write-var-aux-okp
                 write-var-aux
                 update-var-aux
-                errorp)))))
+                errorp))))
+
+  (defval *atc-write-var-rules*
+    '(write-var-to-update-var
+      write-var-okp-of-enter-scope
+      write-var-okp-of-add-var
+      write-var-okp-of-update-var
+      write-var-okp-when-valuep-of-read-var
+      (:e typep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -595,7 +631,12 @@
                            (value-fix val2)
                          (read-var-aux var scopes))))
        :enable (read-var-aux
-                update-var-aux)))))
+                update-var-aux))))
+
+  (defval *atc-read-var-rules*
+    '(read-var-of-enter-scope
+      read-var-of-add-var
+      read-var-of-update-var)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -727,7 +768,14 @@
                 top-frame
                 push-frame
                 pop-frame
-                compustate-frames-number)))))
+                compustate-frames-number))))
+
+  (defval *atc-update-var-rules*
+    '(update-var-of-enter-scope
+      update-var-of-add-var
+      update-var-of-update-var-same
+      update-var-of-update-var-less
+      update-var-of-read-var-same)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -758,7 +806,13 @@
 
   (defruled compustate-frames-number-of-update-var-not-zero
     (not (equal (compustate-frames-number (update-var var val compst)) 0))
-    :enable update-var))
+    :enable update-var)
+
+  (defval *atc-compustate-frames-number-rules*
+    '(compustate-frames-number-of-add-frame-not-zero
+      compustate-frames-number-of-enter-scope-not-zero
+      compustate-frames-number-of-add-var-not-zero
+      compustate-frames-number-of-update-var-not-zero)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -797,42 +851,24 @@
     :enable (update-var
              push-frame
              pop-frame
-             read-array)))
+             read-array))
+
+  (defval *atc-read-array-rules*
+    '(read-array-of-add-frame
+      read-array-of-enter-scope
+      read-array-of-add-var
+      read-array-of-update-var)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atc-symbolic-computation-state-rules*
   :short "List of rules for symbolic computation states."
-  '(push-frame-of-one-empty-scope
-    push-frame-of-one-nonempty-scope
-    pop-frame-of-add-frame
-    pop-frame-of-enter-scope
-    pop-frame-of-add-var
-    exit-scope-of-enter-scope
-    exit-scope-of-add-var
-    create-var-to-add-var
-    create-var-okp-of-add-frame
-    create-var-okp-of-enter-scope
-    create-var-okp-of-add-var
-    write-var-to-update-var
-    write-var-okp-of-enter-scope
-    write-var-okp-of-add-var
-    write-var-okp-of-update-var
-    write-var-okp-when-valuep-of-read-var
-    read-var-of-enter-scope
-    read-var-of-add-var
-    read-var-of-update-var
-    update-var-of-enter-scope
-    update-var-of-add-var
-    update-var-of-update-var-same
-    update-var-of-update-var-less
-    update-var-of-read-var-same
-    compustate-frames-number-of-add-frame-not-zero
-    compustate-frames-number-of-enter-scope-not-zero
-    compustate-frames-number-of-add-var-not-zero
-    compustate-frames-number-of-update-var-not-zero
-    read-array-of-add-frame
-    read-array-of-enter-scope
-    read-array-of-add-var
-    read-array-of-update-var
-    (:e typep)))
+  (append *atc-push-frame-rules*
+          *atc-pop-frame-rules*
+          *atc-exit-scope-rules*
+          *atc-create-var-rules*
+          *atc-write-var-rules*
+          *atc-read-var-rules*
+          *atc-update-var-rules*
+          *atc-compustate-frames-number-rules*
+          *atc-read-array-rules*))
