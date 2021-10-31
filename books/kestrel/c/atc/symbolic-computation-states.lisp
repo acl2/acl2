@@ -965,43 +965,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-compustate-frames-number-rules
-  :short "Rules about @(tsee compustate-frames-number)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The theorems about @(tsee compustate-frames-number)
-     serve to discharge the hypotheses about it being not 0
-     in some of the other theorems below.
-     These are all immediately discharged,
-     because the functions used to represent the symbolic execution states
-     satisfy that condition
-     (by design, for @(tsee add-var) and @(tsee update-var))."))
-
-  (defruled compustate-frames-number-of-add-frame-not-zero
-    (not (equal (compustate-frames-number (add-frame fun compst)) 0))
-    :enable add-frame)
-
-  (defruled compustate-frames-number-of-enter-scope-not-zero
-    (not (equal (compustate-frames-number (enter-scope compst)) 0))
-    :enable enter-scope)
-
-  (defruled compustate-frames-number-of-add-var-not-zero
-    (not (equal (compustate-frames-number (add-var var val compst)) 0))
-    :enable add-var)
-
-  (defruled compustate-frames-number-of-update-var-not-zero
-    (not (equal (compustate-frames-number (update-var var val compst)) 0))
-    :enable update-var)
-
-  (defval *atc-compustate-frames-number-rules*
-    '(compustate-frames-number-of-add-frame-not-zero
-      compustate-frames-number-of-enter-scope-not-zero
-      compustate-frames-number-of-add-var-not-zero
-      compustate-frames-number-of-update-var-not-zero)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection atc-read-array-rules
   :short "Rules about @(tsee read-array)."
   :long
@@ -1047,6 +1010,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-compustate-frames-number-rules
+  :short "Rules about @(tsee compustate-frames-number)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorems about @(tsee compustate-frames-number)
+     serve to discharge the hypotheses about it being not 0
+     in some of the other theorems below.
+     These are all immediately discharged,
+     because the functions used to represent the symbolic execution states
+     satisfy that condition
+     (by design, for @(tsee add-var) and @(tsee update-var))."))
+
+  (defruled compustate-frames-number-of-add-frame-not-zero
+    (not (equal (compustate-frames-number (add-frame fun compst)) 0))
+    :enable add-frame)
+
+  (defruled compustate-frames-number-of-enter-scope-not-zero
+    (not (equal (compustate-frames-number (enter-scope compst)) 0))
+    :enable enter-scope)
+
+  (defruled compustate-frames-number-of-add-var-not-zero
+    (not (equal (compustate-frames-number (add-var var val compst)) 0))
+    :enable add-var)
+
+  (defruled compustate-frames-number-of-update-var-not-zero
+    (not (equal (compustate-frames-number (update-var var val compst)) 0))
+    :enable update-var)
+
+  (defval *atc-compustate-frames-number-rules*
+    '(compustate-frames-number-of-add-frame-not-zero
+      compustate-frames-number-of-enter-scope-not-zero
+      compustate-frames-number-of-add-var-not-zero
+      compustate-frames-number-of-update-var-not-zero)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atc-symbolic-computation-state-rules*
   :short "List of rules for symbolic computation states."
   (append *atc-push-frame-rules*
@@ -1057,5 +1057,5 @@
           *atc-read-var-rules*
           *atc-update-var-rules*
           *atc-write-array-rules*
-          *atc-compustate-frames-number-rules*
-          *atc-read-array-rules*))
+          *atc-read-array-rules*
+          *atc-compustate-frames-number-rules*))
