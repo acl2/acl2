@@ -971,7 +971,22 @@
   (xdoc::topstring
    (xdoc::p
     "The theorems about @(tsee read-array)
-     skip over all the functions that represent the computation states."))
+     skip over all the functions that represent the computation states,
+     except for possibly @(tsee update-array):
+     this is similar to the interaction
+     between @(tsee read-var) and @(tsee update-var),
+     with some complications motivated by
+     the possibility that pointers may be null
+     and the additional type information contained in pointers.")
+   (xdoc::p
+    "These complications in the @('read-array-of-update-array') rule
+     suggests that,
+     while the current model of pointers (see @(tsee pointer))
+     seems adequate to represent pointer values in C,
+     we should change @(tsee read-array), @(tsee write-array), and maybe others
+     to operate directly on addresses:
+     this way, we avoid concerns about null pointers and pointer types.
+     We will investigate this soon."))
 
   (defruled read-array-of-add-frame
     (equal (read-array ptr (add-frame fun compst))
@@ -1002,13 +1017,165 @@
              pop-frame
              read-array))
 
+  (defruled read-array-of-update-array
+    (implies (and (not (pointer-nullp ptr))
+                  (not (pointer-nullp ptr2))
+                  (equal (type-of-array-element array)
+                         (pointer->reftype ptr)))
+             (equal (read-array ptr (update-array ptr2 array compst))
+                    (if (equal (pointer->address? ptr)
+                               (pointer->address? ptr2))
+                        (array-fix array)
+                      (read-array ptr compst))))
+    :enable (read-array
+             update-array
+             pointer-nullp))
+
   (defval *atc-read-array-rules*
     '(read-array-of-add-frame
       read-array-of-enter-scope
       read-array-of-add-var
-      read-array-of-update-var)))
+      read-array-of-update-var
+      read-array-of-update-array)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-update-array-rules
+  :short "Rules about @(tsee update-array)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We have rules to unconditionally push @(tsee update-array)
+     through all the layers except @(tsee update-array).")
+   (xdoc::p
+    "When @(tsee update-array) is applied to @(tsee update-array),
+     we have rules similar to the ones for @(tsee update-var).
+     If the two pointers have the same address, we overwrite the array.
+     When the two pointers are not null and have different addresses,
+     we swap the @(tsee update-var)s
+     if the right pointer is smaller than the left one,
+     where smaller is a syntactic check:
+     when the two pointer arguments are symbols
+     (which happens in the proofs of C functions),
+     we compare the symbols;
+     when the two pointer arguments are @(tsee read-var) calls
+     (which happens in the proofs of C loops),
+     we compare the identifier terms,
+     which boils down to comparing the variable names.
+     Either way, we normalize the nests of @(tsee update-array) calls
+     by ordering them according to the pointer.")
+   (xdoc::p
+    "As observed in @(see atc-read-array-rules),
+     it should be possible to simplify some of these rules
+     by changing @(tsee read-array) and @(tsee write-array),
+     and consequently @(tsee update-array),
+     to operate directly on addresses rather than pointers.")
+   (xdoc::p
+    "We also include a rule saying that
+     updating an array with the existing one is a no-op.
+     This is similar to @('update-var-of-read-var').
+     In particular, it uses two possibly different computation states,
+     for the reasons explained for @('update-var-of-read-var')."))
+
+  (defruled update-array-of-add-frame
+    (equal (update-array ptr array (add-frame fun compst))
+           (add-frame fun (update-array ptr array compst)))
+    :enable (update-array
+             add-frame
+             push-frame))
+
+  (defruled update-array-of-enter-scope
+    (equal (update-array ptr array (enter-scope compst))
+           (enter-scope (update-array ptr array compst)))
+    :enable (update-array
+             enter-scope
+             push-frame
+             pop-frame
+             top-frame))
+
+  (defruled update-array-of-add-var
+    (equal (update-array ptr array (add-var var val compst))
+           (add-var var val (update-array ptr array compst)))
+    :enable (update-array
+             add-var
+             push-frame
+             pop-frame
+             top-frame))
+
+  (defruled update-array-of-update-var
+    (equal (update-array ptr array (update-var var val compst))
+           (update-var var val (update-array ptr array compst)))
+    :enable (update-array
+             update-var
+             push-frame
+             pop-frame
+             top-frame))
+
+  (defruled update-array-of-update-array-same
+    (equal (update-array ptr array (update-array ptr array2 compst))
+           (update-array ptr array compst))
+    :enable update-array)
+
+  (defruled update-array-of-update-array-less-symbol
+    (implies (and (syntaxp (and (symbolp ptr)
+                                (symbolp ptr2)
+                                (symbol< ptr2 ptr)))
+                  (not (pointer-nullp ptr))
+                  (not (pointer-nullp ptr2))
+                  (not (equal (pointer->address? ptr)
+                              (pointer->address? ptr2))))
+             (equal (update-array ptr array (update-array ptr2 array2 compst))
+                    (update-array ptr2 array2 (update-array ptr array compst))))
+    :enable (update-array
+             pointer-nullp))
+
+  (defruled update-array-of-update-array-less-ident
+    (implies (and (syntaxp (and (acl2::ffn-symb-p ptr 'read-var)
+                                (acl2::ffn-symb-p ptr2 'read-var)
+                                (<< (fargn ptr2 1)
+                                    (fargn ptr 1))))
+                  (not (pointer-nullp ptr))
+                  (not (pointer-nullp ptr2))
+                  (not (equal (pointer->address? ptr)
+                              (pointer->address? ptr2))))
+             (equal (update-array ptr array (update-array ptr2 array2 compst))
+                    (update-array ptr2 array2 (update-array ptr array compst))))
+    :enable (update-array
+             pointer-nullp))
+
+  (defruled update-array-of-read-array-same
+    (implies (and (syntaxp (symbolp compst))
+                  (not (pointer-nullp ptr))
+                  (compustatep compst1)
+                  (arrayp (read-array ptr compst))
+                  (equal (read-array ptr compst)
+                         (read-array ptr compst1)))
+             (equal (update-array ptr (read-array ptr compst) compst1)
+                    compst1))
+    :enable (read-array
+             update-array
+             pointer-nullp
+             arrayp
+             omap::update-of-cdr-of-in-when-in)
+    :prep-lemmas
+    ((defruled omap::update-of-cdr-of-in-when-in
+       (implies (consp (omap::in k m))
+                (equal (omap::update k (cdr (omap::in k m)) m)
+                       m))
+       :induct (omap::in k m)
+       :enable omap::in)))
+
+  (defval *atc-update-array-rules*
+    '(update-array-of-add-frame
+      update-array-of-enter-scope
+      update-array-of-add-var
+      update-array-of-update-var
+      update-array-of-update-array-same
+      update-array-of-update-array-less-symbol
+      update-array-of-update-array-less-ident
+      update-array-of-read-array-same)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-compustate-frames-number-rules
   :short "Rules about @(tsee compustate-frames-number)."
@@ -1058,4 +1225,5 @@
           *atc-update-var-rules*
           *atc-write-array-rules*
           *atc-read-array-rules*
+          *atc-update-array-rules*
           *atc-compustate-frames-number-rules*))
