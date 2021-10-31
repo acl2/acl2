@@ -73,7 +73,7 @@
      if the two variables are equal,
      we can readily rewrite this term to the value in @(tsee add-var),
      because that function guarantees the variable to exist with that value.
-     In contrast, if we @(tsee read-var) appeared applied to @(tsee create-var),
+     In contrast, if @(tsee read-var) appeared applied to @(tsee create-var),
      additional hypotheses would be needed (and would have to be discharged)
      saying that @(tsee create-var) succeeds.")
    (xdoc::p
@@ -130,9 +130,9 @@
      all the @(tsee add-var) and @(tsee enter-scope) layers shown above,
      and reach @('<compst>'), where it is not further reducible.
      This may happen for several different variables,
-     so the general form of our symbolic computation states is")
+     leading to states of the form")
    (xdoc::codeblock
-    "(add-var ... (enter-scope (update-var ... (update-var ... <compst>)...)")
+    "(... (enter-scope (add-var (update-var ... (update-var ... <compst>)...)")
    (xdoc::p
     "Below we introduce rules to order these @(tsee update-var)s
      according to the variables,
@@ -141,8 +141,41 @@
     "Note that this form of the computation states
      serves to represent side effects performed by the loop
      on the initial computation state.
-     The same approach will be used to generate proofs for
-     more general side effects, e.g. on global variables or the heap.")
+     The same approach is used to generate proofs for
+     more general side effects, e.g. on the heap, as explained below.")
+   (xdoc::p
+    "A computation state has a heap,
+     whose arrays may be updated during the symbolic execution.
+     We represent these updates via the function @(tsee update-array),
+     which is similar to @(tsee write-array)
+     but always satisfies additional properties:
+     the relation between @(tsee update-array) and @(tsee write-array)
+     is similar to the one between @(tsee update-var) and @(tsee write-var)
+     and to the one between @(tsee add-var) and @(tsee create-var),
+     explained above.")
+   (xdoc::p
+    "Arrays may be updated by C functions and C loops,
+     so they need to be incorporated in both of
+     the symbolic computation state representations described above.
+     We push the @(tsee update-array) past all the other functions,
+     leading to states of the form")
+   (xdoc::codeblock
+    "(... (add-frame (update-array ... (update-array ... <compst>)...)")
+   (xdoc::p
+    "for C functions and of the form")
+   (xdoc::codeblock
+    "(... (enter-scope (add-var ... (update-array ... <compst>)...)")
+   (xdoc::p
+    "for C loops.
+     We order the @(tsee update-array) calls
+     according to their first argument (i.e. the pointer).
+     Note that for a C functions this first argument is an ACL2 variable,
+     while for a C loop it is a @('(read-var <identifier> ...)').
+     These two kinds of first arguments never appear together.
+     We prove rules that order according to the symbols,
+     which apply to proofs of theorems of C functions,
+     and we prove rules that order according to the identifiers,
+     which apply to proofs of theorems of C loops.")
    (xdoc::p
     "After introducing the ACL2 functions
      that represent the canonical symbolic computation states,
@@ -223,6 +256,14 @@
      which simplifies other rules;
      we check that the variable is actually there
      when we turn @(tsee write-var) into @(tsee update-var),
+     in another rule.
+     Third, we do not check the type of the new value
+     against the type of the old value if the variable exists,
+     and instead we unconditionally overwrite the old value with the new value:
+     this ensures that the new value is always there,
+     which simplified other rules;
+     we check that the types match
+     when we turn @(tsee write-var) into @(tsee update-var),
      in another rule."))
   (b* ((frame (top-frame compst))
        (scopes (frame->scopes frame))
@@ -248,6 +289,41 @@
      (defret consp-of-update-var-aux
        (equal (consp new-scopes)
               (consp scopes))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define update-array ((ptr pointerp) (array arrayp) (compst compustatep))
+  :guard (not (pointer-nullp ptr))
+  :returns (new-compst compustatep)
+  :short (xdoc::topstring
+          "Update an array in a "
+          (xdoc::seetopic "atc-symbolic-computation-states"
+                          "canonical representation of computation states")
+          ".")
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee write-array), but it does not return an error.
+     First, the guard requires the pointer to be non-null,
+     which ensures that we always get an address (via @(tsee address-fix)).
+     Second, we update the heap with the new array regardless of
+     whether an old array at that address exists or not,
+     and whether, if it exists, its type and length match the new array;
+     we do not consider the type of the pointer either here.
+     This way, @(tsee update-array) always guarantees that
+     the array goes into the heap,
+     thus simplifying rules about it.
+     When we replace @(tsee write-array) with @(tsee update-array)
+     we ensure that all the conditions mentioned above hold,
+     so in a way @(tsee update-array) caches the fact that
+     those conditions are satisfied."))
+  (b* ((address (address-fix (pointer->address? ptr)))
+       (heap (compustate->heap compst))
+       (new-heap (omap::update address (array-fix array) heap))
+       (new-compst (change-compustate compst :heap new-heap)))
+    new-compst)
+  :guard-hints (("Goal" :in-theory (enable pointer-nullp)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -394,6 +470,7 @@
   (define create-var-okp ((var identp) (compst compustatep))
     :guard (> (compustate-frames-number compst) 0)
     :returns (yes/no booleanp)
+    :parents nil
     (b* ((frame (top-frame compst))
          (scopes (frame->scopes frame))
          (scope (car scopes)))
@@ -442,11 +519,11 @@
      because @('write-var-okp') may need to go through all the layers.
      When the computation state (meta) variable is reached,
      it must be the case that there are hypotheses available
-     saying that reading the variable yields the value:
+     saying that reading the variable yields a value:
      this happens for loop proofs, for variables created outside the loop,
      which are therefore not visible as @(tsee add-var)s.
      The rule is used as last resort,
-     and only if the computation state is an ACL2 variable
+     only if the computation state is an ACL2 variable
      (as enforced by the @(tsee syntaxp) hypothesis).")
    (xdoc::p
     "We also include the executable counterpart of @(tsee typep)
@@ -461,11 +538,13 @@
   (define write-var-okp ((var identp) (type typep) (compst compustatep))
     :guard (> (compustate-frames-number compst) 0)
     :returns (yes/no booleanp)
+    :parents nil
     (write-var-aux-okp var type (frame->scopes (top-frame compst)))
     :hooks (:fix)
     :prepwork
     ((define write-var-aux-okp ((var identp) (type typep) (scopes scope-listp))
        :returns (yes/no booleanp)
+       :parents nil
        (b* (((when (endp scopes)) nil)
             (scope (scope-fix (car scopes)))
             (pair (omap::in (ident-fix var) scope))
@@ -779,6 +858,113 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-write-array-rules
+  :short "Rules about @(tsee write-array)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorem about @(tsee write-array) turns it into @(tsee update-var),
+     similarly to how @(tsee write-var) is turned into @(tsee update-var).
+     The condition for the replacement is captured by @('write-array-okp'),
+     for which we supply rules to go through all the computation state layers.
+     Here we need to include a rule for @(tsee update-var),
+     because @('write-var-okp') may need to go through all the layers.
+     When the computation state (meta) variable is reached,
+     it must be the case that there are hypotheses available
+     saying that reading the array
+     yields an array of appropriate type and length.
+     The rule is used as last resort,
+     only if the computation state is an ACL2 variable
+     (as enforced by the @(tsee syntaxp) hypothesis)."))
+
+  (define write-array-okp ((ptr pointerp)
+                           (type typep)
+                           (len natp)
+                           (compst compustatep))
+    :returns (yes/no booleanp)
+    :parents nil
+    (b* ((address (pointer->address? ptr))
+         (reftype (pointer->reftype ptr))
+         (heap (compustate->heap compst))
+         ((when (not address)) nil)
+         (address+array (omap::in address heap))
+         ((unless (consp address+array)) nil)
+         (array (cdr address+array))
+         ((unless (equal reftype
+                         (type-of-array-element array)))
+          nil)
+         ((unless (equal (type-fix type)
+                         (type-of-array-element array)))
+          nil)
+         ((unless (equal (nfix len)
+                         (array-length array)))
+          nil))
+      t)
+    :hooks (:fix))
+
+  (defruled write-array-okp-of-add-frame
+    (equal (write-array-okp ptr type len (add-frame fun compst))
+           (write-array-okp ptr type len compst))
+    :enable (write-array-okp
+             add-frame
+             push-frame))
+
+  (defruled write-array-okp-of-enter-scope
+    (equal (write-array-okp ptr type len (enter-scope compst))
+           (write-array-okp ptr type len compst))
+    :enable (write-array-okp
+             enter-scope
+             push-frame
+             pop-frame))
+
+  (defruled write-array-okp-of-add-var
+    (equal (write-array-okp ptr type len (add-var var val compst))
+           (write-array-okp ptr type len compst))
+    :enable (write-array-okp
+             add-var
+             push-frame
+             pop-frame))
+
+  (defruled write-array-okp-of-update-var
+    (equal (write-array-okp ptr type len (update-var var val compst))
+           (write-array-okp ptr type len compst))
+    :enable (write-array-okp
+             update-var
+             push-frame
+             pop-frame))
+
+  (defruled write-array-okp-when-arrayp-of-read-array
+    (implies (and (syntaxp (symbolp compst))
+                  (equal array (read-array ptr compst))
+                  (arrayp array)
+                  (typep type)
+                  (natp len))
+             (equal (write-array-okp ptr type len compst)
+                    (and (equal (type-of-array-element array)
+                                type)
+                         (equal (array-length array)
+                                len))))
+    :enable (write-array-okp read-array arrayp))
+
+  (defruled write-array-to-update-array
+    (implies (write-array-okp ptr
+                              (type-of-array-element array)
+                              (array-length array)
+                              compst)
+             (equal (write-array ptr array compst)
+                    (update-array ptr array compst)))
+    :enable (write-array write-array-okp update-array))
+
+  (defval *atc-write-array-rules*
+    '(write-array-okp-of-add-frame
+      write-array-okp-of-enter-scope
+      write-array-okp-of-add-var
+      write-array-okp-of-update-var
+      write-array-okp-when-arrayp-of-read-array
+      write-array-to-update-array)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-compustate-frames-number-rules
   :short "Rules about @(tsee compustate-frames-number)."
   :long
@@ -870,5 +1056,6 @@
           *atc-write-var-rules*
           *atc-read-var-rules*
           *atc-update-var-rules*
+          *atc-write-array-rules*
           *atc-compustate-frames-number-rules*
           *atc-read-array-rules*))
