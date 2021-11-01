@@ -62,6 +62,8 @@
                                        transform-specific-required-args ;arguments to function-body-transformer
                                        transform-specific-keyword-args-and-defaults ;arguments to function-body-transformer
                                        enables ; used for each function (currently)
+                                       measure-enables
+                                       guard-enables
                                        make-becomes-theorem-name
                                        make-becomes-theorems-name
                                        make-becomes-theorem-extra-args
@@ -157,13 +159,14 @@
                                   (er hard ',apply-to-defun-name "Measure, ~x0, is not a recognized term." measure)
                                 (replace-xarg-in-declares :measure measure declares)))))
                 ;; Handle the (termination) :hints xarg:
+                (measure-enables ',measure-enables)
                 (declares (if (not rec)
                               declares ; no termination since not recursive
                             ;; single or mutual recursion:
                             (replace-xarg-in-declares
                              :hints
                              (if (eq :auto measure-hints)
-                                 `(("Goal" :in-theory '()
+                                 `(("Goal" :in-theory ',measure-enables
                                     ;; ACL2 automatically replaces the old functions with the new ones in this:
                                     :use (:instance (:termination-theorem ,fn))))
                                measure-hints)
@@ -311,7 +314,7 @@
                         (local ,new-defun) ; has :verify-guards nil
                         (local (install-not-normalized ,new-fn))
                         (local ,becomes-theorem)
-                        ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints))))
+                        ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints ',guard-enables))))
                         ;; export the new defun and the becomes-theorem:
                         ,new-defun-to-export
                         ,becomes-theorem-to-export)
@@ -344,7 +347,7 @@
                           (local ,new-defun) ; has :verify-guards nil
                           (local (install-not-normalized ,new-fn))
                           (local ,becomes-theorem)
-                          ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints))))
+                          ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints ',guard-enables))))
                           ;; export the new defun and the becomes theorem:
                           ,new-defun-to-export
                           ,becomes-theorem-to-export)
@@ -415,7 +418,7 @@
                         (local ,make-flag-form)
                         (local ,becomes-defthm-flag)
                         ,@(and verify-guards
-                               `((local ,(verify-guards-for-defun fn function-renaming guard-hints))))
+                               `((local ,(verify-guards-for-defun fn function-renaming guard-hints ',guard-enables))))
                         ;; Export the new mutual-recursion:
                         ,mutual-recursion-to-export
                         ;; Export the 'becomes' theorems:
@@ -460,7 +463,10 @@
                                        transform-specific-required-args
                                        transform-specific-keyword-args-and-defaults ; a list of doublets containing arg names and quoted default values
                                        &key
+                                       ;; All of these are baked into the generated transformation, not passed into each call of the transformation:
                                        (enables 'nil) ; enables to use in all equivalence proofs
+                                       (measure-enables 'nil) ; for when :measure-hints is :auto
+                                       (guard-enables 'nil) ; for when :guard-hints is :auto
                                        (make-becomes-theorem-name 'make-becomes-theorem)
                                        (make-becomes-theorems-name 'make-becomes-theorems)
                                        (make-becomes-theorem-extra-args 'nil)
@@ -468,7 +474,14 @@
                                        (short ':auto)
                                        (transform-specific-arg-descriptions 'nil)
                                        (description 'nil))
-  `(make-event (def-equality-transformation-fn ',name ',function-body-transformer ',transform-specific-required-args ',transform-specific-keyword-args-and-defaults ,enables
+  `(make-event (def-equality-transformation-fn
+                 ',name
+                 ',function-body-transformer
+                 ',transform-specific-required-args
+                 ',transform-specific-keyword-args-and-defaults
+                 ,enables
+                 ,measure-enables
+                 ,guard-enables
                  ',make-becomes-theorem-name
                  ',make-becomes-theorems-name
                  ',make-becomes-theorem-extra-args
