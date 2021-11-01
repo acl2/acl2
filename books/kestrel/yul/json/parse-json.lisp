@@ -146,7 +146,7 @@
 }
 ||#
 
-;; Then we generate the IR with this command:
+;; Then we generate the IR in a JSON wrapper with this command:
 ;;
 ;;   solc --standard-json  --pretty-json --input-file power2.yon > power2irs.json
 
