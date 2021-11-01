@@ -680,7 +680,7 @@
         (error :null-pointer))
        (address+array (omap::in address heap))
        ((unless (consp address+array))
-        (error (list :address-not-found address :heap heap)))
+        (error (list :address-not-found address)))
        (array (cdr address+array))
        ((unless (equal reftype (type-of-array-element array)))
         (error (list :mistype-array-read
@@ -713,7 +713,7 @@
         (error :null-pointer))
        (address+array (omap::in address heap))
        ((unless (consp address+array))
-        (error (list :address-not-found address :heap heap)))
+        (error (list :address-not-found address)))
        (old-array (cdr address+array))
        ((unless (equal reftype (type-of-array-element old-array)))
         (error (list :mistype-array-write
