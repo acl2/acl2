@@ -185,7 +185,7 @@
      we simply expand the definition of @(tsee exec-ident)
      which unconditionally yields @(tsee read-var).
      The @(tsee read-var) call may undergo further rewriting,
-     as explained in @(see atc-symbolic-computation-state-rules)."))
+     as explained in @(see atc-read-var-rules)."))
 
   (defval *atc-exec-ident-rules*
     '(exec-ident)))
