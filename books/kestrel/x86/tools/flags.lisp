@@ -23,6 +23,11 @@
 (defconst *flags*
   '(:cf :pf :af :zf :sf :tf :if :df :of :iopl :nt :rf :vm :ac :vif :vip :id))
 
+(defconst *one-bit-flags*
+  '(:cf :pf :af :zf :sf :tf :if :df :of
+        ;; :iopl
+        :nt :rf :vm :ac :vif :vip :id))
+
 (defun flag-ok (flag)
   (declare (xargs :guard t))
   (member-eq flag *flags*))
@@ -52,57 +57,57 @@
 ;; See also !flgi in the mode, but that is a macro and cannot be called with a
 ;; variable as the flag..
 (defund set-flag (flag val x86)
-  (declare (xargs :stobjs x86
-                  :guard (flag-and-val-ok flag val)))
+  (declare (xargs :guard (flag-and-val-ok flag val)
+                  :stobjs x86))
   (let* ((rflags (rflags x86))
          (new-rflags
           (case flag
-            (:cf   (x86isa::!rflagsBits->cf val rflags))
-            (:pf   (x86isa::!rflagsBits->pf val rflags))
-            (:af   (x86isa::!rflagsBits->af val rflags))
-            (:zf   (x86isa::!rflagsBits->zf val rflags))
-            (:sf   (x86isa::!rflagsBits->sf val rflags))
-            (:tf   (x86isa::!rflagsBits->tf val rflags))
+            (:cf   (x86isa::!rflagsBits->cf   val rflags))
+            (:pf   (x86isa::!rflagsBits->pf   val rflags))
+            (:af   (x86isa::!rflagsBits->af   val rflags))
+            (:zf   (x86isa::!rflagsBits->zf   val rflags))
+            (:sf   (x86isa::!rflagsBits->sf   val rflags))
+            (:tf   (x86isa::!rflagsBits->tf   val rflags))
             (:if   (x86isa::!rflagsBits->intf val rflags))
-            (:df   (x86isa::!rflagsBits->df val rflags))
-            (:of   (x86isa::!rflagsBits->of val rflags))
+            (:df   (x86isa::!rflagsBits->df   val rflags))
+            (:of   (x86isa::!rflagsBits->of   val rflags))
             (:iopl (x86isa::!rflagsBits->iopl val rflags))
-            (:nt   (x86isa::!rflagsBits->nt val rflags))
-            (:rf   (x86isa::!rflagsBits->rf val rflags))
-            (:vm   (x86isa::!rflagsBits->vm val rflags))
-            (:ac   (x86isa::!rflagsBits->ac val rflags))
-            (:vif  (x86isa::!rflagsBits->vif val rflags))
-            (:vip  (x86isa::!rflagsBits->vip val rflags))
-            (:id   (x86isa::!rflagsBits->id val rflags))
+            (:nt   (x86isa::!rflagsBits->nt   val rflags))
+            (:rf   (x86isa::!rflagsBits->rf   val rflags))
+            (:vm   (x86isa::!rflagsBits->vm   val rflags))
+            (:ac   (x86isa::!rflagsBits->ac   val rflags))
+            (:vif  (x86isa::!rflagsBits->vif  val rflags))
+            (:vip  (x86isa::!rflagsBits->vip  val rflags))
+            (:id   (x86isa::!rflagsBits->id   val rflags))
             (otherwise (er hard 'set-flag "illegal flag keyword: ~x0.~%" flag)))))
     (!rflags new-rflags x86)))
 
 (defund get-flag (flag x86)
-  (declare (xargs :stobjs x86
-                  :guard (flag-ok flag)))
+  (declare (xargs :guard (flag-ok flag)
+                  :stobjs x86))
   (let ((rflags (rflags x86)))
     (case flag
-      (:cf   (x86isa::rflagsBits->cf rflags))
-      (:pf   (x86isa::rflagsBits->pf rflags))
-      (:af   (x86isa::rflagsBits->af rflags))
-      (:zf   (x86isa::rflagsBits->zf rflags))
-      (:sf   (x86isa::rflagsBits->sf rflags))
-      (:tf   (x86isa::rflagsBits->tf rflags))
+      (:cf   (x86isa::rflagsBits->cf   rflags))
+      (:pf   (x86isa::rflagsBits->pf   rflags))
+      (:af   (x86isa::rflagsBits->af   rflags))
+      (:zf   (x86isa::rflagsBits->zf   rflags))
+      (:sf   (x86isa::rflagsBits->sf   rflags))
+      (:tf   (x86isa::rflagsBits->tf   rflags))
       (:if   (x86isa::rflagsBits->intf rflags))
-      (:df   (x86isa::rflagsBits->df rflags))
-      (:of   (x86isa::rflagsBits->of rflags))
+      (:df   (x86isa::rflagsBits->df   rflags))
+      (:of   (x86isa::rflagsBits->of   rflags))
       (:iopl (x86isa::rflagsBits->iopl rflags))
-      (:nt   (x86isa::rflagsBits->nt rflags))
-      (:rf   (x86isa::rflagsBits->rf rflags))
-      (:vm   (x86isa::rflagsBits->vm rflags))
-      (:ac   (x86isa::rflagsBits->ac rflags))
-      (:vif  (x86isa::rflagsBits->vif rflags))
-      (:vip  (x86isa::rflagsBits->vip rflags))
-      (:id   (x86isa::rflagsBits->id rflags))
+      (:nt   (x86isa::rflagsBits->nt   rflags))
+      (:rf   (x86isa::rflagsBits->rf   rflags))
+      (:vm   (x86isa::rflagsBits->vm   rflags))
+      (:ac   (x86isa::rflagsBits->ac   rflags))
+      (:vif  (x86isa::rflagsBits->vif  rflags))
+      (:vip  (x86isa::rflagsBits->vip  rflags))
+      (:id   (x86isa::rflagsBits->id   rflags))
       (otherwise (er hard 'get-flag "illegal flag keyword: ~x0.~%" flag)))))
 
 ;;
-;; Theorems to introduce get-flag
+;; Rules to introduce get-flag
 ;;
 
 (defthmd rflagsbits->cf$inline-of-xr
@@ -191,7 +196,7 @@
   :hints (("Goal" :in-theory (enable get-flag))))
 
 ;;
-;; Theorems to introduce set-flag
+;; Rules to introduce set-flag
 ;;
 
 (defthmd !rflags-of-!rflagsbits->af
@@ -294,23 +299,56 @@
   (implies (and (syntaxp (and (quotep flag1)
                               (quotep flag2)
                               (acl2::smaller-termp flag2 flag1)))
-;                (symbol< flag1 flag2)
-                (not (equal flag1 flag2))
-                (member-eq flag1 *flags*)
-                (member-eq flag2 *flags*)
+                ;; (symbol< flag1 flag2)
+                (not (equal flag1 flag2)) ; gets computed
+                (member-eq flag1 *flags*) ; gets computed
+                (member-eq flag2 *flags*) ; gets computed
                 )
            (equal (set-flag flag1 val1 (set-flag flag2 val2 x86))
                   (set-flag flag2 val2 (set-flag flag1 val1 x86))))
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (e/d (set-flag
                                    acl2::bfix
-                                     x86isa::2bits-fix
-                                     x86isa::rflagsBits->ac
-                                     x86isa::!rflagsBits->cf
-                                     x86isa::!rflagsBits->pf
-                                     x86isa::!rflagsBits->af
-                                     x86isa::!rflagsBits->zf
-                                     x86isa::!rflagsBits->sf
+                                   x86isa::2bits-fix
+                                   x86isa::rflagsBits->ac
+                                   x86isa::!rflagsBits->cf
+                                   x86isa::!rflagsBits->pf
+                                   x86isa::!rflagsBits->af
+                                   x86isa::!rflagsBits->zf
+                                   x86isa::!rflagsBits->sf
+                                   x86isa::!rflagsBits->tf
+                                   x86isa::!rflagsBits->intf
+                                   x86isa::!rflagsBits->df
+                                   x86isa::!rflagsBits->of
+                                   x86isa::!rflagsBits->iopl
+                                   x86isa::!rflagsBits->nt
+                                   x86isa::!rflagsBits->rf
+                                   x86isa::!rflagsBits->vm
+                                   x86isa::!rflagsBits->ac
+                                   x86isa::!rflagsBits->vif
+                                   x86isa::!rflagsBits->vip
+                                   x86isa::!rflagsBits->id)
+                                  (bitops::part-install-width-low$inline)))))
+
+(local (include-book "kestrel/bv/rules10" :dir :system))
+
+(defthm get-flag-of-set-flag
+  (implies (and (member-eq flag1 *flags*)
+                ;;todo: add more:
+                (member-eq flag2 *one-bit-flags*)
+                (unsigned-byte-p 1 val))
+           (equal (get-flag flag1 (set-flag flag2 val x86))
+                  (if (equal flag1 flag2)
+                      val
+                    (get-flag flag1 x86))))
+  :hints (("Goal" :in-theory (enable get-flag
+                                     set-flag
+                                     x86isa::!rflagsbits->af
+                                     x86isa::!rflagsbits->cf
+                                     x86isa::!rflagsbits->pf
+                                     x86isa::!rflagsbits->of
+                                     x86isa::!rflagsbits->sf
+                                     x86isa::!rflagsbits->zf
                                      x86isa::!rflagsBits->tf
                                      x86isa::!rflagsBits->intf
                                      x86isa::!rflagsBits->df
@@ -322,29 +360,7 @@
                                      x86isa::!rflagsBits->ac
                                      x86isa::!rflagsBits->vif
                                      x86isa::!rflagsBits->vip
-                                     x86isa::!rflagsBits->id)
-                                  (BITOPS::PART-INSTALL-WIDTH-LOW$INLINE)))))
-
-(local (include-book "kestrel/bv/rules10" :dir :system))
-
-(defthm get-flag-of-set-flag
-  (implies (and (member-eq flag1 *flags*)
-                ;;todo: add more:
-                (member-eq flag2 '(:af :cf :pf :of :sf :zf))
-                (unsigned-byte-p 1 val))
-           (equal (get-flag flag1 (set-flag flag2 val x86))
-                  (if (equal flag1 flag2)
-                      val
-                    (get-flag flag1 x86))))
-  :hints (("Goal" :in-theory (enable get-flag
-                                     set-flag
-                                     X86ISA::!RFLAGSBITS->AF
-                                     X86ISA::!RFLAGSBITS->CF
-                                     X86ISA::!RFLAGSBITS->PF
-                                     X86ISA::!RFLAGSBITS->OF
-                                     X86ISA::!RFLAGSBITS->SF
-                                     X86ISA::!RFLAGSBITS->ZF
-
+                                     x86isa::!rflagsBits->id
                                      x86isa::rflagsBits->cf
                                      x86isa::rflagsBits->pf
                                      x86isa::rflagsBits->af
@@ -362,9 +378,7 @@
                                      x86isa::rflagsBits->vif
                                      x86isa::rflagsBits->vip
                                      x86isa::rflagsBits->id
-
-                                     X86ISA::RFLAGSBITS-FIX
-                                     ))))
+                                     x86isa::rflagsbits-fix))))
 
 (defthm rflagsbits->cf$inline-of-bvchop-32
   (equal (x86isa::rflagsbits->cf$inline (bvchop 32 rflags))

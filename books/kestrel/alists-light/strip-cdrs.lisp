@@ -50,6 +50,12 @@
          (cdr (cadr x)))
   :hints (("Goal" :in-theory (enable strip-cdrs))))
 
+;; Not sure which is better
+(defthmd strip-cdrs-of-cdr
+  (equal (strip-cdrs (cdr x))
+         (cdr (strip-cdrs x)))
+  :hints (("Goal" :in-theory (enable strip-cdrs))))
+
 (defthm nth-of-strip-cdrs
   (equal (nth n (strip-cdrs x))
          (cdr (nth n x)))
@@ -73,3 +79,9 @@
          (take (len x)
                y))
   :hints (("Goal" :in-theory (enable strip-cdrs))))
+
+(defthm strip-cdrs-of-revappend
+  (equal (strip-cdrs (revappend x y))
+         (revappend (strip-cdrs x)
+                    (strip-cdrs y)))
+  :hints (("Goal" :in-theory (enable strip-cdrs revappend))))

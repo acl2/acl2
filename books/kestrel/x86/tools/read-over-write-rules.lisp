@@ -81,32 +81,32 @@
 (defthm read-byte-from-segment-of-set-eax
   (equal (read-byte-from-segment eff-addr seg-reg (set-eax val x86))
          (read-byte-from-segment eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm read-byte-from-segment-of-set-ebx
   (equal (read-byte-from-segment eff-addr seg-reg (set-ebx val x86))
          (read-byte-from-segment eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm read-byte-from-segment-of-set-ecx
   (equal (read-byte-from-segment eff-addr seg-reg (set-ecx val x86))
          (read-byte-from-segment eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm read-byte-from-segment-of-set-edx
   (equal (read-byte-from-segment eff-addr seg-reg (set-edx val x86))
          (read-byte-from-segment eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm read-byte-from-segment-of-set-esp
   (equal (read-byte-from-segment eff-addr seg-reg (set-esp val x86))
          (read-byte-from-segment eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm read-byte-from-segment-of-set-ebp
   (equal (read-byte-from-segment eff-addr seg-reg (set-ebp val x86))
          (read-byte-from-segment eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
 
@@ -118,160 +118,160 @@
 (defthm read-from-segment-of-set-eax
   (equal (read-from-segment n eff-addr seg-reg (set-eax val x86))
          (read-from-segment n eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm read-from-segment-of-set-ebx
   (equal (read-from-segment n eff-addr seg-reg (set-ebx val x86))
          (read-from-segment n eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm read-from-segment-of-set-ecx
   (equal (read-from-segment n eff-addr seg-reg (set-ecx val x86))
          (read-from-segment n eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm read-from-segment-of-set-edx
   (equal (read-from-segment n eff-addr seg-reg (set-edx val x86))
          (read-from-segment n eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm read-from-segment-of-set-esp
   (equal (read-from-segment n eff-addr seg-reg (set-esp val x86))
          (read-from-segment n eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm read-from-segment-of-set-ebp
   (equal (read-from-segment n eff-addr seg-reg (set-ebp val x86))
          (read-from-segment n eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
 
 (defthm x86p-of-set-eax
   (implies (x86p x86)
            (x86p (set-eax eax x86)))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm x86p-of-set-ebx
   (implies (x86p x86)
            (x86p (set-ebx ebx x86)))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm x86p-of-set-ecx
   (implies (x86p x86)
            (x86p (set-ecx ecx x86)))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm x86p-of-set-edx
   (implies (x86p x86)
            (x86p (set-edx edx x86)))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm x86p-of-set-esp
   (implies (x86p x86)
            (x86p (set-esp esp x86)))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm x86p-of-set-ebp
   (implies (x86p x86)
            (x86p (set-ebp ebp x86)))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
 
 (defthm eip-of-set-eax
   (equal (eip (set-eax eax x86))
          (eip x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm eip-of-set-ebx
   (equal (eip (set-ebx ebx x86))
          (eip x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm eip-of-set-ecx
   (equal (eip (set-ecx ecx x86))
          (eip x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm eip-of-set-edx
   (equal (eip (set-edx edx x86))
          (eip x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm eip-of-set-esp
   (equal (eip (set-esp esp x86))
          (eip x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm eip-of-set-ebp
   (equal (eip (set-ebp ebp x86))
          (eip x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
 
 (defthm segment-is-32-bitsp-of-set-eax
   (equal (segment-is-32-bitsp seg-reg (set-eax eax x86))
          (segment-is-32-bitsp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm segment-is-32-bitsp-of-set-ebx
   (equal (segment-is-32-bitsp seg-reg (set-ebx ebx x86))
          (segment-is-32-bitsp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm segment-is-32-bitsp-of-set-ecx
   (equal (segment-is-32-bitsp seg-reg (set-ecx ecx x86))
          (segment-is-32-bitsp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm segment-is-32-bitsp-of-set-edx
   (equal (segment-is-32-bitsp seg-reg (set-edx edx x86))
          (segment-is-32-bitsp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm segment-is-32-bitsp-of-set-esp
   (equal (segment-is-32-bitsp seg-reg (set-esp esp x86))
          (segment-is-32-bitsp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm segment-is-32-bitsp-of-set-ebp
   (equal (segment-is-32-bitsp seg-reg (set-ebp ebp x86))
          (segment-is-32-bitsp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
 
 (defthm 32-bit-segment-size-of-set-eax
   (equal (32-bit-segment-size seg-reg (set-eax eax x86))
          (32-bit-segment-size seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm 32-bit-segment-size-of-set-ebx
   (equal (32-bit-segment-size seg-reg (set-ebx ebx x86))
          (32-bit-segment-size seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm 32-bit-segment-size-of-set-ecx
   (equal (32-bit-segment-size seg-reg (set-ecx ecx x86))
          (32-bit-segment-size seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm 32-bit-segment-size-of-set-edx
   (equal (32-bit-segment-size seg-reg (set-edx edx x86))
          (32-bit-segment-size seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm 32-bit-segment-size-of-set-esp
   (equal (32-bit-segment-size seg-reg (set-esp esp x86))
          (32-bit-segment-size seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm 32-bit-segment-size-of-set-ebp
   (equal (32-bit-segment-size seg-reg (set-ebp ebp x86))
          (32-bit-segment-size seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;open less in the proof?
 (defthm 32-bit-segment-size-of-write-byte-to-segment
@@ -289,32 +289,32 @@
 (defthm 32-bit-segment-start-of-set-eax
   (equal (32-bit-segment-start seg-reg (set-eax eax x86))
          (32-bit-segment-start seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm 32-bit-segment-start-of-set-ebx
   (equal (32-bit-segment-start seg-reg (set-ebx ebx x86))
          (32-bit-segment-start seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm 32-bit-segment-start-of-set-ecx
   (equal (32-bit-segment-start seg-reg (set-ecx ecx x86))
          (32-bit-segment-start seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm 32-bit-segment-start-of-set-edx
   (equal (32-bit-segment-start seg-reg (set-edx edx x86))
          (32-bit-segment-start seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm 32-bit-segment-start-of-set-esp
   (equal (32-bit-segment-start seg-reg (set-esp esp x86))
          (32-bit-segment-start seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm 32-bit-segment-start-of-set-ebp
   (equal (32-bit-segment-start seg-reg (set-ebp ebp x86))
          (32-bit-segment-start seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
 
@@ -326,32 +326,32 @@
 (defthm segment-expand-down-bit-of-set-eax
   (equal (segment-expand-down-bit seg-reg (set-eax eax x86))
          (segment-expand-down-bit seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm segment-expand-down-bit-of-set-ebx
   (equal (segment-expand-down-bit seg-reg (set-ebx ebx x86))
          (segment-expand-down-bit seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm segment-expand-down-bit-of-set-ecx
   (equal (segment-expand-down-bit seg-reg (set-ecx ecx x86))
          (segment-expand-down-bit seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm segment-expand-down-bit-of-set-edx
   (equal (segment-expand-down-bit seg-reg (set-edx edx x86))
          (segment-expand-down-bit seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm segment-expand-down-bit-of-set-esp
   (equal (segment-expand-down-bit seg-reg (set-esp esp x86))
          (segment-expand-down-bit seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm segment-expand-down-bit-of-set-ebp
   (equal (segment-expand-down-bit seg-reg (set-ebp ebp x86))
          (segment-expand-down-bit seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 (defthm segment-expand-down-bit-of-write-byte-to-segment
   (equal (segment-expand-down-bit seg-reg1 (write-byte-to-segment eff-addr seg-reg2 val x86))
@@ -369,32 +369,32 @@
 (defthm well-formed-32-bit-segmentp-of-set-eax
   (equal (well-formed-32-bit-segmentp seg-reg (set-eax eax x86))
          (well-formed-32-bit-segmentp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm well-formed-32-bit-segmentp-of-set-ebx
   (equal (well-formed-32-bit-segmentp seg-reg (set-ebx ebx x86))
          (well-formed-32-bit-segmentp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm well-formed-32-bit-segmentp-of-set-ecx
   (equal (well-formed-32-bit-segmentp seg-reg (set-ecx ecx x86))
          (well-formed-32-bit-segmentp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm well-formed-32-bit-segmentp-of-set-edx
   (equal (well-formed-32-bit-segmentp seg-reg (set-edx edx x86))
          (well-formed-32-bit-segmentp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm well-formed-32-bit-segmentp-of-set-esp
   (equal (well-formed-32-bit-segmentp seg-reg (set-esp esp x86))
          (well-formed-32-bit-segmentp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm well-formed-32-bit-segmentp-of-set-ebp
   (equal (well-formed-32-bit-segmentp seg-reg (set-ebp ebp x86))
          (well-formed-32-bit-segmentp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 (defthm well-formed-32-bit-segmentp-of-write-to-segment
   (equal (well-formed-32-bit-segmentp seg-reg1 (write-to-segment n eff-addr seg-reg2 val x86))
@@ -406,96 +406,96 @@
 (defthm segments-separate-of-set-eax
   (equal (segments-separate seg-reg1 seg-reg2 (set-eax eax x86))
          (segments-separate seg-reg1 seg-reg2 x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm segments-separate-of-set-ebx
   (equal (segments-separate seg-reg1 seg-reg2 (set-ebx ebx x86))
          (segments-separate seg-reg1 seg-reg2 x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm segments-separate-of-set-ecx
   (equal (segments-separate seg-reg1 seg-reg2 (set-ecx ecx x86))
          (segments-separate seg-reg1 seg-reg2 x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm segments-separate-of-set-edx
   (equal (segments-separate seg-reg1 seg-reg2 (set-edx edx x86))
          (segments-separate seg-reg1 seg-reg2 x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm segments-separate-of-set-esp
   (equal (segments-separate seg-reg1 seg-reg2 (set-esp esp x86))
          (segments-separate seg-reg1 seg-reg2 x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm segments-separate-of-set-ebp
   (equal (segments-separate seg-reg1 seg-reg2 (set-ebp ebp x86))
          (segments-separate seg-reg1 seg-reg2 x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
 
 (defthm code-and-stack-segments-separate-of-set-eax
   (equal (code-and-stack-segments-separate (set-eax eax x86))
          (code-and-stack-segments-separate x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm code-and-stack-segments-separate-of-set-ebx
   (equal (code-and-stack-segments-separate (set-ebx ebx x86))
          (code-and-stack-segments-separate x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm code-and-stack-segments-separate-of-set-ecx
   (equal (code-and-stack-segments-separate (set-ecx ecx x86))
          (code-and-stack-segments-separate x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm code-and-stack-segments-separate-of-set-edx
   (equal (code-and-stack-segments-separate (set-edx edx x86))
          (code-and-stack-segments-separate x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm code-and-stack-segments-separate-of-set-esp
   (equal (code-and-stack-segments-separate (set-esp esp x86))
          (code-and-stack-segments-separate x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm code-and-stack-segments-separate-of-set-ebp
   (equal (code-and-stack-segments-separate (set-ebp ebp x86))
          (code-and-stack-segments-separate x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
 
 (defthm alignment-checking-enabled-p-of-set-eax
   (equal (alignment-checking-enabled-p (set-eax eax x86))
          (alignment-checking-enabled-p x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm alignment-checking-enabled-p-of-set-ebx
   (equal (alignment-checking-enabled-p (set-ebx ebx x86))
          (alignment-checking-enabled-p x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm alignment-checking-enabled-p-of-set-ecx
   (equal (alignment-checking-enabled-p (set-ecx ecx x86))
          (alignment-checking-enabled-p x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm alignment-checking-enabled-p-of-set-edx
   (equal (alignment-checking-enabled-p (set-edx edx x86))
          (alignment-checking-enabled-p x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm alignment-checking-enabled-p-of-set-esp
   (equal (alignment-checking-enabled-p (set-esp esp x86))
          (alignment-checking-enabled-p x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm alignment-checking-enabled-p-of-set-ebp
   (equal (alignment-checking-enabled-p (set-ebp ebp x86))
          (alignment-checking-enabled-p x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
 
@@ -507,32 +507,32 @@
 (defthm get-flag-of-set-eax
   (equal (get-flag flag (set-eax eax x86))
          (get-flag flag x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm get-flag-of-set-ebx
   (equal (get-flag flag (set-ebx ebx x86))
          (get-flag flag x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm get-flag-of-set-ecx
   (equal (get-flag flag (set-ecx ecx x86))
          (get-flag flag x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm get-flag-of-set-edx
   (equal (get-flag flag (set-edx edx x86))
          (get-flag flag x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm get-flag-of-set-esp
   (equal (get-flag flag (set-esp esp x86))
          (get-flag flag x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm get-flag-of-set-ebp
   (equal (get-flag flag (set-ebp ebp x86))
          (get-flag flag x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 (defthm get-flag-of-write-byte-to-segment
   (equal (get-flag flag (write-byte-to-segment eff-addr seg-reg val x86))
@@ -549,64 +549,64 @@
 (defthm eff-addr-okp-of-set-eax
   (equal (eff-addr-okp eff-addr seg-reg (set-eax eax x86))
          (eff-addr-okp eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm eff-addr-okp-of-set-ebx
   (equal (eff-addr-okp eff-addr seg-reg (set-ebx ebx x86))
          (eff-addr-okp eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm eff-addr-okp-of-set-ecx
   (equal (eff-addr-okp eff-addr seg-reg (set-ecx ecx x86))
          (eff-addr-okp eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm eff-addr-okp-of-set-edx
   (equal (eff-addr-okp eff-addr seg-reg (set-edx edx x86))
          (eff-addr-okp eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm eff-addr-okp-of-set-esp
   (equal (eff-addr-okp eff-addr seg-reg (set-esp esp x86))
          (eff-addr-okp eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm eff-addr-okp-of-set-ebp
   (equal (eff-addr-okp eff-addr seg-reg (set-ebp ebp x86))
          (eff-addr-okp eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
 
 (defthm eff-addrs-okp-of-set-eax
   (equal (eff-addrs-okp n eff-addr seg-reg (set-eax eax x86))
          (eff-addrs-okp n eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm eff-addrs-okp-of-set-ebx
   (equal (eff-addrs-okp n eff-addr seg-reg (set-ebx ebx x86))
          (eff-addrs-okp n eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm eff-addrs-okp-of-set-ecx
   (equal (eff-addrs-okp n eff-addr seg-reg (set-ecx ecx x86))
          (eff-addrs-okp n eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm eff-addrs-okp-of-set-edx
   (equal (eff-addrs-okp n eff-addr seg-reg (set-edx edx x86))
          (eff-addrs-okp n eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm eff-addrs-okp-of-set-esp
   (equal (eff-addrs-okp n eff-addr seg-reg (set-esp esp x86))
          (eff-addrs-okp n eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm eff-addrs-okp-of-set-ebp
   (equal (eff-addrs-okp n eff-addr seg-reg (set-ebp ebp x86))
          (eff-addrs-okp n eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
 
@@ -618,32 +618,32 @@
 (defthm 64-bit-modep-of-set-eax
   (equal (64-bit-modep (set-eax eax x86))
          (64-bit-modep x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm 64-bit-modep-of-set-ebx
   (equal (64-bit-modep (set-ebx ebx x86))
          (64-bit-modep x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm 64-bit-modep-of-set-ecx
   (equal (64-bit-modep (set-ecx ecx x86))
          (64-bit-modep x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm 64-bit-modep-of-set-edx
   (equal (64-bit-modep (set-edx edx x86))
          (64-bit-modep x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm 64-bit-modep-of-set-esp
   (equal (64-bit-modep (set-esp esp x86))
          (64-bit-modep x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm 64-bit-modep-of-set-ebp
   (equal (64-bit-modep (set-ebp ebp x86))
          (64-bit-modep x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
 
@@ -655,32 +655,32 @@
 (defthm app-view-of-set-eax
   (equal (app-view (set-eax eax x86))
          (app-view x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm app-view-of-set-ebx
   (equal (app-view (set-ebx ebx x86))
          (app-view x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm app-view-of-set-ecx
   (equal (app-view (set-ecx ecx x86))
          (app-view x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm app-view-of-set-edx
   (equal (app-view (set-edx edx x86))
          (app-view x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm app-view-of-set-esp
   (equal (app-view (set-esp esp x86))
          (app-view x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm app-view-of-set-ebp
   (equal (app-view (set-ebp ebp x86))
          (app-view x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 (defthm app-view-of-write-to-segment
   (equal (app-view (write-to-segment n eff-addr seg-reg val x86))
@@ -691,64 +691,64 @@
 (defthm code-segment-assumptions32-for-code-of-set-eax
   (equal (code-segment-assumptions32-for-code code offset (set-eax eax x86))
          (code-segment-assumptions32-for-code code offset x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm code-segment-assumptions32-for-code-of-set-ebx
   (equal (code-segment-assumptions32-for-code code offset (set-ebx ebx x86))
          (code-segment-assumptions32-for-code code offset x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm code-segment-assumptions32-for-code-of-set-ecx
   (equal (code-segment-assumptions32-for-code code offset (set-ecx ecx x86))
          (code-segment-assumptions32-for-code code offset x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm code-segment-assumptions32-for-code-of-set-edx
   (equal (code-segment-assumptions32-for-code code offset (set-edx edx x86))
          (code-segment-assumptions32-for-code code offset x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm code-segment-assumptions32-for-code-of-set-esp
   (equal (code-segment-assumptions32-for-code code offset (set-esp esp x86))
          (code-segment-assumptions32-for-code code offset x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm code-segment-assumptions32-for-code-of-set-ebp
   (equal (code-segment-assumptions32-for-code code offset (set-ebp ebp x86))
          (code-segment-assumptions32-for-code code offset x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
 
 (defthm segment-base-and-bounds-of-set-eax
   (equal (segment-base-and-bounds proc-mode seg-reg (set-eax eax x86))
          (segment-base-and-bounds proc-mode seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm segment-base-and-bounds-of-set-ebx
   (equal (segment-base-and-bounds proc-mode seg-reg (set-ebx ebx x86))
          (segment-base-and-bounds proc-mode seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm segment-base-and-bounds-of-set-ecx
   (equal (segment-base-and-bounds proc-mode seg-reg (set-ecx ecx x86))
          (segment-base-and-bounds proc-mode seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm segment-base-and-bounds-of-set-edx
   (equal (segment-base-and-bounds proc-mode seg-reg (set-edx edx x86))
          (segment-base-and-bounds proc-mode seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm segment-base-and-bounds-of-set-esp
   (equal (segment-base-and-bounds proc-mode seg-reg (set-esp esp x86))
          (segment-base-and-bounds proc-mode seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm segment-base-and-bounds-of-set-ebp
   (equal (segment-base-and-bounds proc-mode seg-reg (set-ebp ebp x86))
          (segment-base-and-bounds proc-mode seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
 
@@ -760,32 +760,32 @@
 (defthm data-segment-writeable-bit-of-set-eax
   (equal (data-segment-writeable-bit seg-reg (set-eax eax x86))
          (data-segment-writeable-bit seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm data-segment-writeable-bit-of-set-ebx
   (equal (data-segment-writeable-bit seg-reg (set-ebx ebx x86))
          (data-segment-writeable-bit seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm data-segment-writeable-bit-of-set-ecx
   (equal (data-segment-writeable-bit seg-reg (set-ecx ecx x86))
          (data-segment-writeable-bit seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm data-segment-writeable-bit-of-set-edx
   (equal (data-segment-writeable-bit seg-reg (set-edx edx x86))
          (data-segment-writeable-bit seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm data-segment-writeable-bit-of-set-esp
   (equal (data-segment-writeable-bit seg-reg (set-esp esp x86))
          (data-segment-writeable-bit seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm data-segment-writeable-bit-of-set-ebp
   (equal (data-segment-writeable-bit seg-reg (set-ebp ebp x86))
          (data-segment-writeable-bit seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 (defthm data-segment-writeable-bit-of-write-byte-to-segment
   (equal (data-segment-writeable-bit seg-reg1 (write-byte-to-segment eff-addr seg-reg2 val x86))
@@ -807,32 +807,32 @@
 (defthm code-segment-readable-bit-of-set-eax
   (equal (code-segment-readable-bit (set-eax eax x86))
          (code-segment-readable-bit x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm code-segment-readable-bit-of-set-ebx
   (equal (code-segment-readable-bit (set-ebx ebx x86))
          (code-segment-readable-bit x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm code-segment-readable-bit-of-set-ecx
   (equal (code-segment-readable-bit (set-ecx ecx x86))
          (code-segment-readable-bit x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm code-segment-readable-bit-of-set-edx
   (equal (code-segment-readable-bit (set-edx edx x86))
          (code-segment-readable-bit x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm code-segment-readable-bit-of-set-esp
   (equal (code-segment-readable-bit (set-esp esp x86))
          (code-segment-readable-bit x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm code-segment-readable-bit-of-set-ebp
   (equal (code-segment-readable-bit (set-ebp ebp x86))
          (code-segment-readable-bit x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 (defthm code-segment-readable-bit-of-write-byte-to-segment
   (equal (code-segment-readable-bit (write-byte-to-segment eff-addr seg-reg2 val x86))
@@ -849,32 +849,32 @@
 (defthm code-segment-well-formedp-of-set-eax
   (equal (code-segment-well-formedp (set-eax eax x86))
          (code-segment-well-formedp x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm code-segment-well-formedp-of-set-ebx
   (equal (code-segment-well-formedp (set-ebx ebx x86))
          (code-segment-well-formedp x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm code-segment-well-formedp-of-set-ecx
   (equal (code-segment-well-formedp (set-ecx ecx x86))
          (code-segment-well-formedp x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm code-segment-well-formedp-of-set-edx
   (equal (code-segment-well-formedp (set-edx edx x86))
          (code-segment-well-formedp x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm code-segment-well-formedp-of-set-esp
   (equal (code-segment-well-formedp (set-esp esp x86))
          (code-segment-well-formedp x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm code-segment-well-formedp-of-set-ebp
   (equal (code-segment-well-formedp (set-ebp ebp x86))
          (code-segment-well-formedp x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 (defthm code-segment-well-formedp-of-write-to-segment
   (equal (code-segment-well-formedp (write-to-segment n eff-addr seg-reg val x86))
@@ -1033,37 +1033,37 @@
 (defthm read-stack-dword-of-set-eip
   (equal (read-stack-dword eff-addr (set-eip val x86))
          (read-stack-dword eff-addr x86))
-  :hints (("Goal" :in-theory (e/d (set-eip) ()))))
+  :hints (("Goal" :in-theory (enable set-eip))))
 
 (defthm read-stack-dword-of-set-eax
   (equal (read-stack-dword eff-addr (set-eax val x86))
          (read-stack-dword eff-addr x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm read-stack-dword-of-set-ebx
   (equal (read-stack-dword eff-addr (set-ebx val x86))
          (read-stack-dword eff-addr x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm read-stack-dword-of-set-ecx
   (equal (read-stack-dword eff-addr (set-ecx val x86))
          (read-stack-dword eff-addr x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm read-stack-dword-of-set-edx
   (equal (read-stack-dword eff-addr (set-edx val x86))
          (read-stack-dword eff-addr x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm read-stack-dword-of-set-esp
   (equal (read-stack-dword eff-addr (set-esp val x86))
          (read-stack-dword eff-addr x86))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm read-stack-dword-of-set-ebp
   (equal (read-stack-dword eff-addr (set-ebp val x86))
          (read-stack-dword eff-addr x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 (local (in-theory (disable read-stack-dword-intro)))
 

@@ -76,13 +76,14 @@
                             (er hard 'copy-function-in-defun "Measure, ~x0, is not a recognized term." measure)
                           (replace-xarg-in-declares :measure measure declares)))))
           ;; Handle the (termination) :hints xarg:
+          (measure-enables 'nil)
           (declares (if (not rec)
                         declares ; no termination since not recursive
                       ;; single or mutual recursion:
                       (replace-xarg-in-declares
                        :hints
                        (if (eq :auto measure-hints)
-                           `(("Goal" :in-theory '()
+                           `(("Goal" :in-theory ',measure-enables
                               ;; ACL2 automatically replaces the old functions with the new ones in this:
                               :use (:instance (:termination-theorem ,fn))))
                          measure-hints)
@@ -221,7 +222,7 @@
                   (local ,new-defun) ; has :verify-guards nil
                   (local (install-not-normalized ,new-fn))
                   (local ,becomes-theorem)
-                  ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints))))
+                  ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints 'nil))))
                   ;; export the new defun and the becomes-theorem:
                   ,new-defun-to-export
                   ,becomes-theorem-to-export)
@@ -253,7 +254,7 @@
                     (local ,new-defun) ; has :verify-guards nil
                     (local (install-not-normalized ,new-fn))
                     (local ,becomes-theorem)
-                    ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints))))
+                    ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints 'nil))))
                     ;; export the new defun and the becomes theorem:
                     ,new-defun-to-export
                     ,becomes-theorem-to-export)
@@ -323,7 +324,7 @@
                   (local ,make-flag-form)
                   (local ,becomes-defthm-flag)
                   ,@(and verify-guards
-                         `((local ,(verify-guards-for-defun fn function-renaming guard-hints))))
+                         `((local ,(verify-guards-for-defun fn function-renaming guard-hints 'nil))))
                   ;; Export the new mutual-recursion:
                   ,mutual-recursion-to-export
                   ;; Export the 'becomes' theorems:

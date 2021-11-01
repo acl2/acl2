@@ -13,6 +13,7 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system)) ;todo: add symbol-listp-of-take, etc
+(local (include-book "kestrel/typed-lists-light/symbol-listp2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 

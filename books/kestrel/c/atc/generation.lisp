@@ -3083,9 +3083,7 @@
                                    (ctx ctxp)
                                    state)
   :returns (mv erp
-               (val (tuple (params param-declon-listp)
-                           (pointers atc-symbol-type-alistp)
-                           val))
+               (params param-declon-listp)
                state)
   :short "Generate a list of C parameter declarations
           from a list of ACL2 formal parameters."
@@ -3096,15 +3094,6 @@
      from the formals to their C types,
      as calculated by @(tsee atc-typed-formals).")
    (xdoc::p
-    "We also return an alist whose keys are
-     the formal parameters that are pointers in C
-     and whose values are the types referenced by the pointers.
-     These get a special treatment
-     in the formulation of the generated correctness theorems.
-     This is a sub-alist of @('typed-formals');
-     we may actually abolish it in the future,
-     suitably using @('typed-formals') instead.")
-   (xdoc::p
     "We check that the name of the parameter is a portable C identifier,
      and distinct from the names of the other parameters.")
    (xdoc::p
@@ -3113,18 +3102,18 @@
      Only pointers to non-pointer types are allowed
      (i.e. not pointers to pointers),
      so we stop with an internal error if we encounter a pointer to pointer."))
-  (b* (((when (endp typed-formals)) (acl2::value (list nil nil)))
+  (b* (((when (endp typed-formals)) (acl2::value nil))
        ((cons formal type) (car typed-formals))
        (name (symbol-name formal))
        ((unless (atc-ident-stringp name))
-        (er-soft+ ctx t (list nil nil)
+        (er-soft+ ctx t nil
                   "The symbol name ~s0 of ~
                    the formal parameter ~x1 of the function ~x2 ~
                    must be a portable ASCII C identifier, but it is not."
                   name formal fn))
        (cdr-formals (strip-cars (cdr typed-formals)))
        ((when (member-equal name (symbol-name-lst cdr-formals)))
-        (er-soft+ ctx t (list nil nil)
+        (er-soft+ ctx t nil
                   "The formal parameter ~x0 of the function ~x1 ~
                    has the same symbol name as ~
                    another formal parameter among ~x2; ~
@@ -3136,30 +3125,14 @@
           (mv nil type)))
        ((when (type-case ref-type :pointer))
         (raise "Internal error: pointer type to pointer type ~x0." ref-type)
-        (acl2::value (list nil nil)))
+        (acl2::value nil))
        (param (make-param-declon
                :declor (make-declor :ident (make-ident :name name)
                                     :pointerp pointerp)
                :type (atc-gen-tyspecseq ref-type)))
-       ((er (list params pointers))
+       ((er params)
         (atc-gen-param-declon-list (cdr typed-formals) fn ctx state)))
-    (acl2::value (list (cons param params)
-                       (if pointerp
-                           (acons formal (type-fix type) pointers)
-                         pointers))))
-
-  :verify-guards nil ; done below
-
-  ///
-
-  (more-returns
-   (val true-listp :rule-classes :type-prescription)) ; for guard proofs
-
-  (verify-guards atc-gen-param-declon-list
-    :hints
-    (("Goal" :in-theory (enable
-                         symbol-listp-of-strip-cars-when-atc-symbol-type-alistp
-                         alistp-when-atc-symbol-type-alistp-rewrite)))))
+    (acl2::value (cons param params))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3474,65 +3447,171 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-bindings-for-cfun-formals ((formals symbol-listp)
-                                           (pointers atc-symbol-type-alistp)
-                                           (compst-var symbolp))
-  :returns (mv (doublets doublet-listp)
-               (pointer-vars symbol-symbol-alistp
-                             :hyp (symbol-listp formals))
-               (pointer-hyps true-listp))
-  :short "Generate bindings for the formals of an ACL2 function
-          that represents a C function."
+(define atc-gen-outer-bindings-and-hyps ((typed-formals atc-symbol-type-alistp)
+                                         (compst-var symbolp)
+                                         (fn-recursivep booleanp))
+  :returns (mv (bindings doublet-listp)
+               (pointer-hyps true-listp)
+               (pointer-subst symbol-symbol-alistp
+                              :hyp (atc-symbol-type-alistp typed-formals))
+               (instantiation doublet-listp))
+  :short "Generate the outer bindings,
+          pointer hypotheses,
+          pointer substitutions,
+          and lemma instantiation,
+          for a correctness theorem."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These bindings are used in generated theorems about the C function.
-     A non-recursive ACL2 target function may take arrays as parameters.
-     However, the corresponding C function takes pointers
-     as the corresponding parameters.
-     In the correctness theorem for the function,
-     we use fresh variables for the pointers,
-     and bind the array variables to the arrays referenced by the pointers.
-     The array variables are passed to the ACL2 functions,
-     while the pointer variables are passed to @(tsee exec-fun).")
+    "Both C functions and C loops have correctness theorems of the form
+     @('(b* (<bindings>) ...)').
+     Here we generate the @('<bindings>'),
+     which we designate as `outer' since they are
+     at the outermost level of the theorem's formula.
+     We also generate some of the hypotheses
+     used in the correctness theorems
+     that relate to the bindings,
+     explained below.
+     We also generate a variable substitution, explained below.
+     We also generate an instantiation
+     for a lemma used in the hints of the generated theorem.")
    (xdoc::p
-    "As names of the pointer variables,
-     we use the formal parameters that are arrays in the ACL2 function,
-     and add a suffix with a dash,
-     which therefore cannot conflict with other formal parameter names,
-     which have portable C identifiers as names.
-     We return an alist from the array formal parameters
-     to the corresponding pointer variables,
-     which are used for generating a part of the correctness theorem.")
+    "The (outer) bindings can be determined from
+     the formals of the ACL2 function @('fn') that represents
+     the C function or C loop.
+     The bindings differ between C functions and loops,
+     but there is also commonality,
+     which seems to justify having this one ACL2 code generation function
+     that handles both cases.")
    (xdoc::p
-    "We also generate formulas, used as hypotheses in the generated theorems,
-     about the pointer variables.
-     These hypotheses say that the variables are pointers
-     with the expected types."))
-  (b* (((when (endp formals)) (mv nil nil nil))
-       (formal (car formals))
-       (type (cdr (assoc-eq formal pointers)))
-       ((when (not type))
-        (atc-gen-bindings-for-cfun-formals (cdr formals) pointers compst-var))
-       ((unless (type-case type :pointer))
-        (raise "Internal error: formal ~x0 has type ~x1." formal type)
-        (mv nil nil nil))
-       (var (add-suffix formal "-PTR"))
-       (term `(read-array ,var ,compst-var))
-       (doublet (list formal term))
-       (hyps (list `(pointerp ,var)
-                   `(equal (pointer->reftype ,var)
-                           ',(type-pointer->referenced type))))
-       ((mv more-doublets more-vars more-hyps)
-        (atc-gen-bindings-for-cfun-formals (cdr formals) pointers compst-var)))
-    (mv (cons doublet more-doublets)
-        (acons formal var more-vars)
-        (append hyps more-hyps))))
+    "Consider a non-recursive @('fn'), which represents a C function.
+     Its correctness theorem equates (roughly speaking)
+     a call of @(tsee exec-fun) with a call of @('fn').
+     However, while @('fn') takes arrays as arguments,
+     @(tsee exec-fun) takes pointers to those arrays.
+     So we introduce variables for the pointers,
+     named after the formals of @('fn') that are arrays:
+     we add \"-PTR\" to the formals of @('fn'),
+     which should not cause name conflicts because
+     the names of the formals must be portable C identifiers.
+     For each array formal @('a') of @('fn'),
+     we generate a pointer variable @('a-ptr') as explained,
+     along with a binding @('(a (read-array a-ptr compst))'):
+     this binding relates the two variables,
+     and lets us use the guard of @('fn') as hypothesis in the theorem,
+     which uses @('a'),
+     which the binding replaces with the array pointed to by @('a-ptr').
+     Along with this binding, we also generate hypotheses saying that
+     @('a-ptr') is a pointer of the appropriate type;
+     the type is determined from the type of the formal @('a').
+     Along with the binding and the hypotheses,
+     we also generate an alist element @('(a a-ptr)'),
+     returned as part of the @('pointer-subst') result,
+     that is used to generate the argument list of @(tsee exec-fun),
+     by applying the substitution @('pointer-subst') to the formals of @('fn'):
+     this way, @('a') gets substituted with @('a-ptr'),
+     which is what we want since @(tsee exec-fun) takes pointers, not arrays.")
+   (xdoc::p
+    "The non-array formals of a non-recursive @('fn')
+     do not cause any bindings, hypotheses, or substitutions to be generated.
+     They are passed to both @(tsee exec-fun) and @('fn') in the theorem,
+     and it is the guard of @('fn') that constrains them
+     in the hypotheses of the theorem.")
+   (xdoc::p
+    "The treatment of a recursive @('fn') is a bit more complicated.
+     The correctness theorem for the loop represented by @('fn')
+     equates (roughly speaking)
+     a call of @(tsee exec-stmt) with a call of @('fn').
+     However, @(tsee exec-stmt) is called on a computation state,
+     not on anything that corresponds to the formals of @('fn'),
+     as is the case for a non-recursive @('fn') as explained above.
+     There is still a correspondence, of course:
+     the formals of @('fn') correspond to variables in the computation state.
+     We consider the cases of arrays and non-arrays separately.")
+   (xdoc::p
+    "If @('a') is a non-array formal of a recursive @('fn'),
+     it corresponds to @('(read-var <a> compst)'),
+     where @('<a>') is the identifier derived from the name of @('a').
+     Thus, in this case we generate the binding @('(a (read-var <a> compst))').
+     Since no pointers are involved, in this case we generate
+     no hypotheses and no substitutions.")
+   (xdoc::p
+    "If @('a') is an array formal of a recursive @('fn'),
+     we introduce an additional @('a-ptr') variable,
+     similarly to the case of non-recursive @('fn').
+     We generate two bindings @('(a-ptr (read-var <a> compst))')
+     and @('(a (read-array a-ptr compst))'),
+     in that order.
+     The first binding serves to tie @('a-ptr')
+     to the corresponding variable in the computation state,
+     which has the name of @('a'), but it holds a pointer.
+     The second binding is analogous in purpose
+     to the case of a non-recursive @('fn') explained above:
+     it lets us use the guard of @('fn'), which references @('a'),
+     in the hypotheses of the generated theorem
+     without having to make an explicit substitution,
+     because the bindings are in fact doing the substitution.
+     It should be clear why the two bindings have to be in that order;
+     the bindings are put into a @(tsee b*),
+     which enforces the order.
+     We generate no substitution map in @('pointer-subst') here,
+     because that only applied to @(tsee exec-fun),
+     which is not used for C loops.")
+   (xdoc::p
+    "The reason for generating and using these bindings in the theorems,
+     as opposed to making the substitutions in the theorem's formula,
+     is greater readability.
+     Particularly in the case of loop theorems,
+     if @('a') occurs a few times in the guard,
+     the guard with just @('a') in those occurrences is more readable than
+     if all those occurrences are replaced with @('(read-var <a> compst)').")
+   (xdoc::p
+    "The lemma instantiation is similar to the bindings,
+     but it only concerns the formals of @('fn'), not the @('a-ptr') variables.
+     The instantiation is used on the guard and termination theorems of @('fn'),
+     and therefore it can only concern the formals of @('fn')."))
+  (b* (((when (endp typed-formals)) (mv nil nil nil nil))
+       ((cons formal type) (car typed-formals))
+       (formal-ptr (add-suffix formal "-PTR"))
+       (formal-id `(ident ,(symbol-name formal)))
+       (arrayp (type-case type :pointer))
+       (bindings (if fn-recursivep
+                     (if arrayp
+                         (list `(,formal-ptr (read-var ,formal-id ,compst-var))
+                               `(,formal (read-array ,formal-ptr ,compst-var)))
+                       (list `(,formal (read-var ,formal-id ,compst-var))))
+                   (if arrayp
+                       (list `(,formal (read-array ,formal-ptr ,compst-var)))
+                     nil)))
+       (subst? (and (not fn-recursivep)
+                    arrayp
+                    (list (cons formal formal-ptr))))
+       (hyps (and arrayp
+                  (list `(pointerp ,formal-ptr)
+                        `(equal (pointer->reftype ,formal-ptr)
+                                ',(type-pointer->referenced type)))))
+       (inst (if fn-recursivep
+                 (if arrayp
+                     (list `(,formal (read-array (read-var ,formal-id
+                                                           ,compst-var)
+                                                 ,compst-var)))
+                   (list `(,formal (read-var ,formal-id ,compst-var))))
+               (if arrayp
+                   (list `(,formal (read-array ,formal-ptr ,compst-var)))
+                 nil)))
+       ((mv more-bindings more-hyps more-subst more-inst)
+        (atc-gen-outer-bindings-and-hyps (cdr typed-formals)
+                                         compst-var
+                                         fn-recursivep)))
+    (mv (append bindings more-bindings)
+        (append hyps more-hyps)
+        (append subst? more-subst)
+        (append inst more-inst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-cfun-final-compustate ((mod-arrs symbol-listp)
-                                       (pointer-vars symbol-symbol-alistp)
+                                       (pointer-subst symbol-symbol-alistp)
                                        (compst-var symbolp))
   :returns (term "An untranslated term.")
   :short "Generate a term representing the final computation state
@@ -3557,29 +3636,29 @@
     "The parameter @('mod-arrs') passed to this code
      consists of the formals of @('fn') that represent arrays
      affected by the body of @('fn').
-     The parameter @('pointer-vars') is
-     the result of @(tsee atc-gen-bindings-for-cfun-formals)
+     The parameter @('pointer-subst') is
+     the result of @(tsee atc-gen-outer-bindings-and-hyps)
      that maps array formals of @('fn')
      to the corresponding pointer variables used by the correctness theorems.
      Thus, we go through @('mod-arrs'),
-     looking up the corresponding pointer variables in @('pointer-vars'),
+     looking up the corresponding pointer variables in @('pointer-subst'),
      and we construct each nested @(tsee write-array) call,
      which needs both a pointer and an array.
      Note that, in the correctness theorem,
      the array variables are bound to
      the possibly modified arrays returned by @('fn')."))
   (cond ((endp mod-arrs) compst-var)
-        (t `(write-array ,(cdr (assoc-eq (car mod-arrs) pointer-vars))
+        (t `(write-array ,(cdr (assoc-eq (car mod-arrs) pointer-subst))
                          ,(car mod-arrs)
                          ,(atc-gen-cfun-final-compustate (cdr mod-arrs)
-                                                         pointer-vars
+                                                         pointer-subst
                                                          compst-var)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-cfun-correct-thm ((fn symbolp)
+                                  (typed-formals atc-symbol-type-alistp)
                                   (type typep)
-                                  (pointers atc-symbol-type-alistp)
                                   (affect symbol-listp)
                                   (prec-fns atc-symbol-fninfo-alistp)
                                   (prog-const symbolp)
@@ -3711,22 +3790,22 @@
    (xdoc::p
     "This theorem is not generated if @(':proofs') is @('nil')."))
   (b* ((name (cdr (assoc-eq fn fn-thms)))
-       (formals (formals+ fn wrld))
+       (formals (strip-cars typed-formals))
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
        (result-var (if (type-case type :void)
                        nil
                      (genvar 'atc "RESULT" nil formals)))
-       ((mv formals-binding pointer-vars pointer-hyps)
-        (atc-gen-bindings-for-cfun-formals formals pointers compst-var))
+       ((mv formals-bindings pointer-hyps pointer-subst instantiation)
+        (atc-gen-outer-bindings-and-hyps typed-formals compst-var nil))
        (hyps `(and (compustatep ,compst-var)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
                    (and ,@pointer-hyps)
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
-       (exec-fun-args (fsublis-var-lst pointer-vars formals))
+       (exec-fun-args (fsublis-var-lst pointer-subst formals))
        (fn-results (append (if (type-case type :void)
                                nil
                              (list result-var))
@@ -3735,7 +3814,7 @@
                       (car fn-results)
                     `(mv ,@fn-results)))
        (final-compst
-        (atc-gen-cfun-final-compustate affect pointer-vars compst-var))
+        (atc-gen-cfun-final-compustate affect pointer-subst compst-var))
        (concl `(equal (exec-fun (ident ,(symbol-name fn))
                                 (list ,@exec-fun-args)
                                 ,compst-var
@@ -3743,7 +3822,7 @@
                                 ,limit-var)
                       (b* ((,fn-binder (,fn ,@formals)))
                         (mv ,result-var ,final-compst))))
-       (formula `(b* (,@formals-binding) (implies ,hyps ,concl)))
+       (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (called-fns (acl2::all-fnnames (ubody+ fn wrld)))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
@@ -3765,7 +3844,7 @@
                                ,@measure-thms
                                ,fn-fun-env-thm))
                  :use (:instance (:guard-theorem ,fn)
-                       :extra-bindings-ok ,@formals-binding)
+                       :extra-bindings-ok ,@instantiation)
                  :expand (:lambdas))))
        ((mv local-event exported-event)
         (evmac-generate-defthm name
@@ -3978,19 +4057,9 @@
                   name fn conflicting-fn))
        (wrld (w state))
        ((er typed-formals) (atc-typed-formals fn ctx state))
-       ((er (list params pointers)) (atc-gen-param-declon-list typed-formals
-                                                               fn
-                                                               ctx
-                                                               state))
+       ((er params) (atc-gen-param-declon-list typed-formals fn ctx state))
        (body (ubody+ fn wrld))
        ((er affect) (atc-find-affected fn body typed-formals ctx state))
-       ((unless (subsetp-eq affect (strip-cars pointers)))
-        (er-soft+ ctx t nil
-                  "The variables ~x0 affected by the body of ~x1 ~
-                   must all have pointer types, ~
-                   but some of them are not among ~
-                   the formals ~x2 with pointer types."
-                  affect fn (strip-cars pointers)))
        ((er (list items type limit)) (atc-gen-stmt body
                                                    nil
                                                    (list typed-formals)
@@ -4050,8 +4119,8 @@
                       fn-correct-exported-events
                       fn-correct-thm)
                   (atc-gen-cfun-correct-thm fn
+                                            typed-formals
                                             type
-                                            pointers
                                             affect
                                             prec-fns
                                             prog-const
@@ -4533,52 +4602,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-bindings-for-loop-formals ((formals symbol-listp)
-                                           (pointers atc-symbol-type-alistp)
-                                           (compst-var symbolp))
-  :returns (mv (doublets doublet-listp)
-               (pointer-hyps true-listp))
-  :short "Generate bindings for the formals of an ACL2 function
-          that represents a C loop."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These bindings are used in generated theorems about the loop.
-     The formals of a loop function correspond to
-     variables in the computation state
-     or arrays referenced by variables in the computation state.
-     The two cases are distinguished by whether
-     the formal is a pointer or not.")
-   (xdoc::p
-    "We also generate formulas, used as hypotheses in the generated theorems,
-     about the pointers that appear in the bindings.
-     These hypotheses say that the variables are pointers
-     with the expected types."))
-  (b* (((when (endp formals)) (mv nil nil))
-       (formal (car formals))
-       (type (cdr (assoc-eq formal pointers)))
-       ((when (and type
-                   (not (type-case type :pointer))))
-        (raise "Internal error: pointer ~x0 has type ~x1." formal type)
-        (mv nil nil))
-       (term `(read-var (ident ,(symbol-name formal)) ,compst-var))
-       ((mv term hyps)
-        (if (assoc-eq formal pointers)
-            (mv `(read-array ,term ,compst-var)
-                (list `(pointerp ,term)
-                      `(equal (pointer->reftype ,term)
-                              ',(type-pointer->referenced type))))
-          (mv term nil)))
-       (doublet (list formal term))
-       ((mv more-doublets more-hyps)
-        (atc-gen-bindings-for-loop-formals (cdr formals) pointers compst-var)))
-    (mv (cons doublet more-doublets)
-        (append hyps more-hyps))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-gen-loop-test-correct-thm ((fn symbolp)
-                                       (pointers atc-symbol-type-alistp)
+                                       (typed-formals atc-symbol-type-alistp)
                                        (loop-test exprp)
                                        (test-term pseudo-termp)
                                        (fn-thms symbol-symbol-alistp)
@@ -4604,24 +4629,24 @@
                                            nil
                                            names-to-avoid
                                            wrld))
-       (formals (formals+ fn wrld))
+       (formals (strip-cars typed-formals))
        (compst-var (genvar 'atc "COMPST" nil formals))
-       ((mv formals-binding pointer-hyps)
-        (atc-gen-bindings-for-loop-formals formals pointers compst-var))
+       ((mv formals-bindings pointer-hyps & instantiation)
+        (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
                    (and ,@pointer-hyps)
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
        (concl `(equal (exec-test (exec-expr-pure ',loop-test ,compst-var))
                       ,test-term))
-       (formula `(b* (,@formals-binding) (implies ,hyps ,concl)))
+       (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
                              '(not))
                  :use ((:instance (:guard-theorem ,fn)
-                        :extra-bindings-ok ,@formals-binding))
+                        :extra-bindings-ok ,@instantiation))
                  :expand :lambdas)))
        ((mv correct-test-thm-event &)
         (evmac-generate-defthm correct-test-thm
@@ -4635,6 +4660,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-final-compustate ((mod-vars symbol-listp)
+                                       (pointer-subst symbol-symbol-alistp)
                                        (compst-var symbolp))
   :returns (term "An untranslated term.")
   :short "Generate a term representing the final computation state
@@ -4646,23 +4672,33 @@
      executing the loop on a generic computation state
      (satisfying conditions in the hypotheses of the theorem)
      yields a computation state obtained by modifying
-     one or more variables in the computation state.
-     These are the variables affected by the loop,
+     one or more variables and zero or more arrays in the computation state.
+     These are the variables and arrays affected by the loop,
      which the correctness theorem binds to the results of the loop function,
-     and which have corresponding named variables in the computation state.
+     and which have corresponding named variables and heap arrays
+     in the computation state.
      The modified computation state is expressed as
-     a nest of @(tsee write-var) calls.
+     a nest of @(tsee write-var) and @(tsee write-array) calls.
      This ACL2 code here generates that nest."))
-  (cond ((endp mod-vars) compst-var)
-        (t `(write-var (ident ,(symbol-name (car mod-vars)))
-                       ,(car mod-vars)
-                       ,(atc-gen-loop-final-compustate (cdr mod-vars)
-                                                       compst-var)))))
+  (b* (((when (endp mod-vars)) compst-var)
+       (mod-var (car mod-vars))
+       (ptr (cdr (assoc-eq mod-var pointer-subst))))
+    (if ptr
+        `(write-array ,ptr
+                      ,mod-var
+                      (atc-gen-loop-final-compustate (cdr mod-vars)
+                                                     pointer-subst
+                                                     compst-var))
+      `(write-var (ident ,(symbol-name (car mod-vars)))
+                  ,(car mod-vars)
+                  ,(atc-gen-loop-final-compustate (cdr mod-vars)
+                                                  pointer-subst
+                                                  compst-var)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-body-correct-thm ((fn symbolp)
-                                       (pointers atc-symbol-type-alistp)
+                                       (typed-formals atc-symbol-type-alistp)
                                        (affect symbol-listp)
                                        (loop-body stmtp)
                                        (test-term pseudo-termp)
@@ -4698,8 +4734,8 @@
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
-       ((mv formals-binding pointer-hyps)
-        (atc-gen-bindings-for-loop-formals formals pointers compst-var))
+       ((mv formals-bindings pointer-hyps pointer-subst instantiation)
+        (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
                    (equal ,fenv-var (init-fun-env ,prog-const))
@@ -4711,12 +4747,14 @@
        (affect-binder (if (endp (cdr affect))
                           (car affect)
                         `(mv ,@affect)))
-       (final-compst (atc-gen-loop-final-compustate affect compst-var))
+       (final-compst (atc-gen-loop-final-compustate affect
+                                                    pointer-subst
+                                                    compst-var))
        (body-term (atc-loop-body-term-subst body-term fn affect))
        (concl `(equal (exec-stmt ',loop-body ,compst-var ,fenv-var ,limit-var)
                       (b* ((,affect-binder ,body-term))
                         (mv nil ,final-compst))))
-       (formula `(b* (,@formals-binding) (implies ,hyps ,concl)))
+       (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (called-fns (acl2::all-fnnames (ubody+ fn wrld)))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
@@ -4737,7 +4775,7 @@
                                ,@correct-thms
                                ,@measure-thms))
                  :use ((:instance (:guard-theorem ,fn)
-                        :extra-bindings-ok ,@formals-binding))
+                        :extra-bindings-ok ,@instantiation))
                  :expand :lambdas)))
        ((mv correct-body-thm-event &)
         (evmac-generate-defthm correct-body-thm
@@ -4751,7 +4789,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-correct-thm ((fn symbolp)
-                                  (pointers atc-symbol-type-alistp)
+                                  (typed-formals atc-symbol-type-alistp)
                                   (affect symbol-listp)
                                   (loop-test exprp)
                                   (loop-body stmtp)
@@ -4837,8 +4875,8 @@
        (compst-var (genvar 'atc "COMPST" nil formals))
        (fenv-var (genvar 'atc "FENV" nil formals))
        (limit-var (genvar 'atc "LIMIT" nil formals))
-       ((mv formals-binding pointer-hyps)
-        (atc-gen-bindings-for-loop-formals formals pointers compst-var))
+       ((mv formals-bindings pointer-hyps pointer-subst instantiation)
+        (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
                    (equal ,fenv-var (init-fun-env ,prog-const))
@@ -4849,7 +4887,9 @@
        (affect-binder (if (endp (cdr affect))
                           (car affect)
                         `(mv ,@affect)))
-       (final-compst (atc-gen-loop-final-compustate affect compst-var))
+       (final-compst (atc-gen-loop-final-compustate affect
+                                                    pointer-subst
+                                                    compst-var))
        (concl-lemma `(equal (,exec-stmt-while-for-fn ,compst-var ,limit-var)
                             (b* ((,affect-binder (,fn ,@formals)))
                               (mv nil ,final-compst))))
@@ -4860,8 +4900,8 @@
                                            ,limit-var)
                           (b* ((,affect-binder (,fn ,@formals)))
                             (mv nil ,final-compst))))
-       (formula-lemma `(b* (,@formals-binding) (implies ,hyps ,concl-lemma)))
-       (formula-thm `(b* (,@formals-binding) (implies ,hyps ,concl-thm)))
+       (formula-lemma `(b* (,@formals-bindings) (implies ,hyps ,concl-lemma)))
+       (formula-thm `(b* (,@formals-bindings) (implies ,hyps ,concl-thm)))
        (called-fns (acl2::all-fnnames (ubody+ fn wrld)))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
@@ -4887,13 +4927,13 @@
                                      ,correct-test-thm
                                      ,correct-body-thm))
                        :use ((:instance (:guard-theorem ,fn)
-                              :extra-bindings-ok ,@formals-binding)
+                              :extra-bindings-ok ,@instantiation)
                              (:instance ,termination-of-fn-thm
-                              :extra-bindings-ok ,@formals-binding))
+                              :extra-bindings-ok ,@instantiation))
                        :expand (:lambdas
                                 (,fn ,@(fsublis-var-lst
                                         (acl2::doublets-to-alist
-                                         formals-binding)
+                                         instantiation)
                                         formals))))))
        (lemma-instructions
         `((:in-theory '(,exec-stmt-while-for-fn))
@@ -4966,10 +5006,6 @@
             (atc-gen-loop-measure-fn fn names-to-avoid wrld)
           (mv '(_) nil nil names-to-avoid)))
        ((er typed-formals) (atc-typed-formals fn ctx state))
-       ((er (list & pointers)) (atc-gen-param-declon-list typed-formals
-                                                          fn
-                                                          ctx
-                                                          state))
        (body (ubody+ fn wrld))
        ((er (list loop-stmt
                   test-term
@@ -5037,7 +5073,7 @@
                       correct-test-thm
                       names-to-avoid)
                   (atc-gen-loop-test-correct-thm fn
-                                                 pointers
+                                                 typed-formals
                                                  loop-test
                                                  test-term
                                                  fn-thms
@@ -5047,7 +5083,7 @@
                       correct-body-thm
                       names-to-avoid)
                   (atc-gen-loop-body-correct-thm fn
-                                                 pointers
+                                                 typed-formals
                                                  loop-affect
                                                  loop-body
                                                  test-term
@@ -5064,7 +5100,7 @@
                       fn-correct-thm
                       names-to-avoid)
                   (atc-gen-loop-correct-thm fn
-                                            pointers
+                                            typed-formals
                                             loop-affect
                                             loop-test
                                             loop-body

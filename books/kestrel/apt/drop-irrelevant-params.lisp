@@ -471,7 +471,7 @@
                  ,@prologue
                  (local ,new-defun)
                  (local ,new-fn-defthm)
-                 ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints))))
+                 ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints nil))))
                  ,new-defun-to-export
                  ;wrapper stuff:
                  ,@(if build-wrapper nil (list new-fn-defthm)) ;this is the main theorem in the non-wrapper case
@@ -511,7 +511,7 @@
                    ,@prologue
                    (local ,new-defun)
                    (local ,new-fn-defthm)
-                   ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints))))
+                   ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints nil))))
                    ,new-defun-to-export
                    ;;wrapper stuff:
                    ,@(and (not build-wrapper) (list new-fn-defthm)) ;this is the main theorem in the non-wrapper case
@@ -563,7 +563,7 @@
                  (local ,mutual-recursion) ;contains the aux functions
                  (local ,make-flag-form) ; helps with the proof about mutually recursive functions
                  (local ,becomes-defthm-flag)
-                 ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints))))
+                 ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints nil))))
                  ;; Export the new mutual-recursion:
                  ,mutual-recursion-to-export
                  ;; Export the 'becomes' theorems, if we are in the non-wrapper case:
