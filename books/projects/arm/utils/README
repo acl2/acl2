@@ -2,12 +2,15 @@
 Book Certification
 ----------------------------------------------------------------------
 
+We recommend using the latest development version of ACL2 to certify
+our proofs.
+
 1. To certify books, execute the following:
 
-make ACL2=<Path of the ACL2 image>
+make ACL2=<Path to the ACL2 directory>/saved_acl2
 
 If you already set up an environment variable ACL2 on your machine,
-just simply run "make" to certify books. Here is how I set up this
+just simply run "make" to certify books. Here is how we set up this
 variable.
 
 * On Linux, add the following command to .cshrc:
@@ -20,12 +23,12 @@ variable.
 
 2. To remove certificate files, etc., execute the following:
 
-make clean ACL2=<Path of the ACL2 image>
+make clean ACL2=<Path to the ACL2 directory>/saved_acl2
 
 Or just "make clean" if you already set up the ACL2 environment
 variable described above.
 
-See Makefile for the detail.
+See Makefile for details.
 
 ----------------------------------------------------------------------
 Book Organization
