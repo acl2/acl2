@@ -3502,7 +3502,7 @@
      which uses @('a'),
      which the binding replaces with the array pointed to by @('a-ptr').
      Along with this binding, we also generate hypotheses saying that
-     @('a-ptr') is a pointer of the appropriate type;
+     @('a-ptr') is a non-null pointer of the appropriate type;
      the type is determined from the type of the formal @('a').
      Along with the binding and the hypotheses,
      we also generate an alist element @('(a a-ptr)'),
@@ -3588,6 +3588,7 @@
                     (list (cons formal formal-ptr))))
        (hyps (and arrayp
                   (list `(pointerp ,formal-ptr)
+                        `(not (pointer-nullp ,formal-ptr))
                         `(equal (pointer->reftype ,formal-ptr)
                                 ',(type-pointer->referenced type)))))
        (inst (if fn-recursivep
