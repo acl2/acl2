@@ -11,14 +11,8 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/syntactic-lists" :dir :system)
+(include-book "kestrel/utilities/num-return-values-of-fn" :dir :system)
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
-
-;; Returns the number of return values (in the sense of MV) of FN.
-(defund num-return-values-of-fn (fn wrld)
-  (declare (xargs :guard (and (symbolp fn)
-                              (not (member-eq fn *stobjs-out-invalid*))
-                              (plist-worldp wrld))))
-  (len (stobjs-out fn wrld)))
 
 ;move
 (defthm natp-of-cdr-of-assoc-equal-when-nat-listp-of-strip-cdrs
