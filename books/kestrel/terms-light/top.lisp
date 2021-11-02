@@ -43,3 +43,4 @@
 (include-book "reconstruct-lets-in-term")
 (include-book "serialize-lambdas-in-term")
 (include-book "let-bind-formals-in-calls")
+(include-book "reconstruct-mv-lets-in-term")
