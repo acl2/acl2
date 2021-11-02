@@ -17,6 +17,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 ;example justification:
 ;; (thm

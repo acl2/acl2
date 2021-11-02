@@ -40,3 +40,6 @@
 (include-book "make-if-term")
 (include-book "make-if-term-proof")
 (include-book "strengthen-conjuncts")
+(include-book "reconstruct-lets-in-term")
+(include-book "serialize-lambdas-in-term")
+(include-book "let-bind-formals-in-calls")

@@ -758,10 +758,10 @@
 (make-flag initialized-field-assumptions-for-heap-address)
 
 (defthm-flag-initialized-field-assumptions-for-heap-address
-  (defthm theorem-for-initialized-field-assumptions-for-heap-address
+  (defthm true-listp-of-initialized-field-assumptions-for-heap-address
     (true-listp (initialized-field-assumptions-for-heap-address count heap-triples address-term term-for-assumptions base-heap-term all-heap-triples))
     :flag initialized-field-assumptions-for-heap-address)
-  (defthm theorem-for-initialized-field-assumptions-for-heap-addresses
+  (defthm true-listp-of-initialized-field-assumptions-for-heap-addresses
     (true-listp (initialized-field-assumptions-for-heap-addresses count address-terms element-number term-for-assumptions base-heap-term all-heap-triples))
     :flag initialized-field-assumptions-for-heap-addresses))
 

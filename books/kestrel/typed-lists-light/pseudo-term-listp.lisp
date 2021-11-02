@@ -105,9 +105,22 @@
            (true-listp lst))
   :hints (("Goal" :in-theory (enable pseudo-term-listp))))
 
+;; Kept disabled for speed
+;; Matches the one in std.
+(defthmd pseudo-term-listp-when-symbol-listp
+  (implies (symbol-listp syms)
+           (pseudo-term-listp syms))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
 ;todo: name clash with defforall
 (defthm pseudo-term-listp-when-symbol-listp-cheap-2
   (implies (symbol-listp vars)
            (pseudo-term-listp vars))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
+;; Better than the version in std
+(defthm pseudo-term-listp-of-take-2
+  (implies (pseudo-term-listp l)
+           (pseudo-term-listp (take n l)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp))))

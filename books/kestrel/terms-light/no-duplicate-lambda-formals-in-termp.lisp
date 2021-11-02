@@ -38,10 +38,20 @@
            (no-duplicate-lambda-formals-in-termsp (cdr terms)))
   :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp))))
 
+(defthm no-duplicate-lambda-formals-in-termsp-of-take
+  (implies (no-duplicate-lambda-formals-in-termsp terms)
+           (no-duplicate-lambda-formals-in-termsp (take n terms)))
+  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp))))
+
 (defthm no-duplicate-lambda-formals-in-termp-of-car
   (implies (no-duplicate-lambda-formals-in-termsp terms)
            (no-duplicate-lambda-formals-in-termp (car terms)))
   :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp))))
+
+(defthm no-duplicate-lambda-formals-in-termp-when-symbolp
+  (implies (symbolp term)
+           (no-duplicate-lambda-formals-in-termp term))
+  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termp))))
 
 (defthm no-duplicate-lambda-formals-in-termsp-of-when-no-duplicate-lambda-formals-in-termp
    (implies (and (no-duplicate-lambda-formals-in-termp term)
@@ -60,3 +70,9 @@
                 (consp (car term)))
            (no-duplicatesp-equal (lambda-formals (car term))))
   :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termp))))
+
+(defthm no-duplicate-lambda-formals-in-termsp-of-cons
+  (equal (no-duplicate-lambda-formals-in-termsp (cons term terms))
+         (and (no-duplicate-lambda-formals-in-termp term)
+              (no-duplicate-lambda-formals-in-termsp terms)))
+  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp))))

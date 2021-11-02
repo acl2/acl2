@@ -89,3 +89,8 @@
   (equal (pairlis$ x (true-list-fix y))
          (pairlis$ x y))
   :hints (("Goal" :in-theory (enable pairlis$))))
+
+(defthm len-of-pairlis$
+  (equal (len (pairlis$ x y))
+         (len x))
+  :hints (("Goal" :in-theory (enable pairlis$))))
