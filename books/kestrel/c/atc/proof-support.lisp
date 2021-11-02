@@ -85,6 +85,7 @@
     (:e type-ulong)
     (:e type-sllong)
     (:e type-ullong)
+    (:e type-void)
     (:e valuep)
     (:e value-list-fix)
     (:e zp)
@@ -1328,7 +1329,10 @@
           *atc-valuep-rules*
           *atc-value-listp-rules*
           *atc-value-optionp-rules*
+          *atc-arrayp-rules*
           *atc-type-of-value-option-rules*
+          *atc-type-of-array-element-rules*
+          *atc-array-length-rules*
           *atc-exec-ident-rules*
           *atc-exec-const-rules*
           *atc-exec-arrsub-rules*

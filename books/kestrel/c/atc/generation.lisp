@@ -2052,13 +2052,17 @@
      there are two cases:
      if the loop flag is @('t'), it is an error;
      otherwise, we return nothing, because
-     this is the end of a list of block items that affects that variable.")
+     this is the end of a list of block items that affects that variable.
+     We generate 1 as the limit,
+     because we need 1 to go from @(tsee exec-block-item-list)
+     to the empty list case.")
    (xdoc::p
     "If the term is an @(tsee mv), there are three cases.
      If the loop flag is @('t'), it is an error.
      Otherwise, if the arguments of @(tsee mv) are the @('affect') variables,
      we return nothing, because
-     this is the end of a list of block items that affects that variable.
+     this is the end of a list of block items that affects that variable;
+     we return 1 as the limit, for the same reason as the case above.
      Otherwise, if the @(tsee cdr) of the arguments of @(tsee mv)
      are the @('affect') variables,
      we treat the @(tsee car) of the arguments of @(tsee mv)
@@ -2518,7 +2522,7 @@
                        a recursive call on every path, ~
                        but in the fucntion ~x0 it ends with ~x1 instead."
                       fn term)
-          (acl2::value (list nil (type-void) (pseudo-term-quote 0)))))
+          (acl2::value (list nil (type-void) (pseudo-term-quote 1)))))
        ((mv okp terms) (fty-check-list-call term))
        ((when okp)
         (b* (((unless (>= (len terms) 2))
@@ -2533,7 +2537,7 @@
                         fn term)))
           (cond
            ((equal terms affect)
-            (acl2::value (list nil (type-void) (pseudo-term-quote 0))))
+            (acl2::value (list nil (type-void) (pseudo-term-quote 1))))
            ((equal (cdr terms) affect)
             (b* (((mv erp (list expr type eaffect limit) state)
                   (atc-gen-expr-cval
@@ -2608,7 +2612,7 @@
                              limit))))
        ((when (equal term `(,fn ,@(formals+ fn (w state)))))
         (if loop-flag
-            (acl2::value (list nil (type-void) (pseudo-term-quote 0)))
+            (acl2::value (list nil (type-void) (pseudo-term-quote 1)))
           (er-soft+ ctx t irr
                     "When generating code for the recursive function ~x0, ~
                      a recursive call to the loop function occurs ~
@@ -3502,7 +3506,7 @@
      which uses @('a'),
      which the binding replaces with the array pointed to by @('a-ptr').
      Along with this binding, we also generate hypotheses saying that
-     @('a-ptr') is a pointer of the appropriate type;
+     @('a-ptr') is a non-null pointer of the appropriate type;
      the type is determined from the type of the formal @('a').
      Along with the binding and the hypotheses,
      we also generate an alist element @('(a a-ptr)'),
@@ -3588,6 +3592,7 @@
                     (list (cons formal formal-ptr))))
        (hyps (and arrayp
                   (list `(pointerp ,formal-ptr)
+                        `(not (pointer-nullp ,formal-ptr))
                         `(equal (pointer->reftype ,formal-ptr)
                                 ',(type-pointer->referenced type)))))
        (inst (if fn-recursivep
