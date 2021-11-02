@@ -292,14 +292,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define assertion-list ((asgs assignment-listp) (constrs constraint-listp))
+(define assertion-list-from ((asgs assignment-listp) (constrs constraint-listp))
   :guard (equal (len asgs) (len constrs))
   :returns (asrs assertion-listp)
   :short "Lift @(tsee assertion) to lists."
   (cond ((endp asgs) nil)
         ((endp constrs) (acl2::impossible))
         (t (cons (assertion (car asgs) (car constrs))
-                 (assertion-list (cdr asgs) (cdr constrs)))))
+                 (assertion-list-from (cdr asgs) (cdr constrs)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -585,5 +585,5 @@
           (and (proof-tree-listp ptrees)
                (equal (exec-proof-tree-list ptrees sys p)
                       (proof-list-outcome-assertions
-                       (assertion-list (repeat (len constrs) asg)
-                                       constrs))))))
+                       (assertion-list-from (repeat (len constrs) asg)
+                                            constrs))))))
