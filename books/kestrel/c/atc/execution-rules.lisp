@@ -148,7 +148,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-arrayp-rules
-  :short "Rules for discharging @(tsee arrap) hypotheses."
+  :short "Rules for discharging @(tsee arrayp) hypotheses."
   :long
   (xdoc::topstring
    (xdoc::p
