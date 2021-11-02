@@ -19,15 +19,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Read element from array.
 (defun |f| (|a| |i|)
   (declare (xargs :guard (and (c::uchar-arrayp |a|)
                               (c::sintp |i|)
                               (c::uchar-array-sint-index-okp |a| |i|))))
   (c::uchar-array-read-sint |a| |i|))
 
+; Return array input unchanged.
+(defun |g| (|a|)
+  (declare (xargs :guard (c::uchar-arrayp |a|)))
+  |a|)
+
+; Return one of the array inputs unchanged
+(defun |h| (|a| |b|)
+  (declare (xargs :guard (and (c::ushort-arrayp |a|)
+                              (c::sllong-arrayp |b|))))
+  (declare (ignore |b|))
+  |a|)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| :output-file "arrays.c")
+(c::atc |f| |g| |h| :output-file "arrays.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
