@@ -13,6 +13,7 @@
 ;; This is useful when generating C code with ATC.
 
 (include-book "tools/flag" :dir :system)
+(include-book "kestrel/utilities/non-trivial-bindings" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 ;; Ensures that all calls of TARGET-FN are on actuals that are just its formals
@@ -36,7 +37,10 @@
          (if (and (eq fn target-fn)
                   (= (len (fargs term))
                      (len target-fn-formals)))
-             `((lambda ,target-fn-formals (,fn ,@target-fn-formals)) ,@new-args)
+             (let* ((bindings (non-trivial-bindings target-fn-formals new-args)) ; don't need to bind any var whose correspondong arg is itself
+                    (lambda-formals (strip-cars bindings))
+                    (new-args (strip-cdrs bindings)))
+               `((lambda ,lambda-formals (,fn ,@target-fn-formals)) ,@new-args))
            ;;not a lambda application, so just rebuild the function call:
            `(,fn ,@new-args))))))
 
