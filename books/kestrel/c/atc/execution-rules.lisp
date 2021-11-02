@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-execution-rules
+  :parents (atc-execution)
   :short "Execution rules for ATC."
   :long
   (xdoc::topstring
