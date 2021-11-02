@@ -821,7 +821,6 @@
       '(:in-theory (e/d (exec-statement-list
                          statement-list-dead)
                         (statement-kind-when-mode-regular))
-        :expand (statement-list-dead stmt nil)
         :use (:instance statement-kind-when-mode-regular
               (stmt (car stmts))
               (limit (1- limit)))))
