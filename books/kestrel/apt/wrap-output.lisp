@@ -47,7 +47,10 @@
 (include-book "kestrel/utilities/defining-forms" :dir :system)
 (include-book "kestrel/utilities/world" :dir :system)
 (include-book "kestrel/utilities/my-get-event" :dir :system)
+(include-book "kestrel/utilities/fixup-ignores" :dir :system)
+(include-book "kestrel/utilities/fixup-irrelevants" :dir :system)
 (include-book "kestrel/utilities/system/world-queries" :dir :system)
+(include-book "kestrel/apt/utilities/verify-guards-for-defun" :dir :system)
 (include-book "kestrel/terms-light/wrap-pattern-around-term" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/untranslated-terms-old/untranslated-terms" :dir :system)
@@ -310,26 +313,21 @@ functions that axe has lifted).</li>
          ;; Check whether
          (new-fn-recursivep (if (intersection-eq (strip-cdrs fn-renaming) called-fns) t nil)) ;TODO: what about mutual recursion becoming non-recursive?  we really should transform all the function bodies first and then see what we've got in terms of things bring recursive / mutually recursive
 ;         (has-measurep (fn-has-measurep fn state))
-         (fn-is-guard-verifiedp (guard-verified-p fn wrld))
+
          (declares (get-declares-from-event fn fn-event)) ;TODO: Think about all the kinds of declares that get passed through.
-         (declares (if fn-is-guard-verifiedp (add-verify-guards-t declares) (add-verify-guards-nil declares))) ;TODO don't add a guard of t if it was an implicit t before
+
+         ;; Deal with the :verify-guards xarg.  We always do :verify-guards nil and then perhaps
+         ;; do verify-guards later, in case the function appears in its own guard-theorem (meaning the guard proof needs the becomes-theorem)
+         (declares (set-verify-guards-in-declares nil declares))
+         (declares (remove-xarg-in-declares :guard-hints declares)) ; verify-guards is done separately
+         (declares (remove-xarg-in-declares :guard-debug declares)) ; verify-guards is done separately
+         (declares (remove-xarg-in-declares :guard-simplify declares)) ; verify-guards is done separately
+         ;; Deal with the :guard xarg:
 ;         (guard-alist (g :guard-alist options))
 ;         (guard (lookup-eq-safe fn guard-alist))
-         (guard-suppliedp (not (eq :auto guard)))
-         (guard-hints (g :guard-hints options))
-
-         (declares (if guard-suppliedp
+         (declares (if (not (eq :auto guard))
                        (replace-xarg-in-declares :guard guard declares)
                      declares))
-         (declares (if fn-is-guard-verifiedp
-                       (replace-xarg-in-declares
-                        :guard-hints
-                        (or guard-hints `(("Goal" :use (:instance (:guard-theorem ,fn))
-                           ;; TODO: Restrict the theory here (but allow guard hints to be passed in)
-                           )))
-                        declares)
-                     declares ;or delete the old :guard-hints?
-                     ))
          (declares (if (not new-fn-recursivep)
                        ;; Nuke :the measure if needed:
                        (remove-xarg-in-declares :measure declares) ;todo: think about mut rec
@@ -432,7 +430,7 @@ functions that axe has lifted).</li>
                                    state)
           (make-wrap-output-defthms (rest fns) (rest new-fns) wrapper use-flagp options recursivep new-formals state))))
 
-(defun wrap-output-event (fn wrapper guard guard-hints theorem-disabled function-disabled new-name state)
+(defun wrap-output-event (fn wrapper guard guard-hints theorem-disabled function-disabled new-name verify-guards state)
   (declare (xargs :stobjs state
                   :verify-guards nil ;TODO!
                   :guard (and (symbolp fn)
@@ -442,72 +440,113 @@ functions that axe has lifted).</li>
                                   (untranslated-unary-lambdap wrapper))
                               (t/nil/auto-p function-disabled))
                   :mode :program))
-  (b* ((fn-event (my-get-event fn (w state)))
-         (options (s :guard-hints guard-hints nil))
+  (b* ((wrld (w state))
+       (fn-event (my-get-event fn wrld))
+       (options nil)
+;         (options (s :guard-hints guard-hints options))
 ;         (options (s :guard guard options))
-         (options (s :theorem-disabled theorem-disabled options))
-         (options (s :function-disabled function-disabled options))
-         (wrapper (if (symbolp wrapper) `(lambda (x) (,wrapper x)) wrapper)) ;convert a symbol into a unary lambda
-         (lambda-formals (lambda-formals wrapper))
-         (wrapper-body (lambda-body wrapper))
-         (wrapper-body-vars (all-vars (translate-term wrapper-body 'wrap-output (w state))))
-         (extra-wrapper-vars (set-difference-eq wrapper-body-vars lambda-formals))
-         ;; ((when extra-wrapper-vars)
-         ;;  (mv t
-         ;;      (er hard 'wrap-output-event "Extra wrapper vars detected: ~x0." extra-wrapper-vars)
-         ;;      state))
-         ;; TODO: Check that any formals among the wrapper vars are passed through unchanged to all recursive calls
-         (formals (fn-formals fn (w state)))
-         (new-formals (set-difference-eq extra-wrapper-vars formals))
-         ;; (- (cw "Adding formals: ~x0.~%" new-formals)) ;;todo: optionally print this
-         (recursivep (fn-recursivep fn state))
-         (prologue (transformation-prologue fn (w state))))
+       (options (s :theorem-disabled theorem-disabled options))
+       (options (s :function-disabled function-disabled options))
+       (wrapper (if (symbolp wrapper) `(lambda (x) (,wrapper x)) wrapper)) ;convert a symbol into a unary lambda
+       (lambda-formals (lambda-formals wrapper))
+       (wrapper-body (lambda-body wrapper))
+       (wrapper-body-vars (all-vars (translate-term wrapper-body 'wrap-output wrld)))
+       (extra-wrapper-vars (set-difference-eq wrapper-body-vars lambda-formals))
+       ;; ((when extra-wrapper-vars)
+       ;;  (mv t
+       ;;      (er hard 'wrap-output-event "Extra wrapper vars detected: ~x0." extra-wrapper-vars)
+       ;;      state))
+       ;; TODO: Check that any formals among the wrapper vars are passed through unchanged to all recursive calls
+       (formals (fn-formals fn wrld))
+       (new-formals (set-difference-eq extra-wrapper-vars formals))
+       ;; (- (cw "Adding formals: ~x0.~%" new-formals)) ;;todo: optionally print this
+       (recursivep (fn-recursivep fn state))
+       (prologue (transformation-prologue fn wrld))
+       (verify-guards (if (eq :auto verify-guards) (guard-verified-p fn wrld) verify-guards))
+       (guard-hints (if (eq :auto guard-hints)
+                        `(("Goal" :use (:instance (:guard-theorem ,fn))
+                           ;; TODO: Restrict the theory here (but allow guard hints to be passed in)
+                           ))
+                      guard-hints)))
     (if (not recursivep)
         (let* ((new-fn (if (eq new-name :auto) (increment-name-suffix-safe fn state) new-name))
-               (defun (wrap-output-in-defun fn new-fn fn-event wrapper (acons fn new-fn nil) nil options guard new-formals state)))
+               ;; (function-renaming (acons fn new-fn nil))
+               (new-defun (wrap-output-in-defun fn new-fn fn-event wrapper (acons fn new-fn nil) nil options guard new-formals state))
+               ;; Drop the :verify-guards nil if needed, and add :verify-guards t if appropriate:
+               (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
+               (becomes-theorem (make-wrap-output-defthm fn new-fn wrapper nil options recursivep new-formals state)) ;unusual form (requires the wrapper to be present)
+               ;; Remove :hints from the theorem before exporting it:
+               (becomes-theorem-to-export (clean-up-defthm becomes-theorem)))
           (mv nil
-              `(encapsulate nil
+              `(encapsulate ()
                  ,@prologue
-                 ,defun
+                 (local ,new-defun) ; has :verify-guards nil
                  (local (install-not-normalized ,new-fn))
-                 ,(make-wrap-output-defthm fn new-fn wrapper nil options recursivep new-formals state))
+                 (local ,becomes-theorem)
+                 ,@(and verify-guards `((local (verify-guards$ ,new-fn :hints ,guard-hints))))
+                 ,new-defun-to-export
+                 ,becomes-theorem-to-export)
               state))
       (if (fn-singly-recursivep fn state)
           (let* ((new-fn (if (eq new-name :auto) (increment-name-suffix-safe fn state) new-name))
-                 (new-defun (wrap-output-in-defun fn new-fn fn-event wrapper (acons fn new-fn nil) :single options guard new-formals state)))
+                 ;; (function-renaming (acons fn new-fn nil))
+                 (new-defun (wrap-output-in-defun fn new-fn fn-event wrapper (acons fn new-fn nil) :single options guard new-formals state))
+                 (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
+                 (new-defun-to-export (remove-hints-from-defun new-defun-to-export))
+                 (becomes-theorem (make-wrap-output-defthm fn new-fn wrapper nil options recursivep new-formals state))
+                 ;; Remove :hints from the theorem before exporting it:
+                 (becomes-theorem-to-export (clean-up-defthm becomes-theorem)))
             (mv nil
-                `(encapsulate nil
+                `(encapsulate ()
                    ,@prologue
                    (dont-remove-trivial-equivalences) ; is this still needed?
-                   ,new-defun
+                   (local ,new-defun)
                    (local (install-not-normalized ,new-fn))
-                   ,(make-wrap-output-defthm fn new-fn wrapper nil options recursivep new-formals state))
+                   (local ,becomes-theorem)
+                   ,@(and verify-guards `((local (verify-guards$ ,new-fn :hints ,guard-hints))))
+                   ;; export the new defun and the becomes theorem:
+                   ,new-defun-to-export
+                   ,becomes-theorem-to-export)
                 state))
         ;; FN is a member of a mutual-recursion:
         (b* ((ctx (cons 'wrap-output fn))
-               (fns (get-clique fn (w state)))
+               (fns (get-clique fn wrld))
                ;; Handle the :new-name arg:
                (new-name-alist ;this is an alist, but some values may be :auto
                 (elaborate-mut-rec-option2 new-name :new-name fns ctx))
-               (fn-renaming (pick-new-names new-name-alist state))
+               (function-renaming (pick-new-names new-name-alist state))
+               (new-fn (lookup-eq-safe fn function-renaming))
                ;; Handle the :guard arg:
                (guard-alist ;this is an alist, but some values may be :auto
                 (elaborate-mut-rec-option2 guard :guard fns ctx))
-               (new-defuns (wrap-output-in-defuns fns fn-event wrapper fn-renaming options guard-alist new-formals state))
-               (mut-rec `(mutual-recursion ,@new-defuns))
+               (new-defuns (wrap-output-in-defuns fns fn-event wrapper function-renaming options guard-alist new-formals state))
+               (mutual-recursion `(mutual-recursion ,@new-defuns))
+               (mutual-recursion (fixup-ignores-in-mutual-recursion-form mutual-recursion wrld))
+               (mutual-recursion (fixup-irrelevants-in-mutual-recursion-form mutual-recursion state))
+               (mutual-recursion-to-export (if verify-guards
+                                               (ensure-mutual-recursion-demands-guard-verification mutual-recursion)
+                                             mutual-recursion))
+               (mutual-recursion-to-export (remove-hints-from-mutual-recursion mutual-recursion-to-export))
                (first-fn (first fns))
-               (make-flag-form `(make-flag ,(pack$ 'flag- first-fn) ,first-fn :hints (("Goal" :use (:instance (:termination-theorem ,fn)))))))
+               (make-flag-form `(make-flag ,(pack$ 'flag- first-fn) ,first-fn :hints (("Goal" :use (:instance (:termination-theorem ,fn))))))
+               (becomes-theorems (make-wrap-output-defthms fns (strip-cdrs function-renaming) wrapper t options recursivep new-formals state))
+               (becomes-defthm-flag `(,(pack$ 'defthm-flag- first-fn) ;; this is a custom kind of defthm when using the make-flag trick
+                                      ,@becomes-theorems))
+               (becomes-theorems-to-export (clean-up-defthms becomes-theorems)))
           (mv nil
               `(encapsulate nil
                  ,@prologue
-                 (dont-remove-trivial-equivalences)
-                 ,mut-rec
-                 (local (install-not-normalized ,(lookup-eq-safe fn fn-renaming)))
+                 (dont-remove-trivial-equivalences) ; drop?
+                 (local ,mutual-recursion)
+                 (local (install-not-normalized ,(lookup-eq-safe fn function-renaming)))
                  ;; This helps with the proof about mutually recursive functions:
-                 ,make-flag-form
-                 ( ;;defthm
-                  ,(pack$ 'defthm-flag- first-fn) ;; this is a custom kind of defthm when using the make-flag trick
-                  ,@(make-wrap-output-defthms fns (strip-cdrs fn-renaming) wrapper t options recursivep new-formals state)))
+                 (local ,make-flag-form)
+                 (local ,becomes-defthm-flag)
+                 ,@(and verify-guards `((local (verify-guards$ ,new-fn :hints ,guard-hints))))
+                 ;; Export the new mutual-recursion:
+                 ,mutual-recursion-to-export
+                 ;; Export the 'becomes' theorems:
+                 ,@becomes-theorems-to-export)
               state))))))
 
 (deftransformation wrap-output
@@ -515,10 +554,11 @@ functions that axe has lifted).</li>
    wrapper
    )
   ((guard ':auto) ;TODO: Document
-   (guard-hints 'nil) ;TODO: Document
+   (guard-hints ':auto) ;TODO: Document
    (theorem-disabled 'nil)
    (function-disabled ':auto)
    (new-name ':auto)
+   (verify-guards ':auto)
    ))
 
 ;; See tests in wrap-output-tests.lisp.

@@ -129,8 +129,8 @@
                 (declares (remove-xarg-in-declares :normalize declares))
                 ;; Handle the :mode xarg:
                 (declares (remove-xarg-in-declares :mode declares)) ;todo: handle this better.  this is needed because the event might have :mode :program even if the function was later lifted to logic.  Obviously we shouldn't do this once we support transforming :program mode functions.
-                ;; Deal with the :verify-guards xarg.  We always do :verify-guards nil and then
-                ;; do verify-guards later, in case the function appears in its own guard-theorem (todo: is that still necessary?):
+                ;; Deal with the :verify-guards xarg.  We always do :verify-guards nil and then perhaps
+                ;; do verify-guards later, in case the function appears in its own guard-theorem (meaning the guard proof needs the becomes-theorem)
                 (declares (set-verify-guards-in-declares nil declares))
                 (declares (remove-xarg-in-declares :guard-hints declares)) ; verify-guards is done separately
                 (declares (remove-xarg-in-declares :guard-debug declares)) ; verify-guards is done separately
