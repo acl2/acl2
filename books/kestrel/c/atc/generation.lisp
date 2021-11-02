@@ -3411,7 +3411,17 @@
                     (:e ulongp)
                     (:e slongp)
                     (:e ullongp)
-                    (:e sllongp))))
+                    (:e sllongp)
+                    (:e uchar-arrayp)
+                    (:e schar-arrayp)
+                    (:e ushort-arrayp)
+                    (:e sshort-arrayp)
+                    (:e uint-arrayp)
+                    (:e sint-arrayp)
+                    (:e ulong-arrayp)
+                    (:e slong-arrayp)
+                    (:e ullong-arrayp)
+                    (:e sllong-arrayp))))
                 '(:use (:guard-theorem ,fn))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
