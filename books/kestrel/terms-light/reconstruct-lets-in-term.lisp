@@ -10,8 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/doublets2" :dir :system)
-
+(include-book "kestrel/utilities/non-trivial-bindings" :dir :system)
 (mutual-recursion
  ;; Note that the result is no longer a translate term (pseudo-termp).
  ;; TODO: Consider combining nested LETs into LET*s.
@@ -25,7 +24,7 @@
      (let* ((fn (ffn-symb term))
             (new-args (reconstruct-lets-in-terms (fargs term))))
        (if (flambdap fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
-           `(let ,(make-doublets (lambda-formals fn) new-args)
+           `(let ,(alist-to-doublets (non-trivial-bindings (lambda-formals fn) new-args))
               ,(reconstruct-lets-in-term (lambda-body fn)))
          ;; not a lambda application, so just rebuild the function call:
          `(,fn ,@new-args)))))
