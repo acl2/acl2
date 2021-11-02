@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/non-trivial-bindings" :dir :system)
+
 (mutual-recursion
  ;; Note that the result is no longer a translate term (pseudo-termp).
  ;; TODO: Consider combining nested LETs into LET*s.
