@@ -13,7 +13,7 @@
 (include-book "kestrel/utilities/non-trivial-bindings" :dir :system)
 
 (mutual-recursion
- ;; Note that the result is no longer a translate term (pseudo-termp).
+ ;; Note that the result is no longer a translated term (pseudo-termp).
  ;; TODO: Consider combining nested LETs into LET*s.
  (defund reconstruct-lets-in-term (term)
    (declare (xargs :guard (pseudo-termp term)
