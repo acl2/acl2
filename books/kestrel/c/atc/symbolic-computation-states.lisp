@@ -15,7 +15,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-symbolic-computation-states
+(defxdoc+ atc-symbolic-computation-states
+  :parents (atc-execution)
   :short "Canonical representation of
           the computation states for the symbolic execution."
   :long
