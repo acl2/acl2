@@ -27,13 +27,17 @@
                               (c::uchar-array-sint-index-okp |a| |i|))))
   (c::uchar-array-read-sint |a| |i|))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Return arrays unchanged.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |return1| (|a|)
   (declare (xargs :guard (c::uchar-arrayp |a|)))
   |a|)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |return2| (|a| |b|)
   (declare (xargs :guard (and (c::ushort-arrayp |a|)
@@ -41,11 +45,19 @@
   (declare (ignore |b|))
   |a|)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |return3| (|a| |b|)
+  (declare (xargs :guard (and (c::uchar-arrayp |a|)
+                              (c::sllong-arrayp |b|))))
+  (mv |b| |a|))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (c::atc |read|
         |return1|
         |return2|
+        |return3|
         :output-file "arrays.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
