@@ -39,6 +39,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ jubjub-r-properties
+  :parents (jubjub)
   :short "Properties about @(tsee jubjub-r-pointp)."
   :order-subtopics t
   :default-parent t)

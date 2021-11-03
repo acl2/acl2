@@ -271,6 +271,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defprod resulterr
+  :parents (defresult)
   :short "Fixtype of error results."
   :long
   (xdoc::topstring
@@ -291,6 +292,7 @@
 
 (fty::defoption resulterr-option
   resulterr
+  :parents (defresult)
   :short "Fixtype of optional error results."
   :long
   (xdoc::topstring
@@ -304,6 +306,7 @@
 
 (acl2::defmacro+
  err (x)
+ :parents (defresult)
  :short "Return an error result with a singleton stack."
  :long
  (xdoc::topstring
@@ -320,6 +323,7 @@
 
 (acl2::defmacro+
  err-push (error)
+ :parents (defresult)
  :short "Push the current function onto the stack of an error result."
  :long
  (xdoc::topstring
@@ -340,6 +344,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-b*-binder ok
+  :parents (defresult)
   :short "@(tsee b*) binder for checking and propagating
           error results of fixtype @(tsee resulterr)."
   :long
@@ -387,6 +392,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection defresult-macro-definition
+  :parents (defresult)
   :short "Definition of @(tsee defresult)."
   :long (xdoc::topstring-@def "defresult")
 

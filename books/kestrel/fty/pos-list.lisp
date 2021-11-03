@@ -14,10 +14,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist pos-list
+(defsection pos-list
   :parents (fty::fty-extensions fty::specific-types pos-listp)
   :short "Fixtype of lists of positive integers."
-  :elt-type pos
-  :true-listp t
-  :elementp-of-nil nil
-  :pred pos-listp)
+
+  ;; We put the DEFLIST in a DEFSECTION to avoid generating
+  ;; an XDOC for POS-LISTP, which would shadow the built-in one.
+
+  (fty::deflist pos-list
+    :elt-type pos
+    :true-listp t
+    :elementp-of-nil nil
+    :pred pos-listp))
