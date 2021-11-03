@@ -17,9 +17,19 @@
 (include-book "kestrel/utilities/non-trivial-bindings" :dir :system)
 (include-book "kestrel/utilities/num-return-values-of-fn" :dir :system)
 
-;; This tool turns terms like (mv-nth '0 (mv-list '2 ..)) into mv-lets.  To do
-;; so, it has to determine names to use to catch the multiple values.  It
-;; attempts to that by analyzing the called function.
+;; This tool turns terms like (mv-nth '0 (mv-list '2 ..)) into MV-LETs.  To do
+;; so, it heuristically chooses names to use to catch the multiple values (by
+;; analyzing the called function).
+
+;; This tool also turns lambdas into lets, for readability and since it is
+;; easier to do it here (the output of this tool is no longer a pseudo-term).
+
+;; TODO: Consider having this also introduce MVs, since subsequent code to do
+;; so would have to handle the MV-LETs (and the LETs) introduced here.  Or
+;; reconstruct MVs first, since the result is still a pseudo term...
+
+;; TODO: Also reconstruct lambdas with MV variables, such as the one that
+;; results from :trans (mv-let (x y) (mv x y) (< x y)).
 
 ;; Analyze TERM, which should return multiple values, to try to determine names
 ;; to use for those values (e.g., if it has an if-branch that is (mv var1
@@ -84,12 +94,12 @@
       (er hard? 'apply-mv-let-to-term "Expected ~x0 to return ~x1 values." term returned-val-count)
     (let ((fn (ffn-symb term)))
       ;; reconstruct lambdas outside the "core" term:
-      (if (consp fn) ; lambda application
+      (if (flambdap fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
           `(let ,(alist-to-doublets (non-trivial-bindings (lambda-formals fn) (fargs term)))
              ,(apply-mv-let-to-term (lambda-body fn) returned-val-num returned-val-count wrld))
           ;; `((lambda ,(lambda-formals fn) ,(apply-mv-let-to-term (lambda-body fn) returned-val-naum returned-val-count wrld))
         ;;   ,@(fargs term))
-        ;; we've reached the core term (TODO: What if it's an mv?)
+        ;; we've reached the core term (TODO: What if it's an mv, or the translation of an mv?)
         (if (member-eq fn *stobjs-out-invalid*)
             (er hard? 'apply-mv-let-to-term "Unsupported term: ~x0." term) ;todo: add support for these?
           (let ((fn-value-count (num-return-values-of-fn fn wrld)))
@@ -116,8 +126,10 @@
      (let* ((fn (ffn-symb term))
             (new-args (reconstruct-mv-lets-in-terms (fargs term) wrld)))
        (if (flambdap fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
-           `((lambda ,(lambda-formals fn) ,(reconstruct-mv-lets-in-term (lambda-body fn) wrld))
-             ,@new-args)
+           `(let ,(alist-to-doublets (non-trivial-bindings (lambda-formals fn) new-args))
+              ,(reconstruct-mv-lets-in-term (lambda-body fn) wrld))
+         ;; `((lambda ,(lambda-formals fn) ,(reconstruct-mv-lets-in-term (lambda-body fn) wrld))
+         ;;   ,@new-args)
          (if (and (call-of 'mv-nth term) ; example: (mv-nth '0 (mv-list '2 <multi-valued-term>))
                   (quotep (farg1 term))
                   (natp (unquote (farg1 term)))
