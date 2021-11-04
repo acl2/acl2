@@ -34,6 +34,7 @@
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "arithmetic/top" :Dir :system))
+(local (include-book "alist-thms"))
 ;;(local (include-book "clause-processors/find-subterms" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
@@ -334,10 +335,6 @@
                            (ordering (neteval-ordering-identity (svex-alist-keys x)))))
              :in-theory (enable svex-alist-eval-equiv))))
 
-  (defthm svex-alist-keys-of-svex-alist-reduce
-    (equal (svex-alist-keys (svex-alist-reduce keys a))
-           (intersection-equal (svarlist-fix keys) (svex-alist-keys a)))
-    :hints(("Goal" :in-theory (enable svex-alist-reduce svex-alist-keys))))
 
   (defthm svex-alist-<<=-of-svex-alist-reduce
     (implies (svex-alist-<<= x y)
@@ -379,11 +376,6 @@
     (svex-alist-compose x subst) 2
     :hints(("Goal" :in-theory (enable svex-alist-eval-equiv))))
 
-  
-  (defthm svex-alist-keys-of-svex-alist-compose
-    (equal (Svex-alist-keys (Svex-alist-compose x y))
-           (svex-alist-keys x))
-    :hints(("Goal" :in-theory (enable svex-alist-compose svex-alist-keys))))
 
   (defthm svex-alist-<<=-of-svex-alist-compose
     (implies (and (svex-alist-<<= x y)
@@ -446,10 +438,6 @@
            (append (svex-alist-keys x)
                    (svex-alist-keys y)))
     :hints(("Goal" :in-theory (enable svex-alist-keys))))
-
-  (Defthmd svex-lookup-iff-member-svex-alist-keys
-    (iff (svex-lookup v x)
-         (member-equal (svar-fix v) (svex-alist-keys x))))
 
   (defthm svex-alist-<<=-of-append
     (implies (and (set-equiv (svex-alist-keys x1)
