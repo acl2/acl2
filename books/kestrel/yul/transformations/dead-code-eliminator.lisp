@@ -84,15 +84,15 @@
        because we still need to keep the function definitions."))
     (b* (((when (endp stmts)) nil)
          (stmt (car stmts))
-         (afterp (or afterp
-                     (statement-case stmt :leave)
-                     (statement-case stmt :break)
-                     (statement-case stmt :continue))))
+         (next-afterp (or afterp
+                          (statement-case stmt :leave)
+                          (statement-case stmt :break)
+                          (statement-case stmt :continue))))
       (if (or (not afterp)
               (statement-case stmt :fundef))
           (cons (statement-dead stmt)
-                (statement-list-dead (cdr stmts) afterp))
-        (statement-list-dead (cdr stmts) afterp)))
+                (statement-list-dead (cdr stmts) next-afterp))
+        (statement-list-dead (cdr stmts) next-afterp)))
     :measure (statement-list-count stmts))
 
   (define block-dead ((block blockp))
@@ -133,8 +133,36 @@
                  :body (block-dead (fundef->body fdef)))
     :measure (fundef-count fdef))
 
+  :flag-local nil
+
   :verify-guards nil ; done below
   ///
   (verify-guards statement-dead)
 
-  (fty::deffixequiv-mutual statements/blocks/cases/fundefs-dead))
+  (fty::deffixequiv-mutual statements/blocks/cases/fundefs-dead)
+
+  (defrule statement-kind-of-statement-dead
+    (equal (statement-kind (statement-dead stmt))
+           (statement-kind stmt))
+    :expand (statement-dead stmt))
+
+  (defrule statement-fundef->get-of-statement-dead
+    (implies (statement-case stmt :fundef)
+             (equal (statement-fundef->get (statement-dead stmt))
+                    (fundef-dead (statement-fundef->get stmt))))
+    :enable statement-dead)
+
+  (defrule block->statements-of-block-dead
+    (equal (block->statements (block-dead block))
+           (statement-list-dead (block->statements block) nil))
+    :enable block-dead)
+
+  (defrule swcase->value-of-swcase-dead
+    (equal (swcase->value (swcase-dead case))
+           (swcase->value case))
+    :expand (swcase-dead case))
+
+  (defrule fundef->name-of-fundef-dead
+    (equal (fundef->name (fundef-dead fdef))
+           (fundef->name fdef))
+    :expand (fundef-dead fdef)))

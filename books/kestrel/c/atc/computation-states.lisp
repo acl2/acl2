@@ -666,31 +666,27 @@
   (xdoc::topstring
    (xdoc::p
     "If the pointer is null, we return an error.
-     Otherwise, we check whether the heap has an array at the pointer's address,
-     which we return if it does (otherwise we return an error).
-     We also ensure that the pointer's type references an integer type.
-     (We should expand this check to ensure that
-     it matches the type of the array in the heap.)")
+     Otherwise, we check whether the heap has an array at the pointer's address.
+     We ensure that the array type matches the pointer type.")
    (xdoc::p
     "Note that this function reads the array as a whole;
      it does not read an array element.
      Functions like @(tsee uchar-array-read-sint)
      can be used to read individual array elements."))
-  (b* ((reftype (pointer->reftype ptr))
-       ((unless (or (type-signed-integerp reftype)
-                    (type-unsigned-integerp reftype)))
-        (error (list :mistype-pointer-array-read
-                     :required :array-of-integers
-                     :supplied :array-of reftype)))
-       (address (pointer->address? ptr))
-       (heap (compustate->heap compst)))
-    (if address
-        (b* ((pair (omap::in address heap)))
-          (if pair
-              (cdr pair)
-            (error (list :address-not-found address
-                         :heap heap))))
-      (error :null-pointer-read)))
+  (b* ((address (pointer->address? ptr))
+       (reftype (pointer->reftype ptr))
+       (heap (compustate->heap compst))
+       ((when (not address))
+        (error :null-pointer))
+       (address+array (omap::in address heap))
+       ((unless (consp address+array))
+        (error (list :address-not-found address)))
+       (array (cdr address+array))
+       ((unless (equal reftype (type-of-array-element array)))
+        (error (list :mistype-array-read
+                     :pointer reftype
+                     :array (type-of-array-element array)))))
+    array)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -710,18 +706,24 @@
      it does not write an array element.
      Functions like @(tsee uchar-array-write-sint)
      can be used to write individual array elements."))
-  (b* ((heap (compustate->heap compst))
-       (address (pointer->address? ptr))
-       ((when (not address)) (error :null-pointer-write))
-       (pair (omap::in address heap))
-       ((unless (consp pair)) (error (list :address-not-found address
-                                           :heap heap)))
-       (old-array (cdr pair))
-       ((unless (equal (pointer->reftype ptr)
-                       (type-of-array-element old-array)))
-        (error (list :pointer-mistype
-                     :pointer (pointer->reftype ptr)
+  (b* ((address (pointer->address? ptr))
+       (reftype (pointer->reftype ptr))
+       (heap (compustate->heap compst))
+       ((when (not address))
+        (error :null-pointer))
+       (address+array (omap::in address heap))
+       ((unless (consp address+array))
+        (error (list :address-not-found address)))
+       (old-array (cdr address+array))
+       ((unless (equal reftype (type-of-array-element old-array)))
+        (error (list :mistype-array-write
+                     :pointer reftype
                      :array (type-of-array-element old-array))))
+       ((unless (equal (type-of-array-element array)
+                       (type-of-array-element old-array)))
+        (error (list :array-type-mismatch
+                     :old (type-of-array-element old-array)
+                     :new (type-of-array-element array))))
        ((unless (equal (array-length array)
                        (array-length old-array)))
         (error (list :array-length-mismatch

@@ -12,8 +12,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/axe/contexts" :dir :system)
-(include-book "kestrel/axe/dags" :dir :system)
+(include-book "contexts")
+(include-book "dags")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 

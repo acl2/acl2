@@ -11,6 +11,13 @@
 
 (in-package "X")
 
+;; This book defines readers and writers for (32-bit) x86 registers, such as
+;; EAX, ESP, etc.  It aims for maximum brevity and clarity, so to access EAX,
+;; one simply calls (eax <x86>).  Instead, we could define a general function,
+;; get-reg, and say something like (get-reg :eax <x86>).  This would allow us
+;; to prove fewer rules about "read over write" and similar properties, at the
+;; cost of making proof terms a bit bigger and a bit less readable.
+
 (include-book "projects/x86isa/machine/state" :dir :system) ;for xr
 ;(include-book "projects/x86isa/machine/state-field-thms" :dir :system)
 (include-book "projects/x86isa/portcullis/sharp-dot-constants" :dir :system)
@@ -36,12 +43,12 @@
 (defund set-ebp (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 32 val))) (!rgfi *rbp* val x86))
 
 ;; Read of a write of the same register
-(defthm eax-of-set-eax (equal (eax (set-eax val x86)) (logext 64 val)) :hints (("Goal" :in-theory (e/d (eax set-eax) ()))))
-(defthm ebx-of-set-ebx (equal (ebx (set-ebx val x86)) (logext 64 val)) :hints (("Goal" :in-theory (e/d (ebx set-ebx) ()))))
-(defthm ecx-of-set-ecx (equal (ecx (set-ecx val x86)) (logext 64 val)) :hints (("Goal" :in-theory (e/d (ecx set-ecx) ()))))
-(defthm edx-of-set-edx (equal (edx (set-edx val x86)) (logext 64 val)) :hints (("Goal" :in-theory (e/d (edx set-edx) ()))))
-(defthm esp-of-set-esp (equal (esp (set-esp val x86)) (logext 64 val)) :hints (("Goal" :in-theory (e/d (esp set-esp) ()))))
-(defthm ebp-of-set-ebp (equal (ebp (set-ebp val x86)) (logext 64 val)) :hints (("Goal" :in-theory (e/d (ebp set-ebp) ()))))
+(defthm eax-of-set-eax (equal (eax (set-eax val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable eax set-eax))))
+(defthm ebx-of-set-ebx (equal (ebx (set-ebx val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable ebx set-ebx))))
+(defthm ecx-of-set-ecx (equal (ecx (set-ecx val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable ecx set-ecx))))
+(defthm edx-of-set-edx (equal (edx (set-edx val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable edx set-edx))))
+(defthm esp-of-set-esp (equal (esp (set-esp val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable esp set-esp))))
+(defthm ebp-of-set-ebp (equal (ebp (set-ebp val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable ebp set-ebp))))
 
 ;; Read of a write of a different register
 
@@ -299,7 +306,7 @@
 (defthm set-esp-of-set-esp (equal (set-esp esp1 (set-esp esp2 x86)) (set-esp esp1 x86)) :hints (("Goal" :in-theory (enable set-esp))))
 (defthm set-ebp-of-set-ebp (equal (set-ebp ebp1 (set-ebp ebp2 x86)) (set-ebp ebp1 x86)) :hints (("Goal" :in-theory (enable set-ebp))))
 
-;; Introduce the write-XXX functions (disabled since these are not appropriate for 64-bit reasoning):
+;; Introduce the register writers:
 (defthmd xw-becomes-set-eax (equal (xw :rgf *rax* val x86) (set-eax val x86)) :hints (("Goal" :in-theory (enable set-eax))))
 (defthmd xw-becomes-set-ebx (equal (xw :rgf *rbx* val x86) (set-ebx val x86)) :hints (("Goal" :in-theory (enable set-ebx))))
 (defthmd xw-becomes-set-ecx (equal (xw :rgf *rcx* val x86) (set-ecx val x86)) :hints (("Goal" :in-theory (enable set-ecx))))
@@ -307,6 +314,7 @@
 (defthmd xw-becomes-set-esp (equal (xw :rgf *rsp* val x86) (set-esp val x86)) :hints (("Goal" :in-theory (enable set-esp))))
 (defthmd xw-becomes-set-ebp (equal (xw :rgf *rbp* val x86) (set-ebp val x86)) :hints (("Goal" :in-theory (enable set-ebp))))
 
+;; These rules are disabled since they are not appropriate for 64-bit reasoning:
 (theory-invariant (incompatible (:definition set-eax) (:rewrite xw-becomes-set-eax)))
 (theory-invariant (incompatible (:definition set-ebx) (:rewrite xw-becomes-set-ebx)))
 (theory-invariant (incompatible (:definition set-ecx) (:rewrite xw-becomes-set-ecx)))
@@ -314,7 +322,7 @@
 (theory-invariant (incompatible (:definition set-esp) (:rewrite xw-becomes-set-esp)))
 (theory-invariant (incompatible (:definition set-ebp) (:rewrite xw-becomes-set-ebp)))
 
-;; Introduce the read-XXX functions (disabled since these are not appropriate for 64-bit reasoning):
+;; Introduce the register readers:
 (defthmd xr-becomes-eax (equal (xr :rgf *rax* x86) (eax x86)) :hints (("Goal" :in-theory (enable eax))))
 (defthmd xr-becomes-ebx (equal (xr :rgf *rbx* x86) (ebx x86)) :hints (("Goal" :in-theory (enable ebx))))
 (defthmd xr-becomes-ecx (equal (xr :rgf *rcx* x86) (ecx x86)) :hints (("Goal" :in-theory (enable ecx))))
@@ -322,6 +330,7 @@
 (defthmd xr-becomes-esp (equal (xr :rgf *rsp* x86) (esp x86)) :hints (("Goal" :in-theory (enable esp))))
 (defthmd xr-becomes-ebp (equal (xr :rgf *rbp* x86) (ebp x86)) :hints (("Goal" :in-theory (enable ebp))))
 
+;; These rules are disabled since they are not appropriate for 64-bit reasoning:
 (theory-invariant (incompatible (:definition eax) (:rewrite xr-becomes-eax)))
 (theory-invariant (incompatible (:definition ebx) (:rewrite xr-becomes-ebx)))
 (theory-invariant (incompatible (:definition ecx) (:rewrite xr-becomes-ecx)))
@@ -334,32 +343,32 @@
 (defthm xr-of-set-esp-same
   (equal (xr ':rgf '4 (set-esp esp x86))
          (logext 64 esp))
-  :hints (("Goal" :in-theory (e/d (set-esp) ()))))
+  :hints (("Goal" :in-theory (enable set-esp))))
 
 (defthm xr-of-esp-and-set-eax
   (equal (xr ':rgf '4 (set-eax esp x86))
          (xr ':rgf '4 x86))
-  :hints (("Goal" :in-theory (e/d (set-eax) ()))))
+  :hints (("Goal" :in-theory (enable set-eax))))
 
 (defthm xr-of-esp-and-set-ebx
   (equal (xr ':rgf '4 (set-ebx esp x86))
          (xr ':rgf '4 x86))
-  :hints (("Goal" :in-theory (e/d (set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable set-ebx))))
 
 (defthm xr-of-esp-and-set-ecx
   (equal (xr ':rgf '4 (set-ecx esp x86))
          (xr ':rgf '4 x86))
-  :hints (("Goal" :in-theory (e/d (set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable set-ecx))))
 
 (defthm xr-of-esp-and-set-edx
   (equal (xr ':rgf '4 (set-edx esp x86))
          (xr ':rgf '4 x86))
-  :hints (("Goal" :in-theory (e/d (set-edx) ()))))
+  :hints (("Goal" :in-theory (enable set-edx))))
 
 (defthm xr-of-esp-and-set-ebp
   (equal (xr ':rgf '4 (set-ebp ebp x86))
          (xr ':rgf '4 x86))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
 
@@ -368,9 +377,9 @@
          (if test
              (esp tp)
            (esp ep)))
-  :hints (("Goal" :in-theory (e/d (set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable set-ebp))))
 
-;; used for, for example, when xw involves :UNDEF
+;; used for, for example, when FLD is :UNDEF
 (defthm eax-of-xw (implies (not (equal fld :rgf)) (equal (eax (xw fld index value x86)) (eax x86))) :hints (("Goal" :in-theory (enable eax))))
 (defthm ebx-of-xw (implies (not (equal fld :rgf)) (equal (ebx (xw fld index value x86)) (ebx x86))) :hints (("Goal" :in-theory (enable ebx))))
 (defthm ecx-of-xw (implies (not (equal fld :rgf)) (equal (ecx (xw fld index value x86)) (ecx x86))) :hints (("Goal" :in-theory (enable ecx))))

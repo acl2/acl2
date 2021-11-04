@@ -131,17 +131,19 @@
 ;;we use that expression when we call the corresponding function
 ;i guess if we pass an interpreted fn we must also pass in any supporting fns - perhaps always include all the primitives - since we can't interpret them!
 ;ffixme since this no longer takes state we could use a macro instead of make-event
-(defun make-evaluator-simple-fn (base-name ;a symbol
+(defun make-evaluator-simple-fn (suffix
                                  fns-and-aliases
                                  extra-guards-apply
                                  extra-guards-eval
                                  extra-guards-eval-list
                                  verify-guards
                                  wrld)
-  (declare (xargs :guard (fns-and-aliasesp fns-and-aliases)
+  (declare (xargs :guard (and (symbolp suffix)
+                              (fns-and-aliasesp fns-and-aliases))
                   :verify-guards nil ;todo
                   ))
-  (let* ( ;;maps arities to fn-call-alists.  a fn-call-alist maps fns to the expressions by which to evaluate them:
+  (let* ((base-name (pack$ 'axe-evaluator- suffix))
+         ;;maps arities to fn-call-alists.  a fn-call-alist maps fns to the expressions by which to evaluate them:
          (arity-fn-call-alist-alist (make-arity-fn-call-alist-alist fns-and-aliases wrld))
          (max-arity (maxelem (strip-cars arity-fn-call-alist-alist)))
          (apply-function-name (pack$ 'apply- base-name))
@@ -347,7 +349,7 @@
          (append '(if myif) ;always built-in
                  ',(get-fns-from-fns-and-aliases fns-and-aliases))))))
 
-(defmacro make-evaluator-simple (base-name ;a symbol
+(defmacro make-evaluator-simple (suffix ;a symbol
                                  arity-fn-call-alist-alist
                                  &key
                                  (verify-guards 't)
@@ -355,7 +357,7 @@
                                  (extra-guards-eval 'nil)
                                  (extra-guards-eval-list 'nil))
   `(make-event
-    (make-evaluator-simple-fn ',base-name
+    (make-evaluator-simple-fn ',suffix
                               ,arity-fn-call-alist-alist
                               ',extra-guards-apply
                               ',extra-guards-eval

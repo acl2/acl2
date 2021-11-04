@@ -954,3 +954,13 @@
 (assert-event
  (equal (do-loop-max-pair '((a . 1)(b . 2)(c . 33) (d . 23) (e . 45) (f . 0)))
         '(e . 45)))
+
+; The following failed before a commit on 10/22/2021.
+
+(assert-event (equal (loop$ with temp = '(a b c)
+                            with ans = nil
+                            do (cond ((endp temp) (return ans))
+                                     (t (let ((foo (car temp)))
+                                          (progn (setq ans (cons foo ans))
+                                                 (setq temp (cdr temp)))))))
+                     '(C B A)))

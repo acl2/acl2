@@ -20,12 +20,12 @@
 
 ;; See def-equality-transformation-tests.lisp for an example of what it generates.
 
-(include-book "kestrel/apt/utilities/deftransformation" :dir :system)
-(include-book "kestrel/apt/utilities/option-parsing" :dir :system)
-(include-book "kestrel/apt/utilities/defun-variant" :dir :system)
+(include-book "deftransformation")
+(include-book "option-parsing")
+(include-book "defun-variant")
 (include-book "kestrel/utilities/fixup-ignores" :dir :system)
 (include-book "kestrel/utilities/fixup-irrelevants" :dir :system)
-(include-book "kestrel/apt/utilities/make-becomes-theorem" :dir :system)
+(include-book "make-becomes-theorem")
 (include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
@@ -34,12 +34,12 @@
 (include-book "kestrel/untranslated-terms/rename-functions" :dir :system)
 (include-book "kestrel/utilities/ruler-extenders" :dir :system)
 (include-book "kestrel/utilities/defining-forms" :dir :system) ;for get-body-from-event
-(include-book "kestrel/apt/utilities/function-renamingp" :dir :system)
-(include-book "kestrel/apt/utilities/set-stobjs-in-declares-to-match" :dir :system)
-(include-book "kestrel/apt/utilities/transformation-prologue" :dir :system)
-(include-book "kestrel/apt/utilities/names" :dir :system)
+(include-book "function-renamingp")
+(include-book "set-stobjs-in-declares-to-match")
+(include-book "transformation-prologue")
+(include-book "names")
 (include-book "kestrel/utilities/my-get-event" :dir :system)
-(include-book "kestrel/apt/utilities/verify-guards-for-defun" :dir :system)
+(include-book "verify-guards-for-defun")
 (include-book "kestrel/utilities/system/world-queries" :dir :system)
 (include-book "kestrel/utilities/defmacroq" :dir :system)
 (include-book "kestrel/utilities/maybe-unquote" :dir :system)
@@ -62,6 +62,8 @@
                                        transform-specific-required-args ;arguments to function-body-transformer
                                        transform-specific-keyword-args-and-defaults ;arguments to function-body-transformer
                                        enables ; used for each function (currently)
+                                       measure-enables
+                                       guard-enables
                                        make-becomes-theorem-name
                                        make-becomes-theorems-name
                                        make-becomes-theorem-extra-args
@@ -127,8 +129,8 @@
                 (declares (remove-xarg-in-declares :normalize declares))
                 ;; Handle the :mode xarg:
                 (declares (remove-xarg-in-declares :mode declares)) ;todo: handle this better.  this is needed because the event might have :mode :program even if the function was later lifted to logic.  Obviously we shouldn't do this once we support transforming :program mode functions.
-                ;; Deal with the :verify-guards xarg.  We always do :verify-guards nil and then
-                ;; do verify-guards later, in case the function appears in its own guard-theorem (todo: is that still necessary?):
+                ;; Deal with the :verify-guards xarg.  We always do :verify-guards nil and then perhaps
+                ;; do verify-guards later, in case the function appears in its own guard-theorem (meaning the guard proof needs the becomes-theorem)
                 (declares (set-verify-guards-in-declares nil declares))
                 (declares (remove-xarg-in-declares :guard-hints declares)) ; verify-guards is done separately
                 (declares (remove-xarg-in-declares :guard-debug declares)) ; verify-guards is done separately
@@ -157,13 +159,14 @@
                                   (er hard ',apply-to-defun-name "Measure, ~x0, is not a recognized term." measure)
                                 (replace-xarg-in-declares :measure measure declares)))))
                 ;; Handle the (termination) :hints xarg:
+                (measure-enables ',measure-enables)
                 (declares (if (not rec)
                               declares ; no termination since not recursive
                             ;; single or mutual recursion:
                             (replace-xarg-in-declares
                              :hints
                              (if (eq :auto measure-hints)
-                                 `(("Goal" :in-theory '()
+                                 `(("Goal" :in-theory ',measure-enables
                                     ;; ACL2 automatically replaces the old functions with the new ones in this:
                                     :use (:instance (:termination-theorem ,fn))))
                                measure-hints)
@@ -311,7 +314,7 @@
                         (local ,new-defun) ; has :verify-guards nil
                         (local (install-not-normalized ,new-fn))
                         (local ,becomes-theorem)
-                        ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints))))
+                        ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints ',guard-enables))))
                         ;; export the new defun and the becomes-theorem:
                         ,new-defun-to-export
                         ,becomes-theorem-to-export)
@@ -344,7 +347,7 @@
                           (local ,new-defun) ; has :verify-guards nil
                           (local (install-not-normalized ,new-fn))
                           (local ,becomes-theorem)
-                          ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints))))
+                          ,@(and verify-guards `((local ,(verify-guards-for-defun fn function-renaming guard-hints ',guard-enables))))
                           ;; export the new defun and the becomes theorem:
                           ,new-defun-to-export
                           ,becomes-theorem-to-export)
@@ -415,7 +418,7 @@
                         (local ,make-flag-form)
                         (local ,becomes-defthm-flag)
                         ,@(and verify-guards
-                               `((local ,(verify-guards-for-defun fn function-renaming guard-hints))))
+                               `((local ,(verify-guards-for-defun fn function-renaming guard-hints ',guard-enables))))
                         ;; Export the new mutual-recursion:
                         ,mutual-recursion-to-export
                         ;; Export the 'becomes' theorems:
@@ -460,7 +463,10 @@
                                        transform-specific-required-args
                                        transform-specific-keyword-args-and-defaults ; a list of doublets containing arg names and quoted default values
                                        &key
+                                       ;; All of these are baked into the generated transformation, not passed into each call of the transformation:
                                        (enables 'nil) ; enables to use in all equivalence proofs
+                                       (measure-enables 'nil) ; for when :measure-hints is :auto
+                                       (guard-enables 'nil) ; for when :guard-hints is :auto
                                        (make-becomes-theorem-name 'make-becomes-theorem)
                                        (make-becomes-theorems-name 'make-becomes-theorems)
                                        (make-becomes-theorem-extra-args 'nil)
@@ -468,7 +474,14 @@
                                        (short ':auto)
                                        (transform-specific-arg-descriptions 'nil)
                                        (description 'nil))
-  `(make-event (def-equality-transformation-fn ',name ',function-body-transformer ',transform-specific-required-args ',transform-specific-keyword-args-and-defaults ,enables
+  `(make-event (def-equality-transformation-fn
+                 ',name
+                 ',function-body-transformer
+                 ',transform-specific-required-args
+                 ',transform-specific-keyword-args-and-defaults
+                 ,enables
+                 ,measure-enables
+                 ,guard-enables
                  ',make-becomes-theorem-name
                  ',make-becomes-theorems-name
                  ',make-becomes-theorem-extra-args

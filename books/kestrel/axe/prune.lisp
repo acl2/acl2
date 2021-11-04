@@ -213,13 +213,13 @@
                      ;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
                      ((mv erp then-part state)
                       (prune-term (farg2 term)
-                                  (union-equal (fixup-assumptions (get-conjuncts-of-term test)) assumptions)
-                                  (union-equal (get-equalities (get-conjuncts-of-term test)) equality-assumptions)
+                                  (union-equal (fixup-assumptions (get-conjuncts-of-term2 test)) assumptions)
+                                  (union-equal (get-equalities (get-conjuncts-of-term2 test)) equality-assumptions)
                                   rule-alist monitored-rules call-stp state))
                      ((when erp) (mv erp nil state))
                      ;; Recur on the else-branch, assuming the negation of the (pruned, but not simplified) test:
                      ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
-                     (negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term test)))
+                     (negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test)))
                      ((mv erp else-part state)
                       (prune-term (farg3 term)
                                   (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
@@ -269,13 +269,13 @@
                      ;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
                      ((mv erp then-part state)
                       (prune-term then-branch
-                                  (union-equal (fixup-assumptions (get-conjuncts-of-term test)) assumptions)
-                                  (union-equal (get-equalities (get-conjuncts-of-term test)) equality-assumptions)
+                                  (union-equal (fixup-assumptions (get-conjuncts-of-term2 test)) assumptions)
+                                  (union-equal (get-equalities (get-conjuncts-of-term2 test)) equality-assumptions)
                                   rule-alist monitored-rules call-stp state))
                      ((when erp) (mv erp nil state))
                      ;; Recur on the else-branch, assuming the negation of the (pruned, but not simplified) test:
                      ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
-                     (negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term test)))
+                     (negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test)))
                      ((mv erp else-part state)
                       (prune-term else-branch
                                   (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
@@ -324,14 +324,14 @@
                      ;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
                      ((mv erp then-part state)
                       (prune-term then-branch
-                                  ;; todo: repeated call to get-conjuncts-of-term (and similar things elsewhere in this function):
-                                  (union-equal (fixup-assumptions (get-conjuncts-of-term test)) assumptions)
-                                  (union-equal (get-equalities (get-conjuncts-of-term test)) equality-assumptions)
+                                  ;; todo: repeated call to get-conjuncts-of-term2 (and similar things elsewhere in this function):
+                                  (union-equal (fixup-assumptions (get-conjuncts-of-term2 test)) assumptions)
+                                  (union-equal (get-equalities (get-conjuncts-of-term2 test)) equality-assumptions)
                                   rule-alist monitored-rules call-stp state))
                      ((when erp) (mv erp nil state))
                      ;; Recur on the else-branch, assuming the negation of the (pruned, but not simplified) test:
                      ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
-                     (negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term test)))
+                     (negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test)))
                      ((mv erp else-part state)
                       (prune-term else-branch
                                   (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)

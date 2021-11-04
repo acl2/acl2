@@ -77,7 +77,7 @@
 (define-sk pfield-odd-squarep (x p)
   :guard (and (integerp p) (fep x p))
   :returns (yes/no booleanp)
-  :parents (elliptic-curves)
+  :parents (pfield-squarep)
   :short "Check if a prime field element is a square of an odd field element."
   :long
   (xdoc::topstring
@@ -91,7 +91,7 @@
 (define-sk pfield-even-squarep (x p)
   :guard (and (integerp p) (fep x p))
   :returns (yes/no booleanp)
-  :parents (elliptic-curves)
+  :parents (pfield-squarep)
   :short "Check if a prime field element is a square of an even field element."
   :long
   (xdoc::topstring
@@ -105,6 +105,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule pfield-squarep-of-inv
+  :parents (pfield-squarep)
   :short "The inverse of @('x') is a prime field square iff @('x') is."
   (implies (and (rtl::primep p)
                 (fep x p))

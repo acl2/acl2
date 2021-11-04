@@ -175,21 +175,7 @@
   :hints (("goal" :do-not-induct t
            :in-theory (e/d (good-frame-p
                             collapse frame->root abs-complete)
-                           (frame->root-normalisation
-                            collapse-hifat-place-file-lemma-27)))))
-
-(defthm
-  cp-without-subdirs-helper-correctness-lemma-63
-  (implies
-   (and (good-frame-p frame)
-        (not (consp (frame->frame frame))))
-   (m1-file-alist-p
-    (mv-nth '0
-            (abs-alloc (frame-val->dir$inline (cdr (assoc-equal '0 frame)))
-                       'nil
-                       (find-new-index (strip-cars frame))))))
-  :hints (("goal" :do-not-induct t
-           :in-theory (enable abs-alloc))))
+                           (frame->root-normalisation)))))
 
 (encapsulate
   ()
@@ -1706,6 +1692,7 @@
   2
   :hints (("goal" :in-theory (enable update-nth))))
 
+;; Inductive, therefore probably not worth disabling.
 (defthm cp-without-subdirs-helper-correctness-lemma-9
   (implies (cp-spec-3 queues dst)
            (not (equal (car (nth n queues)) :close)))
@@ -1724,6 +1711,7 @@
                   (consp (nth n queues))))
   :hints (("goal" :in-theory (enable nth cp-spec-3 nonempty-queues))))
 
+;; Might be useful at some point.
 (defthm cp-without-subdirs-helper-correctness-lemma-12
   (implies (and
             (not (consp (assoc-equal z frame)))
@@ -1731,30 +1719,6 @@
            (iff (equal (abs-find-file-src frame path) z)
                 (and (equal (abs-find-file-src frame path) 0)
                      (equal z 0)))))
-
-(encapsulate
-  ()
-
-  (local (include-book "std/lists/prefixp" :dir :system))
-
-  (defthm
-    cp-without-subdirs-helper-correctness-lemma-13
-    (implies
-     (and (path-clear path frame)
-          (no-duplicatesp-equal (strip-cars frame))
-          (atom (assoc-equal 0 frame)))
-     (not
-      (consp
-       (names-at
-        (frame-val->dir (cdr (assoc-equal (abs-find-file-src frame path)
-                                          frame)))
-        (nthcdr
-         (len (frame-val->path (cdr (assoc-equal (abs-find-file-src frame path)
-                                                 frame))))
-         path)))))
-    :hints (("goal" :in-theory (enable path-clear
-                                       abs-find-file-src frame-p strip-cars
-                                       no-duplicatesp-equal names-at)))))
 
 ;; (assert-event
 ;;  (b*
@@ -2017,32 +1981,6 @@
     :hints (("goal" :in-theory (enable 1st-complete-under-path
                                        assoc-equal frame-p)))))
 
-(defthm cp-without-subdirs-helper-correctness-lemma-16
-  (implies (good-frame-p frame)
-           (< 0 (find-new-index (strip-cars frame))))
-  :hints (("goal" :do-not-induct t
-           :in-theory (enable good-frame-p)))
-  :rule-classes
-  (:linear
-   :rewrite
-   (:rewrite
-    :corollary
-    (implies (good-frame-p frame)
-             (not (equal (find-new-index (strip-cars frame)) 0))))))
-
-(defthm cp-without-subdirs-helper-correctness-lemma-20
-  (implies (and (integerp n) (abs-complete x))
-           (not (equal (list n) x)))
-  :hints (("goal" :in-theory (enable abs-complete abs-addrs))))
-
-(defthm
-  cp-without-subdirs-helper-correctness-lemma-18
-  (ctx-app-ok (mv-nth '1 (abs-alloc fs 'nil n))
-              n 'nil)
-  :hints
-  (("goal" :do-not-induct t
-    :in-theory (enable ctx-app-ok abs-alloc addrs-at))))
-
 (defthm
   abs-find-file-src-of-frame->frame-1
   (implies
@@ -2068,111 +2006,25 @@
            :use (:instance abs-find-file-src-of-remove-assoc-1
                            (x 0)))))
 
-(defthm
-  cp-without-subdirs-helper-correctness-lemma-19
-  (implies (good-frame-p frame)
-           (and (no-duplicatesp-equal (strip-cars frame))
-                (list-equiv (frame-val->path (cdr (assoc-equal 0 frame)))
-                            nil)
-                (mv-nth '1 (collapse frame))
-                (frame-p frame)
-                (abs-separate frame)))
-  :hints (("goal" :do-not-induct t
-           :in-theory (enable good-frame-p))))
-
-(defthm cp-without-subdirs-helper-correctness-lemma-21
-  (implies (atom n)
-           (equal (names-at (list n) path) nil))
-  :hints (("goal" :in-theory (enable names-at abs-fs-fix))))
-
-(defthm
-  cp-without-subdirs-helper-correctness-lemma-22
-  (implies (atom n)
-           (equal (mv-nth 1 (abs-find-file-helper (list n) src))
-                  *enoent*))
-  :hints (("goal" :in-theory (enable abs-find-file-helper abs-fs-fix))))
-
-(defthm
-  cp-without-subdirs-helper-correctness-lemma-23
-  (implies
-   (and
-    (good-frame-p frame)
-    (equal (1st-complete (frame->frame frame))
-           0)
-    (equal
-     (mv-nth
-      1
-      (hifat-find-file
-       (put-assoc-equal name
-                        (m1-file '(0 0 0 0 0 0 0 0 0 0 0 0
-                                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                 contents)
-                        (frame->root frame))
-       src))
-     *enoent*)
-    (fat32-filename-p name)
-    (stringp contents))
-   (equal
-    (mv-nth
-     1
-     (hifat-find-file (frame-val->dir$inline (cdr (assoc-equal 0 frame)))
-                      src))
-    *enoent*))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (e/d (abs-pwrit1 abs-pwrite
-                                abs-find-file-src-of-frame-with-root
-                                abs-find-file-src
-                                partial-collapse 1st-complete
-                                collapse-this remove-assoc-when-absent-1
-                                abs-alloc hifat-find-file)
-                    ((:rewrite-quoted-constant true-fix-under-true-equiv)))
-    :expand ((:free (fs)
-                    (hifat-find-file fs src))))))
-
-(defthm cp-without-subdirs-helper-correctness-lemma-24
+(defthm cp-without-subdirs-helper-correctness-lemma-19
   (implies (not (consp (frame->frame frame)))
            (equal (abs-find-file-src frame src) 0))
   :hints (("goal" :in-theory (enable abs-find-file-src frame->frame))))
 
-(defthm
-  cp-without-subdirs-helper-correctness-lemma-14
-  (equal
-   (mv-nth
-    1
-    (abs-find-file-helper
-     (mv-nth 1
-             (abs-alloc (frame-val->dir (cdr (assoc-equal 0 frame)))
-                        nil
-                        (find-new-index (strip-cars frame))))
-     src))
-   *enoent*)
-  :hints (("goal" :in-theory (enable dirname basename
-                                     abs-find-file-helper abs-alloc)
-           :do-not-induct t)))
-
-(defthm cp-without-subdirs-helper-correctness-lemma-15
-  (implies (stringp contents)
-           (not (abs-directory-file-p (m1-file d-e contents))))
-  :hints (("goal" :do-not-induct t
-           :in-theory (enable m1-file abs-directory-file-p
-                              abs-file-p abs-file->contents))))
-
-(defthmd cp-without-subdirs-helper-correctness-lemma-25
-  (equal (mv-nth 0
-                 (abs-alloc fs path (true-fix new-index)))
+(defthmd cp-without-subdirs-helper-correctness-lemma-24
+  (equal (mv-nth 0 (abs-alloc fs path (true-fix new-index)))
          (mv-nth 0 (abs-alloc fs path new-index)))
   :hints (("goal" :in-theory (enable abs-alloc))))
 
+;; This is a congruence, obviously we're not deleting it.
 (defthm
-  cp-without-subdirs-helper-correctness-lemma-26
+  cp-without-subdirs-helper-correctness-lemma-25
   (equal (mv-nth 0 (abs-alloc fs path x))
          (mv-nth 0 (abs-alloc fs path y)))
   :hints
-  (("goal" :use ((:instance cp-without-subdirs-helper-correctness-lemma-25
+  (("goal" :use ((:instance cp-without-subdirs-helper-correctness-lemma-24
                             (new-index x))
-                 (:instance cp-without-subdirs-helper-correctness-lemma-25
+                 (:instance cp-without-subdirs-helper-correctness-lemma-24
                             (new-index y)))))
   :rule-classes
   ((:congruence
@@ -2252,6 +2104,7 @@
                         path))))
   :hints (("goal" :in-theory (enable abs-find-file-src abs-find-file))))
 
+;; Might be useful later.
 (defthm
   cp-without-subdirs-helper-correctness-lemma-27
   (implies
@@ -2287,33 +2140,7 @@
                   (fat32-filename-list-equiv x y)))
   :hints (("goal" :in-theory (enable fat32-filename-list-equiv))))
 
-(defthm
-  cp-without-subdirs-helper-correctness-lemma-28
-  (implies
-   (and
-    (frame-p (frame->frame frame))
-    (consp (assoc-equal x (frame->frame frame)))
-    (abs-complete (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
-    (equal (1st-complete-under-path (frame->frame frame)
-                                    path)
-           0)
-    (equal (assoc-equal x (frame->frame frame))
-           (assoc-equal x frame)))
-   (and
-    (not (fat32-filename-list-equiv
-          path
-          (frame-val->path (cdr (assoc-equal x frame)))))
-    (not
-     (fat32-filename-list-equiv (frame-val->path (cdr (assoc-equal x frame)))
-                                path))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory
-    (disable 1st-complete-under-path-could-fire-up-at-a-painful-moment)
-    :use (:instance 1st-complete-under-path-could-fire-up-at-a-painful-moment
-                    (frame (frame->frame frame))))))
-
+;; Might be useful later.
 (defthm cp-without-subdirs-helper-correctness-lemma-29
   (implies (and (abs-fs-p (put-assoc-equal name val fs))
                 (abs-fs-p fs)
@@ -2361,37 +2188,8 @@
   (("goal" :do-not-induct t
     :in-theory (e/d (frame->root good-frame-p)
                     (cp-without-subdirs-helper-correctness-lemma-30
-                     frame->root-normalisation
-                     collapse-hifat-place-file-lemma-27))
+                     frame->root-normalisation))
     :use cp-without-subdirs-helper-correctness-lemma-30)))
-
-(defthm
-  cp-without-subdirs-helper-correctness-lemma-32
-  (implies
-   (good-frame-p frame)
-   (no-duplicatesp-equal
-    (abs-addrs
-     (mv-nth
-      1
-      (abs-alloc
-       (frame-val->dir (cdr (assoc-equal (abs-find-file-src frame path)
-                                         frame)))
-       (nthcdr
-        (len (frame-val->path (cdr (assoc-equal (abs-find-file-src frame path)
-                                                frame))))
-        path)
-       (find-new-index (strip-cars frame)))))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (e/d (abs-pwrit1 abs-pwrite
-                                abs-find-file-src-of-frame-with-root
-                                partial-collapse 1st-complete
-                                collapse-this remove-assoc-when-absent-1
-                                abs-alloc 1st-complete-under-path
-                                assoc-of-frame->frame
-                                frame->frame-of-put-assoc)
-                    ((:rewrite-quoted-constant true-fix-under-true-equiv))))))
 
 (encapsulate
   ()
@@ -2515,8 +2313,7 @@
                              abs-alloc
                              1st-complete-under-path
                              assoc-of-frame->frame
-                             frame->frame-of-put-assoc
-                             cp-without-subdirs-helper-correctness-lemma-34)
+                             frame->frame-of-put-assoc)
                  ((:rewrite-quoted-constant true-fix-under-true-equiv)))))))
 
     (defthm
@@ -2776,195 +2573,6 @@
                                   abs-pread hifat-open hifat-close)
                         ((:rewrite-quoted-constant true-fix-under-true-equiv))))))
 
-    (defthm
-      cp-without-subdirs-helper-correctness-lemma-43
-      (implies
-       (not
-        (consp
-         (assoc-equal
-          (mv-nth
-           2
-           (abs-open
-            (cdr (cadr (cddddr syscall-sym-list)))
-            (mv-nth 0
-                    (abs-close (mv-nth 2
-                                       (abs-open (cdr (car syscall-sym-list))
-                                                 (fat-st->fd-table st)
-                                                 (fat-st->file-table st)))
-                               (mv-nth 0
-                                       (abs-open (cdr (car syscall-sym-list))
-                                                 (fat-st->fd-table st)
-                                                 (fat-st->file-table st)))
-                               (mv-nth 1
-                                       (abs-open (cdr (car syscall-sym-list))
-                                                 (fat-st->fd-table st)
-                                                 (fat-st->file-table st)))))
-            (mv-nth 1
-                    (abs-close (mv-nth 2
-                                       (abs-open (cdr (car syscall-sym-list))
-                                                 (fat-st->fd-table st)
-                                                 (fat-st->file-table st)))
-                               (mv-nth 0
-                                       (abs-open (cdr (car syscall-sym-list))
-                                                 (fat-st->fd-table st)
-                                                 (fat-st->file-table st)))
-                               (mv-nth 1
-                                       (abs-open (cdr (car syscall-sym-list))
-                                                 (fat-st->fd-table st)
-                                                 (fat-st->file-table st)))))))
-          (mv-nth
-           0
-           (abs-open
-            (cdr (cadr (cddddr syscall-sym-list)))
-            (mv-nth 0
-                    (abs-close (mv-nth 2
-                                       (abs-open (cdr (car syscall-sym-list))
-                                                 (fat-st->fd-table st)
-                                                 (fat-st->file-table st)))
-                               (mv-nth 0
-                                       (abs-open (cdr (car syscall-sym-list))
-                                                 (fat-st->fd-table st)
-                                                 (fat-st->file-table st)))
-                               (mv-nth 1
-                                       (abs-open (cdr (car syscall-sym-list))
-                                                 (fat-st->fd-table st)
-                                                 (fat-st->file-table st)))))
-            (mv-nth 1
-                    (abs-close (mv-nth 2
-                                       (abs-open (cdr (car syscall-sym-list))
-                                                 (fat-st->fd-table st)
-                                                 (fat-st->file-table st)))
-                               (mv-nth 0
-                                       (abs-open (cdr (car syscall-sym-list))
-                                                 (fat-st->fd-table st)
-                                                 (fat-st->file-table st)))
-                               (mv-nth 1
-                                       (abs-open (cdr (car syscall-sym-list))
-                                                 (fat-st->fd-table st)
-                                                 (fat-st->file-table st))))))))))
-       (equal
-        (1st-complete-under-path
-         (frame->frame
-          (mv-nth
-           0
-           (abs-pwrit1
-            (mv-nth
-             2
-             (abs-open
-              (cdr (cadr (cddddr syscall-sym-list)))
-              (mv-nth 0
-                      (abs-close (mv-nth 2
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))
-                                 (mv-nth 0
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))
-                                 (mv-nth 1
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))))
-              (mv-nth 1
-                      (abs-close (mv-nth 2
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))
-                                 (mv-nth 0
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))
-                                 (mv-nth 1
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))))))
-            (mv-nth 0
-                    (hifat-pread (mv-nth 2
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))
-                                 0 (fat-st->offset st)
-                                 (mv-nth 0 (collapse frame))
-                                 (mv-nth 0
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))
-                                 (mv-nth 1
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))))
-            (fat-st->offset st)
-            frame
-            (mv-nth
-             0
-             (abs-open
-              (cdr (cadr (cddddr syscall-sym-list)))
-              (mv-nth 0
-                      (abs-close (mv-nth 2
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))
-                                 (mv-nth 0
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))
-                                 (mv-nth 1
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))))
-              (mv-nth 1
-                      (abs-close (mv-nth 2
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))
-                                 (mv-nth 0
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))
-                                 (mv-nth 1
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))))))
-            (mv-nth
-             1
-             (abs-open
-              (cdr (cadr (cddddr syscall-sym-list)))
-              (mv-nth 0
-                      (abs-close (mv-nth 2
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))
-                                 (mv-nth 0
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))
-                                 (mv-nth 1
-                                         (abs-open (cdr (car syscall-sym-list))
-                                                   (fat-st->fd-table st)
-                                                   (fat-st->file-table st)))))
-              (mv-nth
-               1
-               (abs-close (mv-nth 2
-                                  (abs-open (cdr (car syscall-sym-list))
-                                            (fat-st->fd-table st)
-                                            (fat-st->file-table st)))
-                          (mv-nth 0
-                                  (abs-open (cdr (car syscall-sym-list))
-                                            (fat-st->fd-table st)
-                                            (fat-st->file-table st)))
-                          (mv-nth 1
-                                  (abs-open (cdr (car syscall-sym-list))
-                                            (fat-st->fd-table st)
-                                            (fat-st->file-table st))))))))))
-         (dirname (cdr (cadr (cddddr syscall-sym-list)))))
-        0))
-      :hints
-      (("goal"
-        :do-not-induct t
-        :in-theory (e/d (abs-open abs-close
-                                  abs-pread hifat-open hifat-close)
-                        ((:rewrite-quoted-constant true-fix-under-true-equiv))))))
-
     (skip-proofs
      (defthm
        cp-without-subdirs-helper-correctness-lemma-44
@@ -3017,8 +2625,7 @@
                              abs-alloc
                              1st-complete-under-path
                              assoc-of-frame->frame
-                             frame->frame-of-put-assoc
-                             cp-without-subdirs-helper-correctness-lemma-34)
+                             frame->frame-of-put-assoc)
                  ((:rewrite-quoted-constant true-fix-under-true-equiv)))))))
 
     (skip-proofs
@@ -3074,8 +2681,7 @@
                              abs-alloc
                              1st-complete-under-path
                              assoc-of-frame->frame
-                             frame->frame-of-put-assoc
-                             cp-without-subdirs-helper-correctness-lemma-34)
+                             frame->frame-of-put-assoc)
                  ((:rewrite-quoted-constant true-fix-under-true-equiv)))))))
 
     (skip-proofs
@@ -3136,8 +2742,7 @@
                              abs-alloc
                              1st-complete-under-path
                              assoc-of-frame->frame
-                             frame->frame-of-put-assoc
-                             cp-without-subdirs-helper-correctness-lemma-34)
+                             frame->frame-of-put-assoc)
                  ((:rewrite-quoted-constant true-fix-under-true-equiv)))))))
 
     (skip-proofs
@@ -3199,8 +2804,7 @@
                              abs-alloc
                              1st-complete-under-path
                              assoc-of-frame->frame
-                             frame->frame-of-put-assoc
-                             cp-without-subdirs-helper-correctness-lemma-34)
+                             frame->frame-of-put-assoc)
                  ((:rewrite-quoted-constant true-fix-under-true-equiv)))))))
 
     (defthm
@@ -10429,6 +10033,7 @@
       (t
        (mv dst frame fs o1 queues src st)))))
 
+  ;; Inductive, therefore probably not worth disabling.
   (defthm
     cp-without-subdirs-helper-correctness-lemma-52
     (implies
@@ -10459,6 +10064,7 @@
                (cp-spec-1 frame nil st src fs)
                (schedule-queues queues o1)))))
 
+  ;; Inductive, therefore probably not worth disabling.
   (defthm
     cp-without-subdirs-helper-correctness-lemma-53
     (implies
@@ -10488,6 +10094,7 @@
                (cp-spec-1 frame nil st src fs)
                (schedule-queues queues o1)))))
 
+  ;; Inductive, therefore probably not worth disabling.
   (defthm
     cp-without-subdirs-helper-correctness-lemma-61
     (implies
@@ -10827,74 +10434,66 @@
                         (frame->frame frame))))))
    (:bash ("goal" :in-theory (enable absfat-equiv)))))
 
-(defthm cp-without-subdirs-helper-correctness-2
+(defthm
+  cp-without-subdirs-helper-correctness-2
   (implies
-   (and
-    (cp-spec-3 queues dst)
-    (equal (1st-complete-under-path (frame->frame frame)
-                                    dst)
-           0)
-    (good-frame-p frame))
+   (and (equal (1st-complete-under-path (frame->frame frame)
+                                        dst)
+               0)
+        (good-frame-p frame))
    (collapse-equiv
     (mv-nth
      0
      (absfat-oracle-multi-step
       frame
       (mv-nth 0
-              (schedule-queues
-               (cp-without-subdirs-helper src dst names)
-               o1))
+              (schedule-queues (cp-without-subdirs-helper src dst names)
+                               o1))
       st))
     (mv-nth
      0
      (absfat-oracle-multi-step
       frame
       (mv-nth 0
-              (schedule-queues
-               (cp-without-subdirs-helper src dst names)
-               o2))
+              (schedule-queues (cp-without-subdirs-helper src dst names)
+                               o2))
       st))))
-  :hints (("Goal" :in-theory
-           (e/d
-            (collapse-equiv absfat-equiv put-assoc-of-frame-with-root-1)
-            (collapse-congruence-2
-             (:rewrite cp-without-subdirs-helper-correctness-lemma-64)
-             cp-without-subdirs-helper-correctness-lemma-66))
-           :do-not-induct
-           t
-           :use
-           ((:instance
-             COLLAPSE-CONGRUENCE-2
-             (root (frame->root frame))
-             (frame (frame->frame frame))
-             (x (abs-find-file-src frame dst))
-             (dir1
-              (cp-spec-5 frame st o1
-                         (cp-without-subdirs-helper src dst names)))
-             (dir2
-              (cp-spec-5 frame st o2
-                         (cp-without-subdirs-helper src dst names))))
-            (:instance
-             (:rewrite cp-without-subdirs-helper-correctness-lemma-64)
-             (dst dst)
-             (st st)
-             (o1 o1)
-             (queues (cp-without-subdirs-helper src dst names))
-             (frame frame))
-            (:instance
-             (:rewrite cp-without-subdirs-helper-correctness-lemma-64)
-             (dst dst)
-             (st st)
-             (o1 o2)
-             (queues (cp-without-subdirs-helper src dst names))
-             (frame frame))
-            (:instance
-             cp-without-subdirs-helper-correctness-lemma-66
-             (dst dst)
-             (queues (CP-WITHOUT-SUBDIRS-HELPER SRC DST NAMES)))
-            (:instance
-             cp-without-subdirs-helper-correctness-lemma-66
-             (o1 o2)
-             (o2 o1)
-             (dst dst)
-             (queues (CP-WITHOUT-SUBDIRS-HELPER SRC DST NAMES)))))))
+  :hints
+  (("goal"
+    :in-theory
+    (e/d (collapse-equiv absfat-equiv
+                         put-assoc-of-frame-with-root-1)
+         (collapse-congruence-2
+          (:rewrite cp-without-subdirs-helper-correctness-lemma-64)
+          cp-without-subdirs-helper-correctness-lemma-66
+          (:rewrite frame-p-of-frame->frame)))
+    :do-not-induct t
+    :use
+    ((:instance collapse-congruence-2
+                (root (frame->root frame))
+                (frame (frame->frame frame))
+                (x (abs-find-file-src frame dst))
+                (dir1 (cp-spec-5 frame st o1
+                                 (cp-without-subdirs-helper src dst names)))
+                (dir2 (cp-spec-5 frame st o2
+                                 (cp-without-subdirs-helper src dst names))))
+     (:instance (:rewrite cp-without-subdirs-helper-correctness-lemma-64)
+                (dst dst)
+                (st st)
+                (o1 o1)
+                (queues (cp-without-subdirs-helper src dst names))
+                (frame frame))
+     (:instance (:rewrite cp-without-subdirs-helper-correctness-lemma-64)
+                (dst dst)
+                (st st)
+                (o1 o2)
+                (queues (cp-without-subdirs-helper src dst names))
+                (frame frame))
+     (:instance cp-without-subdirs-helper-correctness-lemma-66
+                (dst dst)
+                (queues (cp-without-subdirs-helper src dst names)))
+     (:instance cp-without-subdirs-helper-correctness-lemma-66
+                (o1 o2)
+                (o2 o1)
+                (dst dst)
+                (queues (cp-without-subdirs-helper src dst names)))))))

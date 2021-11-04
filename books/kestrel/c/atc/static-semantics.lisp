@@ -854,9 +854,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called after checking that the expression is a function call,
-     and thus passing its component (name and arguments) here.")
-   (xdoc::p
     "We check the argument expressions,
      which must be pure (because we restrict them to be so).
      We retrieve the function type from the function table
@@ -921,6 +918,9 @@
    (xdoc::p
     "The two sides must have the same type,
      which is more restrictive than [C:6.5.16.1].
+     Since it is an invariant (currently not formally proved)
+     that variables never have @('void') type,
+     the equality of types implies that the function must not return @('void').
      We do not return any type information because
      an expression statement throws away the expression's value;
      indeed, we are only interested in the side effects of assignment here."))
@@ -978,22 +978,30 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the expression is a function call, we check it as such.")
+    "If the expression is a function call, we check it as such.
+     We also ensure that it returns @('void'),
+     because we apply these checks to
+     expressions that form expression statements:
+     while [C] allows function calls that discard values,
+     we are more restrictive here,
+     also because currently ATC does not generate C code
+     with non-@('void') function calls in expression statements.")
    (xdoc::p
     "If the expression is not a function call,
      it must be an assignment expression,
-     which we resort to check it as such.")
+     which we resort to check as such.")
    (xdoc::p
-    "Even if the expression is a function call, we retun no type here.
-     This is because this ACL2 function is used
-     when checking expression statements,
-     whose value (if any) is discarded."))
+    "We retun no type here,
+     because we apply these checks to
+     expressions that form expression statements."))
   (if (expr-case e :call)
       (b* ((type (check-expr-call (expr-call->fun e)
                                   (expr-call->args e)
                                   funtab
                                   vartab))
-           ((when (errorp type)) type))
+           ((when (errorp type)) type)
+           ((unless (type-case type :void))
+            (error (list :nonvoid-function-result-discarded (expr-fix e)))))
         :wellformed)
     (check-expr-asg e funtab vartab))
   :hooks (:fix))
@@ -1099,7 +1107,8 @@
    (xdoc::p
     "For a @('return') statement,
      we require an expression,
-     and we return the singleton set with the type of the expression.")
+     and we return the singleton set with the type of the expression.
+     The type must not be @('void') [C:6.3.2.2].")
    (xdoc::p
     "For a block item that is a declaration,
      we ensure that it is a variable (not a structure type) declaration.
@@ -1197,7 +1206,9 @@
      :break (error :unsupported-break)
      :return (b* (((unless s.value) (error (list :unsupported-return-void)))
                   (type (check-expr-call-or-pure s.value funtab vartab))
-                  ((when (errorp type)) (error (list :return-error type))))
+                  ((when (errorp type)) (error (list :return-error type)))
+                  ((when (type-case type :void))
+                   (error (list :return-void-expression s.value))))
                (make-stmt-type :return-types (set::insert type nil)
                                :variables vartab)))
     :measure (stmt-count s))

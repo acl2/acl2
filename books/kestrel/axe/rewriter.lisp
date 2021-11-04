@@ -2171,7 +2171,7 @@
         (if (equal *t* new-term) ;todo: also check for *nil*?
             ;; if the term became t, drop it and start again (this can happen if there is redundancy between the terms)
             (simplify-terms (remove-equal old-term terms) rule-alist monitored-rules state)
-          (let ((conjuncts (get-conjuncts-of-term new-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
+          (let ((conjuncts (get-conjuncts-of-term2 new-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
             (simplify-terms (append conjuncts (remove-equal old-term terms)) rule-alist monitored-rules state)))))))
 
 ;; Simplify all the terms, which are implicitly conjoined, assuming all the
@@ -2184,7 +2184,7 @@
                               (symbol-listp monitored-rules)) ;todo: turn some of these into checks
                   :stobjs state
                   :mode :program))
-  (let ((terms (get-conjuncts-of-terms terms))) ;start by flattening all conjunctions (all new conjunctions generated also get flattened)
+  (let ((terms (get-conjuncts-of-terms2 terms))) ;start by flattening all conjunctions (all new conjunctions generated also get flattened)
     (simplify-terms terms rule-alist monitored-rules state)))
 
 ;; Returns (mv erp new-terms state).

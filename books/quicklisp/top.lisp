@@ -79,7 +79,10 @@ the Quicklisp books on MacOS Catalina with SBCL failed initially, but worked
 after installing OpenSSL via Homebrew (using the command @('brew install
 openssl')).  The initial certification error did not explicitly mention
 OpenSSL, but rather a @('SIGABRT'); thus, if this kind of certification error
-is observed, installing OpenSSL may solve the problem.  Note that Homebrew,
+is observed, installing OpenSSL may solve the problem.  Additionally, on a Mac
+Arm64 (e.g. M1) machine, you may need to create symlinks to Homebrew's OpenSSL
+library files in @('/usr/local/lib') (using the command ``@('ln -s
+/opt/homebrew/opt/openssl/lib/*.dylib /usr/local/lib')'').  Note that Homebrew,
 which is a package/application manager for Mac, can be installed from <a
 href='https://brew.sh'>https://brew.sh</a>, following the simple instructions
 there.</p>

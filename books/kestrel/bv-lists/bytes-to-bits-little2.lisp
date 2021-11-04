@@ -13,6 +13,7 @@
 
 (include-book "bytes-to-bits-little")
 (include-book "len-mult-of-8p")
+(include-book "unsigned-byte-listp")
 (include-book "../utilities/defopeners")
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
@@ -26,3 +27,7 @@
 ;;   (equal (byte-to-bits-little byte)
 ;;          (reverse-list (unpackbv 8 1 byte)))
 ;;   :hints (("Goal" :in-theory (enable byte-to-bits-little CAR-BECOMES-NTH-OF-0))))
+
+(defthm unsigned-byte-listp-of-bytes-to-bits-little
+  (unsigned-byte-listp 1 (bytes-to-bits-little bytes))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp-rewrite))))

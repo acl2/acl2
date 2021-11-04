@@ -10,6 +10,9 @@
 
 (in-package "ACL2")
 
+;; utilities:
+(include-book "clause-to-clause-list")
+
 (include-book "do-nothing")
 (include-book "do-nothing-to-literals")
 (include-book "subst-flag")
@@ -17,3 +20,5 @@
 (include-book "flatten-literals")
 (include-book "simple-subsumption")
 (include-book "push-unary-functions")
+(include-book "simplify-after-using-conjunction")
+(include-book "simplify-assumptions")

@@ -19,7 +19,7 @@
 ;; TODO: Make a -fast book like the one we made for the main version of this function (without -with-name).
 
 (include-book "kestrel/utilities/forms" :dir :system)
-(include-book "kestrel/axe/dag-arrays" :dir :system)
+(include-book "dag-arrays")
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 

@@ -104,6 +104,13 @@
   :ok funinfo
   :pred funinfo-resultp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-funinfop
+  (implies (funinfop x)
+           (not (resulterrp x)))
+  :enable (resulterrp funinfop))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap fstate
@@ -148,6 +155,23 @@
   :short "Fixtype of errors and computation states."
   :ok cstate
   :pred cstate-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-cstatep
+  (implies (cstatep x)
+           (not (resulterrp x)))
+  :enable (resulterrp cstatep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define funinfo-for-fundef ((fdef fundefp))
+  :returns (info funinfop)
+  :short "Function information for a function definition."
+  (make-funinfo :inputs (fundef->inputs fdef)
+                :outputs (fundef->outputs fdef)
+                :body (fundef->body fdef))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -352,11 +376,9 @@
        (stmt (car stmts))
        ((unless (statement-case stmt :fundef))
         (add-funs-in-statement-list (cdr stmts) cstate))
-       ((fundef fundef) (statement-fundef->get stmt))
-       ((ok cstate) (add-fun fundef.name
-                             (make-funinfo :inputs fundef.inputs
-                                           :outputs fundef.outputs
-                                           :body fundef.body)
+       (fdef (statement-fundef->get stmt))
+       ((ok cstate) (add-fun (fundef->name fdef)
+                             (funinfo-for-fundef fdef)
                              cstate)))
     (add-funs-in-statement-list (cdr stmts) cstate))
   :hooks (:fix))
@@ -397,12 +419,23 @@
   (xdoc::topstring
    (xdoc::p
     "[Yul: Specification of Yul: Formal Specification] introduces
-     the notion of mode, which indicates how a statement completes execution."))
+     the notion of mode, which indicates how a statement completes execution.")
+   (xdoc::p
+    "We disable the executable counterparts of the constructors of this type,
+     because we want to treat them abstractly.
+     Their definition is already disabled by default, as it should,
+     but the fact that their executable counterpart is enabled
+     defeats the disabling of their definition, given that they are nullary."))
   (:regular ())
   (:break ())
   (:continue ())
   (:leave ())
-  :pred modep)
+  :pred modep
+  ///
+  (in-theory (disable (:e mode-regular)
+                      (:e mode-break)
+                      (:e mode-continue)
+                      (:e mode-leave))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -432,6 +465,13 @@
   :ok eoutcome
   :pred eoutcome-resultp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-eoutcomep
+  (implies (eoutcomep x)
+           (not (resulterrp x)))
+  :enable (resulterrp eoutcomep))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod soutcome
@@ -459,6 +499,13 @@
   :short "Fixtype of errors and statement outcomes."
   :ok soutcome
   :pred soutcome-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-soutcomep
+  (implies (soutcomep x)
+           (not (resulterrp x)))
+  :enable (resulterrp soutcomep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -995,8 +1042,19 @@
       (exec-switch-rest (cdr cases) default target cstate (1- limit)))
     :measure (nfix limit))
 
+  :flag-local nil
+
   :verify-guards nil ; done below
   ///
   (verify-guards exec-expression)
 
-  (fty::deffixequiv-mutual exec))
+  (fty::deffixequiv-mutual exec)
+
+  (defruled statement-kind-when-mode-regular
+    (implies (and (soutcomep (exec-statement stmt cstate limit))
+                  (mode-case (soutcome->mode (exec-statement stmt cstate limit))
+                             :regular))
+             (and (not (equal (statement-kind stmt) :leave))
+                  (not (equal (statement-kind stmt) :break))
+                  (not (equal (statement-kind stmt) :continue))))
+    :enable exec-statement))

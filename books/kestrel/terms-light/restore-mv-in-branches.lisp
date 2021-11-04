@@ -11,14 +11,8 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/syntactic-lists" :dir :system)
+(include-book "kestrel/utilities/num-return-values-of-fn" :dir :system)
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
-
-;; Returns the number of return values (in the sense of MV) of term.
-(defund num-return-values-of-fn (fn wrld)
-  (declare (xargs :guard (and (symbolp fn)
-                              (not (member-eq fn *stobjs-out-invalid*))
-                              (plist-worldp wrld))))
-  (len (stobjs-out fn wrld)))
 
 ;move
 (defthm natp-of-cdr-of-assoc-equal-when-nat-listp-of-strip-cdrs
@@ -77,3 +71,11 @@
                 (if (= (num-return-values-of-fn fn wrld) num-values)
                     term
                   (er hard? 'restore-mv-in-branches "Failed to restore ~x0 to a term with ~x1 values." term num-values))))))))))
+
+(defthm pseudo-termp-of-restore-mv-in-branches
+  (implies (and (pseudo-termp term)
+                (integerp num-values)
+                (<= 2 num-values))
+           (pseudo-termp (restore-mv-in-branches term num-values
+                                                 fns-to-assume-ok
+                                                 wrld))))

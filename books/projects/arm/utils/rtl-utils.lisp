@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; August 2021
+;; October 2021
 
 (in-package "RTL")
 
@@ -36,12 +36,21 @@
       i
     (induct-on-index (1- i))))
 
-(defthmd-nl bits-not-exceed
+(defthmd bits-not-exceed
   (implies (and (rationalp x)
-                (<= 0 x)
-                (natp j))
-           (<= (bits x i j) x))
+                (<= 0 x))
+           (<= (bits x i j) (* x (expt 2 (- j)))))
   :hints (("Goal" :in-theory (enable bits)))
+  :rule-classes :linear)
+
+(defthmd-nl bits-plus-one-lower-bound
+  (implies (and (rationalp x)
+                (integerp i)
+                (integerp j)
+                (< x (expt 2 (1+ i))))
+           (< (* x (expt 2 (- j)))
+              (1+ (bits x i j))))
+  :hints (("Goal" :in-theory (enable bits fl)))
   :rule-classes :linear)
 
 (defthmd bits-shift-up-1-alt
@@ -82,8 +91,14 @@
                 (integerp k))
            (equal (bitn (* x (expt 2 k)) n)
                   (bitn x (- n k))))
-  :hints (("Goal" :use (:instance bitn-shift-up
-                                  (n (- n k))))))
+  :hints (("Goal" :use (:instance bitn-shift-up (n (- n k))))))
+
+(defthmd bitn-integerp-rel
+  (implies (rationalp x)
+           (equal (integerp (* 1/2 x))
+                  (and (integerp x)
+                       (equal (bitn x 0) 0))))
+  :hints (("Goal" :in-theory (enable bitn-def fl))))
 
 (defthmd bitn-0-vs-int-/2
   (implies (integerp x)
@@ -404,6 +419,43 @@
                   (bits x i j)))
   :hints (("Goal" :in-theory (enable bits-to-mod-fl))))
 
+(encapsulate
+  ()
+
+  (local
+   (defthmd bits-plus-fl-aux
+     (implies (and (integerp x)
+                   (rationalp e)
+                   (<= 0 e)
+                   (< e 1)
+                   (integerp i)
+                   (natp j))
+              (equal (bits (+ x e) i j)
+                     (bits x i j)))
+     :hints (("Goal"
+              :use (:instance bits-fl (x (+ x e)))
+              :in-theory (e/d (fl) (bits-fl))))))
+
+  (defthmd bits-plus-fl
+    (implies (and (integerp x)
+                  (rationalp y)
+                  (<= 0 y)
+                  (integerp i)
+                  (natp j))
+             (and (equal (bits (+ x (fl y)) i j)
+                         (bits (+ x y) i j))
+                  (equal (bits (+ -1 x (- (fl y))) i j)
+                         (if (integerp y)
+                             (bits (+ -1 x (- y)) i j)
+                           (bits (- x y) i j)))))
+    :hints (("Goal" :use ((:instance bits-plus-fl-aux
+                                     (x (+ x (fl y)))
+                                     (e (- y (fl y))))
+                          (:instance bits-plus-fl-aux
+                                     (x (+ -1 x (- (fl y))))
+                                     (e (+ 1 (- y) (fl y))))))))
+  )
+
 (defthm bitn-fl
   (implies (and (rationalp x)
                 (natp n))
@@ -601,6 +653,39 @@
                             bvecp)
                            (setbitn
                             expo-setbitn-1-lower-bound)))))
+
+;; SET-FLAG
+
+(defthm bitn-set-flag
+  (implies (and (integerp flags)
+                (natp m)
+                (integerp n))
+           (equal (bitn (set-flag m flags) n)
+                  (if (equal m n)
+                      1
+                    (bitn flags n))))
+  :hints (("Goal"
+           :cases ((< m n))
+           :use (:instance bitn-shift-up
+                           (x 1)
+                           (k m)
+                           (n (- n m)))
+           :in-theory (enable set-flag bitn-logior bvecp))))
+
+(defthm fpscr-rc-set-flag-non-ovl
+  (implies (and (integerp flags)
+                (natp b)
+                (not (member b '(22 23))))
+           (equal (fpscr-rc (set-flag b flags))
+                  (fpscr-rc flags)))
+  :hints (("Goal"
+           :cases ((< b 22))
+           :use (:instance bits-plus-bits
+                           (x 1)
+                           (m 0)
+                           (n (- 23 b))
+                           (p (- 22 b)))
+           :in-theory (enable fpscr-rc set-flag bits-logior bits))))
 
 ;; ======================================================================
 

@@ -27,12 +27,17 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Supporting Author: Eric Smith <eric.smith@kestrel.edu>
 
 (in-package "ACL2")
 
 ;; Previously, this book generated a manual, but books/doc/top now does that
 ;; better.  So the sole purpose of this book now is to check for name conflicts
 ;; after including as many community books as possible.
+
+;; NOTE: We do not recommend including this book for normal proof work, due to
+;; the likelihood of conflicts (e.g., rewrite loops) between different
+;; libraries that it brings in (and due to its sheer size).
 
 ;; Note about the following commented-out form.  This allows a significant
 ;; reduction of memory usage by this book: of ~130 million conses in the ACL2
@@ -86,8 +91,8 @@
 ;; when building the final documentation.
 (include-book "std/strings/fast-cat" :dir :system)
 
-(include-book "relnotes")
-(include-book "practices")
+(include-book "doc/relnotes" :dir :system)
+(include-book "doc/practices" :dir :system)
 
 (include-book "xdoc/save" :dir :system)
 (include-book "xdoc/archive" :dir :system)

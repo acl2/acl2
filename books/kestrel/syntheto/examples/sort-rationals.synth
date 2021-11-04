@@ -1,0 +1,89 @@
+////////////////////////////////////////////////////////////////////////////////
+
+function abs (x:integer)
+         returns (a:integer)
+         ensures a >= 0 {
+  if (x >= 0) {
+    return x;
+  } else {
+    return –x;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+function gcd (x:integer, y:integer)
+         assumes x >= 0 && y >= 0
+         returns (z:integer) {
+  if (x == 0) {
+    return y;
+  } else if (y == 0) {
+    return x;
+  } else if (x < y) {
+    return gcd (x, y % x);
+  } else {
+    return gcd (x % y, y);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+subtype positive = {
+  x:integer | x > 0
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct rational {
+  numerator : integer,
+  denominator : positive,
+  invariant gcd (abs(numerator), abs(denominator)) == 1
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+function lteq (x:rational, y:rational)
+         returns (b:boolean) {
+  return x.numerator * y.denominator <=
+         y.numerator * x.denominator;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+theorem lteq_reflexive
+  forall (x:integer) lteq(x,x)
+
+////////////////////////////////////////////////////////////////////////////////
+
+function ordered (x:seq<rational>) returns (b:boolean) {
+  if (empty(x)) {
+    return true;
+  } else if (empty(rest(x)) {
+    return true;
+  } else {
+    return lteq (first(x), first(rest(x))) &&
+           ordered(rest(rest(x));
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+function permutation (x:seq<rational>, y:seq<rational>)
+         returns (b:boolean) {
+  if (empty(x)) {
+    return empty(y);
+  } else if (empty(y)) {
+    return false;
+  } else {
+    return member (first(x), y) &&
+           permutation (rest(x), remove1 (first(x), y));
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+specification sort_spec
+  (function sort (in:seq<rational>)
+            returns (out:seq<rational>)) {
+  ordered(out) && permutation(out,in)
+}

@@ -381,7 +381,7 @@
   (if (endp cases)
       nil
     (cons (let* ((this-case (first cases))
-                 (conjuncts (get-conjuncts-of-term this-case)))
+                 (conjuncts (get-conjuncts-of-term2 this-case)))
             (make-problem dag (union-equal assumptions conjuncts)))
           (split-problem-into-cases-aux dag assumptions (rest cases)))))
 

@@ -10,8 +10,6 @@
 
 (in-package "ACL2")
 
-;; STATUS: INCOMPLETE
-
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
@@ -426,7 +424,8 @@
                             equality-eval-of-fncall-args)
                            (pairlis$
                             equality-eval-of-variable
-                            set-difference-equal)))))
+                            set-difference-equal
+                            equality-eval-of-fncall-args-back)))))
 
 ;;; now map the term processor over every literal of the clause
 
