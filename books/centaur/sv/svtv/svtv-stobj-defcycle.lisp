@@ -80,7 +80,7 @@
     (b* (((mv err ,stobj)
           (svtv-data-defcycle-core ,design ,phases
                                    ,stobj
-                                   :phase-config ',phase-config
+                                   :phase-config ,phase-config
                                    :rewrite-phases ,rewrite-phases
                                    :rewrite-cycle ,rewrite-cycle
                                    :cycle-simp ,cycle-simp

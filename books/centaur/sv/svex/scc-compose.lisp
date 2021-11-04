@@ -42,6 +42,7 @@
 (local (include-book "centaur/misc/dfs-measure" :dir :system))
 (local (include-book "std/osets/under-set-equiv" :dir :system))
 (local (include-book "clause-processors/just-expand" :dir :system))
+(local (include-book "alist-thms"))
 (local (in-theory (disable tau-system)))
 (local (std::add-default-post-define-hook :fix))
 
@@ -73,7 +74,7 @@
 ;; 
 
 
-(fty::defmap svar-key-alist :key-type svar)
+(fty::defmap svar-key-alist :key-type svar :true-listp t)
 
 ;; Use this for an optimization: don't traverse subtrees containing no looping vars
 (defines svex-has-key
@@ -320,10 +321,6 @@
 ;;           (cons (cons (svar-fix (car vars)) look) (svex-alist-extract-bound-keys (cdr vars) x))
 ;;         (svex-alist-extract-bound-keys (cdr vars) x)))))
 
-(local (defthm svex-alist-keys-of-svex-alist-compose
-         (Equal (svex-alist-keys (svex-alist-compose x a))
-                (svex-alist-keys x))
-         :hints(("Goal" :in-theory (enable svex-alist-keys svex-alist-compose)))))
 
 (define svex-alist-selfcompose-n-times ((n natp) (x svex-alist-p))
   :returns (new-x svex-alist-p)
@@ -348,16 +345,8 @@
     (equal (svex-alist-keys new-x) (svex-alist-keys x))))
        
 
-(local (Defthm svex-alist-keys-of-svex-alist-reduce
-         (equal (svex-alist-keys (svex-alist-reduce keys x))
-                (intersection-equal (svarlist-fix keys) (svex-alist-keys x)))
-         :hints(("Goal" :in-theory (enable svex-alist-reduce svex-alist-keys)))))
 
-(local (defthm svex-alist-keys-of-append
-         (equal (svex-alist-keys (Append a b))
-                (append (svex-alist-keys a)
-                        (svex-alist-keys b)))
-         :hints(("Goal" :in-theory (enable svex-alist-keys)))))
+
 
 (define svex-sccs-finalize-scc ((scc svex/indexlist-p)
                                 (params svex-scc-consts-p)

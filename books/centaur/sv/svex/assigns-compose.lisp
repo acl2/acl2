@@ -36,6 +36,7 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "std/alists/fast-alist-clean" :dir :system))
+(local (include-book "alist-thms"))
 (local (std::add-default-post-define-hook :fix))
 (defxdoc svex-composition
   :parents (svex)
@@ -376,11 +377,6 @@ the original namespace.</li>
        (- (cw "Split update variables: ~x0~%" (len split-updates))))
     (mv nil split-updates splittab))
   ///
-  (local (defthm svex-alist-removekeys-of-nil
-           (equal (svex-alist-removekeys nil x)
-                  (svex-alist-fix x))
-           :hints(("Goal" :in-theory (enable svex-alist-fix
-                                             svex-alist-removekeys)))))
 
   (local (defthm svex-alist-splittab-split-keys-of-nil
            (equal (svex-alist-splittab-split-keys x nil)
@@ -578,16 +574,7 @@ the original namespace.</li>
 
 
 
-(local (defthm svex-alist-keys-of-append
-         (equal (svex-alist-keys (Append a b))
-                (append (svex-alist-keys a)
-                        (svex-alist-keys b)))
-         :hints(("Goal" :in-theory (enable svex-alist-keys)))))
 
-(local (defthm svex-alist-keys-of-removekeys
-         (equal (svex-alist-keys (svex-alist-removekeys keys x))
-                (set-difference-equal (svex-alist-keys x) (svarlist-fix keys)))
-         :hints(("Goal" :in-theory (enable svex-alist-removekeys svex-alist-keys)))))
 
 (local
  (defret svex-alist-keys-of-svex-alist-splittab-unsplit-keys
