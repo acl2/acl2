@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; August 2021
+;; November 2021
 
 ;; Extend Arm floating-point specs to AArch64 that includes two new control
 ;; bits FIZ and AH
@@ -387,25 +387,47 @@
                               (encodingp c f)
                               (natp fpcr))
                   :guard-hints (("Goal" :in-theory (enable encodingp)))))
-  (if (or (snanp a f)
-          (and (= (bitn fpcr *ah*) 1)
-               (qnanp a f)))
-      (aarch64-process-nan a fpcr f)
-    (if (or (snanp b f)
-            (and (= (bitn fpcr *ah*) 1)
-                 (qnanp b f)))
-        (aarch64-process-nan b fpcr f)
-      (if (snanp c f)
-          (aarch64-process-nan c fpcr f)
-        (if (fma-undefined-p b c a f)
-            (signed-indef (bitn fpcr *ah*) f)
-          (if (qnanp a f)
-              (aarch64-process-nan a fpcr f)
-            (if (qnanp b f)
-                (aarch64-process-nan b fpcr f)
-              (if (qnanp c f)
-                  (aarch64-process-nan c fpcr f)
-                ()))))))))
+  (let ((ah (bitn fpcr *ah*)))
+    (cond ((and (nanp b f) (= ah 1))
+           (aarch64-process-nan b fpcr f))
+
+          ((and (nanp c f) (= ah 1))
+           (aarch64-process-nan c fpcr f))
+
+          ((and (nanp a f) (= ah 1))
+           (aarch64-process-nan a fpcr f))
+
+          ((and (or (infp b f) (infp c f))
+                (or (zerp b f) (zerp c f))
+                (= ah 1))
+           (signed-indef 1 f))
+
+          ((snanp a f)
+           (aarch64-process-nan a fpcr f))
+
+          ((snanp b f)
+           (aarch64-process-nan b fpcr f))
+
+          ((snanp c f)
+           (aarch64-process-nan c fpcr f))
+
+          ((and (or (infp b f) (infp c f))
+                (or (zerp b f) (zerp c f)))
+           (signed-indef 0 f))
+
+          ((qnanp a f)
+           (aarch64-process-nan a fpcr f))
+
+          ((qnanp b f)
+           (aarch64-process-nan b fpcr f))
+
+          ((qnanp c f)
+           (aarch64-process-nan c fpcr f))
+
+          ((fma-undefined-p b c a f)
+           (signed-indef ah f))
+
+          (t nil))))
 
 (defun aarch64-fma-pre-comp (a b c fpcr fpsr f)
   (declare (xargs :guard (and (encodingp a f)
