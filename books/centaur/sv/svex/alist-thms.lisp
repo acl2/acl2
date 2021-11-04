@@ -85,11 +85,39 @@
 
 
 (defthmd svex-env-lookup-of-cons
+  (implies (and (iff match (double-rewrite (and (consp pair)
+                                                (equal (svar-fix key) (car pair)))))
+                (syntaxp (quotep match)))
+           (equal (svex-env-lookup key (cons pair rest))
+                  (if match
+                      (4vec-fix (cdr pair))
+                    (svex-env-lookup key rest))))
+  :hints(("Goal" :in-theory (enable svex-env-lookup))))
+
+
+
+(defthmd svex-env-boundp-of-cons
+  (implies (and (iff match (double-rewrite (and (consp pair)
+                                                (equal (svar-fix key) (car pair)))))
+                (syntaxp (quotep match)))
+           (equal (svex-env-boundp key (cons pair rest))
+                  (if match
+                      t
+                    (svex-env-boundp key rest))))
+  :hints(("Goal" :in-theory (enable svex-env-boundp))))
+
+(defthmd svex-env-lookup-of-cons-split
   (Equal (svex-env-lookup k (cons (cons key val) a))
          (if (equal (svar-fix k) key)
              (4vec-fix val)
            (svex-env-lookup k a)))
   :hints(("Goal" :in-theory (enable svex-env-lookup))))
+
+(defthmd svex-env-boundp-of-cons-split
+  (Equal (svex-env-boundp k (cons (cons key val) a))
+         (or (equal (svar-fix k) key)
+             (svex-env-boundp k a)))
+  :hints(("Goal" :in-theory (enable svex-env-boundp))))
 
 
 (defthm svex-alist-eval-equiv-of-cons
@@ -156,9 +184,15 @@
   (svex-compose x subst) 2
   :hints(("Goal" :in-theory (enable svex-eval-equiv))))
 
-(defcong svex-alist-compose-equiv svex-alist-eval-equiv
+(defthm svex-alist-keys-of-svex-alist-compose
+  (Equal (svex-alist-keys (svex-alist-compose x a))
+         (svex-alist-keys x))
+  :hints(("Goal" :in-theory (enable svex-alist-compose
+                                    svex-alist-keys))))
+
+(defcong svex-alist-compose-equiv svex-alist-eval-equiv!
   (svex-alist-compose x subst) 2
-  :hints(("Goal" :in-theory (enable svex-alist-eval-equiv))))
+  :hints(("Goal" :in-theory (enable svex-alist-eval-equiv!))))
 
 (defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-compose x subst) 1
   :hints ((and stable-under-simplificationp `(:expand (,(car (last clause)))))))
@@ -315,11 +349,6 @@
   (equal (svex-alist-removekeys keys nil) nil)
   :hints(("Goal" :in-theory (enable svex-alist-removekeys))))
 
-(defthm svex-alist-keys-of-svex-alist-compose
-  (Equal (svex-alist-keys (svex-alist-compose x a))
-         (svex-alist-keys x))
-  :hints(("Goal" :in-theory (enable svex-alist-compose
-                                    svex-alist-keys))))
 
 (defthm svex-alist-compose-of-append
   (equal (svex-alist-compose (append x y) a)
@@ -403,9 +432,9 @@
   :hints(("Goal" :in-theory (enable svex-eval-equiv))))
 
 (defthm svex-alist-compose-of-svex-alist-compose
-  (svex-alist-eval-equiv (svex-alist-compose (svex-alist-compose x a) b)
-                         (svex-alist-compose x (append (svex-alist-compose a b) b)))
-  :hints(("Goal" :in-theory (enable svex-alist-eval-equiv))))
+  (svex-alist-eval-equiv! (svex-alist-compose (svex-alist-compose x a) b)
+                          (svex-alist-compose x (append (svex-alist-compose a b) b)))
+  :hints(("Goal" :in-theory (enable svex-alist-eval-equiv!))))
 
 (defthm svex-alist-removekeys-of-append
   (Equal (svex-alist-removekeys vars (append a b))

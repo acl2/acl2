@@ -35,6 +35,7 @@
 (include-book "fsm-base")
 (include-book "expand")
 (include-book "../svex/monotonify")
+(local (include-book "../svex/alist-thms"))
 
 (local (include-book "std/lists/sets" :dir :system))
 
@@ -302,9 +303,6 @@
            (implies (subsetp a b)
                     (set-equiv (append b a) b))))
 
-(local (defcong svex-alist-eval-equiv svex-alist-eval-equiv! (svex-alist-compose a b) 2
-         :hints(("Goal" :in-theory (enable svex-alist-eval-equiv!)))))
-
 (define phase-fsm-composition-p ((phase-fsm base-fsm-p)
                                  (flatnorm flatnorm-res-p)
                                  (config phase-fsm-config-p))
@@ -353,14 +351,6 @@
                                      svex-acons
                                      svex-compose
                                      svexlist-compose)))))
-
-(local
- (defthm svex-alist-compose-of-svex-alist-compose
-   (svex-alist-eval-equiv!
-    (svex-alist-compose (svex-alist-compose a b) c)
-    (svex-alist-compose a (append (svex-alist-compose b c) c)))
-   :hints(("Goal" :in-theory (enable svex-alist-eval-equiv!
-                                     svex-eval-equiv)))))
 
 (define svtv-compose-assigns/delays ((flatnorm flatnorm-res-p)
                                      (config phase-fsm-config-p))
