@@ -60,14 +60,14 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
 %type <ecd> enum_const_dec
 %type <ecdl> enum_const_dec_list
 %type <exp> expression constant integer boolean symbol_ref funcall
-%type <exp> array_or_bit_ref subrange array_init case_label
+%type <exp> array_or_bit_ref subrange array_or_struct_init case_label
 %type <exp> primary_expression postfix_expression prefix_expression mult_expression add_expression
 %type <exp> arithmetic_expression rel_expression eq_expression and_expression xor_expression ior_expression
 %type <exp> log_and_expression log_or_expression cond_expression
 %type <exp> mv_expression struct_ref
 %type <fd> func_def func_template
 %type <expl> expr_list nontrivial_expr_list arith_expr_list nontrivial_arith_expr_list
-%type <initl> array_init_list
+%type <initl> init_list
 %type <vdl> param_dec_list nontrivial_param_dec_list
 %type <tpd> template_param_dec
 %type <tdl> template_param_dec_list nontrivial_template_param_dec_list
@@ -535,7 +535,7 @@ untyped_var_dec
     {$$ = new VarDec($1, NULL); symTab->push((VarDec*)$$);}
   | ID '=' expression
     {$$ = new VarDec($1, NULL, $3); symTab->push((VarDec*)$$);}
-  | ID '=' array_init
+  | ID '=' array_or_struct_init
     {$$ = new VarDec($1, NULL, $3); symTab->push((VarDec*)$$);}
   | ID '[' arithmetic_expression ']'
     {
@@ -546,7 +546,7 @@ untyped_var_dec
         yyerror("Non-constant array dimension");
       }
     }
-  | ID '[' arithmetic_expression ']' '=' array_init
+  | ID '[' arithmetic_expression ']' '=' array_or_struct_init
     {
       if ($3->isConst() && $3->evalConst() > 0) {
         $$ = new VarDec($1, new ArrayType($3, NULL), $6); symTab->push((VarDec*)$$);
@@ -557,13 +557,13 @@ untyped_var_dec
     }
   ;
 
-array_init
-  : '{' array_init_list '}'  {$$ = new Initializer((List<Constant>*)($2->front));}
+array_or_struct_init
+  : '{' init_list '}'  {$$ = new Initializer((List<Constant>*)($2->front));}
   ;
 
-array_init_list
+init_list
   : expression                      {$$ = new BigList<Expression>($1);}
-  | array_init_list ',' expression  {$$ = $1->add($3);}
+  | init_list ',' expression  {$$ = $1->add($3);}
   ;
 
 const_dec
@@ -583,9 +583,9 @@ const_dec
 untyped_const_dec
   : ID '=' expression
     {$$ = new ConstDec($1, NULL, $3); symTab->push((ConstDec*)$$);}
-  | ID '=' array_init
+  | ID '=' array_or_struct_init
     {$$ = new ConstDec($1, NULL, $3); symTab->push((ConstDec*)$$);}
-  | ID '[' arithmetic_expression ']' '=' array_init
+  | ID '[' arithmetic_expression ']' '=' array_or_struct_init
     {
       if ($3->isConst() && $3->evalConst() > 0) {
         $$ = new ConstDec($1, new ArrayType($3, NULL), $6); symTab->push((ConstDec*)$$);
