@@ -11,7 +11,7 @@
 (ld '(
 
 ; Include a lot of books.
-(include-book "doc/top-slow" :dir :system) ; probably takes several minutes
+(include-book "top" :dir :system) ; probably takes several minutes
 
 ; The following three forms probably speed things up.
 (set-gc-strategy :egc)
