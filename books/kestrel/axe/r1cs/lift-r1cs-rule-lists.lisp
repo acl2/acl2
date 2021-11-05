@@ -10,7 +10,7 @@
 
 (in-package "R1CS")
 
-(include-book "../sparse/rule-lists")
+(include-book "kestrel/crypto/r1cs/sparse/rule-lists" :dir :system)
 
 ;; try this rule last since it has a free var (do we really need it at all?):
 (table acl2::axe-rule-priorities-table 'pfield::integerp-when-fep 10)

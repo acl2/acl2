@@ -13,7 +13,7 @@
 (include-book "json-to-r1cs/load-circom-json")
 (include-book "lift-semaphore-r1cs")
 (include-book "verify-semaphore-r1cs")
-(include-book "kestrel/crypto/r1cs/tools/axe-prover-r1cs" :dir :system)
+(include-book "kestrel/axe/r1cs/axe-prover-r1cs" :dir :system)
 (include-book "kestrel/crypto/mimc/mimcsponge-spec-rules" :dir :system)
 
 ;;;

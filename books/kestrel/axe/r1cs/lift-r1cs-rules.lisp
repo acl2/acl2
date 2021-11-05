@@ -10,8 +10,8 @@
 
 (in-package "R1CS")
 
-(include-book "../gadgets")
-(include-book "../gadgets/xor-rules")
+(include-book "kestrel/crypto/r1cs/gadgets" :dir :system)
+(include-book "kestrel/crypto/r1cs/gadgets/xor-rules" :dir :system)
 (include-book "kestrel/axe/axe-syntax" :dir :system)
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system) ;for bind-bv-size-axe (todo: separate out the axe rules)
 (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)

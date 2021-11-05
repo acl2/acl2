@@ -14,7 +14,7 @@
 (include-book "lift-semaphore-r1cs")
 (include-book "verify-semaphore-r1cs")
 (include-book "baby-jubjub-prime")
-(include-book "kestrel/crypto/r1cs/tools/axe-prover-r1cs" :dir :system)
+(include-book "kestrel/axe/r1cs/axe-prover-r1cs" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 
 ;; Load the R1CS:

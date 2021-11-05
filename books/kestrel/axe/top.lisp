@@ -248,3 +248,6 @@
 
 ;; The x86-specific Axe tools:
 (include-book "x86/top")
+
+;; The r1cs-specific Axe tools:
+(include-book "r1cs/top")
