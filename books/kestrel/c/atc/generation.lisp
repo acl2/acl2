@@ -2256,11 +2256,11 @@
              ((mv okp sub elem sub-type elem-type)
               (atc-check-array-write var val))
              ((when okp)
-              (b* (((when proofs)
-                    (er-soft+ ctx t irr
-                              "Proofs are not yet supported for array writes; ~
-                               use :PROOFS NIL to generate ~
-                               code without proofs."))
+              (b* (;; ((when proofs)
+                   ;;  (er-soft+ ctx t irr
+                   ;;            "Proofs are not yet supported for array writes; ~
+                   ;;             use :PROOFS NIL to generate ~
+                   ;;             code without proofs."))
                    ((unless (member-eq var affect))
                     (er-soft+ ctx t irr
                               "The array ~x0 is being written to, ~
@@ -3376,6 +3376,7 @@
                   *atc-integer-ops-2-return-rewrite-rules*
                   *atc-integer-convs-return-rewrite-rules*
                   *atc-array-read-return-rewrite-rules*
+                  *atc-array-write-return-rewrite-rules*
                   '(,fn
                     ,@(atc-symbol-fninfo-alist-to-result-thms
                        prec-fns (acl2::all-fnnames (ubody+ fn wrld)))
