@@ -497,6 +497,7 @@ public:
   virtual bool isSubrange();
   virtual bool isSymRef();
   virtual bool isInteger();
+  virtual bool isInitializer();
   bool isFP();
   virtual Type* exprType();
   void display(ostream& os);
@@ -602,9 +603,11 @@ class Initializer : public Expression {
 public:
   List<Constant> *vals;
   Initializer(List<Constant> *v);
+  bool isInitializer();
   void displayNoParens(ostream& os);
   Sexpression *ACL2Expr(bool isBV = false);
   Sexpression *ACL2ArrayExpr();
+  Sexpression *ACL2StructExpr(List<StructField> *fields);
 };
 
 class ArrayRef : public Expression {

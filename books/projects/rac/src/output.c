@@ -177,6 +177,7 @@ Symbol s_minus("-");
 Symbol s_mv("mv");
 Symbol s_mv_assign("mv-assign");
 Symbol s_nth("nth");
+Symbol s_nil("nil");
 Symbol s_null("null");
 Symbol s_plus("+");
 Symbol s_quote("quote");
@@ -185,6 +186,7 @@ Symbol s_return("return");
 Symbol s_t("t");
 Symbol s_times("*");
 Symbol s_floor("floor");
+Symbol s_slash("/");
 Symbol s_setbitn("setbitn");
 Symbol s_setbits("setbits");
 Symbol s_si("si");
@@ -908,6 +910,10 @@ bool Expression::isEqualSymRef(SymDec *s) { // virtual (overridden by SymRef)
   return false;
 }
 
+bool Expression::isInitializer() { // virtual (overridden by Initializer)
+  return false;
+}
+
 int Expression::getPlusConst() { // virtual (overridden by BinaryExpr)
   // Called on a binary expression for which isPlusConst is true; returns the value of the constant.
   return 0;
@@ -1177,6 +1183,10 @@ Sexpression *TempCall::ACL2Expr(bool isBV) {
 
 Initializer::Initializer(List<Constant> *v) : Expression() {vals = v;}
 
+bool Initializer::isInitializer() {
+  return true;
+}
+
 void Initializer::displayNoParens(ostream& os) {
   os << "{";
   List<Constant> *ptr = vals;
@@ -1213,6 +1223,18 @@ Sexpression *Initializer::ACL2ArrayExpr() {
     p = new Plist(&s_quote, p);
   }
   return p;
+}
+
+Sexpression *Initializer::ACL2StructExpr(List<StructField> *fields) {
+  Sexpression *result = new Plist();
+  List<Constant> *ptr = vals;
+  assert(vals->length() == fields->length());
+  while (fields) {
+    result = new Plist(&s_as, new Plist(&s_quote, fields->value->sym), ptr->value->ACL2Expr(), result);
+    ptr = ptr->next;
+    fields = fields->next;
+  }
+  return result;
 }
 
 
@@ -1606,7 +1628,7 @@ Sexpression *BinaryExpr::ACL2Expr(bool isBV) {
   if (!strcmp(op, "+")) ptr = &s_plus; else
   if (!strcmp(op, "-")) ptr = &s_minus; else
   if (!strcmp(op, "*")) ptr = &s_times; else
-  if (!strcmp(op, "/")) ptr = &s_floor; else
+  if (!strcmp(op, "/")) return new Plist(&s_fl, new Plist(&s_slash, sexpr1, sexpr2)); else
   if (!strcmp(op, "%")) ptr = &s_rem; else
   if (!strcmp(op, "<<")) ptr = &s_ash; else
   if (!strcmp(op, ">>")) {ptr = &s_ash; sexpr2 = new Plist(&s_minus, sexpr2);} else
@@ -1868,11 +1890,20 @@ Sexpression *VarDec::ACL2Expr() {
       val = init->ACL2ArrayExpr();
     }
   }
+  else if (type->derefType()->isStructType()) {
+    type = type->derefType();
+    if (!init) {
+      val = new Plist();
+    }
+    else if (init->isInitializer()) {
+      val = ((Initializer*)init)->ACL2StructExpr(((StructType*)type)->fields);
+    }
+    else {
+      val = init->ACL2ArrayExpr();
+    }
+  }
   else if (init) {
     val = type->derefType()->ACL2Assign(init);
-  }
-  else if (type->derefType()->isStructType()) {
-    val = new Plist();
   }
   else {
     val = &i_0;
