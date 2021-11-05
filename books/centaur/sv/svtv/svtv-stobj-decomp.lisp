@@ -35,6 +35,7 @@
 (include-book "../svex/override")
 (include-book "process")
 (include-book "misc/hons-help" :dir :system)
+(local (include-book "../svex/alist-thms"))
 (local (std::add-default-post-define-hook :fix))
 
 (defthm svex-lookup-when-variable-free

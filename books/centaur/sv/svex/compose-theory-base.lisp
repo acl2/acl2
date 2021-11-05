@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "eval")
+(include-book "svex-lattice")
 (include-book "rewrite-base")
 (include-book "alist-equiv")
 (include-book "rsh-concat")
@@ -40,6 +40,7 @@
 (local (include-book "arithmetic/top" :Dir :system))
 (local (include-book "clause-processors/find-subterms" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "alist-thms"))
 (local (std::add-default-post-define-hook :fix))
 
 
@@ -253,33 +254,11 @@
            (and (member-equal key keys)
                 (cons key val)))))
 
-(local (defthm svex-lookup-of-cons
-         (equal (svex-lookup k (cons pair rest))
-                (if (and (consp pair)
-                         (svar-p (car pair))
-                         (equal (svar-fix k) (car pair)))
-                    (svex-fix (cdr pair))
-                  (svex-lookup k rest)))
-         :hints(("Goal" :in-theory (enable svex-lookup svex-alist-fix)))))
+(local (in-theory (enable svex-lookup-of-cons)))
 
-(defcong svex-alist-eval-equiv svex-alist-eval-equiv (cons x y) 2
-  :hints ((and stable-under-simplificationp
-               `(:expand (,(car (last clause)))))))
 
-(local
- (define svex-pair-eval-equiv (x y)
-   :verify-guards nil
-   (and (iff (consp x) (consp y))
-        (implies (consp x)
-                 (and (equal (car x) (car y))
-                      (svex-eval-equiv (cdr x) (cdr y)))))
-   ///
-   (defequiv svex-pair-eval-equiv)
-   (defcong svex-pair-eval-equiv svex-alist-eval-equiv (cons pair rest) 1
-     :hints(("Goal" :in-theory (enable svex-alist-eval-equiv
-                                       svex-lookup))))
 
-   (defcong svex-eval-equiv svex-pair-eval-equiv (cons key val) 2)))
+
 
 (define svex-alist-compextract ((keys svarlist-p)
                             (alist svex-alist-p))
@@ -324,18 +303,48 @@
   (defcong svex-alist-compose-equiv svex-alist-eval-equiv (svex-alist-compextract keys alist) 2))
 
 
-(local (Defthm svex-compose-lookup-when-svex-lookup
-         (implies (svex-lookup v x)
-                  (equal (svex-compose-lookup v x)
-                         (svex-lookup v x)))
-         :hints(("Goal" :in-theory (enable svex-compose-lookup)))))
+(defsection rsh-concat
+  ;; theorems about svex-rsh and svex-concat needed in this book, but maybe generally applicable
+  (defcong svex-eval-equiv svex-eval-equiv (svex-rsh n x) 2
+    :hints((and stable-under-simplificationp
+                `(:expand (,(car (last clause)))))))
 
-(local (Defthm svex-compose-lookup-when-not-svex-lookup
-         (implies (not (svex-lookup v x))
-                  (equal (svex-compose-lookup v x)
-                         (svex-var v)))
-         :hints(("Goal" :in-theory (enable svex-compose-lookup)))))
+  (defthm svex-rsh-of-0
+    (svex-eval-equiv (svex-rsh 0 x) x)
+    :hints(("Goal" :in-theory (enable svex-eval-equiv
+                                      svex-apply))))
 
+  (defthm svex-rsh-of-svex-rsh
+    (svex-eval-equiv (svex-rsh n (svex-rsh m x))
+                     (svex-rsh (+ (nfix n) (nfix m)) x))
+    :hints(("Goal" :in-theory (enable svex-eval-equiv svex-apply))))
+
+  (defcong svex-eval-equiv svex-eval-equiv (svex-concat n x y) 2
+    :hints((and stable-under-simplificationp
+                `(:expand (,(car (last clause)))))))
+
+  (defcong svex-eval-equiv svex-eval-equiv (svex-concat n x y) 3
+    :hints((and stable-under-simplificationp
+                `(:expand (,(car (last clause)))))))
+
+  (defthm svex-compose-of-svex-rsh-under-svex-eval-equiv
+    (svex-eval-equiv (svex-compose (svex-rsh n x) a)
+                     (svex-rsh n (svex-compose x a)))
+    :hints(("Goal" :in-theory (enable svex-eval-equiv))))
+
+
+  (defthm svex-concat-of-svex-rsh-under-svex-eval-equiv
+    (svex-eval-equiv (svex-rsh m (svex-concat n x y))
+                     (if (< (nfix m) (nfix n))
+                         (svex-concat (- (nfix n) (nfix m))
+                                      (svex-rsh m x) y)
+                       (svex-rsh (- (nfix m) (nfix n)) y)))
+    :hints(("Goal" :in-theory (enable svex-eval-equiv svex-apply))))
+
+  (defthm svex-rsh-of-svex-rsh-under-svex-eval-equiv
+    (svex-eval-equiv (svex-rsh m (svex-rsh n x))
+                     (svex-rsh (+ (nfix m) (nfix n)) x))
+    :hints(("Goal" :in-theory (enable svex-eval-equiv svex-apply)))))
 
 ;; Evaluate a neteval ordering with respect to a network of assignments.
 ;; Properly speaking, the environment here should not bind internal variables
@@ -409,9 +418,7 @@
                            :scheme (neteval-ordering-selfinduct x)))))
 
 
-  (defcong svex-eval-equiv svex-eval-equiv (svex-rsh n x) 2
-    :hints((and stable-under-simplificationp
-                `(:expand (,(car (last clause)))))))
+  
 
   ;; (defret keys-subsetp-of-<fn>
   ;;   (subsetp-equal (alist-keys neteval) (svex-alist-keys network))
@@ -594,10 +601,6 @@
                             (ord1 (neteval-ordering-fix ord1))
                             (ord2 (neteval-ordering-fix ord2)))))))
 
-    (local (Defthm svex-env-extract-nil
-             (equal (svex-env-extract nil x) nil)
-             :hints(("Goal" :in-theory (enable svex-env-extract)))))
-
     (defthm neteval-ordering-eval-of-pair-remainders
       (implies (and (svarlist-p keys)
                     (neteval-sigordering-case val
@@ -641,12 +644,7 @@
     (local (in-theory (enable lookup-signal-not-in-network-cond-necc)))
 
 
-    (local (defthm svex-env-lookup-of-cons
-             (Equal (svex-env-lookup k (cons (cons key val) a))
-                    (if (equal (svar-fix k) key)
-                        (4vec-fix val)
-                      (svex-env-lookup k a)))
-             :hints(("Goal" :in-theory (enable svex-env-lookup)))))
+    (local (in-theory (enable svex-env-lookup-of-cons)))
 
     (std::defret-mutual lookup-signal-not-in-network-of-<fn>-lemma
       (defretd lookup-signal-not-in-network-of-<fn>-lemma
@@ -683,30 +681,8 @@
       :fn neteval-ordering-eval))
 
 
-(local (defthm svex-alist-eval-equiv-of-cons
-         (implies (svex-eval-equiv val1 val2)
-                  (svex-alist-eval-equiv (cons (cons key val1) rest)
-                                         (cons (cons key val2) rest)))
-         :hints (("goal" :in-theory (enable svex-alist-eval-equiv
-                                            svex-lookup)))
-         :rule-classes :congruence))
 
 
-(defcong svex-alist-eval-equiv svex-eval-equiv (svex-compose x al) 2
-  :hints(("Goal" :in-theory (enable svex-eval-equiv))))
-
-(defcong svex-eval-equiv svex-eval-equiv (svex-compose x al) 1
-  :hints ((and stable-under-simplificationp
-               `(:expand (,(car (last clause)))))))
-
-(defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-extract vars al) 2
-  :hints ((and stable-under-simplificationp
-               `(:expand (,(car (last clause)))))))
-
-
-(defcong set-equiv svex-alist-eval-equiv (svex-alist-extract vars al) 1
-  :hints ((and stable-under-simplificationp
-               `(:expand (,(car (last clause)))))))
 
 
 
@@ -740,16 +716,6 @@
 
 
 (local (in-theory (disable acl2::intersectp-equal-commute)))
-
-
-(defthmd svex-alist-eval-equiv-in-terms-of-envs-equivalent
-  (equal (svex-alist-eval-equiv x y)
-         (LET
-          ((ENV (SVEX-ALIST-EVAL-EQUIV-ENVS-EQUIVALENT-WITNESS X Y)))
-          (SVEX-ENVS-EQUIVALENT (SVEX-ALIST-EVAL X ENV)
-                                (SVEX-ALIST-EVAL Y ENV))))
-  :hints (("goal" :cases ((svex-alist-eval-equiv x y))
-           :in-theory (enable SVEX-ENVS-EQUIVALENT-IMPLIES-ALIST-EVAL-EQUIV))))
 
 (defines neteval-ordering-compile
   :flag-local nil
@@ -808,16 +774,6 @@
            :hints(("Goal" :in-theory (enable svex-env-boundp svex-alist-keys svex-env-fix alist-keys intersectp-equal)
                    :induct (svex-env-fix x)))))
 
-  (local (defthm svex-rsh-0
-           (svex-eval-equiv (svex-rsh 0 x) x)
-           :hints(("Goal" :in-theory (enable svex-eval-equiv
-                                             svex-apply)))))
-
-  (local (defthmd svex-env-lookup-when-not-boundp
-           (implies (not (svex-env-boundp var x))
-                    (equal (svex-env-lookup var x) (4vec-x)))
-           :hints(("Goal" :in-theory (enable svex-env-lookup svex-env-boundp)))))
-
   (local (defthm svex-eval-svex-var-when-lookup-and-not-intersectp
            (implies (and (not (intersectp-equal (alist-keys (svex-env-fix env))
                                                 (svex-alist-keys network)))
@@ -832,11 +788,6 @@
                          (<= 0 (2vec->val k)))
                     (equal (4vec-rsh k (4vec-x)) (4vec-x)))
            :hints(("Goal" :in-theory (e/d (4vec-rsh 4vec-shift-core))))))
-
-  (local (defthm svex-rsh-of-svex-rsh
-           (svex-eval-equiv (svex-rsh n (svex-rsh m x))
-                            (svex-rsh (+ (nfix n) (nfix m)) x))
-           :hints(("Goal" :in-theory (enable svex-eval-equiv svex-apply)))))
 
 
   (std::defret-mutual eval-of-<fn>
@@ -995,14 +946,20 @@
                                      svex-eval svex-apply)
                                     (<fn>
                                      svex-lookup-of-neteval-ordering-compile))))
-    :fn neteval-ordering-or-null-compile))
+    :fn neteval-ordering-or-null-compile)
+
+  (std::defret-mutual svex-alist-keys-of-<fn>
+    (defret svex-alist-keys-of-<fn>
+      (equal (svex-alist-keys compose)
+             (alist-keys (neteval-ordering-fix x)))
+      :hints ('(:expand (<call>
+                         (:free (a b) (svex-alist-keys (cons a b)))
+                         (alist-keys (neteval-ordering-fix x)))))
+      :fn neteval-ordering-compile)
+    :skip-others t))
 
 
-(defthm svex-lookup-of-append
-  (equal (svex-lookup k (append a b))
-         (or (svex-lookup k a)
-             (svex-lookup k b)))
-  :hints(("Goal" :in-theory (enable svex-lookup svex-alist-fix))))
+
 
 
 
@@ -1257,38 +1214,7 @@
 
 
 
-(defcong svex-eval-equiv svex-eval-equiv (svex-concat n x y) 2
-  :hints((and stable-under-simplificationp
-              `(:expand (,(car (last clause)))))))
 
-(defcong svex-eval-equiv svex-eval-equiv (svex-concat n x y) 3
-  :hints((and stable-under-simplificationp
-              `(:expand (,(car (last clause)))))))
-
-(local (defthm svex-compose-of-svex-rsh-under-svex-eval-equiv
-         (svex-eval-equiv (svex-compose (svex-rsh n x) a)
-                          (svex-rsh n (svex-compose x a)))
-         :hints(("Goal" :in-theory (enable svex-eval-equiv)))))
-
-
-(local (defthm svex-concat-of-svex-rsh-under-svex-eval-equiv
-         (svex-eval-equiv (svex-rsh m (svex-concat n x y))
-                          (if (< (nfix m) (nfix n))
-                              (svex-concat (- (nfix n) (nfix m))
-                                           (svex-rsh m x) y)
-                            (svex-rsh (- (nfix m) (nfix n)) y)))
-         :hints(("Goal" :in-theory (enable svex-eval-equiv svex-apply)))))
-
-(local (defthm svex-rsh-of-svex-rsh-under-svex-eval-equiv
-         (svex-eval-equiv (svex-rsh m (svex-rsh n x))
-                          (svex-rsh (+ (nfix m) (nfix n)) x))
-         :hints(("Goal" :in-theory (enable svex-eval-equiv svex-apply)))))
-                          
-  
-
-(local (defthm svex-rsh-of-0
-         (svex-eval-equiv (svex-rsh 0 x) x)
-         :hints(("Goal" :in-theory (enable svex-eval-equiv svex-apply)))))
 
 
 (defines neteval-ordering-compose
@@ -1476,8 +1402,6 @@
     :hints(("Goal" :in-theory (e/d (svex-alist-eval-equiv-in-terms-of-envs-equivalent)
                                    (<fn>))))))
 
-;; (i-am-here)
-
 (define neteval-ordering-reduce ((vars svarlist-p) (x neteval-ordering-p))
   :returns (new-ord neteval-ordering-p)
   (if (atom vars)
@@ -1538,23 +1462,21 @@
                            (svex-alist-compextract vars (neteval-ordering-compile x network)))
     :hints(("Goal" :in-theory (e/d (svex-alist-eval-equiv-in-terms-of-envs-equivalent)
                                    (neteval-ordering-extract))
-            :do-not-induct t))))
+            :do-not-induct t)))
+
+  (defret alist-keys-of-<fn>
+    (equal (alist-keys new-ord)
+           (svarlist-fix vars))
+    :hints(("Goal" :in-theory (enable alist-keys)))))
 
                  
 
-(defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-reduce keys x) 2
-  :hints ((and stable-under-simplificationp `(:expand (,(car (last clause)))))))
 
 
-(local (defthm svex-alist-eval-equiv-of-reduce-keys
-         (svex-alist-eval-equiv (svex-alist-reduce (svex-alist-keys x) x) x)
-         :hints(("Goal" :in-theory (enable svex-alist-eval-equiv)))))
 
-(defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-compose x subst) 1
-  :hints ((and stable-under-simplificationp `(:expand (,(car (last clause)))))))
 
-(defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-compose x subst) 2
-  :hints ((and stable-under-simplificationp `(:expand (,(car (last clause)))))))
+
+
 
 
 (defsection netcomp-p
@@ -1614,7 +1536,10 @@
                               (netcomp-p-witness (svex-alist-fix comp)
                                                  (svex-alist-fix decomp)))
     ///
-    
+
+    (defret alist-keys-of-<fn>
+      (equal (alist-keys ord)
+             (svex-alist-keys comp)))
 
     (defthm svex-alist-compextract-keys-under-compose-equiv
       (svex-alist-eval-equiv (svex-alist-compextract (svex-alist-keys x) x) x)
@@ -1641,21 +1566,7 @@
                                 netcomp-p-eval-equiv-witness))))
       :rule-classes :definition))
 
-
-  (local (defthm svex-compose-lookup-of-append
-           (equal (Svex-compose-lookup key (append x y))
-                  (or (svex-lookup key x)
-                      (svex-compose-lookup key y)))
-           :hints(("Goal" :in-theory (enable svex-compose-lookup)))))
-
-  (local (defthm svex-eval-equiv-of-svex-lookup-when-compose-equiv
-           (implies (and (svex-alist-compose-equiv x y)
-                         (svex-lookup k x) (svex-lookup k y))
-                    (equal (svex-eval-equiv (svex-lookup k x) (svex-lookup k y)) t))
-           :hints (("goal" :use ((:instance svex-alist-compose-equiv-necc
-                                  (var k)))
-                    :in-theory (e/d (svex-compose-lookup)
-                                    (svex-alist-compose-equiv-necc))))))
+  (local (in-theory (enable svex-eval-equiv-of-svex-lookup-when-compose-equiv)))
   
 
 
@@ -1683,18 +1594,6 @@
                            (ordering (neteval-ordering-identity (svex-alist-keys x)))))
              :in-theory (enable svex-alist-eval-equiv))))
 
-  (defcong svex-alist-compose-equiv svex-alist-compose-equiv
-    (svex-alist-reduce keys x) 2
-    :hints ((and stable-under-simplificationp
-                 (let* ((lit (car (last clause))))
-                   `(:expand (,lit)
-                     :use ((:instance svex-alist-compose-equiv-necc
-                            (var (svex-alist-compose-equiv-witness . ,(cdr lit)))
-                            (y x-equiv)))
-                     :in-theory (e/d (svex-compose-lookup)
-                                     (svex-alist-compose-equiv-necc
-                                      svex-alist-compose-equiv-implies-svex-eval-equiv-svex-compose-lookup-2)))))))
-
   (defthm netcomp-p-of-svex-alist-reduce
     (implies (netcomp-p x y)
              (netcomp-p (svex-alist-reduce keys x) y))
@@ -1704,29 +1603,8 @@
                            (ordering (neteval-ordering-reduce keys (netcomp-p-eval-equiv-witness x y)))))
              :expand ((netcomp-p x y)))))
   
-  (defthm append-svex-alist-eval-when-svex-alist-compose-equiv
-    (implies (svex-alist-compose-equiv x y)
-             (svex-envs-similar (append (svex-alist-eval x env) env)
-                                (append (svex-alist-eval y env) env)))
-    :hints(("Goal" :in-theory (e/d (svex-envs-similar svex-compose-lookup)
-                                   (svex-alist-compose-equiv-necc
-                                    svex-alist-compose-equiv-implies-svex-eval-equiv-svex-compose-lookup-2))
-            :expand ((:free (var) (svex-eval (svex-var var) env)))
-            :use ((:instance svex-alist-compose-equiv-necc
-                   (var (svex-envs-similar-witness
-                         (append (svex-alist-eval x env) env)
-                                (append (svex-alist-eval y env) env)))))))
-    :rule-classes :congruence)
-            
 
-  (defcong svex-alist-compose-equiv svex-eval-equiv
-    (svex-compose x subst) 2
-    :hints(("Goal" :in-theory (enable svex-eval-equiv))))
-
-  (defcong svex-alist-compose-equiv svex-alist-eval-equiv
-    (svex-alist-compose x subst) 2
-    :hints(("Goal" :in-theory (enable svex-alist-eval-equiv))))
-
+  
 
   (defthm netcomp-p-of-svex-alist-compose
     (implies (and (netcomp-p x network)
@@ -1740,20 +1618,6 @@
                                       (netcomp-p-eval-equiv-witness subst network)))))
              :expand ((netcomp-p x network)
                       (netcomp-p subst network)))))
-
-  (defthm svex-alist-compose-of-svex-identity-subst
-    (implies (subsetp-equal vars (svex-alist-keys x))
-             (equal (svex-alist-compose (svex-identity-subst vars) x)
-                    (svex-alist-reduce vars x)))
-    :hints(("Goal" :in-theory (enable svex-alist-compose
-                                      ;; svex-alist-keys
-                                      svex-identity-subst
-                                      svarlist-fix
-                                      svex-acons
-                                      svex-compose
-                                      pairlis$
-                                      svarlist->svexes
-                                      svex-alist-reduce))))
 
   (defthm netcomp-p-of-svex-identity-subst
     (implies (subsetp-equal (svarlist-fix vars) (svex-alist-keys network))
@@ -1795,11 +1659,8 @@
 
 
 
-(defcong svex-envs-similar svex-envs-similar (svex-env-removekeys keys env) 2
-  :hints ((and stable-under-simplificationp `(:expand (,(car (last clause)))))))
 
-(defcong set-equiv svex-envs-equivalent (svex-env-removekeys keys env) 1
-  :hints ((and stable-under-simplificationp `(:expand (,(car (last clause)))))))
+
 
 
 
@@ -1845,16 +1706,6 @@
          :ordering (neteval-ordering-or-null-ordering
                     (neteval-ordering-reduce-rec vars x.ord))))
      ///
-
-     (local (defthmd svex-lookup-redef
-              (equal (svex-lookup key alist)
-                     (cond ((atom alist) nil)
-                           ((and (consp (car alist))
-                                 (equal (caar alist) (svar-fix key)))
-                            (svex-fix (cdar alist)))
-                           (t (svex-lookup key (cdr alist)))))
-              :hints(("Goal" :in-theory (enable svex-lookup)))
-              :rule-classes :definition))
 
      (local (defthm compose-lookup-of-neteval-ordering-compile-when-not-in-network
               (implies (not (svex-lookup var network))
@@ -2069,34 +1920,21 @@
                     (neteval-ordering (netcomp-p-eval-equiv-witness updates network))))))))
 
 
-(defthm svex-env-removekeys-under-svex-envs-similar
-  (svex-envs-similar (svex-env-removekeys vars x)
-                     (append (svarlist-x-env vars) x))
-  :hints(("Goal" :in-theory (enable svex-envs-similar))))
+(local (in-theory (enable svex-env-removekeys-under-svex-envs-similar)))
 
 
 
 
 
-(local
- (encapsulate nil
 
-   (local (defthm svex-lookup-of-svarlist-x-subst-split
-            (equal (Svex-lookup v (svarlist-x-subst x))
-                   (and (member-equal (svar-fix v) (svarlist-fix x))
-                        (svex-x)))
-            :hints(("Goal" :in-theory (enable svarlist-x-subst)))))
-
-   (defcong set-equiv svex-alist-eval-equiv (svarlist-x-subst x) 1
-         :hints(("Goal" :in-theory (enable svex-alist-eval-equiv))))))
 
 (defsection netevalcomp-p
   (defun-sk netevalcomp-p (comp network)
     (exists ordering
-            (svex-alist-eval-equiv comp
-                                   (svex-alist-compose
-                                    (neteval-ordering-compile ordering network)
-                                    (svarlist-x-subst (svex-alist-keys network))))))
+            (svex-alist-<<= comp
+                           (svex-alist-compose
+                            (neteval-ordering-compile ordering network)
+                            (svarlist-x-subst (svex-alist-keys network))))))
 
   (in-theory (disable netevalcomp-p netevalcomp-p-suff))
 

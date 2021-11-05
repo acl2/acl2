@@ -5,7 +5,7 @@
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
-
+; Supporting Author: Nathan Guermond
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
@@ -608,8 +608,7 @@
                                   (rationalp (car |(cons x y)|))
                                   (rationalp (cdr |(cons x y)|))
                                   (< (* (car |(cons x y)|) (cdr |(cons x y)|)) (/ 1 2)))))
-      |(cons x y)|)
-    )
+      |(cons x y)|))
 
   (wrap-output dec-x<y out)
   (must-be-redundant

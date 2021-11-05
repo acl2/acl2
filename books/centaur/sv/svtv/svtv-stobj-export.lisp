@@ -36,6 +36,11 @@
 (include-book "clause-processors/meta-extract-user" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 
+
+;; (local (in-theory (disable omap::alistp-when-mapp
+;;                            alistp)))
+                           
+
 (defsection svtv-data-obj
   (local (defun svtv-data-obj-fields-from-decls (decls)
            (if (atom decls)
@@ -46,7 +51,8 @@
 
   (make-event
    `(defprod svtv-data-obj
-      ,(svtv-data-obj-fields-from-decls *svtv-data-nonstobj-fields*))))
+      ,(svtv-data-obj-fields-from-decls *svtv-data-nonstobj-fields*)
+      :layout :list)))
 
 (defsection svtv-data-to-obj
   (local (defun svtv-data-obj-ctor-from-decls (decls)
@@ -421,9 +427,10 @@
                   (svtv-data-obj->phase-fsm-validp x)
                   ;; (svtv-data-obj->flatten-validp x)
                   )
-             (base-fsm-eval-equiv
+             (phase-fsm-composition-p
               (svtv-data-obj->phase-fsm x)
-              (svtv-compose-assigns/delays (svtv-data-obj->flatnorm x))))
+              (svtv-data-obj->flatnorm x)
+              (Svtv-data-obj->phase-fsm-setup x)))
     :hints(("Goal" :in-theory (enable svtv-data$ap
                                       svtv-data$c-phase-fsm-okp))))
 
@@ -505,6 +512,7 @@
           (svtv-data (update-svtv-data->flatnorm obj.flatnorm svtv-data))
           (svtv-data (update-svtv-data->flatnorm-validp obj.flatnorm-validp svtv-data))
 
+          (svtv-data (update-svtv-data->phase-fsm-setup obj.phase-fsm-setup svtv-data))
           (svtv-data (update-svtv-data->phase-fsm obj.phase-fsm svtv-data))
           (svtv-data (update-svtv-data->phase-fsm-validp obj.phase-fsm-validp svtv-data))
 

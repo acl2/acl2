@@ -825,7 +825,15 @@ variables depend on themselves."
     :hints ((and stable-under-simplificationp
                  `(:expand ((:with svex-compose-dfs-memo-vars-okp-implies-svex-compose-dfs-memo-var-okp-redef ,(car (last clause))))
                    :do-not-induct t)))
-    :fn svexlist-compose-dfs))
+    :fn svexlist-compose-dfs)
+
+
+  (defret svex-alist-keys-subsetp-of-<fn>
+    (implies (and (svex-compose-dfs-memo-vars-okp memo assigns updates stack)
+                  (subsetp-equal (svex-alist-keys updates) (svex-alist-keys assigns)))
+             (subsetp-equal (svex-alist-keys updates1) (svex-alist-keys assigns)))
+    :hints ((acl2::set-reasoning))
+    :fn svex-compose-dfs))
 
 
 (defret svex-compose*-of-updates-of-<fn>
@@ -1277,7 +1285,26 @@ variables depend on themselves."
   (defret no-duplicate-keys-of-<fn>
     (implies (no-duplicatesp-equal (svex-alist-keys updates))
              (no-duplicatesp-equal (svex-alist-keys updates1)))
-    :hints (("goal" :induct <call> :expand (<call>)))))
+    :hints (("goal" :induct <call> :expand (<call>))))
+  
+  (defret svex-lookup-preserved-of-<fn>
+    (implies (svex-lookup var updates)
+             (svex-lookup var updates1))
+    :hints (("goal" :induct <call> :expand (<call>))))
+    
+
+  (defret svex-alist-keys-subsetp-of-<fn>
+    (implies (and (svex-compose-dfs-memo-vars-okp memo assigns updates nil)
+                  (subsetp-equal (svex-alist-keys updates) (svex-alist-keys assigns)))
+             (subsetp-equal (svex-alist-keys updates1) (svex-alist-keys assigns)))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (defret svex-alist-keys-contains-of-<fn>
+    (implies (and (svex-compose-dfs-memo-vars-okp memo assigns updates nil)
+                  (svarlist-p keys)
+                  (subsetp-equal keys (svex-alist-keys assigns)))
+             (subsetp-equal keys (svex-alist-keys updates1)))
+    :hints (("goal" :induct <call> :expand (<call> (svarlist-fix keys))))))
 
 
 (defret netcomp-p-of-svex-compose-assigns
@@ -1291,9 +1318,14 @@ variables depend on themselves."
   :hints (("goal" :in-theory (enable netcomp-p-transitive2)))
   :fn svex-compose-assigns)
 
-
 (defret no-duplicate-keys-of-<fn>
   (no-duplicatesp-equal (svex-alist-keys updates))
   :hints(("Goal" :in-theory (enable svex-compose-assigns)))
+  :fn svex-compose-assigns)
+
+(defret svex-alist-keys-of-<fn>
+  (set-equiv (svex-alist-keys updates)
+             (svex-alist-keys assigns))
+  :hints(("Goal" :in-theory (enable set-equiv <fn>)))
   :fn svex-compose-assigns)
   

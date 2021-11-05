@@ -1330,7 +1330,7 @@ unknown.</p>"
   :returns (equal 4vec-p)
   :short "Unsafe, Verilog-style ``case equality'' of @(see 4vec)s."
 
-  :long "<p>Warning: this is a bad operator that breaks the @(see 4vec-[=)
+  :long "<p>Warning: this is a bad operator that breaks the @(see 4vec-<<=)
 lattice monotonicity property.  It is similar to @(see 4vec-==) but, instead of
 treating X or Z bits as unknown, allows them to be directly compared with one
 another.</p>
@@ -2124,7 +2124,7 @@ an unknown.</p>"
 
 
 (define 4vec-xfree-p ((x 4vec-p))
-  :parents (4vec-[= svex-xeval)
+  :parents (4vec-<<= svex-xeval)
   :short "Recognizer for @(see 4vec)s with no X bits.  These have a special
 relationship with @(see svex-xeval)."
   (b* (((4vec x) x))

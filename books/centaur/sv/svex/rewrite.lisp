@@ -552,7 +552,14 @@ functions) and that it is being given the right number of arguments.</p>
 
   (defthm svex-mask-lookup-of-nil
     (equal (svex-mask-lookup k nil)
-           0)))
+           0))
+  
+  (defthmd svex-mask-lookup-of-cons
+    (equal (svex-mask-lookup key1 (cons (cons key val) rest))
+           (if (equal (svex-fix key1) key)
+               (4vmask-fix val)
+             (svex-mask-lookup key1 rest)))
+    :hints(("Goal" :in-theory (enable svex-mask-lookup)))))
 
 
 (define svex-mask-alist-keys ((x svex-mask-alist-p))

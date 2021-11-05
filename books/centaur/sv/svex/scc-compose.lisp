@@ -42,6 +42,7 @@
 (local (include-book "centaur/misc/dfs-measure" :dir :system))
 (local (include-book "std/osets/under-set-equiv" :dir :system))
 (local (include-book "clause-processors/just-expand" :dir :system))
+(local (include-book "alist-thms"))
 (local (in-theory (disable tau-system)))
 (local (std::add-default-post-define-hook :fix))
 
@@ -73,7 +74,7 @@
 ;; 
 
 
-(fty::defmap svar-key-alist :key-type svar)
+(fty::defmap svar-key-alist :key-type svar :true-listp t)
 
 ;; Use this for an optimization: don't traverse subtrees containing no looping vars
 (defines svex-has-key
@@ -320,6 +321,7 @@
 ;;           (cons (cons (svar-fix (car vars)) look) (svex-alist-extract-bound-keys (cdr vars) x))
 ;;         (svex-alist-extract-bound-keys (cdr vars) x)))))
 
+
 (define svex-alist-selfcompose-n-times ((n natp) (x svex-alist-p))
   :returns (new-x svex-alist-p)
   :verify-guards nil
@@ -337,8 +339,14 @@
 
   (defret netcomp-p-of-<fn>-trans
     (implies (netcomp-p x y)
-             (netcomp-p new-x y))))
+             (netcomp-p new-x y)))
+
+  (defret svex-alist-keys-of-<fn>
+    (equal (svex-alist-keys new-x) (svex-alist-keys x))))
        
+
+
+
 
 (define svex-sccs-finalize-scc ((scc svex/indexlist-p)
                                 (params svex-scc-consts-p)
@@ -369,7 +377,36 @@
   (defret netcomp-p-of-<fn>
     (b* ((updates (svex-scc-consts->updates params)))
       (implies (netcomp-p finalized-updates updates)
-               (netcomp-p new-finalized-updates updates)))))
+               (netcomp-p new-finalized-updates updates))))
+
+  (defret svex-alist-keys-of-<fn>
+    (implies (not err)
+             (equal (svex-alist-keys new-finalized-updates)
+                    (append (intersection-equal (svex-varlist-vars (svex/indexlist-exprs scc))
+                                                (svex-alist-keys (svex-scc-consts->updates params)))
+                            (svex-alist-keys finalized-updates)))))
+
+  (local (defret <fn>-nil-when-error
+           (implies err
+                    (equal new-finalized-updates nil))))
+
+  (local (in-theory (disable set::pick-a-point-subsetp-equal-strategy)))
+
+  (local (defthm subsetp-when-equal-append
+           (implies (equal a (append b c))
+                    (iff (subsetp a d)
+                         (and (subsetp b d)
+                              (subsetp c d))))))
+  (local (defthm subsetp-intersection
+           (subsetp (intersection-equal a b) b)))
+
+  (defret svex-alist-keys-subsetp-of-<fn>
+    (implies (subsetp-equal (svex-alist-keys finalized-updates)
+                            (svex-alist-keys (svex-scc-consts->updates params)))
+             (subsetp-equal (svex-alist-keys new-finalized-updates)
+                            (svex-alist-keys (svex-scc-consts->updates params))))
+    :hints (("goal" :use svex-alist-keys-of-<fn>
+             :in-theory (disable <fn> svex-alist-keys-of-<fn>)))))
 
 (define svex/indices-for-mask ((x svex-p)
                                (mask 4vmask-p)
@@ -1092,6 +1129,34 @@ negative -- the lognot is the number of bits to shift).</p>"
           :hints ('(:expand (<call>)))
           :fn svex-mask-compose-bit-sccs))
 
+      (local (in-theory (disable SVEX-ALIST-KEYS-OF-SVEX-SCCS-FINALIZE-SCC)))
+
+      (std::defret-mutual svex-alist-keys-of-svex-compose-bit-sccs
+        (defret svex-alist-keys-of-<fn>
+          (b* ((updates (svex-scc-consts->updates params)))
+            (implies (subsetp-equal (svex-alist-keys finalized-updates)
+                                    (Svex-alist-keys updates))
+                     (subsetp-equal (svex-alist-keys new-finalized-updates)
+                                    (Svex-alist-keys updates))))
+          :hints ('(:expand (<call>)))
+          :fn svex-compose-bit-sccs)
+        (defret svex-alist-keys-of-<fn>
+          (b* ((updates (svex-scc-consts->updates params)))
+            (implies (subsetp-equal (svex-alist-keys finalized-updates)
+                                    (Svex-alist-keys updates))
+                     (subsetp-equal (svex-alist-keys new-finalized-updates)
+                                    (Svex-alist-keys updates))))
+          :hints ('(:expand (<call>)))
+          :fn svex-args-compose-bit-sccs)
+        (defret svex-alist-keys-of-<fn>
+          (b* ((updates (svex-scc-consts->updates params)))
+            (implies (subsetp-equal (svex-alist-keys finalized-updates)
+                                    (Svex-alist-keys updates))
+                     (subsetp-equal (svex-alist-keys new-finalized-updates)
+                                    (Svex-alist-keys updates))))
+          :hints ('(:expand (<call>)))
+          :fn svex-mask-compose-bit-sccs))
+
       (fty::deffixequiv-mutual svex-compose-bit-sccs
         :hints((acl2::just-expand-mrec-default-hint 'svex-compose-bit-sccs
                                                     id nil world))))))
@@ -1145,7 +1210,14 @@ negative -- the lognot is the number of bits to shift).</p>"
                     (netcomp-p updates y))
                (netcomp-p new-finalized-updates y)))
     :hints(("Goal" :in-theory (e/d (netcomp-p-transitive2)
-                                   (<fn>))))))
+                                   (<fn>)))))
+
+  (defret svex-alist-keys-of-<fn>
+    (b* ((updates (svex-scc-consts->updates params)))
+      (implies (subsetp-equal (svex-alist-keys finalized-updates)
+                              (Svex-alist-keys updates))
+               (subsetp-equal (svex-alist-keys new-finalized-updates)
+                              (Svex-alist-keys updates))))))
 
 
 
