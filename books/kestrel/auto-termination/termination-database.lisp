@@ -5,7 +5,7 @@
 ; See README for an overview of the algorithm implemented by this file, and see
 ; write-td-cands.lsp for how it is invoked.  The fundamental idea is to include
 ; this book after including a book with many termination theorems underneath it
-; -- normally, community book doc/top-slow.lisp -- and then invoke td-init and
+; -- normally, community book books/top.lisp -- and then invoke td-init and
 ; write-td to build the termination-database and write it out, respectively.
 
 (in-package "ACL2")
@@ -655,15 +655,15 @@
 
 (defun write-td-fn-include-books-extra (chan state)
 
-; After (include-book "doc/top-slow" :dir :system), in raw Lisp, we find the
-; packages that are present but whose book is "doc/top-slow" (here, <ACL2>
+; After (include-book "top" :dir :system), in raw Lisp, we find the
+; packages that are present but whose book is "top" (here, <ACL2>
 ; denotes the path to the top-level ACL2 directory):
 
 ;   (value :q)
 ;   (let ((doc-top-book
 ;          (concatenate 'string
 ;                       (f-get-global 'system-books-dir *the-live-state*)
-;                       "doc/top-slow.lisp")))
+;                       "top.lisp")))
 ;     (loop for x in (known-package-alist *the-live-state*)
 ;           when (equal (car (package-entry-book-path x))
 ;                       doc-top-book)
@@ -699,7 +699,7 @@
            (cond ((and sysfile
                        (if (sysfile-p sysfile)
                            (not (equal (sysfile-filename sysfile)
-                                       "doc/top-slow"))
+                                       "top"))
                          t))
                   (cons sysfile
                         (pkg-books-1 (cdr pkg-entries) system-books-dir)))
@@ -763,12 +763,12 @@
         (pprogn (princ$ *td-fn-header* chan state)
                 (princ$ "
 ; The following books are included to provide the packages that are
-; defined after including system book \"doc/top-slow\".
+; defined after including system book \"top\".
 "
                         chan state)
                 (fms!-lst (pkg-include-books state) chan state)
                 (fms "~%; Next we deal with packages whose associated book ~
-                      in~%;~ ~ ~ ~x0~%; is community book \"doc/top-slow\", ~
+                      in~%;~ ~ ~ ~x0~%; is community book \"top\", ~
                       which is too large to include efficiently.~%"
                      (list (cons #\0 '(known-package-alist state)))
                      chan state nil)

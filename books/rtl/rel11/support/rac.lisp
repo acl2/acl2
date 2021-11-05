@@ -346,3 +346,7 @@
   (equal (ash i c)
          (fl (* (ifix i) (expt 2 c))))
   :hints (("Goal" :in-theory (enable floor fl ash))))
+
+(defthm rem-mod
+  (implies (and (natp m) (posp n))
+	   (equal (rem m n) (mod m n))))

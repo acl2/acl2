@@ -237,7 +237,6 @@
 
 (defun t-s-aux (m c tt r p)
   (declare (xargs :measure (nfix m)
-                  :guard-debug t
                   :guard (and (posp m) (natp c) (natp tt)
                               (natp r)
                               (rtl::primep p) (< 2 p))
@@ -351,7 +350,6 @@
 
 (define tonelli-shanks-lesser-sqrt ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
-  :guard-debug t
   :short "Tonelli-Shanks modular square root. Finds least square root if a square root exists."
   :long "Finds the lesser square root of the two square roots of n modulo p if
          a square root exists. Otherwise returns 0.  p must be an odd prime.
@@ -385,7 +383,6 @@
 
 (define tonelli-shanks-either-sqrt ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
-  :guard-debug t
   :short "Tonelli-Shanks modular square root. Finds a square root if a square root exists."
   :long "Finds a square root of n modulo p if it exists, else returns 0.
          p must be an odd prime. z is a quadratic nonresidue in p."
@@ -395,7 +392,6 @@
 
 (define tonelli-shanks-greater-sqrt ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
-  :guard-debug t
   :short "Tonelli-Shanks modular square root. Finds the greater square root."
   :long "Finds the greater square root of the two square roots of n modulo p if
          a square root exists, otherwise returns 0. p must be an odd prime.
@@ -556,7 +552,6 @@
 
   (define tonelli-shanks-even-sqrt ((n natp) (p natp) (z natp))
     :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
-    :guard-debug t
     :short "Tonelli-Shanks modular square root. Finds the even square root."
     :long "Finds the even square root of the two square roots of n modulo p if
            a square root exists, otherwise returns 0.
@@ -598,7 +593,6 @@
 
   (define tonelli-shanks-odd-sqrt ((n natp) (p natp) (z natp))
     :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
-    :guard-debug t
     :short "Tonelli-Shanks modular square root. Finds the odd square root."
     :long "Finds the odd square root of the two square roots of n modulo p if a
            square root exists. Otherwise returns 0. z is a quadratic nonresidue
