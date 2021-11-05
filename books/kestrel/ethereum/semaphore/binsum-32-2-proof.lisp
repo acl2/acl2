@@ -15,9 +15,9 @@
 (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (include-book "kestrel/bv/rules7" :dir :system) ; for BVCAT-OF-BVNOT-AND-BVNOT
-(include-book "kestrel/crypto/r1cs/tools/axe-prover-r1cs" :dir :system)
+(include-book "kestrel/axe/r1cs/axe-prover-r1cs" :dir :system)
 (include-book "kestrel/crypto/r1cs/proof-support" :dir :system)
-(include-book "kestrel/crypto/r1cs/tools/axe-rules-r1cs" :dir :system)
+(include-book "kestrel/axe/r1cs/axe-rules-r1cs" :dir :system)
 (include-book "kestrel/bv/rules9" :dir :system)
 
 ;; Load the R1CS:

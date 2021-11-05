@@ -12,7 +12,7 @@
 
 (include-book "xdoc/top" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
-(include-book "tools/doc")
+(include-book "kestrel/axe/r1cs/doc" :dir :system)
 
 (acl2::defxdoc r1cs
                :short "Formalization of Rank-1 Constraint Systems (R1CSes)"

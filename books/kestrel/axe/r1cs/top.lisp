@@ -1,4 +1,4 @@
-; Top book for R1CS tools dir
+; Top book for R1CS variant of Axe
 ;
 ; Copyright (C) 2020-2021 Kestrel Institute
 ;
@@ -10,6 +10,9 @@
 
 (in-package "R1CS")
 
-;; See also books/kestrel/axe/r1cs/.
-
-(include-book "order-r1cs-vars")
+;;(include-book "lift-r1cs-old") ;brings in skip-proofs, deprecated
+(include-book "lift-r1cs")
+(include-book "axe-prover-r1cs")
+(include-book "verify-r1cs")
+;; (include-book "order-r1cs-vars")
+(include-book "doc")

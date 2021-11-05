@@ -10,7 +10,7 @@
 
 (in-package "ZCASH")
 
-(include-book "kestrel/crypto/r1cs/tools/lift-r1cs" :dir :system)
+(include-book "kestrel/axe/r1cs/lift-r1cs" :dir :system)
 
 ;; A thin wrapper around lift-r1cs that sets the prime for Zcash.
 ;; If the VARS are keywords (which is common), they get converted to the ZCASH package."

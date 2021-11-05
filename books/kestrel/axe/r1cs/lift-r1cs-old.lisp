@@ -16,9 +16,9 @@
 
 (include-book "lift-r1cs-rules")
 (include-book "lift-r1cs-rule-lists")
-(include-book "../sparse/rule-lists")
-(include-book "../sparse/rules-axe")
-(include-book "../sparse/rules")
+(include-book "kestrel/crypto/r1cs/sparse/rule-lists" :dir :system)
+(include-book "kestrel/crypto/r1cs/sparse/rules-axe" :dir :system)
+(include-book "kestrel/crypto/r1cs/sparse/rules" :dir :system)
 (include-book "lift-r1cs-common")
 (include-book "kestrel/utilities/keywords-to-acl2-package" :dir :system)
 (include-book "kestrel/axe/unroll-spec-basic" :dir :system) ; brings in skip-proofs

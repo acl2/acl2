@@ -10,7 +10,7 @@
 
 (in-package "ZKSEMAPHORE")
 
-(include-book "kestrel/crypto/r1cs/tools/verify-r1cs" :dir :system)
+(include-book "kestrel/axe/r1cs/verify-r1cs" :dir :system)
 
 ;; A wrapper of verify-r1cs that specializes it for the semaphore prime
 (acl2::defmacrodoc verify-semaphore-r1cs (lifted-r1cs ; a DAG
