@@ -39,6 +39,7 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "clause-processors/find-subterms" :dir :system))
+(local (include-book "alist-thms"))
 (local (std::add-default-post-define-hook :fix))
 
 
@@ -331,13 +332,7 @@
     :hints(("Goal" :in-theory (enable svex-vars svar-split-vars)))))
 
 
-(local (defthm svex-lookup-of-cons
-         (equal (svex-lookup key (cons (cons var val) rest))
-                (if (and (svar-p var)
-                         (equal (svar-fix key) var))
-                    (svex-fix val)
-                  (svex-lookup key rest)))
-         :hints(("Goal" :in-theory (enable svex-lookup)))))
+(local (in-theory (enable svex-lookup-of-cons)))
 
 
 ;; Make an svex-alist that replicates a splitstable, that is, that evaluates
@@ -778,10 +773,8 @@
   (local (in-theory (enable svar-splittab-fix)))
 
 
-  (local (defthm svex-env-boundp-by-member-alist-keys
-           (implies (member (svar-fix var) (alist-keys (svex-env-fix env)))
-                    (svex-env-boundp var env))
-           :hints(("Goal" :in-theory (enable svex-env-boundp alist-keys)))))
+  ;; was svex-env-boundp-by-member-alist-keys
+  (local (in-theory (enable svex-env-boundp-iff-member-alist-keys)))
 
   (defthm svar-splittab-lookup-of-append-env-when-alist-keys-subsetp
     (implies (subsetp-equal (alist-keys (svar-splittab-fix x)) (alist-keys (svex-env-fix env)))
@@ -882,16 +875,11 @@
     :hints(("Goal" :in-theory (enable svar-splittab-vars))))
 
   
-
+  (local (in-theory (enable svex-env-boundp-iff-member-alist-keys)))
   (local (defthm member-alist-keys
            (iff (member k (alist-keys x))
                 (hons-assoc-equal k x))
            :hints(("Goal" :in-theory (enable alist-keys)))))
-
-  (local (defthm svex-env-boundp-is-member-alist-keys
-           (iff (svex-env-boundp key x)
-                (member-equal (svar-fix key) (alist-keys (svex-env-fix x))))
-           :hints(("Goal" :in-theory (enable svex-env-boundp)))))
 
   (defret lookup-in-<fn>
     (equal (svex-env-lookup key new-env)
@@ -903,12 +891,6 @@
 
   (local (in-theory (enable svar-splittab-fix))))
 
-(local
- (defthm svex-alist-keys-of-append
-   (equal (svex-alist-keys (append x y))
-          (append (svex-alist-keys x)
-                  (svex-alist-keys y)))
-   :hints(("Goal" :in-theory (enable svex-alist-keys)))))
 
 
 ;; Produce an svex-alist that evaluates to the svar-splittab-inverse-env.
@@ -929,12 +911,6 @@
     :hints(("Goal" :in-theory (enable svar-splittab-inverse-env svex-alist-eval)
             :induct <call>
             :expand ((:free (v) (svex-eval (svex-var v) env))))))
-
-  (local (defthm svex-alist-eval-of-pairlis$-vars
-           (implies (svarlist-p vars)
-                    (equal (svex-alist-eval (pairlis$ vars (svarlist->svexes vars)) env)
-                           (svex-env-extract vars env)))
-           :hints(("Goal" :in-theory (enable svex-alist-eval svex-env-extract svarlist->svexes svex-eval)))))
 
   (local (defthm svarlist-p-keys-of-svar-splittab
            (implies (svar-splittab-p x)
@@ -1013,6 +989,8 @@
               (hons-assoc-equal k x))
          :hints(("Goal" :in-theory (enable alist-keys)))))
 
+
+;; Move to alist-thms?  though seems pretty specific
 (local (Defthm svex-lookup-when-subsetp-alist-keys
          (implies (and (subsetp set (svex-alist-keys x))
                        (member-equal (svar-fix key) set))
@@ -1027,43 +1005,9 @@
      (implies (svar-splittab-p x)
               (svarlist-p (alist-keys x)))
      :hints(("Goal" :in-theory (enable svar-splittab-p alist-keys))))
-   (defcong svex-alist-eval-equiv svex-alist-eval-equiv (append x y) 1
-     :hints ((and stable-under-simplificationp `(:expand (,(car (last clause)))))))
 
-   (defcong svex-alist-eval-equiv svex-alist-eval-equiv (append x y) 2
-     :hints ((and stable-under-simplificationp `(:expand (,(car (last clause)))))))
-
-   
-   (defthm svex-compose-lookup-of-append
-     (equal (Svex-compose-lookup key (append x y))
-            (or (svex-lookup key x)
-                (svex-compose-lookup key y)))
-     :hints(("Goal" :in-theory (enable svex-compose-lookup))))
-
-   (defcong svex-alist-compose-equiv svex-alist-compose-equiv (append x y) 2
-     :hints ((and stable-under-simplificationp `(:expand (,(car (last clause)))))))
-
-   (defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-alist-removekeys keys x) 2
-     :hints((and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))))))
-
-   (local (defthm svex-compose-lookup-of-svex-alist-removekeys
-            (equal (svex-compose-lookup v (svex-alist-removekeys keys x))
-                   (if (member-equal (svar-fix v) (svarlist-fix keys))
-                       (svex-var v)
-                     (svex-compose-lookup v x)))
-            :hints(("Goal" :in-theory (enable svex-compose-lookup)))))
-
-   (defcong svex-alist-compose-equiv svex-alist-compose-equiv (svex-alist-removekeys keys x) 2
-     :hints((and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))))))
-
-   (defthm svex-compose-lookup-of-svex-alist-compose
-     (equal (Svex-compose-lookup v (svex-alist-compose x a))
-            (if (svex-lookup v x)
-                (svex-compose (svex-lookup v x) a)
-              (svex-var v)))
-     :hints(("Goal" :in-theory (enable svex-compose-lookup))))))
+   (in-theory (enable svex-compose-lookup-of-svex-alist-removekeys
+                      svex-compose-lookup-of-svex-alist-compose))))
 
 ;; Transforms x by replacing each pair whose key is bound in splittab with one
 ;; pair for each variable in its split.
@@ -1136,12 +1080,7 @@
            :hints(("Goal" :in-theory (enable svar-splittab-lookup svar-splittab-vars
                                              svar-splittab-fix alist-keys)))))
 
-  (local (defthm svex-env-lookup-of-cons
-           (equal (svex-env-lookup k (cons (cons key val) env))
-                  (if (and (svar-p key) (equal (svar-fix k) key))
-                      (4vec-fix val)
-                    (svex-env-lookup k env)))
-           :hints(("Goal" :in-theory (enable svex-env-lookup)))))
+  (local (in-theory (enable svex-env-lookup-of-cons)))
                         
 
   (defret eval-svex-lookup-of-<fn>
@@ -1179,13 +1118,6 @@
                         (t (svex-lookup key x)))))
     :hints(("Goal" :in-theory (enable svex-lookup svex-alist-keys svex-alist-eval))))
 
-
-
-
-  (defthm alist-keys-of-svex-alist-eval
-    (equal (alist-keys (svex-alist-eval x env))
-           (svex-alist-keys x))
-    :hints(("Goal" :in-theory (enable svex-alist-keys svex-alist-eval alist-keys))))
 
   (defret <fn>-in-terms-of-svex-alist-splittab-split-keys
     (implies (and (not (intersectp-equal (svex-alist-keys x)
@@ -1237,20 +1169,7 @@
     :hints(("Goal" :in-theory (enable svex-alist-to-split)))))
 
 
-(local
- (progn
-   (defthm svex-compose-nil
-     (svex-eval-equiv (svex-compose x nil) x)
-     :hints(("Goal" :in-theory (enable svex-eval-equiv svex-alist-eval))))
 
-   (defthm svex-alist-eval-equiv-of-compose-nil
-     (svex-alist-eval-equiv (svex-alist-compose x nil) x)
-     :hints(("Goal" :in-theory (enable svex-alist-eval-equiv-in-terms-of-envs-equivalent
-                                       svex-alist-eval))))
-
-   (defthm svex-alist-removekeys-of-nil
-     (equal (svex-alist-removekeys keys nil) nil)
-     :hints(("Goal" :in-theory (enable svex-alist-removekeys))))))
 
 
 ;; Translate the pairs of x into the un-split space, not touching the expressions.
@@ -1286,17 +1205,9 @@
  (progn
 
 
-   (defthm svex-alist-keys-of-svex-alist-compose
-     (Equal (svex-alist-keys (svex-alist-compose x a))
-            (svex-alist-keys x))
-     :hints(("Goal" :in-theory (enable svex-alist-compose
-                                       svex-alist-keys))))
+   
 
-   (defthm svex-alist-compose-of-append
-     (equal (svex-alist-compose (append x y) a)
-            (append (svex-alist-compose x a)
-                    (svex-alist-compose y a)))
-     :hints(("Goal" :in-theory (enable svex-alist-compose svex-acons))))
+   
 
    ;; (local
    ;;  (defthm svex-alist-removekeys-of-cons-member
@@ -1307,18 +1218,8 @@
    ;;                    (svex-alist-removekeys vars y)))
    ;;    :hints(("Goal" :in-theory (enable svex-alist-removekeys)))))
 
-   (defthm svex-alist-removekeys-of-append-subset
-     (implies (subsetp-equal (svex-alist-keys x) (svarlist-fix vars))
-              (equal (svex-alist-removekeys vars (append x y))
-                     (svex-alist-removekeys vars y)))
-     :hints(("Goal" :in-theory (enable svex-alist-keys svex-alist-removekeys))))
-
-   (defthm svex-alist-removekeys-of-non-intersect
-     (implies (not (intersectp-equal (svex-alist-keys x) (svarlist-fix vars)))
-              (equal (svex-alist-removekeys vars x)
-                     (svex-alist-fix x)))
-     :hints(("Goal" :in-theory (enable svex-alist-keys svex-alist-removekeys
-                                       svex-alist-fix))))
+   (in-theory (enable svex-alist-removekeys-of-append-subset
+                      svex-alist-removekeys-of-non-intersect))
 
 
 
@@ -1329,19 +1230,6 @@
 
 
 
-
-   (defthm svex-alist-keys-of-svex-alist-compose
-     (Equal (svex-alist-keys (svex-alist-compose x a))
-            (svex-alist-keys x))
-     :hints(("Goal" :in-theory (enable svex-alist-compose
-                                       svex-alist-keys))))
-
-   (defthm svex-alist-compose-of-append
-     (equal (svex-alist-compose (append x y) a)
-            (append (svex-alist-compose x a)
-                    (svex-alist-compose y a)))
-     :hints(("Goal" :in-theory (enable svex-alist-compose svex-acons))))
-
    ;; (local
    ;;  (defthm svex-alist-removekeys-of-cons-member
    ;;    (implies (or (member-equal (car pair) (svarlist-fix vars))
@@ -1351,18 +1239,9 @@
    ;;                    (svex-alist-removekeys vars y)))
    ;;    :hints(("Goal" :in-theory (enable svex-alist-removekeys)))))
 
-   (defthm svex-alist-removekeys-of-append-subset
-     (implies (subsetp-equal (svex-alist-keys x) (svarlist-fix vars))
-              (equal (svex-alist-removekeys vars (append x y))
-                     (svex-alist-removekeys vars y)))
-     :hints(("Goal" :in-theory (enable svex-alist-keys svex-alist-removekeys))))
+   
 
-   (defthm svex-alist-removekeys-of-non-intersect
-     (implies (not (intersectp-equal (svex-alist-keys x) (svarlist-fix vars)))
-              (equal (svex-alist-removekeys vars x)
-                     (svex-alist-fix x)))
-     :hints(("Goal" :in-theory (enable svex-alist-keys svex-alist-removekeys
-                                       svex-alist-fix))))
+   
 
    ;; (local (defthm consp-hons-assoc-equal
    ;;          (iff (consp (hons-assoc-equal k a))
@@ -1370,24 +1249,7 @@
 
 
 
-   (std::defret-mutual svex-eval-of-append-when-subsetp-first
-     (defret <fn>-of-append-when-subsetp-first
-       (implies (subsetp-equal (svex-vars x) (alist-keys (svex-env-fix env)))
-                (equal (svex-eval x (append env env2))
-                       val))
-       :hints ('(:expand ((:free (env) <call>)
-                          (svex-vars x)))
-               (and stable-under-simplificationp
-                    '(:in-theory (enable svex-env-boundp))))
-       :fn svex-eval)
-     (defret <fn>-of-append-when-subsetp-first
-       (implies (subsetp-equal (svexlist-vars x) (alist-keys (svex-env-fix env)))
-                (equal (svexlist-eval x (append env env2))
-                       vals))
-       :hints ('(:expand ((:free (env) <call>)
-                          (svexlist-vars x))))
-       :fn svexlist-eval)
-     :mutual-recursion svex-eval)
+   
 
    (local
     (std::defret-mutual svex-eval-of-special-append
@@ -1415,25 +1277,7 @@
               (equal (svex-alist-eval x (append (svex-env-extract keys env) env2 env))
                      result))
      :hints (("goal" :in-theory (enable svex-alist-eval svex-alist-vars)))
-     :fn svex-alist-eval)
-
-   (defthm svex-alist-eval-of-append-when-subsetp-first
-     (implies (subsetp (svex-alist-vars x) (alist-keys (svex-env-fix a)))
-              (equal (svex-alist-eval x (append a b))
-                     (svex-alist-eval x a)))
-     :hints(("Goal" :in-theory (enable svex-alist-eval svex-alist-vars))))
-   
-
-   (defthm svex-alist-compose-of-append-when-subsetp-first
-     (implies (subsetp (svex-alist-vars x) (svex-alist-keys a))
-              (svex-alist-eval-equiv (svex-alist-compose x (append a b))
-                                     (svex-alist-compose x a)))
-     :hints(("Goal" :in-theory (enable svex-alist-eval-equiv-in-terms-of-envs-equivalent))))
-
-   (defthm svex-alist-eval-of-svex-alist-removekeys
-     (equal (svex-alist-eval (svex-alist-removekeys vars x) a)
-            (svex-env-removekeys vars (svex-alist-eval x a)))
-     :hints(("Goal" :in-theory (enable svex-alist-eval svex-alist-removekeys svex-env-removekeys))))))
+     :fn svex-alist-eval)))
 
 
 
@@ -1505,21 +1349,15 @@
      (equal (neteval-ordering-compile nil network) nil)
      :hints(("Goal" :in-theory (enable neteval-ordering-compile))))
 
-   (local
-    (defthm svex-alist-removekeys-when-superset
-      (implies (subsetp (svex-alist-keys a) (svarlist-fix keys))
-               (equal (svex-alist-removekeys keys a) nil))
-      :hints(("Goal" :in-theory (enable svex-alist-removekeys svex-alist-keys svex-alist-fix)))))
-
-   (local
-    (defthm svex-alist-keys-of-svex-alist-removekeys
-      (equal (svex-alist-keys (svex-alist-removekeys vars alist))
-             (set-difference-equal (svex-alist-keys alist) (svarlist-fix vars)))
-      :hints(("Goal" :in-theory (enable svex-alist-removekeys svex-alist-keys set-difference-equal)))))
+   (in-theory (enable svex-alist-removekeys-when-superset))
 
    (local (defthm subsetp-set-difference
             (subsetp-equal (set-difference-equal a b) a)
             :hints(("goal" :in-theory (enable acl2::subsetp-witness-rw)))))
+
+   (local (defthm subsetp-of-intersection
+            (subsetp-equal (intersection-equal x y) x)
+            :hints(("Goal" :in-theory (enable intersection-equal)))))
 
    (local (defthm subsetp-keys-of-svex-alist-reduce
             (implies (svarlist-p vars)
@@ -1529,27 +1367,7 @@
 
 
 
-   (local
-    (define svex-pair-eval-equiv (x y)
-      :verify-guards nil
-      (and (iff (consp x) (consp y))
-           (implies (consp x)
-                    (and (equal (car x) (car y))
-                         (svex-eval-equiv (cdr x) (cdr y)))))
-      ///
-      (defequiv svex-pair-eval-equiv)
-      (defcong svex-pair-eval-equiv svex-alist-eval-equiv (cons pair rest) 1
-        :hints(("Goal" :in-theory (enable svex-alist-eval-equiv
-                                          svex-lookup))))
 
-      (defcong svex-eval-equiv svex-pair-eval-equiv (cons key val) 2)))
-
-
-   (local
-    (defthm svex-compose-of-rsh-under-eval-equiv
-      (svex-eval-equiv (svex-compose (svex-rsh offset x) a)
-                       (svex-rsh offset (svex-compose x a)))
-      :hints(("Goal" :in-theory (enable svex-eval-equiv)))))
 
    (local
     (defthm svex-compose-of-concat-under-eval-equiv
@@ -1557,63 +1375,41 @@
                        (svex-concat offset (svex-compose x a) (svex-compose y a)))
       :hints(("Goal" :in-theory (enable svex-eval-equiv)))))
 
-   (local (defthm svex-compose-of-compose
-            (svex-eval-equiv (svex-compose (svex-compose x a) b)
-                             (svex-compose x (append (svex-alist-compose a b) b)))
-            :hints(("Goal" :in-theory (enable svex-eval-equiv)))))
 
-   (local (defthm svex-alist-compose-of-svex-alist-compose
-            (svex-alist-eval-equiv (svex-alist-compose (svex-alist-compose x a) b)
-                                   (svex-alist-compose x (append (svex-alist-compose a b) b)))
-            :hints(("Goal" :in-theory (enable svex-alist-eval-equiv)))))
-
-
-
-   (local (defthm svex-alist-removekeys-of-append-removekeys
-            (equal (svex-alist-removekeys vars (append (svex-alist-removekeys vars x) y))
-                   (svex-alist-removekeys vars (append x y)))
-            :hints(("Goal" :in-theory (enable svex-alist-removekeys)))))
-
-
-   (local (defthm svex-alist-removekeys-of-append
-            (Equal (svex-alist-removekeys vars (append a b))
-                   (append (svex-alist-removekeys vars a)
-                           (svex-alist-removekeys vars b)))
-            :hints(("Goal" :in-theory (enable svex-alist-removekeys)))))
-
-   (local (defthm svex-alist-compose-of-removekeys
-            (equal (svex-alist-compose (svex-alist-removekeys keys x) a)
-                   (svex-alist-removekeys keys (svex-alist-compose x a)))
-            :hints(("Goal" :in-theory (enable svex-alist-compose svex-alist-removekeys svex-acons)))))
-
+   ;; (local
+   ;;  (std::defret-mutual svex-eval-of-append-reduce-superset
+   ;;    (defret <fn>-of-append-reduce-superset
+   ;;      :pre-bind ((env (append a b c)))
+   ;;      (implies (subsetp-equal (svex-vars x) (svarlist-fix vars))
+   ;;               (equal (svex-eval x (append a (svex-env-reduce vars b) c))
+   ;;                      val))
+   ;;      :hints ('(:expand ((:free (env) <call>)
+   ;;                         (svex-vars x)))
+   ;;              (and stable-under-simplificationp
+   ;;                   '(:in-theory (enable svex-env-boundp))))
+   ;;      :fn svex-eval)
+   ;;    (defret <fn>-of-append-reduce-superset
+   ;;      :pre-bind ((env (append a b c)))
+   ;;      (implies (subsetp-equal (svexlist-vars x) (svarlist-fix vars))
+   ;;               (equal (svexlist-eval x (append a (svex-env-reduce vars b) c))
+   ;;                      vals))
+   ;;      :hints ('(:expand ((:free (env) <call>)
+   ;;                         (svexlist-vars x))))
+   ;;      :fn svexlist-eval)
+   ;;    :mutual-recursion svex-eval))
 
    (local
-    (std::defret-mutual svex-eval-of-append-reduce-superset
-      (defret <fn>-of-append-reduce-superset
-        :pre-bind ((env (append a b c)))
-        (implies (subsetp-equal (svex-vars x) (svarlist-fix vars))
-                 (equal (svex-eval x (append a (svex-env-reduce vars b) c))
-                        val))
-        :hints ('(:expand ((:free (env) <call>)
-                           (svex-vars x)))
-                (and stable-under-simplificationp
-                     '(:in-theory (enable svex-env-boundp))))
-        :fn svex-eval)
-      (defret <fn>-of-append-reduce-superset
-        :pre-bind ((env (append a b c)))
-        (implies (subsetp-equal (svexlist-vars x) (svarlist-fix vars))
-                 (equal (svexlist-eval x (append a (svex-env-reduce vars b) c))
-                        vals))
-        :hints ('(:expand ((:free (env) <call>)
-                           (svexlist-vars x))))
-        :fn svexlist-eval)
-      :mutual-recursion svex-eval))
-
-   (local (defthm svex-alist-eval-append-reduce-superset
-            (implies (subsetp-equal (svex-alist-vars x) (svarlist-fix vars))
-                     (equal (svex-alist-eval x (append a (svex-env-reduce vars b) c))
-                            (svex-alist-eval x (append a b c))))
-            :hints(("Goal" :in-theory (enable svex-alist-eval svex-alist-vars)))))
+    (encapsulate nil
+      (local (defthm svex-envs-similar-of-extract-append-reduce-superset
+               (implies (subsetp-equal (svarlist-fix vars1) (svarlist-fix vars))
+                        (svex-envs-similar (svex-env-extract vars1 (append a (svex-env-reduce vars b) c))
+                                           (svex-env-extract vars1 (append a b c))))
+               :hints(("Goal" :in-theory (enable svex-envs-similar)))))
+      (defthm svex-alist-eval-append-reduce-superset
+        (implies (subsetp-equal (svex-alist-vars x) (svarlist-fix vars))
+                 (equal (svex-alist-eval x (append a (svex-env-reduce vars b) c))
+                        (svex-alist-eval x (append a b c))))
+        :hints(("Goal" :in-theory (enable svex-alist-eval-equal-when-extract-vars-similar))))))
 
    (local (defthm svex-alist-compose-append-reduce-superset
             (implies (subsetp-equal (svex-alist-vars x) (svarlist-fix vars))
@@ -1624,14 +1420,7 @@
 
    (local
     (encapsulate nil
-      (local (defthmd svex-env-boundp-is-member-alist-keys
-               (iff (svex-env-boundp key x)
-                    (member-equal (svar-fix key) (alist-keys (svex-env-fix x))))
-               :hints(("Goal" :in-theory (enable svex-env-boundp)))))
-      (local (defthm svex-env-lookup-when-not-boundp
-               (implies (not (svex-env-boundp key x))
-                        (equal (svex-env-lookup key x) (4vec-x)))
-               :hints(("Goal" :in-theory (enable svex-env-lookup svex-env-boundp)))))
+      (local (in-theory (enable svex-env-lookup-when-not-boundp)))
 
       (defthm svex-envs-equivalent-append-removekeys-set-equiv
         (implies (acl2::set-equiv (alist-keys (svex-env-fix a)) (svarlist-fix vars))
@@ -1639,7 +1428,7 @@
                                        (append a b)))
         :hints(("Goal" :in-theory (enable svex-envs-equivalent))
                (and stable-under-simplificationp
-                    '(:in-theory (e/d (svex-env-boundp-is-member-alist-keys)
+                    '(:in-theory (e/d (svex-env-boundp-iff-member-alist-keys)
                                       (member-alist-keys))))))
 
       (defthm svex-alist-eval-equiv-append-removekeys-set-equiv
@@ -1667,21 +1456,6 @@
    ;;      :hints ('(:expand ((:free (env) <call>))))
    ;;      :fn svexlist-eval)
    ;;    :mutual-recursion svex-eval))
-
-
-   
-
-   (local (Defthm svex-compose-lookup-when-svex-lookup
-            (implies (svex-lookup v x)
-                     (equal (svex-compose-lookup v x)
-                            (svex-lookup v x)))
-            :hints(("Goal" :in-theory (enable svex-compose-lookup)))))
-
-   (local (Defthm svex-compose-lookup-when-not-svex-lookup
-            (implies (not (svex-lookup v x))
-                     (equal (svex-compose-lookup v x)
-                            (svex-var v)))
-            :hints(("Goal" :in-theory (enable svex-compose-lookup)))))
 
 
    (local (defthm svex-compose-of-svex-var
@@ -1760,28 +1534,7 @@
                          '(:in-theory (e/d (svex-compose)
                                            (svex-lookup-of-svex-alist-compose)))))))
 
-
-   (local
-    (std::defret-mutual svex-eval-of-append-non-intersecting
-      (defret <fn>-of-append-non-intersecting
-        :pre-bind ((env (append a c)))
-        (implies (not (intersectp-equal (svex-vars x) (alist-keys (svex-env-fix b))))
-                 (equal (svex-eval x (append a b c))
-                        val))
-        :hints ('(:expand ((:free (env) <call>)
-                           (svex-vars x)))
-                (and stable-under-simplificationp
-                     '(:in-theory (enable svex-env-boundp))))
-        :fn svex-eval)
-      (defret <fn>-of-append-non-intersecting
-        :pre-bind ((env (append a c)))
-        (implies (not (intersectp-equal (svexlist-vars x) (alist-keys (svex-env-fix b))))
-                 (equal (svexlist-eval x (append a b c))
-                        vals))
-        :hints ('(:expand ((:free (env) <call>)
-                           (svexlist-vars x))))
-        :fn svexlist-eval)
-      :mutual-recursion svex-eval))
+   
 
    (defret <fn>-of-append-non-intersecting-third-of-four
      :pre-bind ((env (append a b d)))
@@ -1996,9 +1749,9 @@
                                                     inverse))))
        :hints(("Goal" :in-theory (e/d (neteval-ordering-or-null-compile
                                        svex-compose-of-rsh-under-eval-equiv-rev)
-                                      (svex-compose-of-rsh-under-eval-equiv)))
+                                      (svex-compose-of-svex-rsh-under-svex-eval-equiv)))
               (and stable-under-simplificationp
-                   '(:in-theory (enable svex-compose-of-rsh-under-eval-equiv)))))
+                   '(:in-theory (enable svex-compose-of-svex-rsh-under-svex-eval-equiv)))))
 
      (local (defthm svex-compose-of-0
               (equal (svex-compose 0 a) 0)
@@ -2025,10 +1778,10 @@
               :hints(("Goal" :in-theory (e/d (neteval-ordering-or-null-compile
                                               svex-compose-of-rsh-under-eval-equiv-rev
                                               svex-compose-of-concat-under-eval-equiv-rev)
-                                             (svex-compose-of-rsh-under-eval-equiv
+                                             (svex-compose-of-svex-rsh-under-svex-eval-equiv
                                               svex-compose-of-concat-under-eval-equiv)))
                      (and stable-under-simplificationp
-                          '(:in-theory (enable svex-compose-of-rsh-under-eval-equiv
+                          '(:in-theory (enable svex-compose-of-svex-rsh-under-svex-eval-equiv
                                                svex-compose-of-concat-under-eval-equiv))))))
 
      (local (defthmd svex-concat-equiv-when-concat-0-equiv
@@ -2158,7 +1911,7 @@
                :do-not-induct t)
               '(:in-theory (enable NETEVAL-ORDERING-OR-NULL-COMPILE-SPLIT-SWITCH-VARS-SHIFT))
               ;; '(:in-theory (e/d (svex-compose-of-rsh-under-eval-equiv-rev)
-              ;;                   (svex-compose-of-rsh-under-eval-equiv)))
+              ;;                   (svex-compose-of-svex-rsh-under-svex-eval-equiv)))
               ))
 
      (local (defun switch-vars-concat-ind (x offset offset2 width)
@@ -2294,7 +2047,7 @@
                :do-not-induct t)
               '(:in-theory (enable neteval-ordering-or-null-compile-split-switch-vars-shift-concat-any-bind))
               ;; '(:in-theory (e/d (svex-compose-of-rsh-under-eval-equiv-rev)
-              ;;                   (svex-compose-of-rsh-under-eval-equiv)))
+              ;;                   (svex-compose-of-svex-rsh-under-svex-eval-equiv)))
               ))
      
      (defcong svex-alist-eval-equiv svex-eval-equiv
@@ -2486,9 +2239,6 @@
      ;;          :hints ((and stable-under-simplificationp
      ;;                       `(:expand (,(car (last clause))))))))
 
-     (local (defthm append-svex-alist-reduce-under-svex-alist-eval-equiv
-              (svex-alist-eval-equiv (append (svex-alist-reduce keys x) x) x)
-              :hints(("Goal" :in-theory (enable svex-alist-eval-equiv)))))
 
 
      (defthm prop-for-svar-split-neteval-sigordering-compile
@@ -2730,11 +2480,6 @@
                        (subsetp-equal (svar-split-vars (cdr (hons-assoc-equal var splittab)))
                                       (svar-splittab-vars splittab)))
               :hints(("Goal" :in-theory (enable svar-splittab-vars)))))
-
-     
-     (local (defthm append-svex-alist-reduce-under-svex-alist-eval-equiv
-              (svex-alist-eval-equiv (append (svex-alist-reduce keys x) x) x)
-              :hints(("Goal" :in-theory (enable svex-alist-eval-equiv)))))
      
      (local (defthmd from-split-ordering-lemma
               (IMPLIES
@@ -3068,42 +2813,7 @@
 (local
  (progn
 
-   (defthm svex-compose-of-append-first-superset
-     (implies (subsetp (svex-vars x) (svex-alist-keys a))
-              (svex-eval-equiv (svex-compose x (append a b))
-                               (svex-compose x a)))
-     :hints(("Goal" :in-theory (enable svex-eval-equiv))))
-
-   (std::defret-mutual svex-eval-of-append-when-non-intersectp-first
-     (defret <fn>-of-append-when-non-intersectp-first
-       (implies (not (intersectp-equal (svex-vars x) (alist-keys (svex-env-fix env2))))
-                (equal (svex-eval x (append env2 env))
-                       val))
-       :hints ('(:expand ((:free (env) <call>)
-                          (svex-vars x)))
-               (and stable-under-simplificationp
-                    '(:in-theory (enable svex-env-boundp))))
-       :fn svex-eval)
-     (defret <fn>-of-append-when-non-intersectp-first
-       (implies (not (intersectp-equal (svexlist-vars x) (alist-keys (svex-env-fix env2))))
-                (equal (svexlist-eval x (append env2 env))
-                       vals))
-       :hints ('(:expand ((:free (env) <call>)
-                          (svexlist-vars x))))
-       :fn svexlist-eval)
-     :mutual-recursion svex-eval)
-
-   (defthm svex-compose-of-append-first-non-intersect
-     (implies (not (intersectp-equal (svex-vars x) (svex-alist-keys a)))
-              (svex-eval-equiv (svex-compose x (append a b))
-                               (svex-compose x b)))
-     :hints(("Goal" :in-theory (enable svex-eval-equiv))))
-
-   (defthm svex-compose-of-append-second-non-intersect
-     (implies (not (intersectp-equal (svex-vars x) (svex-alist-keys a)))
-              (svex-eval-equiv (svex-compose x (append b a))
-                               (svex-compose x b)))
-     :hints(("Goal" :in-theory (enable svex-eval-equiv))))
+   
 
    (local (defthm svar-split-vars-of-lookup
             (implies (and (svar-p var)
@@ -3170,10 +2880,7 @@
                                     svex-compose-lookup))
          (and stable-under-simplificationp
               (let ((key (acl2::find-call-lst 'SVEX-ALIST-eval-equiv-witness clause)))
-                   `(:clause-processor (acl2::generalize-with-alist-cp clause '((,key . key))))))))
-
-
-
+                `(:clause-processor (acl2::generalize-with-alist-cp clause '((,key . key))))))))
 
 
 

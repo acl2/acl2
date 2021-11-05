@@ -31,6 +31,7 @@
 (in-package "SV")
 (include-book "moddb")
 (include-book "alias-norm")
+;; (include-book "../svex/rewrite")
 (include-book "../svex/assigns-compose")
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "centaur/vl/util/cwtime" :dir :system)
@@ -1122,7 +1123,7 @@ should address this again later.</p>"
                  ;; Bozo -- convert this to a zero-extend when possible?
                  (make-svex-call
                   :fn 'bit?
-                  :args (list (svex-quote (2vec (sparseint-val (svex-mask-lookup (make-svex-var :name key) masks))))
+                  :args (list (svex-quote (2vec (sparseint-val (svex-mask-lookup (make-svex-var :name key) masks)))) 
                               ;; care
                               (make-svex-var :name val)
                               ;; don't-care
@@ -1132,32 +1133,6 @@ should address this again later.</p>"
 
 
 
-
-(define svex-compose-assigns/delays ((assigns svex-alist-p)
-                                     (delays svar-map-p)
-                                     (constraints constraintlist-p)
-                                     &key
-                                     (rewrite 't)
-                                     (verbosep 'nil))
-  :returns (mv (updates svex-alist-p)
-               (nextstates svex-alist-p)
-               (full-constraints constraintlist-p))
-  (b* ((updates (cwtime (svex-assigns-compose assigns :rewrite rewrite) :mintime 1))
-       (masks (svexlist-mask-alist (svex-alist-vals updates)))
-       ((with-fast updates))
-       (next-states (cwtime (svex-compose-delays delays updates masks) :mintime 1))
-       (full-constraints (cwtime (constraintlist-compose constraints updates) :mintime 1))
-       (- (clear-memoize-table 'svex-compose))
-       ((unless rewrite)
-        (mv updates next-states full-constraints))
-       (rewritten (svex-alist-rewrite-fixpoint (append updates next-states)
-                                               :verbosep verbosep
-                                               :count 2))
-       (updates-len (len updates))
-       (updates (take updates-len rewritten))
-       (next-states (nthcdr updates-len rewritten)))
-    (clear-memoize-table 'svex-compose)
-    (mv updates next-states full-constraints)))
 
 
 ;; (defsection addr-p-when-normordered
@@ -1269,6 +1244,36 @@ should address this again later.</p>"
                     (let ((moddb nil) (aliases nil)) <call>)))
     :hints(("Goal" :in-theory (enable normalize-stobjs-of-svex-design-flatten)))))
 
+
+
+
+
+
+(define svex-compose-assigns/delays ((assigns svex-alist-p)
+                                     (delays svar-map-p)
+                                     (constraints constraintlist-p)
+                                     &key
+                                     (rewrite 't)
+                                     (verbosep 'nil))
+  :returns (mv (updates svex-alist-p)
+               (nextstates svex-alist-p)
+               (full-constraints constraintlist-p))
+  (b* ((updates (cwtime (svex-assigns-compose assigns :rewrite rewrite) :mintime 1))
+       (masks (svexlist-mask-alist (svex-alist-vals updates)))
+       ((with-fast updates))
+       (next-states (cwtime (svex-compose-delays delays updates masks) :mintime 1))
+       (full-constraints (cwtime (constraintlist-compose constraints updates) :mintime 1))
+       (- (clear-memoize-table 'svex-compose))
+       ((unless rewrite)
+        (mv updates next-states full-constraints))
+       (rewritten (svex-alist-rewrite-fixpoint (append updates next-states)
+                                               :verbosep verbosep
+                                               :count 2))
+       (updates-len (len updates))
+       (updates (take updates-len rewritten))
+       (next-states (nthcdr updates-len rewritten)))
+    (clear-memoize-table 'svex-compose)
+    (mv updates next-states full-constraints)))
 
 (define svex-design-compile ((x design-p)
                              &key

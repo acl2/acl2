@@ -59,7 +59,9 @@
   (defequiv base-fsm-eval-equiv)
 
   (defcong base-fsm-eval-equiv svex-alist-eval-equiv (base-fsm->values fsm) 1)
-  (defcong base-fsm-eval-equiv svex-alist-eval-equiv! (base-fsm->nextstate fsm) 1))
+  (defcong base-fsm-eval-equiv svex-alist-eval-equiv! (base-fsm->nextstate fsm) 1)
+
+  (defrefinement base-fsm-equiv base-fsm-eval-equiv))
 
 ;; (define base-fsm-eval-equiv! ((x base-fsm-p) (y base-fsm-p))
 ;;   (b* (((base-fsm x))

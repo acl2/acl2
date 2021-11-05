@@ -518,7 +518,6 @@ typically be @(see memoize)d in some way or another.</p>"
 
   (verify-guards svarlist-filter))
 
-
 (define svex-alist-keys ((x svex-alist-p))
   :parents (svex-alist)
   :short "Like @(see alist-keys) but with proper @(see fty-discipline) for @(see svex-alist)s."
@@ -547,7 +546,7 @@ typically be @(see memoize)d in some way or another.</p>"
            (cons (svar-fix k) (svex-alist-keys x)))
     :hints(("Goal" :in-theory (enable svex-acons))))
 
-    (defthm svex-alist-keys-of-pairlis$
+  (defthm svex-alist-keys-of-pairlis$
     (equal (svex-alist-keys (pairlis$ x y))
            (svarlist-filter x))
     :hints(("Goal" :in-theory (enable svarlist-filter pairlis$ svex-alist-keys)))))

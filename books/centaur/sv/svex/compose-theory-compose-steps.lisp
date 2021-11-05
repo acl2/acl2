@@ -33,17 +33,18 @@
 ;; (include-book "rewrite-base")
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
+(local (include-book "alist-thms"))
 (local (std::add-default-post-define-hook :fix))
 
 
 
-(local (defthm svex-lookup-of-cons
-         (equal (svex-lookup key (cons (cons var val) rest))
-                (if (and (svar-p var)
-                         (equal (svar-fix key) var))
-                    (svex-fix val)
-                  (svex-lookup key rest)))
-         :hints(("Goal" :in-theory (enable svex-lookup)))))
+;; (local (defthm svex-lookup-of-cons
+;;          (equal (svex-lookup key (cons (cons var val) rest))
+;;                 (if (and (svar-p var)
+;;                          (equal (svar-fix key) var))
+;;                     (svex-fix val)
+;;                   (svex-lookup key rest)))
+;;          :hints(("Goal" :in-theory (enable svex-lookup)))))
 
 
 
