@@ -33,6 +33,7 @@
 
 (include-book "design-fsm")
 ;; (include-book "cycle-compile")
+(include-book "../svex/compose-theory-base")
 (include-book "cycle-base")
 ;; (include-book "pipeline")
 (include-book "assign")
@@ -98,6 +99,9 @@
     (flatnorm-validp :type (member t nil) :pred booleanp :fix bool-fix)
 
 
+    (phase-fsm-setup :type (satisfies phase-fsm-config-p) :pred phase-fsm-config-p :fix phase-fsm-config-fix
+                     :initially ,(make-phase-fsm-config
+                                  :override-config (make-svtv-assigns-override-config-omit)))
     (phase-fsm :type (satisfies base-fsm-p) :pred base-fsm-p :fix base-fsm-fix
                :initially ,(make-base-fsm))
     (phase-fsm-validp :type (member t nil) :pred booleanp :fix bool-fix)
@@ -256,8 +260,6 @@
 
 
 
-
-
 (define svtv-data$c-phase-fsm-okp (svtv-data$c (phase-fsm base-fsm-p))
   ;; :guard (and (modalist-addr-p (design->modalist (svtv-data$c->design svtv-data$c)))
   ;;             ;; (svtv-data$c-flatten-okp svtv-data$c (svtv-data$c->flatten svtv-data$c))
@@ -269,16 +271,18 @@
                  ;;              (assigns)
                  ;;              (svtv-normalize-assigns flatten aliases setup)
                  ;;              assigns))
-        (svtv-data$c->flatnorm svtv-data$c)))
-    (base-fsm-eval-equiv phase-fsm
-                         (svtv-compose-assigns/delays flatnorm)))
+        (svtv-data$c->flatnorm svtv-data$c))
+       (config (svtv-data$c->phase-fsm-setup svtv-data$c)))
+    (ec-call (phase-fsm-composition-p phase-fsm flatnorm config)))
   ///
   (defcong base-fsm-eval-equiv equal (svtv-data$c-phase-fsm-okp svtv-data$c phase-fsm) 2)
 
   (acl2::def-updater-independence-thm svtv-data$c-phase-fsm-okp-updater-independence
     (let ((new acl2::new) (old acl2::old))
-      (implies (equal (svtv-data$c->flatnorm new)
-                      (svtv-data$c->flatnorm old))
+      (implies (and (equal (svtv-data$c->flatnorm new)
+                           (svtv-data$c->flatnorm old))
+                    (equal (svtv-data$c->phase-fsm-setup new)
+                           (svtv-data$c->phase-fsm-setup old)))
                (equal (svtv-data$c-phase-fsm-okp new phase-fsm)
                       (svtv-data$c-phase-fsm-okp old phase-fsm))))))
 
@@ -820,22 +824,39 @@
   (non-exec (update-svtv-data$c->flatnorm-validp validp x)))
 
 
+(defthm update-phase-fsm-setup-preserves-svtv-data$ap
+  (implies (and (svtv-data$ap x)
+                (not (svtv-data$a->phase-fsm-validp x))
+                ;; (not (svtv-data$a->phase-fsm-validp x))
+                )
+           (svtv-data$ap (update-svtv-data$c->phase-fsm-setup phase-fsm-setup x)))
+  :hints(("Goal" :expand ((svtv-data$ap (update-svtv-data$c->phase-fsm-setup phase-fsm-setup x))))))
+
+
+(define update-svtv-data$a->phase-fsm-setup ((phase-fsm-setup phase-fsm-config-p) x)
+  :guard (and (not (svtv-data$a->phase-fsm-validp x)))
+  :enabled t :hooks nil
+  (non-exec (update-svtv-data$c->phase-fsm-setup phase-fsm-setup x)))
+
+
 
 
 (defthm update-phase-fsm-preserves-svtv-data$ap
   (implies (and (svtv-data$ap x)
-                (if (svtv-data$c->phase-fsm-validp x)
-                    (svtv-data$c-phase-fsm-okp x phase-fsm)
-                  (not (svtv-data$c->cycle-fsm-validp x))))
+                (or (not (svtv-data$a->cycle-fsm-validp x))
+                    (base-fsm-eval-equiv phase-fsm (svtv-data$c->phase-fsm x)))
+                (or (not (svtv-data$c->phase-fsm-validp x))
+                    (svtv-data$c-phase-fsm-okp x phase-fsm)))
            (svtv-data$ap (update-svtv-data$c->phase-fsm phase-fsm x)))
   :hints(("Goal" :expand ((svtv-data$ap (update-svtv-data$c->phase-fsm phase-fsm x)))
           :use ((:instance svtv-data$ap-implies-phase-fsm-okp))
           :in-theory (disable svtv-data$ap-implies-phase-fsm-okp))))
 
 (define update-svtv-data$a->phase-fsm ((phase-fsm base-fsm-p) (x svtv-data$ap))
-  :guard (if (svtv-data$a->phase-fsm-validp x)
-             (ec-call (svtv-data$a-phase-fsm-okp x phase-fsm))
-           (not (svtv-data$a->cycle-fsm-validp x)))
+  :guard (and (or (not (svtv-data$a->cycle-fsm-validp x))
+                  (base-fsm-eval-equiv phase-fsm (svtv-data$a->phase-fsm x)))
+              (or (not (svtv-data$a->phase-fsm-validp x))
+                  (ec-call (svtv-data$a-phase-fsm-okp x phase-fsm))))
   ;; :guard-hints ((and stable-under-simplificationp '(:in-theory (enable svtv-data$ap))))  
   :enabled t :hooks nil
   (non-exec (update-svtv-data$c->phase-fsm phase-fsm x)))

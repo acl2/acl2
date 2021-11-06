@@ -36,10 +36,12 @@
 (include-book "compose-phases")
 (include-book "../mods/compile")
 (include-book "../svex/4vmask")
-(include-book "../svex/assigns-compose") ;; ?
+(include-book "../svex/assigns-compose")
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "centaur/gl/auto-bindings" :dir :system)
 (include-book "std/alists/alist-defuns" :dir :system)
+(include-book "std/util/defredundant" :dir :system)
+(local (include-book "../svex/alist-thms"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/alists/fal-extract" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))
@@ -909,30 +911,10 @@
     (cons `(equal ,var ',(car ins))
           (autoins-lookup-casesplit (cdr ins) var))))
 
-
-(defthmd svex-env-lookup-of-cons
-  (implies (and (iff match (double-rewrite (and (consp pair)
-                                                (svar-p (car pair))
-                                                (equal (svar-fix key) (car pair)))))
-                (syntaxp (quotep match)))
-           (equal (svex-env-lookup key (cons pair rest))
-                  (if match
-                      (4vec-fix (cdr pair))
-                    (svex-env-lookup key rest))))
-  :hints(("Goal" :in-theory (enable svex-env-lookup))))
-
-
-
-(defthmd svex-env-boundp-of-cons
-  (implies (and (iff match (double-rewrite (and (consp pair)
-                                                (svar-p (car pair))
-                                                (equal (svar-fix key) (car pair)))))
-                (syntaxp (quotep match)))
-           (equal (svex-env-boundp key (cons pair rest))
-                  (if match
-                      t
-                    (svex-env-boundp key rest))))
-  :hints(("Goal" :in-theory (enable svex-env-boundp))))
+;; these events need to be included here non-locally because they're used by
+;; defsvtv forms
+(std::defredundant :names (svex-env-lookup-of-cons
+                           svex-env-boundp-of-cons))
 
 
 

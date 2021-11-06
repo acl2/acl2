@@ -39,43 +39,43 @@
 
 ;; (local
 ;;  (progn
-;;    (defthm 4vec-==-[=-===-ext
-;;      (implies (and (4vec-[= a1 a)
-;;                    (4vec-[= b1 b))
-;;               (4vec-[= (4vec-== a1 b1) (4vec-=== a b)))
-;;      :hints (("goal" :in-theory (e/d (4vec-[=-transitive-2)
-;;                                      (4vec-==-[=-===))
-;;               :use ((:instance 4vec-==-[=-===)))))
+;;    (defthm 4vec-==-<<=-===-ext
+;;      (implies (and (4vec-<<= a1 a)
+;;                    (4vec-<<= b1 b))
+;;               (4vec-<<= (4vec-== a1 b1) (4vec-=== a b)))
+;;      :hints (("goal" :in-theory (e/d (4vec-<<=-transitive-2)
+;;                                      (4vec-==-<<=-===))
+;;               :use ((:instance 4vec-==-<<=-===)))))
 
-;;    (defthm 4vec-wildeq-safe-[=-wildeq-ext
-;;      (implies (and (4vec-[= a1 a)
-;;                    (4vec-[= b1 b))
-;;               (4vec-[= (4vec-wildeq-safe a1 b1) (4vec-wildeq a b)))
-;;      :hints (("goal" :in-theory (e/d (4vec-[=-transitive-2)
-;;                                      (4vec-wildeq-safe-[=-wildeq))
-;;               :use ((:instance 4vec-wildeq-safe-[=-wildeq)))))
+;;    (defthm 4vec-wildeq-safe-<<=-wildeq-ext
+;;      (implies (and (4vec-<<= a1 a)
+;;                    (4vec-<<= b1 b))
+;;               (4vec-<<= (4vec-wildeq-safe a1 b1) (4vec-wildeq a b)))
+;;      :hints (("goal" :in-theory (e/d (4vec-<<=-transitive-2)
+;;                                      (4vec-wildeq-safe-<<=-wildeq))
+;;               :use ((:instance 4vec-wildeq-safe-<<=-wildeq)))))
 
 
-;;    (defthm 4vec-bit?-[=-bit?!-ext
-;;      (implies (and (4vec-[= test1 test)
-;;                    (4vec-[= then1 then)
-;;                    (4vec-[= else1 else))
-;;               (4vec-[= (4vec-bit? test1 then1 else1)
+;;    (defthm 4vec-bit?-<<=-bit?!-ext
+;;      (implies (and (4vec-<<= test1 test)
+;;                    (4vec-<<= then1 then)
+;;                    (4vec-<<= else1 else))
+;;               (4vec-<<= (4vec-bit? test1 then1 else1)
 ;;                        (4vec-bit?! test then else)))
-;;      :hints (("goal" :in-theory (e/d (4vec-[=-transitive-2)
-;;                                      (4vec-bit?-[=-bit?!))
-;;               :use ((:instance 4vec-bit?-[=-bit?!)))))
+;;      :hints (("goal" :in-theory (e/d (4vec-<<=-transitive-2)
+;;                                      (4vec-bit?-<<=-bit?!))
+;;               :use ((:instance 4vec-bit?-<<=-bit?!)))))
 
 
-;;    (defthm 4vec-?*-[=-?!-ext
-;;      (implies (and (4vec-[= test1 test)
-;;                    (4vec-[= then1 then)
-;;                    (4vec-[= else1 else))
-;;               (4vec-[= (4vec-?* test1 then1 else1)
+;;    (defthm 4vec-?*-<<=-?!-ext
+;;      (implies (and (4vec-<<= test1 test)
+;;                    (4vec-<<= then1 then)
+;;                    (4vec-<<= else1 else))
+;;               (4vec-<<= (4vec-?* test1 then1 else1)
 ;;                        (4vec-?! test then else)))
-;;      :hints (("goal" :in-theory (e/d (4vec-[=-transitive-2)
-;;                                      (4vec-?*-[=-?!))
-;;               :use ((:instance 4vec-?*-[=-?!)))))))
+;;      :hints (("goal" :in-theory (e/d (4vec-<<=-transitive-2)
+;;                                      (4vec-?*-<<=-?!))
+;;               :use ((:instance 4vec-?*-<<=-?!)))))))
 
 (defconst *svex-fn/args-monotonify-body*
   '(case (fnsym-fix fn)
@@ -187,22 +187,22 @@
                      (svex-eval (nth n x) env))
               :hints(("Goal" :in-theory (enable 4veclist-nth-safe nth)))))
 
-     (local (defthm 4vec-[=-car-mono-eval/eval-when-4veclist-[=
-              (implies (4veclist-[= (svexlist-mono-eval x env) (svexlist-eval x env))
-                       (4vec-[= (svex-mono-eval (car x) env)
+     (local (defthm 4vec-<<=-car-mono-eval/eval-when-4veclist-<<=
+              (implies (4veclist-<<= (svexlist-mono-eval x env) (svexlist-eval x env))
+                       (4vec-<<= (svex-mono-eval (car x) env)
                                 (svex-eval (car x) env)))
               :hints (("goal" :expand ((svexlist-mono-eval x env) (svexlist-eval x env))
                        :in-theory (enable svex-mono-eval-of-quote)))))
 
-     (local (defthm 4veclist-[=-cdr-mono-eval/eval-when-4veclist-[=
-              (implies (4veclist-[= (svexlist-mono-eval x env) (svexlist-eval x env))
-                       (4veclist-[= (svexlist-mono-eval (cdr x) env)
+     (local (defthm 4veclist-<<=-cdr-mono-eval/eval-when-4veclist-<<=
+              (implies (4veclist-<<= (svexlist-mono-eval x env) (svexlist-eval x env))
+                       (4veclist-<<= (svexlist-mono-eval (cdr x) env)
                                     (svexlist-eval (cdr x) env)))
               :hints (("goal" :expand ((svexlist-mono-eval x env) (svexlist-eval x env))))))
 
-     (local (defthm 4vec-[=-nth-mono-eval/eval-when-4veclist-[=
-              (implies (4veclist-[= (svexlist-mono-eval x env) (svexlist-eval x env))
-                       (4vec-[= (svex-mono-eval (nth n x) env)
+     (local (defthm 4vec-<<=-nth-mono-eval/eval-when-4veclist-<<=
+              (implies (4veclist-<<= (svexlist-mono-eval x env) (svexlist-eval x env))
+                       (4vec-<<= (svex-mono-eval (nth n x) env)
                                 (svex-eval (nth n x) env)))
               :hints (("goal"
                        :induct (nth n x)

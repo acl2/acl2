@@ -42,6 +42,9 @@
                                  (phases svtv-cyclephaselist-p)
                                  svtv-data
                                  &key
+                                 ((phase-config phase-fsm-config-p)
+                                  '(make-phase-fsm-config
+                                    :override-config (make-svtv-assigns-override-config-omit)))
                                  ((monotonify booleanp) 't)
                                  ((rewrite-phases booleanp) 't)
                                  ((rewrite-cycle booleanp) 't)
@@ -54,7 +57,7 @@
        ((when err)
         (mv err svtv-data))
        (svtv-data (svtv-data-maybe-compute-flatnorm svtv-data (make-flatnorm-setup :monotonify monotonify)))
-       (svtv-data (svtv-data-maybe-compute-phase-fsm svtv-data))
+       (svtv-data (svtv-data-maybe-compute-phase-fsm svtv-data phase-config))
        (svtv-data (svtv-data-maybe-rewrite-phase-fsm rewrite-phases svtv-data :verbosep t))
        (svtv-data (svtv-data-maybe-compute-cycle-fsm phases svtv-data cycle-simp :skip skip-cycle))
        ((when skip-cycle)
@@ -72,11 +75,12 @@
                   (implies (not skip-cycle)
                            (equal (svtv-data$c->cycle-fsm-validp new-svtv-data) t))))))
 
-(defun defcycle-fn (name design phases names names-p monotonify rewrite-phases rewrite-cycle cycle-simp skip-cycle stobj)
+(defun defcycle-fn (name design phases names names-p monotonify phase-config rewrite-phases rewrite-cycle cycle-simp skip-cycle stobj)
   `(make-event
     (b* (((mv err ,stobj)
           (svtv-data-defcycle-core ,design ,phases
                                    ,stobj
+                                   :phase-config ,phase-config
                                    :rewrite-phases ,rewrite-phases
                                    :rewrite-cycle ,rewrite-cycle
                                    :cycle-simp ,cycle-simp
@@ -110,11 +114,14 @@
                          phases
                          (names 'nil names-p)
                          (monotonify 't)
+                         (phase-config
+                          '(make-phase-fsm-config
+                            :override-config (make-svtv-assigns-override-config-omit)))
                          (rewrite-phases 't)
                          (rewrite-cycle 't)
                          (cycle-simp 't)
                          (skip-cycle 'nil)
                          (stobj 'svtv-data))
-  (defcycle-fn name design phases names names-p monotonify rewrite-phases rewrite-cycle cycle-simp skip-cycle stobj))
+  (defcycle-fn name design phases names names-p monotonify phase-config rewrite-phases rewrite-cycle cycle-simp skip-cycle stobj))
 
 ;; Doc in new-svtv-doc.lisp

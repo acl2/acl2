@@ -982,6 +982,45 @@
                (atc-array-read-return-names-loop-array-types (cdr atypes)
                                                              itypes)))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-array-write-return-rewrite-rules*
+  :short "List of rewrite rules for the return types of
+          models of C array write operations."
+  (atc-array-write-return-names-loop-array-types *atc-integer-types*
+                                                 *atc-integer-types*)
+
+  :prepwork
+
+  ((define atc-array-write-return-names-loop-index-types ((atype typep)
+                                                          (itypes type-listp))
+     :guard (and (type-integerp atype)
+                 (type-integer-listp itypes))
+     :returns (names symbol-listp)
+     :parents nil
+     (cond
+      ((endp itypes) nil)
+      (t (b* ((afixtype (atc-integer-type-fixtype atype))
+              (ifixtype (atc-integer-type-fixtype (car itypes)))
+              (pred (pack afixtype '-arrayp)))
+           (cons
+            (pack pred '-of- afixtype '-array-write- ifixtype)
+            (atc-array-read-return-names-loop-index-types atype
+                                                          (cdr itypes)))))))
+
+   (define atc-array-write-return-names-loop-array-types ((atypes type-listp)
+                                                          (itypes type-listp))
+     :guard (and (type-integer-listp atypes)
+                 (type-integer-listp itypes))
+     :returns (names symbol-listp)
+     :parents nil
+     (cond ((endp atypes) nil)
+           (t (append
+               (atc-array-write-return-names-loop-index-types (car atypes)
+                                                              itypes)
+               (atc-array-write-return-names-loop-array-types (cdr atypes)
+                                                              itypes)))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atc-more-rewrite-rules*
@@ -1360,6 +1399,7 @@
           *atc-integer-ops-2-return-rewrite-rules*
           *atc-integer-convs-return-rewrite-rules*
           *atc-array-read-return-rewrite-rules*
+          *atc-array-write-return-rewrite-rules*
           *atc-more-rewrite-rules*
           *atc-type-prescription-rules*
           *atc-compound-recognizer-rules*

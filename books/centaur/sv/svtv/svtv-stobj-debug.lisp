@@ -218,13 +218,13 @@
 ;;                   (no-duplicatesp-equal (alist-keys y)))))
 
 (defsection no-duplicates-when-keys-equal-data-nextstate
-  (local
-   (defret no-duplicate-nextstates-when-equal-<fn>
-     (implies (and (equal y
-                          (svex-alist-keys (base-fsm->nextstate fsm)))
-                   (not err))
-              (no-duplicatesp-equal y))
-     :fn svtv-design-to-fsm))
+  ;; (local
+  ;;  (defret no-duplicate-nextstates-when-equal-<fn>
+  ;;    (implies (and (equal y
+  ;;                         (svex-alist-keys (base-fsm->nextstate fsm)))
+  ;;                  (not err))
+  ;;             (no-duplicatesp-equal y))
+  ;;    :fn svtv-design-to-fsm))
   
   (defthm no-duplicate-nextstates-of-base-nextstate
     (implies (and (svtv-data$ap svtv-data)

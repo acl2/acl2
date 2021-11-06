@@ -1813,11 +1813,11 @@
 
   (local (defthm svex-xeval-lemma
            (implies (and (equal 0 (loghead n (lognot (4vec->lower x))))
-                         (4vec-[= x y))
+                         (4vec-<<= x y))
                     (and (equal (loghead n (lognot (4vec->lower y))) 0)
                          (equal (loghead n (lognot (4vec->upper y)))
                                 (loghead n (lognot (4vec->upper x))))))
-           :hints (("goal" :in-theory (enable 4vec-[=))
+           :hints (("goal" :in-theory (enable 4vec-<<=))
                    (logbitp-reasoning :passes 2))
            :rule-classes nil))
 
@@ -1887,11 +1887,11 @@
 
   (local (defthm svex-xeval-lemma-2
            (implies (and (equal 0 (loghead n (4vec->upper x)))
-                         (4vec-[= x y))
+                         (4vec-<<= x y))
                     (and (equal (loghead n (4vec->upper y)) 0)
                          (equal (loghead n (4vec->lower y))
                                 (loghead n (4vec->lower x)))))
-           :hints (("goal" :in-theory (enable 4vec-[=))
+           :hints (("goal" :in-theory (enable 4vec-<<=))
                    (logbitp-reasoning :passes 2))
            :rule-classes nil))
 
@@ -2501,7 +2501,7 @@
             ;; :prune-examples nil
             :add-hints (:in-theory (enable* bitops::bool->bit
                                             ;; bitops::logbitp-case-splits
-                                    logbitp-when-4vec-[=-svex-eval-strong)))))
+                                    logbitp-when-4vec-<<=-svex-eval-strong)))))
 
   (def-svex-rewrite bit?-of-0s
     :lhs (bit? c x y)
@@ -2515,7 +2515,7 @@
             ;; :prune-examples nil
             :add-hints (:in-theory (enable* bitops::bool->bit
                                             bitops::logbitp-case-splits
-                                            logbitp-when-4vec-[=-svex-eval-strong))))))
+                                            logbitp-when-4vec-<<=-svex-eval-strong))))))
 
 
 
@@ -2549,7 +2549,7 @@
             ;; :prune-examples nil
             :add-hints (:in-theory (enable* bitops::bool->bit
                                             bitops::logbitp-case-splits
-                                            logbitp-when-4vec-[=-svex-eval-strong)))))
+                                            logbitp-when-4vec-<<=-svex-eval-strong)))))
 
   (def-svex-rewrite bit?!-of-quoted-non1
     :lhs (bit?! c x y)
@@ -2563,7 +2563,7 @@
             ;; :prune-examples nil
             :add-hints (:in-theory (enable* bitops::bool->bit
                                             bitops::logbitp-case-splits
-                                            logbitp-when-4vec-[=-svex-eval-strong)))))
+                                            logbitp-when-4vec-<<=-svex-eval-strong)))))
 
   (def-svex-rewrite bit?!-of-xeval-neg1
     :lhs (bit?! c x y)
@@ -2576,7 +2576,7 @@
             ;; :prune-examples nil
             :add-hints (:in-theory (enable* bitops::bool->bit
                                             bitops::logbitp-case-splits
-                                            logbitp-when-4vec-[=-svex-eval-strong)))))
+                                            logbitp-when-4vec-<<=-svex-eval-strong)))))
 
   (def-svex-rewrite bit?!-of-xeval-0/z
     :lhs (bit?! c x y)
@@ -2590,7 +2590,7 @@
             ;; :prune-examples nil
             :add-hints (:in-theory (enable* bitops::bool->bit
                                             bitops::logbitp-case-splits
-                                            logbitp-when-4vec-[=-svex-eval-strong))))))
+                                            logbitp-when-4vec-<<=-svex-eval-strong))))))
 
 
 (def-svex-rewrite bitand-under-mask-1
@@ -2605,7 +2605,7 @@
           :prune-examples nil
           :add-hints (:in-theory (enable* bitops::bool->bit
                                           bitops::logbitp-case-splits
-                                          logbitp-when-4vec-[=-svex-eval-strong)))))
+                                          logbitp-when-4vec-<<=-svex-eval-strong)))))
 
 (def-svex-rewrite bitand-under-mask-2
   :lhs (bitand x y)
@@ -2619,7 +2619,7 @@
           :prune-examples nil
           :add-hints (:in-theory (enable* bitops::bool->bit
                                           bitops::logbitp-case-splits
-                                          logbitp-when-4vec-[=-svex-eval-strong)))))
+                                          logbitp-when-4vec-<<=-svex-eval-strong)))))
 
 (def-svex-rewrite resand-under-mask-1
   :lhs (resand x y)
@@ -2633,7 +2633,7 @@
           :prune-examples nil
           :add-hints (:in-theory (enable* bitops::bool->bit
                                           bitops::logbitp-case-splits
-                                          logbitp-when-4vec-[=-svex-eval-strong)))))
+                                          logbitp-when-4vec-<<=-svex-eval-strong)))))
 
 (def-svex-rewrite resand-under-mask-2
   :lhs (resand x y)
@@ -2647,7 +2647,7 @@
           :prune-examples nil
           :add-hints (:in-theory (enable* bitops::bool->bit
                                           bitops::logbitp-case-splits
-                                          logbitp-when-4vec-[=-svex-eval-strong)))))
+                                          logbitp-when-4vec-<<=-svex-eval-strong)))))
 
 (def-svex-rewrite bitor-under-mask-1
   :lhs (bitor x y)
@@ -2661,7 +2661,7 @@
           :prune-examples nil
           :add-hints (:in-theory (enable* bitops::bool->bit
                                           bitops::logbitp-case-splits
-                                          logbitp-when-4vec-[=-svex-eval-strong)))))
+                                          logbitp-when-4vec-<<=-svex-eval-strong)))))
 
 (def-svex-rewrite bitor-under-mask-2
   :lhs (bitor x y)
@@ -2675,7 +2675,7 @@
           :prune-examples nil
           :add-hints (:in-theory (enable* bitops::bool->bit
                                           bitops::logbitp-case-splits
-                                          logbitp-when-4vec-[=-svex-eval-strong)))))
+                                          logbitp-when-4vec-<<=-svex-eval-strong)))))
 
 (def-svex-rewrite resor-under-mask-1
   :lhs (resor x y)
@@ -2689,7 +2689,7 @@
           :prune-examples nil
           :add-hints (:in-theory (enable* bitops::bool->bit
                                           bitops::logbitp-case-splits
-                                          logbitp-when-4vec-[=-svex-eval-strong)))))
+                                          logbitp-when-4vec-<<=-svex-eval-strong)))))
 
 (def-svex-rewrite resor-under-mask-2
   :lhs (resor x y)
@@ -2703,7 +2703,7 @@
           :prune-examples nil
           :add-hints (:in-theory (enable* bitops::bool->bit
                                           bitops::logbitp-case-splits
-                                          logbitp-when-4vec-[=-svex-eval-strong)))))
+                                          logbitp-when-4vec-<<=-svex-eval-strong)))))
 
 
 (def-svex-rewrite res-under-mask-1
@@ -2718,7 +2718,7 @@
           :prune-examples nil
           :add-hints (:in-theory (enable* bitops::bool->bit
                                           bitops::logbitp-case-splits
-                                          logbitp-when-4vec-[=-svex-eval-strong)))))
+                                          logbitp-when-4vec-<<=-svex-eval-strong)))))
 
 (def-svex-rewrite res-under-mask-2
   :lhs (res x y)
@@ -2732,7 +2732,7 @@
           :prune-examples nil
           :add-hints (:in-theory (enable* bitops::bool->bit
                                           bitops::logbitp-case-splits
-                                          logbitp-when-4vec-[=-svex-eval-strong)))))
+                                          logbitp-when-4vec-<<=-svex-eval-strong)))))
 
 
 
@@ -2783,7 +2783,7 @@
 (define 4vec-res-must-choose-mask ((x s4vec-p)
                                    (y s4vec-p)
                                    (mask 4vmask-p))
-  :prepwork ((local (in-theory (enable logbitp-when-4vec-[=-svex-eval-strong))))
+  :prepwork ((local (in-theory (enable logbitp-when-4vec-<<=-svex-eval-strong))))
   ;; determines bits where (res x y) is known to equal x but not known to equal
   ;; y, and mask is active.  On other bits, it's ok to choose y as long as
   ;; res-combine-cond holds.
@@ -2836,7 +2836,7 @@
 
 
   (local (in-theory (disable 4vec-res-must-choose-mask
-                             LOGBITP-WHEN-4VEC-[=-SVEX-EVAL-STRONG)))
+                             LOGBITP-WHEN-4VEC-<<=-SVEX-EVAL-STRONG)))
 
   ;; (defthm 4vec-res-must-choose-mask-correct-range
   ;;   (implies (and (res-combine-cond (svex-xeval x) (svex-xeval y) mask)
@@ -2857,7 +2857,7 @@
   ;;   :hints(("Goal" :in-theory (enable 4vec-mask 4vec-concat 4vec-rsh))
   ;;          (logbitp-reasoning :prune-examples nil
   ;;                             :simp-hint (:in-theory (enable* logbitp-case-splits
-  ;;                                                             logbitp-when-4vec-[=-svex-eval-strong
+  ;;                                                             logbitp-when-4vec-<<=-svex-eval-strong
   ;;                                                             ;; bit-n
   ;;                                                             4vec-res-must-choose-mask)))))
 
@@ -2892,7 +2892,7 @@
     :hints(("Goal" :in-theory (enable 4vec-mask 4vec-concat 4vec-rsh 4vec-shift-core))
            (logbitp-reasoning :prune-examples nil
                               :simp-hint (:in-theory (enable* logbitp-case-splits
-                                                              logbitp-when-4vec-[=-svex-eval-strong
+                                                              logbitp-when-4vec-<<=-svex-eval-strong
                                                               ;; bit-n
                                                               4vec-res-must-choose-mask)))))
 
@@ -2963,7 +2963,7 @@
   ;;   :hints(("Goal" :in-theory (enable 4vec-mask 4vec-concat 4vec-rsh))
   ;;          (logbitp-reasoning :prune-examples nil
   ;;                             :simp-hint (:in-theory (enable* logbitp-case-splits
-  ;;                                                             logbitp-when-4vec-[=-svex-eval-strong
+  ;;                                                             logbitp-when-4vec-<<=-svex-eval-strong
   ;;                                                             ;; bit-n
   ;;                                                             4vec-res-must-choose-mask)))))
 
@@ -2984,7 +2984,7 @@
     :hints(("Goal" :in-theory (enable 4vec-mask 4vec-rsh 4vec-shift-core))
            (logbitp-reasoning :prune-examples nil
                               :simp-hint (:in-theory (enable* logbitp-case-splits
-                                                              logbitp-when-4vec-[=-svex-eval-strong
+                                                              logbitp-when-4vec-<<=-svex-eval-strong
                                                               ;; bit-n
                                                               4vec-res-must-choose-mask)))))
 
@@ -3342,7 +3342,7 @@
           :prune-examples nil
           :add-hints (:in-theory (enable* bitops::bool->bit
                                           bitops::logbitp-case-splits
-                                          logbitp-when-4vec-[=-svex-eval-strong)))))
+                                          logbitp-when-4vec-<<=-svex-eval-strong)))))
 
 (def-svex-rewrite bitxor-negation-under-mask-1
   :lhs (bitxor x y)
@@ -3356,7 +3356,7 @@
           :prune-examples nil
           :add-hints (:in-theory (enable* bitops::bool->bit
                                           bitops::logbitp-case-splits
-                                          logbitp-when-4vec-[=-svex-eval-strong)))))
+                                          logbitp-when-4vec-<<=-svex-eval-strong)))))
 
 
 (def-svex-rewrite bitxor-identity-under-mask-2
@@ -3371,7 +3371,7 @@
           :prune-examples nil
           :add-hints (:in-theory (enable* bitops::bool->bit
                                           bitops::logbitp-case-splits
-                                          logbitp-when-4vec-[=-svex-eval-strong)))))
+                                          logbitp-when-4vec-<<=-svex-eval-strong)))))
 
 (def-svex-rewrite bitxor-negation-under-mask-2
   :lhs (bitxor x y)
@@ -3385,7 +3385,7 @@
           :prune-examples nil
           :add-hints (:in-theory (enable* bitops::bool->bit
                                           bitops::logbitp-case-splits
-                                          logbitp-when-4vec-[=-svex-eval-strong)))))
+                                          logbitp-when-4vec-<<=-svex-eval-strong)))))
 
 
 
@@ -3905,7 +3905,7 @@
     :checks ((not (sparseint-equal 0 (s4vec->lower (s3vec-fix (svex-s4xeval a))))))
     :rhs b
     :hints(("Goal" :in-theory (e/d (4vec-? 3vec-? svex-apply 4vec-mask
-                                           3vec-fix 4vec-[=)
+                                           3vec-fix 4vec-<<=)
                                    (svex-eval-gte-xeval))
             :use ((:instance svex-eval-gte-xeval
                    (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
@@ -3917,7 +3917,7 @@
     :checks ((not (sparseint-equal 0 (s4vec->lower (s3vec-fix (svex-s4xeval a))))))
     :rhs b
     :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask
-                                           3vec-fix 4vec-[=)
+                                           3vec-fix 4vec-<<=)
                                    (svex-eval-gte-xeval))
             :use ((:instance svex-eval-gte-xeval
                    (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
@@ -3929,7 +3929,7 @@
     :checks ((not (sparseint-equal 0 (s4vec->lower (s3vec-fix (svex-s4xeval a))))))
     :rhs b
     :hints(("Goal" :in-theory (e/d (4vec-?! svex-apply 4vec-mask
-                                           3vec-fix 4vec-[=)
+                                           3vec-fix 4vec-<<=)
                                    (svex-eval-gte-xeval))
             :use ((:instance svex-eval-gte-xeval
                    (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
@@ -3941,7 +3941,7 @@
     :checks ((sparseint-equal 0 (s4vec->upper (s3vec-fix (svex-s4xeval a)))))
     :rhs c
     :hints(("Goal" :in-theory (e/d (4vec-? 3vec-? svex-apply 4vec-mask
-                                           3vec-fix 4vec-[=)
+                                           3vec-fix 4vec-<<=)
                                    (svex-eval-gte-xeval))
             :use ((:instance svex-eval-gte-xeval
                    (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
@@ -3953,7 +3953,7 @@
     :checks ((sparseint-equal 0 (s4vec->upper (s3vec-fix (svex-s4xeval a)))))
     :rhs c
     :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask
-                                           3vec-fix 4vec-[=)
+                                           3vec-fix 4vec-<<=)
                                    (svex-eval-gte-xeval))
             :use ((:instance svex-eval-gte-xeval
                    (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
@@ -3965,7 +3965,7 @@
     :checks ((sparseint-equal 0 (s4vec->upper (s3vec-fix (svex-s4xeval a)))))
     :rhs c
     :hints(("Goal" :in-theory (e/d (4vec-?! svex-apply 4vec-mask
-                                           3vec-fix 4vec-[=)
+                                           3vec-fix 4vec-<<=)
                                    (svex-eval-gte-xeval))
             :use ((:instance svex-eval-gte-xeval
                    (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
@@ -3976,7 +3976,7 @@
     :lhs (?* a b b)
     :rhs b
     :hints(("Goal" :in-theory (e/d (4vec-?* 3vec-?* svex-apply 4vec-mask
-                                           3vec-fix 4vec-[=)
+                                           3vec-fix 4vec-<<=)
                                    (svex-eval-gte-xeval))
             :use ((:instance svex-eval-gte-xeval
                    (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
@@ -3987,7 +3987,7 @@
     :lhs (?! a b b)
     :rhs b
     :hints(("Goal" :in-theory (e/d (4vec-?! svex-apply 4vec-mask
-                                           3vec-fix 4vec-[=)
+                                           3vec-fix 4vec-<<=)
                                    (svex-eval-gte-xeval))
             :use ((:instance svex-eval-gte-xeval
                    (x (svex-lookup 'a (mv-nth 1 (svexlist-unify '(a b c) args nil)))))))
@@ -4377,11 +4377,11 @@
            (4vec-mask-to-zero mask (s4vec->4vec x)))
     :hints(("Goal" :in-theory (enable 4vec-mask-to-zero)))))
 
-(local (defthm 4vec-mask-to-zero-preserves-[=
-         (implies (4vec-[= x y)
-                  (4vec-[= (4vec-mask-to-zero mask x)
+(local (defthm 4vec-mask-to-zero-preserves-<<=
+         (implies (4vec-<<= x y)
+                  (4vec-<<= (4vec-mask-to-zero mask x)
                            (4vec-mask-to-zero mask y)))
-         :hints(("Goal" :in-theory (e/d (4vec-[= 4vec-mask-to-zero)
+         :hints(("Goal" :in-theory (e/d (4vec-<<= 4vec-mask-to-zero)
                                         ((tau-system))))
                 (logbitp-reasoning))))
 
@@ -4403,10 +4403,10 @@
    (implies (and (equal (4vec->upper (4vec-mask-to-zero mask (svex-xeval x))) 0)
                  (equal (4vec->lower (4vec-mask-to-zero mask (svex-xeval x))) 0))
             (Equal (4vec-mask-to-zero mask (svex-eval x env)) 0))
-   :hints(("Goal" :use ((:instance 4vec-mask-to-zero-preserves-[=
+   :hints(("Goal" :use ((:instance 4vec-mask-to-zero-preserves-<<=
                          (x (svex-xeval x)) (y (svex-eval x env))))
            :in-theory (e/d (equal-of-4vec->upper)
-                           (4vec-mask-to-zero-preserves-[=))
+                           (4vec-mask-to-zero-preserves-<<=))
            :expand ((:free (x) (hide x)))))))
 
 (def-svex-rewrite uor-under-mask-1
@@ -4452,9 +4452,9 @@
           (svex-generalize-lookups)
           (logbitp-reasoning
            :simp-hint (:in-theory (enable* logbitp-case-splits
-                                           logbitp-when-4vec-[=-svex-eval-strong))
+                                           logbitp-when-4vec-<<=-svex-eval-strong))
            :add-hints (:in-theory (enable* logbitp-case-splits
-                                           logbitp-when-4vec-[=-svex-eval-strong)))))
+                                           logbitp-when-4vec-<<=-svex-eval-strong)))))
 
 
 
@@ -4558,10 +4558,10 @@
 
   (local (defthmd 4vec-xfree-under-mask-implies-4vec-masks-equal
            (implies (and (4vec-xfree-under-mask x mask)
-                         (4vec-[= x y))
+                         (4vec-<<= x y))
                     (equal (4vec-mask mask y) (4vec-mask mask x)))
            :hints(("Goal" :in-theory (enable 4vec-xfree-under-mask
-                                             4vec-[=
+                                             4vec-<<=
                                              4vec-mask))
                   (logbitp-reasoning))))
 
