@@ -1005,8 +1005,8 @@
               (pred (pack afixtype '-arrayp)))
            (cons
             (pack pred '-of- afixtype '-array-write- ifixtype)
-            (atc-array-read-return-names-loop-index-types atype
-                                                          (cdr itypes)))))))
+            (atc-array-write-return-names-loop-index-types atype
+                                                           (cdr itypes)))))))
 
    (define atc-array-write-return-names-loop-array-types ((atypes type-listp)
                                                           (itypes type-listp))
