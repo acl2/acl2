@@ -4701,9 +4701,9 @@
     (if ptr
         `(write-array ,ptr
                       ,mod-var
-                      (atc-gen-loop-final-compustate (cdr mod-vars)
-                                                     pointer-subst
-                                                     compst-var))
+                      ,(atc-gen-loop-final-compustate (cdr mod-vars)
+                                                      pointer-subst
+                                                      compst-var))
       `(write-var (ident ,(symbol-name (car mod-vars)))
                   ,(car mod-vars)
                   ,(atc-gen-loop-final-compustate (cdr mod-vars)
