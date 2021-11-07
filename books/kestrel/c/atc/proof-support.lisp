@@ -1058,6 +1058,7 @@
     compustatep-of-enter-scope
     compustatep-of-add-var
     compustatep-of-update-var
+    compustatep-of-update-array
     compustatep-when-compustate-resultp-and-not-errorp
     compustate-resultp-of-write-var
     heap-fix-when-heapp
@@ -1372,6 +1373,7 @@
           *atc-type-of-value-option-rules*
           *atc-type-of-array-element-rules*
           *atc-array-length-rules*
+          *atc-array-length-write-rules*
           *atc-exec-ident-rules*
           *atc-exec-const-rules*
           *atc-exec-arrsub-rules*

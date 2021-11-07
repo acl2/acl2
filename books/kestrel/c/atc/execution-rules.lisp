@@ -383,6 +383,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-array-length-write-rules
+  :short "Rules for array lengths and array write operations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These rules say that the array write operations preserve array lengths.
+     There is one rule for each @('<type1>-array-write-<type2>') function,
+     so generate the list programmatically."))
+
+  (define atc-array-length-write-rules-loop-itypes ((atype typep)
+                                                    (itypes type-listp))
+    :guard (and (type-integerp atype)
+                (type-integer-listp itypes))
+    :returns (names symbol-listp)
+    :parents nil
+    (cond ((endp itypes) nil)
+          (t (b* ((afixtype (atc-integer-type-fixtype atype))
+                  (ifixtype (atc-integer-type-fixtype (car itypes))))
+               (cons
+                (pack afixtype
+                      '-array-length-of-
+                      afixtype
+                      '-array-write-
+                      ifixtype)
+                (atc-array-length-write-rules-loop-itypes atype
+                                                          (cdr itypes)))))))
+
+  (define atc-array-length-write-rules-loop-atypes ((atypes type-listp)
+                                                    (itypes type-listp))
+    :guard (and (type-integer-listp atypes)
+                (type-integer-listp itypes))
+    :returns (name symbol-listp)
+    :parents nil
+    (cond ((endp atypes) nil)
+          (t (append (atc-array-length-write-rules-loop-itypes (car atypes)
+                                                               itypes)
+                     (atc-array-length-write-rules-loop-atypes (cdr atypes)
+                                                               itypes)))))
+
+  (defval *atc-array-length-write-rules*
+    (atc-array-length-write-rules-loop-atypes *atc-integer-types*
+                                              *atc-integer-types*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-exec-ident-rules
   :short "Rules for executing identifiers."
   :long
@@ -1706,10 +1751,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-exec-expr-asg-rules
-  :short "Rules for @(tsee exec-expr-asg)."
+(defsection atc-exec-expr-asg-ident-rules
+  :short "Rules for executing assignment expressions to identifier expressions."
 
-  (defruled exec-expr-asg-open
+  (defruled exec-expr-asg-ident
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :binary)
                   (equal (binop-kind (expr-binary->op e)) :asg)
@@ -1728,14 +1773,135 @@
                     (write-var (expr-ident->get e1) val compst1)))
     :enable exec-expr-asg)
 
-  (defval *atc-exec-expr-asg-rules*
-    '(exec-expr-asg-open
+  (defval *atc-exec-expr-asg-ident-rules*
+    '(exec-expr-asg-ident
       (:e expr-kind)
       (:e expr-binary->op)
       (:e expr-binary->arg1)
       (:e expr-binary->arg2)
-      (:e binop-kind)
-      (:e expr-ident->get))))
+      (:e expr-ident->get)
+      (:e binop-kind))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exec-expr-asg-arrsub-rules-generation
+  :short "Code to generate the rules for executing
+          assignments to array subscript expressions."
+
+  (define atc-exec-expr-asg-arrsub-rules-gen ((atype typep) (itype typep))
+    :guard (and (type-integerp atype)
+                (type-integerp itype))
+    :returns (mv (name symbolp)
+                 (event pseudo-event-formp))
+    :parents nil
+    (b* ((afixtype (atc-integer-type-fixtype atype))
+         (ifixtype (atc-integer-type-fixtype itype))
+         (apred (pack afixtype '-arrayp))
+         (epred (pack afixtype 'p))
+         (ipred (pack ifixtype 'p))
+         (atype-array-itype-index-okp
+          (pack afixtype '-array- ifixtype '-index-okp))
+         (atype-array-write-itype
+          (pack afixtype '-array-write- ifixtype))
+         (name (pack 'exec-expr-asg-arrsub-when- apred '-and- ipred))
+         (formula
+          `(implies
+            (and (syntaxp (quotep e))
+                 (equal (expr-kind e) :binary)
+                 (equal (binop-kind (expr-binary->op e)) :asg)
+                 (equal left (expr-binary->arg1 e))
+                 (equal right (expr-binary->arg2 e))
+                 (equal (expr-kind left) :arrsub)
+                 (equal arr (expr-arrsub->arr left))
+                 (equal sub (expr-arrsub->sub left))
+                 (equal (expr-kind (expr-arrsub->arr left)) :ident)
+                 (not (zp limit))
+                 (equal val+compst1
+                        (exec-expr-call-or-pure right compst fenv (1- limit)))
+                 (equal val (mv-nth 0 val+compst1))
+                 (equal compst1 (mv-nth 1 val+compst1))
+                 (,epred val)
+                 (equal ptr (read-var (expr-ident->get arr) compst1))
+                 (pointerp ptr)
+                 (equal array (read-array ptr compst1))
+                 (,apred array)
+                 (equal index (exec-expr-pure sub compst1))
+                 (,ipred index)
+                 (,atype-array-itype-index-okp array index))
+            (equal (exec-expr-asg e compst fenv limit)
+                   (write-array ptr
+                                (,atype-array-write-itype array index val)
+                                compst1))))
+         (event `(defruled ,name
+                   ,formula
+                   :enable (exec-expr-asg
+                            exec-integer
+                            ,atype-array-itype-index-okp
+                            ,atype-array-write-itype))))
+      (mv name event)))
+
+  (define atc-exec-expr-asg-arrsub-rules-gen-loop-itypes ((atype typep)
+                                                          (itypes type-listp))
+    :guard (and (type-integerp atype)
+                (type-integer-listp itypes))
+    :returns (mv (names symbol-listp)
+                 (events pseudo-event-form-listp))
+    :parents nil
+    (b* (((when (endp itypes)) (mv nil nil))
+         ((mv name event) (atc-exec-expr-asg-arrsub-rules-gen atype
+                                                              (car itypes)))
+         ((mv names events)
+          (atc-exec-expr-asg-arrsub-rules-gen-loop-itypes atype (cdr itypes))))
+      (mv (cons name names) (cons event events))))
+
+  (define atc-exec-expr-asg-arrsub-rules-gen-loop-atypes ((atypes type-listp)
+                                                          (itypes type-listp))
+    :guard (and (type-integer-listp atypes)
+                (type-integer-listp itypes))
+    :returns (mv (names symbol-listp)
+                 (events pseudo-event-form-listp))
+    :parents nil
+    (b* (((when (endp atypes)) (mv nil nil))
+         ((mv names events)
+          (atc-exec-expr-asg-arrsub-rules-gen-loop-itypes (car atypes) itypes))
+         ((mv more-names more-events)
+          (atc-exec-expr-asg-arrsub-rules-gen-loop-atypes (cdr atypes) itypes)))
+      (mv (append names more-names) (append events more-events))))
+
+  (define atc-exec-expr-asg-arrsub-rules-gen-all ()
+    :returns (event pseudo-event-formp)
+    :parents nil
+    (b* (((mv names events)
+          (atc-exec-expr-asg-arrsub-rules-gen-loop-atypes *atc-integer-types*
+                                                          *atc-integer-types*)))
+      `(progn
+         (defsection atc-exec-expr-asg-arrsub-rules
+           :short "Rules for executing assignment expressions to
+                   array subscript expressions."
+           ,@events
+           (defval *atc-exec-expr-asg-arrsub-rules*
+             '(,@names
+               (:e expr-kind)
+               (:e expr-arrsub->arr)
+               (:e expr-arrsub->sub)
+               (:e expr-binary->op)
+               (:e expr-binary->arg1)
+               (:e expr-binary->arg2)
+               (:e expr-ident->get)
+               (:e binop-kind))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event (atc-exec-expr-asg-arrsub-rules-gen-all))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exec-expr-asg-rules
+  :short "Rules for executing assignment expressions."
+
+  (defval *atc-exec-expr-asg-rules*
+    (append *atc-exec-expr-asg-ident-rules*
+            *atc-exec-expr-asg-arrsub-rules*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
