@@ -669,7 +669,8 @@
      i.e. that are represented as @(tsee update-var)s:
      if the two variables are the same, the value is returned;
      otherwise, we skip over the @(tsee update-var)
-     in search for the variable."))
+     in search for the variable.
+     The fourth theorem serves to move past array updates."))
 
   (defruled read-var-of-enter-scope
     (implies (not (equal (compustate-frames-number compst) 0))
@@ -713,10 +714,20 @@
        :enable (read-var-aux
                 update-var-aux))))
 
+  (defruled read-var-of-update-array
+    (implies (not (equal (compustate-frames-number compst) 0))
+             (equal (read-var var (update-array ptr array compst))
+                    (read-var var compst)))
+    :enable (read-var
+             update-array
+             top-frame
+             compustate-frames-number))
+
   (defval *atc-read-var-rules*
     '(read-var-of-enter-scope
       read-var-of-add-var
-      read-var-of-update-var)))
+      read-var-of-update-var
+      read-var-of-update-array)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1183,13 +1194,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The theorems about @(tsee compustate-frames-number)
+    "The first four theorems about @(tsee compustate-frames-number)
      serve to discharge the hypotheses about it being not 0
-     in some of the other theorems below.
+     in some of the other theorems.
      These are all immediately discharged,
      because the functions used to represent the symbolic execution states
      satisfy that condition
-     (by design, for @(tsee add-var) and @(tsee update-var))."))
+     (by design, for @(tsee add-var) and @(tsee update-var)).")
+   (xdoc::p
+    "The last theorem serves to skip over @(tsee update-array) calls."))
 
   (defruled compustate-frames-number-of-add-frame-not-zero
     (not (equal (compustate-frames-number (add-frame fun compst)) 0))
@@ -1207,11 +1220,18 @@
     (not (equal (compustate-frames-number (update-var var val compst)) 0))
     :enable update-var)
 
+  (defruled compustate-frames-number-of-update-array
+    (equal (compustate-frames-number (update-array ptr array compst))
+           (compustate-frames-number compst))
+    :enable (update-array
+             compustate-frames-number))
+
   (defval *atc-compustate-frames-number-rules*
     '(compustate-frames-number-of-add-frame-not-zero
       compustate-frames-number-of-enter-scope-not-zero
       compustate-frames-number-of-add-var-not-zero
-      compustate-frames-number-of-update-var-not-zero)))
+      compustate-frames-number-of-update-var-not-zero
+      compustate-frames-number-of-update-array)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
