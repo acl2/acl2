@@ -109,4 +109,11 @@
 ;enable?
 (defthmd intersection-equal-commutative-iff
   (iff (intersection-equal x y)
-       (intersection-equal y x)) :hints (("Goal" :in-theory (enable intersection-equal ))))
+       (intersection-equal y x))
+  :hints (("Goal" :in-theory (enable intersection-equal))))
+
+(defthm intersection-equal-when-member-equal-and-member-equal
+  (implies (and (member-equal a x)
+                (member-equal a y))
+           (intersection-equal x y))
+  :hints (("Goal" :in-theory (enable intersection-equal))))
