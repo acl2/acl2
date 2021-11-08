@@ -880,7 +880,7 @@
      The condition for the replacement is captured by @('write-array-okp'),
      for which we supply rules to go through all the computation state layers.
      Here we need to include a rule for @(tsee update-var),
-     because @('write-var-okp') may need to go through all the layers.
+     because @('write-array-okp') may need to go through all the layers.
      When the computation state (meta) variable is reached,
      it must be the case that there are hypotheses available
      saying that reading the array
@@ -890,8 +890,7 @@
      (as enforced by the @(tsee syntaxp) hypothesis)."))
 
   (define write-array-okp ((ptr pointerp)
-                           (type typep)
-                           (len natp)
+                           (array arrayp)
                            (compst compustatep))
     :returns (yes/no booleanp)
     :parents nil
@@ -901,45 +900,45 @@
          ((when (not address)) nil)
          (address+array (omap::in address heap))
          ((unless (consp address+array)) nil)
-         (array (cdr address+array))
+         (old-array (cdr address+array))
          ((unless (equal reftype
-                         (type-of-array-element array)))
+                         (type-of-array-element old-array)))
           nil)
-         ((unless (equal (type-fix type)
-                         (type-of-array-element array)))
+         ((unless (equal (type-of-array-element array)
+                         (type-of-array-element old-array)))
           nil)
-         ((unless (equal (nfix len)
-                         (array-length array)))
+         ((unless (equal (array-length array)
+                         (array-length old-array)))
           nil))
       t)
     :hooks (:fix))
 
   (defruled write-array-okp-of-add-frame
-    (equal (write-array-okp ptr type len (add-frame fun compst))
-           (write-array-okp ptr type len compst))
+    (equal (write-array-okp ptr array (add-frame fun compst))
+           (write-array-okp ptr array compst))
     :enable (write-array-okp
              add-frame
              push-frame))
 
   (defruled write-array-okp-of-enter-scope
-    (equal (write-array-okp ptr type len (enter-scope compst))
-           (write-array-okp ptr type len compst))
+    (equal (write-array-okp ptr array (enter-scope compst))
+           (write-array-okp ptr array compst))
     :enable (write-array-okp
              enter-scope
              push-frame
              pop-frame))
 
   (defruled write-array-okp-of-add-var
-    (equal (write-array-okp ptr type len (add-var var val compst))
-           (write-array-okp ptr type len compst))
+    (equal (write-array-okp ptr array (add-var var val compst))
+           (write-array-okp ptr array compst))
     :enable (write-array-okp
              add-var
              push-frame
              pop-frame))
 
   (defruled write-array-okp-of-update-var
-    (equal (write-array-okp ptr type len (update-var var val compst))
-           (write-array-okp ptr type len compst))
+    (equal (write-array-okp ptr array (update-var var val compst))
+           (write-array-okp ptr array compst))
     :enable (write-array-okp
              update-var
              push-frame
@@ -947,22 +946,17 @@
 
   (defruled write-array-okp-when-arrayp-of-read-array
     (implies (and (syntaxp (symbolp compst))
-                  (equal array (read-array ptr compst))
-                  (arrayp array)
-                  (typep type)
-                  (natp len))
-             (equal (write-array-okp ptr type len compst)
+                  (equal old-array (read-array ptr compst))
+                  (arrayp old-array))
+             (equal (write-array-okp ptr array compst)
                     (and (equal (type-of-array-element array)
-                                type)
+                                (type-of-array-element old-array))
                          (equal (array-length array)
-                                len))))
+                                (array-length old-array)))))
     :enable (write-array-okp read-array arrayp))
 
   (defruled write-array-to-update-array
-    (implies (write-array-okp ptr
-                              (type-of-array-element array)
-                              (array-length array)
-                              compst)
+    (implies (write-array-okp ptr array compst)
              (equal (write-array ptr array compst)
                     (update-array ptr array compst)))
     :enable (write-array write-array-okp update-array))
