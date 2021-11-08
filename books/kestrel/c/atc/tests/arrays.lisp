@@ -19,7 +19,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Read elements.
+; Read elements from arrays.
 
 (defun |read| (|a| |i|)
   (declare (xargs :guard (and (c::uchar-arrayp |a|)
@@ -54,10 +54,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Write elements to arrays.
+
+(defun |write| (|a| |i|)
+  (declare
+   (xargs
+    :guard (and (c::uchar-arrayp |a|)
+                (c::sintp |i|)
+                (c::uchar-array-sint-index-okp |a| |i|))))
+  (let ((|a| (c::uchar-array-write-sint |a| |i| (c::uchar-from-sint
+                                                 (c::sint-dec-const 88)))))
+    |a|))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (c::atc |read|
         |return1|
         |return2|
         |return3|
+        |write|
         :output-file "arrays.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

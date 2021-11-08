@@ -4968,10 +4968,16 @@
               ;; make auxiliary dag data structures:
               ((mv dag-parent-array dag-constant-alist dag-variable-alist)
                (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
-              ;; Build the rule-alists:
+              ;; Expand 0-ary function calls in rule-lists:
+              (global-rules (elaborate-rule-items global-rules state))
               (rule-lists (elaborate-rule-item-lists rule-lists state))
-              ;; Include the global-rules in each rule-list:
-              (rule-lists (union-eq-with-all (elaborate-rule-items global-rules state) rule-lists))
+              ;; Add global-rules to the rule-lists:
+              (rule-lists (if (endp rule-lists)
+                              ;; If no rule-lists given, use the global rules as a single rule-list:
+                              (list global-rules) ; todo: what if global-rules is empty?
+                            ;; Include the global-rules in each rule-list:
+                            (union-eq-with-all global-rules rule-lists)))
+              ;; Build the rule-alists:
               ((mv erp rule-alists) (make-rule-alists rule-lists (w state)))
               ((when erp) (mv erp nil state))
               (case-designator "MAIN_CASE") ; the name of this case
@@ -4983,7 +4989,7 @@
                    info tries)
                (,prove-disjunction-name (list top-nodenum) ;; just one disjunct
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                         tactic
+                                        tactic
                                         rule-alists
                                         interpreted-function-alist
                                         monitor

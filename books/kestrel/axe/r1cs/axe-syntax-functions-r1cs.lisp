@@ -12,7 +12,7 @@
 
 ;; TODO: Switch package to ACL2?  These are not r1cs-specific.
 
-(include-book "../portcullis")
+(include-book "kestrel/crypto/r1cs/portcullis" :dir :system)
 (include-book "kestrel/axe/dag-arrays" :dir :system)
 
 (defun acl2::var-less-than-unquoted-keyp (var-darg key-darg acl2::dag-array)

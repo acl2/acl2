@@ -1,4 +1,4 @@
-; Semaphore-specific version of verify-r1cs
+; Zcash-specific version of verify-r1cs
 ;
 ; Copyright (C) 2020-2021 Kestrel Institute
 ;
@@ -8,26 +8,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ZKSEMAPHORE")
+(in-package "ZCASH")
 
 (include-book "kestrel/axe/r1cs/verify-r1cs" :dir :system)
 
-;; A wrapper of verify-r1cs that specializes it for the semaphore prime
-(acl2::defmacrodoc verify-semaphore-r1cs (lifted-r1cs ; a DAG
-                                          spec-term ; a term over the input and output vars, not evaluated
-                                          &key
-                                          (bit-inputs 'nil) ; bitp assumptions will be generated for these
-                                          ;; same as for acl2::prove-implication-with-r1cs-prover:
-                                          (tactic ''(:rep :rewrite :subst))
-                                          (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
-                                          (global-rules 'nil) ;; rules to be added to every rule-list
-                                          (interpreted-function-alist 'nil)
-                                          (no-splitp 't) ; whether to prevent splitting into cases (note that we change the default here)
-                                          (monitor 'nil)
-                                          (print ':brief))
+;; A wrapper of verify-r1cs that specializes it for the zcash prime
+(acl2::defmacrodoc verify-zcash-r1cs (lifted-r1cs ; a DAG
+                                      spec-term ; a term over the input and output vars, not evaluated
+                                      &key
+                                      (bit-inputs 'nil) ; bitp assumptions will be generated for these
+                                      ;; same as for acl2::prove-implication-with-r1cs-prover:
+                                      (tactic ''(:rep :rewrite :subst))
+                                      (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
+                                      (global-rules 'nil) ;; rules to be added to every rule-list
+                                      (interpreted-function-alist 'nil)
+                                      (no-splitp 't) ; whether to prevent splitting into cases (note that we change the default here)
+                                      (monitor 'nil)
+                                      (print ':brief))
   `(r1cs::verify-r1cs ,lifted-r1cs
                       ,spec-term
-                      21888242871839275222246405745257275088548364400416034343698204186575808495617
+                      ;; the prime (zcash::jubjub-q):
+                      52435875175126190479447740508185965837690552500527637822603658699938581184513
                       :bit-inputs ,bit-inputs
                       :tactic ,tactic
                       :rule-lists ,rule-lists
@@ -36,9 +37,9 @@
                       :no-splitp ,no-splitp
                       :monitor ,monitor
                       :print ,print)
-  :parents (semaphore r1cs::r1cs-verification-with-axe)
-  :short "A tool to verify a semaphore R1CS"
-  :description "This tool is a wrapper for @(tsee r1cs::verify-r1cs) that sets the prime to @(tsee baby-jubjub-prime). See also @(tsee r1cs::r1cs-verification-with-axe)."
+  :parents (zcash r1cs::r1cs-verification-with-axe)
+  :short "A tool to verify a zcash R1CS"
+  :description "This tool is a wrapper for @(tsee r1cs::verify-r1cs) that sets the prime to @(tsee jubjub-q). See also @(tsee r1cs::r1cs-verification-with-axe)."
   :args ((lifted-r1cs "A <see topic=\"@(url acl2::dags)\">DAG</see> representing the lifted R1CS")
          (spec-term "A term over the input and output vars (this input is not evaluated)")
          (bit-inputs "Variables for which to generate BITP assumptions")

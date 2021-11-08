@@ -18,7 +18,7 @@
 (include-book "kestrel/crypto/r1cs/sparse/rules" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
 (include-book "kestrel/crypto/r1cs/gadgets/xor-rules" :dir :system)
-(include-book "kestrel/crypto/r1cs/tools/axe-rules-r1cs" :dir :system)
+(include-book "kestrel/axe/r1cs/axe-rules-r1cs" :dir :system)
 (include-book "kestrel/crypto/blake/blake2s" :dir :system) ;the spec
 (include-book "kestrel/bv/rules9" :dir :system)
 (include-book "kestrel/bv-lists/packbv-little" :dir :system)

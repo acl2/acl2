@@ -5,7 +5,7 @@
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/utilities/merge-sort-symbol-less-than" :dir :system)
 (include-book "kestrel/utilities/defmergesort" :dir :system)
-(include-book "filter-and-combine-symbol-alists")
+(include-book "kestrel/crypto/r1cs/tools/filter-and-combine-symbol-alists" :dir :system)
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
