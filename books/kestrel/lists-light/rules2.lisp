@@ -34,6 +34,7 @@
 (local (include-book "last" ))
 (local (include-book "cdr" ))
 (local (include-book "update-nth" ))
+(local (include-book "perm2"))
 ;(local (include-book "clear-nth"))
 (local (include-book "append" ))
 (local (include-book "true-list-fix" ))
@@ -168,6 +169,7 @@
            :induct (double-cdr-induct lst1 lst2)
            :do-not '(generalize eliminate-destructors))))
 
+;rename!
 (defthm fw-1
   (implies (perm bag1 (update-nth n val bag2))
            (memberp val bag1))

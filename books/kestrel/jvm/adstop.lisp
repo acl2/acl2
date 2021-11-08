@@ -19,6 +19,7 @@
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 (include-book "kestrel/maps/maps" :dir :system)
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
+(local (include-book "kestrel/lists-light/memberp2" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))

@@ -16,6 +16,7 @@
 (include-book "memberp")
 (include-book "reverse-list-def")
 (include-book "subrange-def")
+(include-book "perm") ; provides the defequiv
 (local (include-book "take"))
 (local (include-book "subrange"))
 
@@ -36,3 +37,6 @@
   :hints (("Goal" :use (:instance NTH-OF-SUBRANGE (n (- n start)))
            :do-not-induct t
            :in-theory (disable NTH-OF-SUBRANGE))))
+
+(defcong perm equal (memberp a x) 2
+  :hints (("Goal" :use (:instance member-equal-when-perm-iff (y x-equiv)))))

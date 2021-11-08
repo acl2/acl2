@@ -11,19 +11,11 @@
 
 (in-package "ACL2")
 
-(include-book "memberp-def")
-(include-book "remove1-dollar-def")
-
-;;;
-;;; perm
-;;;
-
-;; Check whether the elements of x are a permutation of the elements of y.
-;; Ignores the final cdrs of x and y.
+;; Checks whether the true-list X is a permutation of the true-list Y.
 (defund perm (x y)
-  (declare (xargs :guard t))
-  (if (not (consp x))
-      (not (consp y))
-    (and (memberp (first x) y) ;member-equal would require true-listp
-         ;; Can't call remove1 since it requires a true-list:
-         (perm (rest x) (remove1$ (first x) y)))))
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp y))))
+  (if (endp x)
+      (endp y)
+    (and (member-equal (first x) y)
+         (perm (rest x) (remove1-equal (first x) y)))))
