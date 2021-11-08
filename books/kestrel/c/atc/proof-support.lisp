@@ -1005,8 +1005,8 @@
               (pred (pack afixtype '-arrayp)))
            (cons
             (pack pred '-of- afixtype '-array-write- ifixtype)
-            (atc-array-read-return-names-loop-index-types atype
-                                                          (cdr itypes)))))))
+            (atc-array-write-return-names-loop-index-types atype
+                                                           (cdr itypes)))))))
 
    (define atc-array-write-return-names-loop-array-types ((atypes type-listp)
                                                           (itypes type-listp))
@@ -1058,6 +1058,7 @@
     compustatep-of-enter-scope
     compustatep-of-add-var
     compustatep-of-update-var
+    compustatep-of-update-array
     compustatep-when-compustate-resultp-and-not-errorp
     compustate-resultp-of-write-var
     heap-fix-when-heapp
@@ -1372,6 +1373,7 @@
           *atc-type-of-value-option-rules*
           *atc-type-of-array-element-rules*
           *atc-array-length-rules*
+          *atc-array-length-write-rules*
           *atc-exec-ident-rules*
           *atc-exec-const-rules*
           *atc-exec-arrsub-rules*

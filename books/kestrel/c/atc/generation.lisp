@@ -3496,7 +3496,7 @@
      the C function or C loop.
      The bindings differ between C functions and loops,
      but there is also commonality,
-     which seems to justify having this one ACL2 code generation function
+     which justifies having this one ACL2 code generation function
      that handles both cases.")
    (xdoc::p
     "Consider a non-recursive @('fn'), which represents a C function.
@@ -3598,8 +3598,7 @@
                    (if arrayp
                        (list `(,formal (read-array ,formal-ptr ,compst-var)))
                      nil)))
-       (subst? (and (not fn-recursivep)
-                    arrayp
+       (subst? (and arrayp
                     (list (cons formal formal-ptr))))
        (hyps (and arrayp
                   (list `(pointerp ,formal-ptr)
@@ -4702,9 +4701,9 @@
     (if ptr
         `(write-array ,ptr
                       ,mod-var
-                      (atc-gen-loop-final-compustate (cdr mod-vars)
-                                                     pointer-subst
-                                                     compst-var))
+                      ,(atc-gen-loop-final-compustate (cdr mod-vars)
+                                                      pointer-subst
+                                                      compst-var))
       `(write-var (ident ,(symbol-name (car mod-vars)))
                   ,(car mod-vars)
                   ,(atc-gen-loop-final-compustate (cdr mod-vars)
