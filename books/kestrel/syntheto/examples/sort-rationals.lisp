@@ -84,6 +84,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Matt K. mod for ACL2(r):
+#+:non-standard-analysis
+(local
+ (defthm rationalp-implies-realp
+   (implies (rationalp x) (realp x))))
+
 (define lteq ((x myrationalp) (y myrationalp))
   :returns (b booleanp)
   (b* ((x (myrational-fix x))
