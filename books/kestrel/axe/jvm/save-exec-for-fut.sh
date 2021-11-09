@@ -35,6 +35,7 @@ if [[ ( ! -f ${BASE_NAME} ) || ( ${BASE_NAME} -ot formal-unit-tester.cert ) || (
     rm -f "${BASE_NAME}.dx86cl64"
     echo "(Saving an image for the Formal Unit Tester:"
 
+    # (mv-let (erp val state) (ld ...) (if erp (exit 1) (value :q)))
     (echo '(include-book "kestrel/utilities/exit-if-function-not-defined" :dir :system) (include-book "kestrel/jvm/portcullis" :dir :system) (include-book "kestrel/axe/jvm/formal-unit-tester" :dir :system :ttags :all) (exit-if-function-not-defined test-file-fn) :q (save-exec "'${BASE_NAME}'" "ACL2 after including fut.")' | ${ACL2})
     ls -l acl2-with-fut*
     echo "Done saving image.)"

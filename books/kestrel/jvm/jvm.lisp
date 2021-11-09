@@ -3410,11 +3410,15 @@
 ; -----------------------------------------------------------------------------
 ; (LSHR) Instruction
 
+(defun ishr64 (value1 value2)
+  (declare (xargs :guard (and (unsigned-byte-p 64 value1)
+                              (unsigned-byte-p 64 value2))))
+  (acl2::bvashr 64 value1 (acl2::bvchop 6 value2)))
+
 (defun execute-LSHR (th s)
   (let* ((value2 (top-operand (stack (thread-top-frame th s))))
          (value1 (top-long (pop-operand (stack (thread-top-frame th s)))))
-         (shiftamt (acl2::bvchop 6 value2))
-         (result (acl2::bvashr 64 value1 shiftamt)))
+         (result (ishr64 value1 value2)))
     (modify th s
             :pc (+ 1 ;(inst-length inst)
                    (pc (thread-top-frame th s)))
