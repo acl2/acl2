@@ -516,8 +516,6 @@
      similarly to @(tsee create-var) being turned into @(tsee add-var).
      The condition for the replacemenet is captured by @('write-var-okp'),
      for which we supply rules to go through the computation state layers.
-     Here we need to include a rule for @(tsee update-var),
-     because @('write-var-okp') may need to go through all the layers.
      When the computation state (meta) variable is reached,
      it must be the case that there are hypotheses available
      saying that reading the variable yields a value:
@@ -601,6 +599,13 @@
        :enable (write-var-aux-okp
                 update-var-aux))))
 
+  (defruled write-var-okp-of-update-array
+    (equal (write-var-okp var type (update-array ptr array compst))
+           (write-var-okp var type compst))
+    :enable (write-var-okp
+             update-array
+             top-frame))
+
   (defruled write-var-okp-when-valuep-of-read-var
     (implies (and (syntaxp (symbolp compst))
                   (equal val (read-var var compst))
@@ -646,6 +651,7 @@
       write-var-okp-of-enter-scope
       write-var-okp-of-add-var
       write-var-okp-of-update-var
+      write-var-okp-of-update-array
       write-var-okp-when-valuep-of-read-var
       (:e typep))))
 
@@ -879,8 +885,6 @@
      similarly to how @(tsee write-var) is turned into @(tsee update-var).
      The condition for the replacement is captured by @('write-array-okp'),
      for which we supply rules to go through all the computation state layers.
-     Here we need to include a rule for @(tsee update-var),
-     because @('write-array-okp') may need to go through all the layers.
      When the computation state (meta) variable is reached,
      it must be the case that there are hypotheses available
      saying that reading the array
@@ -962,12 +966,12 @@
     :enable (write-array write-array-okp update-array))
 
   (defval *atc-write-array-rules*
-    '(write-array-okp-of-add-frame
+    '(write-array-to-update-array
+      write-array-okp-of-add-frame
       write-array-okp-of-enter-scope
       write-array-okp-of-add-var
       write-array-okp-of-update-var
-      write-array-okp-when-arrayp-of-read-array
-      write-array-to-update-array)))
+      write-array-okp-when-arrayp-of-read-array)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
