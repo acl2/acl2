@@ -516,8 +516,6 @@
      similarly to @(tsee create-var) being turned into @(tsee add-var).
      The condition for the replacemenet is captured by @('write-var-okp'),
      for which we supply rules to go through the computation state layers.
-     Here we need to include a rule for @(tsee update-var),
-     because @('write-var-okp') may need to go through all the layers.
      When the computation state (meta) variable is reached,
      it must be the case that there are hypotheses available
      saying that reading the variable yields a value:
@@ -536,14 +534,14 @@
      and thus there is no need for the executable counterpart of @(tsee typep)
      to be included in the list of rules here."))
 
-  (define write-var-okp ((var identp) (type typep) (compst compustatep))
+  (define write-var-okp ((var identp) (val valuep) (compst compustatep))
     :guard (> (compustate-frames-number compst) 0)
     :returns (yes/no booleanp)
     :parents nil
-    (write-var-aux-okp var type (frame->scopes (top-frame compst)))
+    (write-var-aux-okp var val (frame->scopes (top-frame compst)))
     :hooks (:fix)
     :prepwork
-    ((define write-var-aux-okp ((var identp) (type typep) (scopes scope-listp))
+    ((define write-var-aux-okp ((var identp) (val valuep) (scopes scope-listp))
        :returns (yes/no booleanp)
        :parents nil
        (b* (((when (endp scopes)) nil)
@@ -551,80 +549,82 @@
             (pair (omap::in (ident-fix var) scope))
             ((when (consp pair))
              (equal (type-of-value (cdr pair))
-                    (type-fix type))))
-         (write-var-aux-okp var type (cdr scopes)))
+                    (type-of-value val))))
+         (write-var-aux-okp var val (cdr scopes)))
        :hooks (:fix))))
 
   (defruled write-var-okp-of-enter-scope
-    (equal (write-var-okp var type (enter-scope compst))
-           (write-var-okp var type compst))
+    (equal (write-var-okp var val (enter-scope compst))
+           (write-var-okp var val compst))
     :enable (write-var-okp
              write-var-aux-okp
              enter-scope))
 
   (defruled write-var-okp-of-add-var
-    (implies (typep type)
-             (equal (write-var-okp var type (add-var var2 val2 compst))
-                    (if (equal (ident-fix var)
-                               (ident-fix var2))
-                        (equal (type-of-value val2)
-                               type)
-                      (write-var-okp var type compst))))
+    (equal (write-var-okp var val (add-var var2 val2 compst))
+           (if (equal (ident-fix var)
+                      (ident-fix var2))
+               (equal (type-of-value val2)
+                      (type-of-value val))
+             (write-var-okp var val compst)))
     :enable (write-var-okp
              write-var-aux-okp
              add-var))
 
   (defruled write-var-okp-of-update-var
-    (implies (typep type)
-             (equal (write-var-okp var type (update-var var2 val2 compst))
-                    (if (equal (ident-fix var)
-                               (ident-fix var2))
-                        (equal (type-of-value val2)
-                               type)
-                      (write-var-okp var type compst))))
+    (equal (write-var-okp var val (update-var var2 val2 compst))
+           (if (equal (ident-fix var)
+                      (ident-fix var2))
+               (equal (type-of-value val2)
+                      (type-of-value val))
+             (write-var-okp var val compst)))
     :enable (write-var-okp
              update-var)
     :prep-lemmas
     ((defrule lemma
-       (implies (and (typep type)
-                     (consp scopes))
+       (implies (consp scopes)
                 (equal (write-var-aux-okp var
-                                          type
+                                          val
                                           (update-var-aux var2
                                                           val2
                                                           scopes))
                        (if (equal (ident-fix var)
                                   (ident-fix var2))
                            (equal (type-of-value val2)
-                                  type)
-                         (write-var-aux-okp var type scopes))))
+                                  (type-of-value val))
+                         (write-var-aux-okp var val scopes))))
        :enable (write-var-aux-okp
                 update-var-aux))))
 
+  (defruled write-var-okp-of-update-array
+    (equal (write-var-okp var val (update-array ptr array compst))
+           (write-var-okp var val compst))
+    :enable (write-var-okp
+             update-array
+             top-frame))
+
   (defruled write-var-okp-when-valuep-of-read-var
     (implies (and (syntaxp (symbolp compst))
-                  (equal val (read-var var compst))
-                  (valuep val)
-                  (typep type))
-             (equal (write-var-okp var type compst)
+                  (equal old-val (read-var var compst))
+                  (valuep old-val))
+             (equal (write-var-okp var val compst)
                     (equal (type-of-value val)
-                           type)))
+                           (type-of-value old-val))))
     :enable (write-var-okp
              read-var)
     :prep-lemmas
     ((defrule lemma
-       (implies (and (equal val (read-var-aux var scopes))
-                     (valuep val)
-                     (typep type))
-                (equal (write-var-aux-okp var type scopes)
+       (implies (and (equal old-val (read-var-aux var scopes))
+                     (valuep old-val))
+                (equal (write-var-aux-okp var val scopes)
                        (equal (type-of-value val)
-                              type)))
+                              (type-of-value old-val))))
        :enable (write-var-aux-okp
                 read-var-aux))))
 
   (defruled write-var-to-update-var
     (implies (and (not (equal (compustate-frames-number compst) 0))
-                  (write-var-okp var (type-of-value val) compst))
+                  (write-var-okp var val compst))
              (equal (write-var var val compst)
                     (update-var var val compst)))
     :enable (write-var-okp
@@ -633,7 +633,7 @@
              errorp)
     :prep-lemmas
     ((defrule lemma
-       (implies (write-var-aux-okp var (type-of-value val) scopes)
+       (implies (write-var-aux-okp var val scopes)
                 (equal (write-var-aux var val scopes)
                        (update-var-aux var val scopes)))
        :enable (write-var-aux-okp
@@ -646,6 +646,7 @@
       write-var-okp-of-enter-scope
       write-var-okp-of-add-var
       write-var-okp-of-update-var
+      write-var-okp-of-update-array
       write-var-okp-when-valuep-of-read-var
       (:e typep))))
 
@@ -879,8 +880,6 @@
      similarly to how @(tsee write-var) is turned into @(tsee update-var).
      The condition for the replacement is captured by @('write-array-okp'),
      for which we supply rules to go through all the computation state layers.
-     Here we need to include a rule for @(tsee update-var),
-     because @('write-var-okp') may need to go through all the layers.
      When the computation state (meta) variable is reached,
      it must be the case that there are hypotheses available
      saying that reading the array
@@ -890,8 +889,7 @@
      (as enforced by the @(tsee syntaxp) hypothesis)."))
 
   (define write-array-okp ((ptr pointerp)
-                           (type typep)
-                           (len natp)
+                           (array arrayp)
                            (compst compustatep))
     :returns (yes/no booleanp)
     :parents nil
@@ -901,45 +899,45 @@
          ((when (not address)) nil)
          (address+array (omap::in address heap))
          ((unless (consp address+array)) nil)
-         (array (cdr address+array))
+         (old-array (cdr address+array))
          ((unless (equal reftype
-                         (type-of-array-element array)))
+                         (type-of-array-element old-array)))
           nil)
-         ((unless (equal (type-fix type)
-                         (type-of-array-element array)))
+         ((unless (equal (type-of-array-element array)
+                         (type-of-array-element old-array)))
           nil)
-         ((unless (equal (nfix len)
-                         (array-length array)))
+         ((unless (equal (array-length array)
+                         (array-length old-array)))
           nil))
       t)
     :hooks (:fix))
 
   (defruled write-array-okp-of-add-frame
-    (equal (write-array-okp ptr type len (add-frame fun compst))
-           (write-array-okp ptr type len compst))
+    (equal (write-array-okp ptr array (add-frame fun compst))
+           (write-array-okp ptr array compst))
     :enable (write-array-okp
              add-frame
              push-frame))
 
   (defruled write-array-okp-of-enter-scope
-    (equal (write-array-okp ptr type len (enter-scope compst))
-           (write-array-okp ptr type len compst))
+    (equal (write-array-okp ptr array (enter-scope compst))
+           (write-array-okp ptr array compst))
     :enable (write-array-okp
              enter-scope
              push-frame
              pop-frame))
 
   (defruled write-array-okp-of-add-var
-    (equal (write-array-okp ptr type len (add-var var val compst))
-           (write-array-okp ptr type len compst))
+    (equal (write-array-okp ptr array (add-var var val compst))
+           (write-array-okp ptr array compst))
     :enable (write-array-okp
              add-var
              push-frame
              pop-frame))
 
   (defruled write-array-okp-of-update-var
-    (equal (write-array-okp ptr type len (update-var var val compst))
-           (write-array-okp ptr type len compst))
+    (equal (write-array-okp ptr array (update-var var val compst))
+           (write-array-okp ptr array compst))
     :enable (write-array-okp
              update-var
              push-frame
@@ -947,33 +945,28 @@
 
   (defruled write-array-okp-when-arrayp-of-read-array
     (implies (and (syntaxp (symbolp compst))
-                  (equal array (read-array ptr compst))
-                  (arrayp array)
-                  (typep type)
-                  (natp len))
-             (equal (write-array-okp ptr type len compst)
+                  (equal old-array (read-array ptr compst))
+                  (arrayp old-array))
+             (equal (write-array-okp ptr array compst)
                     (and (equal (type-of-array-element array)
-                                type)
+                                (type-of-array-element old-array))
                          (equal (array-length array)
-                                len))))
+                                (array-length old-array)))))
     :enable (write-array-okp read-array arrayp))
 
   (defruled write-array-to-update-array
-    (implies (write-array-okp ptr
-                              (type-of-array-element array)
-                              (array-length array)
-                              compst)
+    (implies (write-array-okp ptr array compst)
              (equal (write-array ptr array compst)
                     (update-array ptr array compst)))
     :enable (write-array write-array-okp update-array))
 
   (defval *atc-write-array-rules*
-    '(write-array-okp-of-add-frame
+    '(write-array-to-update-array
+      write-array-okp-of-add-frame
       write-array-okp-of-enter-scope
       write-array-okp-of-add-var
       write-array-okp-of-update-var
-      write-array-okp-when-arrayp-of-read-array
-      write-array-to-update-array)))
+      write-array-okp-when-arrayp-of-read-array)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
