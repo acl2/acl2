@@ -10,14 +10,19 @@
 
 (in-package "ZCASH")
 
+(include-book "proof-support")
+
 (include-book "a-3-1-1-spec")
 (include-book "a-3-1-2-spec")
 (include-book "a-3-1-3-spec")
 (include-book "a-3-1-4-spec")
 (include-book "a-3-1-5-spec")
+
 (include-book "a-3-2-1-spec")
 (include-book "a-3-2-2-spec")
+
 (include-book "a-3-3-1-spec")
+(include-book "a-3-3-1-proof")
 (include-book "a-3-3-2-spec")
 (include-book "a-3-3-3-spec")
 (include-book "a-3-3-4-spec")
