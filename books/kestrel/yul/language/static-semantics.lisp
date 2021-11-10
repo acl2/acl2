@@ -1055,6 +1055,8 @@
       :wellformed)
     :measure (fundef-count fundef))
 
+  :flag-local nil
+
   :verify-guards nil ; done below
   ///
   (verify-guards check-statement
