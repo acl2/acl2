@@ -203,9 +203,9 @@
 ;; that all calls of a given function should have a given val (an untranslated
 ;; term, which gets translated) put in for the indicated argument (using
 ;; 1-based numbering).
-(defmacro specialize-calls-in-theorems (theorem-names
-                                        suffix
-                                        triples ; of the form (function argnum val)
+(defmacro specialize-calls-in-theorems (theorem-names ; a form that returns a list of symbols
+                                        suffix ; a form that returns a symbol
+                                        triples ; a form that returns a list of triples of the form (function argnum val)
                                         &key
                                         (quiet 't))
   (if (or (eq quiet t)
