@@ -1,7 +1,7 @@
 ; An simple evaluator supporting a basic set of functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 ;; A simple version of the Axe evaluator with verified guards and without skip-proofs.
+;; This evaluator knows about a "basic" set of functions, hence the name.
 
 (include-book "unguarded-primitives")
 (include-book "unguarded-built-ins")
@@ -92,5 +93,5 @@
     (bv-array-read bv-array-read-unguarded)
     (bv-array-write bv-array-write-unguarded)))
 
-;; Make the evaluator:
-(make-evaluator-simple axe-evaluator-basic *axe-evaluator-basic-fns-and-aliases*)
+;; Makes the evaluator:
+(make-evaluator-simple basic *axe-evaluator-basic-fns-and-aliases*)

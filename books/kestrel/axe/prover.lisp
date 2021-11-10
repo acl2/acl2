@@ -43,7 +43,7 @@
 (include-book "tries")
 (include-book "replace-using-assumptions")
 (include-book "fixup-context")
-(include-book "kestrel/utilities/negate-terms" :dir :system)
+(include-book "kestrel/terms-light/negate-terms" :dir :system)
 ;(local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -1881,7 +1881,8 @@
  ) ;end mutual-recursion for Axe Prover
 
 
-;;returns (mv erp result state) where result is :proved [iff we proved that the top-node of dag-lst is non-nil (or is t?)], :failed, or :timed-out
+;; Returns (mv erp result state) where RESULT is :proved, :failed, or :timed-out.  If RESULT is :proved, we proved that the top-node of DAG is
+;; non-nil.
 (defun prove-dag-with-axe-prover (dag
                                   assumptions ;terms we can assume non-nil
                                   rule-alists
@@ -1898,8 +1899,9 @@
   (declare (xargs :stobjs state
                   :verify-guards nil ;todo
                   :mode :program ;todo
-                  :guard (and (pseudo-dagp dag) ;todo: allow a quotep?
-                              (< (len dag) 2147483647)
+                  :guard (and (or (and (pseudo-dagp dag)
+                                       (< (len dag) 2147483647))
+                                  (myquotep dag))
                               (pseudo-term-listp assumptions)
                               (array1p context-array-name context-array)
                               (contextp-with-bound context (alen1 context-array-name context-array))
@@ -1910,7 +1912,7 @@
                               (interpreted-function-alistp interpreted-function-alist)
                               (axe-prover-optionsp options))))
   (if (quotep dag)
-      (if (unquote dag) ;a non-nil constant
+      (if (unquote dag) ;a non-nil constant:
           (mv (erp-nil) :proved state)
         (b* ((- (cw "Note: The DAG was the constant nil.")))
           (mv (erp-nil) :failed state)))
@@ -1919,7 +1921,7 @@
          (dag-array (make-into-array 'dag-array dag))
          (top-nodenum (top-nodenum dag))
          (dag-len (+ 1 top-nodenum))
-         (negated-assumptions (negate-terms assumptions))
+         (negated-assumptions (negate-terms assumptions)) ; todo: handle constant assumptions
          (max-context-nodenum (max-nodenum-in-context context)) ;pass in? ;fixme have this return nil instead of -1
          (no-context-nodesp (eql -1 max-context-nodenum))
          (- (and no-context-nodesp (cw "(No context.)~%")))

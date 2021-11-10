@@ -30,23 +30,21 @@
 
 (in-package "SV")
 (include-book "compose-theory-base")
-(include-book "rewrite-base")
-;; (local (include-book "std/lists/acl2-count" :dir :system))
+;; (include-book "rewrite-base")
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
-(local (include-book "centaur/misc/equal-sets" :dir :system))
-
+(local (include-book "alist-thms"))
 (local (std::add-default-post-define-hook :fix))
 
 
 
-(local (defthm svex-lookup-of-cons
-         (equal (svex-lookup key (cons (cons var val) rest))
-                (if (and (svar-p var)
-                         (equal (svar-fix key) var))
-                    (svex-fix val)
-                  (svex-lookup key rest)))
-         :hints(("Goal" :in-theory (enable svex-lookup)))))
+;; (local (defthm svex-lookup-of-cons
+;;          (equal (svex-lookup key (cons (cons var val) rest))
+;;                 (if (and (svar-p var)
+;;                          (equal (svar-fix key) var))
+;;                     (svex-fix val)
+;;                   (svex-lookup key rest)))
+;;          :hints(("Goal" :in-theory (enable svex-lookup)))))
 
 
 
@@ -63,6 +61,7 @@
                                             svex-lookup)))
          :rule-classes :congruence))
 
+
 (defsection netcomp-p-of-cons-compose
 
   (defthm netcomp-p-of-nil
@@ -77,10 +76,11 @@
                                                 (neteval-ordering-compile order network1))
                          (svex-lookup var network))
                     (svex-eval-equiv (svex-lookup var network)
-                                     (svex-compose (svex-lookup var network1)
-                                                   (neteval-ordering-compile
-                                                    (cdr (hons-assoc-equal (svar-fix var) order))
-                                                    network1))))))
+                                     ;; (svex-compose (svex-lookup var network1)
+                                     (neteval-sigordering-compile
+                                      (cdr (hons-assoc-equal (svar-fix var) order))
+                                      var 0
+                                      network1)))))
 
   
 
@@ -170,7 +170,6 @@
                                     rest-network)
                         network1))
     :hints(("Goal" :in-theory (enable svex-acons)))))
-
 
 
 (define svex-network-compose-step ((var svar-p)
@@ -324,3 +323,4 @@
                   (netcomp-p network network1)
                   (svex-lookup var network))
              (netcomp-p new-network network1))))
+

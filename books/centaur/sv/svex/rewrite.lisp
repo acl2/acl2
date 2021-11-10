@@ -552,7 +552,14 @@ functions) and that it is being given the right number of arguments.</p>
 
   (defthm svex-mask-lookup-of-nil
     (equal (svex-mask-lookup k nil)
-           0)))
+           0))
+  
+  (defthmd svex-mask-lookup-of-cons
+    (equal (svex-mask-lookup key1 (cons (cons key val) rest))
+           (if (equal (svex-fix key1) key)
+               (4vmask-fix val)
+             (svex-mask-lookup key1 rest)))
+    :hints(("Goal" :in-theory (enable svex-mask-lookup)))))
 
 
 (define svex-mask-alist-keys ((x svex-mask-alist-p))
@@ -618,10 +625,26 @@ functions) and that it is being given the right number of arguments.</p>
        (mask-al (svex-args-apply-masks (cdr args) (cdr masks) mask-al))
        (look (svex-mask-lookup (car args) mask-al))
        (mask (4vmask-union (car masks) look)))
-    (svex-mask-acons (car args) mask mask-al))
+    (if (sparseint-equal mask look)
+        mask-al
+      (svex-mask-acons (car args) mask mask-al)))
   ///
 
   (verify-guards svex-args-apply-masks)
+
+  ;; (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
+  ;; (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+
+  (local (defthm 4vmask-subsumes-when-4vmask-union-equal
+           (implies (equal (sparseint-val (4vmask-union mask1 mask2))
+                           (sparseint-val (4vmask-fix mask2)))
+                    (4vmask-subsumes mask2 mask1))
+           :hints(("Goal" :in-theory (e/d (4vmask-union
+                                           4vmask-subsumes)                                          
+                                          (logior logand lognot
+                                                  4vmask-subsumes-of-4vmask-union-1))
+                   :use ((:instance 4VMASK-SUBSUMES-OF-4VMASK-UNION-1
+                          (x mask1) (y mask2)))))))
 
   (defthm svex-args-apply-masks-lookup-subsumes-prev-lookup
     (4vmask-subsumes (svex-mask-lookup x (svex-args-apply-masks args masks mask-al))
@@ -733,7 +756,8 @@ functions) and that it is being given the right number of arguments.</p>
     :hints (("goal" :use ((:instance svex-args-apply-masks-argmasks-lookups-subsume-masks-lemma
                            (n 0))))))
 
-  (deffixequiv svex-args-apply-masks))
+  (deffixequiv svex-args-apply-masks
+    :hints(("Goal" :in-theory (enable 4vmasklist-fix)))))
 
 (defsection svex-mask-alist-partly-complete
   (acl2::defquant svex-mask-alist-partly-complete (x mask-al)
@@ -1104,15 +1128,15 @@ functions) and that it is being given the right number of arguments.</p>
          (out-multirefs (svex-key-alist-fix out-multirefs))
          (memo (svex-svex-memo-fix memo))
 
-         (kind (svex-kind x))
          (mask (svex-mask-lookup x masks))
+         ((when (eql mask 0)) (mv 0 out-multirefs memo))
+         (kind (svex-kind x))
          ((when (eq kind :quote))
           ;; Normalizing constants under the global masks may help to make
           ;; terms like (logand x #xFFFF0000) and (logand x #xFFFFFFFF) turn
           ;; into the same logand, if it turns out that we never care about the
           ;; lower 16 bits.
           (mv (svex-quote (4vec-mask-to-zero mask (svex-quote->val x))) out-multirefs memo))
-         ((when (eql mask 0)) (mv 0 out-multirefs memo))
          ((when (eq kind :var)) (mv x out-multirefs memo))
          (multirefp (svex-get-multiref x multirefs))
          (memo? (and multirefp (hons-get x memo)))
@@ -1804,7 +1828,10 @@ functions) and that it is being given the right number of arguments.</p>
 
   (defthm keys-of-svex-alist-rewrite-fixpoint
     (iff (svex-lookup v (svex-alist-rewrite-fixpoint x :count count :verbosep verbosep))
-         (svex-lookup v x))))
+         (svex-lookup v x)))
+
+  (defret svex-alist-keys-of-<fn>
+    (equal (svex-alist-keys xx) (svex-alist-keys x))))
 
 
 (define svex-alist-maybe-rewrite-fixpoint ((x svex-alist-p)
@@ -1835,7 +1862,10 @@ functions) and that it is being given the right number of arguments.</p>
 
   (defret keys-of-svex-alist-maybe-rewrite-fixpoint
     (iff (svex-lookup v xx)
-         (svex-lookup v x))))
+         (svex-lookup v x)))
+
+  (defret svex-alist-keys-of-<fn>
+    (equal (svex-alist-keys xx) (svex-alist-keys x))))
 
 
 

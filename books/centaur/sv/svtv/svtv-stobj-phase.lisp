@@ -41,7 +41,8 @@
                      '(:in-theory (enable svtv-data$ap))))
   :returns new-svtv-data
   (b* ((svtv-data (update-svtv-data->phase-fsm (svtv-compose-assigns/delays
-                                                (svtv-data->flatnorm svtv-data))
+                                                (svtv-data->flatnorm svtv-data)
+                                                (svtv-data->phase-fsm-setup svtv-data))
                                                svtv-data)))
     (update-svtv-data->phase-fsm-validp t svtv-data))
   ///
@@ -55,21 +56,31 @@
   (defret phase-fsm-validp-of-<fn>
     (svtv-data$c->phase-fsm-validp new-svtv-data)))
 
-(define svtv-data-maybe-compute-phase-fsm (svtv-data)
+(define svtv-data-maybe-compute-phase-fsm (svtv-data
+                                           (setup phase-fsm-config-p))
   :guard (svtv-data->flatnorm-validp svtv-data)
   :returns new-svtv-data
-  (if (svtv-data->phase-fsm-validp svtv-data)
+  (if (and (svtv-data->phase-fsm-validp svtv-data)
+           (equal (phase-fsm-config-fix setup)
+                  (svtv-data->phase-fsm-setup svtv-data)))
       svtv-data
-    (b* ((svtv-data (update-svtv-data->cycle-fsm-validp nil svtv-data)))
+    (b* ((svtv-data (update-svtv-data->cycle-fsm-validp nil svtv-data))
+         (svtv-data (update-svtv-data->phase-fsm-validp nil svtv-data))
+         (svtv-data (update-svtv-data->phase-fsm-setup setup svtv-data)))
       (svtv-data-compute-phase-fsm svtv-data)))
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
                   (not (equal key :phase-fsm-validp))
+                  (not (equal key :phase-fsm-setup))
                   (not (equal key :cycle-fsm-validp))
                   (not (equal key :phase-fsm)))
              (equal (svtv-data$c-get k new-svtv-data)
                     (svtv-data$c-get key svtv-data))))
+
+  (defret phase-fsm-setup-of-<fn>
+    (equal (svtv-data$c->phase-fsm-setup new-svtv-data)
+           (phase-fsm-config-fix setup)))
 
   (defret phase-fsm-validp-of-<fn>
     (svtv-data$c->phase-fsm-validp new-svtv-data)))

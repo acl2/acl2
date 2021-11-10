@@ -33,6 +33,7 @@
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 (include-book "kestrel/lists-light/subrange-def" :dir :system)
+(include-book "kestrel/lists-light/memberp-def" :dir :system)
 (include-book "kestrel/lists-light/perm-def" :dir :system)
 (include-book "kestrel/lists-light/perm" :dir :system) ;needed for the congruence rules?  could split out the defequiv
 (include-book "kestrel/utilities/doublets2" :dir :system)
@@ -42,9 +43,12 @@
 (include-book "kestrel/utilities/user-interface" :dir :system) ;for manage-screen-output (TODO: reduce the stuff included in this book)
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "kestrel/lists-light/memberp2" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/remove1-equal" :dir :system))
+(local (include-book "kestrel/lists-light/perm" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 
 ;move
@@ -367,13 +371,19 @@
                   (true-listp y)))
   :hints (("Goal" :in-theory (enable generic-forall-p))))
 
+(defthmd not-generic-forall-p-when-not-generic-predicate-and-member-equal
+  (implies (and (not (generic-predicate item))
+                (member-equal item x))
+           (not (generic-forall-p x))))
+
 (defthmd generic-forall-p-when-perm-helper
   (implies (and (true-listp x)
                 ;(true-listp y)
                 (perm x y))
            (equal (generic-forall-p x)
                   (generic-forall-p (true-list-fix (double-rewrite y)))))
-  :hints (("Goal" :in-theory (enable generic-forall-p perm))))
+  :hints (("Goal" :in-theory (enable generic-forall-p perm
+                                     not-generic-forall-p-when-not-generic-predicate-and-member-equal))))
 
 ;add to macro?
 (defthm not-generic-forall-p-when-not-true-listp

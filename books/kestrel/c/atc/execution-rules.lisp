@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-execution-rules
+  :parents (atc-execution)
   :short "Execution rules for ATC."
   :long
   (xdoc::topstring
@@ -147,6 +148,286 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-arrayp-rules
+  :short "Rules for discharging @(tsee arrayp) hypotheses."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some symbolic execution rules have hypotheses saying that
+     certain terms are arrays, i.e. they satisfy @(tsee arrayp).
+     These are discharged by backchaining to
+     the fact that those terms satisfy specific array predicates,
+     such as @(tsee uchar-arrayp)."))
+
+  (defval *atc-arrayp-rules*
+    '(arrayp-when-uchar-arrayp
+      arrayp-when-schar-arrayp
+      arrayp-when-ushort-arrayp
+      arrayp-when-sshort-arrayp
+      arrayp-when-uint-arrayp
+      arrayp-when-sint-arrayp
+      arrayp-when-ulong-arrayp
+      arrayp-when-slong-arrayp
+      arrayp-when-ullong-arrayp
+      arrayp-when-sllong-arrayp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-type-of-value-option-rules
+  :short "Rules about @(tsee type-of-value-option)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These rules reduce @(tsee type-of-value-option)
+     to @(tsee type-of-value) when the argument is a value,
+     and to @('void') when the argument is @('nil').
+     During execution, the argument is always either @('nil')
+     or a term that is easily proved to be a value;
+     so these rules suffice to eliminate @(tsee type-of-value-option)."))
+
+  (defruled type-of-value-option-when-valuep
+    (implies (valuep x)
+             (equal (type-of-value-option x)
+                    (type-of-value x)))
+    :enable (type-of-value-option
+             value-option-some->val))
+
+  (defruled type-of-value-option-of-nil
+    (equal (type-of-value-option nil)
+           (type-void)))
+
+  (defval *atc-type-of-value-option-rules*
+    '(type-of-value-option-when-valuep
+      type-of-value-option-of-nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-type-of-array-element-rules
+  :short "Rules about @(tsee type-of-array-element)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These turn @(tsee type-of-array-element) into specific types
+     given that the argument satisfies predicates like @(tsee uchar-arrayp).
+     Hypotheses that arrays satisfy these predicates
+     are in the generated theorems,
+     so they can be discharged."))
+
+  (defruled type-of-array-element-when-uchar-arrayp
+    (implies (uchar-arrayp x)
+             (equal (type-of-array-element x)
+                    (type-uchar)))
+    :enable (type-of-array-element array-kind))
+
+  (defruled type-of-array-element-when-schar-arrayp
+    (implies (schar-arrayp x)
+             (equal (type-of-array-element x)
+                    (type-schar)))
+    :enable (type-of-array-element array-kind))
+
+  (defruled type-of-array-element-when-ushort-arrayp
+    (implies (ushort-arrayp x)
+             (equal (type-of-array-element x)
+                    (type-ushort)))
+    :enable (type-of-array-element array-kind))
+
+  (defruled type-of-array-element-when-sshort-arrayp
+    (implies (sshort-arrayp x)
+             (equal (type-of-array-element x)
+                    (type-sshort)))
+    :enable (type-of-array-element array-kind))
+
+  (defruled type-of-array-element-when-uint-arrayp
+    (implies (uint-arrayp x)
+             (equal (type-of-array-element x)
+                    (type-uint)))
+    :enable (type-of-array-element array-kind))
+
+  (defruled type-of-array-element-when-sint-arrayp
+    (implies (sint-arrayp x)
+             (equal (type-of-array-element x)
+                    (type-sint)))
+    :enable (type-of-array-element array-kind))
+
+  (defruled type-of-array-element-when-ulong-arrayp
+    (implies (ulong-arrayp x)
+             (equal (type-of-array-element x)
+                    (type-ulong)))
+    :enable (type-of-array-element array-kind))
+
+  (defruled type-of-array-element-when-slong-arrayp
+    (implies (slong-arrayp x)
+             (equal (type-of-array-element x)
+                    (type-slong)))
+    :enable (type-of-array-element array-kind))
+
+  (defruled type-of-array-element-when-ullong-arrayp
+    (implies (ullong-arrayp x)
+             (equal (type-of-array-element x)
+                    (type-ullong)))
+    :enable (type-of-array-element array-kind))
+
+  (defruled type-of-array-element-when-sllong-arrayp
+    (implies (sllong-arrayp x)
+             (equal (type-of-array-element x)
+                    (type-sllong)))
+    :enable (type-of-array-element array-kind))
+
+  (defval *atc-type-of-array-element-rules*
+    '(type-of-array-element-when-uchar-arrayp
+      type-of-array-element-when-schar-arrayp
+      type-of-array-element-when-ushort-arrayp
+      type-of-array-element-when-sshort-arrayp
+      type-of-array-element-when-uint-arrayp
+      type-of-array-element-when-sint-arrayp
+      type-of-array-element-when-ulong-arrayp
+      type-of-array-element-when-slong-arrayp
+      type-of-array-element-when-ullong-arrayp
+      type-of-array-element-when-sllong-arrayp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-array-length-rules
+  :short "Rules for array length operations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are not operations in C, as we know,
+     but we have functions in our C semantics for array length.
+     We introduce rules to turn @(tsee array-length)
+     into more specific array length functions like @(tsee uchar-array-length).
+     We also add existing (i.e. proved elsewhere) rules
+     about @(tsee uchar-array-length) and the others being @(tsee natp)."))
+
+  (defruled array-length-when-uchar-array-length
+    (implies (uchar-arrayp x)
+             (equal (array-length x)
+                    (uchar-array-length x)))
+    :enable (array-length array-kind array-uchar->get))
+
+  (defruled array-length-when-schar-array-length
+    (implies (schar-arrayp x)
+             (equal (array-length x)
+                    (schar-array-length x)))
+    :enable (array-length array-kind array-schar->get))
+
+  (defruled array-length-when-ushort-array-length
+    (implies (ushort-arrayp x)
+             (equal (array-length x)
+                    (ushort-array-length x)))
+    :enable (array-length array-kind array-ushort->get))
+
+  (defruled array-length-when-sshort-array-length
+    (implies (sshort-arrayp x)
+             (equal (array-length x)
+                    (sshort-array-length x)))
+    :enable (array-length array-kind array-sshort->get))
+
+  (defruled array-length-when-uint-array-length
+    (implies (uint-arrayp x)
+             (equal (array-length x)
+                    (uint-array-length x)))
+    :enable (array-length array-kind array-uint->get))
+
+  (defruled array-length-when-sint-array-length
+    (implies (sint-arrayp x)
+             (equal (array-length x)
+                    (sint-array-length x)))
+    :enable (array-length array-kind array-sint->get))
+
+  (defruled array-length-when-ulong-array-length
+    (implies (ulong-arrayp x)
+             (equal (array-length x)
+                    (ulong-array-length x)))
+    :enable (array-length array-kind array-ulong->get))
+
+  (defruled array-length-when-slong-array-length
+    (implies (slong-arrayp x)
+             (equal (array-length x)
+                    (slong-array-length x)))
+    :enable (array-length array-kind array-slong->get))
+
+  (defruled array-length-when-ullong-array-length
+    (implies (ullong-arrayp x)
+             (equal (array-length x)
+                    (ullong-array-length x)))
+    :enable (array-length array-kind array-ullong->get))
+
+  (defruled array-length-when-sllong-array-length
+    (implies (sllong-arrayp x)
+             (equal (array-length x)
+                    (sllong-array-length x)))
+    :enable (array-length array-kind array-sllong->get))
+
+  (defval *atc-array-length-rules*
+    '(array-length-when-uchar-array-length
+      array-length-when-schar-array-length
+      array-length-when-ushort-array-length
+      array-length-when-sshort-array-length
+      array-length-when-uint-array-length
+      array-length-when-sint-array-length
+      array-length-when-ulong-array-length
+      array-length-when-slong-array-length
+      array-length-when-ullong-array-length
+      array-length-when-sllong-array-length
+      natp-of-uchar-array-length
+      natp-of-schar-array-length
+      natp-of-ushort-array-length
+      natp-of-sshort-array-length
+      natp-of-uint-array-length
+      natp-of-sint-array-length
+      natp-of-ulong-array-length
+      natp-of-slong-array-length
+      natp-of-ullong-array-length
+      natp-of-sllong-array-length)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-array-length-write-rules
+  :short "Rules for array lengths and array write operations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These rules say that the array write operations preserve array lengths.
+     There is one rule for each @('<type1>-array-write-<type2>') function,
+     so generate the list programmatically."))
+
+  (define atc-array-length-write-rules-loop-itypes ((atype typep)
+                                                    (itypes type-listp))
+    :guard (and (type-integerp atype)
+                (type-integer-listp itypes))
+    :returns (names symbol-listp)
+    :parents nil
+    (cond ((endp itypes) nil)
+          (t (b* ((afixtype (atc-integer-type-fixtype atype))
+                  (ifixtype (atc-integer-type-fixtype (car itypes))))
+               (cons
+                (pack afixtype
+                      '-array-length-of-
+                      afixtype
+                      '-array-write-
+                      ifixtype)
+                (atc-array-length-write-rules-loop-itypes atype
+                                                          (cdr itypes)))))))
+
+  (define atc-array-length-write-rules-loop-atypes ((atypes type-listp)
+                                                    (itypes type-listp))
+    :guard (and (type-integer-listp atypes)
+                (type-integer-listp itypes))
+    :returns (name symbol-listp)
+    :parents nil
+    (cond ((endp atypes) nil)
+          (t (append (atc-array-length-write-rules-loop-itypes (car atypes)
+                                                               itypes)
+                     (atc-array-length-write-rules-loop-atypes (cdr atypes)
+                                                               itypes)))))
+
+  (defval *atc-array-length-write-rules*
+    (atc-array-length-write-rules-loop-atypes *atc-integer-types*
+                                              *atc-integer-types*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-exec-ident-rules
   :short "Rules for executing identifiers."
   :long
@@ -156,7 +437,7 @@
      we simply expand the definition of @(tsee exec-ident)
      which unconditionally yields @(tsee read-var).
      The @(tsee read-var) call may undergo further rewriting,
-     as explained in @(see atc-symbolic-computation-state-rules)."))
+     as explained in @(see atc-read-var-rules)."))
 
   (defval *atc-exec-ident-rules*
     '(exec-ident)))
@@ -1470,10 +1751,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-exec-expr-asg-rules
-  :short "Rules for @(tsee exec-expr-asg)."
+(defsection atc-exec-expr-asg-ident-rules
+  :short "Rules for executing assignment expressions to identifier expressions."
 
-  (defruled exec-expr-asg-open
+  (defruled exec-expr-asg-ident
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :binary)
                   (equal (binop-kind (expr-binary->op e)) :asg)
@@ -1492,14 +1773,135 @@
                     (write-var (expr-ident->get e1) val compst1)))
     :enable exec-expr-asg)
 
-  (defval *atc-exec-expr-asg-rules*
-    '(exec-expr-asg-open
+  (defval *atc-exec-expr-asg-ident-rules*
+    '(exec-expr-asg-ident
       (:e expr-kind)
       (:e expr-binary->op)
       (:e expr-binary->arg1)
       (:e expr-binary->arg2)
-      (:e binop-kind)
-      (:e expr-ident->get))))
+      (:e expr-ident->get)
+      (:e binop-kind))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exec-expr-asg-arrsub-rules-generation
+  :short "Code to generate the rules for executing
+          assignments to array subscript expressions."
+
+  (define atc-exec-expr-asg-arrsub-rules-gen ((atype typep) (itype typep))
+    :guard (and (type-integerp atype)
+                (type-integerp itype))
+    :returns (mv (name symbolp)
+                 (event pseudo-event-formp))
+    :parents nil
+    (b* ((afixtype (atc-integer-type-fixtype atype))
+         (ifixtype (atc-integer-type-fixtype itype))
+         (apred (pack afixtype '-arrayp))
+         (epred (pack afixtype 'p))
+         (ipred (pack ifixtype 'p))
+         (atype-array-itype-index-okp
+          (pack afixtype '-array- ifixtype '-index-okp))
+         (atype-array-write-itype
+          (pack afixtype '-array-write- ifixtype))
+         (name (pack 'exec-expr-asg-arrsub-when- apred '-and- ipred))
+         (formula
+          `(implies
+            (and (syntaxp (quotep e))
+                 (equal (expr-kind e) :binary)
+                 (equal (binop-kind (expr-binary->op e)) :asg)
+                 (equal left (expr-binary->arg1 e))
+                 (equal right (expr-binary->arg2 e))
+                 (equal (expr-kind left) :arrsub)
+                 (equal arr (expr-arrsub->arr left))
+                 (equal sub (expr-arrsub->sub left))
+                 (equal (expr-kind (expr-arrsub->arr left)) :ident)
+                 (not (zp limit))
+                 (equal val+compst1
+                        (exec-expr-call-or-pure right compst fenv (1- limit)))
+                 (equal val (mv-nth 0 val+compst1))
+                 (equal compst1 (mv-nth 1 val+compst1))
+                 (,epred val)
+                 (equal ptr (read-var (expr-ident->get arr) compst1))
+                 (pointerp ptr)
+                 (equal array (read-array ptr compst1))
+                 (,apred array)
+                 (equal index (exec-expr-pure sub compst1))
+                 (,ipred index)
+                 (,atype-array-itype-index-okp array index))
+            (equal (exec-expr-asg e compst fenv limit)
+                   (write-array ptr
+                                (,atype-array-write-itype array index val)
+                                compst1))))
+         (event `(defruled ,name
+                   ,formula
+                   :enable (exec-expr-asg
+                            exec-integer
+                            ,atype-array-itype-index-okp
+                            ,atype-array-write-itype))))
+      (mv name event)))
+
+  (define atc-exec-expr-asg-arrsub-rules-gen-loop-itypes ((atype typep)
+                                                          (itypes type-listp))
+    :guard (and (type-integerp atype)
+                (type-integer-listp itypes))
+    :returns (mv (names symbol-listp)
+                 (events pseudo-event-form-listp))
+    :parents nil
+    (b* (((when (endp itypes)) (mv nil nil))
+         ((mv name event) (atc-exec-expr-asg-arrsub-rules-gen atype
+                                                              (car itypes)))
+         ((mv names events)
+          (atc-exec-expr-asg-arrsub-rules-gen-loop-itypes atype (cdr itypes))))
+      (mv (cons name names) (cons event events))))
+
+  (define atc-exec-expr-asg-arrsub-rules-gen-loop-atypes ((atypes type-listp)
+                                                          (itypes type-listp))
+    :guard (and (type-integer-listp atypes)
+                (type-integer-listp itypes))
+    :returns (mv (names symbol-listp)
+                 (events pseudo-event-form-listp))
+    :parents nil
+    (b* (((when (endp atypes)) (mv nil nil))
+         ((mv names events)
+          (atc-exec-expr-asg-arrsub-rules-gen-loop-itypes (car atypes) itypes))
+         ((mv more-names more-events)
+          (atc-exec-expr-asg-arrsub-rules-gen-loop-atypes (cdr atypes) itypes)))
+      (mv (append names more-names) (append events more-events))))
+
+  (define atc-exec-expr-asg-arrsub-rules-gen-all ()
+    :returns (event pseudo-event-formp)
+    :parents nil
+    (b* (((mv names events)
+          (atc-exec-expr-asg-arrsub-rules-gen-loop-atypes *atc-integer-types*
+                                                          *atc-integer-types*)))
+      `(progn
+         (defsection atc-exec-expr-asg-arrsub-rules
+           :short "Rules for executing assignment expressions to
+                   array subscript expressions."
+           ,@events
+           (defval *atc-exec-expr-asg-arrsub-rules*
+             '(,@names
+               (:e expr-kind)
+               (:e expr-arrsub->arr)
+               (:e expr-arrsub->sub)
+               (:e expr-binary->op)
+               (:e expr-binary->arg1)
+               (:e expr-binary->arg2)
+               (:e expr-ident->get)
+               (:e binop-kind))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event (atc-exec-expr-asg-arrsub-rules-gen-all))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exec-expr-asg-rules
+  :short "Rules for executing assignment expressions."
+
+  (defval *atc-exec-expr-asg-rules*
+    (append *atc-exec-expr-asg-ident-rules*
+            *atc-exec-expr-asg-arrsub-rules*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1522,10 +1924,7 @@
      i.e. the one whose correctness theorem is being proved.
      Note that these theorems are generated only for non-recursive functions;
      the recursive functions represent loops,
-     and their correctness theorems do not involve @(tsee exec-fun).")
-   (xdoc::p
-    "The rule has a form suited to an @(':expand') hint,
-     which requires no free variables in hypotheses or right-hand side."))
+     and their correctness theorems do not involve @(tsee exec-fun)."))
 
   (defruled exec-fun-open
     (implies (and (not (zp limit))
@@ -1543,8 +1942,8 @@
                                     (1- limit)))
                   (equal val? (mv-nth 0 val?+compst1))
                   (equal compst1 (mv-nth 1 val?+compst1))
-                  (valuep val?)
-                  (equal (type-of-value val?)
+                  (value-optionp val?)
+                  (equal (type-of-value-option val?)
                          (type-name-to-type
                           (make-tyname :specs (fun-info->result info)
                                        :pointerp nil))))
@@ -1672,18 +2071,19 @@
                   (equal (block-item-kind item) :declon)
                   (not (zp limit))
                   (equal declon (block-item-declon->get item))
+                  (declon-case declon :var)
                   (equal val+compst1
-                         (exec-expr-call-or-pure (declon->init declon)
+                         (exec-expr-call-or-pure (declon-var->init declon)
                                                  compst
                                                  fenv
                                                  (1- limit)))
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
-                  (equal declor (declon->declor declon))
+                  (equal declor (declon-var->declor declon))
                   (equal (type-of-value val)
                          (type-name-to-type
-                          (make-tyname :specs (declon->type declon)
+                          (make-tyname :specs (declon-var->type declon)
                                        :pointerp (declor->pointerp declor))))
                   (equal compst2
                          (create-var (declor->ident declor) val compst1))
@@ -1709,9 +2109,10 @@
       (:e block-item-kind)
       (:e block-item-declon->get)
       (:e block-item-stmt->get)
-      (:e declon->type)
-      (:e declon->declor)
-      (:e declon->init)
+      (:e declon-kind)
+      (:e declon-var->type)
+      (:e declon-var->declor)
+      (:e declon-var->init)
       (:e declor->pointerp)
       (:e declor->ident))))
 

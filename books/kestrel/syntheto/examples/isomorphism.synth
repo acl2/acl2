@@ -1,0 +1,21 @@
+subtype nat {
+  x:int | x >= 0
+}
+
+function add1(x: nat) returns (y: nat) ensures y > 0 {
+  return x + 1;
+}
+
+function id(x: nat) returns (y: nat) {
+  return x;
+}
+
+function add1_2 =
+  transform add1
+    by isomorphism {parameter = x,
+                    new_parameter_name = xx,
+                    old_type = nat,
+                    new_type = nat,
+                    old_to_new = id,
+                    new_to_old = id,
+                    simplify = true}

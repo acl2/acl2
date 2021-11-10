@@ -14,10 +14,13 @@
 ;; See also books/std/typed-lists/symbol-listp.lisp, but that book may be more
 ;; heavyweight.
 
+(in-theory (disable symbol-listp))
+
 ;; Avoid name clash with std.
 (defthm symbol-listp-of-set-difference-equal-alt
   (implies (symbol-listp l1)
-           (symbol-listp (set-difference-equal l1 l2))))
+           (symbol-listp (set-difference-equal l1 l2)))
+  :hints (("Goal" :in-theory (enable symbol-listp))))
 
 (defthm symbol-listp-of-append2
   (equal (symbol-listp (append x y))
@@ -29,18 +32,20 @@
 (defthm symbol-listp-of-union-equal-alt
   (equal (symbol-listp (union-equal l1 l2))
          (and (symbol-listp (true-list-fix l1))
-              (symbol-listp l2))))
+              (symbol-listp l2)))
+  :hints (("Goal" :in-theory (enable symbol-listp))))
 
 (defthm symbol-listp-of-intersection-equal
   (implies (or (symbol-listp l1)
                (symbol-listp l2))
-           (symbol-listp (intersection-equal l1 l2))))
+           (symbol-listp (intersection-equal l1 l2)))
+  :hints (("Goal" :in-theory (enable symbol-listp))))
 
 (defthm symbol-listp-of-add-to-set-equal
   (equal (symbol-listp (add-to-set-equal x l))
          (and (symbolp x)
               (symbol-listp l)))
-  :hints (("Goal" :in-theory (enable add-to-set-equal))))
+  :hints (("Goal" :in-theory (enable symbol-listp add-to-set-equal))))
 
 (defthm symbol-listp-of-cdr
   (implies (symbol-listp x)

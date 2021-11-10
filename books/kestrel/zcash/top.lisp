@@ -21,6 +21,7 @@
 (include-book "pedersen-hash-injectivity-properties")
 (include-book "pedersen-hash-image-properties")
 (include-book "randomness-beacon")
+(include-book "verify-zcash-r1cs")
 
 (include-book "gadgets/top")
 

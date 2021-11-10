@@ -1,7 +1,7 @@
 ; A tool for instantiating a hyp of a rule
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -80,24 +80,18 @@
 (make-flag instantiate-hyp)
 
 (defthm-flag-instantiate-hyp
-  (defthm theorem-for-instantiate-hyp
-    t
-    :rule-classes nil
-    :flag instantiate-hyp)
   (defthm true-listp-of-mv-nth-1-of-instantiate-hyp-lst
     (true-listp (mv-nth 1 (instantiate-hyp-lst l alist free-vars-flg interpreted-function-alist)))
     :flag instantiate-hyp-lst)
+  :skip-others t
   :hints (("Goal" :in-theory (enable instantiate-hyp instantiate-hyp-lst))))
 
 (defthm-flag-instantiate-hyp
-  (defthm theorem-for-instantiate-hyp3
-    t
-    :rule-classes nil
-    :flag instantiate-hyp)
   (defthm len-of-mv-nth-1-of-instantiate-hyp-lst
     (equal (len (mv-nth 1 (instantiate-hyp-lst l alist free-vars-flg interpreted-function-alist)))
            (len l))
     :flag instantiate-hyp-lst)
+  :skip-others t
   :hints (("Goal" :in-theory (enable instantiate-hyp instantiate-hyp-lst))))
 
 (defthm-flag-instantiate-hyp
@@ -115,16 +109,13 @@
   :hints (("Goal" :in-theory (enable instantiate-hyp instantiate-hyp-lst))))
 
 (defthm-flag-instantiate-hyp
-  (defthm theorem-for-instantiate-hyp4
-    t
-    :rule-classes nil
-    :flag instantiate-hyp)
   (defthm all-myquotep-of-mv-nth-1-of-instantiate-hyp-lst
     (implies (and (mv-nth 0 (instantiate-hyp-lst l alist free-vars-flg interpreted-function-alist))
                   (pseudo-term-listp l)
                   (all-dargp (strip-cdrs alist)))
              (all-myquotep (mv-nth 1 (instantiate-hyp-lst l alist free-vars-flg interpreted-function-alist))))
     :flag instantiate-hyp-lst)
+  :skip-others t
   :hints (("Goal" :in-theory (e/d (instantiate-hyp instantiate-hyp-lst) (myquotep)))))
 
 (verify-guards instantiate-hyp :otf-flg t :hints (("Goal" :in-theory (enable pseudo-termp))))

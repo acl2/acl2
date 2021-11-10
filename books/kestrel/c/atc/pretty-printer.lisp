@@ -283,7 +283,9 @@
                   :ushort "unsigned short"
                   :uint "unsigned int"
                   :ulong "unsigned long"
-                  :ullong "unsigned long long")
+                  :ullong "unsigned long long"
+                  :struct (msg "struct ~@0"
+                               (pprint-ident tss.tag)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -525,6 +527,8 @@
              :const (expr-grade-primary)
              :arrsub (expr-grade-postfix)
              :call (expr-grade-postfix)
+             :member (expr-grade-postfix)
+             :memberp (expr-grade-postfix)
              :postinc (expr-grade-postfix)
              :postdec (expr-grade-postfix)
              :preinc (expr-grade-unary)
@@ -693,6 +697,12 @@
                            (pprint-ident expr.fun)
                            (pprint-comma-sep
                             (pprint-expr-list expr.args (expr-grade-top))))
+                :member (msg "~@0.~@1"
+                             (pprint-expr expr.target (expr-grade-postfix))
+                             (pprint-ident expr.name))
+                :memberp (msg "~@0->~@1"
+                              (pprint-expr expr.target (expr-grade-postfix))
+                              (pprint-ident expr.name))
                 :postinc (msg "~@0++"
                               (pprint-expr expr.arg (expr-grade-postfix)))
                 :postdec (msg "~@0--"
@@ -777,15 +787,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-declon ((declon declonp) (level natp))
-  :returns (part msgp)
-  :short "Pretty-print a declaration."
-  (b* (((declon declon) declon))
-    (pprint-line (msg "~@0 ~@1 = ~@2;"
-                      (pprint-tyspecseq declon.type)
-                      (pprint-declor declon.declor)
-                      (pprint-expr declon.init (expr-grade-top)))
+(define pprint-struct-declon ((member struct-declonp) (level natp))
+  :returns (line msgp)
+  :short "Pretty-print a structure declaration."
+  (b* (((struct-declon member) member))
+    (pprint-line (msg "~@0 ~@1;"
+                      (pprint-tyspecseq member.type)
+                      (pprint-declor member.declor))
                  (lnfix level)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-struct-declon-list ((members struct-declon-listp) (level natp))
+  :returns (lines msg-listp)
+  :short "Pretty-print a list of stucture declarations."
+  (cond ((endp members) nil)
+        (t (cons (pprint-struct-declon (car members) level)
+                 (pprint-struct-declon-list (cdr members) level))))
+  ///
+  (fty::deffixequiv pprint-struct-declon-list
+    :hints (("Goal" :in-theory (disable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-declon ((declon declonp) (level natp))
+  :returns (lines msg-listp)
+  :short "Pretty-print a declaration."
+  (declon-case
+   declon
+   :var
+   (list (pprint-line (msg "~@0 ~@1 = ~@2;"
+                           (pprint-tyspecseq declon.type)
+                           (pprint-declor declon.declor)
+                           (pprint-expr declon.init (expr-grade-top)))
+                      (lnfix level)))
+   :struct
+   (append (list (pprint-line (msg "struct ~@0 {"
+                                   (pprint-ident declon.tag))
+                              (lnfix level)))
+           (pprint-struct-declon-list declon.members (1+ (lnfix level)))
+           (list (pprint-line "}"
+                              (lnfix level)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -897,7 +940,7 @@
   (define pprint-block-item ((item block-itemp) (level natp))
     :returns (lines msg-listp)
     (block-item-case item
-                     :declon (list (pprint-declon item.get level))
+                     :declon (pprint-declon item.get level)
                      :stmt (pprint-stmt item.get level))
     :measure (block-item-count item))
 
@@ -923,7 +966,7 @@
 
 (define pprint-param-declon-list ((params param-declon-listp))
   :returns (parts msg-listp)
-  :short "Pretty-print a list of parameter-declarations."
+  :short "Pretty-print a list of parameter declarations."
   (cond ((endp params) nil)
         (t (cons (pprint-param-declon (car params))
                  (pprint-param-declon-list (cdr params)))))
@@ -955,9 +998,7 @@
   :short "Pretty-print an external declaration."
   (ext-declon-case ext
                    :fundef (pprint-fundef ext.get)
-                   :declon (raise "Internal error: ~
-                                 non-function-definition external declarations ~
-                                 not supported.")))
+                   :declon (pprint-declon ext.get 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

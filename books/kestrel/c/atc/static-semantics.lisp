@@ -763,6 +763,8 @@
                    (error (list :arrsub e sub-type))))
                (check-arrsub e.arr arr-type e.sub sub-type))
      :call (error (list :expr-non-pure e))
+     :member (error (list :not-supported-yet e))
+     :memberp (error (list :not-supported-yet e))
      :postinc (error (list :expr-non-pure e))
      :postdec (error (list :expr-non-pure e))
      :preinc (error (list :expr-non-pure e))
@@ -852,9 +854,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called after checking that the expression is a function call,
-     and thus passing its component (name and arguments) here.")
-   (xdoc::p
     "We check the argument expressions,
      which must be pure (because we restrict them to be so).
      We retrieve the function type from the function table
@@ -919,6 +918,9 @@
    (xdoc::p
     "The two sides must have the same type,
      which is more restrictive than [C:6.5.16.1].
+     Since it is an invariant (currently not formally proved)
+     that variables never have @('void') type,
+     the equality of types implies that the function must not return @('void').
      We do not return any type information because
      an expression statement throws away the expression's value;
      indeed, we are only interested in the side effects of assignment here."))
@@ -976,22 +978,30 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the expression is a function call, we check it as such.")
+    "If the expression is a function call, we check it as such.
+     We also ensure that it returns @('void'),
+     because we apply these checks to
+     expressions that form expression statements:
+     while [C] allows function calls that discard values,
+     we are more restrictive here,
+     also because currently ATC does not generate C code
+     with non-@('void') function calls in expression statements.")
    (xdoc::p
     "If the expression is not a function call,
      it must be an assignment expression,
-     which we resort to check it as such.")
+     which we resort to check as such.")
    (xdoc::p
-    "Even if the expression is a function call, we retun no type here.
-     This is because this ACL2 function is used
-     when checking expression statements,
-     whose value (if any) is discarded."))
+    "We retun no type here,
+     because we apply these checks to
+     expressions that form expression statements."))
   (if (expr-case e :call)
       (b* ((type (check-expr-call (expr-call->fun e)
                                   (expr-call->args e)
                                   funtab
                                   vartab))
-           ((when (errorp type)) type))
+           ((when (errorp type)) type)
+           ((unless (type-case type :void))
+            (error (list :nonvoid-function-result-discarded (expr-fix e)))))
         :wellformed)
     (check-expr-asg e funtab vartab))
   :hooks (:fix))
@@ -1097,10 +1107,12 @@
    (xdoc::p
     "For a @('return') statement,
      we require an expression,
-     and we return the singleton set with the type of the expression.")
+     and we return the singleton set with the type of the expression.
+     The type must not be @('void') [C:6.3.2.2].")
    (xdoc::p
     "For a block item that is a declaration,
-     we ensure that the type is not @('void'),
+     we ensure that it is a variable (not a structure type) declaration.
+     We ensure that the type is not @('void'),
      because the type must be complete [C:6.7/7],
      and @('void') is incomplete [C:6.2.5/19].
      We also ensure that the initializer has the same type as the variable
@@ -1194,7 +1206,9 @@
      :break (error :unsupported-break)
      :return (b* (((unless s.value) (error (list :unsupported-return-void)))
                   (type (check-expr-call-or-pure s.value funtab vartab))
-                  ((when (errorp type)) (error (list :return-error type))))
+                  ((when (errorp type)) (error (list :return-error type)))
+                  ((when (type-case type :void))
+                   (error (list :return-void-expression s.value))))
                (make-stmt-type :return-types (set::insert type nil)
                                :variables vartab)))
     :measure (stmt-count s))
@@ -1205,27 +1219,32 @@
     :returns (stype stmt-type-resultp)
     (block-item-case
      item
-     :declon (b* (((declon declon) item.get)
-                  ((when (tyspecseq-case declon.type :void))
-                   (error (list :declon-error-type-void declon)))
-                  (pointerp (declor->pointerp declon.declor))
-                  (var (declor->ident declon.declor))
-                  (wf (check-ident var))
-                  ((when (errorp wf)) (error (list :declon-error-var wf)))
-                  (type (type-name-to-type (make-tyname :specs declon.type
-                                                        :pointerp pointerp)))
-                  (init-type (check-expr-call-or-pure declon.init funtab vartab))
-                  ((when (errorp init-type))
-                   (error (list :declon-error-init init-type)))
-                  ((unless (equal init-type type))
-                   (error (list
-                           :declon-mistype declon.type declon.declor declon.init
-                           :required type
-                           :supplied init-type)))
-                  (vartab (var-table-add-var var type vartab))
-                  ((when (errorp vartab)) (error (list :declon-error vartab))))
-               (make-stmt-type :return-types (set::insert (type-void) nil)
-                               :variables vartab))
+     :declon
+     (b* (((unless (declon-case item.get :var))
+           (error (list :struct-declaration-in-block-item item.get)))
+          (type (declon-var->type item.get))
+          (declor (declon-var->declor item.get))
+          (init (declon-var->init item.get))
+          ((when (tyspecseq-case type :void))
+           (error (list :declon-error-type-void item.get)))
+          (pointerp (declor->pointerp declor))
+          (var (declor->ident declor))
+          (wf (check-ident var))
+          ((when (errorp wf)) (error (list :declon-error-var wf)))
+          (type (type-name-to-type (make-tyname :specs type
+                                                :pointerp pointerp)))
+          (init-type (check-expr-call-or-pure init funtab vartab))
+          ((when (errorp init-type))
+           (error (list :declon-error-init init-type)))
+          ((unless (equal init-type type))
+           (error (list
+                   :declon-mistype type declor init
+                   :required type
+                   :supplied init-type)))
+          (vartab (var-table-add-var var type vartab))
+          ((when (errorp vartab)) (error (list :declon-error vartab))))
+       (make-stmt-type :return-types (set::insert (type-void) nil)
+                       :variables vartab))
      :stmt (check-stmt item.get funtab vartab))
     :measure (block-item-count item))
 
@@ -1387,9 +1406,10 @@
   (xdoc::topstring
    (xdoc::p
     "For now we only allow function definitions."))
-  (ext-declon-case ext
-                 :fundef (check-fundef ext.get funtab)
-                 :declon (fun-table-fix funtab))
+  (ext-declon-case
+   ext
+   :fundef (check-fundef ext.get funtab)
+   :declon (error (list :top-level-declaraion-not-supported ext.get)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

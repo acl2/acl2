@@ -31,7 +31,7 @@
    (xdoc::p
     "This is not necessarily meant to be a complete abstract syntax of C.
      It only needs to represent the C programs that ATC generates,
-     not necessarily all the possible C programs.")
+     not all the possible C programs.")
    (xdoc::p
     "At the same time, we plan to formalize
      a more comprehensive abstract syntax of C
@@ -47,7 +47,7 @@
      such as @('#include')s, and possibly also some (simple) macros.
      This means that the ATC abstract syntax will have to mix
      preprocessing constructs with the preprocessed constructs:
-     this is something that may not be part, as such,
+     this is something that may not be part, in this mixed form,
      of the language formalization,
      which should presumably differentiate between
      preprocessing translation units and
@@ -184,8 +184,9 @@
      In C, @('0') is always an octal integer constant,
      so our abstract syntax here captures a bit more,
      namely a decimal integer constant 0 that does not exist in C.
-     This is not an issue, because a pretty-printer would turn that
-     into @('0') in the same way as if it were octal.")
+     This is not an issue for now,
+     because our pretty-printer turns that into @('0')
+     in the same way as if it were octal.")
    (xdoc::p
     "In base 8, the value has a unique syntactic representation
      if we assume exactly one leading 0,
@@ -193,7 +194,7 @@
    (xdoc::p
     "In base 16, the value has a unique syntactc representation
      if we assume no leading 0s and either lowercase or uppercase letters
-     (e.g. we do not capture the difference between
+     (i.e. we do not capture the difference between
      the hexadecimal digits @('a') and @('A')).
      This is not a very severe limitation,
      even though sometimes one may like to write
@@ -365,9 +366,27 @@
    (xdoc::p
     "For now we only capture type specifier sequences for
      the @('void') type,
-     the plain @('char') type, and
-     the standard signed and unsigned integer types (except @('_Bool')).
-     We only capture one sequence for each, implicitly."))
+     the plain @('char') type,
+     the standard signed and unsigned integer types (except @('_Bool')),
+     and structure types.
+     We only capture structure type specifiers consisting of
+     an identifier, which is the tag of the structure type [C:6.7.2.1].")
+   (xdoc::p
+    "Syntactically, declarations that defines (the members of) structure types
+     are also type specifiers.
+     We capture them elsewhere in our abstract syntax.
+     We use values of this fixtype of sequences of type specifiers
+     only in parts of the code that reference existing types,
+     not that introduce them.
+     Recall that our abstract syntax does not capture
+     all possible forms of C code,
+     only the ones for C code that we want ATC to generate.
+     In that context, there is a distinction between
+     defining a structure type and merely referencing it.")
+   (xdoc::p
+    "We only capture one sequence for type, implicitly,
+     even though some types can be specified
+     via different equivalent sequences."))
   (:void ())
   (:char ())
   (:schar ())
@@ -380,6 +399,7 @@
   (:uint ())
   (:ulong ())
   (:ullong ())
+  (:struct ((tag ident)))
   :pred tyspecseqp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -467,11 +487,13 @@
        for now we only cover
        array subscripting,
        function calls (where we require the function to be an identifier),
+       structure and union member access
+       (both forms: @('.') directly on structures and unions,
+       as well as @('->') on pointers to structures and unions),
        and post-increment/decrement.
        Richer expressions for functions in function calls
        (e.g. function pointers)
        will be added if/when needed.
-       Structure and union member accesses will be added later.
        Compound literals will be added as needed.")
      (xdoc::p
       "Of the unary expressions [C:6.5.3],
@@ -515,6 +537,10 @@
     (:arrsub ((arr expr) (sub expr)))
     (:call ((fun ident)
             (args expr-list)))
+    (:member ((target expr)
+              (name ident)))
+    (:memberp ((target expr)
+               (name ident)))
     (:postinc ((arg expr)))
     (:postdec ((arg expr)))
     (:preinc ((arg expr)))
@@ -577,29 +603,68 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod declon
+(fty::defprod struct-declon
+  :short "Fixtype of structure declarations [C:6.7.2.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used inside structure specifiers:
+     they do not declare structure types, but rather their members.")
+   (xdoc::p
+    "For now we only capture structure declarations that consist of
+     a type specifier sequence from @(tsee tyspecseq),
+     and a structure declarator that is a declarator from @(tsee declor).
+     We do not capture static assertions.
+     We do not capture bit field sizes."))
+  ((type tyspecseq)
+   (declor declor))
+  :tag :struct-declon
+  :pred struct-declonp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist struct-declon-list
+  :short "Fixtype of lists of structure declarations."
+  :elt-type struct-declon
+  :true-listp t
+  :elementp-of-nil nil
+  :pred struct-declon-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum declon
   :short "Fixtype of declarations [C:6.7]."
   :long
   (xdoc::topstring
    (xdoc::p
     "Declarations are perhaps the most complex part of the C syntax.
      For now we capture only a very limited form of declarations,
-     namely the ones consisting of
-     a type specifier sequence from @(tsee tyspecseq),
-     no storage class specifiers,
-     no type qualifiers,
-     no function specifiers,
-     no alignment specifiers,
-     and a single declarator (see @(tsee declor))
-     with an initializer expression.")
+     namely:")
+   (xdoc::ul
+    (xdoc::li
+     "The ones consisting of
+      a type specifier sequence from @(tsee tyspecseq),
+      no storage class specifiers,
+      no type qualifiers,
+      no function specifiers,
+      no alignment specifiers,
+      and a single declarator (see @(tsee declor))
+      with an initializer expression.
+      These declare variables.")
+    (xdoc::li
+     "The ones consisting of
+      a single structure type specifier consisting of the tag identifier
+      and a list of structure declarations from @(tsee struct-declon).
+      These declare structure types."))
    (xdoc::p
     "We will support richer forms of declarations when needed.")
    (xdoc::p
     "We do not support static assertions for now."))
-  ((type tyspecseq)
-   (declor declor)
-   (init expr))
-  :tag :declon
+  (:var ((type tyspecseq)
+         (declor declor)
+         (init expr)))
+  (:struct ((tag ident)
+            (members struct-declon-list)))
   :pred declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -788,14 +853,8 @@
 
 (fty::deftagsum ext-declon
   :short "Fixtype of external declarations [C:6.9]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now we only allow function definitions at the top level.
-     We add a placeholder for other top-level declarations,
-     which we will flesh out later."))
   (:fundef ((get fundef)))
-  (:declon ())
+  (:declon ((get declon)))
   :pred ext-declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

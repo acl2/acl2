@@ -431,11 +431,11 @@
                                      SUBSETP-EQUAL
                                      sortedp-<=))))
 
-(encapsulate ()
-  (local (include-book "kestrel/lists-light/memberp" :dir :system))
-;move
-  (defcong perm iff (member-equal x y) 2
-    :hints (("Goal" :in-theory (enable member-equal perm)))))
+;; (encapsulate ()
+;;   (local (include-book "kestrel/lists-light/memberp" :dir :system))
+;; ;move
+;;   (defcong perm iff (member-equal x y) 2
+;;     :hints (("Goal" :in-theory (enable member-equal perm)))))
 
 ;move
 (defcong perm equal (subsetp-equal x y) 2

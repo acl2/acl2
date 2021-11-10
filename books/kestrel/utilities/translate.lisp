@@ -27,7 +27,7 @@
                  wrld
                  (default-state-vars nil)))
 
-;; Translates a term (by expanding macros, quoting constants, turing lets into
+;; Translates a term (by expanding macros, quoting constants, turning lets into
 ;; lambdas, etc.).  Returns the translation of TERM, or throws an informative
 ;; hard error if something is wrong.  I think this is based on something Matt
 ;; K. wrote.  See also check-user-term.

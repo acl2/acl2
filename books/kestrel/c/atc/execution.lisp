@@ -1406,6 +1406,8 @@
                           (exec-expr-pure e.sub compst)
                           compst)
      :call (error (list :non-pure-expr e))
+     :member (error (list :not-supported-yet e))
+     :memberp (error (list :not-supported-yet e))
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))
      :preinc (error (list :non-pure-expr e))
@@ -1537,7 +1539,7 @@
                                   (compst compustatep)
                                   (fenv fun-envp)
                                   (limit natp))
-    :returns (mv (result value-resultp)
+    :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
     :parents (atc-dynamic-semantics exec)
     :short "Execute a function call or a pure expression."
@@ -1547,7 +1549,10 @@
       "This is only used for expressions that must be
        either function calls or pure.
        If the expression is a call, we handle it here.
-       Otherwise, we resort to @(tsee exec-expr-pure)."))
+       Otherwise, we resort to @(tsee exec-expr-pure).")
+     (xdoc::p
+      "We return an optional value,
+       which is @('nil') for a function that returns @('void')."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          (e (expr-fix e)))
       (if (expr-case e :call)
@@ -1582,6 +1587,9 @@
       (xdoc::li
        "A right-hand side consisting of a function call or a pure expression."))
      (xdoc::p
+      "We ensure that if the right-hand side expression is a function call,
+       it returns a value (i.e. it is not @('void')).")
+     (xdoc::p
       "We allow these assignment expressions
        as the expressions of expression statements.
        Thus, we discard the value of the assignment
@@ -1595,9 +1603,11 @@
          (right (expr-binary->arg2 e))
          ((unless (binop-case op :asg))
           (error (list :expr-asg-not-asg op)))
-         ((mv val compst)
+         ((mv val? compst)
           (exec-expr-call-or-pure right compst fenv (1- limit)))
-         ((when (errorp val)) val))
+         ((when (errorp val?)) val?)
+         ((when (not val?)) (error (list :asg-void-expr (expr-fix e))))
+         (val val?))
       (case (expr-kind left)
         (:ident
          (b* ((var (expr-ident->get left)))
@@ -1701,10 +1711,10 @@
                     (compst compustatep)
                     (fenv fun-envp)
                     (limit natp))
-    :returns (mv (result value-resultp)
+    :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
     :parents (atc-dynamic-semantics exec)
-    :short "Execution a function on argument values."
+    :short "Execute a function on argument values."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -1712,8 +1722,7 @@
        We initialize a scope with the argument values,
        and we push a frame onto the call stack.
        We execute the function body,
-       which must return a result,,
-       which must match the function's result type.
+       which must return a result that matches the function's result type.
        We pop the frame and return the value of the function call as result."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          (info (fun-env-lookup fun fenv))
@@ -1725,21 +1734,18 @@
          ((when (errorp scope)) (mv scope (compustate-fix compst)))
          (frame (make-frame :function fun :scopes (list scope)))
          (compst (push-frame frame compst))
-         ((mv val-opt compst) (exec-stmt info.body compst fenv (1- limit)))
+         ((mv val? compst) (exec-stmt info.body compst fenv (1- limit)))
          (compst (pop-frame compst))
-         ((when (errorp val-opt)) (mv val-opt compst)))
-      (if val-opt
-          (if (equal (type-of-value val-opt)
-                     (type-name-to-type
-                      (make-tyname :specs info.result
-                                   :pointerp nil)))
-              (mv val-opt compst)
-            (mv (error (list :return-value-mistype
-                             :required info.result
-                             :supplied (type-of-value val-opt)))
-                compst))
-        (mv (error (list :no-return-value (ident-fix fun)))
-            compst)))
+         ((when (errorp val?)) (mv val? compst))
+         ((unless (equal (type-of-value-option val?)
+                         (type-name-to-type
+                          (make-tyname :specs info.result
+                                       :pointerp nil))))
+          (mv (error (list :return-value-mistype
+                           :required info.result
+                           :supplied (type-of-value-option val?)))
+              compst)))
+      (mv val? compst))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1854,7 +1860,8 @@
        we also return a possibly updated computation state.")
      (xdoc::p
       "If the block item is a declaration,
-       we first execute the expression,
+       we ensure it is a variable (not a structure type) declaration,
+       then we execute the expression,
        then we add the variable to the top scope of the top frame.
        The initializer value must have the same type as the variable,
        which automatically excludes the case of the variable being @('void'),
@@ -1866,25 +1873,34 @@
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (block-item-case
        item
-       :declon (b* (((declon declon) item.get)
-                    ((mv init compst) (exec-expr-call-or-pure declon.init
-                                                              compst
-                                                              fenv
-                                                              (1- limit)))
-                    ((when (errorp init)) (mv init compst))
-                    (var (declor->ident declon.declor))
-                    (pointerp (declor->pointerp declon.declor))
-                    (type (type-name-to-type
-                           (make-tyname :specs declon.type
-                                        :pointerp pointerp)))
-                    ((unless (equal type (type-of-value init)))
-                     (mv (error (list :decl-var-mistype var
-                                      :required type
-                                      :supplied (type-of-value init)))
-                         compst))
-                    (new-compst (create-var var init compst))
-                    ((when (errorp new-compst)) (mv new-compst compst)))
-                 (mv nil new-compst))
+       :declon
+       (b* (((unless (declon-case item.get :var))
+             (mv (error (list :struct-declaration-in-block-item item.get))
+                 (compustate-fix compst)))
+            (type (declon-var->type item.get))
+            (declor (declon-var->declor item.get))
+            (init (declon-var->init item.get))
+            ((mv init compst) (exec-expr-call-or-pure init
+                                                      compst
+                                                      fenv
+                                                      (1- limit)))
+            ((when (errorp init)) (mv init compst))
+            ((when (not init))
+             (mv (error (list :void-initializer (block-item-fix item)))
+                 compst))
+            (var (declor->ident declor))
+            (pointerp (declor->pointerp declor))
+            (type (type-name-to-type
+                   (make-tyname :specs type
+                                :pointerp pointerp)))
+            ((unless (equal type (type-of-value init)))
+             (mv (error (list :decl-var-mistype var
+                              :required type
+                              :supplied (type-of-value init)))
+                 compst))
+            (new-compst (create-var var init compst))
+            ((when (errorp new-compst)) (mv new-compst compst)))
+         (mv nil new-compst))
        :stmt (exec-stmt item.get compst fenv (1- limit))))
     :measure (nfix limit))
 

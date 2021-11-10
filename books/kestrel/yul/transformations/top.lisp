@@ -11,6 +11,8 @@
 (in-package "YUL")
 
 (include-book "dead-code-eliminator")
+(include-book "dead-code-eliminator-verification")
+
 (include-book "for-loop-init-rewriter")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -21,7 +23,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We formalize some of the Yul transformations
+    "We formalize and verify some of the Yul transformations
      used in the Solidity compiler,
      documented at [Yul: Yul Optimizer]."))
   :order-subtopics t)

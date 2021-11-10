@@ -21,6 +21,9 @@
     (cons (enquote (car items))
           (enquote-list (cdr items)))))
 
+(defthm pseudo-term-listp-of-enquote-list
+  (pseudo-term-listp (enquote-list items)))
+
 ;; Test whether TERM is syntactically a true-list: a nest of CONSes
 ;; terminating in a quoted true list (often 'nil).
 (defund syntactic-true-listp (term)
@@ -67,3 +70,9 @@
       ;; must be a cons:
       (cons (farg1 term) ; must be a call of cons
             (syntactic-list-elements (farg2 term))))))
+
+(defthm pseudo-term-listp-of-syntactic-list-elements
+  (implies (and (pseudo-termp term)
+                (syntactic-true-listp term))
+           (pseudo-term-listp (syntactic-list-elements term)))
+  :hints (("Goal" :in-theory (enable syntactic-true-listp))))

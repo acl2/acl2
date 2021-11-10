@@ -23,6 +23,7 @@
                          value))
                       '(any
                         bool
+                        defund-sk
                         defxdoc+
                         nat
                         nat-resultp
@@ -35,4 +36,5 @@
                         fty::resulterrp
                         fty::stack
                         str::hex-digit-char
-                        ubyte256)))
+                        ubyte256
+                        values)))

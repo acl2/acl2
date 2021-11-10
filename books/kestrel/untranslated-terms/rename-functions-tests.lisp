@@ -36,3 +36,19 @@
                      ((EQUAL X 4) (POSP 4))))
 
 ;; TODO: Add tests of case, case-match, b*, etc.
+
+(assert-equal
+ (rename-functions-in-untranslated-term
+  '(b* ((x (car y))
+        ((when (consp x))
+         (+ (car x) (cdr x)))
+        (- (cw "Hello"))
+        ((mv a b c) (mv (< a a) b c)))
+     (list x a b c))
+  '((< . new<) (car . newcar) (consp . newconsp)) state)
+ '(B* ((X (NEWCAR Y))
+       ((WHEN (newCONSP X))
+        (+ (newcar x) (cdr x)))
+       (- (CW "Hello"))
+       ((MV A B C) (MV (new< A A) B C)))
+    (LIST X A B C)))

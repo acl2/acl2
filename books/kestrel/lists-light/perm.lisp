@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "perm-def")
-(local (include-book "memberp"))
+;(local (include-book "memberp"))
 (local (include-book "member-equal"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "subsetp-equal"))
@@ -21,18 +21,9 @@
 (local (include-book "union-equal"))
 (local (include-book "set-difference-equal"))
 
-(local (in-theory (enable member-equal-becomes-memberp)))
-
 (defthm perm-self
   (perm x x)
   :hints (("Goal" :in-theory (enable perm))))
-
-(defthmd memberp-when-perm
-  (implies (perm x y)
-           (equal (memberp a x)
-                  (memberp a y)))
-  :hints (("Goal" :in-theory (enable perm))
-          ("subgoal *1/2" :cases ((equal a (car x))))))
 
 (defthmd member-equal-when-perm-iff
   (implies (perm x y)
@@ -40,7 +31,6 @@
                 (member-equal a y)))
   :hints (("Goal" :in-theory (enable perm))
           ("subgoal *1/2" :cases ((equal a (car x))))))
-
 
 (defthm perm-of-remove1-equal-and-remove1-equal
   (implies (perm x y)
@@ -53,7 +43,7 @@
                 (perm y z))
            (perm x z))
   :hints (("Goal" :in-theory (enable perm))
-          ("subgoal *1/5" :use (:instance memberp-when-perm
+          ("subgoal *1/5" :use (:instance member-equal-when-perm-iff
                                            (a (car x))
                                            (x y)
                                            (y z)))))
@@ -72,13 +62,13 @@
           ("subgoal *1/2" :use (:instance perm-of-remove1-equal-and-remove1-equal
                                           (a (car y)))
            :in-theory (e/d (perm) (perm-of-remove1-equal-and-remove1-equal)))
-          ("subgoal *1/3" :use (:instance memberp-when-perm
+          ("subgoal *1/3" :use (:instance member-equal-when-perm-iff
                                           (a (car y))))))
 
 (defequiv perm)
 
-(defcong perm equal (memberp a x) 2
-  :hints (("Goal" :use (:instance memberp-when-perm (y x-equiv)))))
+(defcong perm iff (member-equal a x) 2
+  :hints (("Goal" :use (:instance member-equal-when-perm-iff (y x-equiv)))))
 
 (defcong perm perm (remove1-equal a x) 2)
 
@@ -102,13 +92,13 @@
 
 (defthm perm-of-cons-arg1
   (equal (perm (cons a x) y)
-         (and (memberp a y)
+         (and (member-equal a y)
               (perm (remove1-equal a y) x)))
   :hints (("Goal" :in-theory (enable perm))))
 
 (defthm perm-of-cons-arg2
   (equal (perm x (cons a y))
-         (and (memberp a x)
+         (and (member-equal a x)
               (perm (remove1-equal a x) y)))
   :hints (("Goal" :in-theory (enable perm))))
 
@@ -175,7 +165,7 @@
 ;; become an addition on the other side.
 (defthmd perm-of-remove1-equal
   (equal (perm (remove1-equal a x) y)
-         (if (memberp a x)
+         (if (member-equal a x)
              (perm x (cons a y))
            (perm x y)))
   :hints (("Goal" :in-theory (enable perm))))
@@ -193,7 +183,7 @@
 
 ;; TODO: move
 (defthm no-duplicatesp-equal-of-remove1-equal-when-at-most-one
-  (implies (not (memberp a (remove1-equal a x))) ;there is at most one copy of a in x
+  (implies (not (member-equal a (remove1-equal a x))) ;there is at most one copy of a in x
            (equal (no-duplicatesp-equal (remove1-equal a x))
                   (no-duplicatesp-equal x))))
 
@@ -290,12 +280,12 @@
 
 (defthm perm-of-remove1-equal-same-arg1
   (equal (perm (remove1-equal a x) x)
-         (not (memberp a x)))
+         (not (member-equal a x)))
   :hints (("Goal" :in-theory (enable remove1-equal perm))))
 
 (defthm perm-of-remove1-equal-same-arg2
   (equal (perm x (remove1-equal a x))
-         (not (memberp a x)))
+         (not (member-equal a x)))
   :hints (("Goal" :in-theory (enable remove1-equal perm))))
 
 (defthm perm-of-set-difference-equal-arg1

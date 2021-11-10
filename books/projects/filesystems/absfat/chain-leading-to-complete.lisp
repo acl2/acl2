@@ -827,7 +827,7 @@
           :expand (collapse-1st-index frame x))))
 
 (defthmd
-  chain-ends-in-abs-complete-lemma-10
+  chain-ends-in-abs-complete-lemma-5
   (implies
    (and (mv-nth 1 (collapse frame))
         (no-duplicatesp-equal (strip-cars (frame->frame frame)))
@@ -845,7 +845,8 @@
     :in-theory
     (e/d (frame-addrs-before collapse-1st-index
                              collapse-iter collapse
-                             (:rewrite cons-of-remove-under-set-equiv-1))
+                             (:rewrite cons-of-remove-under-set-equiv-1)
+                             frame->root)
          ((:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:type-prescription abs-addrs-of-remove-assoc-lemma-1)
@@ -861,7 +862,8 @@
           (:rewrite partial-collapse-correctness-lemma-2)
           (:rewrite integerp-of-car-when-integer-listp)
           (:definition integer-listp)
-          (:definition nthcdr)))
+          (:definition nthcdr)
+          frame->root-normalisation))
     :induct (frame-addrs-before frame x n)
     :expand (collapse-iter frame 1))))
 
@@ -900,12 +902,12 @@
   (("goal"
     :in-theory
     (e/d
-     (chain-ends-in-abs-complete-lemma-10)
+     (chain-ends-in-abs-complete-lemma-5)
      ((:linear collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-1)))
     :do-not-induct t
     :induct (chain-leading-to-complete frame x acc seq)
-    :restrict ((chain-ends-in-abs-complete-lemma-10 ((n
-                                                      (collapse-1st-index frame x))))))
+    :restrict ((chain-ends-in-abs-complete-lemma-5 ((n
+                                                     (collapse-1st-index frame x))))))
    ("subgoal *1/3"
     :use
     ((:instance

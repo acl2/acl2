@@ -2218,13 +2218,18 @@
 
       (cond
        ((or (apply$-primp fn)
-            (assoc-eq fn *apply$-boot-fns-badge-alist*)
-            (get-warrantp fn wrld))
+            (assoc-eq fn *apply$-boot-fns-badge-alist*))
 
-; Fn doesn't need a warrant or else is already warranted, so we return T,
-; meaning no action is needed.  It is hard to see how the get-warrantp above
-; could succeed, since the (defwarrant fn) event that got us here would have
-; been recognized as redundant, but we check just to make sure.
+; We formerly included one more disjunct: (get-warrantp fn wrld).  But in that
+; case we could get an error when including identical certified books in the
+; example shown just below, because for bk2.lisp, the defwarrant event had a
+; different expansion at include-book time (after having included bk1) then at
+; certification time, resulting in a redefinition error.
+
+;   (in-package "ACL2")
+;   (include-book "projects/apply/top" :dir :system)
+;   (defun foo (x) x)
+;   (defwarrant foo)
 
         (value t))
        ((eq (getpropc fn 'symbol-class nil wrld)
@@ -2372,9 +2377,8 @@
               state
               (observation
                (cons 'defwarrant fn)
-               "The function ~x0 is either built-in and doesn't need a ~
-                warrant or it already has a warrant.  This event thus has no ~
-                effect.~|~%"
+               "The function ~x0 is built-in and already has a warrant when ~
+                ACL2 starts up.  This event thus has no effect.~|~%"
                fn))
           (value `(with-output
                     :stack :pop

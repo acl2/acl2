@@ -109,6 +109,15 @@
   (memberp val (update-nth n val lst))
   :hints (("Goal" :in-theory (enable update-nth))))
 
+(defthm memberp-of-update-nth-when-not-memberp
+  (implies (and (not (memberp val1 lst))
+                (natp n)
+                (<= n (len lst)) ; update-nth might lengthen the list by 1
+                )
+           (equal (memberp val1 (update-nth n val2 lst))
+                  (equal val1 val2)))
+  :hints (("Goal" :in-theory (enable update-nth))))
+
 (defthm memberp-of-nth-and-nthcdr
   (implies (and (<= start n)
                 (< n (len lst))

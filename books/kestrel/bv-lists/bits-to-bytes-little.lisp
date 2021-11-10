@@ -25,9 +25,9 @@
 
 ;; Convert a list of bits to a list of bytes.  Earlier bits in the input are
 ;; used to form earlier bytes in the result. But the first bit in each group of
-;; 8 bits becomes the least significant bit of corresponding byte in the
+;; 8 bits becomes the least significant bit of the corresponding byte in the
 ;; result, so this is "little endian".
-(defun bits-to-bytes-little (bits)
+(defund bits-to-bytes-little (bits)
   (declare (xargs :guard (and (all-unsigned-byte-p 1 bits)
                               (true-listp bits)
                               (len-mult-of-8p bits))))
@@ -38,11 +38,19 @@
 
 (defthm consp-of-bits-to-bytes-little
   (equal (consp (bits-to-bytes-little bits))
-         (consp bits)))
+         (consp bits))
+  :hints (("Goal" :in-theory (enable bits-to-bytes-little))))
 
 (defthm len-of-bits-to-bytes-little
   (equal (len (bits-to-bytes-little bits))
-         (ceiling (len bits) 8)))
+         (ceiling (len bits) 8))
+  :hints (("Goal" :in-theory (enable bits-to-bytes-little))))
 
 (defthm all-unsigned-byte-p-8-of-bits-to-bytes-little
-  (all-unsigned-byte-p 8 (bits-to-bytes-little bits)))
+  (all-unsigned-byte-p 8 (bits-to-bytes-little bits))
+  :hints (("Goal" :in-theory (enable bits-to-bytes-little))))
+
+(defthm bits-to-bytes-little-iff
+  (iff (bits-to-bytes-little bits)
+       (consp bits))
+  :hints (("Goal" :in-theory (enable bits-to-bytes-little))))
