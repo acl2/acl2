@@ -13,6 +13,7 @@
 (include-book "kestrel/utilities/world" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
+(include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/terms-light/sublis-var-and-magic-eval" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
@@ -205,5 +206,9 @@
 (defmacro specialize-calls-in-theorems (theorem-names
                                         suffix
                                         triples ; of the form (function argnum val)
-                                        )
-  `(make-event (specialize-calls-in-theorems-fn ,theorem-names ,suffix ,triples state)))
+                                        &key
+                                        (quiet 't))
+  (if (or (eq quiet t)
+          (equal quiet *t*))
+      `(make-event-quiet (specialize-calls-in-theorems-fn ,theorem-names ,suffix ,triples state))
+    `(make-event (specialize-calls-in-theorems-fn ,theorem-names ,suffix ,triples state))))
