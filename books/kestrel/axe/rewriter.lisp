@@ -1230,7 +1230,7 @@
   (b* ((top-nodenum (top-nodenum dag))
        (original-dag-len (len dag)) ;fixme could just add one to the top node if there are no gaps.. or maybe gaps are okay - then pass in the dag-len?
        (- (and print (cw "(Simplifying DAG (~x0 nodes)...~%" original-dag-len)))
-       ;; Preload the external contexts into the dag-array (node numbers remain the same):
+       ;; Preload the external contexts into the dag-array (node numbers remain the same, so we can reuse the 3 dag indices):
        (max-external-context-nodenum (+ -1 external-context-array-len))
        (initial-array-size (+ original-dag-len external-context-array-len slack-amount))
        (dag-array (make-empty-array 'dag-array initial-array-size))
@@ -1261,16 +1261,18 @@
                                          interpreted-function-alist
                                          monitored-symbols ;; (if use-internal-contextsp nil monitored-symbols) ;; (don't monitor if this is the first of two passes) -- TODO: Note that this can cause problems if we get an unexpected error (e.g., in an axe-syntaxp function) on the first pass)
                                          nil ;internal-context-array=nil means don't use internal contexts
-                                         external-context
+                                         external-context ;todo: process this once, here?
                                          known-booleans
                                          work-hard-on-first-rewrite
-                                         tag limits state))
+                                         tag
+                                         limits
+                                         state))
        ((when erp) (mv erp nil limits state))
        (- (and print (print-hit-counts print info (rules-from-rule-alist rewriter-rule-alist))))
        (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
-       (- (and print (cw ")"))) ;  "(Simplifying with no internal contexts"
+       (- (and print (cw ")"))) ; balances "(Simplifying with no internal contexts"
        (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum)))
-    (if (consp renamed-top-node) ; check for quotep
+    (if (consp renamed-top-node) ; checks for quotep
         (prog2$ (and print (cw "Result: ~x0)~%" renamed-top-node)) ; balances "(Simplifying DAG ...
                 (mv (erp-nil) renamed-top-node limits state))
       (if (not use-internal-contextsp)     ;why would this ever be the case?
@@ -1280,13 +1282,13 @@
                       (drop-non-supporters-array 'dag-array dag-array renamed-top-node print) ; also converts to a dag (list)
                       limits state))
         ;; STEP 2: Rewrite again, using internal contexts:
-        (b* (;;could we stay in the world of arrays when doing this?
+        (b* (;;could we stay in the world of arrays when doing this? and use the array to compute internal contexts?
              ;;could check here whether nothing changed and not build a new list?
              (dag (drop-non-supporters-array 'dag-array dag-array renamed-top-node print))
              (dag-len (+ 1 (top-nodenum dag)))
              (- (and print (cw "~%(Simplifying again with internal contexts (~x0 nodes)...~%" dag-len)))
              (initial-array-size (+ (* 2 dag-len) external-context-array-len slack-amount)) ;the array starts out containing the dag; we leave space for another copy, plus the external context nodes, plus some slack
-             ;;Load all the nodes into the dag-array (fixme only include nodes that support contexts?!):
+             ;;Load all the nodes into the dag-array (fixme only include nodes that support internal contexts?!):
 ;ffixme should we start by pre-loading the context array into the dag-array, like we do above?  that might make it harder to figure out what contexts to use?
              (dag-array (make-into-array-with-len 'dag-array dag initial-array-size))
              ;; Make the auxiliary data structures for the DAG:
