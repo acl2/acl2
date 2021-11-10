@@ -28,7 +28,7 @@
    (xdoc::p
     "We define the static semantics of Yul
      via ACL2 functions that check that the abstract syntax of Yul
-     satisfy a number of constraints.")
+     satisfies a number of constraints.")
    (xdoc::p
     "Since, as explained in @(see abstract-syntax), we omit types for now,
      type checking is prominently missing for now.
@@ -55,7 +55,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult wellformed-result
-  :short "Fixtype of the @(tsee wellformed) indicator and error results."
+  :short "Fixtype of errors and the @(tsee wellformed) indicator."
   :ok wellformed
   :pred wellformed-resultp)
 
@@ -77,7 +77,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult funtype-result
-  :short "Fixtype of function type and error results."
+  :short "Fixtype of errors and function types."
   :ok funtype
   :pred funtype-resultp)
 
@@ -98,7 +98,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult funtable-result
-  :short "Fixtype of function table and error results."
+  :short "Fixtype of errors and function tables."
   :ok funtable
   :pred funtable-resultp)
 
@@ -159,7 +159,7 @@
      so extending the function table (as opposed to creating a new one)
      is appropriate here.")
    (xdoc::p
-    "As soon as a duplication function is found, we stop with an error.")
+    "As soon as a duplicate function is found, we stop with an error.")
    (xdoc::p
     "This ACL2 function is called on the list of statements
      contained in a block."))
@@ -208,7 +208,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult vartable-result
-  :short "Fixtype of variable table and error results."
+  :short "Fixtype of errors and variable tables."
   :ok vartable
   :pred vartable-resultp)
 
@@ -236,7 +236,8 @@
      All of the variables in @('vartab') and @('varvis')
      are actually visible (not only the ones in @('varvis')),
      but only the ones in @('vartab') are also accessible,
-     while the ones in @('varvis') are visible but not accessible."))
+     while the ones in @('varvis') are visible but not accessible.
+     See [Yul: Specification of Yul: Scoping Rules]."))
   (b* ((var (identifier-fix var))
        (vartab (vartable-fix vartab))
        (varvis (identifier-set-fix varvis)))
@@ -617,7 +618,7 @@
   (xdoc::topstring
    (xdoc::p
     "These are checked in the context of
-     a variable table for visibile and accessible variable @('vartab'),
+     a variable table for visible and accessible variable @('vartab'),
      a set of visible but inaccessible variables @('varvis'),
      and a function table @('funtab').
      Also see @(tsee add-var) about @('vartab') and @('varvis').")
@@ -708,7 +709,8 @@
       "For a function call used as a statement,
        we check the function call and ensure it returns no results.")
      (xdoc::p
-      "For an @('if') statement, we check test, which must return one result,
+      "For an @('if') statement,
+       we check the test, which must return one result,
        and we check the body block.
        Since the body is a block,
        the updated variable and function tables are discarded.")
@@ -721,7 +723,7 @@
      (xdoc::p
       "For a @('switch') statement,
        we check the expression, ensuring it returns a single result.
-       We ensure that ther is at least one (literal or default) case
+       We ensure that there is at least one (literal or default) case
        [Yul: Specification of Yul: Restrictions on the Grammar].
        The documentation also requires that the default case be absent
        when the literal cases are exhaustive;
