@@ -351,6 +351,7 @@
     jvm::return-core
     jvm::execute-ishl
     jvm::ishr32
+    jvm::ishr64
     jvm::execute-ishr
     jvm::execute-istore
     jvm::execute-istore_x

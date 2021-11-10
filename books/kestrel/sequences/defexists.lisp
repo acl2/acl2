@@ -19,7 +19,7 @@
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 (include-book "kestrel/lists-light/subrange-def" :dir :system)
-;(include-book "kestrel/lists-light/memberp" :dir :system)
+(include-book "kestrel/lists-light/memberp" :dir :system)
 (include-book "kestrel/lists-light/perm" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
 ;(include-book "../utilities/alists")

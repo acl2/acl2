@@ -36,11 +36,11 @@
 
 ;; (defcong perm perm (append x y) 2 :hints (("Goal" :in-theory (enable append))))
 
-(defthm perm-of-remove-1-of-car-and-append-same
-  (perm (remove1$ (car x) (append y x))
+(defthm perm-of-remove-1-equal-of-car-and-append-same
+  (perm (remove1-equal (car x) (append y x))
         (if (consp x)
             (append y (cdr x))
-          (remove1$ nil y)))
+          (remove1-equal nil y)))
   :hints (("Goal" :in-theory (enable append))))
 
 ;dup

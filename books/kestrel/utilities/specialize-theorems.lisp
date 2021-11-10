@@ -47,7 +47,8 @@
                                        ;; but another var with the same symbol name but a different package
                                        ;; is in the theorem
                                        ,@(alist-to-doublets alist))
-                :in-theory nil)))))
+                ;; Needed because we evaluate ground terms (with magic-eval):
+                :in-theory (executable-counterpart-theory :here))))))
 
 (defmacro specialize-theorem (name suffix alist)
   `(make-event (specialize-theorem-fn ,name ,suffix ,alist state)))
