@@ -23,6 +23,8 @@
 
 (include-book "a-3-3-1-spec")
 (include-book "a-3-3-1-proof")
+(include-book "a-3-3-1-alt-proof")
+
 (include-book "a-3-3-2-spec")
 (include-book "a-3-3-3-spec")
 (include-book "a-3-3-4-spec")
