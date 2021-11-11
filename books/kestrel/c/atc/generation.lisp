@@ -364,8 +364,7 @@
      and is represented by the function,
      when the function is recursive;
      a list of variables affected by the function;
-     the name of the locally generated theorem that asserts
-     that the function (one or more) results have certain C types;
+     the name of the locally generated theorem about the function result(s);
      the name of the locally generated theorem that asserts
      that the execution of the function is functionally correct;
      the name of the locally generated theorem that asserts
@@ -3238,9 +3237,7 @@
                (name "A @(tsee symbolp).")
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
-  :short "Generate the theorem saying that
-          @('fn') returns one or more results of certain C types,
-          under the guard."
+  :short "Generate the theorem about the result(s) of @('fn')."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -3307,16 +3304,18 @@
      The affected variables are also considered as results.
      We concatenate zero or one type from @('type?')
      with zero or more types from @('affect') and @('typed-formals').
-     Then we operate on the resulting list,
-     which forms all the results of the function:
-     the list is never empty (and ACL2 function must always return something);
-     if the list is a singleton, we generate,
-     as the conclusion of the theorem,
-     a single type assertion for the whole function;
-     if the list has multiple elements, we generate,
-     as the conclusion of the theorem,
-     a conjunction of type assertions
-     for the @(tsee mv-nth)s of the function.")
+     More precisely, we make an alist instead of a list,
+     whose values are the types in question
+     and whose keys are @('nil') for the C result (if present)
+     and the names in @('affect') for the other ones.
+     Then we operate on the resulting alist,
+     which forms all the results of the function
+     with their names (and @('nil') for the result, if present).
+     The alist is never empty (an ACL2 function must always return something);
+     If the alist is a singleton,
+     we generate assertions about the function call.
+     If the list has multiple elements,
+     we generate assertions for the @(tsee mv-nth)s of the function call.")
    (xdoc::p
     "If @('fn') is recursive, we generate a hint to induct on the function.
      Since ACL2 disallows @(':use') and @(':induct') hints on the goal,
@@ -3330,7 +3329,10 @@
      We also enable the executable counterpart of @(tsee zp)
      to simplify the test in the right-hand side of that rule.")
    (xdoc::p
-    "We also generate conjuncts saying that the results are not @('nil').
+    "For each result of the function,
+     we always generate an assertion about its C type.")
+   (xdoc::p
+    "We also generate assertions saying that the results are not @('nil').
      Without this, some proofs fail with a subgoal saying that
      a function result is @('nil'), which is false.
      This seems to happen only with functions returning multiple results,
@@ -3344,23 +3346,35 @@
      it seems sufficient to enable
      the executable counterparts of the integer value recognizers;
      the subgoals that arise without them have the form
-     @('(<recognizer> nil)')."))
-  (b* ((types1 (and type?
-                    (not (type-case type? :void))
-                    (list type?)))
-       (types2 (atc-gen-fn-result-thm-aux1 affect typed-formals))
-       (types (append types1 types2))
-       ((unless (consp types))
-        (raise "Internal error: the function ~x0 has no return types." fn)
+     @('(<recognizer> nil)').")
+   (xdoc::p
+    "We also generate assertions saying that
+     each array returned by the function
+     has the same length as the corresponding input array.
+     This is necessary for the correctness proofs of
+     functions that call this function."))
+  (b* ((results1 (and type?
+                      (not (type-case type? :void))
+                      (list (cons nil type?))))
+       (results2 (atc-gen-fn-result-thm-aux1 affect typed-formals))
+       (results (append results1 results2))
+       ((unless (consp results))
+        (raise "Internal error: the function ~x0 has no results." fn)
         (mv nil nil names-to-avoid))
        (formals (formals+ fn wrld))
        (fn-call `(,fn ,@formals))
+       (conjuncts (atc-gen-fn-result-thm-aux2 results
+                                              (if (consp (cdr results))
+                                                  0
+                                                nil)
+                                              fn-call))
        (conclusion
-        (if (consp (cdr types))
-            `(and ,@(atc-gen-fn-result-thm-aux2 types 0 fn-call))
-          `(,(atc-type-predicate (car types)) ,fn-call)))
+        (if (and (consp conjuncts)
+                 (not (consp (cdr conjuncts))))
+            (car conjuncts)
+          `(and ,@conjuncts)))
        (name (add-suffix fn
-                         (if (consp (cdr types))
+                         (if (consp (cdr results))
                              "-RESULTS"
                            "-RESULT")))
        ((mv name names-to-avoid)
@@ -3377,6 +3391,7 @@
                   *atc-integer-convs-return-rewrite-rules*
                   *atc-array-read-return-rewrite-rules*
                   *atc-array-write-return-rewrite-rules*
+                  *atc-array-length-write-rules*
                   '(,fn
                     ,@(atc-symbol-fninfo-alist-to-result-thms
                        prec-fns (acl2::all-fnnames (ubody+ fn wrld)))
@@ -3432,33 +3447,48 @@
 
   :prepwork
 
-  ((define atc-gen-fn-result-thm-aux1
-     ((affect symbol-listp)
-      (typed-formals atc-symbol-type-alistp))
-     :returns (types type-listp)
+  ((define atc-gen-fn-result-thm-aux1 ((affect symbol-listp)
+                                       (typed-formals atc-symbol-type-alistp))
+     :returns (results atc-symbol-type-alistp :hyp (symbol-listp affect))
      :parents nil
      (cond ((endp affect) nil)
            (t (b* ((type (cdr (assoc-eq (car affect)
                                         typed-formals))))
                 (if (typep type)
-                    (cons type
-                          (atc-gen-fn-result-thm-aux1 (cdr affect)
-                                                      typed-formals))
+                    (acons (car affect)
+                           type
+                           (atc-gen-fn-result-thm-aux1 (cdr affect)
+                                                       typed-formals))
                   (raise "Internal error: variable ~x0 not found in ~x1."
                          (car affect) typed-formals))))))
 
-   (define atc-gen-fn-result-thm-aux2 ((types type-listp)
-                                       (index natp)
+   (define atc-gen-fn-result-thm-aux2 ((results atc-symbol-type-alistp)
+                                       (index? acl2::maybe-natp)
                                        (fn-call pseudo-termp))
      :returns conjuncts
      :parents nil
-     (cond ((endp types) nil)
-           (t (list*
-               `(,(atc-type-predicate (car types)) (mv-nth ',index ,fn-call))
-               `(mv-nth ',index ,fn-call)
-               (atc-gen-fn-result-thm-aux2 (cdr types)
-                                           (1+ index)
-                                           fn-call)))))))
+     (b* (((when (endp results)) nil)
+          (theresult (if index?
+                         `(mv-nth ,index? ,fn-call)
+                       fn-call))
+          ((cons name type) (car results))
+          (type-conjunct `(,(atc-type-predicate type) ,theresult))
+          (nonnil-conjunct? (and index? (list theresult)))
+          (arraylength-conjunct?
+           (b* (((unless (type-case type :pointer)) nil)
+                (reftype (type-pointer->referenced type))
+                ((unless (type-integerp reftype))
+                 (raise "Internal error: pointer type ~x0 for ~x1." type name))
+                (reftype-array-length (pack (atc-integer-type-fixtype reftype)
+                                            '-array-length)))
+             (list `(equal (,reftype-array-length ,theresult)
+                           (,reftype-array-length ,name))))))
+       (append (list type-conjunct)
+               nonnil-conjunct?
+               arraylength-conjunct?
+               (atc-gen-fn-result-thm-aux2 (cdr results)
+                                           (and index? (1+ index?))
+                                           fn-call))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
