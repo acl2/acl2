@@ -2513,8 +2513,8 @@
 
 (table axe-rule-priorities-table 'equal-same -1) ;new
 
-;Associativity should fire first, so we always have bitxor nests that are associated to the right
-(table axe-rule-priorities-table 'bitxor-associative -10) ;associativity should first first
+;Associativity should fire first, so we always have bitxor nests that are associated to the right:
+(table axe-rule-priorities-table 'bitxor-associative -10)
 
 (table axe-rule-priorities-table 'nth-of-cons-constant-version -1) ;this hits a lot in some proofs, so let's check it first
 (table axe-rule-priorities-table 'mv-nth-of-cons-alt -1)
