@@ -59,7 +59,8 @@
       :monitor ,monitor
       :print ,print)))
 
-;; Note that this only does the "forward" direction of the proof
+;; Note that this only does the "forward" direction of the proof.  But see a-3-3-1-proof.lisp for an example
+;; that includes the "backward" direction as well.
 (acl2::defmacrodoc verify-r1cs (lifted-r1cs
                                 spec-term
                                 prime

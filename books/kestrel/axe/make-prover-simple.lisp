@@ -564,7 +564,7 @@
          (prove-clause-name (pack$ 'prove-clause-with- suffix '-prover))
          (prove-implication-name (pack$ 'prove-implication-with- suffix '-prover)) ;a macro
          (prove-implication-fn-name (pack$ 'prove-implication-with- suffix '-prover-fn))
-         (prove-implication-fn-helper-name (pack$ 'prove-implication-with- suffix '-prover-fn-helper))
+         (prove-dag-implication-name (pack$ 'prove-dag-implication-with- suffix '-prover))
          (clause-processor-name (pack$ suffix '-prover-clause-processor))
 
          ;; Keep these in sync with the formals of each function:
@@ -4896,7 +4896,7 @@
        ;; TODO: Warning if no variable overlap?
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
        ;; Because this function has a guard that is simply a stobj recognizer, it has no invariant-risk.
-       (defund ,prove-implication-fn-helper-name (dag1
+       (defund ,prove-dag-implication-name (dag1
                                                   dag2
                                                   tactic
                                                   rule-lists
@@ -4914,38 +4914,38 @@
               ((when (not (or (myquotep dag1)
                               (and (pseudo-dagp dag1)
                                    (<= (len dag1) 2147483646)))))
-               (er hard? ',prove-implication-fn-helper-name "Bad first argument: ~x0" dag1)
+               (er hard? ',prove-dag-implication-name "Bad first argument: ~x0" dag1)
                (mv :bad-input nil state))
               ((when (not (or (myquotep dag2)
                               (and (pseudo-dagp dag2)
                                    (<= (len dag2) 2147483646)))))
-               (er hard? ',prove-implication-fn-helper-name "Bad second argument: ~x0" dag2)
+               (er hard? ',prove-dag-implication-name "Bad second argument: ~x0" dag2)
                (mv :bad-input nil state))
               ((when (not (rule-item-list-listp rule-lists)))
-               (er hard? ',prove-implication-fn-helper-name "Bad rule lists: ~x0" rule-lists)
+               (er hard? ',prove-dag-implication-name "Bad rule lists: ~x0" rule-lists)
                (mv :bad-input nil state))
               ((when (not (rule-item-listp global-rules)))
-               (er hard? ',prove-implication-fn-helper-name "Bad global-rules: ~x0" global-rules)
+               (er hard? ',prove-dag-implication-name "Bad global-rules: ~x0" global-rules)
                (mv :bad-input nil state))
               ((when (not (simple-prover-tacticp tactic)))
-               (er hard? ',prove-implication-fn-helper-name "Bad tactic: ~x0" tactic)
+               (er hard? ',prove-dag-implication-name "Bad tactic: ~x0" tactic)
                (mv :bad-input nil state))
               ((when (not (interpreted-function-alistp interpreted-function-alist)))
-               (er hard? ',prove-implication-fn-helper-name "Ill-formed interpreted-function-alist: ~x0" interpreted-function-alist)
+               (er hard? ',prove-dag-implication-name "Ill-formed interpreted-function-alist: ~x0" interpreted-function-alist)
                (mv :bad-input nil state))
               ;; Check whether functions may be missing when we evaluate terms:
               ((when (not (interpreted-function-alist-completep interpreted-function-alist ,(pack$ '* evaluator-base-name '-fns*))))
-               (er hard? ',prove-implication-fn-helper-name "Incomplete interpreted-function-alist.  See warning(s) above: ~x0" interpreted-function-alist)
+               (er hard? ',prove-dag-implication-name "Incomplete interpreted-function-alist.  See warning(s) above: ~x0" interpreted-function-alist)
                (mv :bad-input nil state))
               ;; Check whether functions may be missing when we instantiate hyps, substitute in RHSes and lambda bodies, and merge terms into dags, all of which still use the basic evaluator:
               ((when (not (interpreted-function-alist-completep interpreted-function-alist *axe-evaluator-basic-fns*)))
-               (er hard? ',prove-implication-fn-helper-name "Incomplete interpreted-function-alist.  See warning(s) above: ~x0" interpreted-function-alist)
+               (er hard? ',prove-dag-implication-name "Incomplete interpreted-function-alist.  See warning(s) above: ~x0" interpreted-function-alist)
                (mv :bad-input nil state))
               ((when (not (symbol-listp monitor)))
-               (er hard? ',prove-implication-fn-helper-name "Bad :monitor argument: ~x0" monitor)
+               (er hard? ',prove-dag-implication-name "Bad :monitor argument: ~x0" monitor)
                (mv :bad-input nil state))
               ((when (not (ilks-plist-worldp (w state))))
-               (er hard? ',prove-implication-fn-helper-name "Bad world (this should not happen).")
+               (er hard? ',prove-dag-implication-name "Bad world (this should not happen).")
                (mv :bad-input nil state))
               ;; Form the implication to prove:
               ((mv erp implication-dag-or-quotep) (make-implication-dag dag1 dag2)) ; todo: we will end up having to extract disjuncts from this implication
@@ -5041,7 +5041,7 @@
               ((mv erp dag2) (dag-or-term-to-dag-basic-unguarded dag-or-term2 (w state)))
               ((when erp) (mv erp nil state)))
            ;; This helper function is in :logic mode and is guard-verified:
-           (,prove-implication-fn-helper-name dag1
+           (,prove-dag-implication-name dag1
                                               dag2
                                               tactic
                                               rule-lists
