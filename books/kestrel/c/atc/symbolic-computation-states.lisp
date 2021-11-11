@@ -943,6 +943,25 @@
              push-frame
              pop-frame))
 
+  (defruled write-array-okp-of-update-array
+    (implies (and (not (pointer-nullp ptr))
+                  (not (pointer-nullp ptr2))
+                  (equal (pointer->reftype ptr)
+                         (type-of-array-element array))
+                  (equal (pointer->reftype ptr2)
+                         (type-of-array-element array2)))
+             (equal (write-array-okp ptr array (update-array ptr2 array2 compst))
+                    (if (equal (pointer->address? ptr)
+                               (pointer->address? ptr2))
+                        (and (equal (type-of-array-element array)
+                                    (type-of-array-element array2))
+                             (equal (array-length array)
+                                    (array-length array2)))
+                      (write-array-okp ptr array compst))))
+    :enable (write-array-okp
+             update-array
+             pointer-nullp))
+
   (defruled write-array-okp-when-arrayp-of-read-array
     (implies (and (syntaxp (symbolp compst))
                   (equal old-array (read-array ptr compst))
@@ -966,6 +985,7 @@
       write-array-okp-of-enter-scope
       write-array-okp-of-add-var
       write-array-okp-of-update-var
+      write-array-okp-of-update-array
       write-array-okp-when-arrayp-of-read-array)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1041,7 +1061,8 @@
       read-array-of-enter-scope
       read-array-of-add-var
       read-array-of-update-var
-      read-array-of-update-array)))
+      read-array-of-update-array
+      array-fix-when-arrayp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
