@@ -21,6 +21,8 @@
 
 ; Read elements from arrays.
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun |read| (|a| |i|)
   (declare (xargs :guard (and (c::uchar-arrayp |a|)
                               (c::sintp |i|)
@@ -55,6 +57,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Write elements to arrays.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |write| (|a| |i|)
   (declare
