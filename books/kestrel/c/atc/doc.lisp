@@ -1047,5 +1047,5 @@
     "Redundancy"
 
     (xdoc::p
-     "A call of ATC is redundant if an only if
+     "A call of ATC is redundant if and only if
       it is identical to a previous successful call of ATC."))))
