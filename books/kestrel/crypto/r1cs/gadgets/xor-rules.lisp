@@ -77,7 +77,7 @@
                 (rtl::primep p))
            (equal (equal (mul (add a a p) b p)
                          (add a (add b (neg c p) p) p))
-                  (equal (mod (ifix c) p) ; just c, if we known (fep c p)
+                  (equal (mod (ifix c) p) ; just c, if we know (fep c p)
                          (acl2::bitxor a b)))))
 
 ;; This version has the equality in the LHS flipped.
@@ -88,7 +88,7 @@
                 (rtl::primep p))
            (equal (equal (add a (add b (neg c p) p) p)
                          (mul (add a a p) b p))
-                  (equal (mod (ifix c) p) ; just c, if we known (fep c p)
+                  (equal (mod (ifix c) p) ; just c, if we know (fep c p)
                          (acl2::bitxor a b)))))
 
 ;; Compared to bitxor-constraint-intro-2, this swaps a and b in the add.
@@ -99,7 +99,7 @@
                 (rtl::primep p))
            (equal (equal (mul (add a a p) b p)
                          (add b (add a (neg c p) p) p))
-                  (equal (mod (ifix c) p) ; just c, if we known (fep c p)
+                  (equal (mod (ifix c) p) ; just c, if we know (fep c p)
                          (acl2::bitxor a b)))))
 
 ;; This version has the equality in the LHS flipped.
@@ -110,7 +110,7 @@
                 (rtl::primep p))
            (equal (equal (add b (add a (neg c p) p) p)
                          (mul (add a a p) b p))
-                  (equal (mod (ifix c) p) ; just c, if we known (fep c p)
+                  (equal (mod (ifix c) p) ; just c, if we know (fep c p)
                          (acl2::bitxor a b)))))
 
 (defthm xor-idiom-1
