@@ -2255,12 +2255,7 @@
              ((mv okp sub elem sub-type elem-type)
               (atc-check-array-write var val))
              ((when okp)
-              (b* (;; ((when proofs)
-                   ;;  (er-soft+ ctx t irr
-                   ;;            "Proofs are not yet supported for array writes; ~
-                   ;;             use :PROOFS NIL to generate ~
-                   ;;             code without proofs."))
-                   ((unless (member-eq var affect))
+              (b* (((unless (member-eq var affect))
                     (er-soft+ ctx t irr
                               "The array ~x0 is being written to, ~
                                but it is not among the variables ~x1 ~
