@@ -13,9 +13,15 @@
 (include-book "kestrel/utilities/gen-xdoc-for-file" :dir :system)
 
 ;; Introduced by defaggregate
+(acl2::defxdoc r1csp
+  :short "Recognize An R1CS"
+  :long "An R1CS is a defaggregate whose fields represent a prime, a list of variables, and a list of constraints.  The constructor is @('r1cs'), and the accessors are @('r1cs->prime'), @('r1cs->vars') and @('r1cs->constraints') ."
+  :parents (r1cs))
+
+;; Introduced by defaggregate
 (acl2::defxdoc r1cs-constraintp
   :short "Recognize An R1CS constraint"
-  :long "An R1CS constraint is a defaggregate with 3 fields, A, B, and C, each of which is a sparse vector."
+  :long "An R1CS constraint is a defaggregate with 3 fields, A, B, and C, each of which is a sparse vector.  The constructor is @('r1cs-constraint'), and the accessors are @('r1cs-constraint->a'), @('r1cs-constraint->b'), and @('r1cs-constraint->c')."
   :parents (r1cs))
 
 ;; (depends-on "r1cs.lisp")
