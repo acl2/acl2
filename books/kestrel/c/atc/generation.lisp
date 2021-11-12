@@ -3655,6 +3655,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-diff-address-hyps ((pointer-vars symbol-listp))
+  :returns (hyps true-listp)
+  :short "Generate hypotheses saying that pointers are distinct."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The ACL2 functions that represent C functions and loops
+     take and return whole arrays as inputs:
+     thus, the possible modification to each array only applies to that array.
+     In C code, arrays are passed as pointers instead.
+     If two of these pointers, for different arrays in ACL2, were equal,
+     then the C code would not be correct in general,
+     because modifying one array would also modify the other one:
+     there is, in fact, just one array, which both pointers point to,
+     but here we are talking about the two different arrays
+     in the ACL2 representation.
+     It is thus critical that the generated correctness theorems
+     include the assumption that all the pointers are distinct.
+     This is the case not only for the arrays that may be modified,
+     but also for the ones that may not:
+     otherwise, we could not rely on the latter to be unmodified,
+     during the symbolic execution proof.")
+   (xdoc::p
+    "We generate these hypotheses here,
+     by going through the pointer variables involved in
+     the correctness theorem of the C function or loop.
+     More precisely, we generate hypotheses saying that
+     the addresses in the pointers are distinct.
+     We need the addresses to be distinct,
+     so that they are two different arrays in our model of the heap.
+     The other component of a pointer (see @(tsee pointer)) is a type,
+     but that one is already independently constrained
+     by other hypotheses in the generated correctness theorems."))
+  (b* (((when (endp pointer-vars)) nil)
+       (var (car pointer-vars))
+       (hyps (atc-gen-diff-address-hyps-aux var (cdr pointer-vars)))
+       (more-hyps (atc-gen-diff-address-hyps (cdr pointer-vars))))
+    (append hyps more-hyps))
+
+  :prepwork
+  ((define atc-gen-diff-address-hyps-aux ((var symbolp)
+                                          (pointer-vars symbol-listp))
+     :returns (hyps true-listp)
+     :parents nil
+     (b* (((when (endp pointer-vars)) nil)
+          (hyp `(not (equal (pointer->address? ,var)
+                            (pointer->address? ,(car pointer-vars)))))
+          (hyps (atc-gen-diff-address-hyps-aux var (cdr pointer-vars))))
+       (cons hyp hyps)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-cfun-final-compustate ((mod-arrs symbol-listp)
                                        (pointer-subst symbol-symbol-alistp)
                                        (compst-var symbolp))
@@ -3844,11 +3896,14 @@
                      (genvar 'atc "RESULT" nil formals)))
        ((mv formals-bindings pointer-hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var nil))
+       (diff-pointer-hyps
+        (atc-gen-diff-address-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
                    (and ,@pointer-hyps)
+                   ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
        (exec-fun-args (fsublis-var-lst pointer-subst formals))
        (fn-results (append (if (type-case type :void)
@@ -4781,12 +4836,15 @@
        (limit-var (genvar 'atc "LIMIT" nil formals))
        ((mv formals-bindings pointer-hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
+       (diff-pointer-hyps
+        (atc-gen-diff-address-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
                    (and ,@pointer-hyps)
+                   ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)
                    ,(untranslate test-term nil wrld)))
        (affect-binder (if (endp (cdr affect))
@@ -4922,12 +4980,15 @@
        (limit-var (genvar 'atc "LIMIT" nil formals))
        ((mv formals-bindings pointer-hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
+       (diff-pointer-hyps
+        (atc-gen-diff-address-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
                    (and ,@pointer-hyps)
+                   ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
        (affect-binder (if (endp (cdr affect))
                           (car affect)
