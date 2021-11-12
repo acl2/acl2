@@ -3617,7 +3617,7 @@
      and therefore it can only concern the formals of @('fn')."))
   (b* (((when (endp typed-formals)) (mv nil nil nil nil))
        ((cons formal type) (car typed-formals))
-       (formal-ptr (add-suffix formal "-PTR"))
+       (formal-ptr (add-suffix-to-fn formal "-PTR"))
        (formal-id `(ident ,(symbol-name formal)))
        (arrayp (type-case type :pointer))
        (bindings (if fn-recursivep
