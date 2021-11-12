@@ -3902,7 +3902,7 @@
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
-                   (and ,@pointer-hyps)
+                   ,@pointer-hyps
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
        (exec-fun-args (fsublis-var-lst pointer-subst formals))
@@ -4735,7 +4735,7 @@
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
-                   (and ,@pointer-hyps)
+                   ,@pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
        (concl `(equal (exec-test (exec-expr-pure ',loop-test ,compst-var))
                       ,test-term))
@@ -4843,7 +4843,7 @@
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
-                   (and ,@pointer-hyps)
+                   ,@pointer-hyps
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)
                    ,(untranslate test-term nil wrld)))
@@ -4987,7 +4987,7 @@
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
                    (>= ,limit-var ,limit)
-                   (and ,@pointer-hyps)
+                   ,@pointer-hyps
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
        (affect-binder (if (endp (cdr affect))
