@@ -995,6 +995,15 @@
        That is,
        the C function is functionally equivalent to the ACL2 function.")
      (xdoc::p
+      "If the ACL2 function takes arrays as inputs,
+       the generated correctness theorem includes hypotheses
+       saying that the arrays are all at different addresses.
+       The formal model of C that the proofs rely on
+       assumes that arrays do not overlap.
+       Thus, the guarantees provided by the generated theorems about the C code
+       hold only if pointers to distinct, non-overlapping arrays
+       are passed to the generated C functions.")
+     (xdoc::p
       "If the @(':proofs') input is @('nil'),
        this theorem is not generated.")))
 
