@@ -37,7 +37,7 @@
                       :no-splitp ,no-splitp
                       :monitor ,monitor
                       :print ,print)
-  :parents (zcash r1cs::r1cs-verification-with-axe)
+  :parents (zcash r1cs::verify-r1cs r1cs::r1cs-verification-with-axe)
   :short "A tool to verify a zcash R1CS"
   :description "This tool is a wrapper for @(tsee r1cs::verify-r1cs) that sets the prime to @(tsee jubjub-q). See also @(tsee r1cs::r1cs-verification-with-axe)."
   :args ((lifted-r1cs "A <see topic=\"@(url acl2::dags)\">DAG</see> representing the lifted R1CS")
