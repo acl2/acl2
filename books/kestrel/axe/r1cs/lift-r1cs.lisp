@@ -71,15 +71,15 @@
 
 ;; Returns (mv erp event state).
 (defun lift-r1cs-fn (name-of-defconst
-                         vars ; may be keywords, in which case we switch to PACKAGE (if not :auto) or to the acl2 package
-                         constraints
-                         prime
-                         package
-                         extra-rules remove-rules rules
-                         monitor memoizep
-                         count-hitsp
-                         print
-                         whole-form state)
+                     vars ; may be keywords, in which case we switch to PACKAGE (if not :auto) or to the acl2 package
+                     constraints
+                     prime
+                     package
+                     extra-rules remove-rules rules
+                     monitor memoizep
+                     count-hitsp
+                     print
+                     whole-form state)
   (declare (xargs :guard (and (symbolp name-of-defconst)
                               (symbol-listp vars)
                               (r1cs-constraint-listp constraints)
@@ -114,69 +114,69 @@
        ((acl2::when (and (not (eq :auto rules)) remove-rules))
         (er hard? 'lift-r1cs-fn ":rules and :remove-rules should not both be given.")
         (mv :bad-input nil state)))
-  (acl2::def-simplified-fn name-of-defconst
-                           term-to-simplify
-                           ;; The extra rules:
-                           (if (not (eq :auto rules))
-                               nil ;rules are given below, so extra-rules are not allowed
-                             (append (lift-r1cs-rules)
-                                     extra-rules))
-                           remove-rules
-                           rules ;to override the default
-                           ;; nil ;rule-alists
-                           ;; drop? but we need to know that all lookups of vars give integers:
-                           ;; TODO: Use the more compact machinery for this?:
-                           (fep-assumptions-for-vars lifted-vars prime)
-                           ;; TODO: Add more functions to this?
-                           ;; TODO: Make this once and store it?
-                           (acl2::make-interpreted-function-alist '(r1cs::r1cs-constraint->a$inline
-                                                                    r1cs::r1cs-constraint->b$inline
-                                                                    r1cs::r1cs-constraint->c$inline
-                                                                    assoc-equal ; called by r1cs::r1cs-constraint->a$inline, etc
-                                                                    ;; todo: i had assoc here; should that be an error?
-                                                                    mul
-                                                                    neg
-                                                                    add
-                                                                    pfield::pos-fix
-                                                                    pfield::fep)
-                                                                  (w state))
-                           monitor
-                           memoizep
-                           count-hitsp
-                           ;; nil                             ;simplify-xorsp
-                           print
-                           whole-form
-                           state)))
+    (acl2::def-simplified-fn name-of-defconst
+                             term-to-simplify
+                             ;; The extra rules:
+                             (if (not (eq :auto rules))
+                                 nil ;rules are given below, so extra-rules are not allowed
+                               (append (lift-r1cs-rules)
+                                       extra-rules))
+                             remove-rules
+                             rules ;to override the default
+                             ;; nil ;rule-alists
+                             ;; drop? but we need to know that all lookups of vars give integers:
+                             ;; TODO: Use the more compact machinery for this?:
+                             (fep-assumptions-for-vars lifted-vars prime)
+                             ;; TODO: Add more functions to this?
+                             ;; TODO: Make this once and store it?
+                             (acl2::make-interpreted-function-alist '(r1cs::r1cs-constraint->a$inline
+                                                                      r1cs::r1cs-constraint->b$inline
+                                                                      r1cs::r1cs-constraint->c$inline
+                                                                      assoc-equal ; called by r1cs::r1cs-constraint->a$inline, etc
+                                                                      ;; todo: i had assoc here; should that be an error?
+                                                                      mul
+                                                                      neg
+                                                                      add
+                                                                      pfield::pos-fix
+                                                                      pfield::fep)
+                                                                    (w state))
+                             monitor
+                             memoizep
+                             count-hitsp
+                             ;; nil                             ;simplify-xorsp
+                             print
+                             whole-form
+                             state)))
 
 ;; Lifts an R1CS into a logical term, represented as an Axe DAG.  Takes an
 ;; R1CS, given as a list of variables, a list of constraints, and a prime.
 ;; Creates a constant DAG named <name-of-defconst>.
 (defmacro lift-r1cs (&whole whole-form
-                                name-of-defconst ; name of the defconst to create, will hold the lifted R1CS
-                                ;; r1cs ;todo: currentlty can't make the r1cs (due to prime tests?)
-                                vars ;; the variables of the R1CS to lift
-                                constraints ;; the constraints of the R1CS to lift
-                                prime       ;; the prime of the R1CS to lift
-                                &key
-                                (package ':auto) ; package to use for vars
-                                (extra-rules 'nil)
-                                (remove-rules 'nil)
-                                (rules ':auto)
-                                (monitor 'nil)
-                                (memoizep 'nil) ;; memoization can slow down R1CS lifting a lot, due to many terms with the same single nodenum (the valuation?) being put into the same memo slot
-                                (count-hitsp 'nil)
-                                (print 'nil))
+                            name-of-defconst ; name of the defconst to create, will hold the lifted R1CS, in DAG form
+                            ;; r1cs ;todo: currentlty can't make the r1cs (due to prime tests?)
+                            vars        ;; the variables of the R1CS to lift
+                            constraints ;; the constraints of the R1CS to lift
+                            prime       ;; the prime of the R1CS to lift
+                            &key
+                            (package ':auto) ; package to use for vars
+                            (extra-rules 'nil)
+                            (remove-rules 'nil)
+                            (rules ':auto)
+                            (monitor 'nil)
+                            (memoizep 'nil) ;; memoization can slow down R1CS lifting a lot, due to many terms with the same single nodenum (the valuation?) being put into the same memo slot
+                            (count-hitsp 'nil)
+                            (print 'nil))
   `(acl2::make-event-quiet (lift-r1cs-fn ',name-of-defconst
-                                             ,vars
-                                             ,constraints
-                                             ,prime
-                                             ,package
-                                             ,extra-rules
-                                             ,remove-rules
-                                             ,rules
-                                             ,monitor
-                                             ,memoizep
-                                             ,count-hitsp
-                                             ,print
-                                             ',whole-form
-                                             state)))
+                                         ,vars
+                                         ,constraints
+                                         ,prime
+                                         ,package
+                                         ,extra-rules
+                                         ,remove-rules
+                                         ,rules
+                                         ,monitor
+                                         ,memoizep
+                                         ,count-hitsp
+                                         ,print
+                                         ',whole-form
+                                         state)))
