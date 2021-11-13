@@ -20,14 +20,6 @@
                               (bitp y))))
   (bitnot (acl2::bitand x y)))
 
-(local
- (defthmd bitand-cases
-  (equal (acl2::bitand x y)
-         (if (and (equal (bvchop 1 x) 1)
-                  (equal (bvchop 1 y) 1))
-             1
-           0))))
-
 ;; Make a constraint asserting that var3 = (bitnand var1 var2)
 (defund make-nand-constraint (var1 var2 var3)
   (declare (xargs :guard (and (symbolp var1)
@@ -55,4 +47,4 @@
                                      r1cs-constraint-holdsp
                                      dot-product
                                      integerp-of-lookup-equal
-                                     bitand-cases))))
+                                     acl2::bitand-cases))))
