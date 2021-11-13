@@ -42,4 +42,4 @@
     (xdoc::li (xdoc::tt "(pow x n p)") ": Exponentiation in the field: Computes @('x') to the nth power @('x^n') modulo the prime @('p').  Note that @('n') can be any natural.")
     (xdoc::li (xdoc::tt "(inv x p)") ": Multiplicative inverse in the field: Computes @('1/x') modulo the prime @('p').  Requires @('x') to be non-zero.")
     (xdoc::li (xdoc::tt "(div x y p)") ": Division in the field: Computes @('x/y') modulo the prime @('p').  Requires @('y') to be non-zero.")
-    (xdoc::li (xdoc::tt "(minus1 p)") ": Returns @('p-1').  This is often very large (if @('p')is very large), but it can help to think of this value as @('-1')."))))
+    (xdoc::li (xdoc::tt "(minus1 p)") ": Returns @('p-1').  This is often very large (if @('p') is very large), but it can help to think of this value as @('-1')."))))
