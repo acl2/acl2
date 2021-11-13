@@ -40,7 +40,7 @@
                     :print ,print)
   :parents (zcash r1cs::lift-r1cs r1cs::r1cs-verification-with-axe)
   :short "A tool to lift a zcash R1CS"
-  :description "This tool is a wrapper for @(tsee r1cs::lift-r1cs) that sets the prime to @(tsee jubjub-q) and sets the package to @('ZCASH).  See also @(tsee r1cs::r1cs-verification-with-axe)."
+  :description "This tool is a wrapper for @(tsee r1cs::lift-r1cs) that sets the prime to @(tsee jubjub-q) and sets the package to @('ZCASH').  See also @(tsee r1cs::r1cs-verification-with-axe)."
   :args ((name-of-defconst "The name of the defconst (a symbol) that will be created to hold the DAG.  This name should start and end with @('*').")
          (vars "A form that evaluates to the variables of the R1CS.")
          (constraints "A form that evaluates to the constraints of the R1CS.")
