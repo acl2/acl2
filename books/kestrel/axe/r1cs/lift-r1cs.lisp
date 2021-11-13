@@ -149,6 +149,7 @@
                              whole-form
                              state)))
 
+;; NOTE: Keep this in sync with lift-zcash-r1cs.
 (acl2::defmacrodoc lift-r1cs (&whole whole-form
                                      name-of-defconst ; name of the defconst to create, will hold the lifted R1CS, in DAG form
                                      ;; r1cs ;todo: currentlty can't make the r1cs (due to prime tests?)
@@ -180,7 +181,7 @@
                                          state))
   :parents (r1cs-verification-with-axe)
   :short "A tool to lift an R1CS into logic"
-  :description "Lifts an R1CS into a logical term, represented as an Axe DAG.  Takes an R1CS, given as a list of variables, a list of constraints, and a prime.  Creates a constant DAG whose name is the @('name-of-defconst') input supplied by the user.  The lifting is done by applying the Axe Rewriter.  xSee also @(tsee r1cs-verification-with-axe)."
+  :description "Lifts an R1CS into a logical term, represented as an Axe DAG.  Takes an R1CS, given as a list of variables, a list of constraints, and a prime.  Creates a constant DAG whose name is the @('name-of-defconst') input supplied by the user.  The lifting is done by applying the Axe Rewriter.  See also @(tsee r1cs-verification-with-axe)."
   :args ((name-of-defconst "The name of the defconst (a symbol) that will be created to hold the DAG.  This name should start and end with @('*').")
          (vars "A form that evaluates to the variables of the R1CS.")
          (constraints "A form that evaluates to the constraints of the R1CS.")
