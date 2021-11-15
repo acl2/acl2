@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -98,7 +98,7 @@
 
 (define parse-exact ((nat natp) (input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -123,7 +123,7 @@
 (define parse-in-range ((min natp) (max natp) (input nat-listp))
   :guard (<= min max)
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -153,7 +153,7 @@
               (< max1 min2)
               (<= min2 max2))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -204,7 +204,7 @@
 
 (define parse-ichar ((char characterp) (input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -226,7 +226,7 @@
 
 (define parse-ichars ((char1 characterp) (char2 characterp) (input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -251,7 +251,7 @@
 
 (define parse-alpha ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -277,7 +277,7 @@
 
 (define parse-bit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -303,7 +303,7 @@
 
 (define parse-cr ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -324,7 +324,7 @@
 
 (define parse-digit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -345,7 +345,7 @@
 
 (define parse-dquote ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -367,7 +367,7 @@
 
 (define parse-htab ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -388,7 +388,7 @@
 
 (define parse-lf ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -409,7 +409,7 @@
 
 (define parse-sp ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -430,7 +430,7 @@
 
 (define parse-vchar ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -452,7 +452,7 @@
 
 (define parse-crlf ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -476,7 +476,7 @@
 
 (define parse-hexdig ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -516,7 +516,7 @@
 
 (define parse-wsp ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -541,7 +541,7 @@
 
 (define parse-prose-val ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -684,7 +684,7 @@
 
 (define parse-dot-1*bit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -707,7 +707,7 @@
 
 (define parse-dot-1*digit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -730,7 +730,7 @@
 
 (define parse-dot-1*hexdig ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -753,7 +753,7 @@
 
 (define parse-dash-1*bit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -776,7 +776,7 @@
 
 (define parse-dash-1*digit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -799,7 +799,7 @@
 
 (define parse-dash-1*hexdig ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1008,7 +1008,7 @@
 
 (define parse-bin-val ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1034,7 +1034,7 @@
 
 (define parse-dec-val ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1060,7 +1060,7 @@
 
 (define parse-hex-val ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1086,7 +1086,7 @@
 
 (define parse-bin/dec/hex-val ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1114,7 +1114,7 @@
 
 (define parse-num-val ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1138,7 +1138,7 @@
 
 (define parse-quoted-string ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1184,7 +1184,7 @@
 
 (define parse-case-insensitive-string ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1208,7 +1208,7 @@
 
 (define parse-case-sensitive-string ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1232,7 +1232,7 @@
 
 (define parse-char-val ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1257,7 +1257,7 @@
 
 (define parse-wsp/vchar ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1301,7 +1301,7 @@
 
 (define parse-comment ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1326,7 +1326,7 @@
 
 (define parse-cnl ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1351,7 +1351,7 @@
 
 (define parse-cnl-wsp ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1374,7 +1374,7 @@
 
 (define parse-cwsp ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1438,7 +1438,7 @@
 
 (define parse-*digit-star-*digit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1463,7 +1463,7 @@
 
 (define parse-repeat ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1508,7 +1508,7 @@
 
 (define parse-alpha/digit/dash ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1555,7 +1555,7 @@
 
 (define parse-rulename ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1581,7 +1581,7 @@
 
   (define parse-alternation ((input nat-listp))
     :returns (mv (error? maybe-msgp)
-                 (tree? (and (abnf::maybe-treep tree?)
+                 (tree? (and (abnf::tree-optionp tree?)
                              (implies (not error?) (abnf::treep tree?))
                              (implies error? (not tree?)))
                         :hyp (nat-listp input))
@@ -1600,7 +1600,7 @@
 
   (define parse-concatenation ((input nat-listp))
     :returns (mv (error? maybe-msgp)
-                 (tree? (and (abnf::maybe-treep tree?)
+                 (tree? (and (abnf::tree-optionp tree?)
                              (implies (not error?) (abnf::treep tree?))
                              (implies error? (not tree?)))
                         :hyp (nat-listp input))
@@ -1619,7 +1619,7 @@
 
   (define parse-repetition ((input nat-listp))
     :returns (mv (error? maybe-msgp)
-                 (tree? (and (abnf::maybe-treep tree?)
+                 (tree? (and (abnf::tree-optionp tree?)
                              (implies (not error?) (abnf::treep tree?))
                              (implies error? (not tree?)))
                         :hyp (nat-listp input))
@@ -1636,7 +1636,7 @@
 
   (define parse-element ((input nat-listp))
     :returns (mv (error? maybe-msgp)
-                 (tree? (and (abnf::maybe-treep tree?)
+                 (tree? (and (abnf::tree-optionp tree?)
                              (implies (not error?) (abnf::treep tree?))
                              (implies error? (not tree?)))
                         :hyp (nat-listp input))
@@ -1671,7 +1671,7 @@
 
   (define parse-group ((input nat-listp))
     :returns (mv (error? maybe-msgp)
-                 (tree? (and (abnf::maybe-treep tree?)
+                 (tree? (and (abnf::tree-optionp tree?)
                              (implies (not error?) (abnf::treep tree?))
                              (implies error? (not tree?)))
                         :hyp (nat-listp input))
@@ -1694,7 +1694,7 @@
 
   (define parse-option ((input nat-listp))
     :returns (mv (error? maybe-msgp)
-                 (tree? (and (abnf::maybe-treep tree?)
+                 (tree? (and (abnf::tree-optionp tree?)
                              (implies (not error?) (abnf::treep tree?))
                              (implies error? (not tree?)))
                         :hyp (nat-listp input))
@@ -1731,7 +1731,7 @@
 
   (define parse-alt-rest-comp ((input nat-listp))
     :returns (mv (error? maybe-msgp)
-                 (tree? (and (abnf::maybe-treep tree?)
+                 (tree? (and (abnf::tree-optionp tree?)
                              (implies (not error?) (abnf::treep tree?))
                              (implies error? (not tree?)))
                         :hyp (nat-listp input))
@@ -1764,7 +1764,7 @@
 
   (define parse-conc-rest-comp ((input nat-listp))
     :returns (mv (error? maybe-msgp)
-                 (tree? (and (abnf::maybe-treep tree?)
+                 (tree? (and (abnf::tree-optionp tree?)
                              (implies (not error?) (abnf::treep tree?))
                              (implies error? (not tree?)))
                         :hyp (nat-listp input))
@@ -1903,7 +1903,7 @@
 
 (define parse-elements ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1925,7 +1925,7 @@
 
 (define parse-equal-/-equal-slash ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1950,7 +1950,7 @@
 
 (define parse-defined-as ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -1975,7 +1975,7 @@
 
 (define parse-rule ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -2002,7 +2002,7 @@
 
 (define parse-*cwsp-cnl ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -2024,7 +2024,7 @@
 
 (define parse-rule-/-*cwsp-cnl ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -2069,7 +2069,7 @@
 
 (define parse-rulelist ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (abnf::maybe-treep tree?)
+               (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
                            (implies error? (not tree?)))
                       :hyp (nat-listp input))
@@ -2090,7 +2090,7 @@
                :rule-classes :linear)))
 
 (define parse-grammar ((nats nat-listp))
-  :returns (tree? abnf::maybe-treep :hyp (nat-listp nats))
+  :returns (tree? abnf::tree-optionp :hyp (nat-listp nats))
   (b* (((mv error? tree? rest) (parse-rulelist nats))
        ((when error?) nil)
        ((when rest) nil))

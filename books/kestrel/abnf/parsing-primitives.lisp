@@ -79,7 +79,7 @@
 
 (define parse-exact ((nat natp) (input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (maybe-treep tree?)
+               (tree? (and (tree-optionp tree?)
                            (implies (not error?) (treep tree?))
                            (implies error? (not tree?))))
                (rest-input nat-listp))
@@ -113,7 +113,7 @@
 
 (define parse-exact-list ((nats nat-listp) (input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (maybe-treep tree?)
+               (tree? (and (tree-optionp tree?)
                            (implies (not error?) (treep tree?))
                            (implies error? (not tree?))))
                (rest-input nat-listp))
@@ -174,7 +174,7 @@
 (define parse-in-range ((min natp) (max natp) (input nat-listp))
   :guard (<= min max)
   :returns (mv (error? maybe-msgp)
-               (tree? (and (maybe-treep tree?)
+               (tree? (and (tree-optionp tree?)
                            (implies (not error?) (treep tree?))
                            (implies error? (not tree?))))
                (rest-input nat-listp))
