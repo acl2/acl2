@@ -224,7 +224,7 @@
                :name len-of-parse-ichar-linear
                :rule-classes :linear)))
 
-(define parse-ichars ((char1 characterp) (char2 characterp) (input nat-listp))
+(define parse-ichar2 ((char1 characterp) (char2 characterp) (input nat-listp))
   :returns (mv (error? maybe-msgp)
                (tree? (and (abnf::tree-optionp tree?)
                            (implies (not error?) (abnf::treep tree?))
@@ -246,7 +246,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name len-of-parse-ichars-linear
+               :name len-of-parse-ichar2-linear
                :rule-classes :linear)))
 
 (define parse-alpha ((input nat-listp))
@@ -1168,7 +1168,7 @@
                (rest-input nat-listp :hyp (nat-listp input)))
   (seq-backtrack
    input
-   ((tree := (parse-ichars #\% #\i input))
+   ((tree := (parse-ichar2 #\% #\i input))
     (return (abnf::make-tree-nonleaf :rulename? nil
                                      :branches (list (list tree)))))
    ((return-raw (mv nil
@@ -1214,7 +1214,7 @@
                       :hyp (nat-listp input))
                (rest-input nat-listp :hyp (nat-listp input)))
   (seq input
-       (tree-%s := (parse-ichars #\% #\s input))
+       (tree-%s := (parse-ichar2 #\% #\s input))
        (tree-qstring := (parse-quoted-string input))
        (return (abnf::make-tree-nonleaf
                 :rulename? abnf::*case-sensitive-string*
@@ -1932,7 +1932,7 @@
                (rest-input nat-listp :hyp (nat-listp input)))
   (seq-backtrack
    input
-   ((tree := (parse-ichars #\= #\/ input))
+   ((tree := (parse-ichar2 #\= #\/ input))
     (return (abnf::make-tree-nonleaf :rulename? nil
                                      :branches (list (list tree)))))
    ((tree := (parse-ichar #\= input))

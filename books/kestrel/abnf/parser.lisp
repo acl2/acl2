@@ -172,7 +172,7 @@
      by first parsing the first character in common
      and then deciding how to proceed based on the next character.
      However, each character pair like @('\"=/\"') and @('\"%s\"')
-     is parsed in one shot via one call to @(tsee parse-ichars)
+     is parsed in one shot via one call to @(tsee parse-ichar2)
      which produces a single leaf tree
      with the list of those two character codes,
      not via two calls to @(tsee parse-ichar)
@@ -438,7 +438,7 @@
                :name len-of-parse-ichar-linear
                :rule-classes :linear)))
 
-(define parse-ichars ((char1 characterp) (char2 characterp) (input nat-listp))
+(define parse-ichar2 ((char1 characterp) (char2 characterp) (input nat-listp))
   :returns (mv (error? maybe-msgp)
                (tree? (and (tree-optionp tree?)
                            (implies (not error?) (treep tree?))
@@ -467,7 +467,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name len-of-parse-ichars-linear
+               :name len-of-parse-ichar2-linear
                :rule-classes :linear)))
 
 (define parse-alpha ((input nat-listp))
@@ -1460,7 +1460,7 @@
   :short "Parse an option @('[ \"%i\" ]')."
   (seq-backtrack
    input
-   ((tree := (parse-ichars #\% #\i input))
+   ((tree := (parse-ichar2 #\% #\i input))
     (return (make-tree-nonleaf :rulename? nil :branches (list (list tree)))))
    ((return-raw (mv nil
                     (make-tree-nonleaf :rulename? nil :branches nil)
@@ -1508,7 +1508,7 @@
   :parents (grammar-parser-implementation)
   :short "Parse a case-sensitive character value notation."
   (seq input
-       (tree-%s := (parse-ichars #\% #\s input))
+       (tree-%s := (parse-ichar2 #\% #\s input))
        (tree-qstring := (parse-quoted-string input))
        (return (make-tree-nonleaf :rulename? *case-sensitive-string*
                                   :branches (list (list tree-%s)
@@ -2446,7 +2446,7 @@
     the latter is tried before the former.")
   (seq-backtrack
    input
-   ((tree := (parse-ichars #\= #\/ input))
+   ((tree := (parse-ichar2 #\= #\/ input))
     (return (make-tree-nonleaf :rulename? nil :branches (list (list tree)))))
    ((tree := (parse-ichar #\= input))
     (return (make-tree-nonleaf :rulename? nil :branches (list (list tree))))))
