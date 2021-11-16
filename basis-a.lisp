@@ -6075,11 +6075,13 @@
 
 ; Note that do-expressionp is not actually a state global, even though most
 ; fields do name a state global.  That's OK, as we are careful about this in
-; default-state-vars.
+; default-state-vars.  Also note that its value is either nil or a cons that is
+; a legal stobjs-out.
 
   (((safe-mode . boot-strap-flg) . (temp-touchable-vars . guard-checking-on))
    .
-   ((ld-skip-proofsp . temp-touchable-fns) . (parallel-execution-enabled . do-expressionp)))
+   ((ld-skip-proofsp . temp-touchable-fns) .
+    (parallel-execution-enabled . do-expressionp)))
   nil)
 
 (defmacro default-state-vars

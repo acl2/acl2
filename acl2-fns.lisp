@@ -676,7 +676,8 @@
   (let* ((*acl2-output-type-abort* nil) ; protect for call on next line
          (result (output-type-for-declare-form-rec form nil))
          (stobjs-out (and
-                      (not (eq fn 'return-last)) ; *stobjs-out-invalid* check
+                      (not (member fn (symbol-value '*stobjs-out-invalid*)
+                                   :test #'eq))
 ; check that (w *the-live-state*) is bound
                       (boundp 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD)
                       (fboundp 'get-stobjs-out-for-declare-form)

@@ -66,7 +66,9 @@
             (if (consp fn) ;; check for lambda application
                 `((lambda ,(lambda-formals fn) ,(restore-mv-in-branches (lambda-body fn) num-values fns-to-assume-ok wrld))
                   ,@(fargs term))
-              (if (member-eq fn fns-to-assume-ok)
+              (if (or (member-eq fn fns-to-assume-ok)
+                      (eq 'do$ fn) ; Matt K. mod 11/2021 for addition to *stobjs-out-invalid*
+                      )
                   term
                 (if (= (num-return-values-of-fn fn wrld) num-values)
                     term

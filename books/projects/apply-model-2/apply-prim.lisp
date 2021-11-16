@@ -95,24 +95,35 @@
 ; Warning: Keep this constant in sync with the value in ACL2 source file
 ; apply-prim.lisp.
 
+; Warning: Functions that take state, e.g., EV, can't be badged and so are not
+; currently listed below.  But if and when we relax the conditions on badging
+; and support STATE in apply$ we should probably blacklist ev and a bunch of
+; other superpowerful :program mode functions!
+
 ; The functions listed here are not safe to apply, primarily because their
 ; behavior differs from their logical definitions.
 
 ; This list should contain every defined built-in function symbol that belongs
-; to *initial-untouchable-fns* or (strip-cars *ttag-fns*) and traffics only in
-; non-stobjs, and we check that property in check-built-in-constants.  These
-; three restrictions need not be enforced here because unless a trust tag is
-; used, then only defined functions that avoid stobjs can have warrants, and
-; the ttag and untouchable restrictions already prevent warrants.
+; to *initial-untouchable-fns* or (strip-cars *ttag-fns*) and doesn't take a
+; stobj input.  (Those that do take a stobj input aren't currently a concern,
+; since they can't be put in a list for apply$, except by way of our careful
+; translations of do loop$ expressions.)  We check that property in
+; check-built-in-constants.  These three restrictions need not be enforced here
+; because unless a trust tag is used, then only defined functions that avoid
+; stobjs can have warrants, and the ttag and untouchable restrictions already
+; prevent warrants.
 
-   '(SYNP                                   ; bad
-     WORMHOLE1                              ; restricts arguments
-     WORMHOLE-EVAL                          ; restricts arguments
-     SYS-CALL                               ; bad -- requires trust tag
-     HONS-CLEAR!                            ; bad -- requires trust tag
-     HONS-WASH!                             ; bad -- requires trust tag
-     UNTOUCHABLE-MARKER                     ; bad -- untouchable
-     ASET1-TRUSTED                          ; bad -- untouchable (added 7/2021)
+  (union-eq
+   '(SYNP                   ; bad
+     WORMHOLE1              ; restricts arguments
+     WORMHOLE-EVAL          ; restricts arguments
+     SYS-CALL               ; bad -- requires trust tag
+     HONS-CLEAR!            ; bad -- requires trust tag
+     HONS-WASH!             ; bad -- requires trust tag
+     UNTOUCHABLE-MARKER     ; bad -- untouchable
+     ASET1-TRUSTED          ; bad -- untouchable
+     COERCE-OBJECT-TO-STATE ; bad -- creates live state
+     CREATE-STATE           ; bad -- creates live state
 
 ; At one time we considered disallowing these functions but we now allow them.
 ; We list them here just to document that we considered them and concluded that
@@ -133,7 +144,12 @@
 ;    MEMOIZE-SUMMARY
 ;    CLEAR-MEMOIZE-TABLES
 ;    CLEAR-MEMOIZE-TABLE
-     ))
+     )
+
+; See the comment in *avoid-oneify-fns* in the ACL2 sources for why we include
+; the following here.
+
+   acl2::*avoid-oneify-fns*))
 
 (defun first-order-like-terms-and-out-arities (world)
 

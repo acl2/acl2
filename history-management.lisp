@@ -1750,7 +1750,11 @@
                         (list name
                               (formals name wrld)
                               (stobjs-in name wrld)
-                              (stobjs-out name wrld)))
+
+; Avoid using the function stobjs-out, because that causes an error when name
+; is DO$.
+
+                              (getpropc name 'stobjs-out '(nil) wrld)))
                        (t nil)))
            (cond
             ((eq renewal-mode :erase)
@@ -13435,7 +13439,7 @@
 ; arity for the style of the loop$ scion.
 
   (case-match term
-    (('do$ & & ('quote obj1) ('quote obj2) & &)
+    (('do$ & & ('quote obj1) ('quote obj2) & & &)
      (and (well-formed-lambda-objectp obj1 wrld)
           (well-formed-lambda-objectp obj2 wrld)
           (equal (length (lambda-object-formals obj1)) 1)
@@ -14380,10 +14384,19 @@
          (if (symbolp name)
              (guard name nil wrld)
            (lambda-object-guard name)))
-        (stobj-optp (not (and (symbolp name)
-                              (eq (getpropc name 'non-executablep
-                                            nil wrld)
-                                  t)))))
+        (stobj-optp
+
+; For a lambda object translated with stobjs-out other than t, we could use
+; stobj-optp = t here.  But it seems awkward to figure out which lambda objects
+; are of that sort.  A suitable declare form (xargs :stobjs ...) might suffice,
+; if we can guarantee that such a form is only present when translation was
+; with stobjs-out not t.  Alternatively, maybe we can pass information to this
+; function telling us when we are generating guards for code, so that we can
+; bind stobj-optp to t only in those cases.
+
+         (and (symbolp name)
+              (not (eq (getpropc name 'non-executablep nil wrld)
+                       t)))))
     (mv-let
       (cl-set1 ttree)
       (guard-clauses+ guard
@@ -15945,7 +15958,7 @@
              (list (if (car stobjs-in) 1 2))))
        ((member-eq nil (cddr stobjs-in))
         "it is function symbol with a non-stobj input other than the first two")
-       ((eq stobjs-out :none) ; IF or RETURN-LAST; goofy hint
+       ((eq stobjs-out :none) ; IF, RETURN-LAST, or DO$; goofy hint
         "it is a function symbol whose output signature is unknown")
        ((or (car stobjs-out)
             (cadr stobjs-out))
@@ -16062,13 +16075,15 @@
            ((not (eq (fargn term 1) 'clause))
             (er@par soft ctx "~@0" err-msg
               "its first argument is not the variable, CLAUSE"))
-           ((set-difference-eq (non-stobjps (all-vars term) t wrld)
+           ((set-difference-eq (unknown-stobj-names (all-vars term) t wrld)
                                '(clause))
             (er@par soft ctx "~@0" err-msg
               (msg "it contains the free variable~#0~[~/s~] ~&0, but the only ~
                     legal variable (not including stobjs) is ~x1"
                    (reverse
-                    (set-difference-eq (non-stobjps (all-vars term) t wrld)
+                    (set-difference-eq (unknown-stobj-names (all-vars term)
+                                                            t
+                                                            wrld)
                                        '(clause)))
                    'clause)))
 
