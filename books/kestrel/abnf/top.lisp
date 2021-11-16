@@ -18,6 +18,7 @@
 (include-book "core-rules")
 (include-book "concrete-syntax")
 (include-book "parsing-primitives-seq")
+(include-book "parsing-primitives-defresult")
 (include-book "parser")
 (include-book "parser-verification")
 (include-book "abstractor")
