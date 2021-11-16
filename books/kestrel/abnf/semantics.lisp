@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +13,7 @@
 (include-book "abstract-syntax")
 
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
+(include-book "kestrel/fty/defresult" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
 (local (include-book "kestrel/utilities/oset-theorems" :dir :system))
@@ -206,10 +207,10 @@
   (true-listp (car (tree-nonleaf->branches x)))
   :rule-classes :type-prescription)
 
-(fty::defoption maybe-tree
+(fty::defoption tree-option
   tree
   :short "Union of trees and @('nil')."
-  :pred maybe-treep)
+  :pred tree-optionp)
 
 (fty::defset tree-set
   :elt-type tree
@@ -218,6 +219,27 @@
   :fix tree-set-fix
   :equiv tree-set-equiv
   :short "Finite sets of trees.")
+
+(fty::defresult tree-result
+  :short "Fixtype of errors and trees."
+  :ok tree
+  :pred tree-resultp)
+
+(fty::defresult tree-list-result
+  :short "Fixtype of errors and lists of trees."
+  :ok tree-list
+  :pred tree-list-resultp)
+
+(fty::defresult tree-list-list-result
+  :short "Fixtype of errors and lists of lists of trees."
+  :ok tree-list-list
+  :pred tree-list-list-resultp)
+
+(fty::defresult tree-option-result
+  :short "Fixtype of errors and optional trees."
+  :ok tree-option
+  :pred tree-option-resultp
+  :prepwork ((local (in-theory (enable tree-optionp treep)))))
 
 (defines tree->string
   :short "String at the leaves of trees."

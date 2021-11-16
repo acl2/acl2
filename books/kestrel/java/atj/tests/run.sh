@@ -69,6 +69,13 @@ java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G MultivalueDeepGua
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G MultivalueShallowUnguardedTests
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G MultivalueShallowGuardedTests
 
+# test the boolean functions
+# (without timings because they are very fast, all print as 0.000):
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G BooleansDeepUnguardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G BooleansDeepGuardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G BooleansShallowUnguardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G BooleansShallowGuardedTests
+
 # printed only if all the tests succeed:
 echo "" # blank line
 echo "All the ATJ tests have succeeded."

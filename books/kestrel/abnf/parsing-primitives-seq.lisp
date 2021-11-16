@@ -17,15 +17,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ parsing-primitives
+(defxdoc+ parsing-primitives-seq
   :parents (abnf)
-  :short "Some basic parsing functions for ABNF."
+  :short "Some basic ABNF parsing functions for use with <i>Seq</i>."
   :long
   (xdoc::topstring
    (xdoc::p
     "These functions may be useful when writing
-     parsers for languages specified via ABNF grammars.
-     These functions are being moved here
+     <i>@(see Seq)</i>-based parsers for languages specified via ABNF grammars.
+     These functions take lists of natural numbers as inputs
+     and return outputs of the form prescribed for <i>Seq</i> actions.")
+   (xdoc::p
+    "These parsing functions are somewhat similar to the "
+    (xdoc::seetopic "parsing-primitives-defresult"
+                    "@('fty::defresult')-based parsing primitives")
+    ", but they have an interface suitable for <i>Seq</i>
+     instead of an interface suitable for @(tsee fty::defresult).")
+   (xdoc::p
+    "These parsing functions are being moved here
      from the ABNF grammar parser:
      they are used by the ABNF grammar parser,
      but they are more general."))
@@ -79,7 +88,7 @@
 
 (define parse-exact ((nat natp) (input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (maybe-treep tree?)
+               (tree? (and (tree-optionp tree?)
                            (implies (not error?) (treep tree?))
                            (implies error? (not tree?))))
                (rest-input nat-listp))
@@ -113,7 +122,7 @@
 
 (define parse-exact-list ((nats nat-listp) (input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (tree? (and (maybe-treep tree?)
+               (tree? (and (tree-optionp tree?)
                            (implies (not error?) (treep tree?))
                            (implies error? (not tree?))))
                (rest-input nat-listp))
@@ -174,7 +183,7 @@
 (define parse-in-range ((min natp) (max natp) (input nat-listp))
   :guard (<= min max)
   :returns (mv (error? maybe-msgp)
-               (tree? (and (maybe-treep tree?)
+               (tree? (and (tree-optionp tree?)
                            (implies (not error?) (treep tree?))
                            (implies error? (not tree?))))
                (rest-input nat-listp))
