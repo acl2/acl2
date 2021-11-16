@@ -645,8 +645,7 @@
      Thus, even though @(tsee add-funs-in-statement-list)
      retrieves the same functions from the statements
      because the transformations does not remove them
-     (more precisely, it retrieves transformed function definitions,
-     whose dead code is removed),
+     (more precisely, it retrieves transformed function definitions),
      an error value may have stacks of different sizes,
      due to the different number of recursive calls.")
    (xdoc::p
@@ -654,9 +653,9 @@
      because of the @('afterp') flag of @(tsee statement-list-dead).
      To have a sufficiently strong induction hypothesis
      we need that flag to be generic, not to have a specific value.
-     Thus, we introduced a predicate universally quantified over @('afterp'),
+     Thus, we introduce a predicate universally quantified over @('afterp'),
      and we prove that it holds by induction.
-     There may a way to avoid the explicit quantification,
+     There may be a way to avoid the explicit quantification,
      particularly because we are only interested in two values of @('afterp'),
      namely @('nil') and non-@('nil')."))
   (cstate-result-okeq
@@ -822,7 +821,6 @@
       '(:in-theory (e/d (exec-statement-list
                          statement-list-dead)
                         (statement-kind-when-mode-regular))
-        :expand (statement-list-dead stmt nil)
         :use (:instance statement-kind-when-mode-regular
               (stmt (car stmts))
               (limit (1- limit)))))

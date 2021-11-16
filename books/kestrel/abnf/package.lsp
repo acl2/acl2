@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "centaur/fty/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -21,6 +22,7 @@
                           bool
                           char-fix
                           chars=>nats
+                          defmacro+
                           defxdoc+
                           explode
                           implode
@@ -39,9 +41,13 @@
                           natip
                           nat-list
                           nat-list-fix
+                          nat-resultp
+                          nat-list-resultp
                           nats=>chars
                           nats=>string
                           patbind-fun
+                          pos-list
+                          pos-listp
                           pseudo-event-formp
                           pseudo-event-form-listp
                           read-file-characters
@@ -50,6 +56,9 @@
                           seq-backtrack
                           string=>nats
                           unsigned-byte-listp
+                          fty::err
+                          fty::err-push
+                          fty::resulterrp
                           set::list-in
                           set::nat-setp
                           std::define-sk
