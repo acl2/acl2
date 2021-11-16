@@ -25,8 +25,14 @@
    (xdoc::p
     "These functions may be useful when writing
      <i>@(see Seq)</i>-based parsers for languages specified via ABNF grammars.
-     These functions return results consistent with
-     the functions used with the <i>Seq</i> macros.")
+     These functions take lists of natural numbers as inputs
+     and return outputs of the form prescribed for <i>Seq</i> actions.")
+   (xdoc::p
+    "These parsing functions are somewhat similar to the "
+    (xdoc::seetopic "parsing-primitives-defresult"
+                    "@('fty::defresult')-based parsing primitives")
+    ", but they have an interface suitable for <i>Seq</i>
+     instead of an interface suitable for @(tsee fty::defresult).")
    (xdoc::p
     "These parsing functions are being moved here
      from the ABNF grammar parser:
