@@ -55,8 +55,10 @@ September 1999
 ;; Some proof speedup lemmas
 ;; Changed after Version 6.1 by Matt Kaufmann to replace obsolete the-error by
 ;; the-check.
-(defthm the-check-noop
-  (equal (the-check g x y) y))
+;; Removed 11/2021 by Matt Kaufmann with the addition of the-check to
+;; guard-holcers.
+;(defthm the-check-noop
+;  (equal (the-check g x y) y))
 
 (defthm nth-update-nth-const
   (implies
@@ -67,7 +69,10 @@ September 1999
 	  (if (equal (nfix n1) (nfix n2)) v (nth n1 l))))
   :rule-classes ((:rewrite :loop-stopper nil)))
 
-(in-theory (disable the-check nth update-nth))
+;; Removed disabling of 11/2021 by Matt Kaufmann with the addition of the-check
+;; to guard-holcers.
+;(in-theory (disable the-check nth update-nth))
+(in-theory (disable nth update-nth))
 
 ;; Some macros for convenient expression of declarations
 (defmacro Int32 (x) `(the   (signed-byte 32) ,x))

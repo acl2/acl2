@@ -119,7 +119,9 @@
 The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
           fn (if (eq formals :none) 'formals 'stobjs-out)))
      ((or (assoc fn *ttag-fns*)
-          (member fn '(mv-list return-last))
+          (member fn '(mv-list return-last
+; Matt K. mod 11/2021 for addition of do$ to *stobjs-out-invalid*
+                               do$))
           (remove nil stobjs-in)) ;; takes a stobj or needs a ttag
       `(mv t (non-exec (ecc (,fn . ,(make-list-of-nths 'args 0 (length formals)))))))
      ((and (consp stobjs-out) (consp (cdr stobjs-out)))

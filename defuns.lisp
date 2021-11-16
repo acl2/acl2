@@ -9420,11 +9420,15 @@
    (t (let* ((key (car (car new-pairs)))
              (val (cdr (car new-pairs))))
         (mv-let (erp tkey bindings)
+
+; Below we are setting stobjs-out = t and known-stobjs = t, since the more
+; restrictive translation has already been made, if necessary.
+
           (translate11-lambda-object key
-                                     '(nil) ; stobjs-out
-                                     nil    ; bindings
-                                     nil    ; known-stobjs
-                                     nil    ; flet-alist
+                                     t   ; stobjs-out
+                                     nil ; bindings
+                                     t   ; known-stobjs
+                                     nil ; flet-alist
                                      key
                                      ctx
                                      wrld
@@ -9631,9 +9635,9 @@
         ((fquotep term)
 
 ; Should we transform quoted LAMBDA objects?  No.  First, they may not be in
-; :FN slots and changing them would simply be wrong.  Second, even if they are in
-; :FN slots they are applied with apply$, which can't execute raw Lisp.  It's just
-; wrongheaded to think about transforming quoted LAMBDA objects!
+; :FN slots and changing them would simply be wrong.  Second, even if they are
+; in :FN slots they are applied with apply$, which can't execute raw Lisp.
+; It's just wrongheaded to think about transforming quoted LAMBDA objects!
 
          term)
         ((flambdap (ffn-symb term))
@@ -9645,34 +9649,67 @@
         ((eq (ffn-symb term) 'if)
          `(if ,(logic-code-to-runnable-code nil (fargn term 1) wrld)
               ,(logic-code-to-runnable-code nil (fargn term 2) wrld)
-              ,(logic-code-to-runnable-code nil (fargn term 3) wrld)))
+            ,(logic-code-to-runnable-code nil (fargn term 3) wrld)))
         ((eq (ffn-symb term) 'return-last)
          (logic-code-to-runnable-code nil (fargn term 3) wrld))
+        ((eq (ffn-symb term) 'do$)
+
+; We use ec-call here in case stobjs are involved, following the use of ec-call
+; farther below.
+
+         `(multiple-value-list?
+           (ec-call (do$ ,@(logic-code-to-runnable-code-lst (fargs term)
+                                                            wrld)))))
         ((eq (ffn-symb term) 'mv-list)
 
 ; Since term is a fully translated term, we know it is of the form (mv-list 'k
 ; expr) where k is an explicit integer greater than 1 and the out-arity of expr
 ; is k.  Thus, there is no need to wrap another mv-list around expr!  But we do
 ; have to transform its subterms.
+
          `(mv-list ,(fargn term 1)
                    ,(logic-code-to-runnable-code t (fargn term 2) wrld)))
+        (t (let* ((fn (ffn-symb term))
+                  (stobjs-out (stobjs-out fn wrld)) 
+                  (pair (assoc-eq fn *primitive-untranslate-alist*))
+                  (ec-call-p
 
-        (t (let ((out-arity (length (stobjs-out (ffn-symb term) wrld))))
+; We sometimes use ec-call to avoid issues with live stobjs.  Consider the
+; following example.
+
+;   (include-book "projects/apply/top" :dir :system)
+;   (defstobj st fld)
+;   (defwarrant fld)
+;   (apply$ '(lambda (x)
+;              (declare (xargs :guard (stp x) :split-types t))
+;              (fld x))
+;           '((17)))
+
+; The lambda can be guard-verified and will thus be compiled.  But if we are
+; not careful, this will lead to calling fld on (17), which logically should
+; return 17 but, at least in our experiments, does not.  (It has returned
+; 637624320 !)  We address this below by wrapping ec-call around functions that
+; take stobj arguments, since *1* functions can handle such non-stobj
+; arguments; after all, they do so in proofs.  We also want to prevent live
+; stobjs from getting into computations that involve such lambdas, so we check
+; not only the stobjs-in but also the stobjs-out, so as to avoid raw Lisp
+; calls of stobj creators.
+
+                   (and (not pair) ; optimization
+                        (not (and (all-nils stobjs-out) ; avoid stobj creators
+                                  (all-nils (stobjs-in fn wrld))))))
+                  (args (logic-code-to-runnable-code-lst (fargs term) wrld))
+                  (call (if pair ; hence not ec-call-p
+                            (cons (cdr pair) args)
+                          (let ((call0 (cons-with-hint fn args term)))
+                            (if ec-call-p
+                                (list 'ec-call call0)
+                              call0)))))
              (cond
               ((and (not already-in-mv-listp)
-                    (not (int= out-arity 1)))
-               `(mv-list
-                 ',out-arity
-                 (,(ffn-symb term)
-                  ,@(logic-code-to-runnable-code-lst (fargs term) wrld))))
-              (t (let ((temp (assoc-eq (ffn-symb term)
-                                       *primitive-untranslate-alist*)))
-                   (cons-with-hint (if temp
-                                       (cdr temp)
-                                       (ffn-symb term))
-                                   (logic-code-to-runnable-code-lst
-                                    (fargs term) wrld)
-                                   term))))))))
+                    (cdr stobjs-out)) ; (not (int= out-arity 1))
+               `(mv-list ',(length stobjs-out) ,call))
+              (t call))))))
 
 (defun logic-code-to-runnable-code-lst (terms wrld)
   (declare (xargs :guard (and (pseudo-term-listp terms)
@@ -9827,11 +9864,16 @@
              (val (cdr (car new-pairs)))
              (val-term (access loop$-alist-entry val :term)))
         (mv-let (erp tkey bindings)
+
+; Below we use stobjs-out = t and known-stobjs = t, since suitable translation
+; (insisting on single-threadedness) has already been performed to create the
+; defun bodies that we are exploring.
+
           (translate11-loop$ key
-                             '(nil) ; stobjs-out
-                             nil    ; bindings
-                             nil    ; known-stobjs
-                             nil    ; flet-alist
+                             t   ; stobjs-out
+                             nil ; bindings
+                             t   ; known-stobjs
+                             nil ; flet-alist
                              key
                              ctx
                              wrld
@@ -9878,7 +9920,7 @@
                    your counterfeit version:  the loop$ expression~%~Y01 ~
                    actually translates to~%~Y21, which when converted to ~
                    runnable raw Lisp is~%~Y31, but your counterfeit claimed the ~
-                   runnable raw Lisp of its tranlation is~%~Y41."
+                   runnable raw Lisp of its translation is~%~Y41."
                   key
                   nil
                   tkey
@@ -12937,3 +12979,67 @@
      (t (er hard 'check-out-instantiablep
          "The following functions are instantiable and shouldn't be:~%~x0"
          bad)))))
+
+; This is an odd place for the following event.  But it needs to be in a file
+; that is processed in the boot-strap before interface-raw.lisp, so a more
+; natural place -- apply-prim.lisp -- won't work.
+(defconst *avoid-oneify-fns*
+
+; Each of these functions has a *1* function (defined in oneify-cltl-code) that
+; simply calls it directly, in particular without any guard checks or any
+; labels functions.  Those missing labels functions normally, when
+; guard-checking is off, lead to calls of primitives that check for the live
+; state.  Because of the direct calls without labels functions, these functions
+; can cause a raw Lisp error when passing other than a live state as an actual
+; that should be a state (as per the stobjs-in).  So, calling these indirectly
+; via apply$ has that problem as well; hence we put these all into
+; *blacklisted-apply$-fns*, in addition to giving them special treatment in
+; oneify-cltl-code.  Without putting these into *blacklisted-apply$-fns* we
+; were able to get a raw Lisp error as follows.
+
+;   (include-book "projects/apply/top" :dir :system)
+;   (defbadge set-body-fn)
+;   (apply$ 'set-body-fn (list 3 4 5 6)) ; raw Lisp error
+
+  '(thm-fn
+    make-event-fn
+    certify-book-fn
+; Keep the following in sync with primitive-event-macros.
+    defun-fn
+    ;; #+:non-standard-analysis
+    ;; defun-std ; defun-fn
+    defuns-fn ; mutual-recursion
+    ;; defuns ; calls defuns-fn, above
+    defthm-fn
+    ;; #+:non-standard-analysis
+    ;; defthm-std ; calls defthm-fn, above
+    defaxiom-fn
+    defconst-fn
+    defstobj-fn defabsstobj-fn
+    defpkg-fn
+    deflabel-fn
+    deftheory-fn
+    defchoose-fn
+    verify-guards-fn
+    defmacro-fn
+    in-theory-fn
+    in-arithmetic-theory-fn
+    regenerate-tau-database-fn
+    push-untouchable-fn
+    remove-untouchable-fn
+    reset-prehistory-fn
+    set-body-fn
+    table-fn
+    progn-fn
+    encapsulate-fn
+    include-book-fn
+    change-include-book-dir
+    comp-fn
+    verify-termination-fn
+    verify-termination-boot-strap-fn
+    ;; add-match-free-override ; should be fast enough
+
+; Theory-invariant is included in *macros-for-nonexpansion-in-raw-lisp*.  The
+; remaining members of primitive-event-macros, after theory-invariant, are
+; handled well enough already since we included table-fn above.
+    ))

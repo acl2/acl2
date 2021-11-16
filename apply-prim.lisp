@@ -317,29 +317,27 @@
 ; Warning: Keep this constant in sync with the value in community book
 ; books/projects/apply-model-2/apply-prim.lisp.
 
-; Warning: Functions that take state, e.g., EV, can't be badged and so are not
-; currently listed below.  But if and when we relax the conditions on badging
-; and support STATE in apply$ we should probably blacklist ev and a bunch of
-; other superpowerful :program mode functions!
-
 ; The functions listed here are not safe to apply, primarily because their
 ; behavior differs from their logical definitions.
 
 ; This list should contain every defined built-in function symbol that belongs
-; to *initial-untouchable-fns* or (strip-cars *ttag-fns*) and traffics only in
-; non-stobjs, and we check that property in check-built-in-constants.  These
-; three restrictions need not be enforced here because unless a trust tag is
-; used, then only defined functions that avoid stobjs can have warrants, and
-; the ttag and untouchable restrictions already prevent warrants.
+; to *initial-untouchable-fns* or (strip-cars *ttag-fns*) and doesn't take a
+; stobj input.  (Those that do take a stobj input aren't currently a concern,
+; since they can't be put in a list for apply$, except by way of our careful
+; translations of do loop$ expressions.)  We check that property in
+; check-built-in-constants.
 
-   '(SYNP                                      ; bad
-     WORMHOLE1                                 ; restricts arguments
-     WORMHOLE-EVAL                             ; restricts arguments
-     SYS-CALL                                  ; bad -- requires trust tag
-     HONS-CLEAR!                               ; bad -- requires trust tag
-     HONS-WASH!                                ; bad -- requires trust tag
-     UNTOUCHABLE-MARKER                        ; bad -- untouchable
-     ASET1-TRUSTED                             ; bad -- untouchable
+  (union-eq
+   '(SYNP                   ; restricts arguments
+     WORMHOLE1              ; restricts arguments
+     WORMHOLE-EVAL          ; restricts arguments
+     SYS-CALL               ; bad -- requires trust tag
+     HONS-CLEAR!            ; bad -- requires trust tag
+     HONS-WASH!             ; bad -- requires trust tag
+     UNTOUCHABLE-MARKER     ; bad -- untouchable
+     ASET1-TRUSTED          ; bad -- untouchable
+     COERCE-OBJECT-TO-STATE ; bad -- creates live state
+     CREATE-STATE           ; bad -- creates live state
 
 ; At one time we considered disallowing these functions but we now allow them.
 ; We list them here just to document that we considered them and concluded that
@@ -360,7 +358,11 @@
 ;    MEMOIZE-SUMMARY
 ;    CLEAR-MEMOIZE-TABLES
 ;    CLEAR-MEMOIZE-TABLE
-     ))
+     )
+
+; See the comment in *avoid-oneify-fns* for why we include the following here.
+
+   *avoid-oneify-fns*))
 
 (defun split-system-verify-guards-alist (alist wrld alist1 alist2)
 
@@ -673,6 +675,23 @@
                (not (member-eq fn avoid-fns))
                (all-nils (getpropc fn 'stobjs-in nil wrld))
 
+; We considered removing the conjunct immediately above when we started
+; allowing warrants for functions that traffic in stobjs, including state, in
+; support of do loop$ expressions.  However, the system failed to build,
+; because when attempting to define (apply$-prim fn args) where fn is 'STATE-P,
+; the function was to return (state-p (car args)), which violates
+; single-threadedness; and of course, that problem applies to all functions
+; that take state.  Of course we could hack around this by giving an exemption
+; to single-threadedness checking for apply-prim during the boot-strap; but
+; that wouldn't suffice to accept a similar definition of apply$-prim in
+; community book books/projects/apply-model-2/apply-prim.lisp.  For now we
+; require the user to warrant state-p and any other built-in function that
+; takes state.  We could of course generate and evaluate defwarrant events for
+; all such functions during the boot-strap, and we might do that later; but we
+; might instead choose to fold these functions into apply$-prim after all,
+; since that would remove the need to include warrant hypotheses about such
+; built-ins in theorems.
+
 ; Note that even functions taking state like state-p and global-table-cars,
 ; i.e., that take a STATE-STATE input, will have STATE in their stobjs-in and
 ; hence will fail the test just above.  So we don't need to give special
@@ -681,9 +700,7 @@
                (all-nils (getpropc fn 'stobjs-out nil wrld)))
 
 ; Note that stobj creators and fixers take no stobjs in but return stobjs.  We
-; don't want any such functions in our answer!  Also, we don't want to think
-; about functions like BOUNDP-GLOBAL1 and 32-BIT-INTEGER-STACK-LENGTH1 that use
-; STATE-STATE as a formal preventing their execution.
+; don't want any such functions in our answer!
 
           (first-order-like-terms-and-out-arities1
            (cdr fns)

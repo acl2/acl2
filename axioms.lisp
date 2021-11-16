@@ -3490,6 +3490,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (consp (cdr (car x)))
                 (assoc-eq-equal-alistp (cdr x))))))
 
+(defun assoc-eq-safe (key alist)
+
+; This function supports translation of do loop$ expressions; see
+; var-to-cdr-assoc-var-substitution.
+
+  (declare (xargs :guard (symbolp key)))
+  (cond ((atom alist)
+         nil)
+        ((and (consp (car alist))
+              (eq key (caar alist)))
+         (car alist))
+        (t
+         (assoc-eq-safe key (cdr alist)))))
+
 (defun assoc-eq-equal (x y alist)
 
 ; We look for a pair on alist of the form (x y . val) where we compare the
@@ -27856,11 +27870,7 @@ Lisp definition."
   `(not (logicp ,fn ,wrld)))
 
 (defconst *stobjs-out-invalid*
-
-; Warning: keep this in sync with the comment about illegal functions to
-; memoize in :doc memoize.
-
-  '(if return-last))
+  '(if return-last do$))
 
 (defun stobjs-out (fn w)
 
@@ -27900,11 +27910,12 @@ Lisp definition."
   (and (plist-worldp wrld)
        (symbolp fn)
 
-; We avoid potential problems obtaining the stobjs-out of 'if.  (We give
-; special handling to 'return-last in ev-fncall-w-guard1, so we don't need to
-; avoid it here.)
+; We avoid potential problems obtaining the stobjs-out of 'if and 'do$.  (We
+; give special handling to 'return-last in ev-fncall-w-guard1, so we don't need
+; to avoid it here.)
 
        (not (eq fn 'if))
+       (not (eq fn 'do$))
        (not (assoc-eq fn *ttag-fns*))
        (let* ((formals (getpropc fn 'formals t wrld))
               (stobjs-in (stobjs-in fn wrld))
