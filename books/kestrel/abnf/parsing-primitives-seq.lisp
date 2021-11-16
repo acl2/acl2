@@ -17,15 +17,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ parsing-primitives
+(defxdoc+ parsing-primitives-seq
   :parents (abnf)
-  :short "Some basic parsing functions for ABNF."
+  :short "Some basic ABNF parsing functions for use with <i>Seq</i>."
   :long
   (xdoc::topstring
    (xdoc::p
     "These functions may be useful when writing
-     parsers for languages specified via ABNF grammars.
-     These functions are being moved here
+     <i>@(see Seq)</i>-based parsers for languages specified via ABNF grammars.
+     These functions return results consistent with
+     the functions used with the <i>Seq</i> macros.")
+   (xdoc::p
+    "These parsing functions are being moved here
      from the ABNF grammar parser:
      they are used by the ABNF grammar parser,
      but they are more general."))

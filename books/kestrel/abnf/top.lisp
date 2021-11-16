@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,7 +17,7 @@
 (include-book "operations")
 (include-book "core-rules")
 (include-book "concrete-syntax")
-(include-book "parsing-primitives")
+(include-book "parsing-primitives-seq")
 (include-book "parser")
 (include-book "parser-verification")
 (include-book "abstractor")

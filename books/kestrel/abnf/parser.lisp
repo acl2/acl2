@@ -11,7 +11,7 @@
 (in-package "ABNF")
 
 (include-book "concrete-syntax")
-(include-book "parsing-primitives")
+(include-book "parsing-primitives-seq")
 
 (include-book "std/io/read-file-characters" :dir :system)
 
