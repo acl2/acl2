@@ -16,9 +16,17 @@
 (deftest
   (specialize-theorem 'car-cons '-with-x-3 '((x . 3)))
   (must-be-redundant
-   (DEFTHM
-    CAR-CONS-WITH-X-3
-    (EQUAL (CAR (CONS '3 Y)) '3))))
+   (DEFTHM CAR-CONS-WITH-X-3
+     (EQUAL (CAR (CONS '3 Y))
+            '3))))
+
+;same as above but the 3 is quoted:
+(deftest
+  (specialize-theorem 'car-cons '-with-x-3 '((x . '3)))
+  (must-be-redundant
+   (DEFTHM CAR-CONS-WITH-X-3
+     (EQUAL (CAR (CONS '3 Y))
+            '3))))
 
 ;; Specializing multiple theorems at once
 (deftest
