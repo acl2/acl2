@@ -4942,9 +4942,11 @@
      For robustness, first we set the theory to contain
      just the specialized @(tsee exec-stmt-while),
      then we apply induction, which therefore must be on that function.
-     The hints for the subgoals are for the symbolic execution,
-     similar to the ones in @(tsee atc-gen-cfun-correct-thm),
-     where the @(':expand') hint applies to the loop function,
+     The theory for the subgoal includes
+     fewer rules than the ones for the full symbolic execution,
+     because we use the correctness theorems for the loop test and body
+     as rewrite rules instead, which take care of most of the execution.
+     The @(':expand') hint applies to the loop function,
      for robustness (as ACL2's heuristics sometimes prevent
      the opening of recursive function definitions,
      but here we know that we always want to open it).
@@ -4955,10 +4957,6 @@
      (ii) the definition of the specialized @(tsee exec-stmt-while);
      (iii) the rule saying that the measure yields a natural number; and
      (iv) the termination theorem of the loop function, suitably instantiated.
-     We also pass the theorem asserting the correctness of the loop body:
-     this is expected to be used as a rewrite rule for the body,
-     making its symbolic execution unnecessary here;
-     this is a step towards more modular and controlled proofs.
      Given the correctness lemma, the correctness theorem is easily proved,
      via the lemma and the generate theorem that equates
      the specialized @(tsee exec-stmt-while) to the general one."))
@@ -5016,8 +5014,33 @@
                collect `(:t ,callable)))
        (lemma-hints `(("Goal"
                        :do-not-induct t
-                       :in-theory (union-theories
-                                   (theory 'atc-all-rules)
+                       :in-theory (append
+                                   *atc-symbolic-computation-state-rules*
+                                   *atc-valuep-rules*
+                                   *atc-value-listp-rules*
+                                   *atc-value-optionp-rules*
+                                   *atc-arrayp-rules*
+                                   *atc-type-of-value-option-rules*
+                                   *atc-type-of-array-element-rules*
+                                   *atc-array-length-rules*
+                                   *atc-array-length-write-rules*
+                                   *atc-other-executable-counterpart-rules*
+                                   *atc-other-definition-rules*
+                                   *atc-distributivity-over-if-rewrite-rules*
+                                   *atc-identifier-rules*
+                                   *atc-not-rules*
+                                   *atc-integer-size-rules*
+                                   *atc-other-rewrite-rules*
+                                   *atc-integer-ops-1-return-rewrite-rules*
+                                   *atc-integer-ops-2-return-rewrite-rules*
+                                   *atc-integer-convs-return-rewrite-rules*
+                                   *atc-array-read-return-rewrite-rules*
+                                   *atc-array-write-return-rewrite-rules*
+                                   *atc-more-rewrite-rules*
+                                   *atc-type-prescription-rules*
+                                   *atc-compound-recognizer-rules*
+                                   *value-disjoint-rules*
+                                   *array-disjoint-rules*
                                    '(not
                                      ,exec-stmt-while-for-fn
                                      ,@type-prescriptions
