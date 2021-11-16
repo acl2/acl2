@@ -19,7 +19,7 @@
 
 (defxdoc+ grammar-new
   :parents (concrete-syntax)
-  :short "ABNF old grammar of Yul."
+  :short "ABNF new grammar of Yul."
   :long
   (xdoc::topstring
    (xdoc::p
