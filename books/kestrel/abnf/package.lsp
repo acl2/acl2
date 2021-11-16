@@ -22,6 +22,7 @@
                           bool
                           char-fix
                           chars=>nats
+                          defmacro+
                           defxdoc+
                           explode
                           implode
@@ -45,6 +46,8 @@
                           nats=>chars
                           nats=>string
                           patbind-fun
+                          pos-list
+                          pos-listp
                           pseudo-event-formp
                           pseudo-event-form-listp
                           read-file-characters

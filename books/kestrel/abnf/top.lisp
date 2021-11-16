@@ -23,6 +23,7 @@
 (include-book "parser-verification")
 (include-book "abstractor")
 (include-book "parser-and-abstractor-validation")
+(include-book "parser-generators")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
