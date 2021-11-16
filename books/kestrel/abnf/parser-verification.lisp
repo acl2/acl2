@@ -179,15 +179,15 @@
                     (nat-list-fix input))))
   :enable parse-ichar)
 
-(defrule input-decomposition-of-parse-ichars
+(defrule input-decomposition-of-parse-ichar2
   :parents (grammar-parser-input-decomposition)
-  :short "Input decomposition theorem for @(tsee parse-ichars)."
-  (b* (((mv error? tree? rest-input) (parse-ichars char1 char2 input)))
+  :short "Input decomposition theorem for @(tsee parse-ichar2)."
+  (b* (((mv error? tree? rest-input) (parse-ichar2 char1 char2 input)))
     (implies (not error?)
              (equal (append (tree->string tree?)
                             rest-input)
                     (nat-list-fix input))))
-  :enable parse-ichars)
+  :enable parse-ichar2)
 
 (defrule input-decomposition-of-parse-alpha
   :parents (grammar-parser-input-decomposition)
@@ -1144,16 +1144,16 @@
            nats-match-insensitive-chars-p
            nat-match-insensitive-char-p))
 
-(defrule tree-match-of-parse-ichars
+(defrule tree-match-of-parse-ichar2
   :parents (grammar-parser-tree-matching)
-  :short "Tree matching theorem for @(tsee parse-ichars)."
-  (b* (((mv error? tree? &) (parse-ichars char1 char2 input)))
+  :short "Tree matching theorem for @(tsee parse-ichar2)."
+  (b* (((mv error? tree? &) (parse-ichar2 char1 char2 input)))
     (implies (and (not error?)
                   (equal element (element-char-val
                                   (char-val-insensitive
                                    (implode (list char1 char2))))))
              (tree-match-element-p tree? element *all-concrete-syntax-rules*)))
-  :enable (parse-ichars
+  :enable (parse-ichar2
            tree-match-char-val-p
            nats-match-insensitive-chars-p
            nat-match-insensitive-char-p))
@@ -2483,7 +2483,7 @@
 
    (xdoc::p
     "Since @(tsee constraints-from-parse-ichar)
-     and @(tsee constraints-from-parse-ichars)
+     and @(tsee constraints-from-parse-ichar2)
      state constraints with @(tsee nat-match-insensitive-char-p),
      and since those two theorems are used in the proofs
      of many other parsing constraint theorems,
@@ -2531,14 +2531,14 @@
   :enable (parse-ichar
            parse-any))
 
-(defrule constraints-from-parse-ichars
+(defrule constraints-from-parse-ichar2
   :parents (grammar-parser-constraints-from-parsing)
-  :short "Constraints induced by @(tsee parse-ichars)."
-  (implies (not (mv-nth 0 (parse-ichars char1 char2 input)))
+  :short "Constraints induced by @(tsee parse-ichar2)."
+  (implies (not (mv-nth 0 (parse-ichar2 char1 char2 input)))
            (and (nat-match-insensitive-char-p (nfix (car input)) char1)
                 (nat-match-insensitive-char-p (nfix (cadr input)) char2)))
   :rule-classes nil
-  :enable (parse-ichars
+  :enable (parse-ichar2
            parse-any))
 
 (defrule constraints-from-parse-alpha
@@ -2669,7 +2669,7 @@
            parse-dquote
            parse-exact
            parse-any)
-  :use (:instance constraints-from-parse-ichars (char1 #\%) (char2 #\i)))
+  :use (:instance constraints-from-parse-ichar2 (char1 #\%) (char2 #\i)))
 
 (defrule constraints-from-parse-char-val
   :parents (grammar-parser-constraints-from-parsing)
@@ -2687,7 +2687,7 @@
            parse-exact
            parse-any)
   :use (constraints-from-parse-case-insensitive-string
-        (:instance constraints-from-parse-ichars (char1 #\%) (char2 #\s))))
+        (:instance constraints-from-parse-ichar2 (char1 #\%) (char2 #\s))))
 
 (defrule constraints-from-parse-wsp/vchar
   :parents (grammar-parser-constraints-from-parsing)
@@ -4170,7 +4170,7 @@
      has the hypothesis that @(tsee parse-ichar) with argument @('#\\/')
      fails on the remaining input.
      Without this hypothesis,
-     @(tsee parse-ichars) with arguments @('#\\=') and @('#\\/') could succeed:
+     @(tsee parse-ichar2) with arguments @('#\\=') and @('#\\/') could succeed:
      after parsing the @('\"=\"') in the string at the leaves of the tree,
      it could parse a @('\"/\"') in the remaining input,
      obtaining a @('\"=/\"').")
@@ -4735,10 +4735,10 @@
                                       (element-rulename *quoted-string*)
                                       *all-concrete-syntax-rules*)
                 (tree-terminatedp tree))
-           (mv-nth 0 (parse-ichars #\% #\i (append (tree->string tree)
+           (mv-nth 0 (parse-ichar2 #\% #\i (append (tree->string tree)
                                                    rest-input))))
   :use (constraints-from-tree-match-quoted-string
-        (:instance constraints-from-parse-ichars
+        (:instance constraints-from-parse-ichar2
                    (char1 #\%)
                    (char2 #\i)
                    (input (append (tree->string tree) rest-input)))))
@@ -5758,11 +5758,11 @@
                                        (char-val-insensitive "="))
                                       *all-concrete-syntax-rules*)
                 (mv-nth 0 (parse-ichar #\/ rest-input)))
-           (mv-nth 0 (parse-ichars #\= #\/ (append (tree->string tree)
+           (mv-nth 0 (parse-ichar2 #\= #\/ (append (tree->string tree)
                                                    rest-input))))
   :enable (tree-match-element-p
            tree-match-char-val-p
-           parse-ichars
+           parse-ichar2
            parse-ichar
            parse-any
            tree->string))
@@ -6059,7 +6059,7 @@
      because the function returns a tree without leaves,
      reflecting the absence of the syntactic entity.
      The completeness theorem @(tsee parse-?%i-when-tree-match)
-     has the hypothesis that @(tsee parse-ichars)
+     has the hypothesis that @(tsee parse-ichar2)
      (with arguments @('#\\%') and @('#\\i'))
      fails on the remaining input.
      Without this hypothesis, the theorem would not hold because,
@@ -6297,7 +6297,7 @@
      @(tsee parse-exact),
      @(tsee parse-in-range),
      @(tsee parse-ichar), and
-     @(tsee parse-ichars)
+     @(tsee parse-ichar2)
      are proved by expanding the necessary definitions.
      The proofs for @(tsee parse-exact) and @(tsee parse-in-range)
      use @(tsee parse-any-of-cons) as a rewrite rule,
@@ -6725,18 +6725,18 @@
            tree-match-char-val-p
            parse-any))
 
-(defrule parse-ichars-when-tree-match
+(defrule parse-ichar2-when-tree-match
   :parents (grammar-parser-completeness)
-  :short "Completeness theorem for @(tsee parse-ichars)."
+  :short "Completeness theorem for @(tsee parse-ichar2)."
   (implies (tree-match-element-p tree
                                  (element-char-val (char-val-insensitive
                                                     (implode (list char1
                                                                    char2))))
                                  *all-concrete-syntax-rules*)
-           (equal (parse-ichars char1 char2 (append (tree->string tree)
+           (equal (parse-ichar2 char1 char2 (append (tree->string tree)
                                                     rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
-  :enable (parse-ichars
+  :enable (parse-ichar2
            tree-match-element-p
            tree-match-char-val-p
            parse-any))
@@ -7390,7 +7390,7 @@
   (implies (and (tree-match-element-p tree
                                       (?_ (/_ "%i"))
                                       *all-concrete-syntax-rules*)
-                (mv-nth 0 (parse-ichars #\% #\i rest-input)))
+                (mv-nth 0 (parse-ichar2 #\% #\i rest-input)))
            (equal (parse-?%i (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
   :expand (:free (element rules) (tree-match-element-p tree element rules))
