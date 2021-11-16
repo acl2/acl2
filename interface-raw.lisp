@@ -1323,10 +1323,10 @@
    ((eq (car x) 'lambda$)
     (mv-let (flg tx bindings)
       (translate11-lambda-object x
-                                 '(nil) ; stobjs-out
-                                 nil    ; bindings
-                                 nil    ; known-stobjs
-                                 nil    ; flet-alist
+                                 t   ; stobjs-out
+                                 nil ; bindings
+                                 t   ; known-stobjs
+                                 nil ; flet-alist
                                  x
                                  'oneify
                                  w
@@ -1345,10 +1345,10 @@
     (mv-let (flg tx bindings)
       (translate11-loop$
        x
-       '(nil) ; stobjs-out
-       nil    ; bindings
-       nil    ; known-stobjs
-       nil    ; flet-alist
+       t   ; stobjs-out
+       nil ; bindings
+       t   ; known-stobjs
+       nil ; flet-alist
        x
        'oneify
        w
@@ -1362,7 +1362,10 @@
                           executing this code!  Please contact the ACL2 ~
                           implementors."
                          ',x)
-        (oneify tx fns w program-p))))
+        (let ((tmp (oneify tx fns w program-p))
+              (stobjs-out (loop$-stobjs-out x tx)))
+          (cond ((cdr stobjs-out) `(values-list ,tmp))
+                (t tmp))))))
    ((not (symbolp (car x)))
     (oneify
      (list* 'let (listlis (cadr (car x))
@@ -1914,53 +1917,12 @@
      (cond
       ((or (and guard-is-t cl-compliant-p-optimization)
            (and boot-strap-p ; optimization (well, except for :redef)
-                (member-eq fn
-                           '(thm-fn
-                             make-event-fn
-                             certify-book-fn
-; Keep the following in sync with primitive-event-macros.
-                             defun-fn
-                             ;; #+:non-standard-analysis
-                             ;; defun-std ; defun-fn
-                             defuns-fn ; mutual-recursion
-                             ;; defuns ; calls defuns-fn, above
-                             defthm-fn
-                             ;; #+:non-standard-analysis
-                             ;; defthm-std ; calls defthm-fn, above
-                             defaxiom-fn
-                             defconst-fn
-                             defstobj-fn defabsstobj-fn
-                             defpkg-fn
-                             deflabel-fn
-                             deftheory-fn
-                             defchoose-fn
-                             verify-guards-fn
-                             defmacro-fn
-                             in-theory-fn
-                             in-arithmetic-theory-fn
-                             regenerate-tau-database-fn
-                             push-untouchable-fn
-                             remove-untouchable-fn
-                             reset-prehistory-fn
-                             set-body-fn
-                             table-fn
-                             progn-fn
-                             encapsulate-fn
-                             include-book-fn
-                             change-include-book-dir
-                             comp-fn
-                             verify-termination-fn
-                             verify-termination-boot-strap-fn
-                             ;; add-match-free-override ; should be fast enough
+                (member-eq fn *avoid-oneify-fns*)))
 
-; Theory-invariant is included in *macros-for-nonexpansion-in-raw-lisp*.  The
-; remaining members of primitive-event-macros, after theory-invariant, are
-; handled well enough already since we included table-fn above.
-                             ))))
-
-; Optimization in a common case: avoid labels function.  Note that if the guard
-; is t then there are no stobjs except for the recognizer, whose raw Lisp code
-; can handle non-live stobjs.
+; Optimization in a common case: avoid labels function and, indeed, avoid any
+; oneification of the body.  Note that if the guard is t then there are no
+; stobjs except for the recognizer, whose raw Lisp code can handle non-live
+; stobjs.
 
        `(,*1*fn
          ,formals
@@ -8119,8 +8081,7 @@
 
                       (and #+acl2-save-unnormalized-bodies (logicp fn wrld)
                            (getpropc fn 'unnormalized-body nil wrld)
-                           (all-nils (stobjs-in fn wrld))
-                           (all-nils (stobjs-out fn wrld)))
+                           (all-nils (stobjs-in fn wrld)))
                       collect fn))
            (bad (set-difference-eq fns
 ; Avoid undefined constant warning during boot-strap by using symbol-value:

@@ -15,9 +15,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local ; for do$ case below
+ (defthm acl2-count-car-last
+   (<= (acl2-count (car (last x)))
+       (acl2-count x))
+   :rule-classes :linear))
+
 (define term-possible-numbers-of-results ((term pseudo-termp) (wrld plist-worldp))
   :returns (possible-numbers-of-results pos-listp)
   :parents (std/system/term-queries)
+  :measure (acl2-count term) ; for do$ case below
   :short "Calculate the possible numbers of results of a translated term."
   :long
   (xdoc::topstring
@@ -106,6 +113,24 @@
        ((when (eq fn 'if))
         (intersection$ (term-possible-numbers-of-results (fargn term 2) wrld)
                        (term-possible-numbers-of-results (fargn term 3) wrld)))
+       ((when (eq fn 'do$))
+; Matt K. mod 11/2021 for addition to *stobjs-out-invalid*
+        (let* ((quoted-do-fn (fargn term 3))
+               (do-fn (and (quotep quoted-do-fn)
+                           (unquote quoted-do-fn)))
+               (body (and (consp do-fn)
+                          (eq (car do-fn) 'lambda)
+                          (true-listp do-fn)
+                          (car (last do-fn)))))
+          (cond ((pseudo-termp body)
+                 (term-possible-numbers-of-results body wrld))
+                (t
+; This case is not possible for the output of translate, but maybe could happen
+; in pathological case after rewriting.
+                 (prog2$ (er hard? 'term-possible-numbers-of-results
+                             "Unable to guess the number of results for ~x0."
+                             term)
+                         '(1))))))
        ((when (symbolp fn)) (list (number-of-results+ fn wrld))))
     (term-possible-numbers-of-results (lambda-body fn) wrld))
   :verify-guards :after-returns

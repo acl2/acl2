@@ -1247,10 +1247,12 @@
 ;where do we use this?
 ;; Changed after Version 6.1 by Matt Kaufmann to replace obsolete the-error by
 ;; the-check.
-(defthm the-check-noop
-  (equal (the-check g y x)
-         x)
-  :hints (("goal" :in-theory (enable the-check))))
+;; Removed 11/2021 by Matt Kaufmann with the addition of the-check to
+;; guard-holcers.
+;(defthm the-check-noop
+;  (equal (the-check g y x)
+;         x)
+;  :hints (("goal" :in-theory (enable the-check))))
 
 ;this rule seems to be expensive
 (defthm logand-bound

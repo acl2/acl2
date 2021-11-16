@@ -26,3 +26,4 @@
 (verify-termination-remove-guard-holders1) ; and guards
 
 (verify-termination remove-guard-holders-weak) ; and guards
+

@@ -74,6 +74,8 @@
                  (make-executable (fargn term 3) stobjs-out wrld)))
    ((eq (ffn-symb term) 'mv-list)
     term)
+   ((eq (ffn-symb term) 'do$) ; MattK addition 11/2021
+    term)
    ((eq (ffn-symb term) 'return-last)
 
 ; For relevant background see translate11.

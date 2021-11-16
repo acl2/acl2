@@ -5509,12 +5509,6 @@
                wormhole-eval force case-split double-rewrite)
              term wrld)))))
 
-(defun make-true-list-cons-nest (term-lst)
-  (cond ((null term-lst) *nil*)
-        (t (cons-term 'cons
-                      (list (car term-lst)
-                            (make-true-list-cons-nest (cdr term-lst)))))))
-
 ; Rockwell Addition: The reason we changed the recursivep property is
 ; that we frequently ask whether there is a recursive fn on the
 ; fnstack and now we don't have to go to the property list to answer.

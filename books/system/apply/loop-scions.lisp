@@ -735,7 +735,7 @@
 (defthm nat-listp-nfix-list
    (nat-listp (nfix-list x)))
 
-(defun do$ (measure-fn alist do-fn finally-fn
+(defun do$ (measure-fn alist do-fn finally-fn default
                        untrans-measure untrans-do-loop$)
   (declare (xargs :guard (and (apply$-guard measure-fn '(nil))
 
@@ -771,7 +771,7 @@
             nil)))
      ((l< (lex-fix (apply$ measure-fn (list new-alist)))
           (lex-fix (apply$ measure-fn (list alist))))
-      (do$ measure-fn new-alist do-fn finally-fn
+      (do$ measure-fn new-alist do-fn finally-fn default
            untrans-measure untrans-do-loop$))
      (t
       (prog2$
@@ -789,6 +789,6 @@
            new-alist
            (apply$ measure-fn (list alist))
            (apply$ measure-fn (list new-alist))
-           :do$-measure-did-not-decrease)
-       :do$-measure-did-not-decrease)))))
+           default)
+       default)))))
 

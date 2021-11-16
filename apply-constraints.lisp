@@ -83,18 +83,17 @@
 
 ; Badge-userfn is constrained to return nil or an apply$-badge.  The latter are
 ; non-cheap records with token name APPLY$-BADGE and accessors :arity,
-; :out-arity, and :ilks.  The existence of a badge means the function is is
-; stobj- and state-free, and treats its arguments as described by the ilks of
-; the badge.  Arity is the arity of fn, out-arity is the number of values it
-; returns, and ilks indicates how the arguments are used.  Most generally, ilks
-; is a list, as long as the formals, of flags NIL, :FN, and/or :EXPR,
-; indicating that the corresponding formal is used in a ``vanilla''
-; (conventional) way, as a function only inspected by APPLY$, or as an
-; expression only inspected by EV$.  If the ilks is a list (c_1 ... c_arity),
-; we say c_i is the ``ilk'' of the ith argument.  We make a special case of
-; when all the formals are ordinary, i.e., when each ilk is NIL.  We denote
-; this with ilks = T.  (This is admittedly a bit confusing, ``T is an
-; abbreviation for a list of NILs.'')
+; :out-arity, and :ilks.  The existence of a badge means the function treats
+; its arguments as described by the ilks of the badge.  Arity is the arity of
+; fn, out-arity is the number of values it returns, and ilks indicates how the
+; arguments are used.  Most generally, ilks is a list, as long as the formals,
+; of flags NIL, :FN, and/or :EXPR, indicating that the corresponding formal is
+; used in a ``vanilla'' (conventional) way, as a function only inspected by
+; APPLY$, or as an expression only inspected by EV$.  If the ilks is a list
+; (c_1 ... c_arity), we say c_i is the ``ilk'' of the ith argument.  We make a
+; special case of when all the formals are ordinary, i.e., when each ilk is
+; NIL.  We denote this with ilks = T.  (This is admittedly a bit confusing, ``T
+; is an abbreviation for a list of NILs.'')
 
 ; The reason we impose any constraint on the shape of the object returned by
 ; badge-userfn is so that we can verify guards for tamep and apply$ without

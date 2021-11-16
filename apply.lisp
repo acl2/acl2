@@ -555,9 +555,8 @@
 ;                              ; treated like a function
 
 ;   If a function fn with formals v1, ..., vn, has a badge with :arity n,
-;   :out-arity k and :ilks T or (c1 ... cn) then we know that fn does not have
-;   state or stobjs in its signature, that fn takes n arguments and returns k
-;   values, and
+;   :out-arity k and :ilks T or (c1 ... cn) then fn takes n arguments and
+;   returns k values, and
 
 ;   - if fn is an apply$ primitive, then ilks is T
 
@@ -574,11 +573,10 @@
 ;    - otherwise, fn is a user-defined function successfully processed by
 ;      defwarrant and thus:
 
-;      Fn is a defined :logic mode function without state or stobjs in its
-;      signature, its justification is ``pre-apply$ definable,'' meaning that
-;      the measure, well-founded relation, and domain are ancestrally
-;      independent of apply$-userfn, and is either in class (G1) or (G2) as
-;      described below:
+;      Fn is a defined :logic mode function, its justification is ``pre-apply$
+;      definable,'' meaning that the measure, well-founded relation, and domain
+;      are ancestrally independent of apply$-userfn, and is either in class
+;      (G1) or (G2) as described below:
 
 ;      (G1) fn's body is ancestrally independent of apply$-userfn and
 ;           ancestrally independent of inapplicative functions, like sys-call.
@@ -1717,6 +1715,20 @@
 ; is unavailable.  So it can't take state and can't cause errors, just prepare
 ; the messages.
 
+; At one time we disallowed badges for all functions that traffic in stobjs.
+; We removed that restriction to support stobjs in DO loop$ expressions,
+; without yet supporting the general use of apply$ on functions that traffic in
+; stobjs.  This of course presents no new problems for logic-mode functions in
+; contexts such as theorems, where one translates without stobj restrictions,
+; because one can already call logic-mode functions that take and/or return
+; stobjs in theorems.  Such calls in code also do not present problems for a
+; different reason (ignoring stobj creators, which we'll discuss shortly): such
+; calls can't occur, because any such function takes at least one stobj
+; argument, and code cannot produce an argument list for the second argument of
+; apply$ that contains a stobj.  Finally, returning to stobj creators, note
+; that apply$ will call their *1* functions, which always throw; and this
+; already prevents them from creating live stobjs, for example during proofs.
+
   (declare (xargs :mode :program))
   (let ((bdg (and (symbolp fn)
                   (get-badge fn wrld)))
@@ -1746,41 +1758,24 @@
       (mv (msg "~x0 has been declared untouchable and so cannot be badged."
                fn)
           nil nil))
-
      ((member-eq fn *blacklisted-apply$-fns*)
 
 ; No blacklisted function has a badge.  Functions like SYS-CALL, HONS-CLEAR!,
 ; and HONS-WASH! require active trust tags to call and we'd rather not
 ; complicate the whole apply$ story by relaxing this requirement.  It doesn't
 ; seem worth the bother to make such exceptions; after all, with a trust tag
-; one can redefine *blacklisted-apply$-fns*!  One important consequence of this
-; decision: if no blacklisted function has a badge and if we've used badges to
-; determine the badge for a function, then no badged function calls a
-; blacklisted function because to badge a function we have to check that all
-; the functions called in its body are badged.  The subtlety in this argument
-; is that we might inadvertently give a function g a badge after noticing that
-; apply$ is not ancestral in g: it must therefore be ``tame'' -- but it might
-; call SYS-CALL!  So we have to be a little careful in defwarrant.
+; one can redefine *blacklisted-apply$-fns*!
+
+; The following message could be made more specific for the case that fn
+; belongs to the list *avoid-oneify-fns*.  But a more specific message would
+; probably be too low-level, and this one is still accurate, since CL behavior
+; differs from logical behavior with respect to handling of state.
 
           (mv (msg "~x0 cannot be badged because apply$ is prohibited from ~
                     calling it.  This is generally because its Common Lisp ~
                     behavior is different from its logical behavior."
                    fn)
               nil nil))
-     ((or (not (all-nils (getpropc fn 'stobjs-in nil wrld)))
-          (not (all-nils (getpropc fn 'stobjs-out nil wrld))))
-
-; You might think that checking that if no stobjs are coming in then no stobjs
-; are coming out, but you'd be wrong: stobj creators and fixers.
-
-      (mv (msg "~x0 cannot be badged because its signature, ~%~y1 ==> ~y2, ~
-                includes a single-threaded object!"
-               fn
-               (prettyify-stobj-flags
-                (getpropc fn 'stobjs-in nil wrld))
-               (prettyify-stobjs-out
-                (getpropc fn 'stobjs-out nil wrld)))
-          nil nil))
      ((null (bad-ancestor
              nil ; j-flg (we do not care about the justification)
              body
@@ -1952,10 +1947,9 @@
 
 ; Third, we keep track of ``occurrence ilks'' as we walk the body.
 
-; Fourth, inspection of badger above shows that it signals an error unless fn is
-; a defined (not constrained) :logic mode function symbol that does not traffic
-; in stobjs or state and that has a natural-number valued measure that
-; decreases according to o<.
+; Fourth, inspection of badger above shows that it signals an error unless fn
+; is a defined (not constrained) :logic mode function symbol that has a
+; natural-number valued measure that decreases according to o<.
 
 ; Fifth, when badger returns non-erroneously, the badge is constructed with
 ; make apply$-badge with obviously correct settings for :arity and :out-arity.
@@ -1964,9 +1958,8 @@
 ; Assurances on Badged Functions (recapitulation)
 
 ; If badger assigns new-badge as the badge of fn with (beta-reduced) body,
-; body, then we know fn is a defined :logic mode function without state or
-; stobjs in its signature, its justification is pre-apply$ definable as above
-; and fn is either in class (G1) or (G2).
+; body, then we know fn is a defined :logic mode function, its justification is
+; pre-apply$ definable as above and fn is either in class (G1) or (G2).
 
 ; (G1) fn's body is ancestrally independent of apply$-userfn and ancestrally
 ;      independent of inapplicative functions, like sys-call.
@@ -2006,12 +1999,11 @@
 ;      unchanged into the nth slot of every recursive call of fn.
 
 ; To establish this we first inspect badger and see that it quite literally
-; checks that fn is in :logic mode without state or stobjs in its signature,
-; its justification is pre-apply$ definable, and it is either in class (G1) or
-; (G2).  It then goes on to check the additional properties imposed on (G2)
-; functions.  One need only pay attention to the non-erroneous exits, e.g., (mv
-; nil ...).  It is the third (last) non-erroneous exit that is potentially
-; problematic.
+; checks that fn is in :logic mode, its justification is pre-apply$ definable,
+; and it is either in class (G1) or (G2).  It then goes on to check the
+; additional properties imposed on (G2) functions.  One need only pay attention
+; to the non-erroneous exits, e.g., (mv nil ...).  It is the third (last)
+; non-erroneous exit that is potentially problematic.
 
 ; Briefly reviewing the code in badger leading to the second non-erroneous
 ; return we see that it guesses an alist0 assigning ilks to the vars of body,
@@ -2199,16 +2191,17 @@
 ; inferred).
 
 ; Among other things we guarantee that fn is a defined :logic mode function,
-; that it is not blacklisted, does not traffic in stobjs, that its
-; justification is independent of apply$ (but see warning below), that either
-; (a) the body is independent of apply$, or (b) the body is not independent of
-; apply$ but is singly-recursive (well, at least, not mutually recursive) and
-; that the justification is suitably lexicographic (in the sense that we can
-; insert it into the model's measure of the apply$ clique).
+; that it is not blacklisted, that its justification is independent of apply$
+; (but see warning below), that either (a) the body is independent of apply$,
+; or (b) the body is not independent of apply$ but is singly-recursive (well,
+; at least, not mutually recursive) and that the justification is suitably
+; lexicographic (in the sense that we can insert it into the model's measure of
+; the apply$ clique).
 
   (declare (xargs :mode :program))
   (mv-let (msg storedp badge)
     (ok-defbadge fn wrld)
+    (declare (ignore storedp))
     (cond
      (msg (er soft ctx "~@0" msg))
      (t
@@ -2236,7 +2229,7 @@
             :PROGRAM)
         (er soft ctx
             "Defwarrant expects a defined, :logic mode function symbol as its ~
-           argument and ~x0 is not one."
+             argument and ~x0 is not one."
             fn))
 
 ; Next, we need to find out if the justification of fn, if any, is dependent on
@@ -2264,9 +2257,9 @@
              (t
               (let ((body (body fn nil wrld)))
 
-; At this point we know fn is a candidate for either G1 or G2.  It can be G1 if
-; its body doesn't depend on apply$-userfn.  Otherwise, it has to be G2.  But
-; in both cases we'll have other constraints to check.
+; At this point we know fn is a candidate for either G1 or G2.  It is G1 if its
+; body doesn't depend on apply$-userfn.  Otherwise, it is G2 if it meets
+; certain constraints.
 
                 (cond
                  ((null (bad-ancestor
@@ -2275,31 +2268,10 @@
                          *apply$-userfn-callers*
                          wrld))
 
-; Fn will be in G1 if we warrant it.  It will necessarily be ``tame'' because
-; it's independent of apply$.  But it might call a blacklisted function because
-; we haven't actually checked that every subfunction it calls is badged.
+; Fn is in G1, so we warrant it.
 
-                  (cond
-                   (storedp
-
-; Fn already had a badge in the system.  So we know it doesn't have a blacklisted
-; ancestor.
-                    (value (list nil ; no events necessary
-                                 badge)))
-                   (t
-                    (let ((bad-fn
-                           (bad-ancestor nil body *blacklisted-apply$-fns* wrld)))
-                      (cond
-                       (bad-fn
-                        (er soft ctx
-                            "~x0 cannot be warranted because its body is ~
-                             ancestrally dependent on ~x1 and we enforce the ~
-                             restriction that no blacklisted function is ~
-                             called by any badged function."
-                            fn
-                            bad-fn))
-                       (t (value (list nil   ; no events necessary
-                                       badge))))))))
+                  (value (list nil ; no events necessary
+                               badge)))
 
 ; Fn will be in G2 if we warrant it.  But its justification must fit within
 ; the model's justification of the apply clique.
@@ -2573,14 +2545,13 @@
 ;        :PUT)
 
 ; we could lay down something that checks that that badge is correct (e.g.,
-; based on check-ilks-list preceded by the necessary checks on stobjs, etc.) to
-; avoid the two-pass guessing in badger?  We'd have to have a way to check the
-; measure without access to (ens state), but we could include the old measure
-; and just use equal.  And we'd have to have a way to signal an error from the
-; middle of a value calculation for a TABLE event, which might have to be a
-; hard error...  All this is speculative because efficiency is not a big
-; concern right now!  We will wait until users start using APPLY$ and complain
-; about performance!
+; based on check-ilks-list) to avoid the two-pass guessing in badger?  We'd
+; have to have a way to check the measure without access to (ens state), but we
+; could include the old measure and just use equal.  And we'd have to have a
+; way to signal an error from the middle of a value calculation for a TABLE
+; event, which might have to be a hard error...  All this is speculative
+; because efficiency is not a big concern right now!  We will wait until users
+; start using APPLY$ and complain about performance!
 
 (defun defbadge-fn1 (fn state)
   (declare (xargs :mode :program))
@@ -3207,7 +3178,7 @@
 ; and LEXP to the well-founded-relation-alist; but we verify that "cheat" in
 ; check-system-events, as noted in comments in the definitions of both of them.
 
-(defun do$ (measure-fn alist do-fn finally-fn
+(defun do$ (measure-fn alist do-fn finally-fn default
                        untrans-measure untrans-do-loop$)
   (declare (xargs :guard (and (apply$-guard measure-fn '(nil))
 
@@ -3244,7 +3215,7 @@
             nil)))
      ((l< (lex-fix (apply$ measure-fn (list new-alist)))
           (lex-fix (apply$ measure-fn (list alist))))
-      (do$ measure-fn new-alist do-fn finally-fn
+      (do$ measure-fn new-alist do-fn finally-fn default
            untrans-measure untrans-do-loop$))
      (t
       (prog2$
@@ -3262,8 +3233,8 @@
            new-alist
            (apply$ measure-fn (list alist))
            (apply$ measure-fn (list new-alist))
-           :do$-measure-did-not-decrease)
-       :do$-measure-did-not-decrease)))))
+           default)
+       default)))))
 )
 
 ;-----------------------------------------------------------------
