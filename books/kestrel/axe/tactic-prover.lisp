@@ -27,6 +27,7 @@
 (include-book "kestrel/utilities/progn" :dir :system) ; for extend-progn
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 (local (in-theory (enable member-equal-becomes-memberp))) ;todo
 
@@ -35,13 +36,6 @@
                 (pseudo-term-listp y))
            (pseudo-termp a))
   :hints (("Goal" :in-theory (enable pseudo-term-listp MEMBERP))))
-
-(defthm pseudo-term-listp-of-union-equal-2 ;name clash
-  (equal (pseudo-term-listp (union-equal x y))
-         (and (pseudo-term-listp (true-list-fix x))
-              (pseudo-term-listp y)))
-  :hints (("Goal" :in-theory (e/d (union-equal pseudo-term-listp)
-                                  (pseudo-termp)))))
 
 ;;
 ;; Proof tactics
