@@ -30,8 +30,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-function (fn (ctx ctxp) state)
-  :returns (mv erp (nothing null) state)
+(define atc-remove-called-fns ((fns symbol-listp) (term pseudo-termp))
+  :returns (new-fns symbol-listp :hyp (symbol-listp fns))
+  :short "Remove from a list of function symbols
+          all the functions called by a term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee atc-process-function);
+     see that function's documentation for details."))
+  (cond ((endp fns) nil)
+        (t (if (acl2::ffnnamep (car fns) term)
+               (atc-remove-called-fns (cdr fns) term)
+             (cons (car fns)
+                   (atc-remove-called-fns (cdr fns) term))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-process-function (fn
+                              (uncalled-fns symbol-listp)
+                              (ctx ctxp)
+                              state)
+  :returns (mv erp
+               (new-uncalled-fns symbol-listp
+                                 :hyp (and (symbolp fn)
+                                           (symbol-listp uncalled-fns)))
+               state)
   :short "Process a target function @('fni') among @('fn1'), ..., @('fnp')."
   :long
   (xdoc::topstring
@@ -41,7 +65,25 @@
      without analyzing the body of the function in detail.
      The remaining checks are performed during code generation,
      where it is more natural to make them,
-     as the functions' bodies are analyzed to translate them to C."))
+     as the functions' bodies are analyzed to translate them to C.")
+   (xdoc::p
+    "The @('uncalled-fns') parameter lists the symbols of
+     all the recursive target functions
+     that precede @('fn') in @('(fn1 ... fnp)')
+     and that are not called by any of the functions
+     that precede @('fn') in @('(fn1 ... fnp)').
+     This list is used to ensure that all the recursive target functions,
+     which represent C loops,
+     are called by some other target functions (that follow them).
+     The reason for checking this is that C loops
+     may only occur in C functions;
+     if this check were not satisfied,
+     there would be some C loop, represented by a recursive target function,
+     that does not appear in the generated C code.
+     As we process @('fn'),
+     we remove from @('uncalled-fns') all the functions called by @('fn').
+     If @('fn') is recursive, we add it to @('uncalled-fns').
+     We return the updated list of uncalled functions."))
   (b* ((desc (msg "The target ~x0 input" fn))
        ((er &) (acl2::ensure-value-is-function-name$ fn desc t nil))
        (desc (msg "The target function ~x0" fn))
@@ -69,24 +111,61 @@
                    must be O<, but it ~x1 instead. ~
                    Only recursive functions with well-founded relation O< ~
                    are currently supported by ATC."
-                  fn (acl2::well-founded-relation+ fn (w state)))))
-    (acl2::value nil))
+                  fn (acl2::well-founded-relation+ fn (w state))))
+       (uncalled-fns (atc-remove-called-fns uncalled-fns (ubody+ fn (w state))))
+       (uncalled-fns (if rec
+                         (cons fn uncalled-fns)
+                       uncalled-fns)))
+    (acl2::value uncalled-fns))
   :guard-hints (("Goal" :in-theory (enable
                                     acl2::ensure-value-is-function-name
                                     acl2::ensure-function-is-guard-verified
                                     acl2::ensure-function-is-logic-mode
-                                    acl2::ensure-function-is-defined))))
+                                    acl2::ensure-function-is-defined)))
+  ///
+
+  (defret null-of-atc-process-function-when-erp
+    (implies erp
+             (null new-uncalled-fns)))
+
+  (defruled symbolp-of-fn-when-atc-process-function-not-erp
+    (implies (not (mv-nth 0 (atc-process-function fn uncalled-fns ctx state)))
+             (symbolp fn))
+    :enable acl2::ensure-value-is-function-name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-function-list ((fns true-listp) (ctx ctxp) state)
-  :returns (mv erp (nothing null) state)
+(define atc-process-function-list ((fns true-listp)
+                                   (uncalled-fns symbol-listp)
+                                   (ctx ctxp)
+                                   state)
+  :returns (mv erp
+               (new-uncalled-fns symbol-listp
+                                 :hyp (and (symbol-listp fns)
+                                           (symbol-listp uncalled-fns)))
+               state)
   :short "Lift @(tsee atc-process-function) to lists."
-  (b* (((when (endp fns)) (acl2::value nil))
-       ((er &) (atc-process-function (car fns) ctx state))
-       ((er &) (atc-process-function-list (cdr fns) ctx state)))
-    (acl2::value nil))
-  :prepwork ((local (in-theory (disable null)))))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We thread through the list of uncalled recursive functions."))
+  (b* (((when (endp fns)) (acl2::value uncalled-fns))
+       ((er uncalled-fns) (atc-process-function (car fns)
+                                                uncalled-fns
+                                                ctx
+                                                state))
+       ((er uncalled-fns) (atc-process-function-list (cdr fns)
+                                                     uncalled-fns
+                                                     ctx
+                                                     state)))
+    (acl2::value uncalled-fns))
+  :prepwork ((local (in-theory (disable null))))
+  :guard-hints
+  (("Goal" :in-theory (enable symbolp-of-fn-when-atc-process-function-not-erp)))
+  ///
+  (defret null-of-atc-process-function-list-when-erp
+    (implies erp
+             (null new-uncalled-fns))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,7 +173,12 @@
   :returns (mv erp (nothing null) state)
   :verify-guards nil
   :short "Process the target functions @('fn1'), ..., @('fnp')."
-  (b* (((er &) (atc-process-function-list fn1...fnp ctx state))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We initialize the list of uncalled recursive functions to be empty,
+     and we ensure that the list is empty after processing all functions."))
+  (b* (((er uncalled-fns) (atc-process-function-list fn1...fnp nil ctx state))
        ((unless (consp fn1...fnp))
         (er-soft+ ctx t nil
                   "At least one target function must be supplied."))
@@ -102,7 +186,12 @@
                 fn1...fnp
                 (msg "The list of target functions ~x0" fn1...fnp)
                 t
-                nil)))
+                nil))
+       ((unless (endp uncalled-fns))
+        (er-soft+ ctx t nil
+                  "The recursive target functions ~x0 ~
+                   are not called by any other target function."
+                  uncalled-fns)))
     (acl2::value nil))
   :prepwork ((local (in-theory (disable null)))))
 
