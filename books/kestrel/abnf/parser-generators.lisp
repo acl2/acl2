@@ -32,7 +32,8 @@
      This is not a full parser generator, but it is a start towards one.")
    (xdoc::p
     "The ABNF grammar of interest must be in an ACL2 named constant called
-     @('abnf::*grammar*') (note that it is in the @('\"ABNF\"') package).
+     @('abnf::*def-parse-grammar*')
+     (note that it is in the @('\"ABNF\"') package).
      This constant is implicitly referenced by the parsing generation macros.
      If the grammar is in a differently named constant,
      it is easy to define the required constant to be equal to that one.
@@ -74,9 +75,9 @@
      the name of the corresponding parsing function
      must be specified by the user.
      This is done via three ACL2 named constants called
-     @('abnf::*parse-group-fns*'),
-     @('abnf::*parse-option-fns*'), and
-     @('abnf::*parse-repetition-fns*')
+     @('abnf::*def-parse-group-fns*'),
+     @('abnf::*def-parse-option-fns*'), and
+     @('abnf::*def-parse-repetition-fns*')
      (note that they are in the @('\"ABNF\"') package).
      These are alists from groups or options or repetitions,
      represented as ABNF abstract syntax
@@ -92,7 +93,7 @@
    (xdoc::p
     "The @(tsee def-parse-*-rulename) macro generates a parsing function for
      a repetition of zero or more instances of the specified rule name.
-     It uses @('abnf::*parse-repetition-fns*') to retrieve
+     It uses @('abnf::*def-parse-repetition-fns*') to retrieve
      the name of the parsing function to generate.
      If the rule name is @('<R>'),
      the generated function calls @('parse-<R>')
@@ -100,7 +101,7 @@
    (xdoc::p
     "The @(tsee def-parse-group) macro is similar to @(tsee def-parse-rulename),
      but it retrieves the name of the function to generate
-     from @('abnf::*parse-group-fns*');
+     from @('abnf::*def-parse-group-fns*');
      the macro takes the group as an argument,
      which is used as a key in the alist.
      It attempts to parse each alternative,
@@ -112,10 +113,10 @@
      is similar to @(tsee def-parse-*-rulename),
      but it repeatedly uses the parsing function for the group.
      The name of the generated function is retrieved from
-     @('abnf::*parse-repetition-fns*').")
+     @('abnf::*def-parse-repetition-fns*').")
    (xdoc::p
     "The @(tsee def-parse-option) macro is similar to @(tsee def-parse-group),
-     but its name is retrieved from @('abnf::*parse-option-fns*').
+     but its name is retrieved from @('abnf::*def-parse-option-fns*').
      Furthermore, if no alternative can be parsed,
      parsing succeeds because an instance of an option may be absent in fact.")
    (xdoc::p
@@ -807,10 +808,10 @@
      the grammar and the group, option, and repetition alists."))
   `(make-event (def-parse-gen-function-for-spec
                  ,spec
-                 *grammar*
-                 *parse-group-fns*
-                 *parse-option-fns*
-                 *parse-repetition-fns*)))
+                 *def-parse-grammar*
+                 *def-parse-group-fns*
+                 *def-parse-option-fns*
+                 *def-parse-repetition-fns*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
