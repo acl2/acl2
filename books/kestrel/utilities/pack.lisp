@@ -143,6 +143,11 @@
   `(intern-in-package-of-symbol ,(pack$-fn rst) ,sym))
 
 ;todo: add $ to name?
+(defmacro pack-in-package-of-first-symbol (sym
+                                           &rest rst)
+  `(pack-in-package-of-symbol ,sym ,sym ,@rst))
+
+;todo: add $ to name?
 ;; Returns a string rather than a symbol.
 (defmacro packtostring (&rest rst)
   (pack$-fn rst))
