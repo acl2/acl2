@@ -70,7 +70,11 @@
      (xdoc::p
       "These function names must be all distinct.")
      (xdoc::p
-      "There must be at least one target function."))
+      "There must be at least one target function.")
+     (xdoc::p
+      "Each recursive target function must be called by
+       at least one recursive or non-recursive target function
+       that follows it in the list @('(fn1 ... fnp)')."))
 
     (xdoc::desc
      "@(':output-file') &mdash; no default"
