@@ -18,6 +18,8 @@
 
 ;; TODO: Add support for :axe-prover option to call the Axe prover
 
+;; TODO: Make a lighter-weight version that does not depend on skip-proofs.
+
 (include-book "prune")
 (include-book "dag-size")
 (include-book "dagify") ;todo
@@ -29,13 +31,13 @@
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
-(local (in-theory (enable member-equal-becomes-memberp))) ;todo
+;(local (in-theory (enable member-equal-becomes-memberp))) ;todo
 
-(defthm pseudo-termp-when-memberp
-  (implies (and (memberp a y)
-                (pseudo-term-listp y))
-           (pseudo-termp a))
-  :hints (("Goal" :in-theory (enable pseudo-term-listp MEMBERP))))
+;; (defthm pseudo-termp-when-memberp
+;;   (implies (and (memberp a y)
+;;                 (pseudo-term-listp y))
+;;            (pseudo-termp a))
+;;   :hints (("Goal" :in-theory (enable pseudo-term-listp MEMBERP))))
 
 ;;
 ;; Proof tactics
