@@ -1357,9 +1357,7 @@
    (xdoc::p
     "Starting with an initial variable table,
      we process the parameter declarations and obtain the variable table
-     in which the function body must be checked statically.
-     We ensure that the body of the function is a compound statement [C:6.9.1/1]
-     and we check its block items.
+     in which the function body must be checked.
      Critically, the block items are checked in the initial variable table,
      which has the types for the function parameters,
      without creating a new scope for the block (i.e. the compound statement):
@@ -1395,10 +1393,7 @@
        (vartab (var-table-init))
        (vartab (check-param-declon-list fundef.params vartab))
        ((when (errorp vartab)) (error (list :fundef-param-error vartab)))
-       ((unless (stmt-case fundef.body :compound))
-        (error (list :fundef-body-error-not-compound fundef.body)))
-       (body-items (stmt-compound->items fundef.body))
-       (stype (check-block-item-list body-items funtab vartab))
+       (stype (check-block-item-list fundef.body funtab vartab))
        ((when (errorp stype)) (error (list :fundef-body-error stype)))
        ((unless (equal (stmt-type->return-types stype)
                        (set::insert out-type nil)))
