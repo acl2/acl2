@@ -162,6 +162,18 @@
      (no parsing functions are generated for those;
      the parsing code for those is generated within larger parsing functions).")
    (xdoc::p
+    "All of the three named constants
+     @('abnf::*def-parse-group-fns*'),
+     @('abnf::*def-parse-option-fns*'), and
+     @('abnf::*def-parse-repetition-fns*')
+     must be defined even if any of them is empty,
+     i.e. if the user does not want or need to generate or use
+     parsing functions for groups, options, or repetitions.
+     The named constant @('abnf::*def-parse-fn-name*') must be also defined;
+     there is no default.
+     Finally, the named constant @('abnf::*def-parse-grammar*')
+     must be also defined, as there is no default or implicit grammar.")
+   (xdoc::p
     "All in all, these parser generation tools are quite preliminary,
      but they have been already useful to generate most of
      a lexer for a real (i.e. not toy) programming language.
