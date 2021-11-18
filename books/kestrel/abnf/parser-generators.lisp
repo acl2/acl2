@@ -618,7 +618,10 @@
     "We also generate linear rules about the remaining input.
      These are needed to prove the termination of recursive functions
      that call this function."))
-  (b* ((parse-rulename  (add-suffix 'parse- (str::upcase-string rulename)))
+  (b* ((parse-rulename  (acl2::packn-pos (list fn-name
+                                               '-
+                                               (str::upcase-string rulename))
+                                         fn-name))
        (alt (lookup-rulename (rulename rulename) grammar))
        (order (or order (integers-from-to 1 (len alt)))))
     `(define ,parse-rulename ((input nat-listp))
