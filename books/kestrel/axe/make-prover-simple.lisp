@@ -1,4 +1,4 @@
-; A tool to make an Axe Prover for a given application
+; A tool to make an Axe Prover for a given purpose
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2021 Kestrel Institute
@@ -40,7 +40,6 @@
 (include-book "axe-clause-utilities")
 (include-book "kestrel/utilities/defconst-computed" :dir :system)
 (include-book "kestrel/utilities/equal" :dir :system) ; for equal-same
-;(include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "rewriter-common") ; for axe-bind-free-result-okayp, etc.
 ;(include-book "contexts") ;for max-nodenum-in-context
 (include-book "unify-term-and-dag-fast")
@@ -117,42 +116,38 @@
   (implies (natp x)
            (integerp x)))
 
-(defthm not-<-of-LARGEST-NON-QUOTEP-and--1
-  (not (< (LARGEST-NON-QUOTEP dags) '-1)))
-
 (defthmd nat-listp-forward-to-true-listp-for-axe
-  (implies (NAT-LISTP x) (true-listp x))
+  (implies (nat-listp x)
+           (true-listp x))
   :rule-classes :forward-chaining)
 
 (defthmd nat-listp-forward-to-rational-listp-for-axe
-  (implies (NAT-LISTP x) (rational-listp x))
+  (implies (nat-listp x)
+           (rational-listp x))
   :rule-classes :forward-chaining)
 
 (defthmd axe-treep-of-cadr
   (implies (and (axe-treep tree)
                 (symbolp (car tree))
-                (not (equal 'quote (car tree)))
-                )
+                (not (equal 'quote (car tree))))
            (axe-treep (cadr tree)))
   :hints (("Goal" :in-theory (enable axe-treep))))
 
 (defthmd axe-treep-of-caddr
   (implies (and (axe-treep tree)
                 (symbolp (car tree))
-                (not (equal 'quote (car tree)))
-                )
+                (not (equal 'quote (car tree))))
            (axe-treep (caddr tree)))
   :hints (("Goal" :in-theory (enable axe-treep))))
 
 (defthmd axe-treep-of-cadddr
   (implies (and (axe-treep tree)
                 (symbolp (car tree))
-                (not (equal 'quote (car tree)))
-                )
+                (not (equal 'quote (car tree))))
            (axe-treep (cadddr tree)))
   :hints (("Goal" :in-theory (enable axe-treep))))
 
-(defthm symbol-when-member-equal
+(defthm symbolp-when-member-equal
   (implies (and (member-equal x free)
                 (symbol-listp free))
            (symbolp x)))
@@ -189,6 +184,7 @@
            (all-dargp-less-than (lookup-args-in-result-array args result-array-name result-array) bound))
   :hints (("Goal" :in-theory (e/d (get-args-not-done lookup-args-in-result-array) (dargp)))))
 
+;; Rules used when admitting the generated prover
 (defconst *make-prover-simple-rules*
   '((:COMPOUND-RECOGNIZER AXE-TREEP-COMPOUND-RECOGNIZER)
     (:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
@@ -204,7 +200,7 @@
     (:DEFINITION LENGTH)
     (:DEFINITION MAX)
     ;;    (:DEFINITION MEMBER-EQUAL) ;cases case splits?
-    symbol-when-member-equal
+    symbolp-when-member-equal
     not-equal-of-quote-when-member-equal
     axe-treep-of-cadr
     axe-treep-of-caddr
@@ -2537,7 +2533,7 @@
                                symbol-alistp-of-pairlis$-alt
                                true-listp-of-cons
                                axe-treep-when-consp-of-car
-                               not-<-of-largest-non-quotep-and--1
+                               <=-of--1-and-largest-non-quotep-linear ; not-<-of-largest-non-quotep-and--1
                                integerp-when-natp-for-axe
                                pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array-other
                                integerp-of-maxelem2
@@ -3500,7 +3496,6 @@
        ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
        ;; where if provedp is non-nil we proved the clause and the other return values are irrelevant.
        ;; otherwise, we return the simplified clause (as the list of literal nodenums and the dag-array, etc.)
-       ;; perhaps this should return info, which the parent can print
        ;; There should be no harvestable disjuncts in the LITERAL-NODENUMS returned?
        ;; In general, this can loop (e.g., due to looping rules), so we use a count to ensure termination.
        (mutual-recursion
@@ -3805,31 +3800,12 @@
                      (declare (ignore erp provedp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                      (true-listp new-literal-nodenums)))
           :flag ,apply-tactics-name)
-        :hints (("Goal" ;:induct t
-                 :in-theory (e/d (,apply-tactic-name
-                                  ,apply-tactics-name
-                                  <-OF-+-OF-1-STRENGTHEN-2
-                                  NATP-OF-+-OF-1
-                                  rationalp-when-natp-for-axe)
-                                 (natp)))))
-
-       ;; (defthm ,(pack$ apply-tactic-name '-return-type-2)
-       ;;   (implies (true-listp literal-nodenums)
-       ;;            (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
-       ;;              (,apply-tactic-name tactic literal-nodenums
-       ;;                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-       ;;                                  rule-alist rule-set-number
-       ;;                                  interpreted-function-alist monitored-symbols
-       ;;                                  case-designator print ;move print arg?
-       ;;                                  info tries prover-depth known-booleans options count)
-       ;;              (declare (ignore erp provedp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
-       ;;              (true-listp new-literal-nodenums)))
-       ;;   :hints (("Goal" :induct t
-       ;;            :in-theory (e/d (,apply-tactic-name
-       ;;                             <-OF-+-OF-1-STRENGTHEN-2
-       ;;                             NATP-OF-+-OF-1
-       ;;                             rationalp-when-natp-for-axe)
-       ;;                            (natp)))))
+        :hints (("Goal" :in-theory (e/d (,apply-tactic-name
+                                         ,apply-tactics-name
+                                         <-of-+-of-1-strengthen-2
+                                         natp-of-+-of-1
+                                         rationalp-when-natp-for-axe)
+                                        (natp)))))
 
        ;; Consider each of the RULE-ALISTS in order, for each applying the TACTIC.  TODO: What if the :tactic doesn't include :rewrite?
        ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries), where if ERP
@@ -4692,8 +4668,7 @@
                                       (<= dag-len new-dag-len)))))
          :rule-classes :linear
          :hints (("Goal" :use ,(pack$ 'prove-or-split-case-with- suffix '-prover-return-type)
-                  :in-theory (disable ,(pack$ 'prove-or-split-case-with- suffix '-prover-return-type))))
-         )
+                  :in-theory (disable ,(pack$ 'prove-or-split-case-with- suffix '-prover-return-type)))))
 
        ;; The main entry point of the Axe Prover.
        ;; Tries to prove the disjunction of LITERAL-NODENUMS-OR-QUOTEPS.
@@ -4897,20 +4872,20 @@
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
        ;; Because this function has a guard that is simply a stobj recognizer, it has no invariant-risk.
        (defund ,prove-dag-implication-name (dag1
-                                                  dag2
-                                                  tactic
-                                                  rule-lists
-                                                  global-rules
-                                                  interpreted-function-alist
-                                                  no-splitp
-                                                  monitor
-                                                  print
-                                                  state)
+                                            dag2
+                                            tactic
+                                            rule-lists
+                                            global-rules
+                                            interpreted-function-alist
+                                            no-splitp
+                                            monitor
+                                            print
+                                            state)
          (declare (xargs :guard-hints (("Goal" :use (:instance make-implication-dag-return-type)
                                         :in-theory (e/d (array-len-with-slack top-nodenum-of-dag-when-pseudo-dagp wf-dagp)
                                                         (symbol-listp top-nodenum myquotep get-global w quotep make-implication-dag-return-type))))
                          :stobjs state))
-         (b* (;; Check inputs:
+         (b* ( ;; Check inputs:
               ((when (not (or (myquotep dag1)
                               (and (pseudo-dagp dag1)
                                    (<= (len dag1) 2147483646)))))
@@ -5001,7 +4976,7 @@
                                         (if (member-eq print '(nil :brief))
                                             nil ; do not count tries
                                           (zero-tries))
-                                        0             ;prover-depth
+                                        0 ;prover-depth
                                         (known-booleans (w state))
                                         options))
               ((when erp) (mv erp nil state))
@@ -5193,7 +5168,7 @@
                (mv (erp-nil) (list clause)))))))))
 
 ;; Creates a custom Axe prover using the given evaluators:
-(defmacro make-prover-simple (suffix
+(defmacro make-prover-simple (suffix ; to be added to generated names
                               evaluator-suffix ;as given to make-evaluator-simple
                               syntaxp-evaluator-suffix ;as given to make-axe-syntaxp-evaluator
                               bind-free-evaluator-suffix ;as given to make-axe-bind-free-evaluator
