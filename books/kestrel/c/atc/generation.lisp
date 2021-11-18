@@ -4180,7 +4180,7 @@
        (fundef (make-fundef :result (atc-gen-tyspecseq type)
                             :name (make-ident :name name)
                             :params params
-                            :body (stmt-compound items)))
+                            :body items))
        (ext (ext-declon-fundef fundef))
        (finfo (fun-info-from-fundef fundef))
        (limit `(binary-+ '2 ,limit))

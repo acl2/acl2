@@ -1933,11 +1933,12 @@
                   (equal scope (init-scope (fun-info->params info) args))
                   (scopep scope)
                   (equal val?+compst1
-                         (exec-stmt (fun-info->body info)
-                                    (push-frame (make-frame
-                                                 :function fun
-                                                 :scopes (list scope))
-                                                compst)
+                         (exec-block-item-list (fun-info->body info)
+                                               (push-frame (make-frame
+                                                            :function fun
+                                                            :scopes (list
+                                                                     scope))
+                                                           compst)
                                     fenv
                                     (1- limit)))
                   (equal val? (mv-nth 0 val?+compst1))
