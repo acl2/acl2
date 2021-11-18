@@ -1358,9 +1358,17 @@
     "Starting with an initial variable table,
      we process the parameter declarations and obtain the variable table
      in which the function body must be checked statically.
-     We ensure that the return types of the body
-     match the return types of the function:
-     currently, this means that the set of return types
+     We ensure that the body of the function is a compound statement [C:6.9.1/1]
+     and we check its block items.
+     Critically, the block items are checked in the initial variable table,
+     which has the types for the function parameters,
+     without creating a new scope for the block (i.e. the compound statement):
+     the reason is that the scope of function parameters
+     terminates at the end of the associated block [C:6.2.1/4].")
+   (xdoc::p
+    "We ensure that the return types of the body
+     match the return types of the function.
+     Currently, this means that the set of return types
      must be a singleton with the function's return type;
      this may be relaxed in the future.")
    (xdoc::p
@@ -1387,7 +1395,10 @@
        (vartab (var-table-init))
        (vartab (check-param-declon-list fundef.params vartab))
        ((when (errorp vartab)) (error (list :fundef-param-error vartab)))
-       (stype (check-stmt fundef.body funtab vartab))
+       ((unless (stmt-case fundef.body :compound))
+        (error (list :fundef-body-error-not-compound fundef.body)))
+       (body-items (stmt-compound->items fundef.body))
+       (stype (check-block-item-list body-items funtab vartab))
        ((when (errorp stype)) (error (list :fundef-body-error stype)))
        ((unless (equal (stmt-type->return-types stype)
                        (set::insert out-type nil)))
