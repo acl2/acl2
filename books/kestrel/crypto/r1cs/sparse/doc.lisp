@@ -15,7 +15,7 @@
 ;; Introduced by defaggregate
 (acl2::defxdoc r1csp
   :short "Recognize an R1CS"
-  :long "An R1CS is a defaggregate whose fields represent a prime, a list of variables, and a list of constraints.  The constructor is @('r1cs'), and the accessors are @('r1cs->prime'), @('r1cs->vars') and @('r1cs->constraints') ."
+  :long "An R1CS is a defaggregate whose fields represent a prime, a list of variables, and a list of constraints.  The constructor is @('r1cs'), and the accessors are @('r1cs->prime'), @('r1cs->vars') and @('r1cs->constraints')."
   :parents (r1cs))
 
 ;; Introduced by defaggregate

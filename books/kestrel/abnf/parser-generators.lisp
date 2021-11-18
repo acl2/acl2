@@ -32,7 +32,8 @@
      This is not a full parser generator, but it is a start towards one.")
    (xdoc::p
     "The ABNF grammar of interest must be in an ACL2 named constant called
-     @('abnf::*grammar*') (note that it is in the @('\"ABNF\"') package).
+     @('abnf::*def-parse-grammar*')
+     (note that it is in the @('\"ABNF\"') package).
      This constant is implicitly referenced by the parsing generation macros.
      If the grammar is in a differently named constant,
      it is easy to define the required constant to be equal to that one.
@@ -43,9 +44,13 @@
      a parsing function for the specified rule name,
      which is passed as an ACL2 string (not as a @(tsee rulename)).
      If the rule name is @('<R>'),
-     the parsing function is called @('parse-<R>'),
-     with the symbol name lowercase.
-     The macro looks up the grammar rule(s) for @('<R>') in the grammar
+     the parsing function is called @('<parse>-<R>'),
+     where @('<parse>') is a symbol that must be
+     the value of a named constant called @('abnf::*def-parse-fn-name*'):
+     for example, this could be
+     the symbol @('parse') for a parser, or @('lex') for a lexer.
+     The @(tsee def-parse-rulename) macro
+     looks up the grammar rule(s) for @('<R>') in the grammar
      collecting the alternation that defines the rule name
      (including any incremental rule).
      The generated function attempts to parse each alternative in order,
@@ -60,23 +65,23 @@
      that provide disambiguation (e.g. parse the longest parsable text),
      or for greater efficiency (e.g. parse the more common alternative first).")
    (xdoc::p
-    "The generated @('parse-<R>') function attempts to parse each alternative,
+    "The generated @('<parse>-<R>') function attempts to parse each alternative,
      which is a concatenation of repetitions,
      by attempting to parse the repetitions in order.
      Repetitions are often singletons, i.e. they are effectively elements:
-     in this case, @('parse-<R>') directly attempts to parse the element.
+     in this case, @('<parse>-<R>') directly attempts to parse the element.
      An element may be a rule name @('<S>'),
-     in which case the corresponding @('parse-<S>') function is called,
+     in which case the corresponding @('<parse>-<S>') function is called,
      whose name is known because it is derived from @('<S>')
-     similarly to how the name of @('parse-<R>') is derived from @('<R>').
+     similarly to how the name of @('<parse>-<R>') is derived from @('<R>').
      For elements that are groups or options,
      or for repetitions that are not singletons,
      the name of the corresponding parsing function
      must be specified by the user.
      This is done via three ACL2 named constants called
-     @('abnf::*parse-group-fns*'),
-     @('abnf::*parse-option-fns*'), and
-     @('abnf::*parse-repetition-fns*')
+     @('abnf::*def-parse-group-fns*'),
+     @('abnf::*def-parse-option-fns*'), and
+     @('abnf::*def-parse-repetition-fns*')
      (note that they are in the @('\"ABNF\"') package).
      These are alists from groups or options or repetitions,
      represented as ABNF abstract syntax
@@ -92,15 +97,15 @@
    (xdoc::p
     "The @(tsee def-parse-*-rulename) macro generates a parsing function for
      a repetition of zero or more instances of the specified rule name.
-     It uses @('abnf::*parse-repetition-fns*') to retrieve
+     It uses @('abnf::*def-parse-repetition-fns*') to retrieve
      the name of the parsing function to generate.
      If the rule name is @('<R>'),
-     the generated function calls @('parse-<R>')
+     the generated function calls @('<parse>-<R>')
      for as long as that succeeds.")
    (xdoc::p
     "The @(tsee def-parse-group) macro is similar to @(tsee def-parse-rulename),
      but it retrieves the name of the function to generate
-     from @('abnf::*parse-group-fns*');
+     from @('abnf::*def-parse-group-fns*');
      the macro takes the group as an argument,
      which is used as a key in the alist.
      It attempts to parse each alternative,
@@ -112,10 +117,10 @@
      is similar to @(tsee def-parse-*-rulename),
      but it repeatedly uses the parsing function for the group.
      The name of the generated function is retrieved from
-     @('abnf::*parse-repetition-fns*').")
+     @('abnf::*def-parse-repetition-fns*').")
    (xdoc::p
     "The @(tsee def-parse-option) macro is similar to @(tsee def-parse-group),
-     but its name is retrieved from @('abnf::*parse-option-fns*').
+     but its name is retrieved from @('abnf::*def-parse-option-fns*').
      Furthermore, if no alternative can be parsed,
      parsing succeeds because an instance of an option may be absent in fact.")
    (xdoc::p
@@ -145,7 +150,7 @@
     "Not all the parsing functions need to be generated via the macros.
      Some may be handwritten, e.g. if they are mutually recursive.
      So long as the names of these handwritten functions
-     have the form @('parse-<R>') for a rule name @('<R>')
+     have the form @('<parse>-<R>') for a rule name @('<R>')
      or are recorded in the alists for groups, options, and repetitions,
      generated parsing functions can seamlessly call handwritten ones.")
    (xdoc::p
@@ -271,6 +276,7 @@
 
 (define def-parse-gen-code-for-element ((elem elementp)
                                         (check-error-p booleanp)
+                                        (fn-name acl2::symbolp)
                                         (group-fns alternation-symbol-alistp)
                                         (option-fns alternation-symbol-alistp))
   :returns (code true-listp)
@@ -322,8 +328,11 @@
                     check-error-p
                     '(((when (resulterrp tree)) (mv (err-push tree) input))))))
    :rulename (b* ((parse-rulename-fn
-                   (add-suffix 'parse- (str::upcase-string
-                                        (rulename->get elem.get)))))
+                   (acl2::packn-pos (list fn-name
+                                          '-
+                                          (str::upcase-string
+                                           (rulename->get elem.get)))
+                                    fn-name)))
                `(((mv tree input) (,parse-rulename-fn input))
                  ,@(and
                     check-error-p
@@ -345,6 +354,7 @@
 (define def-parse-gen-code-for-repetition
   ((rep repetitionp)
    (index natp)
+   (fn-name acl2::symbolp)
    (group-fns alternation-symbol-alistp)
    (option-fns alternation-symbol-alistp)
    (repetition-fns repetition-symbol-alistp))
@@ -388,7 +398,7 @@
                      (make-repeat-range :min 1
                                         :max (nati-finite 1))))
         (mv `(,@(def-parse-gen-code-for-element
-                  rep.element t group-fns option-fns)
+                  rep.element t fn-name group-fns option-fns)
               (,trees-index (list tree)))
             trees-index)))
     (prog2$ (raise "Repetition ~x0 not supported yet." rep)
@@ -398,6 +408,7 @@
 
 (define def-parse-gen-code-for-concatenation
   ((conc concatenationp)
+   (fn-name acl2::symbolp)
    (group-fns alternation-symbol-alistp)
    (option-fns alternation-symbol-alistp)
    (repetition-fns repetition-symbol-alistp))
@@ -412,13 +423,14 @@
      into a list of lists of trees for the concatenation."))
   (b* (((when (endp conc)) (raise "Empty concatenation."))
        ((mv code vars) (def-parse-gen-code-for-concatenation-aux
-                         conc 1 group-fns option-fns repetition-fns)))
+                         conc 1 fn-name group-fns option-fns repetition-fns)))
     `(,@code
       (treess (list ,@vars))))
   :prepwork
   ((define def-parse-gen-code-for-concatenation-aux
      ((conc concatenationp)
       (index natp)
+      (fn-name acl2::symbolp)
       (group-fns alternation-symbol-alistp)
       (option-fns alternation-symbol-alistp)
       (repetition-fns repetition-symbol-alistp))
@@ -429,12 +441,14 @@
           ((mv code1 var) (def-parse-gen-code-for-repetition
                             (car conc)
                             index
+                            fn-name
                             group-fns
                             option-fns
                             repetition-fns))
           ((mv code2 vars) (def-parse-gen-code-for-concatenation-aux
                              (cdr conc)
                              (1+ index)
+                             fn-name
                              group-fns
                              option-fns
                              repetition-fns)))
@@ -487,6 +501,7 @@
 (define def-parse-gen-code-for-alternation
   ((alt alternationp)
    (order pos-listp)
+   (fn-name acl2::symbolp)
    (group-fns alternation-symbol-alistp)
    (option-fns alternation-symbol-alistp)
    (repetition-fns repetition-symbol-alistp))
@@ -519,13 +534,14 @@
         (raise "Bad permutation ~x0." order))
        (alt (def-parse-reorder-alternation alt order))
        ((mv code vars) (def-parse-gen-code-for-alternation-aux
-                         alt 1 group-fns option-fns repetition-fns)))
+                         alt 1 fn-name group-fns option-fns repetition-fns)))
     `(b* (,@code)
        (mv (err (list :found (list ,@vars) :required ',alt)) input)))
   :prepwork
   ((define def-parse-gen-code-for-alternation-aux
      ((alt alternationp)
       (index natp)
+      (fn-name acl2::symbolp)
       (group-fns alternation-symbol-alistp)
       (option-fns alternation-symbol-alistp)
       (repetition-fns repetition-symbol-alistp))
@@ -536,13 +552,15 @@
           (treess-index (add-suffix 'treess (str::natstr index)))
           (code `(((mv ,treess-index input1)
                    (b* (,@(def-parse-gen-code-for-concatenation
-                            (car alt) group-fns option-fns repetition-fns))
+                            (car alt)
+                            fn-name group-fns option-fns repetition-fns))
                      (mv treess input)))
                   ((when (not (resulterrp ,treess-index)))
                    (mv ,treess-index input1))))
           ((mv more-code vars)
            (def-parse-gen-code-for-alternation-aux
-             (cdr alt) (1+ index) group-fns option-fns repetition-fns)))
+             (cdr alt) (1+ index)
+             fn-name group-fns option-fns repetition-fns)))
        (mv (append code more-code) (cons treess-index vars))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -582,6 +600,7 @@
   ((rulename acl2::stringp)
    (order pos-listp)
    (grammar rulelistp)
+   (fn-name acl2::symbolp)
    (group-fns alternation-symbol-alistp)
    (option-fns alternation-symbol-alistp)
    (repetition-fns repetition-symbol-alistp))
@@ -590,7 +609,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The name is @('parse-<R>'), if @('<R>') is the rule name.
+    "The name is @('<parse>-<R>'), if @('<R>') is the rule name.
      We look up the alternation that defines the rule name in the grammar,
      and we generate code to parse that,
      propagating errors,
@@ -599,7 +618,10 @@
     "We also generate linear rules about the remaining input.
      These are needed to prove the termination of recursive functions
      that call this function."))
-  (b* ((parse-rulename  (add-suffix 'parse- (str::upcase-string rulename)))
+  (b* ((parse-rulename  (acl2::packn-pos (list fn-name
+                                               '-
+                                               (str::upcase-string rulename))
+                                         fn-name))
        (alt (lookup-rulename (rulename rulename) grammar))
        (order (or order (integers-from-to 1 (len alt)))))
     `(define ,parse-rulename ((input nat-listp))
@@ -608,7 +630,7 @@
        :short ,(str::cat "Parse a @('" rulename "').")
        (b* (((mv treess input)
              ,(def-parse-gen-code-for-alternation
-                alt order group-fns option-fns repetition-fns))
+                alt order fn-name group-fns option-fns repetition-fns))
             ((when (resulterrp treess))
              (mv (err-push treess) (nat-list-fix input))))
          (mv (make-tree-nonleaf :rulename? (rulename ,rulename)
@@ -633,6 +655,7 @@
 (define def-parse-gen-function-for-group
   ((alt alternationp)
    (order pos-listp)
+   (fn-name acl2::symbolp)
    (group-fns alternation-symbol-alistp)
    (option-fns alternation-symbol-alistp)
    (repetition-fns repetition-symbol-alistp))
@@ -659,7 +682,7 @@
                          "').")
        (b* (((mv treess input)
              ,(def-parse-gen-code-for-alternation
-                alt order group-fns option-fns repetition-fns))
+                alt order fn-name group-fns option-fns repetition-fns))
             ((when (resulterrp treess))
              (mv (err-push treess) (nat-list-fix input))))
          (mv (make-tree-nonleaf :rulename? nil
@@ -684,6 +707,7 @@
 (define def-parse-gen-function-for-option
   ((alt alternationp)
    (order pos-listp)
+   (fn-name acl2::symbolp)
    (group-fns alternation-symbol-alistp)
    (option-fns alternation-symbol-alistp)
    (repetition-fns repetition-symbol-alistp))
@@ -711,7 +735,7 @@
                          "').")
        (b* (((mv treess input)
              ,(def-parse-gen-code-for-alternation
-                alt order group-fns option-fns repetition-fns))
+                alt order fn-name group-fns option-fns repetition-fns))
             ((when (resulterrp treess))
              (mv (make-tree-nonleaf
                   :rulename? nil
@@ -732,6 +756,7 @@
 
 (define def-parse-gen-function-for-repetition
   ((rep repetitionp)
+   (fn-name acl2::symbolp)
    (group-fns alternation-symbol-alistp)
    (option-fns alternation-symbol-alistp)
    (repetition-fns repetition-symbol-alistp))
@@ -759,7 +784,7 @@
                     (rest-input nat-listp))
        :short ,(str::cat "Parse a @('" (def-parse-print-repetition rep) "').")
        (b* (,@(def-parse-gen-code-for-element
-                rep.element nil group-fns option-fns)
+                rep.element nil fn-name group-fns option-fns)
             ((when (resulterrp tree)) (mv nil input))
             ((mv trees input) (,parse-repetition input)))
          (mv (cons tree trees) input))
@@ -777,6 +802,7 @@
 (define def-parse-gen-function-for-spec
   ((spec def-parse-function-spec-p)
    (grammar rulelistp)
+   (fn-name acl2::symbolp)
    (group-fns alternation-symbol-alistp)
    (option-fns alternation-symbol-alistp)
    (repetition-fns repetition-symbol-alistp))
@@ -785,13 +811,17 @@
   (def-parse-function-spec-case
     spec
     :rulename (def-parse-gen-function-for-rulename
-                spec.get spec.order grammar group-fns option-fns repetition-fns)
+                spec.get spec.order grammar
+                fn-name group-fns option-fns repetition-fns)
     :group (def-parse-gen-function-for-group
-             spec.get spec.order group-fns option-fns repetition-fns)
+             spec.get spec.order
+             fn-name group-fns option-fns repetition-fns)
     :option (def-parse-gen-function-for-option
-              spec.get spec.order group-fns option-fns repetition-fns)
+              spec.get spec.order
+              fn-name group-fns option-fns repetition-fns)
     :repetition (def-parse-gen-function-for-repetition
-                  spec.get group-fns option-fns repetition-fns)))
+                  spec.get
+                  fn-name group-fns option-fns repetition-fns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -807,10 +837,11 @@
      the grammar and the group, option, and repetition alists."))
   `(make-event (def-parse-gen-function-for-spec
                  ,spec
-                 *grammar*
-                 *parse-group-fns*
-                 *parse-option-fns*
-                 *parse-repetition-fns*)))
+                 *def-parse-grammar*
+                 *def-parse-fn-name*
+                 *def-parse-group-fns*
+                 *def-parse-option-fns*
+                 *def-parse-repetition-fns*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
