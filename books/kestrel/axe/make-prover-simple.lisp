@@ -5017,15 +5017,15 @@
               ((when erp) (mv erp nil state)))
            ;; This helper function is in :logic mode and is guard-verified:
            (,prove-dag-implication-name dag1
-                                              dag2
-                                              tactic
-                                              rule-lists
-                                              global-rules
-                                              interpreted-function-alist
-                                              no-splitp
-                                              monitor
-                                              print
-                                              state)))
+                                        dag2
+                                        tactic
+                                        rule-lists
+                                        global-rules
+                                        interpreted-function-alist
+                                        no-splitp
+                                        monitor
+                                        print
+                                        state)))
 
        ;; Attempt to prove that DAG-OR-TERM1 implies DAG-OR-TERM2.
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
