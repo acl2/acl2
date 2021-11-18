@@ -737,7 +737,7 @@
        which may result in new and updated variables.
        We defensively stop with an error if the initialization block
        terminates with @('break') or @('continue');
-       if it termnates with @('leave'), we also terminate with @('leave'),
+       if it terminates with @('leave'), we also terminate with @('leave'),
        removing extra variables and restoring the function state.
        We delegate the execution of the loop iterations
        to another ACL2 function.
