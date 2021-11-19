@@ -916,8 +916,7 @@
        than its mutually recursive companions.
        The reason is that such contextual information is always set
        when a funtion definition is checked.
-       In particular, as explained in @(tsee make-vars-inaccessible),
-       there is no variable table to pass.")
+       In particular, there is no variable table to pass.")
      (xdoc::p
       "This ACL2 function does not need to return anything.
        Any variable table internal to the function's body
