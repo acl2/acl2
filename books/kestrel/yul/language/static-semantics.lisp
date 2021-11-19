@@ -39,29 +39,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defunit wellformed
-  :short "Fixtype of the well-formedness indicator."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is returned by the ACL2 static semantic checking functions
-     when an abstract syntactic entity passes the static semantic checks
-     and there is no additional information to return.
-     When the static semantic checks fail,
-     those functions return errors instead;
-     see @(tsee wellformed-result)."))
-  :value :wellformed
-  :pred wellformedp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult wellformed-result
-  :short "Fixtype of errors and the @(tsee wellformed) indicator."
-  :ok wellformed
-  :pred wellformed-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod funtype
   :short "Fixtype of function types."
   :long
@@ -295,7 +272,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-identifier ((iden identifierp))
-  :returns (wf? wellformed-resultp)
+  :returns (noinfo resulterr-optionp)
   :short "Check if an identifier is well-formed."
   :long
   (xdoc::topstring
@@ -313,25 +290,25 @@
     (if (and (consp chars)
              (acl2::alpha/uscore/dollar-char-p (car chars))
              (acl2::alpha/digit/uscore/dollar-charlist-p (cdr chars)))
-        :wellformed
+        nil
       (err (list :bad-identifier (identifier-fix iden)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-identifier-list ((idens identifier-listp))
-  :returns (wf? wellformed-resultp)
+  :returns (noinfo resulterr-optionp)
   :short "Check if all the identifiers in a list are well-formed."
-  (b* (((when (endp idens)) :wellformed)
+  (b* (((when (endp idens)) nil)
        ((ok &) (check-identifier (car idens)))
        ((ok &) (check-identifier-list (cdr idens))))
-    :wellformed)
+    nil)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-path ((path pathp) (vartab vartablep))
-  :returns (wf? wellformed-resultp)
+  :returns (noinfo resulterr-optionp)
   :short "Check if a path is well-formed."
   :long
   (xdoc::topstring
@@ -361,13 +338,13 @@
        (var (car idens))
        ((unless (check-var var vartab))
         (err (list :variable-not-found var))))
-    :wellformed)
+    nil)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-literal ((lit literalp))
-  :returns (wf? wellformed-resultp)
+  :returns (noinfo resulterr-optionp)
   :short "Check if a literal is well-formed."
   :long
   (xdoc::topstring
@@ -387,7 +364,7 @@
      cannot contain (unescaped) double quotes.
      Those are simply syntactic restrictions."))
   (b* (((ok &) (eval-literal lit)))
-    :wellformed)
+    nil)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -549,7 +526,7 @@
                              (value expressionp)
                              (vartab vartablep)
                              (funtab funtablep))
-  :returns (wf? wellformed-resultp)
+  :returns (noinfo resulterr-optionp)
   :short "Check if a single assignment is well-formed."
   :long
   (xdoc::topstring
@@ -566,7 +543,7 @@
        ((ok results) (check-expression value vartab funtab))
        ((unless (= results 1))
         (err (list :assign-single-var-mismatch (path-fix target) results))))
-    :wellformed)
+    nil)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -575,7 +552,7 @@
                             (value funcallp)
                             (vartab vartablep)
                             (funtab funtablep))
-  :returns (wf? wellformed-resultp)
+  :returns (noinfo resulterr-optionp)
   :short "Check if a multiple assignment is well-formed."
   :long
   (xdoc::topstring
@@ -597,15 +574,15 @@
        ((unless (= results (len targets)))
         (err (list :assign-single-var-mismatch
                (path-list-fix targets) results))))
-    :wellformed)
+    nil)
   :hooks (:fix)
 
   :prepwork
   ((define check-assign-multi-aux ((targets path-listp)
                                    (vartab vartablep))
-     :returns (wf? wellformed-resultp)
+     :returns (noinfo resulterr-optionp)
      :parents nil
-     (b* (((when (endp targets)) :wellformed)
+     (b* (((when (endp targets)) nil)
           ((ok &) (check-path (car targets) vartab)))
        (check-assign-multi-aux (cdr targets) vartab))
      :hooks (:fix))))
@@ -1036,7 +1013,7 @@
   (define check-fundef ((fundef fundefp)
                         (varvis identifier-setp)
                         (funtab funtablep))
-    :returns (wf? wellformed-resultp)
+    :returns (noinfo resulterr-optionp)
     :short "Check if a function definition is well-formed."
     :long
     (xdoc::topstring
@@ -1067,7 +1044,7 @@
                               vartab
                               varvis
                               funtab)))
-      :wellformed)
+      nil)
     :measure (fundef-count fundef))
 
   :prepwork
