@@ -134,8 +134,7 @@
      The function table already contains the functions
      already accessible just before the block start,
      which are also accessible in the block,
-     so extending the function table (as opposed to creating a new one)
-     is appropriate here.")
+     so we must extend the function table here.")
    (xdoc::p
     "As soon as a duplicate function is found, we stop with an error.")
    (xdoc::p
@@ -176,9 +175,8 @@
      including sub-blocks,
      but it is not accessible in
      function definitions in the block or sub-blocks.
-     Variables that are visible but inaccessible are represented
-     not in the variable tables defined here;
-     see @(tsee add-var)."))
+     Variables that are visible but inaccessible
+     are not represented in the variable tables defined here."))
   :elt-type identifier
   :elementp-of-nil nil
   :pred vartablep)
@@ -200,27 +198,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-var ((var identifierp) (vartab vartablep) (varvis identifier-setp))
+(define add-var ((var identifierp) (vartab vartablep))
   :returns (vartab? vartable-resultp)
   :short "Add a variable to a variable table."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Besides the variable and the variable table,
-     this ACL2 function also takes as argument the set of variables
-     that are visible but not accessible.
-     The reason is that a new variable is allowed only if
-     it does not shadow any visible variable, whether accessible or not.
-     All of the variables in @('vartab') and @('varvis')
-     are actually visible (not only the ones in @('varvis')),
-     but only the ones in @('vartab') are also accessible,
-     while the ones in @('varvis') are visible but not accessible.
-     See [Yul: Specification of Yul: Scoping Rules]."))
+    "If a variable with the same name is already in the table,
+     an error is returned."))
   (b* ((var (identifier-fix var))
-       (vartab (vartable-fix vartab))
-       (varvis (identifier-set-fix varvis)))
-    (if (or (set::in var vartab)
-            (set::in var varvis))
+       (vartab (vartable-fix vartab)))
+    (if (set::in var vartab)
         (err (list :duplicate-variable var))
       (set::insert var vartab)))
   :hooks (:fix))
@@ -228,8 +216,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define add-vars ((vars identifier-listp)
-                  (vartab vartablep)
-                  (varvis identifier-setp))
+                  (vartab vartablep))
   :returns (vartab? vartable-resultp)
   :short "Add (a list of) variables to a variable table."
   :long
@@ -240,33 +227,8 @@
    (xdoc::p
     "This lifts @(tsee add-var) to lists."))
   (b* (((when (endp vars)) (vartable-fix vartab))
-       ((ok vartab) (add-var (car vars) vartab varvis)))
-    (add-vars (cdr vars) vartab varvis))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define make-vars-inaccessible ((vartab vartablep) (varvis identifier-setp))
-  :returns (new-varvis identifier-setp)
-  :short "Add the variables from the variable table
-          to the set of visible but inaccessible variables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "See @(tsee add-var) for a description of
-     what @('vartab') and @('varvis') represent.
-     This is used just before checking a function definition.
-     Since a function body cannot access
-     variables declared outside the function,
-     but those variables are still visible and cannot be shadowed,
-     we add the variables in the variable table
-     to the set of visible but inaccessible variables."))
-  (set::union (vartable-fix vartab) (identifier-set-fix varvis))
-  :prepwork
-  ((defrulel lemma
-     (implies (vartablep x)
-              (identifier-setp x))
-     :enable (identifier-setp vartablep)))
+       ((ok vartab) (add-var (car vars) vartab)))
+    (add-vars (cdr vars) vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -461,7 +423,6 @@
 (define check-variable-single ((name identifierp)
                                (init expression-optionp)
                                (vartab vartablep)
-                               (varvis identifier-setp)
                                (funtab funtablep))
   :returns (vartab? vartable-resultp)
   :short "Check if a single variable declaration is well-formed."
@@ -472,13 +433,13 @@
      see that function's documentation for background.")
    (xdoc::p
     "The name of the variable must be a well-formed identifier
-     that is not visible (including accessible).
+     that is not already in the variable table.
      The expression is checked if present,
      and it must return exactly one result."))
   (b* ((name (identifier-fix name))
        (init (expression-option-fix init))
        ((ok &) (check-identifier name))
-       ((ok vartab) (add-var name vartab varvis))
+       ((ok vartab) (add-var name vartab))
        ((when (not init)) vartab)
        ((ok results) (check-expression init vartab funtab))
        ((unless (= results 1))
@@ -491,7 +452,6 @@
 (define check-variable-multi ((names identifier-listp)
                               (init funcall-optionp)
                               (vartab vartablep)
-                              (varvis identifier-setp)
                               (funtab funtablep))
   :returns (vartab? vartable-resultp)
   :short "Check if a multiple variable declaration is well-formed."
@@ -502,7 +462,7 @@
      see that function's documentation for background.")
    (xdoc::p
     "The name of the variables must be well-formed identifiers
-     that are not visible (including accessible).
+     that are not already in the variable table.
      They must also be distinct and at least two.
      The expression is checked if present,
      and it must return the same number of results
@@ -510,7 +470,7 @@
   (b* ((names (identifier-list-fix names))
        (init (funcall-option-fix init))
        ((ok &) (check-identifier-list names))
-       ((ok vartab-new) (add-vars names vartab varvis))
+       ((ok vartab-new) (add-vars names vartab))
        ((unless (>= (len names) 2))
         (err (list :declare-zero-one-var names)))
        ((when (not init)) vartab-new)
@@ -535,10 +495,7 @@
      for now we require the path to be a singleton;
      see discussion there about non-singleton paths.")
    (xdoc::p
-    "We check the expression, and and ensure that it returns one result.")
-   (xdoc::p
-    "This only depends on the (non-extended) variable table,
-     which is unchanged and so we do not return an updated one."))
+    "We check the expression, and and ensure that it returns one result."))
   (b* (((ok &) (check-path target vartab))
        ((ok results) (check-expression value vartab funtab))
        ((unless (= results 1))
@@ -563,10 +520,7 @@
    (xdoc::p
     "We check the function call, and ensure that it returns
      a number of results equal to the number of variables.
-     The variables must be two or more.")
-   (xdoc::p
-    "This only depends on the (non-extended) variable table,
-     which is unchanged and so we do not return an updated one."))
+     The variables must be two or more."))
   (b* (((ok &) (check-assign-multi-aux targets vartab))
        ((unless (>= (len targets) 2))
         (err (list :assign-zero-one-path (path-list-fix targets))))
@@ -622,9 +576,7 @@
    (xdoc::p
     "These are checked in the context of
      a variable table for visible and accessible variable @('vartab'),
-     a set of visible but inaccessible variables @('varvis'),
-     and a function table @('funtab').
-     Also see @(tsee add-var) about @('vartab') and @('varvis').")
+     and a function table @('funtab').")
    (xdoc::p
     "A successful check returns
      a set of possible modes in which execution may complete.
@@ -644,7 +596,6 @@
 
   (define check-statement ((stmt statementp)
                            (vartab vartablep)
-                           (varvis identifier-setp)
                            (funtab funtablep))
     :returns (vartab-modes vartable-modes-resultp)
     :short "Check if a statement is well-formed."
@@ -747,12 +698,8 @@
        the function definitions in a block are collected,
        and used to extend the function table,
        before processing the statements in a block.
-       Since a function body cannot access
-       variables declared outside the function,
-       we make the variables in the variable table inaccessible,
-       and then we use a separate mutually recursive ACL2 function
-       that checks function definitions.
-       That ACL2 function returns nothing in case of success,
+       The function definition is checked by a separate ACL2 function,
+       which returns nothing in case of success,
        so here we return the outside variable table unchanged:
        a function definition does not modify the variable table.
        At run time, a function definition is essentially a no-op,
@@ -760,14 +707,13 @@
     (statement-case
      stmt
      :block
-     (b* (((ok modes) (check-block stmt.get vartab varvis funtab)))
+     (b* (((ok modes) (check-block stmt.get vartab funtab)))
        (make-vartable-modes :variables (vartable-fix vartab)
                             :modes modes))
      :variable-single
      (b* (((ok vartab) (check-variable-single stmt.name
                                               stmt.init
                                               vartab
-                                              varvis
                                               funtab)))
        (make-vartable-modes :variables vartab
                             :modes (set::insert (mode-regular) nil)))
@@ -775,7 +721,6 @@
      (b* (((ok vartab) (check-variable-multi stmt.names
                                              stmt.init
                                              vartab
-                                             varvis
                                              funtab)))
        (make-vartable-modes :variables vartab
                             :modes (set::insert (mode-regular) nil)))
@@ -799,7 +744,6 @@
            (err (list :multi-valued-if-test stmt.test)))
           ((ok modes) (check-block stmt.body
                                    vartab
-                                   varvis
                                    funtab)))
        (make-vartable-modes :variables (vartable-fix vartab)
                             :modes (set::insert (mode-regular) modes)))
@@ -808,7 +752,6 @@
           ((ok funtab) (add-funtypes-in-statement-list stmts funtab))
           ((ok vartab-modes) (check-statement-list stmts
                                                    vartab
-                                                   varvis
                                                    funtab))
           (vartab1 (vartable-modes->variables vartab-modes))
           (init-modes (vartable-modes->modes vartab-modes))
@@ -821,7 +764,6 @@
            (err (list :multi-valued-for-test stmt.test)))
           ((ok update-modes) (check-block stmt.update
                                           vartab1
-                                          varvis
                                           funtab))
           ((when (set::in (mode-break) update-modes))
            (err (list :break-in-loop-update stmt.update)))
@@ -829,7 +771,6 @@
            (err (list :continue-in-loop-update stmt.update)))
           ((ok body-modes) (check-block stmt.body
                                         vartab1
-                                        varvis
                                         funtab))
           (modes (if (or (set::in (mode-leave) init-modes)
                          (set::in (mode-leave) update-modes)
@@ -848,11 +789,9 @@
            (err (list :duplicate-switch-cases (statement-fix stmt))))
           ((ok cases-modes) (check-swcase-list stmt.cases
                                                vartab
-                                               varvis
                                                funtab))
           ((ok default-modes) (check-block-option stmt.default
                                                   vartab
-                                                  varvis
                                                   funtab)))
        (make-vartable-modes :variables (vartable-fix vartab)
                             :modes (set::union cases-modes default-modes)))
@@ -866,8 +805,7 @@
      (make-vartable-modes :variables (vartable-fix vartab)
                           :modes (set::insert (mode-continue) nil))
      :fundef
-     (b* ((varvis (make-vars-inaccessible vartab varvis))
-          ((ok &) (check-fundef stmt.get varvis funtab)))
+     (b* (((ok &) (check-fundef stmt.get funtab)))
        (make-vartable-modes :variables (vartable-fix vartab)
                             :modes (set::insert (mode-regular) nil))))
     :measure (statement-count stmt)
@@ -875,7 +813,6 @@
 
   (define check-statement-list ((stmts statement-listp)
                                 (vartab vartablep)
-                                (varvis identifier-setp)
                                 (funtab funtablep))
     :returns (vartab-modes vartable-modes-resultp)
     :short "Check if a list of statements is well-formed."
@@ -900,13 +837,11 @@
                                :modes (set::insert (mode-regular) nil)))
          ((ok vartab-modes) (check-statement (car stmts)
                                              vartab
-                                             varvis
                                              funtab))
          (vartab (vartable-modes->variables vartab-modes))
          (first-modes (vartable-modes->modes vartab-modes))
          ((ok vartab-modes) (check-statement-list (cdr stmts)
                                                   vartab
-                                                  varvis
                                                   funtab))
          (vartab (vartable-modes->variables vartab-modes))
          (rest-modes (vartable-modes->modes vartab-modes))
@@ -919,7 +854,6 @@
 
   (define check-block ((block blockp)
                        (vartab vartablep)
-                       (varvis identifier-setp)
                        (funtab funtablep))
     :returns (modes mode-set-resultp)
     :short "Check if a block is well-formed."
@@ -939,14 +873,12 @@
          ((ok funtab) (add-funtypes-in-statement-list stmts funtab))
          ((ok vartab-modes) (check-statement-list stmts
                                                   vartab
-                                                  varvis
                                                   funtab)))
       (vartable-modes->modes vartab-modes))
     :measure (block-count block))
 
   (define check-block-option ((block? block-optionp)
                               (vartab vartablep)
-                              (varvis identifier-setp)
                               (funtab funtablep))
     :returns (modes mode-set-resultp)
     :short "Check if an optional block is well-formed."
@@ -961,13 +893,11 @@
      :none (set::insert (mode-regular) nil)
      :some (check-block (block-option-some->val block?)
                         vartab
-                        varvis
                         funtab))
     :measure (block-option-count block?))
 
   (define check-swcase ((case swcasep)
                         (vartab vartablep)
-                        (varvis identifier-setp)
                         (funtab funtablep))
     :returns (modes mode-set-resultp)
     :short "Check if a case is well-formed."
@@ -980,13 +910,11 @@
          ((ok &) (check-literal case.value)))
       (check-block case.body
                    vartab
-                   varvis
                    funtab))
     :measure (swcase-count case))
 
   (define check-swcase-list ((cases swcase-listp)
                              (vartab vartablep)
-                             (varvis identifier-setp)
                              (funtab funtablep))
     :returns (modes mode-set-resultp)
     :short "Check if a list of cases is well-formed."
@@ -1001,17 +929,14 @@
     (b* (((when (endp cases)) nil)
          ((ok first-modes) (check-swcase (car cases)
                                          vartab
-                                         varvis
                                          funtab))
          ((ok rest-modes) (check-swcase-list (cdr cases)
                                              vartab
-                                             varvis
                                              funtab)))
       (set::union first-modes rest-modes))
     :measure (swcase-list-count cases))
 
   (define check-fundef ((fundef fundefp)
-                        (varvis identifier-setp)
                         (funtab funtablep))
     :returns (noinfo resulterr-optionp)
     :short "Check if a function definition is well-formed."
@@ -1037,12 +962,9 @@
        Note that the construction will detect and reject any duplicates.
        Then we check the function's body."))
     (b* (((fundef fundef) fundef)
-         ((ok vartab) (add-vars (append fundef.inputs fundef.outputs)
-                                nil
-                                varvis))
+         ((ok vartab) (add-vars (append fundef.inputs fundef.outputs) nil))
          ((ok &) (check-block fundef.body
                               vartab
-                              varvis
                               funtab)))
       nil)
     :measure (fundef-count fundef))
