@@ -18,10 +18,8 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "numeric-lists"))
-
-;x must be a nodenum or quotep:
-;(defmacro isconstant (x) `(consp ,x))
 
  ;can we deprecate this?  or split for var terms and all others - could just add term to the dag and use the main routine
 ;do we need both this and the version for a nodenum?
@@ -44,7 +42,8 @@
                               (if (consp nodenums-to-assume-false)
                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (maxelem nodenums-to-assume-false)))
                                 t))
-                  :guard-hints (("Goal" :in-theory (e/d (CAR-BECOMES-NTH-OF-0) (natp))))))
+                  :guard-hints (("Goal" :in-theory (e/d (CAR-BECOMES-NTH-OF-0)
+                                                        (natp))))))
   (if (endp nodenums-to-assume-false)
       nil ;; failed to rewrite TERM
     (let* ((nodenum-to-assume-false (first nodenums-to-assume-false))
@@ -154,7 +153,8 @@
                                                   NATP-OF-+-OF-1)
                                                  (natp
                                                   true-listp-of-dargs-of-aref1-when-pseudo-dag-arrayp
-                                                  true-listp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple))))))
+                                                  true-listp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple
+                                                  consp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple-iff))))))
   (if (endp nodenums-to-assume-false)
       nil ;; failure to rewrite NODENUM
     (let* ((nodenum-to-assume-false (first nodenums-to-assume-false)))
@@ -247,6 +247,7 @@
                             ;;quotep
                             myquotep
                             ;;MAXELEM-OF-CONS
+                            consp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple-iff
                             )))))
 
 ;; simple consequence needed for proofs about the prover

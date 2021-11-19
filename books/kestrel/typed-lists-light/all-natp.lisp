@@ -45,3 +45,10 @@
                 (consp x))
            (integerp (car x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
+
+(defthmd natp-of-nth-when-all-natp-type
+  (implies (and (all-natp x)
+                (< n (len x))
+                (natp n))
+           (natp (nth n x)))
+  :rule-classes :type-prescription)

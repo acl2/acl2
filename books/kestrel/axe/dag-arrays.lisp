@@ -231,6 +231,12 @@
   ;         :cases ((symbolp (aref1 dag-array-name dag-array n)))
            :in-theory (e/d (pseudo-dag-arrayp-aux) (bounded-dag-exprp)))))
 
+(defthm consp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple-iff
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n))
+                (natp n))
+           (iff (consp (dargs (aref1 dag-array-name dag-array n)))
+                (dargs (aref1 dag-array-name dag-array n)))))
+
 (defthm all-dargp-less-than-of-dargs-of-aref1
   (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array m)
                 (<= n m)
