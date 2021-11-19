@@ -11,6 +11,7 @@
 (in-package "YUL")
 
 (include-book "static-safety-checking")
+(include-book "static-shadowing-checking")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
