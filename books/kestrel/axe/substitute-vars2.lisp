@@ -12,9 +12,10 @@
 
 (in-package "ACL2")
 
-(include-book "substitute-vars")
+(include-book "kestrel/utilities/forms" :dir :system)
+(include-book "rebuild-literals")
+(include-book "crunch-dag2")
 (include-book "remove-duplicates-from-sorted-list")
-(include-book "rebuild-nodes2") ;reduce
 (include-book "../acl2-arrays/typed-acl2-arrays")
 (local (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -31,6 +32,14 @@
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/arithmetic-light/max" :dir :system))
+
+;; See also substitute-vars.lisp
+
+;; for speed:
+(local (in-theory (disable strip-caddrs
+                           default-cdr
+                           nth
+                           nat-listp)))
 
 ;; ACC contains the smallest items, in decreasing order.
 (defund merge-<-and-remove-dups-aux (l1 l2 acc)
@@ -426,7 +435,7 @@
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< literal-nodenum dag-len))
            (natp (mv-nth 2 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))))
-  :hints (("Goal" :in-theory (enable check-for-var-subst-literal2 len-of-0-and-len consp-of-cdr))))
+  :hints (("Goal" :in-theory (enable check-for-var-subst-literal2 <-of-0-and-len consp-of-cdr))))
 
 (defthm <-mv-nth-2-of-check-for-var-subst-literal2
   (implies (and (mv-nth 0 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
@@ -435,7 +444,7 @@
                 (< literal-nodenum dag-len))
            (< (mv-nth 2 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
               dag-len))
-  :hints (("Goal" :in-theory (enable check-for-var-subst-literal2 len-of-0-and-len consp-of-cdr))))
+  :hints (("Goal" :in-theory (enable check-for-var-subst-literal2 <-of-0-and-len consp-of-cdr))))
 
 (defthm dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2
   (implies (and (mv-nth 0 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
@@ -444,7 +453,7 @@
                 (< literal-nodenum dag-len))
            (dargp-less-than (mv-nth 3 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
                             dag-len))
-  :hints (("Goal" :in-theory (enable check-for-var-subst-literal2 len-of-0-and-len consp-of-cdr))))
+  :hints (("Goal" :in-theory (enable check-for-var-subst-literal2 <-of-0-and-len consp-of-cdr))))
 
 (defthm dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2-gen
   (implies (and (mv-nth 0 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
@@ -565,7 +574,9 @@
                                dag-len))
   :hints (("Goal" :in-theory (enable subst-candidates strip-cadrs largest-non-quotep check-for-var-subst-literal2
                                      find-var-and-expr-to-subst2
-                                     NATP-OF-+-OF-1))))
+                                     NATP-OF-+-OF-1
+                                     nth ;todo: why?
+                                     ))))
 
 
 ;; Maps each node of a candidate var to the sorted lis of the nodenums of the
@@ -576,6 +587,14 @@
   (and (nat-listp val)
        (no-duplicatesp-equal val)
        (sortedp-<= val)))
+
+(defthm all-rationalp-of-aref1-when-candidate-deps-arrayp
+  (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
+                (< n (alen1 'candidate-deps-array candidate-deps-array)) ;drop?
+                (natp n) ; drop?
+                )
+           (all-rationalp (aref1 'candidate-deps-array candidate-deps-array n)))
+  :hints (("Goal" :in-theory (enable all-rationalp-when-nat-listp))))
 
 (defthm <=-of-maxelem-of-strip-cars-of-cdr
   (implies (consp (cdr x))
@@ -1170,6 +1189,8 @@
                 t ;changep
                 new-literal-nodenums
                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))))
+
+;; todo: move these:
 
 (defthm len-of-set-difference-equal
   (<= (len (set-difference-equal x y))

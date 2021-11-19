@@ -45,14 +45,6 @@
                            (all-bounded-axe-treep items bound))
            :in-theory (enable all-bounded-axe-treep all-dargp-less-than))))
 
-(defthm true-listp-of-dargs-when-dag-exprp0
-  (implies (and (dag-exprp0 expr)
-                ;; (consp expr)
-                ;; (not (equal 'quote (car expr)))
-                )
-           (true-listp (dargs expr)))
-  :hints (("Goal" :in-theory (enable dag-exprp0))))
-
 (local (in-theory (disable symbol-listp))) ; prevent inductions
 
 ;;;

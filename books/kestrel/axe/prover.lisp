@@ -44,6 +44,7 @@
 (include-book "replace-using-assumptions")
 (include-book "fixup-context")
 (include-book "kestrel/terms-light/negate-terms" :dir :system)
+(include-book "make-instantiation-code-simple")
 ;(local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -123,6 +124,9 @@
   (and (alistp options)
        (subsetp-eq (strip-cars options) '(;; :no-splitp ;whether to split into cases
                                           :no-stp))))
+
+;; Make a version of instantiate-hyp, etc that use the basic evaluator:
+(make-instantiation-code-simple basic axe-evaluator-basic)
 
 ;todo
 (defttag invariant-risk)

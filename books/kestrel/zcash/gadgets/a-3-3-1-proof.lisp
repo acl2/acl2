@@ -96,6 +96,25 @@
 ;;                 pfield::add-commutative-axe
 ;;                 )))
 
+;; TODO: Have the prover generate this function (or something like this that uses DAGs) as it runs.
+(defund a-3-3-1-valuation (u/num v/num)
+  (acons 'u/num u/num
+         (acons 'v/num v/num
+                ;; this is the argument to the
+                ;; answer literal in the failed
+                ;; proof attempt just above,
+                ;; except with '<p> replaced by
+                ;; (zcash::jubjub-q):
+                (ACONS 'POINT_INTERPRETATION/U^2/SQUARED_NUM
+                       (MUL U/NUM U/NUM (zcash::jubjub-q))
+                       (ACONS 'POINT_INTERPRETATION/V^2/SQUARED_NUM
+                              (MUL V/NUM V/NUM (zcash::jubjub-q))
+                              (ACONS 'POINT_INTERPRETATION/U^2_V^2/PRODUCT_NUM
+                                     (MUL (MUL U/NUM U/NUM (zcash::jubjub-q))
+                                          (MUL V/NUM V/NUM (zcash::jubjub-q))
+                                          (zcash::jubjub-q))
+                                     'NIL))))))
+
 ;; Backward Direction.  If u/num and v/num satisfy the spec, and are field
 ;; elements, then there is a valuation, namely the one given explictly below,
 ;; that gives the right values to u/num and v/num and that satisfies the entire
@@ -103,28 +122,15 @@
 (acl2::prove-implication-with-r1cs-prover
  ;; Assumption:
  `(and (zcash::affine-edwards-spec u/num v/num)
+       ;; This formulation is overkill here but is needed for efficient lookup if there are many vars:
        ,(pfield::gen-fe-listp-assumption '(u/num v/num)
                                          '(zcash::jubjub-q)))
  ;; Conclusion:
  '(r1cs::r1cs-holdsp *a-3-3-1-r1cs*
-                     (acons 'u/num u/num
-                            (acons 'v/num v/num
-                                   ;; this is the argument to the
-                                   ;; answer literal in the failed
-                                   ;; proof attempt just above,
-                                   ;; except with '<p> replaced by
-                                   ;; (zcash::jubjub-q):
-                                   (ACONS 'POINT_INTERPRETATION/U^2/SQUARED_NUM
-                                          (MUL U/NUM U/NUM (zcash::jubjub-q))
-                                          (ACONS 'POINT_INTERPRETATION/V^2/SQUARED_NUM
-                                                 (MUL V/NUM V/NUM (zcash::jubjub-q))
-                                                 (ACONS 'POINT_INTERPRETATION/U^2_V^2/PRODUCT_NUM
-                                                        (MUL (MUL U/NUM U/NUM (zcash::jubjub-q))
-                                                             (MUL V/NUM V/NUM (zcash::jubjub-q))
-                                                             (zcash::jubjub-q))
-                                                        'NIL))))))
+                     (a-3-3-1-valuation u/num v/num))
  :monitor '(pfield::mul-of-1-arg1 pfield::fep-of-mul)
- :rule-lists '(((r1cs::R1CS-RULES)
+ :rule-lists '((a-3-3-1-valuation
+                (r1cs::R1CS-RULES)
                 acl2::lookup-equal-of-acons-same
                 acl2::lookup-equal-of-acons-diff
                 pfield::add-of-0-arg1

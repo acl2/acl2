@@ -17,13 +17,9 @@
 ;; This version uses the basic evaluator.
 
 (include-book "evaluator-basic")
-(include-book "make-instantiation-code-simple")
 (include-book "make-instantiation-code-simple-free-vars")
 (include-book "make-instantiation-code-simple-no-free-vars")
 (include-book "make-instantiation-code-simple-no-free-vars2")
-
-;; Make a version of instantiate-hyp, etc that use the basic evaluator:
-(make-instantiation-code-simple basic axe-evaluator-basic)
 
 ;; Make a version for when there are free vars:
 (make-instantiation-code-simple-free-vars basic axe-evaluator-basic)

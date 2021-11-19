@@ -13,11 +13,11 @@
 (in-package "ACL2")
 
 ;; This book contains a variant of the main tool that skips a check by taking
-;; advantage of a stronger guard: that all vars are bound in the alist:
+;; advantage of a stronger guard: that all vars are bound in the alist.
 
 ;; This book provides a tool that, given the name of an evaluator, makes a hyp
-;; instantiation for that uses it.  This book is for the case where the hyp has
-;; no free vars (vars not bound in the alist).
+;; instantiation function that uses it.  This book is for the case where the
+;; hyp has no free vars (vars not bound in the alist).
 
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
 (include-book "all-dargp-less-than")
