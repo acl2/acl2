@@ -34,6 +34,7 @@
                         fty::ok
                         fty::resulterr
                         fty::resulterrp
+                        fty::resulterr-optionp
                         fty::stack
                         str::hex-digit-char
                         ubyte256
