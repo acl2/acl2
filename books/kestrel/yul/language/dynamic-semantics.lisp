@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax")
 (include-book "literal-evaluation")
+(include-book "modes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -413,32 +414,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum mode
-  :short "Fixtype of modes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "[Yul: Specification of Yul: Formal Specification] introduces
-     the notion of mode, which indicates how a statement completes execution.")
-   (xdoc::p
-    "We disable the executable counterparts of the constructors of this type,
-     because we want to treat them abstractly.
-     Their definition is already disabled by default, as it should,
-     but the fact that their executable counterpart is enabled
-     defeats the disabling of their definition, given that they are nullary."))
-  (:regular ())
-  (:break ())
-  (:continue ())
-  (:leave ())
-  :pred modep
-  ///
-  (in-theory (disable (:e mode-regular)
-                      (:e mode-break)
-                      (:e mode-continue)
-                      (:e mode-leave))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod eoutcome
   :short "Fixtype of expression outcomes."
   :long
@@ -762,7 +737,7 @@
        which may result in new and updated variables.
        We defensively stop with an error if the initialization block
        terminates with @('break') or @('continue');
-       if it termnates with @('leave'), we also terminate with @('leave'),
+       if it terminates with @('leave'), we also terminate with @('leave'),
        removing extra variables and restoring the function state.
        We delegate the execution of the loop iterations
        to another ACL2 function.

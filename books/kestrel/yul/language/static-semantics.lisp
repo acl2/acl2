@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax")
 (include-book "literal-evaluation")
+(include-book "modes")
 
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/defunit" :dir :system)
@@ -611,6 +612,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod vartable-modes
+  :short "Fixtype of pairs consisting of a variable table and a set of modes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Values of this fixtype capture the information calculated
+     by the successful check of statements.
+     The variable table captures the updated variable table.
+     The set of modes captures the possible ways in which
+     the statement may terminate."))
+  ((variables vartable)
+   (modes mode-set))
+  :tag :vartable-modes
+  :pred vartable-modes-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult vartable-modes-result
+  :short "Fixtype of errors and
+          pairs consisting of a variable table and a set of modes."
+  :ok vartable-modes
+  :pred vartable-modes-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines check-statements/blocks/cases/fundefs
   :short "Check if statements, blocks, cases, and function definitions
           are well-formed."
@@ -623,103 +649,96 @@
      and a function table @('funtab').
      Also see @(tsee add-var) about @('vartab') and @('varvis').")
    (xdoc::p
-    "In order to check that a @('leave') statement is only used in a function,
-     according to [Yul: Specification of Yul: Restrictions on the Grammar],
-     the context also includes a flag indicating
-     whether we are in a function or not.
-     This flag may be initially unset
-     (e.g. in the top-level code block of a Yul object
-     [Yul: Specification of Yul Object]),
-     but then once it is set, it stays set as we go into the code.")
-   (xdoc::p
-    "We also need a flag indicating whether
-     we are in a loop's initialization block.
-     This is so we can ensure that no functions are defined in the block
-     [Yul: Specification of Yul: Restrictions on the Grammar].
-     The flag may be initially unset
-     (e.g. in the top-level code block of a Yul object
-     [Yul: Specification of Yul Object]),
-     but it is set as soon as we go into a loop initialization block.
-     From there, it always stays set as we go more inside the code;
-     even if we encounter an inner loop,
-     and eventually we go into its update or body block,
-     we are still in the initialization block of the outer loop,
-     and still no function definitions are allowed,
-     and thus we need to keep that flag set.
-     Note that, before going into a function definition's body block,
-     we ensure that the flag is unset
-     (i.e. we ensure that no functions are defined in the block),
-     so we preserve its value also in this case.
-     In summary, the flag is unconditionally set
-     when entering a loop initialization block,
-     and always preserved whenever we go into inner blocks.
-     This flag is not passed to the ACL2 function
-     that checks function definitions,
-     because as explained above the flag must be unset
-     in order for the function definition to be allowed,
-     and so it being unset carries no information.")
-   (xdoc::p
-    "We also need a flag indicating whether
-     we are in a loop's body block.
-     Even though the preceding sentence is phrased analogously to
-     the sentence about the loop initialization block above,
-     this flag is actually treated differently.
-     This flag serves to determine whether
-     @('break') and @('continue') are allowed,
-     which is the case if we are in a loop block or sub-blocks,
-     but not in initialization or update blocks of inner loops
-     [Yul: Specification of Yul: Restrictions on the Grammar].
-     This means that, unlike the loop initialization block flag,
-     this flag is unset when we enter a loop initialization or update block,
-     it is set when we enter a loop body block,
-     and is preserved when entering other kinds of blocks.
-     The flag is not passed to the ACL2 function
-     that checks function definitions,
-     because as we enter a function body we are not in a loop,
-     i.e. the flag is implicitly unset there."))
+    "A successful check returns
+     a set of possible modes in which execution may complete.
+     The set of modes is used to check the conditions on
+     the occurrence of @('leave'), @('break'), and @('continue') statements
+     described in [Yul: Specification of Yul: Restrictions on the Grammar].
+     The conditions there are phrased in terms of occurrences of constructs,
+     but it is more convenient, in this formal static semantics,
+     to check these conditions by putting restrictions on
+     the possible modes statically calculated
+     for statements and related constructs.
+     This formulation is also more easily related to the dynamic semantics.
+     At some point we may also formalize the conditions on
+     the occurrence of @('leave'), @('break'), and @('continue') statements
+     described in [Yul: Specification of Yul: Restrictions on the Grammar],
+     and show that they are equivalent to our formulation here."))
 
   (define check-statement ((stmt statementp)
                            (vartab vartablep)
                            (varvis identifier-setp)
-                           (funtab funtablep)
-                           (in-function booleanp)
-                           (in-loop-init booleanp)
-                           (in-loop-body booleanp))
-    :returns (vartab? vartable-resultp)
+                           (funtab funtablep))
+    :returns (vartab-modes vartable-modes-resultp)
     :short "Check if a statement is well-formed."
     :long
     (xdoc::topstring
      (xdoc::p
-      "If successful,
-       we return a possibly updated variable table.
-       The table is updated only via variable declarations,
+      "If checking is successful, we return an updated variable table
+       and a set of possible termination modes.")
+     (xdoc::p
+      "The variable table is updated only via variable declarations,
        while the other kinds of statements leave the table unchanged.
        The table may be changed in blocks nested in the statement,
-       but those changes do not surface outside those blocks.
-       Note also that the function table is not updated
-       while checking function definition statements:
-       as explained in @(tsee add-funtypes-in-statement-list),
-       the function definitions in a block are collected,
-       and used to extend the function table,
-       before processing the statements in a block.")
+       but those changes do not surface outside those blocks.")
+     (xdoc::p
+      "A block is checked via a separate ACL2 function,
+       which returns a set of modes.
+       These are joined with the starting variable table,
+       which is unchanged as expained above.")
      (xdoc::p
       "We use separate ACL2 functions to check declarations and assignments,
-       as their checking does not involve the mutual recursion.")
+       as their checking does not involve the mutual recursion.
+       Declarations and assignments always terminate in regular mode.")
      (xdoc::p
       "For a function call used as a statement,
-       we check the function call and ensure it returns no results.")
+       we check the function call and ensure it returns no results.
+       A function call always terminates in regular mode.")
      (xdoc::p
       "For an @('if') statement,
        we check the test, which must return one result,
        and we check the body block.
-       Since the body is a block,
-       the updated variable and function tables are discarded.")
+       An @('if') statement may terminate in regular mode
+       (when the test is false)
+       or in any of the modes in which the block may terminate
+       (when the test is true).")
      (xdoc::p
-      "For a @('for') statement, we first check the initialization block.
-       We use the updated variable table to check the other components,
+      "For a @('for') statement, we treat the initialization block specially,
        because the scope of the initialization block
        extends to the whole statement, as explained
-       in [Yul: Specification of Yul: Scoping Rules].")
+       in [Yul: Specification of Yul: Scoping Rules].
+       We extract the statements from the block
+       and we process them as if they preceded the rest of the @('for'):
+       we collect the function definitions in the statements,
+       and then we check the statements,
+       updating the variable table and obtaining the possible termination modes.
+       We ensure that no termination in @('break') or @('continue') is possible,
+       because that is not allowed,
+       even if the @('for') is in the body of an outer @('for'):
+       the current, innermost @('for') is the one
+       that could be broken or continued,
+       but that can only be done in the body;
+       thus, the initialization block may only terminate
+       in regular or @('leave') mode.
+       We use the updated variable and function tables
+       to check the other components of the @('for'),
+       i.e. test, update block, and body block.
+       We ensure that the update block cannot terminate
+       in @('break') or @('continue') mode,
+       for the same reason explained above for the initialization block,
+       which therefore leaves regular and @('leave') mode
+       as the only termination possibilities for the update block.
+       The body is allowed to terminate in any mode.
+       The possible termination modes of the @('for') loop
+       are determined as follows:
+       regular mode is always possible,
+       which happens when the test is false or if the loop breaks;
+       @('leave') mode is possible when it is possible for any of the
+       initialization, update, or body block;
+       @('break') and @('continue') modes are not possible,
+       because those could only occur in the body,
+       which causes regular loop termination of the loop for @('break')
+       or continuation of the loop for @('continue').")
      (xdoc::p
       "For a @('switch') statement,
        we check the expression, ensuring it returns a single result.
@@ -738,85 +757,110 @@
        For now we check syntactic difference for simplicity,
        but we plan to tighten that to check semantic difference.
        Every (literal or default) block is then checked,
-       along with the literals.")
+       along with the literals.
+       The possible termination modes are those of the cases
+       and those of the default block.")
      (xdoc::p
-      "For a @('leave') statement,
-       we ensure that we are in a function, as indicated by the flag.")
+      "The treatment of @('leave'), @('break'), and @('continue')
+       is straightforward: they terminate with the corresponding mode,
+       and the variable table is unchanged.")
      (xdoc::p
-      "For a function definition, we ensure that we are not
-       in a loop initialization block, as indicated by the flag.
+      "For a function definition, the function table is not updated:
+       as explained in @(tsee add-funtypes-in-statement-list),
+       the function definitions in a block are collected,
+       and used to extend the function table,
+       before processing the statements in a block.
        Since a function body cannot access
        variables declared outside the function,
        we make the variables in the variable table inaccessible,
        and then we use a separate mutually recursive ACL2 function
-       that checks function definition.
+       that checks function definitions.
        That ACL2 function returns nothing in case of success,
        so here we return the outside variable table unchanged:
-       a function definition does not modify the variable table."))
+       a function definition does not modify the variable table.
+       At run time, a function definition is essentially a no-op,
+       so the termination mode is always regular."))
     (statement-case
      stmt
      :block
-     (b* (((ok &) (check-block stmt.get
-                               vartab
-                               varvis
-                               funtab
-                               in-function
-                               in-loop-init
-                               in-loop-body)))
-       (vartable-fix vartab))
+     (b* (((ok modes) (check-block stmt.get vartab varvis funtab)))
+       (make-vartable-modes :variables (vartable-fix vartab)
+                            :modes modes))
      :variable-single
-     (check-variable-single stmt.name stmt.init vartab varvis funtab)
+     (b* (((ok vartab) (check-variable-single stmt.name
+                                              stmt.init
+                                              vartab
+                                              varvis
+                                              funtab)))
+       (make-vartable-modes :variables vartab
+                            :modes (set::insert (mode-regular) nil)))
      :variable-multi
-     (check-variable-multi stmt.names stmt.init vartab varvis funtab)
+     (b* (((ok vartab) (check-variable-multi stmt.names
+                                             stmt.init
+                                             vartab
+                                             varvis
+                                             funtab)))
+       (make-vartable-modes :variables vartab
+                            :modes (set::insert (mode-regular) nil)))
      :assign-single
      (b* (((ok &) (check-assign-single stmt.target stmt.value vartab funtab)))
-       (vartable-fix vartab))
+       (make-vartable-modes :variables (vartable-fix vartab)
+                            :modes (set::insert (mode-regular) nil)))
      :assign-multi
      (b* (((ok &) (check-assign-multi stmt.targets stmt.value vartab funtab)))
-       (vartable-fix vartab))
+       (make-vartable-modes :variables (vartable-fix vartab)
+                            :modes (set::insert (mode-regular) nil)))
      :funcall
      (b* (((ok results) (check-funcall stmt.get vartab funtab))
           ((unless (= results 0))
            (err (list :discarded-values stmt.get))))
-       (vartable-fix vartab))
+       (make-vartable-modes :variables (vartable-fix vartab)
+                            :modes (set::insert (mode-regular) nil)))
      :if
      (b* (((ok results) (check-expression stmt.test vartab funtab))
           ((unless (= results 1))
            (err (list :multi-valued-if-test stmt.test)))
-          ((ok &) (check-block stmt.body
-                               vartab
-                               varvis
-                               funtab
-                               in-function
-                               in-loop-init
-                               in-loop-body)))
-       (vartable-fix vartab))
+          ((ok modes) (check-block stmt.body
+                                   vartab
+                                   varvis
+                                   funtab)))
+       (make-vartable-modes :variables (vartable-fix vartab)
+                            :modes (set::insert (mode-regular) modes)))
      :for
-     (b* (((ok vartab-init) (check-block stmt.init
-                                         vartab
-                                         varvis
-                                         funtab
-                                         in-function
-                                         t
-                                         nil))
-          ((ok results) (check-expression stmt.test vartab-init funtab))
+     (b* ((stmts (block->statements stmt.init))
+          ((ok funtab) (add-funtypes-in-statement-list stmts funtab))
+          ((ok vartab-modes) (check-statement-list stmts
+                                                   vartab
+                                                   varvis
+                                                   funtab))
+          (vartab1 (vartable-modes->variables vartab-modes))
+          (init-modes (vartable-modes->modes vartab-modes))
+          ((when (set::in (mode-break) init-modes))
+           (err (list :break-in-loop-init stmt.init)))
+          ((when (set::in (mode-continue) init-modes))
+           (err (list :continue-in-loop-init stmt.init)))
+          ((ok results) (check-expression stmt.test vartab1 funtab))
           ((unless (= results 1))
            (err (list :multi-valued-for-test stmt.test)))
-          ((ok &) (check-block stmt.update
-                               vartab-init
-                               varvis
-                               funtab
-                               in-function
-                               in-loop-init
-                               nil))
-          ((ok &) (check-block stmt.body
-                               vartab-init
-                               varvis
-                               funtab
-                               in-function
-                               in-loop-init
-                               t)))
-       (vartable-fix vartab))
+          ((ok update-modes) (check-block stmt.update
+                                          vartab1
+                                          varvis
+                                          funtab))
+          ((when (set::in (mode-break) update-modes))
+           (err (list :break-in-loop-update stmt.update)))
+          ((when (set::in (mode-continue) update-modes))
+           (err (list :continue-in-loop-update stmt.update)))
+          ((ok body-modes) (check-block stmt.body
+                                        vartab1
+                                        varvis
+                                        funtab))
+          (modes (if (or (set::in (mode-leave) init-modes)
+                         (set::in (mode-leave) update-modes)
+                         (set::in (mode-leave) body-modes))
+                     (set::insert (mode-leave) (set::insert (mode-regular) nil))
+                   (set::insert (mode-regular) nil))))
+       (make-vartable-modes :variables (vartable-fix vartab)
+                            :modes modes))
      :switch
      (b* (((ok results) (check-expression stmt.target vartab funtab))
           ((unless (= results 1))
@@ -825,190 +869,168 @@
            (err (list :no-cases-in-switch (statement-fix stmt))))
           ((unless (no-duplicatesp-equal (swcase-list->value-list stmt.cases)))
            (err (list :duplicate-switch-cases (statement-fix stmt))))
-          ((ok &) (check-swcase-list stmt.cases
-                                     vartab
-                                     varvis
-                                     funtab
-                                     in-function
-                                     in-loop-init
-                                     in-loop-body))
-          ((ok &) (check-block-option stmt.default
-                                      vartab
-                                      varvis
-                                      funtab
-                                      in-function
-                                      in-loop-init
-                                      in-loop-body)))
-       (vartable-fix vartab))
+          ((ok cases-modes) (check-swcase-list stmt.cases
+                                               vartab
+                                               varvis
+                                               funtab))
+          ((ok default-modes) (check-block-option stmt.default
+                                                  vartab
+                                                  varvis
+                                                  funtab)))
+       (make-vartable-modes :variables (vartable-fix vartab)
+                            :modes (set::union cases-modes default-modes)))
      :leave
-     (if in-function
-         (vartable-fix vartab)
-       (err (list :leave-outside-function)))
+     (make-vartable-modes :variables (vartable-fix vartab)
+                          :modes (set::insert (mode-leave) nil))
      :break
-     (if in-loop-body
-         (vartable-fix vartab)
-       (err :break-not-in-loop-body))
+     (make-vartable-modes :variables (vartable-fix vartab)
+                          :modes (set::insert (mode-break) nil))
      :continue
-     (if in-loop-body
-         (vartable-fix vartab)
-       (err :continue-not-in-loop-body))
+     (make-vartable-modes :variables (vartable-fix vartab)
+                          :modes (set::insert (mode-continue) nil))
      :fundef
-     (if in-loop-init
-         (err :fundef-in-loop-init)
-       (b* ((varvis (make-vars-inaccessible vartab varvis))
-            ((ok &) (check-fundef stmt.get varvis funtab)))
-         (vartable-fix vartab))))
+     (b* ((varvis (make-vars-inaccessible vartab varvis))
+          ((ok &) (check-fundef stmt.get varvis funtab)))
+       (make-vartable-modes :variables (vartable-fix vartab)
+                            :modes (set::insert (mode-regular) nil))))
     :measure (statement-count stmt)
     :normalize nil) ; without this, MAKE-FLAG (generated by DEFINES) fails
 
   (define check-statement-list ((stmts statement-listp)
                                 (vartab vartablep)
                                 (varvis identifier-setp)
-                                (funtab funtablep)
-                                (in-function booleanp)
-                                (in-loop-init booleanp)
-                                (in-loop-body booleanp))
-    :returns (vartab? vartable-resultp)
+                                (funtab funtablep))
+    :returns (vartab-modes vartable-modes-resultp)
     :short "Check if a list of statements is well-formed."
     :long
     (xdoc::topstring
      (xdoc::p
       "We check the statements, one after the other,
-       threading through the variable table."))
-    (b* (((when (endp stmts)) (vartable-fix vartab))
-         ((ok vartab) (check-statement (car stmts)
-                                       vartab
-                                       varvis
-                                       funtab
-                                       in-function
-                                       in-loop-init
-                                       in-loop-body)))
-      (check-statement-list (cdr stmts)
-                            vartab
-                            varvis
-                            funtab
-                            in-function
-                            in-loop-init
-                            in-loop-body))
+       threading through the variable table.")
+     (xdoc::p
+      "If the list of statements is empty, the termination mode is regular.
+       Otherwise, we have
+       a set of possible termination modes for the first statement,
+       and a set of possible termination modes for the remaining sets.
+       If the first set includes regular mode,
+       we take the union of the two sets;
+       otherwise, we just return the first set
+       because execution of the list of statements ends there.
+       Note that we still check the well-formedness of the remaining statements,
+       even when they are not reachable."))
+    (b* (((when (endp stmts))
+          (make-vartable-modes :variables (vartable-fix vartab)
+                               :modes (set::insert (mode-regular) nil)))
+         ((ok vartab-modes) (check-statement (car stmts)
+                                             vartab
+                                             varvis
+                                             funtab))
+         (vartab (vartable-modes->variables vartab-modes))
+         (first-modes (vartable-modes->modes vartab-modes))
+         ((ok vartab-modes) (check-statement-list (cdr stmts)
+                                                  vartab
+                                                  varvis
+                                                  funtab))
+         (vartab (vartable-modes->variables vartab-modes))
+         (rest-modes (vartable-modes->modes vartab-modes))
+         (modes (if (set::in (mode-regular) first-modes)
+                    (set::union first-modes rest-modes)
+                  first-modes)))
+      (make-vartable-modes :variables vartab
+                           :modes modes))
     :measure (statement-list-count stmts))
 
   (define check-block ((block blockp)
                        (vartab vartablep)
                        (varvis identifier-setp)
-                       (funtab funtablep)
-                       (in-function booleanp)
-                       (in-loop-init booleanp)
-                       (in-loop-body booleanp))
-    :returns (vartab? vartable-resultp)
+                       (funtab funtablep))
+    :returns (modes mode-set-resultp)
     :short "Check if a block is well-formed."
     :long
     (xdoc::topstring
      (xdoc::p
-      "If successful, return a possibly updated variable table.
-       This is normally discarded by the caller,
-       because the updates are almost always only visible in the block itself,
-       except for the initialization block of a @('for') statement,
-       which is treated specially as explained in
-       [Yul: Specification of Yul: Scoping Rules].")
+      "If successful,
+       return the set of possible termination modes of the block.")
      (xdoc::p
       "As explained in @(tsee add-funtypes-in-statement-list),
        all the functions defined in a block are visible in the whole block,
        so we first collect them from the statements that form the block,
        updating the function table with them,
-       and then we check the statements that form the block."))
+       and then we check the statements that form the block,
+       discarding the final variable table."))
     (b* ((stmts (block->statements block))
          ((ok funtab) (add-funtypes-in-statement-list stmts funtab))
-         ((ok vartab) (check-statement-list stmts
-                                            vartab
-                                            varvis
-                                            funtab
-                                            in-function
-                                            in-loop-init
-                                            in-loop-body)))
-      vartab)
+         ((ok vartab-modes) (check-statement-list stmts
+                                                  vartab
+                                                  varvis
+                                                  funtab)))
+      (vartable-modes->modes vartab-modes))
     :measure (block-count block))
 
   (define check-block-option ((block? block-optionp)
                               (vartab vartablep)
                               (varvis identifier-setp)
-                              (funtab funtablep)
-                              (in-function booleanp)
-                              (in-loop-init booleanp)
-                              (in-loop-body booleanp))
-    :returns (vartab? vartable-resultp)
+                              (funtab funtablep))
+    :returns (modes mode-set-resultp)
     :short "Check if an optional block is well-formed."
     :long
     (xdoc::topstring
      (xdoc::p
-      "If there is no block, the check succeeds;
-       we return the variable table unchanged.
+      "If there is no block,
+       the check succeeds and we return just regular mode.
        If there is a block, we check it."))
     (block-option-case
      block?
-     :none (vartable-fix vartab)
+     :none (set::insert (mode-regular) nil)
      :some (check-block (block-option-some->val block?)
                         vartab
                         varvis
-                        funtab
-                        in-function
-                        in-loop-init
-                        in-loop-body))
+                        funtab))
     :measure (block-option-count block?))
 
   (define check-swcase ((case swcasep)
                         (vartab vartablep)
                         (varvis identifier-setp)
-                        (funtab funtablep)
-                        (in-function booleanp)
-                        (in-loop-init booleanp)
-                        (in-loop-body booleanp))
-    :returns (wf? wellformed-resultp)
+                        (funtab funtablep))
+    :returns (modes mode-set-resultp)
     :short "Check if a case is well-formed."
     :long
     (xdoc::topstring
      (xdoc::p
       "We check its literal and its block.
-       We do not need to return anything in case of success."))
+       We return the termination modes of the block."))
     (b* (((swcase case) case)
-         ((ok &) (check-literal case.value))
-         ((ok &) (check-block case.body
-                              vartab
-                              varvis
-                              funtab
-                              in-function
-                              in-loop-init
-                              in-loop-body)))
-      :wellformed)
+         ((ok &) (check-literal case.value)))
+      (check-block case.body
+                   vartab
+                   varvis
+                   funtab))
     :measure (swcase-count case))
 
   (define check-swcase-list ((cases swcase-listp)
                              (vartab vartablep)
                              (varvis identifier-setp)
-                             (funtab funtablep)
-                             (in-function booleanp)
-                             (in-loop-init booleanp)
-                             (in-loop-body booleanp))
-    :returns (wf? wellformed-resultp)
+                             (funtab funtablep))
+    :returns (modes mode-set-resultp)
     :short "Check if a list of cases is well-formed."
     :long
     (xdoc::topstring
      (xdoc::p
-      "We just check each case in turn."))
-    (b* (((when (endp cases)) :wellformed)
-         ((ok &) (check-swcase (car cases)
-                               vartab
-                               varvis
-                               funtab
-                               in-function
-                               in-loop-init
-                               in-loop-body)))
-      (check-swcase-list (cdr cases)
-                         vartab
-                         varvis
-                         funtab
-                         in-function
-                         in-loop-init
-                         in-loop-body))
+      "We return the empty set for the empty list of cases:
+       having no cases contributes no termination modes.
+       If the list of cases is not empty,
+       we return the union of the termination modes of the first case
+       with the union of the termination modes for the remaining cases."))
+    (b* (((when (endp cases)) nil)
+         ((ok first-modes) (check-swcase (car cases)
+                                         vartab
+                                         varvis
+                                         funtab))
+         ((ok rest-modes) (check-swcase-list (cdr cases)
+                                             vartab
+                                             varvis
+                                             funtab)))
+      (set::union first-modes rest-modes))
     :measure (swcase-list-count cases))
 
   (define check-fundef ((fundef fundefp)
@@ -1024,13 +1046,7 @@
        The reason is that such contextual information is always set
        when a funtion definition is checked.
        In particular, as explained in @(tsee make-vars-inaccessible),
-       there is no variable table to pass.
-       The flags saying whether we are
-       in a function
-       or in a loop initialization block
-       or in a loop body block
-       are also not passed because it is always the case that
-       we are in a function and we are not in any loop block initially.")
+       there is no variable table to pass.")
      (xdoc::p
       "This ACL2 function does not need to return anything.
        Any variable table internal to the function's body
@@ -1050,12 +1066,13 @@
          ((ok &) (check-block fundef.body
                               vartab
                               varvis
-                              funtab
-                              t
-                              nil
-                              nil)))
+                              funtab)))
       :wellformed)
     :measure (fundef-count fundef))
+
+  :prepwork
+  ((local
+    (in-theory (enable mode-setp-when-mode-set-resultp-and-not-resulterrp))))
 
   :flag-local nil
 

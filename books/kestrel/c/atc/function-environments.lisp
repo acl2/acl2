@@ -51,7 +51,7 @@
      The other components form the value associated to the key."))
   ((params param-declon-list)
    (result tyspecseq)
-   (body stmt))
+   (body block-item-list))
   :pred fun-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
