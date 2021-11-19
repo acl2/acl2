@@ -309,8 +309,7 @@
        @('vars') is @('nil'),
        and @('fni') is not recursive.
        That is, an expression term returning a C value is also
-       a statement term returning that C value,
-       affecting the same variables.
+       a statement term returning that C value.
        This represents a C @('return') statement
        whose expression is represented by the same term,
        viewed as an expression term returning a C value.")
