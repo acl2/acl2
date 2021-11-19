@@ -15,7 +15,6 @@
 (include-book "modes")
 
 (include-book "kestrel/fty/defresult" :dir :system)
-(include-book "kestrel/fty/defunit" :dir :system)
 (include-book "kestrel/fty/nat-result" :dir :system)
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 
