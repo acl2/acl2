@@ -30,7 +30,7 @@
 (include-book "prover-common")
 (include-book "splitting")
 (include-book "elim")
-(include-book "substitute-vars")
+;; (include-book "substitute-vars")
 (include-book "substitute-vars2")
 (include-book "get-disjuncts")
 (include-book "rule-alists")
@@ -49,7 +49,7 @@
 (include-book "result-array")
 (include-book "alist-suitable-for-hypsp")
 (include-book "make-substitution-code-simple")
-(include-book "make-instantiation-code-simple")
+;; (include-book "make-instantiation-code-simple")
 (include-book "make-instantiation-code-simple-free-vars")
 (include-book "make-instantiation-code-simple-no-free-vars2")
 (include-book "match-hyp-with-nodenum-to-assume-false")
@@ -707,7 +707,7 @@
        (make-substitution-code-simple ,suffix ,evaluator-base-name)
 
        ;; Make versions of instantiate-hyp, etc.
-       (make-instantiation-code-simple ,suffix ,evaluator-base-name)
+       ;; (make-instantiation-code-simple ,suffix ,evaluator-base-name)
        (make-instantiation-code-simple-free-vars ,suffix ,evaluator-base-name)
        (make-instantiation-code-simple-no-free-vars2 ,suffix ,evaluator-base-name)
 
@@ -2617,7 +2617,8 @@
                          :guard-hints (("Goal" :in-theory (e/d (;dag-function-call-exprp
                                                                 dag-function-call-exprp-redef
                                                                 all-myquotep-when-all-dargp
-                                                                consp-of-cdr)
+                                                                consp-of-cdr
+                                                                true-listp-of-cdr)
                                                                (natp dag-function-call-exprp))
                                         :do-not '(generalize eliminate-destructors)
                                         :do-not-induct t))
@@ -4870,6 +4871,7 @@
        ;; Try to prove that DAG1 implies DAG2, for all values of the variables.
        ;; TODO: Warning if no variable overlap?
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
+       ;; The event returned when erp=nil is (value-triple :ok).
        ;; Because this function has a guard that is simply a stobj recognizer, it has no invariant-risk.
        (defund ,prove-dag-implication-name (dag1
                                             dag2
@@ -4992,8 +4994,8 @@
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
        ;; This function has no invariant-risk, because the functions it calls
        ;; have guards that are either t or stobj recognizers.
-       (defund ,prove-implication-fn-name (dag-or-term1 ; not yet translated
-                                           dag-or-term2 ; not yet translated
+       (defund ,prove-implication-fn-name (dag-or-term1 ; if a term, gets translated
+                                           dag-or-term2 ; if a term, gets translated
                                            tactic
                                            rule-lists
                                            global-rules
@@ -5004,9 +5006,11 @@
                                            state)
          (declare (xargs :guard (and (simple-prover-tacticp tactic)
                                      (rule-item-list-listp rule-lists)
-                                     ;; (interpreted-function-alistp interpreted-function-alist)
-                                     (symbol-listp monitor)
                                      (rule-item-listp global-rules)
+                                     (interpreted-function-alistp interpreted-function-alist)
+                                     (booleanp no-splitp)
+                                     (symbol-listp monitor)
+                                     ;; print
                                      (ilks-plist-worldp (w state)))
                          :stobjs state
                          :mode :program ;because this translates its args if they are terms
@@ -5028,9 +5032,9 @@
                                         state)))
 
        ;; Attempt to prove that DAG-OR-TERM1 implies DAG-OR-TERM2.
-       ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
-       (defmacro ,prove-implication-name (dag-or-term1
-                                          dag-or-term2
+       ;; Causes an error if the proof attempt fails.
+       (defmacro ,prove-implication-name (dag-or-term1 ; if a term, gets translated
+                                          dag-or-term2 ; if a term, gets translated
                                           &key
                                           (tactic ''(:rep :rewrite :subst))
                                           (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?

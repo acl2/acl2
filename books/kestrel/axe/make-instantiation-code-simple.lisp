@@ -33,9 +33,8 @@
 
        ;; TERM is from a hyp of a rule and so has quoteps and vars at the leaves.
        ;; ALIST binds vars to dargs (nodenums/ quoteps).
-       ;; Returns (mv instantiated-hyp free-vars-flg).
        (mutual-recursion
-        ;; Returns (mv term free-vars-flg) where TERM has been instantiated with ALIST and FREE-VARS-FLG indicates whether any variables remain in TERM.
+        ;; Returns (mv tree free-vars-flg) where TREE has been instantiated with ALIST and FREE-VARS-FLG indicates whether any variables remain in TREE.
         (defund ,instantiate-hyp-name (term alist interpreted-function-alist)
           (declare (xargs :verify-guards nil ;done below
                           :guard (and (pseudo-termp term)

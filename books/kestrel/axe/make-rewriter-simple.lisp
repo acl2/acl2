@@ -42,9 +42,10 @@
 (include-book "rule-limits")
 (include-book "rule-alists") ; for get-rules-for-fn
 (include-book "make-substitution-code-simple")
-(include-book "make-instantiation-code-simple")
+;; (include-book "make-instantiation-code-simple")
 (include-book "make-instantiation-code-simple-free-vars")
 (include-book "make-instantiation-code-simple-no-free-vars")
+;(include-book "make-instantiation-code-simple-no-free-vars2") ;todo use this one instead but will need assumptions about alist-suitable-for-hypsp
 (include-book "dag-array-builders")
 (include-book "memoization")
 (include-book "dag-array-printing2")
@@ -392,7 +393,7 @@
        (make-substitution-code-simple ,suffix ,evaluator-base-name)
 
        ;; Make versions of instantiate-hyp, etc.
-       (make-instantiation-code-simple ,suffix ,evaluator-base-name)
+       ;; (make-instantiation-code-simple ,suffix ,evaluator-base-name)
        (make-instantiation-code-simple-free-vars ,suffix ,evaluator-base-name)
        (make-instantiation-code-simple-no-free-vars ,suffix ,evaluator-base-name)
 
