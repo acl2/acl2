@@ -233,42 +233,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-identifier ((iden identifierp))
-  :returns (noinfo resulterr-optionp)
-  :short "Check if an identifier is well-formed."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "It must consists of only
-     letter (lowercase and uppercase),
-     (decimal) digits,
-     underscores, and
-     dollars.
-     It must be non-empty and not start with a digit.")
-   (xdoc::p
-    "We may move these requirements into an invariant of @(tsee identifier),
-     but for now we state them as part of the static semantics."))
-  (b* ((chars (str::explode (identifier->get iden))))
-    (if (and (consp chars)
-             (acl2::alpha/uscore/dollar-char-p (car chars))
-             (acl2::alpha/digit/uscore/dollar-charlist-p (cdr chars)))
-        nil
-      (err (list :bad-identifier (identifier-fix iden)))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-identifier-list ((idens identifier-listp))
-  :returns (noinfo resulterr-optionp)
-  :short "Check if all the identifiers in a list are well-formed."
-  (b* (((when (endp idens)) nil)
-       ((ok &) (check-identifier (car idens)))
-       ((ok &) (check-identifier-list (cdr idens))))
-    nil)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define check-path ((path pathp) (vartab vartablep))
   :returns (noinfo resulterr-optionp)
   :short "Check if a path is well-formed."
@@ -294,7 +258,6 @@
   (b* ((idens (path->get path))
        ((unless (consp idens))
         (err (list :empty-path (path-fix path))))
-       ((ok &) (check-identifier-list idens))
        ((unless (endp (cdr idens)))
         (err (list :non-singleton-path (path-fix path))))
        (var (car idens))
@@ -438,7 +401,6 @@
      and it must return exactly one result."))
   (b* ((name (identifier-fix name))
        (init (expression-option-fix init))
-       ((ok &) (check-identifier name))
        ((ok vartab) (add-var name vartab))
        ((when (not init)) vartab)
        ((ok results) (check-expression init vartab funtab))
@@ -469,7 +431,6 @@
      as the number of variables."))
   (b* ((names (identifier-list-fix names))
        (init (funcall-option-fix init))
-       ((ok &) (check-identifier-list names))
        ((ok vartab-new) (add-vars names vartab))
        ((unless (>= (len names) 2))
         (err (list :declare-zero-one-var names)))
