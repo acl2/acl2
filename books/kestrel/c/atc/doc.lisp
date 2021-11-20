@@ -569,10 +569,6 @@
        and the body of @('fnj') is
        a statement term for @('fnj')
        returning @('T') and affecting @('vars').
-       The restriction @('j < i') means that
-       no (direct or indirect) recursion is allowed in the C code
-       and the target functions must be specified
-       in a topological order of their call graph.
        This represents a call of the corresponding C function."))
 
     (xdoc::p
@@ -878,6 +874,12 @@
       the block items (i.e. statements and declarations)
       represented by the ACL2 function's body
       (which is a statement term).")
+
+    (xdoc::p
+     "The restriction @('j < i') when @('fni') calls @('fnj') meant that
+      no (direct or indirect) recursion is allowed in the C code
+      and the target functions must be specified
+      in a topological order of their call graph.")
 
     (xdoc::p
      "The guard verification requirement ensures that
