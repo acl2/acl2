@@ -2641,7 +2641,7 @@
        ((when (type-case type :pointer))
         (er-soft+ ctx t irr
                   "When generating a return statement for function ~x0, ~
-                   the term ~x1 that represents th return expression ~
+                   the term ~x1 that represents the return expression ~
                    has pointer type ~x2, which is disallowed."
                   fn term type))
        (limit (pseudo-term-fncall
