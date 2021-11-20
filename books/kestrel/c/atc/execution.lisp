@@ -1827,7 +1827,16 @@
        :continue (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :break (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :return (if (exprp s.value)
-                   (exec-expr-call-or-pure s.value compst fenv (1- limit))
+                   (b* (((mv val? compst)
+                         (exec-expr-call-or-pure s.value
+                                                 compst
+                                                 fenv
+                                                 (1- limit)))
+                        ((when (errorp val?)) (mv val? compst))
+                        ((when (not val?)) (mv (error (list :return-void-expr
+                                                        s.value))
+                                               compst)))
+                     (mv val? compst))
                  (mv nil (compustate-fix compst)))))
     :measure (nfix limit))
 

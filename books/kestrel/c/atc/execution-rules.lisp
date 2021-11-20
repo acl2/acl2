@@ -2056,9 +2056,14 @@
                   (equal (stmt-kind s) :return)
                   (not (zp limit))
                   (equal e (stmt-return->value s))
-                  e)
+                  e
+                  (equal val+compst1
+                         (exec-expr-call-or-pure e compst fenv (1- limit)))
+                  (equal val (mv-nth 0 val+compst1))
+                  (equal compst1 (mv-nth 1 val+compst1))
+                  (valuep val))
              (equal (exec-stmt s compst fenv limit)
-                    (exec-expr-call-or-pure e compst fenv (1- limit))))
+                    (mv val compst1)))
     :enable exec-stmt)
 
   (defval *atc-exec-stmt-rules*
