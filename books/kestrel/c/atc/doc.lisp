@@ -287,17 +287,17 @@
       are defined below, along with the notions of
       (iii) expression term for @('fni')
       returning @('T') and affecting @('vars'),
-      (iv) pure expression term for @('fni')
-      returning @('T'),
-      (v) C type of a variable, and
-      (vi) assignable variable.")
+      (iv) pure expression term for @('fni') returning @('T'),
+      (v) expression term for @('fni') returning boolean,
+      (vi) C type of a variable, and
+      (vii) assignable variable.")
 
     (xdoc::p
      "A <i>statement term for</i> @('fni') with loop flag @('L')
       <i>returning</i> @('T') and <i>affecting</i> @('vars'),
       where @('fni') is a target function,
       @('L') is either @('t') or @('nil'),
-      @('T') is either a C type or `boolean',
+      @('T') is a C type (possibly @('void')),
       and @('vars') is a list of distinct symbols,
       is inductively defined as one of the following:")
     (xdoc::ul
@@ -339,7 +339,8 @@
        this is the pattern that ATC looks for.")
      (xdoc::li
       "A term @('(mv ret var1 ... varn)'),
-       when @('ret') is an expression term for @('fni') returning @('T'),
+       when @('ret') is an expression term for @('fni')
+       returning @('T') and affecting no variables,
        @('L') is @('nil'),
        @('T') is a non-@('void') non-pointer type,
        @('vars') is the list @('(var1 ... varn)') with @('n') &gt; 1.
@@ -389,7 +390,8 @@
        the symbol names of all the other ACL2 variables in scope
        (function parameters and variables bound in enclosing @(tsee let)s),
        @('term') is an expression term for @('fni')
-       returning a non-pointer C type and affecting no variables, and
+       returning a non-@('void') non-pointer C type
+       and affecting no variables, and
        @('body') is a statement term for @('fni') with loop flag @('L')
        returning @('T') and affecting @('vars').
        This represents, as indicated by the wrapper @(tsee declar),
@@ -405,7 +407,8 @@
       "A term @('(let ((var (assign term))) body)'),
        where @('var') is assignable,
        @('term') is an expression term for @('fni')
-       returning the same non-pointer C type as the C type of @('var')
+       returning the same non-@('void') non-pointer C type
+       as the C type of @('var')
        and affecting no variables, and
        @('body') is a statement term for @('fni') with loop flag @('L')
        returning @('T') and affecting @('vars').
@@ -549,7 +552,7 @@
       <i>returning</i> @('T') and
       <i>affecting</i> @('vars'),
       where @('fni') is a target function,
-      @('T') is either a C type or `boolean',
+      @('T') is a non-@('void') C type,
       and @('vars') is a list of distinct symbols,
       is inductively defined as one of the following:")
     (xdoc::ul
@@ -559,8 +562,10 @@
      (xdoc::li
       "A call of a non-recursive target function @('fnj') with @('j < i'),
        on pure expression terms for @('fni') returning non-@('void') C types,
-       where the types of the terms are equal to the
-       the C types of the formal parameters of @('fnj')
+       where the types of the terms are equal to
+       the C types of the formal parameters of @('fnj'),
+       where each term of pointer type is a variable
+       identical to the corresponding formal parameter of @('fnj'),
        and where the body of @('fnj') is
        a statement term for @('fnj')
        returning @('T') and affecting @('vars').
@@ -571,8 +576,10 @@
        This represents a call of the corresponding C function."))
 
     (xdoc::p
-     "A <i>pure expression term for</i> @('fni') <i>returning</i> @('T') is
-      inductively defined as one of the following:")
+     "A <i>pure expression term for</i> @('fni') <i>returning</i> @('T'),
+      where @('fni') is a target function and
+      @('T') is a non-@('void') C type,
+      is inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
       "A formal parameter of @('fni'),
@@ -745,8 +752,9 @@
        and whose branch expressions are represented by the branch terms."))
 
     (xdoc::p
-     "An <i>expression term for</i> @('fni') <i>returning boolean</i> is
-      inductively defined as one of the following:")
+     "An <i>expression term for</i> @('fni') <i>returning boolean</i>,
+      where @('fni') is a target function,
+      is inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
       "A call of a function @('boolean-from-<type>')
@@ -776,7 +784,7 @@
       "The first one is a function, while the other two are macros.
        This represents the corresponding C logical operator
        (negation @('!'), conjunction @('&&'), disjunction @('||'));
-       conjunction and disjunctions are represented non-strictly.
+       conjunctions and disjunctions are represented non-strictly.
        In translated terms, @('(and x y)') and @('(or x y)') are
        @('(if x y \'nil)') and @('(if x x y)'):
        these are the patterns that ATC looks for."))
@@ -791,6 +799,8 @@
       "If @('var') is not a formal parameter,
        it must be introduced by a @(tsee let) with @(tsee declar),
        and its C type is the one of the term argument of @(tsee declar)."))
+    (xdoc::p
+     "The C type of a variable is never @('void').")
 
     (xdoc::p
      "A variable @('var') bound in
