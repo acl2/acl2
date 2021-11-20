@@ -1535,6 +1535,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define exec-expr-call ((fun identp)
+                          (args expr-listp)
+                          (compst compustatep)
+                          (fenv fun-envp)
+                          (limit natp))
+    :returns (mv (result value-option-resultp)
+                 (new-compst compustatep))
+    :parents (atc-dynamic-semantics exec)
+    :short "Execution a function call."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We return an optional value,
+       which is @('nil') for a function that returns @('void')."))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
+         (vals (exec-expr-pure-list args compst))
+         ((when (errorp vals)) (mv vals (compustate-fix compst))))
+      (exec-fun fun vals compst fenv (1- limit)))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define exec-expr-call-or-pure ((e exprp)
                                   (compst compustatep)
                                   (fenv fun-envp)
@@ -1548,7 +1570,7 @@
      (xdoc::p
       "This is only used for expressions that must be
        either function calls or pure.
-       If the expression is a call, we handle it here.
+       If the expression is a call, we use @(tsee exec-expr-call).
        Otherwise, we resort to @(tsee exec-expr-pure).")
      (xdoc::p
       "We return an optional value,
@@ -1556,11 +1578,11 @@
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          (e (expr-fix e)))
       (if (expr-case e :call)
-          (b* ((e.args (expr-call->args e))
-               (e.fun (expr-call->fun e))
-               (args (exec-expr-pure-list e.args compst))
-               ((when (errorp args)) (mv args (compustate-fix compst))))
-            (exec-fun e.fun args compst fenv (1- limit)))
+          (exec-expr-call (expr-call->fun e)
+                          (expr-call->args e)
+                          compst
+                          fenv
+                          (1- limit))
         (mv (exec-expr-pure e compst)
             (compustate-fix compst))))
     :measure (nfix limit))
@@ -1947,6 +1969,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual compustate-frames-number-of-exec
+    (defret compustate-frames-number-of-exec-expr-call
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
+      :fn exec-expr-call)
     (defret compustate-frames-number-of-exec-expr-call-or-pure
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -1980,7 +2006,8 @@
              (compustate-frames-number compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-block-item-list)
-    :hints (("Goal" :expand ((exec-expr-call-or-pure e compst fenv limit)
+    :hints (("Goal" :expand ((exec-expr-call fun args compst fenv limit)
+                             (exec-expr-call-or-pure e compst fenv limit)
                              (exec-expr-asg e compst fenv limit)
                              (exec-fun fun args compst fenv limit)
                              (exec-stmt s compst fenv limit)
@@ -1990,6 +2017,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual compustate-scopes-numbers-of-exec
+    (defret compustate-scopes-numbers-of-exec-expr-call
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
+      :fn exec-expr-call)
     (defret compustate-scopes-numbers-of-exec-expr-call-or-pure
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
@@ -2026,7 +2057,8 @@
       :hyp (and (> (compustate-frames-number compst) 0)
                 (> (compustate-top-frame-scopes-number compst) 0))
       :fn exec-block-item-list)
-    :hints (("Goal" :expand ((exec-expr-call-or-pure e compst fenv limit)
+    :hints (("Goal" :expand ((exec-expr-call fun args compst fenv limit)
+                             (exec-expr-call-or-pure e compst fenv limit)
                              (exec-expr-asg e compst fenv limit)
                              (exec-fun fun args compst fenv limit)
                              (exec-stmt s compst fenv limit)

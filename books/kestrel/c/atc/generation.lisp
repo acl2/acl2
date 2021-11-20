@@ -1749,13 +1749,9 @@
      as described in the user documentation.")
    (xdoc::p
     "We also return the C type of the expression,
-     and the affected variables.")
-   (xdoc::p
-    "We also return a limit that suffices for @(tsee exec-expr-call-or-pure)
-     to execute the expression completely.
-     This is the limit (associated to the function)
-     sufficient to run @(tsee exec-fun),
-     plus 1 to get there from @(tsee exec-expr-call-or-pure).")
+     the affected variables,
+     and a limit that suffices for @(tsee exec-expr-call-or-pure)
+     to execute the expression completely.")
    (xdoc::p
     "If the term is a call of a function that precedes @('fn')
      in the list of target functions @('fn1'), ..., @('fnp'),
@@ -1765,8 +1761,9 @@
      we ensure that this type is not @('void').
      A sufficient limit for @(tsee exec-fun) to execute the called function
      is retrieved from the called function's information;
-     we add 1 to it, to take into account the decrementing of the limit
-     done by @(tsee exec-expr-call-or-pure) when it calls @(tsee exec-fun).")
+     we add 2 to it, to take into account the decrementing of the limit
+     to go from @(tsee exec-expr-call-or-pure) to @(tsee exec-expr-call)
+     and from there to @(tsee exec-fun).")
    (xdoc::p
     "Otherwise, we attempt to translate the term
      as a pure expression term returning a C value.
@@ -1809,7 +1806,7 @@
                                         :args arg-exprs)
                         out-type
                         affect
-                        `(binary-+ '1 ,limit))))))
+                        `(binary-+ '2 ,limit))))))
     (b* (((mv erp (list expr type) state)
           (atc-gen-expr-cval-pure term inscope fn ctx state))
          ((when erp) (mv erp (list (irr-expr) (irr-type) nil nil) state)))

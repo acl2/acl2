@@ -1719,6 +1719,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-exec-expr-call-rules
+  :short "Rules for @(tsee exec-expr-call)."
+
+  (defruled exec-expr-call-open
+    (implies (and (not (zp limit))
+                  (equal vals (exec-expr-pure-list args compst))
+                  (value-listp vals))
+             (equal (exec-expr-call fun args compst fenv limit)
+                    (exec-fun fun vals compst fenv (1- limit))))
+    :enable exec-expr-call)
+
+  (defval *atc-exec-expr-call-rules*
+    '(exec-expr-call-open)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-exec-expr-call-or-pure-rules
   :short "Rules for @(tsee exec-expr-call-or-pure)."
 
@@ -1735,11 +1751,13 @@
   (defruled exec-expr-call-of-pure-when-call
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :call)
-                  (not (zp limit))
-                  (equal vals (exec-expr-pure-list (expr-call->args e) compst))
-                  (value-listp vals))
+                  (not (zp limit)))
              (equal (exec-expr-call-or-pure e compst fenv limit)
-                    (exec-fun (expr-call->fun e) vals compst fenv (1- limit))))
+                    (exec-expr-call (expr-call->fun e)
+                                    (expr-call->args e)
+                                    compst
+                                    fenv
+                                    (1- limit))))
     :enable exec-expr-call-or-pure)
 
   (defval *atc-exec-expr-call-or-pure-rules*
