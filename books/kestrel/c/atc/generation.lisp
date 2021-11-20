@@ -1725,7 +1725,8 @@
      in the list of target functions @('fn1'), ..., @('fnp'),
      we translate it to a C function call on the translated arguments.
      The type of the expression is the result type of the function,
-     which is looked up in the function alist passed as input.
+     which is looked up in the function alist passed as input:
+     we ensure that this type is not @('void').
      A sufficient limit for @(tsee exec-fun) to execute the called function
      is retrieved from the called function's information;
      we add 1 to it, to take into account the decrementing of the limit
@@ -1739,7 +1740,13 @@
   (b* (((mv okp called-fn args in-types out-type affect limit)
         (atc-check-cfun-call term var-term-alist prec-fns (w state)))
        ((when okp)
-        (b* (((mv erp (list arg-exprs types) state)
+        (b* (((when (type-case out-type :void))
+              (er-soft+ ctx t (list (irr-expr) (irr-type) nil nil)
+                        "A call ~x0 of the function ~x1, which returns void, ~
+                         is being used where ~
+                         an ACL2 term is expected to return a C value."
+                        term called-fn))
+             ((mv erp (list arg-exprs types) state)
               (atc-gen-expr-cval-pure-list args
                                            inscope
                                            fn
