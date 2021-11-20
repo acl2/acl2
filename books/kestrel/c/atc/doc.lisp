@@ -384,7 +384,7 @@
        and whose branch blocks are represented by the branch terms.")
      (xdoc::li
       "A term @('(let ((var (declar term))) body)'),
-       where the symbol name of @('var') is a portable ASCII C identifier
+       when the symbol name of @('var') is a portable ASCII C identifier
        as defined in Section `Portable ASCII C Identifiers' below,
        the symbol name of @('var') is distinct from
        the symbol names of all the other ACL2 variables in scope
@@ -405,7 +405,7 @@
        this is the pattern that ATC looks for.")
      (xdoc::li
       "A term @('(let ((var (assign term))) body)'),
-       where @('var') is assignable,
+       when @('var') is assignable,
        @('term') is an expression term for @('fni')
        returning the same non-@('void') non-pointer C type
        as the C type of @('var')
@@ -424,7 +424,7 @@
      (xdoc::li
       "A term
        @('(let ((var (<type1>-array-write-<type2> var term1 term2))) body)'),
-       where @('<type1>') and @('<type2>') are among"
+       when @('<type1>') and @('<type2>') are among"
       (xdoc::ul
        (xdoc::li "@('schar')")
        (xdoc::li "@('uchar')")
@@ -453,7 +453,7 @@
        followed by the C code represented by @('body').")
      (xdoc::li
       "A term @('(let ((var term)) body)'),
-       where @('var') is assignable,
+       when @('var') is assignable,
        @('term') is a statement term for @('fni') with loop flag @('nil')
        returning @('void') and affecting @('var')
        that is
@@ -472,7 +472,7 @@
        this is the pattern that ATC looks for.")
      (xdoc::li
       "A term @('(mv-let (var1 ... varn) term body)'),
-       where @('n') &gt; 1,
+       when @('n') &gt; 1,
        each @('vari') is assignable,
        @('term') is a statement term for @('fni') with loop flag @('nil')
        returning @('void') and affecting @('(var1 ... varn)')
@@ -562,11 +562,11 @@
      (xdoc::li
       "A call of a non-recursive target function @('fnj') with @('j < i'),
        on pure expression terms for @('fni') returning non-@('void') C types,
-       where the types of the terms are equal to
+       when the types of the terms are equal to
        the C types of the formal parameters of @('fnj'),
-       where each term of pointer type is a variable
+       each term of pointer type is a variable
        identical to the corresponding formal parameter of @('fnj'),
-       and where the body of @('fnj') is
+       and the body of @('fnj') is
        a statement term for @('fnj')
        returning @('T') and affecting @('vars').
        The restriction @('j < i') means that
@@ -594,7 +594,7 @@
        as an expression.")
      (xdoc::li
       "A call of a function @('<type>-<base>-const') on a quoted integer,
-       where @('<type>') is among"
+       when @('<type>') is among"
       (xdoc::ul
        (xdoc::li "@('sint')")
        (xdoc::li "@('uint')")
@@ -602,12 +602,12 @@
        (xdoc::li "@('ulong')")
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
-      "and @('<base>') is among"
+      "@('<base>') is among"
       (xdoc::ul
        (xdoc::li "@('dec')")
        (xdoc::li "@('oct')")
        (xdoc::li "@('hex')"))
-      "when @('T') is the C type corresponding to @('<type>')
+      "@('T') is the C type corresponding to @('<type>')
        and the quoted integer is non-negative and in the range of @('T').
        This represents a C integer constant
        of the C type indicated by the name of the function,
@@ -615,13 +615,13 @@
      (xdoc::li
       "A call of a function @('<op>-<type>') on
        a pure expression term for @('fni') returning @('U'),
-       where @('<op>') is among"
+       when @('<op>') is among"
       (xdoc::ul
        (xdoc::li "@('plus')")
        (xdoc::li "@('minus')")
        (xdoc::li "@('bitnot')")
        (xdoc::li "@('lognot')"))
-      "and @('<type>') is among"
+      "@('<type>') is among"
       (xdoc::ul
        (xdoc::li "@('schar')")
        (xdoc::li "@('uchar')")
@@ -633,7 +633,7 @@
        (xdoc::li "@('ulong')")
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
-      "when @('T') is the C type corresponding to
+      "@('T') is the C type corresponding to
        the return type of @('<op>-<type>')
        and @('U') is the C type corresponding to @('<type>').
        This represents the C operator indicated by the name of the function
@@ -645,7 +645,7 @@
      (xdoc::li
       "A call of a function @('<op>-<type1>-<type2>')
        on pure expression terms for @('fni') returning @('U') and @('V'),
-       where @('<op>') is among"
+       when @('<op>') is among"
       (xdoc::ul
        (xdoc::li "@('add')")
        (xdoc::li "@('sub')")
@@ -663,7 +663,7 @@
        (xdoc::li "@('bitand')")
        (xdoc::li "@('bitxor')")
        (xdoc::li "@('bitior')"))
-      "and @('<type1>') and @('<type2>') are among"
+      "@('<type1>') and @('<type2>') are among"
       (xdoc::ul
        (xdoc::li "@('schar')")
        (xdoc::li "@('uchar')")
@@ -675,7 +675,7 @@
        (xdoc::li "@('ulong')")
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
-      "when @('T') is the C type corresponding to
+      "@('T') is the C type corresponding to
        the return type of @('<op>-<type1>-<type2>'),
        @('U') is the C type corresponding to @('<type1>'), and
        @('V') is the C type corresponding to @('<type2>').
@@ -690,7 +690,7 @@
      (xdoc::li
       "A call of a function @('<type1>-from-<type2>')
        on a pure expression term for @('fni') returning @('U'),
-       where @('<type1>') and @('<type2>') are among"
+       when @('<type1>') and @('<type2>') are among"
       (xdoc::ul
        (xdoc::li "@('schar')")
        (xdoc::li "@('uchar')")
@@ -703,7 +703,7 @@
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
       "and also differ from each other,
-       when @('T') is the C type corresponding to @('<type1>')
+       @('T') is the C type corresponding to @('<type1>')
        and @('U') is the C type corresponding to @('<type2>').
        This represents
        a cast to the type indicated by the first part of the function name.
@@ -717,7 +717,7 @@
      (xdoc::li
       "A call of @('<type1>-array-read-<type2>')
        on expression terms for @('fni') returning @('U') and @('V'),
-       where @('<type1>') and @('<type2>') are among"
+       when @('<type1>') and @('<type2>') are among"
       (xdoc::ul
        (xdoc::li "@('schar')")
        (xdoc::li "@('uchar')")
@@ -729,7 +729,7 @@
        (xdoc::li "@('ulong')")
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
-      "when @('T') is the C type correponding to @('<type1>'),
+      "@('T') is the C type correponding to @('<type1>'),
        @('U') is the pointer type to @('T'), and
        @('V') is the C type correponding to @('<type2>').
        This represents an array subscripting expression.
@@ -759,7 +759,7 @@
      (xdoc::li
       "A call of a function @('boolean-from-<type>')
        on a pure expression term for @('fni') returning @('U'),
-       where @('<type>') is among"
+       when @('<type>') is among"
       (xdoc::ul
        (xdoc::li "@('schar')")
        (xdoc::li "@('uchar')")
@@ -771,7 +771,7 @@
        (xdoc::li "@('ulong')")
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
-      "when @('U') is the C type corresponding to @('<type>').
+      "@('U') is the C type corresponding to @('<type>').
        This converts a pure expression term returning a C type
        to an expression term returning boolean.")
      (xdoc::li
