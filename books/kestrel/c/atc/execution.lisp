@@ -1542,7 +1542,7 @@
                           (limit natp))
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
-    :parents (atc-dynamic-semantics exec)
+    :parents (atc-execution exec)
     :short "Execution a function call."
     :long
     (xdoc::topstring
@@ -1563,7 +1563,7 @@
                                   (limit natp))
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
-    :parents (atc-dynamic-semantics exec)
+    :parents (atc-execution exec)
     :short "Execute a function call or a pure expression."
     :long
     (xdoc::topstring
@@ -1594,7 +1594,7 @@
                          (fenv fun-envp)
                          (limit natp))
     :returns (new-compst compustate-resultp)
-    :parents (atc-dynamic-semantics exec)
+    :parents (atc-execution exec)
     :short "Execute an assignment expression."
     :long
     (xdoc::topstring
@@ -1735,7 +1735,7 @@
                     (limit natp))
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
-    :parents (atc-dynamic-semantics exec)
+    :parents (atc-execution exec)
     :short "Execute a function on argument values."
     :long
     (xdoc::topstring
@@ -1782,7 +1782,7 @@
     :guard (> (compustate-frames-number compst) 0)
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
-    :parents (atc-dynamic-semantics exec)
+    :parents (atc-execution exec)
     :short "Execute a statement."
     :long
     (xdoc::topstring
@@ -1841,7 +1841,7 @@
     :guard (> (compustate-frames-number compst) 0)
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
-    :parents (atc-dynamic-semantics exec)
+    :parents (atc-execution exec)
     :short "Execute a @('while') statement."
     :long
     (xdoc::topstring
@@ -1876,7 +1876,7 @@
                 (> (compustate-top-frame-scopes-number compst) 0))
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
-    :parents (atc-dynamic-semantics exec)
+    :parents (atc-execution exec)
     :short "Execute a block item."
     :long
     (xdoc::topstring
@@ -1939,7 +1939,7 @@
                 (> (compustate-top-frame-scopes-number compst) 0))
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
-    :parents (atc-dynamic-semantics exec)
+    :parents (atc-execution exec)
     :short "Execute a list of block items."
     :long
     (xdoc::topstring
