@@ -314,6 +314,17 @@
        whose expression is represented by the same term,
        viewed as an expression term returning a C value.")
      (xdoc::li
+      "A term @('(mv ret var1 ... varn)'),
+       when @('ret') is an expression term for @('fni')
+       returning @('T') and affecting no variables,
+       @('L') is @('nil'),
+       @('T') is a non-@('void') non-pointer type,
+       @('vars') is the list @('(var1 ... varn)') with @('n') &gt; 1.
+       This represents a C @('return') statement
+       whose expression is represented by @('ret');
+       the @(tsee mv) and the variables represent no actual C code:
+       they just represent variables that may have been modified.")
+     (xdoc::li
       "A term @('var'),
        when @('L') is @('nil'),
        @('T') is @('void'),
@@ -337,17 +348,6 @@
        @('(mv var1 ... varn)') is
        @('(cons var1 (cons ... (cons varn \' nil)...))');
        this is the pattern that ATC looks for.")
-     (xdoc::li
-      "A term @('(mv ret var1 ... varn)'),
-       when @('ret') is an expression term for @('fni')
-       returning @('T') and affecting no variables,
-       @('L') is @('nil'),
-       @('T') is a non-@('void') non-pointer type,
-       @('vars') is the list @('(var1 ... varn)') with @('n') &gt; 1.
-       This represents a C @('return') statement
-       whose expression is represented by @('ret');
-       the @(tsee mv) and the variables represent no actual C code:
-       they just represent variables that may have been modified.")
      (xdoc::li
       "A call of @('fni') on variables identical to its formal parameters,
        when the C types of the variables are
