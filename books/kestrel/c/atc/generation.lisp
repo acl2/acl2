@@ -1133,7 +1133,7 @@
      the argument for a formal of pointer type must be identical to the formal.
      This is because these arguments and formals represent (pointers to) arrays,
      and thus they must be passed around exactly by their name,
-     similarly to @(tsee stobj)s in ACL2.
+     similarly to stobjs in ACL2.
      This code checks the condition."))
   (b* (((when (endp formals))
         (cond ((consp in-types)
