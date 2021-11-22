@@ -16,7 +16,6 @@
 
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/nat-result" :dir :system)
-(include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -295,8 +294,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines check-safe-expressions/funcalls
-  :short "Check if expressions and function calls are safe."
+(defines check-safe-expressions
+  :short "Check if expressions are safe."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -381,7 +380,7 @@
     (("Goal"
       :in-theory (enable acl2::natp-when-nat-resultp-and-not-resulterrp))))
 
-  (fty::deffixequiv-mutual check-safe-expressions/funcalls))
+  (fty::deffixequiv-mutual check-safe-expressions))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

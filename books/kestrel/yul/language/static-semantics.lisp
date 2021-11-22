@@ -12,6 +12,7 @@
 
 (include-book "static-safety-checking")
 (include-book "static-shadowing-checking")
+(include-book "static-identifier-checking")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
