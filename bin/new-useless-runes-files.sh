@@ -76,6 +76,12 @@ echo "" >> $outfile
 
 echo "(quiet-assign excluded-ur-books '(" >> $outfile
 
+# Avoid books/top.lisp, which we have seen can generate no
+# useless-runes anyhow.  If we ever include anything at the
+# top leve of books/, we will read the (er hard? ...) above,
+# and we'll have to figure out how to deal with that.
+echo '"top"' >> $outfile
+
 grep --include='*.acl2' -ri 'cert-flags.*useless-runes nil' . | sed 's+^[.]/\(.*\)[.]acl2:;.*$+"\1"+g' >> $outfile
 
 echo "))" >> $outfile

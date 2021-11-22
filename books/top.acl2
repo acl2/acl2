@@ -8,4 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; cert-flags: ? T :TTAGS :ALL
+; Matt K. mod 11/21/2021: Added :useless-runes nil to avoid creating a
+; .sys directory here (and possibly avoid future problems with
+; ../bin/new-useless-runes-files.sh).
+; cert-flags: ? T :TTAGS :ALL :useless-runes nil

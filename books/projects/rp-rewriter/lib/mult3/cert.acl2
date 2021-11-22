@@ -1,4 +1,4 @@
 (include-book "projects/rp-rewriter/portcullis" :dir :system)
 
 ; The book spec.lisp, at least, seems to need :useless-runes nil:
-;; cert-flags: ? t :ttags :all :skip-proofs-okp t 
+;; cert-flags: ? t :ttags :all :skip-proofs-okp t :useless-runes nil
