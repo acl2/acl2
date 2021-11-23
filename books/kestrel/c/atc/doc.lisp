@@ -506,7 +506,21 @@
        and the body of @('fnj') is
        a loop term for @('fnj') affecting @('vars').
        This represents the C @('while') statement
-       represented by the body of @('fnj'), as explained below."))
+       represented by the body of @('fnj'), as explained below.")
+     (xdoc::li
+      "A call of a non-recursive target function @('fnj') with @('j < i'),
+       on pure expression terms for @('fni') returning non-@('void') C types,
+       when the C types of the terms are
+       the same as the C types of the formal parameters,
+       each term of pointer type is a variable
+       identical to the corresponding formal parameter of @('fnj'),
+       @('L') is @('nil'),
+       @('T') is @('void'),
+       and the body of @('fnj') is
+       a statement term for @('fnj')
+       returning @('void') and affecting @('vars').
+       This represents an expression statement
+       whose expression is call of the C function corresponding to @('fnj')."))
 
     (xdoc::p
      "A <i>loop term for</i> @('fni')
@@ -876,7 +890,7 @@
       (which is a statement term).")
 
     (xdoc::p
-     "The restriction @('j < i') when @('fni') calls @('fnj') meant that
+     "The restriction @('j < i') when @('fni') calls @('fnj') means that
       no (direct or indirect) recursion is allowed in the C code
       and the target functions must be specified
       in a topological order of their call graph.")

@@ -2134,6 +2134,24 @@
      and we generate no code.
      This represents the conclusion of a loop body (on some path).")
    (xdoc::p
+    "If the term is a call of
+     a non-recursive target function that returns @('void'),
+     the term represents an expression statement
+     consisting of a call to the corresponding C function.
+     The loop flag must be @('nil') for this to be allowed.
+     We ensure that all the pointer arguments are equal to the formals,
+     and that the variables affected by the called function are correct.
+     We retrieve the limit term associated to the called function,
+     which, as explained in @(tsee atc-fn-info),
+     suffices to execute @(tsee exec-fun).
+     But here we are executing lists of block items,
+     so we need to add 1 to go from @(tsee exec-block-item-list)
+     to the call of @(tsee exec-block-item),
+     another 1 to go from there to the call of @(tsee exec-stmt),
+     another 1 to go from there to the call of @(tsee exec-expr-call-or-asg),
+     another 1 to go from there to the call of @(tsee exec-expr-call),
+     and another 1 to go from there to the call of @(tsee exec-fun).")
+   (xdoc::p
     "If the term does not have any of the forms above,
      we treat it as an expression term returning a C value.
      We ensure that the loop flag is @('nil').
@@ -2614,7 +2632,7 @@
               (er-soft+ ctx t irr
                         "A loop body must end with ~
                          a recursive call on every path, ~
-                         but in the fucntion ~x0 it ends with ~x1 instead."
+                         but in the function ~x0 it ends with ~x1 instead."
                         fn term))
              (formals (formals+ loop-fn (w state)))
              ((unless (equal formals loop-args))
@@ -2662,6 +2680,51 @@
                      a recursive call to the loop function occurs ~
                      not at the end of the computation on some path."
                     fn)))
+       ((mv okp called-fn args in-types out-type fn-affect limit)
+        (atc-check-cfun-call term var-term-alist prec-fns (w state)))
+       ((when (and okp
+                   (type-case out-type :void)))
+        (b* (((when loop-flag)
+              (er-soft+ ctx t irr
+                        "A loop body must end with ~
+                         a recursive call on every path, ~
+                         but in the function ~x0 it ends with ~x1 instead."
+                        fn term))
+             ((unless (atc-check-cfun-call-args (formals+ called-fn (w state))
+                                                in-types
+                                                args))
+              (er-soft+ ctx t irr
+                        "The call ~x0 does not satisfy the restrictions ~
+                         on array arguments being identical to the formals."
+                        term))
+             ((unless (equal affect fn-affect))
+              (er-soft+ ctx t irr
+                        "When generating C code for the function ~x0, ~
+                         a call of the non-recursive function ~x1 ~
+                         has been encountered that affects ~x2, ~
+                         which differs from the variables ~x3 ~
+                         being affected here."
+                        fn loop-fn fn-affect affect))
+             ((mv erp (list arg-exprs types) state)
+              (atc-gen-expr-cval-pure-list args
+                                           inscope
+                                           fn
+                                           ctx
+                                           state))
+             ((when erp) (mv erp irr state))
+             ((unless (equal types in-types))
+              (er-soft+ ctx t irr
+                        "The function ~x0 with input types ~x1 ~
+                         is applied to terms ~x2 returning ~x3. ~
+                         This is indicative of provably dead code, ~
+                         given that the code is guard-verified."
+                        called-fn in-types args types))
+             (call-expr (make-expr-call :fun (make-ident
+                                              :name (symbol-name called-fn))
+                                        :args arg-exprs)))
+          (acl2::value (list (list (block-item-stmt (stmt-expr call-expr)))
+                             (type-void)
+                             `(binary-+ '5 ,limit)))))
        ((mv erp (list expr type eaffect limit) state)
         (atc-gen-expr-cval term var-term-alist inscope fn prec-fns ctx state))
        ((when erp) (mv erp irr state))
