@@ -2037,7 +2037,7 @@
      We use the sum of the two limits as the overall limit:
      thus, after @(tsee exec-block-item-list) executes
      the block items for the bound term,
-     it still has enough limit to executed the block items for the body term.")
+     it still has enough limit to execute the block items for the body term.")
    (xdoc::p
     "If the term is a @(tsee let), there are four cases.
      If the binding has the form of an array write,
@@ -2068,8 +2068,6 @@
    (xdoc::p
     "In the @(tsee let) case whose translation is explained above,
      the limit is calculated as follows.
-     For the case of an array write, the limit is irrelevant for now;
-     we do not generate proofs for array writes.
      For the case of the term representing code that affects variables,
      we add up the two limits,
      similarly to the @(tsee mv-let) case.
@@ -2081,13 +2079,15 @@
      (in principle we could take the maximum,
      but see the discussion above for @(tsee if)
      for why we take the sum instead).
-     The first block item is either a declaration or an assignment.
+     The first block item is a declaration, an assignment, or a function call.
      If it is a declaration, we need 1 to go from @(tsee exec-block-item)
-     to the @(':declon') case and to @(tsee exec-expr-call-or-pure).
+     to the @(':declon') case and to @(tsee exec-expr-call-or-pure),
+     for which we get the limit.
      If it is an assignment, we need 1 to go from @(tsee exec-block-item)
      to the @(':stmt') case and to @(tsee exec-stmt),
      another 1 to go from there to the @(':expr') case
-     and to @(tsee exec-expr-asg),
+     and to @(tsee exec-expr-call-or-asg),
+     another 1 to fo from there to @(tsee exec-expr-asg),
      and another 1 to go from there to @(tsee exec-expr-call-or-pure),
      for which we recursively get the limit.
      For the remaining block items, we need to add another 1
@@ -2437,7 +2437,10 @@
                    (type body-type)
                    (limit (pseudo-term-fncall
                            'binary-+
-                           (list init-limit body-limit))))
+                           (list (pseudo-term-quote 3)
+                                 (pseudo-term-fncall
+                                  'binary-+
+                                  (list init-limit body-limit))))))
                 (acl2::value (list (cons item body-items)
                                    type
                                    limit))))
@@ -2500,7 +2503,7 @@
                    (type body-type)
                    (limit (pseudo-term-fncall
                            'binary-+
-                           (list (pseudo-term-quote 4)
+                           (list (pseudo-term-quote 6)
                                  (pseudo-term-fncall
                                   'binary-+
                                   (list rhs-limit body-limit))))))

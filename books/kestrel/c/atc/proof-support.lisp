@@ -1386,6 +1386,7 @@
           *atc-exec-expr-call-rules*
           *atc-exec-expr-call-or-pure-rules*
           *atc-exec-expr-asg-rules*
+          *atc-exec-expr-call-or-asg-rules*
           *atc-exec-fun-rules*
           *atc-exec-stmt-rules*
           *atc-exec-block-item-rules*

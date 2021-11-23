@@ -1728,6 +1728,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define exec-expr-call-or-asg ((e exprp)
+                                 (compst compustatep)
+                                 (fenv fun-envp)
+                                 (limit natp))
+    :returns (new-compst compustate-resultp)
+    :parents (atc-execution exec)
+    :short "Execute a function call or assignment expression."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is used for expressions used as expression statements.
+       Thus, in the case of a function call,
+       we discard the returned value, if any."))
+    (b* (((when (zp limit)) (error :limit)))
+      (if (expr-case e :call)
+          (b* (((mv result compst)
+                (exec-expr-call (expr-call->fun e)
+                                (expr-call->args e)
+                                compst
+                                fenv
+                                (1- limit)))
+               ((when (errorp result)) result))
+            compst)
+        (exec-expr-asg e compst fenv (1- limit))))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define exec-fun ((fun identp)
                     (args value-listp)
                     (compst compustatep)
@@ -1804,7 +1832,10 @@
                       ((mv value? compst)
                        (exec-block-item-list s.items compst fenv (1- limit))))
                    (mv value? (exit-scope compst)))
-       :expr (b* ((compst/error (exec-expr-asg s.get compst fenv (1- limit)))
+       :expr (b* ((compst/error (exec-expr-call-or-asg s.get
+                                                       compst
+                                                       fenv
+                                                       (1- limit)))
                   ((when (errorp compst/error))
                    (mv compst/error (compustate-fix compst))))
                (mv nil compst/error))
@@ -1991,6 +2022,11 @@
                (equal (compustate-frames-number new-compst)
                       (compustate-frames-number compst)))
       :fn exec-expr-asg)
+    (defret compustate-frames-number-of-exec-expr-call-or-asg
+      (implies (compustatep new-compst)
+               (equal (compustate-frames-number new-compst)
+                      (compustate-frames-number compst)))
+      :fn exec-expr-call-or-asg)
     (defret compustate-frames-number-of-exec-fun
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -2018,6 +2054,7 @@
     :hints (("Goal" :expand ((exec-expr-call fun args compst fenv limit)
                              (exec-expr-call-or-pure e compst fenv limit)
                              (exec-expr-asg e compst fenv limit)
+                             (exec-expr-call-or-asg e compst fenv limit)
                              (exec-fun fun args compst fenv limit)
                              (exec-stmt s compst fenv limit)
                              (exec-block-item item compst fenv limit)
@@ -2039,6 +2076,11 @@
                (equal (compustate-scopes-numbers new-compst)
                       (compustate-scopes-numbers compst)))
       :fn exec-expr-asg)
+    (defret compustate-scopes-numbers-of-exec-expr-call-or-asg
+      (implies (compustatep new-compst)
+               (equal (compustate-scopes-numbers new-compst)
+                      (compustate-scopes-numbers compst)))
+      :fn exec-expr-call-or-asg)
     (defret compustate-scopes-numbers-of-exec-fun
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
@@ -2069,6 +2111,7 @@
     :hints (("Goal" :expand ((exec-expr-call fun args compst fenv limit)
                              (exec-expr-call-or-pure e compst fenv limit)
                              (exec-expr-asg e compst fenv limit)
+                             (exec-expr-call-or-asg e compst fenv limit)
                              (exec-fun fun args compst fenv limit)
                              (exec-stmt s compst fenv limit)
                              (exec-stmt-while test body compst fenv limit)
