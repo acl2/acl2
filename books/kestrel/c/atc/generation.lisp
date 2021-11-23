@@ -1118,6 +1118,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-cfun-call-args ((formals symbol-listp)
+                                  (in-types type-listp)
+                                  (args pseudo-term-listp))
+  :returns (yes/no booleanp)
+  :short "Check the arguments of a call to a C function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called after @(tsee atc-check-cfun-call),
+     if the latter is successful.
+     As stated in the user documentation of ATC,
+     calls of non-recursive target functions must satisfy the property that
+     the argument for a formal of pointer type must be identical to the formal.
+     This is because these arguments and formals represent (pointers to) arrays,
+     and thus they must be passed around exactly by their name,
+     similarly to stobjs in ACL2.
+     This code checks the condition."))
+  (b* (((when (endp formals))
+        (cond ((consp in-types)
+               (raise "Internal error: extra types ~x0." in-types))
+              ((consp args)
+               (raise "Internal error: extra arguments ~x0." args))
+              (t t)))
+       ((when (or (endp in-types)
+                  (endp args)))
+        (raise "Internal error: extra formals ~x0." formals))
+       (formal (car formals))
+       (in-type (car in-types))
+       (arg (car args))
+       ((unless (type-case in-type :pointer))
+        (atc-check-cfun-call-args (cdr formals) (cdr in-types) (cdr args)))
+       ((unless (eq formal arg)) nil))
+    (atc-check-cfun-call-args (cdr formals) (cdr in-types) (cdr args))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-loop-call ((term pseudo-termp)
                              (var-term-alist symbol-pseudoterm-alistp)
                              (prec-fns atc-symbol-fninfo-alistp))
@@ -1713,23 +1749,21 @@
      as described in the user documentation.")
    (xdoc::p
     "We also return the C type of the expression,
-     and the affected variables.")
-   (xdoc::p
-    "We also return a limit that suffices for @(tsee exec-expr-call-or-pure)
-     to execute the expression completely.
-     This is the limit (associated to the function)
-     sufficient to run @(tsee exec-fun),
-     plus 1 to get there from @(tsee exec-expr-call-or-pure).")
+     the affected variables,
+     and a limit that suffices for @(tsee exec-expr-call-or-pure)
+     to execute the expression completely.")
    (xdoc::p
     "If the term is a call of a function that precedes @('fn')
      in the list of target functions @('fn1'), ..., @('fnp'),
      we translate it to a C function call on the translated arguments.
      The type of the expression is the result type of the function,
-     which is looked up in the function alist passed as input.
+     which is looked up in the function alist passed as input:
+     we ensure that this type is not @('void').
      A sufficient limit for @(tsee exec-fun) to execute the called function
      is retrieved from the called function's information;
-     we add 1 to it, to take into account the decrementing of the limit
-     done by @(tsee exec-expr-call-or-pure) when it calls @(tsee exec-fun).")
+     we add 2 to it, to take into account the decrementing of the limit
+     to go from @(tsee exec-expr-call-or-pure) to @(tsee exec-expr-call)
+     and from there to @(tsee exec-fun).")
    (xdoc::p
     "Otherwise, we attempt to translate the term
      as a pure expression term returning a C value.
@@ -1739,7 +1773,20 @@
   (b* (((mv okp called-fn args in-types out-type affect limit)
         (atc-check-cfun-call term var-term-alist prec-fns (w state)))
        ((when okp)
-        (b* (((mv erp (list arg-exprs types) state)
+        (b* (((when (type-case out-type :void))
+              (er-soft+ ctx t (list (irr-expr) (irr-type) nil nil)
+                        "A call ~x0 of the function ~x1, which returns void, ~
+                         is being used where ~
+                         an ACL2 term is expected to return a C value."
+                        term called-fn))
+             ((unless (atc-check-cfun-call-args (formals+ called-fn (w state))
+                                                in-types
+                                                args))
+              (er-soft+ ctx t (list (irr-expr) (irr-type) nil nil)
+                        "The call ~x0 does not satisfy the restrictions ~
+                         on array arguments being identical to the formals."
+                        term))
+             ((mv erp (list arg-exprs types) state)
               (atc-gen-expr-cval-pure-list args
                                            inscope
                                            fn
@@ -1759,7 +1806,7 @@
                                         :args arg-exprs)
                         out-type
                         affect
-                        `(binary-+ '1 ,limit))))))
+                        `(binary-+ '2 ,limit))))))
     (b* (((mv erp (list expr type) state)
           (atc-gen-expr-cval-pure term inscope fn ctx state))
          ((when erp) (mv erp (list (irr-expr) (irr-type) nil nil) state)))
@@ -1990,7 +2037,7 @@
      We use the sum of the two limits as the overall limit:
      thus, after @(tsee exec-block-item-list) executes
      the block items for the bound term,
-     it still has enough limit to executed the block items for the body term.")
+     it still has enough limit to execute the block items for the body term.")
    (xdoc::p
     "If the term is a @(tsee let), there are four cases.
      If the binding has the form of an array write,
@@ -2021,8 +2068,6 @@
    (xdoc::p
     "In the @(tsee let) case whose translation is explained above,
      the limit is calculated as follows.
-     For the case of an array write, the limit is irrelevant for now;
-     we do not generate proofs for array writes.
      For the case of the term representing code that affects variables,
      we add up the two limits,
      similarly to the @(tsee mv-let) case.
@@ -2034,13 +2079,15 @@
      (in principle we could take the maximum,
      but see the discussion above for @(tsee if)
      for why we take the sum instead).
-     The first block item is either a declaration or an assignment.
+     The first block item is a declaration, an assignment, or a function call.
      If it is a declaration, we need 1 to go from @(tsee exec-block-item)
-     to the @(':declon') case and to @(tsee exec-expr-call-or-pure).
+     to the @(':declon') case and to @(tsee exec-expr-call-or-pure),
+     for which we get the limit.
      If it is an assignment, we need 1 to go from @(tsee exec-block-item)
      to the @(':stmt') case and to @(tsee exec-stmt),
      another 1 to go from there to the @(':expr') case
-     and to @(tsee exec-expr-asg),
+     and to @(tsee exec-expr-call-or-asg),
+     another 1 to fo from there to @(tsee exec-expr-asg),
      and another 1 to go from there to @(tsee exec-expr-call-or-pure),
      for which we recursively get the limit.
      For the remaining block items, we need to add another 1
@@ -2086,6 +2133,24 @@
      we ensure that the loop flag is @('t'),
      and we generate no code.
      This represents the conclusion of a loop body (on some path).")
+   (xdoc::p
+    "If the term is a call of
+     a non-recursive target function that returns @('void'),
+     the term represents an expression statement
+     consisting of a call to the corresponding C function.
+     The loop flag must be @('nil') for this to be allowed.
+     We ensure that all the pointer arguments are equal to the formals,
+     and that the variables affected by the called function are correct.
+     We retrieve the limit term associated to the called function,
+     which, as explained in @(tsee atc-fn-info),
+     suffices to execute @(tsee exec-fun).
+     But here we are executing lists of block items,
+     so we need to add 1 to go from @(tsee exec-block-item-list)
+     to the call of @(tsee exec-block-item),
+     another 1 to go from there to the call of @(tsee exec-stmt),
+     another 1 to go from there to the call of @(tsee exec-expr-call-or-asg),
+     another 1 to go from there to the call of @(tsee exec-expr-call),
+     and another 1 to go from there to the call of @(tsee exec-fun).")
    (xdoc::p
     "If the term does not have any of the forms above,
      we treat it as an expression term returning a C value.
@@ -2390,7 +2455,10 @@
                    (type body-type)
                    (limit (pseudo-term-fncall
                            'binary-+
-                           (list init-limit body-limit))))
+                           (list (pseudo-term-quote 3)
+                                 (pseudo-term-fncall
+                                  'binary-+
+                                  (list init-limit body-limit))))))
                 (acl2::value (list (cons item body-items)
                                    type
                                    limit))))
@@ -2453,7 +2521,7 @@
                    (type body-type)
                    (limit (pseudo-term-fncall
                            'binary-+
-                           (list (pseudo-term-quote 4)
+                           (list (pseudo-term-quote 6)
                                  (pseudo-term-fncall
                                   'binary-+
                                   (list rhs-limit body-limit))))))
@@ -2564,7 +2632,7 @@
               (er-soft+ ctx t irr
                         "A loop body must end with ~
                          a recursive call on every path, ~
-                         but in the fucntion ~x0 it ends with ~x1 instead."
+                         but in the function ~x0 it ends with ~x1 instead."
                         fn term))
              (formals (formals+ loop-fn (w state)))
              ((unless (equal formals loop-args))
@@ -2612,6 +2680,51 @@
                      a recursive call to the loop function occurs ~
                      not at the end of the computation on some path."
                     fn)))
+       ((mv okp called-fn args in-types out-type fn-affect limit)
+        (atc-check-cfun-call term var-term-alist prec-fns (w state)))
+       ((when (and okp
+                   (type-case out-type :void)))
+        (b* (((when loop-flag)
+              (er-soft+ ctx t irr
+                        "A loop body must end with ~
+                         a recursive call on every path, ~
+                         but in the function ~x0 it ends with ~x1 instead."
+                        fn term))
+             ((unless (atc-check-cfun-call-args (formals+ called-fn (w state))
+                                                in-types
+                                                args))
+              (er-soft+ ctx t irr
+                        "The call ~x0 does not satisfy the restrictions ~
+                         on array arguments being identical to the formals."
+                        term))
+             ((unless (equal affect fn-affect))
+              (er-soft+ ctx t irr
+                        "When generating C code for the function ~x0, ~
+                         a call of the non-recursive function ~x1 ~
+                         has been encountered that affects ~x2, ~
+                         which differs from the variables ~x3 ~
+                         being affected here."
+                        fn loop-fn fn-affect affect))
+             ((mv erp (list arg-exprs types) state)
+              (atc-gen-expr-cval-pure-list args
+                                           inscope
+                                           fn
+                                           ctx
+                                           state))
+             ((when erp) (mv erp irr state))
+             ((unless (equal types in-types))
+              (er-soft+ ctx t irr
+                        "The function ~x0 with input types ~x1 ~
+                         is applied to terms ~x2 returning ~x3. ~
+                         This is indicative of provably dead code, ~
+                         given that the code is guard-verified."
+                        called-fn in-types args types))
+             (call-expr (make-expr-call :fun (make-ident
+                                              :name (symbol-name called-fn))
+                                        :args arg-exprs)))
+          (acl2::value (list (list (block-item-stmt (stmt-expr call-expr)))
+                             (type-void)
+                             `(binary-+ '5 ,limit)))))
        ((mv erp (list expr type eaffect limit) state)
         (atc-gen-expr-cval term var-term-alist inscope fn prec-fns ctx state))
        ((when erp) (mv erp irr state))
@@ -2634,7 +2747,7 @@
        ((when (type-case type :pointer))
         (er-soft+ ctx t irr
                   "When generating a return statement for function ~x0, ~
-                   the term ~x1 that represents th return expression ~
+                   the term ~x1 that represents the return expression ~
                    has pointer type ~x2, which is disallowed."
                   fn term type))
        (limit (pseudo-term-fncall
@@ -4007,6 +4120,7 @@
 (define atc-find-affected ((fn symbolp)
                            (term pseudo-termp)
                            (typed-formals atc-symbol-type-alistp)
+                           (prec-fns atc-symbol-fninfo-alistp)
                            (ctx ctxp)
                            state)
   :returns (mv erp
@@ -4017,7 +4131,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used on the body of each non-recursive target function,
+    "This is used on the body of each non-recursive target function @('fni'),
      in order to determine the variables affected by it,
      according to the nomenclature in the user documentation.
      We visit the leaves of the term
@@ -4026,10 +4140,22 @@
      which must be one of the following forms:")
    (xdoc::ul
     (xdoc::li
-     "A formal parameter @('var') of the function that has pointer type.
+     "A call of a (recursive or non-recursive) target function @('fnj')
+      with @('j < i').
+      In this case, @('term') affects the same variables as @('fnj').
+      We use @(tsee atc-check-cfun-call) and @(tsee atc-check-loop-call)
+      to check if the term is a call of a target function
+      and to retrieve that function's affected variables:
+      we pass @('nil') as the variable-term alist,
+      because it does not change the returned affected variables,
+      which is the only thing we care about here,
+      ignoring all the other results.")
+    (xdoc::li
+     "A formal parameter @('var') of @('fni') with pointer type.
       In this case, @('term') affects the list of variables @('(var)').")
     (xdoc::li
-     "A term @('ret') that is not a formal parameter of pointer type.
+     "A term @('ret') that is not a call of @('fnj') as above
+      and is not a formal parameter of @('fni') of pointer type.
       In this case, @('term') affects no variables.")
     (xdoc::li
      "A term @('(mv var1 ... varn)') where each @('vari') is
@@ -4052,13 +4178,31 @@
   (b* (((mv okp test then else) (fty-check-if-call term))
        ((when okp)
         (b* (((mv mbtp &) (check-mbt-call test))
-             ((when mbtp) (atc-find-affected fn then typed-formals ctx state))
+             ((when mbtp) (atc-find-affected fn
+                                             then
+                                             typed-formals
+                                             prec-fns
+                                             ctx
+                                             state))
              ((mv mbt$p &) (check-mbt$-call test))
-             ((when mbt$p) (atc-find-affected fn then typed-formals ctx state))
-             ((er then-affected) (atc-find-affected fn then typed-formals
-                                                    ctx state))
-             ((er else-affected) (atc-find-affected fn else typed-formals
-                                                    ctx state)))
+             ((when mbt$p) (atc-find-affected fn
+                                              then
+                                              typed-formals
+                                              prec-fns
+                                              ctx
+                                              state))
+             ((er then-affected) (atc-find-affected fn
+                                                    then
+                                                    typed-formals
+                                                    prec-fns
+                                                    ctx
+                                                    state))
+             ((er else-affected) (atc-find-affected fn
+                                                    else
+                                                    typed-formals
+                                                    prec-fns
+                                                    ctx
+                                                    state)))
           (if (equal then-affected else-affected)
               (acl2::value then-affected)
             (er-soft+ ctx t nil
@@ -4068,8 +4212,18 @@
                        this is disallowed."
                       fn then-affected else-affected))))
        ((mv okp & body &) (fty-check-lambda-call term))
-       ((when okp)
-        (atc-find-affected fn body typed-formals ctx state))
+       ((when okp) (atc-find-affected fn
+                                      body
+                                      typed-formals
+                                      prec-fns
+                                      ctx
+                                      state))
+       ((mv okp & & & & affected &)
+        (atc-check-cfun-call term nil prec-fns (w state)))
+       ((when okp) (acl2::value affected))
+       ((mv okp & & & affected & &)
+        (atc-check-loop-call term nil prec-fns))
+       ((when okp) (acl2::value affected))
        ((when (pseudo-term-case term :var))
         (b* ((var (pseudo-term-var->name term)))
           (if (atc-formal-pointerp var typed-formals)
@@ -4154,7 +4308,12 @@
        ((er typed-formals) (atc-typed-formals fn ctx state))
        ((er params) (atc-gen-param-declon-list typed-formals fn ctx state))
        (body (ubody+ fn wrld))
-       ((er affect) (atc-find-affected fn body typed-formals ctx state))
+       ((er affect) (atc-find-affected fn
+                                       body
+                                       typed-formals
+                                       prec-fns
+                                       ctx
+                                       state))
        ((er (list items type limit)) (atc-gen-stmt body
                                                    nil
                                                    (list typed-formals)

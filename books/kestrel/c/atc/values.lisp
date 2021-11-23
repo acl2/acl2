@@ -274,7 +274,13 @@
     (implies (value-listp x)
              (not (errorp x)))
     :rule-classes :tau-system
-    :enable errorp))
+    :enable errorp)
+
+  (defrule not-errorp-when-value-optionp
+    (implies (value-optionp x)
+             (not (errorp x)))
+    :rule-classes :tau-system
+    :enable value-optionp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

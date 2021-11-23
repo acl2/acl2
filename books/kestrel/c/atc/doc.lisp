@@ -287,17 +287,17 @@
       are defined below, along with the notions of
       (iii) expression term for @('fni')
       returning @('T') and affecting @('vars'),
-      (iv) pure expression term for @('fni')
-      returning @('T'),
-      (v) C type of a variable, and
-      (vi) assignable variable.")
+      (iv) pure expression term for @('fni') returning @('T'),
+      (v) expression term for @('fni') returning boolean,
+      (vi) C type of a variable, and
+      (vii) assignable variable.")
 
     (xdoc::p
      "A <i>statement term for</i> @('fni') with loop flag @('L')
       <i>returning</i> @('T') and <i>affecting</i> @('vars'),
       where @('fni') is a target function,
       @('L') is either @('t') or @('nil'),
-      @('T') is either a C type or `boolean',
+      @('T') is a C type (possibly @('void')),
       and @('vars') is a list of distinct symbols,
       is inductively defined as one of the following:")
     (xdoc::ul
@@ -313,6 +313,17 @@
        This represents a C @('return') statement
        whose expression is represented by the same term,
        viewed as an expression term returning a C value.")
+     (xdoc::li
+      "A term @('(mv ret var1 ... varn)'),
+       when @('ret') is an expression term for @('fni')
+       returning @('T') and affecting no variables,
+       @('L') is @('nil'),
+       @('T') is a non-@('void') non-pointer type,
+       @('vars') is the list @('(var1 ... varn)') with @('n') &gt; 1.
+       This represents a C @('return') statement
+       whose expression is represented by @('ret');
+       the @(tsee mv) and the variables represent no actual C code:
+       they just represent variables that may have been modified.")
      (xdoc::li
       "A term @('var'),
        when @('L') is @('nil'),
@@ -337,16 +348,6 @@
        @('(mv var1 ... varn)') is
        @('(cons var1 (cons ... (cons varn \' nil)...))');
        this is the pattern that ATC looks for.")
-     (xdoc::li
-      "A term @('(mv ret var1 ... varn)'),
-       when @('ret') is an expression term for @('fni') returning @('T'),
-       @('L') is @('nil'),
-       @('T') is a non-@('void') non-pointer type,
-       @('vars') is the list @('(var1 ... varn)') with @('n') &gt; 1.
-       This represents a C @('return') statement
-       whose expression is represented by @('ret');
-       the @(tsee mv) and the variables represent no actual C code:
-       they just represent variables that may have been modified.")
      (xdoc::li
       "A call of @('fni') on variables identical to its formal parameters,
        when the C types of the variables are
@@ -383,13 +384,14 @@
        and whose branch blocks are represented by the branch terms.")
      (xdoc::li
       "A term @('(let ((var (declar term))) body)'),
-       where the symbol name of @('var') is a portable ASCII C identifier
+       when the symbol name of @('var') is a portable ASCII C identifier
        as defined in Section `Portable ASCII C Identifiers' below,
        the symbol name of @('var') is distinct from
        the symbol names of all the other ACL2 variables in scope
        (function parameters and variables bound in enclosing @(tsee let)s),
        @('term') is an expression term for @('fni')
-       returning a non-pointer C type and affecting no variables, and
+       returning a non-@('void') non-pointer C type
+       and affecting no variables, and
        @('body') is a statement term for @('fni') with loop flag @('L')
        returning @('T') and affecting @('vars').
        This represents, as indicated by the wrapper @(tsee declar),
@@ -403,9 +405,10 @@
        this is the pattern that ATC looks for.")
      (xdoc::li
       "A term @('(let ((var (assign term))) body)'),
-       where @('var') is assignable,
+       when @('var') is assignable,
        @('term') is an expression term for @('fni')
-       returning the same non-pointer C type as the C type of @('var')
+       returning the same non-@('void') non-pointer C type
+       as the C type of @('var')
        and affecting no variables, and
        @('body') is a statement term for @('fni') with loop flag @('L')
        returning @('T') and affecting @('vars').
@@ -421,7 +424,7 @@
      (xdoc::li
       "A term
        @('(let ((var (<type1>-array-write-<type2> var term1 term2))) body)'),
-       where @('<type1>') and @('<type2>') are among"
+       when @('<type1>') and @('<type2>') are among"
       (xdoc::ul
        (xdoc::li "@('schar')")
        (xdoc::li "@('uchar')")
@@ -450,7 +453,7 @@
        followed by the C code represented by @('body').")
      (xdoc::li
       "A term @('(let ((var term)) body)'),
-       where @('var') is assignable,
+       when @('var') is assignable,
        @('term') is a statement term for @('fni') with loop flag @('nil')
        returning @('void') and affecting @('var')
        that is
@@ -469,7 +472,7 @@
        this is the pattern that ATC looks for.")
      (xdoc::li
       "A term @('(mv-let (var1 ... varn) term body)'),
-       where @('n') &gt; 1,
+       when @('n') &gt; 1,
        each @('vari') is assignable,
        @('term') is a statement term for @('fni') with loop flag @('nil')
        returning @('void') and affecting @('(var1 ... varn)')
@@ -503,7 +506,21 @@
        and the body of @('fnj') is
        a loop term for @('fnj') affecting @('vars').
        This represents the C @('while') statement
-       represented by the body of @('fnj'), as explained below."))
+       represented by the body of @('fnj'), as explained below.")
+     (xdoc::li
+      "A call of a non-recursive target function @('fnj') with @('j < i'),
+       on pure expression terms for @('fni') returning non-@('void') C types,
+       when the C types of the terms are
+       the same as the C types of the formal parameters,
+       each term of pointer type is a variable
+       identical to the corresponding formal parameter of @('fnj'),
+       @('L') is @('nil'),
+       @('T') is @('void'),
+       and the body of @('fnj') is
+       a statement term for @('fnj')
+       returning @('void') and affecting @('vars').
+       This represents an expression statement
+       whose expression is call of the C function corresponding to @('fnj')."))
 
     (xdoc::p
      "A <i>loop term for</i> @('fni')
@@ -549,7 +566,7 @@
       <i>returning</i> @('T') and
       <i>affecting</i> @('vars'),
       where @('fni') is a target function,
-      @('T') is either a C type or `boolean',
+      @('T') is a non-@('void') C type,
       and @('vars') is a list of distinct symbols,
       is inductively defined as one of the following:")
     (xdoc::ul
@@ -559,20 +576,20 @@
      (xdoc::li
       "A call of a non-recursive target function @('fnj') with @('j < i'),
        on pure expression terms for @('fni') returning non-@('void') C types,
-       where the types of the terms are equal to the
-       the C types of the formal parameters of @('fnj')
-       and where the body of @('fnj') is
+       when the types of the terms are equal to
+       the C types of the formal parameters of @('fnj'),
+       each term of pointer type is a variable
+       identical to the corresponding formal parameter of @('fnj'),
+       and the body of @('fnj') is
        a statement term for @('fnj')
        returning @('T') and affecting @('vars').
-       The restriction @('j < i') means that
-       no (direct or indirect) recursion is allowed in the C code
-       and the target functions must be specified
-       in a topological order of their call graph.
        This represents a call of the corresponding C function."))
 
     (xdoc::p
-     "A <i>pure expression term for</i> @('fni') <i>returning</i> @('T') is
-      inductively defined as one of the following:")
+     "A <i>pure expression term for</i> @('fni') <i>returning</i> @('T'),
+      where @('fni') is a target function and
+      @('T') is a non-@('void') C type,
+      is inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
       "A formal parameter of @('fni'),
@@ -587,7 +604,7 @@
        as an expression.")
      (xdoc::li
       "A call of a function @('<type>-<base>-const') on a quoted integer,
-       where @('<type>') is among"
+       when @('<type>') is among"
       (xdoc::ul
        (xdoc::li "@('sint')")
        (xdoc::li "@('uint')")
@@ -595,12 +612,12 @@
        (xdoc::li "@('ulong')")
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
-      "and @('<base>') is among"
+      "@('<base>') is among"
       (xdoc::ul
        (xdoc::li "@('dec')")
        (xdoc::li "@('oct')")
        (xdoc::li "@('hex')"))
-      "when @('T') is the C type corresponding to @('<type>')
+      "@('T') is the C type corresponding to @('<type>')
        and the quoted integer is non-negative and in the range of @('T').
        This represents a C integer constant
        of the C type indicated by the name of the function,
@@ -608,13 +625,13 @@
      (xdoc::li
       "A call of a function @('<op>-<type>') on
        a pure expression term for @('fni') returning @('U'),
-       where @('<op>') is among"
+       when @('<op>') is among"
       (xdoc::ul
        (xdoc::li "@('plus')")
        (xdoc::li "@('minus')")
        (xdoc::li "@('bitnot')")
        (xdoc::li "@('lognot')"))
-      "and @('<type>') is among"
+      "@('<type>') is among"
       (xdoc::ul
        (xdoc::li "@('schar')")
        (xdoc::li "@('uchar')")
@@ -626,7 +643,7 @@
        (xdoc::li "@('ulong')")
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
-      "when @('T') is the C type corresponding to
+      "@('T') is the C type corresponding to
        the return type of @('<op>-<type>')
        and @('U') is the C type corresponding to @('<type>').
        This represents the C operator indicated by the name of the function
@@ -638,7 +655,7 @@
      (xdoc::li
       "A call of a function @('<op>-<type1>-<type2>')
        on pure expression terms for @('fni') returning @('U') and @('V'),
-       where @('<op>') is among"
+       when @('<op>') is among"
       (xdoc::ul
        (xdoc::li "@('add')")
        (xdoc::li "@('sub')")
@@ -656,7 +673,7 @@
        (xdoc::li "@('bitand')")
        (xdoc::li "@('bitxor')")
        (xdoc::li "@('bitior')"))
-      "and @('<type1>') and @('<type2>') are among"
+      "@('<type1>') and @('<type2>') are among"
       (xdoc::ul
        (xdoc::li "@('schar')")
        (xdoc::li "@('uchar')")
@@ -668,7 +685,7 @@
        (xdoc::li "@('ulong')")
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
-      "when @('T') is the C type corresponding to
+      "@('T') is the C type corresponding to
        the return type of @('<op>-<type1>-<type2>'),
        @('U') is the C type corresponding to @('<type1>'), and
        @('V') is the C type corresponding to @('<type2>').
@@ -683,7 +700,7 @@
      (xdoc::li
       "A call of a function @('<type1>-from-<type2>')
        on a pure expression term for @('fni') returning @('U'),
-       where @('<type1>') and @('<type2>') are among"
+       when @('<type1>') and @('<type2>') are among"
       (xdoc::ul
        (xdoc::li "@('schar')")
        (xdoc::li "@('uchar')")
@@ -696,7 +713,7 @@
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
       "and also differ from each other,
-       when @('T') is the C type corresponding to @('<type1>')
+       @('T') is the C type corresponding to @('<type1>')
        and @('U') is the C type corresponding to @('<type2>').
        This represents
        a cast to the type indicated by the first part of the function name.
@@ -710,7 +727,7 @@
      (xdoc::li
       "A call of @('<type1>-array-read-<type2>')
        on expression terms for @('fni') returning @('U') and @('V'),
-       where @('<type1>') and @('<type2>') are among"
+       when @('<type1>') and @('<type2>') are among"
       (xdoc::ul
        (xdoc::li "@('schar')")
        (xdoc::li "@('uchar')")
@@ -722,7 +739,7 @@
        (xdoc::li "@('ulong')")
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
-      "when @('T') is the C type correponding to @('<type1>'),
+      "@('T') is the C type correponding to @('<type1>'),
        @('U') is the pointer type to @('T'), and
        @('V') is the C type correponding to @('<type2>').
        This represents an array subscripting expression.
@@ -745,13 +762,14 @@
        and whose branch expressions are represented by the branch terms."))
 
     (xdoc::p
-     "An <i>expression term for</i> @('fni') <i>returning boolean</i> is
-      inductively defined as one of the following:")
+     "An <i>expression term for</i> @('fni') <i>returning boolean</i>,
+      where @('fni') is a target function,
+      is inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
       "A call of a function @('boolean-from-<type>')
        on a pure expression term for @('fni') returning @('U'),
-       where @('<type>') is among"
+       when @('<type>') is among"
       (xdoc::ul
        (xdoc::li "@('schar')")
        (xdoc::li "@('uchar')")
@@ -763,7 +781,7 @@
        (xdoc::li "@('ulong')")
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
-      "when @('U') is the C type corresponding to @('<type>').
+      "@('U') is the C type corresponding to @('<type>').
        This converts a pure expression term returning a C type
        to an expression term returning boolean.")
      (xdoc::li
@@ -776,7 +794,7 @@
       "The first one is a function, while the other two are macros.
        This represents the corresponding C logical operator
        (negation @('!'), conjunction @('&&'), disjunction @('||'));
-       conjunction and disjunctions are represented non-strictly.
+       conjunctions and disjunctions are represented non-strictly.
        In translated terms, @('(and x y)') and @('(or x y)') are
        @('(if x y \'nil)') and @('(if x x y)'):
        these are the patterns that ATC looks for."))
@@ -791,6 +809,8 @@
       "If @('var') is not a formal parameter,
        it must be introduced by a @(tsee let) with @(tsee declar),
        and its C type is the one of the term argument of @(tsee declar)."))
+    (xdoc::p
+     "The C type of a variable is never @('void').")
 
     (xdoc::p
      "A variable @('var') bound in
@@ -868,6 +888,12 @@
       the block items (i.e. statements and declarations)
       represented by the ACL2 function's body
       (which is a statement term).")
+
+    (xdoc::p
+     "The restriction @('j < i') when @('fni') calls @('fnj') means that
+      no (direct or indirect) recursion is allowed in the C code
+      and the target functions must be specified
+      in a topological order of their call graph.")
 
     (xdoc::p
      "The guard verification requirement ensures that
