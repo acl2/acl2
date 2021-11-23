@@ -75,3 +75,9 @@
   (equal (nat-listp (append a b))
          (and (nat-listp (true-list-fix a))
               (nat-listp b))))
+
+(defthm nat-listp-of-take-2
+  (implies (nat-listp l)
+           (equal (nat-listp (take n l))
+                  (<= (nfix n) (len l))))
+  :hints (("Goal" :in-theory (enable take nat-listp))))
