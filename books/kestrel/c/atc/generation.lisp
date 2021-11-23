@@ -4120,6 +4120,7 @@
 (define atc-find-affected ((fn symbolp)
                            (term pseudo-termp)
                            (typed-formals atc-symbol-type-alistp)
+                           (prec-fns atc-symbol-fninfo-alistp)
                            (ctx ctxp)
                            state)
   :returns (mv erp
@@ -4130,7 +4131,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used on the body of each non-recursive target function,
+    "This is used on the body of each non-recursive target function @('fni'),
      in order to determine the variables affected by it,
      according to the nomenclature in the user documentation.
      We visit the leaves of the term
@@ -4139,10 +4140,22 @@
      which must be one of the following forms:")
    (xdoc::ul
     (xdoc::li
-     "A formal parameter @('var') of the function that has pointer type.
+     "A call of a (recursive or non-recursive) target function @('fnj')
+      with @('j < i').
+      In this case, @('term') affects the same variables as @('fnj').
+      We use @(tsee atc-check-cfun-call) and @(tsee atc-check-loop-call)
+      to check if the term is a call of a target function
+      and to retrieve that function's affected variables:
+      we pass @('nil') as the variable-term alist,
+      because it does not change the returned affected variables,
+      which is the only thing we care about here,
+      ignoring all the other results.")
+    (xdoc::li
+     "A formal parameter @('var') of @('fni') with pointer type.
       In this case, @('term') affects the list of variables @('(var)').")
     (xdoc::li
-     "A term @('ret') that is not a formal parameter of pointer type.
+     "A term @('ret') that is not a call of @('fnj') as above
+      and is not a formal parameter of @('fni') of pointer type.
       In this case, @('term') affects no variables.")
     (xdoc::li
      "A term @('(mv var1 ... varn)') where each @('vari') is
@@ -4165,13 +4178,31 @@
   (b* (((mv okp test then else) (fty-check-if-call term))
        ((when okp)
         (b* (((mv mbtp &) (check-mbt-call test))
-             ((when mbtp) (atc-find-affected fn then typed-formals ctx state))
+             ((when mbtp) (atc-find-affected fn
+                                             then
+                                             typed-formals
+                                             prec-fns
+                                             ctx
+                                             state))
              ((mv mbt$p &) (check-mbt$-call test))
-             ((when mbt$p) (atc-find-affected fn then typed-formals ctx state))
-             ((er then-affected) (atc-find-affected fn then typed-formals
-                                                    ctx state))
-             ((er else-affected) (atc-find-affected fn else typed-formals
-                                                    ctx state)))
+             ((when mbt$p) (atc-find-affected fn
+                                              then
+                                              typed-formals
+                                              prec-fns
+                                              ctx
+                                              state))
+             ((er then-affected) (atc-find-affected fn
+                                                    then
+                                                    typed-formals
+                                                    prec-fns
+                                                    ctx
+                                                    state))
+             ((er else-affected) (atc-find-affected fn
+                                                    else
+                                                    typed-formals
+                                                    prec-fns
+                                                    ctx
+                                                    state)))
           (if (equal then-affected else-affected)
               (acl2::value then-affected)
             (er-soft+ ctx t nil
@@ -4181,8 +4212,18 @@
                        this is disallowed."
                       fn then-affected else-affected))))
        ((mv okp & body &) (fty-check-lambda-call term))
-       ((when okp)
-        (atc-find-affected fn body typed-formals ctx state))
+       ((when okp) (atc-find-affected fn
+                                      body
+                                      typed-formals
+                                      prec-fns
+                                      ctx
+                                      state))
+       ((mv okp & & & & affected &)
+        (atc-check-cfun-call term nil prec-fns (w state)))
+       ((when okp) (acl2::value affected))
+       ((mv okp & & & affected & &)
+        (atc-check-loop-call term nil prec-fns))
+       ((when okp) (acl2::value affected))
        ((when (pseudo-term-case term :var))
         (b* ((var (pseudo-term-var->name term)))
           (if (atc-formal-pointerp var typed-formals)
@@ -4267,7 +4308,12 @@
        ((er typed-formals) (atc-typed-formals fn ctx state))
        ((er params) (atc-gen-param-declon-list typed-formals fn ctx state))
        (body (ubody+ fn wrld))
-       ((er affect) (atc-find-affected fn body typed-formals ctx state))
+       ((er affect) (atc-find-affected fn
+                                       body
+                                       typed-formals
+                                       prec-fns
+                                       ctx
+                                       state))
        ((er (list items type limit)) (atc-gen-stmt body
                                                    nil
                                                    (list typed-formals)
