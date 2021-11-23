@@ -421,3 +421,63 @@
     (implies (unsigned-byte-p 16 x)
              (integerp x))
     :rules (integerp-when-unsigned-byte-p)))
+
+;; no hints given
+(must-fail
+ (defthm-with-basic-prover-clause-processor use-test-1
+   (equal (car (cons x y)) x)))
+
+(defthm-with-basic-prover-clause-processor use-test-2
+  (equal (car (cons x y)) x)
+  :use car-cons
+  )
+
+(defthm-with-basic-prover-clause-processor use-test-2b
+  (equal (car (cons x y)) x)
+  :use (car-cons)
+  )
+
+(defthm-with-basic-prover-clause-processor use-test-2c
+  (equal (car (cons x y)) x)
+  :use (:instance car-cons)
+  )
+
+(defthm-with-basic-prover-clause-processor use-test-2d
+  (equal (car (cons x y)) x)
+  :use ((:instance car-cons))
+  )
+
+(defthm-with-basic-prover-clause-processor use-test-2e
+  (equal (car (cons x y)) x)
+  :use (:instance car-cons (x x) (y y))
+  )
+
+(defthm-with-basic-prover-clause-processor use-test-2f
+  (equal (car (cons x y)) x)
+  :use ((:instance car-cons (x x) (y y)))
+  )
+
+(defthm-with-basic-prover-clause-processor use-test-2g
+  (equal (car (cons x y)) x)
+  :use ((:instance car-cons ;(x x)
+                   (y y)))
+  )
+
+; bad vars (x and y) in theorem in :use hint
+(must-fail
+ (defthm-with-basic-prover-clause-processor use-test-3
+  (equal (car (cons a b)) a)
+  :use car-cons
+  ))
+
+; bad var (c) in :use hint
+(must-fail
+ (defthm-with-basic-prover-clause-processor use-test-3
+  (equal (car (cons a b)) a)
+  :use (:instance car-cons (x a) (y c))
+  ))
+
+(defthm-with-basic-prover-clause-processor use-test-4
+  (equal (car (cons a b)) a)
+  :use (:instance car-cons (x a) (y b))
+  )
