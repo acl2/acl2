@@ -1273,18 +1273,16 @@
                (val pseudo-termp)
                (body pseudo-termp)
                (wrapper? symbolp))
-  :short "Check if a term may represent
-          a local variable declaration
-          or a local variable assignment
-          or a code affecting a single variable,
-          followed by more code."
+  :short "Check if a term may be a @(tsee let) statement term."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "The forms of these terms are described in the user documentation.")
    (xdoc::p
     "Here we recognize and decompose statement terms that are @(tsee let)s.
      In translated form, @('(let ((var val)) body)')
      is @('((lambda (var) body) val)').
-     However, if @('rest') has other free variables in addition to @('var'),
+     However, if @('body') has other free variables in addition to @('var'),
      those appear as both formal parameters and actual arguments, e.g.
      @('((lambda (var x y) rest<var,x,y>) val x y)'):
      this is because ACL2 translated terms have all closed lambda expressions,
@@ -1328,6 +1326,38 @@
     (implies yes/no
              (< (+ (pseudo-term-count val)
                    (pseudo-term-count body))
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-mv-let ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (vars symbol-listp)
+               (indices nat-listp)
+               (val pseudo-termp)
+               (body pseudo-termp))
+  :short "Check if a term may be an @(tsee mv-let) statement term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The forms of these terms are described in the user documentation.")
+   (xdoc::p
+    "For now this is just a wrapper of another utility,
+     but we will generalize this soon."))
+  (b* (((mv okp & vars indices & val body) (fty-check-mv-let-call term)))
+    (mv okp vars indices val body))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-mv-let-val
+    (implies yes/no
+             (< (pseudo-term-count val)
+                (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-mv-let-body
+    (implies yes/no
+             (< (pseudo-term-count body)
                 (pseudo-term-count term)))
     :rule-classes :linear))
 
