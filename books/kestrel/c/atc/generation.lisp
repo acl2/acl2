@@ -1415,10 +1415,27 @@
    (xdoc::p
     "The forms of these terms are described in the user documentation.")
    (xdoc::p
-    "For now this is just a wrapper of another utility,
-     but we will generalize this soon."))
-  (b* (((mv okp & vars indices & val body) (fty-check-mv-let-call term)))
-    (mv okp nil vars indices val body nil))
+    "First, we check if the term is an @(tsee mv-let),
+     obtaining variables, indices, value term, and body term.
+     Then we check whether the value term is
+     a @('declar<n>') or an @('assign<n>'):
+     in this case, we return the first variable
+     separately from the other variables,
+     and we also return
+     the corresponding @(tsee declar) or @(tsee assign) wrapper.
+     Otherwise, we return all the variables together,
+     with @('nil') as the @('var?') and @('wrapper?') results."))
+  (b* (((mv okp & vars indices & val body) (fty-check-mv-let-call term))
+       ((when (not okp)) (mv nil nil nil nil nil nil nil))
+       ((mv okp wrapper & wrapped) (atc-check-declar/assign-n val))
+       ((when (not okp)) (mv t nil vars indices val body nil)))
+    (mv t (car vars) (cdr vars) indices wrapped body wrapper))
+
+  :prepwork
+  ((defrule verify-guards-lemma
+     (implies (symbol-listp x)
+              (iff (consp x) x))))
+
   ///
 
   (defret pseudo-term-count-of-atc-check-mv-let-val
