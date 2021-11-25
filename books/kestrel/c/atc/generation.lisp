@@ -1332,12 +1332,83 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-declar/assign-n ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (wrapper symbolp)
+               (n natp)
+               (wrapped pseudo-termp))
+  :short "Check if a term is a call of @('declar<n>') or @('assign<n>')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the macros described in @(see atc-let-designations).
+     These macros expand to")
+   (xdoc::codeblock
+    "(mv-let (*1 *2 ... *<n>)"
+    "  <wrapped>"
+    "  (mv (<wrapper> *1) *2 ... *<n>))")
+   (xdoc::p
+    "which in translated terms looks like")
+   (xdoc::codeblock
+    "((lambda (mv)"
+    "         ((lambda (*1 *2 ... *<n>)"
+    "                  (cons ((<wrapper> *1) (cons *2 ... (cons *<n> 'nil)))))"
+    "          (mv-nth '0 mv)"
+    "          (mv-nth '1 mv)"
+    "          ..."
+    "          (mv-nth '<n-1> mv)))"
+    " <wrapped>)")
+   (xdoc::p
+    "So here we attempt to recognize this for of translated terms.
+     If successful, we return @('<wrapper>'), @('<n>'), and @('<wrapped>')."))
+  (b* (((mv okp mv-var vars indices hides wrapped body)
+        (fty-check-mv-let-call term))
+       ((unless okp) (mv nil nil 0 nil))
+       ((unless (eq mv-var 'mv)) (mv nil nil 0 nil))
+       (n (len vars))
+       ((unless (>= n 2)) (mv nil nil 0 nil))
+       ((unless (equal vars
+                       (loop$ for i of-type integer from 1 to n
+                              collect (pack '* i))))
+        (mv nil nil 0 nil))
+       ((unless (equal indices
+                       (loop$ for i of-type integer from 0 to (1- n)
+                              collect i)))
+        (mv nil nil 0 nil))
+       ((unless (equal hides (repeat n nil)))
+        (mv nil nil 0 nil))
+       ((mv okp terms) (fty-check-list-call body))
+       ((unless okp) (mv nil nil 0 nil))
+       ((unless (equal (len terms) n)) (mv nil nil 0 nil))
+       ((cons term terms) terms)
+       ((unless (pseudo-term-case term :fncall)) (mv nil nil 0 nil))
+       (wrapper (pseudo-term-fncall->fn term))
+       ((unless (member-eq wrapper '(declar assign))) (mv nil nil 0 nil))
+       ((unless (equal (pseudo-term-fncall->args term) (list '*1)))
+        (mv nil nil 0 nil))
+       ((unless (equal terms
+                       (loop$ for i of-type integer from 2 to n
+                              collect (pack '* i))))
+        (mv nil nil 0 nil)))
+    (mv t wrapper n wrapped))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-declar/assign-n-wrapped
+    (implies yes/no
+             (< (pseudo-term-count wrapped)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-mv-let ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
+               (var? symbolp)
                (vars symbol-listp)
                (indices nat-listp)
                (val pseudo-termp)
-               (body pseudo-termp))
+               (body pseudo-termp)
+               (wrapper? symbolp))
   :short "Check if a term may be an @(tsee mv-let) statement term."
   :long
   (xdoc::topstring
@@ -1347,7 +1418,7 @@
     "For now this is just a wrapper of another utility,
      but we will generalize this soon."))
   (b* (((mv okp & vars indices & val body) (fty-check-mv-let-call term)))
-    (mv okp vars indices val body))
+    (mv okp nil vars indices val body nil))
   ///
 
   (defret pseudo-term-count-of-atc-check-mv-let-val
@@ -2274,7 +2345,7 @@
                                 :else (make-stmt-compound :items else-items))))
             type
             limit))))
-       ((mv okp & vars indices & val body) (fty-check-mv-let-call term))
+       ((mv okp & vars indices val body &) (atc-check-mv-let term))
        ((when okp)
         (b* (((unless (> (len vars) 1))
               (mv (raise "Internal error: MV-LET ~x0 has less than 2 variables."
