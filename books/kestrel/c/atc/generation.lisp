@@ -3829,20 +3829,11 @@
      by other hypotheses in the generated correctness theorems."))
   (b* (((when (endp pointer-vars)) nil)
        (var (car pointer-vars))
-       (hyps (atc-gen-diff-address-hyps-aux var (cdr pointer-vars)))
+       (hyps (loop$ for var2 in (cdr pointer-vars)
+                    collect `(not (equal (pointer->address? ,var)
+                                         (pointer->address? ,var2)))))
        (more-hyps (atc-gen-diff-address-hyps (cdr pointer-vars))))
-    (append hyps more-hyps))
-
-  :prepwork
-  ((define atc-gen-diff-address-hyps-aux ((var symbolp)
-                                          (pointer-vars symbol-listp))
-     :returns (hyps true-listp)
-     :parents nil
-     (b* (((when (endp pointer-vars)) nil)
-          (hyp `(not (equal (pointer->address? ,var)
-                            (pointer->address? ,(car pointer-vars)))))
-          (hyps (atc-gen-diff-address-hyps-aux var (cdr pointer-vars))))
-       (cons hyp hyps)))))
+    (append hyps more-hyps)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
