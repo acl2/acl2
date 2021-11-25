@@ -657,16 +657,21 @@
     (b* (((when (zp limit)) (err (list :limit
                                    (identifier-fix fun)
                                    (value-list-fix args))))
+         (lstate-before (cstate->local cstate))
+         (fstate-before (cstate->functions cstate))
          ((ok (funinfo info)) (get-fun fun cstate))
-         ((ok cstate1) (init-local info.inputs args info.outputs cstate))
+         ((ok cstate) (init-local info.inputs args info.outputs cstate))
          ((ok (soutcome outcome))
-          (exec-block info.body cstate1 (1- limit)))
+          (exec-block info.body cstate (1- limit)))
          ((when (mode-case outcome.mode :break))
           (err (list :break-from-function (identifier-fix fun))))
          ((when (mode-case outcome.mode :continue))
           (err (list :continue-from-function (identifier-fix fun))))
-         ((ok vals) (read-vars-values info.outputs outcome.cstate)))
-      (make-eoutcome :cstate (cstate-fix cstate) :values vals))
+         ((ok vals) (read-vars-values info.outputs outcome.cstate))
+         (cstate (change-cstate outcome.cstate
+                                :local lstate-before
+                                :functions fstate-before)))
+      (make-eoutcome :cstate cstate :values vals))
     :measure (nfix limit))
 
   (define exec-statement ((stmt statementp) (cstate cstatep) (limit natp))
