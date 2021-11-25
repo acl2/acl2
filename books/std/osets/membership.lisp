@@ -503,7 +503,7 @@ generalized the approach to arbitrary predicates instead.</p>
 a Y)'), then @('(subset X Y)') is just</p>
 
 @({
- (forall a, (implies (in a X) (P a)))
+ (forall a (implies (in a X) (P a)))
 })
 
 <p>Our generalization basically lets you reduce a proof of @('(P-setp X)') to a
@@ -913,5 +913,3 @@ directed by @(see accumulated-persistence).</p>"
 
 (defun fast-measure (X Y)
   (+ (acl2-count X) (acl2-count Y)))
-
-
