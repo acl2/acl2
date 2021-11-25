@@ -846,7 +846,7 @@
              (exec-for-iterations stmt.test
                                   stmt.update
                                   stmt.body
-                                  cstate
+                                  outcome.cstate
                                   (1- limit)))
             ((when (mode-case outcome.mode :break))
              (err (list :break-from-for (statement-fix stmt))))

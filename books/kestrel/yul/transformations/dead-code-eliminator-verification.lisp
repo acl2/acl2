@@ -816,6 +816,25 @@
                                              (statement-for->init stmt))
                                             cstate)
                                            (+ -1 limit))))
+                                        (cstate->functions cstate))))
+                       (:instance restrict-vars-of-dead
+                        (vars (omap::keys (cstate->local cstate)))
+                        (cstate (cstate (cstate->local
+                                         (soutcome->cstate
+                                          (exec-for-iterations
+                                           (statement-for->test stmt)
+                                           (statement-for->update stmt)
+                                           (statement-for->body stmt)
+                                           (soutcome->cstate
+                                            (exec-statement-list
+                                             (block->statements
+                                              (statement-for->init stmt))
+                                             (add-funs-in-statement-list
+                                              (block->statements
+                                               (statement-for->init stmt))
+                                              cstate)
+                                             (+ -1 limit)))
+                                           (+ -1 limit))))
                                         (cstate->functions cstate)))))))))
      ((exec-of-dead-flag-is exec-statement-list)
       '(:in-theory (e/d (exec-statement-list
