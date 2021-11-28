@@ -412,12 +412,12 @@
      and it must return exactly one result."))
   (b* ((name (identifier-fix name))
        (init (expression-option-fix init))
-       ((ok vartab) (add-var name vartab))
-       ((when (not init)) vartab)
+       ((ok vartab-new) (add-var name vartab))
+       ((when (not init)) vartab-new)
        ((ok results) (check-safe-expression init vartab funtab))
        ((unless (= results 1))
         (err (list :declare-single-var-mismatch name results))))
-    vartab)
+    vartab-new)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
