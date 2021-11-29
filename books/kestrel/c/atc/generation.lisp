@@ -2141,7 +2141,7 @@
    (xdoc::p
     "If the term is a @(tsee mv-let),
      there are three cases.
-     If the term involves a @(tsee declar<n>) wrapper,
+     If the term involves a @('declar<n>') wrapper,
      we ensure that a variable with
      the same symbol name as the first bound variable
      is not already in scope
@@ -2153,7 +2153,7 @@
      which also determines the type of the variable,
      and which must affect the bound variables except the first one;
      the type must not be a pointer type (code generation fails if it is).
-     Otherwise, if the term involves the @(tsee assign) wrapper,
+     Otherwise, if the term involves an @('assign<n>') wrapper,
      we ensure that the first bound variable is assignable,
      which implies that it must be in scope,
      and we also ensure that it has the same type as the one in scope;
