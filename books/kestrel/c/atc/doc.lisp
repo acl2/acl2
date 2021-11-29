@@ -387,8 +387,7 @@
        when the symbol name of @('var') is a portable ASCII C identifier
        as defined in Section `Portable ASCII C Identifiers' below,
        the symbol name of @('var') is distinct from
-       the symbol names of all the other ACL2 variables in scope
-       (function parameters and variables bound in enclosing @(tsee let)s),
+       the symbol names of all the other ACL2 variables in scope,
        @('term') is an expression term for @('fni')
        returning a non-@('void') non-pointer C type
        and affecting no variables, and
@@ -469,6 +468,78 @@
        In translated terms,
        @('(let ((var term)) body)') is
        @('((lambda (var) body) term)');
+       this is the pattern that ATC looks for.")
+     (xdoc::li
+      "A term @('(mv-let (var1 var2 ... varn) (declarn term) body)'),
+       when @('n') &gt; 1,
+       the symbol name of @('var1') is a portable ASCII C identifier
+       as defined in Section `Portable ASCII C Identifiers' below,
+       the symbol name of @('var1') is distinct from
+       the symbol names of all the other ACL2 variables in scope,
+       each @('vari') with @('i') &gt; 1 is assignable,
+       @('term') is an expression term for @('fni')
+       returning a non-@('void') non-pointer C type
+       and affecting the variables @('(var2 ... varn)'), and
+       @('body') is a statement term for @('fni') with loop flag @('L')
+       returning @('T') and affecting @('vars').
+       This represents, as indicated by the wrapper @(declarn),
+       a declaration of a C local variable represented by @('var1'),
+       initialized with the C expression represented by @('term'),
+       followed by the C code represented by @('body').
+       The C type of the variable is determined from the initializer.
+       In translated terms,
+       @('(mv-let (var1 var2 ... varn) (declarn term) body)') is
+       @('((lambda (mv)
+                   ((lambda (var1 var2 ... varn) body)
+                    (mv-nth '0 mv)
+                    (mv-nth '1 mv)
+                    ...
+                    (mv-nth 'n-1 mv)))
+           ((lambda (mv)
+                    ((lambda (*1 *2 ... *n)
+                             (cons (declar *1) (cons *2 ... (cons *n 'nil))))
+                     (mv-nth '0 mv)
+                     (mv-nth '1 mv)
+                     ...
+                     (mv-nth 'n-1 mv)))
+            term))');
+       this is the pattern that ATC looks for.")
+     (xdoc::li
+      "A term @('(mv-let (var1 var2 ... varn) (assignn term) body)'),
+       when @('n') &gt; 1,
+       each @('vari') is assignable,
+       @('term') is an expression term for @('fni')
+       returning the same non-@('void') non-pointer C type
+       as the C type of @('vari')
+       and affecting the variables @('(var2 ... varn)')
+       that is
+       either a call of a recursive target function @('fnj') with @('j < i')
+       whose body term returns @('void') and affects @('(var1 ... varn)')
+       or an @(tsee if) whose test is an expression term returning boolean
+       (not a test @('(mbt ...)') or @('(mbt$ ...)')), and
+       @('body') is a statement term for @('fni') with loop flag @('L')
+       returning @('T') and affecting @('vars').
+       This represents, as indicated by the wrapper @(assign),
+       an assignment to
+       the C local variable or function parameter represented by @('var'),
+       with the C expression represented by @('term') as right-hand side,
+       followed by the C code represented by @('body').
+       In translated terms,
+       @('(mv-let (var1 var2 ... varn) (assignn term) body)') is
+       @('((lambda (mv)
+                   ((lambda (var1 var2 ... varn) body)
+                    (mv-nth '0 mv)
+                    (mv-nth '1 mv)
+                    ...
+                    (mv-nth 'n-1 mv)))
+           ((lambda (mv)
+                    ((lambda (*1 *2 ... *n)
+                             (cons (assign *1) (cons *2 ... (cons *n 'nil))))
+                     (mv-nth '0 mv)
+                     (mv-nth '1 mv)
+                     ...
+                     (mv-nth 'n-1 mv)))
+            term))');
        this is the pattern that ATC looks for.")
      (xdoc::li
       "A term @('(mv-let (var1 ... varn) term body)'),
