@@ -482,7 +482,7 @@
        and affecting the variables @('(var2 ... varn)'), and
        @('body') is a statement term for @('fni') with loop flag @('L')
        returning @('T') and affecting @('vars').
-       This represents, as indicated by the wrapper @(declarn),
+       This represents, as indicated by the wrapper @('declarn'),
        a declaration of a C local variable represented by @('var1'),
        initialized with the C expression represented by @('term'),
        followed by the C code represented by @('body').
@@ -519,7 +519,7 @@
        (not a test @('(mbt ...)') or @('(mbt$ ...)')), and
        @('body') is a statement term for @('fni') with loop flag @('L')
        returning @('T') and affecting @('vars').
-       This represents, as indicated by the wrapper @(assign),
+       This represents, as indicated by the wrapper @('assignn'),
        an assignment to
        the C local variable or function parameter represented by @('var'),
        with the C expression represented by @('term') as right-hand side,
