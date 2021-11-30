@@ -50,7 +50,8 @@
 
 (defun list-typep (type)
   (declare (xargs :guard t))
-  (and (eql 3 (len type)) ;this might be overkill to check in some cases?
+  (and (true-listp type)
+       (eql 3 (len type)) ;this might be overkill to check in some cases?
        (eq :list (first type))))
 
 (defun make-list-type (element-type len-type)
