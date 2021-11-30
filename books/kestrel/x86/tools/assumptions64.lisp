@@ -16,25 +16,26 @@
 (include-book "../parsers/parsed-executable-tools")
 
 (defun bytes-loaded-in-text-section-64 (text-section-bytes text-offset x86)
-  (declare (xargs :stobjs x86
-                  :verify-guards nil ;todo
-                  ))
+  (declare (xargs :guard (and (acl2::all-unsigned-byte-p 8 text-section-bytes)
+                              (true-listp text-section-bytes)
+                              (consp text-section-bytes))
+                  :stobjs x86))
   (and ;; We'll base all addresses on the address of the text section
    ;; (we can calculate the relative offset of other things by
    ;; taking their default load addresses (numbers from the
    ;; executable) and subtracting the default load address of the
    ;; text section (also a number stored in the executable).
-   (integerp text-offset)
+   ;; The addresses where the program is located are canonical:
+   ;; TODO: Or should these be guards (then we could just use program-at)?
+   (canonical-address-p text-offset)
+   (canonical-address-p (+ text-offset
+                           (- (len text-section-bytes) 1)))
    ;; We assume the program (and eventually all data from the
    ;; executable) is loaded into memory.
    ;; (TODO: What about more than 1 section?):
    (program-at text-offset
                text-section-bytes
-               x86)
-   ;; The addresses where the program is located are canonical:
-   (canonical-address-p text-offset)
-   (canonical-address-p (+ text-offset
-                           (- (len text-section-bytes) 1)))))
+               x86)))
 
 (defun addresses-of-subsequent-stack-slots-aux (num-stack-slots address)
   (if (zp num-stack-slots)
@@ -70,7 +71,6 @@
 
     ;; The RSP is 8-byte aligned (TODO: check with Shilpi):
     ;; This may not be respected by malware.
-    ;; TODO: For 32-bit code, it would be 4-byte aligned (should we check the magic number of the executable)?
     ;; TODO: Try without this
     (equal 0 (bvchop 3 (rgfi *rsp* ,x86)))
 
