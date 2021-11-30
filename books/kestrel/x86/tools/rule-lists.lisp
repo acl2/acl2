@@ -453,6 +453,7 @@
     acl2::bvplus-recollapse ;rename
     ))
 
+;not used?
 (defun canonical-address-rules ()
   '(x86isa::not-member-p-canonical-address-listp ;drop the not and strengthen?
     x86isa::subset-p-two-create-canonical-address-lists-general ;strengthen?

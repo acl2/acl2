@@ -47,7 +47,8 @@
          nil ; no ifns
          nil ; no-splitp
          nil ; no monitored rules
-         nil ;print
+         nil ; print
+         nil ; :use hint
          state))
        (axe-provedp (not failedp)))
     (if (and acl2-provedp

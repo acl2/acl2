@@ -26,8 +26,9 @@
    (equal (ms x86) nil)
    (equal (x86isa::fault x86) nil)))
 
-;; A lifter target is a numeric offset, the name of a subroutine (a string), or the symbol :entry-point.
+;; A lifter target is either a numeric offset, the name of a subroutine (a string), or the symbol :entry-point.
 (defun lifter-targetp (target)
+  (declare (xargs :guard t))
   (or (natp target)
       (stringp target)
       (eq :entry-point target)))

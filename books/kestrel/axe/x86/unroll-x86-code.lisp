@@ -55,7 +55,10 @@
 (acl2::ensure-rules-known (lifter-rules64))
 (acl2::ensure-rules-known (assumption-simplification-rules))
 
+;; The type of an x86 executable
+;; TODO: Add support for ELF
 (defun executable-typep (type)
+  (declare (xargs :guard t))
   (member-eq type '(:pe-32
                     :pe-64
                     :mach-o-32

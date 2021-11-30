@@ -30,6 +30,7 @@
                                   typep
                                   value))
              '(alist-to-doublets
+               all-fnnames
                any
                bool
                check-and-call
@@ -53,8 +54,18 @@
                deftutorial
                defxdoc+
                doublet-listp
+               doublets-to-alist
                e/d*
                enable*
+               ensure-function-is-defined$
+               ensure-function-is-guard-verified$
+               ensure-function-is-logic-mode$
+               ensure-list-has-no-duplicates$
+               ensure-symbol-is-fresh-event-name$
+               ensure-value-is-boolean$
+               ensure-value-is-function-name$
+               ensure-value-is-string$
+               ensure-value-is-symbol$
                er-soft+
                evmac-appcond-listp
                evmac-appcond-theorem-list
@@ -68,6 +79,8 @@
                fargs
                fcons-term
                ffn-symb
+               ffn-symb-p
+               ffnnamep
                flambda-applicationp
                flatten-ands-in-lit
                formals+
@@ -86,6 +99,7 @@
                lnfix
                make-event-terse
                make-evmac-appcond
+               maybe-natp
                maybe-pseudo-event-formp
                mbt$
                measure+
@@ -93,6 +107,8 @@
                mv-nth-of-cons
                nat
                nvariablep
+               one-way-unify
+               packn
                packn-pos
                pos-listp
                pseudo-event-form-listp
@@ -136,11 +152,15 @@
                str-fix
                symbol-fix
                symbol-list
+               symbol-list-fix
                symbol-pseudoterm-alistp
+               symbol-pseudoterm-alist-fix
                symbol-symbol-alistp
+               table-alist+
                tuple
                ubody+
                uguard+
                untranslate-lst
                variablep
+               well-founded-relation+
                std::defret-mutual)))
