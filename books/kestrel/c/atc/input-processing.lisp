@@ -40,7 +40,7 @@
     "This is used by @(tsee atc-process-function);
      see that function's documentation for details."))
   (cond ((endp fns) nil)
-        (t (if (acl2::ffnnamep (car fns) term)
+        (t (if (ffnnamep (car fns) term)
                (atc-remove-called-fns (cdr fns) term)
              (cons (car fns)
                    (atc-remove-called-fns (cdr fns) term))))))
@@ -85,17 +85,17 @@
      If @('fn') is recursive, we add it to @('uncalled-fns').
      We return the updated list of uncalled functions."))
   (b* ((desc (msg "The target ~x0 input" fn))
-       ((er &) (acl2::ensure-value-is-function-name$ fn desc t nil))
+       ((er &) (ensure-value-is-function-name$ fn desc t nil))
        (desc (msg "The target function ~x0" fn))
-       ((er &) (acl2::ensure-function-is-logic-mode$ fn desc t nil))
-       ((er &) (acl2::ensure-function-is-guard-verified$ fn desc t nil))
-       ((er &) (acl2::ensure-function-is-defined$ fn desc t nil))
-       ((when (acl2::ffnnamep fn (acl2::uguard+ fn (w state))))
+       ((er &) (ensure-function-is-logic-mode$ fn desc t nil))
+       ((er &) (ensure-function-is-guard-verified$ fn desc t nil))
+       ((er &) (ensure-function-is-defined$ fn desc t nil))
+       ((when (ffnnamep fn (uguard+ fn (w state))))
         (er-soft+ ctx t nil
                   "The target function ~x0 is used in its own guard. ~
                    This is currently not supported in ATC."
                   fn))
-       (rec (acl2::irecursivep+ fn (w state)))
+       (rec (irecursivep+ fn (w state)))
        ((when (and rec (> (len rec) 1)))
         (er-soft+ ctx t nil
                   "The recursive target function ~x0 ~
@@ -103,7 +103,7 @@
                    but it is mutually recursive with ~x1 instead."
                   fn (remove-eq fn rec)))
        ((when (and rec
-                   (not (equal (acl2::well-founded-relation+ fn (w state))
+                   (not (equal (well-founded-relation+ fn (w state))
                                'o<))))
         (er-soft+ ctx t nil
                   "The well-founded relation ~
@@ -111,7 +111,7 @@
                    must be O<, but it ~x1 instead. ~
                    Only recursive functions with well-founded relation O< ~
                    are currently supported by ATC."
-                  fn (acl2::well-founded-relation+ fn (w state))))
+                  fn (well-founded-relation+ fn (w state))))
        (uncalled-fns (atc-remove-called-fns uncalled-fns (ubody+ fn (w state))))
        (uncalled-fns (if rec
                          (cons fn uncalled-fns)
@@ -182,7 +182,7 @@
        ((unless (consp fn1...fnp))
         (er-soft+ ctx t nil
                   "At least one target function must be supplied."))
-       ((er &) (acl2::ensure-list-has-no-duplicates$
+       ((er &) (ensure-list-has-no-duplicates$
                 fn1...fnp
                 (msg "The list of target functions ~x0" fn1...fnp)
                 t
@@ -208,10 +208,10 @@
         (er-soft+ ctx t nil
                   "The :OUTPUT-FILE input must be present, ~
                    but it is absent instead."))
-       ((er &) (acl2::ensure-value-is-string$ output-file
-                                              "The :OUTPUT-FILE input"
-                                              t
-                                              nil))
+       ((er &) (ensure-value-is-string$ output-file
+                                        "The :OUTPUT-FILE input"
+                                        t
+                                        nil))
        ((mv msg? dirname state) (oslib::dirname output-file))
        ((when msg?) (er-soft+ ctx t nil
                               "No directory path can be obtained ~
@@ -311,14 +311,14 @@
                        but it is ~x0 instead."
                       const-name)
           (acl2::value (list nil nil nil))))
-       ((er &) (acl2::ensure-value-is-symbol$ const-name
-                                              "The :CONST-NAME input"
-                                              t
-                                              nil))
+       ((er &) (ensure-value-is-symbol$ const-name
+                                        "The :CONST-NAME input"
+                                        t
+                                        nil))
        (prog-const (if (eq const-name :auto)
                        'c::*program*
                      const-name))
-       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+       ((er &) (ensure-symbol-is-fresh-event-name$
                 prog-const
                 (msg "The constant name ~x0 ~
                       specified by the :CONST-NAME input"
@@ -328,7 +328,7 @@
                 t
                 nil))
        (wf-thm (add-suffix prog-const "-WELL-FORMED"))
-       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+       ((er &) (ensure-symbol-is-fresh-event-name$
                 wf-thm
                 (msg "The generated theorem name ~x0 ~
                       indirectly specified by the :CONST-NAME input"
@@ -354,9 +354,8 @@
      :mode :program
      (b* (((when (endp fni...fnp)) (acl2::value nil))
           (fn (car fni...fnp))
-          (fn-thm (acl2::packn
-                   (list prog-const "-" (symbol-name fn) "-CORRECT")))
-          ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+          (fn-thm (packn (list prog-const "-" (symbol-name fn) "-CORRECT")))
+          ((er &) (ensure-symbol-is-fresh-event-name$
                    fn-thm
                    (msg "The generated theorem name ~x0 ~
                          indirectly specified by the :CONST-NAME input"
@@ -417,10 +416,10 @@
        (proofs (if proofs-option
                    (cdr proofs-option)
                  t))
-       ((er &) (acl2::ensure-value-is-boolean$ proofs
-                                               "The :PROOFS input"
-                                               t
-                                               nil))
+       ((er &) (ensure-value-is-boolean$ proofs
+                                         "The :PROOFS input"
+                                         t
+                                         nil))
        (const-name-option (assoc-eq :const-name options))
        ((mv const-name const-name?)
         (if const-name-option

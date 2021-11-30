@@ -183,9 +183,9 @@
     "We just check whether the term is
      a call of a @('boolean-from-<type>') function
      or a call of @(tsee not), @(tsee and), or @(tsee or)."))
-  (b* (((mv andp & &) (acl2::check-and-call term))
+  (b* (((mv andp & &) (check-and-call term))
        ((when andp) t)
-       ((mv orp & &) (acl2::check-or-call term))
+       ((mv orp & &) (check-or-call term))
        ((when orp) t))
     (case-match term
       ((fn . &) (if (or (member-eq fn *atc-boolean-from-type-fns*)
@@ -206,7 +206,7 @@
      or a call of one of the functions
      listed in the user documentation for
      pure expression terms returning C values."))
-  (b* (((when (acl2::variablep term)) t))
+  (b* (((when (variablep term)) t))
     (case-match term
       ((fn . &)
        (if (or (member-eq fn *atc-type-base-const-fns*)
@@ -235,7 +235,7 @@
   (b* (((when (atc-pure-c-valued-termp term)) t))
     (case-match term
       ((fn . &) (and (symbolp fn)
-                     (not (acl2::irecursivep+ fn wrld))))
+                     (not (irecursivep+ fn wrld))))
       (& nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -251,13 +251,13 @@
      an @(tsee if), an @(tsee mv), a @(tsee let), an @(tsee mv-let),
      or a call of a recursive function,
      which we therefore assume to be a target function."))
-  (b* (((mv ifp & & &) (acl2::check-if-call term))
+  (b* (((mv ifp & & &) (check-if-call term))
        ((when ifp) t)
-       ((mv mvp &) (acl2::check-list-call term))
+       ((mv mvp &) (check-list-call term))
        ((when mvp) t)
-       ((mv mv-letp & & & & & &) (acl2::check-mv-let-call term))
+       ((mv mv-letp & & & & & &) (check-mv-let-call term))
        ((when mv-letp) t))
     (case-match term
       ((fn . &) (or (consp fn) ; lambda
-                    (consp (acl2::irecursivep+ fn wrld))))
+                    (consp (irecursivep+ fn wrld))))
       (& nil))))
