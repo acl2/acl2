@@ -64,12 +64,12 @@
      for two reasons explained below.")
    (xdoc::p
     "The first reason is that the execution functions
-     also take function states as arguments,
+     also take function environments as arguments,
      which contain function bodies that must be transformed.
-     Thus, we define transformation functions on function states,
+     Thus, we define transformation functions on function environments,
      and we refine the formulation of our theorems to")
    (xdoc::codeblock
-    "(exec (xform ast) cstate (xform fstate)) = (exec ast state fstate)")
+    "(exec (xform ast) cstate (xform funenv)) = (exec ast state funenv)")
    (xdoc::p
     "The second reason and refinement of the theorems
      has to do with error results,
@@ -93,7 +93,7 @@
      but we consider non-errors non-equivalent unless equal.
      The theorem formulation is thus further refined to")
    (xdoc::codeblock
-    "(exec (xform ast) cstate (xform fstate)) ~=~ (exec ast cstate fstate)")
+    "(exec (xform ast) cstate (xform funenv)) ~=~ (exec ast cstate funenv)")
    (xdoc::p
     "where @('~=~') denotes the equivalence
      (we use this symbol just here, for readability).")
@@ -210,77 +210,77 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fstate-dead ((fstate fstatep))
-  :returns (new-fstate fstatep)
-  :short "Eliminate dead code in function states."
+(define funenv-dead ((funenv funenvp))
+  :returns (new-funenv funenvp)
+  :short "Eliminate dead code in function environments."
   :long
   (xdoc::topstring
    (xdoc::p
     "We transform all the function information values of the map."))
-  (b* ((fstate (fstate-fix fstate))
-       ((when (omap::empty fstate)) nil)
-       ((mv name info) (omap::head fstate)))
-    (omap::update name (funinfo-dead info) (fstate-dead (omap::tail fstate))))
+  (b* ((funenv (funenv-fix funenv))
+       ((when (omap::empty funenv)) nil)
+       ((mv name info) (omap::head funenv)))
+    (omap::update name (funinfo-dead info) (funenv-dead (omap::tail funenv))))
   :verify-guards :after-returns
   :hooks (:fix)
   ///
 
-  (defrule fstate-keys-of-dead
-    (implies (fstatep fstate)
-             (equal (omap::keys (fstate-dead fstate))
-                    (omap::keys fstate))))
+  (defrule funenv-keys-of-dead
+    (implies (funenvp funenv)
+             (equal (omap::keys (funenv-dead funenv))
+                    (omap::keys funenv))))
 
-  (defrule fstate-consp-of-in-of-dead
-    (implies (fstatep fstate)
-             (equal (consp (omap::in fun (fstate-dead fstate)))
-                    (consp (omap::in fun fstate)))))
+  (defrule funenv-consp-of-in-of-dead
+    (implies (funenvp funenv)
+             (equal (consp (omap::in fun (funenv-dead funenv)))
+                    (consp (omap::in fun funenv)))))
 
-  (defrule fstate-val-of-dead
-    (implies (and (fstatep fstate)
-                  (omap::in fun fstate))
-             (equal (cdr (omap::in fun (fstate-dead fstate)))
-                    (funinfo-dead (cdr (omap::in fun fstate))))))
+  (defrule funenv-val-of-dead
+    (implies (and (funenvp funenv)
+                  (omap::in fun funenv))
+             (equal (cdr (omap::in fun (funenv-dead funenv)))
+                    (funinfo-dead (cdr (omap::in fun funenv))))))
 
-  (defrule fstate-update-of-dead
+  (defrule funenv-update-of-dead
     (implies (and (identifierp name)
                   (funinfop info)
-                  (fstatep fstate))
+                  (funenvp funenv))
              (equal (omap::update name
                                   (funinfo-dead info)
-                                  (fstate-dead fstate))
-                    (fstate-dead (omap::update name info fstate))))
+                                  (funenv-dead funenv))
+                    (funenv-dead (omap::update name info funenv))))
     :enable (omap::head
              omap::tail
              omap::update
-             fstatep)
-    :hints ('(:expand ((:free (name info fstate)
-                        (fstate-dead (cons (cons name info) fstate))))))))
+             funenvp)
+    :hints ('(:expand ((:free (name info funenv)
+                        (funenv-dead (cons (cons name info) funenv))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fstate-result-dead ((fstate? fstate-resultp))
-  :returns (new-fstate? fstate-resultp)
-  :short "Eliminate dead code in function state results."
+(define funenv-result-dead ((funenv? funenv-resultp))
+  :returns (new-funenv? funenv-resultp)
+  :short "Eliminate dead code in function environment results."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We transform function states and leave errors unchanged."))
-  (b* ((fstate? (fstate-result-fix fstate?)))
-    (if (resulterrp fstate?)
-        fstate?
-      (fstate-dead fstate?)))
+    "We transform function environments and leave errors unchanged."))
+  (b* ((funenv? (funenv-result-fix funenv?)))
+    (if (resulterrp funenv?)
+        funenv?
+      (funenv-dead funenv?)))
   :hooks (:fix)
   ///
 
-  (defrule fstate-result-dead-when-fstatep
-    (implies (fstatep fstate)
-             (equal (fstate-result-dead fstate)
-                    (fstate-dead fstate)))
-    :enable (fstatep resulterrp))
+  (defrule funenv-result-dead-when-funenvp
+    (implies (funenvp funenv)
+             (equal (funenv-result-dead funenv)
+                    (funenv-dead funenv)))
+    :enable (funenvp resulterrp))
 
-  (defrule fstate-result-dead-when-resulterrp
+  (defrule funenv-result-dead-when-resulterrp
     (implies (resulterrp error)
-             (equal (fstate-result-dead error)
+             (equal (funenv-result-dead error)
                     error))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -346,22 +346,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fstate-result-okeq ((x fstate-resultp) (y fstate-resultp))
+(define funenv-result-okeq ((x funenv-resultp) (y funenv-resultp))
   :returns (yes/no booleanp)
-  :short "Equality of function state results modulo errors."
+  :short "Equality of function environment results modulo errors."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the equivalence relation on computation states
      discussed in @(see dead-code-eliminator-verification)."))
-  (b* ((x (fstate-result-fix x))
-       (y (fstate-result-fix y)))
+  (b* ((x (funenv-result-fix x))
+       (y (funenv-result-fix y)))
     (cond ((resulterrp x) (resulterrp y))
           ((resulterrp y) (resulterrp x))
           (t (equal x y))))
   :hooks (:fix)
   ///
-  (defequiv fstate-result-okeq))
+  (defequiv funenv-result-okeq))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -371,33 +371,33 @@
 
 (defrule get-fun-of-dead
   :short "Correctness theorem for @(tsee get-fun)."
-  (equal (get-fun fun (fstate-dead fstate))
-         (funinfo-result-dead (get-fun fun fstate)))
-  :use (:instance lemma (fstate (fstate-fix fstate)))
+  (equal (get-fun fun (funenv-dead funenv))
+         (funinfo-result-dead (get-fun fun funenv)))
+  :use (:instance lemma (funenv (funenv-fix funenv)))
   :prep-lemmas
   ((defruled lemma
-     (implies (fstatep fstate)
-              (equal (get-fun fun (fstate-dead fstate))
-                     (funinfo-result-dead (get-fun fun fstate))))
+     (implies (funenvp funenv)
+              (equal (get-fun fun (funenv-dead funenv))
+                     (funinfo-result-dead (get-fun fun funenv))))
      :enable get-fun)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule add-fun-of-dead
   :short "Correctness theorem for @(tsee add-fun)."
-  (equal (add-fun fun (funinfo-dead info) (fstate-dead fstate))
-         (fstate-result-dead (add-fun fun info fstate)))
+  (equal (add-fun fun (funinfo-dead info) (funenv-dead funenv))
+         (funenv-result-dead (add-fun fun info funenv)))
   :use (:instance lemma
-        (fstate (fstate-fix fstate))
+        (funenv (funenv-fix funenv))
         (info (funinfo-fix info)))
   :prep-lemmas
   ((defrule lemma
-     (implies (and (fstatep fstate)
+     (implies (and (funenvp funenv)
                    (funinfop info))
-              (equal (add-fun fun (funinfo-dead info) (fstate-dead fstate))
-                     (fstate-result-dead (add-fun fun info fstate))))
+              (equal (add-fun fun (funinfo-dead info) (funenv-dead funenv))
+                     (funenv-result-dead (add-fun fun info funenv))))
      :enable (add-fun
-              fstate-result-dead))))
+              funenv-result-dead))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -435,23 +435,23 @@
      There may be a way to avoid the explicit quantification,
      particularly because we are only interested in two values of @('afterp'),
      namely @('nil') and non-@('nil')."))
-  (fstate-result-okeq
+  (funenv-result-okeq
    (add-funs-in-statement-list (statement-list-dead stmts afterp)
-                               (fstate-dead fstate))
-   (fstate-result-dead
-    (add-funs-in-statement-list stmts fstate)))
+                               (funenv-dead funenv))
+   (funenv-result-dead
+    (add-funs-in-statement-list stmts funenv)))
   :use pred-holds
   :enable pred-necc
 
   :prep-lemmas
 
   ((defund-sk pred (stmts)
-     (forall (afterp fstate)
-             (fstate-result-okeq
+     (forall (afterp funenv)
+             (funenv-result-okeq
               (add-funs-in-statement-list (statement-list-dead stmts afterp)
-                                          (fstate-dead fstate))
-              (fstate-result-dead
-               (add-funs-in-statement-list stmts fstate))))
+                                          (funenv-dead funenv))
+              (funenv-result-dead
+               (add-funs-in-statement-list stmts funenv))))
      :rewrite :direct)
 
    (defruled pred-base
@@ -471,15 +471,15 @@
      ((defruled lemma
         (implies (and (consp stmts)
                       (pred (cdr stmts)))
-                 (fstate-result-okeq
+                 (funenv-result-okeq
                   (add-funs-in-statement-list (statement-list-dead stmts afterp)
-                                              (fstate-dead fstate))
-                  (fstate-result-dead
-                   (add-funs-in-statement-list stmts fstate))))
+                                              (funenv-dead funenv))
+                  (funenv-result-dead
+                   (add-funs-in-statement-list stmts funenv))))
         :enable (pred-necc
                  add-funs-in-statement-list
                  statement-list-dead
-                 fstate-result-dead)
+                 funenv-result-dead)
         :expand (statement-list-dead stmts afterp))))
 
    (defruled pred-holds
@@ -592,7 +592,7 @@
                                    default
                                    target
                                    cstate
-                                   fstate
+                                   funenv
                                    limit)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -617,9 +617,9 @@
   (local (in-theory (enable cstate-result-okeq
                             eoutcome-result-okeq
                             soutcome-result-okeq
-                            fstate-result-okeq
+                            funenv-result-okeq
                             funinfo-result-dead
-                            fstate-result-dead)))
+                            funenv-result-dead)))
 
   (defthm-exec-flag
 
@@ -627,11 +627,11 @@
       (eoutcome-result-okeq
        (exec-expression expr
                         cstate
-                        (fstate-dead fstate)
+                        (funenv-dead funenv)
                         limit)
        (exec-expression expr
                         cstate
-                        fstate
+                        funenv
                         limit))
       :flag exec-expression)
 
@@ -639,11 +639,11 @@
       (eoutcome-result-okeq
        (exec-expression-list exprs
                              cstate
-                             (fstate-dead fstate)
+                             (funenv-dead funenv)
                              limit)
        (exec-expression-list exprs
                              cstate
-                             fstate
+                             funenv
                              limit))
       :flag exec-expression-list)
 
@@ -651,11 +651,11 @@
       (eoutcome-result-okeq
        (exec-funcall call
                      cstate
-                     (fstate-dead fstate)
+                     (funenv-dead funenv)
                      limit)
        (exec-funcall call
                      cstate
-                     fstate
+                     funenv
                      limit))
       :flag exec-funcall)
 
@@ -664,12 +664,12 @@
        (exec-function fun
                       args
                       cstate
-                      (fstate-dead fstate)
+                      (funenv-dead funenv)
                       limit)
        (exec-function fun
                       args
                       cstate
-                      fstate
+                      funenv
                       limit))
       :flag exec-function)
 
@@ -677,11 +677,11 @@
       (soutcome-result-okeq
        (exec-statement (statement-dead stmt)
                        cstate
-                       (fstate-dead fstate)
+                       (funenv-dead funenv)
                        limit)
        (exec-statement stmt
                        cstate
-                       fstate
+                       funenv
                        limit))
       :flag exec-statement)
 
@@ -689,11 +689,11 @@
       (soutcome-result-okeq
        (exec-statement-list (statement-list-dead stmts nil)
                             cstate
-                            (fstate-dead fstate)
+                            (funenv-dead funenv)
                             limit)
        (exec-statement-list stmts
                             cstate
-                            fstate
+                            funenv
                             limit))
       :flag exec-statement-list)
 
@@ -701,11 +701,11 @@
       (soutcome-result-okeq
        (exec-block (block-dead block)
                    cstate
-                   (fstate-dead fstate)
+                   (funenv-dead funenv)
                    limit)
        (exec-block block
                    cstate
-                   fstate
+                   funenv
                    limit))
       :flag exec-block)
 
@@ -715,13 +715,13 @@
                             (block-dead update)
                             (block-dead body)
                             cstate
-                            (fstate-dead fstate)
+                            (funenv-dead funenv)
                             limit)
        (exec-for-iterations test
                             update
                             body
                             cstate
-                            fstate
+                            funenv
                             limit))
       :flag exec-for-iterations)
 
@@ -731,13 +731,13 @@
                          (block-option-dead default)
                          target
                          cstate
-                         (fstate-dead fstate)
+                         (funenv-dead funenv)
                          limit)
        (exec-switch-rest cases
                          default
                          target
                          cstate
-                         fstate
+                         funenv
                          limit))
       :flag exec-switch-rest)
 
