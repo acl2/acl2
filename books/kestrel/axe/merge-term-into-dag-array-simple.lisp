@@ -1,4 +1,4 @@
-; Utilities to merge terms into dags, with no simplification
+; Utilities to merge terms into dags, with no simplification or evaluation
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2021 Kestrel Institute
@@ -12,11 +12,11 @@
 
 (in-package "ACL2")
 
-;; The functions in this book use the basic evaluator to evaluate ground terms.
+;; This version does not handle embedded dags, resolve ifs, or evaluate ground terms.
+;; See also merge-term-into-dag-array-basic.lisp.
 
 (include-book "dag-array-builders2")
 (include-book "kestrel/typed-lists-light/all-consp" :dir :system)
-;; (include-book "evaluator-basic")
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp2" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -29,8 +29,6 @@
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
-
-;; this version does not handle embedded dags, resolve ifs, or evaluate ground terms
 
 (local (in-theory (enable integerp-when-natp)))
 

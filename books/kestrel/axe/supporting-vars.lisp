@@ -1,7 +1,7 @@
 ; Computing the vars that support DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -67,6 +67,7 @@
 ;;;
 
 ;; Returns the list of the vars that support (any of the) NODENUMS.
+;; Smashes the array called 'done-array.
 (defund vars-that-support-dag-nodes (nodenums dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (nat-listp nodenums)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -88,7 +89,7 @@
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< nodenums dag-len))
            (symbol-listp (vars-that-support-dag-nodes nodenums dag-array-name dag-array dag-len)))
-  :rule-classes :type-prescription
+  :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable vars-that-support-dag-nodes))))
 
 ;;;
@@ -96,6 +97,7 @@
 ;;;
 
 ;; Returns the list of the vars that support NODENUM.
+;; Smashes the array called 'done-array.
 (defun vars-that-support-dag-node (nodenum dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)

@@ -10,7 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/top" :dir :system)
+;(include-book "xdoc/top" :dir :system)
+(include-book "jvm/doc")
 (include-book "kestrel/utilities/xdoc-paras" :dir :system)
 
 (defxdoc stp
