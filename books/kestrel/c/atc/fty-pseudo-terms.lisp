@@ -301,7 +301,7 @@
                (new-actuals pseudo-term-listp))
   :short "FTY version of @(tsee remove-equal-formals-actuals)."
   (remove-equal-formals-actuals formals
-                                (acl2::pseudo-term-list-fix actuals))
+                                (pseudo-term-list-fix actuals))
   ///
 
   (more-returns
@@ -581,7 +581,7 @@
 (define fty-fsublis-var ((subst symbol-pseudoterm-alistp) (term pseudo-termp))
   :returns (new-term pseudo-termp)
   :short "FTY version of @(tsee fsublis-var)."
-  (fsublis-var (acl2::symbol-pseudoterm-alist-fix subst)
+  (fsublis-var (symbol-pseudoterm-alist-fix subst)
                (pseudo-term-fix term))
   :prepwork
   ((defrulel lemma
@@ -596,7 +596,7 @@
                              (terms pseudo-term-listp))
   :returns (new-terms pseudo-term-listp)
   :short "FTY version of @(tsee fsublis-var-lst)."
-  (fsublis-var-lst (acl2::symbol-pseudoterm-alist-fix subst)
+  (fsublis-var-lst (symbol-pseudoterm-alist-fix subst)
                    (pseudo-term-list-fix terms))
 
   :prepwork

@@ -77,7 +77,7 @@
 (define atc-table-lookup ((call pseudo-event-formp) (wrld plist-worldp))
   :returns (info? atc-maybe-call-infop)
   :short "Look up an @(tsee atc) call in the table."
-  (b* ((table (acl2::table-alist+ *atc-table* wrld))
+  (b* ((table (table-alist+ *atc-table* wrld))
        (info? (cdr (assoc-equal call table))))
     (if (atc-maybe-call-infop info?)
         info?

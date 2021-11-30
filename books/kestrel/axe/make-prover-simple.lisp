@@ -58,6 +58,41 @@
 (include-book "kestrel/utilities/all-vars-in-term-bound-in-alistp" :dir :system)
 (include-book "make-assumption-array")
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
+
+;move
+(defthm symbol-doublet-listp-forward-to-alistp
+  (implies (symbol-doublet-listp x)
+           (alistp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable symbol-doublet-listp alistp))))
+
+(defthm symbol-doublet-listp-forward-to-doublet-listp
+  (implies (symbol-doublet-listp x)
+           (doublet-listp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable symbol-doublet-listp alistp))))
+
+(defthm symbol-doublet-listp-forward-to-symbol-listp-of-strip-cars
+  (implies (symbol-doublet-listp x)
+           (symbol-listp (strip-cars x)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable symbol-doublet-listp alistp))))
+
+(defthm symbol-doublet-listp-forward-to-all->=-len-of-2
+  (implies (symbol-doublet-listp x)
+           (all->=-len x 2))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable symbol-doublet-listp alistp))))
+
+(defthm symbol-alistp-of-doublets-to-alist
+  (equal (symbol-alistp (doublets-to-alist doublets))
+         (symbol-listp (strip-cars doublets))))
+
+(defthm symbol-term-alistp-of-doublets-to-alist
+  (equal (symbol-term-alistp (doublets-to-alist doublets))
+         (and (symbol-listp (strip-cars doublets))
+              (pseudo-term-listp (strip-cadrs doublets)))))
 
 (defthm all-axe-treep-of-keep-atoms-when-contextp
   (implies (and (contextp x)
@@ -69,7 +104,7 @@
 (defthm strip-cdrs-of-pairlis$-3
   (equal (strip-cdrs (pairlis$ x y))
          (take (len x) y))
-  :hints (("Goal" :in-theory (enable len))))
+  :hints (("Goal" :in-theory (enable (:i len)))))
 
 (defthmd len-of-lambda-formals-when-axe-treep
   (implies (and (axe-treep tree)
@@ -101,8 +136,8 @@
   (implies (and (equal (len x) free)
                 (syntaxp (quotep free)))
            (equal (consp x) (< 0 free)))
-  :hints (("Goal" :in-theory (e/d (len) (;len-of-cdr
-                                         )))))
+  :hints (("Goal" :in-theory (e/d ((:i len)) ( ;len-of-cdr
+                                              )))))
 
 (defthmd rationalp-when-natp-for-axe
   (implies (natp x)
@@ -517,6 +552,189 @@
   (implies (simple-prover-tactic-listp tactics)
            (simple-prover-tactic-listp (cdr tactics)))
   :hints (("Goal" :in-theory (enable simple-prover-tactic-listp))))
+
+;; A hint representing a single theorem instance to use.
+;; Recognize <symbol> or (:instance <symbol> ... subst ...).
+(defund axe-use-instancep (instance)
+  (declare (xargs :guard t))
+  (or (and (symbolp instance) ; theorem name with no subst
+           (not (keywordp instance)) ; can't be :instance
+           )
+      (and (true-listp instance)
+           (<= 2 (len instance))
+           (eq :instance (first instance))
+           (symbolp (second instance)) ; theorem name
+           (symbol-doublet-listp (rest (rest instance))) ; the subst
+           (pseudo-term-listp (strip-cadrs (rest (rest instance))))
+           )))
+
+(defund axe-use-instance-subst (instance)
+  (declare (xargs :guard (axe-use-instancep instance)
+                  :guard-hints (("Goal" :in-theory (enable axe-use-instancep)))))
+  (if (consp instance)
+      (rest (rest instance))
+    nil))
+
+(defthm symbol-listp-of-strip-cars-of-axe-use-instance-subst
+  (implies (axe-use-instancep instance)
+           (symbol-listp (strip-cars (axe-use-instance-subst instance))))
+  :hints (("Goal" :in-theory (enable axe-use-instance-subst axe-use-instancep))))
+
+(defthm pseudo-term-listp-of-strip-cadrs-of-axe-use-instance-subst
+  (implies (axe-use-instancep instance)
+           (pseudo-term-listp (strip-cadrs (axe-use-instance-subst instance))))
+  :hints (("Goal" :in-theory (enable axe-use-instance-subst axe-use-instancep))))
+
+(defthm doublet-listp-of-axe-use-instance-subst
+  (implies (axe-use-instancep instance)
+           (doublet-listp (axe-use-instance-subst instance)))
+  :hints (("Goal" :in-theory (enable axe-use-instance-subst axe-use-instancep))))
+
+(defthm alistp-of-axe-use-instance-subst
+  (implies (axe-use-instancep instance)
+           (alistp (axe-use-instance-subst instance)))
+  :hints (("Goal" :in-theory (enable axe-use-instance-subst axe-use-instancep))))
+
+(defthm all->=-len-of-axe-use-instance-subst
+  (implies (axe-use-instancep instance)
+           (all->=-len (axe-use-instance-subst instance) 2))
+  :hints (("Goal" :in-theory (enable axe-use-instance-subst axe-use-instancep))))
+
+
+;; A hint representing a list of theorem instances to use.
+(defund axe-use-instance-listp (instances)
+  (declare (xargs :guard t))
+  (if (not (consp instances))
+      (null instances)
+    (and (axe-use-instancep (first instances))
+         (axe-use-instance-listp (rest instances)))))
+
+;; Only nil is both a use instance and a list of use instances.
+(thm
+ (implies (not (equal x nil))
+          (not (and (axe-use-instancep x)
+                    (axe-use-instance-listp x))))
+ :hints (("Goal" :in-theory (enable AXE-USE-INSTANCE-LISTP
+                                    axe-use-instancep))))
+
+(defthm axe-use-instancep-of-car
+  (implies (and (axe-use-instance-listp instances)
+                ;; (consp instances)
+                )
+           (axe-use-instancep (car instances)))
+  :hints (("Goal" :in-theory (enable axe-use-instance-listp))))
+
+(defthm axe-use-instance-listp-of-cdr
+  (implies (axe-use-instance-listp instances)
+           (axe-use-instance-listp (cdr instances)))
+  :hints (("Goal" :in-theory (enable axe-use-instance-listp))))
+
+(defund axe-use-hintp (hint)
+  (declare (xargs :guard t))
+  (or (axe-use-instancep hint)
+      (axe-use-instance-listp hint)))
+
+;; Turns a single instance into a list of instances
+(defund desugar-axe-use-hint (hint)
+  (declare (xargs :guard (axe-use-hintp hint)))
+  (if (null hint)
+      hint
+    (if (axe-use-instancep hint)
+        (list hint)
+      hint)))
+
+(defthm axe-use-instance-listp-of-desugar-axe-use-hint
+  (implies (axe-use-hintp hint)
+           (axe-use-instance-listp (desugar-axe-use-hint hint)))
+  :hints (("Goal" :in-theory (enable desugar-axe-use-hint axe-use-hintp axe-use-instance-listp))))
+
+;; Returns (mv erp new-literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+(defund apply-axe-use-instances (axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist clause-vars wrld new-nodenums-acc)
+  (declare (xargs :guard (and (axe-use-instance-listp axe-use-instances)
+                              (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                              (symbol-listp clause-vars)
+                              (plist-worldp wrld))
+                  :guard-hints (("Goal" :expand (AXE-USE-INSTANCE-LISTP AXE-USE-INSTANCES)
+                                 :in-theory (e/d ((:d axe-use-instance-listp) AXE-USE-INSTANCEP)
+                                                 (doublets-to-alist strip-cars strip-cadrs symbol-listp symbol-doublet-listp
+                                                                    PSEUDO-TERMP))))))
+  (if (endp axe-use-instances)
+      (mv (erp-nil) new-nodenums-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+    (b* ((axe-use-instance (first axe-use-instances)) ;; either <symbol> or (:instance <symbol> ... subst ...)
+         (theorem-name (if (consp axe-use-instance) (second axe-use-instance) axe-use-instance))
+         (subst-doublets (if (consp axe-use-instance) (axe-use-instance-subst axe-use-instance) nil))
+         (subst-vars (strip-cars subst-doublets))
+         (theorem-body (defthm-body theorem-name wrld)) ; for now at least, this can't be a definition name
+         (theorem-vars (free-vars-in-term theorem-body))
+         ((when (not (subsetp-equal subst-vars theorem-vars)))
+          (er hard? 'apply-axe-use-instances "Axe :use instance ~x0 has vars, ~x1, not in the theorem body, ~x2." axe-use-instance (set-difference-eq subst-vars theorem-vars) theorem-body)
+          (mv (erp-t) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+         (new-vars (append (set-difference-eq theorem-vars subst-vars) ; vars not substituted
+                           (free-vars-in-terms (strip-cadrs subst-doublets))))
+         ((when (not (subsetp-eq new-vars clause-vars)))
+          (er hard? 'apply-axe-use-instances "Axe :use instance ~x0 introduces vars, ~x1, not in the clause." axe-use-instance (set-difference-eq new-vars clause-vars))
+          (mv (erp-t) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+         ;; TODO: Check arities in the subst?
+         ;; Now negate the theorem-body because we assume literal nodenums false:
+         (negated-instantiated-body (sublis-var-simple (doublets-to-alist subst-doublets) `(not ,theorem-body)))
+         ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+          (merge-term-into-dag-array-basic negated-instantiated-body
+                                           nil ; could optimize using the fact that we know this is nil and all vars are already present
+                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array
+                                           nil ; todo
+                                           ))
+         ((when erp)
+          (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+         ((when (consp new-nodenum-or-quotep)) ; check for quotep
+          (er hard? 'apply-axe-use-instances "Axe :use instance ~x0 resulted in the constant term ~x1." axe-use-instance new-nodenum-or-quotep)
+          (mv (erp-t) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+      (apply-axe-use-instances (rest axe-use-instances)
+                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                               clause-vars
+                               wrld
+                               (cons new-nodenum-or-quotep new-nodenums-acc)))))
+
+(defthm apply-axe-use-instances-return-type
+  (mv-let (erp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+    (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist clause-vars wrld new-nodenums-acc)
+    (implies (and (not erp)
+                  (nat-listp new-nodenums-acc)
+                  (all-< new-nodenums-acc dag-len)
+                  (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                  (axe-use-instance-listp axe-use-instances))
+             (and (nat-listp new-literal-nodenums)
+                  (all-< new-literal-nodenums new-dag-len)
+                  (all-dargp-less-than new-literal-nodenums new-dag-len)
+                  (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))))
+  :hints (("Goal" :expand (axe-use-instance-listp axe-use-instances)
+           :in-theory (e/d (apply-axe-use-instances)
+                           (pseudo-termp)))))
+
+;drop?
+(defthm apply-axe-use-instances-bound
+  (mv-let (erp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+    (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist clause-vars wrld new-nodenums-acc)
+    (declare (ignore new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+    (implies (and (<= new-dag-len bound)
+                  (not erp)
+                  (nat-listp new-nodenums-acc)
+                  (all-< new-nodenums-acc dag-len)
+                  (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                  (axe-use-instance-listp axe-use-instances))
+             (all-dargp-less-than new-literal-nodenums bound)))
+  :hints (("Goal" :use (:instance apply-axe-use-instances-return-type)
+           :in-theory (disable apply-axe-use-instances-return-type))))
+
+;; the dag can't get smaller
+(defthm <=-of-mv-nth-3-of-apply-axe-use-instances
+  (implies (and (not (mv-nth 0 (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist clause-vars wrld new-nodenums-acc))) ; no error
+                (nat-listp new-nodenums-acc)
+                (all-< new-nodenums-acc dag-len)
+                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (axe-use-instance-listp axe-use-instances))
+           (<= dag-len (mv-nth 3 (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist clause-vars wrld new-nodenums-acc))))
+  :rule-classes (:rewrite :linear)
+  :hints (("Goal" :in-theory (e/d (apply-axe-use-instances) (pseudo-termp)))))
 
 (defun make-prover-simple-fn (suffix ;; gets added to generated names
                               evaluator-suffix
@@ -4671,6 +4889,37 @@
          :hints (("Goal" :use ,(pack$ 'prove-or-split-case-with- suffix '-prover-return-type)
                   :in-theory (disable ,(pack$ 'prove-or-split-case-with- suffix '-prover-return-type)))))
 
+       (defthm ,(pack$ 'prove-or-split-case-with- suffix '-prover-return-type-corollary-gen)
+         (implies (and (<= bound dag-len)
+                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                       (nat-listp literal-nodenums)
+                       (all-< literal-nodenums dag-len)
+                       (all-rule-alistp rule-alists)
+                       (interpreted-function-alistp interpreted-function-alist)
+                       (info-worldp info)
+                       (triesp tries)
+                       (symbol-listp monitored-symbols)
+                       (stringp case-designator)
+                       (natp prover-depth)
+                       (simple-prover-optionsp options))
+                  (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
+                    (,prove-or-split-case-name literal-nodenums
+                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                               tactic
+                                               rule-alists
+                                               interpreted-function-alist
+                                               monitored-symbols
+                                               print
+                                               case-designator
+                                               info tries
+                                               prover-depth known-booleans options count)
+                    (declare (ignore result new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
+                    (implies (not erp)
+                             (implies (< 0 prover-depth)
+                                      (<= bound new-dag-len)))))
+         :hints (("Goal" :use ,(pack$ 'prove-or-split-case-with- suffix '-prover-return-type)
+                  :in-theory (disable ,(pack$ 'prove-or-split-case-with- suffix '-prover-return-type)))))
+
        ;; The main entry point of the Axe Prover.
        ;; Tries to prove the disjunction of LITERAL-NODENUMS-OR-QUOTEPS.
        ;; Returns (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries) where result is :proved, :failed, or :timed-out
@@ -4687,7 +4936,9 @@
                                         print
                                         case-designator ;the name of this case
                                         info tries
-                                        prover-depth known-booleans options)
+                                        prover-depth known-booleans options
+                                        use-hint
+                                        wrld)
          (declare (xargs :guard (and (simple-prover-tacticp tactic)
                                      (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (true-listp literal-nodenums-or-quoteps)
@@ -4700,7 +4951,10 @@
                                      (stringp case-designator)
                                      (natp prover-depth)
                                      (symbol-listp known-booleans)
-                                     (simple-prover-optionsp options))))
+                                     (simple-prover-optionsp options)
+                                     (axe-use-hintp use-hint)
+                                     (plist-worldp wrld))
+                         :guard-hints (("Goal" :in-theory (enable true-listp-when-nat-listp-rewrite)))))
          (b* (;; If no, rule-alists are given, rewrite with a single set of simple rules.  This makes sure that
               ;; constants get evaluated, contradictions get found (when making the assumption-array), etc.
               (rule-alists (if (not rule-alists)
@@ -4713,6 +4967,16 @@
               ((when provedp)
                (and print (cw "! Proved case ~s0 (one literal was a non-nil constant!)~%" case-designator))
                (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+              ;; Get the vars
+              (vars (vars-that-support-dag-nodes literal-nodenums 'dag-array dag-array dag-len))
+              (- (cw "(DAG has ~x0 vars.)~%" (len vars)))
+              ;; Apply :use hints:
+              (axe-use-instances (desugar-axe-use-hint use-hint))
+              ((mv erp new-literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+               (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist vars wrld nil))
+              ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+              (- (cw "(Added ~x0 literal(s) from use hints.)~%" (len new-literal-nodenums)))
+              (literal-nodenums (append new-literal-nodenums literal-nodenums))
               ;; Now extract any additional disjuncts from the literals:
               ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                (get-disjuncts-from-nodes literal-nodenums
@@ -4749,7 +5013,9 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
-                       (simple-prover-optionsp options))
+                       (simple-prover-optionsp options)
+                       (axe-use-hintp use-hint)
+                       (plist-worldp wrld))
                   (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,prove-disjunction-name literal-nodenums-or-quoteps
                                              dag-array
@@ -4763,7 +5029,8 @@
                                              print
                                              case-designator
                                              info tries
-                                             prover-depth known-booleans options)
+                                             prover-depth known-booleans options
+                                             use-hint wrld)
                     (implies (not erp)
                              (and (prover-resultp result)
                                   (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
@@ -4882,6 +5149,7 @@
                                             no-splitp
                                             monitor
                                             print
+                                            use
                                             state)
          (declare (xargs :guard-hints (("Goal" :use (:instance make-implication-dag-return-type)
                                         :in-theory (e/d (array-len-with-slack top-nodenum-of-dag-when-pseudo-dagp wf-dagp)
@@ -4923,6 +5191,9 @@
                (mv :bad-input nil state))
               ((when (not (ilks-plist-worldp (w state))))
                (er hard? ',prove-dag-implication-name "Bad world (this should not happen).")
+               (mv :bad-input nil state))
+              ((when (not (axe-use-hintp use)))
+               (er hard? ',prove-dag-implication-name "Bad :use hint: ~x0." use)
                (mv :bad-input nil state))
               ;; Form the implication to prove:
               ((mv erp implication-dag-or-quotep) (make-implication-dag dag1 dag2)) ; todo: we will end up having to extract disjuncts from this implication
@@ -4980,7 +5251,9 @@
                                           (zero-tries))
                                         0 ;prover-depth
                                         (known-booleans (w state))
-                                        options))
+                                        options
+                                        use
+                                        (w state)))
               ((when erp) (mv erp nil state))
               (- (and tries (cw "~%Total rule tries: ~x0.~%" tries)))
               (- (and info (print-hit-counts print info (rules-from-rule-alists rule-alists)))))
@@ -5003,6 +5276,7 @@
                                            no-splitp
                                            monitor
                                            print
+                                           use
                                            state)
          (declare (xargs :guard (and (simple-prover-tacticp tactic)
                                      (rule-item-list-listp rule-lists)
@@ -5029,6 +5303,7 @@
                                         no-splitp
                                         monitor
                                         print
+                                        use
                                         state)))
 
        ;; Attempt to prove that DAG-OR-TERM1 implies DAG-OR-TERM2.
@@ -5042,7 +5317,8 @@
                                           (interpreted-function-alist 'nil)
                                           (no-splitp 'nil) ; whether to prevent splitting into cases
                                           (monitor 'nil)
-                                          (print ':brief))
+                                          (print ':brief)
+                                          (use 'nil))
          ;; all args get evaluated:
          (list 'make-event
                (list ',prove-implication-fn-name
@@ -5055,11 +5331,12 @@
                      no-splitp
                      monitor
                      print
+                     use
                      'state)))
 
        ;; Returns (mv erp provedp).  Attempts to prove the clause (a disjunction
        ;; of terms) with the Axe Prover.
-       (defund ,prove-clause-name (clause tactic name rule-alists monitored-symbols interpreted-function-alist print known-booleans options)
+       (defund ,prove-clause-name (clause tactic name rule-alists monitored-symbols interpreted-function-alist print known-booleans options use wrld)
          (declare (xargs :guard (and (simple-prover-tacticp tactic)
                                      (pseudo-term-listp clause)
                                      (symbolp name)
@@ -5069,12 +5346,15 @@
                                      (interpreted-function-alistp interpreted-function-alist)
                                      ;;... todo add more
                                      (simple-prover-optionsp options)
-                                     (symbol-listp known-booleans))))
+                                     (symbol-listp known-booleans)
+                                     (axe-use-hintp use)
+                                     (plist-worldp wrld))))
          (b* ((- (cw "(Proving clause with Axe prover:~%"))
               ((mv erp literal-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                (make-terms-into-dag-array-basic clause 'dag-array 'dag-parent-array interpreted-function-alist))
               ((when erp) (mv erp nil))
               ;;fixme name clashes..
+              ;; fixme: check inputs here (combine with checks elsewhere?):
               ((mv erp result & & & & & info tries)
                (,prove-disjunction-name literal-nodenums-or-quoteps ;; fixme think about the options used here!
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -5092,7 +5372,9 @@
                                           (zero-tries))
                                         0 ;prover-depth
                                         known-booleans
-                                        options))
+                                        options
+                                        use
+                                        wrld))
               ((when erp) (mv erp nil))
               (- (and tries (cw "Total rule tries: ~x0.~%" tries)))
               (- (and info (print-hit-counts print info (rules-from-rule-alists rule-alists)))))
@@ -5117,6 +5399,7 @@
                                      (true-listp (lookup-equal :rule-lists hint))
                                      (booleanp (lookup-equal :no-splitp hint))
                                      (symbol-listp (lookup-equal :monitor hint))
+                                     (axe-use-hintp (lookup-equal :use hint))
                                      (ilks-plist-worldp (w state)))))
          (b* ((must-prove (lookup-eq :must-prove hint))
               ;; Handle the :rules input:
@@ -5141,6 +5424,8 @@
               (tactic (if (not tactic)
                           '(:rep :rewrite :subst)
                         tactic))
+              ;; Handle the :use input:
+              (use-hint (lookup-eq :use hint))
               (monitored-symbols (lookup-eq :monitor hint))
               (no-splitp (lookup-eq :no-splitp hint))
               (print (lookup-eq :print hint))
@@ -5159,7 +5444,9 @@
                                    nil ;interpreted-function-alist ;todo?
                                    print
                                    (known-booleans (w state))
-                                   options))
+                                   options
+                                   use-hint
+                                   (w state)))
               ((when erp) (mv erp (list clause))) ; error (and no change to clause set)
               )
            (if provedp

@@ -19,14 +19,20 @@
 ; where bytes are read in pairs from a byte array,
 ; each pair is turned into a 16-bit value (with a high byte and a low byte),
 ; and the latter is added to the current checksum modulo 2^16.
-; For now we use C int values because this is what C currently supports,
-; and we use guards to constrain
+
+; We have a legacy version of this example that uses C int values,
+; which was created when ATC only supported int values.
+; In this legacy version, we use guards to constrain
 ; the current checksum to be 16 bits,
 ; the high byte to be 8 bits, and
 ; the low byte to be 8 bits.
-; When ATC supports additional integer types,
-; we will change this example, or create a new one,
-; that uses unsigned types of the appropriate sizes.
+
+; We also have a newer version that uses
+; C unsigned char values for the two bytes
+; and an unsigned int value for the checksum.
+; For generality, we use guards to constrain
+; the high byte to be 8 bits and
+; the low byte to be 8 bits.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -45,7 +51,7 @@
     :rule-classes :linear
     :enable (c::sint-max c::int-bits))
 
-  (defun |checksum| (|current| |hibyte| |lobyte|)
+  (defun |legacy| (|current| |hibyte| |lobyte|)
     (declare (xargs :guard (and (c::sintp |current|)
                                 (c::sintp |hibyte|)
                                 (c::sintp |lobyte|)
@@ -75,9 +81,39 @@
                         |lobyte|))
      (c::sint-dec-const 65535))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate ()
+
+  (defrulel uint-max->=-200k
+    (>= (c::uint-max) 200000)
+    :rule-classes :linear
+    :enable (c::uint-max c::int-bits))
+
+  (defun |checksum| (|current| |hibyte| |lobyte|)
+    (declare (xargs :guard (and (c::uintp |current|)
+                                (c::ucharp |hibyte|)
+                                (c::ucharp |lobyte|)
+                                ;; current <= 65635:
+                                (<= (c::uint->get |current|) 65535)
+                                ;; hibyte <= 255:
+                                (<= (c::uchar->get |hibyte|) 255)
+                                ;; lobyte <= 255:
+                                (<= (c::uchar->get |lobyte|) 255))
+                    :guard-hints (("Goal"
+                                   :in-theory (enable c::shl-uint-sint-okp
+                                                      c::shl-uint-okp)))))
+    (c::bitand-uint-uint
+     (c::add-uint-uint
+      |current|
+      (c::add-uint-uint (c::shl-uint-sint (c::uint-from-uchar |hibyte|)
+                                          (c::sint-dec-const 8))
+                        (c::uint-from-uchar |lobyte|)))
+     (c::uint-dec-const 65535))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |checksum| :output-file "checksum.c")
+(c::atc |legacy| |checksum| :output-file "checksum.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

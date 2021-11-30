@@ -89,8 +89,8 @@
          (name-resultp (add-suffix name "-RESULTP"))
          (short (str::cat "Fixtype of " desc " and errors."))
          (typep-when-name-resultp-and-not-errorp
-          (acl2::packn-pos (list typep '-when- name-resultp '-and-not-errorp)
-                           name)))
+          (packn-pos (list typep '-when- name-resultp '-and-not-errorp)
+                     name)))
       `(encapsulate ()
          (fty::defflatsum ,name-result
            :short ,short

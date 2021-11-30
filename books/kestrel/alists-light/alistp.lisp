@@ -107,3 +107,12 @@
   (implies (alistp alist)
            (alistp (remove1-equal pair alist)))
   :hints (("Goal" :in-theory (enable remove1-equal))))
+
+;; (defthm len-of-car-when-alistp-cheap
+;;   (implies (alistp alist)
+;;            (equal (len (car alist))
+;;                   (if (consp alist)
+;;                       1
+;;                     0)))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
+;;   :hints (("Goal" :in-theory (enable alistp))))

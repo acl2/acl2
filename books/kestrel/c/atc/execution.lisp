@@ -1535,20 +1535,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define exec-expr-call ((fun identp)
+                          (args expr-listp)
+                          (compst compustatep)
+                          (fenv fun-envp)
+                          (limit natp))
+    :returns (mv (result value-option-resultp)
+                 (new-compst compustatep))
+    :parents (atc-execution exec)
+    :short "Execution a function call."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We return an optional value,
+       which is @('nil') for a function that returns @('void')."))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
+         (vals (exec-expr-pure-list args compst))
+         ((when (errorp vals)) (mv vals (compustate-fix compst))))
+      (exec-fun fun vals compst fenv (1- limit)))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define exec-expr-call-or-pure ((e exprp)
                                   (compst compustatep)
                                   (fenv fun-envp)
                                   (limit natp))
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
-    :parents (atc-dynamic-semantics exec)
+    :parents (atc-execution exec)
     :short "Execute a function call or a pure expression."
     :long
     (xdoc::topstring
      (xdoc::p
       "This is only used for expressions that must be
        either function calls or pure.
-       If the expression is a call, we handle it here.
+       If the expression is a call, we use @(tsee exec-expr-call).
        Otherwise, we resort to @(tsee exec-expr-pure).")
      (xdoc::p
       "We return an optional value,
@@ -1556,11 +1578,11 @@
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          (e (expr-fix e)))
       (if (expr-case e :call)
-          (b* ((e.args (expr-call->args e))
-               (e.fun (expr-call->fun e))
-               (args (exec-expr-pure-list e.args compst))
-               ((when (errorp args)) (mv args (compustate-fix compst))))
-            (exec-fun e.fun args compst fenv (1- limit)))
+          (exec-expr-call (expr-call->fun e)
+                          (expr-call->args e)
+                          compst
+                          fenv
+                          (1- limit))
         (mv (exec-expr-pure e compst)
             (compustate-fix compst))))
     :measure (nfix limit))
@@ -1572,7 +1594,7 @@
                          (fenv fun-envp)
                          (limit natp))
     :returns (new-compst compustate-resultp)
-    :parents (atc-dynamic-semantics exec)
+    :parents (atc-execution exec)
     :short "Execute an assignment expression."
     :long
     (xdoc::topstring
@@ -1706,6 +1728,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define exec-expr-call-or-asg ((e exprp)
+                                 (compst compustatep)
+                                 (fenv fun-envp)
+                                 (limit natp))
+    :returns (new-compst compustate-resultp)
+    :parents (atc-execution exec)
+    :short "Execute a function call or assignment expression."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is used for expressions used as expression statements.
+       Thus, in the case of a function call,
+       we discard the returned value, if any."))
+    (b* (((when (zp limit)) (error :limit)))
+      (if (expr-case e :call)
+          (b* (((mv result compst)
+                (exec-expr-call (expr-call->fun e)
+                                (expr-call->args e)
+                                compst
+                                fenv
+                                (1- limit)))
+               ((when (errorp result)) result))
+            compst)
+        (exec-expr-asg e compst fenv (1- limit))))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define exec-fun ((fun identp)
                     (args value-listp)
                     (compst compustatep)
@@ -1713,7 +1763,7 @@
                     (limit natp))
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
-    :parents (atc-dynamic-semantics exec)
+    :parents (atc-execution exec)
     :short "Execute a function on argument values."
     :long
     (xdoc::topstring
@@ -1760,7 +1810,7 @@
     :guard (> (compustate-frames-number compst) 0)
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
-    :parents (atc-dynamic-semantics exec)
+    :parents (atc-execution exec)
     :short "Execute a statement."
     :long
     (xdoc::topstring
@@ -1782,7 +1832,10 @@
                       ((mv value? compst)
                        (exec-block-item-list s.items compst fenv (1- limit))))
                    (mv value? (exit-scope compst)))
-       :expr (b* ((compst/error (exec-expr-asg s.get compst fenv (1- limit)))
+       :expr (b* ((compst/error (exec-expr-call-or-asg s.get
+                                                       compst
+                                                       fenv
+                                                       (1- limit)))
                   ((when (errorp compst/error))
                    (mv compst/error (compustate-fix compst))))
                (mv nil compst/error))
@@ -1805,7 +1858,16 @@
        :continue (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :break (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :return (if (exprp s.value)
-                   (exec-expr-call-or-pure s.value compst fenv (1- limit))
+                   (b* (((mv val? compst)
+                         (exec-expr-call-or-pure s.value
+                                                 compst
+                                                 fenv
+                                                 (1- limit)))
+                        ((when (errorp val?)) (mv val? compst))
+                        ((when (not val?)) (mv (error (list :return-void-expr
+                                                        s.value))
+                                               compst)))
+                     (mv val? compst))
                  (mv nil (compustate-fix compst)))))
     :measure (nfix limit))
 
@@ -1819,7 +1881,7 @@
     :guard (> (compustate-frames-number compst) 0)
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
-    :parents (atc-dynamic-semantics exec)
+    :parents (atc-execution exec)
     :short "Execute a @('while') statement."
     :long
     (xdoc::topstring
@@ -1854,7 +1916,7 @@
                 (> (compustate-top-frame-scopes-number compst) 0))
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
-    :parents (atc-dynamic-semantics exec)
+    :parents (atc-execution exec)
     :short "Execute a block item."
     :long
     (xdoc::topstring
@@ -1917,7 +1979,7 @@
                 (> (compustate-top-frame-scopes-number compst) 0))
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
-    :parents (atc-dynamic-semantics exec)
+    :parents (atc-execution exec)
     :short "Execute a list of block items."
     :long
     (xdoc::topstring
@@ -1947,6 +2009,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual compustate-frames-number-of-exec
+    (defret compustate-frames-number-of-exec-expr-call
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
+      :fn exec-expr-call)
     (defret compustate-frames-number-of-exec-expr-call-or-pure
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -1956,6 +2022,11 @@
                (equal (compustate-frames-number new-compst)
                       (compustate-frames-number compst)))
       :fn exec-expr-asg)
+    (defret compustate-frames-number-of-exec-expr-call-or-asg
+      (implies (compustatep new-compst)
+               (equal (compustate-frames-number new-compst)
+                      (compustate-frames-number compst)))
+      :fn exec-expr-call-or-asg)
     (defret compustate-frames-number-of-exec-fun
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -1980,8 +2051,10 @@
              (compustate-frames-number compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-block-item-list)
-    :hints (("Goal" :expand ((exec-expr-call-or-pure e compst fenv limit)
+    :hints (("Goal" :expand ((exec-expr-call fun args compst fenv limit)
+                             (exec-expr-call-or-pure e compst fenv limit)
                              (exec-expr-asg e compst fenv limit)
+                             (exec-expr-call-or-asg e compst fenv limit)
                              (exec-fun fun args compst fenv limit)
                              (exec-stmt s compst fenv limit)
                              (exec-block-item item compst fenv limit)
@@ -1990,6 +2063,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual compustate-scopes-numbers-of-exec
+    (defret compustate-scopes-numbers-of-exec-expr-call
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
+      :fn exec-expr-call)
     (defret compustate-scopes-numbers-of-exec-expr-call-or-pure
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
@@ -1999,6 +2076,11 @@
                (equal (compustate-scopes-numbers new-compst)
                       (compustate-scopes-numbers compst)))
       :fn exec-expr-asg)
+    (defret compustate-scopes-numbers-of-exec-expr-call-or-asg
+      (implies (compustatep new-compst)
+               (equal (compustate-scopes-numbers new-compst)
+                      (compustate-scopes-numbers compst)))
+      :fn exec-expr-call-or-asg)
     (defret compustate-scopes-numbers-of-exec-fun
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
@@ -2026,8 +2108,10 @@
       :hyp (and (> (compustate-frames-number compst) 0)
                 (> (compustate-top-frame-scopes-number compst) 0))
       :fn exec-block-item-list)
-    :hints (("Goal" :expand ((exec-expr-call-or-pure e compst fenv limit)
+    :hints (("Goal" :expand ((exec-expr-call fun args compst fenv limit)
+                             (exec-expr-call-or-pure e compst fenv limit)
                              (exec-expr-asg e compst fenv limit)
+                             (exec-expr-call-or-asg e compst fenv limit)
                              (exec-fun fun args compst fenv limit)
                              (exec-stmt s compst fenv limit)
                              (exec-stmt-while test body compst fenv limit)
