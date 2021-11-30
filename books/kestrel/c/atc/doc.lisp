@@ -253,7 +253,7 @@
     (xdoc::p
      "The conjuncts may be at any level of nesting,
       but must be extractable by flattening
-      the @(tsee and) structure of the (translated) guard term.
+      the @(tsee and) structure of the guard term.
       The rest of the guard (i.e. other than the conjuncts above)
       is not explicitly represented in the C code.")
 
@@ -343,11 +343,7 @@
        it just serves to conclude
        preceding statements that may modify @('var1'), ..., @('varn'),
        but since ACL2 is functional,
-       the possibly modified variables must be returned by the term.
-       In translated terms,
-       @('(mv var1 ... varn)') is
-       @('(cons var1 (cons ... (cons varn \' nil)...))');
-       this is the pattern that ATC looks for.")
+       the possibly modified variables must be returned by the term.")
      (xdoc::li
       "A call of @('fni') on variables identical to its formal parameters,
        when the C types of the variables are
@@ -367,13 +363,7 @@
        (iii) an `else' branch that may be any ACL2 term.
        This represents the same C code represented by the `then' branch.
        Both the test and the `else' branch are ignored;
-       the reason is that ATC generates C code under guard assumptions.
-       In translated terms,
-       @('(mbt x)') is
-       @('(return-last \'acl2::mbe1-raw \'t x)'), and
-       @('(mbt$ x)') is
-       @('(return-last \'acl2::mbe1-raw \'t (if x \'t \'nil))');
-       these are the patterns that ATC looks for.")
+       the reason is that ATC generates C code under guard assumptions.")
      (xdoc::li
       "A call of @(tsee if) on
        (i) a test that is an expression term for @('fni') returning boolean and
@@ -397,11 +387,7 @@
        a declaration of a C local variable represented by @('var'),
        initialized with the C expression represented by @('term'),
        followed by the C code represented by @('body').
-       The C type of the variable is determined from the initializer.
-       In translated terms,
-       @('(let ((var (declar term))) body)') is
-       @('((lambda (var) body) (declar term))');
-       this is the pattern that ATC looks for.")
+       The C type of the variable is determined from the initializer.")
      (xdoc::li
       "A term @('(let ((var (assign term))) body)'),
        when @('var') is assignable,
@@ -415,11 +401,7 @@
        an assignment to
        the C local variable or function parameter represented by @('var'),
        with the C expression represented by @('term') as right-hand side,
-       followed by the C code represented by @('body').
-       In translated terms,
-       @('(let ((var (assign term))) body)') is
-       @('((lambda (var) body) (assign term))');
-       this is the pattern that ATC looks for.")
+       followed by the C code represented by @('body').")
      (xdoc::li
       "A term
        @('(let ((var (<type1>-array-write-<type2> var term1 term2))) body)'),
@@ -464,11 +446,7 @@
        returning @('T') and affecting @('vars').
        This represents the C code represented by @('term'),
        which may modify the variable represented by @('var'),
-       followed by the C code represented by @('body').
-       In translated terms,
-       @('(let ((var term)) body)') is
-       @('((lambda (var) body) term)');
-       this is the pattern that ATC looks for.")
+       followed by the C code represented by @('body').")
      (xdoc::li
       "A term @('(mv-let (var1 var2 ... varn) (declarn term) body)'),
        when @('n') &gt; 1,
@@ -486,24 +464,7 @@
        a declaration of a C local variable represented by @('var1'),
        initialized with the C expression represented by @('term'),
        followed by the C code represented by @('body').
-       The C type of the variable is determined from the initializer.
-       In translated terms,
-       @('(mv-let (var1 var2 ... varn) (declarn term) body)') is
-       @('((lambda (mv)
-                   ((lambda (var1 var2 ... varn) body)
-                    (mv-nth '0 mv)
-                    (mv-nth '1 mv)
-                    ...
-                    (mv-nth 'n-1 mv)))
-           ((lambda (mv)
-                    ((lambda (*1 *2 ... *n)
-                             (cons (declar *1) (cons *2 ... (cons *n 'nil))))
-                     (mv-nth '0 mv)
-                     (mv-nth '1 mv)
-                     ...
-                     (mv-nth 'n-1 mv)))
-            term))');
-       this is the pattern that ATC looks for.")
+       The C type of the variable is determined from the initializer.")
      (xdoc::li
       "A term @('(mv-let (var1 var2 ... varn) (assignn term) body)'),
        when @('n') &gt; 1,
@@ -523,24 +484,7 @@
        an assignment to
        the C local variable or function parameter represented by @('var'),
        with the C expression represented by @('term') as right-hand side,
-       followed by the C code represented by @('body').
-       In translated terms,
-       @('(mv-let (var1 var2 ... varn) (assignn term) body)') is
-       @('((lambda (mv)
-                   ((lambda (var1 var2 ... varn) body)
-                    (mv-nth '0 mv)
-                    (mv-nth '1 mv)
-                    ...
-                    (mv-nth 'n-1 mv)))
-           ((lambda (mv)
-                    ((lambda (*1 *2 ... *n)
-                             (cons (assign *1) (cons *2 ... (cons *n 'nil))))
-                     (mv-nth '0 mv)
-                     (mv-nth '1 mv)
-                     ...
-                     (mv-nth 'n-1 mv)))
-            term))');
-       this is the pattern that ATC looks for.")
+       followed by the C code represented by @('body').")
      (xdoc::li
       "A term @('(mv-let (var1 ... varn) term body)'),
        when @('n') &gt; 1,
@@ -556,16 +500,7 @@
        returning @('T') and affecting @('vars').
        This represents the C code represented by @('term'),
        which may modify the variables represented by @('var1'), ..., @('varn'),
-       followed by the C code represented by @('body').
-       In translated terms,
-       @('(mv-let (var1 ... varn) term body)') is
-       @('((lambda (mv)
-                   ((lambda (var1 ... varn) body)
-                    (mv-nth \'0 mv)
-                    ...
-                    (mv-nth \'n-1 mv)))
-           term)');
-       this is the pattern that ATC looks for.")
+       followed by the C code represented by @('body').")
      (xdoc::li
       "A call of a recursive target function @('fnj') with @('j < i'),
        on variables identical to its formal parameters,
@@ -608,13 +543,7 @@
        (iii) an `else' branch that may be any ACL2 term.
        This represents the same C code represented by the `then' branch.
        Both the test and the `else' branch are ignored;
-       the reason is that ATC generates C code under guard assumptions.
-       In translated terms,
-       @('(mbt x)') is
-       @('(return-last \'acl2::mbe1-raw \'t x)'), and
-       @('(mbt$ x)') is
-       @('(return-last \'acl2::mbe1-raw \'t (if x \'t \'nil))');
-       these are the patterns that ATC looks for.")
+       the reason is that ATC generates C code under guard assumptions.")
      (xdoc::li
       "A call of @(tsee if) on
        (i) a test that is an expression term for @('fni') returning boolean,
@@ -865,10 +794,7 @@
       "The first one is a function, while the other two are macros.
        This represents the corresponding C logical operator
        (negation @('!'), conjunction @('&&'), disjunction @('||'));
-       conjunctions and disjunctions are represented non-strictly.
-       In translated terms, @('(and x y)') and @('(or x y)') are
-       @('(if x y \'nil)') and @('(if x x y)'):
-       these are the patterns that ATC looks for."))
+       conjunctions and disjunctions are represented non-strictly."))
 
     (xdoc::p
      "The <i>C type of a variable</i> @('var') is defined as follows:")
@@ -1004,7 +930,120 @@
         "do         long       union      _Imaginary"
         "double     register   unsigned   _Noreturn"
         "else       restrict   void       _Static_assert"
-        "enum       return     volatile   _Thread_local")))))
+        "enum       return     volatile   _Thread_local"))))
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    (xdoc::evmac-subsection
+     "Translated Terms"
+
+     (xdoc::p
+      "The description of the representation of C code in ACL2 above
+       talks about "
+      (xdoc::seetopic "acl2::term" "untranslated terms")
+      ", but ATC operates on "
+      (xdoc::seetopic "acl2::term" "translated terms")
+      ", since it looks at unnormalized bodies of ACL2 functions.
+       This section describes how
+       the untranslated terms mentioned above
+       appear as translated terms:
+       these are the patterns that ATC looks for.")
+
+     (xdoc::p
+      "An untranslated term @('(and a b)') is translated to")
+     (xdoc::codeblock
+      "(if a b \'nil)")
+
+     (xdoc::p
+      "An untranslated term @('(or a b)') it translated to")
+     (xdoc::codeblock
+      "(if a a b)")
+
+     (xdoc::p
+      "An untranslated term @('(mbt x)') is translated to")
+     (xdoc::codeblock
+      "(return-last \'acl2::mbe1-raw \'t x)")
+
+     (xdoc::p
+      "An untranslated term @('(mbt$ x)') is translated to")
+     (xdoc::codeblock
+      "(return-last \'acl2::mbe1-raw \'t (if x \'t \'nil))")
+
+     (xdoc::p
+      "An untranslated term @('(mv var1 ... varn)') is translated to")
+     (xdoc::codeblock
+      "(cons var1 (cons ... (cons varn \' nil)...))")
+
+     (xdoc::p
+      "An untranslated term @('(let ((var (declar term))) body)')
+       is translated to")
+     (xdoc::codeblock
+      "((lambda (var) body) (declar term))")
+
+     (xdoc::p
+      "An untranslated term @('(let ((var (assign term))) body)')
+       is translated to")
+     (xdoc::codeblock
+      "((lambda (var) body) (assign term))")
+
+     (xdoc::p
+      "An untranslated term @('(let ((var term)) body)')
+       is translated to")
+     (xdoc::codeblock
+      "((lambda (var) body) term)")
+
+     (xdoc::p
+      "An untranslated term
+       @('(mv-let (var1 var2 ... varn) (declarn term) body)')
+       is translated to")
+     (xdoc::codeblock
+      "((lambda (mv)"
+      "         ((lambda (var1 var2 ... varn) body)"
+      "          (mv-nth \'0 mv)"
+      "          (mv-nth \'1 mv)"
+      "          ..."
+      "          (mv-nth \'n-1 mv)))"
+      " ((lambda (mv)"
+      "          ((lambda (*1 *2 ... *n)"
+      "                   (cons (declar *1) (cons *2 ... (cons *n 'nil))))"
+      "           (mv-nth \'0 mv)"
+      "           (mv-nth \'1 mv)"
+      "           ..."
+      "           (mv-nth \'n-1 mv)))"
+      "  term))")
+
+     (xdoc::p
+      "An untranslated term
+       @('(mv-let (var1 var2 ... varn) (assignn term) body)')
+       is translated to")
+     (xdoc::codeblock
+      "((lambda (mv)"
+      "         ((lambda (var1 var2 ... varn) body)"
+      "          (mv-nth \'0 mv)"
+      "          (mv-nth \'1 mv)"
+      "          ..."
+      "          (mv-nth \'n-1 mv)))"
+      " ((lambda (mv)"
+      "          ((lambda (*1 *2 ... *n)"
+      "                   (cons (assign *1) (cons *2 ... (cons *n 'nil))))"
+      "           (mv-nth \'0 mv)"
+      "           (mv-nth \'1 mv)"
+      "           ..."
+      "           (mv-nth \'n-1 mv)))"
+      "  term))")
+
+     (xdoc::p
+      "An untranslated term
+       @('(mv-let (var1 var2 ... varn) term body)')
+       is translated to")
+     (xdoc::codeblock
+      "((lambda (mv)"
+      "         ((lambda (var1 ... varn) body)"
+      "          (mv-nth \'0 mv)"
+      "          (mv-nth \'1 mv)"
+      "          ..."
+      "          (mv-nth \'n-1 mv)))"
+      " term)")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
