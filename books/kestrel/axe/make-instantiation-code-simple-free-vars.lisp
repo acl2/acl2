@@ -13,8 +13,8 @@
 (in-package "ACL2")
 
 ;; This book provides a tool that, given the name of an evaluator, makes a hyp
-;; instantiation for that uses it.  This book is for the case where the hyp has
-;; free vars (vars not bound in the alist).
+;; instantiation function that uses it.  This book is for the case where the
+;; hyp has free vars (vars not bound in the alist).
 
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
 (include-book "all-dargp-less-than")

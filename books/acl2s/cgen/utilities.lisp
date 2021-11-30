@@ -575,11 +575,11 @@
      (t
       (let ((vars (all-vars trans)))
         (cond
-         ((acl2::non-stobjps vars t (w state)) ;;; known-stobjs = t
+         ((acl2::unknown-stobj-names vars t (w state)) ;;; known-stobjs = t
           (er soft 'top-level
               "Global variables, such as ~&0, are not allowed. See ~
                :DOC ASSIGN and :DOC @."
-              (acl2::non-stobjps vars t (w state)))) ;;; known-stobjs = t
+              (acl2::unknown-stobj-names vars t (w state)))) ;;; known-stobjs = t
          (t (acl2::ev-for-trans-eval trans nil ctx state t
 
 ; Matt K. mod: Added conservative value of new argument,

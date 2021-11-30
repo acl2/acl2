@@ -17634,45 +17634,47 @@
                                     (nodenum-to-split-on (find-a-node-to-split-miter-on
                                                           miter-array-name miter-len miter-array
                                                           test-cases interpreted-function-alist)) ; ffixme think about heuristics!
-
                                     )
                                  (if (not nodenum-to-split-on)
                                      (prog2$
                                       (cw "(Couldn't find any node to split on.)~%")
-                                      ;;fixme should we consider bit-blasting here?
+                                      ;; TODO: should we consider bit-blasting here?
                                       (if (not must-succeedp)
                                           (prog2$ (cw "(Failing because we don't have to succeed on this miter.))")
                                                   (mv nil nil rand state result-array-stobj))
                                         (if (not timeout)
                                             (prog2$ (cw "(Failing because we would normally increase the timeout but timing out is turned off.))")
                                                     (mv nil nil rand state result-array-stobj))
-                                          (let ((timeout (* 2 timeout)))
-                                            (prog2$ (cw "(Increasing the timeout to ~x0 and trying again.)~%" timeout)
-                                                    (mv-let (erp provedp rand state result-array-stobj)
-                                                      (miter-and-merge miter-dag-lst
-                                                                       miter-name ;fixme change this to indicate the increased timeout?
-                                                                       miter-depth
-                                                                       var-type-alist
-                                                                       interpreted-function-alist
-                                                                       print
-                                                                       traced-nodes
-                                                                       rewriter-rule-alist
-                                                                       prover-rule-alist
-                                                                       assumptions
-                                                                       extra-stuff
-                                                                       test-cases
-                                                                       monitored-symbols
-                                                                       use-context-when-miteringp
-                                                                       analyzed-function-table
-                                                                       unroll
-                                                                       tests-per-case
-                                                                       timeout must-succeedp
-                                                                       pre-simplifyp
-                                                                       simplify-xorsp
-                                                                       options
-                                                                       rand state result-array-stobj)
-                                                      (prog2$ (cw "End of proof attempt for ~x0)~%"  miter-name)
-                                                              (mv erp provedp rand state result-array-stobj))))))))
+                                          (if (< 10000000000 timeout) ;; not sure what the limit should be but 2^64 causes an STP error
+                                              (prog2$ (cw "(Failing because the timeout is too high.))")
+                                                      (mv nil nil rand state result-array-stobj))
+                                            (let ((timeout (* 2 timeout))) ;; TODO: Don't do this if no queries timed out
+                                              (prog2$ (cw "(Increasing the timeout to ~x0 and trying again.)~%" timeout)
+                                                      (mv-let (erp provedp rand state result-array-stobj)
+                                                        (miter-and-merge miter-dag-lst
+                                                                         miter-name ;fixme change this to indicate the increased timeout?
+                                                                         miter-depth
+                                                                         var-type-alist
+                                                                         interpreted-function-alist
+                                                                         print
+                                                                         traced-nodes
+                                                                         rewriter-rule-alist
+                                                                         prover-rule-alist
+                                                                         assumptions
+                                                                         extra-stuff
+                                                                         test-cases
+                                                                         monitored-symbols
+                                                                         use-context-when-miteringp
+                                                                         analyzed-function-table
+                                                                         unroll
+                                                                         tests-per-case
+                                                                         timeout must-succeedp
+                                                                         pre-simplifyp
+                                                                         simplify-xorsp
+                                                                         options
+                                                                         rand state result-array-stobj)
+                                                        (prog2$ (cw "End of proof attempt for ~x0)~%"  miter-name)
+                                                                (mv erp provedp rand state result-array-stobj)))))))))
                                    (b* ((- (cw "(Splitting miter on node ~x0.)~%" nodenum-to-split-on))
                                         (split-assumption (dag-to-term-aux-array miter-array-name miter-array nodenum-to-split-on)) ;fffixme this can blow up if there's nothing small to split on!
                                         ;;(split-assumption (orient-equality2 split-assumption)) ;too aggressive? ;handle nots and known preds? ;Fri Feb 26 01:48:01 2010
@@ -21003,13 +21005,18 @@
                 tests))
        ((mv erp equality-dag) (make-equality-dag dag1 dag2))
        ((when erp) (mv erp nil state rand result-array-stobj))
-       ;;todo: add the extra rules here too?
+       ;; Make the initial rule sets:
        ((mv erp initial-rule-sets) (if (eq :auto initial-rule-sets)
                                        ;;todo: make this a named rule set:
-                                       (add-rules-to-rule-sets (append (list-rules)
-                                                                       extra-rules)
+                                       (add-rules-to-rule-sets (list-rules)
                                                                (phased-bv-axe-rule-sets state) (w state)) ;todo: overkill?
                                      (mv (erp-nil) initial-rule-sets)))
+       ((when erp) (mv erp nil state rand result-array-stobj))
+       ;; Always add the extra rules:
+       ((mv erp initial-rule-sets) (if initial-rule-sets
+                                       (add-rules-to-rule-sets extra-rules initial-rule-sets (w state))
+                                     ;; special case: no initial-rule-sets, but extra rules are given (TODO: Think about this):
+                                     (add-rules-to-rule-sets extra-rules (list nil) (w state))))
        ((when erp) (mv erp nil state rand result-array-stobj))
        ((mv erp
             & ; the event is usually an empty progn

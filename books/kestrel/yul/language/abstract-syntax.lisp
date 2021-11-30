@@ -77,6 +77,14 @@
   :elementp-of-nil nil
   :pred identifier-setp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule identifier-setp-of-mergesort
+  (implies (true-listp x)
+           (equal (identifier-setp (set::mergesort x))
+                  (identifier-listp x)))
+  :enable set::mergesort)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult identifier-result
@@ -90,6 +98,13 @@
   :short "Fixtype of errors and lists of identifiers."
   :ok identifier-list
   :pred identifier-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult identifier-set-result
+  :short "Fixtype of errors and osets of identifiers."
+  :ok identifier-set
+  :pred identifier-set-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

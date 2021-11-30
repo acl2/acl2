@@ -30,8 +30,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-function (fn (ctx ctxp) state)
-  :returns (mv erp (nothing null) state)
+(define atc-remove-called-fns ((fns symbol-listp) (term pseudo-termp))
+  :returns (new-fns symbol-listp :hyp (symbol-listp fns))
+  :short "Remove from a list of function symbols
+          all the functions called by a term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee atc-process-function);
+     see that function's documentation for details."))
+  (cond ((endp fns) nil)
+        (t (if (ffnnamep (car fns) term)
+               (atc-remove-called-fns (cdr fns) term)
+             (cons (car fns)
+                   (atc-remove-called-fns (cdr fns) term))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-process-function (fn
+                              (uncalled-fns symbol-listp)
+                              (ctx ctxp)
+                              state)
+  :returns (mv erp
+               (new-uncalled-fns symbol-listp
+                                 :hyp (and (symbolp fn)
+                                           (symbol-listp uncalled-fns)))
+               state)
   :short "Process a target function @('fni') among @('fn1'), ..., @('fnp')."
   :long
   (xdoc::topstring
@@ -41,19 +65,37 @@
      without analyzing the body of the function in detail.
      The remaining checks are performed during code generation,
      where it is more natural to make them,
-     as the functions' bodies are analyzed to translate them to C."))
+     as the functions' bodies are analyzed to translate them to C.")
+   (xdoc::p
+    "The @('uncalled-fns') parameter lists the symbols of
+     all the recursive target functions
+     that precede @('fn') in @('(fn1 ... fnp)')
+     and that are not called by any of the functions
+     that precede @('fn') in @('(fn1 ... fnp)').
+     This list is used to ensure that all the recursive target functions,
+     which represent C loops,
+     are called by some other target functions (that follow them).
+     The reason for checking this is that C loops
+     may only occur in C functions;
+     if this check were not satisfied,
+     there would be some C loop, represented by a recursive target function,
+     that does not appear in the generated C code.
+     As we process @('fn'),
+     we remove from @('uncalled-fns') all the functions called by @('fn').
+     If @('fn') is recursive, we add it to @('uncalled-fns').
+     We return the updated list of uncalled functions."))
   (b* ((desc (msg "The target ~x0 input" fn))
-       ((er &) (acl2::ensure-value-is-function-name$ fn desc t nil))
+       ((er &) (ensure-value-is-function-name$ fn desc t nil))
        (desc (msg "The target function ~x0" fn))
-       ((er &) (acl2::ensure-function-is-logic-mode$ fn desc t nil))
-       ((er &) (acl2::ensure-function-is-guard-verified$ fn desc t nil))
-       ((er &) (acl2::ensure-function-is-defined$ fn desc t nil))
-       ((when (acl2::ffnnamep fn (acl2::uguard+ fn (w state))))
+       ((er &) (ensure-function-is-logic-mode$ fn desc t nil))
+       ((er &) (ensure-function-is-guard-verified$ fn desc t nil))
+       ((er &) (ensure-function-is-defined$ fn desc t nil))
+       ((when (ffnnamep fn (uguard+ fn (w state))))
         (er-soft+ ctx t nil
                   "The target function ~x0 is used in its own guard. ~
                    This is currently not supported in ATC."
                   fn))
-       (rec (acl2::irecursivep+ fn (w state)))
+       (rec (irecursivep+ fn (w state)))
        ((when (and rec (> (len rec) 1)))
         (er-soft+ ctx t nil
                   "The recursive target function ~x0 ~
@@ -61,7 +103,7 @@
                    but it is mutually recursive with ~x1 instead."
                   fn (remove-eq fn rec)))
        ((when (and rec
-                   (not (equal (acl2::well-founded-relation+ fn (w state))
+                   (not (equal (well-founded-relation+ fn (w state))
                                'o<))))
         (er-soft+ ctx t nil
                   "The well-founded relation ~
@@ -69,24 +111,61 @@
                    must be O<, but it ~x1 instead. ~
                    Only recursive functions with well-founded relation O< ~
                    are currently supported by ATC."
-                  fn (acl2::well-founded-relation+ fn (w state)))))
-    (acl2::value nil))
+                  fn (well-founded-relation+ fn (w state))))
+       (uncalled-fns (atc-remove-called-fns uncalled-fns (ubody+ fn (w state))))
+       (uncalled-fns (if rec
+                         (cons fn uncalled-fns)
+                       uncalled-fns)))
+    (acl2::value uncalled-fns))
   :guard-hints (("Goal" :in-theory (enable
                                     acl2::ensure-value-is-function-name
                                     acl2::ensure-function-is-guard-verified
                                     acl2::ensure-function-is-logic-mode
-                                    acl2::ensure-function-is-defined))))
+                                    acl2::ensure-function-is-defined)))
+  ///
+
+  (defret null-of-atc-process-function-when-erp
+    (implies erp
+             (null new-uncalled-fns)))
+
+  (defruled symbolp-of-fn-when-atc-process-function-not-erp
+    (implies (not (mv-nth 0 (atc-process-function fn uncalled-fns ctx state)))
+             (symbolp fn))
+    :enable acl2::ensure-value-is-function-name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-function-list ((fns true-listp) (ctx ctxp) state)
-  :returns (mv erp (nothing null) state)
+(define atc-process-function-list ((fns true-listp)
+                                   (uncalled-fns symbol-listp)
+                                   (ctx ctxp)
+                                   state)
+  :returns (mv erp
+               (new-uncalled-fns symbol-listp
+                                 :hyp (and (symbol-listp fns)
+                                           (symbol-listp uncalled-fns)))
+               state)
   :short "Lift @(tsee atc-process-function) to lists."
-  (b* (((when (endp fns)) (acl2::value nil))
-       ((er &) (atc-process-function (car fns) ctx state))
-       ((er &) (atc-process-function-list (cdr fns) ctx state)))
-    (acl2::value nil))
-  :prepwork ((local (in-theory (disable null)))))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We thread through the list of uncalled recursive functions."))
+  (b* (((when (endp fns)) (acl2::value uncalled-fns))
+       ((er uncalled-fns) (atc-process-function (car fns)
+                                                uncalled-fns
+                                                ctx
+                                                state))
+       ((er uncalled-fns) (atc-process-function-list (cdr fns)
+                                                     uncalled-fns
+                                                     ctx
+                                                     state)))
+    (acl2::value uncalled-fns))
+  :prepwork ((local (in-theory (disable null))))
+  :guard-hints
+  (("Goal" :in-theory (enable symbolp-of-fn-when-atc-process-function-not-erp)))
+  ///
+  (defret null-of-atc-process-function-list-when-erp
+    (implies erp
+             (null new-uncalled-fns))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,15 +173,25 @@
   :returns (mv erp (nothing null) state)
   :verify-guards nil
   :short "Process the target functions @('fn1'), ..., @('fnp')."
-  (b* (((er &) (atc-process-function-list fn1...fnp ctx state))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We initialize the list of uncalled recursive functions to be empty,
+     and we ensure that the list is empty after processing all functions."))
+  (b* (((er uncalled-fns) (atc-process-function-list fn1...fnp nil ctx state))
        ((unless (consp fn1...fnp))
         (er-soft+ ctx t nil
                   "At least one target function must be supplied."))
-       ((er &) (acl2::ensure-list-has-no-duplicates$
+       ((er &) (ensure-list-has-no-duplicates$
                 fn1...fnp
                 (msg "The list of target functions ~x0" fn1...fnp)
                 t
-                nil)))
+                nil))
+       ((unless (endp uncalled-fns))
+        (er-soft+ ctx t nil
+                  "The recursive target functions ~x0 ~
+                   are not called by any other target function."
+                  uncalled-fns)))
     (acl2::value nil))
   :prepwork ((local (in-theory (disable null)))))
 
@@ -119,10 +208,10 @@
         (er-soft+ ctx t nil
                   "The :OUTPUT-FILE input must be present, ~
                    but it is absent instead."))
-       ((er &) (acl2::ensure-value-is-string$ output-file
-                                              "The :OUTPUT-FILE input"
-                                              t
-                                              nil))
+       ((er &) (ensure-value-is-string$ output-file
+                                        "The :OUTPUT-FILE input"
+                                        t
+                                        nil))
        ((mv msg? dirname state) (oslib::dirname output-file))
        ((when msg?) (er-soft+ ctx t nil
                               "No directory path can be obtained ~
@@ -222,14 +311,14 @@
                        but it is ~x0 instead."
                       const-name)
           (acl2::value (list nil nil nil))))
-       ((er &) (acl2::ensure-value-is-symbol$ const-name
-                                              "The :CONST-NAME input"
-                                              t
-                                              nil))
+       ((er &) (ensure-value-is-symbol$ const-name
+                                        "The :CONST-NAME input"
+                                        t
+                                        nil))
        (prog-const (if (eq const-name :auto)
                        'c::*program*
                      const-name))
-       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+       ((er &) (ensure-symbol-is-fresh-event-name$
                 prog-const
                 (msg "The constant name ~x0 ~
                       specified by the :CONST-NAME input"
@@ -239,7 +328,7 @@
                 t
                 nil))
        (wf-thm (add-suffix prog-const "-WELL-FORMED"))
-       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+       ((er &) (ensure-symbol-is-fresh-event-name$
                 wf-thm
                 (msg "The generated theorem name ~x0 ~
                       indirectly specified by the :CONST-NAME input"
@@ -265,9 +354,8 @@
      :mode :program
      (b* (((when (endp fni...fnp)) (acl2::value nil))
           (fn (car fni...fnp))
-          (fn-thm (acl2::packn
-                   (list prog-const "-" (symbol-name fn) "-CORRECT")))
-          ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+          (fn-thm (packn (list prog-const "-" (symbol-name fn) "-CORRECT")))
+          ((er &) (ensure-symbol-is-fresh-event-name$
                    fn-thm
                    (msg "The generated theorem name ~x0 ~
                          indirectly specified by the :CONST-NAME input"
@@ -328,10 +416,10 @@
        (proofs (if proofs-option
                    (cdr proofs-option)
                  t))
-       ((er &) (acl2::ensure-value-is-boolean$ proofs
-                                               "The :PROOFS input"
-                                               t
-                                               nil))
+       ((er &) (ensure-value-is-boolean$ proofs
+                                         "The :PROOFS input"
+                                         t
+                                         nil))
        (const-name-option (assoc-eq :const-name options))
        ((mv const-name const-name?)
         (if const-name-option

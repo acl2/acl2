@@ -538,8 +538,11 @@
   (loop$ with temp of-type integer = 0
          do
          :measure (acl2-count temp)
-	 (progn (cw "Temp = ~x0~%" temp)
-	 	 (setq temp (+ 1 temp)))))
+         (progn (cw "Temp = ~x0~%" temp)
+                (setq temp (+ 1 temp)))))
+
+(thm (equal (infinite-loop)
+            nil))
 
 (must-fail
  (infinite-loop)
@@ -586,18 +589,18 @@
 ; Checkpoints
 ; Subgoal 1.3
 ; (IMPLIES (AND (ALISTP ALIST)
-;               (NOT (CONSP (CDR (ASSOC-EQUAL 'TEMP ALIST)))))
-;          (NOT (CDR (ASSOC-EQUAL 'TEMP ALIST))))
+;               (NOT (CONSP (CDR (HONS-ASSOC-EQUAL 'TEMP ALIST)))))
+;          (NOT (CDR (HONS-ASSOC-EQUAL 'TEMP ALIST))))
 
 ; Subgoal 1.2
 ; (IMPLIES (AND (ALISTP ALIST)
-;               (CONSP (CDR (ASSOC-EQUAL 'TEMP ALIST))))
-;          (ACL2-NUMBERP (CDR (ASSOC-EQUAL 'ANS ALIST))))
+;               (CONSP (CDR (HONS-ASSOC-EQUAL 'TEMP ALIST))))
+;          (ACL2-NUMBERP (CDR (HONS-ASSOC-EQUAL 'ANS ALIST))))
 
 ; Subgoal 1.1
 ; (IMPLIES (AND (ALISTP ALIST)
-;               (CONSP (CDR (ASSOC-EQUAL 'TEMP ALIST))))
-;          (ACL2-NUMBERP (CADR (ASSOC-EQUAL 'TEMP ALIST))))
+;               (CONSP (CDR (HONS-ASSOC-EQUAL 'TEMP ALIST))))
+;          (ACL2-NUMBERP (CADR (HONS-ASSOC-EQUAL 'TEMP ALIST))))
 
 
 ; Both of the following show ways we can address the above
@@ -685,7 +688,7 @@
 (must-fail
  (defun do-loop3-type-spec (lst)
    (declare (xargs :guard (nat-listp lst)))
-   (loop$ with temp of-type (satistfies nat-listp) = lst
+   (loop$ with temp of-type (satisfies nat-listp) = lst
           with ans of-type (satisfies natp) = 0
           do
           (if (endp temp)
@@ -716,41 +719,41 @@
  (defun do-loop4 (lst)
    (declare (xargs :guard (true-listp lst)))
    (loop$ with temp = lst
-	  with ans = 0
-	  do
-	  :guard (and (true-listp temp)
-		      (natp ans))
-	  (if (endp temp)
+          with ans = 0
+          do
+          :guard (and (true-listp temp)
+                      (natp ans))
+          (if (endp temp)
               (loop-finish)
-	      (if (eq (car temp) 'stop)
-		  (return 'stopped)
-		  (progn (setq ans (+ 1 ans))
-			 (setq temp (if (eq (car temp) 'skip)
+              (if (eq (car temp) 'stop)
+                  (return 'stopped)
+                  (progn (setq ans (+ 1 ans))
+                         (setq temp (if (eq (car temp) 'skip)
                                         xxx
-				        (cdr temp))))))
-	  finally
-	  :guard (integerp ans)
-	  (return ans))))
+                                        (cdr temp))))))
+          finally
+          :guard (integerp ans)
+          (return ans))))
 
 ; This is accepted and guard verified.
 (defun do-loop4 (lst)
   (declare (xargs :guard (true-listp lst)))
   (loop$ with temp = lst
-	 with ans = 0
-	 do
-	 :guard (and (true-listp temp)
-		     (natp ans))
-	 (if (endp temp)
+         with ans = 0
+         do
+         :guard (and (true-listp temp)
+                     (natp ans))
+         (if (endp temp)
              (loop-finish)
-	     (if (eq (car temp) 'stop)
-		 (return 'stopped)
-		 (progn (setq ans (+ 1 ans))
-			(setq temp (if (eq (car temp) 'skip)
+             (if (eq (car temp) 'stop)
+                 (return 'stopped)
+                 (progn (setq ans (+ 1 ans))
+                        (setq temp (if (eq (car temp) 'skip)
                                        (cddr temp)
-				       (cdr temp))))))
-	 finally
-	 :guard (integerp ans)
-	 (return ans)))
+                                       (cdr temp))))))
+         finally
+         :guard (integerp ans)
+         (return ans)))
 
 (assert-event
  (equal (do-loop4 '(1 2 3)) 3))
@@ -773,11 +776,11 @@
   (loop$ with i of-type (satisfies natp) = i0
          with cnt of-type integer = 0
          do
-	 :measure (nfix (- max i))
-	 :guard (natp max)
+         :measure (nfix (- max i))
+         :guard (natp max)
          (if (>= i max)
              (loop-finish)
-	     (progn (setq cnt (+ 1 cnt))
+             (progn (setq cnt (+ 1 cnt))
                     (setq i (+ 1 i))))
          finally
          (return (list 'from i0 'to max 'is cnt 'steps))))
@@ -964,3 +967,1436 @@
                                           (progn (setq ans (cons foo ans))
                                                  (setq temp (cdr temp)))))))
                      '(C B A)))
+
+; Start tests of DO loop$s that return multiple values and/or stobjs.
+; These may be labeled do-mv-N.
+
+(defun do-mv-1 (x)
+; Returns a single non-stobj value, but uses mv-setq in the loop.
+  (declare (xargs :guard (true-listp x)))
+  (loop$ with temp = x
+         with result = nil
+         with len = 0
+         do
+         :guard (and (true-listp temp)
+                     (natp len))
+         (if (null temp)
+             (loop-finish)
+           (mv-setq (temp result len)
+                    (mv (cdr temp)
+                        (cons (car temp) result)
+                        (1+ len))))
+         finally (return (list len result))))
+
+(defun do-mv-2 (x)
+; Same as do-mv-1, except we return two values.
+  (declare (xargs :guard (true-listp x)))
+  (loop$ with temp = x
+         with result = nil
+         with len = 0
+         do
+         :values (nil nil)
+         :guard (and (true-listp temp)
+                     (natp len))
+         (if (null temp)
+             (loop-finish)
+           (mv-setq (temp result len)
+                    (mv (cdr temp)
+                        (cons (car temp) result)
+                        (1+ len))))
+         finally (return (mv len result))))
+
+(must-fail
+; The following defun is identical to the one above, except that the FINALLY
+; clause has a non-return exit, which is illegal for :VALUES other than (NIL).
+; This test supports a comment in ACL2 source function translate11-do-finally.
+ (defun do-mv-2-bad-1 (x)
+   (declare (xargs :guard (true-listp x)))
+   (loop$ with temp = x
+          with result = nil
+          with len = 0
+          do
+          :values (nil nil)
+          :guard (and (true-listp temp)
+                      (natp len))
+          (if (null temp)
+              (loop-finish)
+            (mv-setq (temp result len)
+                     (mv (cdr temp)
+                         (cons (car temp) result)
+                         (1+ len))))
+          finally (mv len result))))
+
+(must-fail
+; The following defun is identical to the one above, except that the FINALLY
+; clause has a non-return exit, which is illegal for :VALUES other than (NIL).
+; This test supports a comment in ACL2 source function translate11-do-finally.
+ (defun do-mv-2-bad-2 (x)
+   (declare (xargs :guard (true-listp x)))
+   (loop$ with temp = x
+          with result = nil
+          with len = 0
+          do
+          :values (nil nil)
+          :guard (and (true-listp temp)
+                      (natp len))
+          (if (null temp)
+              (loop-finish)
+            (mv-setq (temp result len)
+                     (mv (cdr temp)
+                         (cons (car temp) result)
+                         (1+ len))))
+          finally (if (equal len 3)
+                      (cw "Some msg")
+                    (return (mv len result))))))
+
+(defstobj st fld)
+(defwarrant fld)
+(defwarrant update-fld)
+
+(must-fail
+;;; This fails because of the form (return 'stopped), which violates the
+;;; expected return of the stobj, st.
+ (defun do-mv-3 (lst st)
+   (declare (xargs :stobjs st :guard (true-listp lst)))
+   (loop$ with temp of-type (satisfies true-listp) = lst
+          do
+          :values (st)
+          (cond ((endp temp)
+                 (loop-finish))
+                ((eq (car temp) 'stop)
+                 (return 'stopped))
+                (t (mv-setq (st temp)
+                            (let ((st (update-fld
+                                       (+ (ifix (car temp)) (ifix (fld st)))
+                                       st)))
+                              (mv st (cdr temp))))))
+          finally (return st))))
+
+; Disallow stobj modification that isn't justified logically.
+; Before we got the ACL2 code right, we were able to admit the following, and
+; then after evaluating (do-mv-3-bad '(3 4 17 5) st), we found that
+; (fld st) = 0, yet we could prove the following.
+;   (thm (implies (warrant fld update-fld)
+;                 (equal (do-mv-3-bad '(3 4 17 5) '(0)) '(7))))
+(must-fail
+ (defun do-mv-3 (lst st)
+   (declare (xargs :stobjs st
+                   :guard (true-listp lst)))
+   (let ((st (update-fld 0 st)))
+     (loop$ with temp of-type (satisfies true-listp) = lst
+            do
+            :values (st)
+            :measure (len temp)
+            :guard
+; We include (stp st) because stobj-optp = nil for lambdas; see
+; guard-clauses-for-fn1.
+            (stp st)
+            (cond ((endp temp)
+                   (loop-finish))
+                  ((eql (car temp) 17)
+                   (progn (setq temp nil)
+                          (update-fld 0 st)))
+                  (t (mv-setq (st temp)
+                              (let ((st (update-fld
+                                         (+ (ifix (car temp)) (ifix (fld st)))
+                                         st)))
+                                (mv st (cdr temp))))))
+            finally (return st)))))
+
+(must-fail
+; This fails because "Single-threaded object names, such as ST, may not be
+; LET-bound at the top-level of a DO loop body or FINALLY clause."
+ (defun do-mv-3 (lst st)
+   (declare (xargs :stobjs st :guard (true-listp lst)))
+   (let ((st (update-fld 0 st)))
+     (loop$ with temp of-type (satisfies true-listp) = lst
+            do
+            :values (st)
+            :guard
+; We include (stp st) because stobj-optp = nil for lambdas; see
+; guard-clauses-for-fn1.
+            (stp st)
+            (cond ((endp temp)
+                   (loop-finish))
+                  (t (let ((st (update-fld
+                                (+ (ifix (car temp)) (ifix (fld st)))
+                                st)))
+                       (mv-setq (st temp)
+                                (mv st (cdr temp))))))
+            finally (return st)))))
+
+(must-fail
+; Stobjs must not appear in WITH clauses.
+ (defun do-mv-3 (lst st)
+   (declare (xargs :stobjs st :guard (true-listp lst)))
+   (let ((st (update-fld 0 st)))
+     (loop$ with temp of-type (satisfies true-listp) = lst
+            with st = st
+            do
+            :values (st)
+            :guard
+; We include (stp st) because stobj-optp = nil for lambdas; see
+; guard-clauses-for-fn1.
+            (stp st)
+            (cond ((endp temp)
+                   (loop-finish))
+                  (t (mv-setq (st temp)
+                              (let ((st (update-fld
+                                         (+ (ifix (car temp)) (ifix (fld st)))
+                                         st)))
+                                (mv st (cdr temp))))))
+            finally (return st)))))
+
+(defun do-mv-3 (lst st)
+   (declare (xargs :stobjs st :guard (true-listp lst)))
+   (let ((st (update-fld 0 st)))
+     (loop$ with temp of-type (satisfies true-listp) = lst
+            do
+            :values (st)
+            :guard
+; We include (stp st) because stobj-optp = nil for lambdas; see
+; guard-clauses-for-fn1.
+            (stp st)
+            (cond ((endp temp)
+                   (loop-finish))
+                  (t (mv-setq (st temp)
+                              (let ((st (update-fld
+                                         (+ (ifix (car temp)) (ifix (fld st)))
+                                         st)))
+                                (mv st (cdr temp))))))
+            finally (return st))))
+
+(assert-event
+ (let ((st (do-mv-3 '(1 2 4) st)))
+   (mv (equal (fld st) 7) st))
+ :stobjs-out '(nil st))
+
+(must-fail
+ (defun do-mv-3-alt (lst st)
+; This is like do-mv-3, except that we put a let outside the mv-setq, which is
+; illegal (as it would defeat single-threadedness for st).
+   (declare (xargs :stobjs st :guard (true-listp lst)))
+   (let ((st (update-fld 0 st)))
+     (loop$ with temp of-type (satisfies true-listp) = lst
+            do
+            :values (st)
+            (cond ((endp temp)
+                   (loop-finish))
+                  (t (let* ((a (car temp))
+                            (st (update-fld
+                                 (+ (ifix a) (ifix (fld st)))
+                                 st)))
+                       (mv-setq (st temp)
+                                (mv st (cdr temp))))))
+            finally (return st))))
+ )
+
+; We can pass a congruent stobj for st into the function defined just above.
+
+(defstobj st2 fld2 :congruent-to st)
+(defwarrant fld2)
+(defwarrant update-fld2)
+
+(assert-event
+ (let ((st2 (do-mv-3 '(1 2 4) st2)))
+   (mv (equal (fld st2) 7) st2))
+ :stobjs-out '(nil st2))
+
+(must-fail
+; The :values of a do loop$ is taken literally, not allowing for congruent
+; stobjs.  The way to allow congruent stobjs in a do loop$ is to wrap the loop
+; into a function; see how do-mv-3 is called in the test just above on st2.
+ (defun do-mv-3-cong (lst st2)
+   (declare (xargs :stobjs st2 :guard (true-listp lst)))
+   (let ((st2 (update-fld 0 st2)))
+     (loop$ with temp of-type (satisfies true-listp) = lst
+            do
+            :values (st)
+            (cond ((endp temp)
+                   (loop-finish))
+                  (t (mv-setq (st temp)
+                              (let ((st (update-fld
+                                         (+ (ifix (car temp)) (ifix (fld st)))
+                                         st)))
+                                (mv st (cdr temp))))))
+            finally (return st)))))
+
+(must-fail
+; This fails because :VALUES below contradicts the stobjs-out of the FINALLY
+; clause.
+ (defun do-mv-4-bug (n lst st)
+   (declare (xargs :stobjs st :guard (and (natp n)
+                                          (true-listp lst))))
+   (loop$ with temp of-type (satisfies true-listp) = lst
+          do
+          :values (st)
+          :guard (integerp n)
+          (progn (setq st (update-fld n st))
+                 (cond ((endp temp)
+                        (loop-finish))
+                       (t (mv-setq (st temp)
+                                   (let ((st (update-fld
+                                              (+ (ifix (car temp))
+                                                 (ifix (fld st)))
+                                              st)))
+                                     (mv st (cdr temp)))))))
+          finally
+          :guard (integerp n)
+          (return (mv (equal (fld st) (+ n 7)) st)))))
+
+(defun do-mv-4 (n lst st)
+  (declare (xargs :stobjs st :guard (and (natp n)
+                                         (true-listp lst))))
+  (let ((st (update-fld n st)))
+    (loop$ with temp of-type (satisfies true-listp) = lst
+           do
+           :values (nil st)
+           :guard
+; We include (stp st) because stobj-optp = nil for lambdas; see
+; guard-clauses-for-fn1.
+           (and (stp st)
+                (natp n))
+           (cond ((endp temp)
+                  (loop-finish))
+                 (t (mv-setq (st temp)
+                             (let ((st (update-fld
+                                        (+ (ifix (car temp))
+                                           (ifix (fld st)))
+                                        st)))
+                               (mv st (cdr temp))))))
+           finally
+           :guard
+; We include (stp st) because stobj-optp = nil for lambdas; see
+; guard-clauses-for-fn1.
+           (and (stp st)
+                (integerp n))
+           (return (mv (equal (fld st) (+ n 7)) st)))))
+
+(assert-event (do-mv-4 20 '(3 0 4) st)
+              :stobjs-out '(nil st))
+
+(thm (implies (warrant fld update-fld)
+              (mv-let (equality-flg st)
+                (do-mv-4 20 '(3 0 4) '(100))
+                (and (equal equality-flg t)
+                     (equal st '(27))
+                     (equal (fld st) 27)))))
+
+; As just above, but this time use the body of do-mv-4 directly in the loop:
+(thm (implies (warrant fld update-fld)
+              (mv-let (equality-flg st)
+                (let* ((n 20)
+                       (lst '(3 0 4))
+                       (st '(100)))
+                  (let ((st (update-fld n st)))
+                    (loop$ with temp of-type (satisfies true-listp) = lst
+                           do
+                           :values (nil st)
+                           :guard
+; We include (stp st) because stobj-optp = nil for lambdas; see
+; guard-clauses-for-fn1.
+                           (and (stp st)
+                                (natp n))
+                           (cond ((endp temp)
+                                  (loop-finish))
+                                 (t (mv-setq (st temp)
+                                             (let ((st (update-fld
+                                                        (+ (ifix (car temp))
+                                                           (ifix (fld st)))
+                                                        st)))
+                                               (mv st (cdr temp))))))
+                           finally
+                           :guard
+; We include (stp st) because stobj-optp = nil for lambdas; see
+; guard-clauses-for-fn1.
+                           (and (stp st)
+                                (integerp n))
+                           (return (mv (equal (fld st) (+ n 7)) st)))))
+                (and (equal equality-flg t)
+                     (equal st '(27))
+                     (equal (fld st) 27)))))
+
+(must-fail
+; Check that we don't need to worry about handling missing ELSE of IF.  Error
+; message says that IF takes three arguments.
+ (defun bad-loop ()
+   (loop$ with temp = '(1 2 3)
+          with x
+          do (if (consp temp)
+                 (progn (setq x (car temp))
+                        (setq temp (cdr temp))))
+          finally (return x))))
+
+(must-fail
+; As above, but the issue is in the FINALLY clause this time.
+ (defun bad-loop ()
+   (loop$ with temp = '(1 2 3)
+          with x
+          do (if (consp temp)
+                 (progn (setq x (car temp))
+                        (setq temp (cdr temp)))
+               (loop-finish))
+          finally (if (evenp x)
+                      (return x)))))
+
+; Test that it's OK to fall through to a missing finally clause, as is natural
+; in this membership function.
+(defun member-equal-via-loop (a lst)
+  (loop$ with temp = lst
+         do
+         (cond ((atom temp)
+                (loop-finish))
+               ((equal (car temp) a)
+                (return temp))
+               (t (setq temp (cdr temp))))))
+
+; Check that we have indeed defined member-equal using loop$.
+(defthm member-equal-via-loop-is-member-equal
+  (equal (member-equal-via-loop a x)
+         (member-equal a x)))
+
+(must-fail
+; This is like member-equal-via-loop except that we return both t and the tail
+; when found.  It's an error though, because there is no finally clause.
+ (defun bad-loop (a lst)
+   (loop$ with temp = lst
+          do
+          :values (nil nil)
+          (cond ((atom temp)
+                 (loop-finish))
+                ((equal (car temp) a)
+                 (return (mv t temp)))
+                (t (setq temp (cdr temp)))))))
+
+(must-fail
+; This is like the one above, but with a finally clause that is missing a
+; return even though its expression has the right output shape.
+ (defun bad-loop (a lst)
+   (loop$ with temp = lst
+          do
+          :values (nil nil)
+          (cond ((atom temp)
+                 (loop-finish))
+                ((equal (car temp) a)
+                 (return (mv t temp)))
+                (t (setq temp (cdr temp))))
+          finally (mv nil nil))))
+
+(must-fail
+; This is like the bad-loop attempt just above, but this time there is a
+; finally clause that, however, doesn't return an mv result on each branch.
+ (defun bad-loop (a lst)
+   (loop$ with temp = lst
+          do
+          :values (nil nil)
+          (cond ((atom temp)
+                 (loop-finish))
+                ((equal (car temp) a)
+                 (return (mv t temp)))
+                (t (setq temp (cdr temp))))
+          finally (return (if (null temp)
+                              (mv nil nil)
+                            (cw "Non-nil atom.~%"))))))
+
+(must-fail
+; variant of the one just above
+ (defun bad-loop (a lst)
+   (loop$ with temp = lst
+          do
+          :values (nil nil)
+          (cond ((atom temp)
+                 (loop-finish))
+                ((equal (car temp) a)
+                 (return (mv t temp)))
+                (t (setq temp (cdr temp))))
+          finally (if (null temp)
+                      (return (mv nil nil))
+                    (cw "Non-nil atom.~%")))))
+
+; Unlike the bad-loop definition just above, this timee we include a suitable
+; finally clause.
+(defun member-equal-via-loop-2 (a lst)
+  (loop$ with temp = lst
+         do
+         :values (nil nil)
+         (cond ((atom temp)
+                (loop-finish))
+               ((equal (car temp) a)
+                (return (mv t temp)))
+               (t (setq temp (cdr temp))))
+         finally (return (mv nil nil))))
+
+; And here's a reasonable theorem about the new function.
+(defthm member-equal-via-loop-2-iff-member-equal
+  (iff (mv-nth 0 (member-equal-via-loop-2 a x))
+       (member-equal a x)))
+
+; Test execution in the prover.
+(thm (equal (loop$ with temp = '(1 2 3 4 5 6)
+                   do
+                   :values (nil nil)
+                   (cond ((atom temp)
+                          (loop-finish))
+                         ((equal (car temp) 3)
+                          (return (mv t temp)))
+                         (t (setq temp (cdr temp))))
+                   finally (return (mv nil nil)))
+            '(t (3 4 5 6)))
+     :hints (("Goal" :in-theory '((:e do$)))))
+
+; Test execution in the loop.
+(assert-event
+ (loop$ with temp = '(1 2 3 4 5 6)
+        do
+        :values (nil nil)
+        (cond ((atom temp)
+               (loop-finish))
+              ((equal (car temp) 3)
+               (return (mv t temp)))
+              (t (setq temp (cdr temp))))
+        finally (return (mv nil nil)))
+ :stobjs-out '(nil nil))
+
+; As above, but membership test fails.
+(must-fail
+ (assert-event
+  (loop$ with temp = '(1 2 3 4 5 6)
+         do
+         :values (nil nil)
+         (cond ((atom temp)
+                (loop-finish))
+               ((equal (car temp) 7)
+                (return (mv t temp)))
+               (t (setq temp (cdr temp))))
+         finally (return (mv nil nil)))
+  :stobjs-out '(nil nil)))
+
+; Test default for multiple values.  This shows the importance of the call of
+; values-list inserted for DO loop$s in ACL2 source function oneify, using
+; loop$-stobjs-out.  Here are also testing that the first argument of progn (or
+; prog2) is translated with stobjs-out = t or stobjs-out = (nil).
+(defun infinite-loop-mv ()
+  (declare (xargs :verify-guards nil))
+  (loop$ with temp of-type integer = 0
+         do
+         :measure (acl2-count temp)
+         :values (nil nil)
+         (progn (cw "Temp = ~x0~%" temp)
+                (setq temp (1+ temp)))
+         finally (return (mv 3 4))))
+
+(thm (equal (infinite-loop-mv)
+            '(nil nil)))
+
+(must-fail
+ (defun do-mv-5-bad (x)
+; Modification of do-mv-2 that fails because it returns nil from implicit
+; finally clause.
+   (declare (xargs :guard (true-listp x)))
+   (loop$ with temp = x
+          with result = nil
+          with len = 0
+          do
+          :values (nil nil)
+          :guard (and (true-listp temp)
+                      (natp len))
+          (cond ((null temp)
+                 (loop-finish))
+                ((equal (car temp) 0)
+                 (return (mv len result)))
+                (t (mv-setq (temp result len)
+                            (mv (cdr temp)
+                                (cons (car temp) result)
+                                (1+ len))))))))
+
+(defun do-mv-5 (x)
+; Modification of do-mv-2 that succeeds in spite of having no finally clause,
+; because there is no loop-finish call in the do-body.
+   (declare (xargs :guard (true-listp x)))
+   (loop$ with temp = x
+          with result = nil
+          with len = 0
+          do
+          :values (nil nil)
+          :guard (and (true-listp temp)
+                      (natp len))
+          (cond ((null temp)
+                 (return (mv len result)))
+                ((equal (car temp) 0)
+                 (return (mv len result)))
+                (t (mv-setq (temp result len)
+                            (mv (cdr temp)
+                                (cons (car temp) result)
+                                (1+ len)))))))
+
+; Here is an analogue of do-loop-counting-up (above) that returns multiple
+; values that include a stobj.
+
+(defun do-loop-counting-up-mv (i0 max st)
+  (declare (xargs :guard (and (natp i0) (natp max))
+                  :verify-guards nil
+                  :stobjs st))
+  (loop$ with i of-type (satisfies natp) = i0
+         with cnt of-type integer = 0
+         do
+         :measure (nfix (- max i))
+         :guard (natp max)
+         :values (nil st)
+         (if (>= i max)
+             (loop-finish)
+             (progn (setq cnt (+ 1 cnt))
+                    (setq st (update-fld i st))
+                    (setq i (+ 1 i))))
+         finally
+         (return
+          (mv (list 'from i0 'to max 'is cnt 'steps 'and 'fld '= (fld st))
+              st))))
+
+; Repeating an experiment shown above, but on a different laptop:
+#|
+ACL2 !>(time$ (do-loop-counting-up 1 1000000))
+; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; 57.72 seconds realtime, 57.71 seconds runtime
+; (4,080,550,752 bytes allocated).
+(FROM 1 TO 1000000 IS 999999 STEPS)
+ACL2 !>(verify-guards do-loop-counting-up)
+[[.. output omitted ..]]
+Prover steps counted:  400639
+ DO-LOOP-COUNTING-UP
+ACL2 !>(time$ (do-loop-counting-up 1 1000000))
+; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; 0.00 seconds realtime, 0.00 seconds runtime
+; (144 bytes allocated).
+(FROM 1 TO 1000000 IS 999999 STEPS)
+ACL2 !>
+|#
+; And now repeating that experiment for the new version.
+#|
+ACL2 !>(time$ (do-loop-counting-up-mv 1 1000000 st))
+; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; 67.41 seconds realtime, 67.39 seconds runtime
+; (4,688,677,328 bytes allocated).
+((FROM 1 TO 1000000
+       IS 999999 STEPS AND FLD = 999999)
+ <st>)
+ACL2 !>(verify-guards do-loop-counting-up-mv)
+[[.. output omitted ..]]
+Prover steps counted:  634086
+ DO-LOOP-COUNTING-UP-MV
+ACL2 !>(time$ (do-loop-counting-up-mv 1 1000000 st))
+; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; 0.01 seconds realtime, 0.01 seconds runtime
+; (256 bytes allocated).
+((FROM 1 TO 1000000
+       IS 999999 STEPS AND FLD = 999999)
+ <st>)
+ACL2 !>
+|#
+
+; Test direct execution of do$.
+
+(assert-event
+ (equal (nth 3 (body 'do-mv-2 nil (w state)))
+        '(DO$
+          '(LAMBDA
+            (ALIST)
+            (DECLARE
+             (XARGS :GUARD (IF (ALISTP ALIST)
+                               (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                   (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
+                                   'NIL)
+                               'NIL)
+                    :SPLIT-TYPES T)
+             (IGNORABLE ALIST))
+            (RETURN-LAST
+             'PROGN
+             '(LAMBDA$
+               (ALIST)
+               (DECLARE
+                (XARGS :GUARD (AND (ALISTP ALIST)
+                                   (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                   (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))))
+               (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                     (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
+                     (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
+                    (DECLARE (IGNORABLE TEMP RESULT LEN))
+                    (ACL2-COUNT TEMP)))
+             ((LAMBDA (TEMP RESULT LEN)
+                      (ACL2-COUNT TEMP))
+              (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
+              (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
+              (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
+          (CONS (CONS 'TEMP X)
+                (CONS (CONS 'RESULT 'NIL)
+                      (CONS (CONS 'LEN '0) 'NIL)))
+          '(LAMBDA
+            (ALIST)
+            (DECLARE
+             (XARGS :GUARD (IF (ALISTP ALIST)
+                               (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                   (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
+                                   'NIL)
+                               'NIL)
+                    :SPLIT-TYPES T)
+             (IGNORABLE ALIST))
+            (RETURN-LAST
+             'PROGN
+             '(LAMBDA$
+               (ALIST)
+               (DECLARE
+                (XARGS :GUARD (AND (ALISTP ALIST)
+                                   (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                   (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))))
+               (LET
+                ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                 (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
+                 (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
+                (DECLARE (IGNORABLE TEMP RESULT LEN))
+                (IF
+                 (NULL TEMP)
+                 (CONS ':LOOP-FINISH
+                       (CONS 'NIL
+                             (CONS (CONS (CONS 'TEMP TEMP)
+                                         (CONS (CONS 'RESULT RESULT)
+                                               (CONS (CONS 'LEN LEN) 'NIL)))
+                                   'NIL)))
+                 (CONS
+                  'NIL
+                  (CONS
+                   (MV-NTH '2
+                           (CONS (CDR TEMP)
+                                 (CONS (CONS (CAR TEMP) RESULT)
+                                       (CONS (BINARY-+ '1 LEN) 'NIL))))
+                   (CONS
+                    (CONS
+                     (CONS 'TEMP
+                           (MV-NTH '0
+                                   (CONS (CDR TEMP)
+                                         (CONS (CONS (CAR TEMP) RESULT)
+                                               (CONS (BINARY-+ '1 LEN) 'NIL)))))
+                     (CONS
+                      (CONS 'RESULT
+                            (MV-NTH '1
+                                    (CONS (CDR TEMP)
+                                          (CONS (CONS (CAR TEMP) RESULT)
+                                                (CONS (BINARY-+ '1 LEN) 'NIL)))))
+                      (CONS
+                       (CONS 'LEN
+                             (MV-NTH '2
+                                     (CONS (CDR TEMP)
+                                           (CONS (CONS (CAR TEMP) RESULT)
+                                                 (CONS (BINARY-+ '1 LEN) 'NIL)))))
+                       (CONS (CONS 'MV0
+                                   (CONS (CDR TEMP)
+                                         (CONS (CONS (CAR TEMP) RESULT)
+                                               (CONS (BINARY-+ '1 LEN) 'NIL))))
+                             'NIL))))
+                    'NIL))))))
+             ((LAMBDA
+               (TEMP RESULT LEN)
+               (IF
+                (NULL TEMP)
+                (CONS ':LOOP-FINISH
+                      (CONS 'NIL
+                            (CONS (CONS (CONS 'TEMP TEMP)
+                                        (CONS (CONS 'RESULT RESULT)
+                                              (CONS (CONS 'LEN LEN) 'NIL)))
+                                  'NIL)))
+                (CONS
+                 'NIL
+                 (CONS
+                  (MV-NTH '2
+                          (CONS (CDR TEMP)
+                                (CONS (CONS (CAR TEMP) RESULT)
+                                      (CONS (BINARY-+ '1 LEN) 'NIL))))
+                  (CONS
+                   (CONS
+                    (CONS 'TEMP
+                          (MV-NTH '0
+                                  (CONS (CDR TEMP)
+                                        (CONS (CONS (CAR TEMP) RESULT)
+                                              (CONS (BINARY-+ '1 LEN) 'NIL)))))
+                    (CONS
+                     (CONS 'RESULT
+                           (MV-NTH '1
+                                   (CONS (CDR TEMP)
+                                         (CONS (CONS (CAR TEMP) RESULT)
+                                               (CONS (BINARY-+ '1 LEN) 'NIL)))))
+                     (CONS
+                      (CONS 'LEN
+                            (MV-NTH '2
+                                    (CONS (CDR TEMP)
+                                          (CONS (CONS (CAR TEMP) RESULT)
+                                                (CONS (BINARY-+ '1 LEN) 'NIL)))))
+                      (CONS (CONS 'MV0
+                                  (CONS (CDR TEMP)
+                                        (CONS (CONS (CAR TEMP) RESULT)
+                                              (CONS (BINARY-+ '1 LEN) 'NIL))))
+                            'NIL))))
+                   'NIL)))))
+              (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
+              (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
+              (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
+          '(LAMBDA
+            (ALIST)
+            (DECLARE (XARGS :GUARD (ALISTP ALIST)
+                            :SPLIT-TYPES T)
+                     (IGNORABLE ALIST))
+            (RETURN-LAST
+             'PROGN
+             '(LAMBDA$
+               (ALIST)
+               (DECLARE (XARGS :GUARD (ALISTP ALIST)))
+               (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                     (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
+                     (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
+                    (DECLARE (IGNORABLE TEMP RESULT LEN))
+                    (CONS ':RETURN
+                          (CONS (CONS LEN (CONS RESULT 'NIL))
+                                (CONS (CONS (CONS 'TEMP TEMP)
+                                            (CONS (CONS 'RESULT RESULT)
+                                                  (CONS (CONS 'LEN LEN) 'NIL)))
+                                      'NIL)))))
+             ((LAMBDA (TEMP RESULT LEN)
+                      (CONS ':RETURN
+                            (CONS (CONS LEN (CONS RESULT 'NIL))
+                                  (CONS (CONS (CONS 'TEMP TEMP)
+                                              (CONS (CONS 'RESULT RESULT)
+                                                    (CONS (CONS 'LEN LEN) 'NIL)))
+                                        'NIL))))
+              (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
+              (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
+              (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
+          '(NIL NIL)
+          '(ACL2-COUNT TEMP)
+          '(LOOP$ WITH TEMP = X WITH RESULT
+                  = NIL WITH LEN = 0 DO :VALUES (NIL NIL)
+                  :GUARD
+                  (AND (TRUE-LISTP TEMP) (NATP LEN))
+                  (IF (NULL TEMP)
+                      (LOOP-FINISH)
+                      (MV-SETQ (TEMP RESULT LEN)
+                               (MV (CDR TEMP)
+                                   (CONS (CAR TEMP) RESULT)
+                                   (1+ LEN))))
+                  FINALLY (RETURN (MV LEN RESULT))))))
+
+; Note that below, we take the form above but replace ' by ` in the :FN slots;
+; see :DOC gratuitous-lambda-object-restrictions.
+(assert-event
+ (mv-let
+   (len result)
+   (let ((x '(4 6 8)))
+     (DO$
+      '(LAMBDA
+        (ALIST)
+        (DECLARE
+         (XARGS :GUARD (IF (ALISTP ALIST)
+                           (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                               (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
+                               'NIL)
+                           'NIL)
+                :SPLIT-TYPES T)
+         (IGNORABLE ALIST))
+        (RETURN-LAST
+         'PROGN
+         '(LAMBDA$
+           (ALIST)
+           (DECLARE
+            (XARGS :GUARD (AND (ALISTP ALIST)
+                               (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                               (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))))
+           (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                 (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
+                 (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
+                (DECLARE (IGNORABLE TEMP RESULT LEN))
+                (ACL2-COUNT TEMP)))
+         ((LAMBDA (TEMP RESULT LEN)
+                  (ACL2-COUNT TEMP))
+          (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
+          (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
+          (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
+      (CONS (CONS 'TEMP X)
+            (CONS (CONS 'RESULT 'NIL)
+                  (CONS (CONS 'LEN '0) 'NIL)))
+      '(LAMBDA
+        (ALIST)
+        (DECLARE
+         (XARGS :GUARD (IF (ALISTP ALIST)
+                           (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                               (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
+                               'NIL)
+                           'NIL)
+                :SPLIT-TYPES T)
+         (IGNORABLE ALIST))
+        (RETURN-LAST
+         'PROGN
+         '(LAMBDA$
+           (ALIST)
+           (DECLARE
+            (XARGS :GUARD (AND (ALISTP ALIST)
+                               (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                               (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))))
+           (LET
+            ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+             (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
+             (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
+            (DECLARE (IGNORABLE TEMP RESULT LEN))
+            (IF
+             (NULL TEMP)
+             (CONS ':LOOP-FINISH
+                   (CONS 'NIL
+                         (CONS (CONS (CONS 'TEMP TEMP)
+                                     (CONS (CONS 'RESULT RESULT)
+                                           (CONS (CONS 'LEN LEN) 'NIL)))
+                               'NIL)))
+             (CONS
+              'NIL
+              (CONS
+               (MV-NTH '2
+                       (CONS (CDR TEMP)
+                             (CONS (CONS (CAR TEMP) RESULT)
+                                   (CONS (BINARY-+ '1 LEN) 'NIL))))
+               (CONS
+                (CONS
+                 (CONS 'TEMP
+                       (MV-NTH '0
+                               (CONS (CDR TEMP)
+                                     (CONS (CONS (CAR TEMP) RESULT)
+                                           (CONS (BINARY-+ '1 LEN) 'NIL)))))
+                 (CONS
+                  (CONS 'RESULT
+                        (MV-NTH '1
+                                (CONS (CDR TEMP)
+                                      (CONS (CONS (CAR TEMP) RESULT)
+                                            (CONS (BINARY-+ '1 LEN) 'NIL)))))
+                  (CONS
+                   (CONS 'LEN
+                         (MV-NTH '2
+                                 (CONS (CDR TEMP)
+                                       (CONS (CONS (CAR TEMP) RESULT)
+                                             (CONS (BINARY-+ '1 LEN) 'NIL)))))
+                   (CONS (CONS 'MV0
+                               (CONS (CDR TEMP)
+                                     (CONS (CONS (CAR TEMP) RESULT)
+                                           (CONS (BINARY-+ '1 LEN) 'NIL))))
+                         'NIL))))
+                'NIL))))))
+         ((LAMBDA
+           (TEMP RESULT LEN)
+           (IF
+            (NULL TEMP)
+            (CONS ':LOOP-FINISH
+                  (CONS 'NIL
+                        (CONS (CONS (CONS 'TEMP TEMP)
+                                    (CONS (CONS 'RESULT RESULT)
+                                          (CONS (CONS 'LEN LEN) 'NIL)))
+                              'NIL)))
+            (CONS
+             'NIL
+             (CONS
+              (MV-NTH '2
+                      (CONS (CDR TEMP)
+                            (CONS (CONS (CAR TEMP) RESULT)
+                                  (CONS (BINARY-+ '1 LEN) 'NIL))))
+              (CONS
+               (CONS
+                (CONS 'TEMP
+                      (MV-NTH '0
+                              (CONS (CDR TEMP)
+                                    (CONS (CONS (CAR TEMP) RESULT)
+                                          (CONS (BINARY-+ '1 LEN) 'NIL)))))
+                (CONS
+                 (CONS 'RESULT
+                       (MV-NTH '1
+                               (CONS (CDR TEMP)
+                                     (CONS (CONS (CAR TEMP) RESULT)
+                                           (CONS (BINARY-+ '1 LEN) 'NIL)))))
+                 (CONS
+                  (CONS 'LEN
+                        (MV-NTH '2
+                                (CONS (CDR TEMP)
+                                      (CONS (CONS (CAR TEMP) RESULT)
+                                            (CONS (BINARY-+ '1 LEN) 'NIL)))))
+                  (CONS (CONS 'MV0
+                              (CONS (CDR TEMP)
+                                    (CONS (CONS (CAR TEMP) RESULT)
+                                          (CONS (BINARY-+ '1 LEN) 'NIL))))
+                        'NIL))))
+               'NIL)))))
+          (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
+          (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
+          (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
+      '(LAMBDA
+        (ALIST)
+        (DECLARE (XARGS :GUARD (ALISTP ALIST)
+                        :SPLIT-TYPES T)
+                 (IGNORABLE ALIST))
+        (RETURN-LAST
+         'PROGN
+         '(LAMBDA$
+           (ALIST)
+           (DECLARE (XARGS :GUARD (ALISTP ALIST)))
+           (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                 (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
+                 (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
+                (DECLARE (IGNORABLE TEMP RESULT LEN))
+                (CONS ':RETURN
+                      (CONS (CONS LEN (CONS RESULT 'NIL))
+                            (CONS (CONS (CONS 'TEMP TEMP)
+                                        (CONS (CONS 'RESULT RESULT)
+                                              (CONS (CONS 'LEN LEN) 'NIL)))
+                                  'NIL)))))
+         ((LAMBDA (TEMP RESULT LEN)
+                  (CONS ':RETURN
+                        (CONS (CONS LEN (CONS RESULT 'NIL))
+                              (CONS (CONS (CONS 'TEMP TEMP)
+                                          (CONS (CONS 'RESULT RESULT)
+                                                (CONS (CONS 'LEN LEN) 'NIL)))
+                                    'NIL))))
+          (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
+          (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
+          (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
+      '(NIL NIL)
+      '(ACL2-COUNT TEMP)
+      '(LOOP$ WITH TEMP = X WITH RESULT
+              = NIL WITH LEN = 0 DO :VALUES (NIL NIL)
+              :GUARD
+              (AND (TRUE-LISTP TEMP) (NATP LEN))
+              (IF (NULL TEMP)
+                  (LOOP-FINISH)
+                  (MV-SETQ (TEMP RESULT LEN)
+                           (MV (CDR TEMP)
+                               (CONS (CAR TEMP) RESULT)
+                               (1+ LEN))))
+              FINALLY (RETURN (MV LEN RESULT)))))
+   (and (eql len 3)
+        (equal result '(8 6 4)))))
+
+; The following failed in the initial implementation of DO loop$ expressions.
+(defun g3 ()
+  (loop$ with ans = nil with i = 0
+         do
+         :measure (nfix (- 3 i))
+         (progn (if (> (nfix i) 2)
+                    (loop-finish)
+                  (setq i (1+ i)))
+                (setq ans
+                      (loop$ with ans2 = ans with j = 0
+                             do
+                             :measure (nfix (- 6 j))
+                             (progn
+                               (if (> (nfix j) 5)
+                                   (loop-finish)
+                                 (setq j (1+ j)))
+                               (setq ans2 (cons (cons i j) ans2)))
+                             finally (return ans2))))
+         finally (return ans)))
+
+(assert-event (equal (g3)
+                     '((3 . 6)
+                       (3 . 5)
+                       (3 . 4)
+                       (3 . 3)
+                       (3 . 2)
+                       (3 . 1)
+                       (2 . 6)
+                       (2 . 5)
+                       (2 . 4)
+                       (2 . 3)
+                       (2 . 2)
+                       (2 . 1)
+                       (1 . 6)
+                       (1 . 5)
+                       (1 . 4)
+                       (1 . 3)
+                       (1 . 2)
+                       (1 . 1))))
+
+(defun do-mv-6 (x)
+; Modification of do-mv-5 that has
+; both return and loop-finish in the loop body and also a finally body.
+   (declare (xargs :guard (true-listp x)))
+   (loop$ with temp = x
+          with result = nil
+          with len = 0
+          do
+          :values (nil nil)
+          :guard (and (true-listp temp)
+                      (natp len))
+          (cond ((null temp)
+                 (return (mv len result)))
+                ((equal (car temp) 0)
+                 (loop-finish))
+                (t (mv-setq (temp result len)
+                            (mv (cdr temp)
+                                (cons (car temp) result)
+                                (1+ len)))))
+          finally
+          (return (mv len result))))
+
+(assert-event
+ (mv-let
+   (len result)
+   (do-mv-5 '(a b c))
+   (and (= len 3)
+        (equal result '(c b a)))))
+
+(assert-event
+ (mv-let
+   (len result)
+   (do-mv-6 '(a b c))
+   (and (= len 3)
+        (equal result '(c b a)))))
+
+; The following tests aren't about loops, so they may be better placed in a
+; different book.  But warrants were first allowed for functions that take
+; stobjs when supporting DO loop$ expressions, so we naturally placed the tests
+; here.  The first update below is discussed in a comment in
+; logic-code-to-runnable-code.
+
+; Initialize st.
+(value-triple (update-fld 1 st)
+              :stobjs-out '(st))
+
+; Update a non-live version of st.
+(assert-event
+ (equal (apply$ '(lambda (x)
+                   (declare (xargs :guard (stp x) :split-types t))
+                   (fld x))
+                '((17)))
+        17))
+
+; Check that live stobj didn't change.
+(assert-event
+ (equal (fld st) 1))
+
+; Here is a more complex version of the test above.
+(assert-event
+ (equal (apply$ 'apply$
+                '((lambda (x)
+                    (declare (xargs :guard (stp x) :split-types t))
+                    (fld x))
+                  ((17))))
+        17))
+
+; Check that live stobj didn't change.
+(assert-event
+ (equal (fld st) 1))
+
+; A do loop$ within a for loop$:
+(defun loop$-for-with-1 (n)
+  (declare (xargs :guard (natp n)))
+  (loop$ for i of-type (integer 0 *) from 1 to n
+         collect
+         (mv-let (x y)
+           (loop$ with k2 of-type (integer 0 *) = i
+                  with temp = nil
+                  do
+                  :values (nil nil)
+                  (if (zp k2)
+                      (return (mv temp temp))
+                    (progn (setq temp (cons k2 temp))
+                           (setq k2 (1- k2)))))
+           (list (len x) y))))
+
+(assert-event (equal (loop$-for-with-1 3)
+                     '((1 (1))
+                       (2 (1 2))
+                       (3 (1 2 3)))))
+
+; A for loop$ within a do loop$:
+(defun loop$-with-for-1 (n)
+  (declare (type (integer 1 *) n))
+  (loop$ with i of-type (integer 0 *) = n
+         with ans1 = nil
+         with ans2 of-type integer = 0
+         do
+         :values (nil nil)
+         (if (zp i)
+             (return (mv ans2 ans1))
+           (let ((temp (loop$ for k2 from 1 to i
+                              collect k2)))
+             (mv-setq (ans1 ans2 i)
+                      (mv (append temp ans1)
+                          (+ ans2 (len temp))
+                          (1- i)))))))
+
+(assert-event (mv-let (a b)
+                (loop$-with-for-1 4)
+                (and (equal a 10)
+                     (equal b '(1 1 2 1 2 3 1 2 3 4)))))
+
+(must-fail
+; Error message:
+#|
+Illegal assignment in the finally body:
+it is illegal to attempt an assignment (with SETQ or MV-SETQ) to ANS,
+which is not among the local variables (ANS2 and J) in the lexical
+scope containing (SETQ ANS ANS2).
+|#
+ (defun non-local-asst ()
+  (loop$ with ans = nil with i = 0
+         do
+         (progn (if (> (nfix i) 2) (loop-finish) (setq i (1+ i)))
+                (loop$ with ans2 = ans with j = 0 do
+                       (progn
+                         (if (> (nfix j) 5) (loop-finish) (setq j (1+ j)))
+                         (setq ans2 (cons (cons i j) ans2)))
+                       finally (setq ans ans2)))
+         finally (return ans))))
+
+(defwarrant put-global)
+
+(defthm state-p1-update-nth-2-do-mv-7
+  (implies (state-p1 st)
+           (state-p1 (update-nth 2
+                                 (add-pair 'do-mv-7 val (nth 2 st))
+                                 st)))
+  :hints (("Goal" :in-theory (enable state-p1))))
+
+(defun do-mv-7 (x state)
+; Modification of do-mv-6 that modifies state.
+   (declare (xargs :guard (true-listp x) :stobjs state))
+   (loop$ with temp = x
+          with result = nil
+          with len = 0
+          do
+          :values (state nil nil)
+          :guard (and (true-listp temp)
+                      (natp len)
+                      (state-p state))
+          (cond ((null temp)
+                 (return (mv state len result)))
+                ((equal (car temp) 0)
+                 (loop-finish))
+                (t (mv-setq (temp result len state)
+                            (let ((state (f-put-global 'do-mv-7 len state)))
+                              (mv (cdr temp)
+                                  (cons (car temp) result)
+                                  (1+ len)
+                                  state)))))
+          finally
+          (return (mv state len result))))
+
+(assert-event
+ (pprogn
+  (f-put-global 'do-mv-7 :uninitialized state)
+  (mv-let
+    (state len result)
+    (do-mv-7 '(a b c) state)
+    (mv (and (= len 3)
+             (equal (f-get-global 'do-mv-7 state) 2)
+             (equal result '(c b a)))
+        state)))
+ :stobjs-out '(nil state))
+
+(must-fail
+; It appears that the HyperSpec actually allows repeated variables in a
+; multiple-value-setq, so we could presumably allow that for mv-setq.  However,
+; that doesn't seem like a particularly useful capability, and somehow it seems
+; a bit open to problems (e.g., does every Lisp implementation bind the
+; variables from left to right?).  So we disallow that.
+ (defun mv-repeated-vars (x)
+   (declare (xargs :guard (true-listp x)))
+   (loop$ with lst = x
+          with val = nil
+          do
+          (if (atom lst)
+              (return val)
+            (mv-setq (val val lst)
+                     (mv (car lst)
+                         (car lst)
+                         (cdr lst))))
+          finally (return val))))
+
+(defun do-mv-2-a (x)
+; This variant of do-mv-2 has loop$ on the else branch of the top-level if,
+; where we know the stobjs-out.
+  (declare (xargs :guard (true-listp x)))
+  (if (eq (car x) 'abc)
+      (mv (car x) (cdr x))
+    (loop$ with temp = x
+           with result = nil
+           with len = 0
+           do
+           :values (nil nil)
+           :guard (and (true-listp temp)
+                       (natp len))
+           (if (null temp)
+               (loop-finish)
+             (mv-setq (temp result len)
+                      (mv (cdr temp)
+                          (cons (car temp) result)
+                          (1+ len))))
+           finally (return (mv len result)))))
+
+(must-fail
+; This variant of do-mv-2-a has loop$ on the else branch that doesn't match
+; the stobjs-out determined from the then branch.
+ (defun do-mv-2-a-bad (x)
+   (declare (xargs :guard (true-listp x)))
+   (if (eq (car x) 'abc)
+       (mv 17 (car x) (cdr x))
+     (loop$ with temp = x
+            with result = nil
+            with len = 0
+            do
+            :values (nil nil)
+            :guard (and (true-listp temp)
+                        (natp len))
+            (if (null temp)
+                (loop-finish)
+              (mv-setq (temp result len)
+                       (mv (cdr temp)
+                           (cons (car temp) result)
+                           (1+ len))))
+            finally (return (mv len result)))))
+ )
+
+(defun do-mv-2-b (x)
+; This variant of do-mv-2 has loop$ on the then branch of the top-level if,
+; where we do not yet know the stobjs-out.
+  (declare (xargs :guard (true-listp x)))
+  (if (eq (car x) 'abc)
+      (loop$ with temp = x
+             with result = nil
+             with len = 0
+             do
+             :values (nil nil)
+             :guard (and (true-listp temp)
+                         (natp len))
+             (if (null temp)
+                 (loop-finish)
+               (mv-setq (temp result len)
+                        (mv (cdr temp)
+                            (cons (car temp) result)
+                            (1+ len))))
+             finally (return (mv len result)))
+    (mv (car x) (cdr x))))
+
+(defun do-mv-1-alt (x)
+; This variant of do-mv-1 uses an mv-setq to set a locally-scoped variable.
+  (declare (xargs :guard (true-listp x)))
+  (loop$ with temp = x
+         with result = nil
+         with len = 0
+         with my-car = 17
+         do
+         :guard (and (true-listp temp)
+                     (natp len))
+         (if (null temp)
+             (loop-finish)
+           (let ((my-car 0))
+             (progn (setq my-car (car temp))
+                    (mv-setq (temp result len)
+                             (mv (cdr temp)
+                                 (cons my-car result)
+                                 (1+ len))))))
+         finally (return (list len result my-car))))
+
+; Let's check that do-mv-1-alt returns the same len and result as do-mv-1 and
+; that do-mv-1-alt returns the right final value of my-car.
+(assert-event (and (equal (do-mv-1-alt '(a b c d))
+                          '(4 (D C B A) 17))
+                   (equal (do-mv-1     '(a b c d))
+                          '(4 (D C B A)))))
+
+(must-fail
+; This is just the body of loop-mv-1, with x replaced by '(a b c).  The error
+; message says, appropriately, that "We prohibit certain events .. from being
+; ancestrally dependent on loop$ and lambda$ expressions...."
+ (defconst *c*
+   (loop$ with temp = '(a b c)
+          with result = nil
+          with len = 0
+          do
+          :guard (and (true-listp temp)
+                      (natp len))
+          (if (null temp)
+              (loop-finish)
+            (mv-setq (temp result len)
+                     (mv (cdr temp)
+                         (cons (car temp) result)
+                         (1+ len))))
+          finally (return (list len result)))))
+
+; Check that flet isn't allowed.
+
+(defun$ my-op (x y)
+  (declare (xargs :guard t))
+  (* (nfix x) (nfix y)))
+
+(must-fail
+ (defun for-loop-with-flet (lst)
+   (declare (xargs :guard (true-listp lst) :verify-guards nil))
+   (flet ((my-op (x y) (+ (nfix x) (nfix y))))
+     (loop$ for x in lst
+            collect (my-op 3 (nfix x))))))
+
+(must-fail
+ (defun do-loop-with-flet (lst)
+   (declare (xargs :guard t :verify-guards nil))
+   (flet ((my-op (x y) (+ (nfix x) (nfix y))))
+     (loop$ with temp = lst
+            with ans of-type integer = 1
+            do
+            (if (atom temp)
+                (return ans)
+              (progn (setq ans (my-op (car temp) ans))
+                     (setq temp (cdr temp))))))))
+
+; In the variant of do-mv-3 below, we warrant a function that returns state and
+; is not a stobj primitive, and use it in the do loop$.
+
+(defun$ do-mv-3-alt-helper (st a x)
+  (declare (xargs :stobjs st))
+  (let ((st (update-fld
+             (+ (ifix a) (ifix (fld st)))
+             st)))
+    (mv st x)))
+
+(defun do-mv-3-alt (lst st)
+  (declare (xargs :stobjs st :guard (true-listp lst)))
+  (let ((st (update-fld 0 st)))
+    (loop$ with temp of-type (satisfies true-listp) = lst
+           do
+           :values (st)
+           :guard
+; We include (stp st) because stobj-optp = nil for lambdas; see
+; guard-clauses-for-fn1.
+           (stp st)
+           (cond ((endp temp)
+                  (loop-finish))
+                 (t (mv-setq (st temp)
+                             (do-mv-3-alt-helper st (car temp) (cdr temp)))))
+           finally (return st))))
+
+(assert-event
+ (let ((st (do-mv-3-alt '(1 2 4) st)))
+   (mv (equal (fld st) 7) st))
+ :stobjs-out '(nil st))
+
+; The following example comes from :DOC loop$.
+(defun test-loop$ (i0 max st)
+  (declare (xargs :guard (and (natp i0) (natp max))
+                  :stobjs st))
+  (loop$ with i of-type (satisfies natp) = i0
+         with cnt of-type integer = 0
+         do
+         :measure (nfix (- max i))
+         :guard (and (natp max)
+                     (natp cnt)
+                     (stp st))
+         :values (nil st)
+         (if (>= i max)
+             (loop-finish)
+           (progn (setq st (update-fld i st))
+                  (mv-setq (cnt i)
+                           (mv (+ 1 cnt) (+ 1 i)))))
+         finally
+         :guard (stp st)
+         (return
+          (mv (list 'from i0 'to max 'is cnt 'steps 'and 'fld '= (fld st))
+              st))))

@@ -19,7 +19,7 @@
 
 (defxdoc+ grammar-new
   :parents (concrete-syntax)
-  :short "ABNF old grammar of Yul."
+  :short "ABNF new grammar of Yul."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -75,3 +75,62 @@
     :prep-books
     ((local
       (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define abnf-tree-with-root-p (tree (rulename stringp))
+  :returns (yes/no booleanp)
+  :short "Recognize terminated ABNF trees rooted at rulename,
+          for the ABNF grammar of Yul."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The tree has ASCII codes at its leaves."))
+  (and (abnf::treep tree)
+       (abnf::tree-terminatedp tree)
+       (abnf::tree-match-element-p tree
+                                   (abnf::element-rulename
+                                    (abnf::rulename rulename))
+                                   *grammar-new*))
+  :no-function t
+  :hooks (:fix)
+  ///
+
+  (defrule abnf-treep-when-abnf-tree-with-root-p
+    (implies (abnf-tree-with-root-p tree rulename) ; RULENAME intentionally free variable
+             (abnf::treep tree)))
+
+  (defrule not-abnf-tree-with-root-p-of-nil
+    (not (abnf-tree-with-root-p nil rulename))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist abnf-tree-list-with-root-p (x rulename)
+  :guard (stringp rulename)
+  :short "Lift @(tsee abnf-tree-with-root-p) to lists"
+  (abnf-tree-with-root-p x rulename)
+  :true-listp t
+  :elementp-of-nil nil
+  ///
+  (defrule abnf-tree-listp-when-abnf-tree-list-with-root-p
+    (implies (abnf-tree-list-with-root-p trees rulename)
+             (abnf::tree-listp trees))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection abnf-tree-wrap
+  :short "Wrap an ABNF tree into a nest of ABNF trees
+          with the given rule names as roots."
+  :long "@(def abnf-tree-wrap)"
+
+  (defmacro abnf-tree-wrap (tree &rest rulenames)
+    `(abnf-tree-wrap-fn ,tree (list ,@rulenames)))
+
+  (define abnf-tree-wrap-fn ((tree abnf::treep) (rulenames string-listp))
+    :returns (wrapped-tree abnf::treep)
+    (cond ((endp rulenames) (abnf::tree-fix tree))
+          (t (abnf-tree-wrap-fn (abnf::make-tree-nonleaf
+                                 :rulename? (abnf::rulename (car rulenames))
+                                 :branches (list (list tree)))
+                                (cdr rulenames))))
+    :hooks (:fix)))

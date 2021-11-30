@@ -102,6 +102,14 @@
            (all-dargp (dargs expr)))
   :hints (("Goal" :in-theory (enable dag-exprp0))))
 
+(defthm true-listp-of-dargs-when-dag-exprp0
+  (implies (and (dag-exprp0 expr)
+                ;; (consp expr)
+                ;; (not (equal 'quote (car expr)))
+                )
+           (true-listp (dargs expr)))
+  :hints (("Goal" :in-theory (enable dag-exprp0))))
+
 ;drop?
 (local (in-theory (enable consp-of-cdr-of-nth-when-all-dargp)))
 
@@ -247,7 +255,7 @@
            (symbolp (nth 0 expr)))
   :hints (("Goal" :in-theory (enable dag-exprp0))))
 
-(defthmd true-list-of-cdr--when-dag-exprp0-and-quotep
+(defthmd true-listp-of-cdr-when-dag-exprp0-and-quotep
   (implies (and (dag-exprp0 expr)
                 (equal 'quote (car expr)))
            (true-listp (cdr expr)))

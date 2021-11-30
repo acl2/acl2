@@ -186,6 +186,14 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable all-dargp largest-non-quotep))))
 
+(defthm <=-of--1-and-largest-non-quotep-linear
+  (<= -1 (largest-non-quotep dags))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable largest-non-quotep))))
+
+(defthmd not-<-of-largest-non-quotep-and--1
+  (not (< (largest-non-quotep dags) -1)))
+
 (defthm largest-non-quotep-of-cons
   (implies (and (dargp arg)
                 (all-dargp args))

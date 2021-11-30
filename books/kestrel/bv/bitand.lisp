@@ -1,7 +1,7 @@
 ; Taking the and of two bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -153,3 +153,10 @@
                 (natp n))
            (equal (bvchop n (bitand x y))
                   (bitand x y))))
+
+(defthmd bitand-cases
+  (equal (acl2::bitand x y)
+         (if (and (equal (bvchop 1 x) 1)
+                  (equal (bvchop 1 y) 1))
+             1
+           0)))

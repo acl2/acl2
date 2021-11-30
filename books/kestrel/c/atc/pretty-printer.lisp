@@ -988,7 +988,7 @@
                                     (pprint-comma-sep
                                      (pprint-param-declon-list fdef.params)))
                                0))
-            (pprint-stmt fdef.body 1)
+            (pprint-block-item-list fdef.body 1)
             (list (pprint-line "}" 0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

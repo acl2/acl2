@@ -709,11 +709,11 @@ and has no badge.  See :DOC gratuitous-lambda-object-restrictions for
 a workaround if you really mean to have an ill-formed LAMBDA-like constant
 in your code.  You may see this message without having explicitly typed
 a LAMBDA if you used a loop$ statement.  Loop$ statements are translated
-into calls of scions that use LAMBDA objects generated from the UNTIL,
-WHEN, and operator expressions.  If you are defining a function that
-calls itself recursively from within a loop$ you must include the xargs
-:LOOP$-RECURSION T and an explicit :MEASURE.  Note:  this error occurred
-in the context (LAMBDA$ (E) (HELLO E)).
+into calls of scions that use LAMBDA objects generated from constituent
+expressions.  If you are defining a function that calls itself recursively
+from within a loop$ you must include the xargs :LOOP$-RECURSION T and
+an explicit :MEASURE.  Note:  this error occurred in the context 
+(LAMBDA$ (E) (HELLO E)).
 
 ACL2 !>>>(APPLY$ (CONS 'LAMBDA
                        (CONS (CONS 'E 'NIL)
@@ -734,11 +734,11 @@ and has no badge.  See :DOC gratuitous-lambda-object-restrictions for
 a workaround if you really mean to have an ill-formed LAMBDA-like constant
 in your code.  You may see this message without having explicitly typed
 a LAMBDA if you used a loop$ statement.  Loop$ statements are translated
-into calls of scions that use LAMBDA objects generated from the UNTIL,
-WHEN, and operator expressions.  If you are defining a function that
-calls itself recursively from within a loop$ you must include the xargs
-:LOOP$-RECURSION T and an explicit :MEASURE.  Note:  this error occurred
-in the context (LAMBDA$ NIL (HELLO 'JOHN)).
+into calls of scions that use LAMBDA objects generated from constituent
+expressions.  If you are defining a function that calls itself recursively
+from within a loop$ you must include the xargs :LOOP$-RECURSION T and
+an explicit :MEASURE.  Note:  this error occurred in the context 
+(LAMBDA$ NIL (HELLO 'JOHN)).
 
 ACL2 !>>>(LOOP$ FOR E IN '(JOHN MARY)
                 COLLECT (HELLO E))
@@ -751,9 +751,9 @@ lambda-object-restrictions for a workaround if you really mean to have
 an ill-formed LAMBDA-like constant in your code.  You may see this
 message without having explicitly typed a LAMBDA if you used a loop$
 statement.  Loop$ statements are translated into calls of scions that
-use LAMBDA objects generated from the UNTIL, WHEN, and operator expressions.
-If you are defining a function that calls itself recursively from within
-a loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
+use LAMBDA objects generated from constituent expressions.  If you
+are defining a function that calls itself recursively from within a
+loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
 :MEASURE.  Note:  this error occurred in the context 
 (LAMBDA$ (LOOP$-IVAR)
          (LET ((E LOOP$-IVAR))
@@ -772,9 +772,9 @@ lambda-object-restrictions for a workaround if you really mean to have
 an ill-formed LAMBDA-like constant in your code.  You may see this
 message without having explicitly typed a LAMBDA if you used a loop$
 statement.  Loop$ statements are translated into calls of scions that
-use LAMBDA objects generated from the UNTIL, WHEN, and operator expressions.
-If you are defining a function that calls itself recursively from within
-a loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
+use LAMBDA objects generated from constituent expressions.  If you
+are defining a function that calls itself recursively from within a
+loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
 :MEASURE.  Note:  this error occurred in the context 
 (LAMBDA$ (LOOP$-IVAR)
          (LET ((E LOOP$-IVAR))
@@ -799,9 +799,9 @@ lambda-object-restrictions for a workaround if you really mean to have
 an ill-formed LAMBDA-like constant in your code.  You may see this
 message without having explicitly typed a LAMBDA if you used a loop$
 statement.  Loop$ statements are translated into calls of scions that
-use LAMBDA objects generated from the UNTIL, WHEN, and operator expressions.
-If you are defining a function that calls itself recursively from within
-a loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
+use LAMBDA objects generated from constituent expressions.  If you
+are defining a function that calls itself recursively from within a
+loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
 :MEASURE.  Note:  this error occurred in the context 
 (LAMBDA$ (LOOP$-IVAR)
          (LET ((E LOOP$-IVAR))
@@ -904,11 +904,10 @@ for a workaround if you really mean to have an ill-formed LAMBDA-like
 constant in your code.  You may see this message without having explicitly
 typed a LAMBDA if you used a loop$ statement.  Loop$ statements are
 translated into calls of scions that use LAMBDA objects generated from
-the UNTIL, WHEN, and operator expressions.  If you are defining a function
-that calls itself recursively from within a loop$ you must include
-the xargs :LOOP$-RECURSION T and an explicit :MEASURE.  Note:  this
-error occurred in the context 
-(LAMBDA$ (D) (DECLARE (XARGS :GUARD (SYMBOLP D))) (HELLO D)).
+constituent expressions.  If you are defining a function that calls
+itself recursively from within a loop$ you must include the xargs :LOOP$-
+RECURSION T and an explicit :MEASURE.  Note:  this error occurred in
+the context (LAMBDA$ (D) (DECLARE (XARGS :GUARD (SYMBOLP D))) (HELLO D)).
 
 
 Summary
@@ -1011,11 +1010,11 @@ and has no badge.  See :DOC gratuitous-lambda-object-restrictions for
 a workaround if you really mean to have an ill-formed LAMBDA-like constant
 in your code.  You may see this message without having explicitly typed
 a LAMBDA if you used a loop$ statement.  Loop$ statements are translated
-into calls of scions that use LAMBDA objects generated from the UNTIL,
-WHEN, and operator expressions.  If you are defining a function that
-calls itself recursively from within a loop$ you must include the xargs
-:LOOP$-RECURSION T and an explicit :MEASURE.  Note:  this error occurred
-in the context (LAMBDA$ NIL (HELLO 'JOHN)).
+into calls of scions that use LAMBDA objects generated from constituent
+expressions.  If you are defining a function that calls itself recursively
+from within a loop$ you must include the xargs :LOOP$-RECURSION T and
+an explicit :MEASURE.  Note:  this error occurred in the context 
+(LAMBDA$ NIL (HELLO 'JOHN)).
 
 
 Summary
@@ -1083,11 +1082,11 @@ and has no badge.  See :DOC gratuitous-lambda-object-restrictions for
 a workaround if you really mean to have an ill-formed LAMBDA-like constant
 in your code.  You may see this message without having explicitly typed
 a LAMBDA if you used a loop$ statement.  Loop$ statements are translated
-into calls of scions that use LAMBDA objects generated from the UNTIL,
-WHEN, and operator expressions.  If you are defining a function that
-calls itself recursively from within a loop$ you must include the xargs
-:LOOP$-RECURSION T and an explicit :MEASURE.  Note:  this error occurred
-in the context (LAMBDA$ NIL (HELLO 'JOHN)).
+into calls of scions that use LAMBDA objects generated from constituent
+expressions.  If you are defining a function that calls itself recursively
+from within a loop$ you must include the xargs :LOOP$-RECURSION T and
+an explicit :MEASURE.  Note:  this error occurred in the context 
+(LAMBDA$ NIL (HELLO 'JOHN)).
 
 
 Summary
@@ -1501,7 +1500,10 @@ Goal''
 ([ A key checkpoint:
 
 Goal''
-(EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
+(EQUAL (HIDE (EV$ '(RETURN-LAST 'PROGN
+                                '(LAMBDA$ NIL (HELLO 'JOHN))
+                                (HELLO 'JOHN))
+                  NIL))
        '(HI JOHN))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -1525,7 +1527,10 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 *** Key checkpoint at the top level: ***
 
 Goal''
-(EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
+(EQUAL (HIDE (EV$ '(RETURN-LAST 'PROGN
+                                '(LAMBDA$ NIL (HELLO 'JOHN))
+                                (HELLO 'JOHN))
+                  NIL))
        '(HI JOHN))
 
 ACL2 Error in ( THM ...):  See :DOC failure.
@@ -2088,7 +2093,10 @@ Goal''
 ([ A key checkpoint:
 
 Goal''
-(EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
+(EQUAL (HIDE (EV$ '(RETURN-LAST 'PROGN
+                                '(LAMBDA$ NIL (HELLO 'JOHN))
+                                (HELLO 'JOHN))
+                  NIL))
        '(HI JOHN))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -2112,7 +2120,10 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 *** Key checkpoint at the top level: ***
 
 Goal''
-(EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
+(EQUAL (HIDE (EV$ '(RETURN-LAST 'PROGN
+                                '(LAMBDA$ NIL (HELLO 'JOHN))
+                                (HELLO 'JOHN))
+                  NIL))
        '(HI JOHN))
 
 ACL2 Error in ( THM ...):  See :DOC failure.
@@ -2805,6 +2816,7 @@ Summary
 Form:  ( THM ...)
 Rules: ((:EXECUTABLE-COUNTERPART FORCE)
         (:EXECUTABLE-COUNTERPART HELLO)
+        (:EXECUTABLE-COUNTERPART RETURN-LAST)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:REWRITE APPLY$-HELLO))
 
@@ -3541,6 +3553,7 @@ Summary
 Form:  ( THM ...)
 Rules: ((:EXECUTABLE-COUNTERPART FORCE)
         (:EXECUTABLE-COUNTERPART HELLO)
+        (:EXECUTABLE-COUNTERPART RETURN-LAST)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:REWRITE APPLY$-HELLO))
 
@@ -3953,11 +3966,11 @@ is used in (PROGRAM-MODE-WITH-NO-BADGE 'JOHN) and has no badge.  See
 really mean to have an ill-formed LAMBDA-like constant in your code.
 You may see this message without having explicitly typed a LAMBDA if
 you used a loop$ statement.  Loop$ statements are translated into calls
-of scions that use LAMBDA objects generated from the UNTIL, WHEN, and
-operator expressions.  If you are defining a function that calls itself
-recursively from within a loop$ you must include the xargs :LOOP$-
-RECURSION T and an explicit :MEASURE.  Note:  this error occurred in
-the context (LAMBDA$ NIL (PROGRAM-MODE-WITH-NO-BADGE 'JOHN)).
+of scions that use LAMBDA objects generated from constituent expressions.
+If you are defining a function that calls itself recursively from within
+a loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
+:MEASURE.  Note:  this error occurred in the context 
+(LAMBDA$ NIL (PROGRAM-MODE-WITH-NO-BADGE 'JOHN)).
 
 
 Summary
@@ -4087,9 +4100,15 @@ Goal''
 ([ A key checkpoint:
 
 Goal''
-(EQUAL (HIDE (EV$ '(PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN)
-                  NIL))
-       '(HI JOHN))
+(EQUAL
+ (HIDE
+  (EV$
+      '(RETURN-LAST 'PROGN
+                    '(LAMBDA$ NIL
+                              (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                    (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+      NIL))
+ '(HI JOHN))
 
 *1 (Goal'') is pushed for proof by induction.
 
@@ -4112,9 +4131,15 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 *** Key checkpoint at the top level: ***
 
 Goal''
-(EQUAL (HIDE (EV$ '(PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN)
-                  NIL))
-       '(HI JOHN))
+(EQUAL
+ (HIDE
+  (EV$
+      '(RETURN-LAST 'PROGN
+                    '(LAMBDA$ NIL
+                              (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                    (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+      NIL))
+ '(HI JOHN))
 
 ACL2 Error in ( THM ...):  See :DOC failure.
 
@@ -4142,10 +4167,16 @@ Subgoal 11
 ([ A key checkpoint:
 
 Subgoal 11
-(IMPLIES (NOT (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
-         (EQUAL (UNTAME-EV$ '(PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN)
-                            NIL)
-                '(HI JOHN)))
+(IMPLIES
+ (NOT (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
+ (EQUAL
+  (UNTAME-EV$
+      '(RETURN-LAST 'PROGN
+                    '(LAMBDA$ NIL
+                              (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                    (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+      NIL)
+  '(HI JOHN)))
 
 *1 (Subgoal 11) is pushed for proof by induction.
 
@@ -4156,14 +4187,20 @@ Subgoal 10'
 ([ A key checkpoint:
 
 Subgoal 10'
-(IMPLIES (AND (EQUAL (CADR (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
-                     1)
-              (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT)
-              (EQUAL (CDDDR (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
-                     T))
-         (EQUAL (APPLY$ 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT
-                        '(JOHN))
-                '(HI JOHN)))
+(IMPLIES
+ (AND (EQUAL (CADR (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
+             1)
+      (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT)
+      (EQUAL (CDDDR (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
+             T))
+ (EQUAL
+  (CADR
+   (HIDE
+        (EV$-LIST '('(LAMBDA$ NIL
+                              (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                    (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                  NIL)))
+  '(HI JOHN)))
 
 Normally we would attempt to prove Subgoal 10' by induction.  However,
 we prefer in this instance to focus on the original input conjecture
@@ -4179,25 +4216,35 @@ attempt has failed.
 Summary
 Form:  ( THM ...)
 Rules: ((:DEFINITION EV$)
+        (:DEFINITION EV$-LIST-DEF)
+        (:DEFINITION HIDE)
         (:DEFINITION NOT)
+        (:DEFINITION RETURN-LAST)
         (:DEFINITION SUITABLY-TAMEP-LISTP)
         (:DEFINITION SYNP)
         (:DEFINITION TAMEP)
         (:DEFINITION TAMEP-FUNCTIONP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART APPLY$-PRIMP)
+        (:EXECUTABLE-COUNTERPART BADGE-PRIM)
         (:EXECUTABLE-COUNTERPART BINARY-+)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART CONSP)
         (:EXECUTABLE-COUNTERPART EQUAL)
-        (:EXECUTABLE-COUNTERPART EV$-LIST)
+        (:EXECUTABLE-COUNTERPART EV$)
         (:EXECUTABLE-COUNTERPART INTEGERP)
         (:EXECUTABLE-COUNTERPART NOT)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART SYMBOLP)
+        (:EXECUTABLE-COUNTERPART ZP)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:META APPLY$-PRIM-META-FN-CORRECT)
+        (:REWRITE APPLY$-PRIMITIVE)
+        (:REWRITE APPLY$-PRIMP-BADGE)
         (:REWRITE BETA-REDUCTION)
+        (:REWRITE CDR-CONS)
         (:REWRITE ZP-OPEN))
 Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION EV$)
@@ -4215,20 +4262,32 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 *** Key checkpoints before reverting to proof by induction: ***
 
 Subgoal 11
-(IMPLIES (NOT (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
-         (EQUAL (UNTAME-EV$ '(PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN)
-                            NIL)
-                '(HI JOHN)))
+(IMPLIES
+ (NOT (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
+ (EQUAL
+  (UNTAME-EV$
+      '(RETURN-LAST 'PROGN
+                    '(LAMBDA$ NIL
+                              (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                    (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+      NIL)
+  '(HI JOHN)))
 
 Subgoal 10'
-(IMPLIES (AND (EQUAL (CADR (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
-                     1)
-              (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT)
-              (EQUAL (CDDDR (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
-                     T))
-         (EQUAL (APPLY$ 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT
-                        '(JOHN))
-                '(HI JOHN)))
+(IMPLIES
+ (AND (EQUAL (CADR (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
+             1)
+      (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT)
+      (EQUAL (CDDDR (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
+             T))
+ (EQUAL
+  (CADR
+   (HIDE
+        (EV$-LIST '('(LAMBDA$ NIL
+                              (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                    (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                  NIL)))
+  '(HI JOHN)))
 
 ACL2 Error in ( THM ...):  See :DOC failure.
 
@@ -4332,9 +4391,14 @@ Goal''
 ([ A key checkpoint:
 
 Goal''
-(EQUAL (HIDE (EV$ '(LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN)
-                  NIL))
-       '(HI JOHN))
+(EQUAL
+ (HIDE
+   (EV$ '(RETURN-LAST 'PROGN
+                      '(LAMBDA$ NIL
+                                (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                      (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+        NIL))
+ '(HI JOHN))
 
 *1 (Goal'') is pushed for proof by induction.
 
@@ -4357,9 +4421,14 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 *** Key checkpoint at the top level: ***
 
 Goal''
-(EQUAL (HIDE (EV$ '(LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN)
-                  NIL))
-       '(HI JOHN))
+(EQUAL
+ (HIDE
+   (EV$ '(RETURN-LAST 'PROGN
+                      '(LAMBDA$ NIL
+                                (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                      (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+        NIL))
+ '(HI JOHN))
 
 ACL2 Error in ( THM ...):  See :DOC failure.
 
@@ -4387,10 +4456,16 @@ Subgoal 11
 ([ A key checkpoint:
 
 Subgoal 11
-(IMPLIES (NOT (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
-         (EQUAL (UNTAME-EV$ '(LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN)
-                            NIL)
-                '(HI JOHN)))
+(IMPLIES
+ (NOT (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
+ (EQUAL
+   (UNTAME-EV$
+        '(RETURN-LAST 'PROGN
+                      '(LAMBDA$ NIL
+                                (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                      (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+        NIL)
+   '(HI JOHN)))
 
 *1 (Subgoal 11) is pushed for proof by induction.
 
@@ -4401,14 +4476,19 @@ Subgoal 10'
 ([ A key checkpoint:
 
 Subgoal 10'
-(IMPLIES (AND (EQUAL (CADR (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
-                     1)
-              (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT)
-              (EQUAL (CDDDR (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
-                     T))
-         (EQUAL (APPLY$ 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT
-                        '(JOHN))
-                '(HI JOHN)))
+(IMPLIES
+ (AND (EQUAL (CADR (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
+             1)
+      (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT)
+      (EQUAL (CDDDR (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
+             T))
+ (EQUAL
+  (CADR
+    (HIDE (EV$-LIST '('(LAMBDA$ NIL
+                                (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                      (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                    NIL)))
+  '(HI JOHN)))
 
 Normally we would attempt to prove Subgoal 10' by induction.  However,
 we prefer in this instance to focus on the original input conjecture
@@ -4424,25 +4504,35 @@ attempt has failed.
 Summary
 Form:  ( THM ...)
 Rules: ((:DEFINITION EV$)
+        (:DEFINITION EV$-LIST-DEF)
+        (:DEFINITION HIDE)
         (:DEFINITION NOT)
+        (:DEFINITION RETURN-LAST)
         (:DEFINITION SUITABLY-TAMEP-LISTP)
         (:DEFINITION SYNP)
         (:DEFINITION TAMEP)
         (:DEFINITION TAMEP-FUNCTIONP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART APPLY$-PRIMP)
+        (:EXECUTABLE-COUNTERPART BADGE-PRIM)
         (:EXECUTABLE-COUNTERPART BINARY-+)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART CONSP)
         (:EXECUTABLE-COUNTERPART EQUAL)
-        (:EXECUTABLE-COUNTERPART EV$-LIST)
+        (:EXECUTABLE-COUNTERPART EV$)
         (:EXECUTABLE-COUNTERPART INTEGERP)
         (:EXECUTABLE-COUNTERPART NOT)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART SYMBOLP)
+        (:EXECUTABLE-COUNTERPART ZP)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:META APPLY$-PRIM-META-FN-CORRECT)
+        (:REWRITE APPLY$-PRIMITIVE)
+        (:REWRITE APPLY$-PRIMP-BADGE)
         (:REWRITE BETA-REDUCTION)
+        (:REWRITE CDR-CONS)
         (:REWRITE ZP-OPEN))
 Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION EV$)
@@ -4460,20 +4550,31 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 *** Key checkpoints before reverting to proof by induction: ***
 
 Subgoal 11
-(IMPLIES (NOT (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
-         (EQUAL (UNTAME-EV$ '(LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN)
-                            NIL)
-                '(HI JOHN)))
+(IMPLIES
+ (NOT (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
+ (EQUAL
+   (UNTAME-EV$
+        '(RETURN-LAST 'PROGN
+                      '(LAMBDA$ NIL
+                                (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                      (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+        NIL)
+   '(HI JOHN)))
 
 Subgoal 10'
-(IMPLIES (AND (EQUAL (CADR (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
-                     1)
-              (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT)
-              (EQUAL (CDDDR (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
-                     T))
-         (EQUAL (APPLY$ 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT
-                        '(JOHN))
-                '(HI JOHN)))
+(IMPLIES
+ (AND (EQUAL (CADR (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
+             1)
+      (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT)
+      (EQUAL (CDDDR (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
+             T))
+ (EQUAL
+  (CADR
+    (HIDE (EV$-LIST '('(LAMBDA$ NIL
+                                (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                      (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                    NIL)))
+  '(HI JOHN)))
 
 ACL2 Error in ( THM ...):  See :DOC failure.
 
@@ -4607,7 +4708,10 @@ Goal''
   (HIDE
    (COMMENT
     "Call failed because the warrant for LOGIC-MODE-WITH-BADGE-AND-WARRANT is not known to be true"
-    (EV$ '(LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN)
+    (EV$ '(RETURN-LAST 'PROGN
+                       '(LAMBDA$ NIL
+                                 (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
+                       (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
          NIL)))
   '(HI JOHN)))
 
@@ -4639,7 +4743,10 @@ Goal''
   (HIDE
    (COMMENT
     "Call failed because the warrant for LOGIC-MODE-WITH-BADGE-AND-WARRANT is not known to be true"
-    (EV$ '(LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN)
+    (EV$ '(RETURN-LAST 'PROGN
+                       '(LAMBDA$ NIL
+                                 (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
+                       (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
          NIL)))
   '(HI JOHN)))
 

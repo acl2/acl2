@@ -821,11 +821,15 @@
      a type specifier sequence for the result (see @(tsee tyspecseq)),
      an identifier to name the function,
      and a list of parameter declarations.
-     Richer forms may be added in the future."))
+     Richer forms may be added in the future.")
+   (xdoc::p
+    "Since the body of a function definition must be a compound statement,
+     we formalize the body as
+     the list of block items that form the compound statement."))
   ((result tyspecseq)
    (name ident)
    (params param-declon-list)
-   (body stmt))
+   (body block-item-list))
   :tag :fundef
   :pred fundefp)
 

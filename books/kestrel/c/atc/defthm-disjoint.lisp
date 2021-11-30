@@ -45,7 +45,7 @@
   (b* (((when (endp pjs)) (mv nil nil))
        (pj (car pjs))
        ((when (eq pi pj)) (defthm-disjoint-inner-loop pi (cdr pjs)))
-       (name (acl2::packn-pos (list "NOT-" pj "-WHEN-" pi) 'atc))
+       (name (packn-pos (list "NOT-" pj "-WHEN-" pi) 'atc))
        (event `(defruled ,name
                  (implies (,pi x)
                           (not (,pj x)))

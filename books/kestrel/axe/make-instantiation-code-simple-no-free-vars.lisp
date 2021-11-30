@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 ;; This book provides a tool that, given the name of an evaluator, makes a hyp
-;; instantiation for that uses it.  This book is for the case where the hyp has
+;; instantiation function uses it.  This book is for the case where the hyp has
 ;; no free vars (vars not bound in the alist).
 
 ;; TODO: Deprecate this in favor of the "2" version

@@ -1156,8 +1156,8 @@
              pointer-nullp))
 
   (defruled update-array-of-update-array-less-ident
-    (implies (and (syntaxp (and (acl2::ffn-symb-p ptr 'read-var)
-                                (acl2::ffn-symb-p ptr2 'read-var)
+    (implies (and (syntaxp (and (ffn-symb-p ptr 'read-var)
+                                (ffn-symb-p ptr2 'read-var)
                                 (<< (fargn ptr2 1)
                                     (fargn ptr 1))))
                   (not (pointer-nullp ptr))

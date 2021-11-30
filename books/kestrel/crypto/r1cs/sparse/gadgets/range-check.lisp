@@ -1458,13 +1458,6 @@
                   (indices-for-1s high (+ 1 low) c)))
   :hints (("Goal" :in-theory (enable indices-for-1s))))
 
-(defthmd bitand-cases
-  (equal (acl2::bitand x y)
-         (if (and (equal (bvchop 1 x) 1)
-                  (equal (bvchop 1 y) 1))
-             1
-           0)))
-
 (defund renaming-correctp (pivar-renaming c n avars valuation p)
   (declare (xargs :guard (and (alistp pivar-renaming)
                               (nat-listp (strip-cars pivar-renaming))

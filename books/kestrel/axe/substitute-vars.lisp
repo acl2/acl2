@@ -27,28 +27,14 @@
 
 ;; See also substitute-vars2.lisp
 
-
-;move
-(defthmd len-of-0-and-len
-  (equal (< 0 (len x))
-         (consp x))
-  :hints (("Goal" :in-theory (e/d (len) (LEN-OF-CDR)))))
-
 ;move
 (defthm not-<-of-+-1-of-maxelem
- (implies (and (all-< x y)
-               (integerp y)
-               (all-integerp x)
-               (consp x))
-          (not (< y (+ 1 (maxelem x)))))
- :hints (("Goal" :in-theory (enable all-< maxelem))))
-
-;move
-(defthm consp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple-iff
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n))
-                (natp n))
-           (iff (consp (dargs (aref1 dag-array-name dag-array n)))
-                (dargs (aref1 dag-array-name dag-array n)))))
+  (implies (and (all-< x y)
+                (integerp y)
+                (all-integerp x)
+                (consp x))
+           (not (< y (+ 1 (maxelem x)))))
+  :hints (("Goal" :in-theory (enable all-< maxelem))))
 
 ;decides whether we should substitute (is it the nodenum of a var, and is it equated to a term that doesn't include itself?)
 ;; Returns (mv substp var).
@@ -159,7 +145,7 @@
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< literal-nodenum dag-len))
            (natp (mv-nth 2 (check-for-var-subst-literal literal-nodenum dag-array dag-len))))
-  :hints (("Goal" :in-theory (enable check-for-var-subst-literal len-of-0-and-len consp-of-cdr))))
+  :hints (("Goal" :in-theory (enable check-for-var-subst-literal <-of-0-and-len consp-of-cdr))))
 
 (defthm <-mv-nth-2-of-check-for-var-subst-literal
   (implies (and (mv-nth 0 (check-for-var-subst-literal literal-nodenum dag-array dag-len))
@@ -168,7 +154,7 @@
                 (< literal-nodenum dag-len))
            (< (mv-nth 2 (check-for-var-subst-literal literal-nodenum dag-array dag-len))
               dag-len))
-  :hints (("Goal" :in-theory (enable check-for-var-subst-literal len-of-0-and-len consp-of-cdr))))
+  :hints (("Goal" :in-theory (enable check-for-var-subst-literal <-of-0-and-len consp-of-cdr))))
 
 (defthm dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal
   (implies (and (mv-nth 0 (check-for-var-subst-literal literal-nodenum dag-array dag-len))
@@ -177,7 +163,7 @@
                 (< literal-nodenum dag-len))
            (dargp-less-than (mv-nth 3 (check-for-var-subst-literal literal-nodenum dag-array dag-len))
                             dag-len))
-  :hints (("Goal" :in-theory (enable check-for-var-subst-literal len-of-0-and-len consp-of-cdr))))
+  :hints (("Goal" :in-theory (enable check-for-var-subst-literal <-of-0-and-len consp-of-cdr))))
 
 (defthm dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal-gen
   (implies (and (mv-nth 0 (check-for-var-subst-literal literal-nodenum dag-array dag-len))

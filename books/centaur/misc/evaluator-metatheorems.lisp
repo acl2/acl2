@@ -569,6 +569,13 @@
                 (hons-acons 'cons-with-hint (cons 2 rune)
                             rest))
 
+               ;; special case 4: the-check
+               ;; (Matt K. addition 11/2021 for the-check addition to guard-holders
+               (((('consp 'x) ('equal ('car 'x) ''the-check))
+                 (!evfn . '((car (cdr (cdr (cdr x)))) a)))
+                (hons-acons 'the-check (cons 3 rune)
+                            rest))
+
                (((('consp 'x) ('equal ('car 'x) ('quote fn)))
                  (fn . list-of-ev-apps))
                 (if (list-of-ev-apps-p list-of-ev-apps evfn 0 'x)

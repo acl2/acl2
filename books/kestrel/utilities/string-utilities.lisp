@@ -21,13 +21,7 @@
 
 (local (in-theory (disable mv-nth)))
 
-;move
-(local
- (defthm <-of-0-and-len
-   (equal (< 0 (len x))
-          (consp x))
-   :hints (("Goal" :in-theory (e/d (len) (len-of-cdr))))))
-
+(local (in-theory (enable <-of-0-and-len)))
 
 ;this used to deal with strings, but it seemed nicer to use lists of chars
 ;terminator may often be #\;

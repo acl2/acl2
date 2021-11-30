@@ -86,6 +86,12 @@
          (< 0 (len x)))
   :hints (("Goal" :in-theory (e/d (len) (len-of-cdr)))))
 
+;; Disabled by default
+(defthmd <-of-0-and-len
+  (equal (< 0 (len x))
+         (consp x))
+  :hints (("Goal" :in-theory (e/d (len) (LEN-OF-CDR)))))
+
 ;todo: add versions with more cdrs?
 (defthm consp-of-cdr-when-len-known
   (implies (and (equal (len x) k)

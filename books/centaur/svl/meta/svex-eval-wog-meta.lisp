@@ -537,10 +537,12 @@ was ~st seconds."))
                       svexl-node-kind-wog-is-svexl-node-kind
                       sv::4vec-equal))))
 
-  (local
-   (defthm the-check-def
-       (equal (the-check x y z)
-              z)))
+; Commented out 11/2021 by Matt Kaufmann with the addition of the-check
+; to guard-holcers.
+;  (local
+;   (defthm the-check-def
+;       (equal (the-check x y z)
+;              z)))
 
   (local
    (defthm svex-env-fastlookup-wog-def-local

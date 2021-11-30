@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 ;; The functions in this book use the basic evaluator to evaluate ground terms.
+;; See also merge-term-into-dag-array-simple.lisp.
 
 (include-book "dag-array-builders2")
 (include-book "kestrel/typed-lists-light/all-consp" :dir :system)
@@ -537,20 +538,46 @@
   :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type-corollary3)
            :in-theory (disable merge-term-into-dag-array-basic-return-type-corollary3))))
 
+;use consp as the normal form
 (defthm merge-term-into-dag-array-basic-return-type-corollary4
   (implies (and (pseudo-termp term)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (symbol-alistp var-replacement-alist)
                 (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
                 ;;no errors:
+                (not (mv-nth 0 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
+           (equal (natp (mv-nth 1 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
+                  (not (consp (mv-nth 1 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))))
+  :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type)
+           :in-theory (disable merge-term-into-dag-array-basic-return-type
+                               dargp-of-mv-nth-1-of-merge-term-into-dag-array-basic
+                               dargp-less-than-of-mv-nth-1-of-merge-term-into-dag-array-basic))))
+
+;use consp as the normal form
+(defthm merge-term-into-dag-array-basic-return-type-corollary4b
+  (implies (and (pseudo-termp term)
+                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                (symbol-alistp var-replacement-alist)
+                (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                ;;no errors:
+                (not (mv-nth 0 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
+           (equal (integerp (mv-nth 1 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
+                  (not (consp (mv-nth 1 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))))
+  :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type)
+           :in-theory (disable merge-term-into-dag-array-basic-return-type
+                               dargp-of-mv-nth-1-of-merge-term-into-dag-array-basic
+                               dargp-less-than-of-mv-nth-1-of-merge-term-into-dag-array-basic))))
+
+(defthm merge-term-into-dag-array-basic-return-type-corollary5
+  (implies (and (pseudo-termp term)
+                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                (symbol-alistp var-replacement-alist)
+                (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                ;;no errors:
                 (not (mv-nth 0 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
-                (not (consp (mv-nth 1 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
+           ;     (not (consp (mv-nth 1 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
                 )
-           (natp (mv-nth 1 (merge-term-into-dag-array-basic
-                            term
-                            var-replacement-alist
-                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                            interpreted-function-alist))))
+           (<= 0 (mv-nth 1 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
   :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type)
            :in-theory (disable merge-term-into-dag-array-basic-return-type
                                dargp-of-mv-nth-1-of-merge-term-into-dag-array-basic

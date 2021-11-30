@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax")
 (include-book "literal-evaluation")
+(include-book "modes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -413,32 +414,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum mode
-  :short "Fixtype of modes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "[Yul: Specification of Yul: Formal Specification] introduces
-     the notion of mode, which indicates how a statement completes execution.")
-   (xdoc::p
-    "We disable the executable counterparts of the constructors of this type,
-     because we want to treat them abstractly.
-     Their definition is already disabled by default, as it should,
-     but the fact that their executable counterpart is enabled
-     defeats the disabling of their definition, given that they are nullary."))
-  (:regular ())
-  (:break ())
-  (:continue ())
-  (:leave ())
-  :pred modep
-  ///
-  (in-theory (disable (:e mode-regular)
-                      (:e mode-break)
-                      (:e mode-continue)
-                      (:e mode-leave))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod eoutcome
   :short "Fixtype of expression outcomes."
   :long
@@ -629,8 +604,7 @@
                                              :values nil))
          ((ok (eoutcome outcome))
           (exec-expression (car exprs) cstate (1- limit)))
-         ((unless (and (consp outcome.values)
-                       (endp (cdr outcome.values))))
+         ((unless (equal (len outcome.values) 1))
           (err (list :not-single-value outcome.values)))
          (val (car outcome.values))
          ((ok (eoutcome outcome))
@@ -762,7 +736,7 @@
        which may result in new and updated variables.
        We defensively stop with an error if the initialization block
        terminates with @('break') or @('continue');
-       if it termnates with @('leave'), we also terminate with @('leave'),
+       if it terminates with @('leave'), we also terminate with @('leave'),
        removing extra variables and restoring the function state.
        We delegate the execution of the loop iterations
        to another ACL2 function.
@@ -789,8 +763,7 @@
         :some
         (b* (((ok (eoutcome outcome))
               (exec-expression stmt.init.val cstate (1- limit)))
-             ((unless (and (consp outcome.values)
-                           (not (consp (cdr outcome.values)))))
+             ((unless (equal (len outcome.values) 1))
               (err (list :not-single-value outcome.values)))
              ((ok cstate)
               (add-var-value stmt.name (car outcome.values) outcome.cstate)))
@@ -819,8 +792,7 @@
        (b* (((ok var) (path-to-var stmt.target))
             ((ok (eoutcome outcome))
              (exec-expression stmt.value cstate (1- limit)))
-            ((unless (and (consp outcome.values)
-                          (not (consp (cdr outcome.values)))))
+            ((unless (equal (len outcome.values) 1))
              (err (list :not-single-value outcome.values)))
             ((ok cstate)
              (write-var-value var (car outcome.values) outcome.cstate)))
@@ -843,8 +815,7 @@
        :if
        (b* (((ok (eoutcome outcome))
              (exec-expression stmt.test cstate (1- limit)))
-            ((unless (and (consp outcome.values)
-                          (not (consp (cdr outcome.values)))))
+            ((unless (equal (len outcome.values) 1))
              (err (list :if-test-not-single-value outcome.values)))
             (val (car outcome.values)))
          (if (equal val (value 0))
@@ -883,8 +854,7 @@
        :switch
        (b* (((ok (eoutcome outcome))
              (exec-expression stmt.target cstate (1- limit)))
-            ((unless (and (consp outcome.values)
-                          (not (consp (cdr outcome.values)))))
+            ((unless (equal (len outcome.values) 1))
              (err (list :not-single-value outcome.values))))
          (exec-switch-rest stmt.cases
                            stmt.default
@@ -989,8 +959,7 @@
                                    (block-fix body))))
          ((ok (eoutcome outcome))
           (exec-expression test cstate (1- limit)))
-         ((unless (and (consp outcome.values)
-                       (not (consp (cdr outcome.values)))))
+         ((unless (equal (len outcome.values) 1))
           (err (list :for-test-not-single-value outcome.values)))
          ((when (equal (car outcome.values) (value 0)))
           (make-soutcome :cstate outcome.cstate :mode (mode-regular)))

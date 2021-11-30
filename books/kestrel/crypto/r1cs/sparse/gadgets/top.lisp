@@ -16,6 +16,7 @@
 (include-book "selection")
 (include-book "nonzero")
 (include-book "xor")
+(include-book "nand")
 (include-book "packing")
 (include-book "product")
 (include-book "bitand")

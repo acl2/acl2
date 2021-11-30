@@ -13,36 +13,15 @@
 (in-package "ACL2")
 
 ;; This book contains a variant of the main tool that skips a check by taking
-;; advantage of a stronger guard: that all vars are bound in the alist:
+;; advantage of a stronger guard: that all vars are bound in the alist.
 
 ;; This book provides a tool that, given the name of an evaluator, makes a hyp
-;; instantiation for that uses it.  This book is for the case where the hyp has
-;; no free vars (vars not bound in the alist).
+;; instantiation function that uses it.  This book is for the case where the
+;; hyp has no free vars (vars not bound in the alist).
 
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
 (include-book "all-dargp-less-than")
 (include-book "axe-trees")
-
-(defthmd assoc-equal-iff-member-equal-of-strip-cars
-  (implies (alistp alist)
-           (iff (assoc-equal key alist)
-                (member-equal key (strip-cars alist))))
-  :hints (("Goal" :in-theory (enable memberp strip-cars assoc-equal))))
-
-(defthm consp-of-assoc-equal
-  (implies (alistp alist)
-           (iff (consp (assoc-equal key alist))
-                (assoc-equal key alist)))
-  :hints (("Goal" :in-theory (enable assoc-equal))))
-
-;; (defthm len-of-car-when-alistp-cheap
-;;   (implies (alistp alist)
-;;            (equal (len (car alist))
-;;                   (if (consp alist)
-;;                       1
-;;                     0)))
-;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-;;   :hints (("Goal" :in-theory (enable alistp))))
 
 (defun make-instantiation-code-simple-no-free-vars2-fn (suffix evaluator-base-name)
   (declare (xargs :guard (and (symbolp suffix)
@@ -56,6 +35,7 @@
        (local (include-book "kestrel/alists-light/alistp" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
        (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
+       (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
        (local (in-theory (disable alistp symbol-alistp myquotep dargp)))
 
@@ -151,7 +131,7 @@
           :flag ,instantiate-hyp-lst-name)
         :hints (("Goal" :in-theory (enable ,instantiate-hyp-name
                                            ,instantiate-hyp-lst-name
-                                           assoc-equal-iff-member-equal-of-strip-cars))))
+                                           assoc-equal-iff))))
 
        (,(pack$ 'defthm-flag- instantiate-hyp-name)
         (defthm ,(pack$ 'bounded-axe-treep-of- instantiate-hyp-name)
