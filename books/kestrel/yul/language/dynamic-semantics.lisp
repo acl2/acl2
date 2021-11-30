@@ -145,6 +145,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define funinfo-for-fundef ((fdef fundefp))
+  :returns (info funinfop)
+  :short "Function information for a function definition."
+  (make-funinfo :inputs (fundef->inputs fdef)
+                :outputs (fundef->outputs fdef)
+                :body (fundef->body fdef))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defomap funenv
   :short "Fixtype of function environments."
   :long
@@ -175,16 +185,6 @@
   (implies (funenvp x)
            (not (resulterrp x)))
   :enable (resulterrp funenvp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define funinfo-for-fundef ((fdef fundefp))
-  :returns (info funinfop)
-  :short "Function information for a function definition."
-  (make-funinfo :inputs (fundef->inputs fdef)
-                :outputs (fundef->outputs fdef)
-                :body (fundef->body fdef))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
