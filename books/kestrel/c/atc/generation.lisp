@@ -40,6 +40,7 @@
 
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
+(local (include-book "projects/apply/top" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -308,13 +309,6 @@
   :short "Check a variable against a symbol table."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "This is used when we encounter a @(tsee let) in code generation.
-     We need to decide how to treat the @(tsee let)
-     based on whether the variable is new or not,
-     and whether if not new it is in the innermost scope or not,
-     and whether if new there is a different variable with the same symbol name.
-     This function checks all of these conditions.")
    (xdoc::p
     "If the variable is in the symbol table, we return its type,
      along with a flag indicating whether
@@ -1273,18 +1267,16 @@
                (val pseudo-termp)
                (body pseudo-termp)
                (wrapper? symbolp))
-  :short "Check if a term may represent
-          a local variable declaration
-          or a local variable assignment
-          or a code affecting a single variable,
-          followed by more code."
+  :short "Check if a term may be a @(tsee let) statement term."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "The forms of these terms are described in the user documentation.")
    (xdoc::p
     "Here we recognize and decompose statement terms that are @(tsee let)s.
      In translated form, @('(let ((var val)) body)')
      is @('((lambda (var) body) val)').
-     However, if @('rest') has other free variables in addition to @('var'),
+     However, if @('body') has other free variables in addition to @('var'),
      those appear as both formal parameters and actual arguments, e.g.
      @('((lambda (var x y) rest<var,x,y>) val x y)'):
      this is because ACL2 translated terms have all closed lambda expressions,
@@ -1328,6 +1320,126 @@
     (implies yes/no
              (< (+ (pseudo-term-count val)
                    (pseudo-term-count body))
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-declar/assign-n ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (wrapper symbolp)
+               (n natp)
+               (wrapped pseudo-termp))
+  :short "Check if a term is a call of @('declar<n>') or @('assign<n>')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the macros described in @(see atc-let-designations).
+     These macros expand to")
+   (xdoc::codeblock
+    "(mv-let (*1 *2 ... *<n>)"
+    "  <wrapped>"
+    "  (mv (<wrapper> *1) *2 ... *<n>))")
+   (xdoc::p
+    "which in translated terms looks like")
+   (xdoc::codeblock
+    "((lambda (mv)"
+    "         ((lambda (*1 *2 ... *<n>)"
+    "                  (cons ((<wrapper> *1) (cons *2 ... (cons *<n> 'nil)))))"
+    "          (mv-nth '0 mv)"
+    "          (mv-nth '1 mv)"
+    "          ..."
+    "          (mv-nth '<n-1> mv)))"
+    " <wrapped>)")
+   (xdoc::p
+    "So here we attempt to recognize this for of translated terms.
+     If successful, we return @('<wrapper>'), @('<n>'), and @('<wrapped>')."))
+  (b* (((mv okp mv-var vars indices hides wrapped body)
+        (fty-check-mv-let-call term))
+       ((unless okp) (mv nil nil 0 nil))
+       ((unless (eq mv-var 'mv)) (mv nil nil 0 nil))
+       (n (len vars))
+       ((unless (>= n 2)) (mv nil nil 0 nil))
+       ((unless (equal vars
+                       (loop$ for i of-type integer from 1 to n
+                              collect (pack '* i))))
+        (mv nil nil 0 nil))
+       ((unless (equal indices
+                       (loop$ for i of-type integer from 0 to (1- n)
+                              collect i)))
+        (mv nil nil 0 nil))
+       ((unless (equal hides (repeat n nil)))
+        (mv nil nil 0 nil))
+       ((mv okp terms) (fty-check-list-call body))
+       ((unless okp) (mv nil nil 0 nil))
+       ((unless (equal (len terms) n)) (mv nil nil 0 nil))
+       ((cons term terms) terms)
+       ((unless (pseudo-term-case term :fncall)) (mv nil nil 0 nil))
+       (wrapper (pseudo-term-fncall->fn term))
+       ((unless (member-eq wrapper '(declar assign))) (mv nil nil 0 nil))
+       ((unless (equal (pseudo-term-fncall->args term) (list '*1)))
+        (mv nil nil 0 nil))
+       ((unless (equal terms
+                       (loop$ for i of-type integer from 2 to n
+                              collect (pack '* i))))
+        (mv nil nil 0 nil)))
+    (mv t wrapper n wrapped))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-declar/assign-n-wrapped
+    (implies yes/no
+             (< (pseudo-term-count wrapped)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-mv-let ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (var? symbolp)
+               (vars symbol-listp)
+               (indices nat-listp)
+               (val pseudo-termp)
+               (body pseudo-termp)
+               (wrapper? symbolp))
+  :short "Check if a term may be an @(tsee mv-let) statement term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The forms of these terms are described in the user documentation.")
+   (xdoc::p
+    "First, we check if the term is an @(tsee mv-let),
+     obtaining variables, indices, value term, and body term.
+     Then we check whether the value term is
+     a @('declar<n>') or an @('assign<n>'):
+     in this case, we return the first variable
+     separately from the other variables,
+     and we also return
+     the corresponding @(tsee declar) or @(tsee assign) wrapper.
+     Otherwise, we return all the variables together,
+     with @('nil') as the @('var?') and @('wrapper?') results."))
+  (b* (((mv okp & vars indices & val body) (fty-check-mv-let-call term))
+       ((when (not okp)) (mv nil nil nil nil nil nil nil))
+       ((mv okp wrapper & wrapped) (atc-check-declar/assign-n val))
+       ((when (not okp)) (mv t nil vars indices val body nil)))
+    (mv t (car vars) (cdr vars) indices wrapped body wrapper))
+
+  :prepwork
+  ((defrule verify-guards-lemma
+     (implies (symbol-listp x)
+              (iff (consp x) x))))
+
+  ///
+
+  (defret pseudo-term-count-of-atc-check-mv-let-val
+    (implies yes/no
+             (< (pseudo-term-count val)
+                (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-mv-let-body
+    (implies yes/no
+             (< (pseudo-term-count body)
                 (pseudo-term-count term)))
     :rule-classes :linear))
 
@@ -2028,12 +2140,34 @@
      during the generated proofs.")
    (xdoc::p
     "If the term is a @(tsee mv-let),
-     we ensure that all its bound variables are in scope.
-     We recursively treat the bound term as
-     a statement term affecting the bound variables,
-     generating block items for it;
-     then we continue processing the body of the @(tsee mv-let)
-     as a term affecting the variables in @('affect').
+     there are three cases.
+     If the term involves a @('declar<n>') wrapper,
+     we ensure that a variable with
+     the same symbol name as the first bound variable
+     is not already in scope
+     (i.e. in the symbol table)
+     and that the name is a portable ASCII identifier;
+     we generate a declaration for the variable,
+     initialized with the expression obtained
+     from the term that the variable is bound to,
+     which also determines the type of the variable,
+     and which must affect the bound variables except the first one;
+     the type must not be a pointer type (code generation fails if it is).
+     Otherwise, if the term involves an @('assign<n>') wrapper,
+     we ensure that the first bound variable is assignable,
+     which implies that it must be in scope,
+     and we also ensure that it has the same type as the one in scope;
+     we generate an assignment whose right-hand side is
+     obtained from the unwrapped term,
+     which must be an expression term returning a C value
+     that affects the bound variables except the first one.
+     Otherwise, if the term involves no wrapper,
+     we ensure that the bound variables are all assignable,
+     and that the non-wrapped term has the form
+     described in the user documentation;
+     we generate code that affects the variables from that term.
+     In all cases, we recursively generate the block items for the body
+     and we put those just after the preceding code.
      We use the sum of the two limits as the overall limit:
      thus, after @(tsee exec-block-item-list) executes
      the block items for the bound term,
@@ -2042,32 +2176,9 @@
     "If the term is a @(tsee let), there are four cases.
      If the binding has the form of an array write,
      we generate an array assignment.
-     Otherwise, if the term involves the @(tsee declar) wrapper,
-     we ensure that a variable with the same symbol name is not already in scope
-     (i.e. in the symbol table)
-     and that the name is a portable ASCII identifier;
-     we generate a declaration for the variable,
-     initialized with the expression obtained
-     from the term that the variable is bound to,
-     which also determines the type of the variable,
-     and which must affect no variables;
-     the type must not be a pointer type (code generation fails if it is).
-     Otherwise, if the term involves the @(tsee assign) wrapper,
-     we ensure that the variable is assignable,
-     which implies that it must be in scope,
-     and we also ensure that it has the same type as the one in scope;
-     we generate an assignment whose right-hand side is
-     obtained from the unwrapped term,
-     which must be an expression term returning a C value.
-     Otherwise, if the term involves no wrapper,
-     we also ensure that the variable is assignable,
-     and that the non-wrapped term represents a conditional of loop in C;
-     we generate code that affects the variable from that term.
-     In all cases, we recursively generate the block items for the body
-     and we put those just after the preceding code.")
-   (xdoc::p
-    "In the @(tsee let) case whose translation is explained above,
-     the limit is calculated as follows.
+     The other three cases are similar to
+     the three @(tsee mv-let) cases above.
+     The limit is calculated as follows.
      For the case of the term representing code that affects variables,
      we add up the two limits,
      similarly to the @(tsee mv-let) case.
@@ -2243,13 +2354,174 @@
                                 :else (make-stmt-compound :items else-items))))
             type
             limit))))
-       ((mv okp & vars indices & val body) (fty-check-mv-let-call term))
+       ((mv okp var? vars indices val body wrapper?) (atc-check-mv-let term))
        ((when okp)
-        (b* (((unless (> (len vars) 1))
-              (mv (raise "Internal error: MV-LET ~x0 has less than 2 variables."
-                         term)
-                  irr
-                  state))
+        (b* ((all-vars (if var? (cons var? vars) vars))
+             (val-instance (fty-fsublis-var var-term-alist val))
+             (vals (atc-make-mv-nth-terms indices val-instance))
+             (var-term-alist-body
+              (atc-update-var-term-alist all-vars vals var-term-alist))
+             ((when (eq wrapper? 'declar))
+              (b* ((var var?)
+                   ((mv type? & errorp) (atc-check-var var inscope))
+                   ((when errorp)
+                    (er-soft+ ctx t irr
+                              "When generating C code for the function ~x0, ~
+                               a new variable ~x1 has been encountered ~
+                               that has the same symbol name as, ~
+                               but different package name from, ~
+                               a variable already in scope. ~
+                               This is disallowed."
+                              fn var))
+                   ((when type?)
+                    (er-soft+ ctx t irr
+                              "The variable ~x0 in the function ~x1 ~
+                               is already in scope and cannot be re-declared."
+                              var fn))
+                   ((unless (atc-ident-stringp (symbol-name var)))
+                    (er-soft+ ctx t irr
+                              "The symbol name ~s0 of ~
+                               the MV-LET variable ~x1 of the function ~x2 ~
+                               must be a portable ASCII C identifier, ~
+                               but it is not."
+                              (symbol-name var) var fn))
+                   ((mv type?-list innermostp-list)
+                    (atc-get-vars-check-innermost vars inscope))
+                   ((when (member-eq nil type?-list))
+                    (er-soft+ ctx t irr
+                              "When generating C code for the function ~x0, ~
+                               an attempt is made to modify the variables ~x1, ~
+                               not all of which are in scope."
+                              fn vars))
+                   ((unless (atc-vars-assignablep vars innermostp-list affect))
+                    (er-soft+ ctx t irr
+                              "When generating C code for the function ~x0, ~
+                               an attempt is made to modify the variables ~x1, ~
+                               not all of which are assignable."
+                              fn vars))
+                   ((mv erp
+                        (list init-expr init-type init-affect init-limit)
+                        state)
+                    (atc-gen-expr-cval val
+                                       var-term-alist
+                                       inscope
+                                       fn
+                                       prec-fns
+                                       ctx
+                                       state))
+                   ((when erp) (mv erp irr state))
+                   ((unless (equal init-affect vars))
+                    (er-soft+ ctx t irr
+                              "The term ~x0 to which the variable ~x1 is bound ~
+                               must affect the variables ~x2, ~
+                               but it affects ~x3 instead."
+                              val var vars init-affect))
+                   ((when (type-case init-type :pointer))
+                    (er-soft+ ctx t irr
+                              "The term ~x0 to which the variable ~x1 is bound ~
+                               must not have a C pointer type, ~
+                               but it has type ~x2 instead."
+                              val var init-type))
+                   (declon (make-declon-var :type (atc-gen-tyspecseq init-type)
+                                            :declor (make-declor
+                                                     :ident
+                                                     (make-ident
+                                                      :name (symbol-name var)))
+                                            :init init-expr))
+                   (item (block-item-declon declon))
+                   (inscope (atc-add-var var init-type inscope))
+                   ((er (list body-items body-type body-limit))
+                    (atc-gen-stmt body
+                                  var-term-alist-body
+                                  inscope
+                                  loop-flag
+                                  affect
+                                  fn
+                                  prec-fns
+                                  proofs
+                                  ctx
+                                  state))
+                   (type body-type)
+                   (limit (pseudo-term-fncall
+                           'binary-+
+                           (list (pseudo-term-quote 3)
+                                 (pseudo-term-fncall
+                                  'binary-+
+                                  (list init-limit body-limit))))))
+                (acl2::value (list (cons item body-items)
+                                   type
+                                   limit))))
+             ((when (eq wrapper? 'assign))
+              (b* ((var var?)
+                   ((mv type? innermostp &) (atc-check-var var inscope))
+                   ((unless (atc-var-assignablep var innermostp affect))
+                    (er-soft+ ctx t irr
+                              "When generating C code for the function ~x0, ~
+                               an attempt is being made ~
+                               to modify a non-assignable variable ~x1."
+                              fn var))
+                   (prev-type type?)
+                   ((mv erp
+                        (list rhs-expr rhs-type rhs-affect rhs-limit)
+                        state)
+                    (atc-gen-expr-cval val
+                                       var-term-alist
+                                       inscope
+                                       fn
+                                       prec-fns
+                                       ctx
+                                       state))
+                   ((when erp) (mv erp irr state))
+                   ((unless (equal prev-type rhs-type))
+                    (er-soft+ ctx t irr
+                              "The type ~x0 of the term ~x1 ~
+                               assigned to the LET variable ~x2 ~
+                               of the function ~x3 ~
+                               differs from the type ~x4 ~
+                               of a variable with the same symbol in scope."
+                              rhs-type val var fn prev-type))
+                   ((unless (equal rhs-affect vars))
+                    (er-soft+ ctx t irr
+                              "The term ~x0 to which the variable ~x1 is bound ~
+                               must affect the variables ~x2, ~
+                               but it affects ~x3 instead."
+                              val var vars rhs-affect))
+                   ((when (type-case rhs-type :pointer))
+                    (er-soft+ ctx t irr
+                              "The term ~x0 to which the variable ~x1 is bound ~
+                               must not have a C pointer type, ~
+                               but it has type ~x2 instead."
+                              val var rhs-type))
+                   (asg (make-expr-binary
+                         :op (binop-asg)
+                         :arg1 (expr-ident (make-ident :name (symbol-name var)))
+                         :arg2 rhs-expr))
+                   (stmt (stmt-expr asg))
+                   (item (block-item-stmt stmt))
+                   ((er (list body-items body-type body-limit))
+                    (atc-gen-stmt body
+                                  var-term-alist
+                                  inscope
+                                  loop-flag
+                                  affect
+                                  fn
+                                  prec-fns
+                                  proofs
+                                  ctx
+                                  state))
+                   (type body-type)
+                   (limit (pseudo-term-fncall
+                           'binary-+
+                           (list (pseudo-term-quote 6)
+                                 (pseudo-term-fncall
+                                  'binary-+
+                                  (list rhs-limit body-limit))))))
+                (acl2::value (list (cons item body-items)
+                                   type
+                                   limit))))
+             ((unless (eq wrapper? nil))
+              (prog2$ (raise "Internal error: LET wrapper is ~x0." wrapper?)
+                      (acl2::value irr)))
              ((mv type?-list innermostp-list)
               (atc-get-vars-check-innermost vars inscope))
              ((when (member-eq nil type?-list))
@@ -2290,10 +2562,6 @@
                          has the non-void type ~x2, ~
                          which is disallowed."
                         fn val xform-type))
-             (val-instance (fty-fsublis-var var-term-alist val))
-             (vals (atc-make-mv-nth-terms indices val-instance))
-             (var-term-alist-body
-              (atc-update-var-term-alist vars vals var-term-alist))
              ((er (list body-items body-type body-limit))
               (atc-gen-stmt body
                             var-term-alist-body
@@ -2848,7 +3116,8 @@
              (pseudo-termp x))
     :enable pseudo-termp)
 
-  (verify-guards atc-gen-stmt))
+  (verify-guards atc-gen-stmt
+    :hints (("Goal" :in-theory (disable atc-gen-stmt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3798,20 +4067,11 @@
      by other hypotheses in the generated correctness theorems."))
   (b* (((when (endp pointer-vars)) nil)
        (var (car pointer-vars))
-       (hyps (atc-gen-diff-address-hyps-aux var (cdr pointer-vars)))
+       (hyps (loop$ for var2 in (cdr pointer-vars)
+                    collect `(not (equal (pointer->address? ,var)
+                                         (pointer->address? ,var2)))))
        (more-hyps (atc-gen-diff-address-hyps (cdr pointer-vars))))
-    (append hyps more-hyps))
-
-  :prepwork
-  ((define atc-gen-diff-address-hyps-aux ((var symbolp)
-                                          (pointer-vars symbol-listp))
-     :returns (hyps true-listp)
-     :parents nil
-     (b* (((when (endp pointer-vars)) nil)
-          (hyp `(not (equal (pointer->address? ,var)
-                            (pointer->address? ,(car pointer-vars)))))
-          (hyps (atc-gen-diff-address-hyps-aux var (cdr pointer-vars))))
-       (cons hyp hyps)))))
+    (append hyps more-hyps)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
