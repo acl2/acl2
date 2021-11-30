@@ -1153,22 +1153,22 @@
       (b* ((lemma-name-1 (intern$ (concatenate
                                    'string
                                    "ASYNC-ADDER$INVALID-RESULT-"
-                                   (str::natstr (1- n)))
+                                   (str::nat-to-dec-string (1- n)))
                                   "ADE"))
            (lemma-name-2 (intern$ (concatenate
                                    'string
                                    "ASYNC-ADDER$STATE-INVARIANT-"
-                                   (str::natstr (1- n)))
+                                   (str::nat-to-dec-string (1- n)))
                                   "ADE"))
            (st-trans (intern$ (concatenate
                                'string
                                "ASYNC-ADDER$ST-TRANS-"
-                               (str::natstr (1- n)))
+                               (str::nat-to-dec-string (1- n)))
                               "ADE"))
            (st-trans->numsteps (intern$ (concatenate
                                          'string
                                          "*ASYNC-ADDER$ST-TRANS-"
-                                         (str::natstr (1- n))
+                                         (str::nat-to-dec-string (1- n))
                                          "->NUMSTEPS*")
                                         "ADE")))
 
@@ -1473,22 +1473,22 @@
             (intern$ (concatenate
                       'string
                       "ASYNC-ADDER-LAST-ROUND$INVALID-RESULT-"
-                      (str::natstr (1- n)))
+                      (str::nat-to-dec-string (1- n)))
                      "ADE"))
            (lemma-name-2 (intern$ (concatenate
                                    'string
                                    "ASYNC-ADDER-LAST-ROUND$SIM-"
-                                   (str::natstr (1- n)))
+                                   (str::nat-to-dec-string (1- n)))
                                   "ADE"))
            (st-trans (intern$ (concatenate
                                'string
                                "ASYNC-ADDER-LAST-ROUND$ST-TRANS-"
-                               (str::natstr (1- n)))
+                               (str::nat-to-dec-string (1- n)))
                               "ADE"))
            (st-trans->numsteps (intern$ (concatenate
                                          'string
                                          "*ASYNC-ADDER-LAST-ROUND$ST-TRANS-"
-                                         (str::natstr (1- n))
+                                         (str::nat-to-dec-string (1- n))
                                          "->NUMSTEPS*")
                                         "ADE")))
 

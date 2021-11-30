@@ -669,55 +669,55 @@ hex-digit-chars-value), and somewhat better performance:</p>
                  (cons #\0 acc)
                (revappend-nat-to-hex-chars-aux n acc))))
 
-(define natstr16
+(define nat-to-hex-string
   :short "Convert a natural number into a string with its hex digits."
   ((n natp))
   :returns (str stringp :rule-classes :type-prescription)
-  :long "<p>For instance, @('(natstr16 31)') is @('\"1F\"').</p>"
+  :long "<p>For instance, @('(nat-to-hex-string 31)') is @('\"1F\"').</p>"
   :inline t
   (implode (nat-to-hex-chars n))
   ///
-  (defthm hex-digit-char-listp-of-natstr
-    (hex-digit-char-listp (explode (natstr16 n))))
-  (defthm natstr16-one-to-one
-    (equal (equal (natstr16 n) (natstr16 m))
+  (defthm hex-digit-char-listp-of-nat-to-dec-string
+    (hex-digit-char-listp (explode (nat-to-hex-string n))))
+  (defthm nat-to-hex-string-one-to-one
+    (equal (equal (nat-to-hex-string n) (nat-to-hex-string m))
            (equal (nfix n) (nfix m))))
-  (defthm hex-digit-chars-value-of-natstr
-    (equal (hex-digit-chars-value (explode (natstr16 n)))
+  (defthm hex-digit-chars-value-of-nat-to-dec-string
+    (equal (hex-digit-chars-value (explode (nat-to-hex-string n)))
            (nfix n)))
-  (defthm natstr16-nonempty
-    (not (equal (natstr16 n) ""))))
+  (defthm nat-to-hex-string-nonempty
+    (not (equal (nat-to-hex-string n) ""))))
 
-(define natstr16-list
+(define nat-to-hex-string-list
   :short "Convert a list of natural numbers into a list of hex digit strings."
   ((x nat-listp))
   :returns (strs string-listp)
   (if (atom x)
       nil
-    (cons (natstr16 (car x))
-          (natstr16-list (cdr x))))
+    (cons (nat-to-hex-string (car x))
+          (nat-to-hex-string-list (cdr x))))
   ///
-  (defthm natstr16-list-when-atom
+  (defthm nat-to-hex-string-list-when-atom
     (implies (atom x)
-             (equal (natstr16-list x)
+             (equal (nat-to-hex-string-list x)
                     nil)))
-  (defthm natstr16-list-of-cons
-    (equal (natstr16-list (cons a x))
-           (cons (natstr16 a)
-                 (natstr16-list x)))))
+  (defthm nat-to-hex-string-list-of-cons
+    (equal (nat-to-hex-string-list (cons a x))
+           (cons (nat-to-hex-string a)
+                 (nat-to-hex-string-list x)))))
 
 
-(define natsize16-aux
-  :parents (natsize16)
+(define nat-to-hex-string-size-aux
+  :parents (nat-to-hex-string-size)
   ((n natp))
   :returns (size natp :rule-classes :type-prescription)
   (if (zp n)
       0
-    (+ 1 (natsize16-aux (ash n -4))))
+    (+ 1 (nat-to-hex-string-size-aux (ash n -4))))
   :prepwork ((local (in-theory (enable nat-to-hex-chars))))
   ///
   ;; BOZO perhaps eventually reimplement this using integer-length.  Here are
-  ;; some fledgling steps toward that... natsize16 is probably something like:
+  ;; some fledgling steps toward that... nat-to-hex-string-size is probably something like:
   ;;   (+ 1 (ash (+ -1 (integer-length x)) -2)))
 
   ;; (local (defthm c1
@@ -736,16 +736,16 @@ hex-digit-chars-value), and somewhat better performance:</p>
   ;;                  :in-theory (acl2::enable* acl2::ihsext-recursive-redefs
   ;;                                            acl2::logtail**)))))
 
-  ;; (local (defthm natsize16-aux-redef
-  ;;          (equal (natsize16-aux n)
+  ;; (local (defthm nat-to-hex-string-size-aux-redef
+  ;;          (equal (nat-to-hex-string-size-aux n)
   ;;                 (if (zp n)
   ;;                     0
-  ;;                   (+ 1 (natsize16-aux
+  ;;                   (+ 1 (nat-to-hex-string-size-aux
   ;;                         (acl2::logcdr (acl2::logcdr (acl2::logcdr (acl2::logcdr n))))))))
-  ;;          :rule-classes ((:definition :clique (natsize16-aux)
-  ;;                          :controller-alist ((natsize16-aux t))))))
+  ;;          :rule-classes ((:definition :clique (nat-to-hex-string-size-aux)
+  ;;                          :controller-alist ((nat-to-hex-string-size-aux t))))))
 
-  ;; (local (in-theory (disable natsize16-aux)))
+  ;; (local (in-theory (disable nat-to-hex-string-size-aux)))
 
   ;; (DEFTHM ACL2::INTEGER-LENGTH**
   ;;   (EQUAL (INTEGER-LENGTH I)
@@ -757,12 +757,12 @@ hex-digit-chars-value), and somewhat better performance:</p>
   ;;   ((:DEFINITION :CLIQUE (INTEGER-LENGTH)
   ;;     :CONTROLLER-ALIST ((INTEGER-LENGTH T)))))
 
-  (defthm natsize16-aux-redef
-    (equal (natsize16-aux n)
+  (defthm nat-to-hex-string-size-aux-redef
+    (equal (nat-to-hex-string-size-aux n)
            (len (basic-nat-to-hex-chars n)))
     :hints(("Goal" :in-theory (enable basic-nat-to-hex-chars)))))
 
-(define natsize16
+(define nat-to-hex-string-size
   :short "Number of characters in the hexadecimal representation of a natural."
   ((x natp))
   :returns (size posp :rule-classes :type-prescription)
@@ -771,7 +771,7 @@ hex-digit-chars-value), and somewhat better performance:</p>
        :exec
        (if (zp x)
            1
-         (natsize16-aux x)))
+         (nat-to-hex-string-size-aux x)))
   :prepwork ((local (in-theory (enable nat-to-hex-chars)))))
 
 (define parse-hex-from-charlist

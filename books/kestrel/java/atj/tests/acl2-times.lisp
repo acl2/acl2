@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -65,10 +65,10 @@
        (seconds-int (floor milliseconds-int 1000))
        (seconds-frac (mod milliseconds-int 1000))
        (frac-str (cond ((< seconds-frac 10)
-                        (str::cat "00" (str::natstr seconds-frac)))
+                        (str::cat "00" (str::nat-to-dec-string seconds-frac)))
                        ((< seconds-frac 100)
-                        (str::cat "0" (str::natstr seconds-frac)))
-                       (t (str::natstr seconds-frac)))))
+                        (str::cat "0" (str::nat-to-dec-string seconds-frac)))
+                       (t (str::nat-to-dec-string seconds-frac)))))
     (msg "~x0.~s1" seconds-int frac-str)))
 
 ; Obtain the content of the specified file, as a list of natural numbers.

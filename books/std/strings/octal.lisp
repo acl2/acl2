@@ -640,60 +640,60 @@ oct-digit-chars-value), and somewhat better performance:</p>
                  (cons #\0 acc)
                (revappend-nat-to-oct-chars-aux n acc))))
 
-(define natstr8
+(define nat-to-oct-string
   :short "Convert a natural number into a string with its octal digits."
   ((n natp))
   :returns (str stringp :rule-classes :type-prescription)
-  :long "<p>For instance, @('(natstr8 15)') is @('\"17\"').</p>"
+  :long "<p>For instance, @('(nat-to-oct-string 15)') is @('\"17\"').</p>"
   :inline t
   (implode (nat-to-oct-chars n))
   ///
-  (defthm oct-digit-char-listp-of-natstr
-    (oct-digit-char-listp (explode (natstr8 n))))
-  (defthm natstr8-one-to-one
-    (equal (equal (natstr8 n) (natstr8 m))
+  (defthm oct-digit-char-listp-of-nat-to-dec-string
+    (oct-digit-char-listp (explode (nat-to-oct-string n))))
+  (defthm nat-to-oct-string-one-to-one
+    (equal (equal (nat-to-oct-string n) (nat-to-oct-string m))
            (equal (nfix n) (nfix m))))
-  (defthm oct-digit-chars-value-of-natstr
-    (equal (oct-digit-chars-value (explode (natstr8 n)))
+  (defthm oct-digit-chars-value-of-nat-to-dec-string
+    (equal (oct-digit-chars-value (explode (nat-to-oct-string n)))
            (nfix n)))
-  (defthm natstr8-nonempty
-    (not (equal (natstr8 n) ""))))
+  (defthm nat-to-oct-string-nonempty
+    (not (equal (nat-to-oct-string n) ""))))
 
-(define natstr8-list
+(define nat-to-oct-string-list
   :short "Convert a list of natural numbers into a list of octal digit strings."
   ((x nat-listp))
   :returns (strs string-listp)
   (if (atom x)
       nil
-    (cons (natstr8 (car x))
-          (natstr8-list (cdr x))))
+    (cons (nat-to-oct-string (car x))
+          (nat-to-oct-string-list (cdr x))))
   ///
-  (defthm natstr8-list-when-atom
+  (defthm nat-to-oct-string-list-when-atom
     (implies (atom x)
-             (equal (natstr8-list x)
+             (equal (nat-to-oct-string-list x)
                     nil)))
-  (defthm natstr8-list-of-cons
-    (equal (natstr8-list (cons a x))
-           (cons (natstr8 a)
-                 (natstr8-list x)))))
+  (defthm nat-to-oct-string-list-of-cons
+    (equal (nat-to-oct-string-list (cons a x))
+           (cons (nat-to-oct-string a)
+                 (nat-to-oct-string-list x)))))
 
-(define natsize8-aux
-  :parents (natsize8)
+(define nat-to-oct-string-size-aux
+  :parents (nat-to-oct-string-size)
   ((n natp))
   :returns (size natp :rule-classes :type-prescription)
   (if (zp n)
       0
-    (+ 1 (natsize8-aux (ash n -3))))
+    (+ 1 (nat-to-oct-string-size-aux (ash n -3))))
   :prepwork ((local (in-theory (enable nat-to-oct-chars))))
   ///
   ;; BOZO perhaps eventually reimplement this using integer-length.  See also
   ;; hex.lisp for some fledgling steps toward that.
-  (defthm natsize8-aux-redef
-    (equal (natsize8-aux n)
+  (defthm nat-to-oct-string-size-aux-redef
+    (equal (nat-to-oct-string-size-aux n)
            (len (basic-nat-to-oct-chars n)))
     :hints(("Goal" :in-theory (enable basic-nat-to-oct-chars)))))
 
-(define natsize8
+(define nat-to-oct-string-size
   :short "Number of characters in the octal representation of a natural."
   ((x natp))
   :returns (size posp :rule-classes :type-prescription)
@@ -701,7 +701,7 @@ oct-digit-chars-value), and somewhat better performance:</p>
   (mbe :logic (len (nat-to-oct-chars x))
        :exec  (if (zp x)
                   1
-                (natsize8-aux x)))
+                (nat-to-oct-string-size-aux x)))
   :prepwork ((local (in-theory (enable nat-to-oct-chars)))))
 
 (define parse-octal-from-charlist

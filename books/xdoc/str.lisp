@@ -153,8 +153,8 @@
                                          str::nat-to-dec-chars-aux
                                          str::nat-to-dec-chars
                                          str::nat-to-dec-chars$inline
-                                         str::natstr
-                                         str::natstr$inline
+                                         str::nat-to-dec-string
+                                         str::nat-to-dec-string$inline
                                          )
                    t
                    state)))

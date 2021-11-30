@@ -87,7 +87,7 @@
   (if (atom x)
       nil
     (cons (car x)
-          (cons (string-append (str::natstr count)
+          (cons (string-append (str::nat-to-dec-string count)
                                "------------------------------")
                 (pretty-list (cdr x) (1+ count))))))
 
@@ -528,6 +528,3 @@
   :hints (("Goal" :in-theory (enable f-sr))))
 
 ;; (in-theory (disable link$step))
-
-
-

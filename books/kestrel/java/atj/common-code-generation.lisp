@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -167,8 +167,8 @@
   :short "Generate Java code to build a Java @('BigInteger')
           from an ACL2 integer."
   (b* ((string (if (< integer 0)
-                   (str::cat "-" (str::natstr (- integer)))
-                 (str::natstr integer))))
+                   (str::cat "-" (str::nat-to-dec-string (- integer)))
+                 (str::nat-to-dec-string integer))))
     (jexpr-newclass (jtype-class "BigInteger")
                     (list
                      (jexpr-literal-string string)))))
@@ -310,7 +310,7 @@
    (xdoc::p
     "For convenience of the callers of this function,
      the local variable declaration is returned in a singleton block."))
-  (b* ((var-name (str::cat var-base (natstr var-index)))
+  (b* ((var-name (str::cat var-base (nat-to-dec-string var-index)))
        (var-index (1+ var-index))
        (locvar-block (jblock-locvar var-type var-name var-init?)))
     (mv locvar-block var-name var-index))

@@ -156,7 +156,7 @@
         (str::cat
          "Read "
          (if signed? "a signed " "an unsigned ")
-         (str::natstr size)
+         (str::nat-to-dec-string size)
          "-bit value from memory via an effective address."))
        (long-doc-string
         (str::cat
@@ -822,7 +822,7 @@
         (str::cat
          "Write "
          (if signed? "a signed " "an unsigned ")
-         (str::natstr size)
+         (str::nat-to-dec-string size)
          "-bit value to memory via an effective address."))
        (long-doc-string
         (str::cat

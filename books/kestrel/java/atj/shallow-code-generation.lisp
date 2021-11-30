@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -165,7 +165,7 @@
     "Currently we generate field names of the form @('$<i>'),
      where @('<i>') is the base-10 representation of the index,
      i.e. @('$0'), @('$1'), etc."))
-  (str::cat "$" (natstr index)))
+  (str::cat "$" (nat-to-dec-string index)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3692,7 +3692,7 @@
      :parents nil
      (cond ((zp n) acc)
            (t (atj-gen-shallow-synonym-method-params-aux
-               (1- n) (cons (str::cat "x" (str::natstr n)) acc)))))))
+               (1- n) (cons (str::cat "x" (str::nat-to-dec-string n)) acc)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4970,7 +4970,7 @@
      :returns (mv (block jblockp)
                   (vars string-listp))
      (cond ((endp arg-exprs) (mv nil nil))
-           (t (b* ((first-var (str::cat var-base (str::natstr index)))
+           (t (b* ((first-var (str::cat var-base (str::nat-to-dec-string index)))
                    (first-arg-expr (car arg-exprs))
                    (first-arg-type (car arg-types))
                    (first-in-type (car in-types))
@@ -5002,7 +5002,7 @@
      :returns (mv (block jblockp)
                   (vars string-listp))
      (cond ((endp types) (mv nil nil))
-           (t (b* ((first-var (str::cat var-base (str::natstr index)))
+           (t (b* ((first-var (str::cat var-base (str::nat-to-dec-string index)))
                    (first-type (car types))
                    (first-jtype (atj-type-to-jitype first-type))
                    (first-expr (jexpr-get-field expr

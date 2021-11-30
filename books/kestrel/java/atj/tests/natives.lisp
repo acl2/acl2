@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -502,7 +502,7 @@
 (define make-char-code-tests ((code natp))
   (if (and (mbt (natp code))
            (< code 256))
-      (cons (list (str::cat "CharCode" (str::natstr code))
+      (cons (list (str::cat "CharCode" (str::nat-to-dec-string code))
                   `(char-code ,(code-char code)))
             (make-char-code-tests (1+ code)))
     nil)
@@ -517,7 +517,7 @@
 (define make-code-char-tests ((code natp))
   (if (and (mbt (natp code))
            (< code 256))
-      (cons (list (str::cat "CodeChar" (str::natstr code))
+      (cons (list (str::cat "CodeChar" (str::nat-to-dec-string code))
                   `(code-char ,code))
             (make-code-char-tests (1+ code)))
     nil)

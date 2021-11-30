@@ -90,9 +90,13 @@
   (declare (type (integer 0 255) i))
   (append
    (acl2::string-to-bytes (pedersen-base-point-seed-string))
-   (bytes-pad-left 32 (char-code #\0) (acl2::string-to-bytes (str::intstr s)))
+   (bytes-pad-left 32
+                   (char-code #\0)
+                   (acl2::string-to-bytes (str::int-to-dec-string s)))
    (acl2::string-to-bytes "_")
-   (bytes-pad-left 32 (char-code #\0) (acl2::string-to-bytes (str::intstr i)))))
+   (bytes-pad-left 32
+                   (char-code #\0)
+                   (acl2::string-to-bytes (str::int-to-dec-string i)))))
 
 
 (defun pedersen-base-calculate-y (s i)
