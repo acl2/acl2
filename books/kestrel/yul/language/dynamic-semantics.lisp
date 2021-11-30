@@ -59,64 +59,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap lstate
-  :short "Fixtype of local states."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "[Yul: Specification of Yul: Formal Specification] introduces
-     the notion of local state object as
-     a finite map from identifiers to values."))
-  :key-type identifier
-  :val-type value
-  :pred lstatep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule lstatep-of-restrict
-  (implies (lstatep map)
-           (lstatep (omap::restrict keys map)))
-  :enable omap::restrict)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule identifier-setp-of-keys-when-lstatep
-  (implies (lstatep map)
-           (identifier-setp (omap::keys map)))
-  :enable omap::keys)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod cstate
-  :short "Fixtype of computational states."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "According to [Yul: Specification of Yul: Formal Specification],
-     this consists of a local state object and a global state object.
-     The latter is generic in generic Yul.
-     For now, for simplicity, we ignore the global state completely,
-     but we plan to add that at some point."))
-  ((local lstate))
-  :tag :cstate
-  :pred cstatep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult cstate-result
-  :short "Fixtype of errors and computation states."
-  :ok cstate
-  :pred cstate-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-cstatep
-  (implies (cstatep x)
-           (not (resulterrp x)))
-  :enable (resulterrp cstatep))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod funinfo
   :short "Fixtype of function information."
   :long
@@ -188,6 +130,130 @@
   (implies (funenvp x)
            (not (resulterrp x)))
   :enable (resulterrp funenvp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-fun ((fun identifierp) (funenv funenvp))
+  :returns (info funinfo-resultp)
+  :short "Obtain information about a function from the function environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if the function does not exist."))
+  (b* ((fun-info (omap::in (identifier-fix fun) (funenv-fix funenv)))
+       ((unless (consp fun-info))
+        (err (list :function-not-found (identifier-fix fun)))))
+    (cdr fun-info))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-fun ((fun identifierp) (info funinfop) (funenv funenvp))
+  :returns (new-funenv funenv-resultp)
+  :short "Add a function to the function environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An error is returned if the function already exists.")
+   (xdoc::p
+    "This is the dynamic counterpart of
+     @(tsee add-funtype) in the static semantics."))
+  (b* ((fun-info (omap::in (identifier-fix fun) (funenv-fix funenv)))
+       ((when (consp fun-info))
+        (err (list :function-already-exists (identifier-fix fun))))
+       (new-funenv
+        (omap::update (identifier-fix fun)
+                      (funinfo-fix info)
+                      (funenv-fix funenv))))
+    new-funenv)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-funs-in-statement-list ((stmts statement-listp) (funenv funenvp))
+  :returns (new-funenv funenv-resultp)
+  :short "Add all the functions in a block to the function environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Just before executing a block,
+     all the function definitions in the block
+     are added to the function environment.
+     This is because,
+     as explained in [Yul: Specification of Yul: Scoping Rules],
+     all the functions defined in a block are accessible in the whole block,
+     even before they are defined in the block.")
+   (xdoc::p
+    "This is the dynamic counterpart of
+     @(tsee add-funtypes-in-statement-list) in the static semantics."))
+  (b* (((when (endp stmts)) (funenv-fix funenv))
+       (stmt (car stmts))
+       ((unless (statement-case stmt :fundef))
+        (add-funs-in-statement-list (cdr stmts) funenv))
+       (fdef (statement-fundef->get stmt))
+       ((ok funenv) (add-fun (fundef->name fdef)
+                             (funinfo-for-fundef fdef)
+                             funenv)))
+    (add-funs-in-statement-list (cdr stmts) funenv))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap lstate
+  :short "Fixtype of local states."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "[Yul: Specification of Yul: Formal Specification] introduces
+     the notion of local state object as
+     a finite map from identifiers to values."))
+  :key-type identifier
+  :val-type value
+  :pred lstatep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule lstatep-of-restrict
+  (implies (lstatep map)
+           (lstatep (omap::restrict keys map)))
+  :enable omap::restrict)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule identifier-setp-of-keys-when-lstatep
+  (implies (lstatep map)
+           (identifier-setp (omap::keys map)))
+  :enable omap::keys)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod cstate
+  :short "Fixtype of computational states."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "According to [Yul: Specification of Yul: Formal Specification],
+     this consists of a local state object and a global state object.
+     The latter is generic in generic Yul.
+     For now, for simplicity, we ignore the global state completely,
+     but we plan to add that at some point."))
+  ((local lstate))
+  :tag :cstate
+  :pred cstatep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult cstate-result
+  :short "Fixtype of errors and computation states."
+  :ok cstate
+  :pred cstate-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-cstatep
+  (implies (cstatep x)
+           (not (resulterrp x)))
+  :enable (resulterrp cstatep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -330,72 +396,6 @@
   (b* ((lstate (cstate->local cstate))
        (new-lstate (omap::restrict (identifier-set-fix vars) lstate)))
     (change-cstate cstate :local new-lstate))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define get-fun ((fun identifierp) (funenv funenvp))
-  :returns (info funinfo-resultp)
-  :short "Obtain information about a function from the function environment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "It is an error if the function does not exist."))
-  (b* ((fun-info (omap::in (identifier-fix fun) (funenv-fix funenv)))
-       ((unless (consp fun-info))
-        (err (list :function-not-found (identifier-fix fun)))))
-    (cdr fun-info))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define add-fun ((fun identifierp) (info funinfop) (funenv funenvp))
-  :returns (new-funenv funenv-resultp)
-  :short "Add a function to the function environment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "An error is returned if the function already exists.")
-   (xdoc::p
-    "This is the dynamic counterpart of
-     @(tsee add-funtype) in the static semantics."))
-  (b* ((fun-info (omap::in (identifier-fix fun) (funenv-fix funenv)))
-       ((when (consp fun-info))
-        (err (list :function-already-exists (identifier-fix fun))))
-       (new-funenv
-        (omap::update (identifier-fix fun)
-                      (funinfo-fix info)
-                      (funenv-fix funenv))))
-    new-funenv)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define add-funs-in-statement-list ((stmts statement-listp) (funenv funenvp))
-  :returns (new-funenv funenv-resultp)
-  :short "Add all the functions in a block to the function environment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Just before executing a block,
-     all the function definitions in the block
-     are added to the function environment.
-     This is because,
-     as explained in [Yul: Specification of Yul: Scoping Rules],
-     all the functions defined in a block are accessible in the whole block,
-     even before they are defined in the block.")
-   (xdoc::p
-    "This is the dynamic counterpart of
-     @(tsee add-funtypes-in-statement-list) in the static semantics."))
-  (b* (((when (endp stmts)) (funenv-fix funenv))
-       (stmt (car stmts))
-       ((unless (statement-case stmt :fundef))
-        (add-funs-in-statement-list (cdr stmts) funenv))
-       (fdef (statement-fundef->get stmt))
-       ((ok funenv) (add-fun (fundef->name fdef)
-                             (funinfo-for-fundef fdef)
-                             funenv)))
-    (add-funs-in-statement-list (cdr stmts) funenv))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
