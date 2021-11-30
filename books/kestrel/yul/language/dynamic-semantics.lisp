@@ -35,7 +35,10 @@
     "We define the dynamic semantics of Yul
      by formalizing the Yul computation state
      and by defining ACL2 functions that manipulate the computation state
-     via execution of the Yul abstract syntax.")
+     via execution of the Yul abstract syntax.
+     The formalization also involves a function environment
+     that includes the Yul functions in scope,
+     and that is manipulated along with the computation state.")
    (xdoc::p
     "This is based on the formal specification in
      [Yul: Specification of Yul: Formal Specification],
