@@ -22,9 +22,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a concise wrapper of the built-in @(tsee acl2::packn-pos),
+    "This is a concise wrapper of the built-in @(tsee packn-pos),
      specialized for the C package.
      This macro takes any number of arguments,
-     which are evaluated and put into a list passed to @(tsee acl2::packn-pos);
+     which are evaluated and put into a list passed to @(tsee packn-pos);
      thus, the arguments must be all atoms."))
-  `(acl2::packn-pos (list ,@args) (pkg-witness "C")))
+  `(packn-pos (list ,@args) (pkg-witness "C")))

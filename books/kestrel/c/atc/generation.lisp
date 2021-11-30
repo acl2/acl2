@@ -2049,9 +2049,9 @@
                                    (alist symbol-pseudoterm-alistp))
   :returns (new-alist symbol-pseudoterm-alistp)
   :short "Update an alist from symbols to terms."
-  (append (pairlis$ (acl2::symbol-list-fix vars)
+  (append (pairlis$ (symbol-list-fix vars)
                     (pseudo-term-list-fix terms))
-          (acl2::symbol-pseudoterm-alist-fix alist)))
+          (symbol-pseudoterm-alist-fix alist)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3771,7 +3771,7 @@
                   *atc-array-length-write-rules*
                   '(,fn
                     ,@(atc-symbol-fninfo-alist-to-result-thms
-                       prec-fns (acl2::all-fnnames (ubody+ fn wrld)))
+                       prec-fns (all-fnnames (ubody+ fn wrld)))
                     sintp-of-sint-dec-const
                     sintp-of-sint-oct-const
                     sintp-of-sint-hex-const
@@ -3840,7 +3840,7 @@
                          (car affect) typed-formals))))))
 
    (define atc-gen-fn-result-thm-aux2 ((results atc-symbol-type-alistp)
-                                       (index? acl2::maybe-natp)
+                                       (index? maybe-natp)
                                        (fn-call pseudo-termp))
      :returns conjuncts
      :parents nil
@@ -4291,7 +4291,7 @@
                       (b* ((,fn-binder (,fn ,@formals)))
                         (mv ,result-var ,final-compst))))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
-       (called-fns (acl2::all-fnnames (ubody+ fn wrld)))
+       (called-fns (all-fnnames (ubody+ fn wrld)))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
        (correct-thms
@@ -4773,7 +4773,7 @@
          ((when (eq term-fn 'o<))
           (b* ((meas-gen (fargn term 2))
                (meas-inst (fargn term 1))
-               ((mv okp subst) (acl2::one-way-unify meas-gen meas-inst))
+               ((mv okp subst) (one-way-unify meas-gen meas-inst))
                ((when (not okp))
                 (er-soft+ ctx t nil
                           "Failed to match istantiated measure ~x0 ~
@@ -5078,7 +5078,7 @@
          (fn/lam (pseudo-term-call->fn term))
          ((when (eq fn/lam fn))
           (if (consp (cdr affect))
-              `(mv ,@(acl2::symbol-list-fix affect))
+              `(mv ,@(symbol-list-fix affect))
             (symbol-fix (car affect))))
          (args (pseudo-term-call->args term))
          (new-args (atc-loop-body-term-subst-lst args fn affect))
@@ -5272,7 +5272,7 @@
                       (b* ((,affect-binder ,body-term))
                         (mv nil ,final-compst))))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
-       (called-fns (acl2::all-fnnames (ubody+ fn wrld)))
+       (called-fns (all-fnnames (ubody+ fn wrld)))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
        (correct-thms
@@ -5420,7 +5420,7 @@
                             (mv nil ,final-compst))))
        (formula-lemma `(b* (,@formals-bindings) (implies ,hyps ,concl-lemma)))
        (formula-thm `(b* (,@formals-bindings) (implies ,hyps ,concl-thm)))
-       (called-fns (acl2::all-fnnames (ubody+ fn wrld)))
+       (called-fns (all-fnnames (ubody+ fn wrld)))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
        (result-thms (cons fn-result-thm result-thms))
@@ -5475,7 +5475,7 @@
                               :extra-bindings-ok ,@instantiation))
                        :expand (:lambdas
                                 (,fn ,@(fsublis-var-lst
-                                        (acl2::doublets-to-alist
+                                        (doublets-to-alist
                                          instantiation)
                                         formals))))))
        (lemma-instructions
