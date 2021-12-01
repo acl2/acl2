@@ -241,19 +241,7 @@
     (if (resulterrp funscope?)
         funscope?
       (funscope-dead funscope?)))
-  :hooks (:fix)
-  ///
-
-  (defrule funscope-result-dead-when-funscopep
-    (implies (funscopep funscope)
-             (equal (funscope-result-dead funscope)
-                    (funscope-dead funscope)))
-    :enable (funscopep resulterrp))
-
-  (defrule funscope-result-dead-when-resulterrp
-    (implies (resulterrp error)
-             (equal (funscope-result-dead error)
-                    error))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -288,19 +276,7 @@
     (if (resulterrp funenv?)
         funenv?
       (funenv-dead funenv?)))
-  :hooks (:fix)
-  ///
-
-  (defrule funenv-result-dead-when-funenvp
-    (implies (funenvp funenv)
-             (equal (funenv-result-dead funenv)
-                    (funenv-dead funenv)))
-    :enable (funenvp resulterrp))
-
-  (defrule funenv-result-dead-when-resulterrp
-    (implies (resulterrp error)
-             (equal (funenv-result-dead error)
-                    error))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -337,19 +313,7 @@
     (if (resulterrp funinfoenv?)
         funinfoenv?
       (funinfo+funenv-dead funinfoenv?)))
-  :hooks (:fix)
-  ///
-
-  (defrule funinfo+funenv-result-dead-when-funinfo+funenv-p
-    (implies (funinfo+funenv-p funinfoenv)
-             (equal (funinfo+funenv-result-dead funinfoenv)
-                    (funinfo+funenv-dead funinfoenv)))
-    :enable (funinfo+funenv-p resulterrp))
-
-  (defrule funinfo+funenv-result-dead-when-resulterrp
-    (implies (resulterrp error)
-             (equal (funinfo+funenv-result-dead error)
-                    error))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -410,6 +374,7 @@
               (equal (find-fun fun (funenv-dead funenv))
                      (funinfo+funenv-result-dead (find-fun fun funenv))))
      :enable (find-fun
+              funinfo+funenv-result-dead
               funinfo+funenv-dead))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -447,6 +412,7 @@
   (equal (funscope-for-fundefs (fundef-list-dead fundefs))
          (funscope-result-dead (funscope-for-fundefs fundefs)))
   :enable (funscope-for-fundefs
+           funscope-result-dead
            funscopep-when-funscope-resultp-and-not-resulterrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -465,7 +431,10 @@
               (equal (add-funs (fundef-list-dead fundefs) (funenv-dead funenv))
                      (funenv-result-dead (add-funs fundefs funenv))))
      :enable (add-funs
-              funscopep-when-funscope-resultp-and-not-resulterrp))))
+              funscope-result-dead
+              funenv-result-dead
+              funscopep-when-funscope-resultp-and-not-resulterrp
+              not-resulterrp-when-funenvp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -538,12 +507,14 @@
    (xdoc::p
     "The current proof uses some @(':use') and @(':expand') hints
      for certain cases of the induction proof.
-     Attempting to apply these hints to all cases uniformly
-     causes the proof to be too slow (if it works at all),
-     presumably due to many unnecessary case splits.
-     There may be ways to avoid the @(':use') hints,
-     by proving and enabling suitable rules,
-     but this needs more work; it was not immediate to do.
+     For robustness and efficiency,
+     we prefer to apply these hints only to those cases.
+     (In earlier version of this proof, which was more complex at the time,
+     attempting to apply these hints to all cases uniformly
+     caused the proof to be too slow, if it worked at all,
+     presumably due to many unnecessary case splits.)
+     There may be actually ways to avoid the @(':use') hints,
+     by proving and enabling suitable rules.
      It is less clear whether the @(':expand') hints could be avoided,
      given that the functions in question are already enabled,
      but ACL2's heuristics prevent their expansion,
@@ -557,9 +528,11 @@
     "We also want to limit the enabling of certain functions
      to certain cases of the induction proof.
      We need to study this in more detail,
-     but initial experiments suggested that those enablements
-     may cause adverse effects in the cases in which they are not needed).
-     So again limiting the enablements to the needed proof cases
+     but initial experiments
+     (actually in an earlier, more complex version of this proof)
+     suggested that those enablements
+     may cause adverse effects in the cases in which they are not needed.
+     So, again, limiting the enablements to the needed proof cases
      seems to be the right thing at this moment.")
    (xdoc::p
     "To avoid the brittleness and unreadability of subgoal hints,
@@ -631,11 +604,7 @@
      since we always want to expand them in the proofs.
      Note that, if we put them into a goal hint,
      they would not apply to subgoals where computed hints apply;
-     this is why we locally enable them instead.")
-   (xdoc::p
-    "We locally enable the @('...-result-dead') functions,
-     since we always want to expand them in the proofs.
-     This way, we expose the two cases, error and non-error."))
+     this is why we locally enable them instead."))
 
   (local (in-theory (enable eoutcome-result-okeq
                             soutcome-result-okeq
