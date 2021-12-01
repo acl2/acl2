@@ -66,7 +66,7 @@
                 (symbol-name (car args))
               (if (stringp e)
                   e
-                (str::intstr (ifix e))))))
+                (str::int-to-dec-string (ifix e))))))
         (if (and (consp (cdr args))
                  (not (stringp (car args)))
                  (not (string-listp (car args))))
@@ -328,13 +328,13 @@
                       (b* (((mv rest1 rest2)
                             (sorted-set-difference set1 (cdr set2))))
                         (mv rest1 (cons c2 rest2)))))))))
-        
+
   #|(b* ((lst1 '(14 6 3 5 8 7 5 4))
        (lst2 '(1 55 4 6 7 5 3 2 8))
        (lst1 (acl2::merge-sort-lexorder lst1))
        (lst2 (acl2::merge-sort-lexorder lst2)))
     (sorted-set-difference lst1 lst2))|#
-  
+
   (defun fetch-new-theory-step2 (macro-name)
     `(make-event
       (b* ((new-current-theory (let ((world (w state))) (current-theory :here)))
@@ -347,7 +347,7 @@
            ((mv added-theory removed-theory)
             (sorted-set-difference new-current-theory
                                    old-current-theory))
-           
+
            #|(- (cw "Scanning for newly added event ..."))
            (added-theory (set-difference$ new-current-theory
                                           old-current-theory
@@ -429,7 +429,7 @@ disable the library as given.
 
 
 <p> If you wish not to generate a macro, you may want to use @(see
-preserve-current-theory) </p> 
+preserve-current-theory) </p>
 
 "
  )
@@ -472,5 +472,3 @@ preserve-current-theory) </p>
        (progn
          ,(preserve-current-theory-step1 event)
          ,(preserve-current-theory-step2)))))
-
-

@@ -657,7 +657,7 @@
                               (<= x 1))))
   (if (equal x 1)
       "1.0"
-    (str::cat "0." (str::natstr (floor (* x 100) 1)))))
+    (str::cat "0." (str::nat-to-dec-string (floor (* x 100) 1)))))
 
 (assert! (equal (priority-float 1/10) "0.10"))
 (assert! (equal (priority-float 37/100) "0.37"))

@@ -35,7 +35,10 @@
     "We define the dynamic semantics of Yul
      by formalizing the Yul computation state
      and by defining ACL2 functions that manipulate the computation state
-     via execution of the Yul abstract syntax.")
+     via execution of the Yul abstract syntax.
+     The formalization also involves a function environment
+     that includes the Yul functions in scope,
+     and that is manipulated along with the computation state.")
    (xdoc::p
     "This is based on the formal specification in
      [Yul: Specification of Yul: Formal Specification],
@@ -53,6 +56,253 @@
      by showing that there is a suitable limit that does not run out."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod funinfo
+  :short "Fixtype of function information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is all the information about a function definition,
+     except for its name."))
+  ((inputs identifier-list)
+   (outputs identifier-list)
+   (body block))
+  :tag :funinfo
+  :pred funinfop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult funinfo-result
+  :short "Fixtype of errors and function information."
+  :ok funinfo
+  :pred funinfo-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-funinfop
+  (implies (funinfop x)
+           (not (resulterrp x)))
+  :enable (resulterrp funinfop))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define funinfo-for-fundef ((fundef fundefp))
+  :returns (funinfo funinfop)
+  :short "Function information for a function definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This just takes the inputs, outputs, and body of the function definition
+     and forms function information with them."))
+  (make-funinfo :inputs (fundef->inputs fundef)
+                :outputs (fundef->outputs fundef)
+                :body (fundef->body fundef))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap funscope
+  :short "Fixtype of function scopes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a finite map from identifiers (function names)
+     to function information:
+     it models the function definitions in a scope."))
+  :key-type identifier
+  :val-type funinfo
+  :pred funscopep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult funscope-result
+  :short "Fixtype of errors and function scopes."
+  :ok funscope
+  :pred funscope-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-funscopep
+  (implies (funscopep x)
+           (not (resulterrp x)))
+  :enable resulterrp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define funscope-for-fundefs ((fundefs fundef-listp))
+  :returns (funscope funscope-resultp)
+  :short "Function scope for a list of function definitions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go through the list and form a function scope for the functions.
+     It is an error if there are two functions with the same name."))
+  (b* (((when (endp fundefs)) nil)
+       ((ok scope) (funscope-for-fundefs (cdr fundefs)))
+       (fundef (car fundefs))
+       (fun (fundef->name fundef))
+       (fun+info (omap::in fun scope))
+       ((when (consp fun+info)) (err (list :duplicate-function fun))))
+    (omap::update fun (funinfo-for-fundef fundef) scope))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist funenv
+  :short "Fixtype of function environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a list of function scopes,
+     which represents a stack;
+     the stack grows leftward, i.e.
+     push is @(tsee cons), pop is @(tsee cdr), and top is @(tsee car).
+     A function scope is pushed when entering a block,
+     and it is popped when exiting the block.
+     This needs to be a stack because Yul functions are statically scoped:
+     when a function later in the stack calls a function earlier in the stack,
+     the stack must be shrunk so that the called function
+     has access only to the functions that are statically in scope,
+     not the functions in inner blocks that the caller has access to.")
+   (xdoc::p
+    "[Yul: Specification of Yul: Formal Specification]
+     does not explicitly mention any notion of function environments,
+     but their presence is implicit in the description of
+     the scope of function definitions."))
+  :elt-type funscope
+  :true-listp t
+  :elementp-of-nil t
+  :pred funenvp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult funenv-result
+  :short "Fixtype of errors and function environments."
+  :ok funenv
+  :pred funenv-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-funenvp
+  (implies (funenvp x)
+           (not (resulterrp x)))
+  :enable (resulterrp funenvp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod funinfo+funenv
+  :short "Fixtype of pairs consisting of
+          function information and a function environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used as (non-error) results of @(tsee find-fun):
+     see that function's documentation."))
+  ((info funinfo)
+   (env funenv)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult funinfo+funenv-result
+  :short "Fixtype of errors and
+          pairs consisting of
+          function information and a function environment."
+  :ok funinfo+funenv
+  :pred funinfo+funenv-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-funinfo+funenv-p
+  (implies (funinfo+funenv-p x)
+           (not (resulterrp x)))
+  :enable (resulterrp funinfo+funenv-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define find-fun ((fun identifierp) (funenv funenvp))
+  :returns (info funinfo+funenv-resultp)
+  :short "Find a function in the function environment by name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We search through the scopes, from innermost to outermost.
+     It is an expected invariant that the scopes in a function environment
+     have disjoint function names
+     (we may formalize and prove this invariant at some point):
+     thus, the search order would not matter
+     if we only needed the function information;
+     however, as explained below, we also returned a function environment,
+     and therefore the innermost-to-outermost search order is important.")
+   (xdoc::p
+    "If we find @('fun'), we return not only its information,
+     but also the current function environment,
+     which is the initial function environment
+     with zero or more scopes popped;
+     the scope where @('fun') is found is not popped,
+     i.e. it is returned as the top scope.
+     This resulting function environment represents
+     the functions in scope for @('fun').
+     In @(tsee exec-function), which takes a @('fun') as argument,
+     we call @('find-fun') to retrieve the information about @('fun')
+     so that we can execute its body:
+     thus, it is convenient for @('find-fun') to return
+     the function environment for @('fun'),
+     which must be indeed passed to @(tsee exec-block) on the @('fun')'s body.")
+   (xdoc::p
+    "It is an error if @('fun') is not found in the environment."))
+  (b* (((when (endp funenv))
+        (err (list :function-not-found (identifier-fix fun))))
+       (funscope (funscope-fix (car funenv)))
+       (fun+info (omap::in (identifier-fix fun) funscope))
+       ((when (consp fun+info))
+        (make-funinfo+funenv :info (cdr fun+info) :env funenv)))
+    (find-fun fun (cdr funenv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ensure-funscope-disjoint ((funscope funscopep) (funenv funenvp))
+  :returns (_ resulterr-optionp)
+  :short "Ensure that a function scope is disjoint from a function environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, ensure that the function names in the scope
+     are disjoint from all the function names in the environment's scopes.
+     This is used to ensure that there is no function shadowing:
+     see @(tsee add-funs)."))
+  (b* (((when (endp funenv)) nil)
+       (overlap (set::intersect (omap::keys (funscope-fix funscope))
+                                (omap::keys (funscope-fix (car funenv)))))
+       ((unless (set::empty overlap))
+        (err (list :duplicate-functions overlap))))
+    (ensure-funscope-disjoint funscope (cdr funenv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-funs ((fundefs fundef-listp) (funenv funenvp))
+  :returns (new-funenv funenv-resultp)
+  :short "Add functions to the function environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We create a function scope for the given list of function definitions
+     and we push that onto the function environment.
+     We ensure that the new functions have different names from
+     the functions already in the environment.
+     This ACL2 function is used for all the function definitions in a block;
+     see @(tsee exec-block)."))
+  (b* (((ok funscope) (funscope-for-fundefs fundefs))
+       ((ok &) (ensure-funscope-disjoint funscope funenv)))
+    (cons funscope (funenv-fix funenv)))
+  :hooks (:fix)
+  :prepwork
+  ((local
+    (in-theory
+     (enable funscopep-when-funscope-resultp-and-not-resulterrp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -84,57 +334,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod funinfo
-  :short "Fixtype of function information."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is all the information about a function definition,
-     except for its name.
-     This is used for the values of function states (see @(tsee fstate)."))
-  ((inputs identifier-list)
-   (outputs identifier-list)
-   (body block))
-  :tag :funinfo
-  :pred funinfop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult funinfo-result
-  :short "Fixtype of errors and function information."
-  :ok funinfo
-  :pred funinfo-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-funinfop
-  (implies (funinfop x)
-           (not (resulterrp x)))
-  :enable (resulterrp funinfop))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defomap fstate
-  :short "Fixtype of function states."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is a finite map from identifiers (function names)
-     to function information:
-     it models the function definitions currently in scope;
-     this changes as blocks are entered and exited.
-     [Yul: Specification of Yul: Formal Specification]
-     does not explicitly mention this,
-     but its presence is implicit in the description of
-     the scope of function definitions."))
-  :key-type identifier
-  :val-type funinfo
-  :pred fstatep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod cstate
-  :short "Fixtype of computational states."
+  :short "Fixtype of computation states."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -142,11 +343,8 @@
      this consists of a local state object and a global state object.
      The latter is generic in generic Yul.
      For now, for simplicity, we ignore the global state completely,
-     but we plan to add that at some point.
-     We also include the function state,
-     whose motivation is discussed in @(tsee fstate)."))
-  ((local lstate)
-   (functions fstate))
+     but we plan to add that at some point."))
+  ((local lstate))
   :tag :cstate
   :pred cstatep)
 
@@ -163,16 +361,6 @@
   (implies (cstatep x)
            (not (resulterrp x)))
   :enable (resulterrp cstatep))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define funinfo-for-fundef ((fdef fundefp))
-  :returns (info funinfop)
-  :short "Function information for a function definition."
-  (make-funinfo :inputs (fundef->inputs fdef)
-                :outputs (fundef->outputs fdef)
-                :body (fundef->body fdef))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -319,73 +507,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define get-fun ((fun identifierp) (cstate cstatep))
-  :returns (info funinfo-resultp)
-  :short "Obtain information about a function from the computation state."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "It is an error if the function does not exist."))
-  (b* ((fstate (cstate->functions cstate))
-       (fun-info (omap::in (identifier-fix fun) fstate))
-       ((unless (consp fun-info))
-        (err (list :function-not-found (identifier-fix fun)))))
-    (cdr fun-info))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define add-fun ((fun identifierp) (info funinfop) (cstate cstatep))
-  :returns (new-cstate cstate-resultp)
-  :short "Add a function to the computation state."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "An error is returned if the function already exists.")
-   (xdoc::p
-    "This is the dynamic counterpart of
-     @(tsee add-funtype) in the static semantics."))
-  (b* ((fstate (cstate->functions cstate))
-       (fun-info (omap::in (identifier-fix fun) fstate))
-       ((when (consp fun-info))
-        (err (list :function-already-exists (identifier-fix fun))))
-       (new-fstate
-        (omap::update (identifier-fix fun) (funinfo-fix info) fstate))
-       (new-cstate (change-cstate cstate :functions new-fstate)))
-    new-cstate)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define add-funs-in-statement-list ((stmts statement-listp) (cstate cstatep))
-  :returns (new-cstate cstate-resultp)
-  :short "Add all the functions in a block to the computation state."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Just before executing a block,
-     all the function definitions in the block
-     are added to computation states.
-     This is because,
-     as explained in [Yul: Specification of Yul: Scoping Rules],
-     all the functions defined in a block are accessible in the whole block,
-     even before they are defined in the block.")
-   (xdoc::p
-    "This is the dynamic counterpart of
-     @(tsee add-funtypes-in-statement-list) in the static semantics."))
-  (b* (((when (endp stmts)) (cstate-fix cstate))
-       (stmt (car stmts))
-       ((unless (statement-case stmt :fundef))
-        (add-funs-in-statement-list (cdr stmts) cstate))
-       (fdef (statement-fundef->get stmt))
-       ((ok cstate) (add-fun (fundef->name fdef)
-                             (funinfo-for-fundef fdef)
-                             cstate)))
-    (add-funs-in-statement-list (cdr stmts) cstate))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define init-local ((in-vars identifier-listp)
                     (in-vals value-listp)
                     (out-vars identifier-listp)
@@ -404,6 +525,7 @@
      note that we implicitly check that the number of input variables
      matches the number of input values.
      The output variables are initialized to 0."))
+  (declare (ignore cstate))
   (b* ((cstate (change-cstate cstate :local nil))
        ((ok cstate) (add-vars-values in-vars in-vals cstate))
        ((ok cstate) (add-vars-values out-vars
@@ -440,7 +562,7 @@
   :ok eoutcome
   :pred eoutcome-resultp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (defruled not-resulterrp-when-eoutcomep
   (implies (eoutcomep x)
@@ -574,7 +696,10 @@
      which involves executing the statements in function bodies,
      which involves executing the expressions in the statements."))
 
-  (define exec-expression ((expr expressionp) (cstate cstatep) (limit natp))
+  (define exec-expression ((expr expressionp)
+                           (cstate cstatep)
+                           (funenv funenvp)
+                           (limit natp))
     :returns (outcome eoutcome-resultp)
     :short "Execute an expression."
     (b* (((when (zp limit)) (err (list :limit (expression-fix expr)))))
@@ -582,11 +707,12 @@
        expr
        :path (exec-path expr.get cstate)
        :literal (exec-literal expr.get cstate)
-       :funcall (exec-funcall expr.get cstate (1- limit))))
+       :funcall (exec-funcall expr.get cstate funenv (1- limit))))
     :measure (nfix limit))
 
   (define exec-expression-list ((exprs expression-listp)
                                 (cstate cstatep)
+                                (funenv funenvp)
                                 (limit natp))
     :returns (outcome eoutcome-resultp)
     :short "Execute a list of expressions."
@@ -603,16 +729,19 @@
          ((when (endp exprs)) (make-eoutcome :cstate (cstate-fix cstate)
                                              :values nil))
          ((ok (eoutcome outcome))
-          (exec-expression (car exprs) cstate (1- limit)))
+          (exec-expression (car exprs) cstate funenv (1- limit)))
          ((unless (equal (len outcome.values) 1))
           (err (list :not-single-value outcome.values)))
          (val (car outcome.values))
          ((ok (eoutcome outcome))
-          (exec-expression-list (cdr exprs) outcome.cstate (1- limit))))
+          (exec-expression-list (cdr exprs) outcome.cstate funenv (1- limit))))
       (make-eoutcome :cstate outcome.cstate :values (cons val outcome.values)))
     :measure (nfix limit))
 
-  (define exec-funcall ((call funcallp) (cstate cstatep) (limit natp))
+  (define exec-funcall ((call funcallp)
+                        (cstate cstatep)
+                        (funenv funenvp)
+                        (limit natp))
     :returns (outcome eoutcome-resultp)
     :short "Execute a function call."
     :long
@@ -626,13 +755,14 @@
     (b* (((when (zp limit)) (err (list :limit (funcall-fix call))))
          ((funcall call) call)
          ((ok (eoutcome outcome))
-          (exec-expression-list (rev call.args) cstate (1- limit))))
-      (exec-function call.name outcome.values outcome.cstate (1- limit)))
+          (exec-expression-list (rev call.args) cstate funenv (1- limit))))
+      (exec-function call.name outcome.values outcome.cstate funenv (1- limit)))
     :measure (nfix limit))
 
   (define exec-function ((fun identifierp)
                          (args value-listp)
                          (cstate cstatep)
+                         (funenv funenvp)
                          (limit natp))
     :returns (outcome eoutcome-resultp)
     :short "Execution a function on some values."
@@ -645,11 +775,15 @@
        that takes values directly as arguments,
        in case we want to formally talk about function calls.")
      (xdoc::p
-      "We initialize the local state with the function's inputs and outputs.
-       We run the function body on the resulting computation state.
+      "We find the function in the function environment,
+       also obtaining the (generally smaller) function environment
+       for executing the function.
+       We initialize the local state with the function's inputs and outputs.
+       We run the function body on the resulting computation state
+       and on the function environment for executing the function.
        We read the final values of the function output variables
        and return them as result.
-       We also restore the computation state prior to the function call.")
+       We also restore the local state prior to the function call.")
      (xdoc::p
       "As a defensive check, we ensure that the function's body
        terminates regularly or via @('leave'),
@@ -657,19 +791,26 @@
     (b* (((when (zp limit)) (err (list :limit
                                    (identifier-fix fun)
                                    (value-list-fix args))))
-         ((ok (funinfo info)) (get-fun fun cstate))
-         ((ok cstate1) (init-local info.inputs args info.outputs cstate))
+         ((ok (funinfo+funenv info+env)) (find-fun fun funenv))
+         ((funinfo info) info+env.info)
+         (lstate-before (cstate->local cstate))
+         ((ok cstate) (init-local info.inputs args info.outputs cstate))
          ((ok (soutcome outcome))
-          (exec-block info.body cstate1 (1- limit)))
+          (exec-block info.body cstate info+env.env (1- limit)))
          ((when (mode-case outcome.mode :break))
           (err (list :break-from-function (identifier-fix fun))))
          ((when (mode-case outcome.mode :continue))
           (err (list :continue-from-function (identifier-fix fun))))
-         ((ok vals) (read-vars-values info.outputs outcome.cstate)))
-      (make-eoutcome :cstate (cstate-fix cstate) :values vals))
+         ((ok vals) (read-vars-values info.outputs outcome.cstate))
+         (cstate (change-cstate outcome.cstate
+                                :local lstate-before)))
+      (make-eoutcome :cstate cstate :values vals))
     :measure (nfix limit))
 
-  (define exec-statement ((stmt statementp) (cstate cstatep) (limit natp))
+  (define exec-statement ((stmt statementp)
+                          (cstate cstatep)
+                          (funenv funenvp)
+                          (limit natp))
     :returns (outcome soutcome-resultp)
     :short "Execute a statement."
     :long
@@ -724,25 +865,22 @@
      (xdoc::p
       "For a loop statement,
        we start by saving (the names of) the variables before the loop,
-       similarly to @(tsee exec-block);
-       we also save the fucntion sate, similarly to @(tsee exec-block).
+       similarly to @(tsee exec-block).
        The initialization block of a loop statement
        is not treated like other blocks:
        its scope extends to the rest of the loop statement.
        Thus, instead of executing the initialization block as a block,
        we take the statements in the block,
-       extend the function state with any function declared there,
+       extend the function environment with any function declared there,
        and execute the statements,
        which may result in new and updated variables.
        We defensively stop with an error if the initialization block
        terminates with @('break') or @('continue');
        if it terminates with @('leave'), we also terminate with @('leave'),
-       removing extra variables and restoring the function state.
+       removing extra variables and restoring the function environment.
        We delegate the execution of the loop iterations
        to another ACL2 function.
        We take the result of that ACL2 function,
-       restore the function state
-       (similarly to @(tsee exec-block),
        and remove the variables added by the loop
        (similarly to @(tsee exec-block)).")
      (xdoc::p
@@ -751,18 +889,18 @@
        and terminates regularly.
        It is like a no-op when it is encountered as a statement.
        The function definitions in a block
-       are incorporated into the function state of the computation state
+       are incorporated into the function environment of the computation state
        prior to starting to execute the statements in the block."))
     (b* (((when (zp limit)) (err (list :limit (statement-fix stmt)))))
       (statement-case
        stmt
-       :block (exec-block stmt.get cstate (1- limit))
+       :block (exec-block stmt.get cstate funenv (1- limit))
        :variable-single
        (expression-option-case
         stmt.init
         :some
         (b* (((ok (eoutcome outcome))
-              (exec-expression stmt.init.val cstate (1- limit)))
+              (exec-expression stmt.init.val cstate funenv (1- limit)))
              ((unless (equal (len outcome.values) 1))
               (err (list :not-single-value outcome.values)))
              ((ok cstate)
@@ -777,7 +915,7 @@
             stmt.init
             :some
             (b* (((ok (eoutcome outcome))
-                  (exec-funcall stmt.init.val cstate (1- limit)))
+                  (exec-funcall stmt.init.val cstate funenv (1- limit)))
                  ((ok cstate)
                   (add-vars-values stmt.names outcome.values outcome.cstate)))
               (make-soutcome :cstate cstate :mode (mode-regular)))
@@ -791,7 +929,7 @@
        :assign-single
        (b* (((ok var) (path-to-var stmt.target))
             ((ok (eoutcome outcome))
-             (exec-expression stmt.value cstate (1- limit)))
+             (exec-expression stmt.value cstate funenv (1- limit)))
             ((unless (equal (len outcome.values) 1))
              (err (list :not-single-value outcome.values)))
             ((ok cstate)
@@ -802,64 +940,61 @@
              (err (list :non-multiple-variables stmt.targets)))
             ((ok vars) (paths-to-vars stmt.targets))
             ((ok (eoutcome outcome))
-             (exec-funcall stmt.value cstate (1- limit)))
+             (exec-funcall stmt.value cstate funenv (1- limit)))
             ((ok cstate)
              (write-vars-values vars outcome.values outcome.cstate)))
          (make-soutcome :cstate cstate :mode (mode-regular)))
        :funcall
        (b* (((ok (eoutcome outcome))
-             (exec-funcall stmt.get cstate (1- limit)))
+             (exec-funcall stmt.get cstate funenv (1- limit)))
             ((when (consp outcome.values))
              (err (list :funcall-statement-returns outcome.values))))
          (make-soutcome :cstate outcome.cstate :mode (mode-regular)))
        :if
        (b* (((ok (eoutcome outcome))
-             (exec-expression stmt.test cstate (1- limit)))
+             (exec-expression stmt.test cstate funenv (1- limit)))
             ((unless (equal (len outcome.values) 1))
              (err (list :if-test-not-single-value outcome.values)))
             (val (car outcome.values)))
          (if (equal val (value 0))
              (make-soutcome :cstate outcome.cstate :mode (mode-regular))
-           (exec-block stmt.body outcome.cstate (1- limit))))
+           (exec-block stmt.body outcome.cstate funenv (1- limit))))
        :for
        (b* ((vars-before (omap::keys (cstate->local cstate)))
-            (fstate-before (cstate->functions cstate))
             (stmts (block->statements stmt.init))
-            ((ok cstate) (add-funs-in-statement-list stmts cstate))
+            ((ok funenv) (add-funs (statements-to-fundefs stmts) funenv))
             ((ok (soutcome outcome))
-             (exec-statement-list stmts cstate (1- limit)))
+             (exec-statement-list stmts cstate funenv (1- limit)))
             ((when (mode-case outcome.mode :break))
              (err (list :break-from-for-init (statement-fix stmt))))
             ((when (mode-case outcome.mode :continue))
              (err (list :continue-from-for-init (statement-fix stmt))))
             ((when (mode-case outcome.mode :leave))
-             (b* ((cstate (change-cstate outcome.cstate
-                                         :functions fstate-before))
-                  (cstate (restrict-vars vars-before cstate)))
+             (b* ((cstate (restrict-vars vars-before outcome.cstate)))
                (make-soutcome :cstate cstate :mode (mode-leave))))
             ((ok (soutcome outcome))
              (exec-for-iterations stmt.test
                                   stmt.update
                                   stmt.body
-                                  cstate
+                                  outcome.cstate
+                                  funenv
                                   (1- limit)))
             ((when (mode-case outcome.mode :break))
              (err (list :break-from-for (statement-fix stmt))))
             ((when (mode-case outcome.mode :continue))
              (err (list :continue-from-for (statement-fix stmt))))
-            (cstate (change-cstate outcome.cstate
-                                   :functions fstate-before))
-            (cstate (restrict-vars vars-before cstate)))
+            (cstate (restrict-vars vars-before outcome.cstate)))
          (make-soutcome :cstate cstate :mode outcome.mode))
        :switch
        (b* (((ok (eoutcome outcome))
-             (exec-expression stmt.target cstate (1- limit)))
+             (exec-expression stmt.target cstate funenv (1- limit)))
             ((unless (equal (len outcome.values) 1))
              (err (list :not-single-value outcome.values))))
          (exec-switch-rest stmt.cases
                            stmt.default
                            (car outcome.values)
                            outcome.cstate
+                           funenv
                            (1- limit)))
        :leave (make-soutcome :cstate (cstate-fix cstate)
                              :mode (mode-leave))
@@ -873,6 +1008,7 @@
 
   (define exec-statement-list ((stmts statement-listp)
                                (cstate cstatep)
+                               (funenv funenvp)
                                (limit natp))
     :returns (outcome soutcome-resultp)
     :short "Execute a list of statements."
@@ -888,12 +1024,15 @@
          ((when (endp stmts)) (make-soutcome :cstate (cstate-fix cstate)
                                              :mode (mode-regular)))
          ((ok (soutcome outcome))
-          (exec-statement (car stmts) cstate (1- limit)))
+          (exec-statement (car stmts) cstate funenv (1- limit)))
          ((unless (mode-case outcome.mode :regular)) outcome))
-      (exec-statement-list (cdr stmts) outcome.cstate (1- limit)))
+      (exec-statement-list (cdr stmts) outcome.cstate funenv (1- limit)))
     :measure (nfix limit))
 
-  (define exec-block ((block blockp) (cstate cstatep) (limit natp))
+  (define exec-block ((block blockp)
+                      (cstate cstatep)
+                      (funenv funenvp)
+                      (limit natp))
     :returns (outcome soutcome-resultp)
     :short "Execute a block."
     :long
@@ -902,22 +1041,17 @@
       "We save (the names of) the variables just before the block,
        so that we can restrict the computation state after the block
        to only those variables, as explained in @(tsee restrict-vars).
-       We also save the function state before the block,
-       because we need to restore that after the block.
-       We extend the function state with the functions in the block.
+       We extend the function environment with the functions in the block.
        We execute the block's statements.
        We return the resulting outcome,
-       but we restore the function state before the block
-       and we remove all the variables added by the block."))
+       but we remove all the variables added by the block."))
     (b* (((when (zp limit)) (err (list :limit (block-fix block))))
          (vars-before (omap::keys (cstate->local cstate)))
-         (fstate-before (cstate->functions cstate))
          (stmts (block->statements block))
-         ((ok cstate) (add-funs-in-statement-list stmts cstate))
+         ((ok funenv) (add-funs (statements-to-fundefs stmts) funenv))
          ((ok (soutcome outcome))
-          (exec-statement-list stmts cstate (1- limit)))
-         (cstate (change-cstate outcome.cstate :functions fstate-before))
-         (cstate (restrict-vars vars-before cstate)))
+          (exec-statement-list stmts cstate funenv (1- limit)))
+         (cstate (restrict-vars vars-before outcome.cstate)))
       (make-soutcome :cstate cstate :mode outcome.mode))
     :measure (nfix limit))
 
@@ -925,6 +1059,7 @@
                                (update blockp)
                                (body blockp)
                                (cstate cstatep)
+                               (funenv funenvp)
                                (limit natp))
     :returns (outcome soutcome-resultp)
     :short "Execute the iterations of a loop statement."
@@ -958,32 +1093,33 @@
                                    (block-fix update)
                                    (block-fix body))))
          ((ok (eoutcome outcome))
-          (exec-expression test cstate (1- limit)))
+          (exec-expression test cstate funenv (1- limit)))
          ((unless (equal (len outcome.values) 1))
           (err (list :for-test-not-single-value outcome.values)))
          ((when (equal (car outcome.values) (value 0)))
           (make-soutcome :cstate outcome.cstate :mode (mode-regular)))
          ((ok (soutcome outcome))
-          (exec-block body outcome.cstate (1- limit)))
+          (exec-block body outcome.cstate funenv (1- limit)))
          ((when (mode-case outcome.mode :break))
           (make-soutcome :cstate outcome.cstate :mode (mode-regular)))
          ((when (mode-case outcome.mode :leave))
           (make-soutcome :cstate outcome.cstate :mode outcome.mode))
          ((ok (soutcome outcome))
-          (exec-block update outcome.cstate (1- limit)))
+          (exec-block update outcome.cstate funenv (1- limit)))
          ((when (mode-case outcome.mode :break))
           (err (list :break-from-for-update (block-fix update))))
          ((when (mode-case outcome.mode :continue))
           (err (list :continue-from-for-update (block-fix update))))
          ((when (mode-case outcome.mode :leave))
           (make-soutcome :cstate outcome.cstate :mode outcome.mode)))
-      (exec-for-iterations test update body outcome.cstate (1- limit)))
+      (exec-for-iterations test update body outcome.cstate funenv (1- limit)))
     :measure (nfix limit))
 
   (define exec-switch-rest ((cases swcase-listp)
                             (default block-optionp)
                             (target valuep)
                             (cstate cstatep)
+                            (funenv funenvp)
                             (limit natp))
     :returns (outcome soutcome-resultp)
     :short "Execute the rest of a switch statement,
@@ -1000,15 +1136,16 @@
                                    (swcase-list-fix cases)
                                    (block-option-fix default))))
          ((when (endp cases))
-          (block-option-case default
-                             :some (exec-block default.val cstate (1- limit))
-                             :none (make-soutcome :cstate (cstate-fix cstate)
-                                                  :mode (mode-regular))))
+          (block-option-case
+           default
+           :some (exec-block default.val cstate funenv (1- limit))
+           :none (make-soutcome :cstate (cstate-fix cstate)
+                                :mode (mode-regular))))
          ((swcase case) (car cases))
          ((ok caseval) (eval-literal case.value))
          ((when (value-equiv target caseval))
-          (exec-block case.body cstate (1- limit))))
-      (exec-switch-rest (cdr cases) default target cstate (1- limit)))
+          (exec-block case.body cstate funenv (1- limit))))
+      (exec-switch-rest (cdr cases) default target cstate funenv (1- limit)))
     :measure (nfix limit))
 
   :flag-local nil
@@ -1020,10 +1157,10 @@
   (fty::deffixequiv-mutual exec)
 
   (defruled statement-kind-when-mode-regular
-    (implies (and (soutcomep (exec-statement stmt cstate limit))
-                  (mode-case (soutcome->mode (exec-statement stmt cstate limit))
-                             :regular))
-             (and (not (equal (statement-kind stmt) :leave))
-                  (not (equal (statement-kind stmt) :break))
-                  (not (equal (statement-kind stmt) :continue))))
+    (b* ((outcome (exec-statement stmt cstate funenv limit)))
+      (implies (and (soutcomep outcome)
+                    (mode-case (soutcome->mode outcome) :regular))
+               (and (not (equal (statement-kind stmt) :leave))
+                    (not (equal (statement-kind stmt) :break))
+                    (not (equal (statement-kind stmt) :continue)))))
     :enable exec-statement))

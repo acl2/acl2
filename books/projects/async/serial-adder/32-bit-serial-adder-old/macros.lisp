@@ -76,21 +76,21 @@
         ((symbolp (car body))
          (cond
           ((not (cadr body))
-           (list (strings-to-symbol "G" (str::natstr i))
+           (list (strings-to-symbol "G" (str::nat-to-dec-string i))
                  (list (car body))
                  'vss
                  ()))
           ((equal (cadr body) t)
-           (list (strings-to-symbol "G" (str::natstr i))
+           (list (strings-to-symbol "G" (str::nat-to-dec-string i))
                  (list (car body))
                  'vdd
                  ()))
           ((symbolp (cadr body))
-           (list (strings-to-symbol "G" (str::natstr i))
+           (list (strings-to-symbol "G" (str::nat-to-dec-string i))
                  (list (car body))
                  'wire
                  (list (cadr body))))
-          (t (list (strings-to-symbol "G" (str::natstr i))
+          (t (list (strings-to-symbol "G" (str::nat-to-dec-string i))
                    (list (car body))
                    (caadr body)
                    (cdadr body)))))
@@ -430,7 +430,7 @@
                               (natp i))))
   (if (atom st)
       nil
-    (cons `(list ',(strings-to-symbol "R" (str::natstr i))
+    (cons `(list ',(strings-to-symbol "R" (str::nat-to-dec-string i))
                  ',(list (car st))
                  'wire
                  (list (si ',s ,i)))
@@ -670,11 +670,11 @@
   :mode :program
   (if (atom high-signals-set)
       '(progn)
-    (b* ((suffix (if (natp suffix) (str::natstr suffix) suffix))
+    (b* ((suffix (if (natp suffix) (str::nat-to-dec-string suffix) suffix))
          (new-suffix (concatenate 'string
                                   suffix
                                   "-"
-                                  (str::natstr (len high-signals-set))))
+                                  (str::nat-to-dec-string (len high-signals-set))))
          (high-signals (car high-signals-set))
          (low-signals (remove-lst high-signals signals))
          (signals-hyps (append (bind-signals-to-val high-signals t)
@@ -778,11 +778,11 @@
       nil
     (b* ((st-trans (strings-to-symbol (symbol-name name)
                                       "$ST-TRANS-"
-                                      (str::natstr n)))
+                                      (str::nat-to-dec-string n)))
          (st-trans->numsteps (strings-to-symbol "*"
                                                 (symbol-name name)
                                                 "$ST-TRANS-"
-                                                (str::natstr n)
+                                                (str::nat-to-dec-string n)
                                                 "->NUMSTEPS*")))
       (append
        `((defund ,st-trans (,x)
@@ -802,7 +802,7 @@
       nil
     (b* ((st-trans (strings-to-symbol (symbol-name name)
                                       "$ST-TRANS-"
-                                      (str::natstr (1- n)))))
+                                      (str::nat-to-dec-string (1- n)))))
       (cons `(,st-trans ,x)
             (st-trans-lst name (1- n) x)))))
 
@@ -813,11 +813,11 @@
       nil
     (b* ((st-trans (strings-to-symbol (symbol-name name)
                                       "$ST-TRANS-"
-                                      (str::natstr (1- n))))
+                                      (str::nat-to-dec-string (1- n))))
          (st-trans->numsteps (strings-to-symbol "*"
                                                 (symbol-name name)
                                                 "$ST-TRANS-"
-                                                (str::natstr (1- n))
+                                                (str::nat-to-dec-string (1- n))
                                                 "->NUMSTEPS*")))
       (cons `((,st-trans ,x) ,st-trans->numsteps)
             (st-trans->numsteps-lst name (1- n) x)))))

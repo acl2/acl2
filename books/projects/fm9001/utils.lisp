@@ -614,7 +614,7 @@
 (defun si (s idx)
   (declare (xargs :guard (and (symbolp s)
                               (natp idx))))
-  (intern$ (append-symbol-string s (str::natstr (nfix idx)))
+  (intern$ (append-symbol-string s (str::nat-to-dec-string (nfix idx)))
            "FM9001"))
 
 (defun sis (s start-idx count)

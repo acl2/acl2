@@ -112,7 +112,7 @@ name to create a temporary filename."
        ((unless (stringp user))
         (er hard? __function__ "reading $USER failed")
         (mv nil state))
-       (filename (str::cat user "-" (str::natstr pid) "-" basename))
+       (filename (str::cat user "-" (str::nat-to-dec-string pid) "-" basename))
        (path     (catpath tempdir filename)))
     (mv path state))
   ///
@@ -171,5 +171,3 @@ Otherwise, we just default to @('/tmp').</p>"
 
 
 (defattach tempfile-fn default-tempfile)
-
-

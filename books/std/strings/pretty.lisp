@@ -759,10 +759,10 @@ just assume that we always want to escape symbols that need escaping.</p>"
   :returns (size posp :rule-classes :type-prescription)
   :inline t
   (case (the (unsigned-byte 5) print-base)
-    (10        (natsize x))
-    (16        (natsize16 x))
-    (8         (natsize8 x))
-    (otherwise (natsize2 x))))
+    (10        (nat-to-dec-string-size x))
+    (16        (nat-to-hex-string-size x))
+    (8         (nat-to-oct-string-size x))
+    (otherwise (nat-to-bin-string-size x))))
 
 (define int-size
   :short "How many characters are required to represent an integer?"

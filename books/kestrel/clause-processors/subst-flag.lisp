@@ -31,7 +31,13 @@
 (local (in-theory (disable disjoin
                            symbol-alistp
                            strip-cdrs
-                           assoc-equal)))
+                           assoc-equal
+                           ;; member-equal
+                           default-car ; for speed
+                           default-cdr ; for speed
+                           consp-from-len-cheap ; for speed
+                           ;; pseudo-term-listp
+                           )))
 
 (in-theory (disable mv-nth))
 

@@ -6167,7 +6167,7 @@
     ((< (LNFIX$INLINE X) '10)
      (O< (ACL2-COUNT (TRUNCATE X '10))
          (ACL2-COUNT X))))
-   (STR::NATSIZE-SLOW 1 :SYSTEM . "std/strings/decimal"))
+   (STR::NAT-TO-DEC-STRING-SIZE-SLOW 1 :SYSTEM . "std/strings/decimal"))
   ((JUSTIFICATION (N)
                   (NIL O-P . O<)
                   ((ACL2-COUNT N) IF MV-LIST RETURN-LAST))

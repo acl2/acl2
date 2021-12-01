@@ -39,7 +39,7 @@
 (defun si (s idx)
   (declare (xargs :guard (and (symbolp s)
                               (natp idx))))
-  (intern$ (append-symbol-string s (natstr (nfix idx)))
+  (intern$ (append-symbol-string s (nat-to-dec-string (nfix idx)))
            "ADE"))
 
 (local
@@ -65,7 +65,7 @@
                            (x (append (explode (symbol-name s2))
                                       '(#\_)))
                            (y (explode (symbol-name s1)))
-                           (a (append (explode (natstr (nfix n)))
+                           (a (append (explode (nat-to-dec-string (nfix n)))
                                       '(#\_))))
            :in-theory (disable not-iprefixp-append))))
 
@@ -92,11 +92,11 @@
   ()
 
   (local
-   (defthm not-member-underscore-natstr
-     (not (member #\_ (explode (natstr n))))
+   (defthm not-member-underscore-nat-to-dec-string
+     (not (member #\_ (explode (nat-to-dec-string n))))
      :hints (("Goal" :in-theory (enable basic-nat-to-dec-chars
                                         nat-to-dec-chars
-                                        natstr)))))
+                                        nat-to-dec-string)))))
 
   (local
    (defthmd si-of-diff-symbols-aux-1
@@ -128,24 +128,24 @@
                      si-of-diff-symbols-aux-1
                      (str1 (str-append-symbol-underscore s1))
                      (str2 (str-append-symbol-underscore s2))
-                     (str3 (natstr (nfix n1)))
-                     (str4 (natstr (nfix n2))))
+                     (str3 (nat-to-dec-string (nfix n1)))
+                     (str4 (nat-to-dec-string (nfix n2))))
                     (:instance
                      si-of-diff-symbols-aux-1
                      (str1 (str-append-symbol-underscore s2))
                      (str2 (str-append-symbol-underscore s1))
-                     (str3 (natstr (nfix n2)))
-                     (str4 (natstr (nfix n1))))
+                     (str3 (nat-to-dec-string (nfix n2)))
+                     (str4 (nat-to-dec-string (nfix n1))))
                     (:instance
                      si-of-diff-symbols-aux-2
                      (n (length (symbol-name s2)))
-                     (str1 (append-symbol-string s1 (natstr (nfix n1))))
-                     (str2 (append-symbol-string s2 (natstr (nfix n2)))))
+                     (str1 (append-symbol-string s1 (nat-to-dec-string (nfix n1))))
+                     (str2 (append-symbol-string s2 (nat-to-dec-string (nfix n2)))))
                     (:instance
                      si-of-diff-symbols-aux-2
                      (n (length (symbol-name s1)))
-                     (str1 (append-symbol-string s2 (natstr (nfix n2))))
-                     (str2 (append-symbol-string s1 (natstr (nfix n1))))))))))
+                     (str1 (append-symbol-string s2 (nat-to-dec-string (nfix n2))))
+                     (str2 (append-symbol-string s1 (nat-to-dec-string (nfix n1))))))))))
 
   (local
    (defun diff-elementp (x y)
@@ -183,15 +183,15 @@
                     (:instance
                      not-equal-equiv-diff-elementp
                      (x (append (explode (symbol-name s1))
-                                (cons #\_ (explode (natstr (nfix n1))))))
+                                (cons #\_ (explode (nat-to-dec-string (nfix n1))))))
                      (y (append (explode (symbol-name s2))
-                                (cons #\_ (explode (natstr (nfix n2)))))))
+                                (cons #\_ (explode (nat-to-dec-string (nfix n2)))))))
                     (:instance
                      diff-elementp-append
                      (x1 (explode (symbol-name s1)))
-                     (x2 (cons #\_ (explode (natstr (nfix n1)))))
+                     (x2 (cons #\_ (explode (nat-to-dec-string (nfix n1)))))
                      (y1 (explode (symbol-name s2)))
-                     (y2 (cons #\_ (explode (natstr (nfix n2)))))))))))
+                     (y2 (cons #\_ (explode (nat-to-dec-string (nfix n2)))))))))))
 
   (in-theory (disable istrprefixp
                       str-append-symbol-underscore

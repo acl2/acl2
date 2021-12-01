@@ -62,7 +62,7 @@
       read-string
 
       str::cat
-      str::natstr
+      str::nat-to-dec-string
       str::strtok
       str::count
       str::substrp

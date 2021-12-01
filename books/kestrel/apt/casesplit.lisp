@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -484,7 +484,7 @@
     a prefix (@('thm') or @('cond') or @('new'))
     a number @('k'),
     and a suffix (@('-hyp') or @('-guard')).")
-  (intern (str::cat prefix (str::natstr k) suffix) "KEYWORD"))
+  (intern (str::cat prefix (str::nat-to-dec-string k) suffix) "KEYWORD"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

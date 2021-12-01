@@ -507,31 +507,31 @@ consing together characters in reverse order.</p>"
                  (cons #\0 acc)
                (revappend-nat-to-dec-chars-aux n acc))))
 
-(define natstr
+(define nat-to-dec-string
   :short "Convert a natural number into a string with its digits."
   ((n natp))
   :returns (str stringp :rule-classes :type-prescription)
-  :long "<p>For instance, @('(natstr 123)') is @('\"123\"').</p>"
+  :long "<p>For instance, @('(nat-to-dec-string 123)') is @('\"123\"').</p>"
   :inline t
   (implode (nat-to-dec-chars n))
   ///
-  (defthm dec-digit-char-listp-of-natstr
-    (dec-digit-char-listp (explode (natstr n))))
-  (defthm natstr-one-to-one
-    (equal (equal (natstr n) (natstr m))
+  (defthm dec-digit-char-listp-of-nat-to-dec-string
+    (dec-digit-char-listp (explode (nat-to-dec-string n))))
+  (defthm nat-to-dec-string-one-to-one
+    (equal (equal (nat-to-dec-string n) (nat-to-dec-string m))
            (equal (nfix n) (nfix m))))
-  (defthm dec-digit-chars-value-of-natstr
-    (equal (dec-digit-chars-value (explode (natstr n)))
+  (defthm dec-digit-chars-value-of-nat-to-dec-string
+    (equal (dec-digit-chars-value (explode (nat-to-dec-string n)))
            (nfix n)))
-  (defthm natstr-nonempty
-    (not (equal (natstr n) ""))))
+  (defthm nat-to-dec-string-nonempty
+    (not (equal (nat-to-dec-string n) ""))))
 
-(define natstr-width
+(define nat-to-dec-string-width
   :short "Convert a natural number into a string with the given width."
   ((n natp)
    (width posp))
   :returns (str stringp :rule-classes :type-prescription)
-  :long "<p>Similar to @(see natstr) but produces a fixed number of decimal
+  :long "<p>Similar to @(see nat-to-dec-string) but produces a fixed number of decimal
 digits.  If the input number is smaller it is padded with 0s, and if larger its
 more-significant bits are truncated.</p>"
   (b* ((width (mbe :logic (if (posp width) width 1) :exec width))
@@ -545,24 +545,24 @@ more-significant bits are truncated.</p>"
             (implies (character-listp x)
                      (character-listp (nthcdr n x))))))
   ///
-  (defthm dec-digit-char-listp-of-natstr-width
-    (dec-digit-char-listp (explode (natstr-width n width))))
-  (defthm natstr-width-nonempty
-    (not (equal (natstr-width n width) ""))))
+  (defthm dec-digit-char-listp-of-nat-to-dec-string-width
+    (dec-digit-char-listp (explode (nat-to-dec-string-width n width))))
+  (defthm nat-to-dec-string-width-nonempty
+    (not (equal (nat-to-dec-string-width n width) ""))))
 
-(define intstr
+(define int-to-dec-string
   :short "Convert an integer into a string with its digits."
   ((i integerp))
   :returns (str stringp :rule-classes :type-prescription)
-  :long "<p>For instance, @('(intstr -123)') is @('\"-123\"').</p>"
+  :long "<p>For instance, @('(int-to-dec-string -123)') is @('\"-123\"').</p>"
   :inline t
   (let ((i (mbe :logic (ifix i) :exec i)))
     (if (< i 0)
         (implode (cons #\- (nat-to-dec-chars (- i))))
       (implode (nat-to-dec-chars i))))
   ///
-  (defthm intstr-nonempty
-    (not (equal (intstr i) "")))
+  (defthm int-to-dec-string-nonempty
+    (not (equal (int-to-dec-string i) "")))
 
   (local (defthm l0
            (implies (dec-digit-char-listp x)
@@ -572,15 +572,15 @@ more-significant bits are truncated.</p>"
            (implies (equal (char x 0) #\-)
                     (not (equal x "0")))))
 
-  (defthm intstr-one-to-one-positive
-    (equal (equal (intstr n) (intstr m))
+  (defthm int-to-dec-string-one-to-one-positive
+    (equal (equal (int-to-dec-string n) (int-to-dec-string m))
            (equal (ifix n) (ifix m)))
     :hints(("Goal"
-            :in-theory (enable natstr)
-            :use ((:instance natstr-one-to-one (n 0) (m m))
-                  (:instance natstr-one-to-one (n n) (m 0)))))))
+            :in-theory (enable nat-to-dec-string)
+            :use ((:instance nat-to-dec-string-one-to-one (n 0) (m m))
+                  (:instance nat-to-dec-string-one-to-one (n n) (m 0)))))))
 
-(define intstr-width
+(define int-to-dec-string-width
   :short "Convert an integer into a string with a fixed number of digits."
   ((i integerp)
    (width posp))
@@ -603,78 +603,78 @@ more-significant bits are truncated.</p>"
             (implies (character-listp x)
                      (character-listp (nthcdr n x))))))
   ///
-  (defthm intstr-width-nonempty
-    (not (equal (intstr-width i width) ""))))
+  (defthm int-to-dec-string-width-nonempty
+    (not (equal (int-to-dec-string-width i width) ""))))
 
-(define natstr-list
+(define nat-to-dec-string-list
   :short "Convert a list of natural numbers into a list of strings."
   ((x nat-listp))
   :returns (strs string-listp)
   (if (atom x)
       nil
-    (cons (natstr (car x))
-          (natstr-list (cdr x))))
+    (cons (nat-to-dec-string (car x))
+          (nat-to-dec-string-list (cdr x))))
   ///
-  (defthm natstr-list-when-atom
+  (defthm nat-to-dec-string-list-when-atom
     (implies (atom x)
-             (equal (natstr-list x)
+             (equal (nat-to-dec-string-list x)
                     nil)))
-  (defthm natstr-list-of-cons
-    (equal (natstr-list (cons a x))
-           (cons (natstr a)
-                 (natstr-list x)))))
+  (defthm nat-to-dec-string-list-of-cons
+    (equal (nat-to-dec-string-list (cons a x))
+           (cons (nat-to-dec-string a)
+                 (nat-to-dec-string-list x)))))
 
-(define intstr-list
+(define int-to-dec-string-list
   :short "Convert a list of integers into a list of strings."
   ((x integer-listp))
   :returns (strs string-listp)
   (if (atom x)
       nil
-    (cons (intstr (car x))
-          (intstr-list (cdr x))))
+    (cons (int-to-dec-string (car x))
+          (int-to-dec-string-list (cdr x))))
   ///
-  (defthm intstr-list-when-atom
+  (defthm int-to-dec-string-list-when-atom
     (implies (atom x)
-             (equal (intstr-list x)
+             (equal (int-to-dec-string-list x)
                     nil)))
-  (defthm intstr-list-of-cons
-    (equal (intstr-list (cons a x))
-           (cons (intstr a)
-                 (intstr-list x)))))
+  (defthm int-to-dec-string-list-of-cons
+    (equal (int-to-dec-string-list (cons a x))
+           (cons (int-to-dec-string a)
+                 (int-to-dec-string-list x)))))
 
 
-(define natsize-slow ((x natp))
-  :parents (natsize)
+(define nat-to-dec-string-size-slow ((x natp))
+  :parents (nat-to-dec-string-size)
   (if (< (lnfix x) 10)
       1
     (the unsigned-byte
       (+ 1 (the unsigned-byte
-             (natsize-slow
+             (nat-to-dec-string-size-slow
               (the unsigned-byte (truncate x 10))))))))
 
-(local (defthm natsize-slow-bound
+(local (defthm nat-to-dec-string-size-slow-bound
          (implies (posp x)
-                  (<= (natsize-slow x) x))
+                  (<= (nat-to-dec-string-size-slow x) x))
          :rule-classes ((:rewrite) (:linear))
-         :hints(("Goal" :in-theory (enable natsize-slow)))))
+         :hints(("Goal" :in-theory (enable nat-to-dec-string-size-slow)))))
 
-(define natsize-fast ((x :type (unsigned-byte 29)))
-  :parents (natsize)
+(define nat-to-dec-string-size-fast ((x :type (unsigned-byte 29)))
+  :parents (nat-to-dec-string-size)
   :verify-guards nil
   :enabled t
-  (mbe :logic (natsize-slow x)
+  (mbe :logic (nat-to-dec-string-size-slow x)
        :exec
        (if (< x 10)
            1
          (the (unsigned-byte 29)
            (+ 1
               (the (unsigned-byte 29)
-                (natsize-fast (the (unsigned-byte 29) (truncate x 10))))))))
+                (nat-to-dec-string-size-fast (the (unsigned-byte 29) (truncate x 10))))))))
   ///
-  (verify-guards natsize-fast
-    :hints(("Goal" :in-theory (enable natsize-slow)))))
+  (verify-guards nat-to-dec-string-size-fast
+    :hints(("Goal" :in-theory (enable nat-to-dec-string-size-slow)))))
 
-(define natsize
+(define nat-to-dec-string-size
   :short "Number of characters in the decimal representation of a natural."
   ((x natp))
   :returns (size posp :rule-classes :type-prescription)
@@ -683,20 +683,20 @@ more-significant bits are truncated.</p>"
   (mbe :logic
        (if (< (lnfix x) 10)
            1
-         (+ 1 (natsize (truncate x 10))))
+         (+ 1 (nat-to-dec-string-size (truncate x 10))))
        :exec
        (if (<= (mbe :logic (nfix x) :exec x) 536870911)
-           (natsize-fast x)
-         (natsize-slow x)))
+           (nat-to-dec-string-size-fast x)
+         (nat-to-dec-string-size-slow x)))
   ///
-  (defthm natsize-slow-removal
-    (equal (natsize-slow x)
-           (natsize x))
-    :hints(("Goal" :in-theory (enable natsize-slow))))
-  (defthm natsize-fast-removal
-    (equal (natsize-fast x)
-           (natsize x)))
-  (verify-guards natsize$inline))
+  (defthm nat-to-dec-string-size-slow-removal
+    (equal (nat-to-dec-string-size-slow x)
+           (nat-to-dec-string-size x))
+    :hints(("Goal" :in-theory (enable nat-to-dec-string-size-slow))))
+  (defthm nat-to-dec-string-size-fast-removal
+    (equal (nat-to-dec-string-size-fast x)
+           (nat-to-dec-string-size x)))
+  (verify-guards nat-to-dec-string-size$inline))
 
 
 (define parse-nat-from-charlist
@@ -870,3 +870,13 @@ non-decimal digit characters or is empty, we return @('nil').</p>"
               val)))
   ///
   (defcong istreqv equal (strval x) 1))
+
+
+(defmacro natstr (x) `(nat-to-dec-string ,x))
+
+(table acl2::macro-aliases-table 'natstr 'nat-to-dec-string$inline)
+
+
+(defmacro intstr (x) `(int-to-dec-string ,x))
+
+(table acl2::macro-aliases-table 'intstr 'int-to-dec-string$inline)

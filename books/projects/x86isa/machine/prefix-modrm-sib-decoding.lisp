@@ -699,7 +699,7 @@
      ((map (member-equal map '(#ux0F #ux0F_38 #ux0F_3A)))
       (mode (member-equal mode '(32 64))))
 
-     (b* ((mode-name (str::cat (str::natstr mode) "-BIT"))
+     (b* ((mode-name (str::cat (str::nat-to-dec-string mode) "-BIT"))
           (pre-name (str::cat mode-name "-COMPUTE-MANDATORY-PREFIX-FOR-"))
           (map-name (case map
                       (#ux0F    "TWO-BYTE")

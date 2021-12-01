@@ -513,44 +513,44 @@ consing together characters in reverse order.</p>"
                  (cons #\0 acc)
                (revappend-nat-to-bin-chars-aux n acc))))
 
-(define natstr2
+(define nat-to-bin-string
   :short "Convert a natural number into a string with its bits."
   ((n natp))
   :returns (str stringp :rule-classes :type-prescription)
-  :long "<p>For instance, @('(natstr2 8)') is @('\"1000\"').</p>"
+  :long "<p>For instance, @('(nat-to-bin-string 8)') is @('\"1000\"').</p>"
   :inline t
   (implode (nat-to-bin-chars n))
   ///
-  (defthm bin-digit-char-listp-of-natstr
-    (bin-digit-char-listp (explode (natstr2 n))))
-  (defthm natstr2-one-to-one
-    (equal (equal (natstr2 n) (natstr2 m))
+  (defthm bin-digit-char-listp-of-nat-to-dec-string
+    (bin-digit-char-listp (explode (nat-to-bin-string n))))
+  (defthm nat-to-bin-string-one-to-one
+    (equal (equal (nat-to-bin-string n) (nat-to-bin-string m))
            (equal (nfix n) (nfix m))))
-  (defthm bin-digit-chars-value-of-natstr
-    (equal (bin-digit-chars-value (explode (natstr2 n)))
+  (defthm bin-digit-chars-value-of-nat-to-dec-string
+    (equal (bin-digit-chars-value (explode (nat-to-bin-string n)))
            (nfix n)))
-  (defthm natstr2-nonempty
-    (not (equal (natstr2 n) ""))))
+  (defthm nat-to-bin-string-nonempty
+    (not (equal (nat-to-bin-string n) ""))))
 
-(define natstr2-list
+(define nat-to-bin-string-list
   :short "Convert a list of natural numbers into a list of bit strings."
   ((x nat-listp))
   :returns (strs string-listp)
   (if (atom x)
       nil
-    (cons (natstr2 (car x))
-          (natstr2-list (cdr x))))
+    (cons (nat-to-bin-string (car x))
+          (nat-to-bin-string-list (cdr x))))
   ///
-  (defthm natstr2-list-when-atom
+  (defthm nat-to-bin-string-list-when-atom
     (implies (atom x)
-             (equal (natstr2-list x)
+             (equal (nat-to-bin-string-list x)
                     nil)))
-  (defthm natstr2-list-of-cons
-    (equal (natstr2-list (cons a x))
-           (cons (natstr2 a)
-                 (natstr2-list x)))))
+  (defthm nat-to-bin-string-list-of-cons
+    (equal (nat-to-bin-string-list (cons a x))
+           (cons (nat-to-bin-string a)
+                 (nat-to-bin-string-list x)))))
 
-(define natsize2
+(define nat-to-bin-string-size
   :short "Number of characters in the binary representation of a natural."
   ((x natp))
   :returns (size posp :rule-classes :type-prescription
@@ -562,14 +562,14 @@ consing together characters in reverse order.</p>"
   ///
   (defthm len-of-nat-to-bin-chars
     (equal (len (nat-to-bin-chars x))
-           (natsize2 x))
+           (nat-to-bin-string-size x))
     :hints(("Goal" :in-theory (acl2::enable* nat-to-bin-chars
                                              basic-nat-to-bin-chars
                                              acl2::ihsext-recursive-redefs))))
-  (defthm length-of-natstr2
-    (equal (length (natstr2 x))
-           (natsize2 x))
-    :hints(("Goal" :in-theory (enable natstr2)))))
+  (defthm length-of-nat-to-bin-string
+    (equal (length (nat-to-bin-string x))
+           (nat-to-bin-string-size x))
+    :hints(("Goal" :in-theory (enable nat-to-bin-string)))))
 
 (define parse-bits-from-charlist
   :short "Parse a binary number from the beginning of a character list."

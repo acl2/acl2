@@ -266,6 +266,16 @@
     nil)
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-safe-path-list ((paths path-listp) (vartab vartablep))
+  :returns (noinfo resulterr-optionp)
+  :short "Check if a list of paths is safe."
+  (b* (((when (endp paths)) nil)
+       ((ok &) (check-safe-path (car paths) vartab)))
+    (check-safe-path-list (cdr paths) vartab))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-safe-literal ((lit literalp))
@@ -402,12 +412,12 @@
      and it must return exactly one result."))
   (b* ((name (identifier-fix name))
        (init (expression-option-fix init))
-       ((ok vartab) (add-var name vartab))
-       ((when (not init)) vartab)
+       ((ok vartab-new) (add-var name vartab))
+       ((when (not init)) vartab-new)
        ((ok results) (check-safe-expression init vartab funtab))
        ((unless (= results 1))
         (err (list :declare-single-var-mismatch name results))))
-    vartab)
+    vartab-new)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -483,7 +493,7 @@
     "We check the function call, and ensure that it returns
      a number of results equal to the number of variables.
      The variables must be two or more."))
-  (b* (((ok &) (check-safe-assign-multi-aux targets vartab))
+  (b* (((ok &) (check-safe-path-list targets vartab))
        ((unless (>= (len targets) 2))
         (err (list :assign-zero-one-path (path-list-fix targets))))
        ((ok results) (check-safe-funcall value vartab funtab))
@@ -491,17 +501,7 @@
         (err (list :assign-single-var-mismatch
                (path-list-fix targets) results))))
     nil)
-  :hooks (:fix)
-
-  :prepwork
-  ((define check-safe-assign-multi-aux ((targets path-listp)
-                                        (vartab vartablep))
-     :returns (noinfo resulterr-optionp)
-     :parents nil
-     (b* (((when (endp targets)) nil)
-          ((ok &) (check-safe-path (car targets) vartab)))
-       (check-safe-assign-multi-aux (cdr targets) vartab))
-     :hooks (:fix))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

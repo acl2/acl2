@@ -525,7 +525,7 @@
                    ((equal name "li")
                     (b* ((bullet (if (eq (get-list-type open-tags) :bulleted)
                                      "* "
-                                   (str::cat (str::natstr (nfix (car list-nums))) ". ")))
+                                   (str::cat (str::nat-to-dec-string (nfix (car list-nums))) ". ")))
                          (bullet-len (length bullet))
                          (desired    (get-indent-level open-tags))
                          (spaces  (make-list (nfix (- desired bullet-len))

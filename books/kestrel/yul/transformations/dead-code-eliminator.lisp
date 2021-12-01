@@ -166,3 +166,12 @@
     (equal (fundef->name (fundef-dead fdef))
            (fundef->name fdef))
     :expand (fundef-dead fdef)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection fundef-list-dead ((x fundef-listp))
+  :returns (new-fundefs fundef-listp)
+  :short "Eliminate dead code in lists of function definitions."
+  (fundef-dead x)
+  ///
+  (fty::deffixequiv fundef-list-dead))

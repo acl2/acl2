@@ -1463,7 +1463,7 @@
      (b* (((unless (mbt (posp j))) nil)
           ((unless (mbt (posp m))) nil)
           ((when (> j m)) nil)
-          (name (str::cat "RESULT" (str::natstr j)))
+          (name (str::cat "RESULT" (str::nat-to-dec-string j)))
           (var (intern-in-package-of-symbol name old$))
           (vars (isodata-gen-result-vars-aux old$ (1+ j) m)))
        (cons var vars))

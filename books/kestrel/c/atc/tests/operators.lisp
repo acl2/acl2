@@ -43,7 +43,7 @@
                                    #\-
                                    (str::downcase-string (symbol-name afn)))
                        "_test"
-                       (str::natstr index))
+                       (str::nat-to-dec-string index))
                       "ACL2")))
     (mv afn cfn)))
 
@@ -54,7 +54,7 @@
                                    #\-
                                    (str::downcase-string (symbol-name afn)))
                        "_test"
-                       (str::natstr index))
+                       (str::nat-to-dec-string index))
                       "ACL2")))
     (mv afn cfn)))
 

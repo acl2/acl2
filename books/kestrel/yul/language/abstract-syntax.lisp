@@ -476,6 +476,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deflist fundef-list
+  :short "Fixtype of lists of function definitions."
+  :elt-type fundef
+  :true-listp t
+  :elementp-of-nil nil
+  :pred fundef-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define statements-to-fundefs ((stmts statement-listp))
+  :returns (fundefs fundef-listp)
+  :short "Filter function definitions out of a list of statements."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The function definitions are in the same order
+     as they appear in the list of statements.
+     We discard all the statements that are not function definitions,
+     and we eliminate the @(':statement-fundef') wrappers."))
+  (cond ((endp stmts) nil)
+        ((statement-case (car stmts) :fundef)
+         (cons (statement-fundef->get (car stmts))
+               (statements-to-fundefs (cdr stmts))))
+        (t (statements-to-fundefs (cdr stmts))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum data-value
   :short "Fixtype of data values in Yul objects."
   :long

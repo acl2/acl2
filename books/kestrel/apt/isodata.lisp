@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1462,7 +1462,7 @@
      (b* (((unless (mbt (posp j))) nil)
           ((unless (mbt (posp m))) nil)
           ((when (> j m)) nil)
-          (name (str::cat "RESULT" (str::natstr j)))
+          (name (str::cat "RESULT" (str::nat-to-dec-string j)))
           (var (intern-in-package-of-symbol name old$))
           (vars (isodata-gen-result-vars-aux old$ (1+ j) m)))
        (cons var vars))

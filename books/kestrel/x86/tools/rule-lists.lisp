@@ -123,6 +123,8 @@
     x86isa::riml64               ;shilpi leaves this enabled
     x86isa::riml-size$inline ;shilpi leaves this enabled -- could restrict to constant
 
+    x86isa::wml08
+    x86isa::wml16
     x86isa::wml32
     x86isa::wml64           ;shilpi leaves this enabled, but this is big!
     x86isa::wml-size$inline ;shilpi leaves this enabled
@@ -619,6 +621,7 @@
             x86isa::n01$inline
             x86isa::n03$inline
             x86isa::n06$inline
+            x86isa::n08$inline
             x86isa::n16$inline
             x86isa::n32$inline
             x86isa::n64$inline

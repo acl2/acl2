@@ -119,7 +119,7 @@
          (b* (((mv test varnum acc) (aabf-nest-fn (second x) varnum man acc))
               ((mv then varnum acc) (aabf-nest-fn (third x) varnum man acc))
               ((mv else varnum acc) (aabf-nest-fn (fourth x) varnum man acc))
-              (var (intern$ (str::cat "ITE" (str::natstr varnum)) "FGL"))
+              (var (intern$ (str::cat "ITE" (str::nat-to-dec-string varnum)) "FGL"))
               (acc (cons `((mv ,var ,man) (aabf-ite ,test ,then ,else ,man)) acc)))
            (mv var (1+ varnum) acc)))
         ((unless (symbolp fn))
@@ -130,7 +130,7 @@
          (b* (((mv args varnum acc) (aabf-nestlist-fn (cdr x) varnum man acc)))
            (mv (cons fn args) varnum acc)))
         ((mv args varnum acc) (aabf-nestlist-fn (cdr x) varnum man acc))
-        (var (intern$ (str::cat (symbol-name fn) (str::natstr varnum)) "FGL"))
+        (var (intern$ (str::cat (symbol-name fn) (str::nat-to-dec-string varnum)) "FGL"))
         (acc (cons `((manret ,var ,man) (,fn . ,args)) acc)))
      (mv var (1+ varnum) acc)))
 
@@ -152,7 +152,7 @@
          (aabf-nest-fn (car x) varnum man acc))
         ((mv first varnum acc) (aabf-nest-fn (car x) varnum man acc))
         ((mv rest varnum acc) (aabf-binary-nestlist-fn op (cdr x) varnum man acc))
-        (var (intern$ (str::cat (symbol-name op) (str::natstr varnum)) "FGL"))
+        (var (intern$ (str::cat (symbol-name op) (str::nat-to-dec-string varnum)) "FGL"))
         (acc (cons `((mv ,var ,man)
                      (,(case op
                          (and 'aabf-and)
@@ -167,4 +167,3 @@
   (b* (((mv res ?varnum acc) (aabf-nest-fn nest 0 man nil)))
     `(b* ,(reverse acc)
        (mv ,res ,man))))
-

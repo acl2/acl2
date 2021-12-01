@@ -96,7 +96,7 @@
                          "</td><td>"
                          ,fsmt
                          "</td><td>"
-                         ,(natstr nargs)
+                         ,(nat-to-dec-string nargs)
                          "</td></tr> ")))
              (falist-to-xdoc-aux (cdr falist) (revappend entry acc)))))
 
