@@ -68,6 +68,13 @@
   :ok value
   :pred value-resultp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-valuep
+  (implies (valuep x)
+           (not (resulterrp x)))
+  :enable (valuep resulterrp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult value-list-result

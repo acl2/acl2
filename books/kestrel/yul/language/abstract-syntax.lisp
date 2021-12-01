@@ -92,6 +92,13 @@
   :ok identifier
   :pred identifier-resultp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-identifierp
+  (implies (identifierp x)
+           (not (resulterrp x)))
+  :enable (identifierp resulterrp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult identifier-list-result

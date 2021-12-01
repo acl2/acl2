@@ -80,6 +80,13 @@
   :ok funtable
   :pred funtable-resultp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-funtablep
+  (implies (funtablep x)
+           (not (resulterrp x)))
+  :enable resulterrp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define get-funtype ((name identifierp) (funtab funtablep))
