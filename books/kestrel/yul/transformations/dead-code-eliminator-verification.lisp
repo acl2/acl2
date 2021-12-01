@@ -71,18 +71,17 @@
    (xdoc::codeblock
     "(exec (xform ast) cstate (xform funenv)) = (exec ast state funenv)")
    (xdoc::p
-    "The second reason and refinement of the theorems
+    "The second reason, and refinement of the theorems,
      has to do with error results,
      which may be returned by the defensive execution functions.
-     The error values include information about the ACL2 call stack
-     (see @(tsee fty::defresult)),
+     The error values include information about AST pieces
+     and the ACL2 call stack (see @(tsee fty::defresult)),
      which causes a dependency of error values
      on more than just the input/output behavior of ACL2 functions,
-     but also on their specific calls.
+     but also on the ASTs executed and the specific calls.
      Since the @('DeadCodeEliminator') transformation
      removes certain pieces of ASTs,
-     recursive functions like @(tsee add-funs-in-statement-list)
-     may return slightly different error values
+     some functions may return slightly different error values
      when run on @('(xform ast)') vs. @('ast').
      The difference is inessential from a semantic point of view.
      Thus, we define equivalence relations on execution results,
@@ -312,7 +311,16 @@
   (b* (((funinfo+funenv funinfoenv) funinfoenv))
     (make-funinfo+funenv :info (funinfo-dead funinfoenv.info)
                          :env (funenv-dead funinfoenv.env)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule funinfo+funenv->info-of-funinfo+funenv-dead
+    (equal (funinfo+funenv->info (funinfo+funenv-dead funinfoenv))
+           (funinfo-dead (funinfo+funenv->info funinfoenv))))
+
+  (defrule funinfo+funenv->env-of-funinfo+funenv-dead
+    (equal (funinfo+funenv->env (funinfo+funenv-dead funinfoenv))
+           (funenv-dead (funinfo+funenv->env funinfoenv)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -632,8 +640,7 @@
   (local (in-theory (enable eoutcome-result-okeq
                             soutcome-result-okeq
                             funenv-result-dead
-                            funinfo+funenv-result-dead
-                            funinfo+funenv-dead)))
+                            funinfo+funenv-result-dead)))
 
   (defthm-exec-flag
 
