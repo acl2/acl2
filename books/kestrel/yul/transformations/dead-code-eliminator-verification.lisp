@@ -349,25 +349,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define cstate-result-okeq ((x cstate-resultp) (y cstate-resultp))
-  :returns (yes/no booleanp)
-  :short "Equality of computation state results modulo errors."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the equivalence relation on computation states
-     discussed in @(see dead-code-eliminator-verification)."))
-  (b* ((x (cstate-result-fix x))
-       (y (cstate-result-fix y)))
-    (cond ((resulterrp x) (resulterrp y))
-          ((resulterrp y) (resulterrp x))
-          (t (equal x y))))
-  :hooks (:fix)
-  ///
-  (defequiv cstate-result-okeq))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define eoutcome-result-okeq ((x eoutcome-resultp) (y eoutcome-resultp))
   :returns (yes/no booleanp)
   :short "Equality of expression outcome results modulo errors."
@@ -403,25 +384,6 @@
   :hooks (:fix)
   ///
   (defequiv soutcome-result-okeq))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define funenv-result-okeq ((x funenv-resultp) (y funenv-resultp))
-  :returns (yes/no booleanp)
-  :short "Equality of function environment results modulo errors."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the equivalence relation on computation states
-     discussed in @(see dead-code-eliminator-verification)."))
-  (b* ((x (funenv-result-fix x))
-       (y (funenv-result-fix y)))
-    (cond ((resulterrp x) (resulterrp y))
-          ((resulterrp y) (resulterrp x))
-          (t (equal x y))))
-  :hooks (:fix)
-  ///
-  (defequiv funenv-result-okeq))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -667,10 +629,8 @@
      since we always want to expand them in the proofs.
      This way, we expose the two cases, error and non-error."))
 
-  (local (in-theory (enable cstate-result-okeq
-                            eoutcome-result-okeq
+  (local (in-theory (enable eoutcome-result-okeq
                             soutcome-result-okeq
-                            funenv-result-okeq
                             funenv-result-dead
                             funinfo+funenv-result-dead
                             funinfo+funenv-dead)))
