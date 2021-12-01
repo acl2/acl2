@@ -1040,6 +1040,8 @@
             acl2::bvplus-of-+-combine-constants
 
             common-lisp::logcount-constant-opener ; for flags
+            common-lisp::evenp-constant-opener ; appears in parity flag
+            acl2::nonnegative-integer-quotient-constant-opener ; appears in parity flag
             acl2::zip-constant-opener ; for flags
 
             X86ISA::X86-ELEM-FIX ;new
