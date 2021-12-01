@@ -241,7 +241,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-safe-path ((path pathp) (vartab vartablep))
-  :returns (noinfo resulterr-optionp)
+  :returns (_ resulterr-optionp)
   :short "Check if a path is safe."
   :long
   (xdoc::topstring
@@ -276,7 +276,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-safe-path-list ((paths path-listp) (vartab vartablep))
-  :returns (noinfo resulterr-optionp)
+  :returns (_ resulterr-optionp)
   :short "Check if a list of paths is safe."
   (b* (((when (endp paths)) nil)
        ((ok &) (check-safe-path (car paths) vartab)))
@@ -286,7 +286,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-safe-literal ((lit literalp))
-  :returns (noinfo resulterr-optionp)
+  :returns (_ resulterr-optionp)
   :short "Check if a literal is safe."
   :long
   (xdoc::topstring
@@ -465,7 +465,7 @@
                                   (value expressionp)
                                   (vartab vartablep)
                                   (funtab funtablep))
-  :returns (noinfo resulterr-optionp)
+  :returns (_ resulterr-optionp)
   :short "Check if a single assignment is safe."
   :long
   (xdoc::topstring
@@ -488,7 +488,7 @@
                                  (value funcallp)
                                  (vartab vartablep)
                                  (funtab funtablep))
-  :returns (noinfo resulterr-optionp)
+  :returns (_ resulterr-optionp)
   :short "Check if a multiple assignment is safe."
   :long
   (xdoc::topstring
@@ -913,7 +913,7 @@
 
   (define check-safe-fundef ((fundef fundefp)
                              (funtab funtablep))
-    :returns (noinfo resulterr-optionp)
+    :returns (_ resulterr-optionp)
     :short "Check if a function definition is safe."
     :long
     (xdoc::topstring

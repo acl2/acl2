@@ -128,7 +128,7 @@
     :measure (statement-list-count stmts))
 
   (define check-shadow-block ((block blockp) (vars identifier-setp))
-    :returns (noinfo resulterr-optionp)
+    :returns (_ resulterr-optionp)
     :short "Check variable shadowing in a block."
     :long
     (xdoc::topstring
@@ -142,7 +142,7 @@
 
   (define check-shadow-block-option ((block? block-optionp)
                                      (vars identifier-setp))
-    :returns (noinfo resulterr-optionp)
+    :returns (_ resulterr-optionp)
     :short "Check variable shadowing in an optional block."
     (block-option-case
      block?
@@ -151,13 +151,13 @@
     :measure (block-option-count block?))
 
   (define check-shadow-swcase ((case swcasep) (vars identifier-setp))
-    :returns (noinfo resulterr-optionp)
+    :returns (_ resulterr-optionp)
     :short "Check variable shadowing in a case."
     (check-shadow-block (swcase->body case) vars)
     :measure (swcase-count case))
 
   (define check-shadow-swcase-list ((cases swcase-listp) (vars identifier-setp))
-    :returns (noinfo resulterr-optionp)
+    :returns (_ resulterr-optionp)
     :short "Check variable shadowing in a list of cases."
     (b* (((when (endp cases)) nil)
          ((ok &) (check-shadow-swcase (car cases) vars))
@@ -166,7 +166,7 @@
     :measure (swcase-list-count cases))
 
   (define check-shadow-fundef ((fundef fundefp) (vars identifier-setp))
-    :returns (noinfo resulterr-optionp)
+    :returns (_ resulterr-optionp)
     :short "Check variable shadowing in a function definition."
     :long
     (xdoc::topstring
