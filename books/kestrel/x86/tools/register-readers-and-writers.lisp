@@ -307,6 +307,7 @@
 (defthm set-ebp-of-set-ebp (equal (set-ebp ebp1 (set-ebp ebp2 x86)) (set-ebp ebp1 x86)) :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;; Introduce the register writers:
+;; These rules are disabled since they are not appropriate for 64-bit reasoning:
 (defthmd xw-becomes-set-eax (equal (xw :rgf *rax* val x86) (set-eax val x86)) :hints (("Goal" :in-theory (enable set-eax))))
 (defthmd xw-becomes-set-ebx (equal (xw :rgf *rbx* val x86) (set-ebx val x86)) :hints (("Goal" :in-theory (enable set-ebx))))
 (defthmd xw-becomes-set-ecx (equal (xw :rgf *rcx* val x86) (set-ecx val x86)) :hints (("Goal" :in-theory (enable set-ecx))))
@@ -314,7 +315,6 @@
 (defthmd xw-becomes-set-esp (equal (xw :rgf *rsp* val x86) (set-esp val x86)) :hints (("Goal" :in-theory (enable set-esp))))
 (defthmd xw-becomes-set-ebp (equal (xw :rgf *rbp* val x86) (set-ebp val x86)) :hints (("Goal" :in-theory (enable set-ebp))))
 
-;; These rules are disabled since they are not appropriate for 64-bit reasoning:
 (theory-invariant (incompatible (:definition set-eax) (:rewrite xw-becomes-set-eax)))
 (theory-invariant (incompatible (:definition set-ebx) (:rewrite xw-becomes-set-ebx)))
 (theory-invariant (incompatible (:definition set-ecx) (:rewrite xw-becomes-set-ecx)))
@@ -323,6 +323,7 @@
 (theory-invariant (incompatible (:definition set-ebp) (:rewrite xw-becomes-set-ebp)))
 
 ;; Introduce the register readers:
+;; These rules are disabled since they are not appropriate for 64-bit reasoning:
 (defthmd xr-becomes-eax (equal (xr :rgf *rax* x86) (eax x86)) :hints (("Goal" :in-theory (enable eax))))
 (defthmd xr-becomes-ebx (equal (xr :rgf *rbx* x86) (ebx x86)) :hints (("Goal" :in-theory (enable ebx))))
 (defthmd xr-becomes-ecx (equal (xr :rgf *rcx* x86) (ecx x86)) :hints (("Goal" :in-theory (enable ecx))))
@@ -330,7 +331,6 @@
 (defthmd xr-becomes-esp (equal (xr :rgf *rsp* x86) (esp x86)) :hints (("Goal" :in-theory (enable esp))))
 (defthmd xr-becomes-ebp (equal (xr :rgf *rbp* x86) (ebp x86)) :hints (("Goal" :in-theory (enable ebp))))
 
-;; These rules are disabled since they are not appropriate for 64-bit reasoning:
 (theory-invariant (incompatible (:definition eax) (:rewrite xr-becomes-eax)))
 (theory-invariant (incompatible (:definition ebx) (:rewrite xr-becomes-ebx)))
 (theory-invariant (incompatible (:definition ecx) (:rewrite xr-becomes-ecx)))
