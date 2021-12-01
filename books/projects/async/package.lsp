@@ -68,7 +68,7 @@
        str::iprefixp
        str::istrprefixp
        str::nat-to-dec-chars
-       str::natstr)
+       str::nat-to-dec-string)
 
    (union-eq *acl2-exports*
 	     *common-lisp-symbols-from-main-lisp-package*)))

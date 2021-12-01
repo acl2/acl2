@@ -1,7 +1,7 @@
 ; Utilities for making symbols from strings, nats, chars, and other symbols.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 (local (include-book "coerce"))
 (local (include-book "explode-nonnegative-integer"))
 (local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 
 ;; See also the built-in functions add-suffix and add-suffix-to-fn, which are
 ;; less general than pack$ but may suffice for many uses.
@@ -25,20 +26,6 @@
   (equal (character-listp (explode-nonnegative-integer n base acc))
          (character-listp acc))
   :hints (("Goal" :in-theory (e/d (character-listp explode-nonnegative-integer) (floor mod digit-to-char)))))
-
-;improve?
-;see books/std/typed-lists/character-listp.lisp
-(defthm character-listp-of-append2
-  (implies (and (character-listp x)
-                (character-listp y))
-           (character-listp (append x y))))
-
-;; Also in books/std/typed-lists/character-listp.lisp, but that brings in too much stuff.
-(defthm character-listp-of-cons
-  (equal (character-listp (cons a x))
-         (and (characterp a)
-              (character-listp x)))
-  :hints (("Goal" :in-theory (enable character-listp))))
 
 (defthm character-listp-of-explode-atom
   (character-listp (explode-atom x print-base))
@@ -141,6 +128,11 @@
 ;; Pack all the args *after* the first, using the package of the first argument.
 (defmacro pack-in-package-of-symbol (sym &rest rst)
   `(intern-in-package-of-symbol ,(pack$-fn rst) ,sym))
+
+;todo: add $ to name?
+(defmacro pack-in-package-of-first-symbol (sym
+                                           &rest rst)
+  `(pack-in-package-of-symbol ,sym ,sym ,@rst))
 
 ;todo: add $ to name?
 ;; Returns a string rather than a symbol.

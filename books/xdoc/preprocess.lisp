@@ -1314,7 +1314,7 @@ baz
             nil
             state))
        ((unless (equal (len objects) 1))
-        (mv (str::cat "Error: parsed " (str::natstr (len objects))
+        (mv (str::cat "Error: parsed " (str::nat-to-dec-string (len objects))
                       " expressions (instead of 1) from @(`...`).  Input: " str)
             nil
             state))

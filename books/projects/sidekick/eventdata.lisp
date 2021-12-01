@@ -50,11 +50,11 @@
          (100fpart (* fpart 100))
          (chop     (truncate 100fpart 1)))
     (cat sign
-         (natstr ipart)
+         (nat-to-dec-string ipart)
          "."
          (if (< chop 10)
-             (cat "0" (natstr chop))
-           (natstr chop)))))
+             (cat "0" (nat-to-dec-string chop))
+           (nat-to-dec-string chop)))))
 
 ;; (local (defthm acl2-numberp-when-rationalp
 ;;          (implies (rationalp x)
@@ -172,5 +172,3 @@
 ;;  - figure out how to grab all events from a command block
 ;;  - simple sum up their total times, etc.
 ;;  - implement top-level command-block-time command.
-
-

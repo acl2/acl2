@@ -69,7 +69,7 @@ numbers in hex.  It is typically used in @(see cw) statements, e.g.,:</p>
 
 <p>The @('#ux') is for compatibility with the @(see acl2::sharp-u-reader).</p>
 
-<p>See also @(see natstr) which converts numbers into decimal strings (without
+<p>See also @(see nat-to-dec-string) which converts numbers into decimal strings (without
 underscores) and @(see binify) which is like @('hexify') but for binary instead
 of hex.</p>
 

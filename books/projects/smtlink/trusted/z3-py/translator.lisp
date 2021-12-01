@@ -261,7 +261,7 @@
   (define generate-symbol-enumeration ((symbol-index natp))
     :returns (new-sym stringp)
     (b* ((symbol-index (nfix symbol-index))
-         (new-sym (concatenate 'string "gensym_" (natstr symbol-index))))
+         (new-sym (concatenate 'string "gensym_" (nat-to-dec-string symbol-index))))
       new-sym))
 
   (define translate-quote ((expr t))

@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -463,7 +463,7 @@
           (var (car vars))
           (type (car types))
           (expr (car exprs))
-          (tmp (str::cat "$" (str::natstr i)))
+          (tmp (str::cat "$" (str::nat-to-dec-string i)))
           (first-tmp (jblock-locvar type tmp expr))
           (first-asg (jblock-asg (jexpr-name var)
                                  (jexpr-name tmp)))

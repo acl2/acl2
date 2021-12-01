@@ -50,7 +50,7 @@
                      (split-term 'NIL))
   :mode :program
   (b* ((suffix (if (natp suffix)
-                   (str::natstr suffix)
+                   (str::nat-to-dec-string suffix)
                  suffix))
        (lemma-name (intern$ (concatenate 'string
                                          (symbol-name st)
@@ -214,7 +214,7 @@
        (time-const-guts (assert$ (quotep time-const-prop)
                                  (unquote time-const-prop)))
        (suffix (if (natp suffix)
-                   (str::natstr suffix)
+                   (str::nat-to-dec-string suffix)
                  suffix))
        (lemma-name (intern$ (concatenate 'string
                                          (symbol-name start-st)
@@ -346,7 +346,3 @@
                               (cadr (caddar simplified-term1)))))
            :hints ,hints)
         state)))
-
-
-
-

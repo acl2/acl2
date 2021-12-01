@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -136,7 +136,7 @@
     with the optional suffixes, this becomes an integer constant.
     As noted in @(tsee iconst), we allow 0 here,
     which is turned into the single digit @('0').")
-  (str::natstr (lnfix n))
+  (str::nat-to-dec-string (lnfix n))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -151,7 +151,7 @@
     with the optional suffixes, this becomes an integer constant.")
   (if (zp n)
       "0"
-    (str::cat "0" (str::natstr8 n)))
+    (str::cat "0" (str::nat-to-oct-string n)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -167,7 +167,7 @@
     with the optional suffixes, this becomes an integer constant.
     We print this with lowercase prefix and with no leading zeros,
     unless the number is 0, in which case we print @('0x0').")
-  (str::cat "0x" (str::natstr16 (lnfix n)))
+  (str::cat "0x" (str::nat-to-hex-string (lnfix n)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

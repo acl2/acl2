@@ -875,7 +875,7 @@ grammar is:</p>
                                            (vl-echarlist->string etext)
                                            width
                                            val-fix
-                                           (str::natstr16 val-fix)))))
+                                           (str::nat-to-hex-string val-fix)))))
                       ((< value (expt 2 31))
                        warnings)
                       ((and signedp (< value (expt 2 32)))
@@ -900,7 +900,7 @@ grammar is:</p>
                               :args (list (vl-echar->loc firstchar)
                                           (vl-echarlist->string number)
                                           val-fix
-                                          (str::natstr16 val-fix)))))))
+                                          (str::nat-to-hex-string val-fix)))))))
             (mv token remainder2 warnings)))
 
          ;; Otherwise, we weren't able to interpret the normalized edigits as a
@@ -1008,4 +1008,3 @@ grammar is:</p>
   ///
   (def-token/remainder-thms vl-lex-number
     :formals (echars breakp st warnings)))
-

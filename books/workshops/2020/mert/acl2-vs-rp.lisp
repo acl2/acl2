@@ -101,10 +101,10 @@
 
 (defun get-time-aux (diff n)
   (if (zp n)
-      (str::intstr (floor diff 1))
+      (str::int-to-dec-string (floor diff 1))
     (str::cat (get-time-aux (floor diff 10) (1- n))
               (if (equal n 1) "." "")
-              (str::intstr (mod (floor diff 1) 10)))))
+              (str::int-to-dec-string (mod (floor diff 1) 10)))))
 
 (defun get-time (diff host-lisp)
   (if (equal host-lisp 'ccl)
@@ -131,7 +131,7 @@
          (message (str::cat "Proofs with "
                             ,(symbol-name rewriter)
                             " with depth "
-                            ,(str::intstr size)
+                            ,(str::int-to-dec-string size)
                             " finished in "
                             (get-time (- end-time start-time) host)
                             " secs."))

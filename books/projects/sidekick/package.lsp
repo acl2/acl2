@@ -45,7 +45,7 @@
                     sidekick
 
                     str::cat
-                    str::natstr
+                    str::nat-to-dec-string
 
                     ;; acl2 stuff we want access to
                     ens
@@ -68,4 +68,3 @@
                     )
                   std::*std-exports*)
    *std-pkg-symbols*))
-

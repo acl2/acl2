@@ -1,6 +1,6 @@
 ; Template Generators
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -74,7 +74,7 @@
            (n (mbe :logic (nfix n) :exec n)))
        (if (> i n)
            nil
-         (cons (add-suffix 'x (str::natstr i))
+         (cons (add-suffix 'x (str::nat-to-dec-string i))
                (template-fn-params-aux (1+ i) n))))
      :measure (nfix (- (1+ (nfix n)) (nfix i))))))
 

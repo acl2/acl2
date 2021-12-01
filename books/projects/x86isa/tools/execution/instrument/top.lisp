@@ -262,7 +262,7 @@
 (defsection !log-file-name
   :short "Assign a log file where the instrumentation output from
   @(tsee printing-x86-components) will be stored"
-  
+
   (defun !log-file-name-function (name state)
     (declare (xargs :stobjs (state)))
     (mv nil name state))
@@ -283,13 +283,13 @@
   :short "Functions to print some components of the x86 state, either
   to file (@('printing-x86-components')) or to
   terminal (@('printing-x86-to-terminal'))"
-  
+
   (defun print-component (base num)
     (declare (xargs :guard (and (member-equal base '(10 16))
                                 (natp num))))
     (case base
-      (10 (str::natstr num))
-      (t (str::cat "#x" (str::natstr16 num)))))
+      (10 (str::nat-to-dec-string num))
+      (t (str::cat "#x" (str::nat-to-hex-string num)))))
 
   (defun printing-x86-to-string (base x86)
     (declare (xargs :stobjs (x86))
@@ -370,7 +370,7 @@
                              :fmt-control-alist
                              '((current-package . "X86ISA")))))
       str))
- 
+
    (defun printing-x86-components (base x86 state)
      (declare (xargs :stobjs (x86 state)) (ignorable x86 base state))
      (acl2::pprogn
@@ -463,7 +463,7 @@
          ((unless (or (eql base 10) (eql base 16)))
           (prog2$
            (er hard? 'big-step "Unexpected value of print-base global: ~x0." base)
-           (mv nil x86 state)))         
+           (mv nil x86 state)))
          ((mv steps x86)
           (x86-run-steps n x86))
          (state (printing-x86-components base x86 state)))

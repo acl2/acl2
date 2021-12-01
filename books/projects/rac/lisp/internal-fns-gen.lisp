@@ -189,13 +189,13 @@
                                  pkg-name
                                  (symbol-name key)
                                  "-"
-                                 (str::natstr (1- i)))
+                                 (str::nat-to-dec-string (1- i)))
                               key))
                    (renamed-key (strings-to-symbol
                                  pkg-name
                                  (symbol-name key)
                                  "-"
-                                 (str::natstr i))))
+                                 (str::nat-to-dec-string i))))
               (if (equal key (car pair))
                   (if (= i (1- n))
                       ;; Reach the last binding of 'key' in 'alist'
@@ -294,7 +294,7 @@
                          pkg-name
                          (symbol-name key)
                          "--"
-                         (str::natstr (1- i)))))
+                         (str::nat-to-dec-string (1- i)))))
            (replace-all-except-bound-vars key old-key alist)))
         (t (let* ((pair (car alist))
                   (old-key (if (posp i)
@@ -302,13 +302,13 @@
                                 pkg-name
                                 (symbol-name key)
                                 "--"
-                                (str::natstr (1- i)))
+                                (str::nat-to-dec-string (1- i)))
                              key))
                   (renamed-key (strings-to-symbol
                                 pkg-name
                                 (symbol-name key)
                                 "--"
-                                (str::natstr i))))
+                                (str::nat-to-dec-string i))))
              (if (equal key (car pair))
                  (cons
                   (cons renamed-key
@@ -353,7 +353,7 @@
                          pkg-name
                          (symbol-name key)
                          "--"
-                         (str::natstr (1- (count key keys))))))
+                         (str::nat-to-dec-string (1- (count key keys))))))
       (rename-keys-in-body
        (cdr distinct-keys)
        keys
@@ -371,7 +371,7 @@
              (strings-to-symbol pkg-name
                                 (symbol-name x)
                                 "++"
-                                (str::natstr n)))))
+                                (str::nat-to-dec-string n)))))
         (t (cons (rename-with-count
                   (car x) replaced-vars mv-let-vars pkg-name)
                  (rename-with-count

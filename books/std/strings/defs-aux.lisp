@@ -133,13 +133,13 @@
     nat-to-dec-chars
     revappend-nat-to-dec-chars-aux
     revappend-nat-to-dec-chars
-    natstr
-    natstr-list
-    intstr
-    intstr-list
-    natsize-slow
-    natsize-fast
-    natsize
+    nat-to-dec-string
+    nat-to-dec-string-list
+    int-to-dec-string
+    int-to-dec-string-list
+    nat-to-dec-string-size-slow
+    nat-to-dec-string-size-fast
+    nat-to-dec-string-size
     parse-nat-from-charlist
     parse-nat-from-string
     strval
@@ -159,9 +159,9 @@
     nat-to-bin-chars
     revappend-nat-to-bin-chars-aux
     revappend-nat-to-bin-chars
-    natstr2
-    natstr2-list
-    natsize2
+    nat-to-bin-string
+    nat-to-bin-string-list
+    nat-to-bin-string-size
     parse-bits-from-charlist
     parse-bits-from-string
     strval2
@@ -182,10 +182,10 @@
     nat-to-hex-chars
     revappend-nat-to-hex-chars-aux
     revappend-nat-to-hex-chars
-    natstr16
-    natstr16-list
-    natsize16-aux
-    natsize16
+    nat-to-hex-string
+    nat-to-hex-string-list
+    nat-to-hex-string-size-aux
+    nat-to-hex-string-size
     parse-hex-from-charlist
     parse-hex-from-string
     strval16
@@ -207,10 +207,10 @@
     nat-to-oct-chars
     revappend-nat-to-oct-chars-aux
     revappend-nat-to-oct-chars
-    natstr8
-    natstr8-list
-    natsize8-aux
-    natsize8
+    nat-to-oct-string
+    nat-to-oct-string-list
+    nat-to-oct-string-size-aux
+    nat-to-oct-string-size
     parse-octal-from-charlist
     parse-octal-from-string
     strval8

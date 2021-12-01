@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -205,8 +205,8 @@
     "We turn the integer into its (base 10) digits,
      prepended by @('minus') if negative."))
   (if (>= integer 0)
-      (str::natstr integer)
-    (str::cat "minus" (str::natstr (- integer)))))
+      (str::nat-to-dec-string integer)
+    (str::cat "minus" (str::nat-to-dec-string (- integer)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -471,7 +471,7 @@
         (raise "Internal error: no index for CONS pair ~x0." cons)
         "")
        (index (cdr cons+index)))
-    (str::cat "$P_" (str::natstr index))))
+    (str::cat "$P_" (str::nat-to-dec-string index))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

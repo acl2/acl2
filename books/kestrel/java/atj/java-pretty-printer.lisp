@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -327,7 +327,7 @@
   (jliteral-case
    lit
    :integer (print-integer-literal lit.get)
-   :floating (b* ((digits (str::natstr lit.value)))
+   :floating (b* ((digits (str::nat-to-dec-string lit.value)))
                (str::cat digits ".0"))
    :boolean (if lit.value "true" "false")
    :character (msg "'~@0'" (print-jchar lit.value))

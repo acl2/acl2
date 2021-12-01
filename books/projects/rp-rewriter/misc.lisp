@@ -170,7 +170,7 @@
                              '(:IN-THEORY (e/d () ()))))))
              (local
               (rp::add-rp-rule opener-lemmas :outside-in t))
-             
+
              (with-output
                :stack :pop
                :on (acl2::summary acl2::event)
@@ -295,7 +295,7 @@
 ")
 
 (progn
-  (mutual-recursion 
+  (mutual-recursion
    (defund contains-lambda-expression (body)
      (declare (xargs :guard t))
      (cond ((atom body) nil)
@@ -372,7 +372,7 @@ nothing to bump!" nil)))
                                    (beta-reduce 'nil)
                                    (hints 'nil)
                                    (outside-in 'nil))
-    
+
     (b* ((rw-direction
           (cond ((or (equal outside-in ':inside-out)
                      (equal outside-in ':both))
@@ -456,7 +456,7 @@ new rule is created to be used by RP-Rewriter. You can disable this by setting ~
         ""
       (str::cat
        (symbol-name (car args))
-       ": ~p" (str::intstr cnt)
+       ": ~p" (str::int-to-dec-string cnt)
        " ~% "
        (rw-opener-error-args-string (cdr args) (1+ cnt)))))
 

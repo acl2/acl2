@@ -243,15 +243,15 @@
           (def-parse-print-element rep.element))
          ((when (equal range.max
                        (nati-finite range.min)))
-          (str::cat (str::natstr range.min)
+          (str::cat (str::nat-to-dec-string range.min)
                     (def-parse-print-element rep.element))))
       (str::cat (if (equal range.min 0)
                     ""
-                  (str::natstr range.min))
+                  (str::nat-to-dec-string range.min))
                 "*"
                 (if (nati-case range.max :infinity)
                     ""
-                  (str::natstr (nati-finite->get range.max)))
+                  (str::nat-to-dec-string (nati-finite->get range.max)))
                 (def-parse-print-element rep.element)))
     :measure (repetition-count rep)))
 
@@ -398,7 +398,7 @@
      and we put the resulting tree into a singleton list if successful.
      Note that we propagate the error when parsing the element,
      i.e. we pass @('t') as the @('check-error-p') flag."))
-  (b* ((trees-index (add-suffix 'trees (str::natstr index)))
+  (b* ((trees-index (add-suffix 'trees (str::nat-to-dec-string index)))
        (parse-repetition-fn? (cdr (assoc-equal rep repetition-fns)))
        ((when parse-repetition-fn?)
         (mv `(((mv ,trees-index input) (,parse-repetition-fn? input))
@@ -561,7 +561,7 @@
                   (vars acl2::symbol-listp))
      :parents nil
      (b* (((when (endp alt)) (mv nil nil))
-          (treess-index (add-suffix 'treess (str::natstr index)))
+          (treess-index (add-suffix 'treess (str::nat-to-dec-string index)))
           (code `(((mv ,treess-index input1)
                    (b* (,@(def-parse-gen-code-for-concatenation
                             (car alt)
