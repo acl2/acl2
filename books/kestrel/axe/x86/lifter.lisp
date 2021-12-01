@@ -36,6 +36,8 @@
 
 ;; TODO: add an option to enforce a rewrite step limit in the lifter, for debugging?  May require a change to the rewriter.
 
+;; TODO: Switch to using a simpler rewriter, that doesn't depend on skip-proofs
+
 (include-book "misc/defp" :dir :system)
 (include-book "kestrel/x86/tools/support-axe" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
@@ -1037,11 +1039,6 @@
              parameter-name ;;`(nth ',parameter-number params)
              (make-replacement-alist (cdr paramnum-extractor-alist) paramnum-name-alist state-var)))))
 
-;move
-(defmacro pack-in-package-of-first-symbol (sym
-                                                 &rest rst)
-  `(pack-in-package-of-symbol ,sym ,sym ,@rst))
-
 ;; Check that each of the INVARIANTS holds over ONE-REP-TERM
 ;; Returns (mv erp proved-invariants failed-invariants state)
 (defun prove-invariants-preserved (invariants ; the invariants left to check
@@ -1628,7 +1625,7 @@
          (mv (erp-t) nil nil nil state))
         (- (cw "Done proving lack of aliasing)~%"))
 
-        (loop-fn (pack-in-package-of-first-symbol base-name '-loop- this-loop-num)) ;todo: import pack-in-package-of-first-symbol
+        (loop-fn (pack-in-package-of-first-symbol base-name '-loop- this-loop-num))
 
         ;; Rewrite the update functions and exit test in terms of params:
         (param-names (strip-cdrs paramnum-name-alist))
@@ -1797,7 +1794,7 @@
               (all-state-nums (acl2::ints-in-range 0 loop-depth))
               (all-state-vars (ACL2::PACK-IN-PACKAGE-OF-base-SYMBOL-list 'x86_ all-state-nums)) ;could pass these in
               (result-dag ;(mv erp result-dag)
-               ;; todo: this is a non-array functin:
+               ;; todo: this is a non-array function:
                (compose-term-and-dags `(myif ,(farg1 state-term)
                                              :then-part
                                              :else-part)

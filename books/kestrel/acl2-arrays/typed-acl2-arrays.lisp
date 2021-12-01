@@ -67,6 +67,7 @@
        :hints (("Goal" :in-theory (enable ,checker-fn))))
 
      ;; todo: improve the name here:
+     ;; todo: can hyps on the index be dropped if the default value satisfies the pred?
      (defthm ,(pack$ 'type-of-aref1-when- checker-fn)
        (implies (and (,checker-fn array-name array top-index ,@extra-vars)
                      (<= index top-index)

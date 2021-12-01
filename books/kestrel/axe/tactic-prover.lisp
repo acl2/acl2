@@ -18,6 +18,8 @@
 
 ;; TODO: Add support for :axe-prover option to call the Axe prover
 
+;; TODO: Make a lighter-weight version that does not depend on skip-proofs.
+
 (include-book "prune")
 (include-book "dag-size")
 (include-book "dagify") ;todo
@@ -27,21 +29,15 @@
 (include-book "kestrel/utilities/progn" :dir :system) ; for extend-progn
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
-(local (in-theory (enable member-equal-becomes-memberp))) ;todo
+;(local (in-theory (enable member-equal-becomes-memberp))) ;todo
 
-(defthm pseudo-termp-when-memberp
-  (implies (and (memberp a y)
-                (pseudo-term-listp y))
-           (pseudo-termp a))
-  :hints (("Goal" :in-theory (enable pseudo-term-listp MEMBERP))))
-
-(defthm pseudo-term-listp-of-union-equal-2 ;name clash
-  (equal (pseudo-term-listp (union-equal x y))
-         (and (pseudo-term-listp (true-list-fix x))
-              (pseudo-term-listp y)))
-  :hints (("Goal" :in-theory (e/d (union-equal pseudo-term-listp)
-                                  (pseudo-termp)))))
+;; (defthm pseudo-termp-when-memberp
+;;   (implies (and (memberp a y)
+;;                 (pseudo-term-listp y))
+;;            (pseudo-termp a))
+;;   :hints (("Goal" :in-theory (enable pseudo-term-listp MEMBERP))))
 
 ;;
 ;; Proof tactics
@@ -733,7 +729,7 @@
                               (name 'nil) ;the name of the proof if we care to give it one.  also used for the name of the theorem
                               (debug 'nil)
                               (timeout '*default-stp-timeout*) ;1000 here broke proofs
-                              (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include acl2 rules here...
+                              (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include rules for the :acl2 tactic
                               (monitor 'nil)
                               (simplify-xors 't)
                               (rule-classes '(:rewrite))

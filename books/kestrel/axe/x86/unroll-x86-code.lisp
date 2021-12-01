@@ -106,7 +106,7 @@
                               (natp total-steps)
                               )
                   :mode :program)
-           (irrelevant print) ;todo
+           ;; (irrelevant print)
            )
   (if (zp steps-left)
       (mv (erp-nil) dag state)
@@ -119,7 +119,8 @@
                           :assumptions assumptions
                           :monitor rules-to-monitor
                           :use-internal-contextsp use-internal-contextsp
-                          :print :brief ;nil ;print todo
+                          ;; pass print, so we can cause rule hits to be printed:
+                          :print print ; :brief ;nil
 ;                             :print-interval 10000 ;todo: pass in
                           :limits (acons 'x86isa::x86-fetch-decode-execute-base steps-for-this-iteration nil)
                           :memoizep memoizep))

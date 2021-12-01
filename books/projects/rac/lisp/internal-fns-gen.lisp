@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; August 2021
+;; November 2021
 
 ;; Direct reasoning about complex functions is often unachievable in most
 ;; existing verification tools.  Decomposition is a common technique for
@@ -360,20 +360,6 @@
        (replace-all-except-bound-vars key renamed-key body)
        pkg-name))))
 
-(defund rename-keys-in-if-statement (x pkg-name)
-  (cond ((atom x) x)
-        ((member-equal (car x) '(let let* b*))
-         (let* ((alist (cadr x))
-                (body (caddr x))
-                (vars (strip-cars alist))
-                (distinct-vars (remove-duplicates vars))
-                (renamed-alist (rename-keys-in-bindings
-                                distinct-vars vars alist pkg-name))
-                (renamed-body (rename-keys-in-body
-                               distinct-vars vars body pkg-name)))
-           (list (car x) renamed-alist renamed-body)))
-        (t x)))
-
 (defund rename-with-count (x replaced-vars mv-let-vars pkg-name)
   (cond ((null x) nil)
         ((atom x)
@@ -391,36 +377,57 @@
                  (rename-with-count
                   (cdr x) replaced-vars mv-let-vars pkg-name)))))
 
-(defund rename-mv-let-vars (x mv-let-vars pkg-name)
-  ;; Rename variables in the MV-LET forms appearing in term 'x'
-  (declare (xargs :mode :program))
-  (cond
-   ((atom x) x)
-   ((member-equal (car x) '(mv-let mv?-let))
-    (let* ((vars (cadr x))
-           (term (caddr x))
-           (term (if (member-equal (car term)
-                                   (list (intern$ "IF" "RTL")
-                                         (intern$ "IF1" "RTL")))
-                     (list (car term)
-                           (cadr term)
-                           (rename-keys-in-if-statement (caddr term) pkg-name)
-                           (cadddr term))
-                   term))
-           (body (cdddr x))
-           (renamed-vars (rename-with-count vars vars mv-let-vars pkg-name))
-           (renamed-body (rename-with-count body vars mv-let-vars pkg-name)))
-      (cons (car x)
-            (cons renamed-vars
-                  (cons (rename-mv-let-vars
-                         term
-                         (append mv-let-vars vars)
-                         pkg-name)
-                        (rename-mv-let-vars renamed-body
-                                            mv-let-vars
-                                            pkg-name))))))
-   (t (cons (rename-mv-let-vars (car x) mv-let-vars pkg-name)
-            (rename-mv-let-vars (cdr x) mv-let-vars pkg-name)))))
+(mutual-recursion
+ (defund rename-keys-in-if-statement (x mv-let-vars pkg-name)
+   (cond ((atom x) x)
+         ((member-equal (car x) '(let let* b*))
+          (let* ((alist (cadr x))
+                 (body (caddr x))
+                 (vars (strip-cars alist))
+                 (distinct-vars (remove-duplicates vars))
+                 (renamed-alist (rename-keys-in-bindings
+                                 distinct-vars vars alist pkg-name))
+                 (renamed-body (rename-keys-in-body
+                                distinct-vars vars body pkg-name)))
+            (list (car x) renamed-alist renamed-body)))
+         ((member-equal (car x) '(mv-let mv?-let))
+          (rename-mv-let-vars x mv-let-vars pkg-name))
+         (t x)))
+
+ (defund rename-mv-let-vars (x mv-let-vars pkg-name)
+   ;; Rename variables in the MV-LET forms appearing in term 'x'
+   (declare (xargs :mode :program))
+   (cond
+    ((atom x) x)
+    ((member-equal (car x) '(mv-let mv?-let))
+     (let* ((vars (cadr x))
+            (term (caddr x))
+            (term (if (member-equal (car term)
+                                    (list (intern$ "IF" "RTL")
+                                          (intern$ "IF1" "RTL")))
+                      (list (car term)
+                            (cadr term)
+                            (rename-keys-in-if-statement
+                             (caddr term)
+                             (append mv-let-vars vars vars)
+                             pkg-name)
+                            (cadddr term))
+                    term))
+            (body (cdddr x))
+            (renamed-vars (rename-with-count vars vars mv-let-vars pkg-name))
+            (renamed-body (rename-with-count body vars mv-let-vars pkg-name)))
+       (cons (car x)
+             (cons renamed-vars
+                   (cons (rename-mv-let-vars
+                          term
+                          (append mv-let-vars vars)
+                          pkg-name)
+                         (rename-mv-let-vars renamed-body
+                                             mv-let-vars
+                                             pkg-name))))))
+    (t (cons (rename-mv-let-vars (car x) mv-let-vars pkg-name)
+             (rename-mv-let-vars (cdr x) mv-let-vars pkg-name)))))
+ )
 
 (defund shrink-alist (preserved-keys alist)
   ;; Remove all elements from the association list 'alist' except for the
