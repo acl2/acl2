@@ -190,9 +190,12 @@ when using the "time" command for such runs.</p>
 <p><i>Further troubleshooting with SBCL</i></p>
 
 <p>We have seen the error, "An mprotect call failed with ENOMEM."
-A solution has been to rebuild the SBCL executable  after editing the
-  SBCL source file <code>src/compiler/x86-64/parms.lisp</code>,
-  replacing the line<br/>
+This error has been observed to have disappeared in SBCL 2.1.11
+(perhaps simply because of a change to the books in a github version
+of ACL2 in Fall 2021).  Before that, a solution was to rebuild the
+SBCL executable after editing the SBCL source
+file <code>src/compiler/x86-64/parms.lisp</code>, replacing the
+line<br/>
 <code>(defconstant gencgc-card-bytes +backend-page-bytes+)</code><br/>
 by the following line.<br/>
 <code>(defconstant gencgc-card-bytes (* 2 +backend-page-bytes+))</code></p>
