@@ -131,15 +131,13 @@
      can be proved as equality rather than equivalences.")
    (xdoc::p
     "In the proofs, we generally enable
-     functions @('...-result-dead') that transform result values,
-     such as @(tsee cstate-result-dead).
+     functions @('...-result-dead') that transform result values.
      This exposes the error and non-error cases in the proof.
      Perhaps there is a way to avoid enabling these functions,
      and using suitable rules instead.")
    (xdoc::p
     "In the proofs, we generally enable
-     the equivalence relations @('...-result-okeq'),
-     such as @(tsee cstate-result-okeq).
+     the equivalence relations @('...-result-okeq').
      This, together with the enabling of the @('...-result-dead') functions,
      exposes the error and non-error cases.
      Perhaps there is a way to avoid enabling these functions,

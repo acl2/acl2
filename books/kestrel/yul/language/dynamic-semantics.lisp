@@ -198,7 +198,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are used as (non-error) results of @(tsee get-fun):
+    "These are used as (non-error) results of @(tsee find-fun):
      see that function's documentation."))
   ((info funinfo)
    (env funenv)))
