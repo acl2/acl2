@@ -65,9 +65,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is all the information about a function definition,
-     except for its name.
-     This is used for the values of function environments
-     (see @(tsee funenv)."))
+     except for its name."))
   ((inputs identifier-list)
    (outputs identifier-list)
    (body block))
@@ -90,31 +88,92 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define funinfo-for-fundef ((fdef fundefp))
-  :returns (info funinfop)
+(define funinfo-for-fundef ((fundef fundefp))
+  :returns (funinfo funinfop)
   :short "Function information for a function definition."
-  (make-funinfo :inputs (fundef->inputs fdef)
-                :outputs (fundef->outputs fdef)
-                :body (fundef->body fdef))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This just takes the inputs, outputs, and body of the function definition
+     and forms function information with them."))
+  (make-funinfo :inputs (fundef->inputs fundef)
+                :outputs (fundef->outputs fundef)
+                :body (fundef->body fundef))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap funenv
-  :short "Fixtype of function environments."
+(fty::defomap funscope
+  :short "Fixtype of function scopes."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is a finite map from identifiers (function names)
      to function information:
-     it models the function definitions currently in scope;
-     this changes as blocks are entered and exited.
-     [Yul: Specification of Yul: Formal Specification]
-     does not explicitly mention this,
-     but its presence is implicit in the description of
-     the scope of function definitions."))
+     it models the function definitions in a scope."))
   :key-type identifier
   :val-type funinfo
+  :pred funscopep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult funscope-result
+  :short "Fixtype of errors and function scopes."
+  :ok funscope
+  :pred funscope-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-funscopep
+  (implies (funscopep x)
+           (not (resulterrp x)))
+  :enable resulterrp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define funscope-for-fundefs ((fundefs fundef-listp))
+  :returns (funscope funscope-resultp)
+  :short "Function scope for a list of function definitions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go through the list and form a function scope for the functions.
+     It is an error if there are two functions with the same name."))
+  (b* (((when (endp fundefs)) nil)
+       ((ok scope) (funscope-for-fundefs (cdr fundefs)))
+       (fundef (car fundefs))
+       (fun (fundef->name fundef))
+       (fun+info (omap::in fun scope))
+       ((when (consp fun+info)) (err (list :duplicate-function fun))))
+    (omap::update fun (funinfo-for-fundef fundef) scope))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist funenv
+  :short "Fixtype of function environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a list of function scopes,
+     which represents a stack;
+     the stack grows leftward, i.e.
+     push is @(tsee cons), pop is @(tsee cdr), and top is @(tsee car).
+     A function scope is pushed when entering a block,
+     and it is popped when exiting the block.
+     This needs to be a stack because Yul functions are statically scoped:
+     when a function later in the stack calls a function earlier in the stack,
+     the stack must be shrunk so that the called function
+     has access only to the functions that are statically in scope,
+     not the functions in inner blocks that the caller has access to.")
+   (xdoc::p
+    "[Yul: Specification of Yul: Formal Specification]
+     does not explicitly mention any notion of function environments,
+     but their presence is implicit in the description of
+     the scope of function definitions."))
+  :elt-type funscope
+  :true-listp t
+  :elementp-of-nil t
   :pred funenvp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -133,69 +192,117 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define get-fun ((fun identifierp) (funenv funenvp))
-  :returns (info funinfo-resultp)
-  :short "Obtain information about a function from the function environment."
+(fty::defprod funinfo+funenv
+  :short "Fixtype of pairs consisting of
+          function information and a function environment."
   :long
   (xdoc::topstring
    (xdoc::p
-    "It is an error if the function does not exist."))
-  (b* ((fun-info (omap::in (identifier-fix fun) (funenv-fix funenv)))
-       ((unless (consp fun-info))
-        (err (list :function-not-found (identifier-fix fun)))))
-    (cdr fun-info))
+    "These are used as (non-error) results of @(tsee get-fun):
+     see that function's documentation."))
+  ((info funinfo)
+   (env funenv)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult funinfo+funenv-result
+  :short "Fixtype of errors and
+          pairs consisting of
+          function information and a function environment."
+  :ok funinfo+funenv
+  :pred funinfo+funenv-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-funinfo+funenv-p
+  (implies (funinfo+funenv-p x)
+           (not (resulterrp x)))
+  :enable (resulterrp funinfo+funenv-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define find-fun ((fun identifierp) (funenv funenvp))
+  :returns (info funinfo+funenv-resultp)
+  :short "Find a function in the function environment by name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We search through the scopes, from innermost to outermost.
+     It is an expected invariant that the scopes in a function environment
+     have disjoint function names
+     (we may formalize and prove this invariant at some point):
+     thus, the search order would not matter
+     if we only needed the function information;
+     however, as explained below, we also returned a function environment,
+     and therefore the innermost-to-outermost search order is important.")
+   (xdoc::p
+    "If we find @('fun'), we return not only its information,
+     but also the current function environment,
+     which is the initial function environment
+     with zero or more scopes popped;
+     the scope where @('fun') is found is not popped,
+     i.e. it is returned as the top scope.
+     This resulting function environment represents
+     the functions in scope for @('fun').
+     In @(tsee exec-function), which takes a @('fun') as argument,
+     we call @('find-fun') to retrieve the information about @('fun')
+     so that we can execute its body:
+     thus, it is convenient for @('find-fun') to return
+     the function environment for @('fun'),
+     which must be indeed passed to @(tsee exec-block) on the @('fun')'s body.")
+   (xdoc::p
+    "It is an error if @('fun') is not found in the environment."))
+  (b* (((when (endp funenv))
+        (err (list :function-not-found (identifier-fix fun))))
+       (funscope (funscope-fix (car funenv)))
+       (fun+info (omap::in (identifier-fix fun) funscope))
+       ((when (consp fun+info))
+        (make-funinfo+funenv :info (cdr fun+info) :env funenv)))
+    (find-fun fun (cdr funenv)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-fun ((fun identifierp) (info funinfop) (funenv funenvp))
-  :returns (new-funenv funenv-resultp)
-  :short "Add a function to the function environment."
+(define ensure-funscope-disjoint ((funscope funscopep) (funenv funenvp))
+  :returns (_ resulterr-optionp)
+  :short "Ensure that a function scope is disjoint from a function environment."
   :long
   (xdoc::topstring
    (xdoc::p
-    "An error is returned if the function already exists.")
-   (xdoc::p
-    "This is the dynamic counterpart of
-     @(tsee add-funtype) in the static semantics."))
-  (b* ((fun-info (omap::in (identifier-fix fun) (funenv-fix funenv)))
-       ((when (consp fun-info))
-        (err (list :function-already-exists (identifier-fix fun))))
-       (new-funenv
-        (omap::update (identifier-fix fun)
-                      (funinfo-fix info)
-                      (funenv-fix funenv))))
-    new-funenv)
+    "That is, ensure that the function names in the scope
+     are disjoint from all the function names in the environment's scopes.
+     This is used to ensure that there is no function shadowing:
+     see @(tsee add-funs)."))
+  (b* (((when (endp funenv)) nil)
+       (overlap (set::intersect (omap::keys (funscope-fix funscope))
+                                (omap::keys (funscope-fix (car funenv)))))
+       ((unless (set::empty overlap))
+        (err (list :duplicate-functions overlap))))
+    (ensure-funscope-disjoint funscope (cdr funenv)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-funs-in-statement-list ((stmts statement-listp) (funenv funenvp))
+(define add-funs ((fundefs fundef-listp) (funenv funenvp))
   :returns (new-funenv funenv-resultp)
-  :short "Add all the functions in a block to the function environment."
+  :short "Add functions to the function environment."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Just before executing a block,
-     all the function definitions in the block
-     are added to the function environment.
-     This is because,
-     as explained in [Yul: Specification of Yul: Scoping Rules],
-     all the functions defined in a block are accessible in the whole block,
-     even before they are defined in the block.")
-   (xdoc::p
-    "This is the dynamic counterpart of
-     @(tsee add-funtypes-in-statement-list) in the static semantics."))
-  (b* (((when (endp stmts)) (funenv-fix funenv))
-       (stmt (car stmts))
-       ((unless (statement-case stmt :fundef))
-        (add-funs-in-statement-list (cdr stmts) funenv))
-       (fdef (statement-fundef->get stmt))
-       ((ok funenv) (add-fun (fundef->name fdef)
-                             (funinfo-for-fundef fdef)
-                             funenv)))
-    (add-funs-in-statement-list (cdr stmts) funenv))
-  :hooks (:fix))
+    "We create a function scope for the given list of function definitions
+     and we push that onto the function environment.
+     We ensure that the new functions have different names from
+     the functions already in the environment.
+     This ACL2 function is used for all the function definitions in a block;
+     see @(tsee exec-block)."))
+  (b* (((ok funscope) (funscope-for-fundefs fundefs))
+       ((ok &) (ensure-funscope-disjoint funscope funenv)))
+    (cons funscope (funenv-fix funenv)))
+  :hooks (:fix)
+  :prepwork
+  ((local
+    (in-theory
+     (enable funscopep-when-funscope-resultp-and-not-resulterrp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -228,7 +335,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod cstate
-  :short "Fixtype of computational states."
+  :short "Fixtype of computation states."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -668,11 +775,15 @@
        that takes values directly as arguments,
        in case we want to formally talk about function calls.")
      (xdoc::p
-      "We initialize the local state with the function's inputs and outputs.
-       We run the function body on the resulting computation state.
+      "We find the function in the function environment,
+       also obtaining the (generally smaller) function environment
+       for executing the function.
+       We initialize the local state with the function's inputs and outputs.
+       We run the function body on the resulting computation state
+       and on the function environment for executing the function.
        We read the final values of the function output variables
        and return them as result.
-       We also restore the computation state prior to the function call.")
+       We also restore the local state prior to the function call.")
      (xdoc::p
       "As a defensive check, we ensure that the function's body
        terminates regularly or via @('leave'),
@@ -680,11 +791,12 @@
     (b* (((when (zp limit)) (err (list :limit
                                    (identifier-fix fun)
                                    (value-list-fix args))))
+         ((ok (funinfo+funenv info+env)) (find-fun fun funenv))
+         ((funinfo info) info+env.info)
          (lstate-before (cstate->local cstate))
-         ((ok (funinfo info)) (get-fun fun funenv))
          ((ok cstate) (init-local info.inputs args info.outputs cstate))
          ((ok (soutcome outcome))
-          (exec-block info.body cstate funenv (1- limit)))
+          (exec-block info.body cstate info+env.env (1- limit)))
          ((when (mode-case outcome.mode :break))
           (err (list :break-from-function (identifier-fix fun))))
          ((when (mode-case outcome.mode :continue))
@@ -753,8 +865,7 @@
      (xdoc::p
       "For a loop statement,
        we start by saving (the names of) the variables before the loop,
-       similarly to @(tsee exec-block);
-       we also save the fucntion sate, similarly to @(tsee exec-block).
+       similarly to @(tsee exec-block).
        The initialization block of a loop statement
        is not treated like other blocks:
        its scope extends to the rest of the loop statement.
@@ -770,8 +881,6 @@
        We delegate the execution of the loop iterations
        to another ACL2 function.
        We take the result of that ACL2 function,
-       restore the function environment
-       (similarly to @(tsee exec-block),
        and remove the variables added by the loop
        (similarly to @(tsee exec-block)).")
      (xdoc::p
@@ -853,7 +962,7 @@
        :for
        (b* ((vars-before (omap::keys (cstate->local cstate)))
             (stmts (block->statements stmt.init))
-            ((ok funenv) (add-funs-in-statement-list stmts funenv))
+            ((ok funenv) (add-funs (statements-to-fundefs stmts) funenv))
             ((ok (soutcome outcome))
              (exec-statement-list stmts cstate funenv (1- limit)))
             ((when (mode-case outcome.mode :break))
@@ -932,17 +1041,14 @@
       "We save (the names of) the variables just before the block,
        so that we can restrict the computation state after the block
        to only those variables, as explained in @(tsee restrict-vars).
-       We also save the function environment before the block,
-       because we need to restore that after the block.
        We extend the function environment with the functions in the block.
        We execute the block's statements.
        We return the resulting outcome,
-       but we restore the function environment before the block
-       and we remove all the variables added by the block."))
+       but we remove all the variables added by the block."))
     (b* (((when (zp limit)) (err (list :limit (block-fix block))))
          (vars-before (omap::keys (cstate->local cstate)))
          (stmts (block->statements block))
-         ((ok funenv) (add-funs-in-statement-list stmts funenv))
+         ((ok funenv) (add-funs (statements-to-fundefs stmts) funenv))
          ((ok (soutcome outcome))
           (exec-statement-list stmts cstate funenv (1- limit)))
          (cstate (restrict-vars vars-before outcome.cstate)))
