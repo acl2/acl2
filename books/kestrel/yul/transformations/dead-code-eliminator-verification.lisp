@@ -617,12 +617,10 @@
      ((exec-of-dead-flag-is exec-funcall)
       '(:in-theory (enable exec-funcall)))
      ((exec-of-dead-flag-is exec-function)
-      '(:in-theory (enable exec-function)
-        :expand (exec-function fun args cstate (funenv-dead funenv) limit)))
+      '(:in-theory (enable exec-function)))
      ((exec-of-dead-flag-is exec-statement)
-      `(:in-theory (e/d (exec-statement
-                         statement-dead)
-                        ())
+      `(:in-theory (enable exec-statement
+                           statement-dead)
         ,@(and (or (exec-of-dead-stmt-kind-is :if)
                    (exec-of-dead-stmt-kind-is :for)
                    (exec-of-dead-stmt-kind-is :switch))
@@ -635,9 +633,8 @@
               (stmt (car stmts))
               (limit (1- limit)))))
      ((exec-of-dead-flag-is exec-block)
-      '(:in-theory (e/d (exec-block
-                         block-dead)
-                        ())))
+      '(:in-theory (enable exec-block
+                           block-dead)))
      ((exec-of-dead-flag-is exec-for-iterations)
       '(:in-theory (enable exec-for-iterations)))
      ((exec-of-dead-flag-is exec-switch-rest)
@@ -663,7 +660,7 @@
     "We locally enable the equivalence relations,
      since we always want to expand them in the proofs.
      Note that, if we put them into a goal hint,
-     they would not apply to computed hints;
+     they would not apply to subgoals where computed hints apply;
      this is why we locally enable them instead.")
    (xdoc::p
     "We locally enable the @('...-result-dead') functions,
