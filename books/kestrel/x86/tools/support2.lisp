@@ -133,12 +133,6 @@
 
 ;(acl2::defopeners X86ISA::RME-SIZE$inline :hyps ((< X86ISA::EFF-ADDR '2000)))
 
-;todo
-(acl2::def-constant-opener logcount)
-(acl2::def-constant-opener separate)
-(acl2::def-constant-opener nonnegative-integer-quotient)
-(acl2::def-constant-opener evenp)
-
 ;this case seems safe to handle:
 ; (SLICE '10 '7 (BVCAT '3 x '8 y))
 

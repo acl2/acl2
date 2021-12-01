@@ -119,8 +119,15 @@
 
 ;;(acl2::defopeners COMBINE-BYTES :hyps ((syntaxp (quotep x86isa::bytes))))
 
-;;  Use def-constant-opener to enable axe to evaluate ground calls of various
-;;  functions.
+;;  Use def-constant-opener to enable Axe to evaluate ground calls of various
+;;  functions:
+
+(acl2::def-constant-opener logcount)
+(acl2::def-constant-opener zip)
+(acl2::def-constant-opener logcount)
+(acl2::def-constant-opener separate)
+(acl2::def-constant-opener nonnegative-integer-quotient)
+(acl2::def-constant-opener evenp)
 
 ;; Flags:
 

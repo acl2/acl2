@@ -729,7 +729,7 @@
                               (name 'nil) ;the name of the proof if we care to give it one.  also used for the name of the theorem
                               (debug 'nil)
                               (timeout '*default-stp-timeout*) ;1000 here broke proofs
-                              (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include acl2 rules here...
+                              (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include rules for the :acl2 tactic
                               (monitor 'nil)
                               (simplify-xors 't)
                               (rule-classes '(:rewrite))
