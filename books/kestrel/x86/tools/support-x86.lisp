@@ -979,9 +979,6 @@
                                               )
                                   ( ;ACL2::BVCAT-EQUAL-REWRITE ACL2::BVCAT-EQUAL-REWRITE-ALT
                                    )))))
-;move?
-(acl2::def-constant-opener logcount)
-(acl2::def-constant-opener zip)
 
 ;move
 (defthm bitp-of-sf-spec32
