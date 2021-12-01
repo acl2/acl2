@@ -13,7 +13,9 @@
 (defmacro make-event-quiet (&rest args)
   `(with-output
      :off :all
-     :on error
+     ;; Keep errors and stuff printed using CW (which can be suppressed by
+     ;; simply not calling CW):
+     :on (comment error)
      :gag-mode nil
      (make-event ,@args)))
 

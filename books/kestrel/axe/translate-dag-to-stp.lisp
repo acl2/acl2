@@ -588,15 +588,17 @@
 
 ;returns (mv translated-expr constant-array-info) where translated-expr is a string-tree.
 ;fixme what if we can't translate the equality (maybe it mentions ':byte)?
-(defund translate-equality (lhs ;a nodenum or quoted constant
-                            rhs ;a nodenum or quoted constant
-                            dag-array-name dag-array nodenum-type-alist constant-array-info)
-  (declare (xargs :guard (and (or (myquotep rhs)
-                                  (and (natp rhs)
-                                       (pseudo-dag-arrayp dag-array-name dag-array (+ 1 rhs))))
+(defund translate-equality-to-stp (lhs ;a nodenum or quoted constant
+                                   rhs ;a nodenum or quoted constant
+                                   dag-array-name dag-array dag-len
+                                   nodenum-type-alist constant-array-info)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (or (myquotep lhs)
                                   (and (natp lhs)
-                                       (pseudo-dag-arrayp dag-array-name dag-array (+ 1 lhs))))
+                                       (< lhs dag-len)))
+                              (or (myquotep rhs)
+                                  (and (natp rhs)
+                                       (< rhs dag-len)))
                               (alistp nodenum-type-alist)
                               (symbolp dag-array-name)
                               (constant-array-infop constant-array-info))
@@ -608,14 +610,16 @@
                                                          ;;LIST-TYPEP
                                                          ;;GET-TYPE-OF-ARG
                                                          natp))
-                                 :do-not '(generalize eliminate-destructors)))))
+                                 :do-not '(generalize eliminate-destructors))))
+           (ignore dag-len) ; only used in the guard
+           )
   (let* ((lhs-type (get-type-of-arg lhs dag-array-name dag-array nodenum-type-alist))
          (rhs-type (get-type-of-arg rhs dag-array-name dag-array nodenum-type-alist)))
     (if (and (bv-array-typep lhs-type)
              (bv-array-typep rhs-type)
              ;;the lengths must be the same (fixme if not, could translate the equality as false?? and print a warning!)
              (equal (bv-array-type-len lhs-type) (bv-array-type-len rhs-type)))
-        ;; equality of two array terms of the same length:
+        ;; Equality of two array terms of the same length:
         (let* ((lhs-element-width (bv-array-type-element-width lhs-type))
                (rhs-element-width (bv-array-type-element-width rhs-type))
                (common-len (bv-array-type-len lhs-type)) ;same as the len from rhs-type
@@ -624,11 +628,12 @@
               (mv (list "(TRUE)") ;todo: add a test of this case
                   constant-array-info)
             (if (eql 1 common-len)
-                (mv (er hard? 'translate-equality "Arrays of length 1 are not supported.")
+                ;; because such arrays would have 0 bits of index:
+                (mv (er hard? 'translate-equality-to-stp "Arrays of length 1 are not supported.")
                     constant-array-info)
               (if (or (zp lhs-element-width)
                       (zp rhs-element-width))
-                  (mv (er hard? 'translate-equality "Arrays whose elements have 0 width are not supported.")
+                  (mv (er hard? 'translate-equality-to-stp "Arrays whose elements have 0 width are not supported.")
                       constant-array-info)
                 ;; translate the LHS (without padding yet):
                 (mv-let (erp1 lhs-string-tree constant-array-info)
@@ -640,7 +645,7 @@
                         (mv-let (lhs-string-tree constant-array-info)
                           (translate-constant-array-mention lhs lhs-element-width common-len constant-array-info)
                           (mv nil lhs-string-tree constant-array-info))
-                      (prog2$ (er hard? 'translate-equality "Bad array constant: ~x0." lhs)
+                      (prog2$ (er hard? 'translate-equality-to-stp "Bad array constant: ~x0." lhs)
                               (mv t nil constant-array-info))))
                   ;; translate the RHS (without padding yet):
                   (mv-let (erp2 rhs-string-tree constant-array-info)
@@ -652,7 +657,7 @@
                           (mv-let (rhs-string-tree constant-array-info)
                             (translate-constant-array-mention rhs rhs-element-width common-len constant-array-info)
                             (mv nil rhs-string-tree constant-array-info))
-                        (prog2$ (er hard? 'translate-equality "Bad array constant: ~x0." rhs)
+                        (prog2$ (er hard? 'translate-equality-to-stp "Bad array constant: ~x0." rhs)
                                 (mv t nil constant-array-info))))
                     (if (or erp1 erp2)
                         (mv nil constant-array-info)
@@ -673,9 +678,9 @@
                                                              (list ")") ;acc
                                                              )
                          constant-array-info)))))))))
-      ;; If we're comparing two booleans:
       (if (and (boolean-typep lhs-type)
                (boolean-typep rhs-type))
+          ;; Equality of two booleans:
           (if (and (boolean-arg-okp lhs)
                    (boolean-arg-okp rhs))
               (mv
@@ -686,11 +691,11 @@
                       ")")
                constant-array-info)
             ;;todo: pass back errors?
-            (mv (er hard? 'translate-equality "A bad boolean arg was found.")
+            (mv (er hard? 'translate-equality-to-stp "A bad boolean arg was found.")
                 constant-array-info))
-        ;; If we're comparing two bit-vectors:
         (if (and (bv-typep lhs-type)
                  (bv-typep rhs-type))
+            ;; Equality of two bit-vectors:
             (if (and (bv-arg-okp lhs)
                      (bv-arg-okp rhs))
                 (let* ((lhs-width (bv-type-width lhs-type))
@@ -698,7 +703,7 @@
                        (max-width (max lhs-width rhs-width)))
                   (if (or (zp lhs-width)
                           (zp rhs-width))
-                      (mv (er hard? 'translate-equality "Bit vectors of width 0 are not supported.")
+                      (mv (er hard? 'translate-equality-to-stp "Bit vectors of width 0 are not supported.")
                           constant-array-info)
                     (mv (list* "("
                                (translate-bv-arg-and-pad lhs max-width lhs-width)
@@ -707,13 +712,13 @@
                                ")")
                         constant-array-info)))
               ;;todo: pass back errors?
-              (mv (er hard? 'translate-equality "A bad BV arg was found.")
+              (mv (er hard? 'translate-equality-to-stp "A bad BV arg was found.")
                   constant-array-info))
           (prog2$ (print-array2 dag-array-name dag-array (max (if (natp lhs) (+ 1 lhs) 0) (if (natp rhs) (+ 1 rhs) 0)))
                   ;;fixme print the assumptions? or the literals? or nodenum-type-alist ?
                   ;;fixme be more flexible.  btw, nil is considered to be of type boolean, but what if it's being compared to a list of 0 size?
                   ;;fixme if the types are guaranteed to have disjoint value sets, we could just generate FALSE here, but watch out for things like nil (both a boolean and the empty list?)
-                  (mv (er hard? 'translate-equality "Trying to equate things of different types (see above for dag): ~x0 (type: ~x1) and ~x2 (type: ~x3).~%"
+                  (mv (er hard? 'translate-equality-to-stp "Trying to equate things of different types (see above for dag): ~x0 (type: ~x1) and ~x2 (type: ~x3).~%"
                           lhs lhs-type rhs rhs-type)
                       constant-array-info)))))))
 
@@ -724,10 +729,10 @@
                   (len (unquote x))))
   :hints (("Goal" :in-theory (enable get-type-of-arg get-type-of-constant-if-possible))))
 
-(defthm string-treep-of-mv-nth-0-of-translate-equality
+(defthm string-treep-of-mv-nth-0-of-translate-equality-to-stp
  (implies (constant-array-infop constant-array-info)
-          (string-treep (mv-nth 0 (translate-equality lhs rhs dag-array-name dag-array cut-nodenum-type-alist constant-array-info))))
- :hints (("Goal" :in-theory (e/d (translate-equality) (list-typep bv-array-typep bv-array-type-len BV-ARRAY-TYPE-ELEMENT-WIDTH)))))
+          (string-treep (mv-nth 0 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist constant-array-info))))
+ :hints (("Goal" :in-theory (e/d (translate-equality-to-stp) (list-typep bv-array-typep bv-array-type-len BV-ARRAY-TYPE-ELEMENT-WIDTH)))))
 
 ;; Returns (mv array-name constant-array-info actual-element-width) where ARRAY-NAME is a string-tree that can be used to refer to the array
 (defund translate-array-arg (arg
@@ -1605,9 +1610,9 @@
         (equal
          (if (= 2 (len (dargs expr)))
              (mv-let (translated-expr constant-array-info)
-               (translate-equality (darg1 expr)
+               (translate-equality-to-stp (darg1 expr)
                                    (darg2 expr)
-                                   dag-array-name dag-array cut-nodenum-type-alist constant-array-info)
+                                   dag-array-name dag-array dag-len cut-nodenum-type-alist constant-array-info)
                (mv (erp-nil)
                    translated-expr
                    constant-array-info))
@@ -1722,15 +1727,15 @@
   (equal (true-listp (n-close-parens n acc))
          (true-listp acc)))
 
-(defthm constant-array-infop-of-mv-nth-1-of-translate-equality
+(defthm constant-array-infop-of-mv-nth-1-of-translate-equality-to-stp
   (implies (and (constant-array-infop constant-array-info)
 ;                (nat-listp (unquote data))
   ;              (natp element-width)
    ;             (natp element-count)
     ;            (<= element-count (len (unquote data)))
                 )
-           (constant-array-infop (mv-nth 1 (translate-equality lhs rhs dag-array-name dag-array nodenum-type-alist constant-array-info))))
-  :hints (("Goal" :in-theory (enable translate-equality))))
+           (constant-array-infop (mv-nth 1 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len nodenum-type-alist constant-array-info))))
+  :hints (("Goal" :in-theory (enable translate-equality-to-stp))))
 
 (in-theory (disable (:e nat-to-string)))
 
@@ -2142,11 +2147,11 @@
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, or (:counterexample <raw-counterexample>)
 ;; We don't fix up the counterexample here because we don't have access to the cut-nodenum-type-alist, etc.
 (defund call-stp-on-file (input-filename
-                         output-filename
-                         print ;whether to print the result (valid/invalid/timeout)
-                         timeout ;a number of seconds (now conflicts!), or nil for no timeout
-                         counterexamplep
-                         state)
+                          output-filename
+                          print ;whether to print the result (valid/invalid/timeout)
+                          timeout ;a number of seconds (now conflicts!), or nil for no timeout
+                          counterexamplep
+                          state)
   (declare (xargs :stobjs state
                   :guard (and (stringp input-filename)
                               (stringp output-filename)
@@ -2154,58 +2159,59 @@
                               (or (null timeout)
                                   (natp timeout))
                               (booleanp counterexamplep))))
-  (let ((counterexample-arg (if counterexamplep "y" "n")))
-    (mv-let
-      (status state)
-      (if timeout ;;timeout is the the number of seconds (now conflicts!):
-          (call-axe-script "callstplimited.bash" (list input-filename output-filename (nat-to-string timeout) counterexample-arg) state)
-        ;;don't time out:
-        (call-axe-script "callstp.bash" (list input-filename output-filename counterexample-arg) state))
-      ;;(prog2$ (cw "sys-call status: ~x0~%" status)
-      ;;(STP seems to exit with status 0 for both Valid and Invalid examples and with non-zero status for errors.)
-      (if (not (eql 0 status)) ;;todo: do we still need to do all these checks?
-          (if (eql 143 status)
-              ;;exit status 143 seems to indicate timeout (why?!  perhaps it's 128+15 where 15 represents the TERM signal)
-              (prog2$ (cw "!! STP timed out !!")
-                      (mv *timedout* state))
-            (if (eql 201 status)
-                (progn$ (er hard? 'call-stp-on-file "!! ERROR: Unable to find STP (define an STP environment var or add its location to your path) !!")
-                        (mv *error* state))
-              ;; TODO: What is exit status 134?
-              (progn$ (er hard? 'call-stp-on-file "!! ERROR: STP experienced an unknown error (exit status ~x0) !!" status)
-                      (mv *error* state))))
-        ;;check whether the output file contains "Valid."
-        (mv-let (errmsg/contents state)
-          ;; we just need to check whether the output file starts with the characters "Valid."
-          (read-file-characters output-filename state)
-          (if (stringp errmsg/contents) ;a string means error
-              (prog2$ (er hard? 'call-stp-on-file "Unable to read STP output from file ~x0.  Message is: ~s1.~%" output-filename errmsg/contents)
+  (b* ((counterexample-arg (if counterexamplep "y" "n"))
+       ((mv status state) (if timeout ;;timeout is the the number of seconds (now conflicts!):
+                              (call-axe-script "callstplimited.bash" (list input-filename output-filename (nat-to-string timeout) counterexample-arg) state)
+                            ;;don't time out:
+                            (call-axe-script "callstp.bash" (list input-filename output-filename counterexample-arg) state)))
+       ;;(- (cw "STP exit status: ~x0~%" status))
+       )
+    ;;(prog2$ (cw "sys-call status: ~x0~%" status)
+    ;;(STP seems to exit with status 0 for both Valid and Invalid examples and with non-zero status for errors.)
+    (if (not (eql 0 status)) ;;todo: do we still need to do all these checks?
+        (if (eql 143 status)
+            ;;exit status 143 seems to indicate timeout (why?!  perhaps it's 128+15 where 15 represents the TERM signal)
+            (prog2$ (cw "!! STP timed out !!")
+                    (mv *timedout* state))
+          (if (eql 201 status)
+              (progn$ (er hard? 'call-stp-on-file "!! ERROR: Unable to find STP (define an STP environment var or add its location to your path) !!")
                       (mv *error* state))
-            (let ((chars errmsg/contents))
-              (if (equal chars '(#\V #\a #\l #\i #\d #\. #\Newline)) ;;Look for "Valid."
-                  (prog2$ (and print (cw "  STP said Valid."))
-                          (mv *valid* state))
-                ;; Test whether chars end with "Invalid.", perhaps preceded by a printed counterexample.
-                (if (and (<= 9 (len chars)) ;9 is the length of "Invalid." followed by newline - todo make a function 'char-list-ends-with'
-                         (equal (nthcdr (- (len chars) 9) chars)
-                                '(#\I #\n #\v #\a #\l #\i #\d #\. #\Newline))) ;;Look for "Invalid."
-                    (b* ((- (and print (cw "  STP said Invalid.~%")))
-                         ;; Print the counterexample (TODO: What if it is huge?):
-                         (counterexamplep-chars (butlast chars 9))
-                         ;(- (and print counterexamplep (cw "~%Counterexample:~%~S0" (coerce counterexamplep-chars 'string))))
-                         (parsed-counterexample (parse-counterexample counterexamplep-chars nil))
-                         ;(- (and print counterexamplep (cw "~%Parsed counterexample:~%~x0~%" parsed-counterexample)))
-                         )
-                      (mv (if counterexamplep
-                              `(,*counterexample* ,parsed-counterexample)
-                            *invalid*)
-                          state))
-                  (if (or ;(equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\, #\Space  #\e #\x #\i #\t #\i #\n #\g #\.)) ;add newline??
-                       (equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\. #\Newline))) ;;Look for "Timed Out."
-                      (prog2$ (and print (cw "  STP timed out."))
-                              (mv *timedout* state))
-                    (prog2$ (er hard? 'call-stp-on-file "STP returned an unexpected result (~x0).  Check the .out file: ~x1.~%" chars output-filename)
-                            (mv *error* state))))))))))))
+            ;; TODO: What is exit status 134?
+            (progn$ (er hard? 'call-stp-on-file "!! ERROR: STP experienced an unknown error (exit status ~x0, input: ~s1, output: ~s2) !!"
+                        status input-filename output-filename)
+                    (mv *error* state))))
+      ;;check whether the output file contains "Valid."
+      (mv-let (errmsg/contents state)
+        ;; we just need to check whether the output file starts with the characters "Valid."
+        (read-file-characters output-filename state)
+        (if (stringp errmsg/contents) ;a string means error
+            (prog2$ (er hard? 'call-stp-on-file "Unable to read STP output from file ~x0.  Message is: ~s1.~%" output-filename errmsg/contents)
+                    (mv *error* state))
+          (let ((chars errmsg/contents))
+            (if (equal chars '(#\V #\a #\l #\i #\d #\. #\Newline)) ;;Look for "Valid."
+                (prog2$ (and print (cw "  STP said Valid."))
+                        (mv *valid* state))
+              ;; Test whether chars end with "Invalid.", perhaps preceded by a printed counterexample.
+              (if (and (<= 9 (len chars)) ;9 is the length of "Invalid." followed by newline - todo make a function 'char-list-ends-with'
+                       (equal (nthcdr (- (len chars) 9) chars)
+                              '(#\I #\n #\v #\a #\l #\i #\d #\. #\Newline))) ;;Look for "Invalid."
+                  (b* ((- (and print (cw "  STP said Invalid.~%")))
+                       ;; Print the counterexample (TODO: What if it is huge?):
+                       (counterexamplep-chars (butlast chars 9))
+;(- (and print counterexamplep (cw "~%Counterexample:~%~S0" (coerce counterexamplep-chars 'string))))
+                       (parsed-counterexample (parse-counterexample counterexamplep-chars nil))
+;(- (and print counterexamplep (cw "~%Parsed counterexample:~%~x0~%" parsed-counterexample)))
+                       )
+                    (mv (if counterexamplep
+                            `(,*counterexample* ,parsed-counterexample)
+                          *invalid*)
+                        state))
+                (if (or ;(equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\, #\Space  #\e #\x #\i #\t #\i #\n #\g #\.)) ;add newline??
+                     (equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\. #\Newline))) ;;Look for "Timed Out."
+                    (prog2$ (and print (cw "  STP timed out."))
+                            (mv *timedout* state))
+                  (prog2$ (er hard? 'call-stp-on-file "STP returned an unexpected result (~x0).  Check the .out file: ~x1.~%" chars output-filename)
+                          (mv *error* state)))))))))))
 
 (defthm call-stp-on-file-return-type
   (let ((res (mv-nth 0 (call-stp-on-file
@@ -2420,7 +2426,7 @@
   :hints (("Goal" :in-theory (enable prove-query-with-stp)
            :use ())))
 
-;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>)
+;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;; TODO: Unify param order with prove-query-with-stp
 (defund prove-equality-query-with-stp (lhs ;a nodenum or quotep
                                        rhs ;a nodenum or quotep
@@ -2437,25 +2443,26 @@
                                        counterexamplep
                                        state)
   (declare (xargs :stobjs state
-            :guard (and (or (myquotep rhs)
+                  :guard (and
+                          (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                          (or (myquotep lhs)
+                              (and (natp lhs)
+                                   (< lhs dag-len)))
+                        (or (myquotep rhs)
                             (and (natp rhs)
-                                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 rhs))))
-                        (or (myquotep lhs)
-                            (and (natp lhs)
-                                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 lhs))))
+                                 (< rhs dag-len)))
                         (booleanp counterexamplep)
                         (stringp base-filename)
                         (symbolp dag-array-name)
                         (consp nodenums-to-translate) ;why?
                         (nat-listp nodenums-to-translate)
-                        (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                         (all-< nodenums-to-translate dag-len)
                         (natp timeout)
                         (nodenum-type-alistp cut-nodenum-type-alist)
                         (all-< (strip-cars cut-nodenum-type-alist) dag-len)
                         (string-treep extra-asserts))))
   (mv-let (translated-expr constant-array-info)
-    (translate-equality lhs rhs dag-array-name dag-array cut-nodenum-type-alist nil)
+    (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist nil)
     (prove-query-with-stp translated-expr
                           "" ;extra-string: todo: use this
                           dag-array-name
@@ -2498,12 +2505,12 @@
   :hints (("Goal" :in-theory (enable prove-equality-query-with-stp)
            :use (:instance prove-query-with-stp-return-type
                            (translated-query-core (mv-nth 0
-                                                          (translate-equality lhs rhs dag-array-name
-                                                                              dag-array cut-nodenum-type-alist nil)))
+                                                          (translate-equality-to-stp lhs rhs dag-array-name
+                                                                              dag-array dag-len cut-nodenum-type-alist nil)))
                            (extra-string "")
                            (constant-array-info (mv-nth 1
-                                                        (translate-equality lhs rhs dag-array-name
-                                                                            dag-array cut-nodenum-type-alist nil)))))))
+                                                        (translate-equality-to-stp lhs rhs dag-array-name
+                                                                            dag-array dag-len cut-nodenum-type-alist nil)))))))
 
 ;get this working by generating an appropriate cut-nodenum-type-alist
 ;; ;pass in a dag-array-name?
@@ -2608,13 +2615,14 @@
 ;the input must have at least one element
 ;make tail rec with an acc?
 (defun translate-disjunction-aux (items)
-  (declare (xargs :guard (possibly-negated-nodenumsp items)
+  (declare (xargs :guard (and (consp items)
+                              (possibly-negated-nodenumsp items))
                   :guard-hints (("Goal" ;:use (:instance consp-of-car-when-possibly-negated-nodenumsp-weaken-cheap)
                                  :expand (POSSIBLY-NEGATED-NODENUMSP ITEMS)
                                  ;:in-theory (disable consp-of-car-when-possibly-negated-nodenumsp-weaken-cheap)
                                  ))))
   (if (endp items)
-      (er hard? 'translate-disjunction-aux "No items (must be at least one)!")
+      (er hard 'translate-disjunction-aux "No items (must be at least one)!")
     (if (endp (cdr items))
         (translate-possibly-negated-nodenum (first items))
       (cons (translate-possibly-negated-nodenum (first items))
