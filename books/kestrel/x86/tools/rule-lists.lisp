@@ -621,6 +621,7 @@
             x86isa::n01$inline
             x86isa::n03$inline
             x86isa::n06$inline
+            x86isa::n08$inline
             x86isa::n16$inline
             x86isa::n32$inline
             x86isa::n64$inline
