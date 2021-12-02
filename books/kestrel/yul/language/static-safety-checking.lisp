@@ -124,11 +124,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-funtypes-in-statement-list ((stmts statement-listp)
-                                        (funtab funtablep))
+(define add-funtypes ((fundefs fundef-listp) (funtab funtablep))
   :returns (funtab? funtable-resultp)
-  :short "Extend a function table with
-          all the function definitions in a list of statements."
+  :short "Extend a function table with all the function definitions in a list."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -143,20 +141,14 @@
      which are also accessible in the block,
      so we must extend the function table here.")
    (xdoc::p
-    "As soon as a duplicate function is found, we stop with an error.")
-   (xdoc::p
-    "This ACL2 function is called on the list of statements
-     contained in a block."))
-  (b* (((when (endp stmts)) (funtable-fix funtab))
-       (stmt (car stmts))
-       ((unless (statement-case stmt :fundef))
-        (add-funtypes-in-statement-list (cdr stmts) funtab))
-       ((fundef fundef) (statement-fundef->get stmt))
+    "As soon as a duplicate function is found, we stop with an error."))
+  (b* (((when (endp fundefs)) (funtable-fix funtab))
+       ((fundef fundef) (car fundefs))
        ((ok funtab) (add-funtype fundef.name
                                  (len fundef.inputs)
                                  (len fundef.outputs)
                                  funtab)))
-    (add-funtypes-in-statement-list (cdr stmts) funtab))
+    (add-funtypes (cdr fundefs) funtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -663,7 +655,7 @@
        and the variable table is unchanged.")
      (xdoc::p
       "For a function definition, the function table is not updated:
-       as explained in @(tsee add-funtypes-in-statement-list),
+       as explained in @(tsee add-funtypes),
        the function definitions in a block are collected,
        and used to extend the function table,
        before processing the statements in a block.
@@ -724,7 +716,7 @@
                             :modes (set::insert (mode-regular) modes)))
      :for
      (b* ((stmts (block->statements stmt.init))
-          ((ok funtab) (add-funtypes-in-statement-list stmts funtab))
+          ((ok funtab) (add-funtypes (statements-to-fundefs stmts) funtab))
           ((ok vartab-modes) (check-safe-statement-list stmts
                                                         vartab
                                                         funtab))
@@ -838,14 +830,14 @@
       "If successful,
        return the set of possible termination modes of the block.")
      (xdoc::p
-      "As explained in @(tsee add-funtypes-in-statement-list),
+      "As explained in @(tsee add-funtypes),
        all the functions defined in a block are visible in the whole block,
        so we first collect them from the statements that form the block,
        updating the function table with them,
        and then we check the statements that form the block,
        discarding the final variable table."))
     (b* ((stmts (block->statements block))
-         ((ok funtab) (add-funtypes-in-statement-list stmts funtab))
+         ((ok funtab) (add-funtypes (statements-to-fundefs stmts) funtab))
          ((ok vartab-modes) (check-safe-statement-list stmts
                                                        vartab
                                                        funtab)))
@@ -929,7 +921,7 @@
        does not surface outside the function's body.
        Also recall that the function definition itself
        is added to the function table prior to checking it;
-       see @(tsee add-funtypes-in-statement-list).")
+       see @(tsee add-funtypes).")
      (xdoc::p
       "To check the function definition, we construct an initial variable table
        from the inputs and outputs of the function.
