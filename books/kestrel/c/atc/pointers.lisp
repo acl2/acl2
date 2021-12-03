@@ -72,7 +72,7 @@
      Nonetheless, we can get a precise picture from various places.
      [C:6.2.5/20] says that pointer types describe objects
      whose values provide references to entities.
-     [C:6.3.2.3] specifies several thingss about pointers;
+     [C:6.3.2.3] specifies several things about pointers;
      in particular, it talks about null pointers.
      Thus, the picture is the following:
      a pointer is either an address or a null pointer.
