@@ -113,7 +113,7 @@
      unless a reordering keyword argument is passed,
      which works in the same way as in @(tsee def-parse-rulename).")
    (xdoc::p
-    "The @(tsee def-parse-*-group) macros
+    "The @(tsee def-parse-*-group) macro
      is similar to @(tsee def-parse-*-rulename),
      but it repeatedly uses the parsing function for the group.
      The name of the generated function is retrieved from
