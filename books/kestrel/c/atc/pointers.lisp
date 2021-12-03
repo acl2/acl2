@@ -77,7 +77,8 @@
      Thus, the picture is the following:
      a pointer is either an address or a null pointer.
      In our defensive dynamic semantics, where values are tagged by their types,
-     we also include in a pointer the type of its referenced value.")
+     we also include, as part of the pointer,
+     the type of its referenced value.")
    (xdoc::p
     "Thus, we define a pointer as consisting of an optional address and a type.
      The address is absent for a null pointer;
