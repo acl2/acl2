@@ -394,7 +394,13 @@
        ((ok val) (read-var-value (car vars) cstate))
        ((ok vals) (read-vars-values (cdr vars) cstate)))
     (cons val vals))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret len-of-read-vars-values
+    (implies (not (resulterrp vals))
+             (equal (len vals)
+                    (len vars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
