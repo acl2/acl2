@@ -59,6 +59,13 @@
   :ok funtype
   :pred funtype-resultp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-funtypep
+  (implies (funtypep x)
+           (not (resulterrp x)))
+  :enable (funtypep resulterrp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap funtable
@@ -191,6 +198,13 @@
   :short "Fixtype of errors and variable tables."
   :ok vartable
   :pred vartable-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-vartablep
+  (implies (vartablep x)
+           (not (resulterrp x)))
+  :enable (vartablep resulterrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
