@@ -81,3 +81,10 @@
   :short "Fixtype of errors and lists of values."
   :ok value-list
   :pred value-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-value-listp
+  (implies (value-listp x)
+           (not (resulterrp x)))
+  :enable (value-listp resulterrp))
