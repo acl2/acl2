@@ -945,12 +945,18 @@
       "To check the function definition, we construct an initial variable table
        from the inputs and outputs of the function.
        Note that the construction will detect and reject any duplicates.
-       Then we check the function's body."))
+       Then we check the function's body,
+       ensuring that it does not end with @('break') or @('continue'),
+       (i.e. only with @('leave') or regularly)."))
     (b* (((fundef fundef) fundef)
          ((ok vartab) (add-vars (append fundef.inputs fundef.outputs) nil))
-         ((ok &) (check-safe-block fundef.body
-                                   vartab
-                                   funtab)))
+         ((ok modes) (check-safe-block fundef.body
+                                       vartab
+                                       funtab))
+         ((when (set::in (mode-break) modes))
+          (err (list :break-from-function (fundef-fix fundef))))
+         ((when (set::in (mode-continue) modes))
+          (err (list :continue-from-function (fundef-fix fundef)))))
       nil)
     :measure (fundef-count fundef))
 
