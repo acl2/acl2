@@ -106,49 +106,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-funtype ((name identifierp) (in natp) (out natp) (funtab funtablep))
-  :returns (funtab? funtable-resultp)
-  :short "Add a function and its type to a function table."
+(define funtype-for-fundef ((fundef fundefp))
+  :returns (funtype funtypep)
+  :short "Function type for a function definition."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Return an error if a function with that name is already in the table."))
-  (b* ((pair (omap::in (identifier-fix name) (funtable-fix funtab))))
-    (if (consp pair)
-        (err (list :duplicate-function (identifier-fix name)))
-      (omap::update (identifier-fix name)
-                    (make-funtype :in in :out out)
-                    (funtable-fix funtab))))
-  ///
-  (fty::deffixequiv add-funtype :hints (("Goal" :in-theory (disable nfix)))))
+    "This is just the number of inputs and outputs of the function."))
+  (make-funtype :in (len (fundef->inputs fundef))
+                :out (len (fundef->outputs fundef)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define funtable-for-fundefs ((fundefs fundef-listp))
+  :returns (funtab funtable-resultp)
+  :short "Function table for a list of function definitions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go through the list and form a function table for the functions.
+     It is an error if there are two functions with the same name."))
+  (b* (((when (endp fundefs)) nil)
+       ((ok funtab) (funtable-for-fundefs (cdr fundefs)))
+       (fundef (car fundefs))
+       (fun (fundef->name fundef))
+       ((when (consp (omap::in fun funtab)))
+        (err (list :duplicate-function fun))))
+    (omap::update fun (funtype-for-fundef fundef) funtab))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define add-funtypes ((fundefs fundef-listp) (funtab funtablep))
-  :returns (funtab? funtable-resultp)
-  :short "Extend a function table with all the function definitions in a list."
+  :returns (new-funtab funtable-resultp)
+  :short "Add functions to a function table."
   :long
   (xdoc::topstring
    (xdoc::p
-    "According to [Yul: Specification of Yul: Scoping Rules],
-     all the functions defined in a block are accessible in the whole block,
-     even before they are defined in the block.
-     Thus, just before checking a block,
-     we extend the function table
-     with all the function definitions in the block.
-     The function table already contains the functions
-     already accessible just before the block start,
-     which are also accessible in the block,
-     so we must extend the function table here.")
-   (xdoc::p
-    "As soon as a duplicate function is found, we stop with an error."))
-  (b* (((when (endp fundefs)) (funtable-fix funtab))
-       ((fundef fundef) (car fundefs))
-       ((ok funtab) (add-funtype fundef.name
-                                 (len fundef.inputs)
-                                 (len fundef.outputs)
-                                 funtab)))
-    (add-funtypes (cdr fundefs) funtab))
+    "We first construct a function table for the function definitions,
+     and then we use that to update the given function table,
+     ensuring that the two tables have disjoint functions."))
+  (b* ((funtab (funtable-fix funtab))
+       ((ok funtab1) (funtable-for-fundefs fundefs))
+       (overlap (set::intersect (omap::keys funtab1)
+                                (omap::keys funtab)))
+       ((unless (set::empty overlap))
+        (err (list :duplicate-functions overlap))))
+    (omap::update* funtab1 funtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
