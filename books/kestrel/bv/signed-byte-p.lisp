@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system)) ;drop
+
 (in-theory (disable signed-byte-p))
 
 (defthm signed-byte-p-cases
@@ -36,4 +38,11 @@
                 (< x free)
                 (signed-byte-p 32 free))
            (signed-byte-p 32 (+ 1 x)))
+  :hints (("Goal" :in-theory (enable signed-byte-p))))
+
+(defthm signed-byte-p-when-signed-byte-p
+  (implies (and (signed-byte-p freesize x)
+                (<= freesize size)
+                (posp size))
+           (signed-byte-p size x))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
