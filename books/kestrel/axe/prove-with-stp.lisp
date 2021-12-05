@@ -1242,7 +1242,7 @@
           (if (empty-typep type)
               (progn$ ;; (print-array2 'dag-array dag-array (+ 1 (maxelem parent-nodenums))) ;; todo: put back but consider guards
                (cw "parent-nodenums: ~x0~%" parent-nodenums)
-               (er hard? 'type-for-cut-nodenum "expected an induced type from a choppable use for node ~x0" nodenum) ;is this message still right?
+               (er hard? 'type-for-cut-nodenum "expected an induced type from a choppable use for node ~x0, which is ~x1" nodenum (aref1 'dag-array dag-array nodenum)) ;is this message still right?
                (mv (erp-t)
                    (most-general-type) ;;should be safe
                    ))
