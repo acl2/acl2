@@ -170,7 +170,7 @@
                             produce-theorem
                             prove-theorem ;whether to try to prove the theorem with ACL2 (rarely works)
                             output
-                            assumptions
+                            assumptions ; can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
                             non-executable
                             restrict-theory
                             monitor
@@ -248,9 +248,12 @@
        (- (cw "(Result DAG functions: ~x0)~%" result-dag-fns))
        ;; Sometimes the presence of text-offset may indicate that something
        ;; wasn't resolved, but other times it's just needed to express some
-       ;; junk left on the stack:
+       ;; junk left on the stack
        (result-dag-vars (acl2::dag-vars result-dag))
        (- (cw "(Result DAG vars: ~x0)~%" result-dag-vars))
+       (defconst-name (pack-in-package-of-symbol lifted-name '* lifted-name '*))
+       (defconst-form `(defconst ,defconst-name ',result-dag))
+       (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
        ;; Do we want a check like this?
        ;; ((when (not (subsetp-eq result-vars '(x86 text-offset))))
        ;;  (mv t (er hard 'lifter "Unexpected vars, ~x0, in result DAG!" (set-difference-eq result-vars '(x86 text-offset))) state))
@@ -285,17 +288,20 @@
        ;;(- (cw "Runes used: ~x0" runes)) ;TODO: Have Axe return these?
        ;;use defun-nx by default because stobj updates are not all let-bound to x86
        (defun-variant (if non-executable 'defun-nx 'defun))
-       (defun `(,defun-variant ,lifted-name (,@result-dag-vars)
-                 (declare (xargs ,@(if (member-eq 'x86 result-dag-vars)
+       (defun `(,defun-variant ,lifted-name (,@fn-formals)
+                 (declare (xargs ,@(if (member-eq 'x86 fn-formals)
                                        `(:stobjs x86)
                                      nil)
                                  :verify-guards nil ;TODO
-                                 ))
+                                 )
+                          ,@(let ((ignored-vars (set-difference-eq fn-formals result-dag-vars)))
+                              (and ignored-vars
+                                   `((ignore ,@ignored-vars)))))
                  ,function-body-untranslated))
        (defthm `(defthm ,(acl2::pack$ lifted-name '-correct)
                   (implies (and ,@assumptions)
                            (equal (run-until-return x86)
-                                  (,lifted-name ,@result-dag-vars)))
+                                  (,lifted-name ,@fn-formals)))
                   :hints ,(if restrict-theory
                               `(("Goal" :in-theory '(,lifted-name ;,@runes ;without the runes here, this won't work
                                                      )))
@@ -304,7 +310,8 @@
        (defthm (if prove-theorem
                    defthm
                  `(skip-proofs ,defthm)))
-       (event `(progn ,defun
+       (event `(progn ,defconst-form
+                      ,defun
                       ,@(if produce-theorem (list defthm) nil))))
     (mv nil event state)))
 
