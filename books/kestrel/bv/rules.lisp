@@ -5727,16 +5727,6 @@
   :hints (("Goal" :use (:instance bvmult-of-logext-gen-arg2)
            :in-theory (disable bvmult-of-logext-gen-arg2))))
 
-(defthmd equal-of-logext-and-logext
-  (implies (and ;(integerp x)
-                ;(integerp y)
-                (posp size))
-           (equal (equal (LOGEXT size x) (LOGEXT size y))
-                  (equal (bvchop size x) (bvchop size y))))
-  :hints (("Goal" :use (:instance ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4
-                                  (newsize size)
-                                  (y (LOGEXT size y))))))
-
 ;for when we prefer to know the logexts are equal (e.g., when we know signed-byte-p)
 (defthmd equal-of-bvchop-and-bvchop
   (implies (posp n)
