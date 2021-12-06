@@ -752,3 +752,11 @@
                 (integerp x))
            (equal (bvchop (+ -1 size) (+ x (expt 2 size)))
                   (bvchop (+ -1 size) x))))
+
+(defthm bvchop-of-+-of-bvchop-arg3
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp z))
+           (equal (bvchop size (+ x y (bvchop size z)))
+                  (bvchop size (+ x y z))))
+  :hints (("Goal" :in-theory (enable bvchop))))

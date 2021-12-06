@@ -4745,6 +4745,18 @@
                   (bvxor size x y)))
   :hints (("Goal" :in-theory (enable bvxor))))
 
+(defthmd logxor-of-bvchop-and-bvchop
+  (implies (and (integerp x)
+                (integerp y)
+                (natp size1)
+                (natp size2))
+           (equal (LOGXOR (BVCHOP size1 x)
+                          (BVCHOP size2 y))
+                  (if (<= size1 size2)
+                      (bvxor size2 (bvchop size1 x) y)
+                    (bvxor size1 x (bvchop size2 y)))))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
 (theory-invariant (incompatible (:definition bvxor) (:rewrite LOGXOR-BVCHOP-BVCHOP)))
 
 (defthm bitxor-of-myif-arg1
@@ -5726,16 +5738,6 @@
                   (bvmult size y x)))
   :hints (("Goal" :use (:instance bvmult-of-logext-gen-arg2)
            :in-theory (disable bvmult-of-logext-gen-arg2))))
-
-(defthmd equal-of-logext-and-logext
-  (implies (and ;(integerp x)
-                ;(integerp y)
-                (posp size))
-           (equal (equal (LOGEXT size x) (LOGEXT size y))
-                  (equal (bvchop size x) (bvchop size y))))
-  :hints (("Goal" :use (:instance ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4
-                                  (newsize size)
-                                  (y (LOGEXT size y))))))
 
 ;for when we prefer to know the logexts are equal (e.g., when we know signed-byte-p)
 (defthmd equal-of-bvchop-and-bvchop
@@ -8159,3 +8161,17 @@
                     nil)))
   :rule-classes ((:rewrite :backchain-limit-lst (nil nil 0 nil)))
   :hints (("Goal" :by bvlt-of-bvplus-of-minus1-arg2-when-not-bvlt)))
+
+(defthm logand-of-1-arg1
+  (equal (logand 1 x)
+         (getbit 0 x))
+  :hints (("Goal" :in-theory (e/d (logand getbit bvchop)
+                                  (SLICE-BECOMES-GETBIT
+                                   BVCHOP-1-BECOMES-GETBIT)))))
+
+(defthm getbit-0-of-logxor
+  (equal (getbit 0 (logxor x y))
+         (bitxor x y))
+  :hints (("Goal" :in-theory (e/d (bitxor bvxor getbit) (BVXOR-1-BECOMES-BITXOR
+                                                         SLICE-BECOMES-GETBIT
+                                   BVCHOP-1-BECOMES-GETBIT)))))

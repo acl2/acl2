@@ -718,6 +718,7 @@
               (mv (erp-t) nil state)))))
 
 ;todo: allow :rule-classes
+;todo: add option to suppress generation of the theorem
 (defmacro prove-with-tactics (&whole whole-form
                               dag-or-term
                               &key

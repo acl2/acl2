@@ -10,6 +10,7 @@
 (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system)
 (include-book "kestrel/lists-light/len" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
+(include-book "std/testing/assert-equal" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -51,10 +52,24 @@
                                    nth
                                    ) (acl2::nth-of-cdr)))))
 
-;; (make-range-check-constraints '(a0 a1 a2 a3)
-;;                               '(pi0 pi1 pi2 pi3)
-;;                               #b1010
-;;                               4)
+(acl2::assert-equal
+ (make-range-check-constraints '(a0 a1 a2 a3)
+                               '(pi0 pi1 pi2 pi3) ;todo: pi3 can never be used?
+                               #b1010
+                               4)
+ ;; let pi3=a3
+ ;; let pi2=pi3
+ ;; let pi0=pi1
+ '(((A (1 A3)) (B (1 A3) (-1 1)) (C)) ; a3*(a3-1)=0, so a3 is a bit
+   ((A (1 1) (-1 A3) (-1 A2)) ; (1-a3-a2)*a2=0 aka (1-pi3-a2)*a2=0, since c_2 is 0 (see the lets above)
+    (B (1 A2))
+    (C))
+   ((A (1 A1)) (B (1 A1) (-1 1)) (C)) ; a1*(a1-1)=0, so a1 is a bit
+   ((A (1 1) (-1 PI1) (-1 A0)) ; (1-pi1-a0)*a0 = 0 since c_0 is 0
+    (B (1 A0))
+    (C))
+   ((A (1 A3)) (B (1 A1)) (C (1 PI1))) ; a3*a1=pi1, aka pi2*a1=pi1, since c_1 is 1 (see the lets above)
+   ))
 
 ;; The pivars that get constraints are (pivars-for-1s pivars (+ -2 n) (index-of-lowest-0 c) c).
 

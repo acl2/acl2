@@ -500,3 +500,33 @@
   (implies (posp size)
            (equal (logext size (+ -1 (expt 2 (+ -1 size))))
                   (+ -1 (expt 2 (+ -1 size))))))
+
+(defthmd equal-of-logext-and-logext
+  (implies (and ;(integerp x)
+                ;(integerp y)
+                (posp size))
+           (equal (equal (logext size x) (logext size y))
+                  (equal (bvchop size x) (bvchop size y))))
+  :hints (("Goal" :use ((:instance bvchop-of-logext-same (x x))
+                        (:instance bvchop-of-logext-same (x y))
+                        (:instance logext-of-bvchop-same (x x))
+                        (:instance logext-of-bvchop-same (x y)))
+           :in-theory (disable bvchop-of-logext-same
+                               logext-of-bvchop-same
+                               logext-of-bvchop-smaller-better
+                               logext-bvchop-better
+                               bvchop-of-logext))))
+
+(defthm logext-of-+-of-logext-arg1
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (logext 8 (+ (logext 8 x) y))
+                  (logext 8 (+ x y))))
+  :hints (("Goal" :in-theory (e/d (equal-of-logext-and-logext) ()))))
+
+(defthm logext-of-+-of-logext-arg2
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (logext 8 (+ x (logext 8 y)))
+                  (logext 8 (+ x y))))
+  :hints (("Goal" :in-theory (e/d (equal-of-logext-and-logext) ()))))

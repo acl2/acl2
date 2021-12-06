@@ -5458,10 +5458,14 @@
 ;; preds are predicates over the variable PARAMS
 
 (defun make-equalities (items1 items2)
+  (declare (xargs :guard (and (true-listp items1)
+                              (true-listp items2)
+                              (equal (len items1)
+                                     (len items2)))))
   (if (endp items1)
       nil
-    (cons `(equal ,(car items1) ,(car items2))
-          (make-equalities (cdr items1) (cdr items2)))))
+    (cons `(equal ,(first items1) ,(first items2))
+          (make-equalities (rest items1) (rest items2)))))
 
 ;no target should contain another?
 (mutual-recursion
