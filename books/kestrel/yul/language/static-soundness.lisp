@@ -369,6 +369,148 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection static-soundness-theorems-about-add-funs
+  :short "Theorems about @(tsee add-funs) for the static soundness proof"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Similarly to how @(tsee get-funtype) and @(tsee find-fun)
+     are static/dynamic counterparts,
+     so @(tsee add-funtypes) and @(tsee add-funs)
+     are static/dynamic counterparts.
+     Here we prove theorems that relate the latter two,
+     or that relate functions that the latter two are built on.")
+   (xdoc::p
+    "We also prove theorems about the preservation of
+     the safety invariant of function environments.
+     Essentially, given a safe function environments,
+     if we extend with a new scope whose functions
+     are safe in the function table that also includes those functions,
+     we push a scope into the stack that satisfies the invariant;
+     and furthermore, the existing scopes still satisfy the invariant,
+     because the invariant only refers to the current and earlier scopes,
+     not to later ones that are pushed."))
+
+  (defrule funinfo-to-funtype-of-funinfo-for-fundef
+    (equal (funinfo-to-funtype (funinfo-for-fundef fundef))
+           (funtype-for-fundef fundef))
+    :enable (funinfo-to-funtype
+             funinfo-for-fundef
+             funtype-for-fundef))
+
+  (defruled in-funscope-for-fundefs-iff-in-funtable-for-fundefs
+    (implies (and (not (resulterrp (funscope-for-fundefs fundefs)))
+                  (not (resulterrp (funtable-for-fundefs fundefs))))
+             (equal (consp (omap::in fun (funscope-for-fundefs fundefs)))
+                    (consp (omap::in fun (funtable-for-fundefs fundefs)))))
+    :enable (funscope-for-fundefs
+             funtable-for-fundefs))
+
+  (defruled error-funscope-for-fundefs-iff-error-funtable-for-fundefs
+    (equal (resulterrp (funscope-for-fundefs fundefs))
+           (resulterrp (funtable-for-fundefs fundefs)))
+    :enable (funscope-for-fundefs
+             funtable-for-fundefs
+             funtablep-when-funtable-resultp-and-not-resulterrp
+             not-resulterrp-when-funtablep
+             in-funscope-for-fundefs-iff-in-funtable-for-fundefs))
+
+  (defrule funscope-to-funtable-of-funscope-for-fundefs
+    (implies (not (resulterrp (funscope-for-fundefs fundefs)))
+             (equal (funscope-to-funtable (funscope-for-fundefs fundefs))
+                    (funtable-for-fundefs fundefs)))
+    :enable (funscope-to-funtable
+             funscope-for-fundefs
+             funtable-for-fundefs
+             error-funscope-for-fundefs-iff-error-funtable-for-fundefs
+             funscopep-when-funscope-resultp-and-not-resulterrp
+             funscope-to-funtable-of-update
+             in-funscope-for-fundefs-iff-in-funtable-for-fundefs))
+
+  (defruled keys-of-funscope-for-fundefs-is-keys-of-funtable-for-fundefs
+    (implies (and (not (resulterrp (funscope-for-fundefs fundefs)))
+                  (not (resulterrp (funtable-for-fundefs fundefs))))
+             (equal (omap::keys (funscope-for-fundefs fundefs))
+                    (omap::keys (funtable-for-fundefs fundefs))))
+    :enable (funscope-for-fundefs
+             funtable-for-fundefs))
+
+  (defrule funenv-to-funtable-of-add-funs
+    (implies (not (resulterrp (add-funs fundefs funenv)))
+             (equal (funenv-to-funtable (add-funs fundefs funenv))
+                    (add-funtypes fundefs (funenv-to-funtable funenv))))
+    :enable (add-funs
+             add-funtypes
+             funenv-to-funtable
+             error-funscope-for-fundefs-iff-error-funtable-for-fundefs
+             ensure-funscope-disjoint
+             not-resulterrp-when-funenvp
+             funscopep-when-funscope-resultp-and-not-resulterrp
+             keys-of-funscope-for-fundefs-is-keys-of-funtable-for-fundefs
+             set::intersect-of-union))
+
+  (defruled error-add-funs-iff-error-add-funtypes
+    (equal (resulterrp (add-funs fundefs funenv))
+           (resulterrp (add-funtypes fundefs (funenv-to-funtable funenv))))
+    :enable (add-funs
+             add-funtypes
+             funenv-to-funtable
+             error-funscope-for-fundefs-iff-error-funtable-for-fundefs
+             ensure-funscope-disjoint
+             not-resulterrp-when-funenvp
+             funscopep-when-funscope-resultp-and-not-resulterrp
+             keys-of-funscope-for-fundefs-is-keys-of-funtable-for-fundefs
+             set::intersect-of-union
+             funtablep-when-funtable-resultp-and-not-resulterrp))
+
+  (defrule funinfo-safep-of-funinfo-for-fundef
+    (implies (not (resulterrp (check-safe-fundef fundef funtab)))
+             (funinfo-safep (funinfo-for-fundef fundef) funtab))
+    :enable (funinfo-safep
+             check-safe-fundef
+             funinfo-for-fundef))
+
+  (defrule funscope-safep-of-funscope-for-fundefs
+    (implies (and (not (resulterrp (check-safe-fundef-list fundefs funtab)))
+                  (not (resulterrp (funscope-for-fundefs fundefs))))
+             (funscope-safep (funscope-for-fundefs fundefs) funtab))
+    :enable (funscope-safep
+             funscope-for-fundefs
+             check-safe-fundef-list
+             funscopep-when-funscope-resultp-and-not-resulterrp))
+
+  (defruled car-of-add-funs
+    (implies (not (resulterrp (add-funs fundefs funenv)))
+             (equal (car (add-funs fundefs funenv))
+                    (funscope-for-fundefs fundefs)))
+    :enable add-funs)
+
+  (defruled cdr-of-add-funs
+    (implies (not (resulterrp (add-funs fundefs funenv)))
+             (equal (cdr (add-funs fundefs funenv))
+                    (funenv-fix funenv)))
+    :enable add-funs)
+
+  (defruled not-error-funscope-for-fundefs-when-not-error-add-funs
+    (implies (not (resulterrp (add-funs fundefs funenv)))
+             (not (resulterrp (funscope-for-fundefs fundefs))))
+    :enable add-funs)
+
+  (defrule funenv-safep-of-add-funs
+    (implies (and (funenv-safep funenv)
+                  (not (resulterrp (add-funs fundefs funenv)))
+                  (not (resulterrp
+                        (check-safe-fundef-list
+                         fundefs
+                         (add-funtypes fundefs (funenv-to-funtable funenv))))))
+             (funenv-safep (add-funs fundefs funenv)))
+    :expand (funenv-safep (add-funs fundefs funenv))
+    :enable (not-error-funscope-for-fundefs-when-not-error-add-funs
+             car-of-add-funs
+             cdr-of-add-funs)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; modes
 
 (defruled mode-continue-lemma
@@ -450,80 +592,6 @@
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; function addition
-
-(defrule funinfo-to-funtype-of-funinfo-for-fundef
-  (equal (funinfo-to-funtype (funinfo-for-fundef fundef))
-         (funtype-for-fundef fundef))
-  :enable (funinfo-to-funtype
-           funinfo-for-fundef
-           funtype-for-fundef))
-
-(defruled in-funscope-for-fundefs-iff-in-funtable-for-fundefs
-  (implies (and (not (resulterrp (funscope-for-fundefs fundefs)))
-                (not (resulterrp (funtable-for-fundefs fundefs))))
-           (equal (consp (omap::in fun (funscope-for-fundefs fundefs)))
-                  (consp (omap::in fun (funtable-for-fundefs fundefs)))))
-  :enable (funscope-for-fundefs
-           funtable-for-fundefs))
-
-(defruled error-funscope-for-fundefs-iff-error-funtable-for-fundefs
-  (equal (resulterrp (funscope-for-fundefs fundefs))
-         (resulterrp (funtable-for-fundefs fundefs)))
-  :enable (funscope-for-fundefs
-           funtable-for-fundefs
-           funtablep-when-funtable-resultp-and-not-resulterrp
-           not-resulterrp-when-funtablep
-           in-funscope-for-fundefs-iff-in-funtable-for-fundefs))
-
-(defrule funscope-to-funtable-of-funscope-for-fundefs
-  (implies (not (resulterrp (funscope-for-fundefs fundefs)))
-           (equal (funscope-to-funtable (funscope-for-fundefs fundefs))
-                  (funtable-for-fundefs fundefs)))
-  :enable (funscope-to-funtable
-           funscope-for-fundefs
-           funtable-for-fundefs
-           error-funscope-for-fundefs-iff-error-funtable-for-fundefs
-           funscopep-when-funscope-resultp-and-not-resulterrp
-           funscope-to-funtable-of-update
-           in-funscope-for-fundefs-iff-in-funtable-for-fundefs))
-
-(defruled keys-of-funscope-for-fundefs-is-keys-of-funtable-for-fundefs
-  (implies (and (not (resulterrp (funscope-for-fundefs fundefs)))
-                (not (resulterrp (funtable-for-fundefs fundefs))))
-           (equal (omap::keys (funscope-for-fundefs fundefs))
-                  (omap::keys (funtable-for-fundefs fundefs))))
-  :enable (funscope-for-fundefs
-           funtable-for-fundefs))
-
-(defrule funenv-to-funtable-of-add-funs
-  (implies (not (resulterrp (add-funs fundefs funenv)))
-           (equal (funenv-to-funtable (add-funs fundefs funenv))
-                  (add-funtypes fundefs (funenv-to-funtable funenv))))
-  :enable (add-funs
-           add-funtypes
-           funenv-to-funtable
-           error-funscope-for-fundefs-iff-error-funtable-for-fundefs
-           ensure-funscope-disjoint
-           not-resulterrp-when-funenvp
-           funscopep-when-funscope-resultp-and-not-resulterrp
-           keys-of-funscope-for-fundefs-is-keys-of-funtable-for-fundefs
-           set::intersect-of-union))
-
-(defruled error-add-funs-iff-error-add-funtypes
-  (equal (resulterrp (add-funs fundefs funenv))
-         (resulterrp (add-funtypes fundefs (funenv-to-funtable funenv))))
-  :enable (add-funs
-           add-funtypes
-           funenv-to-funtable
-           error-funscope-for-fundefs-iff-error-funtable-for-fundefs
-           ensure-funscope-disjoint
-           not-resulterrp-when-funenvp
-           funscopep-when-funscope-resultp-and-not-resulterrp
-           keys-of-funscope-for-fundefs-is-keys-of-funtable-for-fundefs
-           set::intersect-of-union
-           funtablep-when-funtable-resultp-and-not-resulterrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1009,55 +1077,9 @@
 
 ; theorems about add-funs
 
-(defrule car-of-add-funs
-  (implies (not (resulterrp (add-funs fundefs funenv)))
-           (equal (car (add-funs fundefs funenv))
-                  (funscope-for-fundefs fundefs)))
-  :enable add-funs)
-
-(defrule cdr-of-add-funs
-  (implies (not (resulterrp (add-funs fundefs funenv)))
-           (equal (cdr (add-funs fundefs funenv))
-                  (funenv-fix funenv)))
-  :enable add-funs)
-
-(defruled not-error-funscope-for-fundefs-when-not-error-add-funs
-  (implies (not (resulterrp (add-funs fundefs funenv)))
-           (not (resulterrp (funscope-for-fundefs fundefs))))
-  :enable add-funs)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; function environment safety under safety checking
-
-(defrule funinfo-safep-of-funinfo-for-fundef
-  (implies (not (resulterrp (check-safe-fundef fundef funtab)))
-           (funinfo-safep (funinfo-for-fundef fundef) funtab))
-  :enable (funinfo-safep
-           check-safe-fundef
-           funinfo-for-fundef))
-
-(defrule funscope-safep-of-funscope-for-fundefs
-  (implies (and (not (resulterrp (check-safe-fundef-list fundefs funtab)))
-                (not (resulterrp (funscope-for-fundefs fundefs))))
-           (funscope-safep (funscope-for-fundefs fundefs) funtab))
-  :enable (funscope-safep
-           funscope-for-fundefs
-           check-safe-fundef-list
-           funscopep-when-funscope-resultp-and-not-resulterrp))
-
-(defrule funenv-safep-of-add-funs
-  (implies (and (funenv-safep funenv)
-                (not (resulterrp (add-funs fundefs funenv)))
-                (not (resulterrp
-                      (check-safe-fundef-list
-                       fundefs
-                       (add-funtypes fundefs (funenv-to-funtable funenv))))))
-           (funenv-safep (add-funs fundefs funenv)))
-  :expand (funenv-safep (add-funs fundefs funenv))
-  :enable (not-error-funscope-for-fundefs-when-not-error-add-funs))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
