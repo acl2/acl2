@@ -120,7 +120,7 @@
   (xdoc::topstring
    (xdoc::p
     "We prove two theorems to rephrase @(tsee add-var) and @(tsee add-vars)
-     as @(tsee set::insert) and @(tsee set::list-insert).
+     as @(tsee set::insert) and @('set::list-insert').
      The first is used to prove the second,
      which is used in some other theorem (find it in hints).")
    (xdoc::p
@@ -382,7 +382,7 @@
      it performs the same checks as @(tsee check-safe-fundef),
      except that it does so on function information
      instead of a function definition
-     (so we could not use @(tsee check-safe-undef) here,
+     (so we could not use @(tsee check-safe-fundef) here,
      because we have no function definition).
      Safety is necessarily checked with respect to some function table.
      See @(tsee funscope-safep) and @(tsee funenv-safep)
@@ -910,7 +910,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If @(tsee check-var) and @(tsee check-vars) succeed,
+    "If @(tsee check-var) and @(tsee check-var-list) succeed,
      also @(tsee read-var-value) and @(tsee read-vars-values) do."))
 
   (defruled read-var-value-when-check-var
@@ -1256,7 +1256,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is fairly easy, and relies on
-     the theorem about @(tsee read-var-value) and @(tsee read-var)."))
+     the theorem about @(tsee read-var-value) and @(tsee check-var)."))
 
   (defrule exec-path-when-check-safe-path
     (implies (not (resulterrp
