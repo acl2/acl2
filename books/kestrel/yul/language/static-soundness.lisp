@@ -934,188 +934,247 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; soundness of variable addition
+(defsection static-soundness-of-variable-addition
+  :short "Theorems about the static soundness of variable addition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If @(tsee add-var) and @(tsee add-vars) succeed,
+     also @(tsee add-var-value) and @(tsee add-vars-values) do.
+     Furthermore, the variable table for the resulting computation states
+     is the same returned by the safety checks."))
 
-(defrule add-var-value-when-add-var
-  (b* ((vartab1 (add-var var (cstate-to-vartable cstate)))
-       (cstate1 (add-var-value var val cstate)))
-    (implies (not (resulterrp vartab1))
-             (and (not (resulterrp cstate1))
-                  (equal (cstate-to-vartable cstate1)
-                         vartab1))))
-  :enable (add-var
-           add-var-value
-           cstate-to-vartable
-           vartablep-to-identifier-setp
-           omap::consp-of-omap-in-to-set-in-of-omap-keys))
+  (defrule add-var-value-when-add-var
+    (b* ((vartab1 (add-var var (cstate-to-vartable cstate)))
+         (cstate1 (add-var-value var val cstate)))
+      (implies (not (resulterrp vartab1))
+               (and (not (resulterrp cstate1))
+                    (equal (cstate-to-vartable cstate1)
+                           vartab1))))
+    :enable (add-var
+             add-var-value
+             cstate-to-vartable
+             vartablep-to-identifier-setp
+             omap::consp-of-omap-in-to-set-in-of-omap-keys))
 
-(defrule add-vars-values-when-add-vars
-  (b* ((vartab1 (add-vars vars (cstate-to-vartable cstate)))
-       (cstate1 (add-vars-values vars vals cstate)))
-    (implies (and (not (resulterrp vartab1))
+  (defrule add-vars-values-when-add-vars
+    (b* ((vartab1 (add-vars vars (cstate-to-vartable cstate)))
+         (cstate1 (add-vars-values vars vals cstate)))
+      (implies (and (not (resulterrp vartab1))
+                    (equal (len vals) (len vars)))
+               (and (not (resulterrp cstate1))
+                    (equal (cstate-to-vartable cstate1)
+                           vartab1))))
+    :induct (add-vars-values vars vals cstate)
+    :enable (add-vars
+             add-vars-values
+             add-var)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection static-soundness-of-variable-writing
+  :short "Theorems about the static soundness of variable writing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If @(tsee check-safe-path) and @(tsee check-safe-path-list) succeeds,
+     also @(tsee write-var-value) and @(tsee write-vars-values) do.
+     These are proved by showing that path checking
+     ensures the success of @(tsee path-to-var) and @(tsee paths-to-vars),
+     and also the success of @(tsee check-var) and @(tsee check-var-list).
+     Then we show that @(tsee check-var) and @(tsee check-var-list)
+     ensure that @(tsee write-var-value) and @(tsee write-vars-values) succeed,
+     and finally we put things together."))
+
+  (defrule path-to-var-when-check-safe-path
+    (implies (not (resulterrp (check-safe-path path vartab)))
+             (not (resulterrp (path-to-var path))))
+    :enable (check-safe-path
+             path-to-var
+             not-resulterrp-when-identifierp))
+
+  (defrule check-var-when-check-safe-path
+    (implies (not (resulterrp (check-safe-path path vartab)))
+             (check-var (path-to-var path) vartab))
+    :enable (check-safe-path
+             path-to-var))
+
+  (defrule paths-to-vars-when-check-safe-path-list
+    (implies (not (resulterrp (check-safe-path-list paths vartab)))
+             (not (resulterrp (paths-to-vars paths))))
+    :enable (check-safe-path-list
+             paths-to-vars)
+    :expand (resulterrp (cons (path-to-var (car paths))
+                              (paths-to-vars (cdr paths)))))
+
+  (defrule check-var-list-when-check-safe-path-list
+    (implies (not (resulterrp (check-safe-path-list paths vartab)))
+             (check-var-list (paths-to-vars paths) vartab))
+    :enable (check-safe-path-list
+             check-var-list
+             paths-to-vars))
+
+  (defrule write-var-value-when-check-var
+    (implies (check-var var (cstate-to-vartable cstate))
+             (not (resulterrp (write-var-value var val cstate))))
+    :enable (write-var-value
+             check-var
+             cstate-to-vartable
+             vartablep-to-identifier-setp
+             omap::consp-of-omap-in-to-set-in-of-omap-keys))
+
+  (defrule write-var-value-when-check-safe-path
+    (implies (not (resulterrp
+                   (check-safe-path path (cstate-to-vartable cstate))))
+             (not (resulterrp
+                   (write-var-value (path-to-var path) val cstate)))))
+
+  (defrule write-vars-values-when-check-var-list
+    (implies (and (check-var-list vars (cstate-to-vartable cstate))
                   (equal (len vals) (len vars)))
-             (and (not (resulterrp cstate1))
-                  (equal (cstate-to-vartable cstate1)
-                         vartab1))))
-  :induct (add-vars-values vars vals cstate)
-  :enable (add-vars
-           add-vars-values
-           add-var))
+             (not (resulterrp (write-vars-values vars vals cstate))))
+    :enable (check-var-list
+             write-vars-values))
+
+  (defrule write-vars-values-when-check-safe-path-list
+    (implies (and (not (resulterrp
+                        (check-safe-path-list paths
+                                              (cstate-to-vartable cstate))))
+                  (equal (len vals) (len paths)))
+             (not (resulterrp
+                   (write-vars-values (paths-to-vars paths) vals cstate))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; soundness of variable writing
+(defsection static-soundness-theorems-about-init-local
+  :short "Theorems about @(tsee init-local) for the static soundness proof."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some of these are actually more general and could be moved.
+     These more general theorems are about adding variables,
+     which is what @(tsee init-local) does for the local state of course.")
+   (xdoc::p
+    "First, we show that @(tsee add-var-value) fails iff @(tsee add-var) does
+     (the value put into the variable puts no constraints),
+     and the same holds for @(tsee add-vars-values) and @(tsee add-vars)
+     provided that the number of values matches the number of variables.")
+   (xdoc::p
+    "We prove a theorem that characterizes the effect of @(tsee init-local)
+     on the variable table of the computation state.
+     This should belong to
+     the theorems in @(see theorems-about-cstate-to-vartable-and-execution),
+     and it can probably put there, but currently it needs some other theorems,
+     but it may be possible to streamline and simplify its proof.")
+   (xdoc::p
+    "We also prove a forward chaining rule saying that,
+     if @(tsee init-local) succeeds,
+     the number of values matches the number of variables.
+     This is a handy fact to have available in the main proof.
+     The forward chaining rule is proved via another rule,
+     about @(tsee add-vars-values) instead of @(tsee init-local),
+     that could also be a forward chaining rule,
+     but for now we do not need that,
+     and we only need it to prove the one about @(tsee init-local).")
+   (xdoc::p
+    "The theorem @('check-var-list-of-add-vars-of-append-not-error')
+     serves to establish that the output variables of a function are readable
+     given that they have been added via @(tsee init-local).
+     This is not really a theorem about @(tsee init-local), but it is related;
+     nonetheless, we may move this theorem at some point.")
+   (xdoc::p
+    "We finally show that @(tsee init-local) fails iff
+     the addition of the variables to the variable table fails,
+     or the number of values does not match the number of variables.
+     This is the theorem @('resulterrp-of-init-local'),
+     which is proved via the two theorems that preced it."))
 
-(defrule path-to-var-when-check-safe-path
-  (implies (not (resulterrp (check-safe-path path vartab)))
-           (not (resulterrp (path-to-var path))))
-  :enable (check-safe-path
-           path-to-var
-           not-resulterrp-when-identifierp))
+  (defruled error-add-var-value-iff-error-add-var
+    (equal (resulterrp (add-var-value var val cstate))
+           (resulterrp (add-var var (cstate-to-vartable cstate))))
+    :enable (add-var
+             add-var-value
+             cstate-to-vartable
+             omap::consp-of-omap-in-to-set-in-of-omap-keys
+             not-resulterrp-when-cstatep
+             not-resulterrp-when-vartablep
+             vartablep-to-identifier-setp))
 
-(defrule check-var-when-check-safe-path
-  (implies (not (resulterrp (check-safe-path path vartab)))
-           (check-var (path-to-var path) vartab))
-  :enable (check-safe-path
-           path-to-var))
+  (defruled error-add-vars-values-iff-error-add-vars
+    (implies (equal (len vals) (len vars))
+             (equal (resulterrp (add-vars-values vars vals cstate))
+                    (resulterrp (add-vars vars (cstate-to-vartable cstate)))))
+    :enable (add-vars-values
+             add-vars
+             error-add-var-value-iff-error-add-var
+             not-resulterrp-when-vartablep))
 
-(defrule paths-to-vars-when-check-safe-path-list
-  (implies (not (resulterrp (check-safe-path-list paths vartab)))
-           (not (resulterrp (paths-to-vars paths))))
-  :enable (check-safe-path-list
-           paths-to-vars)
-  :expand (resulterrp (cons (path-to-var (car paths))
-                            (paths-to-vars (cdr paths)))))
+  (defrule cstate-to-vartable-of-init-local
+    (implies (and (equal (len in-vals)
+                         (len in-vars))
+                  (not (resulterrp
+                        (init-local in-vars in-vals out-vars cstate))))
+             (equal (cstate-to-vartable
+                     (init-local in-vars in-vals out-vars cstate))
+                    (add-vars (append in-vars out-vars) nil)))
+    :enable (init-local
+             add-vars-of-append
+             error-add-vars-values-iff-error-add-vars))
 
-(defrule check-var-list-when-check-safe-path-list
-  (implies (not (resulterrp (check-safe-path-list paths vartab)))
-           (check-var-list (paths-to-vars paths) vartab))
-  :enable (check-safe-path-list
-           check-var-list
-           paths-to-vars))
+  (defruled same-len-when-add-vars-values-not-error
+    (implies (not (resulterrp (add-vars-values vars vals cstate)))
+             (equal (len vals) (len vars)))
+    :enable add-vars-values)
 
-(defrule write-var-value-when-check-var
-  (implies (check-var var (cstate-to-vartable cstate))
-           (not (resulterrp (write-var-value var val cstate))))
-  :enable (write-var-value
-           check-var
-           cstate-to-vartable
-           vartablep-to-identifier-setp
-           omap::consp-of-omap-in-to-set-in-of-omap-keys))
+  (defrule same-len-when-init-local-not-error
+    (implies (not (resulterrp (init-local in-vars in-vals out-vars cstate)))
+             (equal (len in-vals) (len in-vars)))
+    :rule-classes ((:forward-chaining
+                    :trigger-terms
+                    ((resulterrp
+                      (init-local in-vars in-vals out-vars cstate)))))
+    :enable init-local
+    :use (:instance same-len-when-add-vars-values-not-error
+          (vals in-vals)
+          (vars in-vars)
+          (cstate (cstate nil))))
 
-(defrule write-var-value-when-check-safe-path
-  (implies (not (resulterrp
-                 (check-safe-path path (cstate-to-vartable cstate))))
-           (not (resulterrp
-                 (write-var-value (path-to-var path) val cstate)))))
+  (defruled check-var-list-of-add-vars-of-append-not-error
+    (implies (and (identifier-listp vars)
+                  (identifier-listp vars1)
+                  (vartablep vartab)
+                  (not (resulterrp (add-vars (append vars1 vars) vartab))))
+             (check-var-list vars (add-vars (append vars1 vars) vartab)))
+    :enable (add-vars-to-list-insert
+             check-var-list-to-set-list-in
+             vartablep-to-identifier-setp))
 
-(defrule write-vars-values-when-check-var-list
-  (implies (and (check-var-list vars (cstate-to-vartable cstate))
-                (equal (len vals) (len vars)))
-           (not (resulterrp (write-vars-values vars vals cstate))))
-  :enable (check-var-list
-           write-vars-values))
+  (defruled add-vars-of-append-not-error-when-init-local-not-error
+    (implies (and (not (resulterrp
+                        (init-local in-vars in-vals out-vars cstate))))
+             (not (resulterrp (add-vars (append in-vars out-vars) nil))))
+    :enable not-resulterrp-when-vartablep
+    :disable cstate-to-vartable-of-init-local
+    :use cstate-to-vartable-of-init-local)
 
-(defrule write-vars-values-when-check-safe-path-list
-  (implies (and (not (resulterrp
-                      (check-safe-path-list paths (cstate-to-vartable cstate))))
-                (equal (len vals) (len paths)))
-           (not (resulterrp
-                 (write-vars-values (paths-to-vars paths) vals cstate)))))
+  (defruled init-local-not-error-when-add-vars-of-append-not-error
+    (implies (and (equal (len in-vals) (len in-vars))
+                  (not (resulterrp (add-vars (append in-vars out-vars) nil))))
+             (not (resulterrp (init-local in-vars in-vals out-vars cstate))))
+    :enable (init-local
+             resulterrp-of-add-vars-of-append
+             error-add-vars-values-iff-error-add-vars)
+    :use (:instance add-vars-of-append-2
+          (vars1 in-vars)
+          (vars2 out-vars)
+          (vartab nil)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; treatment of init-local
-
-(defruled error-add-var-value-iff-error-add-var
-  (equal (resulterrp (add-var-value var val cstate))
-         (resulterrp (add-var var (cstate-to-vartable cstate))))
-  :enable (add-var
-           add-var-value
-           cstate-to-vartable
-           omap::consp-of-omap-in-to-set-in-of-omap-keys
-           not-resulterrp-when-cstatep
-           not-resulterrp-when-vartablep
-           vartablep-to-identifier-setp))
-
-(defruled error-add-vars-values-iff-error-add-vars
-  (implies (equal (len vals) (len vars))
-           (equal (resulterrp (add-vars-values vars vals cstate))
-                  (resulterrp (add-vars vars (cstate-to-vartable cstate)))))
-  :enable (add-vars-values
-           add-vars
-           error-add-var-value-iff-error-add-var
-           not-resulterrp-when-vartablep))
-
-(defrule cstate-to-vartable-of-init-local
-  (implies (and (equal (len in-vals)
-                       (len in-vars))
-                (not (resulterrp (init-local in-vars in-vals out-vars cstate))))
-           (equal (cstate-to-vartable
-                   (init-local in-vars in-vals out-vars cstate))
-                  (add-vars (append in-vars out-vars) nil)))
-  :enable (init-local
-           add-vars-of-append
-           error-add-vars-values-iff-error-add-vars))
-
-(defruled same-len-when-add-vars-values-not-error
-  (implies (not (resulterrp (add-vars-values vars vals cstate)))
-           (equal (len vals) (len vars)))
-  :enable add-vars-values)
-
-(defrule same-len-when-init-local-not-error
-  (implies (not (resulterrp (init-local in-vars in-vals out-vars cstate)))
-           (equal (len in-vals) (len in-vars)))
-  :rule-classes ((:forward-chaining
-                  :trigger-terms
-                  ((resulterrp
-                    (init-local in-vars in-vals out-vars cstate)))))
-  :enable init-local
-  :use (:instance same-len-when-add-vars-values-not-error
-        (vals in-vals)
-        (vars in-vars)
-        (cstate (cstate nil))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; lemmas for the exec-function case
-
-(defruled check-var-list-of-add-vars-of-append-not-error
-  (implies (and (identifier-listp vars)
-                (identifier-listp vars1)
-                (vartablep vartab)
-                (not (resulterrp (add-vars (append vars1 vars) vartab))))
-           (check-var-list vars (add-vars (append vars1 vars) vartab)))
-  :enable (add-vars-to-list-insert
-           check-var-list-to-set-list-in
-           vartablep-to-identifier-setp))
-
-(defruled add-vars-of-append-not-error-when-init-local-not-error
-  (implies (and (not (resulterrp
-                      (init-local in-vars in-vals out-vars cstate))))
-           (not (resulterrp (add-vars (append in-vars out-vars) nil))))
-  :enable not-resulterrp-when-vartablep
-  :disable cstate-to-vartable-of-init-local
-  :use cstate-to-vartable-of-init-local)
-
-(defruled init-local-not-error-when-add-vars-of-append-not-error
-  (implies (and (equal (len in-vals) (len in-vars))
-                (not (resulterrp (add-vars (append in-vars out-vars) nil))))
-           (not (resulterrp (init-local in-vars in-vals out-vars cstate))))
-  :enable (init-local
-           resulterrp-of-add-vars-of-append
-           error-add-vars-values-iff-error-add-vars)
-  :use (:instance add-vars-of-append-2
-        (vars1 in-vars)
-        (vars2 out-vars)
-        (vartab nil)))
-
-(defruled resulterrp-of-init-local
-  (equal (resulterrp (init-local in-vars in-vals out-vars cstate))
-         (or (resulterrp (add-vars (append in-vars out-vars) nil))
-             (not (equal (len in-vals) (len in-vars)))))
-  :use (add-vars-of-append-not-error-when-init-local-not-error
-        init-local-not-error-when-add-vars-of-append-not-error))
+  (defruled resulterrp-of-init-local
+    (equal (resulterrp (init-local in-vars in-vals out-vars cstate))
+           (or (resulterrp (add-vars (append in-vars out-vars) nil))
+               (not (equal (len in-vals) (len in-vars)))))
+    :use (add-vars-of-append-not-error-when-init-local-not-error
+          init-local-not-error-when-add-vars-of-append-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1444,8 +1503,7 @@
                         read-vars-values-when-check-var-list
                         check-var-list-of-add-vars-of-append-not-error
 
-                        resulterrp-of-init-local ; replaces:
-                        ;; add-vars-of-append-not-error-when-init-local-not-error
+                        resulterrp-of-init-local
 
                         ;; for subgoal 15:
                         resulterrp-of-find-fun
