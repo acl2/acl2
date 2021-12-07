@@ -13,10 +13,11 @@
 (include-book "static-safety-checking")
 (include-book "dynamic-semantics")
 
-(local (include-book "../library-extensions/lists"))
+(include-book "../library-extensions/osets")
 
 (include-book "kestrel/std/util/defund-sk" :dir :system)
-(include-book "kestrel/utilities/osets" :dir :system)
+
+(local (include-book "../library-extensions/lists"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,26 +35,6 @@
      which the dynamic semantics defensively checks."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; osets
-
-(define set::insert-list ((l true-listp) (s set::setp))
-  :returns (new-s set::setp)
-  (cond ((endp l) (set::sfix s))
-        (t (set::insert-list (cdr l) (set::insert (car l) s)))))
-
-(defrule set::subset-of-insert-list
-  (set::subset s (set::insert-list l s))
-  :enable set::insert-list)
-
-(defruled set::intersect-of-union
-  (equal (set::intersect a (set::union b c))
-         (set::union (set::intersect a b)
-                     (set::intersect a c)))
-  :enable (set::double-containment
-           set::pick-a-point-subset-strategy))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
