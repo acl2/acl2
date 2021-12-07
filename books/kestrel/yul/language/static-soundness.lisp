@@ -1044,27 +1044,6 @@
            (identifier-setp (set::list-insert list set)))
   :enable set::list-insert)
 
-(defrule set::in-of-list-insert
-  (iff (set::in elem (set::list-insert list set))
-       (or (member-equal elem list)
-           (set::in elem set)))
-  :induct (set::list-insert list set)
-  :enable set::list-insert)
-
-(defrule set-list-in-of-list-insert
-  (set::list-in list (set::list-insert list set))
-  :enable (set::list-in set::list-insert))
-
-(defrule set::list-insert-of-append
-  (equal (set::list-insert (append list1 list2) set)
-         (set::list-insert list1 (set::list-insert list2 set)))
-  :enable set::list-insert)
-
-(defrule set::list-insert-commutative
-  (equal (set::list-insert list1 (set::list-insert list2 set))
-         (set::list-insert list2 (set::list-insert list1 set)))
-  :enable set::list-insert)
-
 (defruled check-var-list-of-add-vars-of-append-not-error
   (implies (and (identifier-listp vars)
                 (identifier-listp vars1)

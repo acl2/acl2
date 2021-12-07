@@ -21,8 +21,25 @@
   ///
 
   (std::defrule subset-of-list-insert
-    (subset s (list-insert l s))
-    :enable list-insert))
+    (subset s (list-insert l s)))
+
+  (std::defrule in-of-list-insert
+    (iff (in elem (list-insert list set))
+         (or (member-equal elem list)
+             (in elem set)))
+    :induct (list-insert list set))
+
+  (std::defrule set-list-in-of-list-insert
+    (list-in list (list-insert list set))
+    :enable list-in)
+
+  (std::defrule list-insert-of-append
+    (equal (list-insert (append list1 list2) set)
+           (list-insert list1 (list-insert list2 set))))
+
+  (std::defrule list-insert-commutative
+    (equal (list-insert list1 (list-insert list2 set))
+           (list-insert list2 (list-insert list1 set)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
