@@ -1178,62 +1178,100 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; for funcall
+(defsection theorems-about-checking-expression-lists-in-reverse
+  :short "Theorems about @(tsee check-safe-expression-list) and @(tsee rev)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Lists of expressions are used as function arguments.
+     The static semantics checks them in order,
+     while the dynamic semantics executes them in reverse
+     (see @(tsee exec-funcall).
+     Since execution may have side effect, order is important.
+     However, it is appropriate, and simpler, for the static semantics
+     to check expressions in order without reversing them:
+     the result is the same.")
+   (xdoc::p
+    "However, this creates a ``gap'' that needs to be bridged
+     in the static soundness proof.
+     We do that with the theorems below.
+     The first serves to prove the second.
+     The third is a good simplification rule.
+     The fourth is awkward, but it is currently needed
+     to discharge a hypothesis in the main proof;
+     without this, the third theorem rewrites away some relevant term."))
 
-(defrule resulterrp-of-check-safe-expression-list-of-append
-  (equal (resulterrp (check-safe-expression-list (append es es1) vartab funtab))
-         (or (resulterrp (check-safe-expression-list es vartab funtab))
-             (resulterrp (check-safe-expression-list es1 vartab funtab))))
-  :enable check-safe-expression-list)
+  (defrule resulterrp-of-check-safe-expression-list-of-append
+    (equal (resulterrp (check-safe-expression-list (append es es1)
+                                                   vartab
+                                                   funtab))
+           (or (resulterrp (check-safe-expression-list es vartab funtab))
+               (resulterrp (check-safe-expression-list es1 vartab funtab))))
+    :enable check-safe-expression-list)
 
-(defrule resulterrp-of-check-safe-expression-list-of-rev
-  (equal (resulterrp (check-safe-expression-list (rev es) vartab funtab))
-         (resulterrp (check-safe-expression-list es vartab funtab)))
-  :enable (check-safe-expression-list rev))
+  (defrule resulterrp-of-check-safe-expression-list-of-rev
+    (equal (resulterrp (check-safe-expression-list (rev es) vartab funtab))
+           (resulterrp (check-safe-expression-list es vartab funtab)))
+    :enable (check-safe-expression-list rev))
 
-(defruled check-safe-expression-list-to-len
-  (implies (not (resulterrp (check-safe-expression-list es vartab funtab)))
-           (equal (check-safe-expression-list es vartab funtab) (len es)))
-  :enable check-safe-expression-list)
+  (defruled check-safe-expression-list-to-len
+    (implies (not (resulterrp (check-safe-expression-list es vartab funtab)))
+             (equal (check-safe-expression-list es vartab funtab) (len es)))
+    :enable check-safe-expression-list)
 
-; not ideal
-(defruled check-safe-expression-list-not-error-when-rev
-  (implies (not (resulterrp (check-safe-expression-list (rev es) vartab funtab)))
-           (not (resulterrp (check-safe-expression-list es vartab funtab)))))
+  (defruled check-safe-expression-list-not-error-when-rev
+    (implies (not (resulterrp (check-safe-expression-list (rev es)
+                                                          vartab
+                                                          funtab)))
+             (not (resulterrp (check-safe-expression-list es vartab funtab))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; soundness of literal execution
+(defsection static-soundness-of-literal-execution
+  :short "Theorem about the static soundness of literal execution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is very simple, because both static and dynamic semantics
+     evaluate the literal.")
+   (xdoc::p
+    "We also show that it returns one value."))
 
-(defruled exec-literal-when-check-safe-literal
-  (implies (not (resulterrp (check-safe-literal lit)))
-           (b* ((outcome (exec-literal lit cstate)))
-             (and (not (resulterrp outcome))
-                  (equal (eoutcome->cstate outcome)
-                         (cstate-fix cstate))
-                  (equal (len (eoutcome->values outcome))
-                         1))))
-  :enable (check-safe-literal
-           exec-literal))
+  (defrule exec-literal-when-check-safe-literal
+    (implies (not (resulterrp (check-safe-literal lit)))
+             (b* ((outcome (exec-literal lit cstate)))
+               (and (not (resulterrp outcome))
+                    (equal (eoutcome->cstate outcome)
+                           (cstate-fix cstate))
+                    (equal (len (eoutcome->values outcome))
+                           1))))
+    :enable (check-safe-literal
+             exec-literal)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; soundness of variable execution
+(defsection static-soundness-of-path-execution
+  :short "Theorem about the static soundness of path execution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is fairly easy, and relies on
+     the theorem about @(tsee read-var-value) and @(tsee read-var)."))
 
-(defruled exec-path-when-check-safe-path
-  (implies (not (resulterrp (check-safe-path path (cstate-to-vartable cstate))))
-           (b* ((outcome (exec-path path cstate)))
-             (and (not (resulterrp outcome))
-                  (equal (eoutcome->cstate outcome)
-                         (cstate-fix cstate))
-                  (equal (len (eoutcome->values outcome))
-                         1))))
-  :enable (check-safe-path
-           exec-path
-           path-to-var
-           not-resulterrp-when-valuep
-           not-resulterrp-when-identifierp
-           read-var-value-when-check-var))
+  (defrule exec-path-when-check-safe-path
+    (implies (not (resulterrp (check-safe-path path (cstate-to-vartable cstate))))
+             (b* ((outcome (exec-path path cstate)))
+               (and (not (resulterrp outcome))
+                    (equal (eoutcome->cstate outcome)
+                           (cstate-fix cstate))
+                    (equal (len (eoutcome->values outcome))
+                           1))))
+    :enable (check-safe-path
+             exec-path
+             path-to-var
+             not-resulterrp-when-valuep
+             not-resulterrp-when-identifierp
+             read-var-value-when-check-var)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1454,9 +1492,6 @@
                         check-safe-swcase
                         check-safe-swcase-list
                         check-safe-literal
-
-                        exec-literal-when-check-safe-literal
-                        exec-path-when-check-safe-path
 
                         resulterr-limitp
 
