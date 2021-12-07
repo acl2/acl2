@@ -647,23 +647,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; variable tables
-
 (define cstate-to-vartable ((cstate cstatep))
   :returns (vartab vartablep)
+  :short "Turn a computation state into a variable table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A variable table is the static counterpart of
+     the local state of a computation state in the dynamic execution.
+     The variable table consists of the keys of the omap.")
+   (xdoc::p
+    "We prove a theorem to fold the body of this function
+     into the function call.
+     This is the opposite of unfolding the definition.
+     We use this rule in the main static soundness theorem.
+     This rule is not very satisfactory;
+     we will look into avoiding it in some way."))
   (omap::keys (cstate->local cstate))
   :hooks (:fix)
-  :prepwork ((local (in-theory (enable vartablep-to-identifier-setp)))))
+  :prepwork ((local (in-theory (enable vartablep-to-identifier-setp))))
+  ///
 
-(defruled cstate-to-vartable-fold-def
-  (equal (omap::keys (cstate->local cstate))
-         (cstate-to-vartable cstate))
-  :enable cstate-to-vartable)
+  (defruled cstate-to-vartable-fold-def
+    (equal (omap::keys (cstate->local cstate))
+           (cstate-to-vartable cstate))
+    :enable cstate-to-vartable)
 
-(defrule identifier-set-fix-of-cstate-to-vartable
-  (equal (identifier-set-fix (cstate-to-vartable cstate))
-         (cstate-to-vartable cstate))
-  :use (:instance vartablep-to-identifier-setp (x (cstate-to-vartable cstate))))
+  (defrule identifier-set-fix-of-cstate-to-vartable
+    (equal (identifier-set-fix (cstate-to-vartable cstate))
+           (cstate-to-vartable cstate))
+    :use (:instance vartablep-to-identifier-setp
+          (x (cstate-to-vartable cstate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
