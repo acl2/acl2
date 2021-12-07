@@ -850,6 +850,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection theorems-about-add-var/vars
+  :short "Theorems about @(tsee add-var) and @(tsee add-vars)
+          for the static soundness proof."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We prove two theorems to rephrase @(tsee add-var) and @(tsee add-vars)
+     as @(tsee set::insert) and @(tsee set::list-insert).
+     The first is used to prove the second,
+     which is used in some other theorem (find it in hints).")
+   (xdoc::p
+    "We have two variants of @(tsee add-vars) applied to @(tsee append)
+     that differ only in the exact hypotheses.
+     This seems unfortunate, so we will try and consolidate them.
+     We also have a theorem about
+     errors for @(tsee add-vars) of @(tsee append)."))
+
+  (defruled add-var-to-insert
+    (b* ((vartab1 (add-var var vartab)))
+      (implies (not (resulterrp vartab1))
+               (equal vartab1
+                      (set::insert (identifier-fix var)
+                                   (vartable-fix vartab)))))
+    :enable add-var)
+
+  (defruled add-vars-to-list-insert
+    (b* ((vartab1 (add-vars vars vartab)))
+      (implies (not (resulterrp vartab1))
+               (equal vartab1
+                      (set::list-insert (identifier-list-fix vars)
+                                        (vartable-fix vartab)))))
+    :enable (add-vars
+             set::list-insert
+             add-var-to-insert))
+
+  (defruled add-vars-of-append
+    (implies (and (not (resulterrp (add-vars vars1 vartab)))
+                  (not (resulterrp (add-vars vars2 (add-vars vars1 vartab)))))
+             (equal (add-vars (append vars1 vars2) vartab)
+                    (add-vars vars2 (add-vars vars1 vartab))))
+    :enable add-vars)
+
+  (defruled add-vars-of-append-2
+    (implies (not (resulterrp (add-vars (append vars1 vars2) vartab)))
+             (equal (add-vars (append vars1 vars2) vartab)
+                    (add-vars vars2 (add-vars vars1 vartab))))
+    :enable add-vars)
+
+  (defruled resulterrp-of-add-vars-of-append
+    (implies (resulterrp (add-vars vars vartab))
+             (resulterrp (add-vars (append vars vars1) vartab)))
+    :enable add-vars))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; soundness of literal execution
 
 (defruled exec-literal-when-check-safe-literal
@@ -987,31 +1042,6 @@
 
 ; treatment of init-local
 
-(defruled add-var-to-insert
-  (b* ((vartab1 (add-var var vartab)))
-    (implies (not (resulterrp vartab1))
-             (equal vartab1
-                    (set::insert (identifier-fix var)
-                                 (vartable-fix vartab)))))
-  :enable add-var)
-
-(defruled add-vars-to-list-insert
-  (b* ((vartab1 (add-vars vars vartab)))
-    (implies (not (resulterrp vartab1))
-             (equal vartab1
-                    (set::list-insert (identifier-list-fix vars)
-                                      (vartable-fix vartab)))))
-  :enable (add-vars
-           set::list-insert
-           add-var-to-insert))
-
-(defruled add-vars-of-append
-  (implies (and (not (resulterrp (add-vars vars1 vartab)))
-                (not (resulterrp (add-vars vars2 (add-vars vars1 vartab)))))
-           (equal (add-vars (append vars1 vars2) vartab)
-                  (add-vars vars2 (add-vars vars1 vartab))))
-  :enable (add-vars))
-
 (defruled error-add-var-value-iff-error-add-var
   (equal (resulterrp (add-var-value var val cstate))
          (resulterrp (add-var var (cstate-to-vartable cstate))))
@@ -1074,23 +1104,13 @@
            not-resulterrp-when-value-listp
            value-listp-when-value-list-resultp-and-not-resulterrp))
 
-(defruled add-vars-to-set-list-insert
-  (implies (and (identifier-listp vars)
-                (vartablep vartab)
-                (not (resulterrp (add-vars vars vartab))))
-           (equal (add-vars vars vartab)
-                  (set::list-insert vars vartab)))
-  :enable (add-vars
-           add-var
-           set::list-insert))
-
 (defruled check-var-list-of-add-vars-of-append-not-error
   (implies (and (identifier-listp vars)
                 (identifier-listp vars1)
                 (vartablep vartab)
                 (not (resulterrp (add-vars (append vars1 vars) vartab))))
            (check-var-list vars (add-vars (append vars1 vars) vartab)))
-  :enable (add-vars-to-set-list-insert
+  :enable (add-vars-to-list-insert
            check-var-list-to-set-list-in
            vartablep-to-identifier-setp))
 
@@ -1101,17 +1121,6 @@
   :enable not-resulterrp-when-vartablep
   :disable cstate-to-vartable-of-init-local
   :use cstate-to-vartable-of-init-local)
-
-(defruled resulterrp-of-add-vars-of-append
-  (implies (resulterrp (add-vars vars vartab))
-           (resulterrp (add-vars (append vars vars1) vartab)))
-  :enable add-vars)
-
-(defruled add-vars-of-append-2 ; see add-vars-of-append
-  (implies (not (resulterrp (add-vars (append vars1 vars2) vartab)))
-           (equal (add-vars (append vars1 vars2) vartab)
-                  (add-vars vars2 (add-vars vars1 vartab))))
-  :enable add-vars)
 
 (defruled init-local-not-error-when-add-vars-of-append-not-error
   (implies (and (equal (len in-vals) (len in-vars))
