@@ -16,6 +16,7 @@
 
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/nat-result" :dir :system)
+(include-book "kestrel/std/util/defund-sk" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -59,6 +60,13 @@
   :ok funtype
   :pred funtype-resultp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-funtypep
+  (implies (funtypep x)
+           (not (resulterrp x)))
+  :enable (funtypep resulterrp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap funtable
@@ -80,6 +88,13 @@
   :ok funtable
   :pred funtable-resultp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-funtablep
+  (implies (funtablep x)
+           (not (resulterrp x)))
+  :enable resulterrp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define get-funtype ((name identifierp) (funtab funtablep))
@@ -99,57 +114,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-funtype ((name identifierp) (in natp) (out natp) (funtab funtablep))
-  :returns (funtab? funtable-resultp)
-  :short "Add a function and its type to a function table."
+(define funtype-for-fundef ((fundef fundefp))
+  :returns (funtype funtypep)
+  :short "Function type for a function definition."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Return an error if a function with that name is already in the table."))
-  (b* ((pair (omap::in (identifier-fix name) (funtable-fix funtab))))
-    (if (consp pair)
-        (err (list :duplicate-function (identifier-fix name)))
-      (omap::update (identifier-fix name)
-                    (make-funtype :in in :out out)
-                    (funtable-fix funtab))))
-  ///
-  (fty::deffixequiv add-funtype :hints (("Goal" :in-theory (disable nfix)))))
+    "This is just the number of inputs and outputs of the function."))
+  (make-funtype :in (len (fundef->inputs fundef))
+                :out (len (fundef->outputs fundef)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-funtypes-in-statement-list ((stmts statement-listp)
-                                        (funtab funtablep))
-  :returns (funtab? funtable-resultp)
-  :short "Extend a function table with
-          all the function definitions in a list of statements."
+(define funtable-for-fundefs ((fundefs fundef-listp))
+  :returns (funtab funtable-resultp)
+  :short "Function table for a list of function definitions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "According to [Yul: Specification of Yul: Scoping Rules],
-     all the functions defined in a block are accessible in the whole block,
-     even before they are defined in the block.
-     Thus, just before checking a block,
-     we extend the function table
-     with all the function definitions in the block.
-     The function table already contains the functions
-     already accessible just before the block start,
-     which are also accessible in the block,
-     so we must extend the function table here.")
+    "We go through the list and form a function table for the functions.
+     It is an error if there are two functions with the same name."))
+  (b* (((when (endp fundefs)) nil)
+       ((ok funtab) (funtable-for-fundefs (cdr fundefs)))
+       (fundef (car fundefs))
+       (fun (fundef->name fundef))
+       ((when (consp (omap::in fun funtab)))
+        (err (list :duplicate-function fun))))
+    (omap::update fun (funtype-for-fundef fundef) funtab))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-funtypes ((fundefs fundef-listp) (funtab funtablep))
+  :returns (new-funtab funtable-resultp)
+  :short "Add functions to a function table."
+  :long
+  (xdoc::topstring
    (xdoc::p
-    "As soon as a duplicate function is found, we stop with an error.")
-   (xdoc::p
-    "This ACL2 function is called on the list of statements
-     contained in a block."))
-  (b* (((when (endp stmts)) (funtable-fix funtab))
-       (stmt (car stmts))
-       ((unless (statement-case stmt :fundef))
-        (add-funtypes-in-statement-list (cdr stmts) funtab))
-       ((fundef fundef) (statement-fundef->get stmt))
-       ((ok funtab) (add-funtype fundef.name
-                                 (len fundef.inputs)
-                                 (len fundef.outputs)
-                                 funtab)))
-    (add-funtypes-in-statement-list (cdr stmts) funtab))
+    "We first construct a function table for the function definitions,
+     and then we use that to update the given function table,
+     ensuring that the two tables have disjoint functions."))
+  (b* ((funtab (funtable-fix funtab))
+       ((ok funtab1) (funtable-for-fundefs fundefs))
+       (overlap (set::intersect (omap::keys funtab1)
+                                (omap::keys funtab)))
+       ((unless (set::empty overlap))
+        (err (list :duplicate-functions overlap))))
+    (omap::update* funtab1 funtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -187,6 +199,33 @@
   :short "Fixtype of errors and variable tables."
   :ok vartable
   :pred vartable-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-vartablep
+  (implies (vartablep x)
+           (not (resulterrp x)))
+  :enable (vartablep resulterrp))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; Occasionally useful when using set operations on variable tables.
+; It may be better to define variable tables as wrapped sets and avoid this.
+(defruled vartablep-to-identifier-setp
+  (equal (vartablep x)
+         (identifier-setp x))
+  :enable (vartablep identifier-setp))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; Useful to get rid of the fixer when the variable table
+; is known to be a set of identifiers (e.g. due to using set operations).
+; It may be better to define variable tables as wrapped sets and avoid this.
+(defrule vartable-fix-when-identifier-setp
+  (implies (identifier-setp x)
+           (equal (vartable-fix x)
+                  x))
+  :enable vartablep-to-identifier-setp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -234,7 +273,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-safe-path ((path pathp) (vartab vartablep))
-  :returns (noinfo resulterr-optionp)
+  :returns (_ resulterr-optionp)
   :short "Check if a path is safe."
   :long
   (xdoc::topstring
@@ -269,7 +308,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-safe-path-list ((paths path-listp) (vartab vartablep))
-  :returns (noinfo resulterr-optionp)
+  :returns (_ resulterr-optionp)
   :short "Check if a list of paths is safe."
   (b* (((when (endp paths)) nil)
        ((ok &) (check-safe-path (car paths) vartab)))
@@ -279,7 +318,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-safe-literal ((lit literalp))
-  :returns (noinfo resulterr-optionp)
+  :returns (_ resulterr-optionp)
   :short "Check if a literal is safe."
   :long
   (xdoc::topstring
@@ -458,7 +497,7 @@
                                   (value expressionp)
                                   (vartab vartablep)
                                   (funtab funtablep))
-  :returns (noinfo resulterr-optionp)
+  :returns (_ resulterr-optionp)
   :short "Check if a single assignment is safe."
   :long
   (xdoc::topstring
@@ -481,7 +520,7 @@
                                  (value funcallp)
                                  (vartab vartablep)
                                  (funtab funtablep))
-  :returns (noinfo resulterr-optionp)
+  :returns (_ resulterr-optionp)
   :short "Check if a multiple assignment is safe."
   :long
   (xdoc::topstring
@@ -656,7 +695,7 @@
        and the variable table is unchanged.")
      (xdoc::p
       "For a function definition, the function table is not updated:
-       as explained in @(tsee add-funtypes-in-statement-list),
+       as explained in @(tsee add-funtypes),
        the function definitions in a block are collected,
        and used to extend the function table,
        before processing the statements in a block.
@@ -717,7 +756,7 @@
                             :modes (set::insert (mode-regular) modes)))
      :for
      (b* ((stmts (block->statements stmt.init))
-          ((ok funtab) (add-funtypes-in-statement-list stmts funtab))
+          ((ok funtab) (add-funtypes (statements-to-fundefs stmts) funtab))
           ((ok vartab-modes) (check-safe-statement-list stmts
                                                         vartab
                                                         funtab))
@@ -831,14 +870,14 @@
       "If successful,
        return the set of possible termination modes of the block.")
      (xdoc::p
-      "As explained in @(tsee add-funtypes-in-statement-list),
+      "As explained in @(tsee add-funtypes),
        all the functions defined in a block are visible in the whole block,
        so we first collect them from the statements that form the block,
        updating the function table with them,
        and then we check the statements that form the block,
        discarding the final variable table."))
     (b* ((stmts (block->statements block))
-         ((ok funtab) (add-funtypes-in-statement-list stmts funtab))
+         ((ok funtab) (add-funtypes (statements-to-fundefs stmts) funtab))
          ((ok vartab-modes) (check-safe-statement-list stmts
                                                        vartab
                                                        funtab)))
@@ -906,7 +945,7 @@
 
   (define check-safe-fundef ((fundef fundefp)
                              (funtab funtablep))
-    :returns (noinfo resulterr-optionp)
+    :returns (_ resulterr-optionp)
     :short "Check if a function definition is safe."
     :long
     (xdoc::topstring
@@ -922,17 +961,23 @@
        does not surface outside the function's body.
        Also recall that the function definition itself
        is added to the function table prior to checking it;
-       see @(tsee add-funtypes-in-statement-list).")
+       see @(tsee add-funtypes).")
      (xdoc::p
       "To check the function definition, we construct an initial variable table
        from the inputs and outputs of the function.
        Note that the construction will detect and reject any duplicates.
-       Then we check the function's body."))
+       Then we check the function's body,
+       ensuring that it does not end with @('break') or @('continue'),
+       (i.e. only with @('leave') or regularly)."))
     (b* (((fundef fundef) fundef)
          ((ok vartab) (add-vars (append fundef.inputs fundef.outputs) nil))
-         ((ok &) (check-safe-block fundef.body
-                                   vartab
-                                   funtab)))
+         ((ok modes) (check-safe-block fundef.body
+                                       vartab
+                                       funtab))
+         ((when (set::in (mode-break) modes))
+          (err (list :break-from-function (fundef-fix fundef))))
+         ((when (set::in (mode-continue) modes))
+          (err (list :continue-from-function (fundef-fix fundef)))))
       nil)
     :measure (fundef-count fundef))
 
@@ -951,3 +996,195 @@
       (enable vartablep-when-vartable-resultp-and-not-resulterrp))))
 
   (fty::deffixequiv-mutual check-safe-statements/blocks/cases/fundefs))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-safe-fundef-list ((fundefs fundef-listp) (funtab funtablep))
+  :returns (_ resulterr-optionp)
+  :short "Check if a list of function definitions is safe."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not really add anything
+     compared to @(tsee check-safe-statement-list),
+     in the sense that checking the safey of a list of function definitions
+     is the same as checking the safety of them as a list of statements.
+     However, it is convenient to define a dedicated ACL2 function
+     to check the safety of lists of function definitions directly,
+     and that does not return any information if the safety checks succeed.
+     (This ACL2 function is used in the "
+    (xdoc::seetopic "static-soundness" "static soundness proof")
+    ".)")
+   (xdoc::p
+    "We prove that if a list of statements passes the safety checks,
+     the list of function definitions extraced from the statements
+     passed the safety checks according to this ACL2 function.
+     Given that the statement checking functions take variables tables as inputs
+     while the function definition checking function do not,
+     and given that the statement checking functions modify variable tables
+     and thread them through the list of statements,
+     we carry out the induction proof on a predicate
+     that is universally quantified over variable tables."))
+  (b* (((when (endp fundefs)) nil)
+       ((ok &) (check-safe-fundef (car fundefs) funtab))
+       ((ok &) (check-safe-fundef-list (cdr fundefs) funtab)))
+    nil)
+  :hooks (:fix)
+  ///
+
+  (defruled check-safe-fundef-list-of-statements-to-fundefs
+    (implies (not (resulterrp
+                   (check-safe-statement-list stmts vartab funtab)))
+             (not (resulterrp
+                   (check-safe-fundef-list (statements-to-fundefs stmts)
+                                           funtab))))
+    :use pred-holds
+    :enable pred-necc
+
+    :prep-lemmas
+
+    ((defund-sk pred (stmts funtab)
+       (forall vartab
+               (implies
+                (not (resulterrp
+                      (check-safe-statement-list stmts vartab funtab)))
+                (not (resulterrp
+                      (check-safe-fundef-list (statements-to-fundefs stmts)
+                                              funtab)))))
+       :rewrite :direct)
+
+     (defruled base-case
+       (implies (not (consp stmts))
+                (pred stmts funtab))
+       :enable (pred
+                statements-to-fundefs
+                check-safe-statement-list
+                check-safe-fundef-list))
+
+
+     (defruled step-lemma
+       (implies (and (consp stmts)
+                     (pred (cdr stmts) funtab)
+                     (not (resulterrp
+                           (check-safe-statement-list stmts vartab funtab))))
+                (not (resulterrp
+                      (check-safe-fundef-list (statements-to-fundefs stmts)
+                                              funtab))))
+       :expand (check-safe-statement-list stmts vartab funtab)
+       :enable (pred-necc
+                check-safe-statement
+                statements-to-fundefs
+                check-safe-statement-list
+                check-safe-fundef-list))
+
+     (defruled step-case
+       (implies (and (consp stmts)
+                     (pred (cdr stmts) funtab))
+                (pred stmts funtab))
+       :expand (pred stmts funtab)
+       :enable step-lemma)
+
+     (defruled pred-holds
+       (pred stmts funtab)
+       :induct (len stmts)
+       :enable (base-case step-case)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection check-safe-extends-vartable
+  :short "Theorems about the variable table being extended
+          by the ACL2 safety checking functions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The safety checking functions that return udpated variables tables,
+     namely @(tsee check-safe-statement) and @(tsee check-safe-statement-list),
+     extend the variable table in general.
+     That is, the resulting variable table is always a superset
+     of the initial variable table;
+     this is not strict superset, i.e. they may be equal.
+     We prove that for @(tsee add-var) and @(tsee add-vars) first,
+     which are the functions that actually extend the variable table
+     in the safety checking functions,
+     and then we prove it on the safety checking functions by induction."))
+
+  (defrule add-var-extends-vartable
+    (implies (vartablep vartab)
+             (b* ((vartab1 (add-var var vartab)))
+               (implies (not (resulterrp vartab1))
+                        (set::subset vartab vartab1))))
+    :enable add-var)
+
+  (defrule add-vars-extends-vartable
+    (implies (vartablep vartab)
+             (b* ((vartab1 (add-vars vars vartab)))
+               (implies (not (resulterrp vartab1))
+                        (set::subset vartab vartab1))))
+    :enable (add-vars
+             set::subset-transitive))
+
+  (defrule check-safe-variable-single-extends-vartable
+    (implies (vartablep vartab)
+             (b* ((vartab1 (check-safe-variable-single name init vartab funtab)))
+               (implies (not (resulterrp vartab1))
+                        (set::subset vartab vartab1))))
+    :enable check-safe-variable-single)
+
+  (defrule check-safe-variable-multi-extends-vartable
+    (implies (vartablep vartab)
+             (b* ((vartab1 (check-safe-variable-multi name init vartab funtab)))
+               (implies (not (resulterrp vartab1))
+                        (set::subset vartab vartab1))))
+    :enable check-safe-variable-multi)
+
+  (defthm-check-safe-statements/blocks/cases/fundefs-flag
+
+    (defthm check-safe-statement-extends-vartable
+      (implies
+       (vartablep vartab)
+       (b* ((vartab-modes (check-safe-statement stmt vartab funtab)))
+         (implies (not (resulterrp vartab-modes))
+                  (set::subset vartab
+                               (vartable-modes->variables vartab-modes)))))
+      :flag check-safe-statement)
+
+    (defthm check-safe-statement-list-extends-vartable
+      (implies
+       (vartablep vartab)
+       (b* ((vartab-modes (check-safe-statement-list stmts vartab funtab)))
+         (implies (not (resulterrp vartab-modes))
+                  (set::subset vartab
+                               (vartable-modes->variables vartab-modes)))))
+      :flag check-safe-statement-list)
+
+    (defthm check-safe-block-extends-vartable
+      t
+      :rule-classes nil
+      :flag check-safe-block)
+
+    (defthm check-safe-block-option-extends-vartable
+      t
+      :rule-classes nil
+      :flag check-safe-block-option)
+
+    (defthm check-safe-swcase-extends-vartable
+      t
+      :rule-classes nil
+      :flag check-safe-swcase)
+
+    (defthm check-safe-swcase-list-extends-vartable
+      t
+      :rule-classes nil
+      :flag check-safe-swcase-list)
+
+    (defthm check-safe-fundef-extends-vartable
+      t
+      :rule-classes nil
+      :flag check-safe-fundef)
+
+    :hints (("Goal"
+             :in-theory
+             (enable check-safe-statement
+                     check-safe-statement-list
+                     set::subset-transitive
+                     vartablep-when-vartable-resultp-and-not-resulterrp)))))

@@ -20,14 +20,14 @@
 (include-book "prove-with-stp")
 
 ;returns (mv erp event state)
-(defun defthm-stp-fn (name theorem-body rule-classes counterexamplep timeout print state)
+(defun defthm-stp-fn (name theorem-body rule-classes counterexamplep max-conflicts print state)
   (declare (xargs :mode :program
                   :guard (and (booleanp counterexamplep)
-                              (or (null timeout)
-                                  (natp timeout)))
+                              (or (null max-conflicts)
+                                  (natp max-conflicts)))
                   :stobjs state))
   (b* (((mv result state)
-        (translate-and-prove-term-with-stp theorem-body counterexamplep timeout
+        (translate-and-prove-term-with-stp theorem-body counterexamplep max-conflicts
                                            print (symbol-name name) state)))
     (if (eq result *valid*)
         (mv nil ;no error
@@ -46,6 +46,6 @@
                             &key
                             (rule-classes '(:rewrite))
                             (counterexample 'nil)
-                            (timeout '*default-stp-timeout*)
+                            (max-conflicts '*default-stp-max-conflicts*)
                             (print 'nil))
-  `(make-event (defthm-stp-fn ',name ',theorem-body ',rule-classes ',counterexample ,timeout ',print state)))
+  `(make-event (defthm-stp-fn ',name ',theorem-body ',rule-classes ',counterexample ,max-conflicts ',print state)))

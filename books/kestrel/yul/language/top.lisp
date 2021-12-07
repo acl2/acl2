@@ -14,6 +14,7 @@
 (include-book "abstract-syntax")
 (include-book "static-semantics")
 (include-book "dynamic-semantics")
+(include-book "static-soundness")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

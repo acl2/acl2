@@ -310,7 +310,7 @@
 ;;                                                 ,assumptions)
 ;;                            :type :bit
 ;;                            :tactics '(:rewrite :stp) ;todo: maybe prune?
-;;                            :timeout nil
+;;                            :max-conflicts nil
 ;;                            :print t
 ;;                            :rule-classes nil ;todo: will always be needed if we use :type :bit?
 ;;                            )
@@ -525,7 +525,7 @@
                                  t ;memoizep
                                  t      ;vars-for-array-elements
                                  t      ;prune-branches
-                                 nil    ;call-stp ;t, nil, or a timeout
+                                 nil    ;call-stp ;t, nil, or a max-conflicts
                                  :auto  ;steps
                                  :smart ;; (if (eq variant :assert) :split :smart)
                                  nil    ;param-names
@@ -600,7 +600,7 @@
                                      assumptions)
                              nil ;simplify-assumptions
                              print
-                             nil ;*default-stp-timeout* ;timeout ;a number of seconds, or nil for no timeout
+                             nil ;*default-stp-max-conflicts* ;max-conflicts ;a number of conflicts, or nil for no max
                              t   ;call-stp-when-pruning
                              (append extra-rules
                                      (set-difference-eq (formal-unit-testing-extra-simplification-rules)

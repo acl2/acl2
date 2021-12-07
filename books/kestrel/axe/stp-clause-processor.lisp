@@ -33,7 +33,7 @@
        ((mv result state)
         (prove-clause-with-stp clause
                                counterexample
-                               *default-stp-timeout* ;todo: get from the hints?
+                               *default-stp-max-conflicts* ;todo: get from the hints?
                                nil                   ;todo: get from the hints?
                                "STP-CLAUSE-PROC" ;todo: do better?  can we access the name of the theorem?
                                state)))

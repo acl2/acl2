@@ -127,7 +127,7 @@
               (prove-implication-with-stp simplified-test-term
                                           assumptions ;todo: this caused problems with an rlp example: (append assumptions equality-assumptions)
                                           nil ;counterexamplep
-                                          *default-stp-timeout*
+                                          *default-stp-max-conflicts*
                                           nil                ;print
                                           "PRUNE-PROVE-TRUE" ;todo: do better?
                                           state))
@@ -141,7 +141,7 @@
               (prove-implication-with-stp `(not ,simplified-test-term)
                                           assumptions ;todo: this caused problems with an rlp example: (append assumptions equality-assumptions)
                                           nil ;counterexamplep
-                                          (if (natp call-stp) call-stp *default-stp-timeout*)
+                                          (if (natp call-stp) call-stp *default-stp-max-conflicts*)
                                           nil                 ;print
                                           "PRUNE-PROVE-FALSE" ;todo: do better?
                                           state))

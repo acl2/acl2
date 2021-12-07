@@ -192,7 +192,7 @@
            (equal (+ (* 1/2 x) (* 1/2 x))
                   x)))
 
-(defconst *default-stp-timeout* 60000) ;now this is the number of conflicts, not seconds?!
+(defconst *default-stp-max-conflicts* 60000) ; this is the number of conflicts, not seconds
 
 (defttag translate-dag-to-stp)  ;reusing this ;due to the sys-call+?
 
@@ -1242,7 +1242,7 @@
           (if (empty-typep type)
               (progn$ ;; (print-array2 'dag-array dag-array (+ 1 (maxelem parent-nodenums))) ;; todo: put back but consider guards
                (cw "parent-nodenums: ~x0~%" parent-nodenums)
-               (er hard? 'type-for-cut-nodenum "expected an induced type from a choppable use for node ~x0" nodenum) ;is this message still right?
+               (er hard? 'type-for-cut-nodenum "expected an induced type from a choppable use for node ~x0, which is ~x1" nodenum (aref1 'dag-array dag-array nodenum)) ;is this message still right?
                (mv (erp-t)
                    (most-general-type) ;;should be safe
                    ))
@@ -2095,7 +2095,7 @@
 (defund prove-disjunction-with-stp-at-depth (depth-limit ;a natural, or nil for no limit (in which case depth-array is meaningless)
                                              disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist
                                              base-filename
-                                             print timeout counterexamplep state)
+                                             print max-conflicts counterexamplep state)
   (declare (xargs :guard (and (or (natp depth-limit) (equal nil depth-limit))
                               (possibly-negated-nodenumsp disjuncts)
                               (consp disjuncts)
@@ -2109,7 +2109,7 @@
                               (nodenum-type-alistp known-nodenum-type-alist)
                               (all-< (strip-cars known-nodenum-type-alist) dag-len)
                               (stringp base-filename)
-                              (or (natp timeout) (null timeout))
+                              (or (natp max-conflicts) (null max-conflicts))
                               (booleanp counterexamplep))
                   :guard-hints (("Goal" :in-theory (e/d (integer-listp-when-nat-listp) (natp reverse-removal))))
                   :stobjs state))
@@ -2140,7 +2140,7 @@
                           (concatenate 'string base-filename (if depth-limit (concatenate 'string  "-depth-" (nat-to-string depth-limit)) "-uncut"))
                           cut-nodenum-type-alist
                           t ;;print - pass in print?
-                          timeout
+                          max-conflicts
                           nil ;initial constant-array-info
                           counterexamplep
                           state)))
@@ -2158,7 +2158,7 @@
                                        dag-parent-array ;must be named 'dag-parent-array
                                        base-filename    ;a string
                                        print
-                                       timeout ;a number of conflicts, or nil for no timeout
+                                       max-conflicts ;a number of conflicts, or nil for no max
                                        counterexamplep
                                        state)
   (declare (xargs :stobjs state
@@ -2183,7 +2183,7 @@
                               (equal (alen1 'dag-parent-array dag-parent-array)
                                      (alen1 'dag-array dag-array))
                               (stringp base-filename)
-                              (or (equal timeout nil) (natp timeout))
+                              (or (equal max-conflicts nil) (natp max-conflicts))
                               (booleanp counterexamplep))))
   (if (or (not (natp min-depth))
           (not (natp max-depth))
@@ -2195,7 +2195,7 @@
          ((mv result state)
           ;; This cuts out any stuff we can't translate, or any stuff that's too deep:
           (prove-disjunction-with-stp-at-depth depth disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                               base-filename print timeout counterexamplep state)))
+                                               base-filename print max-conflicts counterexamplep state)))
       (if (eq result *error*)
           (mv *error* state)
         (if (eq result *valid*)
@@ -2203,13 +2203,13 @@
           (if (eq result *timedout*)
               ;; STP timed out, so don't try any deeper depths (they will probably time-out too). recur on the range of shallower depths
               (prove-disjunction-with-stp-aux min-depth (+ -1 depth) depth-array known-nodenum-type-alist disjuncts
-                                              dag-array dag-len dag-parent-array base-filename print timeout counterexamplep state)
+                                              dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep state)
             (progn$
              ;; STP said invalid or gave a counterexample, so don't try any shallower depths (they will also be invalid). recur on the range of deeper depths
              ;; TODO: Use the counterexample here (check whether possible or certain?)?
              (prove-disjunction-with-stp-aux (+ 1 depth) max-depth depth-array known-nodenum-type-alist disjuncts
                                              dag-array dag-len dag-parent-array
-                                             base-filename print timeout
+                                             base-filename print max-conflicts
                                              counterexamplep state))))))))
 
 (defthmd myquotep-when-axe-disjunctionp
@@ -2238,7 +2238,7 @@
                                     dag-parent-array ;must be named 'dag-parent-array (fixme generalize?)
                                     base-filename    ;a string
                                     print
-                                    timeout ;a number of conflicts, or nil for no timeout
+                                    max-conflicts ;a number of conflicts, or nil for no max
                                     counterexamplep ;perhaps this should always be t?
                                     state)
   (declare (xargs :stobjs state
@@ -2249,8 +2249,8 @@
                               (equal (alen1 'dag-parent-array dag-parent-array)
                                      (alen1 'dag-array dag-array))
                               (stringp base-filename)
-                              (or (null timeout)
-                                  (natp timeout))
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
                               (booleanp counterexamplep))
                   :guard-hints (("Goal" :in-theory (e/d (all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-disjunctionp
                                                          myquotep-when-axe-disjunctionp
@@ -2302,7 +2302,7 @@
                                              disjuncts
                                              nil ;fake depth-array
                                              dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                             base-filename print timeout counterexamplep state)))
+                                             base-filename print max-conflicts counterexamplep state)))
     (if (eq result *error*)
         (mv *error* state)
       (if (eq result *valid*)
@@ -2327,7 +2327,7 @@
                         (make-depth-array-for-nodes (strip-nots-from-possibly-negated-nodenums disjuncts) ;todo: avoid consing this up?
                                                     'dag-array dag-array dag-len))
                        ((mv result state)
-                        (prove-disjunction-with-stp-aux 1 max-depth depth-array known-nodenum-type-alist disjuncts dag-array dag-len dag-parent-array base-filename print timeout counterexamplep state)))
+                        (prove-disjunction-with-stp-aux 1 max-depth depth-array known-nodenum-type-alist disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep state)))
 ;todo: move printing to sub-function?
                     (if (eq result *error*)
                         (mv *error* state)
@@ -2349,13 +2349,13 @@
 ;fixme: have this print balanced parens
 ;todo: exploit boolean structure in the hyps (and conc?)
 ;todo: deprecate in favor of a version that just takes a single term (note that we may need to look into the boolean structure of the term to get assumptions that tell us the types of things?)
-(defun prove-clause-with-stp (clause counterexamplep timeout print base-filename state)
+(defun prove-clause-with-stp (clause counterexamplep max-conflicts print base-filename state)
   (declare (xargs :stobjs state
                   :verify-guards nil ;todo: need properties of MAKE-TERMS-INTO-DAG-ARRAY, etc
                   :guard (and (pseudo-term-listp clause)
                               (booleanp counterexamplep)
-                              (or (null timeout)
-                                  (natp timeout)))))
+                              (or (null max-conflicts)
+                                  (natp max-conflicts)))))
   (b* ( ;; Check for bad input (todo: drop this check?):
        ((when (not (pseudo-term-listp clause)))
         (er hard 'prove-clause-with-stp "Some disjunct in the clause is not a pseudo-term: ~x0." clause)
@@ -2382,26 +2382,26 @@
                                     dag-parent-array ;must be named 'dag-parent-array
                                     base-filename
                                     print
-                                    timeout
+                                    max-conflicts
                                     counterexamplep
                                     state)))))
 
 ;; Attempt to use STP to prove CONC assuming HYPS.  This version requires CONC
 ;; and HYPS to be already translated.  ;Returns (mv result state) where RESULT
 ;; is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>)..
-(defund prove-implication-with-stp (conc hyps counterexamplep timeout print base-filename state)
+(defund prove-implication-with-stp (conc hyps counterexamplep max-conflicts print base-filename state)
   (declare (xargs :stobjs state
                   :verify-guards nil ;todo: verify-guards for subfunctions first
                   :guard (and (pseudo-termp conc)
                               (pseudo-term-listp hyps)
                               (booleanp counterexamplep)
-                              (or (null timeout)
-                                  (natp timeout)))))
+                              (or (null max-conflicts)
+                                  (natp max-conflicts)))))
   (b* ((negated-hyps (wrap-all 'not hyps)) ;inefficient - also could remove double negation?
        (clause (cons conc negated-hyps)))
     (prove-clause-with-stp clause
                            counterexamplep
-                           timeout
+                           max-conflicts
                            print
                            base-filename
                            state)))
@@ -2414,40 +2414,40 @@
 ;todo: allow a name to be passed in for the proof/theorem
 ;todo: exploit boolean structure in the hyps (and conc?)
 ;todo: also add a version that just takes a single term (note that we may need to look into the boolean structure of the term to get assumptions that tell us the types of things?).  then perhaps deprecate this.
-;; (defun prove-implication-with-stp (conc hyps counterexamplep timeout print base-filename state)
+;; (defun prove-implication-with-stp (conc hyps counterexamplep max-conflicts print base-filename state)
 ;;   (declare (xargs :stobjs state
 ;;                   :mode :program ;because this calls translate-term
 ;;                   :guard (and (booleanp counterexamplep)
-;;                               (or (null timeout)
-;;                                   (natp timeout)))))
+;;                               (or (null max-conflicts)
+;;                                   (natp max-conflicts)))))
 ;;   (b* ((w (w state))
 ;;        (conc (translate-term conc 'prove-with-stp w))
 ;;        (hyps (translate-terms hyps 'prove-with-stp w)))
-;;     (prove-translated-implication-with-stp conc hyps counterexamplep timeout print base-filename state)))
+;;     (prove-translated-implication-with-stp conc hyps counterexamplep max-conflicts print base-filename state)))
 
  ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
-(defun prove-term-with-stp (term counterexamplep timeout print base-filename state)
+(defun prove-term-with-stp (term counterexamplep max-conflicts print base-filename state)
   (declare (xargs :stobjs state
                   :verify-guards nil ;todo: verify-guards for subfunctions first
                   :guard (and (pseudo-termp term)
                               (booleanp counterexamplep)
-                              (or (null timeout)
-                                  (natp timeout))
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
                               (stringp base-filename))))
   (b* (((mv hyps conc) (term-hyps-and-conc term))) ;split term into hyps and conclusion
-    (prove-implication-with-stp conc hyps counterexamplep timeout print base-filename state)))
+    (prove-implication-with-stp conc hyps counterexamplep max-conflicts print base-filename state)))
 
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 (suppress-invariant-risk
- (defun translate-and-prove-term-with-stp (term counterexamplep timeout print base-filename state)
+ (defun translate-and-prove-term-with-stp (term counterexamplep max-conflicts print base-filename state)
    (declare (xargs :stobjs state
                    :mode :program ;because of translate-term
                    :guard (and (booleanp counterexamplep)
-                               (or (null timeout)
-                                   (natp timeout))
+                               (or (null max-conflicts)
+                                   (natp max-conflicts))
                                (stringp base-filename))))
    (prove-term-with-stp (translate-term term 'translate-and-prove-term-with-stp (w state))
-                        counterexamplep timeout print base-filename state)))
+                        counterexamplep max-conflicts print base-filename state)))
 
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;TODO: Deprecate in favor of defthm-stp?
@@ -2455,9 +2455,9 @@
 (defmacro prove-with-stp (term
                           &key
                           (counterexample 't)
-                          (timeout '*default-stp-timeout*)
+                          (max-conflicts '*default-stp-max-conflicts*)
                           (print 'nil))
-  `(translate-and-prove-term-with-stp ,term ',counterexample ,timeout ',print
+  `(translate-and-prove-term-with-stp ,term ',counterexample ,max-conflicts ',print
                                       "USER-QUERY"
                                       state))
 
@@ -2468,15 +2468,15 @@
 ;returns (mv erp result state) where if things go well, result is an empty progn
 ;for tests that are expected to prove
 (suppress-invariant-risk
- (defun must-prove-with-stp-fn (name term counterexamplep timeout print state)
+ (defun must-prove-with-stp-fn (name term counterexamplep max-conflicts print state)
    (declare (xargs :stobjs state
                    :mode :program ;because this ultimately calls translate-term
                    :guard (and (symbolp name)
                                (booleanp counterexamplep)
-                               (or (null timeout)
-                                   (natp timeout)))))
+                               (or (null max-conflicts)
+                                   (natp max-conflicts)))))
    (mv-let (result state)
-     (translate-and-prove-term-with-stp term counterexamplep timeout print (symbol-name name) state)
+     (translate-and-prove-term-with-stp term counterexamplep max-conflicts print (symbol-name name) state)
      (if (eq *error* result)
          (prog2$ (hard-error 'must-prove-with-stp "Error ~x0 running test." (acons #\0 name nil))
                  (mv (erp-t) :error state))
@@ -2489,23 +2489,23 @@
 (defmacro must-prove-with-stp (name term
                                     &key
                                     (counterexample 't)
-                                    (timeout '*default-stp-timeout*)
+                                    (max-conflicts '*default-stp-max-conflicts*)
                                     (print 'nil))
-  `(make-event (must-prove-with-stp-fn ',name ,term ',counterexample ,timeout ',print state)))
+  `(make-event (must-prove-with-stp-fn ',name ,term ',counterexample ,max-conflicts ',print state)))
 
 ;fixme test the new depth bound when the prover calls stp? huh?
 
 ;returns (mv erp result state) where if things go well, result is an empty progn
 (suppress-invariant-risk
- (defun must-not-prove-with-stp-fn (name term counterexamplep timeout print state)
+ (defun must-not-prove-with-stp-fn (name term counterexamplep max-conflicts print state)
    (declare (xargs :stobjs state
                    :mode :program ;because this ultimately calls translate-term
                    :guard (and (symbolp name)
                                (booleanp counterexamplep)
-                               (or (null timeout)
-                                   (natp timeout)))))
+                               (or (null max-conflicts)
+                                   (natp max-conflicts)))))
    (mv-let (result state)
-     (translate-and-prove-term-with-stp term counterexamplep timeout print (symbol-name name) state)
+     (translate-and-prove-term-with-stp term counterexamplep max-conflicts print (symbol-name name) state)
      (if (eq *error* result)
          (prog2$ (hard-error 'must-not-prove-with-stp "Error running test ~x0." (acons #\0 name nil))
                  (mv (erp-t) :error state))
@@ -2519,6 +2519,6 @@
 (defmacro must-not-prove-with-stp (name term
                                         &key
                                         (counterexample 't)
-                                        (timeout '*default-stp-timeout*)
+                                        (max-conflicts '*default-stp-max-conflicts*)
                                         (print 'nil))
-  `(make-event (must-not-prove-with-stp-fn ',name ,term ',counterexample ,timeout ',print state)))
+  `(make-event (must-not-prove-with-stp-fn ',name ,term ',counterexample ,max-conflicts ',print state)))

@@ -5076,7 +5076,7 @@
 ;;                (b* ((- (cw "Note: The DAG was the constant nil.")))
 ;;                  (mv (erp-nil) :failed)))
 ;;            (b* ( ;(dummy (cw " ~x0 prover rules (print ~x1).~%" (len prover-rules) print)) ;drop?
-;; ;          (dummy (cw "print-timeout-goalp:  ~x0" print-timeout-goalp))
+;; ;          (dummy (cw "print-max-conflicts-goalp:  ~x0" print-max-conflicts-goalp))
 ;;                 (dag-array (make-into-array 'dag-array dag))
 ;;                 (top-nodenum (top-nodenum-of-dag dag))
 ;;                 (dag-len (+ 1 top-nodenum))
