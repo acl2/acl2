@@ -81,7 +81,16 @@
      from the function information's input and output lists."))
   (b* (((funinfo funinfo) funinfo))
     (make-funtype :in (len funinfo.inputs) :out (len funinfo.outputs)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defruled len-of-funinfo->inputs
+    (equal (len (funinfo->inputs funinfo))
+           (funtype->in (funinfo-to-funtype funinfo))))
+
+  (defruled len-of-funinfo->outputs
+    (equal (len (funinfo->outputs funinfo))
+           (funtype->out (funinfo-to-funtype funinfo)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -105,7 +114,11 @@
   :hooks (:fix)
   ///
 
-  (defrule in-funscope-to-funtable-iff-in-funscope
+  (defrule in-of-funscope-to-funtable
+    (iff (omap::in fun (funscope-to-funtable funscope))
+         (omap::in fun (funscope-fix funscope))))
+
+  (defrule consp-of-in-of-funscope-to-funtable
     (equal (consp (omap::in fun (funscope-to-funtable funscope)))
            (consp (omap::in fun (funscope-fix funscope)))))
 
@@ -251,50 +264,108 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled check-safe-block-when-funscope-safep
-  (implies (and (identifierp fun)
-                (funscopep funscope)
-                (funscope-safep funscope funtab)
-                (consp (omap::in fun funscope)))
-           (b* ((funinfo (cdr (omap::in fun funscope)))
-                (vartab (add-vars
-                         (append (funinfo->inputs funinfo)
-                                 (funinfo->outputs funinfo))
-                         nil))
-                (modes (check-safe-block (funinfo->body funinfo)
-                                         vartab
-                                         funtab)))
-             (and (not (resulterrp vartab))
-                  (not (resulterrp modes))
-                  (not (set::in (mode-break) modes))
-                  (not (set::in (mode-continue) modes)))))
-  :enable (funscope-safep
-           funinfo-safep))
+(defsection static-soundness-theorems-about-find-fun
+  :short "Theorems about @(tsee find-fun) for the static soundness proof."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We prove that if a function environment is safe,
+     and if @(tsee find-fun) succeeds in that environment,
+     then the resulting function is safe.
+     We prove this for function scopes first,
+     then for function environments.
+     The latter is an important theorem to use in the static soundness proof:
+     it serves to establish the safety of a function's body,
+     when executing the function,
+     so that the static soundness inductive hypothesis about the function
+     applies, i.e. tells us that the execution of the body
+     will not return an error result.")
+   (xdoc::p
+    "We also prove certain properties that relate
+     @(tsee get-funtype) and @(tsee find-fun),
+     which are static/dynamic counterparts."))
 
-(defruled check-safe-block-when-funenv-safep
-  (b* ((funinfoenv (find-fun fun funenv)))
-    (implies (and (funenv-safep funenv)
-                  (not (resulterrp funinfoenv)))
-             (b* ((funinfo (funinfo+funenv->info funinfoenv))
-                  (funenv1 (funinfo+funenv->env funinfoenv))
+  (defruled check-safe-block-when-funscope-safep
+    (implies (and (identifierp fun)
+                  (funscopep funscope)
+                  (funscope-safep funscope funtab)
+                  (consp (omap::in fun funscope)))
+             (b* ((funinfo (cdr (omap::in fun funscope)))
                   (vartab (add-vars
                            (append (funinfo->inputs funinfo)
                                    (funinfo->outputs funinfo))
                            nil))
                   (modes (check-safe-block (funinfo->body funinfo)
                                            vartab
-                                           (funenv-to-funtable funenv1))))
+                                           funtab)))
                (and (not (resulterrp vartab))
                     (not (resulterrp modes))
                     (not (set::in (mode-break) modes))
-                    (not (set::in (mode-continue) modes))
-                    (funenv-safep funenv1)))))
-  :enable (find-fun
-           funenv-safep)
-  :hints ('(:use (:instance check-safe-block-when-funscope-safep
-            (fun (identifier-fix fun))
-            (funscope (funscope-fix (car funenv)))
-            (funtab (funenv-to-funtable funenv))))))
+                    (not (set::in (mode-continue) modes)))))
+    :enable (funscope-safep
+             funinfo-safep))
+
+  (defruled check-safe-block-when-funenv-safep
+    (b* ((funinfoenv (find-fun fun funenv)))
+      (implies (and (funenv-safep funenv)
+                    (not (resulterrp funinfoenv)))
+               (b* ((funinfo (funinfo+funenv->info funinfoenv))
+                    (funenv1 (funinfo+funenv->env funinfoenv))
+                    (vartab (add-vars
+                             (append (funinfo->inputs funinfo)
+                                     (funinfo->outputs funinfo))
+                             nil))
+                    (modes (check-safe-block (funinfo->body funinfo)
+                                             vartab
+                                             (funenv-to-funtable funenv1))))
+                 (and (not (resulterrp vartab))
+                      (not (resulterrp modes))
+                      (not (set::in (mode-break) modes))
+                      (not (set::in (mode-continue) modes))
+                      (funenv-safep funenv1)))))
+    :enable (find-fun
+             funenv-safep)
+    :hints ('(:use (:instance check-safe-block-when-funscope-safep
+                    (fun (identifier-fix fun))
+                    (funscope (funscope-fix (car funenv)))
+                    (funtab (funenv-to-funtable funenv))))))
+
+  (defruled funinfo-to-funtype-of-cdr-of-in
+    (implies (and (funscopep funscope)
+                  (consp (omap::in fun funscope)))
+             (equal (funinfo-to-funtype (cdr (omap::in fun funscope)))
+                    (cdr (omap::in fun (funscope-to-funtable funscope)))))
+    :enable funscope-to-funtable)
+
+  (defrule funinfo-to-funtype-of-find-fun-info
+    (b* ((funinfoenv (find-fun fun funenv))
+         (funtype (get-funtype fun (funenv-to-funtable funenv))))
+      (implies (not (resulterrp funinfoenv))
+               (b* ((funinfo (funinfo+funenv->info funinfoenv)))
+                 (and (not (resulterrp funtype))
+                      (equal (funinfo-to-funtype funinfo)
+                             funtype)))))
+    :expand (funenv-to-funtable funenv)
+    :enable (find-fun
+             funenv-to-funtable
+             get-funtype
+             funinfo-to-funtype-of-cdr-of-in
+             not-resulterrp-when-funtypep
+             funtypep-when-funtype-resultp-and-not-resulterrp)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (and (funtablep funtab)
+                     (consp (omap::in fun funtab)))
+                (funtypep (cdr (omap::in fun funtab)))))))
+
+  (defruled resulterrp-of-find-fun
+    (equal (resulterrp (find-fun fun funenv))
+           (resulterrp (get-funtype fun (funenv-to-funtable funenv))))
+    :enable (funenv-to-funtable
+             find-fun
+             get-funtype
+             not-resulterrp-when-funinfo+funenv-p
+             not-resulterrp-when-funtypep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -987,59 +1058,6 @@
   :enable (not-error-funscope-for-fundefs-when-not-error-add-funs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; function finding
-
-(defruled len-of-funinfo->inputs
-  (equal (len (funinfo->inputs funinfo))
-         (funtype->in (funinfo-to-funtype funinfo)))
-  :enable funinfo-to-funtype)
-
-(defruled len-of-funinfo->outputs
-  (equal (len (funinfo->outputs funinfo))
-         (funtype->out (funinfo-to-funtype funinfo)))
-  :enable funinfo-to-funtype)
-
-(defrule funinfo-to-fun-type-of-cdr-of-in
-  (implies (and (funscopep funscope)
-                (consp (omap::in fun funscope)))
-           (equal (funinfo-to-funtype (cdr (omap::in fun funscope)))
-                  (cdr (omap::in fun (funscope-to-funtable funscope)))))
-  :enable funscope-to-funtable)
-
-(defrule funinfo-to-funtype-of-find-fun-info
-  (b* ((funinfoenv (find-fun fun funenv))
-       (funtype (get-funtype fun (funenv-to-funtable funenv))))
-    (implies (not (resulterrp funinfoenv))
-             (b* ((funinfo (funinfo+funenv->info funinfoenv)))
-               (and (not (resulterrp funtype))
-                    (equal (funinfo-to-funtype funinfo)
-                           funtype)))))
-  :expand (funenv-to-funtable funenv)
-  :enable (find-fun
-           funenv-to-funtable
-           get-funtype
-           not-resulterrp-when-funtypep
-           funtypep-when-funtype-resultp-and-not-resulterrp)
-  :prep-lemmas
-  ((defrule lemma
-     (implies (and (funtablep funtab)
-                   (consp (omap::in fun funtab)))
-              (funtypep (cdr (omap::in fun funtab)))))))
-
-(defrule in-of-funscope-to-funtable
-  (iff (omap::in fun (funscope-to-funtable funscope))
-       (omap::in fun (funscope-fix funscope)))
-  :enable funscope-to-funtable)
-
-(defruled resulterrp-of-find-fun
-  (equal (resulterrp (find-fun fun funenv))
-         (resulterrp (get-funtype fun (funenv-to-funtable funenv))))
-  :enable (funenv-to-funtable
-           find-fun
-           get-funtype
-           not-resulterrp-when-funinfo+funenv-p
-           not-resulterrp-when-funtypep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
