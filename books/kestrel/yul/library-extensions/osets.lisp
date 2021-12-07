@@ -14,15 +14,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::define insert-list ((l true-listp) (s setp))
+(std::define list-insert ((l true-listp) (s setp))
   :returns (new-s setp)
   (cond ((endp l) (sfix s))
-        (t (insert-list (cdr l) (insert (car l) s))))
+        (t (list-insert (cdr l) (insert (car l) s))))
   ///
 
-  (std::defrule subset-of-insert-list
-    (subset s (insert-list l s))
-    :enable insert-list))
+  (std::defrule subset-of-list-insert
+    (subset s (list-insert l s))
+    :enable list-insert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

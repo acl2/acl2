@@ -536,10 +536,10 @@
   (b* ((cstate1 (add-vars-values vars vals cstate)))
     (implies (not (resulterrp cstate1))
              (equal (cstate-to-vartable cstate1)
-                    (set::insert-list (identifier-list-fix vars)
+                    (set::list-insert (identifier-list-fix vars)
                                       (cstate-to-vartable cstate)))))
   :enable (add-vars-values
-           set::insert-list))
+           set::list-insert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -833,14 +833,14 @@
                                  (vartable-fix vartab)))))
   :enable add-var)
 
-(defruled add-vars-to-insert-list
+(defruled add-vars-to-list-insert
   (b* ((vartab1 (add-vars vars vartab)))
     (implies (not (resulterrp vartab1))
              (equal vartab1
-                    (set::insert-list (identifier-list-fix vars)
+                    (set::list-insert (identifier-list-fix vars)
                                       (vartable-fix vartab)))))
   :enable (add-vars
-           set::insert-list
+           set::list-insert
            add-var-to-insert))
 
 (defruled add-vars-of-append
@@ -1019,16 +1019,15 @@
            not-resulterrp-when-value-listp
            value-listp-when-value-list-resultp-and-not-resulterrp))
 
-(defruled add-vars-to-set-insert-list
+(defruled add-vars-to-set-list-insert
   (implies (and (identifier-listp vars)
                 (vartablep vartab)
                 (not (resulterrp (add-vars vars vartab))))
            (equal (add-vars vars vartab)
-                  (set::insert-list vars vartab)))
+                  (set::list-insert vars vartab)))
   :enable (add-vars
            add-var
-           set::insert-list))
-
+           set::list-insert))
 
 (defruled check-var-list-to-set-list-in
   (implies (and (identifier-listp vars)
@@ -1039,32 +1038,32 @@
            check-var
            set::list-in))
 
-(defrule identifier-setp-of-insert-list
+(defrule identifier-setp-of-list-insert
   (implies (and (identifier-listp list)
                 (identifier-setp set))
-           (identifier-setp (set::insert-list list set)))
-  :enable set::insert-list)
+           (identifier-setp (set::list-insert list set)))
+  :enable set::list-insert)
 
-(defrule set::in-of-insert-list
-  (iff (set::in elem (set::insert-list list set))
+(defrule set::in-of-list-insert
+  (iff (set::in elem (set::list-insert list set))
        (or (member-equal elem list)
            (set::in elem set)))
-  :induct (set::insert-list list set)
-  :enable set::insert-list)
+  :induct (set::list-insert list set)
+  :enable set::list-insert)
 
-(defrule set-list-in-of-insert-list
-  (set::list-in list (set::insert-list list set))
-  :enable (set::list-in set::insert-list))
+(defrule set-list-in-of-list-insert
+  (set::list-in list (set::list-insert list set))
+  :enable (set::list-in set::list-insert))
 
-(defrule set::insert-list-of-append
-  (equal (set::insert-list (append list1 list2) set)
-         (set::insert-list list1 (set::insert-list list2 set)))
-  :enable set::insert-list)
+(defrule set::list-insert-of-append
+  (equal (set::list-insert (append list1 list2) set)
+         (set::list-insert list1 (set::list-insert list2 set)))
+  :enable set::list-insert)
 
-(defrule set::insert-list-commutative
-  (equal (set::insert-list list1 (set::insert-list list2 set))
-         (set::insert-list list2 (set::insert-list list1 set)))
-  :enable set::insert-list)
+(defrule set::list-insert-commutative
+  (equal (set::list-insert list1 (set::list-insert list2 set))
+         (set::list-insert list2 (set::list-insert list1 set)))
+  :enable set::list-insert)
 
 (defruled check-var-list-of-add-vars-of-append-not-error
   (implies (and (identifier-listp vars)
@@ -1072,7 +1071,7 @@
                 (vartablep vartab)
                 (not (resulterrp (add-vars (append vars1 vars) vartab))))
            (check-var-list vars (add-vars (append vars1 vars) vartab)))
-  :enable (add-vars-to-set-insert-list
+  :enable (add-vars-to-set-list-insert
            check-var-list-to-set-list-in
            vartablep-to-identifier-setp))
 
