@@ -39,9 +39,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; errors
-
 (define resulterr-limitp (x)
+  :short "Recognize limit errors."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(see dynamic-semantics),
+     the ACL2 execution functions of Yul code
+     take an artificial limit counter as input,
+     and return an error when that limit is exhausted.
+     In formulating the Yul static soundness theorem,
+     we need to exclude limit errors
+     from the dynamic errors rules out by the static semantic checks:
+     the static semantic checks rule out all dynamic errors
+     except for limit errors,
+     because of course there are no termination checks.")
+   (xdoc::p
+    "Here we define a predicate that recognized limit errors,
+     i.e. values of type @(tsee resulterr)
+     whose information starts with the keyword @(':limit').
+     The adequacy of this predicate definition depends on
+     the definition of the execution functions,
+     in particular the fact that they return error limits of this form.
+     This predicate must be adapted if that form changes;
+     the static soundness proof will fail in that case."))
   :returns (yes/no booleanp)
   (and (resulterrp x)
        (b* ((info (fty::resulterr->info x)))
