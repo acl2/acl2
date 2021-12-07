@@ -78,6 +78,189 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-var-list ((vars identifier-listp) (vartab vartablep))
+  :returns (yes/no booleanp)
+  :short "Check if the variables in a list are all in a variable table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee check-var) to lists.
+     It is not actually part of the formalization of the static safety checks,
+     because that formalization uses @(tsee check-var)
+     to define @(tsee check-safe-path),
+     and then lifts the latter to lists.
+     For the static soundness proof,
+     it is useful to have this @('check-var-list') function.
+     We may refactor the static safety checks to include this function,
+     at some point, but for now we just define it here.")
+   (xdoc::p
+    "We prove a theorem that turns @(tsee check-var-list)
+     into the inclusion of the list of variable in the variable table,
+     which is a set."))
+  (or (endp vars)
+      (and (check-var (car vars) vartab)
+           (check-var-list (cdr vars) vartab)))
+  :hooks (:fix)
+  ///
+
+  (defruled check-var-list-to-set-list-in
+    (implies (and (identifier-listp vars)
+                  (vartablep vartab))
+             (equal (check-var-list vars vartab)
+                    (set::list-in vars vartab)))
+    :enable (check-var
+             set::list-in)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection theorems-about-add-var/vars
+  :short "Theorems about @(tsee add-var) and @(tsee add-vars)
+          for the static soundness proof."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We prove two theorems to rephrase @(tsee add-var) and @(tsee add-vars)
+     as @(tsee set::insert) and @(tsee set::list-insert).
+     The first is used to prove the second,
+     which is used in some other theorem (find it in hints).")
+   (xdoc::p
+    "We have two variants of @(tsee add-vars) applied to @(tsee append)
+     that differ only in the exact hypotheses.
+     This seems unfortunate, so we will try and consolidate them.
+     We also have a theorem about
+     errors for @(tsee add-vars) of @(tsee append)."))
+
+  (defruled add-var-to-insert
+    (b* ((vartab1 (add-var var vartab)))
+      (implies (not (resulterrp vartab1))
+               (equal vartab1
+                      (set::insert (identifier-fix var)
+                                   (vartable-fix vartab)))))
+    :enable add-var)
+
+  (defruled add-vars-to-list-insert
+    (b* ((vartab1 (add-vars vars vartab)))
+      (implies (not (resulterrp vartab1))
+               (equal vartab1
+                      (set::list-insert (identifier-list-fix vars)
+                                        (vartable-fix vartab)))))
+    :enable (add-vars
+             set::list-insert
+             add-var-to-insert))
+
+  (defruled add-vars-of-append
+    (implies (and (not (resulterrp (add-vars vars1 vartab)))
+                  (not (resulterrp (add-vars vars2 (add-vars vars1 vartab)))))
+             (equal (add-vars (append vars1 vars2) vartab)
+                    (add-vars vars2 (add-vars vars1 vartab))))
+    :enable add-vars)
+
+  (defruled add-vars-of-append-2
+    (implies (not (resulterrp (add-vars (append vars1 vars2) vartab)))
+             (equal (add-vars (append vars1 vars2) vartab)
+                    (add-vars vars2 (add-vars vars1 vartab))))
+    :enable add-vars)
+
+  (defruled resulterrp-of-add-vars-of-append
+    (implies (resulterrp (add-vars vars vartab))
+             (resulterrp (add-vars (append vars vars1) vartab)))
+    :enable add-vars))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection static-soundness-theorems-about-modes
+  :short "Theorems about modes for the static soundness proof."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Values of rnumeration fixtype like @(tsee mode)
+     are usually compared via their kinds (i.e. @(tsee mode-kind)),
+     rather than directly;
+     the fixtype definition macros in fact generate theorems to this effect,
+     along with useful theorems such as the forward chaining rule that
+     @(tsee mode-kind) is one of four known possibilities.")
+   (xdoc::p
+    "However, our ACL2 static safety checking functions return sets of modes
+     (for statements, blocks, and other constructs),
+     and the static soundness theorems say that
+     the mode returned by the ACL2 execution functions are in those sets.
+     This set membership formulation does not blend well with
+     the kind-centric treatment of modes.
+     Thus, here we introduce theorems that
+     turn kind comparisons into mode comparisons.
+     Because some of the theorems about kinds no longer apply,
+     we also need to add some similar theorems for modes,
+     and certain explicit non-equality theorems.")
+   (xdoc::p
+    "This is not very satisfactory.
+     There may be a way to avoid all of this,
+     and somehow handle mode kinds with set membership well."))
+
+  (defruled equal-of-mode-kind-continue
+    (implies (modep mode)
+             (equal (equal (mode-kind mode) :continue)
+                    (equal mode (mode-continue)))))
+
+  (defruled equal-of-mode-kind-break
+    (implies (modep mode)
+             (equal (equal (mode-kind mode) :break)
+                    (equal mode (mode-break)))))
+
+  (defruled equal-of-mode-kind-regular
+    (implies (modep mode)
+             (equal (equal (mode-kind mode) :regular)
+                    (equal mode (mode-regular)))))
+
+  (defruled equal-of-mode-kind-leave
+    (implies (modep mode)
+             (equal (equal (mode-kind mode) :leave)
+                    (equal mode (mode-leave)))))
+
+  (defrule mode-regular-not-continue
+    (not (equal (mode-regular)
+                (mode-continue))))
+
+  (defrule mode-regular-not-break
+    (not (equal (mode-regular)
+                (mode-break))))
+
+  (defrule mode-leave-not-continue
+    (not (equal (mode-leave)
+                (mode-continue))))
+
+  (defrule mode-leave-not-break
+    (not (equal (mode-leave)
+                (mode-break))))
+
+  (defruled mode-leave-if-not-regular/continue/break
+    (implies (and (modep mode)
+                  (not (equal mode (mode-regular)))
+                  (not (equal mode (mode-continue)))
+                  (not (equal mode (mode-break))))
+             (equal (equal mode (mode-leave))
+                    t)))
+
+  (defruled mode-possibilities
+    (implies (modep x)
+             (or (equal x (mode-regular))
+                 (equal x (mode-leave))
+                 (equal x (mode-break))
+                 (equal x (mode-continue)))))
+
+  (defruled soutcome->mode-regular-lemma
+    (implies (and (set::in (soutcome->mode outcome) modes)
+                  (not (equal (soutcome->mode outcome) (mode-break)))
+                  (not (equal (soutcome->mode outcome) (mode-continue)))
+                  (not (set::in (mode-leave) modes)))
+             (equal (soutcome->mode outcome) (mode-regular)))
+    :use (:instance mode-possibilities (x (soutcome->mode outcome)))
+    :disable (equal-of-mode-leave
+              equal-of-mode-continue
+              equal-of-mode-break
+              equal-of-mode-regular)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define funinfo-to-funtype ((funinfo funinfop))
   :returns (ftype funtypep)
   :short "Turn function information into a function type."
@@ -519,99 +702,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection static-soundness-theorems-about-modes
-  :short "Theorems about modes for the static soundness proof."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Values of rnumeration fixtype like @(tsee mode)
-     are usually compared via their kinds (i.e. @(tsee mode-kind)),
-     rather than directly;
-     the fixtype definition macros in fact generate theorems to this effect,
-     along with useful theorems such as the forward chaining rule that
-     @(tsee mode-kind) is one of four known possibilities.")
-   (xdoc::p
-    "However, our ACL2 static safety checking functions return sets of modes
-     (for statements, blocks, and other constructs),
-     and the static soundness theorems say that
-     the mode returned by the ACL2 execution functions are in those sets.
-     This set membership formulation does not blend well with
-     the kind-centric treatment of modes.
-     Thus, here we introduce theorems that
-     turn kind comparisons into mode comparisons.
-     Because some of the theorems about kinds no longer apply,
-     we also need to add some similar theorems for modes,
-     and certain explicit non-equality theorems.")
-   (xdoc::p
-    "This is not very satisfactory.
-     There may be a way to avoid all of this,
-     and somehow handle mode kinds with set membership well."))
-
-  (defruled equal-of-mode-kind-continue
-    (implies (modep mode)
-             (equal (equal (mode-kind mode) :continue)
-                    (equal mode (mode-continue)))))
-
-  (defruled equal-of-mode-kind-break
-    (implies (modep mode)
-             (equal (equal (mode-kind mode) :break)
-                    (equal mode (mode-break)))))
-
-  (defruled equal-of-mode-kind-regular
-    (implies (modep mode)
-             (equal (equal (mode-kind mode) :regular)
-                    (equal mode (mode-regular)))))
-
-  (defruled equal-of-mode-kind-leave
-    (implies (modep mode)
-             (equal (equal (mode-kind mode) :leave)
-                    (equal mode (mode-leave)))))
-
-  (defrule mode-regular-not-continue
-    (not (equal (mode-regular)
-                (mode-continue))))
-
-  (defrule mode-regular-not-break
-    (not (equal (mode-regular)
-                (mode-break))))
-
-  (defrule mode-leave-not-continue
-    (not (equal (mode-leave)
-                (mode-continue))))
-
-  (defrule mode-leave-not-break
-    (not (equal (mode-leave)
-                (mode-break))))
-
-  (defruled mode-leave-if-not-regular/continue/break
-    (implies (and (modep mode)
-                  (not (equal mode (mode-regular)))
-                  (not (equal mode (mode-continue)))
-                  (not (equal mode (mode-break))))
-             (equal (equal mode (mode-leave))
-                    t)))
-
-  (defruled mode-possibilities
-    (implies (modep x)
-             (or (equal x (mode-regular))
-                 (equal x (mode-leave))
-                 (equal x (mode-break))
-                 (equal x (mode-continue)))))
-
-  (defruled soutcome->mode-regular-lemma
-    (implies (and (set::in (soutcome->mode outcome) modes)
-                  (not (equal (soutcome->mode outcome) (mode-break)))
-                  (not (equal (soutcome->mode outcome) (mode-continue)))
-                  (not (set::in (mode-leave) modes)))
-             (equal (soutcome->mode outcome) (mode-regular)))
-    :use (:instance mode-possibilities (x (soutcome->mode outcome)))
-    :disable (equal-of-mode-leave
-              equal-of-mode-continue
-              equal-of-mode-break
-              equal-of-mode-regular)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define cstate-to-vartable ((cstate cstatep))
   :returns (vartab vartablep)
   :short "Turn a computation state into a variable table."
@@ -812,96 +902,6 @@
                                        set::subset-transitive
                                        cstate-to-vartable-fold-def
                                        set::intersect-with-subset-left)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-var-list ((vars identifier-listp) (vartab vartablep))
-  :returns (yes/no booleanp)
-  :short "Check if the variables in a list are all in a variable table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This lifts @(tsee check-var) to lists.
-     It is not actually part of the formalization of the static safety checks,
-     because that formalization uses @(tsee check-var)
-     to define @(tsee check-safe-path),
-     and then lifts the latter to lists.
-     For the static soundness proof,
-     it is useful to have this @('check-var-list') function.
-     We may refactor the static safety checks to include this function,
-     at some point, but for now we just define it here.")
-   (xdoc::p
-    "We prove a theorem that turns @(tsee check-var-list)
-     into the inclusion of the list of variable in the variable table,
-     which is a set."))
-  (or (endp vars)
-      (and (check-var (car vars) vartab)
-           (check-var-list (cdr vars) vartab)))
-  :hooks (:fix)
-  ///
-
-  (defruled check-var-list-to-set-list-in
-    (implies (and (identifier-listp vars)
-                  (vartablep vartab))
-             (equal (check-var-list vars vartab)
-                    (set::list-in vars vartab)))
-    :enable (check-var
-             set::list-in)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection theorems-about-add-var/vars
-  :short "Theorems about @(tsee add-var) and @(tsee add-vars)
-          for the static soundness proof."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We prove two theorems to rephrase @(tsee add-var) and @(tsee add-vars)
-     as @(tsee set::insert) and @(tsee set::list-insert).
-     The first is used to prove the second,
-     which is used in some other theorem (find it in hints).")
-   (xdoc::p
-    "We have two variants of @(tsee add-vars) applied to @(tsee append)
-     that differ only in the exact hypotheses.
-     This seems unfortunate, so we will try and consolidate them.
-     We also have a theorem about
-     errors for @(tsee add-vars) of @(tsee append)."))
-
-  (defruled add-var-to-insert
-    (b* ((vartab1 (add-var var vartab)))
-      (implies (not (resulterrp vartab1))
-               (equal vartab1
-                      (set::insert (identifier-fix var)
-                                   (vartable-fix vartab)))))
-    :enable add-var)
-
-  (defruled add-vars-to-list-insert
-    (b* ((vartab1 (add-vars vars vartab)))
-      (implies (not (resulterrp vartab1))
-               (equal vartab1
-                      (set::list-insert (identifier-list-fix vars)
-                                        (vartable-fix vartab)))))
-    :enable (add-vars
-             set::list-insert
-             add-var-to-insert))
-
-  (defruled add-vars-of-append
-    (implies (and (not (resulterrp (add-vars vars1 vartab)))
-                  (not (resulterrp (add-vars vars2 (add-vars vars1 vartab)))))
-             (equal (add-vars (append vars1 vars2) vartab)
-                    (add-vars vars2 (add-vars vars1 vartab))))
-    :enable add-vars)
-
-  (defruled add-vars-of-append-2
-    (implies (not (resulterrp (add-vars (append vars1 vars2) vartab)))
-             (equal (add-vars (append vars1 vars2) vartab)
-                    (add-vars vars2 (add-vars vars1 vartab))))
-    :enable add-vars)
-
-  (defruled resulterrp-of-add-vars-of-append
-    (implies (resulterrp (add-vars vars vartab))
-             (resulterrp (add-vars (append vars vars1) vartab)))
-    :enable add-vars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
