@@ -612,41 +612,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-var-list ((vars identifier-listp) (vartab vartablep))
-  :returns (yes/no booleanp)
-  :short "Check if the variables in a list are all in a variable table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This lifts @(tsee check-var) to lists.
-     It is not actually part of the formalization of the static safety checks,
-     because that formalization uses @(tsee check-var)
-     to define @(tsee check-safe-path),
-     and then lifts the latter to lists.
-     For the static soundness proof,
-     it is useful to have this @('check-var-list') function.
-     We may refactor the static safety checks to include this function,
-     at some point, but for now we just define it here.")
-   (xdoc::p
-    "We prove a theorem that turns @(tsee check-var-list)
-     into the inclusion of the list of variable in the variable table,
-     which is a set."))
-  (or (endp vars)
-      (and (check-var (car vars) vartab)
-           (check-var-list (cdr vars) vartab)))
-  :hooks (:fix)
-  ///
-
-  (defruled check-var-list-to-set-list-in
-    (implies (and (identifier-listp vars)
-                  (vartablep vartab))
-             (equal (check-var-list vars vartab)
-                    (set::list-in vars vartab)))
-    :enable (check-var
-             set::list-in)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define cstate-to-vartable ((cstate cstatep))
   :returns (vartab vartablep)
   :short "Turn a computation state into a variable table."
@@ -850,6 +815,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-var-list ((vars identifier-listp) (vartab vartablep))
+  :returns (yes/no booleanp)
+  :short "Check if the variables in a list are all in a variable table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee check-var) to lists.
+     It is not actually part of the formalization of the static safety checks,
+     because that formalization uses @(tsee check-var)
+     to define @(tsee check-safe-path),
+     and then lifts the latter to lists.
+     For the static soundness proof,
+     it is useful to have this @('check-var-list') function.
+     We may refactor the static safety checks to include this function,
+     at some point, but for now we just define it here.")
+   (xdoc::p
+    "We prove a theorem that turns @(tsee check-var-list)
+     into the inclusion of the list of variable in the variable table,
+     which is a set."))
+  (or (endp vars)
+      (and (check-var (car vars) vartab)
+           (check-var-list (cdr vars) vartab)))
+  :hooks (:fix)
+  ///
+
+  (defruled check-var-list-to-set-list-in
+    (implies (and (identifier-listp vars)
+                  (vartablep vartab))
+             (equal (check-var-list vars vartab)
+                    (set::list-in vars vartab)))
+    :enable (check-var
+             set::list-in)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; soundness of literal execution
 
 (defruled exec-literal-when-check-safe-literal
@@ -891,23 +891,6 @@
            not-resulterrp-when-valuep
            not-resulterrp-when-identifierp
            read-var-value-when-check-var))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; variable restriction on variable table
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; variable writing on variable table
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; variable addition on variable table
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; variable table manipulation by dynamic semantics
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
