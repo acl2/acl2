@@ -216,19 +216,19 @@
              (equal (equal (mode-kind mode) :leave)
                     (equal mode (mode-leave)))))
 
-  (defrule mode-regular-not-continue
+  (defruled mode-regular-not-continue
     (not (equal (mode-regular)
                 (mode-continue))))
 
-  (defrule mode-regular-not-break
+  (defruled mode-regular-not-break
     (not (equal (mode-regular)
                 (mode-break))))
 
-  (defrule mode-leave-not-continue
+  (defruled mode-leave-not-continue
     (not (equal (mode-leave)
                 (mode-continue))))
 
-  (defrule mode-leave-not-break
+  (defruled mode-leave-not-break
     (not (equal (mode-leave)
                 (mode-break))))
 
@@ -1400,6 +1400,11 @@
                         exec-path-when-check-safe-path
 
                         resulterr-limitp
+
+                        mode-regular-not-continue
+                        mode-regular-not-break
+                        mode-leave-not-continue
+                        mode-leave-not-break
 
                         ;; for subgoal 86:
                         equal-of-mode-kind-continue
