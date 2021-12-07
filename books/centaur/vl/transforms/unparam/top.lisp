@@ -1129,6 +1129,85 @@ for each usertype is stored in the res field.</p>"
     (vl-gencase-some-match x (cdr y) ss scopes warnings)))
 
 
+
+
+(define vl-genblob-split-scopeitems ((x vl-genblob-p))
+  :returns (mv (scopeitems vl-genblob-p)
+               (nonscopeitems vl-genblob-p))
+  (b* (((vl-genblob x)))
+    (mv (make-vl-genblob :portdecls x.portdecls ;; ?
+                         :vardecls x.vardecls
+                         :paramdecls x.paramdecls
+                         :fundecls x.fundecls
+                         :taskdecls x.taskdecls
+                         :modinsts x.modinsts
+                         :gateinsts x.gateinsts
+                         :typedefs x.typedefs
+                         :imports x.imports
+                         :fwdtypedefs x.fwdtypedefs
+                         :modports x.modports
+                         :genvars x.genvars
+                         :generates x.generates ;; ?
+                         :ports x.ports         ;; ?
+                         :scopetype x.scopetype
+                         :id x.id)
+        (change-vl-genblob x
+                           :portdecls nil
+                           :vardecls nil
+                           :paramdecls nil
+                           :fundecls nil
+                           :taskdecls nil
+                           :modinsts nil
+                           :gateinsts nil
+                           :typedefs nil
+                           ;; :imports nil
+                           :fwdtypedefs nil
+                           :modports nil
+                           :genvars nil
+                           :generates nil
+                           :ports nil))))
+
+(define vl-genblob-rejoin-scopeitems ((scopeitems vl-genblob-p)
+                                      (nonscopeitems vl-genblob-p))
+  :returns (new-x vl-genblob-p)
+  (b* (((vl-genblob scopeitems)))
+    (change-vl-genblob nonscopeitems
+                       :portdecls scopeitems.portdecls
+                       :vardecls scopeitems.vardecls
+                       :paramdecls scopeitems.paramdecls
+                       :fundecls scopeitems.fundecls
+                       :taskdecls scopeitems.taskdecls
+                       :gateinsts scopeitems.gateinsts
+                       :typedefs scopeitems.typedefs
+                       :fwdtypedefs scopeitems.fwdtypedefs
+                       :modports scopeitems.modports
+                       :genvars scopeitems.genvars
+                       :ports scopeitems.ports
+                       :generates scopeitems.generates
+                       :modinsts scopeitems.modinsts)))
+
+(define vl-genblob-resolve-rejoin-scopeitems ((scopeitems vl-genblob-p)
+                                              (nonscopeitems vl-genblob-p)
+                                              (generates vl-genelementlist-p)
+                                              (modinsts vl-modinstlist-p))
+  :returns (new-x vl-genblob-p)
+  (b* (((vl-genblob scopeitems)))
+    (change-vl-genblob nonscopeitems
+                       :portdecls scopeitems.portdecls
+                       :vardecls scopeitems.vardecls
+                       :paramdecls scopeitems.paramdecls
+                       :fundecls scopeitems.fundecls
+                       :taskdecls scopeitems.taskdecls
+                       :gateinsts scopeitems.gateinsts
+                       :typedefs scopeitems.typedefs
+                       :fwdtypedefs scopeitems.fwdtypedefs
+                       :modports scopeitems.modports
+                       :genvars scopeitems.genvars
+                       :ports scopeitems.ports
+                       :generates generates
+                       :modinsts modinsts)))
+
+
 #|
 (trace$ #!vl (vl-genblob-resolve-aux
               :entry (list 'vl-genblob-resolve-aux
@@ -1161,7 +1240,17 @@ for each usertype is stored in the res field.</p>"
                                   vl-genblob-p-by-tag-when-vl-scope-p
                                   vl-warninglist-p-when-subsetp-equal
                                   acl2::loghead
-                                  ifix nfix)))
+                                  ifix nfix
+                                  not
+                                  vl-unparam-instkeylist-p-when-not-consp
+                                  vl-unparam-instkeylist-p-when-subsetp-equal
+                                  vl-maybe-datatype-fix-under-vl-maybe-datatype-equiv
+                                  vl-maybe-expr-fix-under-vl-maybe-expr-equiv
+                                  acl2::maybe-natp-fix-under-maybe-nat-equiv
+                                  (:t vl-genelement-kind)
+                                  (:t vl-expr-resolved-p)
+                                  (:t vl-warninglist-p)
+                                  vl-genelement-kind-by-tag)))
                (local (defthm vl-genelement-fix-under-iff
                         (vl-genelement-fix x)
                         :hints(("Goal" :in-theory (enable (tau-system))))))
@@ -1296,21 +1385,51 @@ for each usertype is stored in the res field.</p>"
            ((vl-genblob x) (vl-genblob-fix x))
            (elabindex (vl-elabindex-push x))
            ((vl-simpconfig config))
-           ((wmv ?ok warnings new-x elabindex)
-            (vl-genblob-elaborate x elabindex
-                                  :reclimit config.elab-limit))
+
+           ;; Problem: Elaborating the genblob before resolving the generates
+           ;; may cause certain things not to resolve.  E.g.
+           ;;   for (i=0; i<=MAX; i++) begin : myloop
+           ;;       logic [i:0] loopvar;
+           ;;   end
+           ;;   assign foo = $bits(myloop[2].loopvar);
+           ;; Not totally clear what should be allowed. Apparently the above
+           ;; usage is generally supported. Need to test whether having the
+           ;; assign before the generate loop would still work. If it's based
+           ;; on parse order, that makes it hard and we might need to revamp
+           ;; all the earlier transformations to operate on parse-ordered
+           ;; modules etc.
+
+           ;; For now, we'll first elaborate genblob element types that will
+           ;; (or might) produce scopeitems.  Then we'll resolve the generates,
+           ;; then the rest of the genblob elements.
+           ((mv scopeitem-blob non-scopeitem-blob)
+            (vl-genblob-split-scopeitems x))
+           ((wmv ?ok warnings new-scopeitem-blob elabindex)
+            (vl-genblob-elaborate scopeitem-blob elabindex :reclimit config.elab-limit))
 
            ((mv warnings keylist1 new-generates elabindex ledger)
             ;; Not new-x.generates (complicates termination)
             (vl-generatelist-resolve x.generates elabindex ledger warnings))
-
-           ((vl-genblob new-x))
+           
            ((mv ?ok2 warnings new-insts keylist elabindex ledger)
-            (vl-unparam-instlist new-x.modinsts elabindex ledger warnings nil))
+            (vl-unparam-instlist (vl-genblob->modinsts new-scopeitem-blob) elabindex ledger warnings nil))
+
+           (elabindex (vl-elabindex-undo))
+           (new-x1 (change-vl-genblob new-scopeitem-blob
+                                      :generates new-generates
+                                      :modinsts new-insts))
+           (elabindex (vl-elabindex-push new-x1))
+           
+           ((wmv ?ok warnings new-non-scopeitem-blob elabindex)
+            (vl-genblob-elaborate non-scopeitem-blob elabindex :reclimit config.elab-limit))
+
+           (new-x (vl-genblob-rejoin-scopeitems new-x1 new-non-scopeitem-blob))
+           
            (elabindex (vl-elabindex-undo)))
-        (mv warnings (append-without-guard keylist1 keylist)
-            (change-vl-genblob new-x :generates new-generates
-                               :modinsts new-insts)
+
+        (mv warnings
+            (append-without-guard keylist1 keylist)
+            new-x
             elabindex
             ledger)))
 
@@ -1362,7 +1481,7 @@ for each usertype is stored in the res field.</p>"
                   (make-vl-genbegin :block new-block) elabindex ledger)))
            ;; Check that the element in the block is as expected for a condnest.
            ((unless (and (tuplep 1 x.elems)
-                         (or (vl-genelement-case (car x.elems) :vl-genif)
+                         (or* (vl-genelement-case (car x.elems) :vl-genif)
                              (vl-genelement-case (car x.elems) :vl-gencase))))
             (mv (fatal :type :vl-programming-error
                        :msg "Block flagged as nested conditional was not: ~a0"
@@ -1486,16 +1605,27 @@ for each usertype is stored in the res field.</p>"
                                :msg "~a0: generate loop with index as block name"
                                :args (list x)))
                   (mv body.name warnings)))
-               (elabindex (vl-elabindex-push (vl-sort-genelements
-                                              nil :scopetype :vl-genarray
-                                              :id body.name)))
+               (loopscope (vl-sort-genelements
+                           nil :scopetype :vl-genarray
+                           :id body.name))
+               ;; (- (acl2::sneaky-save :loopscope loopscope))
+               ;; (- (acl2::sneaky-save :before-loop-elabindex (list (vl-elabindex->ss)
+               ;;                                                    (vl-elabindex->undostack)
+               ;;                                                    (vl-elabindex->scopes))))
+               (elabindex (vl-elabindex-push loopscope))
                ((mv errmsg warnings keylist arrayblocks elabindex ledger)
                 (vl-genloop-resolve 100000 ;; recursion limit
                                     x.body
                                     x.var (vl-resolved->val initval)
                                     x.nextval x.continue
                                     elabindex ledger warnings))
+               ;; (- (acl2::sneaky-save :loop-elabindex (list (vl-elabindex->ss)
+               ;;                                             (vl-elabindex->undostack)
+               ;;                                             (vl-elabindex->scopes))))
                (elabindex (vl-elabindex-undo))
+               ;; (- (acl2::sneaky-save :after-loop-elabindex (list (vl-elabindex->ss)
+               ;;                                                   (vl-elabindex->undostack)
+               ;;                                                   (vl-elabindex->scopes))))
                ((when errmsg)
                 (mv (fatal :type :vl-genloop-resolve-fail
                            :msg "~a0: Failed to unroll the generate loop: ~@1"
