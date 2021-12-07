@@ -612,14 +612,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; extension of check-var to lists
-
 (define check-var-list ((vars identifier-listp) (vartab vartablep))
   :returns (yes/no booleanp)
+  :short "Check if the variables in a list are all in a variable table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee check-var) to lists.
+     It is not actually part of the formalization of the static safety checks,
+     because that formalization uses @(tsee check-var)
+     to define @(tsee check-safe-path),
+     and then lifts the latter to lists.
+     For the static soundness proof,
+     it is useful to have this @('check-var-list') function.
+     We may refactor the static safety checks to include this function,
+     at some point, but for now we just define it here.")
+   (xdoc::p
+    "We prove a theorem that turns @(tsee check-var-list)
+     into the inclusion of the list of variable in the variable table,
+     which is a set."))
   (or (endp vars)
       (and (check-var (car vars) vartab)
            (check-var-list (cdr vars) vartab)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defruled check-var-list-to-set-list-in
+    (implies (and (identifier-listp vars)
+                  (vartablep vartab))
+             (equal (check-var-list vars vartab)
+                    (set::list-in vars vartab)))
+    :enable (check-var
+             set::list-in)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1112,15 +1136,6 @@
   :enable (add-vars
            add-var
            set::list-insert))
-
-(defruled check-var-list-to-set-list-in
-  (implies (and (identifier-listp vars)
-                (vartablep vartab))
-           (equal (check-var-list vars vartab)
-                  (set::list-in vars vartab)))
-  :enable (check-var-list
-           check-var
-           set::list-in))
 
 (defruled check-var-list-of-add-vars-of-append-not-error
   (implies (and (identifier-listp vars)
