@@ -43,6 +43,7 @@
 ; and turn it into a module.
 
   ((name     stringp               "Name of the module.")
+   (imports  vl-importlist-p)
    (params   vl-paramdecllist-p    "Parameters declarations from the #(...) list, if any.")
    (ansi-ports vl-ansi-portdecllist-p "Temporary form of ANSI portdecls")
    (ports    vl-portlist-p         "Ports like (o, a, b).")
@@ -116,7 +117,7 @@
                     :finals      c.finals
                     :generates   c.generates
                     :genvars     c.genvars
-                    :imports     c.imports
+                    :imports     (append-without-guard imports c.imports)
                     :typedefs    c.typedefs
                     :properties  c.properties
                     :sequences   c.sequences
@@ -139,6 +140,7 @@
                     :comments    nil
                     :parse-temps (make-vl-parse-temps
                                   :ansi-p ansi-p
+                                  :imports imports
                                   :ansi-ports ansi-ports
                                   :paramports params
                                   :loaditems items)
@@ -198,8 +200,7 @@
              ((when (and ansi-p
                          (vl-genelementlist->portdecls items))) ;; User's fault
               (vl-parse-error "ANSI module cannot have internal port declarations."))
-             (items (append (vl-modelementlist->genelements imports) items))
-             (module (vl-make-module-by-items name params ansi-portdecls ports ansi-p items
+             (module (vl-make-module-by-items name imports params ansi-portdecls ports ansi-p items
                                               atts minloc maxloc warnings))
              (module (if (or timeunit timeprec)
                          (change-vl-module module

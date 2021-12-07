@@ -4585,6 +4585,8 @@ the type information between the variable and port declarations.</p>"
                 separate in the ANSI case because the ports may refer to parameters,
                 and we therefore need to preserve the textual order so that shadowcheck
                 doesn't fail.")
+   (imports   vl-importlist-p
+              "Package imports occurring before the parameter and port lists")
    (loaditems vl-genelementlist-p
               "See @(see make-implicit-wires).  This is a temporary container to
                hold the module elements, in program order, until the rest of the

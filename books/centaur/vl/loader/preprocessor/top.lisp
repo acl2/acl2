@@ -4000,6 +4000,13 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
         ;; BOZO maybe add a note that we are ignoring these directives?
         (vl-preprocess-loop remainder n ppst state))
 
+       ((when (and (equal directive "default_nettype")
+                   (not (vl-ppst->activep))))
+        (b* (((mv & ?prefix remainder) (vl-read-until-literal *nls*
+                                                              remainder)))
+          (vl-preprocess-loop remainder n ppst state)))
+             
+       
        (ppst (vl-ppst-fatal
               :msg "~a0: we do not support `~s1."
               :args (list (vl-echar->loc echar1)
