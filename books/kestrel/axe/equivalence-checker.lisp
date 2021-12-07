@@ -7798,7 +7798,7 @@
                                                    dag-array ;this is the miter-array
                                                    dag-len
                                                    var-type-alist ;gives types to the variables in the dag (are these really needed? maybe not if we use induced types?)
-                                                   print timeout miter-name
+                                                   print max-conflicts miter-name
                                                    state)
   (declare (xargs :mode :program :stobjs state))
   (b* (
@@ -7842,7 +7842,7 @@
                                                cut-nodenum-type-alist
                                                extra-asserts
                                                print
-                                               timeout
+                                               max-conflicts
                                                nil ;no counterexample (for now)
                                                state)
                 (if (eq result *error*)
@@ -7858,7 +7858,7 @@
 ;binary search to try to find a cut depth at which the goal is valid.
 ;would like to reuse this for pure constants
 ;returns (mv success-flg state)
-(defun attempt-cut-equivalence-proofs (min-depth max-depth depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print timeout miter-name base-filename state)
+(defun attempt-cut-equivalence-proofs (min-depth max-depth depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name base-filename state)
   (declare (xargs :mode :program :stobjs state)
            (irrelevant miter-name) ;todo
            )
@@ -7889,7 +7889,7 @@
                                           cut-nodenum-type-alist
                                           extra-asserts
                                           print
-                                          timeout
+                                          max-conflicts
                                           nil ;no counterexample (for now)
                                           state)
            (if (eq result *error*)
@@ -7901,11 +7901,11 @@
                (if (eq result *timedout*)
                    ;;since the current depth timed out, we go shallower
                    (attempt-cut-equivalence-proofs min-depth (+ -1 current-depth)
-                                                   depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print timeout miter-name base-filename state)
+                                                   depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name base-filename state)
                  ;;the goal was invalid, so we go deeper:
                  ;;todo: use the counterexample?
                  (attempt-cut-equivalence-proofs (+ 1 current-depth) max-depth
-                                                 depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print timeout miter-name base-filename state))))))))))
+                                                 depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name base-filename state))))))))))
 
 ;fixme: other strategies to consider here: rewriting, using the prover, using contexts (should we cut the context too?  what if the context is huge an unrelated to the goal nodes?)
 ;not currently doing any of these things because we want this to be fast
@@ -7914,7 +7914,7 @@
 (defun try-to-prove-pure-nodes-equivalent (smaller-nodenum larger-nodenum ;could one of these have been replaced by a constant?
                                                            miter-array-name miter-array miter-len
                                                            var-type-alist ;fixme think hard about using this (btw, do we check that it's pure?)..
-                                                           print timeout miter-name state)
+                                                           print max-conflicts miter-name state)
   (declare (xargs :mode :program :stobjs state))
   (b* (;(- (and print (cw "(Subdag that supports the nodes:~%")))
        ;(- (and print (print-dag-only-supporters-of-nodes miter-array-name miter-array (list smaller-nodenum larger-nodenum))))
@@ -7938,7 +7938,7 @@
       (prog2$
        (cw "(Attempting aggressively cut proof:~%")
        ;;aggressive cut that replaces all shared nodes with variables:
-       (attempt-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print timeout miter-name state))
+       (attempt-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state))
       (prog2$
        (cw ")~%")
        (if provedp
@@ -7969,7 +7969,7 @@
                                                   miter-array
                                                   miter-len
                                                   var-type-alist
-                                                  print timeout miter-name
+                                                  print max-conflicts miter-name
                                                   (n-string-append (symbol-name miter-name)
                                                                    "-"
                                                                    (nat-to-string smaller-nodenum)
@@ -10088,7 +10088,7 @@
 ;for each user-supplied-rv-claim, prove that the invariant and exit test imply it..
 (defun prove-final-claims-aux (claims
                                hyps ;will be the exit test and invar?
-                               base-name count timeout rule-alist interpreted-function-alist proved-claims-acc defthm-names-acc state)
+                               base-name count max-conflicts rule-alist interpreted-function-alist proved-claims-acc defthm-names-acc state)
   (declare (xargs :mode :program :stobjs (state)))
   (if (endp claims)
       (mv (erp-nil) proved-claims-acc defthm-names-acc state)
@@ -10099,7 +10099,7 @@
                                              hyps
 ; (list invariant-call ;;could include only the relevant conjuncts of the invariant, but we need type info:
 ;      term-to-use)
-                                             defthm-name timeout
+                                             defthm-name max-conflicts
                                              (list rule-alist)
                                              nil ;monitored-symbols
                                              interpreted-function-alist :brief
@@ -10109,7 +10109,7 @@
                   (mv erp nil nil state)
                 (prog2$ (and (not provedp)
                              (cw "(!! Discarding RV claim ~x0.)~%" claim))
-                        (prove-final-claims-aux (rest claims) hyps base-name (+ 1 count) timeout rule-alist interpreted-function-alist
+                        (prove-final-claims-aux (rest claims) hyps base-name (+ 1 count) max-conflicts rule-alist interpreted-function-alist
                                                 (if provedp (cons claim proved-claims-acc) proved-claims-acc)
                                                 (if provedp (cons defthm-name defthm-names-acc) defthm-names-acc)
                                                 state)))))))
@@ -10121,7 +10121,7 @@
 ;fixme think about analyzed-function table
 (defun prove-final-claims (rv-claims
                            hyps ;the simplified, expanded exit test and invariant-call
-                           base-name timeout prover-rule-alist runes interpreted-function-alist state)
+                           base-name max-conflicts prover-rule-alist runes interpreted-function-alist state)
   (declare (xargs :mode :program :stobjs (state)))
   (b* ((- (cw "(Trying to prove final claims ~x0 (Assumptions:~%~x1):~%" rv-claims hyps))
        ((mv erp rule-alist)
@@ -10131,7 +10131,7 @@
        ((when erp) (mv erp nil nil state))
        ((mv erp proved-claims defthm-names-for-proved-claims state)
         ;;for each user-supplied rv-claim, prove the (pushed back) invar and exit test imply it:
-        (prove-final-claims-aux rv-claims hyps base-name 0 timeout
+        (prove-final-claims-aux rv-claims hyps base-name 0 max-conflicts
                                 rule-alist
                                 interpreted-function-alist nil nil state))
        ;; (mv-let (new-terms1 defthm-names-for-new-terms1 state)
@@ -11134,7 +11134,7 @@
 ;; Returns (mv erp simplified-conclusion defthm-name-or-nil state result-array-stobj)
 (defun simplify-conclusion (conclusion            ;a term
                             connections-of-inputs ;these are terms
-                            hyps runes timeout monitored-symbols conclusion-number rule-base fn-invars prover-rule-alist interpreted-function-alist state result-array-stobj)
+                            hyps runes max-conflicts monitored-symbols conclusion-number rule-base fn-invars prover-rule-alist interpreted-function-alist state result-array-stobj)
   (declare (xargs :mode :program :stobjs (state result-array-stobj)))
   (if (and nil (call-of 'prefixp conclusion)) ;Mon Mar 14 03:56:09 2011 fixme get rid of this stuff
       (let* ((x (farg1 conclusion))
@@ -11146,7 +11146,7 @@
           (prove-theorem-with-axe-prover `(equal ,conclusion
                                                  ,equality-to-try)
                                          (append hyps connections-of-inputs)
-                                         defthm-name timeout
+                                         defthm-name max-conflicts
                                          ;;ffixme what other rules should be included?
                                          ;;we may need to open the invars of the individual functions
                                          ;;  (append prover-rules
@@ -11235,7 +11235,7 @@
 ;rewriting the hyps with themselves may make things match better?
 (defun simplify-conclusions (conclusions           ;terms
                              connections-of-inputs ;terms
-                             hyps runes timeout monitored-symbols new-conclusions-acc rule-names-acc conclusion-number rule-base fn-invars prover-rule-alist interpreted-function-alist state result-array-stobj)
+                             hyps runes max-conflicts monitored-symbols new-conclusions-acc rule-names-acc conclusion-number rule-base fn-invars prover-rule-alist interpreted-function-alist state result-array-stobj)
   (declare (xargs :mode :program :stobjs (state result-array-stobj)))
   (if (endp conclusions)
       (mv nil
@@ -11246,19 +11246,19 @@
            (dummy (cw "(Simplifying conclusion:~%~x0~%(Hyps:~%~x1)~%" conclusion hyps)))
       (declare (ignore dummy))
       (mv-let (erp simplified-conclusion defthm-name-or-nil state result-array-stobj)
-        (simplify-conclusion conclusion connections-of-inputs hyps runes timeout monitored-symbols conclusion-number rule-base fn-invars prover-rule-alist interpreted-function-alist state result-array-stobj)
+        (simplify-conclusion conclusion connections-of-inputs hyps runes max-conflicts monitored-symbols conclusion-number rule-base fn-invars prover-rule-alist interpreted-function-alist state result-array-stobj)
         (if erp
             (mv erp nil nil state result-array-stobj)
           (prog2$ (cw "Result of simplifying conclusion: ~x0)~%" simplified-conclusion)
                   (if defthm-name-or-nil
                       ;;we simplified this conclusion:
                       (simplify-conclusions (rest conclusions)
-                                            connections-of-inputs hyps runes timeout monitored-symbols
+                                            connections-of-inputs hyps runes max-conflicts monitored-symbols
                                             (cons simplified-conclusion new-conclusions-acc)
                                             (cons defthm-name-or-nil rule-names-acc)
                                             (+ 1 conclusion-number) rule-base fn-invars prover-rule-alist interpreted-function-alist state result-array-stobj)
                     (simplify-conclusions (rest conclusions)
-                                          connections-of-inputs hyps runes timeout monitored-symbols
+                                          connections-of-inputs hyps runes max-conflicts monitored-symbols
                                           (cons conclusion new-conclusions-acc)
                                           rule-names-acc ;no rule to add
                                           (+ 1 conclusion-number) rule-base fn-invars prover-rule-alist interpreted-function-alist state result-array-stobj))))))))
@@ -11462,7 +11462,7 @@
                                        formals
                                        analyzed-function-table
 ;unroll
-;monitored-symbols print timeout
+;monitored-symbols print max-conflicts
                                        state result-array-stobj)
   ;;fixme if an update-expr calls a function, should we simplify it? do we?
   ;;e.g., an update-fn with an embedded dag -- should we simplify that dag?
@@ -12458,7 +12458,7 @@
 ;miter-depth-to-use ;the depth to use if this routine needs to build a miter
                                            analyzed-function-table
 ;monitored-symbols
-                                           timeout print
+                                           max-conflicts print
                                            rand state result-array-stobj)
   (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
   (b* ((- (cw "(Will prove theorems about the return values of nice tail recursive function ~x0.)~%" fn))
@@ -12663,7 +12663,7 @@
        ((mv erp proved-new-final-claims final-claims-defthm-names state)
         (prove-final-claims new-final-claims
                             (list simplified-expanded-exit-test-expr `(,better-invariant-name ,@better-invariant-formals))
-                            (pack$ fn '-final-claim-) timeout prover-rule-alist
+                            (pack$ fn '-final-claim-) max-conflicts prover-rule-alist
                             `(,better-invariant-name) ;because this will need to be opened
                             interpreted-function-alist state))
        ((when erp) (mv erp nil nil nil analyzed-function-table rand state result-array-stobj))
@@ -13003,7 +13003,7 @@
                        print monitored-symbols
                        analyzed-function-table
                        unroll
-                       make-theoremp timeout
+                       make-theoremp max-conflicts
                        options
                        rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
@@ -13069,7 +13069,7 @@
                                         analyzed-function-table
                                         unroll
                                         512 ;tests-per-case fixme!
-                                        timeout
+                                        max-conflicts
                                         nil ;must-succeedp=nil
                                         t
                                         nil ;simplify xors
@@ -13114,7 +13114,7 @@
                                  invar-set-num invar-num rewriter-rule-alist prover-rule-alist extra-stuff interpreted-function-alist test-cases-for-formals-and-old-vars
                                  miter-depth-to-use ;depth to use if this needs to miter ;helps keep the array names straight
                                  unroll monitored-symbols print
-                                 make-theoremp timeout
+                                 make-theoremp max-conflicts
                                  options
                                  rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
@@ -13132,7 +13132,7 @@
                       (empty-analyzed-function-table) ;fffixme think about what analysis we should do for nested loops...
                       unroll
                       ;;fixme pass in rule-classes!
-                      make-theoremp timeout
+                      make-theoremp max-conflicts
                       options
                       rand state result-array-stobj)
        (if erp
@@ -13178,7 +13178,7 @@
  (defun find-failed-invariants (invars hyps base-theorem-name formal-update-expr-alist
                                        invar-set-num invar-num
                                        rewriter-rule-alist prover-rule-alist extra-stuff interpreted-function-alist test-cases-for-formals-and-old-vars miter-depth-to-use
-                                       unroll monitored-symbols print acc defthm-names-acc timeout options rand state result-array-stobj)
+                                       unroll monitored-symbols print acc defthm-names-acc max-conflicts options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (if (endp invars)
        (mv nil acc defthm-names-acc rand state result-array-stobj)
@@ -13189,7 +13189,7 @@
                                   invar-set-num invar-num
                                   rewriter-rule-alist prover-rule-alist extra-stuff interpreted-function-alist test-cases-for-formals-and-old-vars miter-depth-to-use unroll monitored-symbols print
                                   t ;nil ;don't make the defthm
-                                  timeout
+                                  max-conflicts
                                   options
                                   rand state result-array-stobj)
          (if erp
@@ -13201,7 +13201,7 @@
                                    unroll monitored-symbols print
                                    (if provedp acc (cons invar acc)) ;add this invar to the result if it failed
                                    (if provedp (cons defthm-name defthm-names-acc) defthm-names-acc)
-                                   timeout options rand state result-array-stobj))))))
+                                   max-conflicts options rand state result-array-stobj))))))
 
 ;returns (mv erp invariants-that-failed defthm-names rand state result-array-stobj), where if invariants-that-failed is nil then they all proved and defthm-names are the theorem-names showing that they are preserved by the updates
 ;otherwise, invariants-that-failed are all the members of invars that failed to be proved (safe to throw them all out) and defthm-names is meaningless
@@ -13211,7 +13211,7 @@
                                                      invar-set-num rewriter-rule-alist prover-rule-alist extra-stuff interpreted-function-alist
                                                      test-cases-for-formals-and-old-vars
                                                      miter-depth-to-use
-                                                     unroll monitored-symbols print timeout options rand state result-array-stobj)
+                                                     unroll monitored-symbols print max-conflicts options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (progn$ (cw "(Trying to prove inductive set of length ~x0.~%" (len invars))
            (cw "(Trying to prove them all at once:~%")
@@ -13224,7 +13224,7 @@
                                       invar-set-num
                                       "ALL" ;; invar-num
                                       rewriter-rule-alist prover-rule-alist extra-stuff interpreted-function-alist test-cases-for-formals-and-old-vars miter-depth-to-use unroll monitored-symbols print
-                                      t timeout options rand state result-array-stobj)
+                                      t max-conflicts options rand state result-array-stobj)
              (if erp
                  (mv erp nil nil rand state result-array-stobj)
                (if proved-allp
@@ -13240,7 +13240,7 @@
                            (find-failed-invariants invars (append hyps invars) base-theorem-name formal-update-expr-alist
                                                    invar-set-num 0 rewriter-rule-alist prover-rule-alist
                                                    extra-stuff interpreted-function-alist test-cases-for-formals-and-old-vars miter-depth-to-use
-                                                   unroll monitored-symbols print nil nil timeout options rand state result-array-stobj)
+                                                   unroll monitored-symbols print nil nil max-conflicts options rand state result-array-stobj)
                            (if erp
                                (mv erp nil nil rand state result-array-stobj)
                              ;;It's possible that they fail to prove together but each proves individually, so we do make the theorems
@@ -13260,13 +13260,13 @@
                                                      hyps
                                                      invar-set-num rewriter-rule-alist prover-rule-alist extra-stuff interpreted-function-alist test-cases-for-formals-and-old-vars
                                                      miter-depth-to-use
-                                                     unroll monitored-symbols print timeout options rand state result-array-stobj)
+                                                     unroll monitored-symbols print max-conflicts options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (mv-let (erp invariants-that-failed defthm-names rand state result-array-stobj)
      (try-to-prove-invariant-set-inductive invars base-theorem-name formal-update-expr-alist hyps
                                            invar-set-num rewriter-rule-alist prover-rule-alist
                                            extra-stuff interpreted-function-alist test-cases-for-formals-and-old-vars miter-depth-to-use
-                                           unroll monitored-symbols print timeout options rand state result-array-stobj)
+                                           unroll monitored-symbols print max-conflicts options rand state result-array-stobj)
      (if erp
          (mv erp nil nil rand state result-array-stobj)
        (if invariants-that-failed
@@ -13275,7 +13275,7 @@
                                                  hyps
                                                  (+ 1 invar-set-num)
                                                  rewriter-rule-alist prover-rule-alist extra-stuff interpreted-function-alist test-cases-for-formals-and-old-vars miter-depth-to-use
-                                                 unroll monitored-symbols print timeout options rand state result-array-stobj)
+                                                 unroll monitored-symbols print max-conflicts options rand state result-array-stobj)
          (mv nil invars defthm-names rand state result-array-stobj)))))
 
  ;; ;fixme change things to prove the first theorem here with the connection relation open!  (and maybe also the negated exit test?)
@@ -13392,7 +13392,7 @@
  ;;                                       (axe-prover
  ;;                                        clause
  ;;                                        ',(s :unroll unroll
- ;;                                             (s :timeout t ;Thu Aug 19 23:12:34 2010
+ ;;                                             (s :max-conflicts t ;Thu Aug 19 23:12:34 2010
  ;;                                                (s :print print
  ;;                                                   (s :goal-name theorem-name
  ;;                                                      (axe-prover-hints
@@ -13489,7 +13489,7 @@
                         test-cases ;each is an alist from input vars to values
                         test-case-array-alist ;can be invalid...
                         analyzed-function-table
-                        unroll miter-depth-to-use monitored-symbols timeout print
+                        unroll miter-depth-to-use monitored-symbols max-conflicts print
                         options
                         rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
@@ -13832,7 +13832,7 @@
                                                                                  0 rewriter-rule-alist prover-rule-alist
                                                                                  extra-stuff interpreted-function-alist
                                                                                  test-cases-for-formals-and-old-vars
-                                                                                 miter-depth-to-use unroll monitored-symbols print timeout options rand state result-array-stobj))
+                                                                                 miter-depth-to-use unroll monitored-symbols print max-conflicts options rand state result-array-stobj))
                                           ((when erp) (mv erp :error nil rand state result-array-stobj))
                                           (proved-dropping-invars (intersection-equal all-component-explanations-for-dropping proved-invars))
                                           ;; If we can drop any params we do it now (and then peel off the base case):
@@ -13863,7 +13863,7 @@
                                                                              interpreted-function-alist
                                                                              formals
                                                                              analyzed-function-table
-;unroll monitored-symbols print timeout
+;unroll monitored-symbols print max-conflicts
                                                                              state result-array-stobj)))
                                           ((when erp) (mv erp :error analyzed-function-table rand state result-array-stobj)))
 
@@ -13920,7 +13920,7 @@
 ;unroll
                                                analyzed-function-table
 ;monitored-symbols
-                                               timeout print rand state result-array-stobj)
+                                               max-conflicts print rand state result-array-stobj)
                                               (if erp
                                                   (prog2$ (cw ")")
                                                           (mv t :error analyzed-function-table rand state result-array-stobj))
@@ -14056,7 +14056,7 @@
  (defun analyze-rec-fn-wrapper (nodenum ; must be the nodenum of a non-built-in recursive function call
                                 dag-array-name dag-array interpreted-function-alist extra-stuff
                                 rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist analyzed-function-table unroll miter-depth-to-use monitored-symbols
-                                timeout print options rand state result-array-stobj)
+                                max-conflicts print options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (mv-let (erp result analyzed-function-table rand state result-array-stobj)
      (analyze-rec-fn nodenum dag-array-name dag-array interpreted-function-alist
@@ -14065,7 +14065,7 @@
                      ;;t          ;yes, make type facts
                      test-case-array-alist
                      analyzed-function-table
-                     unroll miter-depth-to-use monitored-symbols timeout print options
+                     unroll miter-depth-to-use monitored-symbols max-conflicts print options
                      rand state result-array-stobj)
      (if erp
          (mv erp result analyzed-function-table rand state result-array-stobj)
@@ -14087,19 +14087,19 @@
  (defun analyze-rec-fns (nodenums ;;must all be nodenums of (non built-in) recursive function calls
                          dag-array-name dag-array interpreted-function-alist extra-stuff
                          rewriter-rule-alist prover-rule-alist ;fixme pass in a rule-alist instead?
-                         test-cases test-case-array-alist analyzed-function-table unroll miter-depth-to-use monitored-symbols timeout print options rand state result-array-stobj)
+                         test-cases test-case-array-alist analyzed-function-table unroll miter-depth-to-use monitored-symbols max-conflicts print options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (if (endp nodenums)
        (mv nil nil analyzed-function-table rand state result-array-stobj)
      (mv-let (erp car-result analyzed-function-table rand state result-array-stobj)
        (analyze-rec-fn-wrapper (first nodenums) dag-array-name dag-array interpreted-function-alist extra-stuff
-                               rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist analyzed-function-table unroll miter-depth-to-use monitored-symbols timeout print options rand state result-array-stobj)
+                               rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist analyzed-function-table unroll miter-depth-to-use monitored-symbols max-conflicts print options rand state result-array-stobj)
        (if erp
            (mv erp nil analyzed-function-table rand state result-array-stobj)
          (mv-let (erp cdr-result analyzed-function-table rand state result-array-stobj)
            (analyze-rec-fns (rest nodenums) dag-array-name dag-array interpreted-function-alist
                             extra-stuff rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist analyzed-function-table unroll miter-depth-to-use monitored-symbols
-                            timeout print options rand state result-array-stobj)
+                            max-conflicts print options rand state result-array-stobj)
            (if erp
                (mv erp nil analyzed-function-table rand state result-array-stobj)
              (mv nil
@@ -14126,7 +14126,7 @@
  ;;                                    miter-depth-to-use
  ;;                                    print monitored-symbols
  ;;                                    analyzed-function-table
- ;;                                    unroll timeout
+ ;;                                    unroll max-conflicts
  ;;                                    state result-array-stobj)
  ;;    (declare (xargs :mode :program :stobjs (state result-array-stobj)))
  ;;    (let* ((dummy (progn$ (cw "(Proving connection conjunct ~x0 of ~x1:~%~x2.~%" current-conjunct-num conjunct-count conjunct)
@@ -14152,7 +14152,7 @@
  ;;                             analyzed-function-table
  ;;                             unroll
  ;;                             t ;make the theorem
- ;;                             timeout
+ ;;                             max-conflicts
  ;;                             state result-array-stobj)
  ;;              (if provedp
  ;;                  (prog2$ (cw "Proved connection conjunct ~x0 of ~x1.)~%" current-conjunct-num conjunct-count)
@@ -14173,7 +14173,7 @@
  ;;                                         miter-depth-to-use
  ;;                                         defthm-name-acc print monitored-symbols
  ;;                                         analyzed-function-table
- ;;                                         unroll timeout
+ ;;                                         unroll max-conflicts
  ;;                                         state result-array-stobj)
  ;;    (declare (xargs :mode :program :stobjs (state result-array-stobj)))
  ;;    (if (endp conjuncts)
@@ -14187,7 +14187,7 @@
  ;;                                           miter-depth-to-use
  ;;                                           print monitored-symbols
  ;;                                           analyzed-function-table
- ;;                                           unroll timeout
+ ;;                                           unroll max-conflicts
  ;;                                           state result-array-stobj)
  ;;                (if (not provedp)
  ;;                    (mv (hard-error 'prove-connection-conjuncts-aux "Failed to prove conjunct: ~x0.~%" (acons #\0 (car conjuncts) nil))
@@ -14202,7 +14202,7 @@
  ;;                                                  miter-depth-to-use
  ;;                                                  (cons defthm-name defthm-name-acc) print monitored-symbols
  ;;                                                  analyzed-function-table
- ;;                                                  unroll timeout
+ ;;                                                  unroll max-conflicts
  ;;                                                  state result-array-stobj))))))
 
  ;;  ;;returns (mv defthm-names state result-array-stobj) ;what about failures?
@@ -14215,7 +14215,7 @@
  ;;                                     miter-depth-to-use
  ;;                                     defthm-name-acc print monitored-symbols
  ;;                                     analyzed-function-table
- ;;                                     unroll timeout
+ ;;                                     unroll max-conflicts
  ;;                                     state result-array-stobj)
  ;;    (declare (xargs :mode :program
  ;;                    :stobjs (state result-array-stobj)))
@@ -14234,7 +14234,7 @@
  ;;                                         miter-depth-to-use
  ;;                                         print monitored-symbols
  ;;                                         analyzed-function-table
- ;;                                         unroll timeout
+ ;;                                         unroll max-conflicts
  ;;                                         state result-array-stobj)
  ;;              (if provedp
  ;;                  (mv (list defthm-name) state result-array-stobj)
@@ -14253,7 +14253,7 @@
  ;;                                                        miter-depth-to-use
  ;;                                                        defthm-name-acc print monitored-symbols
  ;;                                                        analyzed-function-table
- ;;                                                        unroll timeout
+ ;;                                                        unroll max-conflicts
  ;;                                                        state result-array-stobj))))))
 
  ;;       (mv-let (failedp state result-array-stobj)
@@ -14304,7 +14304,7 @@
                                                          traces2
                                                          args2 ;nodenums and quoteps
 
-                                                         timeout
+                                                         max-conflicts
                                                          rewriter-rule-alist
                                                          prover-rule-alist
                                                          extra-stuff interpreted-function-alist
@@ -14642,7 +14642,7 @@
                                                              0 rewriter-rule-alist prover-rule-alist
                                                              extra-stuff interpreted-function-alist
                                                              test-cases-for-formals-and-old-vars
-                                                             miter-depth-to-use unroll monitored-symbols print timeout options rand state result-array-stobj)
+                                                             miter-depth-to-use unroll monitored-symbols print max-conflicts options rand state result-array-stobj)
                        (if erp
                            (mv erp nil nil rand state result-array-stobj)
                          ;; (connection-defthm-names state result-array-stobj)
@@ -14659,7 +14659,7 @@
                          ;;                             rewriter-rule-alist
                          ;;                             prover-rule-alist extra-stuff interpreted-function-alist
                          ;;                             test-cases-for-formals-and-old-vars ;these are over the (renamed) formals of both fns (and the old vars)
-                         ;;                             miter-depth-to-use nil print monitored-symbols analyzed-function-table unroll timeout state result-array-stobj)
+                         ;;                             miter-depth-to-use nil print monitored-symbols analyzed-function-table unroll max-conflicts state result-array-stobj)
                          ;; now use the proved connections and the invariants to do the induction proof:
                          (b* ((connection-predicate-name (packnew fn1 '-and- fn2 '-connection-predicate))
                               (connection-predicate-vars (get-vars-from-terms proved-connections)) ;can there be old vars in the connections?
@@ -14780,7 +14780,7 @@
                                                           fn1-invariant-call
                                                           fn2-invariant-call
                                                           proved-connections)
-                                                   (pack$ fn1 '-and- fn2 '-final-claim-) timeout prover-rule-alist
+                                                   (pack$ fn1 '-and- fn2 '-final-claim-) max-conflicts prover-rule-alist
                                                    `(,fn1-invariant-name ;because these will need to be opened
                                                      ,fn2-invariant-name)
                                                    interpreted-function-alist state))
@@ -15051,7 +15051,7 @@
                                                                     take-does-nothing
                                                                     firstn-becomes-take-gen
                                                                     list::true-listp-fix)))
-                                                      timeout
+                                                      max-conflicts
 ;monitored symbols (inefficient but remember that each theorem can generate several dag rules):
                                                       (cons 'prefixp-when-lens-equal
                                                             ;; TODO: Use plain make-axe-rules here
@@ -15400,7 +15400,7 @@
                                                 original-nodenum2 ;the larger nodenum (can the nodenums be equal?) this node will be replaced
                                                 miter-array-name miter-array miter-len
                                                 miter-depth
-                                                timeout
+                                                max-conflicts
                                                 print interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                                 extra-stuff ;does soundness depend on anything in this, or are these just hints?
                                                 monitored-symbols
@@ -15521,7 +15521,7 @@
                 (analyze-rec-fns rec-fn-nodes-to-handle miter-array-name miter-array interpreted-function-alist extra-stuff
                                  rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist analyzed-function-table unroll
                                  (+ 1 miter-depth)
-                                 monitored-symbols timeout print options rand state result-array-stobj)
+                                 monitored-symbols max-conflicts print options rand state result-array-stobj)
                 (if erp
                     (mv erp :error analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
                   (let ((new-runes (first analyze-rec-fns-result))
@@ -15827,7 +15827,7 @@
                                                                       (generate-connection-lemma-for-nice-tail-rec-fns
                                                                        fn1 exit-test-expr1 base-case-expr1 update-expr-list1 traces1 args1
                                                                        fn2 exit-test-expr2 base-case-expr2 update-expr-list2 traces2 args2
-                                                                       timeout
+                                                                       max-conflicts
                                                                        rewriter-rule-alist
                                                                        prover-rule-alist extra-stuff interpreted-function-alist
                                                                        (+ 1 miter-depth)
@@ -16198,8 +16198,8 @@
                                                  context-array
                                                  context-array-len
                                                  context ;;nil ;;tried nil for speed but that left out some important stuff
-                                                 timeout
-                                                 (not some-goal-timed-outp) ; print-timeout-goalp
+                                                 max-conflicts
+                                                 (not some-goal-timed-outp) ; print-max-conflicts-goalp
                                                  nil ;options
                                                  state)
                       (if erp
@@ -16208,7 +16208,7 @@
                             (prog2$ (cw "Prover rewrote the clause to true!)~%")
                                     (mv nil :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
                           (if (eq :timed-out result)
-                              (prog2$ (cw "Prover failed (by timeout) to prove the clause.)~%")
+                              (prog2$ (cw "Prover failed (by reaching the max conflict limit) to prove the clause.)~%")
                                       (mv nil :timed-out analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
                             (prog2$ (cw "Prover failed to prove the clause.)~%")
                                     (mv nil :failed analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)))))))
@@ -16228,7 +16228,7 @@
                                                        step-num ;use this even in the pure case?
                                                        analyzed-function-table unroll miter-is-purep
                                                        ;;tag-array2
-                                                       some-goal-timed-outp timeout miter-name nodenums-not-to-unroll
+                                                       some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
                                                        options
                                                        rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
@@ -16261,7 +16261,7 @@
            (mv-let (success-flg state) ;ffixme handle errors?
              ;;fffixme pass in and translate assumptions?  they may be tighter than the sizes that are apparent from how the variables are used?
 ;fffixme use (pure) contexts!
-             (try-to-prove-pure-nodes-equivalent smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print timeout miter-name state)
+             (try-to-prove-pure-nodes-equivalent smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state)
              (if success-flg
                  (mv nil :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
                ;; fixme would like to get a counterexample back and use it try to invalidate more "probable facts":
@@ -16269,7 +16269,7 @@
          ;; fixme instead of this, we could always cut out the non pure stuff and attempt that proof?
          ;; fixme should we check for and expand any remining user non-recursive functions?
          (try-to-prove-non-pure-nodes-equivalent smaller-nodenum larger-nodenum miter-array-name miter-array miter-len
-                                                 miter-depth timeout
+                                                 miter-depth max-conflicts
                                                  print interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                                  extra-stuff monitored-symbols
                                                  assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll
@@ -16328,7 +16328,7 @@
  ;;                    state result-array-stobj))))
 
  ;; Returns (mv erp result miter-array analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj), where result is :proved (we proved it and merged), :timed-out, :error, :failed, or (list :new-rules new-runes new-fn-names) or (list :apply-rule ...)
- ;;remember failures and timeouts so we don't try them again?
+ ;;remember failures and failures due to max-conflicts so we don't try them again?
 ;first generate a proof obligation that smaller-nodenum and larger-nodenum in the graph are equal.
 ;then change references to the nodes to point instead to the minimum node from the set that contains smaller-nodenum and larger-nodenum
 ;BOZO i hope miter-len doesn't count the array header...
@@ -16339,7 +16339,7 @@
                                                             extra-stuff monitored-symbols
                                                             assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll miter-is-purep
                                                             ;;tag-array2
-                                                            some-goal-timed-outp timeout miter-name nodenums-not-to-unroll options rand state result-array-stobj)
+                                                            some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (prog2$
     (and (member-eq print '(t :verbose :verbose2)) ;used to print this even for :brief:
@@ -16358,7 +16358,7 @@
                                      extra-stuff monitored-symbols
                                      assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll miter-is-purep
 ;tag-array2
-                                     some-goal-timed-outp timeout miter-name nodenums-not-to-unroll options rand state result-array-stobj)
+                                     some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj)
       (if erp
           (mv erp nil nil nil nil rand state result-array-stobj)
         (if (eq result :proved)
@@ -16407,7 +16407,7 @@
                                        assumptions ;terms we can assume non-nil (we can't actually assume them to be 't right?)
                                        monitored-symbols step-num analyzed-function-table miter-depth unroll miter-is-purep
                                        ;;tag-array2
-                                       use-proverp-flag some-goal-timed-outp timeout miter-name options rand state result-array-stobj)
+                                       use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (b* ((- (cw "  Trying to prove node ~x0 is the constant ~x1.~%" nodenum constant-value)) ;add parens?
         ;;check for trivial equality (this helps if we had (equal x y) and x
@@ -16427,7 +16427,7 @@
                   ))
          ;; Non-pure mode (rewrite fully, using contexts, then call the axe-prover, then handle supporting rec. fns):
          ;;fixme can we just call the prover?
-;ffixme what if we can cut out the non-bv functions and then hit the dag with stp (maybe with a timeout)?
+;ffixme what if we can cut out the non-bv functions and then hit the dag with stp (maybe with a max-conflicts)?
          ;;fixme for two nodes, don't we analyze rec fns first and then call the prover?
          (b* ( ;; First simplify the equality of the node and the constant:  FFIXME first rewrite (and maybe call the prover) without using external contexts..
               (- (cw "(Making the equality and rewriting:~%"))
@@ -16512,8 +16512,8 @@
                                                    assumptions-array ;ffffffixme this may be changed under the hood by the rewrite, giving a slow array warning..?! is it even sound?  now i think it's okay because prove-dag-with-axe-prover doesn't seem to trash the context-array it is passed.
                                                    assumptions-array-len
                                                    context
-                                                   timeout
-                                                   (not some-goal-timed-outp) ;print-timeout-goalp
+                                                   max-conflicts
+                                                   (not some-goal-timed-outp) ;print-max-conflicts-goalp
                                                    nil ;options
                                                    state))
                      (prog2$ (cw "(Not calling prover because use-proverp-flag is nil.~%")
@@ -16543,7 +16543,7 @@
                          (analyze-rec-fns nodes-with-rec-fns miter-array-name miter-array interpreted-function-alist extra-stuff
                                           rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist analyzed-function-table unroll
                                           (+ 1 miter-depth)
-                                          monitored-symbols timeout print options rand state result-array-stobj)
+                                          monitored-symbols max-conflicts print options rand state result-array-stobj)
                          (if erp
                              (mv erp :error analyzed-function-table rand state result-array-stobj)
                            (if (first result)
@@ -16647,7 +16647,7 @@
                                                   cut-nodenum-type-alist
                                                   nil ;extra-asserts ;fixme
                                                   print
-                                                  timeout
+                                                  max-conflicts
                                                   nil ;no counterexample (for now)
                                                   state)
                    (if (eq *error* result)
@@ -16678,7 +16678,7 @@
                                                    assumptions monitored-symbols step-num
                                                    analyzed-function-table unroll miter-is-purep
                                                    ;;tag-array2
-                                                   use-proverp-flag some-goal-timed-outp timeout miter-name options rand state result-array-stobj)
+                                                   use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (if (eq :unused constant-value)
 ;get rid of this check if it never fires
@@ -16703,7 +16703,7 @@
                                                   print interpreted-function-alist extra-stuff
                                                   rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist assumptions monitored-symbols step-num
                                                   analyzed-function-table miter-depth unroll miter-is-purep ;tag-array2
-                                                  use-proverp-flag some-goal-timed-outp timeout miter-name options rand state result-array-stobj)
+                                                  use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)
                    (if erp
                        (mv erp :error miter-array analyzed-function-table rand state result-array-stobj)
                      (if (eq :error result) ;todo: do we need both the erp case and the error case?
@@ -16748,7 +16748,7 @@
                                          analyzed-function-table
                                          unroll miter-is-purep
                                          nodes-to-not-use-prover-for ;the booland nodes at the top of the miter; don't waste time on them by calling the prover
-                                         some-goal-timed-outp timeout miter-name nodenums-not-to-unroll
+                                         some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
                                          options
                                          rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
@@ -16799,7 +16799,7 @@
                                                                   assumptions monitored-symbols
                                                                   step-num analyzed-function-table unroll miter-is-purep
                                                                   ;;tag-array2
-                                                                  use-proverp-flag some-goal-timed-outp timeout miter-name options rand state result-array-stobj))
+                                                                  use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj))
                      (prog2$ (cw ")~%")
                              (if erp
                                  (mv erp :error miter-array analyzed-function-table rand state result-array-stobj)
@@ -16829,7 +16829,7 @@
                                                                 unroll miter-is-purep nodes-to-not-use-prover-for
                                                                 (or some-goal-timed-outp
                                                                     (eq :timed-out result))
-                                                                timeout miter-name nodenums-not-to-unroll options
+                                                                max-conflicts miter-name nodenums-not-to-unroll options
                                                                 rand state result-array-stobj))
                                    ;; Otherwise, result is (list :new-rules new-runes new-fn-names) or (list :apply-rule ...)
                                    ;; Abort the sweep:
@@ -16852,7 +16852,7 @@
                     extra-stuff monitored-symbols assumptions
                     test-cases test-case-array-alist step-num analyzed-function-table unroll
                     miter-is-purep ;tag-array2
-                    some-goal-timed-outp timeout miter-name nodenums-not-to-unroll options rand state result-array-stobj)
+                    some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj)
                    (if erp
                        (mv erp :error miter-array analyzed-function-table rand state result-array-stobj)
                      (prog2$
@@ -16880,7 +16880,7 @@
                                                        analyzed-function-table unroll miter-is-purep nodes-to-not-use-prover-for
                                                        (or some-goal-timed-outp
                                                            (eq :timed-out result))
-                                                       timeout miter-name nodenums-not-to-unroll
+                                                       max-conflicts miter-name nodenums-not-to-unroll
                                                        options
                                                        rand state result-array-stobj))
                           ;; Otherwise, we analyzed a loop fn (and returned some lemmas and/or fns)
@@ -16897,11 +16897,11 @@
                                         test-cases ;give values to the input vars (may be more here than we want to use)
                                         interpreted-function-alist print
                                         traced-nodes rewriter-rule-alist prover-rule-alist transformation-rules extra-stuff monitored-symbols assumptions use-context-when-miteringp
-                                        sweep-num analyzed-function-table unroll timeout options rand state result-array-stobj)
+                                        sweep-num analyzed-function-table unroll max-conflicts options rand state result-array-stobj)
    (declare (xargs :guard (not (eq 'dag-array miter-array-name)) :mode :program :stobjs (rand state result-array-stobj)))
    ;;ffixme what if the miter is a constant?? maybe not possible..
    (progn$
-    (cw "(Sweep ~x0 (depth ~x1, timeout ~x2) for ~x3 (~x4 nodes).~%" sweep-num miter-depth timeout miter-name miter-len)
+    (cw "(Sweep ~x0 (depth ~x1, max-conflicts ~x2) for ~x3 (~x4 nodes).~%" sweep-num miter-depth max-conflicts miter-name miter-len)
     (cw "(Assumptions:~%~x0)~%" assumptions) ;also, maybe pass around and print the refined assumptions??
     (let* ((state (if print
                       (progn$ (cw "(Writing DAG to file:~%")
@@ -16973,7 +16973,7 @@
                                        miter-is-purep
                                        (nodes-to-not-use-prover-for (+ -1 miter-len) miter-array-name miter-array)
                                        nil ;some-goal-timed-outp ;no nodes have timed out yet
-                                       timeout miter-name
+                                       max-conflicts miter-name
                                        nil ;initial nodenums-not-to-unroll
                                        options
                                        rand state result-array-stobj)
@@ -17174,7 +17174,7 @@
  ;;repeatedly sweep up the miter
  ;;each sweep either reduces the miter to true or possibly does some merging and then generates some lemmas (and fns), which are used to simplify the dag before the next sweep
  ;;Returns (mv erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state result-array-stobj)
- ;;where result is :error, :proved-miter, or :done (did all the merging we could [except for timeouts etc] and didn't prove the miter)
+ ;;where result is :error, :proved-miter, or :done (did all the merging we could [except for max-conflictss etc] and didn't prove the miter)
  ;;fixme - check that, if we generated some lemmas, at least one of them fires - is it possible that all we need is to simplify with other lemmas to make progress?
  ;;FIXME - moved the use of the generated lemmas down?
  ;;The reason we may need more than one sweep is that synchronizing transformations may occur.
@@ -17188,13 +17188,13 @@
                                          rewriter-rule-alist prover-rule-alist transformation-rules
                                          assumptions extra-stuff monitored-symbols
                                          use-context-when-miteringp sweep-num analyzed-function-table unroll
-                                         timeout options rand state result-array-stobj)
+                                         max-conflicts options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (mv-let (erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj)
      (perform-miter-sweep miter-name miter-array-name miter-array miter-len miter-depth var-type-alist test-cases interpreted-function-alist
                           print traced-nodes rewriter-rule-alist prover-rule-alist transformation-rules extra-stuff
                           monitored-symbols assumptions use-context-when-miteringp sweep-num analyzed-function-table unroll
-                          timeout options rand state result-array-stobj)
+                          max-conflicts options rand state result-array-stobj)
      (if erp
          (mv erp :error  miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state result-array-stobj)
        (if (eq :proved-miter result)
@@ -17211,7 +17211,7 @@
                                      use-context-when-miteringp
                                      (+ 1 sweep-num)
                                      analyzed-function-table
-                                     unroll timeout options
+                                     unroll max-conflicts options
                                      rand state result-array-stobj)
              (prog2$ (hard-error 'perform-miter-sweeps "ERROR" nil)
                      (mv t :error miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state result-array-stobj))))))))
@@ -17230,7 +17230,7 @@
                                                     test-case-array-alist
                                                     analyzed-function-table
                                                     unroll
-                                                    monitored-symbols timeout
+                                                    monitored-symbols max-conflicts
                                                     changep print miter-depth options
                                                     rand state result-array-stobj)
    (declare (xargs :stobjs (rand state result-array-stobj) :mode :program))
@@ -17243,7 +17243,7 @@
         (mv-let (erp result analyzed-function-table rand state result-array-stobj)
           (analyze-rec-fn nodenum dag-array-name dag-array interpreted-function-alist extra-stuff
                           rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist analyzed-function-table
-                          unroll (+ 1 miter-depth) monitored-symbols timeout print options rand state result-array-stobj)
+                          unroll (+ 1 miter-depth) monitored-symbols max-conflicts print options rand state result-array-stobj)
           (if erp
               (mv erp nil interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state result-array-stobj)
             ;;catch errors?
@@ -17257,7 +17257,7 @@
                                                                     ;;assumptions
                                                                     extra-stuff
                                                                     test-cases test-case-array-alist analyzed-function-table unroll monitored-symbols
-                                                                    timeout changep print miter-depth options rand state result-array-stobj))
+                                                                    max-conflicts changep print miter-depth options rand state result-array-stobj))
               ;;otherwise, we returned (list new-runes new-fn-names)
               ;; trying without simplifying here...  if we do simplify, we need to update test-case-array-alist
               (b* ( ;(fn (ffn-symb (aref1 dag-array-name dag-array nodenum)))
@@ -17276,7 +17276,7 @@
                      (- (cw "Done pre-simplifying at node ~x0)~%" nodenum)))
                 (sweep-for-pre-simplify-recursive-functions (rest rec-fn-nodenums)
                                                             dag-array-name dag-array interpreted-function-alist rewriter-rule-alist prover-rule-alist ;assumptions
-                                                            extra-stuff test-cases test-case-array-alist analyzed-function-table unroll monitored-symbols timeout
+                                                            extra-stuff test-cases test-case-array-alist analyzed-function-table unroll monitored-symbols max-conflicts
                                                             (or changep new-runes) print miter-depth
                                                             options
                                                             rand state result-array-stobj)))))))))
@@ -17293,7 +17293,7 @@
                                                      test-cases ;each assigns values to the inputs
                                                      analyzed-function-table
                                                      unroll
-                                                     monitored-symbols timeout
+                                                     monitored-symbols max-conflicts
                                                      sweep-count print
                                                      traced-nodes
                                                      simplify-xorsp
@@ -17334,7 +17334,7 @@
                                                                      prover-rule-alist ; assumptions
                                                                      ;;done-fns
                                                                      extra-stuff test-cases
-                                                                     test-case-array-alist analyzed-function-table unroll monitored-symbols timeout
+                                                                     test-case-array-alist analyzed-function-table unroll monitored-symbols max-conflicts
                                                                      nil ;changep=nil
                                                                      print miter-depth options rand state result-array-stobj)
                          (if erp
@@ -17406,7 +17406,7 @@
                                                                                                  extra-stuff test-cases
                                                                                                  analyzed-function-table
                                                                                                  unroll
-                                                                                                 monitored-symbols timeout
+                                                                                                 monitored-symbols max-conflicts
                                                                                                  (+ 1 sweep-count)
                                                                                                  print traced-nodes
                                                                                                  simplify-xorsp
@@ -17430,7 +17430,7 @@
                                           test-inputs ;each is an alist from input vars to values
                                           analyzed-function-table
                                           unroll
-                                          monitored-symbols timeout print
+                                          monitored-symbols max-conflicts print
                                           simplify-xorsp
                                           proof-name ;fixme pass around as a string?
                                           miter-depth options
@@ -17455,7 +17455,7 @@
                                                         miter-array-name ;miter-array dag-len
                                                         interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                                         assumptions extra-stuff test-inputs
-                                                        analyzed-function-table unroll monitored-symbols timeout
+                                                        analyzed-function-table unroll monitored-symbols max-conflicts
                                                         0 ;sweep count
                                                         print
                                                         nil ;fffixme traced-nodes
@@ -17493,8 +17493,8 @@
                               (mv nil dag-lst-or-quotep interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state result-array-stobj))))))))))))))
 
 ;fixme i guess it's a requirement now that each loop fn appear only once - check that?  how could we relax that?
- ;; tries to prove the miter by sweeping (with timeouts), then splitting.
- ;; fixme try with increasing timeouts.  fixme consider two modes (must prove, and best effort)
+ ;; tries to prove the miter by sweeping (with max conflicts), then splitting.
+ ;; fixme try with increasing max-conflicts.  fixme consider two modes (must prove, and best effort)
  ;; Returns (mv erp provedp rand state result-array-stobj)
  ;; For best results, the miter passed in should already be simplified. - or this function could do it?
 ;rename - this doesn't actually make the miter?
@@ -17519,8 +17519,8 @@
                          analyzed-function-table
                          unroll
                          tests-per-case
-                         timeout
-                         must-succeedp ;if non-nil, this means we'll increase timeouts forever (fixme only do it as long as something is timing out!)
+                         max-conflicts
+                         must-succeedp ;if non-nil, this means we'll increase max-conflictss forever (fixme only do it as long as something is timing out!)
                          pre-simplifyp
                          simplify-xorsp
                          options
@@ -17547,7 +17547,7 @@
                                              assumptions
                                              extra-stuff
                                              (firstn tests-per-case test-cases) ;fixme think about the firstn ;fixme chose the most interesting ones
-                                             analyzed-function-table unroll monitored-symbols timeout print
+                                             analyzed-function-table unroll monitored-symbols max-conflicts print
                                              simplify-xorsp
                                              miter-name
                                              miter-depth options
@@ -17592,7 +17592,7 @@
                                                use-context-when-miteringp
                                                0
                                                analyzed-function-table
-                                               unroll timeout options
+                                               unroll max-conflicts options
                                                rand state result-array-stobj)
                          (declare (ignore new-analyzed-function-table))
                          (if erp
@@ -17646,17 +17646,17 @@
                                       (if (not must-succeedp)
                                           (prog2$ (cw "(Failing because we don't have to succeed on this miter.))")
                                                   (mv nil nil rand state result-array-stobj))
-                                        (if (not timeout)
-                                            (prog2$ (cw "(Failing because we would normally increase the timeout but timing out is turned off.))")
+                                        (if (not max-conflicts)
+                                            (prog2$ (cw "(Failing because we would normally increase the max-conflicts but timing out is turned off.))")
                                                     (mv nil nil rand state result-array-stobj))
-                                          (if (< 10000000000 timeout) ;; not sure what the limit should be but 2^64 causes an STP error
-                                              (prog2$ (cw "(Failing because the timeout is too high.))")
+                                          (if (< 10000000000 max-conflicts) ;; not sure what the limit should be but 2^64 causes an STP error
+                                              (prog2$ (cw "(Failing because the max-conflicts is too high.))")
                                                       (mv nil nil rand state result-array-stobj))
-                                            (let ((timeout (* 2 timeout))) ;; TODO: Don't do this if no queries timed out
-                                              (prog2$ (cw "(Increasing the timeout to ~x0 and trying again.)~%" timeout)
+                                            (let ((max-conflicts (* 2 max-conflicts))) ;; TODO: Don't do this if no queries timed out
+                                              (prog2$ (cw "(Increasing the max-conflicts to ~x0 and trying again.)~%" max-conflicts)
                                                       (mv-let (erp provedp rand state result-array-stobj)
                                                         (miter-and-merge miter-dag-lst
-                                                                         miter-name ;fixme change this to indicate the increased timeout?
+                                                                         miter-name ;fixme change this to indicate the increased max-conflicts?
                                                                          miter-depth
                                                                          var-type-alist
                                                                          interpreted-function-alist
@@ -17672,7 +17672,7 @@
                                                                          analyzed-function-table
                                                                          unroll
                                                                          tests-per-case
-                                                                         timeout must-succeedp
+                                                                         max-conflicts must-succeedp
                                                                          pre-simplifyp
                                                                          simplify-xorsp
                                                                          options
@@ -17743,7 +17743,7 @@
                                                           monitored-symbols ;clear these out? use only what was passed in?
                                                           use-context-when-miteringp
                                                           (empty-analyzed-function-table) ;analyzed-function-table Mon Jan 24 15:32:32 2011
-                                                          unroll tests-per-case timeout must-succeedp
+                                                          unroll tests-per-case max-conflicts must-succeedp
                                                           pre-simplifyp
                                                           simplify-xorsp
                                                           options
@@ -17789,7 +17789,7 @@
                                                               monitored-symbols ;clear these out? use only what was passed in?
                                                               use-context-when-miteringp
                                                               (empty-analyzed-function-table) ;analyzed-function-table Mon Jan 24 15:32:32 2011
-                                                              unroll tests-per-case timeout must-succeedp
+                                                              unroll tests-per-case max-conflicts must-succeedp
                                                               pre-simplifyp simplify-xorsp options
                                                               rand state result-array-stobj))
                                             ((when erp) (mv erp nil rand state result-array-stobj))
@@ -18260,7 +18260,7 @@
 ;; ;get this working again
 ;; ;move this??
 ;; ;; returns (mv validp timedoutp state result-array-stobj) where validp indicates whether the goal is "Valid."
-;; (defun check-with-stp-fn (term var-size-alist timeout state result-array-stobj)
+;; (defun check-with-stp-fn (term var-size-alist max-conflicts state result-array-stobj)
 ;;   (declare (xargs :mode :program
 ;;                   :stobjs (state result-array-stobj)
 ;;                   :guard (pseudo-termp term)))
@@ -18273,12 +18273,12 @@
 ;;                           (mv t nil state result-array-stobj))
 ;;                 (prog2$ (cw "The DAG is the constant NIL." nodenum-or-quotep)
 ;;                         (mv nil nil state result-array-stobj)))
-;;             (prove-array-node-with-stp dag-array nodenum-or-quotep var-size-alist timeout state result-array-stobj))))
+;;             (prove-array-node-with-stp dag-array nodenum-or-quotep var-size-alist max-conflicts state result-array-stobj))))
 
 ;; ;get this working again
 ;; (defmacro check-with-stp (term var-size-alist)
 ;;   `(time$ (check-with-stp-fn ,term ,var-size-alist
-;;                              nil ;timeout
+;;                              nil ;max-conflicts
 ;;                              state result-array-stobj)))
 
 ;; ;drop this favor of the other?
@@ -19645,7 +19645,7 @@
                               random-seed
                               unroll
                               tests-per-case
-                              timeout
+                              max-conflicts
                               simplify-xorsp ;fixme use the more, deeper in?
                               name              ;the name of this proof
                               options
@@ -19828,7 +19828,7 @@
                                             analyzed-function-table
                                             unroll
                                             tests-per-case
-                                            timeout
+                                            max-conflicts
                                             t ;must-succeedp=t
                                             pre-simplifyp
                                             simplify-xorsp
@@ -19866,7 +19866,7 @@
                        random-seed
                        unroll
                        tests-per-case
-                       timeout
+                       max-conflicts
                        simplify-xorsp ;fixme use the more, deeper in?
                        miter-name        ;the name of this proof
                        options ;could move a lot of stuff into these options
@@ -19903,7 +19903,7 @@
     (if (member-eq 'JVM::ERROR-STATE fns) ;fixme pass in a set of functions to look for.
         (prog2$ (hard-error 'prove-miter-fn "The DAG contains a calls to JVM::ERROR-STATE.  Symbolic execution may have failed." nil)
                 (mv (erp-t) '(progn) state rand result-array-stobj))
-      (let ((timeout (if (eq 'default timeout) *default-stp-timeout* timeout)))
+      (let ((max-conflicts (if (eq 'default max-conflicts) *default-stp-max-conflicts* max-conflicts)))
         (prog2$
          (cw "~%(Proving top-level miter ~x0:~%" miter-name)
          (let ( ;(state (make-temp-dir state))
@@ -19931,7 +19931,7 @@
                                     random-seed
                                     unroll
                                     tests-per-case
-                                    timeout
+                                    max-conflicts
                                     simplify-xorsp ;fixme use the more, deeper in?
                                     miter-name
                                     options
@@ -19985,7 +19985,7 @@
                                   (use-context-when-miteringp 'nil) ;fffixme may cause huge blowups!  why? because memoization gets turned off?
                                   (random-seed 'nil)
                                   (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
-                                  (timeout ''default) ;initial value to use for timeout (may be increased when there's nothing else to do), nil would mean don't timeout
+                                  (max-conflicts ''default) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
                                   (simplify-xorsp 't)
                                   (treat-as-purep 'nil)
                                   (debug 'nil) ;if t, the temp dir with STP files is not deleted
@@ -19993,7 +19993,7 @@
                                   )
   `(prove-miter-fn ,dag-lst ,test-case-count ,var-type-alist ,print ,traced-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
                    ,initial-rule-set ,initial-rule-sets ,assumptions ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-                   ,random-seed ,unroll ,tests-per-case ,timeout ,simplify-xorsp ,name
+                   ,random-seed ,unroll ,tests-per-case ,max-conflicts ,simplify-xorsp ,name
                    (s :prove-constants ,prove-constants
                       (s :treat-as-purep ,treat-as-purep
                          (s :debugp ,debug nil)))
@@ -20883,7 +20883,7 @@
 ;;                           use-context-when-miteringp
 ;;                           random-seed
 ;;                           unroll
-;;                           timeout
+;;                           max-conflicts
 ;;                           simplify-xorsp
 ;;                           state rand RESULT-ARRAY-STOBJ)
 ;;   (declare (xargs :stobjs (state rand RESULT-ARRAY-STOBJ)
@@ -20910,7 +20910,7 @@
 ;;                :use-context-when-miteringp use-context-when-miteringp
 ;;                :random-seed random-seed
 ;;                :unroll unroll
-;;                :timeout timeout
+;;                :max-conflicts max-conflicts
 ;;                :simplify-xorsp simplify-xorsp))
 
 ;; ;TODO: start by making sure we can call STP on a simple example..
@@ -20941,7 +20941,7 @@
 ;;                                   ,(lookup-keyword :use-context-when-miteringp rest)
 ;;                                   ,(lookup-keyword :random-seed rest)
 ;;                                   ,(lookup-keyword :unroll rest)
-;;                                   ,(lookup-keyword :timeout rest)
+;;                                   ,(lookup-keyword :max-conflicts rest)
 ;;                                   ,(lookup-keyword :simplify-xorsp rest)
 ;;                                   state rand RESULT-ARRAY-STOBJ)))
 
@@ -20969,7 +20969,7 @@
                              tactic
                              assumptions
                              types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
-                             name print debug timeout extra-rules initial-rule-sets
+                             name print debug max-conflicts extra-rules initial-rule-sets
                              monitor
                              use-context-when-miteringp
                              normalize-xors
@@ -20980,7 +20980,7 @@
   (declare (xargs :stobjs (state rand result-array-stobj)
                   :mode :program
                   :guard (and (natp tests) ;TODO: add to guard
-                              (natp timeout)
+                              (natp max-conflicts)
                               (symbol-listp extra-rules)
                               (or (eq tactic :rewrite)
                                   (eq tactic :rewrite-and-sweep))
@@ -21029,7 +21029,7 @@
                          tests
                          types
                          :name (or name 'main-miter)
-                         :timeout timeout
+                         :max-conflicts max-conflicts
                          :initial-rule-sets initial-rule-sets
                          :print print
                          :debug debug
@@ -21075,7 +21075,7 @@
         [:print]               ;; Print verbosity (allows nil, :brief, t, and :verbose), Default: :brief
         [:name]                ;; A name to assign to the equivalence term, if desired
         [:debug]               ;; Leave temp files around for debugging, Default: nil
-        [:timeout]             ;; Initial value of STP timeout (number of conflicts), Default: 60000
+        [:max-conflicts]       ;; Initial value of STP max-conflicts (number of conflicts), Default: 60000
         [:extra-rules]         ;; The names of extra rules to use when simplifying, Default: nil
         [:initial-rule-sets]   ;; Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets), Default: :auto
         [:monitor]             ;; Rule names (symbols) to monitor when rewriting
@@ -21098,7 +21098,7 @@
                                     (types 'nil) ;gives types to the vars so we can generate tests for sweeping
                                     (name 'nil) ;the name of the miter, if we care to give it one.  also used for the name of the theorem
                                     (debug 'nil)
-                                    (timeout '60000) ;1000 here broke proofs
+                                    (max-conflicts '60000) ;1000 here broke proofs
                                     (extra-rules 'nil)
                                     (initial-rule-sets ':auto)
                                     (monitor 'nil)
@@ -21115,7 +21115,7 @@
                                            ,name
                                            ,print
                                            ,debug
-                                           ,timeout
+                                           ,max-conflicts
                                            ,extra-rules
                                            ,initial-rule-sets
                                            ,monitor

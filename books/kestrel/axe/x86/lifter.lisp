@@ -73,11 +73,12 @@
 ;(in-theory (disable acl2::bvplus-of-minus1-tighten-32)) ;caused problems in proofs about examples
 
 ;dup
-(defun acl2::my-pack-list (item lst)
+;clash
+(defun acl2::my-pack-listb (item lst)
   (if (endp lst)
       nil
     (cons (acl2::pack$ item (car lst))
-          (acl2::my-pack-list item (cdr lst)))))
+          (acl2::my-pack-listb item (cdr lst)))))
 
 (defthm integerp-of-nth
   (implies (and (integer-listp lst)
@@ -2048,7 +2049,7 @@
         ;; Run until all leaves are at a loop header or have exited the
         ;; segment (perhaps by exiting the subroutine):
         (previous-state-nums (acl2::ints-in-range 0 (+ -1 loop-depth)))
-        (previous-state-vars (acl2::my-pack-list 'x86_ previous-state-nums)) ;could pass these in
+        (previous-state-vars (acl2::my-pack-listb 'x86_ previous-state-nums)) ;could pass these in
         (all-state-vars (cons state-var previous-state-vars))
         ;; Step once to start (e.g., to get past the loop header, if the segment is a loop body):
         (state-dag ;(mv erp state-dag)
